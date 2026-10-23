@@ -114,3 +114,28 @@ BEGIN
     ORDER BY distance,s.recording_id,s.start_sample LIMIT $7',relations.segments,collection)
     USING width,query_features,query_rate_hz,query_channel,query_unit,metadata_filter,top_k;
 END $$;
+
+-- Idempotent recording creation for resumable importers. Existing acquisition
+-- metadata/specification must match; checkpoint progress is deliberately ignored.
+CREATE FUNCTION public.morlet_ensure_recording(collection regclass,recording_id text,
+  sample_rate_hz float8,channel text,unit text,metadata jsonb DEFAULT '{}'::jsonb,
+  window_size integer DEFAULT 512,stride integer DEFAULT 256,normalization text DEFAULT 'zscore')
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE initial jsonb; existing record;
+BEGIN
+  initial:=public.morlet_chunk_checkpoint(sample_rate_hz,window_size,stride,normalization);
+  EXECUTE format('INSERT INTO %s(recording_id,sample_rate_hz,channel,unit,metadata,checkpoint)
+    VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(recording_id) DO NOTHING',collection)
+    USING recording_id,sample_rate_hz,channel,unit,metadata,initial;
+  EXECUTE format('SELECT sample_rate_hz,channel,unit,metadata,checkpoint FROM %s WHERE recording_id=$1 FOR UPDATE',collection)
+    INTO existing USING recording_id;
+  IF existing.checkpoint IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  IF existing.sample_rate_hz IS DISTINCT FROM sample_rate_hz OR existing.channel IS DISTINCT FROM channel
+    OR existing.unit IS DISTINCT FROM unit OR existing.metadata IS DISTINCT FROM metadata
+    OR existing.checkpoint->>'extractor_version' IS DISTINCT FROM initial->>'extractor_version'
+    OR (existing.checkpoint->>'window')::integer IS DISTINCT FROM window_size
+    OR (existing.checkpoint->>'stride')::integer IS DISTINCT FROM stride
+    OR existing.checkpoint->>'normalization' IS DISTINCT FROM normalization THEN
+    RAISE EXCEPTION 'recording metadata or extraction specification conflicts with import';
+  END IF;
+END $$;

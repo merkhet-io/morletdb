@@ -105,3 +105,9 @@ Report version 3 adds `durable_chunks`: a committed-checkpoint resume through a
 fresh connection, injected-rollback preservation, exact feature agreement with
 whole-recording extraction and racing identical retries. This is a correctness
 smoke using one recording, not a bulk streaming throughput measurement.
+
+Report version 4 adds `parquet_ingestion`: local Parquet import with a late input
+gap and committed-prefix recovery, unchanged reimport without duplicates, mapping
+of sample rows, exact agreement between both layouts and direct extraction, and
+rejection of a changed recording specification. Timings are diagnostic, not bulk
+ingestion throughput claims.

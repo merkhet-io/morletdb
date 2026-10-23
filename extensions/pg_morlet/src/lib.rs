@@ -177,6 +177,10 @@ pgrx::extension_sql_file!("../sql/streams.sql", name = "streams", finalize);
 mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
+    #[pg_test(error = "recording metadata or extraction specification conflicts with import")]
+    fn import_rejects_changed_recording_spec() {
+        Spi::run("SELECT morlet_create_stream_collection('public','import_streams'); SELECT morlet_ensure_recording('import_streams','A',4096,'x','g'); SELECT morlet_ensure_recording('import_streams','A',4096,'x','g'); SELECT morlet_ensure_recording('import_streams','A',8192,'x','g')").unwrap();
+    }
     #[pg_test]
     fn durable_chunks_resume_and_rollback() {
         Spi::run("SELECT morlet_create_stream_collection('public','durable_streams'); SELECT morlet_start_recording('durable_streams','A',4096,'x','g'); SELECT morlet_append_chunk('durable_streams','A',0,ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,136) i)); SELECT morlet_append_chunk('durable_streams','A',137,ARRAY(SELECT sin(i::float8/8) FROM generate_series(137,999) i))").unwrap();

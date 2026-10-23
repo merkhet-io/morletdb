@@ -95,7 +95,7 @@ conflicting replay, deletion and RLS-denied updates. The benchmark smoke adds a
 committed-checkpoint resume through a fresh connection, an injected rollback, and
 two racing identical retries that must leave one chunk and one segment.
 
-Next: bounded Parquet import with stable recording identities/chunk coordinates,
-transaction-size controls, long-stream benchmark datasets and an asynchronous
-extraction contract. Current extraction is synchronous and the search budget still
+The [Parquet importer](../tools/ingest/README.md) now supplies stable recording
+identities, canonical chunk coordinates and transaction-size controls. Next:
+long-stream benchmark datasets, batched append and asynchronous extraction. Current extraction is synchronous and the search budget still
 limits scale; this milestone supplies durable state, not an HTAP scale claim.

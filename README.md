@@ -72,6 +72,10 @@ make pg-test  # requires configured PostgreSQL/pgrx
 
 Go code moved from the repository root to `apps/server`; its module path remains `github.com/merkhet-io/morletdb`. A root `go.work` supports editor navigation. Run `go test ./...` inside `apps/server`, or use Make targets. See [monorepo development](docs/development.md).
 
+## Parquet ingestion
+
+The [Parquet importer](tools/ingest/README.md) accepts sample-array and sample-row layouts with explicit mappings, bounded batches and safe replay into durable stream collections.
+
 ## Benchmark baseline
 
 See [the benchmark harness](benchmarks/README.md) for bulk ingestion, feature backfill, Postgres versus DuckDB/Parquet exact retrieval, typed Postgres versus JSONB comparisons, and concurrent-write measurements. CI runs a bounded smoke benchmark; production-scale and HTAP conclusions remain unproven.

@@ -8,6 +8,7 @@ import os
 import platform
 import random
 import statistics
+import sys
 import threading
 import time
 import uuid
@@ -243,6 +244,60 @@ def durable_chunk_smoke(args, records):
             conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
 
 
+def parquet_ingestion_smoke(args, records, directory):
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"tools"/"ingest"))
+    from parquet_import import Config, ImportFailure, import_files
+    schema="morlet_import_bench_"+uuid.uuid4().hex
+    collection=f"{schema}.signals"
+    values=records[0]["samples"][:2048]
+    count=len(values)
+    base={"recording_id":"A","sample_rate_hz":4096.,"channel":"vibration","unit":"g"}
+    path=directory/"import-chunks.parquet"
+    scalar_path=directory/"import-samples.parquet"
+    config=Config(chunk_size=512,commit_chunks=1,batch_rows=1)
+    rows=[{**base,"start_sample":start,"samples":values[start:min(start+512,count)]} for start in range(0,count,512)]
+    with psycopg.connect(args.dsn,autocommit=True) as conn:
+        conn.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
+        try:
+            conn.execute("SELECT morlet_create_stream_collection(%s,'signals')",(schema,))
+            # A late gap leaves an already committed prefix. Corrected rerun must
+            # replay it safely and complete rather than duplicate samples.
+            invalid=[dict(row) for row in rows]
+            invalid[-1]["start_sample"]+=1
+            pq.write_table(pa.Table.from_pylist(invalid),path)
+            try:
+                import_files([path],collection,config,dsn=args.dsn)
+                raise AssertionError("late input gap was accepted")
+            except ImportFailure as exc:
+                assert exc.report["committed_chunk_submissions"]==max(0,len(rows)-1)
+            pq.write_table(pa.Table.from_pylist(rows),path)
+            imported=import_files([path],collection,config,dsn=args.dsn)
+            replayed=import_files([path],collection,config,dsn=args.dsn)
+            assert imported["status"]==replayed["status"]=="complete"
+            chunks_relation=sql.Identifier(schema,'signals_chunks')
+            assert conn.execute(sql.SQL("SELECT count(*) FROM {}").format(chunks_relation)).fetchone()[0]==len(rows)
+            actual=conn.execute(sql.SQL("SELECT start_sample,features FROM {} ORDER BY start_sample").format(sql.Identifier(schema,'signals_segments'))).fetchall()
+            expected=conn.execute("SELECT morlet_segment_grid(%s::float8[],4096,512,256,'zscore')",(values,)).fetchone()[0]['segments']
+            assert actual==[(s['start_sample'],s['features']) for s in expected]
+            try:
+                import_files([path],collection,Config(chunk_size=512,normalization="none"),dsn=args.dsn)
+                raise AssertionError("changed extraction spec was accepted")
+            except ImportFailure:
+                pass
+            conn.execute("SELECT morlet_create_stream_collection(%s,'scalar_signals')",(schema,))
+            pq.write_table(pa.Table.from_pylist([{**base,"position":i,"amplitude":v} for i,v in enumerate(values)]),scalar_path)
+            scalar=import_files([scalar_path],f"{schema}.scalar_signals",Config(layout="samples",chunk_size=512,batch_rows=17),
+                                {"start_sample":"position","value":"amplitude"},dsn=args.dsn)
+            scalar_features=conn.execute(sql.SQL("SELECT start_sample,features FROM {} ORDER BY start_sample").format(sql.Identifier(schema,'scalar_signals_segments'))).fetchall()
+            assert scalar_features==actual
+            return {"samples":count,"stored_chunks":len(rows),"segments":len(actual),
+                    "resume_after_committed_prefix":True,"unchanged_reimport_no_duplicates":True,
+                    "layouts_and_direct_extraction_match":True,"changed_spec_rejected":True,
+                    "resumed_import_s":imported["elapsed_s"],"replay_s":replayed["elapsed_s"],"scalar_import_s":scalar["elapsed_s"]}
+        finally:
+            conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dsn", default=os.environ.get("DATABASE_URL", ""), help="Postgres DSN; defaults to libpq environment")
@@ -261,7 +316,7 @@ def main():
     records = dataset(args.rows,args.samples,args.seed)
     fingerprint = hashlib.sha256(json.dumps(records,separators=(",",":"),allow_nan=False).encode()).hexdigest()
     db, parquet = parquet_baseline(records,args.output,args.repeats)
-    report = {"benchmark_version": 3, "revision": os.environ.get("GITHUB_SHA", "unspecified"), "build_profile": os.environ.get("MORLET_BUILD_PROFILE","unspecified"),
+    report = {"benchmark_version": 4, "revision": os.environ.get("GITHUB_SHA", "unspecified"), "build_profile": os.environ.get("MORLET_BUILD_PROFILE","unspecified"),
               "environment": {"platform":platform.platform(),"cpu_count":os.cpu_count(),"python":platform.python_version(),
                               "duckdb":duckdb.__version__,"pyarrow":pa.__version__,"psycopg":psycopg.__version__,"duckdb_threads":2},
               "dataset": {"rows":args.rows,"samples_per_row":args.samples,"seed":args.seed,"sha256":fingerprint,
@@ -278,6 +333,7 @@ def main():
     if not args.parquet_only:
         report["postgres"] = postgres_baseline(args,records,db,args.output)
         report["durable_chunks"] = durable_chunk_smoke(args,records)
+        report["parquet_ingestion"] = parquet_ingestion_smoke(args,records,args.output)
     db.close()
     (args.output/"report.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps(report,indent=2))
