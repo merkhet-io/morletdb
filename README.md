@@ -8,11 +8,13 @@
 
 **MorletDB stores waveform recordings and finds similar intervals through their spectral and statistical structure.** Import Parquet, preserve acquisition context, and search with SQL. A [Merkhet](https://github.com/merkhet-io) project, licensed under Apache 2.0.
 
+**Active development follows one Rust/Postgres recording workflow.** The Go app and bounded-recording storage layouts are retained as legacy experiments; see the [architecture decision](docs/architecture.md).
+
 The first application is vibration monitoring. The recording model is domain neutral: uniformly sampled signals, explicit sample coordinates, channel, units and metadata.
 
 > **Early prototype.** Exact search, durable ingestion and recovery are tested. Extraction is synchronous; large-scale retrieval and workload isolation are still under evaluation.
 
-[Get started](#try-it-in-postgres) · [Import Parquet](tools/ingest/README.md) · [SQL guide](extensions/pg_morlet/README.md) · [Benchmarks](benchmarks/README.md) · [Brand assets](assets/brand/README.md)
+[Architecture](docs/architecture.md) · [Get started](#try-it-in-postgres) · [Import Parquet](tools/ingest/README.md) · [SQL guide](extensions/pg_morlet/README.md) · [Benchmarks](benchmarks/README.md) · [Brand assets](assets/brand/README.md)
 
 ## From samples to matches
 
@@ -64,7 +66,7 @@ Imports use bounded batches and configurable transactions. Rerunning unchanged i
 
 `morlet-energy-v1` represents each window with twelve log-spaced Morlet energy bands plus AC RMS, crest factor and kurtosis. Search compares fifteen log-transformed features using RMS Euclidean distance. Query and stored windows must have compatible rate, channel, unit, length, normalization and extractor version.
 
-Feature similarity is distinct from aligned sample distance. Both primitives are available, and both Go and Rust implementations validate the versioned extractor against shared fixtures. See the [numerical contract](docs/morlet-extractor.md).
+Feature similarity is distinct from aligned sample distance. Both primitives are available. The canonical Rust implementation validates the versioned extractor against frozen fixtures from the original Go prototype. Pooled energy features do not preserve event order within a window. See the [numerical contract](docs/morlet-extractor.md).
 
 ## Measure before scaling
 
@@ -81,7 +83,7 @@ A [long-stream sweep](benchmarks/README.md#continuous-recording-sweep) varies re
 | Representation | 512..4096-sample windows; versioned extraction and per-window normalization |
 | Search | Exact scan of up to 4096 eligible segments; metadata filters narrow candidates |
 | Consistency | Synchronous extraction and transactional publication; caller permissions and RLS |
-| Next | Long-stream tuning, asynchronous extraction and indexed candidate retrieval |
+| Next | Complete interval retrieval/inspection, reproducible onboarding and real-data relevance evaluation |
 
 No resampling, gap interpolation or background extraction worker is implemented. Database-managed stream tables use the supported append APIs; direct mutation can violate cross-table invariants.
 
@@ -95,18 +97,18 @@ No resampling, gap interpolation or background extraction worker is implemented.
 | [`benchmarks`](benchmarks) | Reproducible storage, retrieval and streaming comparisons |
 | [`apps/server`](apps/server) | Go reference server, HTTP API, CLI and original condition-monitoring demo |
 
-The Rust core stays independent of Postgres. The Go server is a separate execution/storage path; there is no Go-to-Rust FFI. The monorepo keeps alternative integrations possible while workload evidence informs the architecture.
+The Rust core stays independent of Postgres. The Go server is a frozen, separate execution/storage path; there is no Go-to-Rust FFI. New product work targets the continuous recording SQL API. Bounded-recording and alternate storage layouts remain experimental.
 
 ## Develop
 
 ```sh
-make test-go
-make test-rust
+make test  # Rust core; legacy Go checks are opt-in
 make pg-test  # configured PostgreSQL/pgrx required
 ```
 
-For the Go demo, run `make build`, then `./bin/morletdb demo -data ./data` and open http://127.0.0.1:8080. See the [server guide](apps/server/README.md) and [development notes](docs/development.md).
+The frozen Go demo remains accessible through `make legacy-build` and `./bin/morletdb demo -data ./data`. It does not use the PostgreSQL backend. See the [server guide](apps/server/README.md) and [development notes](docs/development.md).
 
 ## License
 
 Copyright 2026 MorletDB contributors. Code, documentation and original brand artwork in this repository are licensed under the [Apache License, Version 2.0](LICENSE).
+

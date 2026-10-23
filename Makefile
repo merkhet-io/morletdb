@@ -1,7 +1,7 @@
-.PHONY: test test-go test-rust build server pg-test golden
+.PHONY: test test-go test-rust build server pg-test golden legacy-build legacy-server
 GO ?= go
 
-test: test-go test-rust
+test: test-rust
 
 test-go:
 	cd apps/server && $(GO) test -race ./... && $(GO) vet ./...
@@ -10,11 +10,11 @@ test-rust:
 	cargo test --locked -p morlet-core
 	cargo fmt --all -- --check
 
-build:
+legacy-build:
 	mkdir -p bin
 	cd apps/server && $(GO) build -o ../../bin/morletdb ./cmd/morletdb
 
-server: build
+legacy-server: legacy-build
 	./bin/morletdb serve
 
 pg-test:
@@ -26,3 +26,8 @@ golden:
 .PHONY: benchmark
 benchmark:
 	python3 benchmarks/run.py
+
+
+# Compatibility aliases for the frozen Go demo.
+build: legacy-build
+server: legacy-server

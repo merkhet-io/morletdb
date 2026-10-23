@@ -1,5 +1,7 @@
 # Monorepo development
 
+Read the [canonical architecture](architecture.md) first. `make test` checks the active Rust core. The Go app and bounded SQL models are legacy experiments.
+
 ## Layout and migration
 
 The Go application lives in `apps/server`, keeping its original module identity and internal package imports. Root Make targets build `bin/morletdb`; existing data directories need no migration. Paths passed with `-data` resolve relative to the process working directory, so use an absolute path when switching between root and application-directory commands.
@@ -18,3 +20,4 @@ CI runs separate Go, portable Rust and PostgreSQL jobs. Extension integration us
 ## Boundaries
 
 The Rust core includes a port of `morlet-energy-v1`, validated against eight shared fixtures covering all signature fields, tokens and features. These fixtures are committed under `testdata/morlet-energy-v1`. Regenerate explicitly with `make golden`; never regenerate automatically in CI. Changing transform semantics requires a new representation version and reviewed fixtures. See [extractor contract](morlet-extractor.md). Keep Postgres-specific types and SQL boundaries in `extensions/pg_morlet`, and portable algorithms in `crates/morlet-core`. Keep example datasets synthetic and small.
+

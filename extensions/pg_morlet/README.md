@@ -1,3 +1,9 @@
+> **Active API:** use the continuous recording functions (`morlet_create_stream_collection`,
+> `morlet_start_recording`, `morlet_append_chunk[s]`, `morlet_search_streams`).
+> Bounded recordings, JSONB grids and typed composite arrays below are retained
+> experimental APIs. New product features target the continuous model.
+> See [architecture](../../docs/architecture.md).
+
 # pg_morlet
 
 Experimental Rust/pgrx extension for MorletDB on PostgreSQL. Initial target: **PostgreSQL 17**, `pgrx` and `cargo-pgrx` **0.16.1**. The crate, CLI and test framework versions must match. Rust is pinned at the repository root.
@@ -147,3 +153,4 @@ extractor checkpoints atomically, supports identical retries, and resumes throug
 new connections. See [durable ingestion](../../docs/durable-ingestion.md) for SQL,
 permissions, progress semantics and limitations. Extraction is still synchronous;
 this path does not change the earlier collection APIs.
+
