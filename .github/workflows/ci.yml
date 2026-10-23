@@ -1,5 +1,16 @@
-name: Go
-on: [push, pull_request]
+name: Legacy Go
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'apps/server/**'
+      - 'testdata/morlet-energy-v1/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'apps/server/**'
+      - 'testdata/morlet-energy-v1/**'
+      - '.github/workflows/ci.yml'
 permissions:
   contents: read
 jobs:
@@ -18,3 +29,4 @@ jobs:
       - run: go vet ./...
       - run: go test -race ./...
       - run: go build ./cmd/morletdb
+

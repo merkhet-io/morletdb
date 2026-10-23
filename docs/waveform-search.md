@@ -1,3 +1,6 @@
+> **Historical Go/bounded-SQL guide.** Use the continuous recording workflow
+> described in the root README for new integrations. See [architecture](architecture.md).
+
 # Waveform search: first retrieval baseline
 
 MorletDB now exposes domain-neutral recordings separately from the original CNC captures. CNC monitoring remains an application example. Existing `/api/captures`, `/api/assess`, CLI commands and dashboard are unchanged.
@@ -56,3 +59,4 @@ Tests cover embedded-event localization, amplitude normalization, noise, distrac
 ## Prototype validation
 
 A local end-to-end smoke test ingested the Python transient example, searched, stopped and restarted the service, listed metadata, retrieved binary samples and repeated search through the persisted index. The best match remained sample 768. Race tests include concurrent feature-grid builds, restart stability, raw checksum failures, index corruption/rebuild and legacy JSON compatibility. A warm-search microbenchmark on the development host (one 4096-sample recording, 512-sample query, stride 128) measured about 0.70 ms/op; this is not a fleet-scale or target-hardware performance claim.
+

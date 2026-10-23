@@ -1,3 +1,7 @@
+> **Frozen reference demo.** New development uses the Rust core and continuous
+> PostgreSQL recording API. This application has independent extraction and
+> storage and is not a frontend for PostgreSQL. See [architecture](../../docs/architecture.md).
+
 # MorletDB
 
 ### Search your waveforms.
@@ -135,4 +139,5 @@ See [design and roadmap](../../docs/design.md) for scope and next steps.
 Copyright 2026 MorletDB contributors.
 
 Licensed under the [Apache License, Version 2.0](../../LICENSE).
+
 
