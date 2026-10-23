@@ -111,3 +111,38 @@ gap and committed-prefix recovery, unchanged reimport without duplicates, mappin
 of sample rows, exact agreement between both layouts and direct extraction, and
 rejection of a changed recording specification. Timings are diagnostic, not bulk
 ingestion throughput claims.
+
+## Continuous recording sweep
+
+```sh
+python benchmarks/streaming.py --lengths 65536,262144 --channels 1,4 \
+  --chunk-sizes 1024,8192 --rpc-batches 1,16 --transaction-chunks 16 \
+  --repeats 20 --output streaming-output/report.json
+```
+
+This is a separate long-stream workload, beyond the earlier per-row sample limit.
+Every channel is a recording with fixed acquisition metadata. Source Parquet is
+written incrementally and reused across chunk/RPC cases. The default sweep has 16
+cases. Ingest is measured once per case; query distributions have three warmups.
+Fixed case order, warm caches and a single ingest run do not establish a causal
+speedup. Repeat sweeps and vary order for architectural decisions.
+
+Each case reports end-to-end importer time (including hashing), processing time,
+append RPC count, samples/sec, relation storage (indexes/TOAST included), instance
+WAL-insert delta, client CPU and sampled peak RSS. It verifies durable progress,
+features crossing persisted chunk boundaries, and replay without duplicate chunks.
+Query latency is measured alone and with a writer appending 1024-sample chunks;
+queries filter a fixed channel/cohort and writer commits during queries are counted.
+Search is explicitly skipped if that channel exceeds the 4096-segment budget.
+
+`--monitor-local-postgres` opts into server process sampling on the same host. It
+requires a local connection and visible Postgres processes. Server CPU is sampled,
+so very short-lived processes may be missed. Summed RSS double-counts shared pages;
+it is a diagnostic proxy, **not unique physical memory usage**. WAL delta includes
+background/other-instance activity and is not attributable solely to the collection.
+Client CPU includes importer/monitor work. Without that flag, server CPU/RSS are null.
+
+CI runs 8 cases: 65536 samples/channel, 1 or 2 channels, 1024 or 4096 samples/chunk,
+and 1 or 8 chunks/RPC. Reports are uploaded with the existing benchmark artifact.
+This is still a single-node synthetic synchronous workload, not beyond-RAM testing
+or evidence of HTAP isolation. Raw waveform source generation is outside timed ingest.

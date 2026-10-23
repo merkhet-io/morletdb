@@ -97,5 +97,29 @@ two racing identical retries that must leave one chunk and one segment.
 
 The [Parquet importer](../tools/ingest/README.md) now supplies stable recording
 identities, canonical chunk coordinates and transaction-size controls. Next:
-long-stream benchmark datasets, batched append and asynchronous extraction. Current extraction is synchronous and the search budget still
+larger benchmark datasets, batch tuning and asynchronous extraction. Current extraction is synchronous and the search budget still
 limits scale; this milestone supplies durable state, not an HTAP scale claim.
+
+## Batched appends
+
+`morlet_append_chunks(collection, recording_id, inputs morlet_input_chunk[])`
+accepts a typed one-dimensional array, with each composite holding a bigint start
+coordinate and float8[] samples. It returns the final received position. For example:
+
+```sql
+SELECT morlet_append_chunks('signals','capture-001',ARRAY[
+  ROW(2048,array_fill(0.::float8,ARRAY[1024]))::morlet_input_chunk,
+  ROW(3072,array_fill(0.::float8,ARRAY[1024]))::morlet_input_chunk
+]);
+```
+
+A batch holds 1..64 chunks and at most 262144 total samples; per-chunk constraints
+still apply. One recording per call keeps lock ordering explicit. Chunks execute
+in supplied order using the same durable append checks. A later failure rolls back
+the **whole SQL statement**, including earlier chunks in the batch. Identical
+retries remain no-ops. Transactions can contain several batch calls, and normal
+caller privileges/RLS remain in effect. NULL arguments follow STRICT semantics.
+
+Batching amortizes client/server round trips. This first implementation still
+advances the checkpoint and inserts features for each chunk inside the call; it
+does not coalesce checkpoint writes or decouple extraction from ingestion.

@@ -39,6 +39,12 @@ class ParquetContractTests(unittest.TestCase):
         self.assertEqual(report["committed_chunk_submissions"],0)
         self.assertEqual(len(report["files"][0]["sha256"]),64)
 
+    def test_bounds_rpc_payload_before_database_work(self):
+        Config(chunk_size=4096,rpc_chunks=64).validate()
+        for config in [Config(rpc_chunks=65),Config(chunk_size=8192,rpc_chunks=64)]:
+            with self.assertRaises(ValueError):
+                config.validate()
+
     def test_rejects_gaps_invalid_values_and_changed_metadata(self):
         for rows in [
             [{**self.base(),"start_sample":0,"samples":[0.]*137},

@@ -99,16 +99,21 @@ BEGIN
   END IF;
   query_features:=public.morlet_features(public.morlet_normalize(query_samples,normalization),query_rate_hz);
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
-  EXECUTE format('SELECT count(*),coalesce(bool_or((r.checkpoint->>''window'')::integer IS DISTINCT FROM $1
-    OR r.checkpoint->>''normalization'' IS DISTINCT FROM $2
-    OR r.checkpoint->>''extractor_version'' IS DISTINCT FROM public.morlet_extractor_version()),false)
-    FROM %s s JOIN %s r USING(recording_id)
-    WHERE r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5 AND r.metadata @> $6',relations.segments,collection)
+  -- Materialize compatibility once per visible recording. The checkpoint tail
+  -- may be TOASTed; decoding it for every joined segment dominates small scans.
+  EXECUTE format('WITH eligible AS MATERIALIZED (
+    SELECT r.recording_id,((r.checkpoint->>''window'')::integer IS DISTINCT FROM $1
+      OR r.checkpoint->>''normalization'' IS DISTINCT FROM $2
+      OR r.checkpoint->>''extractor_version'' IS DISTINCT FROM public.morlet_extractor_version()) AS invalid
+    FROM %2$s r WHERE r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5 AND r.metadata @> $6
+      AND EXISTS(SELECT 1 FROM %1$s s WHERE s.recording_id=r.recording_id))
+    SELECT coalesce(sum((SELECT count(*) FROM %1$s s WHERE s.recording_id=e.recording_id)),0)::bigint,
+      coalesce(bool_or(e.invalid),false) FROM eligible e',relations.segments,collection)
     INTO candidates,incompatible USING width,normalization,query_rate_hz,query_channel,query_unit,metadata_filter;
   IF incompatible THEN RAISE EXCEPTION 'incompatible stream representation'; END IF;
   IF candidates>4096 THEN RAISE EXCEPTION 'stream search exceeds 4096 segments; narrow the metadata filter'; END IF;
   RETURN QUERY EXECUTE format('SELECT s.recording_id,s.start_sample,s.start_sample+$1,
-    public.morlet_feature_vector_distance(s.features,$2) AS distance,r.checkpoint->>''extractor_version''
+    public.morlet_feature_vector_distance(s.features,$2) AS distance,public.morlet_extractor_version()
     FROM %s s JOIN %s r USING(recording_id)
     WHERE r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5 AND r.metadata @> $6
     ORDER BY distance,s.recording_id,s.start_sample LIMIT $7',relations.segments,collection)
@@ -138,4 +143,31 @@ BEGIN
     OR existing.checkpoint->>'normalization' IS DISTINCT FROM normalization THEN
     RAISE EXCEPTION 'recording metadata or extraction specification conflicts with import';
   END IF;
+END $$;
+
+CREATE TYPE public.morlet_input_chunk AS (start_sample bigint,samples float8[]);
+
+-- One recording per batch keeps lock ordering explicit. Every element reuses the
+-- validated durable append path; a later error rolls back the entire statement.
+CREATE FUNCTION public.morlet_append_chunks(collection regclass,recording_id text,inputs public.morlet_input_chunk[])
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE item public.morlet_input_chunk; sample_count bigint:=0; received bigint;
+BEGIN
+  IF array_ndims(inputs) IS DISTINCT FROM 1 OR array_lower(inputs,1) IS DISTINCT FROM 1
+    OR cardinality(inputs) NOT BETWEEN 1 AND 64 THEN
+    RAISE EXCEPTION 'batch must contain 1..64 input chunks in a one-dimensional array';
+  END IF;
+  FOREACH item IN ARRAY inputs LOOP
+    IF item.start_sample IS NULL OR item.samples IS NULL
+      OR array_ndims(item.samples) IS DISTINCT FROM 1 OR array_lower(item.samples,1) IS DISTINCT FROM 1
+      OR cardinality(item.samples) NOT BETWEEN 1 AND 32768 THEN
+      RAISE EXCEPTION 'invalid batch chunk offset or sample array';
+    END IF;
+    sample_count:=sample_count+cardinality(item.samples);
+  END LOOP;
+  IF sample_count>262144 THEN RAISE EXCEPTION 'batch exceeds 262144 samples'; END IF;
+  FOREACH item IN ARRAY inputs LOOP
+    received:=public.morlet_append_chunk(collection,recording_id,item.start_sample,item.samples);
+  END LOOP;
+  RETURN received;
 END $$;

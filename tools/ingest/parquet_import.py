@@ -13,6 +13,7 @@ import time
 import pyarrow.parquet as pq
 import psycopg
 from psycopg.types.json import Jsonb
+from psycopg.types.composite import CompositeInfo, register_composite
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class Config:
     window: int = 512
     stride: int = 256
     normalization: str = "zscore"
+    rpc_chunks: int = 1
 
     def validate(self):
         if self.layout not in ("chunks", "samples"):
@@ -34,6 +36,10 @@ class Config:
             raise ValueError("chunk_size must be 1..min(32768,256*stride)")
         if not (1 <= self.batch_rows <= 1024 and 1 <= self.commit_chunks <= 256):
             raise ValueError("batch_rows must be 1..1024 and commit_chunks 1..256")
+        if not 1 <= self.rpc_chunks <= 64:
+            raise ValueError("rpc_chunks must be 1..64")
+        if self.rpc_chunks * self.chunk_size > 262144:
+            raise ValueError("rpc_chunks * chunk_size must not exceed 262144 samples")
         if self.normalization not in ("none", "demean", "zscore"):
             raise ValueError("invalid normalization")
 
@@ -134,6 +140,7 @@ class ImportFailure(RuntimeError):
 
 
 def import_files(paths, collection, config=Config(), mapping=None, dsn="", validate_only=False):
+    wall_started = time.perf_counter()
     config.validate()
     paths = [Path(path) for path in paths]
     if not paths or any(not path.is_file() for path in paths):
@@ -155,15 +162,47 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
               "collection":collection, "columns":mapping or {},
               "validated_chunk_submissions": 0, "validated_sample_submissions": 0,
               "committed_chunk_submissions": 0, "committed_sample_submissions": 0,
-              "validate_only": validate_only}
+              "validate_only": validate_only, "rpc_calls":0}
     started = time.perf_counter()
+    report["preflight_s"] = started-wall_started
     conn, staged_chunks, staged_samples = None, 0, 0
+    pending, pending_recording, ensured, chunk_factory = [], None, None, None
+
+    def flush():
+        nonlocal staged_chunks, staged_samples, pending, ensured
+        if not pending:
+            return
+        if config.rpc_chunks == 1:
+            offset, values = pending[0]
+            conn.execute("SELECT morlet_append_chunk(%s::regclass,%s,%s,%s::float8[])",
+                         (collection,pending_recording,offset,values))
+        else:
+            payload=[chunk_factory(offset,values) for offset,values in pending]
+            conn.execute("SELECT morlet_append_chunks(%s::regclass,%s,%s::public.morlet_input_chunk[])",
+                         (collection,pending_recording,payload))
+        report["rpc_calls"] += 1
+        staged_chunks += len(pending)
+        staged_samples += sum(len(values) for _,values in pending)
+        pending=[]
+        if staged_chunks >= config.commit_chunks:
+            conn.commit()
+            report["committed_chunk_submissions"] += staged_chunks
+            report["committed_sample_submissions"] += staged_samples
+            staged_chunks,staged_samples=0,0
+            ensured=None
+
     try:
         if not validate_only:
             conn = psycopg.connect(dsn)
             conn.execute("SET statement_timeout='120s'")
+            if config.rpc_chunks > 1:
+                info=CompositeInfo.fetch(conn,"public.morlet_input_chunk")
+                if info is None:
+                    raise ValueError("server is missing the batched ingestion type")
+                register_composite(info,conn)
+                chunk_factory=info.python_type
+            report["extractor_version"]=conn.execute("SELECT morlet_extractor_version()").fetchone()[0]
             conn.commit()
-        # Source order is explicit and preserved. Replays are checked by Postgres.
         for path, signature in zip(paths, signatures):
             ensured = None
             for recording, spec, start, values in chunks(path, config, mapping):
@@ -172,25 +211,20 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
                 if conn is None:
                     continue
                 if ensured != (recording, spec):
+                    flush()
                     rate, channel, unit, meta = spec
                     conn.execute("SELECT morlet_ensure_recording(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
                                  (collection, recording, rate, channel, unit, Jsonb(meta),
                                   config.window, config.stride, config.normalization))
                     ensured = (recording, spec)
-                conn.execute("SELECT morlet_append_chunk(%s::regclass,%s,%s,%s::float8[])",
-                             (collection, recording, start, values))
-                staged_chunks += 1
-                staged_samples += len(values)
-                if staged_chunks >= config.commit_chunks:
-                    conn.commit()
-                    report["committed_chunk_submissions"] += staged_chunks
-                    report["committed_sample_submissions"] += staged_samples
-                    staged_chunks, staged_samples = 0, 0
-                    # Revalidate/lock the recording after every commit, including retries.
-                    ensured = None
+                pending_recording=recording
+                pending.append((start,values))
+                if len(pending)>=config.rpc_chunks or staged_chunks+len(pending)>=config.commit_chunks:
+                    flush()
             after = path.stat()
             if (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns) != signature:
                 raise ValueError("source file changed during import")
+            flush()
         if conn is not None:
             conn.commit()
             report["committed_chunk_submissions"] += staged_chunks
@@ -205,11 +239,13 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
         report["status"] = "failed"
         report["error"] = (exc.diag.message_primary or type(exc).__name__) if isinstance(exc, psycopg.Error) else str(exc)
         report["elapsed_s"] = time.perf_counter() - started
+        report["wall_elapsed_s"] = time.perf_counter() - wall_started
         raise ImportFailure(report) from exc
     finally:
         if conn is not None:
             conn.close()
     report["elapsed_s"] = time.perf_counter() - started
+    report["wall_elapsed_s"] = time.perf_counter() - wall_started
     return report
 
 
@@ -223,6 +259,7 @@ def main():
     parser.add_argument("--chunk-size", type=int, default=4096)
     parser.add_argument("--batch-rows", type=int, default=64)
     parser.add_argument("--commit-chunks", type=int, default=16)
+    parser.add_argument("--rpc-chunks", type=int, default=1)
     parser.add_argument("--window", type=int, default=512)
     parser.add_argument("--stride", type=int, default=256)
     parser.add_argument("--normalization", choices=["none", "demean", "zscore"], default="zscore")
@@ -233,7 +270,7 @@ def main():
         if not isinstance(mapping, dict):
             raise ValueError("column mapping must be a JSON object")
         config = Config(args.layout, args.chunk_size, args.batch_rows, args.commit_chunks,
-                        args.window, args.stride, args.normalization)
+                        args.window, args.stride, args.normalization, args.rpc_chunks)
         report = import_files(args.files, args.collection, config, mapping, args.dsn, args.validate_only)
     except ImportFailure as exc:
         print(json.dumps(exc.report, indent=2), file=sys.stderr)

@@ -290,9 +290,16 @@ def parquet_ingestion_smoke(args, records, directory):
                                 {"start_sample":"position","value":"amplitude"},dsn=args.dsn)
             scalar_features=conn.execute(sql.SQL("SELECT start_sample,features FROM {} ORDER BY start_sample").format(sql.Identifier(schema,'scalar_signals_segments'))).fetchall()
             assert scalar_features==actual
+            conn.execute("SELECT morlet_create_stream_collection(%s,'grouped_signals')",(schema,))
+            grouped_path=directory/"import-groups.parquet"
+            pq.write_table(pa.Table.from_pylist([{**base,"recording_id":identity,"start_sample":0,"samples":values}
+                                               for identity in ("A","B")]),grouped_path)
+            import_files([grouped_path],f"{schema}.grouped_signals",Config(chunk_size=700,rpc_chunks=3,commit_chunks=4),dsn=args.dsn)
+            grouped_counts=conn.execute(sql.SQL("SELECT recording_id,count(*) FROM {} GROUP BY recording_id ORDER BY recording_id").format(sql.Identifier(schema,'grouped_signals_chunks'))).fetchall()
+            assert grouped_counts==[("A",math.ceil(count/700)),("B",math.ceil(count/700))]
             return {"samples":count,"stored_chunks":len(rows),"segments":len(actual),
                     "resume_after_committed_prefix":True,"unchanged_reimport_no_duplicates":True,
-                    "layouts_and_direct_extraction_match":True,"changed_spec_rejected":True,
+                    "layouts_and_direct_extraction_match":True,"changed_spec_rejected":True,"recording_and_transaction_boundaries_match":True,
                     "resumed_import_s":imported["elapsed_s"],"replay_s":replayed["elapsed_s"],"scalar_import_s":scalar["elapsed_s"]}
         finally:
             conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))

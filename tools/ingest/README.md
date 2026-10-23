@@ -101,5 +101,24 @@ a late input gap leaves a committed prefix; corrected rerun completes it; repeat
 import does not duplicate data; sample-row and array-row layouts match direct
 extraction; a changed extraction specification is rejected.
 
-Next: long-stream throughput measurements, a server-side batched append API to
-reduce round trips, object-storage sources and an asynchronous extraction contract.
+The [continuous-recording sweep](../../benchmarks/README.md#continuous-recording-sweep)
+now measures server-side batches. Next: object-storage sources, tuning at larger
+scales and an asynchronous extraction contract.
+
+## Database call batching
+
+`--rpc-chunks` defaults to 1 (1..64), preserving the single-chunk baseline.
+Enable batching explicitly, for example `--rpc-chunks 16`. In batched mode the importer registers the server's
+`morlet_input_chunk` composite type and sends a typed array per append call. Calls
+are flushed at recording/file boundaries, the RPC limit, or the transaction limit.
+`--commit-chunks` still controls transaction size independently. The default uses the original single-chunk API. The initial local sweep reduced
+RPC counts through batching but did not improve throughput, so a new default is
+not justified without representative network/workload measurements.
+
+The configured RPC size times chunk size may not exceed 262144 samples; the server
+also validates actual payload size. Default chunks are 4096 samples. A batch error
+rolls back the pending transaction, while earlier committed batches remain safe to
+replay. Reports add append `rpc_calls` and the server extractor version. `elapsed_s`
+excludes preflight hashing; `preflight_s` and `wall_elapsed_s` expose that overhead.
+Batched calls reduce round trips; throughput improvement must be measured, since
+composite adaptation and feature extraction also consume CPU.

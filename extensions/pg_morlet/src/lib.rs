@@ -177,6 +177,54 @@ pgrx::extension_sql_file!("../sql/streams.sql", name = "streams", finalize);
 mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
+    #[pg_test]
+    fn stream_search_keeps_parent_visibility_and_compatibility() {
+        Spi::run("SELECT morlet_create_stream_collection('public','search_rls'); SELECT morlet_start_recording('search_rls','A',4096,'x','g','{}',512,256,'none'); SELECT morlet_start_recording('search_rls','B',4096,'x','g'); SELECT morlet_append_chunk('search_rls','A',0,array_fill(0.::float8,ARRAY[512])); SELECT morlet_append_chunk('search_rls','B',0,array_fill(0.::float8,ARRAY[512])); ALTER TABLE search_rls ENABLE ROW LEVEL SECURITY; CREATE POLICY parent_visibility ON search_rls USING(recording_id='B'); ALTER TABLE search_rls_segments ENABLE ROW LEVEL SECURITY; CREATE POLICY segment_visibility ON search_rls_segments USING(true); CREATE ROLE morlet_search_reader; GRANT SELECT ON search_rls,search_rls_segments TO morlet_search_reader; SET LOCAL ROLE morlet_search_reader").unwrap();
+        assert_eq!(Spi::get_one::<Vec<String>>("SELECT array_agg(recording_id) FROM morlet_search_streams('search_rls',array_fill(0.::float8,ARRAY[512]),4096,'x','g')").unwrap().unwrap(),vec!["B".to_string()]);
+    }
+    #[pg_test]
+    fn batch_append_is_atomic_and_replay_safe() {
+        Spi::run("SELECT morlet_create_stream_collection('public','batch_streams'); SELECT morlet_start_recording('batch_streams','A',4096,'x','g'); DO $$ BEGIN PERFORM morlet_append_chunks('batch_streams','A',ARRAY[ROW(0,array_fill(0.::float8,ARRAY[512]))::morlet_input_chunk,ROW(513,array_fill(0.::float8,ARRAY[512]))::morlet_input_chunk]); EXCEPTION WHEN OTHERS THEN NULL; END $$").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT received_samples FROM morlet_stream_status('batch_streams','A')"
+            )
+            .unwrap()
+            .unwrap(),
+            0
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM batch_streams_chunks")
+                .unwrap()
+                .unwrap(),
+            0
+        );
+        for _ in 0..2 {
+            assert_eq!(Spi::get_one::<i64>("SELECT morlet_append_chunks('batch_streams','A',ARRAY[ROW(0,array_fill(0.::float8,ARRAY[512]))::morlet_input_chunk,ROW(512,array_fill(0.::float8,ARRAY[512]))::morlet_input_chunk])").unwrap().unwrap(),1024);
+        }
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM batch_streams_chunks")
+                .unwrap()
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT indexed_segments FROM morlet_stream_status('batch_streams','A')"
+            )
+            .unwrap()
+            .unwrap(),
+            3
+        );
+    }
+    #[pg_test(error = "batch exceeds 262144 samples")]
+    fn rejects_oversized_batch_before_appending() {
+        Spi::run("SELECT morlet_create_stream_collection('public','large_batch'); SELECT morlet_append_chunks('large_batch','A',array_fill(ROW(0,array_fill(0.::float8,ARRAY[32768]))::morlet_input_chunk,ARRAY[9]))").unwrap();
+    }
+    #[pg_test(error = "batch must contain 1..64 input chunks in a one-dimensional array")]
+    fn rejects_empty_batch() {
+        Spi::run("SELECT morlet_create_stream_collection('public','empty_batch'); SELECT morlet_append_chunks('empty_batch','A',ARRAY[]::morlet_input_chunk[])").unwrap();
+    }
     #[pg_test(error = "recording metadata or extraction specification conflicts with import")]
     fn import_rejects_changed_recording_spec() {
         Spi::run("SELECT morlet_create_stream_collection('public','import_streams'); SELECT morlet_ensure_recording('import_streams','A',4096,'x','g'); SELECT morlet_ensure_recording('import_streams','A',4096,'x','g'); SELECT morlet_ensure_recording('import_streams','A',8192,'x','g')").unwrap();

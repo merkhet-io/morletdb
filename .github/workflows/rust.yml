@@ -103,8 +103,11 @@ jobs:
           python -c 'import os,psycopg; from psycopg import sql; c=psycopg.connect(dbname="postgres",autocommit=True); c.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(os.environ["PGDATABASE"]))); c.close()'
           python -c 'import psycopg; c=psycopg.connect(autocommit=True); c.execute("CREATE EXTENSION pg_morlet"); c.close()'
           python benchmarks/run.py --rows 32 --samples 2048 --repeats 10 --output benchmark-output
+          python benchmarks/streaming.py --lengths 65536 --channels 1,2 --chunk-sizes 1024,4096 --rpc-batches 1,8 --repeats 10 --monitor-local-postgres --output benchmark-output/streaming-report.json
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'pull_request' && success()
         with:
           name: benchmark-smoke-report
-          path: benchmark-output/report.json
+          path: |
+            benchmark-output/report.json
+            benchmark-output/streaming-report.json
