@@ -23,6 +23,7 @@ import (
 	"github.com/merkhet-io/morletdb/internal/monitor"
 	sig "github.com/merkhet-io/morletdb/internal/signal"
 	"github.com/merkhet-io/morletdb/internal/store"
+	"github.com/merkhet-io/morletdb/internal/waveform"
 )
 
 func main() {
@@ -34,7 +35,7 @@ func main() {
 func output(v any) error { e := json.NewEncoder(os.Stdout); e.SetIndent("", "  "); return e.Encode(v) }
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: morletdb <serve|demo|ingest|import-csv|list> [flags]")
+		return errors.New("usage: morletdb <serve|demo|ingest|import-csv|list|record|recordings|search> [flags]")
 	}
 	f := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	dir := f.String("data", "./data", "capture directory")
@@ -77,6 +78,32 @@ func run(args []string) error {
 			return nil
 		}
 		return e
+	case "record":
+		var r waveform.Recording
+		if e := readJSON(*file, &r); e != nil {
+			return e
+		}
+		v, e := s.PutRecording(r)
+		if e != nil {
+			return e
+		}
+		return output(v)
+	case "recordings":
+		v, e := s.RecordingSummaries()
+		if e != nil {
+			return e
+		}
+		return output(v)
+	case "search":
+		var q waveform.Query
+		if e := readJSON(*file, &q); e != nil {
+			return e
+		}
+		v, e := s.Search(context.Background(), q)
+		if e != nil {
+			return e
+		}
+		return output(v)
 	case "demo":
 		return demo(s)
 	case "list":

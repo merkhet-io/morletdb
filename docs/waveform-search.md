@@ -15,6 +15,7 @@ The standard-library-only Python example ingests a synthetic electrical transien
 ## API
 
 - `POST /api/recordings`: `channel`, `unit`, `start` (RFC3339), `sample_rate_hz`, `samples`, optional string-to-string `metadata`. Server assigns `id`.
+- `GET /api/recordings`: metadata catalog, including `sample_count`, without raw samples.
 - `GET /api/recordings/{id}`: original recording including raw samples.
 - `POST /api/search`: uploaded `samples`, or `recording_id` plus `start_sample` and `sample_count`; supply `channel`, `unit`, `sample_rate_hz`, `normalization`, and `top_k`. Optional `extractor`, `stride`, and exact-match metadata `filter`.
 
@@ -33,6 +34,25 @@ Responses report extractor, normalization, effective stride and ranked hits cont
 
 ## Persistence and next steps
 
-Recordings use immutable, synced JSON files under `data/recordings/`, separate from legacy captures. Restart preserves recordings. Features are recomputed on search; there is no persistent segment index or cache. This is intentionally the correctness baseline before indexing. Binary sample chunks, persisted versioned features, extractor/index interfaces, ANN, multichannel alignment, a packaged SDK and a generic dashboard remain future work. Current retrieval is bounded and unsuitable for fleet-scale archives.
+New recordings use immutable little-endian float64 sample files (`.f64`) with SHA-256 checksums and JSON manifests (`.meta`) under `data/recordings/`. Samples are synced before publishing the manifest, which acts as the commit marker. Incomplete temporary files and orphan binary files are ignored. Old JSON recordings remain readable without migration. Binary length and checksum are verified when raw data is read.
+
+Features are built lazily on the first query for each recording/window-size/stride/normalization/extractor combination, atomically persisted in `data/indexes/`, and reused after restart. Warm search reads manifests and feature grids without reading binary samples; recording-interval queries additionally read their source waveform. Feature files include source identity, version and a payload checksum. Corrupt indexes produce explicit errors; stop the service and remove the affected index file to rebuild on the next query. Removing all files in `data/indexes/` safely rebuilds derived indexes. Do not alter recording files: they are immutable.
+
+The index is an exact feature scan, not ANN. No background indexing, cache eviction, retention, deletion, replication, multi-process writer coordination or generic UI is implemented. Different query configurations create additional index files; operators must manage disk usage. Warm searches do not scrub raw sample checksums. Back up manifests and binary files together; derived indexes can be omitted. Listing still scans the directory and manifests. This is a working single-node prototype for bounded pilot datasets, not fleet-scale storage.
+
+Local CLI equivalents (JSON inputs use the same API schemas):
+
+```sh
+./bin/morletdb record -data ./data -file recording.json
+./bin/morletdb recordings -data ./data
+./bin/morletdb search -data ./data -file query.json
+```
+
+The local CLI requires exclusive operational control of its data directory for writes; run the HTTP service for concurrent clients. Existing CNC capture files and commands remain separate and unchanged.
 
 Tests cover embedded-event localization, amplitude normalization, noise, distractors, exact metadata filtering, interval bounds, overlapping self-match exclusion, result suppression, cancellation, restart, corruption and authenticated HTTP ingestion/search. Synthetic results do not establish real-world retrieval quality.
+
+
+## Prototype validation
+
+A local end-to-end smoke test ingested the Python transient example, searched, stopped and restarted the service, listed metadata, retrieved binary samples and repeated search through the persisted index. The best match remained sample 768. Race tests include concurrent feature-grid builds, restart stability, raw checksum failures, index corruption/rebuild and legacy JSON compatibility. A warm-search microbenchmark on the development host (one 4096-sample recording, 512-sample query, stride 128) measured about 0.70 ms/op; this is not a fleet-scale or target-hardware performance claim.

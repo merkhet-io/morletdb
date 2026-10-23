@@ -16,7 +16,7 @@ This first MVP validates the signal representation and investigation workflow. I
 
 ## Waveform search
 
-Ingest domain-neutral recordings and find matching intervals using explicit amplitude-sensitive or normalized similarity. See [the waveform search guide](docs/waveform-search.md) and [Python example](examples/waveform_search.py). The first retrieval baseline uses exact window-grid scans with bounded JSON storage; CNC monitoring remains the original application demo.
+Ingest domain-neutral recordings and find matching intervals using explicit amplitude-sensitive or normalized similarity. See [the waveform search guide](docs/waveform-search.md) and [Python example](examples/waveform_search.py). The working single-node prototype uses checksummed binary sample storage and persistent feature grids with exact window-grid search; CNC monitoring remains the original application demo.
 
 ## Try it in two minutes
 

@@ -15,13 +15,14 @@ import (
 const Version = "morlet-window-v1"
 
 type Recording struct {
-	ID         string            `json:"id"`
-	Channel    string            `json:"channel"`
-	Unit       string            `json:"unit"`
-	SampleRate float64           `json:"sample_rate_hz"`
-	Start      time.Time         `json:"start"`
-	Metadata   map[string]string `json:"metadata,omitempty"`
-	Samples    []float64         `json:"samples"`
+	ID          string            `json:"id"`
+	Channel     string            `json:"channel"`
+	Unit        string            `json:"unit"`
+	SampleRate  float64           `json:"sample_rate_hz"`
+	Start       time.Time         `json:"start"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
+	Samples     []float64         `json:"samples,omitempty"`
+	SampleCount int               `json:"sample_count,omitempty"`
 }
 type Segment struct {
 	RecordingID string `json:"recording_id"`
@@ -83,7 +84,7 @@ func validateSamples(x []float64, rate float64, limit int) error {
 	}
 	return nil
 }
-func features(x []float64, rate float64, normalization string) ([]float64, error) {
+func Features(x []float64, rate float64, normalization string) ([]float64, error) {
 	// This extractor always removes DC; raw amplitude is retained in demean mode.
 	y := append([]float64(nil), x...)
 	mean := 0.0
@@ -112,6 +113,13 @@ func features(x []float64, rate float64, normalization string) ([]float64, error
 // Search is exact over the configured window grid, not all possible offsets.
 // Overlapping results are suppressed in distance order, retaining the best interval.
 func Search(ctx context.Context, records []Recording, q Query) (Result, error) {
+	return SearchIndexed(ctx, records, q, nil)
+}
+
+// FeatureProvider supplies persisted features for a recording window.
+type FeatureProvider func(Recording, int, int, string) ([]float64, error)
+
+func SearchIndexed(ctx context.Context, records []Recording, q Query, provider FeatureProvider) (Result, error) {
 	out := Result{Extractor: Version, Normalization: q.Normalization, Hits: []Hit{}}
 	if q.Extractor != "" && q.Extractor != Version {
 		return out, errors.New("unsupported extractor")
@@ -160,7 +168,7 @@ func Search(ctx context.Context, records []Recording, q Query) (Result, error) {
 		return out, errors.New("stride must be 1..query length")
 	}
 	out.Stride = q.Stride
-	target, e := features(q.Samples, q.SampleRate, q.Normalization)
+	target, e := Features(q.Samples, q.SampleRate, q.Normalization)
 	if e != nil {
 		return out, e
 	}
@@ -181,7 +189,11 @@ func Search(ctx context.Context, records []Recording, q Query) (Result, error) {
 		if !compatible {
 			continue
 		}
-		for offset := 0; offset+n <= len(r.Samples); offset += q.Stride {
+		count := len(r.Samples)
+		if provider != nil {
+			count = r.SampleCount
+		}
+		for offset := 0; offset+n <= count; offset += q.Stride {
 			if e := ctx.Err(); e != nil {
 				return out, e
 			}
@@ -192,9 +204,18 @@ func Search(ctx context.Context, records []Recording, q Query) (Result, error) {
 			if r.ID == q.RecordingID && offset < q.StartSample+n && q.StartSample < offset+n {
 				continue
 			}
-			f, e := features(r.Samples[offset:offset+n], r.SampleRate, q.Normalization)
+			var f []float64
+			var e error
+			if provider == nil {
+				f, e = Features(r.Samples[offset:offset+n], r.SampleRate, q.Normalization)
+			} else {
+				f, e = provider(r, offset, n, q.Normalization)
+			}
 			if e != nil {
 				return out, e
+			}
+			if len(f) != len(target) {
+				return out, errors.New("incompatible feature dimension")
 			}
 			d := 0.0
 			for i, v := range target {

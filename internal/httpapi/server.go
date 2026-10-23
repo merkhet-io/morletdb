@@ -48,6 +48,14 @@ func New(s *store.Store, token string) http.Handler {
 	mux.HandleFunc("POST /api/assess", a.assess)
 	mux.HandleFunc("POST /api/recordings", a.recordingIngest)
 	mux.HandleFunc("GET /api/recordings/{id}", a.recordingGet)
+	mux.HandleFunc("GET /api/recordings", func(w http.ResponseWriter, r *http.Request) {
+		v, e := a.store.RecordingSummaries()
+		if e != nil {
+			internal(w, e)
+			return
+		}
+		write(w, 200, v)
+	})
 	mux.HandleFunc("POST /api/search", a.search)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -257,12 +265,7 @@ func (a *API) search(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &q) {
 		return
 	}
-	records, e := a.store.Recordings()
-	if e != nil {
-		internal(w, e)
-		return
-	}
-	result, e := waveform.Search(r.Context(), records, q)
+	result, e := a.store.Search(r.Context(), q)
 	if e != nil {
 		write(w, 400, map[string]string{"error": e.Error()})
 		return

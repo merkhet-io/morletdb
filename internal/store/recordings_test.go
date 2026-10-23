@@ -30,7 +30,7 @@ func TestRecordingRoundtrip(t *testing.T) {
 	if _, e = s.GetRecording("../bad"); e == nil {
 		t.Fatal("invalid id accepted")
 	}
-	os.WriteFile(filepath.Join(dir, "recordings", r.ID+".json"), []byte("broken"), 0600)
+	os.WriteFile(filepath.Join(dir, "recordings", r.ID+".f64"), []byte("broken"), 0600)
 	if _, e = s.Recordings(); e == nil {
 		t.Fatal("silent corruption")
 	}
