@@ -64,9 +64,10 @@ not an intrinsic limit of either database. This harness does not compare feature
 extraction implementations or claim signal-retrieval quality from synthetic data.
 
 Sample/feature limits remain in force: 512..32768 samples per recording, 512-sample
-windows with stride 256, at most 4096 total candidate segments. Long recordings,
-cross-chunk windows, async workers and indexed retrieval are not implemented by
-this benchmark. The mixed test uses one writer and a growing relation; it is not
+windows with stride 256, at most 4096 total candidate segments. Main timing
+workloads still use bounded rows. The durable-chunk smoke verifies cross-boundary
+correctness and recovery separately; it is not a long-stream throughput workload.
+Async workers and indexed retrieval remain future work. The mixed test uses one writer and a growing relation; it is not
 an HTAP workload-isolation test.
 
 Storage measurements include raw logical float64 bytes, raw Parquet bytes,
@@ -78,8 +79,8 @@ output; Postgres retains its reported server settings.
 
 ## Decision gates after this baseline
 
-- The portable chunk extractor now verifies continuous offsets and boundary
-  correctness; add durable recording/chunk ingestion and checkpoints around it.
+- Durable chunk ingestion/checkpoints now wrap the portable extractor; extend
+  measurements to long streams and batched imports with interruption/retry.
 - Typed composite arrays now remove JSON number decoding from retrieval; evaluate
   separately indexed segment rows and native extraction serialization next.
 - Add Parquet import mappings and bounded batches using the shared chunk contract.
@@ -97,4 +98,10 @@ selection is made by the smoke benchmark.
 Report version 2 adds `postgres_jsonb` and `postgres_typed` retrieval metrics, typed
 backfill/COPY/storage metrics, and a separate typed API latency. `mixed_api_storage`
 is `typed`; compare mixed latency against `typed_api_including_query_extraction`.
-The benchmark still uses bounded rows, rather than the new in-memory chunk API.
+The main timing benchmark uses bounded rows; report v3 adds a separate durable
+chunk correctness/recovery smoke.
+
+Report version 3 adds `durable_chunks`: a committed-checkpoint resume through a
+fresh connection, injected-rollback preservation, exact feature agreement with
+whole-recording extraction and racing identical retries. This is a correctness
+smoke using one recording, not a bulk streaming throughput measurement.

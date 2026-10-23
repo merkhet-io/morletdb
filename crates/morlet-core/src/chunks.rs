@@ -1,12 +1,29 @@
 //! Append-only single-channel extraction with continuous, zero-based offsets.
 //! A push is atomic in memory: invalid chunks or extraction failures leave state unchanged.
 use crate::{morlet, normalize, validate};
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct ChunkSegment {
     pub start_sample: u64,
     pub features: Vec<f64>,
+}
+
+/// Versioned durable state. Restore validates all invariants before use.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Checkpoint {
+    format_version: u32,
+    extractor_version: String,
+    rate: f64,
+    window: usize,
+    stride: usize,
+    normalization: String,
+    end: u64,
+    next_start: u64,
+    buffer_start: u64,
+    buffer: Vec<f64>,
 }
 
 #[derive(Clone)]
@@ -47,6 +64,59 @@ impl ChunkExtractor {
             buffer_start: 0,
             buffer: VecDeque::new(),
         })
+    }
+
+    pub fn checkpoint(&self) -> Checkpoint {
+        Checkpoint {
+            format_version: 1,
+            extractor_version: morlet::EXTRACTOR_VERSION.into(),
+            rate: self.rate,
+            window: self.window,
+            stride: self.stride as usize,
+            normalization: self.normalization.clone(),
+            end: self.end,
+            next_start: self.next_start,
+            buffer_start: self.buffer_start,
+            buffer: self.buffer.iter().copied().collect(),
+        }
+    }
+
+    pub fn from_checkpoint(checkpoint: Checkpoint) -> Result<Self, String> {
+        if checkpoint.format_version != 1
+            || checkpoint.extractor_version != morlet::EXTRACTOR_VERSION
+        {
+            return Err("unsupported checkpoint or extractor version".into());
+        }
+        let mut state = Self::new(
+            checkpoint.rate,
+            checkpoint.window,
+            checkpoint.stride,
+            &checkpoint.normalization,
+        )?;
+        let count = if checkpoint.end < checkpoint.window as u64 {
+            0
+        } else {
+            1 + (checkpoint.end - checkpoint.window as u64) / checkpoint.stride as u64
+        };
+        let expected_start = count
+            .checked_mul(checkpoint.stride as u64)
+            .ok_or("checkpoint offset overflow")?;
+        let expected_buffer_start = expected_start.min(checkpoint.end);
+        if checkpoint.next_start != expected_start
+            || checkpoint.buffer_start != expected_buffer_start
+            || checkpoint.buffer.len() as u64 != checkpoint.end - expected_buffer_start
+            || checkpoint.buffer.len() >= checkpoint.window
+        {
+            return Err("invalid checkpoint offsets or tail length".into());
+        }
+        if !checkpoint.buffer.is_empty() {
+            validate(&checkpoint.buffer).map_err(|e| e.to_string())?;
+        }
+        state.end = checkpoint.end;
+        state.next_start = expected_start;
+        state.buffer_start = expected_buffer_start;
+        state.buffer = checkpoint.buffer.into();
+        Ok(state)
     }
 
     pub fn next_sample_offset(&self) -> u64 {
@@ -172,6 +242,31 @@ mod tests {
         }
         assert_eq!(starts, (0..=70000 - 512).step_by(256).collect::<Vec<u64>>());
         assert_eq!(extractor.next_sample_offset(), 70000);
+    }
+    #[test]
+    fn checkpoint_roundtrip_preserves_boundary_windows() {
+        let samples: Vec<f64> = (0..2048).map(|i| (i as f64 / 8.).sin()).collect();
+        let mut continuous = ChunkExtractor::new(4096., 512, 256, "zscore").unwrap();
+        let expected = continuous.push(0, &samples).unwrap();
+        let mut restarted = ChunkExtractor::new(4096., 512, 256, "zscore").unwrap();
+        let mut actual = restarted.push(0, &samples[..137]).unwrap();
+        for (start, end) in [(137, 1000), (1000, 2048)] {
+            let encoded = serde_json::to_vec(&restarted.checkpoint()).unwrap();
+            restarted =
+                ChunkExtractor::from_checkpoint(serde_json::from_slice(&encoded).unwrap()).unwrap();
+            actual.extend(
+                restarted
+                    .push(start, &samples[start as usize..end])
+                    .unwrap(),
+            );
+        }
+        assert_eq!(actual, expected);
+        let mut bad = restarted.checkpoint();
+        bad.next_start += 1;
+        assert!(ChunkExtractor::from_checkpoint(bad).is_err());
+        let mut bad = restarted.checkpoint();
+        bad.extractor_version = "future".into();
+        assert!(ChunkExtractor::from_checkpoint(bad).is_err());
     }
     #[test]
     fn invalid_push_does_not_advance_state() {

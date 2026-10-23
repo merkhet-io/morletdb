@@ -33,10 +33,9 @@ Tests compare features and starts exactly against whole-recording extraction
 across arbitrary boundaries and strides, exercise 70000 samples, and check failure
 atomicity and bounded tails.
 
-This is a portable core API, **not yet a durable database ingestion path**. State
-has no checkpoint serialization. The Postgres collection still bounds each row to
-32768 samples and does not join adjacent rows into a continuous stream. Next:
-recording/chunk tables with explicit identities and offsets, idempotent batch
-imports, durable extractor checkpoints and transactional publication of emitted
-segments. No crash-recovery or asynchronous-search completeness guarantee is made
-by this in-memory foundation.
+The core API itself is in-memory. It now exposes a versioned `checkpoint()` and
+validated `from_checkpoint()` for reconstruction. The Postgres wrapper persists
+checkpoints, raw chunks and emitted segments transactionally; see
+[durable ingestion](durable-ingestion.md). Earlier bounded-row Postgres collections
+remain separate and do not join rows into streams. Background workers and
+asynchronous completeness watermarks remain future work.

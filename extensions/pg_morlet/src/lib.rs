@@ -128,13 +128,120 @@ fn morlet_feature_vector_distance(
     .unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
-pgrx::extension_sql_file!("../sql/collections.sql", name = "collections", finalize);
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_chunk_checkpoint(
+    sample_rate_hz: f64,
+    window_size: i32,
+    stride: i32,
+    normalization: &str,
+) -> JsonB {
+    let state = morlet_core::chunks::ChunkExtractor::new(
+        sample_rate_hz,
+        window_size as usize,
+        stride as usize,
+        normalization,
+    )
+    .unwrap_or_else(|e| pgrx::error!("{}", e));
+    JsonB(serde_json::to_value(state.checkpoint()).unwrap())
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_valid_chunk(samples: Vec<Option<f64>>) -> bool {
+    morlet_core::validate(&checked_samples(samples)).unwrap_or_else(|e| pgrx::error!("{}", e));
+    true
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: Vec<Option<f64>>) -> JsonB {
+    if start_sample < 0 {
+        pgrx::error!("chunk start must be nonnegative");
+    }
+    let checkpoint = serde_json::from_value(checkpoint.0)
+        .unwrap_or_else(|e| pgrx::error!("invalid checkpoint: {}", e));
+    let mut state = morlet_core::chunks::ChunkExtractor::from_checkpoint(checkpoint)
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    let segments = state
+        .push(start_sample as u64, &checked_samples(samples))
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    if state.next_sample_offset() > i64::MAX as u64 {
+        pgrx::error!("Postgres sample offset overflow");
+    }
+    JsonB(serde_json::json!({"checkpoint":state.checkpoint(),"segments":segments}))
+}
+
+pgrx::extension_sql_file!("../sql/collections.sql", name = "collections");
+pgrx::extension_sql_file!("../sql/streams.sql", name = "streams", finalize);
 
 #[cfg(any(test, feature = "pg_test"))]
 #[pg_schema]
 mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
+    #[pg_test]
+    fn durable_chunks_resume_and_rollback() {
+        Spi::run("SELECT morlet_create_stream_collection('public','durable_streams'); SELECT morlet_start_recording('durable_streams','A',4096,'x','g'); SELECT morlet_append_chunk('durable_streams','A',0,ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,136) i)); SELECT morlet_append_chunk('durable_streams','A',137,ARRAY(SELECT sin(i::float8/8) FROM generate_series(137,999) i))").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT received_samples FROM morlet_stream_status('durable_streams','A')"
+            )
+            .unwrap()
+            .unwrap(),
+            1000
+        );
+        Spi::run("DO $$ BEGIN PERFORM morlet_append_chunk('durable_streams','A',1000,ARRAY(SELECT sin(i::float8/8) FROM generate_series(1000,2047) i)); RAISE EXCEPTION 'rollback'; EXCEPTION WHEN raise_exception THEN NULL; END $$").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT received_samples FROM morlet_stream_status('durable_streams','A')"
+            )
+            .unwrap()
+            .unwrap(),
+            1000
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM durable_streams_chunks")
+                .unwrap()
+                .unwrap(),
+            2
+        );
+        Spi::run("SELECT morlet_append_chunk('durable_streams','A',1000,ARRAY(SELECT sin(i::float8/8) FROM generate_series(1000,2047) i)); SELECT morlet_append_chunk('durable_streams','A',0,ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,136) i))").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM durable_streams_chunks")
+                .unwrap()
+                .unwrap(),
+            3
+        );
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT indexed_segments FROM morlet_stream_status('durable_streams','A')"
+            )
+            .unwrap()
+            .unwrap(),
+            7
+        );
+        let actual = Spi::get_one::<Vec<f64>>(
+            "SELECT features FROM durable_streams_segments WHERE start_sample=256",
+        )
+        .unwrap()
+        .unwrap();
+        let expected=Spi::get_one::<Vec<f64>>("SELECT morlet_features(morlet_normalize(ARRAY(SELECT sin(i::float8/8) FROM generate_series(256,767) i),'zscore'),4096)").unwrap().unwrap();
+        assert_eq!(actual, expected);
+        assert_eq!(Spi::get_one::<f64>("SELECT distance FROM morlet_search_streams('durable_streams',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,511) i),4096,'x','g') LIMIT 1").unwrap().unwrap(),0.);
+        Spi::run("DELETE FROM durable_streams WHERE recording_id='A'").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM durable_streams_segments")
+                .unwrap()
+                .unwrap(),
+            0
+        );
+    }
+    #[pg_test(error = "conflicting replay at chunk offset")]
+    fn rejects_conflicting_chunk_replay() {
+        Spi::run("SELECT morlet_create_stream_collection('public','replay_streams'); SELECT morlet_start_recording('replay_streams','A',4096,'x','g'); SELECT morlet_append_chunk('replay_streams','A',0,array_fill(0.::float8,ARRAY[137])); SELECT morlet_append_chunk('replay_streams','A',0,array_fill(1.::float8,ARRAY[137]))").unwrap();
+    }
+    #[pg_test(error = "new row violates row-level security policy for table \"rls_streams\"")]
+    fn blocked_checkpoint_update_rolls_back_append() {
+        Spi::run("SELECT morlet_create_stream_collection('public','rls_streams'); SELECT morlet_start_recording('rls_streams','A',4096,'x','g'); ALTER TABLE rls_streams ENABLE ROW LEVEL SECURITY; CREATE POLICY read_streams ON rls_streams FOR SELECT USING(true); CREATE POLICY block_stream_updates ON rls_streams FOR UPDATE USING(true) WITH CHECK(false); CREATE ROLE morlet_stream_writer; GRANT SELECT,UPDATE ON rls_streams TO morlet_stream_writer; GRANT SELECT,INSERT ON rls_streams_chunks,rls_streams_segments TO morlet_stream_writer; SET LOCAL ROLE morlet_stream_writer; SELECT morlet_append_chunk('rls_streams','A',0,array_fill(0.::float8,ARRAY[512]))").unwrap();
+    }
     #[pg_test]
     fn typed_segments_match_json_and_follow_writes() {
         Spi::run("SELECT morlet_create_collection('public','json_reference'); SELECT morlet_create_collection('public','typed_recordings'); INSERT INTO json_reference(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,1535) i)); INSERT INTO typed_recordings(sample_rate_hz,channel,unit,samples) SELECT sample_rate_hz,channel,unit,samples FROM json_reference; SELECT morlet_enable_segments('json_reference'); SELECT morlet_enable_typed_segments('typed_recordings')").unwrap();

@@ -139,3 +139,11 @@ benchmark compares both layouts with identical Parquet feature values.
 
 For the continuous-stream foundation, see [chunked recordings](../../docs/chunked-recordings.md).
 It does not yet change the Postgres per-row recording limit.
+
+## Durable continuous recordings
+
+The separate stream API persists raw chunks, typed segment rows and versioned
+extractor checkpoints atomically, supports identical retries, and resumes through
+new connections. See [durable ingestion](../../docs/durable-ingestion.md) for SQL,
+permissions, progress semantics and limitations. Extraction is still synchronous;
+this path does not change the earlier collection APIs.

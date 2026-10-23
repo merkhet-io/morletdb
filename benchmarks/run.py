@@ -190,6 +190,59 @@ def postgres_baseline(args, records, db, directory):
             conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
 
 
+def durable_chunk_smoke(args, records):
+    """Exercises committed checkpoints across connections and racing retries."""
+    schema = "morlet_stream_bench_" + uuid.uuid4().hex
+    collection = f"{schema}.streams"
+    samples = records[0]["samples"]
+    with psycopg.connect(args.dsn,autocommit=True) as conn:
+        conn.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
+        try:
+            conn.execute("SELECT morlet_create_stream_collection(%s,'streams')",(schema,))
+            conn.execute("SELECT morlet_start_recording(%s,'resume',4096,'vibration','g')",(collection,))
+            # Deliberately cut within a search window and reconnect after commit.
+            first=min(137,len(samples))
+            conn.execute("SELECT morlet_append_chunk(%s,'resume',0,%s::float8[])",(collection,samples[:first]))
+            before=conn.execute("SELECT * FROM morlet_stream_status(%s,'resume')",(collection,)).fetchone()
+            try:
+                with conn.transaction():
+                    conn.execute("SELECT morlet_append_chunk(%s,'resume',%s,%s::float8[])",(collection,first,samples[first:]))
+                    raise RuntimeError("injected transaction failure")
+            except RuntimeError:
+                pass
+            assert conn.execute("SELECT * FROM morlet_stream_status(%s,'resume')",(collection,)).fetchone()==before
+            with psycopg.connect(args.dsn,autocommit=True) as restarted:
+                _, resumed_s=timed(lambda: restarted.execute("SELECT morlet_append_chunk(%s,'resume',%s,%s::float8[])",(collection,first,samples[first:])))
+            result=conn.execute("SELECT morlet_append_chunk(%s,'resume',0,%s::float8[])",(collection,samples[:first])).fetchone()[0]
+            assert result==len(samples)
+            rows=conn.execute(sql.SQL("SELECT start_sample,features FROM {} ORDER BY start_sample").format(sql.Identifier(schema,'streams_segments'))).fetchall()
+            expected=conn.execute("SELECT morlet_segment_grid(%s::float8[],4096,512,256,'zscore')",(samples,)).fetchone()[0]['segments']
+            assert rows==[(s['start_sample'],s['features']) for s in expected]
+            conn.execute("SELECT morlet_start_recording(%s,'race',4096,'vibration','g')",(collection,))
+            barrier=threading.Barrier(2,timeout=30)
+            results, errors=[],[]
+            def retry():
+                try:
+                    with psycopg.connect(args.dsn,autocommit=True) as other:
+                        other.execute("SET statement_timeout='30s'")
+                        barrier.wait()
+                        results.append(other.execute("SELECT morlet_append_chunk(%s,'race',0,%s::float8[])",(collection,samples[:512])).fetchone()[0])
+                except Exception as exc:
+                    errors.append(type(exc).__name__)
+            threads=[threading.Thread(target=retry) for _ in range(2)]
+            for thread in threads: thread.start()
+            for thread in threads: thread.join()
+            assert not errors, f"concurrent replay failed: {errors}"
+            assert results==[512,512]
+            assert conn.execute(sql.SQL("SELECT count(*) FROM {} WHERE recording_id='race'").format(sql.Identifier(schema,'streams_chunks'))).fetchone()[0]==1
+            assert conn.execute("SELECT indexed_segments FROM morlet_stream_status(%s,'race')",(collection,)).fetchone()[0]==1
+            return {"resume_append_s":resumed_s,"rollback_preserved_checkpoint":True,
+                    "resumed_features_match_whole_recording":True,"racing_retries_one_chunk_one_segment":True,
+                    "received_samples":len(samples),"segments":len(rows)}
+        finally:
+            conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dsn", default=os.environ.get("DATABASE_URL", ""), help="Postgres DSN; defaults to libpq environment")
@@ -208,7 +261,7 @@ def main():
     records = dataset(args.rows,args.samples,args.seed)
     fingerprint = hashlib.sha256(json.dumps(records,separators=(",",":"),allow_nan=False).encode()).hexdigest()
     db, parquet = parquet_baseline(records,args.output,args.repeats)
-    report = {"benchmark_version": 2, "revision": os.environ.get("GITHUB_SHA", "unspecified"), "build_profile": os.environ.get("MORLET_BUILD_PROFILE","unspecified"),
+    report = {"benchmark_version": 3, "revision": os.environ.get("GITHUB_SHA", "unspecified"), "build_profile": os.environ.get("MORLET_BUILD_PROFILE","unspecified"),
               "environment": {"platform":platform.platform(),"cpu_count":os.cpu_count(),"python":platform.python_version(),
                               "duckdb":duckdb.__version__,"pyarrow":pa.__version__,"psycopg":psycopg.__version__,"duckdb_threads":2},
               "dataset": {"rows":args.rows,"samples_per_row":args.samples,"seed":args.seed,"sha256":fingerprint,
@@ -224,6 +277,7 @@ def main():
                               "mixed test uses one writer and fixed-cohort searches; no HTAP isolation or async freshness claim"]}
     if not args.parquet_only:
         report["postgres"] = postgres_baseline(args,records,db,args.output)
+        report["durable_chunks"] = durable_chunk_smoke(args,records)
     db.close()
     (args.output/"report.json").write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps(report,indent=2))
