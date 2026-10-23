@@ -52,10 +52,22 @@ SELECT morlet_signature(array_fill(0.::float8, ARRAY[512]), 4096.)->>'version';
 
 The eight shared fixtures and SQL wrapper tests validate numerical agreement; they do not establish medical or industrial diagnostic accuracy. See [extractor contract](../../docs/morlet-extractor.md).
 
-## Next milestones
+## Transactional collections and exact search
 
-1. Define transactional recording/chunk/segment tables and representation specifications.
-2. Add exact interval retrieval with SQL metadata filtering and source provenance.
-3. Benchmark candidate retrieval before selecting pgvector or a custom access method.
+The extension installs in `public`. Collection tables are created in a caller-selected schema, owned by the caller, and dumped/restored as normal application tables. No SECURITY DEFINER functions or automatic grants are used. Grant ordinary table/sequence privileges to application roles as needed; row-level security follows the caller's role.
 
-No background workers, native index storage, database-managed waveform tables or search API are implemented yet.
+```sql
+SELECT morlet_create_collection('public', 'recordings');
+INSERT INTO recordings(sample_rate_hz, channel, unit, metadata, samples)
+VALUES (4096, 'vibration', 'g', '{"asset":"spindle-1"}',
+        ARRAY(SELECT sin(i::float8 / 8) FROM generate_series(0,1023) i));
+SELECT * FROM morlet_search('recordings'::regclass,
+  ARRAY(SELECT sin(i::float8 / 8) FROM generate_series(0,511) i),
+  4096, 'vibration', 'g', '{"asset":"spindle-1"}', 'none', 256, 10);
+```
+
+Rows hold 512..32768 finite samples, rates 128..200000 Hz, channel, unit and JSON object metadata. Arrays must be one-dimensional with lower bound 1. Normal INSERT/UPDATE/DELETE participate in transactions. Searches require SELECT privileges and use exact rate/channel/unit matching plus JSONB containment. Add ordinary indexes for these filters when useful.
+
+Search returns recording IDs and zero-based half-open sample intervals, ranked by aligned sample RMSE (`none`, `demean` or `zscore`), with deterministic ID/offset ties. Query length is 512..4096; stride is positive; top_k is 1..100. At most 4096 candidate windows are evaluated, otherwise the query raises an error. Windows are generated at query time; overlapping hits and the query's own source are included. NULL arguments return no rows. This SQL path currently uses sample distance, independently of the Go server's Morlet-feature ranking. No resampling, ANN index or cross-channel comparison is performed.
+
+Next: persisted versioned segment representations, source-exclusion/overlap policies and retrieval benchmarks. Stored segments and custom index access methods remain future work.

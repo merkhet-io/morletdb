@@ -79,11 +79,60 @@ fn morlet_feature_distance(
     left.distance(&right)
 }
 
+/// Raises on invalid recordings; usable as a table CHECK constraint.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_valid_recording(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> bool {
+    let samples = checked_samples(samples);
+    if samples.len() < 512 {
+        pgrx::error!("recording must contain 512..32768 samples");
+    }
+    morlet_core::validate(&samples).unwrap_or_else(|e| pgrx::error!("{}", e));
+    if !sample_rate_hz.is_finite() || !(128.0..=200000.0).contains(&sample_rate_hz) {
+        pgrx::error!("sample_rate_hz must be finite and in [128,200000]");
+    }
+    true
+}
+
+pgrx::extension_sql_file!("../sql/collections.sql", name = "collections", finalize);
+
 #[cfg(any(test, feature = "pg_test"))]
 #[pg_schema]
 mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
+    #[pg_test]
+    fn collections_search_and_rollback() {
+        Spi::run("SELECT morlet_create_collection('public','test_recordings')").unwrap();
+        Spi::run("INSERT INTO test_recordings(sample_rate_hz,channel,unit,metadata,samples) VALUES (4096,'vibration','g','{\"asset\":\"A\"}',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,1023) i)),(4096,'vibration','g','{\"asset\":\"B\"}',array_fill(0.::float8,ARRAY[1024]))").unwrap();
+        assert_eq!(Spi::get_one::<f64>("SELECT distance FROM morlet_search('test_recordings',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,511) i),4096,'vibration','g','{\"asset\":\"A\"}','none',256,1)").unwrap().unwrap(),0.);
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search('test_recordings',array_fill(0.::float8,ARRAY[512]),4096,'vibration','g','{\"asset\":\"B\"}')").unwrap().unwrap(),3);
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search('test_recordings',array_fill(0.::float8,ARRAY[512]),4096,'other','g')").unwrap().unwrap(),0);
+        Spi::run("DO $$ BEGIN DELETE FROM test_recordings; RAISE EXCEPTION 'rollback'; EXCEPTION WHEN raise_exception THEN NULL; END $$").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM test_recordings")
+                .unwrap()
+                .unwrap(),
+            2
+        );
+    }
+    #[pg_test(error = "permission denied for table private_recordings")]
+    fn search_respects_table_permissions() {
+        Spi::run("SELECT morlet_create_collection('public','private_recordings'); CREATE ROLE morlet_test_reader; SET LOCAL ROLE morlet_test_reader; SELECT * FROM public.morlet_search('public.private_recordings',array_fill(0.::float8,ARRAY[512]),4096,'x','g')").unwrap();
+    }
+    #[pg_test(error = "query must be a one-dimensional array starting at 1")]
+    fn rejects_multidimensional_query() {
+        Spi::run("SELECT morlet_create_collection('public','dim_recordings'); SELECT * FROM morlet_search('dim_recordings',array_fill(0.::float8,ARRAY[2,512]),4096,'x','g')").unwrap();
+    }
+    #[pg_test(error = "NULL waveform elements are unsupported")]
+    fn collection_rejects_null_sample() {
+        Spi::run("SELECT morlet_create_collection('public','bad_recordings'); INSERT INTO bad_recordings(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(NULL::float8,ARRAY[512]))").unwrap();
+    }
+    #[pg_test(
+        error = "search exceeds 4096 candidate windows; narrow the metadata filter or increase stride"
+    )]
+    fn search_budget() {
+        Spi::run("SELECT morlet_create_collection('public','budget_recordings'); INSERT INTO budget_recordings(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(0.::float8,ARRAY[8192])); SELECT * FROM morlet_search('budget_recordings',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','none',1)").unwrap();
+    }
     #[pg_test]
     fn go_fixture_through_sql() {
         let fixture: serde_json::Value =
