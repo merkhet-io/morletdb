@@ -65,7 +65,7 @@ SQL. Reads and search use invoker privileges and parent/child table RLS.
   1..32768 samples with acquisition metadata and representation version. Negative,
   missing, incomplete, out-of-bounds or partly hidden intervals fail explicitly.
 - `morlet_search_interval(collection, recording_id, start, end, metadata_filter,
-  top_k, exclude_source, suppress_overlaps)` searches an existing interval. Query
+  top_k, exclude_source, suppress_overlaps, max_candidates)` searches an existing interval. Query
   length must equal the stored extraction window (512..4096 samples).
 - Source exclusion and overlap suppression default to true. Intervals are
   half-open: adjacent intervals do not overlap. Source exclusion removes matches
@@ -75,7 +75,8 @@ SQL. Reads and search use invoker privileges and parent/child table RLS.
   and extractor version. Distances are feature distances, not confidence scores.
 - Compatibility requires rate/channel/unit/window/normalization/extractor match.
   Search is exact over at most 4096 visible eligible segments. It errors beyond
-  that budget instead of searching a prefix.
+  that budget instead of searching a prefix. An explicit trailing `max_candidates`
+  argument allows experiments up to 1,000,000; see [evaluation](../evaluation/README.md).
 - `morlet_search_streams` remains the input-array compatibility API. It delegates
   to the same eligibility/scoring function but retains its original result shape
   and source-inclusive behavior.

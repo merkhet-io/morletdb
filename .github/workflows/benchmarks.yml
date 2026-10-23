@@ -1,0 +1,32 @@
+name: Manual workload benchmarks
+on:
+  workflow_dispatch:
+    inputs:
+      sizes:
+        description: 'Exact feature populations (comma separated, maximum 1000000)'
+        required: true
+        default: '10000,100000'
+permissions:
+  contents: read
+jobs:
+  exact-and-streaming:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      MORLET_SIZES: ${{ inputs.sizes }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build db
+      - run: docker compose run --rm walkthrough
+      - name: Run explicit workload sweep
+        run: |
+          mkdir -p benchmark-output
+          docker compose run --rm -v "$PWD/benchmark-output:/reports" -e MORLET_SIZES walkthrough sh -c 'pip install --no-cache-dir -r benchmarks/requirements.txt -r evaluation/requirements.txt && python evaluation/scale.py --sizes "$MORLET_SIZES" --output /reports/exact-scale.json && python benchmarks/streaming.py --lengths 65536,262144 --channels 1,2 --chunk-sizes 1024,4096 --rpc-batches 1,8 --output /reports/streaming.json'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: workload-reports
+          path: benchmark-output/
+      - name: Clean up disposable database
+        if: always()
+        run: docker compose down -v

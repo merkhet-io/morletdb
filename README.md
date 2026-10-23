@@ -78,6 +78,14 @@ Imports use bounded batches and configurable transactions. Rerunning unchanged i
 
 Feature similarity is distinct from aligned sample distance. Both primitives are available. The canonical Rust implementation validates the versioned extractor against frozen fixtures from the original Go prototype. Pooled energy features do not preserve event order within a window. See the [numerical contract](docs/morlet-extractor.md).
 
+## Evaluate relevance before scaling
+
+The [real-recording evaluation](evaluation/README.md) compares statistics, FFT,
+Morlet and an experimental temporal representation on a small run-separated CWRU
+bearing dataset. Morlet ties the statistical baseline in this slice; differentiation
+is still unproven. A separate exact-search harness checks larger candidate
+populations against an independent ranking oracle.
+
 ## Measure before scaling
 
 The [benchmark suite](benchmarks/README.md) separates raw ingest, feature computation and retrieval. It compares JSONB and typed Postgres storage with DuckDB/Parquet using identical features and matching top-k results.
@@ -91,7 +99,7 @@ A [long-stream sweep](benchmarks/README.md#continuous-recording-sweep) varies re
 | Continuous recordings | Append-only chunks; bigint global sample coordinates; restartable checkpoints |
 | Input | 1..32768 finite samples per chunk; 128..200000 Hz; explicit channel and units |
 | Representation | 512..4096-sample windows; versioned extraction and per-window normalization |
-| Search | Exact scan of up to 4096 eligible segments; metadata filters narrow candidates |
+| Search | Default exact-search budget: 4096 eligible segments; explicit experiments can raise it to 1,000,000 without a capacity guarantee |
 | Consistency | Synchronous extraction and transactional publication; caller permissions and RLS |
 | Next | Complete interval retrieval/inspection, reproducible onboarding and real-data relevance evaluation |
 

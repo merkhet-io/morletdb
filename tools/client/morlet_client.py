@@ -22,12 +22,13 @@ class RecordingClient:
             return row
 
     def search_interval(self, recording_id, start, end, *, metadata=None,
-                        top_k=10, exclude_source=True, suppress_overlaps=True):
+                        top_k=10, exclude_source=True, suppress_overlaps=True,
+                        max_candidates=4096):
         with self.connection.cursor(row_factory=dict_row) as cursor:
             cursor.execute(
-                "SELECT * FROM morlet_search_interval(%s::regclass,%s,%s,%s,%s,%s,%s,%s)",
+                "SELECT * FROM morlet_search_interval(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (self.collection, recording_id, start, end,
                  Jsonb({} if metadata is None else metadata), top_k,
-                 exclude_source, suppress_overlaps),
+                 exclude_source, suppress_overlaps, max_candidates),
             )
             return cursor.fetchall()

@@ -8,6 +8,7 @@ on:
       - 'crates/**'
       - 'extensions/**'
       - 'tools/**'
+      - 'evaluation/**'
       - 'examples/inspect_recordings.py'
       - 'Cargo.*'
       - 'rust-toolchain.toml'
@@ -30,6 +31,16 @@ jobs:
           docker compose restart db
           docker compose up -d --wait db
           docker compose run --rm walkthrough
+      - name: Exact-search budget and ranking smoke above 4096 candidates
+        run: |
+          mkdir -p benchmark-output
+          docker compose run --rm -v "$PWD/benchmark-output:/reports" walkthrough sh -c 'pip install --no-cache-dir -r evaluation/requirements.txt && python evaluation/scale.py --sizes 10000 --repeats 3 --output /reports/scale-smoke.json'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exact-search-scale-smoke
+          path: benchmark-output/scale-smoke.json
+          if-no-files-found: ignore
       - name: Diagnostics
         if: failure()
         run: docker compose logs db
