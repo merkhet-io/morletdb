@@ -15,6 +15,7 @@ import (
 	"github.com/merkhet-io/morletdb/internal/monitor"
 	"github.com/merkhet-io/morletdb/internal/signal"
 	"github.com/merkhet-io/morletdb/internal/store"
+	"github.com/merkhet-io/morletdb/internal/waveform"
 )
 
 //go:embed dashboard.html
@@ -45,6 +46,9 @@ func New(s *store.Store, token string) http.Handler {
 	mux.HandleFunc("GET /api/captures/{id}", a.get)
 	mux.HandleFunc("GET /api/captures/{id}/similar", a.similar)
 	mux.HandleFunc("POST /api/assess", a.assess)
+	mux.HandleFunc("POST /api/recordings", a.recordingIngest)
+	mux.HandleFunc("GET /api/recordings/{id}", a.recordingGet)
+	mux.HandleFunc("POST /api/search", a.search)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Cache-Control", "no-store")
@@ -202,4 +206,66 @@ func (a *API) assess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	write(w, 200, aresult)
+}
+
+func (a *API) recordingIngest(w http.ResponseWriter, r *http.Request) {
+	var v waveform.Recording
+	if !decode(w, r, &v) {
+		return
+	}
+	if v.ID != "" {
+		write(w, 400, map[string]string{"error": "recording ID is server assigned"})
+		return
+	}
+	if e := v.Validate(); e != nil {
+		write(w, 400, map[string]string{"error": e.Error()})
+		return
+	}
+	v, e := a.store.PutRecording(v)
+	if e != nil {
+		internal(w, e)
+		return
+	}
+	write(w, 201, v)
+}
+func (a *API) recordingGet(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if !store.ValidID(id) {
+		write(w, 400, map[string]string{"error": "invalid recording id"})
+		return
+	}
+	v, e := a.store.GetRecording(id)
+	if errors.Is(e, os.ErrNotExist) {
+		write(w, 404, map[string]string{"error": "recording not found"})
+		return
+	}
+	if e != nil {
+		internal(w, e)
+		return
+	}
+	write(w, 200, v)
+}
+func (a *API) search(w http.ResponseWriter, r *http.Request) {
+	select {
+	case a.slots <- struct{}{}:
+		defer func() { <-a.slots }()
+	default:
+		write(w, 429, map[string]string{"error": "search busy; retry later"})
+		return
+	}
+	var q waveform.Query
+	if !decode(w, r, &q) {
+		return
+	}
+	records, e := a.store.Recordings()
+	if e != nil {
+		internal(w, e)
+		return
+	}
+	result, e := waveform.Search(r.Context(), records, q)
+	if e != nil {
+		write(w, 400, map[string]string{"error": e.Error()})
+		return
+	}
+	write(w, 200, result)
 }

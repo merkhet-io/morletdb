@@ -1,18 +1,22 @@
 # MorletDB
 
-### Signals tell a story. Find it with MorletDB.
+### Search your waveforms.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Go](https://github.com/merkhet-io/morletdb/actions/workflows/ci.yml/badge.svg)](https://github.com/merkhet-io/morletdb/actions/workflows/ci.yml)
 ![Go 1.24+](https://img.shields.io/badge/Go-1.24%2B-00ADD8)
 
-**Signal-native storage and exploration for machine condition monitoring.**
+**Signal-native storage and search for waveform data.**
 
 A [Merkhet](https://github.com/merkhet-io) project, built in Go. Starting with CNC vibration data, MorletDB connects raw signals to localized time-frequency features, healthy references, and similar historical episodes.
 
 Ingest a uniformly sampled vibration capture, extract deterministic Morlet wave tokens, compare it with reviewed healthy captures from the same operating conditions, and retrieve similar historical episodes.
 
 This first MVP validates the signal representation and investigation workflow. It retains raw data and derived signatures in immutable JSON capture files. It is not yet the planned columnar database, a compression breakthrough, a certified monitor, or an automatic machine-protection system.
+
+## Waveform search
+
+Ingest domain-neutral recordings and find matching intervals using explicit amplitude-sensitive or normalized similarity. See [the waveform search guide](docs/waveform-search.md) and [Python example](examples/waveform_search.py). The first retrieval baseline uses exact window-grid scans with bounded JSON storage; CNC monitoring remains the original application demo.
 
 ## Try it in two minutes
 
