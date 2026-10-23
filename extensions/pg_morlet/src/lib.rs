@@ -178,6 +178,10 @@ mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
     #[pg_test]
+    fn continuous_interval_workflow() {
+        Spi::run(include_str!("../sql/interval_tests.sql")).unwrap();
+    }
+    #[pg_test]
     fn stream_search_keeps_parent_visibility_and_compatibility() {
         Spi::run("SELECT morlet_create_stream_collection('public','search_rls'); SELECT morlet_start_recording('search_rls','A',4096,'x','g','{}',512,256,'none'); SELECT morlet_start_recording('search_rls','B',4096,'x','g'); SELECT morlet_append_chunk('search_rls','A',0,array_fill(0.::float8,ARRAY[512])); SELECT morlet_append_chunk('search_rls','B',0,array_fill(0.::float8,ARRAY[512])); ALTER TABLE search_rls ENABLE ROW LEVEL SECURITY; CREATE POLICY parent_visibility ON search_rls USING(recording_id='B'); ALTER TABLE search_rls_segments ENABLE ROW LEVEL SECURITY; CREATE POLICY segment_visibility ON search_rls_segments USING(true); CREATE ROLE morlet_search_reader; GRANT SELECT ON search_rls,search_rls_segments TO morlet_search_reader; SET LOCAL ROLE morlet_search_reader").unwrap();
         assert_eq!(Spi::get_one::<Vec<String>>("SELECT array_agg(recording_id) FROM morlet_search_streams('search_rls',array_fill(0.::float8,ARRAY[512]),4096,'x','g')").unwrap().unwrap(),vec!["B".to_string()]);

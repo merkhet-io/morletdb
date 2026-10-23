@@ -1,0 +1,7 @@
+.git
+target
+**/__pycache__
+benchmark-output
+streaming-output
+data
+bin
