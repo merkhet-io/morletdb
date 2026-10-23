@@ -1,0 +1,26 @@
+[package]
+name = "pg_morlet"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "PostgreSQL signal primitives scaffold for MorletDB"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[[bin]]
+name = "pgrx_embed_pg_morlet"
+path = "src/bin/pgrx_embed.rs"
+
+[features]
+default = ["pg17"]
+pg17 = ["pgrx/pg17", "pgrx-tests/pg17"]
+pg_test = []
+
+[dependencies]
+pgrx = "=0.16.1"
+morlet-core = { path = "../../crates/morlet-core" }
+
+[dev-dependencies]
+pgrx-tests = "=0.16.1"

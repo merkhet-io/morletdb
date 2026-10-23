@@ -5,7 +5,7 @@ MorletDB now exposes domain-neutral recordings separately from the original CNC 
 ## Run
 
 ```sh
-go run ./cmd/morletdb serve
+make server
 # In another terminal:
 python3 examples/waveform_search.py
 ```

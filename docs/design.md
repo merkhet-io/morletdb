@@ -1,4 +1,6 @@
-# Design decisions and next validation steps
+# Original CNC prototype design
+
+This document records the original Go application design. See [development](development.md) for the monorepo and PostgreSQL extension direction, and [waveform search](waveform-search.md) for the newer storage/retrieval implementation.
 
 ## First workflow
 
@@ -6,11 +8,11 @@ A condition-monitoring engineer imports segmented CNC vibration captures, review
 
 ## Components
 
-- `internal/signal`: validation, versioned complex Morlet extraction, energy tokens and capture-level descriptors.
-- `internal/store`: immutable local captures, atomic persistence and restart reads.
-- `internal/monitor`: explicit compatible reference cohorts, robust deviation contributions and exact nearest-neighbor retrieval.
-- `internal/httpapi`: bounded JSON API and embedded offline signal explorer.
-- `cmd/morletdb`: server, deterministic synthetic demo, JSON/CSV import and inspection.
+- `apps/server/internal/signal`: validation, versioned complex Morlet extraction, energy tokens and capture-level descriptors.
+- `apps/server/internal/store`: immutable local captures, atomic persistence and restart reads.
+- `apps/server/internal/monitor`: explicit compatible reference cohorts, robust deviation contributions and exact nearest-neighbor retrieval.
+- `apps/server/internal/httpapi`: bounded JSON API and embedded offline signal explorer.
+- `apps/server/cmd/morletdb`: server, deterministic synthetic demo, JSON/CSV import and inspection.
 
 Use existing Go primitives for storage first. Keeping raw signals makes the representation falsifiable and permits re-extraction. JSON is intentionally replaceable; it does not demonstrate compression or the eventual wave-token storage architecture. The module has no third-party dependencies.
 

@@ -1,0 +1,35 @@
+name: Rust
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - run: cargo fmt --all -- --check
+      - run: cargo test --locked -p morlet-core
+      - run: cargo clippy --locked -p morlet-core --all-targets -- -D warnings
+  postgres:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL 17 and build dependencies
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get update
+          sudo apt-get install -y postgresql-17 postgresql-server-dev-17 libclang-dev clang pkg-config libssl-dev
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Install matching pgrx CLI
+        run: cargo install cargo-pgrx --version 0.16.1 --locked --debug
+      - name: Allow extension installation in this disposable CI runner
+        run: |
+          sudo chown -R "$(id -un)" /usr/lib/postgresql/17/lib /usr/share/postgresql/17/extension
+      - name: Configure PostgreSQL
+        run: cargo pgrx init --pg17 /usr/lib/postgresql/17/bin/pg_config
+      - name: Run extension integration tests
+        working-directory: extensions/pg_morlet
+        run: cargo pgrx test pg17
