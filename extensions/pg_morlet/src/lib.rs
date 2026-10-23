@@ -93,6 +93,41 @@ fn morlet_valid_recording(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> boo
     true
 }
 
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_segment_grid(
+    samples: Vec<Option<f64>>,
+    sample_rate_hz: f64,
+    window_size: i32,
+    stride: i32,
+    normalization: &str,
+) -> JsonB {
+    let grid = morlet_core::segments::grid(
+        &checked_samples(samples),
+        sample_rate_hz,
+        window_size,
+        stride,
+        normalization,
+    )
+    .unwrap_or_else(|e| pgrx::error!("{}", e));
+    JsonB(serde_json::to_value(grid).unwrap_or_else(|e| pgrx::error!("{}", e)))
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_feature_vector_distance(
+    left_features: Vec<Option<f64>>,
+    right_features: Vec<Option<f64>>,
+) -> f64 {
+    if left_features.len() != 15 || right_features.len() != 15 {
+        pgrx::error!("Morlet feature vectors must contain 15 values");
+    }
+    morlet_core::distance(
+        &checked_samples(left_features),
+        &checked_samples(right_features),
+        "none",
+    )
+    .unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
 pgrx::extension_sql_file!("../sql/collections.sql", name = "collections", finalize);
 
 #[cfg(any(test, feature = "pg_test"))]
@@ -100,6 +135,48 @@ pgrx::extension_sql_file!("../sql/collections.sql", name = "collections", finali
 mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
+    #[pg_test]
+    fn persisted_segments_follow_source_transactions() {
+        Spi::run("SELECT morlet_create_collection('public','feature_recordings'); INSERT INTO feature_recordings(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,1023) i)); SELECT morlet_enable_segments('feature_recordings',512,256,'none')").unwrap();
+        assert_eq!(
+            Spi::get_one::<i32>(
+                "SELECT jsonb_array_length(morlet_grid->'segments') FROM feature_recordings"
+            )
+            .unwrap()
+            .unwrap(),
+            3
+        );
+        assert_eq!(Spi::get_one::<f64>("SELECT distance FROM morlet_search_features('feature_recordings',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,511) i),4096,'x','g','{}','none',1)").unwrap().unwrap(),0.);
+        Spi::run("DO $$ BEGIN UPDATE feature_recordings SET samples=array_fill(0.::float8,ARRAY[512]); RAISE EXCEPTION 'rollback'; EXCEPTION WHEN raise_exception THEN NULL; END $$").unwrap();
+        assert_eq!(
+            Spi::get_one::<i32>(
+                "SELECT jsonb_array_length(morlet_grid->'segments') FROM feature_recordings"
+            )
+            .unwrap()
+            .unwrap(),
+            3
+        );
+        Spi::run("UPDATE feature_recordings SET samples=array_fill(0.::float8,ARRAY[512]),sample_rate_hz=8192").unwrap();
+        assert_eq!(Spi::get_one::<f64>("SELECT distance FROM morlet_search_features('feature_recordings',array_fill(0.::float8,ARRAY[512]),8192,'x','g','{}','none',1)").unwrap().unwrap(),0.);
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_features('feature_recordings',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','none')").unwrap().unwrap(),0);
+        let stored_distance = Spi::get_one::<f64>("SELECT distance FROM morlet_search_features('feature_recordings',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,511) i),8192,'x','g','{}','none',1)").unwrap().unwrap();
+        let direct_distance = Spi::get_one::<f64>("SELECT morlet_feature_distance(ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,511) i),array_fill(0.::float8,ARRAY[512]),8192)").unwrap().unwrap();
+        assert!(stored_distance > 0.);
+        assert!((stored_distance - direct_distance).abs() < 1e-12);
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_features('feature_recordings',array_fill(0.::float8,ARRAY[512]),8192,'x','g','{\"asset\":\"missing\"}','none')").unwrap().unwrap(),0);
+        Spi::run("DELETE FROM feature_recordings").unwrap();
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_features('feature_recordings',array_fill(0.::float8,ARRAY[512]),8192,'x','g','{}','none')").unwrap().unwrap(),0);
+    }
+    #[pg_test(
+        error = "incompatible segment representation: match window and normalization, or rebuild for the current extractor"
+    )]
+    fn rejects_incompatible_grid_query() {
+        Spi::run("SELECT morlet_create_collection('public','incompatible_recordings'); SELECT morlet_enable_segments('incompatible_recordings'); INSERT INTO incompatible_recordings(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(0.::float8,ARRAY[512])); SELECT * FROM morlet_search_features('incompatible_recordings',array_fill(0.::float8,ARRAY[1024]),4096,'x','g')").unwrap();
+    }
+    #[pg_test(error = "permission denied for table private_features")]
+    fn feature_search_respects_table_permissions() {
+        Spi::run("SELECT morlet_create_collection('public','private_features'); SELECT morlet_enable_segments('private_features'); CREATE ROLE morlet_feature_reader; SET LOCAL ROLE morlet_feature_reader; SELECT * FROM public.morlet_search_features('public.private_features',array_fill(0.::float8,ARRAY[512]),4096,'x','g')").unwrap();
+    }
     #[pg_test]
     fn collections_search_and_rollback() {
         Spi::run("SELECT morlet_create_collection('public','test_recordings')").unwrap();

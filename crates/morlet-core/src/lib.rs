@@ -1,5 +1,6 @@
 //! Portable signal primitives and the versioned Morlet extractor.
 pub mod morlet;
+pub mod segments;
 use std::fmt;
 
 pub const MAX_SAMPLES: usize = 32_768;

@@ -70,4 +70,23 @@ Rows hold 512..32768 finite samples, rates 128..200000 Hz, channel, unit and JSO
 
 Search returns recording IDs and zero-based half-open sample intervals, ranked by aligned sample RMSE (`none`, `demean` or `zscore`), with deterministic ID/offset ties. Query length is 512..4096; stride is positive; top_k is 1..100. At most 4096 candidate windows are evaluated, otherwise the query raises an error. Windows are generated at query time; overlapping hits and the query's own source are included. NULL arguments return no rows. This SQL path currently uses sample distance, independently of the Go server's Morlet-feature ranking. No resampling, ANN index or cross-channel comparison is performed.
 
-Next: persisted versioned segment representations, source-exclusion/overlap policies and retrieval benchmarks. Stored segments and custom index access methods remain future work.
+## Persisted Morlet segments
+
+```sql
+-- Owner operation: computes existing rows and stores future grids automatically.
+SELECT morlet_enable_segments('recordings'::regclass, 512, 256, 'zscore');
+SELECT * FROM morlet_search_features('recordings'::regclass,
+  ARRAY(SELECT sin(i::float8 / 8) FROM generate_series(0,511) i),
+  4096, 'vibration', 'g', '{"asset":"spindle-1"}', 'zscore', 10);
+```
+
+`morlet_grid` is a STORED generated JSONB column on the collection. Each segment records a start sample and fifteen features; the grid records `morlet-energy-v1`, sample count/rate, window size, stride and normalization. Features are extracted after normalizing **each window independently**. INSERT and sample/rate UPDATE recompute the grid atomically; DELETE removes it with the recording. Callers cannot directly overwrite a generated grid. Adding the column locks and rewrites the table; extraction errors roll back the operation. This is intended for bounded prototype datasets.
+
+Each grid allows at most 256 complete windows, window sizes 512..4096, and positive stride. A shorter recording has an empty grid; trailing partial windows are omitted. Stored grids use ordinary Postgres storage/TOAST. `morlet_search_features` scans at most 4096 eligible stored segments and computes exact RMS Euclidean distance over the fifteen features, extracting only the query at search time. Results include the extractor version and zero-based half-open intervals. It shares metadata, rate, channel, unit, NULL and top_k behavior with `morlet_search`. Overlapping hits and source matches remain included.
+
+A query must match the stored window size and normalization. Incompatible versions/specifications in eligible rows raise an error rather than mixing representations. To change a grid's specification, drop `morlet_grid` and call `morlet_enable_segments` again within one transaction. To recompute under the same specification, `UPDATE recordings SET samples=samples` regenerates it. Before any future extractor-version change, plan an explicit rebuild/upgrade; this unreleased extension does not promise migrations. Generated expressions are preserved by normal pg_dump/restore, which recomputes their values using the installed extractor.
+
+`morlet_segment_grid(samples, rate, window, stride, normalization)` exposes grid construction as JSONB. `morlet_feature_vector_distance(left, right)` requires fifteen finite feature values within +/-1e9. These are separate from sample-space `morlet_distance`.
+
+Next: source-exclusion/overlap policies, retrieval benchmarks and an index strategy. Feature ranking currently uses an exact scan, with no ANN or custom access method.
+

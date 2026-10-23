@@ -16,11 +16,11 @@ MorletDB explores searching waveform recordings by localized signal structure. C
 |---|---|---|
 | [`apps/server`](apps/server) | Go HTTP server, CLI, binary recording storage and exact interval search | Working bounded single-node prototype |
 | [`crates/morlet-core`](crates/morlet-core) | Portable Rust primitives and versioned Morlet extraction | Validated against shared Go/Rust fixtures |
-| [`extensions/pg_morlet`](extensions/pg_morlet) | Rust/pgrx PostgreSQL extension | Transactional collections, exact window search and Morlet features on PostgreSQL 17 |
+| [`extensions/pg_morlet`](extensions/pg_morlet) | Rust/pgrx PostgreSQL extension | Transactional collections, persisted Morlet segments and exact search on PostgreSQL 17 |
 | [`examples`](examples) | Python waveform-search client example | Targets the Go server |
 | [`docs`](docs) | Search contract, architecture and development notes | See links below |
 
-The Go implementation and Rust extension are separate execution paths. Storage remains separate, with no Go-to-Rust FFI. Both implementations check `morlet-energy-v1` signatures against the same committed fixtures within documented floating-point tolerances. The extension exposes Morlet signatures, tokens and features, caller-owned transactional waveform collections, and bounded exact sample-distance window search. Persisted segment representations and indexed similarity retrieval remain future work.
+The Go implementation and Rust extension are separate execution paths. Storage remains separate, with no Go-to-Rust FFI. Both implementations check `morlet-energy-v1` signatures against the same committed fixtures within documented floating-point tolerances. The extension exposes Morlet signatures, tokens and features, caller-owned transactional waveform collections, and bounded exact sample-distance window search. Generated columns persist versioned Morlet segment features and keep them consistent with recording writes. Feature search scans stored segments exactly; indexed similarity retrieval remains future work.
 
 ## Run the Go prototype
 
