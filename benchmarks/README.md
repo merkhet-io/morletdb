@@ -1,3 +1,7 @@
+For real-recording relevance and larger exact-search populations, use the
+[evaluation suite](../evaluation/README.md). Broad streaming sweeps are now a
+manual workflow; normal CI retains correctness smoke coverage.
+
 # MorletDB benchmark baseline
 
 This harness measures the current bounded prototype before choosing a Postgres,
@@ -146,3 +150,4 @@ CI runs 8 cases: 65536 samples/channel, 1 or 2 channels, 1024 or 4096 samples/ch
 and 1 or 8 chunks/RPC. Reports are uploaded with the existing benchmark artifact.
 This is still a single-node synthetic synchronous workload, not beyond-RAM testing
 or evidence of HTAP isolation. Raw waveform source generation is outside timed ingest.
+

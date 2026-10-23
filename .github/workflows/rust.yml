@@ -12,6 +12,12 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo test --locked -p morlet-core
       - run: cargo clippy --locked -p morlet-core --all-targets -- -D warnings
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r evaluation/requirements.txt
+      - run: cargo build --locked --release -p morlet-core --example features
+      - run: python -m unittest discover -s evaluation -p 'test_*.py'
   postgres:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -103,11 +109,11 @@ jobs:
           python -c 'import os,psycopg; from psycopg import sql; c=psycopg.connect(dbname="postgres",autocommit=True); c.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(os.environ["PGDATABASE"]))); c.close()'
           python -c 'import psycopg; c=psycopg.connect(autocommit=True); c.execute("CREATE EXTENSION pg_morlet"); c.close()'
           python benchmarks/run.py --rows 32 --samples 2048 --repeats 10 --output benchmark-output
-          python benchmarks/streaming.py --lengths 65536 --channels 1,2 --chunk-sizes 1024,4096 --rpc-batches 1,8 --repeats 10 --monitor-local-postgres --output benchmark-output/streaming-report.json
+          python examples/inspect_recordings.py
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'pull_request' && success()
         with:
           name: benchmark-smoke-report
           path: |
             benchmark-output/report.json
-            benchmark-output/streaming-report.json
+

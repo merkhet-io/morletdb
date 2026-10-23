@@ -88,3 +88,26 @@ DO $$ BEGIN
   END;
 END $$;
 RESET ROLE;
+
+-- Isolated feature population to exercise budgets without expensive extraction.
+-- Direct segment fixtures are not valid raw-recording ingestion examples.
+SELECT morlet_create_stream_collection('public','budget_streams');
+SELECT morlet_start_recording('budget_streams','population',4096,'x','g');
+INSERT INTO budget_streams_segments(recording_id,start_sample,features)
+  SELECT 'population',i*512::bigint,array_fill(0.::float8,ARRAY[15]) FROM generate_series(0,4096) i;
+DO $$ BEGIN
+  BEGIN
+    PERFORM morlet_search_streams('budget_streams',array_fill(0.::float8,ARRAY[512]),4096,'x','g');
+    RAISE EXCEPTION 'expected default budget rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'stream search exceeds 4096 segments; narrow the metadata filter' THEN RAISE; END IF;
+  END;
+  ASSERT (SELECT count(*) FROM morlet_search_streams('budget_streams',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','zscore',10,5000))=10,
+    'explicit exact-search budget';
+  BEGIN
+    PERFORM morlet_search_streams('budget_streams',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','zscore',10,1000001);
+    RAISE EXCEPTION 'expected maximum budget rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'candidate budget must be 1..1000000' THEN RAISE; END IF;
+  END;
+END $$;

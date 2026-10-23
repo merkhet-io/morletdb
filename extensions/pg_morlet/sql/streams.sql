@@ -85,13 +85,16 @@ END $$;
 
 CREATE FUNCTION public.morlet_stream_candidates(collection regclass,query_samples float8[],query_rate_hz float8,
   query_channel text,query_unit text,metadata_filter jsonb DEFAULT '{}'::jsonb,
-  normalization text DEFAULT 'zscore')
+  normalization text DEFAULT 'zscore',max_candidates integer DEFAULT 4096)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,extractor_version text,metadata jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE relations record; query_features float8[]; width integer; candidates bigint; incompatible boolean;
 BEGIN
   IF array_ndims(query_samples) IS DISTINCT FROM 1 OR array_lower(query_samples,1) IS DISTINCT FROM 1 THEN
     RAISE EXCEPTION 'query must be a one-dimensional array starting at 1';
+  END IF;
+  IF max_candidates NOT BETWEEN 1 AND 1000000 THEN
+    RAISE EXCEPTION 'candidate budget must be 1..1000000';
   END IF;
   width:=cardinality(query_samples);
   IF width NOT BETWEEN 512 AND 4096 OR jsonb_typeof(metadata_filter)<>'object' THEN
@@ -111,7 +114,9 @@ BEGIN
       coalesce(bool_or(e.invalid),false) FROM eligible e',relations.segments,collection)
     INTO candidates,incompatible USING width,normalization,query_rate_hz,query_channel,query_unit,metadata_filter;
   IF incompatible THEN RAISE EXCEPTION 'incompatible stream representation'; END IF;
-  IF candidates>4096 THEN RAISE EXCEPTION 'stream search exceeds 4096 segments; narrow the metadata filter'; END IF;
+  IF candidates>max_candidates THEN
+    RAISE EXCEPTION 'stream search exceeds % segments; narrow the metadata filter',max_candidates;
+  END IF;
   RETURN QUERY EXECUTE format('SELECT s.recording_id,s.start_sample,s.start_sample+$1,
     public.morlet_feature_vector_distance(s.features,$2) AS distance,public.morlet_extractor_version(),r.metadata
     FROM %s s JOIN %s r USING(recording_id)
@@ -123,14 +128,14 @@ END $$;
 -- Compatibility entry point delegates all eligibility/scoring to one path.
 CREATE FUNCTION public.morlet_search_streams(collection regclass,query_samples float8[],query_rate_hz float8,
   query_channel text,query_unit text,metadata_filter jsonb DEFAULT '{}'::jsonb,
-  normalization text DEFAULT 'zscore',top_k integer DEFAULT 10)
+  normalization text DEFAULT 'zscore',top_k integer DEFAULT 10,max_candidates integer DEFAULT 4096)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,extractor_version text)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
   IF top_k NOT BETWEEN 1 AND 100 THEN RAISE EXCEPTION 'invalid top_k'; END IF;
   RETURN QUERY SELECT h.recording_id,h.start_sample,h.end_sample,h.distance,h.extractor_version
     FROM public.morlet_stream_candidates(collection,query_samples,query_rate_hz,query_channel,
-      query_unit,metadata_filter,normalization) h
+      query_unit,metadata_filter,normalization,max_candidates) h
     ORDER BY h.distance,h.recording_id,h.start_sample LIMIT top_k;
 END $$;
 
@@ -226,7 +231,8 @@ END $$;
 -- top_k. Fetching only top_k first could discard valid independent matches.
 CREATE FUNCTION public.morlet_search_interval(collection regclass,source_recording_id text,
   interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,
-  top_k integer DEFAULT 10,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true)
+  top_k integer DEFAULT 10,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  max_candidates integer DEFAULT 4096)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,
   extractor_version text,sample_rate_hz float8,channel text,unit text,metadata jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -234,7 +240,7 @@ DECLARE source record; source_state jsonb; normalization text; hit record;
   picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
   picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
 BEGIN
-  IF interval_end<=interval_start OR interval_end-interval_start NOT BETWEEN 512 AND 4096
+  IF interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start NOT BETWEEN 512 AND 4096
     OR top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' THEN
     RAISE EXCEPTION 'invalid query interval, top_k or metadata filter';
   END IF;
@@ -246,7 +252,7 @@ BEGIN
   END IF;
   normalization:=source_state->>'normalization';
   FOR hit IN SELECT h.* FROM public.morlet_stream_candidates(collection,source.samples,
-    source.sample_rate_hz,source.channel,source.unit,metadata_filter,normalization) h
+    source.sample_rate_hz,source.channel,source.unit,metadata_filter,normalization,max_candidates) h
     WHERE NOT exclude_source OR h.recording_id<>source_recording_id
       OR h.end_sample<=interval_start OR h.start_sample>=interval_end
     ORDER BY h.distance,h.recording_id,h.start_sample
