@@ -1,3 +1,6 @@
+For cross-chunk reads, stored-interval search and the Python client, start with
+the [recording workflow](../../docs/recording-workflow.md).
+
 > **Active API:** use the continuous recording functions (`morlet_create_stream_collection`,
 > `morlet_start_recording`, `morlet_append_chunk[s]`, `morlet_search_streams`).
 > Bounded recordings, JSONB grids and typed composite arrays below are retained

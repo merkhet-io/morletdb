@@ -24,6 +24,16 @@ The first application is vibration monitoring. The recording model is domain neu
 
 Durable appends publish raw chunks, newly complete segment features and extraction checkpoints in one transaction. Identical retries are safe, and a fresh connection can resume from committed state. See the [ingestion contract](docs/durable-ingestion.md).
 
+## Try the complete recording workflow
+
+```sh
+docker compose run --rm walkthrough
+```
+
+This builds the local PostgreSQL 17 preview, imports synthetic Parquet, finds a
+known interval and reconstructs matches. See the [walkthrough](docs/recording-workflow.md)
+for prerequisites, Python usage, credentials, restart checks and explicit teardown.
+
 ## Try it in Postgres
 
 Target: **PostgreSQL 17**. Follow the [Rust/pgrx setup guide](extensions/pg_morlet/README.md#setup) to install the extension, then run:
@@ -47,7 +57,7 @@ SELECT * FROM morlet_search_streams(
 
 `morlet_stream_status('signals', 'motor-001')` reports durable progress. The [batched append API](docs/durable-ingestion.md#batched-appends) sends multiple typed chunks per database call with atomic rollback and the same replay checks.
 
-The stream search above includes source and overlapping matches. The separate bounded-recording API also supports source-interval queries and overlap suppression; see the [SQL guide](extensions/pg_morlet/README.md).
+The array search above includes source and overlapping matches. Use `morlet_search_interval` for a stored source interval with source exclusion and overlap suppression, and `morlet_read_interval` to inspect matches. See the [complete workflow](docs/recording-workflow.md).
 
 ## Import waveform archives
 

@@ -1,0 +1,38 @@
+name: Recording preview
+on:
+  pull_request:
+    paths:
+      - 'deploy/**'
+      - 'compose.yaml'
+      - '.dockerignore'
+      - 'crates/**'
+      - 'extensions/**'
+      - 'tools/**'
+      - 'examples/inspect_recordings.py'
+      - 'Cargo.*'
+      - 'rust-toolchain.toml'
+      - '.github/workflows/preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  walkthrough:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned preview environment
+        run: docker compose build db
+      - name: Import, search, inspect and replay
+        run: docker compose run --rm walkthrough
+      - name: Restart with preserved recordings and repeat
+        run: |
+          docker compose restart db
+          docker compose up -d --wait db
+          docker compose run --rm walkthrough
+      - name: Diagnostics
+        if: failure()
+        run: docker compose logs db
+      - name: Tear down disposable CI database
+        if: always()
+        run: docker compose down -v

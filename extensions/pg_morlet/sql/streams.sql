@@ -83,10 +83,10 @@ BEGIN
     FROM %s r WHERE r.recording_id=$1',relations.segments,collection) USING recording_id;
 END $$;
 
-CREATE FUNCTION public.morlet_search_streams(collection regclass,query_samples float8[],query_rate_hz float8,
+CREATE FUNCTION public.morlet_stream_candidates(collection regclass,query_samples float8[],query_rate_hz float8,
   query_channel text,query_unit text,metadata_filter jsonb DEFAULT '{}'::jsonb,
-  normalization text DEFAULT 'zscore',top_k integer DEFAULT 10)
-RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,extractor_version text)
+  normalization text DEFAULT 'zscore')
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,extractor_version text,metadata jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE relations record; query_features float8[]; width integer; candidates bigint; incompatible boolean;
 BEGIN
@@ -94,8 +94,8 @@ BEGIN
     RAISE EXCEPTION 'query must be a one-dimensional array starting at 1';
   END IF;
   width:=cardinality(query_samples);
-  IF width NOT BETWEEN 512 AND 4096 OR top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' THEN
-    RAISE EXCEPTION 'invalid query size, top_k or metadata filter';
+  IF width NOT BETWEEN 512 AND 4096 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid query size or metadata filter';
   END IF;
   query_features:=public.morlet_features(public.morlet_normalize(query_samples,normalization),query_rate_hz);
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
@@ -113,11 +113,25 @@ BEGIN
   IF incompatible THEN RAISE EXCEPTION 'incompatible stream representation'; END IF;
   IF candidates>4096 THEN RAISE EXCEPTION 'stream search exceeds 4096 segments; narrow the metadata filter'; END IF;
   RETURN QUERY EXECUTE format('SELECT s.recording_id,s.start_sample,s.start_sample+$1,
-    public.morlet_feature_vector_distance(s.features,$2) AS distance,public.morlet_extractor_version()
+    public.morlet_feature_vector_distance(s.features,$2) AS distance,public.morlet_extractor_version(),r.metadata
     FROM %s s JOIN %s r USING(recording_id)
     WHERE r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5 AND r.metadata @> $6
-    ORDER BY distance,s.recording_id,s.start_sample LIMIT $7',relations.segments,collection)
-    USING width,query_features,query_rate_hz,query_channel,query_unit,metadata_filter,top_k;
+    ORDER BY distance,s.recording_id,s.start_sample',relations.segments,collection)
+    USING width,query_features,query_rate_hz,query_channel,query_unit,metadata_filter;
+END $$;
+
+-- Compatibility entry point delegates all eligibility/scoring to one path.
+CREATE FUNCTION public.morlet_search_streams(collection regclass,query_samples float8[],query_rate_hz float8,
+  query_channel text,query_unit text,metadata_filter jsonb DEFAULT '{}'::jsonb,
+  normalization text DEFAULT 'zscore',top_k integer DEFAULT 10)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,extractor_version text)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  IF top_k NOT BETWEEN 1 AND 100 THEN RAISE EXCEPTION 'invalid top_k'; END IF;
+  RETURN QUERY SELECT h.recording_id,h.start_sample,h.end_sample,h.distance,h.extractor_version
+    FROM public.morlet_stream_candidates(collection,query_samples,query_rate_hz,query_channel,
+      query_unit,metadata_filter,normalization) h
+    ORDER BY h.distance,h.recording_id,h.start_sample LIMIT top_k;
 END $$;
 
 -- Idempotent recording creation for resumable importers. Existing acquisition
@@ -170,4 +184,88 @@ BEGIN
     received:=public.morlet_append_chunk(collection,recording_id,item.start_sample,item.samples);
   END LOOP;
   RETURN received;
+END $$;
+
+
+-- Read a bounded half-open interval without exposing table internals. Both
+-- parent and chunk privileges/RLS apply; missing or hidden chunks fail closed.
+CREATE FUNCTION public.morlet_read_interval(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,samples float8[],
+  sample_rate_hz float8,channel text,unit text,metadata jsonb,extractor_version text)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; relations record; recovered float8[]; covered bigint;
+BEGIN
+  IF interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start>32768 THEN
+    RAISE EXCEPTION 'read interval must contain 1..32768 samples at nonnegative coordinates';
+  END IF;
+  EXECUTE format('SELECT r.sample_rate_hz,r.channel,r.unit,r.metadata,r.checkpoint FROM %s r WHERE r.recording_id=$1',collection)
+    INTO source USING source_recording_id;
+  IF source.checkpoint IS NULL THEN RAISE EXCEPTION 'source recording does not exist or is not visible'; END IF;
+  IF interval_end>(source.checkpoint->>'end')::bigint THEN
+    RAISE EXCEPTION 'source interval exceeds recording length';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  EXECUTE format('SELECT array_agg(v.value ORDER BY c.start_sample,v.ordinality),count(*)
+    FROM %s c CROSS JOIN LATERAL unnest(c.samples[
+      greatest(1,$2-c.start_sample+1)::integer:
+      least(cardinality(c.samples)::bigint,$3-c.start_sample)::integer
+    ]) WITH ORDINALITY AS v(value,ordinality)
+    WHERE c.recording_id=$1 AND c.start_sample<$3
+      AND c.start_sample+cardinality(c.samples)>$2',relations.chunks)
+    INTO recovered,covered USING source_recording_id,interval_start,interval_end;
+  IF covered<>interval_end-interval_start THEN
+    RAISE EXCEPTION 'source interval is incomplete or not fully visible';
+  END IF;
+  RETURN QUERY SELECT source_recording_id,interval_start,interval_end,recovered,
+    source.sample_rate_hz,source.channel,source.unit,source.metadata,source.checkpoint->>'extractor_version';
+END $$;
+
+-- Stored-interval search uses the shared exact candidate scorer, then
+-- applies source exclusion and greedy, rank-ordered non-overlap selection BEFORE
+-- top_k. Fetching only top_k first could discard valid independent matches.
+CREATE FUNCTION public.morlet_search_interval(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,
+  top_k integer DEFAULT 10,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,
+  extractor_version text,sample_rate_hz float8,channel text,unit text,metadata jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; source_state jsonb; normalization text; hit record;
+  picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
+  picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
+BEGIN
+  IF interval_end<=interval_start OR interval_end-interval_start NOT BETWEEN 512 AND 4096
+    OR top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid query interval, top_k or metadata filter';
+  END IF;
+  SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
+  EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1',collection)
+    INTO source_state USING source_recording_id;
+  IF (source_state->>'window')::bigint<>interval_end-interval_start THEN
+    RAISE EXCEPTION 'query interval must match the stored representation window';
+  END IF;
+  normalization:=source_state->>'normalization';
+  FOR hit IN SELECT h.* FROM public.morlet_stream_candidates(collection,source.samples,
+    source.sample_rate_hz,source.channel,source.unit,metadata_filter,normalization) h
+    WHERE NOT exclude_source OR h.recording_id<>source_recording_id
+      OR h.end_sample<=interval_start OR h.start_sample>=interval_end
+    ORDER BY h.distance,h.recording_id,h.start_sample
+  LOOP
+    blocked:=false;
+    IF suppress_overlaps AND picked>0 THEN
+      FOR idx IN 1..picked LOOP
+        IF picked_ids[idx]=hit.recording_id AND picked_starts[idx]<hit.end_sample AND picked_ends[idx]>hit.start_sample THEN
+          blocked:=true; EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+    IF blocked THEN CONTINUE; END IF;
+    RETURN QUERY SELECT hit.recording_id,hit.start_sample,hit.end_sample,hit.distance,
+      public.morlet_extractor_version(),source.sample_rate_hz,source.channel,source.unit,hit.metadata;
+    picked:=picked+1;
+    picked_ids:=array_append(picked_ids,hit.recording_id);
+    picked_starts:=array_append(picked_starts,hit.start_sample);
+    picked_ends:=array_append(picked_ends,hit.end_sample);
+    EXIT WHEN picked=top_k;
+  END LOOP;
 END $$;
