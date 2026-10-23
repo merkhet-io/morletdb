@@ -74,12 +74,28 @@ END $$;
 CREATE FUNCTION public.morlet_search_features(
   collection regclass, query_samples float8[], query_rate_hz float8,
   query_channel text, query_unit text, metadata_filter jsonb DEFAULT '{}'::jsonb,
-  normalization text DEFAULT 'zscore', top_k integer DEFAULT 10)
+  normalization text DEFAULT 'zscore', top_k integer DEFAULT 10,
+  source_recording_id bigint DEFAULT NULL, source_start_sample integer DEFAULT NULL,
+  source_end_sample integer DEFAULT NULL, suppress_overlaps boolean DEFAULT true)
 RETURNS TABLE(recording_id bigint, start_sample integer, end_sample integer,
   distance float8, extractor_version text)
-LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path = pg_catalog AS $$
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path = pg_catalog AS $$
 DECLARE window_size integer; query_features float8[]; candidate_count bigint; incompatible boolean;
+  candidate record; selected_ids bigint[] := '{}'; selected_starts integer[] := '{}';
+  selected_ends integer[] := '{}'; selected_count integer := 0; hit_overlap boolean; i integer;
 BEGIN
+  -- Optional source fields require a non-STRICT wrapper; preserve NULL behavior
+  -- for required arguments explicitly.
+  IF collection IS NULL OR query_samples IS NULL OR query_rate_hz IS NULL
+    OR query_channel IS NULL OR query_unit IS NULL OR metadata_filter IS NULL
+    OR normalization IS NULL OR top_k IS NULL OR suppress_overlaps IS NULL THEN
+    RETURN;
+  END IF;
+  IF NOT ((source_recording_id IS NULL AND source_start_sample IS NULL AND source_end_sample IS NULL)
+    OR (source_recording_id IS NOT NULL AND source_start_sample IS NOT NULL
+      AND source_end_sample IS NOT NULL AND source_start_sample >= 0 AND source_end_sample > source_start_sample)) THEN
+    RAISE EXCEPTION 'source exclusion requires recording ID and a valid half-open sample interval';
+  END IF;
   IF array_ndims(query_samples) IS DISTINCT FROM 1 OR array_lower(query_samples,1) IS DISTINCT FROM 1 THEN
     RAISE EXCEPTION 'query must be a one-dimensional array starting at 1';
   END IF;
@@ -103,12 +119,63 @@ BEGIN
   IF candidate_count > 4096 THEN
     RAISE EXCEPTION 'feature search exceeds 4096 candidate segments; narrow the metadata filter';
   END IF;
-  RETURN QUERY EXECUTE format('SELECT r.id,(s->>''start_sample'')::integer,
-      (s->>''start_sample'')::integer+$1,
+  FOR candidate IN EXECUTE format('SELECT r.id AS recording_id,(s->>''start_sample'')::integer AS start_sample,
+      (s->>''start_sample'')::integer+$1 AS end_sample,
       public.morlet_feature_vector_distance(ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8),$2) AS distance,
-      r.morlet_grid->>''version''
+      r.morlet_grid->>''version'' AS extractor_version
     FROM %s r CROSS JOIN LATERAL jsonb_array_elements(r.morlet_grid->''segments'') s
     WHERE r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5 AND r.metadata @> $6
-    ORDER BY distance,r.id,(s->>''start_sample'')::integer LIMIT $7',collection)
-    USING window_size,query_features,query_rate_hz,query_channel,query_unit,metadata_filter,top_k;
+    AND NOT (r.id IS NOT DISTINCT FROM $7 AND (s->>''start_sample'')::integer < $9
+      AND (s->>''start_sample'')::integer+$1 > $8)
+    ORDER BY distance,r.id,(s->>''start_sample'')::integer',collection)
+    USING window_size,query_features,query_rate_hz,query_channel,query_unit,metadata_filter,source_recording_id,source_start_sample,source_end_sample
+  LOOP
+    hit_overlap := false;
+    IF suppress_overlaps AND selected_count > 0 THEN
+      FOR i IN 1..selected_count LOOP
+        IF selected_ids[i] = candidate.recording_id
+          AND candidate.start_sample < selected_ends[i] AND candidate.end_sample > selected_starts[i] THEN
+          hit_overlap := true;
+          EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+    IF hit_overlap THEN CONTINUE; END IF;
+    recording_id := candidate.recording_id; start_sample := candidate.start_sample;
+    end_sample := candidate.end_sample; distance := candidate.distance;
+    extractor_version := candidate.extractor_version;
+    RETURN NEXT;
+    selected_ids := array_append(selected_ids,recording_id);
+    selected_starts := array_append(selected_starts,start_sample);
+    selected_ends := array_append(selected_ends,end_sample);
+    selected_count := selected_count + 1;
+    EXIT WHEN selected_count >= top_k;
+  END LOOP;
+END $$;
+
+
+-- Query an existing interval without transporting samples through the client.
+CREATE FUNCTION public.morlet_search_recording(collection regclass,
+  source_recording_id bigint, source_start_sample integer, source_end_sample integer,
+  metadata_filter jsonb DEFAULT '{}'::jsonb, normalization text DEFAULT 'zscore',
+  top_k integer DEFAULT 10, suppress_overlaps boolean DEFAULT true)
+RETURNS TABLE(recording_id bigint,start_sample integer,end_sample integer,distance float8,extractor_version text)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path = pg_catalog AS $$
+DECLARE source record;
+BEGIN
+  IF source_start_sample < 0 OR source_end_sample <= source_start_sample
+    OR source_end_sample::bigint-source_start_sample::bigint NOT BETWEEN 512 AND 4096 THEN
+    RAISE EXCEPTION 'source query must be a valid half-open interval of 512..4096 samples';
+  END IF;
+  EXECUTE format('SELECT samples,sample_rate_hz,channel,unit FROM %s WHERE id=$1',collection)
+    INTO source USING source_recording_id;
+  IF source.samples IS NULL THEN
+    RAISE EXCEPTION 'source recording does not exist or is not visible';
+  END IF;
+  IF source_end_sample > cardinality(source.samples) THEN
+    RAISE EXCEPTION 'source interval exceeds recording length';
+  END IF;
+  RETURN QUERY SELECT * FROM public.morlet_search_features(collection,
+    source.samples[source_start_sample+1:source_end_sample],source.sample_rate_hz,source.channel,source.unit,
+    metadata_filter,normalization,top_k,source_recording_id,source_start_sample,source_end_sample,suppress_overlaps);
 END $$;

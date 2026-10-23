@@ -82,11 +82,28 @@ SELECT * FROM morlet_search_features('recordings'::regclass,
 
 `morlet_grid` is a STORED generated JSONB column on the collection. Each segment records a start sample and fifteen features; the grid records `morlet-energy-v1`, sample count/rate, window size, stride and normalization. Features are extracted after normalizing **each window independently**. INSERT and sample/rate UPDATE recompute the grid atomically; DELETE removes it with the recording. Callers cannot directly overwrite a generated grid. Adding the column locks and rewrites the table; extraction errors roll back the operation. This is intended for bounded prototype datasets.
 
-Each grid allows at most 256 complete windows, window sizes 512..4096, and positive stride. A shorter recording has an empty grid; trailing partial windows are omitted. Stored grids use ordinary Postgres storage/TOAST. `morlet_search_features` scans at most 4096 eligible stored segments and computes exact RMS Euclidean distance over the fifteen features, extracting only the query at search time. Results include the extractor version and zero-based half-open intervals. It shares metadata, rate, channel, unit, NULL and top_k behavior with `morlet_search`. Overlapping hits and source matches remain included.
+Each grid allows at most 256 complete windows, window sizes 512..4096, and positive stride. A shorter recording has an empty grid; trailing partial windows are omitted. Stored grids use ordinary Postgres storage/TOAST. `morlet_search_features` scans at most 4096 eligible stored segments and computes exact RMS Euclidean distance over the fifteen features, extracting only the query at search time. Results include the extractor version and zero-based half-open intervals. It shares metadata, rate, channel, unit, NULL and top_k behavior with `morlet_search`. Feature search suppresses overlapping hits by default; see the interval-search policy below.
 
 A query must match the stored window size and normalization. Incompatible versions/specifications in eligible rows raise an error rather than mixing representations. To change a grid's specification, drop `morlet_grid` and call `morlet_enable_segments` again within one transaction. To recompute under the same specification, `UPDATE recordings SET samples=samples` regenerates it. Before any future extractor-version change, plan an explicit rebuild/upgrade; this unreleased extension does not promise migrations. Generated expressions are preserved by normal pg_dump/restore, which recomputes their values using the installed extractor.
 
 `morlet_segment_grid(samples, rate, window, stride, normalization)` exposes grid construction as JSONB. `morlet_feature_vector_distance(left, right)` requires fifteen finite feature values within +/-1e9. These are separate from sample-space `morlet_distance`.
 
-Next: source-exclusion/overlap policies, retrieval benchmarks and an index strategy. Feature ranking currently uses an exact scan, with no ANN or custom access method.
+## Stored-interval queries and result policy
+
+```sql
+-- The source interval is zero-based and half-open; its samples, rate,
+-- channel and unit are read under the caller's permissions.
+SELECT * FROM morlet_search_recording('recordings', 1, 0, 512,
+  '{"asset":"spindle-1"}', 'zscore', 10);
+```
+
+`morlet_search_recording(collection, source_id, start, end, metadata_filter, normalization, top_k, suppress_overlaps)` reads a 512..4096-sample interval, queries its features, and excludes candidate intervals overlapping that source interval in the same recording. Adjacent intervals are eligible. Source reads and candidate retrieval obey table privileges and row-level security under the caller and share the statement snapshot. Missing or invisible sources, invalid ranges and ranges beyond the recording raise errors. NULL required arguments return no rows.
+
+`morlet_search_features` also accepts optional `source_recording_id`, `source_start_sample`, `source_end_sample` and `suppress_overlaps` arguments after `top_k`. Supply all three source fields or leave all NULL. These exclusions are geometric filters; the raw-query function does not fetch or validate the referenced source. Use `morlet_search_recording` to bind a query to actual stored samples.
+
+Feature search now defaults to greedy overlap suppression: rank all eligible segments by distance, recording ID and start sample; accept a hit only if it does not overlap an already accepted hit in the same recording; stop after top_k accepted hits. Adjacent intervals and equal intervals in different recordings are eligible. Suppression can return fewer than top_k hits. Set `suppress_overlaps=false` to return all ranked windows. Source exclusion still applies when suppression is disabled. Selection occurs before the final top_k limit so skipped hits do not consume result slots. The 4096-segment budget and representation checks apply before source exclusion and suppression, so filters may be needed even for searches returning few hits.
+
+This changes the default feature-search result policy in the unreleased prototype; `morlet_search` sample-distance behavior remains unchanged. See the [rollback-only psql demo](../../examples/postgres_search.sql).
+
+Next: retrieval benchmarks and an index strategy. Feature ranking currently uses an exact scan, with no ANN or custom access method.
 

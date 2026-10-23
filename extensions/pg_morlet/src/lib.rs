@@ -136,6 +136,30 @@ mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
     #[pg_test]
+    fn interval_search_and_overlap_policy() {
+        Spi::run("SELECT morlet_create_collection('public','interval_recordings'); SELECT morlet_enable_segments('interval_recordings'); INSERT INTO interval_recordings(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(0.::float8,ARRAY[1536])),(4096,'x','g',array_fill(0.::float8,ARRAY[512]))").unwrap();
+        assert_eq!(Spi::get_one::<Vec<i32>>("SELECT array_agg(start_sample ORDER BY distance,recording_id,start_sample) FROM morlet_search_features('interval_recordings',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','zscore',10) WHERE recording_id=1").unwrap().unwrap(),vec![0,512,1024]);
+        assert_eq!(Spi::get_one::<Vec<i32>>("SELECT array_agg(start_sample ORDER BY start_sample) FROM morlet_search_features('interval_recordings',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','zscore',2)").unwrap().unwrap(),vec![0,512]);
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_features('interval_recordings',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','zscore',10,NULL,NULL,NULL,false)").unwrap().unwrap(),6);
+        assert_eq!(Spi::get_one::<Vec<i32>>("SELECT array_agg(start_sample ORDER BY start_sample) FROM morlet_search_recording('interval_recordings',1,0,512) WHERE recording_id=1").unwrap().unwrap(),vec![512,1024]);
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_recording('interval_recordings',1,0,512) WHERE recording_id=2").unwrap().unwrap(),1);
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_features('interval_recordings',NULL,4096,'x','g')").unwrap().unwrap(),0);
+    }
+    #[pg_test(
+        error = "source exclusion requires recording ID and a valid half-open sample interval"
+    )]
+    fn rejects_partial_source_exclusion() {
+        Spi::run("SELECT morlet_create_collection('public','partial_source'); SELECT * FROM morlet_search_features('partial_source',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','zscore',10,1)").unwrap();
+    }
+    #[pg_test(error = "source interval exceeds recording length")]
+    fn rejects_out_of_bounds_source() {
+        Spi::run("SELECT morlet_create_collection('public','short_source'); INSERT INTO short_source(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(0.::float8,ARRAY[512])); SELECT * FROM morlet_search_recording('short_source',1,256,768)").unwrap();
+    }
+    #[pg_test(error = "source recording does not exist or is not visible")]
+    fn source_query_respects_row_security() {
+        Spi::run("SELECT morlet_create_collection('public','rls_source'); INSERT INTO rls_source(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(0.::float8,ARRAY[512])); ALTER TABLE rls_source ENABLE ROW LEVEL SECURITY; CREATE POLICY visible_rows ON rls_source USING (id=2); CREATE ROLE morlet_interval_reader; GRANT SELECT ON rls_source TO morlet_interval_reader; SET LOCAL ROLE morlet_interval_reader; SELECT * FROM morlet_search_recording('rls_source',1,0,512)").unwrap();
+    }
+    #[pg_test]
     fn persisted_segments_follow_source_transactions() {
         Spi::run("SELECT morlet_create_collection('public','feature_recordings'); INSERT INTO feature_recordings(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,1023) i)); SELECT morlet_enable_segments('feature_recordings',512,256,'none')").unwrap();
         assert_eq!(
