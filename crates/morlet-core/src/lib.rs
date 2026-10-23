@@ -1,4 +1,5 @@
 //! Portable signal primitives and the versioned Morlet extractor.
+pub mod chunks;
 pub mod morlet;
 pub mod segments;
 use std::fmt;

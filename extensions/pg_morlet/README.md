@@ -107,3 +107,35 @@ This changes the default feature-search result policy in the unreleased prototyp
 
 Next: retrieval benchmarks and an index strategy. Feature ranking currently uses an exact scan, with no ANN or custom access method.
 
+
+## Typed segment storage
+
+```sql
+SELECT morlet_enable_typed_segments('recordings',512,256,'zscore');
+SELECT * FROM recordings r CROSS JOIN LATERAL unnest(r.morlet_segments) s;
+SELECT * FROM morlet_search_recording('recordings',1,0,512);
+```
+
+This alternative stores a generated array of `morlet_segment` composites, each
+holding `start_sample integer` and `features float8[]`. A separate generated JSONB
+specification holds version/window/stride/normalization; feature numbers are
+stored in binary Postgres arrays. Source samples and sample rate remain on the
+recording row. Both columns update atomically with source writes. Existing rows
+are backfilled under an ALTER TABLE lock.
+
+The existing feature and stored-interval search APIs detect typed segments and
+use them preferentially; JSONB-only collections continue to work. Representation
+checks, candidate budgets, source exclusion, overlap suppression, caller privileges
+and RLS apply to both. If both layouts exist on a collection, both incur write
+cost but searches use the typed specification; normally choose one layout. To
+reconfigure typed storage, drop both `morlet_segments` and `morlet_segment_spec`
+and enable it again within one transaction.
+
+Typed construction currently converts the shared JSONB extractor output into
+composites during writes. It removes JSON number decoding from the retrieval path;
+it does not yet optimize extraction serialization. Storage remains per-recording
+arrays/TOAST, not a segment-level index or separately indexed segment table. The
+benchmark compares both layouts with identical Parquet feature values.
+
+For the continuous-stream foundation, see [chunked recordings](../../docs/chunked-recordings.md).
+It does not yet change the Postgres per-row recording limit.

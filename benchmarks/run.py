@@ -81,6 +81,7 @@ def postgres_baseline(args, records, db, directory):
     schema = "morlet_bench_" + uuid.uuid4().hex
     raw_name, indexed_name = f"{schema}.raw", f"{schema}.indexed"
     raw, indexed = sql.Identifier(schema, "raw"), sql.Identifier(schema, "indexed")
+    typed_name, typed = f"{schema}.typed", sql.Identifier(schema,"typed")
     with psycopg.connect(args.dsn, autocommit=True) as conn:
         conn.execute("SET statement_timeout='120s'")
         version = conn.execute("SELECT morlet_version(),morlet_extractor_version(),version()").fetchone()
@@ -88,7 +89,7 @@ def postgres_baseline(args, records, db, directory):
                     for name in ("shared_buffers", "work_mem", "max_parallel_workers_per_gather", "jit")}
         conn.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
         try:
-            for name in ("raw", "indexed"):
+            for name in ("raw", "indexed", "typed"):
                 conn.execute("SELECT morlet_create_collection(%s,%s)", (schema, name))
             _, raw_s = timed(lambda: copy_records(conn, raw, records))
             raw_size = conn.execute("SELECT pg_total_relation_size(%s::regclass)", (raw_name,)).fetchone()[0]
@@ -96,10 +97,14 @@ def postgres_baseline(args, records, db, directory):
             _, extraction_s = timed(lambda: conn.execute("SELECT morlet_enable_segments(%s,512,256,'zscore')", (raw_name,)))
             conn.execute("SELECT morlet_enable_segments(%s,512,256,'zscore')", (indexed_name,))
             _, synchronous_s = timed(lambda: copy_records(conn, indexed, records))
-            for relation in (raw, indexed):
+            copy_records(conn,typed,records)
+            _, typed_backfill_s = timed(lambda: conn.execute("SELECT morlet_enable_typed_segments(%s,512,256,'zscore')",(typed_name,)))
+            conn.execute(sql.SQL("TRUNCATE {} RESTART IDENTITY").format(typed))
+            _, typed_synchronous_s = timed(lambda: copy_records(conn,typed,records))
+            for relation in (raw, indexed, typed):
                 conn.execute(sql.SQL("ANALYZE {}").format(relation))
             sizes = {label: conn.execute("SELECT pg_total_relation_size(%s::regclass)", (name,)).fetchone()[0]
-                     for label, name in (("backfilled_total_bytes", raw_name), ("synchronous_total_bytes", indexed_name))}
+                     for label, name in (("backfilled_total_bytes", raw_name), ("synchronous_total_bytes", indexed_name), ("typed_total_bytes",typed_name))}
             query = records[0]["samples"][:512]
             query_features = conn.execute("SELECT morlet_features(morlet_normalize(%s::float8[],'zscore'),4096)", (query,)).fetchone()[0]
             # Export the SAME stored features, without re-extracting in a different engine.
@@ -114,6 +119,10 @@ def postgres_baseline(args, records, db, directory):
               public.morlet_feature_vector_distance(ARRAY(SELECT jsonb_array_elements_text(s->'features')::float8),%s::float8[]) AS distance
               FROM {} r CROSS JOIN LATERAL jsonb_array_elements(r.morlet_grid->'segments') s
               WHERE r.metadata @> %s::jsonb ORDER BY distance,r.id,(s->>'start_sample')::int LIMIT 10""").format(indexed)
+            typed_sql = sql.SQL("""SELECT r.id,s.start_sample,
+              public.morlet_feature_vector_distance(s.features,%s::float8[]) AS distance
+              FROM {} r CROSS JOIN LATERAL unnest(r.morlet_segments) s
+              WHERE r.metadata @> %s::jsonb ORDER BY distance,r.id,s.start_sample LIMIT 10""").format(typed)
             duck_sql = """SELECT recording_id,start_sample,
               sqrt(list_sum(list_transform(list_zip(features,?::DOUBLE[]), x -> (x[1]-x[2])*(x[1]-x[2])))/15) AS distance
               FROM features WHERE (? IS NULL OR asset=?) ORDER BY distance,recording_id,start_sample LIMIT 10"""
@@ -122,15 +131,21 @@ def postgres_baseline(args, records, db, directory):
                 filt = {"cohort": "base", **({"asset": asset} if asset else {})}
                 pg_query = lambda: conn.execute(retrieval_sql, (query_features, Jsonb(filt))).fetchall()
                 duck_query = lambda: db.execute(duck_sql, [query_features, asset, asset]).fetchall()
+                typed_query = lambda: conn.execute(typed_sql,(query_features,Jsonb(filt))).fetchall()
                 pg_hits, duck_hits = pg_query(), duck_query()
+                assert typed_query() == pg_hits, "typed Postgres retrieval disagrees with JSONB"
                 assert [(r[0],r[1]) for r in pg_hits] == [(r[0],r[1]) for r in duck_hits], "retrieval identities disagree"
                 assert all(math.isclose(p[2],d[2],rel_tol=1e-9,abs_tol=1e-10) for p,d in zip(pg_hits,duck_hits)), "distances disagree"
                 comparisons[label] = {"candidates": sum(asset is None or r["asset"] == asset for r in feature_rows),
-                                      "postgres": measure(pg_query,args.repeats), "duckdb_parquet": measure(duck_query,args.repeats),
+                                      "postgres_jsonb": measure(pg_query,args.repeats), "postgres_typed": measure(typed_query,args.repeats), "duckdb_parquet": measure(duck_query,args.repeats),
                                       "identical_top_k": True}
             api = lambda: conn.execute("SELECT * FROM morlet_search_features(%s,%s::float8[],4096,'vibration','g',%s::jsonb,'zscore',10,NULL,NULL,NULL,false)",
                                        (indexed_name,query,Jsonb({"cohort":"base"}))).fetchall()
             api_latency = measure(api,args.repeats)
+            typed_api = lambda: conn.execute("SELECT * FROM morlet_search_features(%s,%s::float8[],4096,'vibration','g',%s::jsonb,'zscore',10,NULL,NULL,NULL,false)",
+                                            (typed_name,query,Jsonb({"cohort":"base"}))).fetchall()
+            assert typed_api() == api(), "typed API disagrees with JSONB"
+            typed_api_latency = measure(typed_api,args.repeats)
             # A second connection commits feature-generating writes while the
             # main connection searches a fixed cohort in the same relation.
             ready, start, stop = threading.Event(), threading.Event(), threading.Event()
@@ -142,7 +157,7 @@ def postgres_baseline(args, records, db, directory):
                         ready.set()
                         start.wait()
                         while not stop.is_set():
-                            _, elapsed = timed(lambda: copy_records(writer_conn,indexed,records[:1],"writer"))
+                            _, elapsed = timed(lambda: copy_records(writer_conn,typed,records[:1],"writer"))
                             writer_times.append(elapsed)
                             writer_commits.append(time.perf_counter())
                 except Exception as exc:
@@ -157,18 +172,19 @@ def postgres_baseline(args, records, db, directory):
             start.set()
             mixed_start = time.perf_counter()
             try:
-                mixed = summary([timed(api)[1] for _ in range(args.repeats)])
+                mixed = summary([timed(typed_api)[1] for _ in range(args.repeats)])
                 mixed_end = time.perf_counter()
             finally:
                 stop.set(); thread.join()
             assert not writer_errors, f"writer failed: {writer_errors}"
             return {"server": version[2], "extension_version": version[0], "extractor_version": version[1],
                     "settings": settings, "copy_raw_s": raw_s, "raw_total_bytes_before_features": raw_size, "backfill_features_s": extraction_s,
-                    "copy_with_features_s": synchronous_s, "raw_samples_per_s": len(records)*args.samples/raw_s,
+                    "copy_with_features_s": synchronous_s, "typed_backfill_features_s": typed_backfill_s,
+                    "copy_with_typed_features_s":typed_synchronous_s, "raw_samples_per_s": len(records)*args.samples/raw_s,
                     "synchronous_samples_per_s": len(records)*args.samples/synchronous_s, **sizes,
                     "feature_parquet_bytes": feature_path.stat().st_size, "stored_segments": len(feature_rows),
-                    "precomputed_feature_retrieval": comparisons, "api_including_query_extraction": api_latency,
-                    "mixed_api": mixed, "mixed_writer_commits_during_search": sum(mixed_start <= t <= mixed_end for t in writer_commits),
+                    "precomputed_feature_retrieval": comparisons, "api_including_query_extraction": api_latency, "typed_api_including_query_extraction":typed_api_latency,
+                    "mixed_api": mixed, "mixed_api_storage":"typed", "mixed_writer_commits_during_search": sum(mixed_start <= t <= mixed_end for t in writer_commits),
                     "mixed_writer_commit_latency": summary(writer_times) if writer_times else None}
         finally:
             conn.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
@@ -192,7 +208,7 @@ def main():
     records = dataset(args.rows,args.samples,args.seed)
     fingerprint = hashlib.sha256(json.dumps(records,separators=(",",":"),allow_nan=False).encode()).hexdigest()
     db, parquet = parquet_baseline(records,args.output,args.repeats)
-    report = {"benchmark_version": 1, "revision": os.environ.get("GITHUB_SHA", "unspecified"), "build_profile": os.environ.get("MORLET_BUILD_PROFILE","unspecified"),
+    report = {"benchmark_version": 2, "revision": os.environ.get("GITHUB_SHA", "unspecified"), "build_profile": os.environ.get("MORLET_BUILD_PROFILE","unspecified"),
               "environment": {"platform":platform.platform(),"cpu_count":os.cpu_count(),"python":platform.python_version(),
                               "duckdb":duckdb.__version__,"pyarrow":pa.__version__,"psycopg":psycopg.__version__,"duckdb_threads":2},
               "dataset": {"rows":args.rows,"samples_per_row":args.samples,"seed":args.seed,"sha256":fingerprint,
@@ -203,7 +219,7 @@ def main():
                               "COPY timing includes client serialization, transport and commit; Parquet timing is local file creation",
                               "DuckDB features are exported from Postgres; extraction is not compared across engines",
                               "retrieval uses identical precomputed features and no overlap suppression/source exclusion",
-                              "Postgres JSONB scan versus DuckDB typed columns; results compare these implementations, not engine limits",
+                              "Postgres JSONB and typed composite arrays versus DuckDB Parquet lists; these are exact scans, not indexed engine limits",
                               "sizes have different contents/overheads; feature Parquet excludes raw samples",
                               "mixed test uses one writer and fixed-cohort searches; no HTAP isolation or async freshness claim"]}
     if not args.parquet_only:

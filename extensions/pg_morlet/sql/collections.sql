@@ -71,6 +71,37 @@ BEGIN
     collection,window_size,stride,normalization);
 END $$;
 
+-- Typed binary feature vectors, preserving caller-owned generated-column semantics.
+CREATE TYPE public.morlet_segment AS (start_sample integer, features float8[]);
+
+CREATE FUNCTION public.morlet_segment_array(samples float8[], sample_rate_hz float8,
+  window_size integer, stride integer, normalization text)
+RETURNS public.morlet_segment[] LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog AS $$
+  SELECT ARRAY(SELECT ROW((s->>'start_sample')::integer,
+    ARRAY(SELECT jsonb_array_elements_text(s->'features')::float8))::public.morlet_segment
+    FROM jsonb_array_elements(public.morlet_segment_grid(samples,sample_rate_hz,window_size,stride,normalization)->'segments') s
+    ORDER BY (s->>'start_sample')::integer)
+$$;
+
+CREATE FUNCTION public.morlet_typed_spec(window_size integer,stride integer,normalization text)
+RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE SET search_path = pg_catalog AS $$
+  SELECT jsonb_build_object('version',public.morlet_extractor_version(),
+    'window_size',window_size,'stride',stride,'normalization',normalization)
+$$;
+
+CREATE FUNCTION public.morlet_enable_typed_segments(collection regclass,
+  window_size integer DEFAULT 512,stride integer DEFAULT 256,normalization text DEFAULT 'zscore')
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path = pg_catalog AS $$
+BEGIN
+  PERFORM public.morlet_segment_grid(array_fill(0.::float8,ARRAY[512]),4096,window_size,stride,normalization);
+  EXECUTE format('ALTER TABLE %s ADD COLUMN morlet_segments public.morlet_segment[] GENERATED ALWAYS AS
+    (public.morlet_segment_array(samples,sample_rate_hz,%s,%s,%L)) STORED NOT NULL,
+    ADD COLUMN morlet_segment_spec jsonb GENERATED ALWAYS AS
+    (public.morlet_typed_spec(%s,%s,%L)) STORED NOT NULL',
+    collection,window_size,stride,normalization,window_size,stride,normalization);
+END $$;
+
 CREATE FUNCTION public.morlet_search_features(
   collection regclass, query_samples float8[], query_rate_hz float8,
   query_channel text, query_unit text, metadata_filter jsonb DEFAULT '{}'::jsonb,
@@ -81,6 +112,7 @@ RETURNS TABLE(recording_id bigint, start_sample integer, end_sample integer,
   distance float8, extractor_version text)
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path = pg_catalog AS $$
 DECLARE window_size integer; query_features float8[]; candidate_count bigint; incompatible boolean;
+  segment_count text; representation text; segment_start text; segment_features text; segment_source text;
   candidate record; selected_ids bigint[] := '{}'; selected_starts integer[] := '{}';
   selected_ends integer[] := '{}'; selected_count integer := 0; hit_overlap boolean; i integer;
 BEGIN
@@ -107,11 +139,22 @@ BEGIN
     RAISE EXCEPTION 'metadata_filter must be an object';
   END IF;
   query_features := public.morlet_features(public.morlet_normalize(query_samples,normalization),query_rate_hz);
-  EXECUTE format('SELECT coalesce(sum(jsonb_array_length(morlet_grid->''segments'')),0)::bigint,
-    coalesce(bool_or((morlet_grid->>''version'') IS DISTINCT FROM public.morlet_extractor_version()
-      OR (morlet_grid->>''window_size'')::integer IS DISTINCT FROM $1
-      OR (morlet_grid->>''normalization'') IS DISTINCT FROM $2),false)
-    FROM %s WHERE sample_rate_hz=$3 AND channel=$4 AND unit=$5 AND metadata @> $6',collection)
+  IF EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid=collection AND attname='morlet_segments' AND NOT attisdropped) THEN
+    segment_count := 'cardinality(morlet_segments)'; representation := 'morlet_segment_spec';
+    segment_start := 's.start_sample'; segment_features := 's.features';
+    segment_source := 'unnest(r.morlet_segments) s';
+  ELSE
+    segment_count := 'jsonb_array_length(morlet_grid->''segments'')'; representation := 'morlet_grid';
+    segment_start := '(s->>''start_sample'')::integer';
+    segment_features := 'ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8)';
+    segment_source := 'jsonb_array_elements(r.morlet_grid->''segments'') s';
+  END IF;
+  EXECUTE format('SELECT coalesce(sum(%1$s),0)::bigint,
+    coalesce(bool_or((%2$I->>''version'') IS DISTINCT FROM public.morlet_extractor_version()
+      OR (%2$I->>''window_size'')::integer IS DISTINCT FROM $1
+      OR (%2$I->>''normalization'') IS DISTINCT FROM $2),false)
+    FROM %3$s WHERE sample_rate_hz=$3 AND channel=$4 AND unit=$5 AND metadata @> $6',
+    segment_count,representation,collection)
     INTO candidate_count,incompatible USING window_size,normalization,query_rate_hz,query_channel,query_unit,metadata_filter;
   IF incompatible THEN
     RAISE EXCEPTION 'incompatible segment representation: match window and normalization, or rebuild for the current extractor';
@@ -119,15 +162,14 @@ BEGIN
   IF candidate_count > 4096 THEN
     RAISE EXCEPTION 'feature search exceeds 4096 candidate segments; narrow the metadata filter';
   END IF;
-  FOR candidate IN EXECUTE format('SELECT r.id AS recording_id,(s->>''start_sample'')::integer AS start_sample,
-      (s->>''start_sample'')::integer+$1 AS end_sample,
-      public.morlet_feature_vector_distance(ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8),$2) AS distance,
-      r.morlet_grid->>''version'' AS extractor_version
-    FROM %s r CROSS JOIN LATERAL jsonb_array_elements(r.morlet_grid->''segments'') s
+  FOR candidate IN EXECUTE format('SELECT r.id AS recording_id,%1$s AS start_sample,
+      %1$s+$1 AS end_sample,
+      public.morlet_feature_vector_distance(%2$s,$2) AS distance,
+      r.%3$I->>''version'' AS extractor_version
+    FROM %4$s r CROSS JOIN LATERAL %5$s
     WHERE r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5 AND r.metadata @> $6
-    AND NOT (r.id IS NOT DISTINCT FROM $7 AND (s->>''start_sample'')::integer < $9
-      AND (s->>''start_sample'')::integer+$1 > $8)
-    ORDER BY distance,r.id,(s->>''start_sample'')::integer',collection)
+    AND NOT (r.id IS NOT DISTINCT FROM $7 AND %1$s < $9 AND %1$s+$1 > $8)
+    ORDER BY distance,r.id,%1$s',segment_start,segment_features,representation,collection,segment_source)
     USING window_size,query_features,query_rate_hz,query_channel,query_unit,metadata_filter,source_recording_id,source_start_sample,source_end_sample
   LOOP
     hit_overlap := false;

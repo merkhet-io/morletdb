@@ -136,6 +136,47 @@ mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
     #[pg_test]
+    fn typed_segments_match_json_and_follow_writes() {
+        Spi::run("SELECT morlet_create_collection('public','json_reference'); SELECT morlet_create_collection('public','typed_recordings'); INSERT INTO json_reference(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',ARRAY(SELECT sin(i::float8/8) FROM generate_series(0,1535) i)); INSERT INTO typed_recordings(sample_rate_hz,channel,unit,samples) SELECT sample_rate_hz,channel,unit,samples FROM json_reference; SELECT morlet_enable_segments('json_reference'); SELECT morlet_enable_typed_segments('typed_recordings')").unwrap();
+        let json = Spi::get_one::<JsonB>(
+            "SELECT jsonb_agg(h) FROM morlet_search_recording('json_reference',1,0,512) h",
+        )
+        .unwrap()
+        .unwrap();
+        let typed = Spi::get_one::<JsonB>(
+            "SELECT jsonb_agg(h) FROM morlet_search_recording('typed_recordings',1,0,512) h",
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(json.0, typed.0);
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT cardinality(morlet_segments) FROM typed_recordings")
+                .unwrap()
+                .unwrap(),
+            5
+        );
+        Spi::run("DO $$ BEGIN UPDATE typed_recordings SET samples=array_fill(0.::float8,ARRAY[512]); RAISE EXCEPTION 'rollback'; EXCEPTION WHEN raise_exception THEN NULL; END $$").unwrap();
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT cardinality(morlet_segments) FROM typed_recordings")
+                .unwrap()
+                .unwrap(),
+            5
+        );
+        Spi::run("UPDATE typed_recordings SET samples=array_fill(0.::float8,ARRAY[512]),sample_rate_hz=8192").unwrap();
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT cardinality(morlet_segments) FROM typed_recordings")
+                .unwrap()
+                .unwrap(),
+            1
+        );
+        assert_eq!(Spi::get_one::<f64>("SELECT distance FROM morlet_search_features('typed_recordings',array_fill(0.::float8,ARRAY[512]),8192,'x','g')").unwrap().unwrap(),0.);
+    }
+    #[pg_test]
+    fn typed_search_respects_row_security() {
+        Spi::run("SELECT morlet_create_collection('public','rls_typed'); SELECT morlet_enable_typed_segments('rls_typed'); INSERT INTO rls_typed(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(0.::float8,ARRAY[512])),(4096,'x','g',array_fill(0.::float8,ARRAY[512])); ALTER TABLE rls_typed ENABLE ROW LEVEL SECURITY; CREATE POLICY visible_typed ON rls_typed USING (id=2); CREATE ROLE morlet_typed_reader; GRANT SELECT ON rls_typed TO morlet_typed_reader; SET LOCAL ROLE morlet_typed_reader").unwrap();
+        assert_eq!(Spi::get_one::<i64>("SELECT recording_id FROM morlet_search_features('rls_typed',array_fill(0.::float8,ARRAY[512]),4096,'x','g')").unwrap().unwrap(),2);
+    }
+    #[pg_test]
     fn interval_search_and_overlap_policy() {
         Spi::run("SELECT morlet_create_collection('public','interval_recordings'); SELECT morlet_enable_segments('interval_recordings'); INSERT INTO interval_recordings(sample_rate_hz,channel,unit,samples) VALUES (4096,'x','g',array_fill(0.::float8,ARRAY[1536])),(4096,'x','g',array_fill(0.::float8,ARRAY[512]))").unwrap();
         assert_eq!(Spi::get_one::<Vec<i32>>("SELECT array_agg(start_sample ORDER BY distance,recording_id,start_sample) FROM morlet_search_features('interval_recordings',array_fill(0.::float8,ARRAY[512]),4096,'x','g','{}','zscore',10) WHERE recording_id=1").unwrap().unwrap(),vec![0,512,1024]);

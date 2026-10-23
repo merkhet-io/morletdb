@@ -44,21 +44,22 @@ versions, host information, PostgreSQL settings and the declared build profile.
 2. COPY raw recordings into Postgres in one batch, including commit, then backfill
    generated Morlet grids. Measure these two operations separately.
 3. COPY the same recordings into a table with generated features enabled. This
-   measures the current synchronous extraction-on-write implementation.
+   measures the current synchronous extraction-on-write implementation. Repeat
+   backfill and synchronous COPY using typed segment storage in a separate table.
 4. Export those exact features to typed Parquet columns. Compare exact top-10
-   retrieval in Postgres JSONB and DuckDB/Parquet, using the same precomputed query
+   retrieval in Postgres JSONB, Postgres typed composite arrays and DuckDB/Parquet, using the same precomputed query
    features, both unfiltered and filtered to one asset. Fail if IDs/intervals differ
    or distances disagree beyond floating-point tolerance.
 5. Time the Postgres search API including query normalization/extraction.
-6. Run the API against a fixed cohort while another connection commits one
+6. Run the typed API against a fixed cohort while another connection commits one
    feature-generating recording per transaction. Report search latency, writer
    commit latency and how many writes committed during the search measurement.
    A zero overlap count means the mixed-workload result is inconclusive.
 
 Queries have three untimed warmups, then report median and nearest-rank p95/min/max.
 First-scan timing does not clear OS caches. The retrieval comparison disables
-source exclusion and overlap suppression in both paths. Postgres scans JSONB;
-DuckDB scans typed feature columns. Differences reflect those implementations,
+source exclusion and overlap suppression in all three paths. Postgres scans JSONB
+or typed composite arrays; DuckDB scans typed feature columns. Differences reflect those implementations,
 not an intrinsic limit of either database. This harness does not compare feature
 extraction implementations or claim signal-retrieval quality from synthetic data.
 
@@ -77,10 +78,10 @@ output; Postgres retains its reported server settings.
 
 ## Decision gates after this baseline
 
-- Build a common chunked recording contract, including continuous sample offsets,
-  gaps and boundary-spanning windows; verify against whole-recording extraction.
-- Compare typed Postgres segment rows with typed Parquet features to remove the
-  current JSONB-layout confounder.
+- The portable chunk extractor now verifies continuous offsets and boundary
+  correctness; add durable recording/chunk ingestion and checkpoints around it.
+- Typed composite arrays now remove JSON number decoding from retrieval; evaluate
+  separately indexed segment rows and native extraction serialization next.
 - Add Parquet import mappings and bounded batches using the shared chunk contract.
 - Evaluate asynchronous extraction with durable progress/checkpoints; measure
   ingestion-to-search latency and failure recovery separately from throughput.
@@ -92,3 +93,8 @@ output; Postgres retains its reported server settings.
 
 Keep the same datasets and signal semantics across implementations. No engine
 selection is made by the smoke benchmark.
+
+Report version 2 adds `postgres_jsonb` and `postgres_typed` retrieval metrics, typed
+backfill/COPY/storage metrics, and a separate typed API latency. `mixed_api_storage`
+is `typed`; compare mixed latency against `typed_api_including_query_extraction`.
+The benchmark still uses bounded rows, rather than the new in-memory chunk API.

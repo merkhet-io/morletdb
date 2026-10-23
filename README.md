@@ -20,7 +20,7 @@ MorletDB explores searching waveform recordings by localized signal structure. C
 | [`examples`](examples) | Python waveform-search client example | Targets the Go server |
 | [`docs`](docs) | Search contract, architecture and development notes | See links below |
 
-The Go implementation and Rust extension are separate execution paths. Storage remains separate, with no Go-to-Rust FFI. Both implementations check `morlet-energy-v1` signatures against the same committed fixtures within documented floating-point tolerances. The extension exposes Morlet signatures, tokens and features, caller-owned transactional waveform collections, and bounded exact sample-distance window search. Generated columns persist versioned Morlet segment features and keep them consistent with recording writes. Feature search scans stored segments exactly, supports stored-interval queries, excludes source overlaps, and suppresses overlapping hits. Indexed similarity retrieval remains future work.
+The Go implementation and Rust extension are separate execution paths. Storage remains separate, with no Go-to-Rust FFI. Both implementations check `morlet-energy-v1` signatures against the same committed fixtures within documented floating-point tolerances. The extension exposes Morlet signatures, tokens and features, caller-owned transactional waveform collections, and bounded exact sample-distance window search. A portable [chunk extractor](docs/chunked-recordings.md) handles windows across acquisition boundaries. Generated columns persist versioned Morlet segment features and keep them consistent with recording writes. Feature search scans stored segments exactly, supports stored-interval queries, excludes source overlaps, and suppresses overlapping hits. Indexed similarity retrieval remains future work.
 
 ## Run the Go prototype
 
@@ -74,7 +74,7 @@ Go code moved from the repository root to `apps/server`; its module path remains
 
 ## Benchmark baseline
 
-See [the benchmark harness](benchmarks/README.md) for bulk ingestion, feature backfill, Postgres versus DuckDB/Parquet exact retrieval, and concurrent-write measurements. CI runs a bounded smoke benchmark; production-scale and HTAP conclusions remain unproven.
+See [the benchmark harness](benchmarks/README.md) for bulk ingestion, feature backfill, Postgres versus DuckDB/Parquet exact retrieval, typed Postgres versus JSONB comparisons, and concurrent-write measurements. CI runs a bounded smoke benchmark; production-scale and HTAP conclusions remain unproven.
 
 ## License
 
