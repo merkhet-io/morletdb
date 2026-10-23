@@ -2,6 +2,7 @@
 """Evaluate fixed-window retrieval using run-separated, checksummed recordings."""
 import argparse
 import hashlib
+import io
 import json
 from pathlib import Path
 import platform
@@ -61,9 +62,10 @@ def load_windows(manifest_path, window, query_windows, gallery_windows):
         if recording["split"] not in groups:
             raise ValueError("split must be query or gallery")
         path = manifest_path.parent / recording["path"]
-        if hashlib.sha256(path.read_bytes()).hexdigest() != recording["sha256"]:
+        content = path.read_bytes()
+        if hashlib.sha256(content).hexdigest() != recording["sha256"]:
             raise ValueError(f"source checksum mismatch: {recording['id']}")
-        values = np.load(path, allow_pickle=False)
+        values = np.load(io.BytesIO(content), allow_pickle=False)
         rate = recording["sample_rate_hz"]
         if values.ndim != 1 or not np.isfinite(values).all() or np.any(np.abs(values)>1e9):
             raise ValueError("source must be a finite bounded single channel")
