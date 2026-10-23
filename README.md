@@ -6,7 +6,7 @@
 [![Go](https://github.com/merkhet-io/morletdb/actions/workflows/ci.yml/badge.svg)](https://github.com/merkhet-io/morletdb/actions/workflows/ci.yml)
 [![Rust](https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml/badge.svg)](https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml)
 
-**Signal-native storage and search, with a Go reference server and a Rust PostgreSQL extension scaffold.** A [Merkhet](https://github.com/merkhet-io) project.
+**Signal-native storage and search, with a Go reference server and a Rust PostgreSQL extension.** A [Merkhet](https://github.com/merkhet-io) project.
 
 MorletDB explores searching waveform recordings by localized signal structure. CNC vibration monitoring is the first application; the recording model is domain neutral.
 
@@ -15,12 +15,12 @@ MorletDB explores searching waveform recordings by localized signal structure. C
 | Path | Purpose | Status |
 |---|---|---|
 | [`apps/server`](apps/server) | Go HTTP server, CLI, binary recording storage and exact interval search | Working bounded single-node prototype |
-| [`crates/morlet-core`](crates/morlet-core) | Portable Rust validation, RMS, normalization and aligned sample distance | Initial primitives; no Morlet extractor yet |
-| [`extensions/pg_morlet`](extensions/pg_morlet) | Rust/pgrx PostgreSQL extension | SQL primitive scaffold targeting PostgreSQL 17 |
+| [`crates/morlet-core`](crates/morlet-core) | Portable Rust primitives and versioned Morlet extraction | Validated against shared Go/Rust fixtures |
+| [`extensions/pg_morlet`](extensions/pg_morlet) | Rust/pgrx PostgreSQL extension | SQL primitives and Morlet features on PostgreSQL 17 |
 | [`examples`](examples) | Python waveform-search client example | Targets the Go server |
 | [`docs`](docs) | Search contract, architecture and development notes | See links below |
 
-The Go implementation and Rust extension are separate execution paths. There is no shared storage, Go-to-Rust FFI or numerical parity claim. The extension does not yet implement waveform storage, Morlet features, indexed retrieval or a custom index access method.
+The Go implementation and Rust extension are separate execution paths. Storage remains separate, with no Go-to-Rust FFI. Both implementations check `morlet-energy-v1` signatures against the same committed fixtures within documented floating-point tolerances. The extension now exposes Morlet signatures, tokens and features. Transactional waveform storage, indexed retrieval and a custom index access method are not implemented.
 
 ## Run the Go prototype
 
@@ -60,7 +60,7 @@ SELECT morlet_distance(
 );
 ```
 
-`morlet_distance` currently measures aligned sample RMSE, not Morlet-feature distance. SQL functions validate bounded finite inputs and reject NULL array elements. See the extension guide for complete semantics.
+`morlet_distance` measures aligned sample RMSE; `morlet_feature_distance` compares Morlet feature vectors. `morlet_signature(samples, sample_rate_hz)` returns the full versioned representation as JSONB, and `morlet_features(samples, sample_rate_hz)` returns its 15 search features. SQL functions validate bounded finite inputs and reject NULL array elements. See the extension guide for complete semantics.
 
 ## Checks
 

@@ -1,4 +1,5 @@
 use pgrx::prelude::*;
+use pgrx::JsonB;
 
 pgrx::pg_module_magic!(name, version);
 
@@ -39,10 +40,109 @@ fn morlet_distance(
     .unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
+/// Version of the numerical representation, independent of extension version.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_extractor_version() -> &'static str {
+    morlet_core::morlet::EXTRACTOR_VERSION
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_signature(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> JsonB {
+    let signature = morlet_core::morlet::extract(&checked_samples(samples), sample_rate_hz)
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    JsonB(serde_json::to_value(signature).unwrap_or_else(|e| pgrx::error!("{}", e)))
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_features(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f64> {
+    morlet_core::morlet::extract(&checked_samples(samples), sample_rate_hz)
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+        .features()
+}
+
+/// Distinct from morlet_distance: distance between spectral/statistical features.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_feature_distance(
+    left_samples: Vec<Option<f64>>,
+    right_samples: Vec<Option<f64>>,
+    sample_rate_hz: f64,
+) -> f64 {
+    let left = checked_samples(left_samples);
+    let right = checked_samples(right_samples);
+    if left.len() != right.len() {
+        pgrx::error!("waveforms must have equal lengths");
+    }
+    let left = morlet_core::morlet::extract(&left, sample_rate_hz)
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    let right = morlet_core::morlet::extract(&right, sample_rate_hz)
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    left.distance(&right)
+}
+
 #[cfg(any(test, feature = "pg_test"))]
 #[pg_schema]
 mod tests {
     use pgrx::prelude::*;
+    use pgrx::JsonB;
+    #[pg_test]
+    fn go_fixture_through_sql() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../../testdata/morlet-energy-v1/tone.json"))
+                .unwrap();
+        let values = fixture["capture"]["samples"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_f64().unwrap().to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        let signature = Spi::get_one::<JsonB>(&format!(
+            "SELECT morlet_signature(ARRAY[{values}]::float8[],4096.)"
+        ))
+        .unwrap()
+        .unwrap();
+        assert_eq!(signature.0["version"], fixture["signature"]["version"]);
+        assert_eq!(
+            signature.0["tokens"].as_array().unwrap().len(),
+            fixture["signature"]["tokens"].as_array().unwrap().len()
+        );
+        let features = Spi::get_one::<Vec<f64>>(&format!(
+            "SELECT morlet_features(ARRAY[{values}]::float8[],4096.)"
+        ))
+        .unwrap()
+        .unwrap();
+        assert_eq!(features.len(), 15);
+        for (actual, expected) in features.iter().zip(fixture["features"].as_array().unwrap()) {
+            let expected = expected.as_f64().unwrap();
+            assert!((actual - expected).abs() <= 1e-10 + 1e-9 * expected.abs());
+        }
+        assert_eq!(Spi::get_one::<f64>(&format!("SELECT morlet_feature_distance(ARRAY[{values}]::float8[],ARRAY[{values}]::float8[],4096.)")).unwrap().unwrap(),0.);
+        assert!(
+            Spi::get_one::<JsonB>("SELECT morlet_signature(NULL::float8[],4096.)")
+                .unwrap()
+                .is_none()
+        );
+        assert!(Spi::get_one::<Vec<f64>>(
+            "SELECT morlet_features(array_fill(0.::float8,ARRAY[512]),NULL::float8)"
+        )
+        .unwrap()
+        .is_none());
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_extractor_version()")
+                .unwrap()
+                .unwrap(),
+            "morlet-energy-v1"
+        );
+    }
+    #[pg_test(error = "Morlet extraction requires 512..32768 samples")]
+    fn rejects_short_morlet_input() {
+        Spi::run("SELECT morlet_features(ARRAY[1.]::float8[],4096.)").unwrap();
+    }
+    #[pg_test(error = "sample_rate_hz must be finite and in [128,200000]")]
+    fn rejects_invalid_morlet_rate() {
+        Spi::run("SELECT morlet_signature(array_fill(0.::float8,ARRAY[512]),'NaN'::float8)")
+            .unwrap();
+    }
     #[pg_test]
     fn sql_functions() {
         assert_eq!(

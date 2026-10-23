@@ -1,4 +1,4 @@
-.PHONY: test test-go test-rust build server pg-test
+.PHONY: test test-go test-rust build server pg-test golden
 GO ?= go
 
 test: test-go test-rust
@@ -19,3 +19,6 @@ server: build
 
 pg-test:
 	cd extensions/pg_morlet && cargo pgrx test pg17
+
+golden:
+	cd apps/server && $(GO) run ./cmd/golden -out ../../testdata/morlet-energy-v1

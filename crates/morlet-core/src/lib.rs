@@ -1,4 +1,5 @@
-//! Portable signal primitives. No PostgreSQL dependency and no Morlet extractor yet.
+//! Portable signal primitives and the versioned Morlet extractor.
+pub mod morlet;
 use std::fmt;
 
 pub const MAX_SAMPLES: usize = 32_768;
@@ -10,6 +11,9 @@ pub enum SignalError {
     InvalidSample,
     LengthMismatch,
     InvalidNormalization,
+    MorletLength,
+    InvalidSampleRate,
+    NumericalFailure,
 }
 impl fmt::Display for SignalError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -17,6 +21,9 @@ impl fmt::Display for SignalError {
             Self::InvalidLength => "waveform must contain 1..32768 samples",
             Self::InvalidSample => "samples must be finite and within +/-1e9",
             Self::LengthMismatch => "waveforms must have equal lengths",
+            Self::MorletLength => "Morlet extraction requires 512..32768 samples",
+            Self::InvalidSampleRate => "sample_rate_hz must be finite and in [128,200000]",
+            Self::NumericalFailure => "signal produces non-finite features at this numeric scale",
             Self::InvalidNormalization => "normalization must be none, demean or zscore",
         })
     }

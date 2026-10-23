@@ -14,22 +14,56 @@ jobs:
       - run: cargo clippy --locked -p morlet-core --all-targets -- -D warnings
   postgres:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Install PostgreSQL 17 and build dependencies
+      - name: Verify runner build tools
         run: |
-          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-          sudo apt-get update
-          sudo apt-get install -y postgresql-17 postgresql-server-dev-17 libclang-dev clang pkg-config libssl-dev
+          command -v cc make clang bison flex pkg-config
       - name: Install pinned Rust toolchain
         run: rustup show
+      - name: Cache pgrx CLI
+        id: pgrx-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-pgrx
+          key: pgrx-cli-${{ runner.os }}-rust-1.91.1-pgrx-0.16.1-debug
+      - name: Cache Rust build inputs and artifacts
+        id: rust-build-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: pg17-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
       - name: Install matching pgrx CLI
+        if: steps.pgrx-cli.outputs.cache-hit != 'true'
         run: cargo install cargo-pgrx --version 0.16.1 --locked --debug
-      - name: Allow extension installation in this disposable CI runner
-        run: |
-          sudo chown -R "$(id -un)" /usr/lib/postgresql/17/lib /usr/share/postgresql/17/extension
-      - name: Configure PostgreSQL
-        run: cargo pgrx init --pg17 /usr/lib/postgresql/17/bin/pg_config
+      - name: Save compiled CLI before running tests
+        if: steps.pgrx-cli.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cargo/bin/cargo-pgrx
+          key: pgrx-cli-${{ runner.os }}-rust-1.91.1-pgrx-0.16.1-debug
+      - name: Cache user-owned PostgreSQL build
+        id: postgres-build
+        uses: actions/cache@v4
+        with:
+          path: ~/.pgrx
+          key: pgrx-managed-${{ runner.os }}-pgrx-0.16.1-pg17-minimal-v1
+      - name: Configure user-owned PostgreSQL
+        if: steps.postgres-build.outputs.cache-hit != 'true'
+        run: cargo pgrx init --pg17 download --configure-flag=--without-icu --configure-flag=--without-readline --configure-flag=--without-zlib
       - name: Run extension integration tests
         working-directory: extensions/pg_morlet
         run: cargo pgrx test pg17
+      - name: Preserve compilation cache even when tests fail
+        if: always() && steps.rust-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: pg17-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
