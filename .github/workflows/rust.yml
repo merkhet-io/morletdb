@@ -67,3 +67,41 @@ jobs:
             ~/.cargo/git
             target
           key: pg17-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
+      - uses: actions/setup-python@v5
+        if: github.event_name == 'pull_request'
+        with:
+          python-version: '3.12'
+      - name: Install benchmark dependencies
+        if: github.event_name == 'pull_request'
+        run: python -m pip install -r benchmarks/requirements.txt
+      - name: Cache optimized benchmark build
+        if: github.event_name == 'pull_request'
+        uses: actions/cache@v4
+        with:
+          path: target/release
+          key: benchmark-release-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
+      - name: Start benchmark database
+        if: github.event_name == 'pull_request'
+        working-directory: extensions/pg_morlet
+        run: |
+          PG_CONFIG_PATH=$(python -c 'import pathlib,tomllib; print(tomllib.loads((pathlib.Path.home()/".pgrx/config.toml").read_text())["configs"]["pg17"])')
+          cargo pgrx install --release --pg-config "$PG_CONFIG_PATH"
+          cargo pgrx start pg17
+      - name: Run bounded benchmark smoke test
+        if: github.event_name == 'pull_request'
+        env:
+          PGHOST: localhost
+          PGPORT: '28817'
+          PGDATABASE: postgres
+          PGUSER: runner
+          MORLET_BUILD_PROFILE: release
+        run: |
+          export PGDATABASE="morlet_benchmark_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          python -c 'import os,psycopg; from psycopg import sql; c=psycopg.connect(dbname="postgres",autocommit=True); c.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(os.environ["PGDATABASE"]))); c.close()'
+          python -c 'import psycopg; c=psycopg.connect(autocommit=True); c.execute("CREATE EXTENSION pg_morlet"); c.close()'
+          python benchmarks/run.py --rows 32 --samples 2048 --repeats 10 --output benchmark-output
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'pull_request' && success()
+        with:
+          name: benchmark-smoke-report
+          path: benchmark-output/report.json

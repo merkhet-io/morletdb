@@ -72,6 +72,10 @@ make pg-test  # requires configured PostgreSQL/pgrx
 
 Go code moved from the repository root to `apps/server`; its module path remains `github.com/merkhet-io/morletdb`. A root `go.work` supports editor navigation. Run `go test ./...` inside `apps/server`, or use Make targets. See [monorepo development](docs/development.md).
 
+## Benchmark baseline
+
+See [the benchmark harness](benchmarks/README.md) for bulk ingestion, feature backfill, Postgres versus DuckDB/Parquet exact retrieval, and concurrent-write measurements. CI runs a bounded smoke benchmark; production-scale and HTAP conclusions remain unproven.
+
 ## License
 
 Copyright 2026 MorletDB contributors. Licensed under the [Apache License, Version 2.0](LICENSE).

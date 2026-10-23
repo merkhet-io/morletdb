@@ -22,3 +22,7 @@ pg-test:
 
 golden:
 	cd apps/server && $(GO) run ./cmd/golden -out ../../testdata/morlet-energy-v1
+
+.PHONY: benchmark
+benchmark:
+	python3 benchmarks/run.py
