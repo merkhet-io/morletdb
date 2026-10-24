@@ -1,0 +1,119 @@
+name: Alpha release
+on:
+  push:
+    branches: [main]
+    paths: ['VERSION', '.github/workflows/release.yml']
+  pull_request:
+    paths: ['VERSION', '.github/workflows/release.yml', 'compose.release.yaml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: alpha-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate prerelease identifier
+        id: version
+        shell: bash
+        run: |
+          version=$(cat VERSION)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-alpha\.[0-9]+$ ]]
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+      - name: Reject an existing release version
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/v$VERSION" --jq '.[].ref' > existing-tags.txt
+          if grep -Fxq "refs/tags/v$VERSION" existing-tags.txt; then
+            echo "Release already exists; increment VERSION instead of replacing it." >&2
+            exit 1
+          fi
+      - uses: docker/setup-buildx-action@v3
+      - name: Build candidate image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: morletdb:candidate
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.version.outputs.value }}
+            org.opencontainers.image.licenses=Apache-2.0
+          cache-from: type=gha,scope=alpha
+          cache-to: type=gha,mode=max,scope=alpha
+      - name: Clean-checkout quickstart and restart trial
+        env:
+          MORLET_IMAGE: morletdb:candidate
+          COMPOSE_PROJECT_NAME: alpha-trial
+        run: |
+          docker compose -f compose.release.yaml run --rm walkthrough
+          docker compose -f compose.release.yaml restart db
+          docker compose -f compose.release.yaml up --no-build -d --wait db
+          docker compose -f compose.release.yaml run --rm walkthrough
+      - name: Remove candidate trial volume
+        if: always()
+        env:
+          MORLET_IMAGE: morletdb:candidate
+          COMPOSE_PROJECT_NAME: alpha-trial
+        run: docker compose -f compose.release.yaml down -v
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish tested image without rebuilding
+        if: github.event_name != 'pull_request'
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker tag morletdb:candidate "$image:$VERSION"
+          docker push "$image:$VERSION"
+          digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$image:$VERSION")
+          echo "MORLET_IMAGE=$digest" >> "$GITHUB_ENV"
+          printf '%s\n' "$digest" > image-digest.txt
+      - name: Pull and trial registry digest in a fresh project
+        if: github.event_name != 'pull_request'
+        env:
+          COMPOSE_PROJECT_NAME: registry-trial
+        run: |
+          docker pull "$MORLET_IMAGE"
+          docker compose -f compose.release.yaml run --rm walkthrough
+          docker compose -f compose.release.yaml restart db
+          docker compose -f compose.release.yaml up --no-build -d --wait db
+          docker compose -f compose.release.yaml run --rm walkthrough
+      - name: Publish GitHub prerelease only after registry trial succeeds
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          { cat CHANGELOG.md; printf '\nImage: %s\nCommit: %s\n' "$MORLET_IMAGE" "$GITHUB_SHA"; } > release-notes.md
+          gh release create "v$VERSION" image-digest.txt --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
+      - name: Registry trial diagnostics
+        if: failure()
+        env:
+          MORLET_IMAGE: morletdb:candidate
+          COMPOSE_PROJECT_NAME: registry-trial
+        run: docker compose -f compose.release.yaml logs db
+      - name: Remove registry trial volume
+        if: always()
+        env:
+          MORLET_IMAGE: morletdb:candidate
+          COMPOSE_PROJECT_NAME: registry-trial
+        run: docker compose -f compose.release.yaml down -v

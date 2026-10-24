@@ -101,7 +101,7 @@ A [long-stream sweep](benchmarks/README.md#continuous-recording-sweep) varies re
 | Representation | 512..4096-sample windows; versioned extraction and per-window normalization |
 | Search | Default exact-search budget: 4096 eligible segments; explicit experiments can raise it to 1,000,000 without a capacity guarantee |
 | Consistency | Synchronous extraction and transactional publication; caller permissions and RLS |
-| Next | Complete interval retrieval/inspection, reproducible onboarding and real-data relevance evaluation |
+| Available | Interval retrieval/inspection, Compose walkthrough and limited real-data relevance baseline |
 
 No resampling, gap interpolation or background extraction worker is implemented. Database-managed stream tables use the supported append APIs; direct mutation can violate cross-table invariants.
 
@@ -125,6 +125,10 @@ make pg-test  # configured PostgreSQL/pgrx required
 ```
 
 The frozen Go demo remains accessible through `make legacy-build` and `./bin/morletdb demo -data ./data`. It does not use the PostgreSQL backend. See the [server guide](apps/server/README.md) and [development notes](docs/development.md).
+
+## Contribute and get support
+
+[Contributing](CONTRIBUTING.md) · [Support boundaries](SUPPORT.md) · [Security](SECURITY.md) · [Releases](docs/releases.md)
 
 ## License
 

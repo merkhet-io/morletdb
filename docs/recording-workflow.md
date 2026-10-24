@@ -27,7 +27,8 @@ Real applications should use restricted roles and an administrator-installed ext
 `docker compose down` preserves data. **`docker compose down -v` deletes the demo
 recordings.** The preview uses an unchanged persistent named volume across runs.
 Base image patch versions and package versions are fixed, but tags and apt inputs
-are not content-addressed release artifacts. No prebuilt image is published.
+are not content-addressed release artifacts. For versioned prebuilt images, exact digests and the publication procedure, see
+[alpha releases](releases.md). Source builds remain available with the command above.
 
 ## Python in an existing environment
 

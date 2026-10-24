@@ -23,3 +23,5 @@ RUN cargo pgrx package --pg-config /usr/lib/postgresql/17/bin/pg_config
 FROM postgres:17.6-bookworm
 COPY --from=builder /src/target/release/pg_morlet-pg17/usr/lib/postgresql/17/lib/ /usr/lib/postgresql/17/lib/
 COPY --from=builder /src/target/release/pg_morlet-pg17/usr/share/postgresql/17/extension/ /usr/share/postgresql/17/extension/
+
+COPY LICENSE /usr/share/doc/morletdb/LICENSE

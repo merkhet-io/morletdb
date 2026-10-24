@@ -52,14 +52,14 @@ remains available for deliberate numerical-contract maintenance, not normal use.
   in metadata today. Formal multi-channel synchronization, gaps and calibration
   schemas require partner evidence before implementation.
 
-## Next delivery slices
+## Delivery status and next work
 
-1. Complete cross-chunk reads, stored-interval queries, source exclusion and
-   overlap suppression, with one container environment and Python walkthrough.
-2. Evaluate real approved recordings alongside synthetic controls. Compare basic
-   statistics, FFT bands and Morlet representations using held-out recordings.
-3. Measure larger exact-search populations, ingest/search resource use and
-   recovery before choosing candidate indexes or external raw storage.
+Cross-chunk reads, stored-interval queries, source exclusion, overlap suppression
+and the container/Python walkthrough are implemented. A small CWRU evaluation
+and a 10k feature-only ranking smoke are implemented; neither establishes
+differentiation or production capacity.
 
-The first milestone is a useful repeatable investigation. Production support,
-asynchronous extraction and approximate retrieval need separate evidence.
+Next: independently exercise onboarding, evaluate harder partner-approved
+recordings with negative queries, and measure sustained ingest/search resource
+use before selecting indexes, asynchronous jobs or external raw storage.
+See [support boundaries](../SUPPORT.md) and [evaluation](../evaluation/README.md).
