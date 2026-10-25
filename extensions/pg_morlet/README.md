@@ -77,7 +77,7 @@ SELECT * FROM morlet_search('recordings'::regclass,
 
 Rows hold 512..32768 finite samples, rates 128..200000 Hz, channel, unit and JSON object metadata. Arrays must be one-dimensional with lower bound 1. Normal INSERT/UPDATE/DELETE participate in transactions. Searches require SELECT privileges and use exact rate/channel/unit matching plus JSONB containment. Add ordinary indexes for these filters when useful.
 
-Search returns recording IDs and zero-based half-open sample intervals, ranked by aligned sample RMSE (`none`, `demean` or `zscore`), with deterministic ID/offset ties. Query length is 512..4096; stride is positive; top_k is 1..100. At most 4096 candidate windows are evaluated, otherwise the query raises an error. Windows are generated at query time; overlapping hits and the query's own source are included. NULL arguments return no rows. This SQL path currently uses sample distance, independently of the Go server's Morlet-feature ranking. No resampling, ANN index or cross-channel comparison is performed.
+Search returns recording IDs and zero-based half-open sample intervals, ranked by aligned sample RMSE (`none`, `demean` or `zscore`), with deterministic ID/offset ties. Query length is 512..4096; stride is positive; top_k is 1..100. At most 4096 candidate windows are evaluated, otherwise the query raises an error. Windows are generated at query time; overlapping hits and the query's own source are included. NULL arguments return no rows. This legacy bounded SQL path uses aligned sample distance, distinct from the active continuous-recording feature ranking. No resampling, ANN index or cross-channel comparison is performed.
 
 ## Persisted Morlet segments
 

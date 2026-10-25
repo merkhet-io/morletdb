@@ -14,7 +14,7 @@ diagnostic or safety system.
 | Compatibility | Same rate, channel, unit, window, normalization and extractor version |
 | Lifecycle | Fresh installations; no ALTER EXTENSION UPDATE path or stable API/schema guarantee |
 | Operations | No HA, replication, backup/restore or production capacity certification |
-| Other paths | Go dashboard/server and bounded SQL layouts are legacy experiments |
+| Other paths | Go application removed; frozen numerical reference only; bounded SQL layouts remain legacy experiments |
 
 No automatic diagnosis, resampling, speed invariance, gap interpolation,
 background extraction or synchronized multichannel matching is provided.

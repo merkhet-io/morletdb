@@ -27,11 +27,11 @@ temporal search index. Representation changes require versioning and evaluation.
 | Component | Status |
 |---|---|
 | Rust core and continuous recording SQL | Active prototype path |
-| Go server, HTTP API and monitoring dashboard | Frozen reference demo; critical fixes only |
+| Go extractor and fixture generator | Frozen numerical reference in tools/reference-go; no runtime |
 | Bounded-recording SQL, JSONB grids and typed composite arrays | Legacy experiments; no new product features |
 | JSONB/typed/DuckDB comparison harness | Historical storage experiments, not a backend selection |
 
-Existing APIs remain installable to avoid gratuitous breakage and preserve tests.
+Existing experimental SQL APIs remain installable to preserve tests. The legacy Go server, CLI and dashboard have been removed; their source remains in Git history.
 New examples and features target the continuous model. The Go fixture generator
 remains available for deliberate numerical-contract maintenance, not normal use.
 

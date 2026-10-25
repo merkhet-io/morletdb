@@ -1,6 +1,6 @@
 # Morlet extractor numerical contract
 
-The Rust core and Go reference implementation now share `morlet-energy-v1`. The PostgreSQL extension exposes the Rust port as immutable, parallel-safe, strict SQL functions. Existing SQL primitives and the Go HTTP/CLI APIs remain unchanged.
+The Rust core and Go reference implementation now share `morlet-energy-v1`. The PostgreSQL extension exposes the Rust port as immutable, parallel-safe, strict SQL functions. The Go implementation is retained only as the frozen numerical reference in tools/reference-go; its former HTTP/CLI application has been removed.
 
 ## Representation
 
@@ -37,4 +37,4 @@ Review fixture changes as numerical API changes. CI checks committed expectation
 
 ## Scope
 
-This milestone provides deterministic feature extraction inside Postgres. It does not implement database recording tables, durable segment indexes, ingestion workers or indexed search. The existing Go server remains the only end-to-end storage/search implementation. The next milestone is transactional Postgres recording/segment storage plus exact retrieval using these versioned features.
+The active Rust/PostgreSQL path provides continuous recording storage, durable synchronous appends/checkpoints, interval reads and exact feature retrieval. See [recording workflow](recording-workflow.md). Background extraction and indexed/approximate retrieval remain unimplemented. The [reference module](../tools/reference-go/README.md) and [fixture provenance](../testdata/morlet-energy-v1/README.md) preserve the independent numerical check.

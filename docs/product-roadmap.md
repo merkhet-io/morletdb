@@ -82,7 +82,8 @@ for any future approximate retrieval and report its recall separately from relev
 ## Architecture boundaries
 
 Keep the portable Rust core and continuous-recording PostgreSQL integration as the
-active path. The Go app and bounded JSONB/typed storage variants are retained legacy
+active path. The Go application has been removed; only its independent numerical reference
+remains in tools/reference-go. Bounded JSONB/typed SQL variants are retained legacy
 experiments, not parallel product implementations to extend.
 
 Extraction remains synchronous. Introduce background processing only when measured

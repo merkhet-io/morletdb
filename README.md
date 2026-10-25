@@ -3,12 +3,11 @@
 # Signal analytics and waveform search
 
 [![Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-39C9DF.svg)](LICENSE)
-[![Go checks](https://github.com/merkhet-io/morletdb/actions/workflows/ci.yml/badge.svg)](https://github.com/merkhet-io/morletdb/actions/workflows/ci.yml)
 [![Rust & Postgres checks](https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml/badge.svg)](https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml)
 
 **MorletDB stores waveform recordings and finds similar intervals through their spectral and statistical structure.** Import Parquet, preserve acquisition context, and search with SQL. A [Merkhet](https://github.com/merkhet-io) project, licensed under Apache 2.0.
 
-**Active development follows one Rust/Postgres recording workflow.** The Go app and bounded-recording storage layouts are retained as legacy experiments; see the [architecture decision](docs/architecture.md).
+**Active development follows one Rust/Postgres recording workflow.** The original Go application has been removed; a frozen Go numerical reference is retained only for fixture maintenance. Bounded-recording SQL layouts remain legacy experiments; see the [architecture decision](docs/architecture.md).
 
 The first application is vibration monitoring. The recording model is domain neutral: uniformly sampled signals, explicit sample coordinates, channel, units and metadata.
 
@@ -117,18 +116,17 @@ No resampling, gap interpolation or background extraction worker is implemented.
 | [`extensions/pg_morlet`](extensions/pg_morlet) | Postgres storage, SQL primitives, ingestion and exact search |
 | [`tools/ingest`](tools/ingest) | Parquet importer and input-contract tests |
 | [`benchmarks`](benchmarks) | Reproducible storage, retrieval and streaming comparisons |
-| [`apps/server`](apps/server) | Go reference server, HTTP API, CLI and original condition-monitoring demo |
+| [`tools/reference-go`](tools/reference-go) | Frozen numerical reference and fixture generator; no product runtime |
 
-The Rust core stays independent of Postgres. The Go server is a frozen, separate execution/storage path; there is no Go-to-Rust FFI. New product work targets the continuous recording SQL API. Bounded-recording and alternate storage layouts remain experimental.
+The Rust core stays independent of Postgres. Go is needed only to check or deliberately regenerate numerical reference fixtures; there is no Go-to-Rust FFI. New product work targets the continuous recording SQL API. Bounded-recording and alternate storage layouts remain experimental.
 
 ## Develop
 
 ```sh
-make test  # Rust core; legacy Go checks are opt-in
 make pg-test  # configured PostgreSQL/pgrx required
 ```
 
-The frozen Go demo remains accessible through `make legacy-build` and `./bin/morletdb demo -data ./data`. It does not use the PostgreSQL backend. See the [server guide](apps/server/README.md) and [development notes](docs/development.md).
+For optional numerical-reference checks use `make test-reference`; `make golden` remains an explicit fixture-maintenance command. See [reference provenance](tools/reference-go/README.md) and [development notes](docs/development.md). The old server/CLI commands have been removed.
 
 ## Contribute and get support
 

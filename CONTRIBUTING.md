@@ -3,7 +3,8 @@
 Start with [the recording walkthrough](docs/recording-workflow.md), [architecture](docs/architecture.md) and [support boundaries](SUPPORT.md).
 
 The active path is Rust core → PostgreSQL 17 → Python import/search/inspection.
-The Go server and bounded SQL layouts are reference experiments; discuss changes there before expanding them.
+The Go app is removed. tools/reference-go is frozen numerical-maintenance tooling;
+bounded SQL layouts remain experiments. Discuss changes there before expanding them.
 
 ## Development and validation
 

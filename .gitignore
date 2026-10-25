@@ -1,9 +1,6 @@
 /bin/
 /data/
 /target/
-/apps/server/bin/
-/apps/server/data/
-/apps/server/morletdb
 __pycache__/
 
 /benchmark-output/
