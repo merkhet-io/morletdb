@@ -4,6 +4,7 @@ Binds to localhost (see .streamlit/config.toml). Research tool: similarity is a
 lead for analyst review, never an event label, alert or classification.
 """
 from datetime import datetime, timezone
+import os
 import threading
 import time
 
@@ -165,7 +166,8 @@ def spectrogram(samples, rate, start_ns):
 definition, manifest, base = project()
 rep, det = definition["representation"], definition["detector"]
 st.sidebar.title("MorletDB · seismic")
-st.session_state.dsn = st.sidebar.text_input("PostgreSQL DSN", investigate.DEFAULT_DSN)
+st.session_state.dsn = st.sidebar.text_input("PostgreSQL DSN",
+                                             os.environ.get("DATABASE_URL", investigate.DEFAULT_DSN))
 try:
     c = conn()
     init_db(c)

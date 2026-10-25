@@ -129,6 +129,86 @@ class ReviewRegressions(unittest.TestCase):
         restarted.flush()
         self.assertEqual(len(investigate.segments(self.conn, "test")), 2)
 
+    # -- 1b. identity under different chunk boundaries -------------------------
+    def versions(self):
+        segs = investigate.segments(self.conn, "test")
+        return {s["recording_id"]: s["committed"] for s in segs}
+
+    def test_rechunked_retransmissions_never_multiply_or_conflate_versions(self):
+        x = signal(9000)
+        b = x[2900:6000].copy()
+        b[:100] += 1  # Version B diverges at 2900 and continues to 6000.
+        first = self.ingestor()
+        first.handle(chunk(0, x[:3000]))
+        self.assertEqual(first.handle(chunk(2900, b[:2100])), "overlap_conflict")
+        first.flush()
+        before = self.versions()
+        plain = next(r for r in before if "#" not in r)
+        version_b = next(r for r in before if "#" in r)
+        # A version keeps its own first-sample time; the suffix marks it as a conflict version.
+        self.assertTrue(version_b.split("#")[0].endswith("2024-03-04T00:00:29.000000000Z"))
+        restarted = self.ingestor()
+        # B again in 700-sample pieces, then B's new tail in a chunk straddling its end.
+        for start in range(0, 2100, 700):
+            self.assertEqual(restarted.handle(chunk(2900 + start, b[start:start + 700])), "duplicate")
+        self.assertEqual(restarted.handle(chunk(4500, b[1600:])), "partial_duplicate")
+        # A again as one chunk straddling B's start, extended with A's own later samples.
+        self.assertEqual(restarted.handle(chunk(2000, x[2000:4000])), "partial_duplicate")
+        restarted.flush()
+        after = self.versions()
+        self.assertEqual(set(after), set(before))  # No new versions.
+        self.assertEqual((after[plain], after[version_b]), (4000, 3100))
+        np.testing.assert_array_equal(self.stored(plain, 4000), x[:4000].astype(float))
+        np.testing.assert_array_equal(self.stored(version_b, 3100), b.astype(float))
+
+    def test_distinct_versions_with_shared_prefix_stay_distinct(self):
+        x = signal(6000)
+        b, c = x.copy(), x.copy()
+        b[100:110] += 5
+        c[100:110] -= 5  # Same first 100 samples as B, different afterwards.
+        ingestor = self.ingestor()
+        ingestor.handle(chunk(0, x[:3000]))
+        ingestor.handle(chunk(0, b[:3000]))
+        self.assertEqual(ingestor.handle(chunk(0, c[:3000])), "overlap_conflict")
+        ingestor.flush()
+        found = sorted(tuple(self.stored(r, 3000)[95:115]) for r in self.versions())
+        self.assertEqual(found, sorted(tuple(v[95:115].astype(float)) for v in (x, b, c)))
+
+    def test_identity_collision_fails_instead_of_reusing_a_version(self):
+        x = signal(6000)
+        b, c = x.copy(), x.copy()
+        b[:10] += 1
+        c[:10] -= 1
+        ingestor = self.ingestor()
+        ingestor.handle(chunk(0, x[:3000]))
+        ingestor.handle(chunk(0, b[:3000]))
+        ingestor.flush()
+        existing = max(self.versions())
+        ingestor.recording_id = lambda chunk, reason: existing  # Simulated hash collision.
+        with self.assertRaisesRegex(RuntimeError, "identity already exists"):
+            ingestor.handle(chunk(0, c[:3000]))
+        self.conn.rollback()
+        np.testing.assert_array_equal(self.stored(existing, 3000), b[:3000].astype(float))
+
+    def test_crash_between_opening_a_version_and_its_samples_leaves_no_identity(self):
+        x = signal(6000)
+        b, c = x.copy(), x.copy()
+        b[:10] += 1
+        c[:10] -= 1
+        first = self.ingestor()
+        first.handle(chunk(0, x[:3000]))
+        first.flush()
+        first.handle(chunk(0, b[:3000]))  # Opens version B; samples still pending.
+        self.conn.rollback()  # Crash before the samples commit.
+        self.assertEqual(len(self.versions()), 1, "a version must not exist without its samples")
+        restarted = self.ingestor()
+        restarted.handle(chunk(0, c[:3000]))  # A different version arrives first.
+        restarted.handle(chunk(0, b[:1500]))  # Then B again, with different boundaries.
+        restarted.handle(chunk(1500, b[1500:3000]))
+        restarted.flush()
+        found = sorted(tuple(self.stored(r, 3000)[:10]) for r in self.versions())
+        self.assertEqual(found, sorted(tuple(v[:10].astype(float)) for v in (x, b, c)))
+
     # -- 2. progress-only flushes ----------------------------------------------
     def test_all_duplicate_replay_persists_progress_once_per_verification(self):
         x = signal(9000)

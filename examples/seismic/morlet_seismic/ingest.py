@@ -20,7 +20,13 @@ Recording identity:
   versions may share a first-sample time; their content keeps them distinct.
 - Retransmissions never open recordings: identical data is found by content in an
   existing version (including after restart) and verified as a duplicate. The
-  same conflicting data therefore cannot create endless copies.
+  same conflicting data therefore cannot create endless copies. Recognition
+  compares stored samples, never recomputed hashes, so it does not depend on
+  chunk boundaries; the suffix is only a stable label for one database.
+- A recording identity commits in the same transaction as its opening samples,
+  so no empty version can survive a crash and later be filled by other data.
+  A suffix collision (64-bit prefix) raises instead of reusing a version.
+- After an exception, discard the Ingestor and rebuild it from the database.
 - When several versions could continue contiguously, the candidate order is
   first-sample time, then recording ID, both descending; the choice is logged
   as ``ambiguous_continuation`` because timestamps alone cannot decide it.
@@ -141,6 +147,7 @@ class Ingestor:
         self.latency = {"append_batch_s": [], "chunk_commit_s": []}
         self._events = []
         self._progress = {}
+        self._opened = []                        # (stream, recording id) awaiting commit
 
     # -- state -------------------------------------------------------------
     def load(self, stream):
@@ -195,14 +202,14 @@ class Ingestor:
             "INSERT INTO seismic.segments(recording_id,dataset,stream,split,start_ns,sample_rate_hz,opened_reason)"
             " VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (recording_id) DO NOTHING",
             (recording_id, self.dataset, chunk.stream, split, chunk.start_ns, chunk.sample_rate, reason))
-        self.conn.commit()
+        # No COMMIT here: the identity commits with its opening samples in flush(),
+        # so a crash cannot leave an empty version whose suffix describes other data.
         segment = Segment(recording_id, chunk.start_ns, chunk.sample_rate, 0)
         segments = self.segments[chunk.stream]
         segments.append(segment)
         segments.sort(key=lambda s: (s.start_ns, s.recording_id))
         self.stats["segments_opened"] += 1
-        if self.on_open:
-            self.on_open(chunk.stream, recording_id)
+        self._opened.append((chunk.stream, recording_id))
         return segment
 
     def _stored(self, segment, start, end):
@@ -319,7 +326,7 @@ class Ingestor:
         counters = {stream: {k: v for k, v in c.items() if v}
                     for stream, c in self._progress.items()}
         counters = {stream: c for stream, c in counters.items() if c}
-        if not self.pending and not self._events and not counters:
+        if not self.pending and not self._events and not counters and not self._opened:
             return
         touched = set()
         started = time.perf_counter()
@@ -352,7 +359,12 @@ class Ingestor:
                                                   for _, _, _, c in self.pending)
             self.stats["appended_samples"] += appended
             self.stats["batches"] += 1
+        opened, self._opened = self._opened, []
         self.pending, self._events, self._progress = [], [], {}
+        # Callbacks see only committed state: new recordings first, then new samples.
+        for stream, recording_id in opened:
+            if self.on_open:
+                self.on_open(stream, recording_id)
         if touched and self.on_commit:
             self.on_commit(touched)
 

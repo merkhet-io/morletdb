@@ -57,6 +57,14 @@ appears only in `tests/`.
 
 ## Setup
 
+> [!IMPORTANT]
+> **Use a fresh database.** This example needs `pg_morlet` SQL objects that an
+> older installation does not have (`morlet-energy-lowrate-v1`, bounded interval
+> reads). The extension version is unchanged and there is no upgrade script:
+> rebuilding the image does **not** update an existing database or Docker volume.
+> The steps below create a new database for the example. See
+> [existing installations](../../extensions/pg_morlet/README.md#existing-installations).
+
 Requires Docker Compose v2, Rust (see `rust-toolchain.toml`) and Python 3.12.
 
 ```sh
@@ -64,7 +72,10 @@ Requires Docker Compose v2, Rust (see `rust-toolchain.toml`) and Python 3.12.
 cargo build --locked --release -p morlet-core --example features   # Rust adapter for temporal modes
 python3.12 -m venv .venv-seismic
 .venv-seismic/bin/pip install -r examples/seismic/requirements.txt
-docker compose -f examples/seismic/compose.yaml up -d --wait db          # 127.0.0.1:54339, own volume
+docker compose -f examples/seismic/compose.yaml up -d --build --wait db   # 127.0.0.1:54339, own volume
+docker compose -f examples/seismic/compose.yaml exec db \
+  psql -U morlet -c "CREATE DATABASE seismic"                              # fresh extension install
+export DATABASE_URL=postgresql://morlet:morlet-demo-only@localhost:54339/seismic
 
 cd examples/seismic
 ../../.venv-seismic/bin/python -m morlet_seismic download            # network, once
@@ -73,17 +84,14 @@ cd examples/seismic
 ../../.venv-seismic/bin/streamlit run app.py                         # http://127.0.0.1:8501
 ```
 
+`CREATE DATABASE` fails if `seismic` already exists; pick a new name instead of
+reusing a database created by an earlier version of this example.
+
 The database container is separate from the repository walkthrough (`compose.yaml`
 at the root uses port 54329 and another volume). Credentials are public demo
 values; bind locally only. `docker compose -f examples/seismic/compose.yaml down -v`
 deletes the replayed data.
 
-**Existing volumes are not upgraded.** The extension's SQL functions live in each
-database. If a `morletdb-seismic` volume predates this version, rebuilding the
-image does not update its functions; replay into a new database
-(`CREATE DATABASE ...`, then `--dsn postgresql://morlet:morlet-demo-only@localhost:54339/<new>`)
-or recreate the volume. See
-[existing installations](../../extensions/pg_morlet/README.md#existing-installations).
 
 After `download`, everything else runs without network access. Replaying all
 three streams unpaced as three parallel processes took about 15 minutes on an
@@ -127,8 +135,12 @@ quality code, origin, local emission time) into one `Ingestor`:
   time keeps the plain ID above. A recording opened because of a conflict is a
   version, `<plain id>#<first 16 hex of sha256(opening chunk, float64 LE)>`, so
   several versions can share a first-sample time. Retransmissions of any version,
-  including after restart, are found by content and verified as duplicates; they
-  never open copies. When more than one version could continue contiguously, the
+  including after restart and with different chunk boundaries, are found by
+  comparing stored samples (not by recomputing the hash) and verified as
+  duplicates; they never open copies. A version's identity commits together with
+  its opening samples, so a crash cannot leave an empty version behind. The
+  suffix is a stable label within one database, not a cross-database content
+  address; a suffix collision raises instead of reusing a version. When more than one version could continue contiguously, the
   newest first-sample time (then highest ID) is used and the choice is logged as
   `ambiguous_continuation`.
 - **Durability.** Samples, MorletDB extraction/checkpoint, segment rows, progress

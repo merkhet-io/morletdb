@@ -142,6 +142,13 @@ Found in review of PR #26, each reproduced by a failing PostgreSQL test first:
   finalizes now; a finalized recording that grows has its truncated trailing
   blocks re-analyzed.
 
+- **Crash window in version identity** (final-review check). A version committed
+  before its samples could survive a crash empty, be filled by a different
+  conflicting packet, and later block the original version with an identity
+  error. Identities now commit with their opening samples. Tests cover re-chunked
+  retransmission of both versions, distinct versions with shared prefixes, a
+  forced suffix collision and the crash window.
+
 Found while rerunning the evaluation:
 - Parallel per-stream processes raced to create the collection on a fresh
   database. Setup is now serialized with an advisory lock and covered by a
@@ -209,6 +216,9 @@ measured against simple baselines with reviewed relevance labels.
 4. **Read path.** Ship the `morlet_read_interval` bound with a supported
    migration; every long recording depends on it.
 5. **Live mode.** Run a supervised SeedLink session before calling live input supported.
+6. **Next workload.** The [CNC spindle experiment spec](cnc-spindle-experiment.md):
+   whole-tool holdouts, time-aligned current and temperature context, and
+   20 reviewed pilot queries reported per query with uncertainty.
 
 ## Reproduce
 
