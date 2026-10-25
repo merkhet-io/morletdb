@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.0-alpha.2
+
+First release built from the rewritten public repository history (author
+metadata only; see docs/history-rewrite.md).
+
+Extension (in the image):
+- Opt-in `morlet-energy-lowrate-v1` representation for native rates in [1,128) Hz,
+  with identical math to v1. It adds version-selected `morlet_features` and
+  `morlet_chunk_checkpoint` overloads and trailing `extractor` arguments on
+  recording creation and stream search. Stored-interval search uses and returns
+  the source recording's version. v1 defaults and frozen fixtures are unchanged.
+- `morlet_read_interval` uses a bounded chunk lookup: about 10 ms instead of
+  0.3-0.5 s for reads deep into multi-day recordings. Semantics are unchanged.
+
+Repository (not in the image):
+- `examples/seismic`, a reference application replaying public GEOFON data,
+  with a reproducible evaluation in which pooled Morlet beats or ties the
+  temporal representation. Its CI job runs synthetic tests against a fresh
+  extension install.
+- Offline wave-index PoC, visual notebook, removal of the legacy Go runtime,
+  demo catalog, and CNC and wave-RAG specifications.
+
+Still `pg_morlet` 0.1.0 with **no upgrade script**: databases created with
+0.1.0-alpha.1 keep their old SQL functions; install into a fresh database.
+Linux amd64 / PostgreSQL 17 only. Retrieval quality beyond simple baselines and
+production capacity remain unproven. See SUPPORT.md and evaluation/README.md.
+
 ## 0.1.0-alpha.1
 
 First packaged developer preview of the Rust/PostgreSQL recording workflow:
