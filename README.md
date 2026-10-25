@@ -19,7 +19,7 @@ their waveforms, spectra, recording coordinates and metadata.
 > separate offline wave-index PoC explores temporal retrieval. Real-world
 > usefulness and production-scale performance remain to be established.
 
-[Quickstart](#try-the-recording-workflow) · [Visual notebook](examples/notebooks/README.md) · [SQL guide](extensions/pg_morlet/README.md) · [Wave-index PoC](docs/wave-index-poc.md) · [Architecture](docs/architecture.md)
+[Quickstart](#try-the-recording-workflow) · [Visual notebook](examples/notebooks/README.md) · [SQL guide](extensions/pg_morlet/README.md) · [Wave-index PoC](docs/wave-index-poc.md) · [Demo ideas](docs/demo-catalog.md) · [Architecture](docs/architecture.md)
 
 ## From recordings to evidence you can inspect
 
@@ -155,6 +155,14 @@ context, difficult negatives and an engineer's relevance judgments.
 This direction does not establish defense-specific accuracy or deployment
 readiness. The existing single-channel model does not provide synchronized
 cross-channel search, live acquisition control or automatic fault diagnosis.
+
+## Demo ideas and evaluation backlog
+
+The [demo catalog](docs/demo-catalog.md) collects fifteen proposed investigations:
+industrial diagnostics, end-of-line quality, actuator/electrical traces, HDDs,
+seismic monitoring and voice/audio retrieval. It records priorities, data sources,
+baselines, acceptance criteria and missing capabilities. Start with one bounded
+evaluation; these ideas are not claims of implemented diagnostic features.
 
 ## What has been measured
 
