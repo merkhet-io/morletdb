@@ -82,6 +82,9 @@ ALTER TABLE seismic.detector_progress ADD COLUMN IF NOT EXISTS finalized_from_bl
 
 
 def init_db(conn):
+    # Parallel per-stream processes may initialize a fresh database at once;
+    # IF NOT EXISTS checks are not race-safe, so serialize setup per database.
+    conn.execute("SELECT pg_advisory_xact_lock(hashtext('morlet_seismic.init_db'))")
     conn.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
     exists = conn.execute("SELECT to_regclass(%s)", (COLLECTION,)).fetchone()[0]
     if exists is None:

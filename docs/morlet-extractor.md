@@ -23,7 +23,7 @@ The kernel scale is `6 fs / (2 pi f)` with `f = c_b fs`, so every coefficient, c
 - The checkpoint records the version; restore rejects unknown versions and relabelled rates. Stored-interval search uses the source recording's version and returns it; a population mixing versions raises `incompatible stream representation`.
 - Physical meaning changes with the rate: at 100 Hz the bands span 1.56-40 Hz, windows of 512-4096 samples last 5.12-40.96 s, and the lowest band's support is +/-1.84 s. Choose the window for the task and document it.
 
-No resampling or timestamp relabelling is involved. Existing installations need a fresh extension install (no upgrade script).
+No resampling or timestamp relabelling is involved. Existing databases need a fresh extension installation; rebuilding the image does not update them (see [existing installations](../extensions/pg_morlet/README.md#existing-installations)).
 
 Overlapping bands do not sum to physical signal power. Tokens contain local energies, not phase or invertible wavelet coefficients. A similar spectral signature does not guarantee the same waveform, condition or fault. DC is ignored, and there is no speed invariance or resampling. Per-window amplitude normalization can be requested explicitly by nesting `morlet_normalize(...,'zscore')` before feature extraction.
 

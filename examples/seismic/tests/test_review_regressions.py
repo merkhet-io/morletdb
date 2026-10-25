@@ -51,6 +51,30 @@ class ReviewRegressions(unittest.TestCase):
         client = investigate.client(self.conn)
         return np.asarray(client.read_interval(recording_id, 0, end)["samples"])
 
+    # -- 0. concurrent setup (found while rerunning the evaluation) -----------------
+    def test_parallel_init_on_a_fresh_database_creates_one_collection(self):
+        import threading
+        fresh = TempDatabase()
+        self.addCleanup(fresh.drop)
+        errors, barrier = [], threading.Barrier(4)
+
+        def worker():
+            try:
+                with psycopg.connect(fresh.dsn) as conn:
+                    barrier.wait()
+                    init_db(conn)
+            except Exception as exc:  # noqa: BLE001 - collected for the assertion
+                errors.append(repr(exc))
+        threads = [threading.Thread(target=worker) for _ in range(4)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(60)
+        self.assertEqual(errors, [])
+        with psycopg.connect(fresh.dsn) as conn:
+            self.assertEqual(conn.execute("SELECT count(*) FROM pg_class WHERE relname IN "
+                                          "('seismic_waveforms','seismic_waveforms_chunks')").fetchone()[0], 2)
+
     # -- 1. version identity ---------------------------------------------------
     def test_conflict_at_exact_recording_start_creates_distinct_version(self):
         x = signal(6000)

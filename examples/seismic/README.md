@@ -78,6 +78,13 @@ at the root uses port 54329 and another volume). Credentials are public demo
 values; bind locally only. `docker compose -f examples/seismic/compose.yaml down -v`
 deletes the replayed data.
 
+**Existing volumes are not upgraded.** The extension's SQL functions live in each
+database. If a `morletdb-seismic` volume predates this version, rebuilding the
+image does not update its functions; replay into a new database
+(`CREATE DATABASE ...`, then `--dsn postgresql://morlet:morlet-demo-only@localhost:54339/<new>`)
+or recreate the volume. See
+[existing installations](../../extensions/pg_morlet/README.md#existing-installations).
+
 After `download`, everything else runs without network access. Replaying all
 three streams unpaced as three parallel processes took 22-32 minutes on an
 Apple M5 Max (see the evaluation report); `--streams CX.PB01..HHZ --periods heldout-2024-05` is a
@@ -115,15 +122,31 @@ quality code, origin, local emission time) into one `Ingestor`:
 - **Duplicates.** Overlap with stored samples is compared exactly. Identical
   overlap (for example adjacent day files, or a replay after restart) is a verified
   duplicate; only new samples are appended.
-- **Conflicts.** Differing overlap opens a separate recording and logs an
-  `overlap_conflict`; both versions remain readable.
+- **Conflicts and identity.** Differing overlap opens a separate recording and logs
+  an `overlap_conflict`; both versions remain readable. A recording opened for new
+  time keeps the plain ID above. A recording opened because of a conflict is a
+  version, `<plain id>#<first 16 hex of sha256(opening chunk, float64 LE)>`, so
+  several versions can share a first-sample time. Retransmissions of any version,
+  including after restart, are found by content and verified as duplicates; they
+  never open copies. When more than one version could continue contiguously, the
+  newest first-sample time (then highest ID) is used and the choice is logged as
+  `ambiguous_continuation`.
 - **Durability.** Samples, MorletDB extraction/checkpoint, segment rows, progress
   (`last_committed_end_ns`) and discontinuity events commit in one transaction.
   On restart, state is reloaded from PostgreSQL and replay resumes by verifying
-  the committed prefix. Rejected chunks (wrong rate domain, non-finite or
+  the committed prefix. Samples and features are idempotent. Progress counters are
+  written in the same transaction and cleared only after commit, so progress-only
+  updates persist and are never applied twice; `duplicate_samples` counts
+  verification work and grows with every replay of already committed data. Rejected chunks (wrong rate domain, non-finite or
   out-of-range values) are logged and do not advance state.
 - **Pacing.** `--speed 0` is unpaced; `--speed 600` replays ten minutes of samples
   per second. The UI exposes pause, resume and stop.
+- **Stop, interruption and exhaustion.** Only natural exhaustion of the replay
+  input finalizes recordings for the detector (its trailing partial block is
+  analyzed). An operator Stop, `--max-chunks`, a crash or live input leaves them
+  open, so resumed data is analyzed. If a finalized recording later grows, the
+  trailing blocks analyzed without full context are re-analyzed (logged as
+  `detector_reopened`), which reproduces the uninterrupted result.
 
 Live mode connects once per run to the public GEOFON SeedLink server, selects
 the chosen streams, reconnects with 10 s → 5 min backoff, commits each packet
@@ -188,12 +211,18 @@ Screenshots of these steps are in [`docs/`](docs/).
 
 ```sh
 cd examples/seismic/tests
-../../../.venv-seismic/bin/python -m unittest test_offline test_ingest_db
+MORLET_SEISMIC_REQUIRE_DB=1 MORLET_SEISMIC_REQUIRE_FEATURES=1 \
+  ../../../.venv-seismic/bin/python -m unittest test_offline test_ingest_db test_review_regressions
 ```
 
-`test_offline` needs no database or network. `test_ingest_db` creates and drops a
-temporary database on the local server (`MORLET_SEISMIC_TEST_DSN` overrides the
-default) and skips if none is reachable. Fixtures are synthetic.
+`test_offline` needs no database or network. `test_ingest_db` and
+`test_review_regressions` create and drop a temporary database on a local server
+(`MORLET_SEISMIC_TEST_DSN`, default the compose database) that must have this
+version of `pg_morlet` installed. Without the `REQUIRE` variables they skip when
+the server or the Rust features adapter is missing; with them, a missing
+prerequisite fails. CI's `seismic-example` job installs the branch's extension
+into fresh pgrx PostgreSQL, sets both variables and also fails on any skipped
+test. Fixtures are synthetic; no public service is contacted.
 
 ## Unsupported and next decisions
 
