@@ -21,6 +21,9 @@ Raw samples remain authoritative. `morlet-energy-v1` is a baseline representatio
 not a promise that spectral similarity equals the event similarity a user wants.
 Its search features pool energy across each window; localized tokens are not a
 temporal search index. Representation changes require versioning and evaluation.
+See the [advanced retrieval proposal](advanced-retrieval.md) for a staged design
+covering temporal energy grids, wave-token indexes, ordered motifs and ML datasets.
+These capabilities are proposed, not implemented.
 
 ## Experiments retained, not expanded
 
