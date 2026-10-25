@@ -1,0 +1,69 @@
+{
+ "command": "replay",
+ "dataset": "cx-north-chile-2024-v1",
+ "streams": [
+  "CX.PB01..HHZ"
+ ],
+ "finalized": true,
+ "periods": "all",
+ "interrupted_after_chunks": null,
+ "elapsed_s": 912.5693652919726,
+ "actions": {
+  "no_earlier_segment": 1,
+  "append": 36000,
+  "partial_duplicate": 11,
+  "gap": 1
+ },
+ "ingest": {
+  "chunks": 36013,
+  "appended_samples": 108000000,
+  "duplicate_samples": 7165,
+  "conflicts": 0,
+  "gaps": 1,
+  "errors": 0,
+  "segments_opened": 2,
+  "batches": 2263
+ },
+ "detector": {
+  "blocks": 1800,
+  "triggers": 6594
+ },
+ "append_batch_latency_s": {
+  "n": 2263,
+  "mean": 0.33965631082315095,
+  "p50": 0.33341683296021074,
+  "p90": 0.3889911249279976,
+  "p99": 0.5108584580011666,
+  "max": 1.0676893340423703
+ },
+ "chunk_emit_to_commit_s": {
+  "n": 36013,
+  "mean": 0.3415949639372886,
+  "p50": 0.3337430953979492,
+  "p90": 0.38971590995788574,
+  "p99": 0.5110580921173096,
+  "max": 1.0683629512786865
+ },
+ "host": "macOS-27.0.1-arm64-arm-64bit",
+ "provenance": {
+  "code": {
+   "commit": "0b41233378070150e6e9ca322c48d3d25392fa20",
+   "branch": "feat/seismic-replay-investigation",
+   "dirty": false
+  },
+  "dataset_id": "cx-north-chile-2024-v1",
+  "definition_sha256": "398311d6e0e76dae4d0f65c8162395f987c8487e3ea85bf97e3b8606af334876",
+  "manifest_sha256": "c03f4126f016a102a542d06bd8d96b1e5e86bff394c027dc81172dc49b97071f",
+  "manifest_created_utc": "2026-10-25T13:26:58.511624Z",
+  "representation": {
+   "extractor": "morlet-energy-lowrate-v1",
+   "window_samples": 2048,
+   "stride_samples": 512,
+   "normalization": "zscore",
+   "units": "counts",
+   "instrument_response": "not removed; raw digitizer counts are stored and compared only within one station/channel"
+  },
+  "detector_version": "stalta-baseline-v1",
+  "association_version": "taup-window-v1"
+ }
+}

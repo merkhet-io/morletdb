@@ -86,8 +86,8 @@ or recreate the volume. See
 [existing installations](../../extensions/pg_morlet/README.md#existing-installations).
 
 After `download`, everything else runs without network access. Replaying all
-three streams unpaced as three parallel processes took 22-32 minutes on an
-Apple M5 Max (see the evaluation report); `--streams CX.PB01..HHZ --periods heldout-2024-05` is a
+three streams unpaced as three parallel processes took about 15 minutes on an
+Apple M5 Max (v2 evaluation report); `--streams CX.PB01..HHZ --periods heldout-2024-05` is a
 quicker start. Parallel per-stream processes are safe: each stream's
 recordings are independent.
 
@@ -152,8 +152,8 @@ Live mode connects once per run to the public GEOFON SeedLink server, selects
 the chosen streams, reconnects with 10 s → 5 min backoff, commits each packet
 promptly and reports connection state, reconnects, dropped packets, queue
 backlog and per-stream sample freshness. It never polls an archive and never
-runs in tests. It has been implemented but **was not exercised for this
-report**: the evaluation used historical replay only.
+runs in tests. It is implemented but **unvalidated**: it has never been run
+against a server, and the evaluation used historical replay only.
 
 ## Detection, retrieval and catalog references
 

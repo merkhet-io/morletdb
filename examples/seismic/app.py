@@ -203,7 +203,8 @@ with st.sidebar.expander("Historical replay", expanded=not running):
         if cols[2].button("Stop replay"):
             slot["control"].stop()
     st.caption("Replay re-emits cached miniSEED through the same ingestion as live input. Already "
-               "committed samples are verified as duplicates, not re-appended.")
+               "committed samples are verified as duplicates, not re-appended. Stop leaves recordings "
+               "open for detection; only a replay that runs to the end finalizes them.")
 
 with st.sidebar.expander("Live SeedLink (opt-in)"):
     st.caption(f"Connects one session to the public GEOFON SeedLink server {cli.LIVE_SERVER} "

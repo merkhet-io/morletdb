@@ -1,3 +1,11 @@
+> **Historical report (superseded by [v2](seismic-cx-north-chile-2024-v2.md)).**
+> Produced from code before the PR #26 review fixes (head `321a366`; no code
+> revision was recorded), on a demo database whose `morlet_read_interval` had been
+> replaced by hand, with triggers from a batch `detect --reset`. The v2 rerun at
+> `0b41233` on a fresh database reproduced every detection and retrieval metric
+> and every per-query ranking exactly; only timings, duplicate counts (v1 included
+> an interrupted-restart prefix) and the extraction latency measurement differ.
+
 # Seismic replay evaluation: cx-north-chile-2024-v1
 
 Generated 2026-10-25T14:24:34.080482Z on macOS-27.0.1-arm64-arm-64bit (arm64), Python 3.12.13, ObsPy 1.4.2.
