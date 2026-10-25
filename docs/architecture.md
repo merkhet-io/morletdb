@@ -68,3 +68,11 @@ Next: independently exercise onboarding, evaluate harder partner-approved
 recordings with negative queries, and measure sustained ingest/search resource
 use before selecting indexes, asynchronous jobs or external raw storage.
 See [support boundaries](../SUPPORT.md) and [evaluation](../evaluation/README.md).
+
+## Toward waveform evidence for RAG
+
+The [wave-RAG specification](wave-rag-spec.md) proposes interval annotations,
+versioned evidence export and an optional grounded-answer application. These are
+not implemented. Start with annotation/revision permissions and a deterministic
+report over the existing exact SQL retrieval; generation stays outside PostgreSQL.
+Multiple durable representations still require advanced-retrieval stage A1.
