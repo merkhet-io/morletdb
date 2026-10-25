@@ -2,8 +2,8 @@
 
 Status: **DRAFT, not frozen.** It freezes in a later commit that sets the status to
 FROZEN. Freezing happens before any Paderborn file is opened for evaluation. It requires:
-- dataset access with recorded hashes;
-- the licence question answered (`DATASET.md`, question 1);
+- dataset access with recorded hashes (Zenodo copy; `DATASET.md`);
+- the licence question answered (done: non-commercial);
 - the channel units and `.mat` structure inspected on **development bearings only**.
 
 Researcher-selected thresholds are marked **(provisional)**. Phases 3 (external users)
@@ -29,10 +29,12 @@ usefulness. Human relevance validation is **pending**.
   | Role | Bearings |
   |---|---|
   | Development (8): tuning and the no-match threshold only | K001, K002, KA01, KI01, KA04, KA15, KI04, KI14 |
-  | Held-out (24): primary evaluation | K003–K006; KA03, KA05–KA09, KI03, KI05, KI07, KI08; KA16, KA22, KA30, KI16, KI17, KI18, KI21; KB23, KB24, KB27 |
+  | Held-out (23): primary evaluation | K003–K006; KA03, KA05–KA07, KA09, KI03, KI05, KI07, KI08; KA16, KA22, KA30, KI16, KI17, KI18, KI21; KB23, KB24, KB27 |
 
+- KA08 (artificial outer-ring damage, drilled, extent 2) is absent from the only reachable
+  copy and is excluded. This was decided before any data was opened.
 - **Query/gallery:** each held-out bearing in turn is the query group, and its gallery is
-  the other 23 held-out bearings (leave-one-bearing-out). Eligibility is the same channel,
+  the other 22 held-out bearings (leave-one-bearing-out). Eligibility is the same channel,
   rate and unit, from a different bearing, and is applied identically for every method.
 - **Windows:** 4096 samples (64 ms, the current extractor maximum), disjoint, 8 evenly
   spaced windows per file.
@@ -90,8 +92,8 @@ contract.
   - AP (mAP) and MRR. Recall@10 is not meaningful, because a relevant pool of hundreds
     of windows caps it.
   - nearest distance.
-- **Aggregation:** mean per query bearing, then mean over the 24 query bearings.
-- **Uncertainty:** paired bootstrap over query bearings (2000 resamples, seed 7). With 24
+- **Aggregation:** mean per query bearing, then mean over the 23 query bearings.
+- **Uncertainty:** paired bootstrap over query bearings (2000 resamples, seed 7). With 23
   groups on a single rig, intervals are wide and no strong statistical claim is made.
 - **Breakdowns:**
   - by the query's setting and the target setting;
@@ -134,7 +136,7 @@ Let Δ be the bearing-level P@10 of **M minus FS**, with its 95% interval.
 - Fault labels are only a proxy for usefulness.
 - The 64 ms window and a lowest band of 1 kHz miss shaft-rate content (the decimated
   variant reaches 250 Hz).
-- 24 held-out groups.
+- 23 held-out groups (KA08 missing from the source).
 - The licence is non-commercial pending clarification.
 - No public checksums: we hash on first download.
 

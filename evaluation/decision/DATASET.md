@@ -74,14 +74,22 @@ files.
 | XJTU-SY | 15 run-to-failure bearings, but each bearing runs under one condition only (condition confounded with group); no licence named |
 | CWRU | Already used; too easy (every method ties); no independent bearings across loads |
 
-## Questions for the user
+## Decisions (user, 2026-10-26)
 
-1. **Licence:** do you treat this evaluation as non-commercial research, or should we
-   request permission from the chair? Their contact is on the provider's main page.
-   I will not contact anyone.
-2. **Access:** do you have a copy of the archives, or an approved mirror? Should I retry
-   the official host later? Without the data, the harness is built and tested on
-   synthetic controls only.
-3. **Publishing derived artefacts:** may committed reports include per-window feature
-   vectors and match lists (derived data, attributed, non-commercial)? Otherwise reports
-   carry only aggregates and file identifiers.
+1. **Licence:** non-commercial research use, so CC BY-NC 4.0 applies as published, with
+   attribution to Lessmeier et al. (2016) and KAt, Paderborn University.
+2. **Source:** the official host is still unreachable, and the user has no copy. We use the
+   third-party Zenodo upload <https://zenodo.org/records/15845309> ("Paderborn Bearing
+   Dataset", uploaded 2025-07-09 by J. van den Hoogen).
+   - The upload is labelled CC BY 4.0, but a re-uploader cannot relicense the data, so
+     the provider's CC BY-NC 4.0 still governs.
+   - It holds **31 of 32 archives; KA08 is missing.**
+   - All 31 archive sizes match the official 2024-12-01 listing (Wayback) within its
+     rounding. That corroborates the files; it does not prove them identical.
+   - Zenodo MD5s are checked on download, and our SHA-256s are recorded in
+     `SHA256SUMS.archives`. Retry the official host before publishing results, and note
+     any differences.
+3. **Publishing:** reports include per-query match lists (file, window, distance, labels),
+   per-bearing metrics and a failure gallery with short waveform and spectrum plots. They
+   are derived data under CC BY-NC 4.0 with attribution. Raw recordings and bulk
+   feature dumps are not redistributed.
