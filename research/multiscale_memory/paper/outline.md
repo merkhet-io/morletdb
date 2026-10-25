@@ -35,6 +35,11 @@ does not beat A0. All budgeted arms sit at or below no retrieval. The C advantag
 reconstruction fidelity, i.e. less damage rather than added benefit. Current contribution
 candidate: (c), a negative result with a fidelity-ordering observation.
 
+Pilot 2 (`results/pilot2-73d852e/`, learned cross-fit retriever, attention fusion,
+ensemble control P): H1 again not supported (L3 vs A0 −0.0013, [−0.0043, +0.0016]);
+retrieved signals hurt relative to labels alone (L3 vs L1 −0.0040, [−0.0063, −0.0017]).
+The C > R, W ordering replicates (C64n vs R64n +0.0089, [+0.0052, +0.0123]).
+
 ## 6. Limitations, reproducibility and validity threats
 - One clinical dataset with a single lead.
 - A small model and a fixed retriever.

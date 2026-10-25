@@ -12,7 +12,8 @@ Rust core or the frozen Morlet extractor. The question, design and decision rule
 | `msmem/representation.py` | Immutable specs with content ids, provenance, level-major serialization, selective reads, full and partial reconstruction, coarse plus deterministic refinement |
 | `tests/` | Checks against PyWavelets and analytical fixtures (no self-generated expectations) |
 | `experiments/ptbxl_h2.py` | PTB-XL pilot for H1 and H2 (verify, prepare, retrieve, contexts, train, gate, evaluate) |
-| `results/pilot-590445f/` | Pilot outcome: H1 not supported, H2 inconclusive; see its `NOTES.md` |
+| `results/pilot-590445f/` | Pilot 1 outcome: H1 not supported, H2 inconclusive; see its `NOTES.md` |
+| `PROTOCOL_PILOT2.md`, `experiments/ptbxl_pilot2.py`, `results/pilot2-73d852e/` | Pilot 2 (learned retriever, attention fusion): H1 not supported, H2 inconclusive |
 
 Pooled Morlet energies and localized cells (the existing extractor) are **not**
 reconstructive and are not used here. The DWT is a separate research baseline.

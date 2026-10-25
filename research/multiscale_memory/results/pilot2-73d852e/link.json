@@ -1,0 +1,16 @@
+{
+ "source": "../../data/msmem-runs/pilot-590445f",
+ "lead2.npz": "2c4f552ec30c0ee172de470b302d7c7db5b5031613cd2bf988d6ca83e5a026f2",
+ "contexts.npz": "d2dccdf3773ae38e7a2de9a9e017116d760062763f2c6d07c82b7b5c831a80e1",
+ "provenance": {
+  "commit": "73d852e895b58205e97aacda455adaed2ed5795c",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.2.6",
+  "scipy": "1.16.3",
+  "torch": "2.9.0",
+  "spec_id": "f736c1cb28f46b9bce36017a71a816d2e18329e17939d1fb438055a6671da169"
+ }
+}
