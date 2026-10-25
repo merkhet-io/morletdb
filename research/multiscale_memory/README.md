@@ -11,7 +11,8 @@ Rust core or the frozen Morlet extractor. The question, design and decision rule
 | `msmem/dwt.py` | Orthonormal periodized DWT (db4, Haar), an independent NumPy implementation |
 | `msmem/representation.py` | Immutable specs with content ids, provenance, level-major serialization, selective reads, full and partial reconstruction, coarse plus deterministic refinement |
 | `tests/` | Checks against PyWavelets and analytical fixtures (no self-generated expectations) |
-| `experiments/ptbxl_h2.py` | PTB-XL pilot for H1 and H2 (verify, prepare, retrieve, contexts, train, evaluate) |
+| `experiments/ptbxl_h2.py` | PTB-XL pilot for H1 and H2 (verify, prepare, retrieve, contexts, train, gate, evaluate) |
+| `results/pilot-590445f/` | Pilot outcome: H1 not supported, H2 inconclusive; see its `NOTES.md` |
 
 Pooled Morlet energies and localized cells (the existing extractor) are **not**
 reconstructive and are not used here. The DWT is a separate research baseline.
@@ -32,9 +33,14 @@ for f in ptbxl_database.csv scp_statements.csv SHA256SUMS.txt LICENSE.txt; do
 OUT=../../data/msmem-runs/pilot
 PY="../../.venv-research/bin/python experiments/ptbxl_h2.py"
 $PY verify --out $OUT && $PY prepare --out $OUT && $PY retrieve --out $OUT && $PY contexts --out $OUT
-for arm in A0 A1 A2 A3 R32 R64 R128 W32 W64 W128 C32 C64 C128; do
+# Phase 1, then the validation-only gate, then phase 2 if gate.json passes (PROTOCOL.md):
+for arm in A0 A1 A3 A3n R64n W64n C64n; do
   for seed in 0 1 2; do $PY train --out $OUT --arm $arm --seed $seed; done; done
-$PY evaluate --out $OUT
+$PY gate --out $OUT
+for arm in A2 R32 R64 R128 W32 W64 W128 C32 C64 C128 R32n R128n W32n W128n C32n C128n; do
+  for seed in 0 1 2; do $PY train --out $OUT --arm $arm --seed $seed; done; done
+$PY evaluate --out $OUT       # reads the test fold once
+../../.venv-research/bin/python experiments/ptbxl_h2_supplementary.py $OUT
 ```
 
 Data stays under `data/` (git-ignored) and is never redistributed. Cite PTB-XL

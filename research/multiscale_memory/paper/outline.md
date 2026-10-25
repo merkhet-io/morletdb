@@ -28,8 +28,12 @@ See `../PROTOCOL.md`: patient-disjoint folds, training-only gallery, fixed retri
 budget-matched arms, seeds, and a patient-level paired bootstrap.
 
 ## 5. Results and ablations
-*Empty until the frozen protocol has been run. Tables are generated from
-`results/*/evaluation.json`.*
+Pilot (protocol amendment 1, `results/pilot-590445f/`): H1 not supported (A3 vs A0
++0.0013, 95% CI [−0.0011, +0.0040]). H2 inconclusive under the pre-registered rule: C-64n
+beats R-64n (+0.0087, [+0.0063, +0.0115]) and W-64n (+0.0067, [+0.0042, +0.0093]), but A3n
+does not beat A0. All budgeted arms sit at or below no retrieval. The C advantage tracks
+reconstruction fidelity, i.e. less damage rather than added benefit. Current contribution
+candidate: (c), a negative result with a fidelity-ordering observation.
 
 ## 6. Limitations, reproducibility and validity threats
 - One clinical dataset with a single lead.
