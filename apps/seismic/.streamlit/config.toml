@@ -1,0 +1,8 @@
+# Local-only: never listen on external interfaces; no usage telemetry.
+[server]
+address = "127.0.0.1"
+port = 8501
+headless = true
+
+[browser]
+gatherUsageStats = false

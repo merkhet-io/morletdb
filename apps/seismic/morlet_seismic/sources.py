@@ -174,13 +174,23 @@ class SeedLinkSource:
         self.connected = False
         self._sequence = 0
         self._thread = None
+        self._client = None
+
+    def stop(self):
+        """Stop reconnecting and close the open connection (unblocks run())."""
+        self.control.stop()
+        if self._client is not None:
+            try:
+                self._client.close()
+            except Exception:  # noqa: BLE001 - already closed
+                pass
 
     def _run(self):
         from obspy.clients.seedlink.easyseedlink import create_client
         delay = 10
         while not self.control.stopped:
             try:
-                client = create_client(self.server, on_data=self._on_trace)
+                client = self._client = create_client(self.server, on_data=self._on_trace)
                 for value in self.streams:
                     network, station, location, channel = value.split(".")
                     client.select_stream(network, station, f"{location}{channel}" if location else channel)

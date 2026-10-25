@@ -111,6 +111,15 @@ class Detector:
         for (other,) in rows:
             self.process(other, closed=True)
 
+    def reset(self, streams):
+        """Forget this detector version's results for streams; samples are untouched."""
+        for table in ("triggers", "detector_progress"):
+            self.conn.execute(
+                f"DELETE FROM seismic.{table} t USING seismic.segments g WHERE t.recording_id=g.recording_id"
+                " AND g.dataset=%s AND g.stream = ANY(%s) AND t.detector_version=%s",
+                (self.dataset, list(streams), self.version))
+        self.conn.commit()
+
     def close_all(self, streams=None):
         """End of input: analyze the trailing partial block of every segment.
 

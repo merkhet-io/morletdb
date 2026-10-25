@@ -122,6 +122,15 @@ class SplitsAndAssociation(unittest.TestCase):
         self.assertTrue(all(s % REP["stride_samples"] == 0 for s in backgrounds))
         self.assertTrue(all(s + 2048 <= 100_000 for _, s, _ in windows))
 
+    def test_gallery_cap_keeps_triggers_and_thins_background_evenly(self):
+        windows = [("r", i, "trigger") for i in range(100)] + [("r", 10_000 + i, "background") for i in range(1000)]
+        kept, report = investigate.cap_gallery(windows, limit=300)
+        self.assertEqual((report["kept"], report["trigger_windows"], report["background_windows"]), (300, 100, 200))
+        backs = [s for _, s, k in kept if k == "background"]
+        self.assertEqual((backs[0], backs[-1]), (10_000, 10_999))  # spread, not truncated
+        kept, report = investigate.cap_gallery(windows[:100], limit=40)
+        self.assertEqual((report["kept"], report["trigger_windows_dropped"]), (40, 60))
+
     def test_association_uses_predicted_arrival_windows_not_origin_times(self):
         arrival = {"event_id": "ev1", "stream": "S", "p_ns": 1_000 * 10**9, "s_ns": 1_013 * 10**9,
                    "window_ns": (995 * 10**9, 1_033 * 10**9)}

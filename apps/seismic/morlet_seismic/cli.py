@@ -81,6 +81,24 @@ def replay(args):
     return 0
 
 
+def detect(args):
+    """Re-run the detector over committed samples (deterministic; no ingestion)."""
+    definition, manifest, _ = investigate.load(args.definition, args.data_root)
+    with investigate.connect(args.dsn) as conn:
+        detector = Detector(conn, investigate.client(conn), definition["detector"], definition["id"])
+        streams = args.streams or sorted(investigate.stream_metadata(manifest))
+        if args.reset:
+            detector.reset(streams)
+        started = time.perf_counter()
+        detector.close_all(streams=streams)
+        stored = conn.execute("SELECT stream,count(*) FROM seismic.triggers WHERE dataset=%s AND detector_version=%s"
+                              " GROUP BY 1 ORDER BY 1", (definition["id"], detector.version)).fetchall()
+    print(json.dumps({"command": "detect", "reset": args.reset, "streams": streams,
+                      "elapsed_s": time.perf_counter() - started, "run": detector.stats,
+                      "stored_triggers": dict(stored)}, indent=1))
+    return 0
+
+
 def live(args):
     if not args.enable_live:
         raise SystemExit("live mode connects to a public SeedLink server; pass --enable-live")
@@ -96,7 +114,7 @@ def live(args):
             ingestor.handle(chunk)
             ingestor.flush()  # Live: commit each packet promptly; freshness over batching.
             if time.time() >= deadline:
-                source.control.stop()
+                source.stop()
         print(json.dumps({"ingest": ingestor.stats, "source": source.status()}, indent=1))
     return 0
 
@@ -131,6 +149,9 @@ def main(argv=None):
     rep.add_argument("--no-detect", action="store_true")
     rep.add_argument("--output", type=Path)
     rep.add_argument("--verbose", action="store_true")
+    dt = commands.add_parser("detect", help="re-run STA/LTA over committed samples")
+    dt.add_argument("--streams", nargs="*")
+    dt.add_argument("--reset", action="store_true", help="delete this detector version's triggers first")
     lv = commands.add_parser("live", help="opt-in SeedLink ingestion (network access)")
     lv.add_argument("--enable-live", action="store_true")
     lv.add_argument("--server", default=LIVE_SERVER)
@@ -141,6 +162,9 @@ def main(argv=None):
     ev = commands.add_parser("evaluate", help="real-data evaluation report")
     ev.add_argument("--output", type=Path, required=True)
     ev.add_argument("--background-every-s", type=float, default=300.0)
+    ev.add_argument("--replay-reports", type=Path, help="directory of replay-*.json run reports")
+    ev.add_argument("--max-unassociated", type=int, default=60,
+                    help="evenly spaced unassociated held-out queries per stream")
     args = parser.parse_args(argv)
     if args.command == "download":
         print(dataset.download(args.definition, args.data_root, refresh=args.refresh))
@@ -156,6 +180,8 @@ def main(argv=None):
         print("initialized")
     elif args.command == "replay":
         return replay(args)
+    elif args.command == "detect":
+        return detect(args)
     elif args.command == "live":
         return live(args)
     elif args.command == "status":

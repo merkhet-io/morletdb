@@ -118,6 +118,32 @@ def gallery_windows(segs, trigs, rep, pre_s, *, background_every_s=300.0, split=
     return windows
 
 
+def evenly(items, limit):
+    """Deterministic, time-spread subset (no randomness, no catalog input)."""
+    if len(items) <= limit:
+        return list(items)
+    return [items[round(i * (len(items) - 1) / max(1, limit - 1))] for i in range(limit)]
+
+
+def cap_gallery(windows, limit=4096):
+    """Keep every trigger window, thin the background grid evenly to fit the PoC limit.
+
+    Returns (windows, report). Truncating a time-ordered list would bias the gallery
+    toward early data, so excess windows are removed evenly and the cut is reported.
+    """
+    trig = [w for w in windows if w[2] == "trigger"]
+    back = [w for w in windows if w[2] != "trigger"]
+    if len(trig) >= limit:
+        kept = evenly(trig, limit)
+    else:
+        kept = trig + evenly(back, limit - len(trig))
+    kept_trig = sum(1 for w in kept if w[2] == "trigger")
+    return kept, {"requested": len(windows), "kept": len(kept), "limit": limit,
+                  "trigger_windows": kept_trig, "trigger_windows_dropped": len(trig) - kept_trig,
+                  "background_windows": len(kept) - kept_trig,
+                  "background_windows_dropped": len(back) - (len(kept) - kept_trig)}
+
+
 def load(definition_path, data_root=dataset.DEFAULT_DATA, *, verify=True):
     definition = dataset.load_definition(definition_path)
     manifest = dataset.load_manifest(definition, data_root, verify=verify)

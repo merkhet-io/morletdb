@@ -168,6 +168,40 @@ class IngestContracts(unittest.TestCase):
         # so it is unmonitored rather than searched with an unsettled baseline.
         self.assertFalse(near(70_000))
 
+    def test_finishing_one_stream_does_not_close_another(self):
+        from morlet_seismic.ingest import run
+
+        class Source:
+            mode = "replay"
+
+            def __init__(self, chunks):
+                self.items = chunks
+
+            def chunks(self):
+                return iter(self.items)
+
+        x = signal(90_000, bursts=(80_000,))
+        detector = Detector(self.conn, investigate.client(self.conn), DETECTOR, "test")
+        other = self.ingestor(on_commit=detector.on_commit, on_open=detector.on_open)
+        for c in split_chunks(x[:60_000], 3000):  # SY.TEST..HHZ still in progress
+            other.handle(c)
+        other.flush()
+        b = [chunk(i, x[i:i + 3000], stream="SY.OTHER..HHZ") for i in range(0, 30_000, 3000)]
+        meta = {**META, "SY.OTHER..HHZ": META["SY.TEST..HHZ"]}
+        finishing = Ingestor(self.conn, "test", REP, meta, batch_chunks=4,
+                             on_commit=detector.on_commit, on_open=detector.on_open)
+        run(Source(b), finishing, detector=detector)
+        closed = dict(self.conn.execute(
+            "SELECT g.stream,d.closed FROM seismic.detector_progress d JOIN seismic.segments g USING(recording_id)").fetchall())
+        self.assertTrue(closed["SY.OTHER..HHZ"])
+        self.assertFalse(closed.get("SY.TEST..HHZ", False))  # still open for its own ingestor
+        for c in split_chunks(x[60_000:], 3000, start=60_000):
+            other.handle(c)
+        other.flush()
+        detector.close_all(streams=["SY.TEST..HHZ"])
+        onsets = [t["on_ns"] for t in investigate.triggers(self.conn, "test", "stalta-test", "SY.TEST..HHZ")]
+        self.assertTrue(any(abs(o - (T0 + 800 * 10**9)) < 0.5e9 for o in onsets))
+
     def test_retrieval_budgets_compatibility_and_empty_results(self):
         x = signal(40_000, bursts=(5_000, 25_000))
         labels = {"split": "reference"}

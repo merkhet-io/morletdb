@@ -339,5 +339,6 @@ def run(source, ingestor, *, detector=None, log=None, report_every=500):
                             **{k: v for k, v in ingestor.stats.items() if k != "chunks"}}))
     ingestor.flush()
     if detector is not None:
-        detector.close_all()
+        # Only this run's streams: other processes may still be appending to theirs.
+        detector.close_all(streams=sorted(ingestor.segments))
     return actions
