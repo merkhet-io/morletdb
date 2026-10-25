@@ -57,6 +57,19 @@ class ParquetContractTests(unittest.TestCase):
             with self.assertRaises(ImportFailure):
                 import_files([self.path],"public.unused",validate_only=True)
 
+    def test_low_rate_requires_explicit_lowrate_extractor(self):
+        rows = [{**self.base(), "sample_rate_hz": 100., "start_sample": 0, "samples": self.values}]
+        self.write(rows)
+        with self.assertRaisesRegex(ValueError, "sample_rate_hz"):
+            list(chunks(self.path, Config()))
+        low = Config(extractor="morlet-energy-lowrate-v1")
+        self.assertEqual(len(list(chunks(self.path, low))), 1)
+        self.write([{**rows[0], "sample_rate_hz": 4096.}])
+        with self.assertRaisesRegex(ValueError, r"\[1,128\)"):
+            list(chunks(self.path, low))
+        with self.assertRaises(ValueError):
+            Config(extractor="unknown").validate()
+
 
 if __name__ == "__main__":
     unittest.main()

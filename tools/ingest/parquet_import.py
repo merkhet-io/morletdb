@@ -26,6 +26,7 @@ class Config:
     stride: int = 256
     normalization: str = "zscore"
     rpc_chunks: int = 1
+    extractor: str = "morlet-energy-v1"
 
     def validate(self):
         if self.layout not in ("chunks", "samples"):
@@ -42,6 +43,25 @@ class Config:
             raise ValueError("rpc_chunks * chunk_size must not exceed 262144 samples")
         if self.normalization not in ("none", "demean", "zscore"):
             raise ValueError("invalid normalization")
+        if self.extractor not in RATE_DOMAINS:
+            raise ValueError("extractor must be one of " + ", ".join(RATE_DOMAINS))
+
+
+# Disjoint sample-rate domains of the server's representation versions.
+RATE_DOMAINS = {"morlet-energy-v1": (128, 200000, True),
+                "morlet-energy-lowrate-v1": (1, 128, False)}
+
+
+def sample_rate(value, extractor):
+    low, high, inclusive = RATE_DOMAINS[extractor]
+    try:
+        rate = number(value, "sample_rate_hz", low, high)
+    except ValueError:
+        rate = None
+    if rate is None or (not inclusive and rate >= high):
+        bound = "]" if inclusive else ")"
+        raise ValueError(f"sample_rate_hz must be a finite number in [{low},{high}{bound} for {extractor}")
+    return rate
 
 
 def number(value, label, low, high):
@@ -101,7 +121,7 @@ def chunks(path, config, mapping=None):
             start = row["start_sample"]
             if isinstance(start, bool) or not isinstance(start, int) or not 0 <= start <= 2**63-1:
                 raise ValueError("sample offset must be a nonnegative bigint")
-            rate = number(row["sample_rate_hz"], "sample_rate_hz", 128, 200000)
+            rate = sample_rate(row["sample_rate_hz"], config.extractor)
             if any(not isinstance(row[key], str) or not row[key] for key in ("channel", "unit")):
                 raise ValueError("channel and unit must be nonempty strings")
             row_spec = (rate, row["channel"], row["unit"], metadata(row.get("metadata", {})))
@@ -201,7 +221,7 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
                     raise ValueError("server is missing the batched ingestion type")
                 register_composite(info,conn)
                 chunk_factory=info.python_type
-            report["extractor_version"]=conn.execute("SELECT morlet_extractor_version()").fetchone()[0]
+            report["extractor_version"]=config.extractor
             conn.commit()
         for path, signature in zip(paths, signatures):
             ensured = None
@@ -213,9 +233,12 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
                 if ensured != (recording, spec):
                     flush()
                     rate, channel, unit, meta = spec
-                    conn.execute("SELECT morlet_ensure_recording(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    # Omit the default extractor so older installed servers keep working.
+                    extra = () if config.extractor == "morlet-energy-v1" else (config.extractor,)
+                    conn.execute("SELECT morlet_ensure_recording(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s"
+                                 + ",%s"*len(extra) + ")",
                                  (collection, recording, rate, channel, unit, Jsonb(meta),
-                                  config.window, config.stride, config.normalization))
+                                  config.window, config.stride, config.normalization, *extra))
                     ensured = (recording, spec)
                 pending_recording=recording
                 pending.append((start,values))
@@ -263,6 +286,8 @@ def main():
     parser.add_argument("--window", type=int, default=512)
     parser.add_argument("--stride", type=int, default=256)
     parser.add_argument("--normalization", choices=["none", "demean", "zscore"], default="zscore")
+    parser.add_argument("--extractor", choices=sorted(RATE_DOMAINS), default="morlet-energy-v1",
+                        help="representation version; low-rate recordings (<128 Hz) need morlet-energy-lowrate-v1")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     try:
@@ -270,7 +295,8 @@ def main():
         if not isinstance(mapping, dict):
             raise ValueError("column mapping must be a JSON object")
         config = Config(args.layout, args.chunk_size, args.batch_rows, args.commit_chunks,
-                        args.window, args.stride, args.normalization, args.rpc_chunks)
+                        args.window, args.stride, args.normalization, args.rpc_chunks,
+                        args.extractor)
         report = import_files(args.files, args.collection, config, mapping, args.dsn, args.validate_only)
     except ImportFailure as exc:
         print(json.dumps(exc.report, indent=2), file=sys.stderr)

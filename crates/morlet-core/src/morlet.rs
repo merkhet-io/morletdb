@@ -4,6 +4,11 @@ use serde::Serialize;
 use std::f64::consts::PI;
 
 pub const EXTRACTOR_VERSION: &str = "morlet-energy-v1";
+/// Identical kernels, bands, pooling and features to `morlet-energy-v1`, over the
+/// disjoint rate domain [1,128) Hz. Band centers stay fs/64..0.4fs, so physical
+/// coverage scales with the rate (100 Hz: 1.56..40 Hz). A separate version keeps
+/// v1's frozen contract intact and makes every low-rate representation explicit.
+pub const LOWRATE_EXTRACTOR_VERSION: &str = "morlet-energy-lowrate-v1";
 pub const BANDS: usize = 12;
 pub const MIN_SAMPLES: usize = 512;
 
@@ -56,15 +61,42 @@ pub struct EnergyCell {
     pub energy: f64,
 }
 
+/// Canonical version string, or an error for unknown representations.
+pub fn extractor_version(name: &str) -> Result<&'static str, SignalError> {
+    [EXTRACTOR_VERSION, LOWRATE_EXTRACTOR_VERSION]
+        .into_iter()
+        .find(|version| *version == name)
+        .ok_or(SignalError::UnknownExtractor)
+}
+
+/// Rejects rates outside the version's domain. The domains do not overlap.
+pub fn validate_rate(version: &str, sample_rate_hz: f64) -> Result<(), SignalError> {
+    match extractor_version(version)? {
+        EXTRACTOR_VERSION if (128.0..=200_000.0).contains(&sample_rate_hz) => Ok(()),
+        EXTRACTOR_VERSION => Err(SignalError::InvalidSampleRate),
+        _ if (1.0..128.0).contains(&sample_rate_hz) => Ok(()),
+        _ => Err(SignalError::InvalidLowSampleRate),
+    }
+}
+
 /// Extract integer-coordinate cells without changing the frozen signature format.
 pub fn extract_with_cells(
     samples: &[f64],
     sample_rate_hz: f64,
 ) -> Result<(Signature, Vec<EnergyCell>), SignalError> {
+    extract_versioned_with_cells(samples, sample_rate_hz, EXTRACTOR_VERSION)
+}
+
+pub fn extract_versioned_with_cells(
+    samples: &[f64],
+    sample_rate_hz: f64,
+    version: &str,
+) -> Result<(Signature, Vec<EnergyCell>), SignalError> {
     let mut cells = Vec::new();
     let signature = extract_internal(
         samples,
         sample_rate_hz,
+        version,
         |band, start, end, radius, energy| {
             cells.push(EnergyCell {
                 band,
@@ -82,27 +114,37 @@ pub fn extract_with_cells(
 /// DC-corrected, complex L2-normalized kernels. Only valid coefficients are used.
 /// Tokens pool consecutive blocks of up to 128 valid coefficients per band.
 pub fn extract(samples: &[f64], sample_rate_hz: f64) -> Result<Signature, SignalError> {
-    extract_internal(samples, sample_rate_hz, |_, _, _, _, _| {})
+    extract_versioned(samples, sample_rate_hz, EXTRACTOR_VERSION)
+}
+
+/// Same transform as `extract`, under an explicitly selected rate-domain version.
+pub fn extract_versioned(
+    samples: &[f64],
+    sample_rate_hz: f64,
+    version: &str,
+) -> Result<Signature, SignalError> {
+    extract_internal(samples, sample_rate_hz, version, |_, _, _, _, _| {})
 }
 
 fn extract_internal(
     samples: &[f64],
     sample_rate_hz: f64,
+    version: &str,
     mut emit: impl FnMut(usize, usize, usize, usize, f64),
 ) -> Result<Signature, SignalError> {
+    let version = extractor_version(version)?;
     validate(samples)?;
     if samples.len() < MIN_SAMPLES {
         return Err(SignalError::MorletLength);
     }
-    if !sample_rate_hz.is_finite() || !(128.0..=200_000.0).contains(&sample_rate_hz) {
-        return Err(SignalError::InvalidSampleRate);
-    }
+    // NaN is outside every domain.
+    validate_rate(version, sample_rate_hz)?;
     let n = samples.len();
     // Keep Go's accumulation order as part of this version's numerical contract.
     let mean = samples.iter().map(|v| v / n as f64).sum::<f64>();
     let x: Vec<f64> = samples.iter().map(|v| v - mean).collect();
     let mut result = Signature {
-        version: EXTRACTOR_VERSION,
+        version,
         frequencies_hz: [0.; BANDS],
         energy: [0.; BANDS],
         rms: 0.,
@@ -239,6 +281,43 @@ mod tests {
             assert!(cell.end_sample + cell.support_radius <= samples.len());
             assert!(cell.end_sample > cell.start_sample);
         }
+    }
+
+    #[test]
+    fn lowrate_version_has_disjoint_domain_and_identical_transform() {
+        let samples: Vec<f64> = (0..2048)
+            .map(|i| (i as f64 / 5.).sin() * (-((i as f64 - 900.) / 120.).powi(2)).exp())
+            .collect();
+        let low = extract_versioned(&samples, 100., LOWRATE_EXTRACTOR_VERSION).unwrap();
+        let reference = extract(&samples, 6400.).unwrap();
+        assert_eq!(low.version, LOWRATE_EXTRACTOR_VERSION);
+        assert!((low.frequencies_hz[0] - 100. / 64.).abs() < 1e-12);
+        assert!((low.frequencies_hz[11] - 40.).abs() < 1e-9);
+        // Kernels depend only on fs/f, so sample-coordinate energies are unchanged.
+        for (a, b) in low.features().iter().zip(reference.features()) {
+            assert!((a - b).abs() < 1e-9 * (1. + b.abs()));
+        }
+        let (_, low_cells) =
+            extract_versioned_with_cells(&samples, 100., LOWRATE_EXTRACTOR_VERSION).unwrap();
+        let (_, cells) = extract_with_cells(&samples, 6400.).unwrap();
+        assert_eq!(low_cells.len(), cells.len());
+        for rate in [1., 20., 100., 127.999] {
+            assert!(extract_versioned(&[0.; 512], rate, LOWRATE_EXTRACTOR_VERSION).is_ok());
+            assert_eq!(
+                extract(&[0.; 512], rate).unwrap_err(),
+                SignalError::InvalidSampleRate
+            );
+        }
+        for rate in [f64::NAN, 0., 0.999, 128., 4096.] {
+            assert_eq!(
+                extract_versioned(&[0.; 512], rate, LOWRATE_EXTRACTOR_VERSION).unwrap_err(),
+                SignalError::InvalidLowSampleRate
+            );
+        }
+        assert_eq!(
+            extract_versioned(&[0.; 512], 100., "morlet-energy-v2").unwrap_err(),
+            SignalError::UnknownExtractor
+        );
     }
 
     #[test]

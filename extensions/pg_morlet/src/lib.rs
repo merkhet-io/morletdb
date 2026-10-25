@@ -60,6 +60,18 @@ fn morlet_features(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f64> {
         .features()
 }
 
+/// Version-selected features. Rate domains of the supported versions are disjoint.
+#[pg_extern(name = "morlet_features", immutable, parallel_safe, strict)]
+fn morlet_features_versioned(
+    samples: Vec<Option<f64>>,
+    sample_rate_hz: f64,
+    extractor: &str,
+) -> Vec<f64> {
+    morlet_core::morlet::extract_versioned(&checked_samples(samples), sample_rate_hz, extractor)
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+        .features()
+}
+
 /// Distinct from morlet_distance: distance between spectral/statistical features.
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_feature_distance(
@@ -145,6 +157,25 @@ fn morlet_chunk_checkpoint(
     JsonB(serde_json::to_value(state.checkpoint()).unwrap())
 }
 
+#[pg_extern(name = "morlet_chunk_checkpoint", immutable, parallel_safe, strict)]
+fn morlet_chunk_checkpoint_versioned(
+    sample_rate_hz: f64,
+    window_size: i32,
+    stride: i32,
+    normalization: &str,
+    extractor: &str,
+) -> JsonB {
+    let state = morlet_core::chunks::ChunkExtractor::with_extractor(
+        sample_rate_hz,
+        window_size as usize,
+        stride as usize,
+        normalization,
+        extractor,
+    )
+    .unwrap_or_else(|e| pgrx::error!("{}", e));
+    JsonB(serde_json::to_value(state.checkpoint()).unwrap())
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_valid_chunk(samples: Vec<Option<f64>>) -> bool {
     morlet_core::validate(&checked_samples(samples)).unwrap_or_else(|e| pgrx::error!("{}", e));
@@ -185,6 +216,43 @@ mod tests {
     fn stream_search_keeps_parent_visibility_and_compatibility() {
         Spi::run("SELECT morlet_create_stream_collection('public','search_rls'); SELECT morlet_start_recording('search_rls','A',4096,'x','g','{}',512,256,'none'); SELECT morlet_start_recording('search_rls','B',4096,'x','g'); SELECT morlet_append_chunk('search_rls','A',0,array_fill(0.::float8,ARRAY[512])); SELECT morlet_append_chunk('search_rls','B',0,array_fill(0.::float8,ARRAY[512])); ALTER TABLE search_rls ENABLE ROW LEVEL SECURITY; CREATE POLICY parent_visibility ON search_rls USING(recording_id='B'); ALTER TABLE search_rls_segments ENABLE ROW LEVEL SECURITY; CREATE POLICY segment_visibility ON search_rls_segments USING(true); CREATE ROLE morlet_search_reader; GRANT SELECT ON search_rls,search_rls_segments TO morlet_search_reader; SET LOCAL ROLE morlet_search_reader").unwrap();
         assert_eq!(Spi::get_one::<Vec<String>>("SELECT array_agg(recording_id) FROM morlet_search_streams('search_rls',array_fill(0.::float8,ARRAY[512]),4096,'x','g')").unwrap().unwrap(),vec!["B".to_string()]);
+    }
+    #[pg_test]
+    fn lowrate_recordings_are_explicit_and_isolated() {
+        Spi::run("SELECT morlet_create_stream_collection('public','lowrate_streams'); SELECT morlet_start_recording('lowrate_streams','S1',100,'HHZ','counts','{\"station\":\"S\"}',2048,512,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_start_recording('lowrate_streams','S2',100,'HHZ','counts','{\"station\":\"S\"}',2048,512,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_append_chunk('lowrate_streams','S1',0,ARRAY(SELECT sin(i::float8/5)*exp(-power((i-1000)/150.,2)) FROM generate_series(0,4095) i)); SELECT morlet_append_chunk('lowrate_streams','S2',0,ARRAY(SELECT sin(i::float8/5)*exp(-power((i-1512)/150.,2)) FROM generate_series(0,4095) i))").unwrap();
+        assert_eq!(
+            Spi::get_one::<String>(
+                "SELECT extractor_version FROM morlet_stream_status('lowrate_streams','S1')"
+            )
+            .unwrap()
+            .unwrap(),
+            "morlet-energy-lowrate-v1"
+        );
+        let hit = Spi::get_two::<String, i64>("SELECT recording_id,start_sample FROM morlet_search_interval('lowrate_streams','S1',0,2048,'{}',1)").unwrap();
+        assert_eq!((hit.0.unwrap(), hit.1.unwrap()), ("S2".to_string(), 512));
+        assert_eq!(Spi::get_one::<String>("SELECT extractor_version FROM morlet_search_interval('lowrate_streams','S1',0,2048,'{}',1)").unwrap().unwrap(),"morlet-energy-lowrate-v1");
+        assert_eq!(Spi::get_one::<String>("SELECT extractor_version FROM morlet_read_interval('lowrate_streams','S2',512,2560)").unwrap().unwrap(),"morlet-energy-lowrate-v1");
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_streams('lowrate_streams',ARRAY(SELECT sin(i::float8/5) FROM generate_series(0,2047) i),100,'HHZ','counts','{}','zscore',10,4096,'morlet-energy-lowrate-v1')").unwrap().unwrap(),10);
+    }
+    #[pg_test(
+        error = "invalid chunk extractor: rate 128..200000, window 512..4096, stride 1..32768 required"
+    )]
+    fn default_v1_still_rejects_seismic_rates() {
+        Spi::run("SELECT morlet_create_stream_collection('public','v1_streams'); SELECT morlet_start_recording('v1_streams','S1',100,'HHZ','counts')").unwrap();
+    }
+    #[pg_test(error = "morlet-energy-lowrate-v1 requires a finite sample_rate_hz in [1,128)")]
+    fn lowrate_rejects_v1_rates() {
+        Spi::run("SELECT morlet_create_stream_collection('public','lowrate_bad'); SELECT morlet_start_recording('lowrate_bad','S1',4096,'x','g','{}',512,256,'zscore','morlet-energy-lowrate-v1')").unwrap();
+    }
+    #[pg_test(error = "incompatible stream representation")]
+    fn search_rejects_mixed_extractor_population() {
+        Spi::run("SELECT morlet_create_stream_collection('public','mixed_streams'); SELECT morlet_start_recording('mixed_streams','A',100,'HHZ','counts','{}',512,256,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_append_chunk('mixed_streams','A',0,array_fill(0.::float8,ARRAY[512])); UPDATE mixed_streams SET checkpoint=jsonb_set(checkpoint,'{extractor_version}','\"morlet-energy-v1\"'); SELECT * FROM morlet_search_streams('mixed_streams',array_fill(0.::float8,ARRAY[512]),100,'HHZ','counts','{}','zscore',10,4096,'morlet-energy-lowrate-v1')").unwrap();
+    }
+    #[pg_test(
+        error = "invalid chunk extractor: rate 128..200000, window 512..4096, stride 1..32768 required"
+    )]
+    fn import_cannot_relabel_lowrate_recording_as_v1() {
+        Spi::run("SELECT morlet_create_stream_collection('public','import_lowrate'); SELECT morlet_ensure_recording('import_lowrate','A',100,'HHZ','counts','{}',2048,512,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_ensure_recording('import_lowrate','A',100,'HHZ','counts','{}',2048,512,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_ensure_recording('import_lowrate','A',100,'HHZ','counts','{}',2048,512,'zscore')").unwrap();
     }
     #[pg_test]
     fn batch_append_is_atomic_and_replay_safe() {

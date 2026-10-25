@@ -126,6 +126,31 @@ class WaveIndexContracts(unittest.TestCase):
             path.write_text(json.dumps(report, allow_nan=False))
             self.assertEqual(json.loads(path.read_text())['version'], report['version'])
 
+    def test_lowrate_spec_has_disjoint_domain_and_stable_default_id(self):
+        # Pinned: the committed synthetic report uses this default identifier.
+        self.assertEqual(Spec().id, Spec(extractor='morlet-energy-v1').id)
+        low = Spec(rate=100.0, extractor='morlet-energy-lowrate-v1')
+        self.assertNotEqual(low.id, Spec(rate=100.0*64, extractor='morlet-energy-v1').id)
+        for bad in (dict(rate=100.0), dict(rate=128.0, extractor='morlet-energy-lowrate-v1'),
+                    dict(rate=0.5, extractor='morlet-energy-lowrate-v1'),
+                    dict(rate=100.0, extractor='morlet-energy-v2')):
+            with self.assertRaises(ValueError):
+                Spec(**bad)
+        with self.assertRaises(ValueError):
+            WaveIndex([window('a', spec=Spec(window=512))], replace(low, window=512)).search(
+                window('q', spec=Spec(window=512)))
+
+    @unittest.skipUnless(BINARY.exists(), 'build the Rust features adapter first')
+    def test_rust_lowrate_cells_match_v1_sample_coordinates(self):
+        from wave_index import extract_windows
+        samples = [math.sin(i/5)*math.exp(-((i-900)/120)**2) for i in range(2048)]
+        low = Spec(rate=100.0, extractor='morlet-energy-lowrate-v1')
+        a = extract_windows([{'id': 'x', 'samples': samples}], low, BINARY)[0]
+        b = extract_windows([{'id': 'x', 'samples': samples}], Spec(rate=6400.0), BINARY)[0]
+        self.assertEqual(a.layout, b.layout)
+        self.assertTrue(np.allclose(a.values, b.values, rtol=1e-9, atol=1e-12))
+        self.assertNotEqual(a.spec_id, b.spec_id)
+
 
 if __name__ == '__main__':
     unittest.main()
