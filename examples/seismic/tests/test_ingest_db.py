@@ -13,7 +13,7 @@ from morlet_seismic.ingest import Ingestor, init_db
 AVAILABLE = database_available()
 
 
-@unittest.skipUnless(AVAILABLE, "local MorletDB server (apps/seismic/compose.yaml) not reachable")
+@unittest.skipUnless(AVAILABLE, "local MorletDB server (examples/seismic/compose.yaml) not reachable")
 class IngestContracts(unittest.TestCase):
     def setUp(self):
         self.db = TempDatabase()

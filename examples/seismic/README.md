@@ -1,4 +1,9 @@
-# Seismic replay investigation (local research application)
+# Example: seismic replay investigation
+
+A worked example of the MorletDB recording workflow on real public data, built
+as a small local application. It shows how an application can sit on top of the
+recording SQL API, the Python client and the wave-index PoC without its own
+waveform store or extractor. It is example code, not a supported product.
 
 Replay public broadband recordings through MorletDB, propose candidate
 transients with an STA/LTA baseline, retrieve similar historical intervals from
@@ -58,10 +63,10 @@ Requires Docker Compose v2, Rust (see `rust-toolchain.toml`) and Python 3.12.
 # From the repository root
 cargo build --locked --release -p morlet-core --example features   # Rust adapter for temporal modes
 python3.12 -m venv .venv-seismic
-.venv-seismic/bin/pip install -r apps/seismic/requirements.txt
-docker compose -f apps/seismic/compose.yaml up -d --wait db          # 127.0.0.1:54339, own volume
+.venv-seismic/bin/pip install -r examples/seismic/requirements.txt
+docker compose -f examples/seismic/compose.yaml up -d --wait db          # 127.0.0.1:54339, own volume
 
-cd apps/seismic
+cd examples/seismic
 ../../.venv-seismic/bin/python -m morlet_seismic download            # network, once
 ../../.venv-seismic/bin/python -m morlet_seismic verify              # offline checksums
 ../../.venv-seismic/bin/python -m morlet_seismic replay --output ../../data/seismic/replay.json
@@ -70,7 +75,7 @@ cd apps/seismic
 
 The database container is separate from the repository walkthrough (`compose.yaml`
 at the root uses port 54329 and another volume). Credentials are public demo
-values; bind locally only. `docker compose -f apps/seismic/compose.yaml down -v`
+values; bind locally only. `docker compose -f examples/seismic/compose.yaml down -v`
 deletes the replayed data.
 
 After `download`, everything else runs without network access. Replaying all
@@ -91,7 +96,7 @@ recordings are independent.
 | `status` | Committed progress per stream |
 | `evaluate --output report.json [--replay-reports DIR]` | Real-data evaluation report (JSON + Markdown) |
 
-Run them as `python -m morlet_seismic <command>` from `apps/seismic`.
+Run them as `python -m morlet_seismic <command>` from `examples/seismic`.
 
 ## How ingestion behaves
 
@@ -182,7 +187,7 @@ Screenshots of these steps are in [`docs/`](docs/).
 ## Tests
 
 ```sh
-cd apps/seismic/tests
+cd examples/seismic/tests
 ../../../.venv-seismic/bin/python -m unittest test_offline test_ingest_db
 ```
 

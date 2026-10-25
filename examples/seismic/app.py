@@ -1,4 +1,4 @@
-"""Local seismic investigation UI. Run: streamlit run apps/seismic/app.py
+"""Local seismic investigation UI. Run: streamlit run examples/seismic/app.py
 
 Binds to localhost (see .streamlit/config.toml). Research tool: similarity is a
 lead for analyst review, never an event label, alert or classification.
@@ -170,7 +170,7 @@ try:
     c = conn()
     init_db(c)
 except Exception as exc:  # noqa: BLE001
-    st.error(f"Database unavailable: {exc}. Start it with `docker compose -f apps/seismic/compose.yaml up -d --wait`.")
+    st.error(f"Database unavailable: {exc}. Start it with `docker compose -f examples/seismic/compose.yaml up -d --wait`.")
     st.stop()
 
 datasets = [r[0] for r in c.execute("SELECT DISTINCT dataset FROM seismic.segments ORDER BY 1").fetchall()]

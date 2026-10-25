@@ -1,8 +1,8 @@
 # Seismic replay investigation: results and decisions
 
-Status: **local research application**, historical replay working on real public
+Status: **repository example** (local research application), historical replay working on real public
 data; live SeedLink input implemented but not exercised for the report.
-Date: 2026-10-25. Application and launch instructions: [`apps/seismic`](../apps/seismic/README.md).
+Date: 2026-10-25. Application and launch instructions: [`examples/seismic`](../examples/seismic/README.md).
 Full numbers: [`evaluation/reports/seismic-cx-north-chile-2024-v1.md`](../evaluation/reports/seismic-cx-north-chile-2024-v1.md)
 (JSON beside it).
 
@@ -39,10 +39,10 @@ result here validates one.
    waveform and spectrogram, ranked matches with waveform/spectrum comparison
    and provenance, separate catalog annotations.
 
-![Overview: PB08 recordings split at real gaps](../apps/seismic/docs/01-overview-pb08-gaps.jpg)
-![Query: held-out M5.0 at PB01](../apps/seismic/docs/02-query-pb01-m5.jpg)
-![Pooled MorletDB matches](../apps/seismic/docs/03-pooled-pg-matches.jpg)
-![Approximate temporal plan with a 4-candidate budget](../apps/seismic/docs/04-temporal-approx-budget.jpg)
+![Overview: PB08 recordings split at real gaps](../examples/seismic/docs/01-overview-pb08-gaps.jpg)
+![Query: held-out M5.0 at PB01](../examples/seismic/docs/02-query-pb01-m5.jpg)
+![Pooled MorletDB matches](../examples/seismic/docs/03-pooled-pg-matches.jpg)
+![Approximate temporal plan with a 4-candidate budget](../examples/seismic/docs/04-temporal-approx-budget.jpg)
 
 ## Measured results (Apple M5 Max, macOS 27, PostgreSQL 17.6 container, arm64)
 
@@ -161,8 +161,8 @@ such as depth, first-motion polarity and spectral ratios, not similarity scores.
 ## Reproduce
 
 ```sh
-docker compose -f apps/seismic/compose.yaml up -d --wait db
-cd apps/seismic
+docker compose -f examples/seismic/compose.yaml up -d --wait db
+cd examples/seismic
 ../../.venv-seismic/bin/python -m morlet_seismic download    # once, network
 ../../.venv-seismic/bin/python -m morlet_seismic verify
 for s in PB01 PB02 PB08; do
