@@ -10,6 +10,7 @@ on:
       - 'tools/**'
       - 'evaluation/**'
       - 'examples/inspect_recordings.py'
+      - 'examples/notebooks/**'
       - 'Cargo.*'
       - 'rust-toolchain.toml'
       - '.github/workflows/preview.yml'
@@ -31,6 +32,22 @@ jobs:
           docker compose restart db
           docker compose up -d --wait db
           docker compose run --rm walkthrough
+      - name: Execute visual notebook twice and export HTML
+        run: |
+          mkdir -p notebook-output
+          chmod 777 notebook-output
+          docker compose run --rm -v "$PWD/notebook-output:/reports" walkthrough sh -c '
+            pip install --no-cache-dir -r examples/notebooks/requirements.txt &&
+            python -m ipykernel install --sys-prefix --name python3 &&
+            jupyter nbconvert --to notebook --execute examples/notebooks/waveform-investigation.ipynb --output first-run.ipynb --output-dir /reports --ExecutePreprocessor.timeout=180 &&
+            jupyter nbconvert --to notebook --execute examples/notebooks/waveform-investigation.ipynb --output executed.ipynb --output-dir /reports --ExecutePreprocessor.timeout=180 &&
+            jupyter nbconvert --to html /reports/executed.ipynb --output investigation.html --output-dir /reports'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-notebook
+          path: notebook-output/
+          if-no-files-found: ignore
       - name: Exact-search budget and ranking smoke above 4096 candidates
         run: |
           mkdir -p benchmark-output

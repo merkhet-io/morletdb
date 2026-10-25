@@ -34,6 +34,10 @@ This builds the local PostgreSQL 17 preview, imports synthetic Parquet, finds a
 known interval and reconstructs matches. See the [walkthrough](docs/recording-workflow.md)
 for prerequisites, Python usage, credentials, restart checks and explicit teardown.
 
+For a visual investigation, open the [waveform notebook](examples/notebooks/README.md):
+compare query/match waveforms, spectra, distances and provenance, including a
+polarity distractor that exposes a feature limitation.
+
 ## Try it in Postgres
 
 Target: **PostgreSQL 17**. Follow the [Rust/pgrx setup guide](extensions/pg_morlet/README.md#setup) to install the extension, then run:

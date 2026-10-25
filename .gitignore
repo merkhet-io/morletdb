@@ -9,3 +9,7 @@ __pycache__/
 /benchmark-output/
 
 /streaming-output/
+
+.venv-notebook/
+notebook-output/
+.ipynb_checkpoints/
