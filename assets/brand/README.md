@@ -10,6 +10,7 @@ brand illustration, not a plotted measurement.
 | [mark.svg](mark.svg) / [PNG](mark.png) | Square icon; self-contained dark field, transparent outer corners |
 | [wordmark.svg](wordmark.svg) / [PNG](wordmark.png) | Horizontal identity on a light surface |
 | [hero.svg](hero.svg) / [PNG](hero.png) | README banner on a self-contained dark surface |
+| [pipeline.svg](pipeline.svg) / [PNG](pipeline.png) | README diagram: recording to evidence, on the same dark surface |
 
 Use **MorletDB** in prose and `morletdb` in code/URLs. The visual wordmark is
 lowercase. The promise is **Search your waveforms.** The category is **signal
@@ -27,4 +28,5 @@ Original artwork is distributed under the repository's Apache-2.0 license.
 
 PNG exports are included for avatars, documents and viewers without SVG support.
 Regenerate them from the SVG sources using CairoSVG (512px mark, 580×144 wordmark,
-1120×300 banner). Raster exports are previews of the same vector artwork.
+1120×300 banner and diagram). The diagram PNG was exported with headless Chrome at
+1120×300. Raster exports are previews of the same vector artwork.
