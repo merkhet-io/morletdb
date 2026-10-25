@@ -1,0 +1,4872 @@
+{
+ "catalogs": [
+  {
+   "bytes": 39219,
+   "events": [
+    {
+     "depth_km": 95.911,
+     "description": "66 km ESE of La Tirana, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mgjy",
+     "latitude": -20.4639,
+     "longitude": -69.0329,
+     "magnitude": 3.9,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-03T23:52:52.868000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mgjy&format=quakeml"
+    },
+    {
+     "depth_km": 113.576,
+     "description": "70 km W of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mgmp",
+     "latitude": -21.1123,
+     "longitude": -68.9263,
+     "magnitude": 4.5,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-04T11:02:06.413000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mgmp&format=quakeml"
+    },
+    {
+     "depth_km": 107.862,
+     "description": "13 km NNE of Cami\u00f1a, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mgrm",
+     "latitude": -19.1941,
+     "longitude": -69.3879,
+     "magnitude": 4.6,
+     "magnitude_type": "mwr",
+     "origin_time": "2024-03-04T22:01:31.650000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mgrm&format=quakeml"
+    },
+    {
+     "depth_km": 134.579,
+     "description": "8 km N of San Pedro de Atacama, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mgt1",
+     "latitude": -22.8343,
+     "longitude": -68.2091,
+     "magnitude": 4.1,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-05T03:12:51.172000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mgt1&format=quakeml"
+    },
+    {
+     "depth_km": 33.483,
+     "description": "33 km SW of Tocopilla, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m3k1",
+     "latitude": -22.3351,
+     "longitude": -70.3886,
+     "magnitude": 4.3,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-05T20:30:12.072000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m3k1&format=quakeml"
+    },
+    {
+     "depth_km": 122.496,
+     "description": "27 km ESE of Calama, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m3la",
+     "latitude": -22.5238,
+     "longitude": -68.6709,
+     "magnitude": 4.0,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-05T23:35:37.102000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m3la&format=quakeml"
+    },
+    {
+     "depth_km": 115.038,
+     "description": "53 km W of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m3nm",
+     "latitude": -21.1862,
+     "longitude": -68.7652,
+     "magnitude": 4.4,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-06T11:10:23.417000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m3nm&format=quakeml"
+    },
+    {
+     "depth_km": 132.607,
+     "description": "50 km SW of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m3tv",
+     "latitude": -21.5802,
+     "longitude": -68.5518,
+     "magnitude": 4.2,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-07T04:21:31.153000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m3tv&format=quakeml"
+    },
+    {
+     "depth_km": 47.292,
+     "description": "60 km SSW of La Tirana, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m3yw",
+     "latitude": -20.8601,
+     "longitude": -69.8318,
+     "magnitude": 4.6,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-07T17:04:24.561000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m3yw&format=quakeml"
+    },
+    {
+     "depth_km": 105.863,
+     "description": "81 km ESE of La Tirana, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m412",
+     "latitude": -20.5655,
+     "longitude": -68.9172,
+     "magnitude": 4.3,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-07T23:29:11.213000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m412&format=quakeml"
+    },
+    {
+     "depth_km": 118.841,
+     "description": "81 km WNW of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m42m",
+     "latitude": -20.9188,
+     "longitude": -68.9677,
+     "magnitude": 4.5,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-08T05:25:03.726000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m42m&format=quakeml"
+    },
+    {
+     "depth_km": 125.043,
+     "description": "48 km SSW of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m4db",
+     "latitude": -21.6317,
+     "longitude": -68.422,
+     "magnitude": 4.4,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-09T08:57:17.964000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m4db&format=quakeml"
+    },
+    {
+     "depth_km": 92.951,
+     "description": "131 km SW of San Pedro de Atacama, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m4de",
+     "latitude": -23.8484,
+     "longitude": -68.9877,
+     "magnitude": 4.5,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-09T09:22:28.854000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m4de&format=quakeml"
+    },
+    {
+     "depth_km": 110.074,
+     "description": "40 km ENE of La Tirana, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m4fd",
+     "latitude": -20.1781,
+     "longitude": -69.3113,
+     "magnitude": 4.3,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-09T16:43:11.429000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m4fd&format=quakeml"
+    },
+    {
+     "depth_km": 127.451,
+     "description": "16 km E of Calama, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m4fz",
+     "latitude": -22.4356,
+     "longitude": -68.7624,
+     "magnitude": 4.6,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-09T19:58:53.199000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m4fz&format=quakeml"
+    },
+    {
+     "depth_km": 111.05,
+     "description": "84 km SE of La Tirana, Chile",
+     "event_type": "earthquake",
+     "id": "us7000m4kp",
+     "latitude": -20.921,
+     "longitude": -69.1363,
+     "magnitude": 4.5,
+     "magnitude_type": "mb",
+     "origin_time": "2024-03-10T19:52:37.299000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m4kp&format=quakeml"
+    }
+   ],
+   "name": "regional",
+   "params": {
+    "endtime": "2024-03-11T00:00:00",
+    "format": "xml",
+    "latitude": -20.8,
+    "longitude": -69.5,
+    "maxradiuskm": 400,
+    "minmagnitude": 2.5,
+    "orderby": "time-asc",
+    "starttime": "2024-03-03T23:00:00"
+   },
+   "path": "catalog/usgs-regional-reference-2024-03.xml",
+   "period": "reference-2024-03",
+   "retrieved_utc": "2026-10-25T13:26:57.478613Z",
+   "sha256": "74d5e461f0de28abe84c0e545ea6e4e2706af3fcac36345c119252ae45a77639",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?latitude=-20.8&longitude=-69.5&maxradiuskm=400&minmagnitude=2.5&starttime=2024-03-03T23%3A00%3A00&endtime=2024-03-11T00%3A00%3A00&format=xml&orderby=time-asc"
+  },
+  {
+   "bytes": 5381,
+   "events": [
+    {
+     "depth_km": 10.0,
+     "description": "Macquarie Island region",
+     "event_type": "earthquake",
+     "id": "us6000mgyj",
+     "latitude": -59.1953,
+     "longitude": 158.7607,
+     "magnitude": 6.1,
+     "magnitude_type": "mww",
+     "origin_time": "2024-03-05T19:52:52.612000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mgyj&format=quakeml"
+    },
+    {
+     "depth_km": 115.0,
+     "description": "103 km SE of Pondaguitan, Philippines",
+     "event_type": "earthquake",
+     "id": "us7000m439",
+     "latitude": 5.8168,
+     "longitude": 126.9407,
+     "magnitude": 6.0,
+     "magnitude_type": "mww",
+     "origin_time": "2024-03-08T09:11:45.110000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us7000m439&format=quakeml"
+    }
+   ],
+   "name": "global",
+   "params": {
+    "endtime": "2024-03-11T00:00:00",
+    "format": "xml",
+    "minmagnitude": 6.0,
+    "orderby": "time-asc",
+    "starttime": "2024-03-03T23:00:00"
+   },
+   "path": "catalog/usgs-global-reference-2024-03.xml",
+   "period": "reference-2024-03",
+   "retrieved_utc": "2026-10-25T13:26:57.997957Z",
+   "sha256": "8b8d67bba3a242598e1f0c099b46646ebbb0a4d93f26ce6f3563d144ee5326a6",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?minmagnitude=6.0&starttime=2024-03-03T23%3A00%3A00&endtime=2024-03-11T00%3A00%3A00&format=xml&orderby=time-asc"
+  },
+  {
+   "bytes": 27156,
+   "events": [
+    {
+     "depth_km": 101.655,
+     "description": "81 km WSW of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mvda",
+     "latitude": -21.4461,
+     "longitude": -68.9993,
+     "magnitude": 5.0,
+     "magnitude_type": "mww",
+     "origin_time": "2024-05-01T01:24:50.530000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mvda&format=quakeml"
+    },
+    {
+     "depth_km": 98.778,
+     "description": "79 km WNW of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mvfm",
+     "latitude": -20.9146,
+     "longitude": -68.9445,
+     "magnitude": 4.5,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-01T08:46:20.105000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mvfm&format=quakeml"
+    },
+    {
+     "depth_km": 104.692,
+     "description": "79 km ESE of La Tirana, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mvjy",
+     "latitude": -20.6607,
+     "longitude": -68.9746,
+     "magnitude": 4.2,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-01T22:50:05.803000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mvjy&format=quakeml"
+    },
+    {
+     "depth_km": 144.3,
+     "description": "35 km ENE of Palca, Peru",
+     "event_type": "earthquake",
+     "id": "us6000mvx3",
+     "latitude": -17.6604,
+     "longitude": -69.6507,
+     "magnitude": 4.5,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-03T05:54:58.804000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mvx3&format=quakeml"
+    },
+    {
+     "depth_km": 26.107,
+     "description": "97 km SW of La Tirana, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mw33",
+     "latitude": -20.9735,
+     "longitude": -70.7027,
+     "magnitude": 4.4,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-03T16:26:08.597000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mw33&format=quakeml"
+    },
+    {
+     "depth_km": 126.55,
+     "description": "4 km NNE of Cami\u00f1a, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mw6i",
+     "latitude": -19.2746,
+     "longitude": -69.4057,
+     "magnitude": 4.2,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-03T18:43:47.749000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mw6i&format=quakeml"
+    },
+    {
+     "depth_km": 232.646,
+     "description": "79 km SSW of Atocha, Bolivia",
+     "event_type": "earthquake",
+     "id": "us6000mw90",
+     "latitude": -21.5475,
+     "longitude": -66.6146,
+     "magnitude": 4.4,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-04T02:43:18.297000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mw90&format=quakeml"
+    },
+    {
+     "depth_km": 218.994,
+     "description": "112 km W of El Aguilar, Argentina",
+     "event_type": "earthquake",
+     "id": "us6000mwcm",
+     "latitude": -23.2069,
+     "longitude": -66.7763,
+     "magnitude": 4.4,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-04T18:40:16.272000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mwcm&format=quakeml"
+    },
+    {
+     "depth_km": 112.27,
+     "description": "67 km W of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mwfy",
+     "latitude": -21.1413,
+     "longitude": -68.8933,
+     "magnitude": 4.3,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-05T08:33:24.919000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mwfy&format=quakeml"
+    },
+    {
+     "depth_km": 137.939,
+     "description": "35 km WSW of San Pedro de Atacama, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mwgh",
+     "latitude": -23.0303,
+     "longitude": -68.5215,
+     "magnitude": 4.2,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-05T09:20:44.681000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mwgh&format=quakeml"
+    },
+    {
+     "depth_km": 106.109,
+     "description": "78 km WNW of Ollag\u00fce, Chile",
+     "event_type": "earthquake",
+     "id": "us6000mwmw",
+     "latitude": -20.839,
+     "longitude": -68.8906,
+     "magnitude": 5.0,
+     "magnitude_type": "mb",
+     "origin_time": "2024-05-06T06:30:30.333000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mwmw&format=quakeml"
+    }
+   ],
+   "name": "regional",
+   "params": {
+    "endtime": "2024-05-06T12:00:00",
+    "format": "xml",
+    "latitude": -20.8,
+    "longitude": -69.5,
+    "maxradiuskm": 400,
+    "minmagnitude": 2.5,
+    "orderby": "time-asc",
+    "starttime": "2024-04-30T23:00:00"
+   },
+   "path": "catalog/usgs-regional-heldout-2024-05.xml",
+   "period": "heldout-2024-05",
+   "retrieved_utc": "2026-10-25T13:26:58.239401Z",
+   "sha256": "cd97634446adc1c290bda68182b115dd6f510ce5b480e719d96b1a55e75c94ad",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?latitude=-20.8&longitude=-69.5&maxradiuskm=400&minmagnitude=2.5&starttime=2024-04-30T23%3A00%3A00&endtime=2024-05-06T12%3A00%3A00&format=xml&orderby=time-asc"
+  },
+  {
+   "bytes": 2969,
+   "events": [
+    {
+     "depth_km": 16.0,
+     "description": "154 km WSW of Fakfak, Indonesia",
+     "event_type": "earthquake",
+     "id": "us6000mwjd",
+     "latitude": -3.3167,
+     "longitude": 130.9618,
+     "magnitude": 6.1,
+     "magnitude_type": "mww",
+     "origin_time": "2024-05-05T18:33:11.021000Z",
+     "resource_id": "quakeml:earthquake.usgs.gov/fdsnws/event/1/query?eventid=us6000mwjd&format=quakeml"
+    }
+   ],
+   "name": "global",
+   "params": {
+    "endtime": "2024-05-06T12:00:00",
+    "format": "xml",
+    "minmagnitude": 6.0,
+    "orderby": "time-asc",
+    "starttime": "2024-04-30T23:00:00"
+   },
+   "path": "catalog/usgs-global-heldout-2024-05.xml",
+   "period": "heldout-2024-05",
+   "retrieved_utc": "2026-10-25T13:26:58.507233Z",
+   "sha256": "18cce9453ebdde7d1fb07fbfa00630186d02b28fd2d6155b2d782d34734facb9",
+   "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?minmagnitude=6.0&starttime=2024-04-30T23%3A00%3A00&endtime=2024-05-06T12%3A00%3A00&format=xml&orderby=time-asc"
+  }
+ ],
+ "created_utc": "2026-10-25T13:26:58.511624Z",
+ "definition": {
+  "association": {
+   "model": "iasp91",
+   "post_s_s": 20.0,
+   "pre_p_s": 5.0,
+   "teleseismic_post_p_s": 30.0,
+   "version": "taup-window-v1"
+  },
+  "catalog": {
+   "documentation": "https://earthquake.usgs.gov/fdsnws/event/1/",
+   "event_service": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+   "provider": "USGS ANSS ComCat",
+   "queries": [
+    {
+     "latitude": -20.8,
+     "longitude": -69.5,
+     "maxradiuskm": 400,
+     "minmagnitude": 2.5,
+     "name": "regional"
+    },
+    {
+     "minmagnitude": 6.0,
+     "name": "global"
+    }
+   ]
+  },
+  "description": "IPOC (CX) broadband vertical channels near the persistent intermediate-depth source region under Pica/Iquique, northern Chile. Two whole time periods: a reference week and a later held-out replay period.",
+  "detector": {
+   "block_s": 600.0,
+   "filter": {
+    "corners": 4,
+    "freqmax": 10.0,
+    "freqmin": 2.0,
+    "type": "bandpass",
+    "zerophase": false
+   },
+   "lta_s": 30.0,
+   "method": "recursive_sta_lta",
+   "min_duration_s": 1.0,
+   "off": 1.5,
+   "on": 4.0,
+   "post_s": 60.0,
+   "query_pre_s": 2.0,
+   "sta_s": 1.0,
+   "version": "stalta-baseline-v1",
+   "warmup_s": 120.0
+  },
+  "id": "cx-north-chile-2024-v1",
+  "ingest": {
+   "batch_chunks": 16,
+   "chunk_samples": 3000,
+   "continuity_tolerance_samples": 0.5
+  },
+  "network_citation": {
+   "access": "Open; network page lists no restricted CX stations. Terms/rights field: Unknown.",
+   "citation": "GFZ German Research Centre for Geosciences; Institut des Sciences de l'Univers-Centre National de la Recherche CNRS-INSU (2006): IPOC Seismic Network. Integrated Plate boundary Observatory Chile - IPOC. Dataset/Seismic Network. https://doi.org/10.14470/PK615318",
+   "code": "CX",
+   "doi": "10.14470/PK615318",
+   "name": "IPOC Seismic Network"
+  },
+  "periods": [
+   {
+    "end": "2024-03-11T00:00:00Z",
+    "name": "reference-2024-03",
+    "split": "reference",
+    "start": "2024-03-04T00:00:00Z"
+   },
+   {
+    "end": "2024-05-06T12:00:00Z",
+    "name": "heldout-2024-05",
+    "split": "heldout",
+    "start": "2024-05-01T00:00:00Z"
+   }
+  ],
+  "provider": {
+   "availability": "https://geofon.gfz.de/fdsnws/availability/1/query",
+   "dataselect": "https://geofon.gfz.de/fdsnws/dataselect/1/query",
+   "documentation": "https://geofon.gfz.de/waveform/webservices/fdsnws.php",
+   "name": "GFZ GEOFON",
+   "station": "https://geofon.gfz.de/fdsnws/station/1/query"
+  },
+  "representation": {
+   "extractor": "morlet-energy-lowrate-v1",
+   "instrument_response": "not removed; raw digitizer counts are stored and compared only within one station/channel",
+   "normalization": "zscore",
+   "stride_samples": 512,
+   "units": "counts",
+   "window_samples": 2048
+  },
+  "streams": [
+   {
+    "channel": "HHZ",
+    "location": "",
+    "network": "CX",
+    "station": "PB01"
+   },
+   {
+    "channel": "HHZ",
+    "location": "",
+    "network": "CX",
+    "station": "PB02"
+   },
+   {
+    "channel": "HHZ",
+    "location": "",
+    "network": "CX",
+    "station": "PB08"
+   }
+  ]
+ },
+ "definition_sha256": "398311d6e0e76dae4d0f65c8162395f987c8487e3ea85bf97e3b8606af334876",
+ "manifest_version": "seismic-dataset-manifest-v1",
+ "software": {
+  "numpy": "2.2.6",
+  "obspy": "1.4.2",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "python": "3.12.13",
+  "scipy": "1.15.3"
+ },
+ "stations": [
+  {
+   "bytes": 7295,
+   "channels": [
+    {
+     "azimuth": 0.0,
+     "depth_m": 2.0,
+     "dip": -90.0,
+     "elevation_m": 900.0,
+     "end": "None",
+     "id": "CX.PB01..HHZ",
+     "input_units": "M/S",
+     "latitude": -21.04323,
+     "longitude": -69.4874,
+     "output_units": "COUNTS",
+     "sample_rate": 100.0,
+     "sensitivity": 629145000.0,
+     "sensitivity_frequency_hz": 0.02,
+     "sensor": "GFZ:CX1980:STS-2/N/g=1500",
+     "start": "2006-02-21T00:00:00.000000Z"
+    }
+   ],
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T12:00:00",
+    "level": "response",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-04T00:00:00",
+    "station": "PB01"
+   },
+   "path": "stationxml/CX.PB01..HHZ.xml",
+   "retrieved_utc": "2026-10-25T13:26:56.180084Z",
+   "sha256": "a6dd0b9c4749578d448da7b17319cdca7d9b404c61d70c754949126edcacc635",
+   "stream": "CX.PB01..HHZ",
+   "url": "https://geofon.gfz.de/fdsnws/station/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-04T00%3A00%3A00&endtime=2024-05-06T12%3A00%3A00&level=response"
+  },
+  {
+   "bytes": 7301,
+   "channels": [
+    {
+     "azimuth": 0.0,
+     "depth_m": 0.0,
+     "dip": -90.0,
+     "elevation_m": 1015.0,
+     "end": "None",
+     "id": "CX.PB02..HHZ",
+     "input_units": "M/S",
+     "latitude": -21.31973,
+     "longitude": -69.89603,
+     "output_units": "COUNTS",
+     "sample_rate": 100.0,
+     "sensitivity": 629145000.0,
+     "sensitivity_frequency_hz": 0.02,
+     "sensor": "GFZ:CX1980:STS-2/N/g=1500",
+     "start": "2006-05-06T00:00:00.000000Z"
+    }
+   ],
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T12:00:00",
+    "level": "response",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-04T00:00:00",
+    "station": "PB02"
+   },
+   "path": "stationxml/CX.PB02..HHZ.xml",
+   "retrieved_utc": "2026-10-25T13:26:56.894500Z",
+   "sha256": "b5ac51ec5045141c473789de4c37459a9d8e37a678c7616a0d6bc3563882b1fa",
+   "stream": "CX.PB02..HHZ",
+   "url": "https://geofon.gfz.de/fdsnws/station/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-04T00%3A00%3A00&endtime=2024-05-06T12%3A00%3A00&level=response"
+  },
+  {
+   "bytes": 7292,
+   "channels": [
+    {
+     "azimuth": 0.0,
+     "depth_m": 0.0,
+     "dip": -90.0,
+     "elevation_m": 3060.0,
+     "end": "None",
+     "id": "CX.PB08..HHZ",
+     "input_units": "M/S",
+     "latitude": -20.14112,
+     "longitude": -69.1534,
+     "output_units": "COUNTS",
+     "sample_rate": 100.0,
+     "sensitivity": 629145000.0,
+     "sensitivity_frequency_hz": 0.02,
+     "sensor": "GFZ:CX1980:STS-2/N/g=1500",
+     "start": "2007-03-01T00:00:00.000000Z"
+    }
+   ],
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T12:00:00",
+    "level": "response",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-04T00:00:00",
+    "station": "PB08"
+   },
+   "path": "stationxml/CX.PB08..HHZ.xml",
+   "retrieved_utc": "2026-10-25T13:26:57.207840Z",
+   "sha256": "1b0849e2c4dd6a6e2a63e523ae06b0cf20225dddff868ffbdaf34688868df4b8",
+   "stream": "CX.PB08..HHZ",
+   "url": "https://geofon.gfz.de/fdsnws/station/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-04T00%3A00%3A00&endtime=2024-05-06T12%3A00%3A00&level=response"
+  }
+ ],
+ "waveforms": [
+  {
+   "bytes": 7418880,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-05T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-04T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-03-04T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-05T00:00:00.000000Z",
+   "request_start": "2024-03-04T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:25:52.828113Z",
+   "sha256": "dd055e5210f0156d327e8af60fcd1488c0519053b5e67b8120b0e7a73dedaf9c",
+   "split": "reference",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T00:00:05.628393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640793,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-03T23:59:57.708393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-04T00%3A00%3A00&endtime=2024-03-05T00%3A00%3A00"
+  },
+  {
+   "bytes": 7255040,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-06T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-05T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-03-05T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-06T00:00:00.000000Z",
+   "request_start": "2024-03-05T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:25:56.977023Z",
+   "sha256": "1cd5c3cd2fe5cd1f812bc480139a1d5409c2830d939d680d3d8342005871a0fd",
+   "split": "reference",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T00:00:03.158393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640435,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T23:59:58.818393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-05T00%3A00%3A00&endtime=2024-03-06T00%3A00%3A00"
+  },
+  {
+   "bytes": 7256576,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-07T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-06T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-03-06T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-07T00:00:00.000000Z",
+   "request_start": "2024-03-06T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:25:58.393724Z",
+   "sha256": "3780bd3983cdfba3d37acfe7d1fdf03ce7de10537df45d82695c6d4fd70ac8ed",
+   "split": "reference",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T00:00:02.028391Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640559,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T23:59:56.448391Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-06T00%3A00%3A00&endtime=2024-03-07T00%3A00%3A00"
+  },
+  {
+   "bytes": 7276544,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-08T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-07T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-03-07T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-08T00:00:00.000000Z",
+   "request_start": "2024-03-07T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:25:59.260018Z",
+   "sha256": "7cf050a74a6772b1c61ea9a1d5af322fdbfb0fd2ee0dd8f0ab24b752aef02398",
+   "split": "reference",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T00:00:01.178393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640583,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T23:59:55.358393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-07T00%3A00%3A00&endtime=2024-03-08T00%3A00%3A00"
+  },
+  {
+   "bytes": 7238144,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-09T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-08T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-03-08T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-09T00:00:00.000000Z",
+   "request_start": "2024-03-08T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:00.732985Z",
+   "sha256": "162930de7668f58bab09319dd9ef7a9cb445ded12480a5bf73454c7ae02dffa5",
+   "split": "reference",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T00:00:02.308391Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640535,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T23:59:56.968391Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-08T00%3A00%3A00&endtime=2024-03-09T00%3A00%3A00"
+  },
+  {
+   "bytes": 7389696,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-10T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-09T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-03-09T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-10T00:00:00.000000Z",
+   "request_start": "2024-03-09T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:02.198825Z",
+   "sha256": "4e546493188cfa12b9f36078fde95f38c5b86245c2048ec49b3e9789a9dfa53f",
+   "split": "reference",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T00:00:01.098393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640565,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T23:59:55.458393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-09T00%3A00%3A00&endtime=2024-03-10T00%3A00%3A00"
+  },
+  {
+   "bytes": 7353856,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-11T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-10T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-03-10T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-11T00:00:00.000000Z",
+   "request_start": "2024-03-10T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:03.760120Z",
+   "sha256": "d95cb08506f4f7ad1348af72df496c7c6ea5fa631ec8611edb52130d8244a6f0",
+   "split": "reference",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-11T00:00:02.748393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640837,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T23:59:54.388393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-03-10T00%3A00%3A00&endtime=2024-03-11T00%3A00%3A00"
+  },
+  {
+   "bytes": 7441408,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-02T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-01T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-05-01T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-02T00:00:00.000000Z",
+   "request_start": "2024-05-01T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:05.831534Z",
+   "sha256": "b1b1e4f4a120fd33bde13121ff7942e8dc1deac3befb44f3c5e1e7b086c939d6",
+   "split": "heldout",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T00:00:01.488393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640282,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-04-30T23:59:58.678393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-05-01T00%3A00%3A00&endtime=2024-05-02T00%3A00%3A00"
+  },
+  {
+   "bytes": 7422976,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-03T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-02T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-05-02T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-03T00:00:00.000000Z",
+   "request_start": "2024-05-02T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:07.277524Z",
+   "sha256": "5bbf26e9c469b5dce8252d29883b77739188b2602e32b2775a6ef3a536df146e",
+   "split": "heldout",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T00:00:05.158393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8641045,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T23:59:54.718393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-05-02T00%3A00%3A00&endtime=2024-05-03T00%3A00%3A00"
+  },
+  {
+   "bytes": 7463424,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-04T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-03T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-05-03T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-04T00:00:00.000000Z",
+   "request_start": "2024-05-03T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:08.835351Z",
+   "sha256": "cbe0a87f7b6776ee747a6eff829cd697306e6dee90bb1da8dbdd775e87554d5b",
+   "split": "heldout",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T00:00:03.488391Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640521,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T23:59:58.288391Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-05-03T00%3A00%3A00&endtime=2024-05-04T00%3A00%3A00"
+  },
+  {
+   "bytes": 7240192,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-05T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-04T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-05-04T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-05T00:00:00.000000Z",
+   "request_start": "2024-05-04T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:10.291211Z",
+   "sha256": "ca0c163980b1a4d2645360288a31c6cf4eb0e583df802f913c2c5515700d24ec",
+   "split": "heldout",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T00:00:01.638393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640478,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T23:59:56.868393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-05-04T00%3A00%3A00&endtime=2024-05-05T00%3A00%3A00"
+  },
+  {
+   "bytes": 7161344,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-05T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-05-05T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-06T00:00:00.000000Z",
+   "request_start": "2024-05-05T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:12.245707Z",
+   "sha256": "4c1dd8feb71b9e108042d3353d6561e0c08106a3d9b6d87830767da26a00e42e",
+   "split": "heldout",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T00:00:01.728393Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 8640687,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T23:59:54.868393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-05-05T00%3A00%3A00&endtime=2024-05-06T00%3A00%3A00"
+  },
+  {
+   "bytes": 3601920,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T12:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-06T00:00:00",
+    "station": "PB01"
+   },
+   "path": "raw/CX.PB01..HHZ/2024-05-06T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-06T12:00:00.000000Z",
+   "request_start": "2024-05-06T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:13.774166Z",
+   "sha256": "a5facba9572d0163917f1efc40ed42311f85b001eba6522ce2471d4861b45b7a",
+   "split": "heldout",
+   "stream": "CX.PB01..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T12:00:01.898391Z",
+     "id": "CX.PB01..HHZ",
+     "npts": 4320673,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T23:59:55.178391Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB01&location=--&channel=HHZ&starttime=2024-05-06T00%3A00%3A00&endtime=2024-05-06T12%3A00%3A00"
+  },
+  {
+   "bytes": 8452608,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-05T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-04T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-03-04T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-05T00:00:00.000000Z",
+   "request_start": "2024-03-04T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:15.618524Z",
+   "sha256": "a0899501f99b6d06f38e10531ea2c17c9770d339c1888d356a774981d86820f3",
+   "split": "reference",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T00:00:00.498393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640197,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-03T23:59:58.538393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-04T00%3A00%3A00&endtime=2024-03-05T00%3A00%3A00"
+  },
+  {
+   "bytes": 8412160,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-06T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-05T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-03-05T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-06T00:00:00.000000Z",
+   "request_start": "2024-03-05T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:16.937669Z",
+   "sha256": "2c593d441d68b20639fdc93f8027bd04cf2be3518ffe5032ec4daca9c0ce58b0",
+   "split": "reference",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T00:00:02.468393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640746,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T23:59:55.018393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-05T00%3A00%3A00&endtime=2024-03-06T00%3A00%3A00"
+  },
+  {
+   "bytes": 8517120,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-07T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-06T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-03-06T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-07T00:00:00.000000Z",
+   "request_start": "2024-03-06T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:18.306529Z",
+   "sha256": "1299348e69052464d4320bc0c73433f56799d81b6d922e1f3e5979d81f8f650e",
+   "split": "reference",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T00:00:00.008393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640242,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T23:59:57.598393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-06T00%3A00%3A00&endtime=2024-03-07T00%3A00%3A00"
+  },
+  {
+   "bytes": 8677376,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-08T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-07T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-03-07T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-08T00:00:00.000000Z",
+   "request_start": "2024-03-07T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:19.479062Z",
+   "sha256": "84d8393bcdc7645f881edc87172988519bda6bcfb8d18b35394438edf9683b6d",
+   "split": "reference",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T00:00:01.778391Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640673,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T23:59:55.058391Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-07T00%3A00%3A00&endtime=2024-03-08T00%3A00%3A00"
+  },
+  {
+   "bytes": 8248320,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-09T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-08T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-03-08T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-09T00:00:00.000000Z",
+   "request_start": "2024-03-08T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:20.742457Z",
+   "sha256": "020df82e6fcca24c48308085c527ff54e698e4f804d4527d5ee5d509b49ece9f",
+   "split": "reference",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T00:00:03.698393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640543,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T23:59:58.278393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-08T00%3A00%3A00&endtime=2024-03-09T00%3A00%3A00"
+  },
+  {
+   "bytes": 8521728,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-10T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-09T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-03-09T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-10T00:00:00.000000Z",
+   "request_start": "2024-03-09T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:22.075769Z",
+   "sha256": "9c7416464a947c1133e5e2a6efb88d061029138bdaee17edbc091c86f08f3469",
+   "split": "reference",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T00:00:04.378393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640581,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T23:59:58.578393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-09T00%3A00%3A00&endtime=2024-03-10T00%3A00%3A00"
+  },
+  {
+   "bytes": 8504832,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-11T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-10T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-03-10T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-11T00:00:00.000000Z",
+   "request_start": "2024-03-10T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:24.543786Z",
+   "sha256": "8f6f2b0fefe157e22160114a645418b6b3519311f3abc40832af09f03c3b5972",
+   "split": "reference",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-11T00:00:01.628393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640308,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T23:59:58.558393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-03-10T00%3A00%3A00&endtime=2024-03-11T00%3A00%3A00"
+  },
+  {
+   "bytes": 8273920,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-02T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-01T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-05-01T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-02T00:00:00.000000Z",
+   "request_start": "2024-05-01T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:26.507612Z",
+   "sha256": "32c1851f1fb6627f09b05fec1053051d4af43dd205ee0b9e43932b7cf5c86727",
+   "split": "heldout",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T00:00:03.228393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640837,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-04-30T23:59:54.868393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-05-01T00%3A00%3A00&endtime=2024-05-02T00%3A00%3A00"
+  },
+  {
+   "bytes": 8480256,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-03T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-02T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-05-02T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-03T00:00:00.000000Z",
+   "request_start": "2024-05-02T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:28.021313Z",
+   "sha256": "cedbe2dbc1893bc53452699fa19d63262a826c9a0ba9a7aae06d8e19b0a88056",
+   "split": "heldout",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T00:00:00.888391Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640408,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T23:59:56.818391Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-05-02T00%3A00%3A00&endtime=2024-05-03T00%3A00%3A00"
+  },
+  {
+   "bytes": 8842752,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-04T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-03T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-05-03T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-04T00:00:00.000000Z",
+   "request_start": "2024-05-03T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:29.367774Z",
+   "sha256": "f70cdb8ed145c3e8322f565cc8463c888b826c6ce5c7e54c91f16e334b57969c",
+   "split": "heldout",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T00:00:04.018391Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640872,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T23:59:55.308391Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-05-03T00%3A00%3A00&endtime=2024-05-04T00%3A00%3A00"
+  },
+  {
+   "bytes": 8088576,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-05T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-04T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-05-04T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-05T00:00:00.000000Z",
+   "request_start": "2024-05-04T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:30.632762Z",
+   "sha256": "05e78ed85b4c2ec6ac3a26b7dedfee999cd70e1acf619fb80ec52dec2ae583d2",
+   "split": "heldout",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T00:00:03.628393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640544,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T23:59:58.198393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-05-04T00%3A00%3A00&endtime=2024-05-05T00%3A00%3A00"
+  },
+  {
+   "bytes": 7746560,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-05T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-05-05T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-06T00:00:00.000000Z",
+   "request_start": "2024-05-05T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:32.748525Z",
+   "sha256": "ad46fb3206b8164992a35713ec12ed037f07c383b93547cf63c4395c8b26e0de",
+   "split": "heldout",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T00:00:04.278393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 8640542,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T23:59:58.868393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-05-05T00%3A00%3A00&endtime=2024-05-06T00%3A00%3A00"
+  },
+  {
+   "bytes": 4039680,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T12:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-06T00:00:00",
+    "station": "PB02"
+   },
+   "path": "raw/CX.PB02..HHZ/2024-05-06T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-06T12:00:00.000000Z",
+   "request_start": "2024-05-06T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:35.481448Z",
+   "sha256": "c1fcee007eeb64b22a9583992980d68eac9a880cebafce1f3297fdd8049da9ba",
+   "split": "heldout",
+   "stream": "CX.PB02..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T12:00:00.718393Z",
+     "id": "CX.PB02..HHZ",
+     "npts": 4320179,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T23:59:58.938393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB02&location=--&channel=HHZ&starttime=2024-05-06T00%3A00%3A00&endtime=2024-05-06T12%3A00%3A00"
+  },
+  {
+   "bytes": 9208320,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-05T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-04T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-03-04T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-05T00:00:00.000000Z",
+   "request_start": "2024-03-04T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:37.322371Z",
+   "sha256": "7d7158ccb3d42d90f2e55055988da46b5c75b907497995ef84c322caaa825f51",
+   "split": "reference",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T00:13:42.108394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 82410,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-03T23:59:58.018394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T01:12:49.348393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354639,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T00:13:42.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T02:13:02.888393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360993,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T01:12:52.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T03:13:12.898393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360994,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T02:13:02.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T04:13:21.358393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360840,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T03:13:12.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T05:13:30.928393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360797,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T04:13:22.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T06:13:41.838393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360888,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T05:13:32.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T07:12:52.488391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354953,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T06:13:42.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T08:13:03.698393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361074,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T07:12:52.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T09:13:11.768393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360781,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T08:13:03.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T10:13:21.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360800,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T09:13:13.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T11:13:32.758394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360880,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T10:13:23.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T12:13:43.938393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360998,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T11:13:33.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T13:12:55.588393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355163,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T12:13:43.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T14:13:05.248393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361129,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T13:12:53.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T15:13:13.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360820,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T14:13:04.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T16:13:24.578394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360962,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T15:13:14.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T17:13:33.798393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360884,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T16:13:24.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T18:13:42.108393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360715,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T17:13:34.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T19:12:55.428393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355047,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T18:13:44.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T20:13:04.518391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360956,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T19:12:54.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T21:13:16.878393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361192,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T20:13:04.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T22:13:23.838393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360788,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T21:13:15.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-04T23:13:33.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360800,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T22:13:25.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T00:00:01.818393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 278586,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T23:13:35.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-04T00%3A00%3A00&endtime=2024-03-05T00%3A00%3A00"
+  },
+  {
+   "bytes": 9148416,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-06T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-05T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-03-05T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-06T00:00:00.000000Z",
+   "request_start": "2024-03-05T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:38.524404Z",
+   "sha256": "f8216c42544c9588549b4133cb23e1c6754ba49f6a69b0aef58f06f6e5a9e1e7",
+   "split": "reference",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T00:13:45.218393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 82839,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-04T23:59:56.838393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T01:12:55.118393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354916,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T00:13:45.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T02:13:07.478393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361152,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T01:12:55.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T03:13:15.948393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360899,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T02:13:06.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T04:13:23.558393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360660,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T03:13:16.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T05:13:36.918393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360996,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T04:13:26.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T06:13:45.198393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360824,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T05:13:36.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T07:12:53.288393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354633,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T06:13:46.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T08:13:05.778393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360882,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T07:12:56.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T09:13:17.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361005,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T08:13:06.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T10:13:25.208394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360825,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T09:13:16.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T11:13:38.328393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361037,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T10:13:27.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T12:13:46.998393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360904,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T11:13:37.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T13:12:57.218393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354926,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T12:13:47.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T14:13:06.378393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360842,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T13:12:57.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T15:13:18.828394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361087,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T14:13:07.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T16:13:25.108393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360615,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T15:13:18.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T17:13:38.118393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360916,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T16:13:28.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T18:13:46.888394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360793,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T17:13:38.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T19:12:56.058393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354710,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T18:13:48.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T20:13:06.688393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360773,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T19:12:58.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T21:13:18.948393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360999,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T20:13:08.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T22:13:26.828393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360787,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T21:13:18.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-05T23:13:37.778391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360782,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T22:13:29.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T00:00:02.798393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 278284,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T23:13:39.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-05T00%3A00%3A00&endtime=2024-03-06T00%3A00%3A00"
+  },
+  {
+   "bytes": 9155072,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-07T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-06T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-03-06T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-07T00:00:00.000000Z",
+   "request_start": "2024-03-06T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:39.831876Z",
+   "sha256": "2c09ea352851f09c74a147537d8ab0db4008594b279b9025af030654a96cc5b5",
+   "split": "reference",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T00:13:48.698393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 83083,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-05T23:59:57.878393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T01:12:58.578393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354862,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T00:13:49.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T02:13:09.058393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360910,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T01:12:59.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T03:13:17.838394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360788,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T02:13:09.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T04:13:30.728393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361077,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T03:13:19.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T06:13:49.558393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 721960,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T04:13:29.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T07:12:59.218393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354826,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T06:13:50.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T08:13:10.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360920,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T07:13:00.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T09:13:20.628393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360967,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T08:13:10.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T10:13:27.018393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360606,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T09:13:20.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T11:13:38.908393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360795,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T10:13:30.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T12:13:50.558393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360860,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T11:13:41.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T13:13:02.668393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355071,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T12:13:51.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T14:13:12.538393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361058,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T13:13:01.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T15:13:20.758393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360880,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T14:13:11.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T16:13:30.358394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360840,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T15:13:21.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T17:13:40.398391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360844,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T16:13:31.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T18:13:52.828393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361087,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T17:13:41.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T19:13:03.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355020,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T18:13:52.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T20:13:09.768391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360681,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T19:13:02.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T21:13:20.238393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360728,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T20:13:12.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T22:13:31.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360805,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T21:13:22.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-06T23:13:42.268393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360931,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T22:13:32.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T00:00:03.298393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 278034,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T23:13:42.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-06T00%3A00%3A00&endtime=2024-03-07T00%3A00%3A00"
+  },
+  {
+   "bytes": 9177600,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-08T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-07T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-03-07T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-08T00:00:00.000000Z",
+   "request_start": "2024-03-07T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:40.845772Z",
+   "sha256": "0b7d6dabb7470040b2833e6225af94bc6402d29c360472a10ce5540deba5e9e2",
+   "split": "reference",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T00:13:54.538393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 83633,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-06T23:59:58.218393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T01:13:03.998393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355004,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T00:13:53.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T02:13:14.528394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361057,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T01:13:03.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T03:13:22.458394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360850,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T02:13:13.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T04:13:32.908393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360895,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T03:13:23.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T05:13:44.548393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361059,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T04:13:33.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T06:13:53.358394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360940,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T05:13:43.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T07:13:04.328393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355037,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T06:13:53.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T08:13:13.798393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360984,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T07:13:03.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T09:13:23.148393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360919,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T08:13:13.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T10:13:33.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360900,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T09:13:24.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T11:13:45.838393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361088,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T10:13:34.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T12:13:54.758393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360980,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T11:13:44.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T13:13:04.278393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354932,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T12:13:54.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T15:13:24.458393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 721950,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T13:13:04.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T16:13:35.098393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360914,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T15:13:25.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T17:13:45.018393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360906,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T16:13:35.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T18:13:56.548393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361059,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T17:13:45.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T19:13:06.828393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355087,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T18:13:55.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T20:13:17.938393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361198,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T19:13:05.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T21:13:23.918393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360796,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T20:13:15.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T22:13:33.528393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360657,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T21:13:26.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-07T23:13:47.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361005,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T22:13:36.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T00:00:03.508393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 277655,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T23:13:46.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-07T00%3A00%3A00&endtime=2024-03-08T00%3A00%3A00"
+  },
+  {
+   "bytes": 9144832,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-09T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-08T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-03-08T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-09T00:00:00.000000Z",
+   "request_start": "2024-03-08T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:42.105669Z",
+   "sha256": "bbca0178b374fe3356dbad071c2a2c6513d18f70f2449bce2c8ed79fc25e2501",
+   "split": "reference",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T00:13:56.608393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 83781,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-07T23:59:58.808393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T01:13:03.288394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354633,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T00:13:56.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T02:13:14.488393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360753,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T01:13:06.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T03:13:28.488393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361153,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T02:13:16.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T04:13:37.108393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361015,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T03:13:26.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T05:13:45.128393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360717,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T04:13:37.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T06:13:56.938393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360898,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T05:13:47.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T07:13:07.768394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354981,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T06:13:57.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T08:13:17.098393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360914,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T07:13:07.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T09:13:26.598393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360864,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T08:13:17.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T10:13:39.668393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361171,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T09:13:27.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T11:13:48.788393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360983,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T10:13:38.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T12:13:59.048393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361009,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T11:13:48.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T13:13:07.078391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354812,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T12:13:58.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T14:13:17.348393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360839,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T13:13:08.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T15:13:26.218393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360726,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T14:13:18.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T16:13:37.638393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360868,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T15:13:28.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T17:13:50.558393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361160,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T16:13:38.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T18:13:57.518393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360756,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T17:13:49.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T19:13:08.328393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354837,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T18:13:59.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T20:13:20.818393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361086,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T19:13:09.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T21:13:28.208393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360825,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T20:13:19.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T22:13:39.948393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360999,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T21:13:29.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-08T23:13:48.938394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360898,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T22:13:39.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T00:00:02.108394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 277215,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T23:13:49.968394Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-08T00%3A00%3A00&endtime=2024-03-09T00%3A00%3A00"
+  },
+  {
+   "bytes": 9192448,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-10T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-09T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-03-09T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-10T00:00:00.000000Z",
+   "request_start": "2024-03-09T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:43.573241Z",
+   "sha256": "ef0d06bd885b750a931e6d3f720d9eefafc4ffec6aa5af539f90346bf3d6cb82",
+   "split": "reference",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T00:14:00.088393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 84287,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-08T23:59:57.228393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T01:13:09.838393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354888,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T00:14:00.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T02:13:20.458393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360950,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T01:13:10.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T03:13:28.648393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360769,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T02:13:20.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T04:13:41.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361100,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T03:13:30.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T05:13:50.788393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360983,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T04:13:40.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T06:13:58.728393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360677,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T05:13:51.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T07:13:12.208393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355025,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T06:14:01.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T08:13:18.768393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360681,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T07:13:11.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T09:13:31.608394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360965,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T08:13:21.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T10:13:38.218393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360626,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T09:13:31.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T11:13:50.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360900,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T10:13:41.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T12:14:02.608393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361065,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T11:13:51.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T13:13:09.258393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354730,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T12:14:01.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T14:13:21.868393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360891,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T13:13:12.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T15:13:30.118393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360716,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T14:13:22.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T16:13:41.448393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360849,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T15:13:32.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T17:13:50.628393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360767,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T16:13:42.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T18:14:01.738391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360878,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T17:13:52.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T19:13:10.778394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354782,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T18:14:02.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T20:13:24.188393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361123,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T19:13:12.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T21:13:33.378393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360942,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T20:13:23.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T22:13:44.648393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361069,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T21:13:33.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-09T23:13:49.938393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360598,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T22:13:43.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T00:00:01.428393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 276747,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T23:13:53.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-09T00%3A00%3A00&endtime=2024-03-10T00%3A00%3A00"
+  },
+  {
+   "bytes": 9142272,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-03-11T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-03-10T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-03-10T000000.mseed",
+   "period": "reference-2024-03",
+   "request_end": "2024-03-11T00:00:00.000000Z",
+   "request_start": "2024-03-10T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:45.063606Z",
+   "sha256": "8406edd7159037989f225c19e97791cca5ce0dffac2e479f0c2235547a667404",
+   "split": "reference",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T00:14:01.888393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 84541,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-09T23:59:56.488393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T01:13:11.328393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354737,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T00:14:03.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T02:13:21.888393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360793,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T01:13:13.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T04:13:43.148393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 721819,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T02:13:24.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T05:13:51.408394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360645,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T04:13:44.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T06:14:04.948393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360999,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T05:13:54.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T07:13:16.448393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355149,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T06:14:04.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T08:13:24.248394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360829,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T07:13:15.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T09:13:32.178393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360622,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T08:13:25.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T10:13:44.828393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360887,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T09:13:35.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T11:13:55.688393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360973,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T10:13:45.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T12:14:03.278393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360732,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T11:13:55.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T13:13:15.708393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354975,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T12:14:05.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T14:13:23.808393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360785,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T13:13:15.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T15:13:33.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360800,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T14:13:25.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T16:13:45.938391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360898,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T15:13:36.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T17:13:53.848393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360689,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T16:13:46.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T18:14:06.238394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360928,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T17:13:56.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T19:13:15.758393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354880,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T18:14:06.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T20:13:26.208393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360925,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T19:13:16.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T21:13:38.898394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361094,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T20:13:27.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T22:13:48.448394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361149,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T21:13:36.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-10T23:13:56.058393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360810,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T22:13:47.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-03-11T00:00:01.928393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 276397,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-03-10T23:13:57.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-03-10T00%3A00%3A00&endtime=2024-03-11T00%3A00%3A00"
+  },
+  {
+   "bytes": 9225728,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-02T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-01T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-05-01T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-02T00:00:00.000000Z",
+   "request_start": "2024-05-01T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:47.212454Z",
+   "sha256": "748125e045997c41e629de25661f68653aae42a1f9c8ecac24109088769deddd",
+   "split": "heldout",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T00:17:02.298393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 102316,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-04-30T23:59:59.148393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T01:17:12.888394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360893,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T00:17:03.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T02:16:24.928393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355097,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T01:17:13.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T03:16:34.668393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361071,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T02:16:23.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T04:16:43.628393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360967,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T03:16:33.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T05:16:53.238393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360828,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T04:16:44.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T06:17:04.398394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360944,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T05:16:54.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T07:17:12.388393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360743,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T06:17:04.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T09:16:33.258393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 715830,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T07:17:14.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T10:16:43.608393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360765,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T09:16:35.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T11:16:53.898393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360794,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T10:16:45.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T12:17:04.078394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360812,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T11:16:55.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T13:17:14.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360820,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T12:17:05.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T14:16:23.888393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354793,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T13:17:15.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T15:16:34.898393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360894,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T14:16:25.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T16:16:44.238391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360828,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T15:16:35.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T17:16:57.248393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361129,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T16:16:45.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T18:17:03.908393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360695,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T17:16:56.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T19:17:14.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360800,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T18:17:06.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T20:16:24.058393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354710,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T19:17:16.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T21:16:36.728393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360977,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T20:16:26.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T22:16:46.058393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360910,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T21:16:36.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-01T23:16:58.838393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361188,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T22:16:46.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T00:00:02.798393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 258484,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T23:16:57.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-05-01T00%3A00%3A00&endtime=2024-05-02T00%3A00%3A00"
+  },
+  {
+   "bytes": 9163264,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-03T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-02T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-05-02T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-03T00:00:00.000000Z",
+   "request_start": "2024-05-02T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:48.838128Z",
+   "sha256": "4120ac1e2007a4ea89238f9510c6c79a8faa2a89bdc174be92f549aaa2496fc2",
+   "split": "heldout",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T00:17:08.478393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 103052,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-01T23:59:57.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T01:17:16.898393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360894,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T00:17:07.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T02:16:27.458393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354950,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T01:17:17.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T03:16:35.778393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360782,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T02:16:27.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T04:16:45.548393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360759,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T03:16:37.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T05:16:59.738393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361178,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T04:16:47.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T06:17:06.118393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360816,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T05:16:57.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T07:17:18.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360905,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T06:17:08.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T08:16:28.198393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354924,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T07:17:18.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T09:16:37.608393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360865,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T08:16:28.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T10:16:45.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360700,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T09:16:38.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T11:16:58.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360920,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T10:16:48.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T12:17:09.358393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361040,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T11:16:58.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T13:17:18.498393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360854,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T12:17:09.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T14:16:26.998394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354704,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T13:17:19.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T15:16:36.718394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360676,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T14:16:29.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T17:17:00.158394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 722020,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T15:16:39.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T18:17:10.948393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361099,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T17:16:59.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T19:17:18.518393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360856,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T18:17:09.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T20:16:29.768394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354881,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T19:17:20.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T21:16:38.418393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360746,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T20:16:30.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T22:16:50.248393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360929,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T21:16:40.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-02T23:16:59.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360820,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T22:16:50.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T00:00:03.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 258205,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T23:17:00.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-05-02T00%3A00%3A00&endtime=2024-05-03T00%3A00%3A00"
+  },
+  {
+   "bytes": 9193472,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-04T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-03T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-05-03T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-04T00:00:00.000000Z",
+   "request_start": "2024-05-03T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:50.151894Z",
+   "sha256": "e4ca87acce9e0cb4125885faea5aca49c5894d69e86e7179aca65739b3a42e73",
+   "split": "heldout",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T00:17:09.058394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 103105,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-02T23:59:58.018394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T01:17:22.498393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361054,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T00:17:11.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T02:16:28.948393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354799,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T01:17:20.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T03:16:42.868394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361091,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T02:16:31.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T04:16:48.528393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360657,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T03:16:41.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T05:17:00.368393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360841,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T04:16:51.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T06:17:11.868394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360991,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T05:17:01.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T07:17:22.378393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361042,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T06:17:11.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T08:16:31.168393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354921,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T07:17:21.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T09:16:41.098393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360814,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T08:16:32.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T10:16:51.048393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360809,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T09:16:42.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T11:17:01.468393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360851,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T10:16:52.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T12:17:13.428393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361047,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T11:17:02.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T13:17:21.088393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360813,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T12:17:12.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T14:16:33.178393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354922,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T13:17:23.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T15:16:41.138393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360718,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T14:16:33.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T16:16:50.058393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360610,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T15:16:43.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T17:17:00.288393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360633,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T16:16:53.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T18:17:12.728391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360877,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T17:17:03.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T19:17:23.258393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360930,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T18:17:13.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T20:16:33.298393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354934,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T19:17:23.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T21:16:45.218393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361026,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T20:16:34.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T22:16:52.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360705,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T21:16:44.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-03T23:17:03.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360820,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T22:16:54.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T00:00:02.048394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 257709,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T23:17:04.968394Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-05-03T00%3A00%3A00&endtime=2024-05-04T00%3A00%3A00"
+  },
+  {
+   "bytes": 9130496,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-05T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-04T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-05-04T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-05T00:00:00.000000Z",
+   "request_start": "2024-05-04T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:51.498996Z",
+   "sha256": "b070522b593dc38646c60b429a2760261ec2283d73e91a3be155d1a504f236f7",
+   "split": "heldout",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T00:17:12.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 103500,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-03T23:59:57.018393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T01:17:23.788393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360883,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T00:17:14.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T02:16:32.338393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354738,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T01:17:24.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T03:16:45.298393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361034,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T02:16:34.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T04:16:55.138393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360918,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T03:16:45.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T05:17:02.298393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360634,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T04:16:55.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T06:17:15.048393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360909,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T05:17:05.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T07:17:22.798393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360684,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T06:17:15.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T08:16:36.018393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 355006,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T07:17:25.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T09:16:44.798393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360884,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T08:16:35.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T10:16:54.758393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360780,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T09:16:46.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T11:17:05.148394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360819,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T10:16:56.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T12:17:13.308393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360635,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T11:17:06.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T13:17:24.838393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360788,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T12:17:16.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T14:16:36.818393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354986,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T13:17:26.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T15:16:46.928393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360997,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T14:16:36.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T16:16:56.698393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360974,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T15:16:46.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T17:17:08.748393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361179,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T16:16:56.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T18:17:14.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360700,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T17:17:07.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T19:17:26.398393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360844,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T18:17:17.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T20:16:36.678393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354872,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T19:17:27.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T21:16:48.468393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361051,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T20:16:37.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T22:16:59.408393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361145,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T21:16:47.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-04T23:17:06.448393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360749,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T22:16:58.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T00:00:01.928393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 257297,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T23:17:08.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-05-04T00%3A00%3A00&endtime=2024-05-05T00%3A00%3A00"
+  },
+  {
+   "bytes": 9148928,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T00:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-05T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-05-05T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-06T00:00:00.000000Z",
+   "request_start": "2024-05-05T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:52.959520Z",
+   "sha256": "d95f0b91c5b490e5cd8935162cf5632cc379aca1692362122d3f399edc9f5b61",
+   "split": "heldout",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T00:17:18.378393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 104142,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-04T23:59:56.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T01:17:27.688393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360873,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T00:17:18.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T02:16:37.748394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354879,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T01:17:28.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T03:16:49.238393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361028,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T02:16:38.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T04:16:58.608393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360965,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T03:16:48.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T05:17:09.408393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361045,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T04:16:58.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T06:17:17.618393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360866,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T05:17:08.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T07:17:28.158393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360820,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T06:17:19.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T08:16:36.808393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354685,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T07:17:29.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T09:16:49.588393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360963,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T08:16:39.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T10:16:56.608393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360665,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T09:16:49.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T11:17:08.958393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360900,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T10:16:59.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T12:17:20.468393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361051,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T11:17:09.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T13:17:30.648393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360969,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T12:17:20.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T14:16:38.008393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354705,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T13:17:30.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T15:16:47.378393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360642,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T14:16:40.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T16:17:00.528393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360957,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T15:16:50.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T17:17:09.788393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360883,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T16:17:00.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T18:17:22.538393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361158,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T17:17:10.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T19:17:29.698394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360874,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T18:17:20.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T20:16:38.788393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354683,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T19:17:31.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T21:16:48.928393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360697,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T20:16:41.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T22:17:01.038393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360908,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T21:16:51.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-05T23:17:12.198393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361024,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T22:17:01.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T00:00:03.728393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 257177,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T23:17:11.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-05-05T00%3A00%3A00&endtime=2024-05-06T00%3A00%3A00"
+  },
+  {
+   "bytes": 4581376,
+   "params": {
+    "channel": "HHZ",
+    "endtime": "2024-05-06T12:00:00",
+    "location": "--",
+    "network": "CX",
+    "starttime": "2024-05-06T00:00:00",
+    "station": "PB08"
+   },
+   "path": "raw/CX.PB08..HHZ/2024-05-06T000000.mseed",
+   "period": "heldout-2024-05",
+   "request_end": "2024-05-06T12:00:00.000000Z",
+   "request_start": "2024-05-06T00:00:00.000000Z",
+   "retrieved_utc": "2026-10-25T13:26:55.860279Z",
+   "sha256": "888086f94e00e7a0fca6c32724c279c53521132d0400a3fa48ffd0473c16afee",
+   "split": "heldout",
+   "stream": "CX.PB08..HHZ",
+   "traces": [
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T00:17:22.408393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 104352,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-05T23:59:58.898393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T01:17:32.588393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360963,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T00:17:22.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T02:16:39.608393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354665,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T01:17:32.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T03:16:52.108393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360915,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T02:16:42.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T04:17:00.238391Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360728,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T03:16:52.968391Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T05:17:13.798393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361084,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T04:17:02.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T06:17:22.108393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360915,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T05:17:12.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T07:17:30.448393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360749,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T06:17:22.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T08:16:41.918394Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 354796,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T07:17:33.968394Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T09:16:54.588393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 361063,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T08:16:43.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T10:17:02.018393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360806,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T09:16:53.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T11:17:12.678393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 360872,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T10:17:03.968393Z"
+    },
+    {
+     "dtype": "int32",
+     "encoding": "STEIM2",
+     "end": "2024-05-06T12:00:04.918393Z",
+     "id": "CX.PB08..HHZ",
+     "npts": 257096,
+     "quality": "D",
+     "sampling_rate": 100.0,
+     "start": "2024-05-06T11:17:13.968393Z"
+    }
+   ],
+   "url": "https://geofon.gfz.de/fdsnws/dataselect/1/query?network=CX&station=PB08&location=--&channel=HHZ&starttime=2024-05-06T00%3A00%3A00&endtime=2024-05-06T12%3A00%3A00"
+  }
+ ]
+}

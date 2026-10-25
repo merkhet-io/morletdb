@@ -5,13 +5,25 @@ The Rust core and Go reference implementation now share `morlet-energy-v1`. The 
 ## Representation
 
 - Uniformly sampled single-channel input, 512..32768 finite samples within +/-1e9.
-- Finite sample rate in [128,200000] Hz.
+- Finite sample rate in [128,200000] Hz (`morlet-energy-v1`); see the low-rate version below for [1,128) Hz.
 - Remove the capture mean. Compute AC RMS, absolute centered peak, crest factor and population kurtosis.
 - Twelve logarithmically spaced center frequencies from fs/64 through 0.4fs.
 - Complex Morlet kernels with omega0=6 and scale=6fs/(2 pi f). Truncate at +/-ceil(3 scale), subtract discrete kernel DC and normalize complex L2 energy.
 - Discard boundary coefficients that would need padding. Pool valid coefficient energies into consecutive blocks of at most 128 samples per band. Final blocks can be shorter.
 - Features: log1p of 12 mean band energies, AC RMS, crest factor and kurtosis, in that order.
 - Feature distance: root mean squared Euclidean distance across those 15 features. The SQL wrapper requires equal capture lengths and a common sample rate; units and operating context remain the caller's responsibility.
+
+## Low-rate representation (`morlet-energy-lowrate-v1`)
+
+The kernel scale is `6 fs / (2 pi f)` with `f = c_b fs`, so every coefficient, cell and feature depends only on the sample sequence: the transform is rate-invariant in sample coordinates. The `[128,200000]` Hz bound of `morlet-energy-v1` is therefore a domain contract, not a numerical limit. Rather than widening v1, a second version covers native seismic rates:
+
+- Identical kernels, band layout (fs/64..0.4fs), pooling and 15 features; tokens and band centres are labelled with the true rate.
+- Sample-rate domain `[1,128)` Hz, disjoint from v1, so one rate maps to exactly one valid version.
+- Opt-in only: `morlet_start_recording`/`morlet_ensure_recording(..., extractor => 'morlet-energy-lowrate-v1')`, the version-selected `morlet_features(samples, rate, extractor)` and `morlet_chunk_checkpoint(..., extractor)`, and an `extractor` argument on `morlet_stream_candidates`/`morlet_search_streams`. Defaults remain v1 and the frozen fixtures are unchanged.
+- The checkpoint records the version; restore rejects unknown versions and relabelled rates. Stored-interval search uses the source recording's version and returns it; a population mixing versions raises `incompatible stream representation`.
+- Physical meaning changes with the rate: at 100 Hz the bands span 1.56-40 Hz, windows of 512-4096 samples last 5.12-40.96 s, and the lowest band's support is +/-1.84 s. Choose the window for the task and document it.
+
+No resampling or timestamp relabelling is involved. Existing databases need a fresh extension installation; rebuilding the image does not update them (see [existing installations](../extensions/pg_morlet/README.md#existing-installations)).
 
 Overlapping bands do not sum to physical signal power. Tokens contain local energies, not phase or invertible wavelet coefficients. A similar spectral signature does not guarantee the same waveform, condition or fault. DC is ignored, and there is no speed invariance or resampling. Per-window amplitude normalization can be requested explicitly by nesting `morlet_normalize(...,'zscore')` before feature extraction.
 

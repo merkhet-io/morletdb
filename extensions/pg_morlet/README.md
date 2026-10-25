@@ -36,6 +36,25 @@ cargo pgrx package --pg-config /path/to/pgrx-managed/pg_config
 
 SQL is generated from `#[pg_extern]` annotations by pgrx. `sql/smoke.sql` is a manual smoke script, not an extension migration. Before the first released version, establish generated SQL snapshots and upgrade scripts; there is no upgrade path promised for this unreleased scaffold.
 
+### Existing installations
+
+Changes to SQL objects keep extension version `0.1.0` and ship **no upgrade
+script**. This includes `morlet-energy-lowrate-v1` (new `morlet_features` and
+`morlet_chunk_checkpoint` overloads, trailing `extractor` arguments) and the
+bounded `morlet_read_interval` lookup. PostgreSQL stores an extension's SQL
+objects in each database at `CREATE EXTENSION` time, so:
+
+- Rebuilding the Docker image or reinstalling the shared library does **not**
+  update functions in an existing database or an existing Docker volume. Old
+  definitions keep running against the new library without the new arguments
+  or the read fix.
+- `ALTER EXTENSION pg_morlet UPDATE` does nothing, because the version did not change.
+- The supported procedure is a fresh installation: `CREATE DATABASE`, then
+  `CREATE EXTENSION pg_morlet`, then re-import from the source recordings. For
+  the demo containers, a new volume works too (`docker compose ... down -v`
+  **deletes** stored recordings).
+- Replacing individual functions by hand is not a supported migration.
+
 ## SQL functions
 
 | Function | Semantics |

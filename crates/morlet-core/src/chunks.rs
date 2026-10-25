@@ -28,6 +28,7 @@ pub struct Checkpoint {
 
 #[derive(Clone)]
 pub struct ChunkExtractor {
+    version: &'static str,
     rate: f64,
     window: usize,
     stride: u64,
@@ -45,8 +46,29 @@ impl ChunkExtractor {
         stride: usize,
         normalization: &str,
     ) -> Result<Self, String> {
+        Self::with_extractor(
+            rate,
+            window,
+            stride,
+            normalization,
+            morlet::EXTRACTOR_VERSION,
+        )
+    }
+
+    /// The extractor version is fixed for the stream's lifetime and checkpointed.
+    pub fn with_extractor(
+        rate: f64,
+        window: usize,
+        stride: usize,
+        normalization: &str,
+        extractor: &str,
+    ) -> Result<Self, String> {
+        let version = morlet::extractor_version(extractor).map_err(|e| e.to_string())?;
+        if version != morlet::EXTRACTOR_VERSION {
+            morlet::validate_rate(version, rate).map_err(|e| e.to_string())?;
+        }
         if !rate.is_finite()
-            || !(128.0..=200000.0).contains(&rate)
+            || (version == morlet::EXTRACTOR_VERSION && !(128.0..=200000.0).contains(&rate))
             || !(512..=4096).contains(&window)
             || stride == 0
             || stride > 32768
@@ -55,6 +77,7 @@ impl ChunkExtractor {
         }
         normalize(&[0.], normalization).map_err(|e| e.to_string())?;
         Ok(Self {
+            version,
             rate,
             window,
             stride: stride as u64,
@@ -69,7 +92,7 @@ impl ChunkExtractor {
     pub fn checkpoint(&self) -> Checkpoint {
         Checkpoint {
             format_version: 1,
-            extractor_version: morlet::EXTRACTOR_VERSION.into(),
+            extractor_version: self.version.into(),
             rate: self.rate,
             window: self.window,
             stride: self.stride as usize,
@@ -83,15 +106,16 @@ impl ChunkExtractor {
 
     pub fn from_checkpoint(checkpoint: Checkpoint) -> Result<Self, String> {
         if checkpoint.format_version != 1
-            || checkpoint.extractor_version != morlet::EXTRACTOR_VERSION
+            || morlet::extractor_version(&checkpoint.extractor_version).is_err()
         {
             return Err("unsupported checkpoint or extractor version".into());
         }
-        let mut state = Self::new(
+        let mut state = Self::with_extractor(
             checkpoint.rate,
             checkpoint.window,
             checkpoint.stride,
             &checkpoint.normalization,
+            &checkpoint.extractor_version,
         )?;
         let count = if checkpoint.end < checkpoint.window as u64 {
             0
@@ -177,7 +201,7 @@ impl ChunkExtractor {
                 &self.normalization,
             )
             .map_err(|e| e.to_string())?;
-            let features = morlet::extract(&normalized, self.rate)
+            let features = morlet::extract_versioned(&normalized, self.rate, self.version)
                 .map_err(|e| e.to_string())?
                 .features();
             output.push(ChunkSegment {
@@ -267,6 +291,41 @@ mod tests {
         let mut bad = restarted.checkpoint();
         bad.extractor_version = "future".into();
         assert!(ChunkExtractor::from_checkpoint(bad).is_err());
+    }
+    #[test]
+    fn lowrate_streams_checkpoint_their_version() {
+        let samples: Vec<f64> = (0..5000).map(|i| (i as f64 / 7.).sin()).collect();
+        assert!(ChunkExtractor::new(100., 2048, 512, "zscore").is_err());
+        assert!(ChunkExtractor::with_extractor(
+            4096.,
+            2048,
+            512,
+            "zscore",
+            "morlet-energy-lowrate-v1"
+        )
+        .is_err());
+        assert!(ChunkExtractor::with_extractor(100., 2048, 512, "zscore", "unknown").is_err());
+        let mut stream =
+            ChunkExtractor::with_extractor(100., 2048, 512, "zscore", "morlet-energy-lowrate-v1")
+                .unwrap();
+        let mut output = stream.push(0, &samples[..3000]).unwrap();
+        let checkpoint = stream.checkpoint();
+        assert_eq!(checkpoint.extractor_version, "morlet-energy-lowrate-v1");
+        let mut resumed = ChunkExtractor::from_checkpoint(checkpoint.clone()).unwrap();
+        output.extend(resumed.push(3000, &samples[3000..]).unwrap());
+        assert_eq!(output.len(), 1 + (5000 - 2048) / 512);
+        let expected = morlet::extract_versioned(
+            &normalize(&samples[512..2560], "zscore").unwrap(),
+            100.,
+            "morlet-energy-lowrate-v1",
+        )
+        .unwrap()
+        .features();
+        assert_eq!(output[1].features, expected);
+        // A relabeled checkpoint cannot move a 100 Hz stream into the v1 domain.
+        let mut relabeled = checkpoint;
+        relabeled.extractor_version = morlet::EXTRACTOR_VERSION.into();
+        assert!(ChunkExtractor::from_checkpoint(relabeled).is_err());
     }
     #[test]
     fn invalid_push_does_not_advance_state() {

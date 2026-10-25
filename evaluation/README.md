@@ -111,3 +111,13 @@ Build the Rust adapter first so numerical integration tests run rather than skip
 Normal CI does this and never downloads third-party recordings. The tests cover
 split leakage, source hashes, compatibility, negatives, suppression before top-k,
 fixture agreement and the complete evaluator with synthetic control recordings.
+
+## Seismic replay reports
+
+[`seismic-cx-north-chile-2024-v2`](reports/seismic-cx-north-chile-2024-v2.md) is the reference
+report for the [seismic example](../examples/seismic/README.md): a fresh database, with provenance
+(code revision, representation, definition and manifest hashes) in the report, and run reports
+in `reports/seismic-cx-north-chile-2024-v2-runs/`.
+[`v1`](reports/seismic-cx-north-chile-2024-v1.md) is historical; v2 reproduces its metrics and
+rankings. Summary and limits: [docs/seismic-investigation.md](../docs/seismic-investigation.md).
+

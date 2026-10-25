@@ -15,6 +15,8 @@ pub enum SignalError {
     InvalidNormalization,
     MorletLength,
     InvalidSampleRate,
+    InvalidLowSampleRate,
+    UnknownExtractor,
     NumericalFailure,
 }
 impl fmt::Display for SignalError {
@@ -25,6 +27,12 @@ impl fmt::Display for SignalError {
             Self::LengthMismatch => "waveforms must have equal lengths",
             Self::MorletLength => "Morlet extraction requires 512..32768 samples",
             Self::InvalidSampleRate => "sample_rate_hz must be finite and in [128,200000]",
+            Self::InvalidLowSampleRate => {
+                "morlet-energy-lowrate-v1 requires a finite sample_rate_hz in [1,128)"
+            }
+            Self::UnknownExtractor => {
+                "extractor must be morlet-energy-v1 or morlet-energy-lowrate-v1"
+            }
             Self::NumericalFailure => "signal produces non-finite features at this numeric scale",
             Self::InvalidNormalization => "normalization must be none, demean or zscore",
         })

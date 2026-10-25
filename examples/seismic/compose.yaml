@@ -1,0 +1,25 @@
+# Local-only database for the seismic investigation app. Separate project, port
+# and volume from the repository walkthrough; demo credentials are public.
+name: morletdb-seismic
+services:
+  db:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: morlet-demo-only
+      POSTGRES_DB: morlet
+    command: ["postgres", "-c", "shared_buffers=1GB", "-c", "max_wal_size=8GB"]
+    ports:
+      - "127.0.0.1:54339:5432"
+    volumes:
+      - seismic-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+volumes:
+  seismic-data:

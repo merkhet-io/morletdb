@@ -35,10 +35,15 @@ class Spec:
     unit: str = 'g'
     normalization: str = 'zscore'
     bin_width: float = 0.25
+    # Rate domains are disjoint: v1 is [128,200000] Hz, lowrate-v1 is [1,128) Hz.
+    extractor: str = 'morlet-energy-v1'
 
     def __post_init__(self):
+        domains = {'morlet-energy-v1': lambda r: 128 <= r <= 200000,
+                   'morlet-energy-lowrate-v1': lambda r: 1 <= r < 128}
         if (type(self.window) is not int or not 512 <= self.window <= 4096
-                or not math.isfinite(self.rate) or not 128 <= self.rate <= 200000
+                or self.extractor not in domains
+                or not math.isfinite(self.rate) or not domains[self.extractor](self.rate)
                 or not math.isfinite(self.bin_width) or not 0.001 <= self.bin_width <= 10
                 or self.normalization not in ('none', 'demean', 'zscore')
                 or not isinstance(self.channel, str) or not self.channel
@@ -48,6 +53,7 @@ class Spec:
     @property
     def id(self):
         # Quantizer, score, layout and normalization are frozen in this namespace.
+        # asdict supplies the extractor, so default-spec identifiers are unchanged.
         return digest({'version': VERSION, 'extractor': 'morlet-energy-v1',
                        'layout': 'valid-128-coefficient-cells',
                        'metric': 'equal-band-duration-weighted-log-energy-rmse-v1',
@@ -84,7 +90,8 @@ def extract_windows(rows, spec, binary):
                                               for x in samples)):
             raise ValueError('invalid source window')
         payload.append(json.dumps({'samples': samples, 'sample_rate_hz': spec.rate,
-                                   'normalization': spec.normalization}, allow_nan=False))
+                                   'normalization': spec.normalization,
+                                   'extractor_version': spec.extractor}, allow_nan=False))
     result = subprocess.run([str(Path(binary).resolve())], input='\n'.join(payload)+'\n',
                             text=True, capture_output=True, check=True, timeout=180)
     features = [json.loads(line) for line in result.stdout.splitlines()]
@@ -92,7 +99,7 @@ def extract_windows(rows, spec, binary):
         raise ValueError('extractor output count mismatch')
     windows = []
     for row, feature in zip(rows, features):
-        if feature['version'] != 'morlet-energy-v1':
+        if feature['version'] != spec.extractor:
             raise ValueError('extractor version mismatch')
         cells = feature['energy_cells_experimental']
         windows.append(Window(
