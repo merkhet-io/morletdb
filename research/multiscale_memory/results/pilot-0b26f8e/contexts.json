@@ -1,0 +1,60 @@
+{
+ "spec": "f736c1cb28f46b9bce36017a71a816d2e18329e17939d1fb438055a6671da169",
+ "representation_build_s": 2.575725708040409,
+ "gallery": 17084,
+ "stored_blob_bytes_per_window": 8893,
+ "raw_float64_bytes_per_window": 8000,
+ "delivered_cost_per_neighbour": {
+  "raw": {
+   "scalars": 1000,
+   "bytes": 8000
+  },
+  "R32": {
+   "scalars": 32,
+   "bytes": 256
+  },
+  "W32": {
+   "scalars": 32,
+   "bytes": 256
+  },
+  "C32": {
+   "scalars": 32,
+   "bytes": 320
+  },
+  "R64": {
+   "scalars": 64,
+   "bytes": 512
+  },
+  "W64": {
+   "scalars": 64,
+   "bytes": 512
+  },
+  "C64": {
+   "scalars": 64,
+   "bytes": 640
+  },
+  "R128": {
+   "scalars": 128,
+   "bytes": 1024
+  },
+  "W128": {
+   "scalars": 128,
+   "bytes": 1024
+  },
+  "C128": {
+   "scalars": 128,
+   "bytes": 1280
+  }
+ },
+ "mean_relative_reconstruction_error": {
+  "R32": 0.7959705797618135,
+  "W32": 0.7977846934599917,
+  "C32": 0.5291045226341883,
+  "R64": 0.6734396123411406,
+  "W64": 0.6783800848906443,
+  "C64": 0.31890663944450764,
+  "R128": 0.47663313189223205,
+  "W128": 0.48417859678830805,
+  "C128": 0.11292108160093386
+ }
+}

@@ -1,0 +1,34 @@
+{
+ "arm": "A3",
+ "seed": 0,
+ "parameters": 40325,
+ "best_val_macro_auroc": 0.5679720398553056,
+ "epochs_run": 2,
+ "history": [
+  {
+   "epoch": 1,
+   "val_macro_auroc": 0.5348093023575841
+  },
+  {
+   "epoch": 2,
+   "val_macro_auroc": 0.5679720398553056
+  }
+ ],
+ "train_s": 10.534266207949258,
+ "test_inference_s": null,
+ "device": "mps",
+ "smoke": true,
+ "context": "raw",
+ "neighbours": "retrieved",
+ "provenance": {
+  "commit": "0b26f8e8b86d468d1a049fbea54c5bc5aa5cfe4b",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.2.6",
+  "scipy": "1.16.3",
+  "torch": "2.9.0",
+  "spec_id": "f736c1cb28f46b9bce36017a71a816d2e18329e17939d1fb438055a6671da169"
+ }
+}
