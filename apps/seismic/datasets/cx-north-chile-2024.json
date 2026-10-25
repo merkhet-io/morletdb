@@ -1,0 +1,61 @@
+{
+  "id": "cx-north-chile-2024-v1",
+  "description": "IPOC (CX) broadband vertical channels near the persistent intermediate-depth source region under Pica/Iquique, northern Chile. Two whole time periods: a reference week and a later held-out replay period.",
+  "provider": {
+    "name": "GFZ GEOFON",
+    "dataselect": "https://geofon.gfz.de/fdsnws/dataselect/1/query",
+    "station": "https://geofon.gfz.de/fdsnws/station/1/query",
+    "availability": "https://geofon.gfz.de/fdsnws/availability/1/query",
+    "documentation": "https://geofon.gfz.de/waveform/webservices/fdsnws.php"
+  },
+  "network_citation": {
+    "code": "CX",
+    "name": "IPOC Seismic Network",
+    "doi": "10.14470/PK615318",
+    "citation": "GFZ German Research Centre for Geosciences; Institut des Sciences de l'Univers-Centre National de la Recherche CNRS-INSU (2006): IPOC Seismic Network. Integrated Plate boundary Observatory Chile - IPOC. Dataset/Seismic Network. https://doi.org/10.14470/PK615318",
+    "access": "Open; network page lists no restricted CX stations. Terms/rights field: Unknown."
+  },
+  "streams": [
+    {"network": "CX", "station": "PB01", "location": "", "channel": "HHZ"},
+    {"network": "CX", "station": "PB02", "location": "", "channel": "HHZ"},
+    {"network": "CX", "station": "PB08", "location": "", "channel": "HHZ"}
+  ],
+  "periods": [
+    {"name": "reference-2024-03", "split": "reference",
+     "start": "2024-03-04T00:00:00Z", "end": "2024-03-11T00:00:00Z"},
+    {"name": "heldout-2024-05", "split": "heldout",
+     "start": "2024-05-01T00:00:00Z", "end": "2024-05-06T12:00:00Z"}
+  ],
+  "catalog": {
+    "provider": "USGS ANSS ComCat",
+    "event_service": "https://earthquake.usgs.gov/fdsnws/event/1/query",
+    "documentation": "https://earthquake.usgs.gov/fdsnws/event/1/",
+    "queries": [
+      {"name": "regional", "latitude": -20.8, "longitude": -69.5, "maxradiuskm": 400, "minmagnitude": 2.5},
+      {"name": "global", "minmagnitude": 6.0}
+    ]
+  },
+  "representation": {
+    "extractor": "morlet-energy-lowrate-v1",
+    "window_samples": 2048,
+    "stride_samples": 512,
+    "normalization": "zscore",
+    "units": "counts",
+    "instrument_response": "not removed; raw digitizer counts are stored and compared only within one station/channel"
+  },
+  "ingest": {"chunk_samples": 3000, "batch_chunks": 16, "continuity_tolerance_samples": 0.5},
+  "detector": {
+    "version": "stalta-baseline-v1",
+    "filter": {"type": "bandpass", "freqmin": 2.0, "freqmax": 10.0, "corners": 4, "zerophase": false},
+    "method": "recursive_sta_lta",
+    "sta_s": 1.0, "lta_s": 30.0, "on": 4.0, "off": 1.5,
+    "min_duration_s": 1.0, "warmup_s": 120.0, "post_s": 60.0, "block_s": 600.0,
+    "query_pre_s": 2.0
+  },
+  "association": {
+    "version": "taup-window-v1",
+    "model": "iasp91",
+    "pre_p_s": 5.0, "post_s_s": 20.0,
+    "teleseismic_post_p_s": 30.0
+  }
+}
