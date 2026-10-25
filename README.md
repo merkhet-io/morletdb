@@ -174,7 +174,7 @@ and continuous-recording sweeps are available; report their workload and limits.
 | Area | Contract today |
 |---|---|
 | Storage | Append-only recordings, raw chunks, typed segments and restartable checkpoints |
-| Input | 1..32768 finite samples/chunk; 128..200000 Hz; explicit channel and units |
+| Input | 1..32768 finite samples/chunk; 128..200000 Hz (`morlet-energy-v1`) or opt-in [1,128) Hz (`morlet-energy-lowrate-v1`); explicit channel and units |
 | Search windows | 512..4096 samples; compatible rate/channel/unit/window/normalization/extractor |
 | PostgreSQL retrieval | Exact scan; default 4096 eligible segments; explicit experiments up to 1,000,000, with no capacity guarantee |
 | Consistency and access | Synchronous extraction; transactional publication; caller permissions and RLS |

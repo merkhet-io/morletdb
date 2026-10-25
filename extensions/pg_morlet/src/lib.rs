@@ -234,6 +234,24 @@ mod tests {
         assert_eq!(Spi::get_one::<String>("SELECT extractor_version FROM morlet_read_interval('lowrate_streams','S2',512,2560)").unwrap().unwrap(),"morlet-energy-lowrate-v1");
         assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_streams('lowrate_streams',ARRAY(SELECT sin(i::float8/5) FROM generate_series(0,2047) i),100,'HHZ','counts','{}','zscore',10,4096,'morlet-energy-lowrate-v1')").unwrap().unwrap(),10);
     }
+    #[pg_test]
+    fn reads_span_maximal_chunks_with_bounded_lookup() {
+        Spi::run("SELECT morlet_create_stream_collection('public','wide_chunks'); SELECT morlet_start_recording('wide_chunks','A',4096,'x','g','{}',512,32768,'none'); SELECT morlet_append_chunk('wide_chunks','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,32767) i)); SELECT morlet_append_chunk('wide_chunks','A',32768,ARRAY(SELECT i::float8 FROM generate_series(32768,65535) i))").unwrap();
+        // The last sample of a maximal chunk is exactly at the lookup bound.
+        let tail = Spi::get_one::<Vec<f64>>(
+            "SELECT samples FROM morlet_read_interval('wide_chunks','A',32767,32770)",
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(tail, vec![32767., 32768., 32769.]);
+        let whole = Spi::get_one::<Vec<f64>>(
+            "SELECT samples FROM morlet_read_interval('wide_chunks','A',1,32769)",
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(whole.len(), 32768);
+        assert_eq!((whole[0], whole[32767]), (1., 32768.));
+    }
     #[pg_test(
         error = "invalid chunk extractor: rate 128..200000, window 512..4096, stride 1..32768 required"
     )]

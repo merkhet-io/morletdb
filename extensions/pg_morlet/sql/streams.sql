@@ -216,12 +216,14 @@ BEGIN
     RAISE EXCEPTION 'source interval exceeds recording length';
   END IF;
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  -- Chunks hold at most 32768 samples, so the lower start bound is implied; it
+  -- keeps reads late in long recordings to an index range instead of a prefix scan.
   EXECUTE format('SELECT array_agg(v.value ORDER BY c.start_sample,v.ordinality),count(*)
     FROM %s c CROSS JOIN LATERAL unnest(c.samples[
       greatest(1,$2-c.start_sample+1)::integer:
       least(cardinality(c.samples)::bigint,$3-c.start_sample)::integer
     ]) WITH ORDINALITY AS v(value,ordinality)
-    WHERE c.recording_id=$1 AND c.start_sample<$3
+    WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
       AND c.start_sample+cardinality(c.samples)>$2',relations.chunks)
     INTO recovered,covered USING source_recording_id,interval_start,interval_end;
   IF covered<>interval_end-interval_start THEN
