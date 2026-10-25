@@ -9,7 +9,7 @@
   "heldout-2024-05"
  ],
  "interrupted_after_chunks": null,
- "elapsed_s": 145.6390592920361,
+ "elapsed_s": 121.91545349999797,
  "actions": {
   "duplicate": 15846
  },
@@ -32,7 +32,7 @@
  "host": "macOS-27.0.1-arm64-arm-64bit",
  "provenance": {
   "code": {
-   "commit": "0b41233378070150e6e9ca322c48d3d25392fa20",
+   "commit": "6a829a209a6ae233dde4ff212b9d9c3e3393c176",
    "branch": "feat/seismic-replay-investigation",
    "dirty": false
   },

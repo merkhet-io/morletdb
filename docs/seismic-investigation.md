@@ -49,7 +49,7 @@ result here validates one.
 
 ## Measured results (v2)
 
-Provenance: code `0b41233` (clean tree), fresh database `seismic_eval_0b41233`
+Provenance: code `6a829a2` (clean tree), fresh database `seismic_eval_6a829a2`
 with `pg_morlet` installed from this branch's image, representation
 `morlet-energy-lowrate-v1`, detector `stalta-baseline-v1`, manifest sha256
 `c03f4126…`. Apple M5 Max, macOS 27, PostgreSQL 17.6 container (arm64). Three
@@ -62,12 +62,12 @@ carried identical retransmitted samples, so they were verified as duplicates
 (9,258 samples) and no conflicts occurred; conflict versioning is therefore
 exercised by synthetic tests only. 20,374 header offsets of at most 0.0002
 samples (2 µs, from microsecond-rounded record times) were absorbed and logged.
-Each unpaced replay took 906-913 s (about 1,180-1,190x real time per stream). Append
-batches of 16 x 30 s chunks had p50 0.33 s and p90 0.39 s including
+Each unpaced replay took 956-964 s (about 1,120-1,130x real time per stream). Append
+batches of 16 x 30 s chunks had p50 0.33-0.34 s and p90 0.41 s including
 synchronous Rust extraction. A per-window `morlet_features` round trip from
-Python, including transfer of 2048 floats, measured p50 4.7 ms and p90 6.1 ms.
+Python, including transfer of 2048 floats, measured p50 6.3 ms and p90 8.9 ms.
 v1 measured 31 ms on the older demo database; the cause of the difference was
-not isolated. No queue exists in replay; live backlog, reconnects and
+not isolated. Timings vary between runs; counts and rankings do not. No queue exists in replay; live backlog, reconnects and
 freshness are reported by the SeedLink source but were not measured.
 
 **Restart and lifecycle on real data (same commit).**
@@ -117,9 +117,13 @@ temporal top-5 was 0.20-0.64 at 64 candidates and 0.54-0.81 at 1024. On this
 data the posting plan visits many entries and has incomplete recall.
 Exhaustive scoring of a 4096-window gallery took about 0.1 s in Python.
 
-**v1 versus v2.** v2 reproduced every detection and retrieval metric, every
-gallery generation ID and every per-query ranking in all four modes (217/217
-queries). Only timings, duplicate counts and the extraction measurement differ.
+**Reproducibility.** v2 was generated first at `0b41233` and regenerated at
+`6a829a2`, after the version-identity commit change, on another fresh
+database. Both match v1 on every detection and retrieval metric, every gallery
+generation ID and every per-query ranking in all four modes (217/217 queries).
+The two v2 runs also agree on match distances to 12 decimals, ingestion
+counts, segments and discontinuity events. Only timings, duplicate counts
+(v1 included an interrupted-restart prefix) and the extraction measurement differ.
 
 ## Defects found and fixed
 
