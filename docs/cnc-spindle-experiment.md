@@ -6,6 +6,15 @@ Status: **proposed specification**, not implemented. Builds on demo-catalog entr
 Do not build another application until this spec is reviewed and data access
 is approved.
 
+## Prerequisites before implementation
+
+- **Dataset:** named, with its actual channels, units, sample rates and clocks
+  confirmed from the provider's documentation.
+- **Labels:** which labels exist and how they were produced.
+- **Reviewers:** the relevance reviewers and a second reviewer for the
+  agreement subset are identified.
+- **Approval:** data-access approval is in place.
+
 ## Question
 
 Given an engineer-reviewed vibration episode on one spindle axis, does
@@ -107,9 +116,11 @@ reported as its own bucket.
 - **Per query:** precision@10, nDCG@10 and the rank of the first relevant
   result, reported for every query and method. This table is the primary result.
 - **Paired comparison:** per-query wins, ties and losses for each method pair.
-- **Uncertainty:** bootstrap 95% intervals over queries for each method's mean
-  metric and for the paired differences. With 20 queries these intervals are
-  expected to be wide; report them as they are.
+- **Uncertainty:** grouped bootstrap 95% intervals that resample whole tools or
+  runs, carrying all their queries and windows together. Queries from one tool
+  and overlapping windows are not independent observations. Report the number
+  of independent groups beside every interval. With 20 queries these intervals
+  are expected to be wide; report them as they are.
 - **Context sensitivity:** the same metrics with and without the shared
   context filter.
 - **Failures:** queries where every method fails, and cases where simple
