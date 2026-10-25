@@ -195,6 +195,7 @@ See [support boundaries](SUPPORT.md) and the [numerical contract](docs/morlet-ex
 | [tools/ingest](tools/ingest) · [tools/client](tools/client) | Parquet import and thin Python recording client |
 | [evaluation](evaluation) · [benchmarks](benchmarks) | Relevance, candidate recall and workload experiments |
 | [examples/notebooks](examples/notebooks) | Visual waveform investigation |
+| [apps/seismic](apps/seismic) | Local seismic replay investigation app on public GEOFON data ([results](docs/seismic-investigation.md)) |
 | [tools/reference-go](tools/reference-go) | Frozen independent numerical reference; no product runtime |
 
 ```sh

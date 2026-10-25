@@ -115,14 +115,31 @@ def spectrum_frame(samples, rate, label):
                          "series": label})
 
 
-def line(frame, x, y, title, height=220, color_domain=("query",), color_range=(QUERY,)):
+def line(frame, x, y, title, height=240, color_domain=("query",), color_range=(QUERY,)):
+    utc_axis = "UTC" in x  # Vega defaults to the browser's local zone; sample time is UTC.
+    x_enc = (alt.X(x, type="temporal", title=x, scale=alt.Scale(type="utc"),
+                   axis=alt.Axis(format="%H:%M:%S", formatType="utc"))
+             if utc_axis else alt.X(x, title=x))
+    x_tip = alt.Tooltip(x, type="temporal", format="%Y-%m-%d %H:%M:%S.%L", formatType="utc") if utc_axis else x
     return (alt.Chart(frame, title=title).mark_line(strokeWidth=1.5)
-            .encode(x=alt.X(x, title=x), y=alt.Y(y, title=y),
+            .encode(x=x_enc, y=alt.Y(y, title=y),
                     color=alt.Color("series", scale=alt.Scale(domain=list(color_domain),
                                                               range=list(color_range)),
                                     legend=alt.Legend(orient="top", title=None)),
-                    tooltip=[x, alt.Tooltip(y, format=".4g"), "series"])
+                    tooltip=[x_tip, alt.Tooltip(y, format=".4g"), "series"])
             .properties(height=height).interactive(bind_y=False))
+
+
+def display_filter(samples, rate, enabled):
+    """Display-only copy: demean + causal 2-10 Hz (the detector's band). Never stored or searched."""
+    if not enabled:
+        return np.asarray(samples, dtype=float)
+    from obspy import Trace
+    trace = Trace(np.asarray(samples, dtype=float))
+    trace.stats.sampling_rate = rate
+    trace.detrend("demean")
+    trace.filter("bandpass", freqmin=2.0, freqmax=10.0, corners=4, zerophase=False)
+    return trace.data
 
 
 def spectrogram(samples, rate, start_ns):
@@ -131,7 +148,10 @@ def spectrogram(samples, rate, start_ns):
     f, t, power = spec(samples - samples.mean(), fs=rate, nperseg=256, noverlap=192)
     fig, ax = plt.subplots(figsize=(10, 2.6))
     times = utc(start_ns + (t * 1e9).astype("int64"))
-    ax.pcolormesh(times, f, 10 * np.log10(power + 1e-12), shading="auto", cmap="Blues")
+    db = 10 * np.log10(power + 1e-12)
+    low, high = np.percentile(db, [5, 99.5])  # robust limits; raw counts, power in dB
+    mesh = ax.pcolormesh(times, f, db, shading="auto", cmap="Blues", vmin=low, vmax=high)
+    fig.colorbar(mesh, ax=ax, label="power (dB counts²/Hz)", pad=0.01)
     ax.set_ylabel("frequency (Hz)")
     ax.set_xlabel("sample time (UTC)")
     ax.set_ylim(0, rate / 2)
@@ -170,7 +190,7 @@ with st.sidebar.expander("Historical replay", expanded=not running):
     periods = st.multiselect("Periods", [p["name"] for p in definition["periods"]],
                              default=[p["name"] for p in definition["periods"]])
     speed = st.number_input("Speed (× real time; 0 = unpaced)", 0.0, 100000.0, 600.0, step=100.0)
-    cols = st.columns(3)
+    cols = st.columns(2) + st.columns(2)
     if cols[0].button("Start", disabled=running):
         start_worker("replay", definition["id"], speed=speed, streams=[stream], periods=periods)
         st.rerun()
@@ -180,7 +200,7 @@ with st.sidebar.expander("Historical replay", expanded=not running):
                 slot["control"].resume()
         elif cols[1].button("Pause"):
             slot["control"].pause()
-        if cols[2].button("Stop"):
+        if cols[2].button("Stop replay"):
             slot["control"].stop()
     st.caption("Replay re-emits cached miniSEED through the same ingestion as live input. Already "
                "committed samples are verified as duplicates, not re-appended.")
@@ -238,36 +258,45 @@ def overview_tab():
         st.info("No recordings yet for this stream. Start a replay from the sidebar or run "
                 "`python -m morlet_seismic replay`.")
         return
-    seg_frame = pd.DataFrame([{"row": f"recordings ({s['split']})", "start": utc(s["start_ns"]), "end": utc(s["end_ns"]),
-                               "recording": s["recording_id"], "split": s["split"],
-                               "opened because": s["opened_reason"], "samples": s["committed"]} for s in segs])
-    trig_frame = pd.DataFrame([{"row": "detector triggers", "time": utc(t["on_ns"]), "peak STA/LTA": t["peak_ratio"],
-                                "duration s": (t["off_ns"] - t["on_ns"]) / 1e9,
-                                "catalog association": (associations[(t["recording_id"], t["on_sample"])] or [{}])[0].get("event_id", "none")}
-                               for t in trigs])
-    cat_frame = pd.DataFrame([{"row": "catalog predicted P (reference only)", "time": utc(a["p_ns"]),
-                               "event": a["event_id"], "magnitude": a["magnitude"], "depth km": a["depth_km"],
-                               "distance deg": round(a["distance_deg"], 2)} for a in arrivals])
     split_choice = st.radio("Time period", [p["name"] for p in definition["periods"]], horizontal=True)
     period = next(p for p in definition["periods"] if p["name"] == split_choice)
-    lo, hi = pd.Timestamp(period["start"]), pd.Timestamp(period["end"])
-    domain = alt.Scale(domain=[lo, hi])
-    bars = alt.Chart(seg_frame[(seg_frame.end > lo) & (seg_frame.start < hi)]).mark_bar(height=14, color="#7f8c8d").encode(
-        x=alt.X("start:T", scale=domain, title="sample time (UTC)"), x2="end:T", y=alt.Y("row:N", title=None),
-        tooltip=["recording", "split", "opened because", "samples", "start:T", "end:T"])
-    layers = [bars]
-    if not trig_frame.empty:
-        layers.append(alt.Chart(trig_frame[(trig_frame.time > lo) & (trig_frame.time < hi)]).mark_tick(
-            color=QUERY, thickness=2, size=14).encode(
-            x=alt.X("time:T", scale=domain), y="row:N",
-            tooltip=["time:T", alt.Tooltip("peak STA/LTA", format=".1f"), "duration s", "catalog association"]))
-    if not cat_frame.empty:
-        layers.append(alt.Chart(cat_frame[(cat_frame.time > lo) & (cat_frame.time < hi)]).mark_tick(
-            color=MATCH, thickness=2, size=14).encode(
-            x=alt.X("time:T", scale=domain), y="row:N",
-            tooltip=["time:T", "event", "magnitude", "depth km", "distance deg"]))
+    lo_ns = int(pd.Timestamp(period["start"]).value)
+    hi_ns = int(pd.Timestamp(period["end"]).value)
+    iso = lambda ns: iso_ns(ns)[:23] + "Z"  # noqa: E731 - plain strings serialize robustly
+    marks = []
+    for s in segs:
+        if s["end_ns"] > lo_ns and s["start_ns"] < hi_ns:
+            marks.append({"row": "recordings", "kind": "recording", "start": iso(max(s["start_ns"], lo_ns)),
+                          "end": iso(min(s["end_ns"], hi_ns)), "label": s["recording_id"],
+                          "detail": f"{s['split']}, opened: {s['opened_reason']}, {s['committed']} samples"})
+    for t in trigs:
+        if lo_ns <= t["on_ns"] < hi_ns:
+            a = associations[(t["recording_id"], t["on_sample"])]
+            marks.append({"row": "detector triggers", "kind": "trigger", "start": iso(t["on_ns"]), "end": None,
+                          "label": f"STA/LTA peak {t['peak_ratio']:.1f}",
+                          "detail": f"catalog: {a[0]['event_id']}" if a else "catalog: none"})
+    for r in arrivals:
+        if lo_ns <= r["p_ns"] < hi_ns:
+            marks.append({"row": "catalog predicted P (reference only)", "kind": "catalog", "start": iso(r["p_ns"]),
+                          "end": None, "label": f"{r['event_id']} M{r['magnitude']}",
+                          "detail": f"depth {r['depth_km']:.0f} km, {r['distance_deg']:.2f} deg"})
+    frame = pd.DataFrame(marks)
+    x = alt.X("start:T", title="sample time (UTC)",
+              scale=alt.Scale(type="utc", domain=[iso(lo_ns), iso(hi_ns)]),
+              axis=alt.Axis(formatType="utc", format="%m-%d %H:%M"))
+    y = alt.Y("row:N", title=None, sort=["catalog predicted P (reference only)", "detector triggers", "recordings"])
+    tooltip = [alt.Tooltip("start:T", format="%Y-%m-%d %H:%M:%S", formatType="utc", title="UTC"),
+               "label:N", "detail:N"]
+    base = alt.Chart(frame)
+    timeline = alt.layer(
+        base.transform_filter(alt.datum.kind == "recording").mark_bar(height=14, color="#8a8984")
+        .encode(x=x, x2="end:T", y=y, tooltip=tooltip),
+        base.transform_filter(alt.datum.kind == "trigger").mark_tick(color=QUERY, thickness=1.5, size=14)
+        .encode(x=x, y=y, tooltip=tooltip),
+        base.transform_filter(alt.datum.kind == "catalog").mark_tick(color=MATCH, thickness=2, size=14)
+        .encode(x=x, y=y, tooltip=tooltip))
     st.subheader("Timeline")
-    st.altair_chart(alt.layer(*layers).properties(height=150).interactive(bind_y=False), use_container_width=True)
+    st.altair_chart(timeline.properties(height=150).interactive(bind_y=False), use_container_width=True)
     st.caption("Gray bars: committed recordings (gaps are white space; nothing is filled). Blue ticks: "
                "STA/LTA triggers. Orange ticks: USGS catalog events at their IASP91-predicted P arrival, "
                "a review overlay that never drives the detector.")
@@ -323,9 +352,12 @@ def investigate_tab():
                     f"{iso_ns(segment['start_ns'] + round(qstart * 1e9 / segment['rate']))[:22]} → "
                     f"{iso_ns(segment['start_ns'] + round(qend * 1e9 / segment['rate']))[:22]} "
                     f"({rep['window_samples'] / segment['rate']:.2f} s at {segment['rate']:g} Hz)")
-        frame = waveform_frame(segment, ctx_lo, ctx_hi, context, "query")
+        filtered = st.toggle("Display 2-10 Hz band-passed copy (display only; storage and retrieval use raw counts)",
+                             value=True)
+        frame = waveform_frame(segment, ctx_lo, ctx_hi, display_filter(context, segment["rate"], filtered), "query")
         frame["series"] = np.where((frame["sample"] >= qstart) & (frame["sample"] < qend), "query", "context")
-        st.altair_chart(line(frame, "sample time (UTC)", "counts (demeaned)", "Raw waveform (±30 s context)",
+        st.altair_chart(line(frame, "sample time (UTC)", "counts (demeaned)",
+                             ("2-10 Hz display filter" if filtered else "Raw counts") + " (±30 s context)",
                              color_domain=("context", "query"), color_range=("#b4b2a9", QUERY)),
                         use_container_width=True)
         st.pyplot(spectrogram(context, segment["rate"], segment["start_ns"] + round(ctx_lo * 1e9 / segment["rate"])))
@@ -398,12 +430,14 @@ def investigate_tab():
         with st.expander(f"#{rank} · distance {m['distance']:.4f} · {iso_ns(start_ns)[:22]} · "
                          f"catalog reference: {ref_text}", expanded=rank <= 2):
             a, b = st.columns(2)
-            qn = (query_samples - query_samples.mean()) / (query_samples.std() or 1)
-            mn = (samples - samples.mean()) / (samples.std() or 1)
+            qv = display_filter(query_samples, segment["rate"], filtered)
+            mv = display_filter(samples, mseg["rate"], filtered)
+            qn = (qv - qv.mean()) / (qv.std() or 1)
+            mn = (mv - mv.mean()) / (mv.std() or 1)
             seconds = np.arange(len(qn)) / segment["rate"]
             frame = pd.concat([pd.DataFrame({"seconds from window start": seconds, "z-scored counts": qn, "series": "query"}),
                                pd.DataFrame({"seconds from window start": seconds, "z-scored counts": mn, "series": "match"})])
-            a.altair_chart(line(frame, "seconds from window start", "z-scored counts", "Waveforms (per-window z-score)",
+            a.altair_chart(line(frame, "seconds from window start", "z-scored counts", "Waveforms (per-window z-score" + (", 2-10 Hz display filter)" if filtered else ")"),
                                 color_domain=("query", "match"), color_range=(QUERY, MATCH)), use_container_width=True)
             spectra = pd.concat([spectrum_frame(query_samples, segment["rate"], "query"),
                                  spectrum_frame(samples, mseg["rate"], "match")])

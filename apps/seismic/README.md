@@ -74,8 +74,8 @@ values; bind locally only. `docker compose -f apps/seismic/compose.yaml down -v`
 deletes the replayed data.
 
 After `download`, everything else runs without network access. Replaying all
-three streams unpaced took about 45 minutes on an Apple M5 Max (see the
-evaluation report); `--streams CX.PB01..HHZ --periods heldout-2024-05` is a
+three streams unpaced as three parallel processes took 22-32 minutes on an
+Apple M5 Max (see the evaluation report); `--streams CX.PB01..HHZ --periods heldout-2024-05` is a
 quicker start. Parallel per-stream processes are safe: each stream's
 recordings are independent.
 
@@ -164,7 +164,8 @@ removed, so only same-channel comparisons are meaningful.
    a full `replay`. The second run reports `duplicate_samples` equal to the
    interrupted prefix plus day-file overlaps, and the same recording IDs.
 3. Open the UI, choose **CX.PB08..HHZ**: the timeline shows dozens of separate
-   recordings with white gaps. The discontinuity table lists each gap with its
+   recordings separated by real gaps (zoom the timeline with the mouse wheel;
+   gaps are 0.01-4 s). The discontinuity table lists each gap with its
    size and source file.
 4. Choose **CX.PB01..HHZ** → *Investigate an interval*, filter to
    catalog-associated held-out triggers, and select one. The query waveform,

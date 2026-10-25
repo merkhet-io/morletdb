@@ -56,13 +56,13 @@ def predicted_arrivals(manifest, config):
             s = min((a.time for a in arrivals if a.name in S_PHASES), default=None)
             if p is None:
                 continue
-            regional = distance < 10
+            regional = bool(distance < 10)
             lo = p - config["pre_p_s"]
             hi = (s + config["post_s_s"]) if (regional and s is not None) else p + config["teleseismic_post_p_s"]
             rows.append({"event_id": event["id"], "stream": stream, "magnitude": event["magnitude"],
                          "magnitude_type": event["magnitude_type"], "depth_km": event["depth_km"],
                          "latitude": event["latitude"], "longitude": event["longitude"],
-                         "origin_ns": origin.ns, "distance_deg": distance, "regional": regional,
+                         "origin_ns": origin.ns, "distance_deg": float(distance), "regional": regional,
                          "p_ns": origin.ns + round(p * 1e9),
                          "s_ns": None if s is None else origin.ns + round(s * 1e9),
                          "window_ns": (origin.ns + round(lo * 1e9), origin.ns + round(hi * 1e9)),
