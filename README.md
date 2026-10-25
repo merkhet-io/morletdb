@@ -2,87 +2,61 @@
 
 # Find the signal you have seen before
 
-[![Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-39C9DF.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-39C9DF?labelColor=0B1523)](LICENSE)
 [![Rust & Postgres checks](https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml/badge.svg)](https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml)
+![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-718DFF?labelColor=0B1523&logo=postgresql&logoColor=F1F7FA)
+![Rust + pgrx](https://img.shields.io/badge/Rust-pgrx_0.16-70F0CA?labelColor=0B1523&logo=rust&logoColor=F1F7FA)
+![Status: developer alpha](https://img.shields.io/badge/status-developer_alpha-F1F7FA?labelColor=0B1523)
 
 **MorletDB is a PostgreSQL extension for waveform archives and similarity search.**
-Keep raw sensor recordings, select an interesting interval, and find related
-intervals with their original samples and acquisition context. Built with Rust,
-PostgreSQL 17 and Python. A [Merkhet](https://github.com/merkhet-io) project,
-licensed under Apache 2.0.
+Keep raw sensor recordings in Postgres, select an interesting interval, and ask
+**“Where else does something like this occur?”** Every match comes back as a
+recording and sample interval you can read, plot and trace to its acquisition
+context. Built with Rust, PostgreSQL 17 and Python. A
+[Merkhet](https://github.com/merkhet-io) project, licensed under Apache 2.0.
 
-Start with a vibration burst, an acoustic transient or a repeatable test signal.
-Ask **“Where else does something like this occur?”** Then inspect the matches:
-their waveforms, spectra, recording coordinates and metadata.
+> [!NOTE]
+> **Developer alpha.** The recording workflow is implemented and tested, and it
+> has been exercised on real public seismic data. Real-world usefulness and
+> production-scale performance remain to be established. A similar feature
+> vector is a lead for investigation, not a diagnosis or a confidence score.
 
-> **Developer alpha.** The recording workflow is implemented and tested. A
-> separate offline wave-index PoC explores temporal retrieval. Real-world
-> usefulness and production-scale performance remain to be established.
+[Quickstart](#quickstart) · [On real data](#on-real-data-seismic-replay) · [What has been measured](#what-has-been-measured) · [SQL guide](extensions/pg_morlet/README.md) · [Visual notebook](examples/notebooks/README.md) · [Architecture](docs/architecture.md) · [Demo ideas](docs/demo-catalog.md)
 
-[Quickstart](#try-the-recording-workflow) · [Visual notebook](examples/notebooks/README.md) · [SQL guide](extensions/pg_morlet/README.md) · [Wave-index PoC](docs/wave-index-poc.md) · [Demo ideas](docs/demo-catalog.md) · [Architecture](docs/architecture.md)
+## How it works
 
-## Origins in condition monitoring
-
-MorletDB grew out of work in condition monitoring with **high-volume,
-high-frequency CNC spindle data**: vibration measured across three axes,
-correlated with temperature and current. That experience shaped the idea behind
-the database: keep the original signals and their operating context accessible,
-then make recurring patterns easier to find and compare across recordings.
-
-In that setting, a vibration episode becomes more useful when an engineer can
-inspect what the spindle was doing, compare all three axes, and relate the event
-to temperature and current. The motivating question is practical: **“Have we seen
-this pattern before, and under what conditions?”** Similarity search can help
-assemble that evidence for review; establishing a fault or predicting a failure
-requires separate validation.
-
-Condition monitoring is therefore a core motivation for MorletDB. The current
-implementation provides single-channel waveform storage and retrieval.
-Synchronized analysis across vibration axes, temperature and current remains a
-development direction; the original use case is broader than the capabilities
-implemented today.
-
-## From recordings to evidence you can inspect
+![From recording to evidence: a recording is appended as raw chunks into PostgreSQL (pg_morlet), Rust Morlet extraction writes window features in the same transaction, a query interval is searched exactly against compatible recordings, and ranked matches are read back as original samples with their context.](assets/brand/pipeline.svg)
 
 - **Preserve the source.** Append continuous chunks with global sample offsets.
-  Search windows can cross chunk boundaries; raw samples remain available.
-- **Search local structure.** Compare versioned spectral/statistical features,
-  with compatible acquisition settings and metadata filters.
-- **Follow a match back to the waveform.** Results identify a recording and
-  half-open sample interval. Read the interval and inspect its acquisition context.
-- **Resume ingestion.** Raw chunks, complete segment features and extraction
-  checkpoints publish in one transaction. Identical retries are safe; changed
-  retries, gaps and overlaps fail explicitly.
+  Raw samples stay authoritative, and search windows can cross chunk boundaries.
+- **Search local structure.** Compare versioned spectral and statistical features
+  (twelve Morlet energy bands plus RMS, crest factor and kurtosis). Only
+  recordings with compatible rate, channel, unit, window and extractor are
+  compared, with optional metadata filters.
+- **Follow a match back to the waveform.** Results are half-open sample intervals
+  with their metadata. Source exclusion and overlap suppression run before top-k.
+- **Resume ingestion safely.** Raw chunks, window features and extraction
+  checkpoints commit in one transaction. Identical retries are verified, not
+  duplicated; changed retries, gaps and overlaps fail explicitly.
 
-A recording is one uniformly sampled channel with a sample rate, units and
-metadata. The first application is vibration investigation; the data model also
-accepts compatible acoustic or electrical recordings. A similar feature vector
-is a lead for investigation, not a diagnosis or confidence score.
+A recording is one uniformly sampled channel. MorletDB started with vibration
+investigation, and the same model accepts acoustic, electrical and seismic
+recordings.
 
-## Try the recording workflow
+## Quickstart
 
 ```sh
 docker compose run --rm walkthrough
 ```
 
-This builds the current PostgreSQL 17 preview, imports synthetic Parquet, finds a
-known interval and reconstructs its matches. The
-[walkthrough](docs/recording-workflow.md) covers prerequisites, public demo
-credentials, persistence, restart/replay checks and teardown. The verified
-container target is Linux amd64.
+This builds the PostgreSQL 17 preview, imports synthetic Parquet, finds a known
+interval and reconstructs its matches. The [walkthrough](docs/recording-workflow.md)
+covers prerequisites, the public demo credentials, persistence, restart/replay
+checks and teardown. The verified container target is Linux amd64. Tagged images
+and exact digests are listed in [releases](docs/releases.md).
 
-The [visual notebook](examples/notebooks/README.md) plots query and match
-waveforms beside their FFT magnitudes, distances and provenance. It includes a
-polarity distractor: a signal can look different in time while retaining the
-same spectral-energy features.
-
-For tagged images and exact digests, see [releases](docs/releases.md). Releases
-are snapshots; the offline wave-index experiment requires a current source checkout.
-
-## Try it in Postgres
-
-Install the extension using the [Rust/pgrx guide](extensions/pg_morlet/README.md#setup),
-then run:
+Or install the extension with the [Rust/pgrx guide](extensions/pg_morlet/README.md#setup)
+and use it directly:
 
 ```sql
 CREATE EXTENSION pg_morlet;
@@ -101,16 +75,44 @@ SELECT * FROM morlet_search_streams(
 );
 ```
 
-Use `morlet_search_interval` to query an interval already in a recording, with
-source exclusion and overlap suppression. Use `morlet_read_interval` to reconstruct
-a match across chunks. `morlet_stream_status` reports committed ingestion progress.
-See the [complete recording API](docs/recording-workflow.md).
+Use `morlet_search_interval` to query an interval already stored in a recording,
+`morlet_read_interval` to reconstruct any match, and `morlet_stream_status` to
+check committed ingestion progress. See the [recording API](docs/recording-workflow.md).
+
+> [!IMPORTANT]
+> Alpha releases ship **no extension upgrade scripts**. Install into a fresh
+> database; rebuilding the image does not update an existing database or volume.
+> See [existing installations](extensions/pg_morlet/README.md#existing-installations).
+
+## On real data: seismic replay
+
+![Seismic example: a held-out M5.0 earthquake at station PB01, with its waveform and spectrogram](examples/seismic/docs/02-query-pb01-m5.jpg)
+
+The [seismic example](examples/seismic/README.md) replays about 900 station-hours
+of public broadband recordings from northern Chile (GFZ GEOFON, IPOC network)
+through MorletDB. It splits recordings at real data gaps, verifies duplicate and
+replayed data, proposes candidate events with an ObsPy STA/LTA baseline, and
+retrieves similar historical intervals from the same station in a local Streamlit UI.
+USGS catalog events are shown as a separate reference overlay.
+
+What it showed, reported with its limits in the [investigation summary](docs/seismic-investigation.md):
+
+- Durable ingestion held up on real discontinuities: 238 data gaps, retransmitted
+  records, and restart or stop-and-resume runs that reproduced results exactly.
+- The STA/LTA baseline found all 77 monitored regional catalog arrivals.
+  Catalog labels are an incomplete proxy, since most small local events are
+  uncataloged.
+- Pooled Morlet features retrieved cataloged-event windows far above the base
+  rate, and **outperformed or tied** the experimental temporal representation.
+
+It is an investigation tool, not an earthquake classifier or warning service.
+Seismic rates use the explicit `morlet-energy-lowrate-v1` representation.
 
 ## Import waveform archives
 
 The [Parquet importer](tools/ingest/README.md) accepts sample-array rows or individual
-sample rows, explicit column mappings, bounded batches and validation without a
-database.
+sample rows, explicit column mappings and bounded batches, and can validate
+without a database.
 
 ```sh
 python -m pip install -r tools/ingest/requirements.txt
@@ -120,83 +122,51 @@ python tools/ingest/parquet_import.py signals.parquet \
 ```
 
 Rerunning unchanged input verifies the committed prefix and avoids duplicates.
-Sources are currently local immutable files; S3 discovery and direct row-group
-resume are not implemented.
-
-## Beyond pooled features: a wave-index experiment
-
-The PostgreSQL search path compares twelve pooled Morlet energy bands plus AC
-RMS, crest factor and kurtosis. These fifteen log-transformed features capture
-spectral/statistical similarity but lose event order within a window.
-
-The [offline PoC](docs/wave-index-poc.md) retains integer-coordinate localized
-energy cells from the Rust extractor. A Python harness provides:
-
-1. An exhaustive temporal scorer as the reference.
-2. Quantized positional posting lists to select candidates.
-3. Full temporal reranking, with explicit work budgets and measured recall.
-
-In one deterministic synthetic experiment with **127 gallery windows**, reranking
-**4 candidates** recovered the exhaustive temporal top-3. A burst and its reversal
-had effectively identical pooled features but a temporal distance of **1.18**.
-
-That same query visited **17,835 postings**: common quiet cells make candidate
-lookup expensive. This demonstrates controlled temporal discrimination and a
-candidate/recall tradeoff, not an archive-scale speedup or validated field relevance.
-
-```sh
-python -m pip install -r evaluation/requirements.txt
-cargo build --locked --release -p morlet-core --example features
-python evaluation/wave_index.py --size 128 --output wave-index-output/report.json
-```
-
-The [committed report](evaluation/reports/wave-index-synthetic-v1.json) records
-parameters, source hashes, work counts and diagnostic timings. This is an
-in-memory experiment, not a PostgreSQL index. Durable representation generations,
-database integration and general ordered-motif queries remain in the
-[advanced retrieval design](docs/advanced-retrieval.md).
-
-## Next evaluation direction: defense engineering
-
-We want to evaluate the recording/search workflow on defense-related engineering
-data, starting with test-and-evaluation and equipment maintenance. These are
-**candidate workloads**, not demonstrated deployments or customer results.
-
-| Candidate workload | Investigation to validate |
-|---|---|
-| Platform and subsystem testing | Find repeated vibration or acoustic episodes across comparable test recordings |
-| Vehicle and support-equipment maintenance | Retrieve previously reviewed motor, bearing or pump episodes for analyst comparison |
-| Power-system testing | Compare voltage or current transients across compatible battery or power-supply test runs |
-
-The first proposed slice is **a motor or pump test-bench investigation**:
-select a reviewed vibration episode, retrieve related intervals from held-out
-runs, and inspect the original samples. Success needs approved data, operating
-context, difficult negatives and an engineer's relevance judgments.
-
-This direction does not establish defense-specific accuracy or deployment
-readiness. The existing single-channel model does not provide synchronized
-cross-channel search, live acquisition control or automatic fault diagnosis.
-
-## Demo ideas and evaluation backlog
-
-The [demo catalog](docs/demo-catalog.md) collects fifteen proposed investigations:
-industrial diagnostics, end-of-line quality, actuator/electrical traces, HDDs,
-seismic monitoring and voice/audio retrieval. It records priorities, data sources,
-baselines, acceptance criteria and missing capabilities. Start with one bounded
-evaluation; these ideas are not claims of implemented diagnostic features.
+Sources are local immutable files; S3 discovery and direct row-group resume are
+not implemented.
 
 ## What has been measured
 
-The [real-recording evaluator](evaluation/README.md) compares statistics, FFT,
-pooled Morlet and an experimental temporal representation on a small run-separated
-CWRU bearing dataset. **Morlet ties the statistical baseline in that slice.**
-It establishes a reproducible baseline; differentiation remains unproven.
+Every result names its data, baselines and limits. Differentiation from simple
+methods has **not** been established.
 
-The [benchmark suite](benchmarks/README.md) separates ingestion, extraction and
-retrieval, including storage-layout comparisons and concurrent-write diagnostics.
-A 10,000-candidate feature-only CI smoke checks ranking against an independent
-oracle. It is not evidence of raw-waveform ingestion capacity. Larger experiments
-and continuous-recording sweeps are available; report their workload and limits.
+| Evaluation | Result |
+|---|---|
+| [CWRU bearings](evaluation/README.md), run-separated | Pooled Morlet **ties** the statistical baseline. A reproducible baseline, not a win. |
+| [Seismic replay](evaluation/reports/seismic-cx-north-chile-2024-v2.md), 3 stations, whole-period holdout | Pooled Morlet beats or ties the temporal representation. Catalog precision@5 is 0.21–0.47 against a base rate below 1%. |
+| [Wave-index PoC](docs/wave-index-poc.md), synthetic | Temporal cells separate a burst from its time reversal, which pooled features cannot (distance 1.18 vs ≈0). Posting lists traverse most of the index. |
+| [Benchmarks](benchmarks/README.md) | Ingestion, extraction and retrieval are measured separately. A 10,000-candidate CI smoke checks ranking against an independent oracle; it is not a capacity claim. |
+
+Reports record parameters and source hashes so they can be rerun; the seismic
+report also records the code revision and database it ran on. The wave-index
+experiment is in memory, not a PostgreSQL index, and needs a source checkout
+rather than a release image; its next steps are in the
+[advanced retrieval design](docs/advanced-retrieval.md).
+
+## Where it comes from and where it is going
+
+MorletDB grew out of **condition monitoring with high-volume, high-frequency CNC
+spindle data**: vibration across three axes, correlated with temperature and
+current. In that work, a vibration episode was most useful when an engineer could
+see what the spindle was doing, compare the axes and relate the event to its
+operating context. The motivating question was **“Have we seen this pattern
+before, and under what conditions?”** Today MorletDB stores and retrieves
+single channels. Synchronized analysis across axes, temperature and current is
+a development direction, not a current capability.
+
+Next evaluations, all **candidate workloads** rather than demonstrated results:
+
+- **CNC spindle episodes.** A [pilot experiment spec](docs/cnc-spindle-experiment.md)
+  with whole-tool holdouts, time-aligned context and reviewed relevance labels.
+- **Defense engineering.** Test-and-evaluation and maintenance data: platform and
+  subsystem testing, vehicle and support-equipment maintenance, and power-system
+  testing. The first proposed slice is a motor or pump test-bench investigation
+  with approved data, operating context, difficult negatives and an engineer's
+  relevance judgments. None of this establishes defense-specific accuracy or
+  deployment readiness.
+- **Demo catalog.** Fifteen bounded [investigation ideas](docs/demo-catalog.md),
+  covering industrial diagnostics, quality, electrical traces, HDDs, seismic and
+  audio, each with data sources, baselines and acceptance criteria.
 
 ## Current boundaries
 
@@ -211,20 +181,20 @@ and continuous-recording sweeps are available; report their workload and limits.
 | Lifecycle | Fresh alpha installations; no extension upgrade migration or stable API/schema guarantee |
 
 No resampling, speed invariance, gap interpolation, background extraction worker
-or synchronized multichannel retrieval is implemented. Use supported append APIs;
-direct mutation of managed tables can violate cross-table invariants.
+or synchronized multichannel retrieval is implemented. Use the supported append
+APIs; mutating managed tables directly can violate cross-table invariants.
 See [support boundaries](SUPPORT.md) and the [numerical contract](docs/morlet-extractor.md).
 
-## Develop and contribute
+## Repository
 
 | Path | Role |
 |---|---|
 | [crates/morlet-core](crates/morlet-core) | Portable Rust extraction, localized cells, chunk boundaries and checkpoints |
 | [extensions/pg_morlet](extensions/pg_morlet) | PostgreSQL storage, ingestion, interval reads and exact search |
 | [tools/ingest](tools/ingest) · [tools/client](tools/client) | Parquet import and thin Python recording client |
+| [examples/seismic](examples/seismic) | Reference application: seismic replay investigation on public data |
+| [examples/notebooks](examples/notebooks) | Visual waveform and match inspection |
 | [evaluation](evaluation) · [benchmarks](benchmarks) | Relevance, candidate recall and workload experiments |
-| [examples/notebooks](examples/notebooks) | Visual waveform investigation |
-| [examples/seismic](examples/seismic) | Example application: seismic replay investigation on public GEOFON data ([results](docs/seismic-investigation.md)) |
 | [tools/reference-go](tools/reference-go) | Frozen independent numerical reference; no product runtime |
 
 ```sh
@@ -232,13 +202,15 @@ make test       # Rust core and formatting; no Go toolchain required
 make pg-test    # configured PostgreSQL/pgrx required
 ```
 
-The Rust core is independent of PostgreSQL. Go is retained only for optional
+The Rust core is independent of PostgreSQL. Go is kept only for optional
 reference checks (`make test-reference`) and deliberate fixture maintenance
-(`make golden`). The legacy Go application has been removed.
+(`make golden`).
 
-[Contributing](CONTRIBUTING.md) · [Development](docs/development.md) · [Security](SECURITY.md) · [Roadmap](docs/product-roadmap.md) · [Brand assets](assets/brand/README.md)
+[Contributing](CONTRIBUTING.md) · [Development](docs/development.md) · [Support](SUPPORT.md) · [Security](SECURITY.md) · [Roadmap](docs/product-roadmap.md) · [Brand assets](assets/brand/README.md)
 
 ## License
 
 Copyright 2026 MorletDB contributors. Code, documentation and original brand
 artwork are licensed under the [Apache License, Version 2.0](LICENSE).
+
+<p align="center"><img src="assets/brand/mark.svg" alt="MorletDB mark" width="56"></p>
