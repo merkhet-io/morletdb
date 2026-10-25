@@ -6,7 +6,7 @@ MorletDB runtime, HTTP service or SDK. Active product code is Rust/PostgreSQL/Py
 
 The four Go source/test files and go.mod were moved byte-for-byte from
 `apps/server` at commit
-[0594ee0](https://github.com/merkhet-io/morletdb/tree/0594ee072bfbbb52f6a432c1ebdb12bcc66275e7/apps/server).
+[1b3f86d](https://github.com/merkhet-io/morletdb/tree/1b3f86dcfedfce1248f49c60e958bffab94dc86f/apps/server).
 The module identity is intentionally preserved to avoid touching the reference
 generator's imports. There is no root Go workspace and no Go-to-Rust dependency.
 Legacy capture/context types remain here only because they are part of the

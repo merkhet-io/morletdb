@@ -120,4 +120,6 @@ report for the [seismic example](../examples/seismic/README.md): a fresh databas
 in `reports/seismic-cx-north-chile-2024-v2-runs/`.
 [`v1`](reports/seismic-cx-north-chile-2024-v1.md) is historical; v2 reproduces its metrics and
 rankings. Summary and limits: [docs/seismic-investigation.md](../docs/seismic-investigation.md).
+Commit SHAs recorded in these reports predate the [history rewrite](../docs/history-rewrite.md); its table
+maps each to the rewritten commit with the identical tree.
 

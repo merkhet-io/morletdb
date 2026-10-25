@@ -49,7 +49,7 @@ result here validates one.
 
 ## Measured results (v2)
 
-Provenance: code `6a829a2` (clean tree), fresh database `seismic_eval_6a829a2`
+Provenance: code `6a829a2` (clean tree; `518c1a5` after the [history rewrite](history-rewrite.md), identical tree), fresh database `seismic_eval_6a829a2`
 with `pg_morlet` installed from this branch's image, representation
 `morlet-energy-lowrate-v1`, detector `stalta-baseline-v1`, manifest sha256
 `c03f4126…`. Apple M5 Max, macOS 27, PostgreSQL 17.6 container (arm64). Three

@@ -6,7 +6,7 @@ Go reference implementation. They cover silence/DC, tones, seeded noise, an
 odd-length transient, edge impulses, a chirp and scaled/DC-shifted input.
 
 The legacy-runtime cleanup preserves all eight JSON blobs unchanged from commit
-[0594ee0](https://github.com/merkhet-io/morletdb/tree/0594ee072bfbbb52f6a432c1ebdb12bcc66275e7/testdata/morlet-energy-v1).
+[1b3f86d](https://github.com/merkhet-io/morletdb/tree/1b3f86dcfedfce1248f49c60e958bffab94dc86f/testdata/morlet-energy-v1).
 Their independent generator is now in
 [tools/reference-go](../../tools/reference-go), moved with its extractor and tests
 without source changes. Seeded inputs and numerical constants remain in that generator.
