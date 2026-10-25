@@ -10,8 +10,23 @@ Overlapping chunks are compared with stored samples. Identical overlap is a
 verified duplicate and only the new remainder is appended; differing overlap is
 a conflict and both versions are preserved in separate recordings. Raw samples,
 MorletDB extraction, checkpoints and the stream progress row commit together.
+
+Recording identity:
+- A recording opened for new time (first data, or after a gap) is
+  ``<dataset>/<stream>/<first-sample UTC>``. Placement compares every overlap with
+  stored samples first, so no stored recording can already start there.
+- A recording opened because its samples conflict with stored samples is a
+  version: ``<plain id>#<16 hex of sha256(opening chunk as float64 LE)>``. Several
+  versions may share a first-sample time; their content keeps them distinct.
+- Retransmissions never open recordings: identical data is found by content in an
+  existing version (including after restart) and verified as a duplicate. The
+  same conflicting data therefore cannot create endless copies.
+- When several versions could continue contiguously, the candidate order is
+  first-sample time, then recording ID, both descending; the choice is logged
+  as ``ambiguous_continuation`` because timestamps alone cannot decide it.
 """
 from dataclasses import dataclass
+import hashlib
 import json
 import math
 import sys
@@ -58,7 +73,11 @@ CREATE TABLE IF NOT EXISTS seismic.triggers (
 CREATE TABLE IF NOT EXISTS seismic.detector_progress (
   recording_id text NOT NULL REFERENCES seismic.segments(recording_id) ON DELETE CASCADE,
   detector_version text NOT NULL, next_block bigint NOT NULL, closed boolean NOT NULL DEFAULT false,
+  finalized_end bigint, finalized_from_block bigint,
   PRIMARY KEY(recording_id, detector_version));
+-- App bookkeeping from earlier versions of this example (not the pg_morlet extension).
+ALTER TABLE seismic.detector_progress ADD COLUMN IF NOT EXISTS finalized_end bigint;
+ALTER TABLE seismic.detector_progress ADD COLUMN IF NOT EXISTS finalized_from_block bigint;
 """
 
 
@@ -144,9 +163,22 @@ class Ingestor:
             self._progress[stream][key] += 1
 
     # -- placement -----------------------------------------------------------
+    def recording_id(self, chunk, reason):
+        """Identity rule documented in the module docstring."""
+        plain = f"{self.dataset}/{chunk.stream}/{iso_ns(chunk.start_ns)}"
+        if reason != "overlap_conflict":
+            return plain
+        content = np.asarray(chunk.samples, dtype="<f8").tobytes()
+        return f"{plain}#{hashlib.sha256(content).hexdigest()[:16]}"
+
     def _open(self, chunk, reason):
         self.flush()
-        recording_id = f"{self.dataset}/{chunk.stream}/{iso_ns(chunk.start_ns)}"
+        recording_id = self.recording_id(chunk, reason)
+        known = {s.recording_id for s in self.segments[chunk.stream]}
+        if recording_id in known or self.conn.execute(
+                "SELECT 1 FROM seismic.segments WHERE recording_id=%s", (recording_id,)).fetchone():
+            # Placement should have matched existing content; never reuse an identity.
+            raise RuntimeError(f"recording identity already exists: {recording_id}")
         labels = self.split_of(chunk.stream, chunk.start_ns)
         split = labels["split"]
         meta = {**self.stream_metadata[chunk.stream], **labels, "dataset": self.dataset,
@@ -200,7 +232,8 @@ class Ingestor:
             pending_end[segment.recording_id] = start + len(values)
         overlapped = False
         # Newest first: a replayed segment opened after a conflict must win.
-        for segment in sorted(segments, key=lambda s: s.start_ns, reverse=True):
+        ordered = sorted(segments, key=lambda s: (s.start_ns, s.recording_id), reverse=True)
+        for segment in ordered:
             if segment.rate != chunk.sample_rate:
                 continue
             end = pending_end.get(segment.recording_id, segment.committed)
@@ -231,6 +264,12 @@ class Ingestor:
                 self._queue(segment, stop, remainder, chunk)
                 return "partial_duplicate"
             # index == end: contiguous continuation on the segment's grid.
+            others = [o.recording_id for o in ordered if o is not segment and o.rate == segment.rate
+                      and abs((chunk.start_ns - o.start_ns) * o.rate / 1e9
+                              - pending_end.get(o.recording_id, o.committed)) <= self.tolerance]
+            if others:
+                self._event(chunk.stream, "ambiguous_continuation", chunk.start_ns, segment.recording_id,
+                            alternatives=others)
             jitter = abs(position - index)
             if jitter > 1e-6:
                 self._event(chunk.stream, "absorbed_jitter", chunk.start_ns, segment.recording_id,
@@ -266,7 +305,18 @@ class Ingestor:
             self.flush()
 
     def flush(self):
-        if not self.pending and not self._events:
+        """Commit pending samples, events and progress counters in one transaction.
+
+        Counters are snapshotted, written with the samples and cleared only after
+        COMMIT, so a progress-only flush (for example an all-duplicate replay) is
+        persisted, a repeated flush applies nothing twice, and a failed flush can be
+        retried after the caller rolls back. Samples and features are idempotent;
+        duplicate_samples counts verification work, so it grows on every replay.
+        """
+        counters = {stream: {k: v for k, v in c.items() if v}
+                    for stream, c in self._progress.items()}
+        counters = {stream: c for stream, c in counters.items() if c}
+        if not self.pending and not self._events and not counters:
             return
         touched = set()
         started = time.perf_counter()
@@ -276,16 +326,14 @@ class Ingestor:
             received = self.client.append_chunks(segment.recording_id, batch)
             chunk = self.pending[-1][3]
             appended = sum(len(v) for _, v in batch)
-            stream = chunk.stream
-            p = self._progress.setdefault(stream, {})
-            p["committed_samples"] = p.get("committed_samples", 0) + appended
-            p["committed_chunks"] = p.get("committed_chunks", 0) + len(batch)
-            self._upsert_progress(stream, segment.recording_id, segment.time_of(received),
+            c = dict(counters.pop(chunk.stream, {}))
+            c["committed_samples"] = c.get("committed_samples", 0) + appended
+            c["committed_chunks"] = c.get("committed_chunks", 0) + len(batch)
+            self._upsert_progress(chunk.stream, c, segment.recording_id, segment.time_of(received),
                                   chunk.emitted_wall)
             touched.add(segment.recording_id)
-        for stream in list(self._progress):
-            if not self.pending or stream != self.pending[-1][3].stream:
-                self._upsert_progress(stream, None, None, None)
+        for stream, c in counters.items():
+            self._upsert_progress(stream, c)
         if self._events:
             with self.conn.cursor() as cursor:
                 cursor.executemany(
@@ -305,8 +353,7 @@ class Ingestor:
         if touched and self.on_commit:
             self.on_commit(touched)
 
-    def _upsert_progress(self, stream, recording_id, end_ns, emitted):
-        p = self._progress.get(stream, {})
+    def _upsert_progress(self, stream, p, recording_id=None, end_ns=None, emitted=None):
         self.conn.execute(
             """INSERT INTO seismic.progress AS p(dataset,stream,mode,last_recording_id,last_committed_end_ns,
                  committed_samples,committed_chunks,duplicate_samples,conflicts,gaps,errors,last_chunk_emitted_wall)
@@ -325,7 +372,6 @@ class Ingestor:
             (self.dataset, stream, self.mode, recording_id, end_ns, p.get("committed_samples", 0),
              p.get("committed_chunks", 0), p.get("duplicate_samples", 0), p.get("conflicts", 0),
              p.get("gaps", 0), p.get("errors", 0), emitted))
-        self._progress[stream] = {}
 
 
 def run(source, ingestor, *, detector=None, log=None, report_every=500):
@@ -338,7 +384,9 @@ def run(source, ingestor, *, detector=None, log=None, report_every=500):
             log(json.dumps({"chunks": ingestor.stats["chunks"], "sample_utc": iso_ns(chunk.start_ns),
                             **{k: v for k, v in ingestor.stats.items() if k != "chunks"}}))
     ingestor.flush()
-    if detector is not None:
+    # Finalize only when the input ended naturally. An operator stop, a truncated
+    # demonstration run or live input leaves recordings open for resumed data.
+    if detector is not None and getattr(source, "exhausted", False):
         # Only this run's streams: other processes may still be appending to theirs.
         detector.close_all(streams=sorted(ingestor.segments))
     return actions

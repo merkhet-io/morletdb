@@ -86,6 +86,7 @@ class ReplaySource:
         self.control = control or ReplayControl()
         self.replay_time_ns = None   # sample time of the latest emitted chunk
         self.emitted = 0
+        self.exhausted = False       # True only when every selected sample was emitted
 
     def files(self, stream):
         return sorted((w for w in self.manifest["waveforms"]
@@ -143,9 +144,11 @@ class ReplaySource:
             self.replay_time_ns = start_ns
             self.emitted += 1
             yield Chunk(name, start_ns, rate, np.asarray(samples), quality, origin, self.emitted)
+        self.exhausted = not heads and not self.control.stopped
 
     def status(self):
         return {"mode": self.mode, "paused": self.control.paused, "speed": self.control.speed,
+                "stopped": self.control.stopped, "exhausted": self.exhausted,
                 "replay_time_ns": self.replay_time_ns, "emitted_chunks": self.emitted}
 
 
@@ -158,6 +161,7 @@ class SeedLinkSource:
     """
 
     mode = "live"
+    exhausted = False  # A live stream never ends naturally; recordings stay open.
 
     def __init__(self, server, streams, *, enabled=False, chunk_queue=1000):
         if not enabled:

@@ -4,13 +4,14 @@ import unittest
 import numpy as np
 import psycopg
 
-from helpers import (DETECTOR, META, RATE, REP, T0, TempDatabase, chunk, database_available,
-                     signal, split_chunks)
+from helpers import (DETECTOR, META, RATE, REP, T0, TempDatabase, chunk, require_database,
+                     require_features, signal, split_chunks)
 from morlet_seismic import investigate, retrieval
 from morlet_seismic.detect import Detector
 from morlet_seismic.ingest import Ingestor, init_db
 
-AVAILABLE = database_available()
+AVAILABLE = require_database()
+FEATURES = require_features()
 
 
 @unittest.skipUnless(AVAILABLE, "local MorletDB server (examples/seismic/compose.yaml) not reachable")
@@ -176,9 +177,11 @@ class IngestContracts(unittest.TestCase):
 
             def __init__(self, chunks):
                 self.items = chunks
+                self.exhausted = False
 
             def chunks(self):
-                return iter(self.items)
+                yield from self.items
+                self.exhausted = True  # This stream's input ended naturally.
 
         x = signal(90_000, bursts=(80_000,))
         detector = Detector(self.conn, investigate.client(self.conn), DETECTOR, "test")
@@ -228,7 +231,7 @@ class IngestContracts(unittest.TestCase):
         held = retrieval.stream_filter("test", "SY.TEST..HHZ", split="heldout")
         self.assertEqual(retrieval.pooled_pg(client, segment["recording_id"], 4_800, 6_848, held)["eligible"], 0)
 
-    @unittest.skipUnless(retrieval.FEATURES_BIN.exists(), "build the Rust features adapter first")
+    @unittest.skipUnless(FEATURES, "build the Rust features adapter first")
     def test_temporal_gallery_oracle_approximation_and_posting_budget(self):
         x = signal(40_000, bursts=(5_000, 25_000))
         ingestor = self.ingestor(split_of=lambda s, t: {"split": "reference"})

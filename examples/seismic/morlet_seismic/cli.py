@@ -6,7 +6,7 @@ import platform
 import statistics
 import time
 
-from . import dataset, investigate
+from . import dataset, investigate, provenance
 from .detect import Detector
 from .ingest import Ingestor, init_db, run
 from .sources import ReplayControl, ReplaySource, SeedLinkSource
@@ -26,16 +26,21 @@ def distribution(values):
 
 
 class LimitedSource:
-    """Stops after max_chunks; used to demonstrate interruption and restart."""
+    """Stops after max_chunks to demonstrate interruption and restart.
+
+    A truncated run is not natural exhaustion, so recordings are not finalized.
+    """
 
     def __init__(self, source, max_chunks):
         self.source, self.max_chunks, self.mode = source, max_chunks, source.mode
+        self.exhausted = False
 
     def chunks(self):
         for count, chunk in enumerate(self.source.chunks(), 1):
             yield chunk
             if count >= self.max_chunks:
                 return
+        self.exhausted = self.source.exhausted
 
 
 def build_pipeline(conn, definition, manifest, *, dataset_id=None, mode="replay", detect=True):
@@ -61,18 +66,17 @@ def replay(args):
                               control=ReplayControl(args.speed))
         driven = LimitedSource(source, args.max_chunks) if args.max_chunks else source
         started = time.perf_counter()
-        actions = run(driven, ingestor, detector=None if args.max_chunks else detector,
-                      log=print if args.verbose else None)
-        if args.max_chunks and detector is not None:
-            detector.on_commit({s.recording_id for v in ingestor.segments.values() for s in v})
+        actions = run(driven, ingestor, detector=detector, log=print if args.verbose else None)
         elapsed = time.perf_counter() - started
     report = {"command": "replay", "dataset": definition["id"], "streams": args.streams or "all",
+              "finalized": driven.exhausted,
               "periods": args.periods or "all", "interrupted_after_chunks": args.max_chunks,
               "elapsed_s": elapsed, "actions": actions, "ingest": ingestor.stats,
               "detector": None if detector is None else detector.stats,
               "append_batch_latency_s": distribution(ingestor.latency["append_batch_s"]),
               "chunk_emit_to_commit_s": distribution(ingestor.latency["chunk_commit_s"]),
-              "host": platform.platform()}
+              "host": platform.platform(),
+              "provenance": provenance.collect(definition, manifest, args.data_root)}
     output = json.dumps(report, indent=1)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -94,6 +98,7 @@ def detect(args):
         stored = conn.execute("SELECT stream,count(*) FROM seismic.triggers WHERE dataset=%s AND detector_version=%s"
                               " GROUP BY 1 ORDER BY 1", (definition["id"], detector.version)).fetchall()
     print(json.dumps({"command": "detect", "reset": args.reset, "streams": streams,
+                      "provenance": provenance.collect(definition, manifest, args.data_root),
                       "elapsed_s": time.perf_counter() - started, "run": detector.stats,
                       "stored_triggers": dict(stored)}, indent=1))
     return 0

@@ -70,3 +70,21 @@ def database_available():
         return True
     except Exception:  # noqa: BLE001 - tests skip without a local server
         return False
+
+
+def require_database():
+    """Availability for skipUnless; with MORLET_SEISMIC_REQUIRE_DB=1 a missing server fails."""
+    available = database_available()
+    if not available and os.environ.get("MORLET_SEISMIC_REQUIRE_DB") == "1":
+        raise RuntimeError("MORLET_SEISMIC_REQUIRE_DB=1 but no MorletDB server is reachable at "
+                           + os.environ.get("MORLET_SEISMIC_TEST_DSN", "the default DSN"))
+    return available
+
+
+def require_features():
+    """The Rust features adapter for temporal tests; required when MORLET_SEISMIC_REQUIRE_FEATURES=1."""
+    from morlet_seismic import retrieval
+    present = retrieval.FEATURES_BIN.exists()
+    if not present and os.environ.get("MORLET_SEISMIC_REQUIRE_FEATURES") == "1":
+        raise RuntimeError(f"MORLET_SEISMIC_REQUIRE_FEATURES=1 but {retrieval.FEATURES_BIN} is missing")
+    return present

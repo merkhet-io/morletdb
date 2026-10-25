@@ -18,7 +18,7 @@ from pathlib import Path
 
 from obspy.geodetics import gps2dist_azimuth
 
-from . import catalog, dataset, investigate, retrieval
+from . import catalog, dataset, investigate, provenance, retrieval
 from .ingest import iso_ns
 
 EPISODE_GAP_S = 25.0   # catalog-independent grouping of P/S/coda triggers
@@ -70,6 +70,7 @@ def evaluate(args):
                                 "catalog_events": len(catalog.catalog_events(manifest))}}
     with investigate.connect(args.dsn) as conn:
         client = investigate.client(conn)
+        report["provenance"] = provenance.collect(definition, manifest, args.data_root, conn)
         segs = investigate.segments(conn, dataset_id)
         trigs = investigate.triggers(conn, dataset_id, det["version"])
         progress = conn.execute("SELECT stream,committed_samples,committed_chunks,duplicate_samples,"
@@ -343,9 +344,18 @@ def fmt(value, digits=3):
 
 
 def render_markdown(r):
+    pv = r["provenance"]
+    code = pv["code"]
     lines = [f"# Seismic replay evaluation: {r['dataset']}", "",
              f"Generated {r['created_utc']} on {r['host']['platform']} ({r['host']['machine']}), "
              f"Python {r['host']['python']}, ObsPy {r['host']['obspy']}.", "",
+             f"Code `{code['commit']}`" + (" **with uncommitted changes**" if code["dirty"] else "")
+             + f"; representation `{pv['representation']['extractor']}` (window "
+             f"{pv['representation']['window_samples']}, stride {pv['representation']['stride_samples']}, "
+             f"{pv['representation']['normalization']}); detector `{pv['detector_version']}`; "
+             f"definition sha256 `{pv['definition_sha256'][:16]}…`; manifest sha256 "
+             f"`{pv['manifest_sha256'][:16]}…`; database `{pv['database']}` "
+             f"(pg_morlet {pv['pg_morlet_extversion']}, stored extractor versions {pv['stored_extractor_versions']}).", "",
              "Research diagnostics only. Distances are representation distances, not probabilities; "
              "catalog labels carry location and travel-time uncertainty; unmatched triggers are not "
              "automatically false positives.", "", "## Data and ingestion", "",
