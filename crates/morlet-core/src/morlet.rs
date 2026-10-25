@@ -45,10 +45,51 @@ impl Signature {
     }
 }
 
+/// Experimental localized cells. Coordinates describe coefficient centers;
+/// support radius describes additional raw dependency inside the parent window.
+#[derive(Debug, Clone, Serialize)]
+pub struct EnergyCell {
+    pub band: usize,
+    pub start_sample: usize,
+    pub end_sample: usize,
+    pub support_radius: usize,
+    pub energy: f64,
+}
+
+/// Extract integer-coordinate cells without changing the frozen signature format.
+pub fn extract_with_cells(
+    samples: &[f64],
+    sample_rate_hz: f64,
+) -> Result<(Signature, Vec<EnergyCell>), SignalError> {
+    let mut cells = Vec::new();
+    let signature = extract_internal(
+        samples,
+        sample_rate_hz,
+        |band, start, end, radius, energy| {
+            cells.push(EnergyCell {
+                band,
+                start_sample: start,
+                end_sample: end,
+                support_radius: radius,
+                energy,
+            });
+        },
+    )?;
+    Ok((signature, cells))
+}
+
 /// Twelve log-spaced bands fs/64..0.4fs, omega0=6, support +/-3 scale,
 /// DC-corrected, complex L2-normalized kernels. Only valid coefficients are used.
 /// Tokens pool consecutive blocks of up to 128 valid coefficients per band.
 pub fn extract(samples: &[f64], sample_rate_hz: f64) -> Result<Signature, SignalError> {
+    extract_internal(samples, sample_rate_hz, |_, _, _, _, _| {})
+}
+
+fn extract_internal(
+    samples: &[f64],
+    sample_rate_hz: f64,
+    mut emit: impl FnMut(usize, usize, usize, usize, f64),
+) -> Result<Signature, SignalError> {
     validate(samples)?;
     if samples.len() < MIN_SAMPLES {
         return Err(SignalError::MorletLength);
@@ -125,6 +166,7 @@ pub fn extract(samples: &[f64], sample_rate_hz: f64) -> Result<Signature, Signal
             }
             total += energy;
             count += end - start;
+            emit(band, start, end, radius, energy / (end - start) as f64);
             result.tokens.push(Token {
                 offset_seconds: start as f64 / sample_rate_hz,
                 duration_seconds: (end - start) as f64 / sample_rate_hz,
@@ -183,6 +225,22 @@ mod tests {
             assert!((energy / duration - s.energy[band]).abs() < 1e-9);
         }
     }
+    #[test]
+    fn integer_cells_preserve_signature_and_support() {
+        let samples = tone(1., 0.);
+        let (signature, cells) = extract_with_cells(&samples, 4096.).unwrap();
+        let expected = extract(&samples, 4096.).unwrap();
+        assert_eq!(signature.features(), expected.features());
+        assert_eq!(cells.len(), signature.tokens.len());
+        for (cell, token) in cells.iter().zip(&signature.tokens) {
+            assert_eq!(cell.start_sample as f64 / 4096., token.offset_seconds);
+            assert_eq!(cell.energy, token.energy);
+            assert!(cell.start_sample >= cell.support_radius);
+            assert!(cell.end_sample + cell.support_radius <= samples.len());
+            assert!(cell.end_sample > cell.start_sample);
+        }
+    }
+
     #[test]
     fn invalid_and_silence() {
         assert_eq!(

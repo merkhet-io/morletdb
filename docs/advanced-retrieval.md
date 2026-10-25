@@ -3,6 +3,11 @@
 Status: **Proposed**. Date: 2026-10-25. This is a design for review, not an
 implemented API, migration, benchmark result or production commitment.
 
+An [offline PoC](wave-index-poc.md) now exercises integer-coordinate energy
+cells, an exhaustive temporal reference and approximate positional cell postings.
+It does not implement the A1 SQL migration or persisted generations; database
+integration and the remaining stages below are still proposed.
+
 ## Decision proposed
 
 Extend MorletDB's continuous-recording workflow with versioned temporal

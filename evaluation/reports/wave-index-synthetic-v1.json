@@ -1,0 +1,2104 @@
+{
+  "version": "morlet-cell-postings-poc-v1",
+  "synthetic": true,
+  "spec": {
+    "window": 2048,
+    "rate": 4096.0,
+    "channel": "vibration",
+    "unit": "g",
+    "normalization": "zscore",
+    "bin_width": 0.25
+  },
+  "host": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "python": "3.12.15",
+  "adapter_sha256": "c3042dd36d56e1f741c7efc13151fd1b7feb9e32b7d5ad7921551a2459225f32",
+  "source_windows": [
+    {
+      "id": "query",
+      "start": 0,
+      "end": 2048,
+      "sha256": "20b64132c4ea36fd5021ab6e911a2946922469332402cbfa92030ebede825458"
+    },
+    {
+      "id": "same",
+      "start": 0,
+      "end": 2048,
+      "sha256": "20b64132c4ea36fd5021ab6e911a2946922469332402cbfa92030ebede825458"
+    },
+    {
+      "id": "reversed",
+      "start": 0,
+      "end": 2048,
+      "sha256": "19a4e977d68e8d23829d9055fd80be58c79f99dbec8a818367e1cde11aa92556"
+    },
+    {
+      "id": "tone-0000",
+      "start": 0,
+      "end": 2048,
+      "sha256": "896c12423ba866380c00b3dc314f4acb7aefd4a6e84a5cae909b650b86fd0455"
+    },
+    {
+      "id": "tone-0001",
+      "start": 0,
+      "end": 2048,
+      "sha256": "774fc2462c00a4c9942f260e0ab79b89bbd29a5a9072e328eb1baae67bb16ec9"
+    },
+    {
+      "id": "tone-0002",
+      "start": 0,
+      "end": 2048,
+      "sha256": "9d8aeacc847f8d1303cee0ee3463111d459347d46b4d5ab194682b02149f366b"
+    },
+    {
+      "id": "tone-0003",
+      "start": 0,
+      "end": 2048,
+      "sha256": "38330fed132fe66e1c6372a4e5faffb0b29b17bdc20aa75ca996ffd953a7a119"
+    },
+    {
+      "id": "tone-0004",
+      "start": 0,
+      "end": 2048,
+      "sha256": "62b6a99765968ced28bc0c1e550139a28f587781dec96054e60fef2da648fa60"
+    },
+    {
+      "id": "tone-0005",
+      "start": 0,
+      "end": 2048,
+      "sha256": "396fa4177820c35db6cc18b86ebc9926e21d9787a08602c5355c7a25958fbb55"
+    },
+    {
+      "id": "tone-0006",
+      "start": 0,
+      "end": 2048,
+      "sha256": "cfacde77609771b3da161fd1cd59617937859b4ba25c7bd8179bac4c7c20c430"
+    },
+    {
+      "id": "tone-0007",
+      "start": 0,
+      "end": 2048,
+      "sha256": "c2d8f78d4940db1c842b3a3905da4c19fb86a7a228ca3ac39b0aa2295e1545a1"
+    },
+    {
+      "id": "tone-0008",
+      "start": 0,
+      "end": 2048,
+      "sha256": "69c8cba3dea943bae65e030fa1214ca78f7a28fb370929508035c4ce48570d8a"
+    },
+    {
+      "id": "tone-0009",
+      "start": 0,
+      "end": 2048,
+      "sha256": "37497139df66875574b29beff9023eacaa6f5f3f2f33c5ea9e3433d830d77f2f"
+    },
+    {
+      "id": "tone-0010",
+      "start": 0,
+      "end": 2048,
+      "sha256": "183f9644618fb59468be4b8fa74cff07bf5ac62809c0c365bc82bc01197063b2"
+    },
+    {
+      "id": "tone-0011",
+      "start": 0,
+      "end": 2048,
+      "sha256": "1350b046ab360da93d96fc5f7547edd581f35c84e8d9a5f3cf0323ae70467ab2"
+    },
+    {
+      "id": "tone-0012",
+      "start": 0,
+      "end": 2048,
+      "sha256": "41a4b3b7cfeb9cd375c45db243137051cd1df7a05b54fbe8f97a759eb8cc0bdf"
+    },
+    {
+      "id": "tone-0013",
+      "start": 0,
+      "end": 2048,
+      "sha256": "18040df9d2d5e8a8abe0cfb0a08911ae7e4214e7d151d0e7d2299819e22f78a1"
+    },
+    {
+      "id": "tone-0014",
+      "start": 0,
+      "end": 2048,
+      "sha256": "b5670f03ec6d072d189b68fd9cd57ffa4987e4ab48a0870bf9cd607f9dea07ea"
+    },
+    {
+      "id": "tone-0015",
+      "start": 0,
+      "end": 2048,
+      "sha256": "e597c64935252f01fa2f1f0452723bdae5b578f54b709ff9e6dec34d2821aded"
+    },
+    {
+      "id": "tone-0016",
+      "start": 0,
+      "end": 2048,
+      "sha256": "4a46da5d8815c28decd29eec753c180f3cd9b39ec34c4509b8e525dfc99863d2"
+    },
+    {
+      "id": "tone-0017",
+      "start": 0,
+      "end": 2048,
+      "sha256": "2b6618230eece1a244c88b75d06e3850c12ff019246c6a4a275d95b589e4c16f"
+    },
+    {
+      "id": "tone-0018",
+      "start": 0,
+      "end": 2048,
+      "sha256": "ba57dad1f08e692117bc744eb1358b481ba1e05965b1fad7358ec0caf23346f1"
+    },
+    {
+      "id": "tone-0019",
+      "start": 0,
+      "end": 2048,
+      "sha256": "6c2487cda1cea569019209dc43770c55b44c9a71228e369fd3d809a78f6519f5"
+    },
+    {
+      "id": "tone-0020",
+      "start": 0,
+      "end": 2048,
+      "sha256": "1c0405f138d6aa961069a3821286c810be2d95b207b28559f61a5b701de27def"
+    },
+    {
+      "id": "tone-0021",
+      "start": 0,
+      "end": 2048,
+      "sha256": "f56a04bbecfc57fed3e6276d0da757e790dc80ea52552f45db12bb789ed789d5"
+    },
+    {
+      "id": "tone-0022",
+      "start": 0,
+      "end": 2048,
+      "sha256": "1513ddd491f2272594e70fabd09730492795f06547a646d59ae829181f544266"
+    },
+    {
+      "id": "tone-0023",
+      "start": 0,
+      "end": 2048,
+      "sha256": "d01d46d25369ca2be55f7d7676c13de5a6327594594651e0e30ed4c520f8e0dc"
+    },
+    {
+      "id": "tone-0024",
+      "start": 0,
+      "end": 2048,
+      "sha256": "b7603f69ec14d7f6d49593891d4790038335eb6f4197a07f2477f70e9aadd4d3"
+    },
+    {
+      "id": "tone-0025",
+      "start": 0,
+      "end": 2048,
+      "sha256": "bc264b6fc56210f43e9287e40aa0b1458809ff3f822eac2e1ac73ac979adfb0f"
+    },
+    {
+      "id": "tone-0026",
+      "start": 0,
+      "end": 2048,
+      "sha256": "a45173150399fbac8ca8bcbbbfb2a766a8e919fb501576ee749e2527ba511082"
+    },
+    {
+      "id": "tone-0027",
+      "start": 0,
+      "end": 2048,
+      "sha256": "4d4b9d0f53249214065ea22907a18841138b7935de3eda99efa6472eef86fe50"
+    },
+    {
+      "id": "tone-0028",
+      "start": 0,
+      "end": 2048,
+      "sha256": "2c271e22aabb244aa71d40e8c25ff9c37240c9f474791cf1ca48ec9b7e5d5c24"
+    },
+    {
+      "id": "tone-0029",
+      "start": 0,
+      "end": 2048,
+      "sha256": "b4283815cb9a2337596fd0124042024d7ac34504036785ecb6f8cab369291853"
+    },
+    {
+      "id": "tone-0030",
+      "start": 0,
+      "end": 2048,
+      "sha256": "19a8922171bbc5a20f574ec1110ec566e876186c98e68a142f28fa4090e28ce3"
+    },
+    {
+      "id": "tone-0031",
+      "start": 0,
+      "end": 2048,
+      "sha256": "efb63401660b0632679f887991939f74a06ad2f882f1299b007bcb7c372cd93a"
+    },
+    {
+      "id": "tone-0032",
+      "start": 0,
+      "end": 2048,
+      "sha256": "46f35e0ca6ded7c6dccbc5eb34e91ad814372c716b8218609745b1aa44f07a2f"
+    },
+    {
+      "id": "tone-0033",
+      "start": 0,
+      "end": 2048,
+      "sha256": "0a795e879157e1491cab623515729cd732203d54476d7af94be031bc7523fca4"
+    },
+    {
+      "id": "tone-0034",
+      "start": 0,
+      "end": 2048,
+      "sha256": "300d75f292ace96237ce805c4c7ff44a666d095e198efd2cc4240c4b81dfbf52"
+    },
+    {
+      "id": "tone-0035",
+      "start": 0,
+      "end": 2048,
+      "sha256": "250c6a2f2c3a413b88a0fb26fa1e99e553b6104fc5ac149f7c2541404763b1a3"
+    },
+    {
+      "id": "tone-0036",
+      "start": 0,
+      "end": 2048,
+      "sha256": "432cd97779eade11b581728044a9a0f170293d5830b4f4afbb8067daab14f367"
+    },
+    {
+      "id": "tone-0037",
+      "start": 0,
+      "end": 2048,
+      "sha256": "c28ff0d8c0d35ca10b39a695cbd16ead7d336effd163fe97bfa7348d16e4401e"
+    },
+    {
+      "id": "tone-0038",
+      "start": 0,
+      "end": 2048,
+      "sha256": "0328351f4f08d3ca915efff5766cf4cb5a9261011e5ea525d005c45b1e2d29a2"
+    },
+    {
+      "id": "tone-0039",
+      "start": 0,
+      "end": 2048,
+      "sha256": "eb0591a6850b676b066454eb202fff78794b6d90f528d70c817b2cde3dd478ef"
+    },
+    {
+      "id": "tone-0040",
+      "start": 0,
+      "end": 2048,
+      "sha256": "ec9a6cc18937d0c7d67fb408aabc7104859dd1c7b0c7cd3808c865b6b4ebfc68"
+    },
+    {
+      "id": "tone-0041",
+      "start": 0,
+      "end": 2048,
+      "sha256": "aab584d178c75514ec1104b54d3ce1b74a257cb3e2c8e48521fcb56d492cbfcd"
+    },
+    {
+      "id": "tone-0042",
+      "start": 0,
+      "end": 2048,
+      "sha256": "37d3956e49dbaf4c5b5c47a747a00b5c62093a68d8e74c2dd2e6e0c97d693706"
+    },
+    {
+      "id": "tone-0043",
+      "start": 0,
+      "end": 2048,
+      "sha256": "0db5217203e679e9f33481ad165d8e605aa6d45146d0d3f18624d17660cf9c53"
+    },
+    {
+      "id": "tone-0044",
+      "start": 0,
+      "end": 2048,
+      "sha256": "8042542747cf42c634e2cef92ecccb3d08ea76e8323b4f38c4ebbdffdcde5739"
+    },
+    {
+      "id": "tone-0045",
+      "start": 0,
+      "end": 2048,
+      "sha256": "f260d5228d9bef8363adea41983b7857878e1119978eb7b0e72cd21a9e619d6a"
+    },
+    {
+      "id": "tone-0046",
+      "start": 0,
+      "end": 2048,
+      "sha256": "5e1c1e3fdf0c9402620a5ae58ac044c69c97aabe76a412cb5632a952c28a69e7"
+    },
+    {
+      "id": "tone-0047",
+      "start": 0,
+      "end": 2048,
+      "sha256": "11553be76c935d9dd3f3e960dbb8347370c2cf68feaefeba49a327e73d476014"
+    },
+    {
+      "id": "tone-0048",
+      "start": 0,
+      "end": 2048,
+      "sha256": "e9ceec5db624b27d9fc1d833310fa65dd58249ca6cfc2d06499f99fb43b40077"
+    },
+    {
+      "id": "tone-0049",
+      "start": 0,
+      "end": 2048,
+      "sha256": "f0d8073b02676e6a2738b0b8af8e54eb1fa3418e7237f598c3fb402bf1eedfe3"
+    },
+    {
+      "id": "tone-0050",
+      "start": 0,
+      "end": 2048,
+      "sha256": "bf458121a227606d85ed3e7a03d0ec0350ab45f10426920ebc5b69281a0e3176"
+    },
+    {
+      "id": "tone-0051",
+      "start": 0,
+      "end": 2048,
+      "sha256": "9d0759d70cc8d192d6c68c4f80fab704fe3c2228039f963e36cfb838b7613571"
+    },
+    {
+      "id": "tone-0052",
+      "start": 0,
+      "end": 2048,
+      "sha256": "e42b000710836dab7d844f31e4b71e79fb23162eb4947953a70d9698db557efb"
+    },
+    {
+      "id": "tone-0053",
+      "start": 0,
+      "end": 2048,
+      "sha256": "2ec15d4c901e4a1bb9f0c1bd6eafa4b40fcb8a8245e3c21d919d9e79ce337c7e"
+    },
+    {
+      "id": "tone-0054",
+      "start": 0,
+      "end": 2048,
+      "sha256": "5d9bbdd8874667be8b3bee3055954f7ea1a48b9a076aa7369d035a9ecc4bfc9e"
+    },
+    {
+      "id": "tone-0055",
+      "start": 0,
+      "end": 2048,
+      "sha256": "c29d4f130238592388e6417788227111b38dbe296527fdc592595df31dc47c25"
+    },
+    {
+      "id": "tone-0056",
+      "start": 0,
+      "end": 2048,
+      "sha256": "4fc47dbfdf51fbb5ae95a7203e7cb919b8f581a5e1273f97b1232af6bf0c8d99"
+    },
+    {
+      "id": "tone-0057",
+      "start": 0,
+      "end": 2048,
+      "sha256": "bcd769ac81b0f65a012da32886cb63c6ff88c003e323d614c9a3863c1e3b8f90"
+    },
+    {
+      "id": "tone-0058",
+      "start": 0,
+      "end": 2048,
+      "sha256": "7e45e2aa441ed4af6b09f230e91671e4e7327ced60f23ff6210fe8b0d6226adf"
+    },
+    {
+      "id": "tone-0059",
+      "start": 0,
+      "end": 2048,
+      "sha256": "394e2843ac1579470a637aac52a400bde2ec6a7a03105b736831dbe88cf68ead"
+    },
+    {
+      "id": "tone-0060",
+      "start": 0,
+      "end": 2048,
+      "sha256": "eb3dc8f12d3bfdaa9a1ae2c33c8230f5b55690f0a6a7c6d9a80beed354e6ab61"
+    },
+    {
+      "id": "tone-0061",
+      "start": 0,
+      "end": 2048,
+      "sha256": "7394cf56ca183042d86dd68dd79aa6f84baf7266e7fbe42fb26dadf027c37ce8"
+    },
+    {
+      "id": "tone-0062",
+      "start": 0,
+      "end": 2048,
+      "sha256": "fb1848b289a58c44758efac32b1af6a80aadef6338904c7f3e99981e12a2c36c"
+    },
+    {
+      "id": "tone-0063",
+      "start": 0,
+      "end": 2048,
+      "sha256": "2eaa42e6387dd503e9aa8046a48a800704fdbaaa0debb84288fd6e3c7d5d25fb"
+    },
+    {
+      "id": "tone-0064",
+      "start": 0,
+      "end": 2048,
+      "sha256": "8ae63cb08c5c2ca242f3a20683a0191472d76097e1e4f56ed1fba1c7c95b8990"
+    },
+    {
+      "id": "tone-0065",
+      "start": 0,
+      "end": 2048,
+      "sha256": "5901bc3e8908fe8acfd641dd59b751d2fbc1dbc87f5e5835fd675103ee869030"
+    },
+    {
+      "id": "tone-0066",
+      "start": 0,
+      "end": 2048,
+      "sha256": "c6c310d3633b5da7086593ad60d7cd09e288b9a613ca05fefbfe394cfe6bb7d8"
+    },
+    {
+      "id": "tone-0067",
+      "start": 0,
+      "end": 2048,
+      "sha256": "ef066d64f8dd3e065b7ae5786900272b170da7ac2d8390699c7604bd2ec0154a"
+    },
+    {
+      "id": "tone-0068",
+      "start": 0,
+      "end": 2048,
+      "sha256": "a5288b291c826ca3d52b26cc8b767330883fd8508f507112adc6b0d4fb2ebfa2"
+    },
+    {
+      "id": "tone-0069",
+      "start": 0,
+      "end": 2048,
+      "sha256": "df10bd9bc255563b225a42ba13d14bc7569ab664a9547b9ebc69e6c111a641ba"
+    },
+    {
+      "id": "tone-0070",
+      "start": 0,
+      "end": 2048,
+      "sha256": "d987620fb492fcd2e39d30091e7b981effc18a032851a572ed758b094624403d"
+    },
+    {
+      "id": "tone-0071",
+      "start": 0,
+      "end": 2048,
+      "sha256": "3f12d299074da43082ad00bf5015fbf50292045610b6c325e098974ca20e7c08"
+    },
+    {
+      "id": "tone-0072",
+      "start": 0,
+      "end": 2048,
+      "sha256": "494b6d9f6617cf076b85f9668423b31e768667e28725f05285fb68b68b8b74b6"
+    },
+    {
+      "id": "tone-0073",
+      "start": 0,
+      "end": 2048,
+      "sha256": "e2af35ade913038dcc96bff4c4d3d7a568ec88df44fbe370d842489abccaaa15"
+    },
+    {
+      "id": "tone-0074",
+      "start": 0,
+      "end": 2048,
+      "sha256": "5f6119f17cd7ad1a2d3d9976143bd8b28e9e7fdef629071f392843649b246e48"
+    },
+    {
+      "id": "tone-0075",
+      "start": 0,
+      "end": 2048,
+      "sha256": "f4a89d242604383e89db6a8c007b4b75c61c2e338437309d37981ca2722b0b79"
+    },
+    {
+      "id": "tone-0076",
+      "start": 0,
+      "end": 2048,
+      "sha256": "50ba83edd7740f8080d75f8418270c2f7f5a263ac3cb2fd4e821d4fd7ed47db7"
+    },
+    {
+      "id": "tone-0077",
+      "start": 0,
+      "end": 2048,
+      "sha256": "a4688087c00655d3b0a360bf25d2b11fe9f72d732b71c4bb7519ba636054ed81"
+    },
+    {
+      "id": "tone-0078",
+      "start": 0,
+      "end": 2048,
+      "sha256": "4b1fcd2fa587cd11822597a653eb1ca3e351e8b5cb139bd39750fd88d0bcc829"
+    },
+    {
+      "id": "tone-0079",
+      "start": 0,
+      "end": 2048,
+      "sha256": "ba9948ad722fc517749ffb271ca2904cb0629f63f4a32a41fe52c11262ec85b4"
+    },
+    {
+      "id": "tone-0080",
+      "start": 0,
+      "end": 2048,
+      "sha256": "ef8bfb4fe613a613732fdffd1809d5861e8d7ad3c852ac42de57d11ad573c086"
+    },
+    {
+      "id": "tone-0081",
+      "start": 0,
+      "end": 2048,
+      "sha256": "68b922ea0bb0c60d3cf1e4309699e15b142514682390507110c8f5f811cc3758"
+    },
+    {
+      "id": "tone-0082",
+      "start": 0,
+      "end": 2048,
+      "sha256": "c8bd46913e6db917a3f5080db4baa42a4256a49be1e091da8135647efab8da1e"
+    },
+    {
+      "id": "tone-0083",
+      "start": 0,
+      "end": 2048,
+      "sha256": "d3efbfc41efaa49889d0f5fbd0ae51765f865d4ba742c196db4224909f457f2f"
+    },
+    {
+      "id": "tone-0084",
+      "start": 0,
+      "end": 2048,
+      "sha256": "6da7af9c656ed63cc743a1a6ef2d9934917b443bbbbe82088910b41474fc9835"
+    },
+    {
+      "id": "tone-0085",
+      "start": 0,
+      "end": 2048,
+      "sha256": "9d24b7fb9b761564e148fcbf19231634f1350baa37a66612e8037ee9a82408ba"
+    },
+    {
+      "id": "tone-0086",
+      "start": 0,
+      "end": 2048,
+      "sha256": "054619b95f0bea2c308bea6b177b04fb8920f3a796f4c62be3f580c6b05f8865"
+    },
+    {
+      "id": "tone-0087",
+      "start": 0,
+      "end": 2048,
+      "sha256": "1349ada8c85d9d816135a06f357e093b030b4bcfcad4165be65bcc4ead1e8520"
+    },
+    {
+      "id": "tone-0088",
+      "start": 0,
+      "end": 2048,
+      "sha256": "49c7194d8ebc320c7cc3dcb88bb24df40a31d60ae1c0e29ca688352f6c14f5da"
+    },
+    {
+      "id": "tone-0089",
+      "start": 0,
+      "end": 2048,
+      "sha256": "97a0e9810917dad018104d2f13fd2eb56fb829e39d878d7fa0242ff17778cebd"
+    },
+    {
+      "id": "tone-0090",
+      "start": 0,
+      "end": 2048,
+      "sha256": "f5f491b614775d02833fd98b6dffa11341cdb595b8498ff079c36e7c5a6e6891"
+    },
+    {
+      "id": "tone-0091",
+      "start": 0,
+      "end": 2048,
+      "sha256": "881f3ed9e41e75260d4ff305444bb2a3acbc5edfdf99e7642884572f65df003f"
+    },
+    {
+      "id": "tone-0092",
+      "start": 0,
+      "end": 2048,
+      "sha256": "41f2d654ea2b3810a1a146d9372615e82612795e6260a75db9bead40a324ac29"
+    },
+    {
+      "id": "tone-0093",
+      "start": 0,
+      "end": 2048,
+      "sha256": "11920e9e3a410b5b61c44fd793da38ce7c5afa6d5bbbd0bb6f9aeb7a3f25da40"
+    },
+    {
+      "id": "tone-0094",
+      "start": 0,
+      "end": 2048,
+      "sha256": "a6b842facde553423136a1b5c4b30c5faf6dca73f56fa64e3816ab1ff133a13e"
+    },
+    {
+      "id": "tone-0095",
+      "start": 0,
+      "end": 2048,
+      "sha256": "09dc566372f8d6ff617498925ad7c9596789b4c2552d0137d660e88d015faedf"
+    },
+    {
+      "id": "tone-0096",
+      "start": 0,
+      "end": 2048,
+      "sha256": "f50688c539ff350ddfc9d178f74808c03530cc1ed92bb9020f083b61d303d3a3"
+    },
+    {
+      "id": "tone-0097",
+      "start": 0,
+      "end": 2048,
+      "sha256": "53d12bca2c89440603ec448c4caca15696bf93588fb21d340304425fc6b82fdc"
+    },
+    {
+      "id": "tone-0098",
+      "start": 0,
+      "end": 2048,
+      "sha256": "a28491d88302a264efe040758b4066e47c020b245939d0a786ea066f6ce35398"
+    },
+    {
+      "id": "tone-0099",
+      "start": 0,
+      "end": 2048,
+      "sha256": "5877a13183b9c2c26f07a5c60dd1a0a7f34b1fc6d7118c83b9da48adf006422e"
+    },
+    {
+      "id": "tone-0100",
+      "start": 0,
+      "end": 2048,
+      "sha256": "caafd7fb9aa3adc83ae1923fd62ac719ec03bb7a10fae8aeb721142868384136"
+    },
+    {
+      "id": "tone-0101",
+      "start": 0,
+      "end": 2048,
+      "sha256": "b5909eaebf616f03ea823094ad9df3368e34811bfbb3a6e489e640d58df32a97"
+    },
+    {
+      "id": "tone-0102",
+      "start": 0,
+      "end": 2048,
+      "sha256": "bdee537dce3d4c56cd5c5a7d8f2cb0adaa98155f74aa014eb9c26d2f6948e57d"
+    },
+    {
+      "id": "tone-0103",
+      "start": 0,
+      "end": 2048,
+      "sha256": "c5c60c4f4b64d8614b0de186db192a591df2a2a51012a9030f055c483c58981d"
+    },
+    {
+      "id": "tone-0104",
+      "start": 0,
+      "end": 2048,
+      "sha256": "08cdb1a77e2bc9da4c093bb790ba31fd0ad7fbc7ee646de743811898e027a37c"
+    },
+    {
+      "id": "tone-0105",
+      "start": 0,
+      "end": 2048,
+      "sha256": "9760f15aa52c27a3b75635dfa382ca309f1cf90e5e9ba8dd64868c9a9b306aca"
+    },
+    {
+      "id": "tone-0106",
+      "start": 0,
+      "end": 2048,
+      "sha256": "5417ab07d3a8c712130919ae744efa298ca1e2169e5736c8f10304c456e28e04"
+    },
+    {
+      "id": "tone-0107",
+      "start": 0,
+      "end": 2048,
+      "sha256": "e6db3a3db61f019eaef59a071bd049a75c7c35878166964a6dbf373221abc161"
+    },
+    {
+      "id": "tone-0108",
+      "start": 0,
+      "end": 2048,
+      "sha256": "a0a8d085acb31aaf5a6641e6eea63229702b66468896a82b141b7baa1be98bea"
+    },
+    {
+      "id": "tone-0109",
+      "start": 0,
+      "end": 2048,
+      "sha256": "ad055ea590ebea450299017f196e293595d17521ce7d595886bb441d5861298b"
+    },
+    {
+      "id": "tone-0110",
+      "start": 0,
+      "end": 2048,
+      "sha256": "16b8a9c95712e2afb9c6261619232c318c3f6e95daee4c1a6c4f61f12c0c46c9"
+    },
+    {
+      "id": "tone-0111",
+      "start": 0,
+      "end": 2048,
+      "sha256": "7da93f6865ca8975a885a323cc4895be378d53bfd7e5be1bb10b0e24f8933139"
+    },
+    {
+      "id": "tone-0112",
+      "start": 0,
+      "end": 2048,
+      "sha256": "6584aa4a14456dd108a33d566bd5cc0a3cf3c4063d500630b0b10ce4f6900919"
+    },
+    {
+      "id": "tone-0113",
+      "start": 0,
+      "end": 2048,
+      "sha256": "504a3c8a986fe6d4fe756f6d33b677ff5ab3858a58d262b5fdc97e6e69f5e02b"
+    },
+    {
+      "id": "tone-0114",
+      "start": 0,
+      "end": 2048,
+      "sha256": "aa34c88c0aef46df3a5d35fed4ded0b9c269491d2d5ba35898389224f88bbc1b"
+    },
+    {
+      "id": "tone-0115",
+      "start": 0,
+      "end": 2048,
+      "sha256": "b2a733dd673cf0f54f528c30202b3306364ea113d43cdbdb9b925cb61fff6673"
+    },
+    {
+      "id": "tone-0116",
+      "start": 0,
+      "end": 2048,
+      "sha256": "48b3c6a5ca529f4e32124698b5549bbca9ab68d83069ff0c8c64aa9e98318bd0"
+    },
+    {
+      "id": "tone-0117",
+      "start": 0,
+      "end": 2048,
+      "sha256": "d39f4a97bbd99e95281ff02afa2cc8525b7ed8e3699fd5ac4e016a9fbf1bfd78"
+    },
+    {
+      "id": "tone-0118",
+      "start": 0,
+      "end": 2048,
+      "sha256": "f6260d3d038ed8f479bf6511dc805ca98f7af5f9d559673f014effcbd603c74b"
+    },
+    {
+      "id": "tone-0119",
+      "start": 0,
+      "end": 2048,
+      "sha256": "743f71946ccbf22ceb7dcddb1556f163ae19b0ee7cbc77dace48098f80ce457c"
+    },
+    {
+      "id": "tone-0120",
+      "start": 0,
+      "end": 2048,
+      "sha256": "a9f37c0448906181d8f51a3147f3334bf671fae1780ed97736f83c7ef31f5d2f"
+    },
+    {
+      "id": "tone-0121",
+      "start": 0,
+      "end": 2048,
+      "sha256": "b2ca33a46f63a5c4fbf7f13f83f8a5516092807338095381508f5b7d7abeea75"
+    },
+    {
+      "id": "tone-0122",
+      "start": 0,
+      "end": 2048,
+      "sha256": "9336e5f6e0993fb136f539bba349842280355e127c09d55292c17beb3cadc2c6"
+    },
+    {
+      "id": "tone-0123",
+      "start": 0,
+      "end": 2048,
+      "sha256": "01492d47dd21f3f98c6553b25220bcf706fc88941c6fd8b684da210cfa2e6044"
+    },
+    {
+      "id": "tone-0124",
+      "start": 0,
+      "end": 2048,
+      "sha256": "b3ac3ff51b3dacbc2e2037f7dda8d3cc8a8371d3ef3f995bf484656a26a917aa"
+    }
+  ],
+  "gallery_windows": 127,
+  "cell_count_per_window": 186,
+  "posting_keys": 1707,
+  "posting_entries": 23622,
+  "pooled_top_3": [
+    {
+      "id": "same",
+      "distance": 0.0
+    },
+    {
+      "id": "reversed",
+      "distance": 2.2999822986458e-14
+    },
+    {
+      "id": "tone-0021",
+      "distance": 0.6180256685742982
+    }
+  ],
+  "pooled_reversal_distance": 2.2999822986458e-14,
+  "temporal_reversal_distance": 1.1807429109608503,
+  "extraction_s": 0.3287104270000043,
+  "index_build_s": 0.020792811999996275,
+  "exact_query_s": 0.0016990339999978232,
+  "exact": {
+    "mode": "exhaustive",
+    "exhaustive": true,
+    "incomplete": false,
+    "spec_id": "09c154e6c7a15ef303164074dee9cafde14b31e9ab805b09ba10c4083f25d441",
+    "generation_id": "db18d18a3a94477faf377d38c0d07b2107a96e65d3ebde96b93366a2151ac5db",
+    "score": "equal-band-duration-weighted-log-energy-rmse-v1",
+    "eligible": 127,
+    "scored": 127,
+    "posting_visits": 0,
+    "candidate_budget": 128,
+    "posting_budget": 1000000,
+    "candidate_intervals": [
+      [
+        "same",
+        0
+      ],
+      [
+        "reversed",
+        0
+      ],
+      [
+        "tone-0000",
+        0
+      ],
+      [
+        "tone-0001",
+        0
+      ],
+      [
+        "tone-0002",
+        0
+      ],
+      [
+        "tone-0003",
+        0
+      ],
+      [
+        "tone-0004",
+        0
+      ],
+      [
+        "tone-0005",
+        0
+      ],
+      [
+        "tone-0006",
+        0
+      ],
+      [
+        "tone-0007",
+        0
+      ],
+      [
+        "tone-0008",
+        0
+      ],
+      [
+        "tone-0009",
+        0
+      ],
+      [
+        "tone-0010",
+        0
+      ],
+      [
+        "tone-0011",
+        0
+      ],
+      [
+        "tone-0012",
+        0
+      ],
+      [
+        "tone-0013",
+        0
+      ],
+      [
+        "tone-0014",
+        0
+      ],
+      [
+        "tone-0015",
+        0
+      ],
+      [
+        "tone-0016",
+        0
+      ],
+      [
+        "tone-0017",
+        0
+      ],
+      [
+        "tone-0018",
+        0
+      ],
+      [
+        "tone-0019",
+        0
+      ],
+      [
+        "tone-0020",
+        0
+      ],
+      [
+        "tone-0021",
+        0
+      ],
+      [
+        "tone-0022",
+        0
+      ],
+      [
+        "tone-0023",
+        0
+      ],
+      [
+        "tone-0024",
+        0
+      ],
+      [
+        "tone-0025",
+        0
+      ],
+      [
+        "tone-0026",
+        0
+      ],
+      [
+        "tone-0027",
+        0
+      ],
+      [
+        "tone-0028",
+        0
+      ],
+      [
+        "tone-0029",
+        0
+      ],
+      [
+        "tone-0030",
+        0
+      ],
+      [
+        "tone-0031",
+        0
+      ],
+      [
+        "tone-0032",
+        0
+      ],
+      [
+        "tone-0033",
+        0
+      ],
+      [
+        "tone-0034",
+        0
+      ],
+      [
+        "tone-0035",
+        0
+      ],
+      [
+        "tone-0036",
+        0
+      ],
+      [
+        "tone-0037",
+        0
+      ],
+      [
+        "tone-0038",
+        0
+      ],
+      [
+        "tone-0039",
+        0
+      ],
+      [
+        "tone-0040",
+        0
+      ],
+      [
+        "tone-0041",
+        0
+      ],
+      [
+        "tone-0042",
+        0
+      ],
+      [
+        "tone-0043",
+        0
+      ],
+      [
+        "tone-0044",
+        0
+      ],
+      [
+        "tone-0045",
+        0
+      ],
+      [
+        "tone-0046",
+        0
+      ],
+      [
+        "tone-0047",
+        0
+      ],
+      [
+        "tone-0048",
+        0
+      ],
+      [
+        "tone-0049",
+        0
+      ],
+      [
+        "tone-0050",
+        0
+      ],
+      [
+        "tone-0051",
+        0
+      ],
+      [
+        "tone-0052",
+        0
+      ],
+      [
+        "tone-0053",
+        0
+      ],
+      [
+        "tone-0054",
+        0
+      ],
+      [
+        "tone-0055",
+        0
+      ],
+      [
+        "tone-0056",
+        0
+      ],
+      [
+        "tone-0057",
+        0
+      ],
+      [
+        "tone-0058",
+        0
+      ],
+      [
+        "tone-0059",
+        0
+      ],
+      [
+        "tone-0060",
+        0
+      ],
+      [
+        "tone-0061",
+        0
+      ],
+      [
+        "tone-0062",
+        0
+      ],
+      [
+        "tone-0063",
+        0
+      ],
+      [
+        "tone-0064",
+        0
+      ],
+      [
+        "tone-0065",
+        0
+      ],
+      [
+        "tone-0066",
+        0
+      ],
+      [
+        "tone-0067",
+        0
+      ],
+      [
+        "tone-0068",
+        0
+      ],
+      [
+        "tone-0069",
+        0
+      ],
+      [
+        "tone-0070",
+        0
+      ],
+      [
+        "tone-0071",
+        0
+      ],
+      [
+        "tone-0072",
+        0
+      ],
+      [
+        "tone-0073",
+        0
+      ],
+      [
+        "tone-0074",
+        0
+      ],
+      [
+        "tone-0075",
+        0
+      ],
+      [
+        "tone-0076",
+        0
+      ],
+      [
+        "tone-0077",
+        0
+      ],
+      [
+        "tone-0078",
+        0
+      ],
+      [
+        "tone-0079",
+        0
+      ],
+      [
+        "tone-0080",
+        0
+      ],
+      [
+        "tone-0081",
+        0
+      ],
+      [
+        "tone-0082",
+        0
+      ],
+      [
+        "tone-0083",
+        0
+      ],
+      [
+        "tone-0084",
+        0
+      ],
+      [
+        "tone-0085",
+        0
+      ],
+      [
+        "tone-0086",
+        0
+      ],
+      [
+        "tone-0087",
+        0
+      ],
+      [
+        "tone-0088",
+        0
+      ],
+      [
+        "tone-0089",
+        0
+      ],
+      [
+        "tone-0090",
+        0
+      ],
+      [
+        "tone-0091",
+        0
+      ],
+      [
+        "tone-0092",
+        0
+      ],
+      [
+        "tone-0093",
+        0
+      ],
+      [
+        "tone-0094",
+        0
+      ],
+      [
+        "tone-0095",
+        0
+      ],
+      [
+        "tone-0096",
+        0
+      ],
+      [
+        "tone-0097",
+        0
+      ],
+      [
+        "tone-0098",
+        0
+      ],
+      [
+        "tone-0099",
+        0
+      ],
+      [
+        "tone-0100",
+        0
+      ],
+      [
+        "tone-0101",
+        0
+      ],
+      [
+        "tone-0102",
+        0
+      ],
+      [
+        "tone-0103",
+        0
+      ],
+      [
+        "tone-0104",
+        0
+      ],
+      [
+        "tone-0105",
+        0
+      ],
+      [
+        "tone-0106",
+        0
+      ],
+      [
+        "tone-0107",
+        0
+      ],
+      [
+        "tone-0108",
+        0
+      ],
+      [
+        "tone-0109",
+        0
+      ],
+      [
+        "tone-0110",
+        0
+      ],
+      [
+        "tone-0111",
+        0
+      ],
+      [
+        "tone-0112",
+        0
+      ],
+      [
+        "tone-0113",
+        0
+      ],
+      [
+        "tone-0114",
+        0
+      ],
+      [
+        "tone-0115",
+        0
+      ],
+      [
+        "tone-0116",
+        0
+      ],
+      [
+        "tone-0117",
+        0
+      ],
+      [
+        "tone-0118",
+        0
+      ],
+      [
+        "tone-0119",
+        0
+      ],
+      [
+        "tone-0120",
+        0
+      ],
+      [
+        "tone-0121",
+        0
+      ],
+      [
+        "tone-0122",
+        0
+      ],
+      [
+        "tone-0123",
+        0
+      ],
+      [
+        "tone-0124",
+        0
+      ]
+    ],
+    "matches": [
+      {
+        "id": "same",
+        "start": 0,
+        "end": 2048,
+        "distance": 0.0,
+        "source_sha256": "20b64132c4ea36fd5021ab6e911a2946922469332402cbfa92030ebede825458"
+      },
+      {
+        "id": "tone-0000",
+        "start": 0,
+        "end": 2048,
+        "distance": 0.8269805565254087,
+        "source_sha256": "896c12423ba866380c00b3dc314f4acb7aefd4a6e84a5cae909b650b86fd0455"
+      },
+      {
+        "id": "tone-0001",
+        "start": 0,
+        "end": 2048,
+        "distance": 0.8269879611423613,
+        "source_sha256": "774fc2462c00a4c9942f260e0ab79b89bbd29a5a9072e328eb1baae67bb16ec9"
+      }
+    ]
+  },
+  "candidate_sweep": [
+    {
+      "query_s": 0.0008289560000065421,
+      "candidate_recall_at_3": 0.3333333333333333,
+      "recall_at_3_against_exact": 0.3333333333333333,
+      "mode": "approximate",
+      "exhaustive": false,
+      "incomplete": false,
+      "spec_id": "09c154e6c7a15ef303164074dee9cafde14b31e9ab805b09ba10c4083f25d441",
+      "generation_id": "db18d18a3a94477faf377d38c0d07b2107a96e65d3ebde96b93366a2151ac5db",
+      "score": "equal-band-duration-weighted-log-energy-rmse-v1",
+      "eligible": 127,
+      "scored": 1,
+      "posting_visits": 17835,
+      "candidate_budget": 1,
+      "posting_budget": 1000000,
+      "candidate_intervals": [
+        [
+          "same",
+          0
+        ]
+      ],
+      "matches": [
+        {
+          "id": "same",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.0,
+          "source_sha256": "20b64132c4ea36fd5021ab6e911a2946922469332402cbfa92030ebede825458"
+        }
+      ]
+    },
+    {
+      "query_s": 0.0008378899999996747,
+      "candidate_recall_at_3": 1.0,
+      "recall_at_3_against_exact": 1.0,
+      "mode": "approximate",
+      "exhaustive": false,
+      "incomplete": false,
+      "spec_id": "09c154e6c7a15ef303164074dee9cafde14b31e9ab805b09ba10c4083f25d441",
+      "generation_id": "db18d18a3a94477faf377d38c0d07b2107a96e65d3ebde96b93366a2151ac5db",
+      "score": "equal-band-duration-weighted-log-energy-rmse-v1",
+      "eligible": 127,
+      "scored": 4,
+      "posting_visits": 17835,
+      "candidate_budget": 4,
+      "posting_budget": 1000000,
+      "candidate_intervals": [
+        [
+          "same",
+          0
+        ],
+        [
+          "tone-0000",
+          0
+        ],
+        [
+          "tone-0001",
+          0
+        ],
+        [
+          "tone-0002",
+          0
+        ]
+      ],
+      "matches": [
+        {
+          "id": "same",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.0,
+          "source_sha256": "20b64132c4ea36fd5021ab6e911a2946922469332402cbfa92030ebede825458"
+        },
+        {
+          "id": "tone-0000",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.8269805565254087,
+          "source_sha256": "896c12423ba866380c00b3dc314f4acb7aefd4a6e84a5cae909b650b86fd0455"
+        },
+        {
+          "id": "tone-0001",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.8269879611423613,
+          "source_sha256": "774fc2462c00a4c9942f260e0ab79b89bbd29a5a9072e328eb1baae67bb16ec9"
+        }
+      ]
+    },
+    {
+      "query_s": 0.0009585979999968686,
+      "candidate_recall_at_3": 1.0,
+      "recall_at_3_against_exact": 1.0,
+      "mode": "approximate",
+      "exhaustive": false,
+      "incomplete": false,
+      "spec_id": "09c154e6c7a15ef303164074dee9cafde14b31e9ab805b09ba10c4083f25d441",
+      "generation_id": "db18d18a3a94477faf377d38c0d07b2107a96e65d3ebde96b93366a2151ac5db",
+      "score": "equal-band-duration-weighted-log-energy-rmse-v1",
+      "eligible": 127,
+      "scored": 16,
+      "posting_visits": 17835,
+      "candidate_budget": 16,
+      "posting_budget": 1000000,
+      "candidate_intervals": [
+        [
+          "same",
+          0
+        ],
+        [
+          "tone-0000",
+          0
+        ],
+        [
+          "tone-0001",
+          0
+        ],
+        [
+          "tone-0002",
+          0
+        ],
+        [
+          "tone-0003",
+          0
+        ],
+        [
+          "reversed",
+          0
+        ],
+        [
+          "tone-0004",
+          0
+        ],
+        [
+          "tone-0005",
+          0
+        ],
+        [
+          "tone-0006",
+          0
+        ],
+        [
+          "tone-0014",
+          0
+        ],
+        [
+          "tone-0020",
+          0
+        ],
+        [
+          "tone-0021",
+          0
+        ],
+        [
+          "tone-0007",
+          0
+        ],
+        [
+          "tone-0008",
+          0
+        ],
+        [
+          "tone-0009",
+          0
+        ],
+        [
+          "tone-0027",
+          0
+        ]
+      ],
+      "matches": [
+        {
+          "id": "same",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.0,
+          "source_sha256": "20b64132c4ea36fd5021ab6e911a2946922469332402cbfa92030ebede825458"
+        },
+        {
+          "id": "tone-0000",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.8269805565254087,
+          "source_sha256": "896c12423ba866380c00b3dc314f4acb7aefd4a6e84a5cae909b650b86fd0455"
+        },
+        {
+          "id": "tone-0001",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.8269879611423613,
+          "source_sha256": "774fc2462c00a4c9942f260e0ab79b89bbd29a5a9072e328eb1baae67bb16ec9"
+        }
+      ]
+    },
+    {
+      "query_s": 0.00242010999998854,
+      "candidate_recall_at_3": 1.0,
+      "recall_at_3_against_exact": 1.0,
+      "mode": "approximate",
+      "exhaustive": false,
+      "incomplete": false,
+      "spec_id": "09c154e6c7a15ef303164074dee9cafde14b31e9ab805b09ba10c4083f25d441",
+      "generation_id": "db18d18a3a94477faf377d38c0d07b2107a96e65d3ebde96b93366a2151ac5db",
+      "score": "equal-band-duration-weighted-log-energy-rmse-v1",
+      "eligible": 127,
+      "scored": 127,
+      "posting_visits": 17835,
+      "candidate_budget": 127,
+      "posting_budget": 1000000,
+      "candidate_intervals": [
+        [
+          "same",
+          0
+        ],
+        [
+          "tone-0000",
+          0
+        ],
+        [
+          "tone-0001",
+          0
+        ],
+        [
+          "tone-0002",
+          0
+        ],
+        [
+          "tone-0003",
+          0
+        ],
+        [
+          "reversed",
+          0
+        ],
+        [
+          "tone-0004",
+          0
+        ],
+        [
+          "tone-0005",
+          0
+        ],
+        [
+          "tone-0006",
+          0
+        ],
+        [
+          "tone-0014",
+          0
+        ],
+        [
+          "tone-0020",
+          0
+        ],
+        [
+          "tone-0021",
+          0
+        ],
+        [
+          "tone-0007",
+          0
+        ],
+        [
+          "tone-0008",
+          0
+        ],
+        [
+          "tone-0009",
+          0
+        ],
+        [
+          "tone-0027",
+          0
+        ],
+        [
+          "tone-0028",
+          0
+        ],
+        [
+          "tone-0029",
+          0
+        ],
+        [
+          "tone-0030",
+          0
+        ],
+        [
+          "tone-0031",
+          0
+        ],
+        [
+          "tone-0038",
+          0
+        ],
+        [
+          "tone-0039",
+          0
+        ],
+        [
+          "tone-0040",
+          0
+        ],
+        [
+          "tone-0041",
+          0
+        ],
+        [
+          "tone-0042",
+          0
+        ],
+        [
+          "tone-0043",
+          0
+        ],
+        [
+          "tone-0051",
+          0
+        ],
+        [
+          "tone-0052",
+          0
+        ],
+        [
+          "tone-0053",
+          0
+        ],
+        [
+          "tone-0054",
+          0
+        ],
+        [
+          "tone-0055",
+          0
+        ],
+        [
+          "tone-0056",
+          0
+        ],
+        [
+          "tone-0057",
+          0
+        ],
+        [
+          "tone-0058",
+          0
+        ],
+        [
+          "tone-0059",
+          0
+        ],
+        [
+          "tone-0060",
+          0
+        ],
+        [
+          "tone-0061",
+          0
+        ],
+        [
+          "tone-0069",
+          0
+        ],
+        [
+          "tone-0070",
+          0
+        ],
+        [
+          "tone-0071",
+          0
+        ],
+        [
+          "tone-0072",
+          0
+        ],
+        [
+          "tone-0073",
+          0
+        ],
+        [
+          "tone-0074",
+          0
+        ],
+        [
+          "tone-0075",
+          0
+        ],
+        [
+          "tone-0076",
+          0
+        ],
+        [
+          "tone-0077",
+          0
+        ],
+        [
+          "tone-0078",
+          0
+        ],
+        [
+          "tone-0079",
+          0
+        ],
+        [
+          "tone-0080",
+          0
+        ],
+        [
+          "tone-0081",
+          0
+        ],
+        [
+          "tone-0082",
+          0
+        ],
+        [
+          "tone-0083",
+          0
+        ],
+        [
+          "tone-0084",
+          0
+        ],
+        [
+          "tone-0085",
+          0
+        ],
+        [
+          "tone-0093",
+          0
+        ],
+        [
+          "tone-0094",
+          0
+        ],
+        [
+          "tone-0095",
+          0
+        ],
+        [
+          "tone-0096",
+          0
+        ],
+        [
+          "tone-0097",
+          0
+        ],
+        [
+          "tone-0098",
+          0
+        ],
+        [
+          "tone-0099",
+          0
+        ],
+        [
+          "tone-0100",
+          0
+        ],
+        [
+          "tone-0101",
+          0
+        ],
+        [
+          "tone-0102",
+          0
+        ],
+        [
+          "tone-0103",
+          0
+        ],
+        [
+          "tone-0104",
+          0
+        ],
+        [
+          "tone-0105",
+          0
+        ],
+        [
+          "tone-0106",
+          0
+        ],
+        [
+          "tone-0107",
+          0
+        ],
+        [
+          "tone-0108",
+          0
+        ],
+        [
+          "tone-0109",
+          0
+        ],
+        [
+          "tone-0110",
+          0
+        ],
+        [
+          "tone-0111",
+          0
+        ],
+        [
+          "tone-0112",
+          0
+        ],
+        [
+          "tone-0113",
+          0
+        ],
+        [
+          "tone-0114",
+          0
+        ],
+        [
+          "tone-0115",
+          0
+        ],
+        [
+          "tone-0116",
+          0
+        ],
+        [
+          "tone-0117",
+          0
+        ],
+        [
+          "tone-0017",
+          0
+        ],
+        [
+          "tone-0019",
+          0
+        ],
+        [
+          "tone-0015",
+          0
+        ],
+        [
+          "tone-0016",
+          0
+        ],
+        [
+          "tone-0018",
+          0
+        ],
+        [
+          "tone-0010",
+          0
+        ],
+        [
+          "tone-0011",
+          0
+        ],
+        [
+          "tone-0012",
+          0
+        ],
+        [
+          "tone-0013",
+          0
+        ],
+        [
+          "tone-0024",
+          0
+        ],
+        [
+          "tone-0022",
+          0
+        ],
+        [
+          "tone-0023",
+          0
+        ],
+        [
+          "tone-0025",
+          0
+        ],
+        [
+          "tone-0026",
+          0
+        ],
+        [
+          "tone-0035",
+          0
+        ],
+        [
+          "tone-0032",
+          0
+        ],
+        [
+          "tone-0033",
+          0
+        ],
+        [
+          "tone-0034",
+          0
+        ],
+        [
+          "tone-0036",
+          0
+        ],
+        [
+          "tone-0037",
+          0
+        ],
+        [
+          "tone-0046",
+          0
+        ],
+        [
+          "tone-0048",
+          0
+        ],
+        [
+          "tone-0044",
+          0
+        ],
+        [
+          "tone-0045",
+          0
+        ],
+        [
+          "tone-0047",
+          0
+        ],
+        [
+          "tone-0049",
+          0
+        ],
+        [
+          "tone-0050",
+          0
+        ],
+        [
+          "tone-0062",
+          0
+        ],
+        [
+          "tone-0063",
+          0
+        ],
+        [
+          "tone-0064",
+          0
+        ],
+        [
+          "tone-0065",
+          0
+        ],
+        [
+          "tone-0066",
+          0
+        ],
+        [
+          "tone-0067",
+          0
+        ],
+        [
+          "tone-0068",
+          0
+        ],
+        [
+          "tone-0086",
+          0
+        ],
+        [
+          "tone-0087",
+          0
+        ],
+        [
+          "tone-0088",
+          0
+        ],
+        [
+          "tone-0089",
+          0
+        ],
+        [
+          "tone-0090",
+          0
+        ],
+        [
+          "tone-0091",
+          0
+        ],
+        [
+          "tone-0092",
+          0
+        ],
+        [
+          "tone-0118",
+          0
+        ],
+        [
+          "tone-0119",
+          0
+        ],
+        [
+          "tone-0120",
+          0
+        ],
+        [
+          "tone-0121",
+          0
+        ],
+        [
+          "tone-0122",
+          0
+        ],
+        [
+          "tone-0123",
+          0
+        ],
+        [
+          "tone-0124",
+          0
+        ]
+      ],
+      "matches": [
+        {
+          "id": "same",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.0,
+          "source_sha256": "20b64132c4ea36fd5021ab6e911a2946922469332402cbfa92030ebede825458"
+        },
+        {
+          "id": "tone-0000",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.8269805565254087,
+          "source_sha256": "896c12423ba866380c00b3dc314f4acb7aefd4a6e84a5cae909b650b86fd0455"
+        },
+        {
+          "id": "tone-0001",
+          "start": 0,
+          "end": 2048,
+          "distance": 0.8269879611423613,
+          "source_sha256": "774fc2462c00a4c9942f260e0ab79b89bbd29a5a9072e328eb1baae67bb16ec9"
+        }
+      ]
+    }
+  ],
+  "limits": "in-memory Python postings; Rust extraction; no persistence/SQL/RLS; single-query timings, not a speedup or production capacity claim",
+  "evidence": {
+    "source_commit": "171cb4c8d30c50e179f06ad0bef8df3c64ec0da2",
+    "workflow_run": "https://github.com/merkhet-io/morletdb/actions/runs/40191422299",
+    "note": "Generated by the Rust-backed CLI; this evidence annotation records the producing code revision."
+  }
+}

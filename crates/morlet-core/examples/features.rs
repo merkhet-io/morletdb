@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for line in io::stdin().lock().lines() {
         let input: Input = serde_json::from_str(&line?)?;
         let samples = normalize(&input.samples, &input.normalization)?;
-        let signature = morlet::extract(&samples, input.sample_rate_hz)?;
+        let (signature, cells) = morlet::extract_with_cells(&samples, input.sample_rate_hz)?;
         // Research baseline: retain four coarse temporal bins of token energy.
         // Tokens contribute by center time and duration, including short tails.
         // This is intentionally not a new production extractor/version.
@@ -45,6 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             serde_json::json!({
                 "version": morlet::EXTRACTOR_VERSION,
                 "morlet": signature.features(),
+                "energy_cells_experimental": cells,
                 "morlet_temporal_experimental": temporal,
             })
         );

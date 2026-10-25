@@ -23,7 +23,9 @@ Its search features pool energy across each window; localized tokens are not a
 temporal search index. Representation changes require versioning and evaluation.
 See the [advanced retrieval proposal](advanced-retrieval.md) for a staged design
 covering temporal energy grids, wave-token indexes, ordered motifs and ML datasets.
-These capabilities are proposed, not implemented.
+The [offline wave-index PoC](wave-index-poc.md) now experiments with localized
+energy cells, exhaustive temporal scoring and approximate candidate postings.
+Database generations, migrations and production retrieval remain proposed.
 
 ## Experiments retained, not expanded
 
