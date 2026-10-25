@@ -1,9 +1,11 @@
 # Changelog
 
-## 0.1.0-alpha.2
+## 0.1.0-alpha.3
 
 First release built from the rewritten public repository history (author
-metadata only; see docs/history-rewrite.md).
+metadata only; see docs/history-rewrite.md). 0.1.0-alpha.2 was built and
+withdrawn before announcement because its source commit was re-authored; do not
+use it. alpha.3 contains the same changes.
 
 Extension (in the image):
 - Opt-in `morlet-energy-lowrate-v1` representation for native rates in [1,128) Hz,

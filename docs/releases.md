@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.1.0-alpha.2`). GitHub tags use
+The current package identifier is in VERSION (`0.1.0-alpha.3`). GitHub tags use
 a leading v; GHCR image tags do not. The SQL extension version remains 0.1.0,
 with no upgrade scripts between alpha releases. Releases target PostgreSQL 17 on
 Linux amd64.
@@ -9,7 +9,8 @@ Linux amd64.
 [history rewrite](history-rewrite.md). Its release record was transferred
 unchanged. Its image digest is the same, but the image's OCI labels name the
 original commit `0594ee0`, whose tree is identical to the tag's rewritten
-commit. `0.1.0-alpha.2` is the first image built from the rewritten history.
+commit. `0.1.0-alpha.3` is the first image built from the rewritten history;
+`0.1.0-alpha.2` was withdrawn before announcement and must not be used.
 
 ## Release process
 
@@ -34,7 +35,7 @@ Verify the release exists and copy its exact image digest from image-digest.txt:
 ```sh
 git clone https://github.com/merkhet-io/morletdb.git
 cd morletdb
-git checkout v0.1.0-alpha.2
+git checkout v0.1.0-alpha.3
 export MORLET_IMAGE=ghcr.io/merkhet-io/morletdb@sha256:REPLACE_WITH_RELEASE_DIGEST
 docker compose -f compose.release.yaml pull db
 docker compose -f compose.release.yaml run --rm walkthrough
