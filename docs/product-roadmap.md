@@ -123,3 +123,12 @@ by maintaining this roadmap.
 
 Track time to a useful result, relevance, repeat usage and blocking failures. Narrow
 the workflow or revise the representation/architecture when evidence warrants it.
+
+## Wave-RAG development track (proposed)
+
+Follow the [wave-RAG specification](wave-rag-spec.md): M1 interval annotations and
+revision/access tests; M2 bounded evidence export and deterministic comparison;
+M3 optional model adapter; M4 reviewed utility and grounding evaluation. The next
+coding PR should implement M1 only. This track adds historical knowledge and
+inspectable provenance to the recording workflow; it does not depend on persisting
+the current temporal postings experiment or claim implemented diagnostic features.

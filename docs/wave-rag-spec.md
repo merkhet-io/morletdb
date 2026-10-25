@@ -1,196 +1,254 @@
-# Spec: evidence-grounded waveform investigation ("wave-RAG")
+# Wave-RAG: waveform retrieval with inspectable evidence
 
-Status: **proposed specification**, not implemented. Date: 2026-10-25.
+Status: **proposed**, not implemented. Updated: 2026-10-25.
+Implementation targets the continuous-recording SQL API; this is not an
+announcement of an available RAG feature or a new storage engine.
 
-Goal: let an engineer select a waveform interval and get an answer that is
-**grounded only in retrieved, citeable evidence**. That evidence is similar
-historical intervals plus what is known about them. Every statement cites a
-recording interval or an annotation, and the assistant says so when the
-evidence is insufficient.
+## Product direction
 
-## Naming and claim rule
+An engineer selects a spindle vibration episode and asks: **"Where have we seen
+similar behavior, under comparable operating conditions, and what did reviewers
+record about those episodes?"**
 
-"Wave-RAG" describes the **application pattern** this spec enables. It is not a
-current product claim. Until the [promotion gate](#promotion-gate) is met:
+MorletDB should retrieve original waveform intervals, connect them to versioned
+notes and operating context, and export bounded evidence that a human or model
+can inspect. The database owns evidence identity, retrieval contracts and access.
+An application owns language generation. The first useful deliverable works
+without a model: a cited comparison report with links back to source samples.
 
-- Use "retrieves citeable waveform evidence" and "RAG-ready evidence API".
-- Do not put "wave-RAG database" in the README headline or the repository
-  description.
-- The assistant summarizes retrieved evidence. It never diagnoses, classifies
-  event types or origins, predicts failures, or issues alerts. The existing
-  boundaries in [SUPPORT.md](../SUPPORT.md) and the seismic and CNC docs apply.
+Wave-RAG is the development direction. Describe implemented milestones precisely;
+do not present this proposal as an already supported capability.
 
-## Architecture
+## Starting point and evidence
 
-```text
-query interval ──► exact retrieval (pg_morlet) ──► ranked matches
-                                                      │
-                     annotations overlapping each match (pg_morlet)
-                                                      ▼
-                                  evidence bundles (bounded, versioned)
-                                                      ▼
-            grounded assistant (example app) ──► answer with citations
-                                                      ▼
-                     UI: each citation opens the interval / annotation
+| Available on main | Still missing |
+|---|---|
+| Append-only single-channel recordings, raw chunks and interval reads | Canonical interval annotations and revision semantics |
+| Exact pooled-feature SQL search, metadata filters, source exclusion and overlap suppression | Evidence export with durable identities and explicit completeness |
+| Rust extraction with versioned normal and low-rate domains | General representation specifications and published generations (advanced retrieval A1) |
+| Python client, notebook and public-data seismic replay example | Grounded-answer application and reviewed answer-quality evaluation |
+| Offline exhaustive temporal scorer and approximate postings experiment | Persistent temporal index, synchronized channels and cross-modal search |
+
+The seismic reference evaluation found pooled features better than or equal to
+the current temporal score on the measured galleries. Approximate postings visited
+many entries and had incomplete recall. Keep exact pooled search as the first
+evidence retriever; do not make a persisted wave-token index a prerequisite.
+See [seismic results](seismic-investigation.md), [advanced retrieval](advanced-retrieval.md)
+and the [CNC pilot](cnc-spindle-experiment.md).
+
+## Three distinct capabilities
+
+1. **Waveform to evidence:** query by example, retrieve compatible intervals and
+   attach observations. M1-M2 below.
+2. **Evidence to answer:** summarize retrieved evidence with verifiable citations.
+   Optional application, M3.
+3. **Text to waveform:** queries such as "find chatter" require reviewed concepts,
+   annotation search or evaluated cross-modal encoders. Future experiment, not
+   supplied by today's energy features.
+
+An embedding, wave token or language model does not turn similarity into a fault
+label. Historical reports can be quoted as attributed observations; the application
+must not convert those reports into a diagnosis of the query.
+
+## Architecture and ownership
+
+```mermaid
+flowchart TD
+    Q["Query interval and context"] --> R["Authorized waveform retrieval"]
+    R --> B["Versioned evidence bundle"]
+    A["Authorized annotation revisions"] --> B
+    C["Time-aligned operating context"] --> B
+    B --> V["Deterministic comparison report"]
+    B --> G["Optional model adapter"]
+    G --> K["Citation and claim checks"]
+    K --> V
 ```
 
-MorletDB owns storage, retrieval, annotations and evidence bundles. Generation
-lives in an example application, never inside the database.
+Keep numerical extraction in Rust, storage and authorization in PostgreSQL, and
+thin export/report tooling in Python. No provider SDK, network request or LLM
+execution belongs in the extension.
 
-## M1 — Interval annotations (pg_morlet)
+## M1: interval knowledge in PostgreSQL
 
-Text knowledge attached to recording intervals: analyst notes, reviewed
-labels, maintenance or test reports, catalog references.
+Proposed logical fields (not executable DDL):
 
-Logical record:
+| Field group | Contract |
+|---|---|
+| Identity | Collection identity, recording ID, immutable annotation revision ID, logical annotation ID |
+| Target | Half-open sample interval, or explicitly whole-recording scope; recording is required |
+| Content | Kind, UTF-8 body bounded to 8 KiB, source/author and optional source URI |
+| Provenance | Creation time, effective time if known, schema version and content digest |
+| Review | Draft/reviewed/rejected state, reviewer identity and review timestamp when applicable |
+| Revision | Prior revision reference; corrections and retractions append revisions |
 
-- annotation id
-- recording id
-- half-open sample interval, or NULL for the whole recording
-- kind: `note` | `label` | `event_reference` | `report`
-- body text, up to 8 KB
-- author or source
-- source URI
-- `review_state`: `draft` | `reviewed` | `rejected`
-- `valid_from`, `created_at`
-- `supersedes` (the annotation id it replaces)
+Review state is part of a revision, not a mutable flag that silently changes an
+old citation. Serialize revision creation and reject branches, cycles, cross-recording
+supersession and dangling predecessors. Default reads select the active,
+non-retracted revision in the caller's snapshot. Explicit historical reads resolve
+the cited revision and show whether it has since been corrected or retracted.
 
-Rules:
+Validate bounded intervals against committed samples at insert. An interval ending
+exactly where another begins does not overlap it. Whole-recording scope is explicit;
+it applies to future appends and bundles must show the source extent actually seen.
+Require authorized annotation writes; a caller cannot self-assert reviewer authority
+merely by supplying a reviewer name. Define review grants separately from read access.
 
-- **Append-only.** Corrections create a superseding record, so evidence cited
-  in an earlier answer stays reproducible.
-- **Interval check at insert.** The interval must lie inside the committed
-  samples of the recording.
-- **Permissions.** Annotations follow the parent recording's privileges and
-  row-level security. A reader who cannot see a recording cannot see its
-  annotations.
-- **Retrieval stays separate.** Annotations never affect feature ranking.
-  Retrieval and evidence remain independent: the
-  detection / retrieval / reference separation from the seismic example.
-- **Proposed SQL:**
-  - `morlet_create_annotation_table(collection)`
-  - `morlet_annotate(...)`
-  - `morlet_annotations_for_interval(collection, recording, start, end)`,
-    which returns overlapping, non-superseded annotations.
-- **Installation.** This adds SQL objects, so the existing fresh-install rule
-  applies (no upgrade script in the alpha).
+Annotations must not reveal a recording the caller cannot read. Use caller permissions
+and parent-recording RLS throughout; table grants, direct SELECT, insert, revision
+lookup and joins must be tested with ordinary roles. Do not treat knowing an evidence
+ID as permission. Start with parent-derived visibility; independently restricted
+maintenance reports need additional access rules before ingestion.
 
-Tests: interval bounds, superseding, RLS isolation, overlap semantics at the
-half-open edges.
+Bodies, metadata and linked documents are untrusted data. The database never fetches
+source URIs. Annotations do not change the numeric waveform ranking in M1-M2.
 
-## M2 — Evidence bundles
+Proposed API names, subject to implementation review:
+`morlet_create_annotation_table`, `morlet_annotate`,
+`morlet_annotations_for_interval`. Ship SQL with the explicit alpha fresh-install
+requirement; replacing a library does not upgrade an existing database.
 
-`morlet_search_evidence(collection, recording, start, end, filter, top_k,
-max_candidates, max_annotations_per_match, max_annotation_bytes)` returns, per
-match:
+## M2: bounded evidence export
 
-- rank and distance
-- interval and UTC span
-- compatibility fields: representation version, rate, channel, unit
-- acquisition metadata
-- overlapping annotations with review state
+Start with exact `morlet_search_interval` and a thin Python exporter. Add a SQL
+search-and-annotation function only where it simplifies a shared authorization or
+snapshot contract. Avoid a second ranking implementation.
 
-Each match and annotation gets a stable evidence id, for example
-`E3` → `(recording, start, end)` or `A7` → `annotation id`. Raw samples are not
-in the bundle; they are read on demand with `morlet_read_interval`.
+A bundle contains:
 
-Budgets are explicit, and exceeding one returns an error rather than a
-truncated bundle. The bundle records the query interval, the filter, the
-candidate count and the representation version, so an answer can be replayed
-exactly.
+- Schema version and content digest; creation time; caller-supplied request ID.
+- Query collection/recording/interval, raw interval digest, representation and
+  normalization, window, rate, channel, units and any context filter.
+- Exact versus approximate plan, eligible/scored counts, top-k, source-exclusion
+  and overlap policies, resource budgets and explicit completion status.
+- Per match: rank, distance and metric, durable interval identity, raw digest,
+  acquisition metadata and exact annotation revision IDs and bodies.
+- Optional context spans with clock mapping, offset/drift uncertainty, source
+  digests, summary method and missingness. Never invent UTC when the recording
+  has no absolute acquisition timestamp.
 
-## M3 — Grounded assistant (example)
+A durable evidence identity includes collection identity, recording identity,
+half-open coordinates and the referenced content/specification digest. Short labels
+such as E3 and A7 are aliases local to one bundle, not globally stable IDs.
+Define canonical serialization, digest algorithm and raw-sample byte encoding;
+normalize encoding details such as endianness explicitly. Do not conflate raw
+identity with per-window normalized features.
 
-Built as an example application, reusing the seismic UI patterns. It calls
-Claude through the Anthropic Python SDK.
+Build search, sample-digest reads and annotation reads in one bounded read-only
+REPEATABLE READ transaction, so concurrent appends or annotation revisions cannot
+mix snapshots. A database snapshot identifier or timestamp alone cannot recreate
+a historical result after that transaction ends. Persist the bounded bundle and
+its exact revision/interval references when reproducibility is required. Future
+generations from A1 provide stronger lineage; do not pretend they exist today.
 
-- **Model:** default `claude-opus-5-5` with adaptive thinking and an explicit
-  `effort` level. Effort and any cheaper model are chosen by measurement on the
-  evaluation set, not assumed.
-- **Input to the model:** the evidence bundles rendered as plain-text documents
-  with native citations enabled, one document per match or annotation, titled
-  by evidence id. Also deterministic descriptors of the query and each match
-  (duration, dominant band, RMS, distance, review state), computed by
-  MorletDB/Rust and never inferred by the model. Raw sample arrays are not sent.
-- **Behaviour:**
-  - Answer only from the provided documents, and cite each claim.
-  - Distinguish reviewed annotations from drafts and from catalog-derived
-    references.
-  - Reply "no comparable evidence" when there are no matches, all matches are
-    beyond a configured distance, or no reviewed annotation exists.
-  - Never state a diagnosis, cause, event type or prediction.
-- **Post-checks in code, before display:**
-  - Every citation must resolve to a provided evidence id.
-  - Sentences without a citation are flagged in the UI.
-  - Refusals (`stop_reason: "refusal"`) are handled and shown as such.
-- **Constraint:** native citations cannot be combined with structured outputs,
-  so structured answer fields, if needed, come from a separate call.
-- **Data handling:** bundles and annotations are sent to the Anthropic API.
-  Partner or restricted data needs explicit approval and a retention review
-  first. A local-model path is out of scope for this spec and must be decided
-  per dataset.
+Bound top-k, candidate population, metadata bytes, annotations per match, total
+annotation bytes and overall serialized bundle size. Never silently omit over-budget
+evidence: return an explicit failure without an answer-ready partial bundle.
+Represent missing or unreviewed knowledge as an explicit evidence state.
 
-## M4 — Evaluation
+Raw arrays are read on demand through the authorized interval API, rather than
+included in the model prompt. Deterministic descriptors must name their algorithm,
+units and normalization; no new descriptor is implied to exist in Rust already.
 
-Reuse the reviewed labels from the
-[CNC spindle pilot](cnc-spindle-experiment.md) as the primary set. Seismic
-catalog associations serve as a weak proxy smoke test only.
+Exported bundles are copies: later database permission revocation cannot revoke
+a downloaded file. Access checks apply at creation and re-resolution; applications
+must handle export retention, sharing, deletion and audit. Offline historical
+reproduction is bounded by retained source data and export policy.
 
-- **Retrieval.** Per-query precision@k, nDCG and first-relevant rank against
-  reviewed labels. Compare with statistics and FFT baselines, using the same
-  filters for all methods. Bootstrap uncertainty resamples whole tools or runs
-  as groups, because queries and overlapping windows from one tool are not
-  independent.
-- **Citation precision.** The share of citations whose evidence supports the
-  cited statement, as judged by reviewers blind to the retrieval method.
-- **Unsupported-claim rate.** The share of statements with no supporting cited
-  evidence.
-- **Abstention.** Correct "no comparable evidence" on held-out negatives, and
-  no abstention when reviewed relevant evidence exists.
-- **Value of retrieval.** The same questions answered with retrieval, with
-  baseline retrieval, and with no retrieval at all. This shows whether grounding
-  helps or merely decorates.
-- **Reporting.** Per-query tables, model id, effort, prompt version and token
-  costs, all recorded with the report provenance.
+## M3: optional grounded-answer example
 
-## Promotion gate
+Use a provider-neutral adapter with a deterministic report renderer and a fake
+model for CI. Configure a provider/model explicitly for an opt-in live run; record
+the exact model ID, settings, prompt version and adapter version. Verify SDK and
+citation capabilities against that provider's documentation when implementing;
+no model release or provider-specific API is a database dependency.
 
-Fix thresholds before running and agree on them in review. Proposed:
+The example accepts an interval and a bounded question about retrieved history.
+It emits statements, citation references and an explicit answer/abstention status.
+It distinguishes measured descriptors, reviewed observations, drafts and catalog
+references. It does not infer fault cause, event origin, failure probability or
+equipment actions.
 
-- Retrieval shows a consistent per-query advantage over the simple baselines on
-  reviewed labels, with grouped-bootstrap intervals that exclude no difference.
-- Citation precision ≥ 0.95 and unsupported-claim rate ≤ 5% on the pilot.
-- Abstention is correct on ≥ 90% of negatives.
+Validate every citation against bundle-local aliases and immutable evidence
+references. Citation existence checks do not establish that a statement is supported.
+Display deterministic measurements separately, flag unsupported narrative, and
+evaluate claim support with reviewers. Treat annotation text as quoted evidence,
+never instructions; test adversarial notes that request tool calls, secret disclosure
+or fabricated conclusions. The summarizer has no equipment-control tools.
 
-Only then may docs say "wave-RAG" as a capability, scoped to the evaluated
-domain. If retrieval does not beat the baselines, the assistant can still ship
-as an example, described as summarizing baseline-equivalent retrieval.
+No relevant-looking match is automatically accepted. Distance thresholds are
+representation/domain-specific and require training/calibration data; do not pick
+them from held-out results. Distinguish no matches, budget failure, no reviewed
+knowledge, model failure and insufficient evidence. Similarity-only evidence can
+still produce a deterministic comparison, without a semantic claim.
 
-## Milestones (rough estimates)
+Network generation is off by default. Use synthetic or approved public annotations
+first. Partner waveform context and notes may leave the machine only under an
+explicitly approved data policy. A local adapter can be evaluated later through
+the same interface.
 
-| Milestone | Scope | Estimate |
+## M4: evaluate utility and trust separately
+
+Use the CNC spec when its dataset, clocks, labels, reviewers and permissions are
+confirmed. Seismic catalog associations are weak-proxy smoke evidence only.
+Synthetic tests establish contracts, not industrial relevance.
+
+- Retrieval: reviewed precision/nDCG and first-relevant rank; compare statistics,
+  FFT and pooled Morlet on identical eligible populations and context policies.
+- Answering: reviewer-assessed claim support, citation support and coverage,
+  unsupported-claim rate, and appropriate abstention on positive and negative cases.
+- Ablations: waveform-only comparison, annotations-only, retrieved annotated
+  evidence, baseline retrieval and no retrieval.
+- Leakage: whole-tool/run holdouts, fixed annotation knowledge cutoff and no
+  query labels or later maintenance outcomes injected into the evidence.
+- Uncertainty: paired results and group-resampled intervals, with independent
+  group counts and limitations when too few groups exist.
+- Operations: bundle bytes, retrieval/export/generation latency, CPU/memory,
+  model token/cost counts and reproducible code/data/prompt provenance.
+
+Agree task-specific thresholds before held-out evaluation. Keep capability gates
+distinct: reliable export is an engineering gate; useful grounded investigation
+is an application gate; superiority over baselines is a separate differentiation
+claim. A small pilot cannot establish universal accuracy.
+
+## Delivery sequence and acceptance
+
+| Slice | Deliverable | Acceptance evidence |
 |---|---|---|
-| M1 | Annotation SQL, tests, docs | 1–2 weeks |
-| M2 | Evidence-bundle function, budgets, tests | 3–5 days |
-| M3 | Grounded assistant example, post-checks, UI | about 1 week |
-| M4 | Evaluation harness plus reviewed pilot | 2–4 weeks plus reviewer time |
+| M1 | Annotation/revision SQL plus thin client | Half-open bounds; unauthorized read/write and revision tests; supersession and concurrent-write tests |
+| M2a | Exact retrieval plus deterministic evidence export/report | Same hits as existing SQL; stable IDs/digests; bounded consistent snapshot under appends/revisions; explicit budget errors |
+| M2b | Export provenance and authorized citation resolver | Reproduce an archived report; detect changed/missing/retracted evidence; no cross-role leakage |
+| M3 | Optional answer adapter and citation viewer | Offline fake-model tests, adversarial annotations, unknown citation rejection, distinct failure/abstention states |
+| M4 | Reviewed domain pilot and ablations | Per-query results, independent-group counts, supported and unsupported claims, reproducible report |
 
-M1–M3 can proceed with synthetic and seismic data. M4 depends on the CNC
-prerequisites: dataset, channels, labels, reviewers and data approval.
+**Next coding PR: M1 only.** Then M2a with synthetic annotated recordings and the
+existing exact search, before model integration. Prefer one end-to-end investigation
+over another demo catalog expansion. Estimates depend on reviewed schema and data;
+these are dependency gates rather than calendar promises.
 
-## Out of scope
+## Later database retrieval work
 
-- Text-to-waveform or cross-modal queries ("find chatter")
-- Learned embeddings or fine-tuning
-- Approximate or vector indexes
-- Multichannel synchronized retrieval
-- Autonomous agents acting on equipment
-- Alerts, and any diagnostic or origin classification
+A1 in [advanced retrieval](advanced-retrieval.md) remains the prerequisite for
+multiple durable representation generations. After M2, compare annotation/text
+retrieval and waveform retrieval separately, then evaluate hybrid rank fusion
+and reranking over an identical permission-filtered population. Record constituent
+ranks and plan versions; do not add incomparable lexical and waveform distances.
 
-## Open decisions
+External encoders, learned tokens and text-to-wave queries are optional experiments.
+Record model/checkpoint/preprocessing digests and compare against the current exact
+baseline before choosing vector or token indexes. The disappointing current temporal
+postings result is a reason to measure alternatives, not to reject all temporal
+representations or force a new storage engine.
 
-1. Annotation sources for the pilot, and who reviews them.
-2. Whether annotations ship in `pg_morlet` (proposed) or start as an
-   example-level table.
-3. Data-handling approval for sending partner annotations to the API.
-4. Final gate thresholds.
+For context, [TimeRAG](https://arxiv.org/abs/2412.16643) and
+[TS-RAG](https://arxiv.org/abs/2503.07649) study retrieval-augmented forecasting.
+They are adjacent research, not evidence that MorletDB has forecasting or grounded
+explanation capability. This proposal prioritizes inspectable historical evidence;
+forecasting remains a separate task with its own evaluation.
+
+## Decisions for implementation review
+
+1. Canonical collection identity, annotation revision schema and review grants.
+2. Retention/retraction and historical export policy.
+3. Bundle schema, canonical sample encoding and digest costs.
+4. First approved annotation source and relevance reviewers.
+5. Provider adapter and data policy only when M3 is reached.
