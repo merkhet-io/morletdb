@@ -73,7 +73,8 @@ study that runs only if H2 shows that representation matters.
 
 ## Arms
 
-Every arm with retrieved context also receives the neighbours' label vectors.
+Every arm with retrieved context also receives the neighbours' label vectors, except
+the **no-label variants** marked `n` (amendment 1), which receive neighbour signals only.
 
 | Arm | Neighbour signal context | Scalars per neighbour |
 |---|---|---|
@@ -84,6 +85,9 @@ Every arm with retrieved context also receives the neighbours' label vectors.
 | R-B | raw signal decimated to B samples (FFT resampling), interpolated back | B |
 | W-B | Fixed resolution: all coarse blocks totalling B coefficients (B=32: a6,d6; 64: +d5; 128: +d4), i.e. the projection onto the approximation space of that length | B |
 | C-B | The W-(B/2) coarse blocks plus the B/2 largest-magnitude coefficients among all remaining detail blocks (deterministic rule) | B (+ B/2 indices) |
+
+No-label variants (amendment 1): A3n, R-Bn, W-Bn and C-Bn are identical to A3, R-B, W-B and
+C-B but without neighbour labels; the model omits the label input.
 
 Budgets: B ∈ {32, 64, 128}. Every arm delivers each neighbour to the model as a
 1000-sample time-domain signal reconstructed from what was transmitted. The neighbour
@@ -110,15 +114,24 @@ bytes with indices included.
   time, representation build time, and training and inference time.
 - **Uncertainty:** paired patient-level bootstrap on the test fold (1000 resamples of
   patients), using seed-averaged predictions. The seed spread is reported separately.
-- **Pre-registered primary comparison:** C-64 vs R-64.
+- **Pre-registered primary comparison (amendment 1):** C-64n vs R-64n. The with-label
+  comparison C-64 vs R-64 becomes secondary.
 - **Reported comparisons:** C-B vs W-B, A3 vs A0 (H1), A3 vs A2 (selection), A3 vs A1
   (signal content), and every budget arm vs A1. All comparisons are reported, not only
   significant ones.
+- **Execution in two phases (amendment 1):**
+  - Phase 1 runs A0, A1, A3, A3n, R-64n, W-64n and C-64n with 3 seeds each.
+  - The phase-2 gate uses **validation fold 9 only**. If A3n does not exceed A0 in mean
+    validation macro AUROC, the remaining arms are not run and the test fold is evaluated
+    once for the phase-1 arms. Otherwise phase 2 runs the remaining arms.
+  - Test-fold predictions are written during training but are not read before the single
+    final evaluation of all completed runs.
 - **Decision for this pilot:**
   - H1 is supported if A3 − A0 has a 95% interval above 0.
-  - H2 is supported if C-64 beats R-64 and W-64 with intervals above 0, *and* A3 beats A1.
-    Otherwise H2 is not supported in this setting. If A3 does not beat A1, report the
-    result as inconclusive about representation.
+  - H2 is supported if C-64n beats R-64n and W-64n with intervals above 0, *and* A3n beats
+    A0. If A3n does not beat A0, retrieved signals carry no usable information here and the
+    result is reported as inconclusive about representation. The with-label comparisons
+    (C-64 vs R-64 and W-64, A3 vs A1) are reported as secondary.
 
 ## Leakage controls
 
@@ -163,3 +176,9 @@ storage, progressive retrieval nor retrieval augmentation is claimed as new.
 ## Changelog
 
 - 2026-10-25: initial pilot protocol.
+- 2026-10-25, amendment 1 (before any training run or held-out evaluation): the primary H2
+  test moves to a **no-label** variant. Reason: neighbour labels are likely the strongest
+  input, and could mask any effect of how neighbour *signals* are represented, which is
+  the question H2 asks. The with-label arms stay as the realistic secondary setting.
+  Execution is split into a decisive phase 1 and a phase 2 that runs only if a
+  validation-only gate passes.

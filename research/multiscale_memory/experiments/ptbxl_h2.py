@@ -32,8 +32,18 @@ BUDGETS = (32, 64, 128)
 SPEC = RepresentationSpec(levels=6, channel="II", units="mV", sample_rate_hz=100.0,
                           window_samples=1000, normalization="zscore-per-window")
 COARSE = {16: {"a6"}, 32: {"a6", "d6"}, 64: {"a6", "d6", "d5"}, 128: {"a6", "d6", "d5", "d4"}}
-ARMS = (["A0", "A1", "A2", "A3"] + [f"R{b}" for b in BUDGETS] + [f"W{b}" for b in BUDGETS]
-        + [f"C{b}" for b in BUDGETS])
+ARMS_WITH_LABELS = (["A1", "A2", "A3"] + [f"R{b}" for b in BUDGETS] + [f"W{b}" for b in BUDGETS]
+                    + [f"C{b}" for b in BUDGETS])
+# Amendment 1: "n" arms withhold neighbour labels, so signal context is the only channel.
+ARMS_NO_LABELS = ["A3n"] + [f"{r}{b}n" for r in "RWC" for b in BUDGETS]
+ARMS = ["A0"] + ARMS_WITH_LABELS + ARMS_NO_LABELS
+PHASE1 = ["A0", "A1", "A3", "A3n", "R64n", "W64n", "C64n"]
+
+
+def signal_key(arm: str) -> str:
+    """Which delivered neighbour signal an arm uses ("raw" for full-resolution)."""
+    base = arm[:-1] if arm.endswith("n") else arm
+    return base if base[0] in "RWC" else "raw"
 
 
 def provenance() -> dict:
@@ -215,7 +225,7 @@ def build_model(arm: str):
             super().__init__()
             self.encoder = Encoder()
             self.signal_ctx = arm not in ("A0", "A1")
-            self.label_ctx = arm != "A0"
+            self.label_ctx = arm != "A0" and not arm.endswith("n")
             width = 64 + (64 if self.signal_ctx else 0) + (5 if self.label_ctx else 0)
             self.head = nn.Sequential(nn.Linear(width, 64), nn.ReLU(), nn.Linear(64, 5))
 
@@ -248,7 +258,7 @@ def train(out: Path, arm: str, seed: int, epochs: int, patience: int, smoke: boo
     position = np.full(len(x), -1)
     position[gallery] = np.arange(len(gallery))
     neighbours = nb["random"] if arm == "A2" else nb["retrieved"]
-    ctx_key = {"A2": "raw", "A3": "raw"}.get(arm, arm if arm[0] in "RWC" else "raw")
+    ctx_key = signal_key(arm)
     ctx_bank = torch.tensor(ctxz[ctx_key])
     xz = torch.tensor(zscore(x).astype(np.float32))
     yt = torch.tensor(y)
@@ -342,7 +352,10 @@ def evaluate(out: Path, resamples: int):
         return {"diff": macro_auroc(yt, probs[a]) - macro_auroc(yt, probs[b]),
                 "ci95": [float(np.percentile(diffs, 2.5)), float(np.percentile(diffs, 97.5))],
                 "resamples_used": int(len(diffs))}
-    comparisons = [("C64", "R64"), ("C64", "W64"), ("A3", "A0"), ("A3", "A2"), ("A3", "A1")]
+    # Amendment 1: primary H2 comparison is C64n vs R64n (no neighbour labels).
+    comparisons = [("C64n", "R64n"), ("C64n", "W64n"), ("A3n", "A0"),
+                   ("C64", "R64"), ("C64", "W64"), ("A3", "A0"), ("A3", "A2"), ("A3", "A1")]
+    comparisons += [(f"C{b}n", f"R{b}n") for b in (32, 128)] + [(f"C{b}n", f"W{b}n") for b in (32, 128)]
     comparisons += [(f"C{b}", f"R{b}") for b in (32, 128)] + [(f"C{b}", f"W{b}") for b in (32, 128)]
     comparisons += [(f"{r}{b}", "A1") for r in "RWC" for b in BUDGETS] + [("A2", "A1"), ("A1", "A0")]
     table = {arm: {"macro_auroc": macro_auroc(yt, probs[arm]), "seed_macro_auroc": seeds[arm]}
@@ -357,9 +370,28 @@ def evaluate(out: Path, resamples: int):
         print(f"{name:14s} diff {c['diff']:+.4f}  ci95 [{c['ci95'][0]:+.4f}, {c['ci95'][1]:+.4f}]")
 
 
+def gate(out: Path):
+    """Validation-only summary for the phase decision; never reads test predictions."""
+    import statistics
+    rows = {}
+    for arm in ARMS:
+        vals = [json.loads(p.read_text())["best_val_macro_auroc"]
+                for p in sorted((out / "runs").glob(f"{arm}_seed*/result.json"))]
+        if vals:
+            rows[arm] = {"seeds": len(vals), "val_macro_auroc_mean": statistics.fmean(vals),
+                         "val_macro_auroc_seeds": vals}
+    report = {"note": "validation fold 9 only; test fold 10 not evaluated", "arms": rows,
+              "gate_A3n_minus_A0": (rows["A3n"]["val_macro_auroc_mean"] - rows["A0"]["val_macro_auroc_mean"]
+                                    if "A3n" in rows and "A0" in rows else None)}
+    (out / "gate.json").write_text(json.dumps(report, indent=1))
+    for arm, r in rows.items():
+        print(f"{arm:6s} seeds={r['seeds']} val macro AUROC {r['val_macro_auroc_mean']:.4f}  {[round(v, 4) for v in r['val_macro_auroc_seeds']]}")
+    print("gate A3n - A0 (validation):", report["gate_A3n_minus_A0"])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("stage", choices=["verify", "prepare", "retrieve", "contexts", "train", "evaluate"])
+    parser.add_argument("stage", choices=["verify", "prepare", "retrieve", "contexts", "train", "gate", "evaluate"])
     parser.add_argument("--data", type=Path, default=HERE.parents[2] / "data" / "ptb-xl" / "1.0.3")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--arm", choices=ARMS)
@@ -380,6 +412,8 @@ def main():
         contexts(a.out)
     elif a.stage == "train":
         train(a.out, a.arm, a.seed, a.epochs, a.patience, a.smoke)
+    elif a.stage == "gate":
+        gate(a.out)
     else:
         evaluate(a.out, a.resamples)
 
