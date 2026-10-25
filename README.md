@@ -27,12 +27,12 @@ context. Built with Rust, PostgreSQL 17 and Python. A
 
 ```mermaid
 flowchart LR
-  A[Sensor recording<br/>one channel, rate, units] -->|append chunks| B[(pg_morlet<br/>raw chunks)]
-  B -->|Rust Morlet extraction,<br/>same transaction| C[(Versioned window<br/>features)]
-  Q[Query interval] --> S{Exact search<br/>compatible recordings}
+  A["Sensor recording<br/>one channel, rate, units"] -->|"append chunks"| B[("pg_morlet<br/>raw chunks")]
+  B -->|"Rust Morlet extraction<br/>in the same transaction"| C[("Versioned<br/>window features")]
+  Q["Query interval"] --> S{"Exact search over<br/>compatible recordings"}
   C --> S
-  S --> M[Ranked intervals]
-  M -->|morlet_read_interval| R[Original samples<br/>+ acquisition context]
+  S --> M["Ranked intervals"]
+  M -->|"morlet_read_interval"| R["Original samples and<br/>acquisition context"]
 ```
 
 - **Preserve the source.** Append continuous chunks with global sample offsets.
