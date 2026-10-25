@@ -19,7 +19,28 @@ their waveforms, spectra, recording coordinates and metadata.
 > separate offline wave-index PoC explores temporal retrieval. Real-world
 > usefulness and production-scale performance remain to be established.
 
-[Quickstart](#try-the-recording-workflow) · [Visual notebook](examples/notebooks/README.md) · [SQL guide](extensions/pg_morlet/README.md) · [Wave-index PoC](docs/wave-index-poc.md) · [Architecture](docs/architecture.md)
+[Quickstart](#try-the-recording-workflow) · [Visual notebook](examples/notebooks/README.md) · [SQL guide](extensions/pg_morlet/README.md) · [Wave-index PoC](docs/wave-index-poc.md) · [Demo ideas](docs/demo-catalog.md) · [Architecture](docs/architecture.md)
+
+## Origins in condition monitoring
+
+MorletDB grew out of work in condition monitoring with **high-volume,
+high-frequency CNC spindle data**: vibration measured across three axes,
+correlated with temperature and current. That experience shaped the idea behind
+the database: keep the original signals and their operating context accessible,
+then make recurring patterns easier to find and compare across recordings.
+
+In that setting, a vibration episode becomes more useful when an engineer can
+inspect what the spindle was doing, compare all three axes, and relate the event
+to temperature and current. The motivating question is practical: **“Have we seen
+this pattern before, and under what conditions?”** Similarity search can help
+assemble that evidence for review; establishing a fault or predicting a failure
+requires separate validation.
+
+Condition monitoring is therefore a core motivation for MorletDB. The current
+implementation provides single-channel waveform storage and retrieval.
+Synchronized analysis across vibration axes, temperature and current remains a
+development direction; the original use case is broader than the capabilities
+implemented today.
 
 ## From recordings to evidence you can inspect
 
@@ -155,6 +176,14 @@ context, difficult negatives and an engineer's relevance judgments.
 This direction does not establish defense-specific accuracy or deployment
 readiness. The existing single-channel model does not provide synchronized
 cross-channel search, live acquisition control or automatic fault diagnosis.
+
+## Demo ideas and evaluation backlog
+
+The [demo catalog](docs/demo-catalog.md) collects fifteen proposed investigations:
+industrial diagnostics, end-of-line quality, actuator/electrical traces, HDDs,
+seismic monitoring and voice/audio retrieval. It records priorities, data sources,
+baselines, acceptance criteria and missing capabilities. Start with one bounded
+evaluation; these ideas are not claims of implemented diagnostic features.
 
 ## What has been measured
 
