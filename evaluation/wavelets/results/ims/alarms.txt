@@ -1,0 +1,26 @@
+/Users/zin/sophia/morletdb-wavelets/evaluation/wavelets/w1.py:167: RuntimeWarning: divide by zero encountered in matmul
+  s = xc.T @ xc / n
+/Users/zin/sophia/morletdb-wavelets/evaluation/wavelets/w1.py:167: RuntimeWarning: overflow encountered in matmul
+  s = xc.T @ xc / n
+/Users/zin/sophia/morletdb-wavelets/evaluation/wavelets/w1.py:167: RuntimeWarning: invalid value encountered in matmul
+  s = xc.T @ xc / n
+/Users/zin/sophia/morletdb/.venv-compress/lib/python3.12/site-packages/numpy/linalg/_linalg.py:3383: RuntimeWarning: divide by zero encountered in matmul
+  return _core_matmul(x1, x2)
+/Users/zin/sophia/morletdb/.venv-compress/lib/python3.12/site-packages/numpy/linalg/_linalg.py:3383: RuntimeWarning: overflow encountered in matmul
+  return _core_matmul(x1, x2)
+/Users/zin/sophia/morletdb/.venv-compress/lib/python3.12/site-packages/numpy/linalg/_linalg.py:3383: RuntimeWarning: invalid value encountered in matmul
+  return _core_matmul(x1, x2)
+unit                                 W-WPK   W-MSK    B-SK   W-MDB   W-WPN   B-FFT     RMS    KURT     ENV
+ims-set1-b1-other                        -       -       -    0.98    0.98   0.00u   0.00u       -       -
+ims-set1-b2-other                        -       -       -    0.93    0.93   0.00u    0.21       -   0.00u
+ims-set1-b3-failing                   0.16    0.16    0.16    0.98    0.98    0.98    0.98    0.75    0.00
+ims-set1-b4-failing                  0.00u   0.00u   0.00u    0.94    0.96    0.94    0.31   0.00u    0.23
+ims-set2-b1-failing                   0.32    0.32    0.32    0.50    0.52    0.46    0.52    0.39    0.52
+ims-set2-b2-other                        -       -       -    0.17    0.15    0.10    0.18       -    0.01
+ims-set2-b3-other                        -       -       -    0.23   0.00u   0.00u    0.10       -       -
+ims-set2-b4-other                        -       -       -    0.11    0.11    0.08    0.38    0.08    0.32
+ims-set3-b1-other                        -       -       -    0.98    0.98    0.97    0.02   0.00u    0.02
+ims-set3-b2-other                        -       -       -    0.98    0.98    0.96    0.02       -    0.03
+ims-set3-b3-failing                      -       -       -    0.03    0.05    0.03    0.06   0.00u    0.04
+ims-set3-b4-other                        -       -       -   0.00u   0.00u   0.00u   0.00u       -   0.00u
+cells: stable lead (fraction of post-calibration life); 'u' = unstable alarm (lead 0); '-' = no alarm

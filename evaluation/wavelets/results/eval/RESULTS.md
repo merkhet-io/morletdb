@@ -68,6 +68,18 @@ Per-bearing cells: `alarms.txt`. Alarm minutes after calibration:
 - **Simple RMS** reached a mean stable lead of 0.101 with one unstable alarm. That
   is at least as good as every impulsiveness indicator here.
 
+## IMS harness check (development only; not evidence)
+
+IMS failing bearings were already consumed in compression stage 1, so this run only
+checks the harness on a second rig (`../ims/alarms.txt`).
+- **Impulsiveness family.** The kurtogram, Morlet and wavelet-packet versions give
+  identical stable leads on the failing bearings: set 1 bearing 3 at 0.16, set 2
+  bearing 1 at 0.32. None alarms on any non-failing bearing.
+- **Novelty family.** It raises early stable alarms on bearings that did *not*
+  fail: set 1 bearings 1–2 (0.93–0.98) and set 3 bearings 1–2 (0.96–0.98). This
+  confirms the drift concern behind amendment 2. A persistent novelty alarm on
+  these rigs often means "different from the first 120 snapshots", not "damaged".
+
 ## What this does and does not show
 
 - **Shows:** on this public run-to-failure set, with one shared, fixed alarm rule,
