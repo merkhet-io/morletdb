@@ -239,6 +239,23 @@ fn morlet_envelope_distance(query_envelope: Vec<Option<f64>>, stored: &[u8], max
         .unwrap_or_else(|_| pgrx::error!("envelope lengths differ or max_lag is too large"))
 }
 
+/// `simple-v1` values of one segment, in the order of morlet_simple_value_names().
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_simple_values(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f64> {
+    morlet_core::values::simple(&checked_samples(samples), sample_rate_hz)
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_simple_value_names() -> Vec<&'static str> {
+    morlet_core::values::VALUE_NAMES.to_vec()
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_simple_values_version() -> &'static str {
+    morlet_core::values::VALUES_VERSION
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_valid_encoded_chunk(encoded: &[u8], sample_count: i32) -> bool {
     let samples = morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e));
@@ -526,6 +543,81 @@ mod tests {
     #[pg_test(error = "envelope windows must be a power of two in 512..32768 samples")]
     fn envelope_rejects_other_window_lengths() {
         Spi::run("SELECT morlet_envelope(array_fill(0.::float8,ARRAY[1000]))").unwrap();
+    }
+
+    fn context_fixture() {
+        // One 30000-sample recording at 1 kHz: block N1 twice (amplitude 100 for part A,
+        // 150 for part B) and N2 between them; part A covers [0,15000), part B [15000,30000).
+        Spi::run("SELECT morlet_create_stream_collection('public','mill'); SELECT morlet_enable_context('mill'); SELECT morlet_start_recording('mill','r1',1000,'spindle','A','{}',512,256,'zscore','none'); SELECT morlet_append_chunk('mill','r1',k*10000,ARRAY(SELECT (CASE k WHEN 0 THEN 100 WHEN 1 THEN 50 ELSE 150 END)*sin(i/3.) FROM generate_series(0,9999) i)) FROM generate_series(0,2) k; SELECT morlet_add_context('mill','b1','[{\"recording_id\":\"r1\",\"key\":\"program\",\"value\":\"P1\",\"start_sample\":0,\"end_sample\":30000},{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N1\",\"start_sample\":0,\"end_sample\":10000},{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N2\",\"start_sample\":10000,\"end_sample\":20000},{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N1\",\"start_sample\":20000,\"end_sample\":30000},{\"recording_id\":\"r1\",\"key\":\"part\",\"value\":\"A\",\"start_sample\":0,\"end_sample\":15000},{\"recording_id\":\"r1\",\"key\":\"part\",\"value\":\"B\",\"start_sample\":15000,\"end_sample\":30000},{\"recording_id\":\"r1\",\"key\":\"tool_change\",\"value\":7,\"start_sample\":15000}]')").unwrap();
+    }
+
+    #[pg_test]
+    fn context_segments_values_and_compare_to_history() {
+        context_fixture();
+        // Identical retry is a no-op.
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_add_context('mill','b1',(SELECT jsonb_agg(jsonb_build_object('recording_id',recording_id,'key',key,'value',value,'start_sample',start_sample,'end_sample',end_sample) ORDER BY ctx_id DESC) FROM mill_ctx))").unwrap(), Some(0));
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_build_context_segments('mill','r1',ARRAY['program','block'],ARRAY['part'])").unwrap(), Some(3));
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_build_context_segments('mill','r1',ARRAY['program','block'],ARRAY['part'])").unwrap(), Some(0));
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(start_sample||'-'||end_sample||':'||(context->>'block')||':'||coalesce(occurrence->>'part','?'),',' ORDER BY start_sample) FROM mill_ctx_segments").unwrap().unwrap(), "0-10000:N1:A,10000-20000:N2:?,20000-30000:N1:B");
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_context_values('mill','r1')").unwrap(),
+            Some(3)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_context_values('mill','r1')").unwrap(),
+            Some(0)
+        );
+        // Part B's N1 against history = part A's N1 (same context, other occurrence): amplitude 150 vs 100.
+        let rel = Spi::get_one::<f64>("SELECT relative_deviation FROM morlet_compare_to_history('mill',(SELECT segment_id FROM mill_ctx_segments WHERE start_sample=20000),min_history=>1) WHERE value_name='std'").unwrap().unwrap();
+        assert!((rel - 0.5).abs() < 1e-3, "{rel}");
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(status,',') FROM morlet_compare_to_history('mill',(SELECT segment_id FROM mill_ctx_segments WHERE start_sample=20000)) WHERE value_name IN ('std','duration_s')").unwrap().unwrap(), "insufficient_history,insufficient_history");
+        assert_eq!(Spi::get_one::<i32>("SELECT hist_n FROM morlet_compare_to_history('mill',(SELECT segment_id FROM mill_ctx_segments WHERE start_sample=20000),min_history=>1) LIMIT 1").unwrap(), Some(1));
+        // Matching only on program widens history to N2 as well.
+        assert_eq!(Spi::get_one::<i32>("SELECT hist_n FROM morlet_compare_to_history('mill',(SELECT segment_id FROM mill_ctx_segments WHERE start_sample=20000),ARRAY['program'],min_history=>1) LIMIT 1").unwrap(), Some(2));
+        // A label excludes history.
+        Spi::run("SELECT morlet_add_label('mill','r1',0,10000,'air_cut','test')").unwrap();
+        assert_eq!(Spi::get_one::<i32>("SELECT hist_n FROM morlet_compare_to_history('mill',(SELECT segment_id FROM mill_ctx_segments WHERE start_sample=20000),exclude_labels=>ARRAY['air_cut'],min_history=>1) LIMIT 1").unwrap(), Some(0));
+        Spi::run("SELECT morlet_retract_label('mill',(SELECT label_id FROM mill_labels))").unwrap();
+        assert_eq!(Spi::get_one::<i32>("SELECT hist_n FROM morlet_compare_to_history('mill',(SELECT segment_id FROM mill_ctx_segments WHERE start_sample=20000),exclude_labels=>ARRAY['air_cut'],min_history=>1) LIMIT 1").unwrap(), Some(1));
+        // A revision makes dependent segments stale; a rebuild replaces them.
+        Spi::run("SELECT morlet_revise_context('mill',(SELECT ctx_id FROM mill_ctx WHERE key='block' AND value='\"N2\"'),'{\"end_sample\":19000}')").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM mill_ctx_segments WHERE stale").unwrap(),
+            Some(1)
+        );
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_build_context_segments('mill','r1',ARRAY['program','block'],ARRAY['part'])").unwrap(), Some(1));
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(start_sample||'-'||end_sample,',' ORDER BY start_sample) FROM mill_ctx_segments").unwrap().unwrap(), "0-10000,10000-19000,20000-30000");
+    }
+
+    #[pg_test(error = "context batch b1 already exists with different rows")]
+    fn context_batch_retry_must_be_identical() {
+        context_fixture();
+        Spi::run("SELECT morlet_add_context('mill','b1','[{\"recording_id\":\"r1\",\"key\":\"program\",\"value\":\"P2\",\"start_sample\":0,\"end_sample\":30000}]')").unwrap();
+    }
+
+    #[pg_test(
+        error = "overlapping context intervals for key block in recording r1 (ctx_id 3 and 8)"
+    )]
+    fn context_rejects_overlapping_intervals_of_one_key() {
+        context_fixture();
+        Spi::run("SELECT morlet_add_context('mill','b2','[{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N3\",\"start_sample\":15000,\"end_sample\":16000}]')").unwrap();
+    }
+
+    #[pg_test(error = "segment 2 is stale; rebuild context segments")]
+    fn compare_rejects_stale_segments() {
+        context_fixture();
+        Spi::run("SELECT morlet_build_context_segments('mill','r1',ARRAY['block']); SELECT morlet_build_context_values('mill','r1'); SELECT morlet_revise_context('mill',3,'{}',true); SELECT * FROM morlet_compare_to_history('mill',2)").unwrap();
+    }
+
+    #[pg_test(error = "history exceeds 1 segments; narrow match_keys or the metadata filter")]
+    fn compare_enforces_its_budget() {
+        context_fixture();
+        Spi::run("SELECT morlet_build_context_segments('mill','r1',ARRAY['program','block']); SELECT morlet_build_context_values('mill','r1'); SELECT * FROM morlet_compare_to_history('mill',3,ARRAY['program'],max_candidates=>1)").unwrap();
+    }
+
+    #[pg_test(error = "context is not enabled for this collection (morlet_enable_context)")]
+    fn context_requires_enabling() {
+        Spi::run("SELECT morlet_create_stream_collection('public','plain'); SELECT morlet_build_context_segments('plain','x',ARRAY['block'])").unwrap();
     }
 
     #[pg_test(error = "incompatible stream representation")]
