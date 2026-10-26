@@ -9,7 +9,8 @@
 #  2. ALTER EXTENSION ... UPDATE succeeds and existing data reads identically;
 #  3. legacy collections keep accepting appends, and the documented data
 #     transfer copies a recording into an encoded collection bitwise;
-#  4. the upgraded catalog equals a fresh 0.2.0 installation;
+#  4. the upgraded catalog (0.1.0 -> ... -> the control file's default version, through
+#     every chained update script) equals a fresh installation of that version;
 #  5. the update refuses 0.1.0 objects older than alpha.3.
 # It drops and recreates the databases morlet_upgrade_{old,fresh,guard}.
 set -euo pipefail
@@ -19,6 +20,7 @@ ROOT=$(cd "$EXT/../.." && pwd)
 PG_CONFIG=${PG_CONFIG:-$HOME/.pgrx/17.11/pgrx-install/bin/pg_config}
 BIN=$("$PG_CONFIG" --bindir)
 PORT=${PGPORT:-28817}
+NEW_VERSION=$(sed -n "s/^default_version = '\(.*\)'/\1/p" "$EXT/pg_morlet.control")
 WORK=$(mktemp -d)
 trap 'git -C "$ROOT" worktree remove --force "$WORK/old" >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
 psql() { "$BIN/psql" -h localhost -p "$PORT" -v ON_ERROR_STOP=1 -qAtX "$@"; }
@@ -83,11 +85,11 @@ snapshot morlet_upgrade_old > "$WORK/newlib.txt"
 diff "$WORK/before.txt" "$WORK/newlib.txt"
 echo "ok: old SQL with the new library reads identically"
 
-psql -d morlet_upgrade_old -c "ALTER EXTENSION pg_morlet UPDATE TO '0.2.0'"
-test "$(psql -d morlet_upgrade_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = 0.2.0
+psql -d morlet_upgrade_old -c "ALTER EXTENSION pg_morlet UPDATE"
+test "$(psql -d morlet_upgrade_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
 snapshot morlet_upgrade_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
-echo "ok: updated to 0.2.0, existing data reads identically"
+echo "ok: updated to $NEW_VERSION, existing data reads identically"
 
 psql -d morlet_upgrade_old <<'SQL'
 -- Legacy collections keep float8[] chunks and accept appends and identical replays.
@@ -149,7 +151,7 @@ psql -d morlet_upgrade_fresh -c "CREATE EXTENSION pg_morlet"
 catalog morlet_upgrade_old > "$WORK/upgraded.cat"
 catalog morlet_upgrade_fresh > "$WORK/fresh.cat"
 diff "$WORK/fresh.cat" "$WORK/upgraded.cat"
-echo "ok: upgraded catalog equals a fresh 0.2.0 install ($(wc -l < "$WORK/fresh.cat") objects)"
+echo "ok: upgraded catalog equals a fresh $NEW_VERSION install ($(wc -l < "$WORK/fresh.cat") objects)"
 
 psql -d morlet_upgrade_guard <<'SQL'
 CREATE EXTENSION pg_morlet VERSION '0.1.0';

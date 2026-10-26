@@ -21,12 +21,16 @@ from urllib.parse import parse_qs, urlparse
 import numpy as np
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 HERE = Path(__file__).resolve().parent
 READ_PIECE = 32768          # morlet_read_interval limit per call
 MAX_SPAN = 1 << 22          # samples per overview request (about 2.7 min at 25.6 kHz)
 MAX_BUCKETS = 4000
 ENVELOPE_WINDOWS = (512, 1024, 2048, 4096, 8192, 16384, 32768)
+PUBLIC = ("name", "context", "envelopes", "acquisitions")
+SCORE_VALUES = ["duration_s", "std", "crest", "kurtosis"]   # evaluated default (C2, C3)
+LEVEL_VALUES = ["p75"]                                      # level signals such as current (C1)
 
 
 def min_max_buckets(samples: np.ndarray, buckets: int):
@@ -68,6 +72,9 @@ class Database:
             SELECT format('%I.%I', n.nspname, c.relname) AS name,
                    to_regclass(format('%I.%I', n.nspname, c.relname || '_ctx')) IS NOT NULL AS context,
                    to_regclass(format('%I.%I', n.nspname, c.relname || '_envelopes')) IS NOT NULL AS envelopes,
+                   to_regclass(format('%I.%I', n.nspname, c.relname || '_acq_channels')) IS NOT NULL AS acquisitions,
+                   format('%I.%I', n.nspname, c.relname || '_acq') AS acq_rel,
+                   format('%I.%I', n.nspname, c.relname || '_acq_channels') AS channels_rel,
                    format('%I.%I', n.nspname, c.relname || '_ctx') AS ctx_rel,
                    format('%I.%I', n.nspname, c.relname || '_ctx_segments') AS segments_rel,
                    format('%I.%I', n.nspname, c.relname || '_labels') AS labels_rel
@@ -96,7 +103,7 @@ def api(db: Database, path: str, q: dict):
 
     with db.connect() as conn:
         if path == "/api/collections":
-            return {"collections": [{k: c[k] for k in ("name", "context", "envelopes")} for c in db.collections(conn)]}
+            return {"collections": [{k: c[k] for k in PUBLIC} for c in db.collections(conn)]}
         coll = db.collection(conn, arg("collection"))
         name = coll["name"]
         if path == "/api/recordings":
@@ -104,7 +111,7 @@ def api(db: Database, path: str, q: dict):
                 SELECT recording_id, sample_rate_hz, channel, unit, metadata,
                        (checkpoint->>'end')::bigint AS samples, checkpoint->>'extractor_version' AS extractor
                 FROM {name} ORDER BY recording_id LIMIT 5000""").fetchall()
-            return {"collection": {k: coll[k] for k in ("name", "context", "envelopes")}, "recordings": rows}
+            return {"collection": {k: coll[k] for k in PUBLIC}, "recordings": rows}
         if path == "/api/compare":
             if not coll["context"]:
                 raise ValueError("context is not enabled for this collection")
@@ -113,17 +120,44 @@ def api(db: Database, path: str, q: dict):
             if q.get("exclude_labelled", ["1"])[0] == "1":
                 labels = [r["label"] for r in conn.execute(
                     f"SELECT DISTINCT label FROM {coll['labels_rel']} WHERE NOT retracted").fetchall()]
-            summary = conn.execute("SELECT * FROM morlet_compare_summary(%s, %s, exclude_labels => %s)",
-                                   (name, seg, labels)).fetchone()
-            values = conn.execute("SELECT * FROM morlet_compare_to_history(%s, %s, exclude_labels => %s)",
-                                  (name, seg, labels)).fetchall()
-            return {"segment": seg, "summary": summary, "values": values}
+            before = q.get("before_only", ["0"])[0] == "1"
+            score_values = SCORE_VALUES + (LEVEL_VALUES if q.get("levels", ["0"])[0] == "1" else [])
+            summary = conn.execute("""SELECT * FROM morlet_compare_summary(%s, %s, exclude_labels => %s,
+                                      before_only => %s, score_values => %s)""",
+                                   (name, seg, labels, before, score_values)).fetchone()
+            values = conn.execute("SELECT * FROM morlet_compare_to_history(%s, %s, exclude_labels => %s, before_only => %s)",
+                                  (name, seg, labels, before)).fetchall()
+            channels = []
+            if coll["acquisitions"]:
+                s = conn.execute(f"""SELECT c.acquisition_id, s.context, s.occurrence FROM {coll['segments_rel']} s
+                                     JOIN {coll['channels_rel']} c ON c.recording_id = s.recording_id
+                                     WHERE s.segment_id = %s""", (seg,)).fetchone()
+                if s:
+                    channels = conn.execute("""SELECT * FROM morlet_compare_acquisition(%s, %s, %s, %s,
+                                                 exclude_labels => %s, before_only => %s, score_values => %s)""",
+                                            (name, s["acquisition_id"], Jsonb(s["context"]),
+                                             Jsonb(s["occurrence"]), labels, before,
+                                             score_values)).fetchall()
+            return {"segment": seg, "summary": summary, "values": values, "channels": channels,
+                    "score_values": score_values}
         rec = arg("recording")
         meta = conn.execute(f"""SELECT recording_id, sample_rate_hz, channel, unit, metadata,
                                        (checkpoint->>'end')::bigint AS samples FROM {name} WHERE recording_id = %s""",
                             (rec,)).fetchone()
         if meta is None:
             raise LookupError("unknown recording")
+        if path == "/api/acquisition":
+            if not coll["acquisitions"]:
+                return {"acquisition": None, "channels": []}
+            acq = conn.execute(f"""SELECT a.* FROM {coll['acq_rel']} a JOIN {coll['channels_rel']} c
+                                   ON c.acquisition_id = a.acquisition_id WHERE c.recording_id = %s""", (rec,)).fetchone()
+            if acq is None:
+                return {"acquisition": None, "channels": []}
+            channels = conn.execute(f"""SELECT c.role, c.recording_id, c.offset_ns, c.clock_source, c.offset_uncertainty_ns,
+                                               r.sample_rate_hz, r.channel, r.unit, (r.checkpoint->>'end')::bigint AS samples
+                                        FROM {coll['channels_rel']} c JOIN {name} r ON r.recording_id = c.recording_id
+                                        WHERE c.acquisition_id = %s ORDER BY c.role""", (acq["acquisition_id"],)).fetchall()
+            return {"acquisition": acq, "channels": channels}
         if path == "/api/overview":
             start, end = max(0, arg("start", int)), min(meta["samples"], arg("end", int))
             if end <= start:

@@ -91,10 +91,13 @@ tr.hit { cursor: pointer; } tr.hit:hover td { background: var(--wash); }
       <button id="similar" title="Find similar windows (materialized envelopes)" disabled>Find similar</button>
       <span id="range" class="info"></span>
     </div>
-    <div class="card"><canvas id="wave" height="220" aria-label="Waveform"></canvas></div>
+    <div class="card"><canvas id="wave" height="220" aria-label="Waveform"></canvas><div id="siblings"></div></div>
     <div class="card"><div id="legend" class="legend"></div><canvas id="lanes" height="60" aria-label="Context, segments and labels"></canvas></div>
     <div class="panels">
-      <div class="card"><h2>Compare segment with history</h2><label style="display:block;color:var(--ink-2);font-size:12px;margin:-4px 0 8px"><input type="checkbox" id="exl" checked style="padding:0;vertical-align:-2px"> exclude labelled segments from history</label><div id="compare"><span class="empty">Click a segment in the segments lane.</span></div></div>
+      <div class="card"><h2>Compare segment with history</h2><div style="display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--ink-2);font-size:12px;margin:-4px 0 8px">
+<label><input type="checkbox" id="exl" checked style="padding:0;vertical-align:-2px"> exclude labelled segments from history</label>
+<label title="Only segments that started earlier (needs acquisitions with a UTC origin)"><input type="checkbox" id="bef" style="padding:0;vertical-align:-2px"> history before this point only</label>
+<label title="Add the level (p75) to the score: for level signals such as motor current"><input type="checkbox" id="lvl" style="padding:0;vertical-align:-2px"> include level (p75) in score</label></div><div id="compare"><span class="empty">Click a segment in the segments lane.</span></div></div>
       <div class="card"><h2>Similar windows</h2><div id="similarOut"><span class="empty">Drag over the waveform to select at least 512 samples, then “Find similar”.</span></div></div>
     </div>
   </main>
@@ -105,9 +108,7 @@ tr.hit { cursor: pointer; } tr.hit:hover td { background: var(--wash); }
 const $ = (id) => document.getElementById(id);
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const SLOTS = ["--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
-const st = { coll: null, colls: [], recs: [], rec: null, view: [0, 0], data: null, ctx: null, sel: null, seg: null, drag: null, req: 0 };
-// Values the summary score uses (morlet_compare_summary); others are shown dimmed.
-const SCORED = new Set(["duration_s", "std", "crest", "kurtosis"]);
+const st = { coll: null, colls: [], recs: [], rec: null, view: [0, 0], data: null, ctx: null, sel: null, seg: null, drag: null, req: 0, acq: null, sib: [] };
 
 async function get(path, params) {
   const r = await fetch(path + "?" + new URLSearchParams(params));
@@ -139,11 +140,14 @@ function renderRecs() {
     `<div class="rec${st.rec && st.rec.recording_id === r.recording_id ? " on" : ""}" data-id="${esc(r.recording_id)}"><span>${esc(r.recording_id)}</span><small>${esc(r.channel)}</small></div>`).join("");
 }
 async function selectRecording(id, range) {
-  st.rec = st.recs.find((r) => r.recording_id === id); st.sel = null; st.seg = null; st.data = null; st.ctx = null; draw();
+  st.rec = st.recs.find((r) => r.recording_id === id); st.sel = null; st.seg = null; st.data = null; st.ctx = null; st.sib = []; draw();
+  st.acq = st.coll.acquisitions ? await get("/api/acquisition", { collection: st.coll.name, recording: id }) : { acquisition: null, channels: [] };
   renderRecs();
   const r = st.rec;
   $("meta").innerHTML = `<span><b>${esc(r.recording_id)}</b></span><span>${esc(r.channel)} · ${esc(r.unit)}</span><span>${fmt(r.sample_rate_hz, 1)} Hz</span>` +
-    `<span>${r.samples.toLocaleString()} samples (${fmtT(r.samples)})</span><span>metadata ${esc(JSON.stringify(r.metadata))}</span>`;
+    `<span>${r.samples.toLocaleString()} samples (${fmtT(r.samples)})</span><span>metadata ${esc(JSON.stringify(r.metadata))}</span>` +
+    (st.acq.acquisition ? `<span>acquisition <b>${esc(st.acq.acquisition.acquisition_id)}</b>${st.acq.acquisition.origin_utc ? " · " + esc(st.acq.acquisition.origin_utc) : ""} · ` +
+      st.acq.channels.map((c) => `${esc(c.role)} ${fmt(c.sample_rate_hz, 0)} Hz ${esc(c.clock_source)}${c.offset_ns ? ` +${(c.offset_ns / 1e6).toFixed(1)} ms` : ""}${c.offset_uncertainty_ns ? ` ±${(c.offset_uncertainty_ns / 1e6).toFixed(1)} ms` : ""}`).join(", ") + "</span>" : "");
   $("compare").innerHTML = '<span class="empty">Click a segment in the segments lane.</span>';
   st.view = range ? [Math.max(0, range[0]), Math.min(r.samples, range[1])] : [0, Math.min(r.samples, 1 << 20)];
   await refresh();
@@ -158,6 +162,8 @@ async function refresh() {
     const [data, ctx] = await Promise.all([get("/api/overview", { ...p, buckets: Math.round($("wave").clientWidth * devicePixelRatio) }), get("/api/context", p)]);
     if (req !== st.req) return;
     st.data = data; st.ctx = ctx;
+    st.sib = await siblings(a, b);
+    if (req !== st.req) return;
   } catch (e) { if (req === st.req) fail(e); }
   draw();
 }
@@ -171,7 +177,41 @@ const PAD_L = 56, PAD_R = 8;
 const xOf = (s, w) => PAD_L + (s - st.view[0]) / (st.view[1] - st.view[0]) * (w - PAD_L - PAD_R);
 const sOf = (x, w) => st.view[0] + (x - PAD_L) / (w - PAD_L - PAD_R) * (st.view[1] - st.view[0]);
 
-function draw() { drawWave(); drawLanes(); $("zsel").disabled = !st.sel; $("similar").disabled = !(st.sel && st.coll.envelopes && st.sel[1] - st.sel[0] >= 512); }
+function draw() { drawWave(); drawSiblings(); drawLanes(); $("zsel").disabled = !st.sel; $("similar").disabled = !(st.sel && st.coll.envelopes && st.sel[1] - st.sel[0] >= 512); }
+
+// Sibling channels of the acquisition, over the same acquisition-time window as the view.
+const me = () => st.acq && st.acq.channels.find((c) => c.recording_id === st.rec.recording_id);
+const tOf = (c, n) => c.offset_ns + n * 1e9 / c.sample_rate_hz;
+const nOf = (c, t) => Math.max(0, Math.ceil((t - c.offset_ns) * c.sample_rate_hz / 1e9));
+async function siblings(a, b) {
+  const m = me(); if (!m) return [];
+  const t0 = tOf(m, a), t1 = tOf(m, b), w = Math.round($("wave").clientWidth * devicePixelRatio);
+  return Promise.all(st.acq.channels.filter((c) => c !== m).map(async (c) => {
+    const s0 = Math.min(nOf(c, t0), c.samples), s1 = Math.min(nOf(c, t1), c.samples);
+    if (s1 <= s0) return { c, t0, t1, error: "no samples in this window" };
+    try { return { c, t0, t1, d: await get("/api/overview", { collection: st.coll.name, recording: c.recording_id, start: s0, end: s1, buckets: w }) }; }
+    catch (e) { return { c, t0, t1, error: e.message }; }
+  }));
+}
+function drawSiblings() {
+  const box = $("siblings");
+  if (!st.sib.length) { box.innerHTML = ""; return; }
+  if (box.children.length !== st.sib.length) box.innerHTML = st.sib.map(() => '<canvas height="90" style="margin-top:6px"></canvas>').join("");
+  st.sib.forEach((sb, k) => {
+    const [g, w, h] = setup(box.children[k], 90), top = 14, bot = h - 4;
+    g.clearRect(0, 0, w, h); g.font = "11px system-ui"; g.fillStyle = css("--ink-2");
+    g.fillText(`${sb.c.role} · ${sb.c.channel} (${sb.c.unit}) · ${fmt(sb.c.sample_rate_hz, 0)} Hz`, PAD_L, 10);
+    if (sb.error) { g.fillStyle = css("--muted"); g.fillText(sb.error, PAD_L, 40); return; }
+    const d = sb.d, lo = d.raw || d.min, hi = d.raw || d.max;
+    let mn = Math.min(...lo), mx = Math.max(...hi); if (mn === mx) { mn -= 1; mx += 1; }
+    const y = (v) => bot - (v - mn) / (mx - mn) * (bot - top), x = (n) => PAD_L + (tOf(sb.c, n) - sb.t0) / (sb.t1 - sb.t0) * (w - PAD_L - PAD_R);
+    g.fillStyle = css("--muted"); g.fillText(fmt(mx, 2), 4, top + 8); g.fillText(fmt(mn, 2), 4, bot);
+    g.strokeStyle = css("--series-1"); g.lineWidth = d.raw ? 1.5 : 1; g.beginPath();
+    if (d.raw) d.raw.forEach((v, i) => { const xx = x(d.start + i); i ? g.lineTo(xx, y(v)) : g.moveTo(xx, y(v)); });
+    else d.offsets.forEach((o, i) => { const xx = Math.round(x(o)) + 0.5; g.moveTo(xx, y(d.max[i])); g.lineTo(xx, Math.max(y(d.min[i]), y(d.max[i]) + 1)); });
+    g.stroke();
+  });
+}
 
 function drawWave() {
   const [g, w, h] = setup($("wave"), 220), d = st.data, top = 8, bot = h - 22;
@@ -301,7 +341,9 @@ function statusBadge(q, n) {
 async function compare(seg) {
   $("compare").innerHTML = '<span class="empty">Comparing…</span>';
   try {
-    const r = await get("/api/compare", { collection: st.coll.name, segment: seg.segment_id, exclude_labelled: $("exl").checked ? "1" : "0" });
+    const r = await get("/api/compare", { collection: st.coll.name, segment: seg.segment_id, exclude_labelled: $("exl").checked ? "1" : "0",
+      before_only: $("bef").checked ? "1" : "0", levels: $("lvl").checked ? "1" : "0" });
+    const SCORED = new Set(r.score_values);
     const s = r.summary;
     const maxDev = Math.max(0.05, ...r.values.map((v) => Math.abs(v.relative_deviation || 0)));
     $("compare").innerHTML =
@@ -310,6 +352,10 @@ async function compare(seg) {
       `<div class="tile"><div class="v">${fmt(s.duration_relative_deviation, 3)}</div><div class="l">duration deviation</div></div>` +
       `<div class="tile"><div class="v">${s.hist_n ?? "—"}</div><div class="l">history segments · ${esc(s.status)}</div></div></div>` +
       `<div class="l" style="color:var(--muted);margin-bottom:6px">segment ${seg.segment_id} · ${esc(JSON.stringify(seg.context))} · occurrence ${esc(JSON.stringify(s.query_occurrence))}</div>` +
+      (r.channels.length ? `<h2 style="margin-top:4px">All channels of the acquisition</h2><table style="margin-bottom:12px"><thead><tr><th>channel</th><th>score</th><th>top value</th><th>rank vs history</th><th>status</th></tr></thead><tbody>` +
+        r.channels.map((c) => `<tr${c.recording_id === st.rec.recording_id ? ' style="font-weight:600"' : ""}><td>${esc(c.role)}</td><td>${c.score == null ? "—" : (100 * c.score).toFixed(1) + "%"}</td><td>${esc(c.top_value || "—")}</td>` +
+          `<td>${c.score_quantile == null ? "—" : `${Math.round(c.score_quantile * c.hist_n)} of ${c.hist_n}`}</td><td>${statusBadge(c.score_quantile, c.hist_n || 0)}${c.status !== "ok" ? " · " + esc(c.status) : ""}</td></tr>`).join("") +
+        "</tbody></table>" : "") +
       `<table><thead><tr><th>value</th><th>this segment</th><th>history median</th><th>relative deviation</th><th></th><th>quantile</th><th>status</th></tr></thead><tbody>` +
       r.values.map((v) => { const d = v.relative_deviation, wpx = d == null ? 0 : Math.min(50, Math.abs(d) / maxDev * 50);
         const bar = d == null ? "" : `<div class="barbox"><div class="mid"></div><div class="b" style="background:${d >= 0 ? "var(--pos)" : "var(--neg)"};${d >= 0 ? "left:50%" : "right:50%"};width:${wpx}%"></div></div>`;

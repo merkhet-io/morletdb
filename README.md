@@ -81,8 +81,9 @@ check committed ingestion progress. See the [recording API](docs/recording-workf
 
 > [!IMPORTANT]
 > Rebuilding the image does not update an existing database or volume.
-> `ALTER EXTENSION pg_morlet UPDATE` from 0.1.0 (as released in 0.1.0-alpha.3) to
-> 0.2.0 is tested in CI; older alphas need a fresh install. See
+> `ALTER EXTENSION pg_morlet UPDATE` is tested in CI from SQL 0.1.0 (as released in
+> 0.1.0-alpha.3) and SQL 0.2.0 (0.2.0-alpha.1) to the current version; 0.1.0-alpha.1
+> needs a fresh install. See
 > [existing installations](extensions/pg_morlet/README.md#existing-installations)
 > and [upgrading](docs/durable-ingestion.md#upgrading).
 
@@ -184,9 +185,10 @@ spindle data**: vibration across three axes, correlated with temperature and
 current. In that work, a vibration episode was most useful when an engineer could
 see what the spindle was doing, compare the axes and relate the event to its
 operating context. The motivating question was **“Have we seen this pattern
-before, and under what conditions?”** Today MorletDB stores and retrieves
-single channels. Synchronized analysis across axes, temperature and current is
-a development direction, not a current capability.
+before, and under what conditions?”** MorletDB now groups channels measured
+together, such as vibration axes and spindle current, into acquisitions on one
+time axis. It compares a cut with the same cut on earlier parts, channel by
+channel. Evidence on real shop-floor data with NC-block context is still missing.
 
 Next evaluations, all **candidate workloads** rather than demonstrated results:
 
@@ -212,10 +214,11 @@ Next evaluations, all **candidate workloads** rather than demonstrated results:
 | PostgreSQL retrieval | Exact scan; default 4096 eligible segments; explicit experiments up to 1,000,000, with no capacity guarantee |
 | Consistency and access | Synchronous extraction; transactional publication; caller permissions and RLS |
 | Wave-index PoC | Offline temporal scoring and approximate postings; no persistence or SQL integration |
-| Lifecycle | Alpha. `ALTER EXTENSION pg_morlet UPDATE` from 0.1.0 to 0.2.0 is tested in CI from v0.1.0-alpha.3; no stable API/schema guarantee |
+| Lifecycle | Alpha. `ALTER EXTENSION pg_morlet UPDATE` to the current version is tested in CI from 0.1.0-alpha.3 (SQL 0.1.0) and 0.2.0-alpha.1 (SQL 0.2.0); no stable API/schema guarantee |
 
-No resampling, speed invariance, gap interpolation, background extraction worker
-or synchronized multichannel retrieval is implemented. Use the supported append
+No resampling, speed invariance, gap interpolation, background extraction worker,
+clock-drift model or cross-channel search is implemented. Multichannel acquisitions
+align channels by declared offsets; they do not estimate them. Use the supported append
 APIs; mutating managed tables directly can violate cross-table invariants.
 See [support boundaries](SUPPORT.md) and the [numerical contract](docs/morlet-extractor.md).
 

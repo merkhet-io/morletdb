@@ -145,12 +145,69 @@ moved.
 - **Input validation catches corrupt acquisitions.** Samples must be finite and
   within ±1e9. In the milling data this rejected one run whose values reached 1e34.
 
-## Not yet (phase 2 and later)
+## Acquisitions: several channels on one time axis (phase 2, SQL 0.3.0)
 
-- **Several channels on one time base, and nanosecond timestamps.** Context here
-  is in sample coordinates per recording, so the adapter converts controller
-  time with the recording's rate and start.
-- **"History before this point only".** Restrict history with
-  `metadata_filter` until acquisition time exists.
-- **Representations beyond `simple-v1`** (bands, tooth-passing frequency,
-  context-segment envelopes), nearest-neighbour segments, and a viewer.
+An acquisition groups channel recordings that were measured together: for example
+vibration from a DAQ and spindle current from a separate logger. Each keeps its
+native rate; nothing is resampled.
+
+```sql
+SELECT morlet_enable_acquisitions('spindle');                  -- spindle_acq, spindle_acq_channels
+SELECT morlet_create_acquisition('spindle', 'shift-0412', 'M7', '2026-04-12 06:00Z');
+SELECT morlet_add_acquisition_channel('spindle', 'shift-0412', 'shift-0412-vib', 'vib', 0, 'daq');
+SELECT morlet_add_acquisition_channel('spindle', 'shift-0412', 'shift-0412-cur', 'current',
+                                      2000000, 'wallclock', 1000000);   -- +2 ms, ±1 ms
+
+-- Context once, in acquisition time (ns); mapped to every channel's samples.
+SELECT morlet_add_acquisition_context('spindle', 'shift-0412', 'ctl-001', '[
+  {"key":"block","value":"N120","t_start_ns":5000000000,"t_end_ns":25000000000}, ...]');
+SELECT morlet_build_acquisition_segments('spindle', 'shift-0412',
+                                         ARRAY['program','block','tool'], ARRAY['part']);
+
+-- One occurrence on every channel, side by side; history only from earlier parts.
+SELECT * FROM morlet_compare_acquisition('spindle', 'shift-0412',
+  '{"program":"O1234","block":"N120","tool":7}', '{"part":"SN-0042"}',
+  before_only => true, score_values => ARRAY['duration_s','p75','std','crest','kurtosis']);
+
+-- One time interval from every channel.
+SELECT role, start_sample, cardinality(samples) FROM morlet_read_acquisition('spindle', 'shift-0412', t0, t1);
+```
+
+- **Time:** acquisition time is integer nanoseconds from the origin.
+  - A channel's sample *n* is at `offset_ns + n·1e9/rate`.
+  - `morlet_time_to_samples` maps `[t0, t1)` to `[ceil((t0−offset)·rate/1e9),
+    ceil((t1−offset)·rate/1e9))` in exact `numeric`; 25.6 kHz has a 39,062.5 ns
+    period.
+- **Clock uncertainty:** each channel declares its clock (`daq`, `wallclock`,
+  `controller`) and offset uncertainty.
+  - `morlet_build_acquisition_segments` trims `ceil(uncertainty·rate)` samples
+    from each end of every segment, so samples that may belong to the
+    neighbouring block are left out.
+  - In the synthetic demo, one such sample inflated a current segment's kurtosis
+    deviation to 1170%.
+- **History before this point:** with `before_only => true`, `morlet_compare_to_history`,
+  `morlet_compare_summary` and `morlet_compare_acquisition` use only history
+  segments that started earlier in absolute time (origin + offset + sample
+  time).
+  - The pooled spreads respect the same cutoff.
+  - Recordings without an acquisition and `origin_utc` are left out of such
+    history, and as a query they raise an error.
+- **Score values for level signals:** the default score set (duration, std,
+  crest, kurtosis) was evaluated on vibration, where the mean is near zero.
+  - For level signals such as motor current, the level *is* the signal; add `p75`
+    with `score_values`.
+  - In the demo, an air cut's current drop from 7 A to 3 A scored 0.025 without
+    `p75` and 0.57 with it.
+  - C1 found the p75 of DC spindle current informative.
+- **Retries:** `morlet_create_acquisition` and `morlet_add_acquisition_channel`
+  are idempotent; a conflicting retry is an error. Context batches per channel
+  are `<batch>@<acquisition>/<role>`.
+
+## Not yet
+
+- **Clock drift and sync points.** One fixed offset per channel.
+- **Cross-channel values,** for example coherence between current and vibration.
+- **Representations beyond `simple-v1`:** bands, tooth-passing frequency,
+  context-segment envelopes; nearest-neighbour segments.
+- **Score sets per channel type chosen automatically.** Today they are explicit,
+  through `score_values`.

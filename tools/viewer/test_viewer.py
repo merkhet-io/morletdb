@@ -38,15 +38,24 @@ class Api(unittest.TestCase):
         db = viewer.Database(os.environ["MORLET_VIEWER_TEST_DSN"])
         c = "public.demo_spindle"
         self.assertIn(c, [x["name"] for x in viewer.api(db, "/api/collections", {})["collections"]])
-        ov = viewer.api(db, "/api/overview", {"collection": [c], "recording": ["part-006"], "start": ["0"], "end": ["90000"],
+        ov = viewer.api(db, "/api/overview", {"collection": [c], "recording": ["part-006-vib"], "start": ["0"], "end": ["90000"],
                                               "buckets": ["500"]})
         self.assertEqual(len(ov["min"]), 500)
-        ctx = viewer.api(db, "/api/context", {"collection": [c], "recording": ["part-006"], "start": ["0"], "end": ["90000"]})
+        ctx = viewer.api(db, "/api/context", {"collection": [c], "recording": ["part-006-vib"], "start": ["0"], "end": ["90000"]})
         n30 = next(s for s in ctx["segments"] if s["context"]["block"] == "N30")
         cmp = viewer.api(db, "/api/compare", {"collection": [c], "segment": [str(n30["segment_id"])]})
         self.assertEqual(cmp["summary"]["top_value"], "std")
         self.assertGreater(cmp["summary"]["score"], 0.5)
-        sim = viewer.api(db, "/api/similar", {"collection": [c], "recording": ["part-007"], "start": ["30000"], "end": ["36000"]})
+        # Both channels of the acquisition; with the level, the current channel shows the air cut too.
+        both = viewer.api(db, "/api/compare", {"collection": [c], "segment": [str(n30["segment_id"])],
+                                               "levels": ["1"], "before_only": ["1"]})
+        roles = {ch["role"]: ch for ch in both["channels"]}
+        self.assertEqual(set(roles), {"vib", "current"})
+        self.assertGreater(roles["current"]["score"], 0.3)
+        acq = viewer.api(db, "/api/acquisition", {"collection": [c], "recording": ["part-006-vib"]})
+        self.assertEqual(acq["acquisition"]["acquisition_id"], "part-006")
+        self.assertEqual(len(acq["channels"]), 2)
+        sim = viewer.api(db, "/api/similar", {"collection": [c], "recording": ["part-007-vib"], "start": ["30000"], "end": ["36000"]})
         self.assertEqual(sim["window"][1] - sim["window"][0], 4096)
         with self.assertRaises(LookupError):
             viewer.api(db, "/api/recordings", {"collection": ["public.demo_spindle; DROP TABLE x"]})
