@@ -107,6 +107,11 @@ DATABASE_URL=postgresql://... python tools/viewer/viewer.py   # http://127.0.0.1
   - per-value deviations.
 - **Select a window** to find similar windows across recordings, using the
   materialized envelopes.
+- **Channels together:** sibling channels of an acquisition (for example
+  vibration and spindle current) are drawn on the same time axis and compared side
+  by side.
+- **Labels from the page:** with `--allow-labels`, label air cuts and other events
+  directly. These are the only writes, and they are token-guarded.
 
 The server binds to 127.0.0.1, every session is read-only, and the page loads
 nothing from the network. Details: [tools/viewer](tools/viewer/README.md). The

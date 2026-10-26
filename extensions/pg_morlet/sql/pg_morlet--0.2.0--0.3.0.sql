@@ -245,6 +245,56 @@ BEGIN
   RETURN n;
 END $$;
 
+-- Nearest past segments of the same context: the history of morlet_compare_summary
+-- (same filters, budget and before_only), ranked by the root mean square over
+-- score_values of (x_query - x_history) / |history median|, ties by recording and
+-- start. vals are the history segment's simple-v1 values, labels its overlapping active
+-- labels. top_k up to 1000, so a caller can also draw the whole history distribution.
+CREATE FUNCTION public.morlet_history_neighbors(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],top_k integer DEFAULT 10,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false,score_values text[] DEFAULT ARRAY['duration_s','std','crest','kurtosis'])
+RETURNS TABLE(neighbor_segment_id bigint,recording_id text,start_sample bigint,end_sample bigint,occurrence jsonb,
+  distance float8,vals float8[],labels jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; q record; qr record; match jsonb; history text; n bigint; cutoff numeric;
+  names text[]:=public.morlet_simple_value_names(); ords integer[];
+BEGIN
+  IF top_k NOT BETWEEN 1 AND 1000 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid top_k (1..1000), max_candidates or metadata filter';
+  END IF;
+  IF cardinality(score_values)=0 OR NOT score_values <@ names THEN
+    RAISE EXCEPTION 'score_values must be a non-empty subset of %',names;
+  END IF;
+  ords:=ARRAY(SELECT o::integer FROM unnest(names) WITH ORDINALITY AS t(nm,o) WHERE nm=ANY(score_values) ORDER BY o);
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
+  EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  RETURN QUERY EXECUTE format('WITH hist AS MATERIALIZED ('||history||'),
+      med AS (SELECT o,percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[o]) AS m FROM hist h, unnest($10) o GROUP BY o),
+      d AS (SELECT h.segment_id,sqrt(avg(((($9)[med.o]-h.vals[med.o])/abs(med.m))^2)) AS dist
+        FROM hist h CROSS JOIN med WHERE med.m<>0 GROUP BY h.segment_id)
+    SELECT h.segment_id,h.recording_id,h.start_sample,h.end_sample,h.occurrence,d.dist,h.vals,
+      coalesce((SELECT jsonb_agg(jsonb_build_object(''label_id'',l.label_id,''label'',l.label,''note'',l.note) ORDER BY l.label_id)
+        FROM %s l WHERE l.recording_id=h.recording_id AND NOT l.retracted
+          AND l.start_sample<h.end_sample AND h.start_sample<l.end_sample),''[]''::jsonb)
+    FROM hist h JOIN d ON d.segment_id=h.segment_id
+    ORDER BY d.dist,h.recording_id,h.start_sample LIMIT $11',rel.labels)
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      q.vals,ords,top_k;
+END $$;
+
 -- History selection shared by compare-to-history and its summary. Parameters: $1 query
 -- segment, $2 context match, $3 rate, $4 channel, $5 unit, $6 metadata filter, $7 query
 -- occurrence, $8 excluded labels. With population=true the context match and occurrence
@@ -266,7 +316,7 @@ BEGIN
           AND extract(epoch FROM a.origin_utc)*1000000000+ch.offset_ns
             +s.start_sample::numeric*1000000000/r.sample_rate_hz::numeric<%s)',acq.channels,acq.acq,cutoff_ns);
   END IF;
-  RETURN format('SELECT v.vals%5$s FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
+  RETURN format('SELECT v.vals,s.segment_id,s.recording_id,s.start_sample,s.end_sample,s.occurrence%5$s FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
         JOIN %3$s r ON r.recording_id=s.recording_id
       WHERE s.segment_id<>$1 AND NOT s.stale%6$s AND r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5
         AND r.metadata @> $6

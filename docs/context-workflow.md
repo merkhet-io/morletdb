@@ -203,11 +203,22 @@ SELECT role, start_sample, cardinality(samples) FROM morlet_read_acquisition('sp
   are idempotent; a conflicting retry is an error. Context batches per channel
   are `<batch>@<acquisition>/<role>`.
 
+## Nearest occurrences
+
+`morlet_history_neighbors(collection, segment_id, ...)` returns the history of a
+comparison, with the same filters, budget, `before_only` and `score_values`.
+- **Ranking:** by the root mean square over the score values of
+  `(x_query − x_history) / |history median|`, the same scale as the score.
+- **Output:** each neighbour comes with its occurrence, raw interval,
+  `simple-v1` values and overlapping labels.
+- **Size:** `top_k` goes up to 1000, so a caller can also draw the whole history
+  distribution, as the viewer does.
+
 ## Not yet
 
 - **Clock drift and sync points.** One fixed offset per channel.
 - **Cross-channel values,** for example coherence between current and vibration.
 - **Representations beyond `simple-v1`:** bands, tooth-passing frequency,
-  context-segment envelopes; nearest-neighbour segments.
+  context-segment envelopes.
 - **Score sets per channel type chosen automatically.** Today they are explicit,
   through `score_values`.

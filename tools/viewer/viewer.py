@@ -3,16 +3,22 @@
 
     DATABASE_URL=postgresql://... python tools/viewer/viewer.py [--port 8765]
 
-Binds to 127.0.0.1 only. Every database session is read-only (default_transaction_read_only)
-with a statement timeout; the viewer never writes. It uses the caller's role, so table
-permissions and row-level security apply unchanged. Collection names are only accepted if
-they are discovered stream collections; all values go through query parameters.
+Binds to 127.0.0.1 only and answers only requests addressed to 127.0.0.1/localhost on its port
+(DNS-rebinding guard). Reads use read-only sessions (default_transaction_read_only) with a
+statement timeout. With --allow-labels it also accepts two writes, adding and retracting
+labels, on a separate connection; each write needs this run's random token (only the served
+page has it, sent as a custom header), a JSON body and, if the browser sends one, this
+server's Origin. It uses the caller's role, so table permissions and row-level security apply
+unchanged. Collection names are only accepted if they are discovered stream collections; all
+values go through query parameters.
 """
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
 import os
+import secrets
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -138,8 +144,11 @@ def api(db: Database, path: str, q: dict):
                                             (name, s["acquisition_id"], Jsonb(s["context"]),
                                              Jsonb(s["occurrence"]), labels, before,
                                              score_values)).fetchall()
+            neighbors = conn.execute("""SELECT * FROM morlet_history_neighbors(%s, %s, exclude_labels => %s,
+                                          before_only => %s, score_values => %s, top_k => 1000)""",
+                                     (name, seg, labels, before, score_values)).fetchall()
             return {"segment": seg, "summary": summary, "values": values, "channels": channels,
-                    "score_values": score_values}
+                    "score_values": score_values, "neighbors": neighbors}
         rec = arg("recording")
         meta = conn.execute(f"""SELECT recording_id, sample_rate_hz, channel, unit, metadata,
                                        (checkpoint->>'end')::bigint AS samples FROM {name} WHERE recording_id = %s""",
@@ -211,8 +220,34 @@ def api(db: Database, path: str, q: dict):
     raise LookupError("unknown endpoint")
 
 
+def write_label(db: Database, path: str, body: dict):
+    """The only writes: morlet_add_label and morlet_retract_label, validated like reads."""
+    with db.connect() as rconn:
+        coll = db.collection(rconn, str(body.get("collection", "")))
+    if not coll["context"]:
+        raise ValueError("context is not enabled for this collection")
+    with psycopg.connect(db.dsn, row_factory=dict_row, options="-c statement_timeout=20s") as conn:
+        if path == "/api/label":
+            label = str(body.get("label", "")).strip()
+            if not label or len(label) > 100 or len(str(body.get("note", ""))) > 1000:
+                raise ValueError("label must have 1..100 characters and the note at most 1000")
+            row = conn.execute("SELECT morlet_add_label(%s, %s, %s, %s, %s, %s) AS label_id",
+                               (coll["name"], str(body["recording"]), int(body["start"]), int(body["end"]), label,
+                                str(body.get("note", "")))).fetchone()
+            return {"label_id": row["label_id"]}
+        if path == "/api/retract_label":
+            conn.execute("SELECT morlet_retract_label(%s, %s)", (coll["name"], int(body["label_id"])))
+            return {"retracted": int(body["label_id"])}
+    raise LookupError("unknown endpoint")
+
+
 class Handler(BaseHTTPRequestHandler):
     db: Database = None
+    port: int = 0
+    token: str = None   # set only with --allow-labels
+
+    def host_ok(self):
+        return self.headers.get("Host") in (f"127.0.0.1:{self.port}", f"localhost:{self.port}")
 
     def log_message(self, fmt, *args):  # quiet; errors are returned to the page
         pass
@@ -229,9 +264,13 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if not self.host_ok():
+            return self.send(421, b"misdirected request", "text/plain")
         url = urlparse(self.path)
         if url.path in ("/", "/index.html"):
-            return self.send(200, (HERE / "index.html").read_bytes(), "text/html; charset=utf-8")
+            page = (HERE / "index.html").read_text().replace('<meta name="morlet-write" content="">',
+                                                             f'<meta name="morlet-write" content="{self.token or ""}">')
+            return self.send(200, page.encode(), "text/html; charset=utf-8")
         if not url.path.startswith("/api/"):
             return self.send(404, b"not found", "text/plain")
         try:
@@ -243,19 +282,44 @@ class Handler(BaseHTTPRequestHandler):
             body, code = {"error": (e.diag.message_primary or str(e)).strip()}, 400
         self.send(code, json.dumps(body, default=str).encode(), "application/json")
 
+    def do_POST(self):
+        url = urlparse(self.path)
+        origin = self.headers.get("Origin")
+        allowed = (f"http://127.0.0.1:{self.port}", f"http://localhost:{self.port}")
+        if (not self.token or not self.host_ok() or (origin is not None and origin not in allowed)
+                or not hmac.compare_digest(self.headers.get("X-Morlet-Token", ""), self.token)
+                or not (self.headers.get("Content-Type") or "").startswith("application/json")):
+            return self.send(403, b'{"error": "writes are disabled or the request is not from this viewer"}',
+                             "application/json")
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > 10_000:
+                raise ValueError("request too large")
+            body, code = write_label(self.db, url.path, json.loads(self.rfile.read(n) or b"{}")), 200
+        except (LookupError, ValueError, KeyError, TypeError) as e:
+            body, code = {"error": str(e)}, 400
+        except psycopg.Error as e:
+            body, code = {"error": (e.diag.message_primary or str(e)).strip()}, 400
+        self.send(code, json.dumps(body, default=str).encode(), "application/json")
+
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--dsn", default=os.environ.get("DATABASE_URL"))
+    p.add_argument("--allow-labels", action="store_true",
+                   help="allow adding and retracting labels from the page (the only writes)")
     a = p.parse_args()
     if not a.dsn:
         sys.exit("set DATABASE_URL or pass --dsn")
     Handler.db = Database(a.dsn)
+    Handler.port = a.port
+    Handler.token = secrets.token_urlsafe(32) if a.allow_labels else None
     with Handler.db.connect() as conn:
         conn.execute("SELECT morlet_version()")
     server = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
-    print(f"MorletDB viewer on http://127.0.0.1:{a.port} (read-only)", flush=True)
+    mode = "labels can be added and retracted" if a.allow_labels else "read-only"
+    print(f"MorletDB viewer on http://127.0.0.1:{a.port} ({mode})", flush=True)
     server.serve_forever()
 
 
