@@ -38,6 +38,19 @@ Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
 
   `morlet_collection_storage` gains `envelope_table_bytes`.
 
+- Context model, phase 1 ([docs/context-workflow.md](docs/context-workflow.md)):
+  - `morlet_enable_context`;
+  - a context timeline (`morlet_add_context` with idempotent batches,
+    `morlet_revise_context` with stale tracking);
+  - `morlet_build_context_segments` (maximal intersections of context keys) and
+    `morlet_build_context_values` (`simple-v1`, from `morlet_simple_values`);
+  - `morlet_compare_to_history`, which returns relative deviation, robust z, a
+    quantile and an explicit status;
+  - labels (`morlet_add_label`, `morlet_retract_label`).
+
+  Evaluation C1 (NASA milling) supports the context-conditioned comparison: ρ 0.91
+  against 0.60 context-free.
+
 Docs: the README's measured results now list the frozen held-out tests (Paderborn,
 seismic timing, PTB-XL, storage, materialized envelopes). In these tests Morlet
 features did not beat simple baselines.

@@ -1,6 +1,11 @@
 # Design proposal: synchronized channels, context timeline and compare-to-history
 
-Status: **proposal**, not implemented. Nothing here changes the current SQL or
+Status: **phase 1 implemented** ([context workflow](context-workflow.md)), with three
+simplifications: sample coordinates per recording instead of acquisitions,
+no `before_only`, and no neighbour search. Evaluation C1 changed two things, see
+the workflow guide: relative deviation is the recommended score, because robust z
+fails with small histories, and tool age belongs in every report. The rest of this
+document is still a **proposal**. Nothing here changes the current SQL or
 Rust API. SQL in this document is illustrative: names, types and limits are
 subject to implementation review. Related documents: the
 [CNC spindle experiment spec](cnc-spindle-experiment.md),

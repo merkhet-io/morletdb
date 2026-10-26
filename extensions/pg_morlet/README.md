@@ -188,3 +188,7 @@ representation for search by envelope cross-correlation. Rust entry points:
 `morlet_envelope_distance` and `morlet_envelope_version`. See
 [materialized envelopes](../../docs/durable-ingestion.md#materialized-envelopes).
 
+The context model's phase 1 provides a context timeline, context segments,
+`simple-v1` values, compare-to-history and labels; see the
+[context workflow](../../docs/context-workflow.md).
+
