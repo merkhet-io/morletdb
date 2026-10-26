@@ -4,6 +4,9 @@ use crate::{morlet, normalize, validate};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
+/// Raw-only streams: offsets are tracked and checkpointed, no windows or features are computed.
+pub const NO_EXTRACTOR: &str = "none";
+
 #[derive(Debug, PartialEq, Serialize)]
 pub struct ChunkSegment {
     pub start_sample: u64,
@@ -63,8 +66,15 @@ impl ChunkExtractor {
         normalization: &str,
         extractor: &str,
     ) -> Result<Self, String> {
-        let version = morlet::extractor_version(extractor).map_err(|e| e.to_string())?;
-        if version != morlet::EXTRACTOR_VERSION {
+        let version = if extractor == NO_EXTRACTOR {
+            if !(rate > 0.0 && rate <= 200000.0) {
+                return Err("sample_rate_hz must be finite and in (0,200000]".into());
+            }
+            NO_EXTRACTOR
+        } else {
+            morlet::extractor_version(extractor).map_err(|e| e.to_string())?
+        };
+        if version != morlet::EXTRACTOR_VERSION && version != NO_EXTRACTOR {
             morlet::validate_rate(version, rate).map_err(|e| e.to_string())?;
         }
         if !rate.is_finite()
@@ -106,7 +116,8 @@ impl ChunkExtractor {
 
     pub fn from_checkpoint(checkpoint: Checkpoint) -> Result<Self, String> {
         if checkpoint.format_version != 1
-            || morlet::extractor_version(&checkpoint.extractor_version).is_err()
+            || (checkpoint.extractor_version != NO_EXTRACTOR
+                && morlet::extractor_version(&checkpoint.extractor_version).is_err())
         {
             return Err("unsupported checkpoint or extractor version".into());
         }
@@ -117,6 +128,18 @@ impl ChunkExtractor {
             &checkpoint.normalization,
             &checkpoint.extractor_version,
         )?;
+        if state.version == NO_EXTRACTOR {
+            if checkpoint.next_start != checkpoint.end
+                || checkpoint.buffer_start != checkpoint.end
+                || !checkpoint.buffer.is_empty()
+            {
+                return Err("invalid checkpoint offsets or tail length".into());
+            }
+            state.end = checkpoint.end;
+            state.next_start = checkpoint.end;
+            state.buffer_start = checkpoint.end;
+            return Ok(state);
+        }
         let count = if checkpoint.end < checkpoint.window as u64 {
             0
         } else {
@@ -169,6 +192,12 @@ impl ChunkExtractor {
             .end
             .checked_add(samples.len() as u64)
             .ok_or("sample offset overflow")?;
+        if self.version == NO_EXTRACTOR {
+            self.end = new_end;
+            self.next_start = new_end;
+            self.buffer_start = new_end;
+            return Ok(vec![]);
+        }
         let first_end = self
             .next_start
             .checked_add(self.window as u64)
@@ -326,6 +355,25 @@ mod tests {
         let mut relabeled = checkpoint;
         relabeled.extractor_version = morlet::EXTRACTOR_VERSION.into();
         assert!(ChunkExtractor::from_checkpoint(relabeled).is_err());
+    }
+    #[test]
+    fn raw_only_streams_track_offsets_without_features() {
+        let mut extractor =
+            ChunkExtractor::with_extractor(50., 512, 256, "zscore", NO_EXTRACTOR).unwrap();
+        for offset in (0..100000).step_by(10000) {
+            assert!(extractor.push(offset, &vec![1.; 10000]).unwrap().is_empty());
+            assert_eq!(extractor.retained_samples(), 0);
+        }
+        assert!(extractor.push(5, &[0.]).is_err());
+        let checkpoint = extractor.checkpoint();
+        assert_eq!(checkpoint.extractor_version, NO_EXTRACTOR);
+        let mut restored = ChunkExtractor::from_checkpoint(checkpoint.clone()).unwrap();
+        assert_eq!(restored.next_sample_offset(), 100000);
+        assert!(restored.push(100000, &[2.; 3]).unwrap().is_empty());
+        let mut tampered = checkpoint;
+        tampered.buffer = vec![0.];
+        assert!(ChunkExtractor::from_checkpoint(tampered).is_err());
+        assert!(ChunkExtractor::with_extractor(0., 512, 256, "zscore", NO_EXTRACTOR).is_err());
     }
     #[test]
     fn invalid_push_does_not_advance_state() {

@@ -176,3 +176,8 @@ new connections. See [durable ingestion](../../docs/durable-ingestion.md) for SQ
 permissions, progress semantics and limitations. Extraction is still synchronous;
 this path does not change the earlier collection APIs.
 
+Pass `extractor => 'none'` to `morlet_start_recording` or `morlet_ensure_recording`
+to store raw samples only. Such a recording accepts any sample rate up to
+200000 Hz, writes no segment rows and is skipped by feature search. Reads, storage
+accounting and replay work as usual. The default is still `morlet-energy-v1`.
+

@@ -51,8 +51,10 @@ class Config:
 
 
 # Disjoint sample-rate domains of the server's representation versions.
+# "none" stores raw samples only (no segments, not feature-searchable).
 RATE_DOMAINS = {"morlet-energy-v1": (128, 200000, True),
-                "morlet-energy-lowrate-v1": (1, 128, False)}
+                "morlet-energy-lowrate-v1": (1, 128, False),
+                "none": (0, 200000, True)}
 
 
 def sample_rate(value, extractor):
@@ -61,7 +63,7 @@ def sample_rate(value, extractor):
         rate = number(value, "sample_rate_hz", low, high)
     except ValueError:
         rate = None
-    if rate is None or (not inclusive and rate >= high):
+    if rate is None or (not inclusive and rate >= high) or rate <= 0:
         bound = "]" if inclusive else ")"
         raise ValueError(f"sample_rate_hz must be a finite number in [{low},{high}{bound} for {extractor}")
     return rate
@@ -292,7 +294,7 @@ def main():
     parser.add_argument("--stride", type=int, default=256)
     parser.add_argument("--normalization", choices=["none", "demean", "zscore"], default="zscore")
     parser.add_argument("--extractor", choices=sorted(RATE_DOMAINS), default="morlet-energy-v1",
-                        help="representation version; low-rate recordings (<128 Hz) need morlet-energy-lowrate-v1")
+                        help="representation version; low-rate recordings (<128 Hz) need morlet-energy-lowrate-v1; none stores raw samples only")
     parser.add_argument("--sample-quantum", type=float, default=1.0,
                         help="sample grid for lossless integer chunk storage, e.g. 0.001 for 3-decimal values")
     parser.add_argument("--validate-only", action="store_true")
