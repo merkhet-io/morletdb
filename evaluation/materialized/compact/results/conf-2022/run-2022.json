@@ -1,0 +1,128 @@
+{
+ "year": 2022,
+ "queries": 1557,
+ "events": 284,
+ "load_average_before_after_timed_pass": [
+  [
+   5.818359375,
+   7.73876953125,
+   9.1328125
+  ],
+  [
+   4.64111328125,
+   6.12255859375,
+   7.63330078125
+  ]
+ ],
+ "methods": {
+  "E": {
+   "latency_ms": {
+    "p50": 941.164042102173,
+    "p95": 1324.1389164468271,
+    "p99": 1485.787723530084
+   },
+   "bytes_fetched_mean": 5716048.2363519585,
+   "samples_decoded_mean": 714506.0295439948,
+   "rows_read_mean": 174.43994861913936,
+   "recall10_vs_E": 1.0,
+   "identical_set": 1.0,
+   "identical_order": 1.0,
+   "median_abs_dkm_mean_over_events": 11.294585776668981
+  },
+  "f4": {
+   "latency_ms": {
+    "p50": 11.76116697024554,
+    "p95": 14.298024424351746,
+    "p99": 17.286217985674746
+   },
+   "bytes_fetched_mean": 317209.51573538856,
+   "samples_decoded_mean": 4096.0,
+   "rows_read_mean": 174.43994861913936,
+   "recall10_vs_E": 1.0,
+   "identical_set": 1.0,
+   "identical_order": 1.0,
+   "median_abs_dkm_mean_over_events": 11.294585776668981,
+   "relevance_vs_E": {
+    "m_minus_e_km": -0.0,
+    "ci95": [
+     -0.0,
+     -0.0
+    ],
+    "events": 284
+   }
+  },
+  "f16": {
+   "latency_ms": {
+    "p50": 12.871584040112793,
+    "p95": 15.915399813093224,
+    "p99": 21.13988150842489
+   },
+   "bytes_fetched_mean": 174988.75786769428,
+   "samples_decoded_mean": 4096.0,
+   "rows_read_mean": 174.43994861913936,
+   "recall10_vs_E": 0.9998715478484265,
+   "identical_set": 0.9987154784842646,
+   "identical_order": 0.9871547848426461,
+   "median_abs_dkm_mean_over_events": 11.29508744499134,
+   "relevance_vs_E": {
+    "m_minus_e_km": 0.0005016683223602766,
+    "ci95": [
+     -0.002218980129256426,
+     0.003723985096337256
+    ],
+    "events": 284
+   }
+  },
+  "u8": {
+   "latency_ms": {
+    "p50": 12.950791977345943,
+    "p95": 16.634958283975717,
+    "p99": 20.835954933427278
+   },
+   "bytes_fetched_mean": 105265.89852280026,
+   "samples_decoded_mean": 4096.0,
+   "rows_read_mean": 174.43994861913936,
+   "recall10_vs_E": 0.9976236351958897,
+   "identical_set": 0.9762363519588954,
+   "identical_order": 0.844572896596018,
+   "median_abs_dkm_mean_over_events": 11.306746153171767,
+   "relevance_vs_E": {
+    "m_minus_e_km": 0.01216037650278586,
+    "ci95": [
+     -0.0061230071922276546,
+     0.03663275905302555
+    ],
+    "events": 284
+   }
+  },
+  "u8-d20": {
+   "latency_ms": {
+    "p50": 12.105582980439067,
+    "p95": 15.634749922901392,
+    "p99": 19.863342973403643
+   },
+   "bytes_fetched_mean": 69710.70905587668,
+   "samples_decoded_mean": 4096.0,
+   "rows_read_mean": 174.43994861913936,
+   "recall10_vs_E": 0.9522800256904304,
+   "identical_set": 0.5690430314707772,
+   "identical_order": 0.0674373795761079,
+   "median_abs_dkm_mean_over_events": 11.273111010059534,
+   "relevance_vs_E": {
+    "m_minus_e_km": -0.021474766609446038,
+    "ci95": [
+     -0.09618471260762139,
+     0.05600018411005583
+    ],
+    "events": 284
+   }
+  }
+ },
+ "provenance": {
+  "commit": "bfdf6fe4cfe0f8836e0e04e40798d6696bbce286",
+  "dirty": false,
+  "machine": "arm64",
+  "os": "macOS-27.0.1-arm64-arm-64bit",
+  "cpu": "Apple M5 Max"
+ }
+}

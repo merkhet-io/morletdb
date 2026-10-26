@@ -1,0 +1,54 @@
+{
+ "year": 2023,
+ "provenance": {
+  "commit": "60413d6c2dfab683f5c506a71410f25426606a4a",
+  "dirty": false,
+  "machine": "arm64",
+  "os": "macOS-27.0.1-arm64-arm-64bit",
+  "cpu": "Apple M5 Max"
+ },
+ "reps": {
+  "f4": {
+   "table_bytes": 2990080,
+   "fraction_of_raw_chunks": 0.2771450265755505,
+   "payload_bytes_per_window": 1640.0,
+   "generation_ms_per_window": {
+    "envelope_cpu_s": 0.6022831145443301,
+    "encode_cpu_s": 0.004107123573679116,
+    "insert_s": 0.5658292951443288
+   }
+  },
+  "f16": {
+   "table_bytes": 1376256,
+   "fraction_of_raw_chunks": 0.1275626423690205,
+   "payload_bytes_per_window": 820.0,
+   "generation_ms_per_window": {
+    "envelope_cpu_s": 0.259717768855704,
+    "encode_cpu_s": 0.003664989798195971,
+    "insert_s": 0.439875182792576
+   }
+  },
+  "u8": {
+   "table_bytes": 778240,
+   "fraction_of_raw_chunks": 0.0721336370539104,
+   "payload_bytes_per_window": 418.0,
+   "generation_ms_per_window": {
+    "envelope_cpu_s": 0.24591330030204048,
+    "encode_cpu_s": 0.020831271179510783,
+    "insert_s": 0.41249993836252785
+   }
+  },
+  "u8-d20": {
+   "table_bytes": 466944,
+   "fraction_of_raw_chunks": 0.04328018223234624,
+   "payload_bytes_per_window": 213.0,
+   "generation_ms_per_window": {
+    "envelope_cpu_s": 0.2395170507623016,
+    "encode_cpu_s": 0.014406955578171312,
+    "insert_s": 0.394550964311398
+   }
+  }
+ },
+ "raw_chunk_table_bytes": 10788864,
+ "windows": 1413
+}
