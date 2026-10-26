@@ -21,7 +21,7 @@ context. Built with Rust, PostgreSQL 17 and Python. A
 > production-scale performance remain to be established. A similar feature
 > vector is a lead for investigation, not a diagnosis or a confidence score.
 
-[Quickstart](#quickstart) · [On real data](#on-real-data-seismic-replay) · [What has been measured](#what-has-been-measured) · [SQL guide](extensions/pg_morlet/README.md) · [Visual notebook](examples/notebooks/README.md) · [Architecture](docs/architecture.md) · [Demo ideas](docs/demo-catalog.md)
+[Quickstart](#quickstart) · [Viewer](#see-it-the-viewer) · [On real data](#on-real-data-seismic-replay) · [What has been measured](#what-has-been-measured) · [SQL guide](extensions/pg_morlet/README.md) · [Visual notebook](examples/notebooks/README.md) · [Architecture](docs/architecture.md) · [Demo ideas](docs/demo-catalog.md)
 
 ## How it works
 
@@ -80,9 +80,36 @@ Use `morlet_search_interval` to query an interval already stored in a recording,
 check committed ingestion progress. See the [recording API](docs/recording-workflow.md).
 
 > [!IMPORTANT]
-> Alpha releases ship **no extension upgrade scripts**. Install into a fresh
-> database; rebuilding the image does not update an existing database or volume.
-> See [existing installations](extensions/pg_morlet/README.md#existing-installations).
+> Rebuilding the image does not update an existing database or volume.
+> `ALTER EXTENSION pg_morlet UPDATE` from 0.1.0 (as released in 0.1.0-alpha.3) to
+> 0.2.0 is tested in CI; older alphas need a fresh install. See
+> [existing installations](extensions/pg_morlet/README.md#existing-installations)
+> and [upgrading](docs/durable-ingestion.md#upgrading).
+
+## See it: the viewer
+
+![MorletDB viewer on the synthetic demo: part 6's waveform with block, part, program and tool context lanes, segments and an air-cut label; the selected N30 segment is compared with the same block on other parts and deviates by 77.6% in vibration level (std).](assets/screenshots/viewer-demo.jpg)
+
+A local, read-only web page for recordings, their context and comparisons:
+
+```sh
+python -m pip install -r tools/viewer/requirements.txt
+DATABASE_URL=postgresql://... python tools/viewer/demo.py     # optional: synthetic demo collection
+DATABASE_URL=postgresql://... python tools/viewer/viewer.py   # http://127.0.0.1:8765
+```
+
+- **Waveform** with zoom, plus lanes for context (program, block, tool, part),
+  segments, events and labels.
+- **Click a segment** to compare it with the same context on other parts:
+  - the evaluated score and which value moved;
+  - its rank against history;
+  - per-value deviations.
+- **Select a window** to find similar windows across recordings, using the
+  materialized envelopes.
+
+The server binds to 127.0.0.1, every session is read-only, and the page loads
+nothing from the network. Details: [tools/viewer](tools/viewer/README.md). The
+screenshot uses the synthetic demo, so it is an illustration, not evidence.
 
 ## On real data: seismic replay
 
@@ -199,6 +226,7 @@ See [support boundaries](SUPPORT.md) and the [numerical contract](docs/morlet-ex
 | [crates/morlet-core](crates/morlet-core) | Portable Rust extraction, localized cells, chunk boundaries and checkpoints |
 | [extensions/pg_morlet](extensions/pg_morlet) | PostgreSQL storage, ingestion, interval reads and exact search |
 | [tools/ingest](tools/ingest) · [tools/client](tools/client) | Parquet import and thin Python recording client |
+| [tools/viewer](tools/viewer) | Local, read-only web viewer: waveform, context lanes, compare-to-history, similar windows |
 | [examples/seismic](examples/seismic) | Reference application: seismic replay investigation on public data |
 | [examples/notebooks](examples/notebooks) | Visual waveform and match inspection |
 | [evaluation](evaluation) · [benchmarks](benchmarks) | Relevance, candidate recall and workload experiments |

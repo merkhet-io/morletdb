@@ -45,6 +45,9 @@ SELECT * FROM morlet_compare_summary('spindle', :segment_id, exclude_labels => A
 SELECT morlet_add_label('spindle', 'shift-0412', 25600, 128000, 'air_cut', 'tool above stock');
 ```
 
+To look at recordings, context lanes and comparisons interactively, use the local,
+read-only [viewer](../tools/viewer/README.md).
+
 ## Semantics
 
 - **Context rows:**

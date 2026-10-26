@@ -89,6 +89,11 @@ jobs:
       - name: Test Parquet input contracts
         if: github.event_name == 'pull_request'
         run: python -m unittest discover -s tools/ingest -p 'test_*.py'
+      - name: Test viewer helpers
+        if: github.event_name == 'pull_request'
+        run: |
+          python -m pip install -r tools/viewer/requirements.txt
+          python -m unittest discover -s tools/viewer -p 'test_*.py'
       - name: Cache optimized benchmark build
         if: github.event_name == 'pull_request'
         uses: actions/cache@v4
