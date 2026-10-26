@@ -1,0 +1,8 @@
+{
+ "k": 8,
+ "gallery": 17084,
+ "queries": 21388,
+ "exhaustive_retrieval_s": 3.635320374974981,
+ "retriever": "cosine log|FFT| 0.5-40 Hz, zscored",
+ "same_patient_neighbours": 0
+}

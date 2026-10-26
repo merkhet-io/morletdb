@@ -1,0 +1,46 @@
+{
+ "encoders": [
+  {
+   "part": 0,
+   "train_records": 12807,
+   "best_val_macro_auroc": 0.843545267265932,
+   "epochs_run": 20,
+   "train_s": 33.051109207910486
+  },
+  {
+   "part": 1,
+   "train_records": 12804,
+   "best_val_macro_auroc": 0.8415563294806411,
+   "epochs_run": 20,
+   "train_s": 30.069590499973856
+  },
+  {
+   "part": 2,
+   "train_records": 12820,
+   "best_val_macro_auroc": 0.8364718289658258,
+   "epochs_run": 11,
+   "train_s": 17.263671208987944
+  },
+  {
+   "part": 3,
+   "train_records": 12821,
+   "best_val_macro_auroc": 0.8426846235191139,
+   "epochs_run": 20,
+   "train_s": 29.653262917068787
+  }
+ ],
+ "smoke": false,
+ "oof_train_macro_auroc": 0.8496386304434871,
+ "assigned_val_macro_auroc": 0.840347666078874,
+ "provenance": {
+  "commit": "73d852e895b58205e97aacda455adaed2ed5795c",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.2.6",
+  "scipy": "1.16.3",
+  "torch": "2.9.0",
+  "spec_id": "f736c1cb28f46b9bce36017a71a816d2e18329e17939d1fb438055a6671da169"
+ }
+}

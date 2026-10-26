@@ -1,0 +1,74 @@
+{"records": 21388, "patients": 18617, "excluded": {"no_superclass": 411, "bad_signal": 0}, "per_fold": {"1": 2139, "2": 2138, "3": 2150, "4": 2130, "5": 2135, "6": 2129, "7": 2134, "8": 2129, "9": 2146, "10": 2158}, "label_prevalence": {"NORM": 0.4448, "MI": 0.2557, "STTC": 0.2448, "CD": 0.229, "HYP": 0.1239}}
+/Users/zin/sophia/morletdb/research/multiscale_memory/experiments/ptbxl_h2.py:152: RuntimeWarning: divide by zero encountered in matmul
+  sims = feats[q] @ g.T
+/Users/zin/sophia/morletdb/research/multiscale_memory/experiments/ptbxl_h2.py:152: RuntimeWarning: overflow encountered in matmul
+  sims = feats[q] @ g.T
+/Users/zin/sophia/morletdb/research/multiscale_memory/experiments/ptbxl_h2.py:152: RuntimeWarning: invalid value encountered in matmul
+  sims = feats[q] @ g.T
+{"k": 8, "gallery": 17084, "queries": 21388, "exhaustive_retrieval_s": 3.7745217089541256, "retriever": "cosine log|FFT| 0.5-40 Hz, zscored", "same_patient_neighbours": 0}
+/Users/zin/sophia/morletdb/research/multiscale_memory/msmem/dwt.py:54: RuntimeWarning: divide by zero encountered in matmul
+  return window @ lo, window @ hi
+/Users/zin/sophia/morletdb/research/multiscale_memory/msmem/dwt.py:54: RuntimeWarning: overflow encountered in matmul
+  return window @ lo, window @ hi
+/Users/zin/sophia/morletdb/research/multiscale_memory/msmem/dwt.py:54: RuntimeWarning: invalid value encountered in matmul
+  return window @ lo, window @ hi
+{
+ "spec": "f736c1cb28f46b9bce36017a71a816d2e18329e17939d1fb438055a6671da169",
+ "representation_build_s": 2.579270291957073,
+ "gallery": 17084,
+ "stored_blob_bytes_per_window": 8893,
+ "raw_float64_bytes_per_window": 8000,
+ "delivered_cost_per_neighbour": {
+  "raw": {
+   "scalars": 1000,
+   "bytes": 8000
+  },
+  "R32": {
+   "scalars": 32,
+   "bytes": 256
+  },
+  "W32": {
+   "scalars": 32,
+   "bytes": 256
+  },
+  "C32": {
+   "scalars": 32,
+   "bytes": 320
+  },
+  "R64": {
+   "scalars": 64,
+   "bytes": 512
+  },
+  "W64": {
+   "scalars": 64,
+   "bytes": 512
+  },
+  "C64": {
+   "scalars": 64,
+   "bytes": 640
+  },
+  "R128": {
+   "scalars": 128,
+   "bytes": 1024
+  },
+  "W128": {
+   "scalars": 128,
+   "bytes": 1024
+  },
+  "C128": {
+   "scalars": 128,
+   "bytes": 1280
+  }
+ },
+ "mean_relative_reconstruction_error": {
+  "R32": 0.7959705797618135,
+  "W32": 0.7977846934599917,
+  "C32": 0.5291045226341883,
+  "R64": 0.6734396123411406,
+  "W64": 0.6783800848906443,
+  "C64": 0.31890663944450764,
+  "R128": 0.47663313189223205,
+  "W128": 0.48417859678830805,
+  "C128": 0.11292108160093386
+ }
+}

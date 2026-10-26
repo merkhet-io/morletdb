@@ -1,0 +1,20 @@
+{
+ "k": 8,
+ "gallery": 17084,
+ "queries": 21388,
+ "exhaustive_retrieval_s": 4.303922249935567,
+ "retriever": "cosine on cross-fit A0-encoder embeddings (64-d), exact",
+ "same_patient_neighbours": 0,
+ "kNN_label_val_macro_auroc": 0.8039731485233828,
+ "provenance": {
+  "commit": "73d852e895b58205e97aacda455adaed2ed5795c",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "numpy": "2.2.6",
+  "scipy": "1.16.3",
+  "torch": "2.9.0",
+  "spec_id": "f736c1cb28f46b9bce36017a71a816d2e18329e17939d1fb438055a6671da169"
+ }
+}

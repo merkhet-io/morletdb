@@ -1,0 +1,52 @@
+{
+ "note": "validation fold 9 only; test fold 10 not evaluated",
+ "arms": {
+  "A0": {
+   "seeds": 3,
+   "val_macro_auroc_mean": 0.8415073626372745,
+   "val_macro_auroc_seeds": [
+    0.8428999601534715,
+    0.8434694183654363,
+    0.8381527093929162
+   ]
+  },
+  "P": {
+   "seeds": 3,
+   "val_macro_auroc_mean": 0.8441951621211561,
+   "val_macro_auroc_seeds": [
+    0.8472676994051227,
+    0.843326078644305,
+    0.8419917083140407
+   ]
+  },
+  "L1": {
+   "seeds": 3,
+   "val_macro_auroc_mean": 0.8458582783790417,
+   "val_macro_auroc_seeds": [
+    0.8467594055284188,
+    0.844519123427275,
+    0.8462963061814314
+   ]
+  },
+  "L3": {
+   "seeds": 3,
+   "val_macro_auroc_mean": 0.8439516065036501,
+   "val_macro_auroc_seeds": [
+    0.8441349734507003,
+    0.8432762362490335,
+    0.8444436098112165
+   ]
+  },
+  "L3n": {
+   "seeds": 3,
+   "val_macro_auroc_mean": 0.8422534664488612,
+   "val_macro_auroc_seeds": [
+    0.845405727834257,
+    0.8417008138029555,
+    0.8396538577093713
+   ]
+  }
+ },
+ "gate_L3n_minus_A0": 0.0007461038115866847,
+ "phase2": true
+}
