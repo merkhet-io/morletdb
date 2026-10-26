@@ -34,7 +34,8 @@ PRE_P_S = 5.0
 MARGIN_S = 30.0
 MAX_HYPO_KM = 250.0
 CENTER = (-20.8, -69.5)
-STATIONS = ("PB01", "PB02", "PB03", "PB07", "PB08", "PB09", "PB20", "HMBCX", "PATCX", "PSGCX", "MNMCX")
+# CX HHZ stations with GEOFON availability in both 2023 and 2024 (fdsnws/availability, 2026-10-26).
+STATIONS = ("PB01", "PB02", "PB03", "PB06", "PB08", "PB09", "PB15", "PB16", "PSGCX", "MNMCX")
 NOISE_PER_PERIOD = 300
 CLIP = 8_000_000
 EXCLUDE_HOURS, EXCLUDE_KM = 24.0, 30.0

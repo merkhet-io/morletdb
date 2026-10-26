@@ -26,7 +26,11 @@ This measures three separate claims:
   - Open access; cite doi:10.14470/PK615318.
   - Raw counts. No instrument response is removed, so the primary comparisons are within
     a station.
-  - Stations (11): PB01, PB02, PB03, PB07, PB08, PB09, PB20, HMBCX, PATCX, PSGCX, MNMCX.
+  - Stations (10): PB01, PB02, PB03, PB06, PB08, PB09, PB15, PB16, PSGCX, MNMCX. These
+    are the CX HHZ stations within reach of the region that GEOFON's availability service
+    lists for **both** 2023 and 2024. PB07, HMBCX and PATCX have no data in either year,
+    and PB20 ends in November 2023. The set was chosen from availability alone, before
+    any evaluation.
 - **Catalogue:** USGS ANSS ComCat (public domain), M ≥ 2.5, within 300 km of
   (−20.8, −69.5). A station window is kept if the hypocentral distance (catalogue
   location, epicentral distance plus depth) is ≤ 250 km, so the S wave falls inside the
@@ -53,7 +57,7 @@ This measures three separate claims:
 - **Primary gallery:** same station, other events, same period.
 - **Excluded from the gallery:** any event within 24 h **and** 30 km of the query event,
   so that aftershocks and repeating sequences do not trivially match.
-- **Secondary gallery:** any of the 11 stations, other events, the same exclusion.
+- **Secondary gallery:** any of the 10 stations, other events, the same exclusion.
 
 ## Methods (identical windows, z-score per window, no fitted parameters in the frozen configuration)
 
