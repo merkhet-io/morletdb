@@ -154,7 +154,27 @@ The thresholds are researcher-chosen and provisional until the freeze.
 
 ## Development run
 
-(filled in after development)
+The FEMTO learning set (6 bearings, horizontal channel): `results/dev/alarms.json`
+and `alarms.txt`. Mean stable lead:
+
+| Family | Baseline | Candidates | Selected |
+|---|---|---|---|
+| Impulsiveness | B-SK 0.164 | W-MSK 0.024, W-WPK 0.022 | **W-MSK** |
+| Novelty | B-FFT 0.570 | W-MDB 0.787, W-WPN 0.760 | **W-MDB** |
+
+**Validity concern, found in development and recorded before evaluation.**
+- The novelty-family alarms fire 3–62 minutes after calibration, for every
+  indicator, on bearings whose post-calibration life is 1.4–7.8 h.
+- They most likely respond to run-in or thermal drift, not to damage onset.
+- The stable-alarm proxy does not catch persistent drift.
+- A novelty-family difference may therefore measure sensitivity to drift rather
+  than earlier fault detection.
+
+The frozen rule is not changed. The evaluation result for the novelty family
+will carry this caveat. The alarm time in minutes after calibration is reported
+alongside the stable lead for every indicator.
+
+The IMS harness check runs separately and does not affect the selection.
 
 ## Changes after freeze
 

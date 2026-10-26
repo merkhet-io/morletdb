@@ -1,0 +1,20 @@
+/Users/zin/sophia/morletdb-wavelets/evaluation/wavelets/w1.py:167: RuntimeWarning: divide by zero encountered in matmul
+  s = xc.T @ xc / n
+/Users/zin/sophia/morletdb-wavelets/evaluation/wavelets/w1.py:167: RuntimeWarning: overflow encountered in matmul
+  s = xc.T @ xc / n
+/Users/zin/sophia/morletdb-wavelets/evaluation/wavelets/w1.py:167: RuntimeWarning: invalid value encountered in matmul
+  s = xc.T @ xc / n
+/Users/zin/sophia/morletdb/.venv-compress/lib/python3.12/site-packages/numpy/linalg/_linalg.py:3383: RuntimeWarning: divide by zero encountered in matmul
+  return _core_matmul(x1, x2)
+/Users/zin/sophia/morletdb/.venv-compress/lib/python3.12/site-packages/numpy/linalg/_linalg.py:3383: RuntimeWarning: overflow encountered in matmul
+  return _core_matmul(x1, x2)
+/Users/zin/sophia/morletdb/.venv-compress/lib/python3.12/site-packages/numpy/linalg/_linalg.py:3383: RuntimeWarning: invalid value encountered in matmul
+  return _core_matmul(x1, x2)
+unit                                 W-WPK   W-MSK    B-SK   W-MDB   W-WPN   B-FFT     RMS    KURT     ENV
+femto-Bearing1_1-horizontal          0.00u   0.00u   0.00u    0.91    0.75    0.56    0.17    0.52   0.00u
+femto-Bearing1_2-horizontal          0.00u   0.00u   0.00u    0.95    0.95   0.00u    0.06    0.95    0.06
+femto-Bearing2_1-horizontal          0.00u    0.08   0.00u    0.96    0.98    0.95    0.02    0.08       -
+femto-Bearing2_2-horizontal              -    0.06   0.00u    0.90    0.91    0.87    0.83    0.06   0.00u
+femto-Bearing3_1-horizontal              -       -       -    0.05    0.06    0.06    0.05       -       -
+femto-Bearing3_2-horizontal           0.13   0.00u    0.98    0.94    0.91    0.99    0.02    0.94   0.00u
+cells: stable lead (fraction of post-calibration life); 'u' = unstable alarm (lead 0); '-' = no alarm
