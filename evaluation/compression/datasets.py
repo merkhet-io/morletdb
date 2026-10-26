@@ -25,7 +25,7 @@ def paderborn(role: str, files_per_cell: int | None = 2, root: Path | None = Non
     import paderborn_mat as pm
     root = root or DATA / "paderborn/zenodo-15845309/extracted"
     names = b.DEV if role == "dev" else b.HELDOUT
-    step = 100 / 32768  # observed exact ADC grid (16-bit), see RESULTS.md
+    step = 0.0030517578104827248  # observed ADC step in the files (100/32768 to ~7e-10 relative)
     for bearing in names:
         per_cell = {}
         for path in sorted((root / bearing).glob("*.mat"), key=lambda p: (p.name[:11], int(p.stem.split("_")[-1]))):
@@ -36,11 +36,12 @@ def paderborn(role: str, files_per_cell: int | None = 2, root: Path | None = Non
                 continue
             per_cell[setting] = per_cell.get(setting, 0) + 1
             q = np.round(vib / step)
-            if np.abs(q * step - vib).max() > 1e-6 * step:
-                raise ValueError(f"{path.name}: not on the ADC grid")
+            grid_dev = float(np.abs(q * step - vib).max() / step)
+            if grid_dev > 1e-3:  # integer recovery is unambiguous far below 0.5 step
+                raise ValueError(f"{path.name}: not on the ADC grid ({grid_dev})")
             x = q.astype(np.int64)[:PADERBORN_ROWS * 4096]
             location, origin, extent = b.BEARINGS[bearing]
-            yield {"dataset": "paderborn", "unit": bearing, "id": path.stem, "x": x, "step": step,
+            yield {"dataset": "paderborn", "unit": bearing, "id": path.stem, "x": x, "step": step, "grid_dev": grid_dev,
                    "rate": 64000.0, "setting": setting, "measurement": measurement,
                    "location": location, "origin": origin, "extent": extent}
 

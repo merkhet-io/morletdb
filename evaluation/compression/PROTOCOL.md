@@ -8,7 +8,7 @@ marked **(provisional)** are researcher-selected.
 
 | Dataset | Signal | Native samples | Unit | Development | Held-out |
 |---|---|---|---|---|---|
-| Paderborn KAt (CC BY-NC 4.0) | housing vibration, 64 kHz | int16 ADC counts (exact grid 100/32768) | bearing | 8 dev bearings (PR #6 split) | 23 held-out bearings |
+| Paderborn KAt (CC BY-NC 4.0) | housing vibration, 64 kHz | int16 ADC counts (grid step 0.00305175781048 ≈ 100/32768; integer recovery checked per file) | bearing | 8 dev bearings (PR #6 split) | 23 held-out bearings |
 | IMS/NASA run-to-failure (acknowledgement requested; no licence stated) | housing acceleration, 20 kHz, 1 s snapshots every 10 min | ASCII decimals on a 0.001 grid → int16 (exact for the distributed files) | bearing channel within a test | set 1 (bearings 1–4, x-axis channel) | sets 2 and 3 (bearings 1–4) |
 | IPOC CX (open, doi:10.14470/PK615318) | broadband seismometer HHZ, 100 Hz | int32 counts (Steim2 at source) | station × period | 2023-03-01..03, PB01/PB02/PB06/PSGCX | 2024-03-01..03, same stations |
 
@@ -151,3 +151,8 @@ Encode and decode wall time per million samples, on one thread, on the stated ha
 ## Changelog
 
 - 2026-10-26: frozen before any run.
+- 2026-10-26, before any benchmark row was produced: the Paderborn integer-grid check
+  tolerance was relaxed from 1e-6 to 1e-3 of a step. The files' step differs from
+  100/32768 by about 7e-10 relative, so large counts deviate by about 1e-6 step.
+  Recovery of the integers is unaffected. "Lossless" means lossless in ADC counts; the
+  maximum deviation per file is recorded.
