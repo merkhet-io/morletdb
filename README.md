@@ -127,13 +127,19 @@ not implemented.
 
 ## What has been measured
 
-Every result names its data, baselines and limits. Differentiation from simple
-methods has **not** been established.
+Every result names its data, baselines and limits. **In frozen, held-out tests,
+Morlet features have not beaten simple baselines.** What has held up is the storage
+and retrieval machinery around raw recordings.
 
 | Evaluation | Result |
 |---|---|
-| [CWRU bearings](evaluation/README.md), run-separated | Pooled Morlet **ties** the statistical baseline. A reproducible baseline, not a win. |
-| [Seismic replay](evaluation/reports/seismic-cx-north-chile-2024-v2.md), 3 stations, whole-period holdout | Pooled Morlet beats or ties the temporal representation. Catalog precision@5 is 0.21–0.47 against a base rate below 1%. |
+| [Paderborn bearings](evaluation/decision/results/e6bf274/RESULTS.md), frozen plan, held-out bearings | Morlet vs FFT bands + statistics: Δ P@10 −0.032 [−0.098, +0.036]. **Not supported.** |
+| [Seismic timing test](evaluation/decision/results/timing-012bb3d/RESULTS.md), frozen plan, 2024 held out | Time-resolved features help (+21 km). Temporal Morlet beats a time-binned spectrogram by only +1.6 km [+0.9, +2.3], below the 5 km margin. **Envelope cross-correlation beats temporal Morlet by 6.0 km.** |
+| [PTB-XL ECG pilots](research/multiscale_memory/) | Retrieved context does not improve a classifier, with fixed or learned retrievers. Closed. |
+| [Raw storage](evaluation/compression/README.md) | Lossless encoded chunks are 1.7–2.9× smaller than the previous `float8[]` chunks (4096-sample chunks), comparable to optimized Parquet (codec alone: 2% larger to 13% smaller). |
+| [Materialized envelopes (R1)](evaluation/materialized/results/eval-2025/RESULTS.md), frozen plan, 2025 held out | Stored envelopes return the same top-10 as decoding raw at 0.10× the p95 latency, but cost 27.9% of raw storage (bound 25%): **narrow**. Compact envelopes are being tested. |
+| [CWRU bearings](evaluation/README.md), run-separated, early slice | Pooled Morlet **ties** the statistical baseline. A reproducible baseline, not a win. |
+| [Seismic replay](evaluation/reports/seismic-cx-north-chile-2024-v2.md), 3 stations, early slice | Real ingestion of about 324 M samples with gaps, duplicates and resume. No simple-feature baseline was run, so it says nothing about Morlet vs simple features. |
 | [Wave-index PoC](docs/wave-index-poc.md), synthetic | Temporal cells separate a burst from its time reversal, which pooled features cannot (distance 1.18 vs ≈0). Posting lists traverse most of the index. |
 | [Benchmarks](benchmarks/README.md) | Ingestion, extraction and retrieval are measured separately. A 10,000-candidate CI smoke checks ranking against an independent oracle; it is not a capacity claim. |
 
@@ -173,12 +179,12 @@ Next evaluations, all **candidate workloads** rather than demonstrated results:
 | Area | Contract today |
 |---|---|
 | Storage | Append-only recordings, raw chunks, typed segments and restartable checkpoints |
-| Input | 1..32768 finite samples/chunk; 128..200000 Hz (`morlet-energy-v1`) or opt-in [1,128) Hz (`morlet-energy-lowrate-v1`); explicit channel and units |
+| Input | 1..32768 finite samples/chunk; 128..200000 Hz (`morlet-energy-v1`), opt-in [1,128) Hz (`morlet-energy-lowrate-v1`), or any rate up to 200000 Hz raw-only (`none`: no segments, not feature-searchable); explicit channel and units |
 | Search windows | 512..4096 samples; compatible rate/channel/unit/window/normalization/extractor |
 | PostgreSQL retrieval | Exact scan; default 4096 eligible segments; explicit experiments up to 1,000,000, with no capacity guarantee |
 | Consistency and access | Synchronous extraction; transactional publication; caller permissions and RLS |
 | Wave-index PoC | Offline temporal scoring and approximate postings; no persistence or SQL integration |
-| Lifecycle | Fresh alpha installations; no extension upgrade migration or stable API/schema guarantee |
+| Lifecycle | Alpha. `ALTER EXTENSION pg_morlet UPDATE` from 0.1.0 to 0.2.0 is tested in CI from v0.1.0-alpha.3; no stable API/schema guarantee |
 
 No resampling, speed invariance, gap interpolation, background extraction worker
 or synchronized multichannel retrieval is implemented. Use the supported append

@@ -23,6 +23,14 @@ Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
   collections unchanged and working; re-encoding them is a separate, documented
   data transfer. alpha.1 databases need a reinstall (docs/durable-ingestion.md).
 - Importer: `--sample-quantum`.
+- Raw-only recordings: `extractor => 'none'` stores samples without segments
+  or features. It accepts any rate up to 200000 Hz and is skipped by feature
+  search. The importer accepts `--extractor none`. Library-only change; the
+  default is unchanged.
+
+Docs: the README's measured results now list the frozen held-out tests (Paderborn,
+seismic timing, PTB-XL, storage, materialized envelopes). In these tests Morlet
+features did not beat simple baselines.
 
 ## 0.1.0-alpha.3
 

@@ -412,6 +412,19 @@ mod tests {
     fn lowrate_rejects_v1_rates() {
         Spi::run("SELECT morlet_create_stream_collection('public','lowrate_bad'); SELECT morlet_start_recording('lowrate_bad','S1',4096,'x','g','{}',512,256,'zscore','morlet-energy-lowrate-v1')").unwrap();
     }
+    #[pg_test]
+    fn raw_only_recordings_store_samples_without_segments() {
+        Spi::run("SELECT morlet_create_stream_collection('public','raw_only'); SELECT morlet_start_recording('raw_only','slow',10,'T','C','{}',512,256,'zscore','none'); SELECT morlet_start_recording('raw_only','fast',4096,'x','g','{}',512,256,'zscore','none',0.001); SELECT morlet_start_recording('raw_only','indexed',4096,'x','g','{}',512,256,'zscore'); SELECT morlet_append_chunk('raw_only',r,0,ARRAY(SELECT (round(1000*sin(i/7.))/1000)::float8 FROM generate_series(0,4999) i)) FROM unnest(ARRAY['slow','fast','indexed']) r; SELECT morlet_append_chunk('raw_only','fast',5000,ARRAY(SELECT (round(1000*sin(i/7.))/1000)::float8 FROM generate_series(5000,5999) i))").unwrap();
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM raw_only_segments WHERE recording_id<>'indexed'").unwrap(), Some(0));
+        assert_eq!(Spi::get_one::<String>("SELECT received_samples||' '||indexed_segments||' '||extractor_version FROM morlet_stream_status('raw_only','fast')").unwrap().unwrap(), "6000 0 none");
+        assert_eq!(Spi::get_one::<bool>("SELECT samples=ARRAY(SELECT (round(1000*sin(i/7.))/1000)::float8 FROM generate_series(100,5899) i) FROM morlet_read_interval('raw_only','fast',100,5900)").unwrap(), Some(true));
+        // Feature search sees only recordings that have segments.
+        assert_eq!(Spi::get_one::<i64>("SELECT count(DISTINCT recording_id) FROM morlet_search_streams('raw_only',ARRAY(SELECT sin(i/7.) FROM generate_series(0,511) i),4096,'x','g','{}','zscore',100)").unwrap(), Some(1));
+    }
+    #[pg_test(error = "sample_rate_hz must be finite and in (0,200000]")]
+    fn raw_only_recordings_validate_rate() {
+        Spi::run("SELECT morlet_create_stream_collection('public','raw_only_bad'); SELECT morlet_start_recording('raw_only_bad','A',0,'x','g','{}',512,256,'zscore','none')").unwrap();
+    }
     #[pg_test(error = "incompatible stream representation")]
     fn search_rejects_mixed_extractor_population() {
         Spi::run("SELECT morlet_create_stream_collection('public','mixed_streams'); SELECT morlet_start_recording('mixed_streams','A',100,'HHZ','counts','{}',512,256,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_append_chunk('mixed_streams','A',0,array_fill(0.::float8,ARRAY[512])); UPDATE mixed_streams SET checkpoint=jsonb_set(checkpoint,'{extractor_version}','\"morlet-energy-v1\"'); SELECT * FROM morlet_search_streams('mixed_streams',array_fill(0.::float8,ARRAY[512]),100,'HHZ','counts','{}','zscore',10,4096,'morlet-energy-lowrate-v1')").unwrap();

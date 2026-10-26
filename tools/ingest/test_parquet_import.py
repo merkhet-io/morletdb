@@ -70,6 +70,14 @@ class ParquetContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Config(extractor="unknown").validate()
 
+    def test_raw_only_accepts_any_positive_rate(self):
+        rows = [{**self.base(), "sample_rate_hz": 10., "start_sample": 0, "samples": self.values}]
+        self.write(rows)
+        self.assertEqual(len(list(chunks(self.path, Config(extractor="none")))), 1)
+        self.write([{**rows[0], "sample_rate_hz": 0.}])
+        with self.assertRaisesRegex(ValueError, "sample_rate_hz"):
+            list(chunks(self.path, Config(extractor="none")))
+
 
 if __name__ == "__main__":
     unittest.main()

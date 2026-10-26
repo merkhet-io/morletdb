@@ -219,6 +219,21 @@ JSON decoding uses round-trip float parsing to preserve sample values across
 checkpoint reloads. An extractor-version upgrade requires an explicit rebuild
 policy; no automatic upgrade/migration is provided for this unreleased prototype.
 
+## Raw-only recordings
+
+`extractor => 'none'` stores raw samples without feature extraction:
+- the checkpoint tracks the sample offset only and keeps no tail buffer;
+- no segment rows are written, and status reports `indexed_segments` 0 and
+  extractor `none`;
+- feature search skips these recordings; reads, replay checks and storage
+  accounting work as usual;
+- the sample rate can be any finite value in (0, 200000] Hz.
+
+Use it when recordings are searched by other means, for example materialized
+envelopes. In the frozen seismic timing test, envelope cross-correlation beat
+temporal Morlet features (see the README's measured results). The default stays `morlet-energy-v1`, and a
+recording's extractor cannot be changed after it starts.
+
 ## Progress and search
 
 Status exposes received samples, next window start, visible segment count and
