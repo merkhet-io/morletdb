@@ -69,3 +69,12 @@ The four hypotheses under decision:
    Until it happens, H1 and H3 stay "decision pending".
 3. **H4** matters only if 1 or 2 is positive. One sustained ingestion-plus-search run
    bounds it; it does not need a new harness.
+
+## Update 2026-10-26: H2 tested (frozen plan, `results/e6bf274/RESULTS.md`)
+
+On Paderborn cross-condition retrieval, frozen pooled Morlet does not beat content-matched
+FFT bands + statistics: Δ P@10 −0.032 [−0.098, +0.036], so **H2 is not supported**. No
+method retrieves same-damage episodes from other bearings much above chance (best frozen
+P@10 0.33 vs chance 0.27), and none recognizes no-match queries. Spectral features mainly
+identify the individual bearing (exploratory: 91% of Morlet top-10 come from the query's
+own bearing).
