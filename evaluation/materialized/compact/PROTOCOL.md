@@ -1,5 +1,8 @@
 # R1b: compact materialized envelopes
 
+**Result (2022, once): CONTINUE.** `f16` envelopes: recall@10 0.9999, p95 0.012× of raw
+decode, 12.9% of the raw chunk table. See [results/conf-2022/RESULTS.md](results/conf-2022/RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line, before any 2022 waveform or
 catalogue was downloaded. Changes after the freeze are logged under "Changes after
 freeze".
