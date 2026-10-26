@@ -246,6 +246,43 @@ fn morlet_simple_values(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f
         .unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
+/// calibrated-v1 summary of one query against history rows (flattened, `width` values
+/// each) with per-value spreads (NULL = undefined): {score, score_quantile, top value index
+/// (1-based, 0 if none), history size}. Elements are NULL when undefined.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_calibrated_score(
+    query: Vec<Option<f64>>,
+    history: Vec<Option<f64>>,
+    width: i32,
+    spreads: Vec<Option<f64>>,
+) -> Vec<Option<f64>> {
+    let q = checked_samples(query);
+    let flat = checked_samples(history);
+    let w = width as usize;
+    if w == 0 || q.len() != w || spreads.len() != w || flat.len() % w != 0 {
+        pgrx::error!("query, spreads and history rows must all have width values");
+    }
+    let rows: Vec<&[f64]> = flat.chunks_exact(w).collect();
+    let dev = morlet_core::compare::calibrated_deviations(&q, &rows, &spreads);
+    let top = dev
+        .iter()
+        .enumerate()
+        .filter_map(|(i, d)| d.map(|d| (i, d)))
+        .max_by(|a, b| a.1.total_cmp(&b.1))
+        .map(|(i, _)| (i + 1) as f64)
+        .unwrap_or(0.0);
+    vec![
+        morlet_core::compare::score(&q, &rows, &spreads),
+        if rows.len() <= 2000 {
+            morlet_core::compare::score_quantile(&q, &rows, &spreads)
+        } else {
+            None
+        },
+        Some(top),
+        Some(rows.len() as f64),
+    ]
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_simple_value_names() -> Vec<&'static str> {
     morlet_core::values::VALUE_NAMES.to_vec()
@@ -587,6 +624,39 @@ mod tests {
         );
         assert_eq!(Spi::get_one::<i64>("SELECT morlet_build_context_segments('mill','r1',ARRAY['program','block'],ARRAY['part'])").unwrap(), Some(1));
         assert_eq!(Spi::get_one::<String>("SELECT string_agg(start_sample||'-'||end_sample,',' ORDER BY start_sample) FROM mill_ctx_segments").unwrap().unwrap(), "0-10000,10000-19000,20000-30000");
+    }
+
+    #[pg_test]
+    fn calibrated_summary_ranks_an_anomalous_part_against_its_context() {
+        // Blocks A (amplitude ~100) and B (~10), parts 1..6 each with small variation; part 6
+        // of block A has amplitude 160.
+        Spi::run("SELECT morlet_create_stream_collection('public','cal'); SELECT morlet_enable_context('cal'); SELECT morlet_start_recording('cal',b||p,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_append_chunk('cal',b||p,0,ARRAY(SELECT (CASE WHEN b='A' AND p=6 THEN 160 WHEN b='A' THEN 100*(1+0.01*p) ELSE 10*(1+0.01*p) END)*sin(i/3.)+(i%7) FROM generate_series(0,1999) i)) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_add_context('cal','c-'||b||p,jsonb_build_array(jsonb_build_object('recording_id',b||p,'key','block','value',b,'start_sample',0,'end_sample',2000),jsonb_build_object('recording_id',b||p,'key','part','value',p,'start_sample',0,'end_sample',2000))) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_segments('cal',b||p,ARRAY['block'],ARRAY['part']) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_values('cal',b||p) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p").unwrap();
+        assert_eq!(Spi::get_one::<i32>("SELECT cardinality(morlet_value_spreads('cal',(SELECT min(segment_id) FROM cal_ctx_segments)))").unwrap(), Some(8));
+        assert_eq!(Spi::get_one::<bool>("SELECT (morlet_value_spreads('cal',(SELECT min(segment_id) FROM cal_ctx_segments)))[3]>0").unwrap(), Some(true));
+        let anomalous = "(SELECT segment_id FROM cal_ctx_segments WHERE recording_id='A6')";
+        let normal = "(SELECT segment_id FROM cal_ctx_segments WHERE recording_id='A3')";
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT status||':'||hist_n||':'||score_quantile||':'||(duration_relative_deviation=0) FROM morlet_compare_summary('cal',{anomalous})")).unwrap().unwrap(), "ok:5:1:true");
+        assert_eq!(Spi::get_one::<bool>(&format!("SELECT a.score>5*n.score AND n.score_quantile<1 FROM morlet_compare_summary('cal',{anomalous}) a, morlet_compare_summary('cal',{normal}) n")).unwrap(), Some(true));
+        assert!(matches!(
+            Spi::get_one::<String>(&format!(
+                "SELECT top_value FROM morlet_compare_summary('cal',{anomalous})"
+            ))
+            .unwrap()
+            .as_deref(),
+            Some("std" | "rms" | "p75" | "peak_abs")
+        ));
+        // The near-constant mean (0.3% shift) no longer leads: spreads are floored at 1%.
+        assert_eq!(Spi::get_one::<bool>(&format!("SELECT calibrated_deviation<1 FROM morlet_compare_to_history('cal',{anomalous}) WHERE value_name='mean'")).unwrap(), Some(true));
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT status||':'||calibrated_deviation FROM morlet_compare_to_history('cal',{anomalous}) WHERE value_name='duration_s'")).unwrap().unwrap(), "ok:0");
+        assert_eq!(Spi::get_one::<bool>(&format!("SELECT bool_and(calibrated_deviation IS NOT NULL OR status<>'ok') FROM morlet_compare_to_history('cal',{anomalous})")).unwrap(), Some(true));
+        assert_eq!(
+            Spi::get_one::<String>(&format!(
+                "SELECT status FROM morlet_compare_summary('cal',{anomalous},min_history=>6)"
+            ))
+            .unwrap()
+            .unwrap(),
+            "insufficient_history"
+        );
     }
 
     #[pg_test(error = "context batch b1 already exists with different rows")]

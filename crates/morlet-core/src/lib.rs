@@ -1,5 +1,6 @@
 //! Portable signal primitives and the versioned Morlet extractor.
 pub mod chunks;
+pub mod compare;
 pub mod envelope;
 pub mod morlet;
 pub mod rawcodec;

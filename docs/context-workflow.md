@@ -38,6 +38,9 @@ SELECT * FROM morlet_compare_to_history('spindle', :segment_id);
 SELECT max(abs(relative_deviation)) AS score
 FROM morlet_compare_to_history('spindle', :segment_id, exclude_labels => ARRAY['air_cut','crash']);
 
+-- One calibrated row per comparison (phase 2, calibrated-v1, not yet evaluated on fresh data).
+SELECT * FROM morlet_compare_summary('spindle', :segment_id, exclude_labels => ARRAY['air_cut']);
+
 -- 5. Labels, used as data: exclude known-bad history, build evaluation sets.
 SELECT morlet_add_label('spindle', 'shift-0412', 25600, 128000, 'air_cut', 'tool above stock');
 ```
@@ -79,10 +82,42 @@ SELECT morlet_add_label('spindle', 'shift-0412', 25600, 128000, 'air_cut', 'tool
   - `relative_deviation` = (x − median)/|median|, the **recommended score**;
   - `robust_z` = (x − median)/(1.4826 · MAD);
   - with fewer than `min_history` (default 5) history segments, the numbers are
-    NULL and `status` is `insufficient_history`. `zero_median` and `zero_spread`
-    say why a value is NULL.
+    NULL and `status` is `insufficient_history`. Other statuses are described
+    under "Calibrated comparison" below.
 - **Compare without context:** add a key every segment shares (for example
   `machine`) and pass `match_keys => ARRAY['machine']`.
+
+## Calibrated comparison (phase 2, `calibrated-v1`)
+
+C2's follow-up (`evaluation/context/c2/results/M03.md`) showed a failure of the
+unweighted maximum. One naturally noisy value (kurtosis) drifted and hid
+anomalies that were clear in duration and vibration level. Calibration addresses
+this.
+- **`morlet_value_spreads`:** each value's typical relative spread.
+  - For every context with ≥ 3 comparable segments, compute the median absolute
+    deviation relative to the median.
+  - Take the median over contexts, floored at `spread_floor` (default 1%).
+  - Pooling keeps it stable with small histories (C1). The floor stops
+    near-constant values from turning negligible shifts into alarms.
+- **`morlet_compare_to_history`** adds `spread` and
+  `calibrated_deviation = |relative_deviation| / spread`.
+  - `status` now says whether the calibrated deviation could be computed:
+    `insufficient_history`, `zero_median`, `no_pooled_spread` or `ok`.
+  - `robust_z` is NULL when the history's MAD is 0.
+- **`morlet_compare_summary`** returns one row per comparison:
+  - `score`: the maximum calibrated deviation, and `top_value`;
+  - `score_quantile`: the score's rank among leave-one-out scores of the same
+    history. This is a per-context calibration; 0.99 means "more unusual than 99%
+    of normal history segments are in their own context". It is NULL above 2000
+    history segments.
+  - `duration_relative_deviation`, separately, because duration was the strongest
+    single value in C2.
+
+**Status: implemented, not yet evaluated.** It was designed from what C1 and C2
+taught, so it must be tested on data not used before (planned: C3) before its
+scores are trusted over the relative deviations of C1 and C2. Spreads are
+computed per call over all comparable segments; on the milling check this doubled
+compare latency (p50 23 ms → 46 ms).
 
 ## Read with care
 
