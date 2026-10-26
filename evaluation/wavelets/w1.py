@@ -38,10 +38,10 @@ REPORTED = ("RMS", "KURT", "ENV")
 IMS_FAILING = {("set1", 2), ("set1", 3), ("set2", 0), ("set3", 2)}  # 0-based bearing columns
 
 
-def ims_units():
+def ims_units(npz_dir: Path):
     """(name, rate, snapshots in g) for every IMS bearing; failing ones are flagged in the name."""
     for s in ("set1", "set2", "set3"):
-        d = np.load(ROOT / f"data/ims/npz/{s}.npz")
+        d = np.load(npz_dir / f"{s}.npz")
         x = d["x"].astype(float) * float(d["step"])
         for b in range(x.shape[2]):
             tag = "failing" if (s, b) in IMS_FAILING else "other"
@@ -210,7 +210,7 @@ def unit_alarms(ind):
 def cmd_indicators(a):
     a.out.mkdir(parents=True, exist_ok=True)
     if a.role == "ims":
-        units = ims_units()
+        units = ims_units(a.ims)
     else:
         names = FEMTO_DEV if a.role == "femto-dev" else FEMTO_EVAL
         units = femto_units(a.femto, names, a.channel)
@@ -270,6 +270,7 @@ def main():
     i = sub.add_parser("indicators")
     i.add_argument("--role", choices=["ims", "femto-dev", "femto-eval"], required=True)
     i.add_argument("--femto", type=Path, help="extracted FEMTO archive root")
+    i.add_argument("--ims", type=Path, default=ROOT / "data/ims/npz", help="IMS npz directory (prepare_ims.py)")
     i.add_argument("--channel", choices=["horizontal", "vertical"], default="horizontal")
     i.add_argument("--features-bin", type=Path, default=ROOT / "target/release/examples/features")
     i.add_argument("--out", type=Path, required=True)
