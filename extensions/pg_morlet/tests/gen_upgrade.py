@@ -61,5 +61,7 @@ out += [rust(r) for r in ("morlet_simple_values", "morlet_simple_value_names", "
 out += [fn(r) for r in ("morlet_enable_context", "morlet_context_relations", "morlet_check_context_overlaps",
                         "morlet_add_context", "morlet_revise_context", "morlet_build_context_segments",
                         "morlet_build_context_values", "morlet_add_label", "morlet_retract_label",
-                        "morlet_compare_to_history")]
+                        "morlet_history_sql", "morlet_value_spreads", "morlet_comparable_segment",
+                        "morlet_context_match", "morlet_compare_to_history", "morlet_compare_summary")]
+out += [rust("morlet_calibrated_score")]
 (EXT / "sql/pg_morlet--0.1.0--0.2.0.sql").write_text("\n".join(out))

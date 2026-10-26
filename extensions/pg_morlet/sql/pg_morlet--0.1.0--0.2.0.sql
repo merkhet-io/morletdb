@@ -711,50 +711,120 @@ BEGIN
   IF n<>1 THEN RAISE EXCEPTION 'label % is not active or not visible',label_id; END IF;
 END $$;
 
+-- History selection shared by compare-to-history and its summary. Parameters: $1 query
+-- segment, $2 context match, $3 rate, $4 channel, $5 unit, $6 metadata filter, $7 query
+-- occurrence, $8 excluded labels. With population=true the context match and occurrence
+-- exclusion are dropped (all comparable segments, for pooled spreads) and the context is
+-- returned with the values.
+CREATE FUNCTION public.morlet_history_sql(collection regclass,population boolean)
+RETURNS text LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  RETURN format('SELECT v.vals%5$s FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
+        JOIN %3$s r ON r.recording_id=s.recording_id
+      WHERE s.segment_id<>$1 AND NOT s.stale%6$s AND r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5
+        AND r.metadata @> $6
+        AND NOT EXISTS(SELECT 1 FROM %4$s l WHERE l.recording_id=s.recording_id AND NOT l.retracted AND l.label=ANY($8)
+          AND l.start_sample<s.end_sample AND s.start_sample<l.end_sample)',
+    rel.segments,rel.vals,collection,rel.labels,
+    CASE WHEN population THEN ',s.context' ELSE '' END,
+    CASE WHEN population THEN ' AND $2 IS NOT NULL AND $7 IS NOT NULL'
+      ELSE ' AND s.context @> $2 AND ($7=''{}''::jsonb OR s.occurrence<>$7)' END);
+END $$;
+
+-- Pooled relative spread per simple-v1 value: for every context with at least 3
+-- comparable segments, median(|x - median|)/|median|; then the median over contexts,
+-- floored at spread_floor (default 1%) so near-constant values cannot turn negligible
+-- shifts into large calibrated deviations. NULL where no context qualifies. Population
+-- size is limited by max_candidates.
+CREATE FUNCTION public.morlet_value_spreads(collection regclass,segment_id bigint,
+  metadata_filter jsonb DEFAULT '{}'::jsonb,exclude_labels text[] DEFAULT '{}'::text[],max_candidates integer DEFAULT 100000,
+  spread_floor float8 DEFAULT 0.01)
+RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; pop text; n bigint; spreads float8[];
+BEGIN
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  pop:=public.morlet_history_sql(collection,true);
+  EXECUTE 'SELECT count(*) FROM ('||pop||') h' INTO n
+    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'spread population exceeds % segments; narrow the metadata filter',max_candidates;
+  END IF;
+  IF NOT (spread_floor>0) THEN RAISE EXCEPTION 'spread_floor must be positive'; END IF;
+  EXECUTE 'WITH pop AS MATERIALIZED ('||pop||'),
+      k AS (SELECT generate_series(1,cardinality(public.morlet_simple_value_names())) AS ord),
+      g AS (SELECT p.context,k.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[k.ord]) AS med,count(*) AS n
+        FROM pop p CROSS JOIN k GROUP BY p.context,k.ord HAVING count(*)>=3),
+      r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
+        FROM g JOIN pop p ON p.context=g.context WHERE g.med<>0 GROUP BY g.context,g.ord,g.med)
+    SELECT array_agg(greatest((SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) FROM r WHERE r.ord=k.ord),$9)
+      ORDER BY k.ord) FROM k'
+    INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      spread_floor;
+  RETURN spreads;
+END $$;
+
+-- The query segment with its simple-v1 values; errors if it cannot be compared.
+CREATE FUNCTION public.morlet_comparable_segment(collection regclass,query_segment bigint,
+  OUT segment_id bigint,OUT recording_id text,OUT context jsonb,OUT occurrence jsonb,OUT vals float8[])
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; q record; id bigint:=query_segment;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('SELECT s.segment_id,s.recording_id,s.context,s.occurrence,s.stale,v.vals FROM %s s
+    LEFT JOIN %s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1'' WHERE s.segment_id=$1',rel.segments,rel.vals)
+    INTO q USING id;
+  IF q.segment_id IS NULL THEN RAISE EXCEPTION 'segment % does not exist or is not visible',id; END IF;
+  IF q.stale THEN RAISE EXCEPTION 'segment % is stale; rebuild context segments',id; END IF;
+  IF q.vals IS NULL THEN RAISE EXCEPTION 'segment % has no simple-v1 values (morlet_build_context_values)',id; END IF;
+  segment_id:=q.segment_id; recording_id:=q.recording_id; context:=q.context; occurrence:=q.occurrence; vals:=q.vals;
+END $$;
+
+-- Context match for match_keys (all of the segment's context keys when empty).
+CREATE FUNCTION public.morlet_context_match(context jsonb,match_keys text[])
+RETURNS jsonb LANGUAGE plpgsql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+DECLARE m jsonb;
+BEGIN
+  IF cardinality(match_keys)=0 THEN RETURN context; END IF;
+  IF EXISTS(SELECT 1 FROM unnest(match_keys) k WHERE NOT context ? k) THEN
+    RAISE EXCEPTION 'match_keys must be keys of the segment context %',context;
+  END IF;
+  SELECT jsonb_object_agg(k,context->k) INTO m FROM unnest(match_keys) k;
+  RETURN m;
+END $$;
+
 -- Compares one segment's simple-v1 values with history: other non-stale
 -- segments whose context contains the query's values for match_keys (all of the
 -- query's context keys when empty), on recordings with the same rate, channel
 -- and unit and matching metadata, excluding the query's own occurrence and any
--- segment overlapping an active label in exclude_labels. relative_deviation is
--- the recommended score for small histories (evaluation C1); robust_z needs a
--- stable spread. NULL with a status when a value cannot be computed.
+-- segment overlapping an active label in exclude_labels. status says whether the
+-- calibrated deviation could be computed; robust_z is NULL when the history's MAD is 0.
+-- calibrated_deviation divides relative_deviation by the
+-- value's pooled spread (morlet_value_spreads), so noisy values weigh less (C2's M03
+-- note); relative_deviation is the uncalibrated score of evaluations C1 and C2.
 CREATE FUNCTION public.morlet_compare_to_history(collection regclass,segment_id bigint,
   match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
   exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000)
 RETURNS TABLE(value_name text,value float8,hist_n integer,hist_median float8,relative_deviation float8,
-  robust_z float8,quantile float8,status text,query_occurrence jsonb)
+  robust_z float8,quantile float8,spread float8,calibrated_deviation float8,status text,query_occurrence jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record; q record; qr record; match jsonb; candidates bigint; history text;
+DECLARE q record; qr record; match jsonb; candidates bigint; history text; spreads float8[];
 BEGIN
-  SELECT * INTO rel FROM public.morlet_context_relations(collection);
   IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
     RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
   END IF;
-  EXECUTE format('SELECT s.*,v.vals FROM %s s LEFT JOIN %s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
-    WHERE s.segment_id=$1',rel.segments,rel.vals) INTO q USING segment_id;
-  IF q.segment_id IS NULL THEN RAISE EXCEPTION 'segment % does not exist or is not visible',segment_id; END IF;
-  IF q.stale THEN RAISE EXCEPTION 'segment % is stale; rebuild context segments',segment_id; END IF;
-  IF q.vals IS NULL THEN RAISE EXCEPTION 'segment % has no simple-v1 values (morlet_build_context_values)',segment_id; END IF;
-  IF cardinality(match_keys)=0 THEN
-    match:=q.context;
-  ELSE
-    IF EXISTS(SELECT 1 FROM unnest(match_keys) k WHERE NOT q.context ? k) THEN
-      RAISE EXCEPTION 'match_keys must be keys of the segment context %',q.context;
-    END IF;
-    SELECT jsonb_object_agg(k,q.context->k) INTO match FROM unnest(match_keys) k;
-  END IF;
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
-  history:=format('SELECT v.vals FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
-        JOIN %3$s r ON r.recording_id=s.recording_id
-      WHERE s.segment_id<>$1 AND NOT s.stale AND s.context @> $2 AND r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5
-        AND r.metadata @> $6 AND ($7=''{}''::jsonb OR s.occurrence<>$7)
-        AND NOT EXISTS(SELECT 1 FROM %4$s l WHERE l.recording_id=s.recording_id AND NOT l.retracted AND l.label=ANY($8)
-          AND l.start_sample<s.end_sample AND s.start_sample<l.end_sample)',rel.segments,rel.vals,collection,rel.labels);
+  history:=public.morlet_history_sql(collection,false);
   EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO candidates
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
   IF candidates>max_candidates THEN
     RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
   END IF;
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels);
   RETURN QUERY EXECUTE 'WITH hist AS MATERIALIZED ('||history||'),
     budget AS (SELECT count(*)::integer AS n FROM hist),
     q AS (SELECT name,ord,$9[ord] AS x FROM unnest(public.morlet_simple_value_names()) WITH ORDINALITY AS t(name,ord)),
@@ -762,14 +832,76 @@ BEGIN
         percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[q.ord]) AS med,
         count(*) FILTER (WHERE h.vals[q.ord]<q.x) AS below,count(*) FILTER (WHERE h.vals[q.ord]=q.x) AS equal
       FROM q CROSS JOIN budget b LEFT JOIN hist h ON true GROUP BY q.name,q.ord,q.x,b.n),
-    sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad FROM st)
+    sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad,
+        $11[st.ord] AS spread FROM st)
     SELECT name,x,n,CASE WHEN n>=$10 THEN med END,
       CASE WHEN n>=$10 AND med<>0 THEN (x-med)/abs(med) END,
       CASE WHEN n>=$10 AND mad>0 THEN (x-med)/(1.4826*mad) END,
       CASE WHEN n>=$10 THEN (below+0.5*equal)::float8/n END,
-      CASE WHEN n<$10 THEN ''insufficient_history'' WHEN med=0 THEN ''zero_median'' WHEN mad=0 THEN ''zero_spread''
-        ELSE ''ok'' END,$7
+      spread,
+      CASE WHEN n>=$10 AND med<>0 AND spread>0 THEN abs(x-med)/abs(med)/spread END,
+      CASE WHEN n<$10 THEN ''insufficient_history'' WHEN med=0 THEN ''zero_median''
+        WHEN spread IS NULL THEN ''no_pooled_spread'' ELSE ''ok'' END,$7
     FROM sp ORDER BY ord'
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
-      q.vals,min_history;
+      q.vals,min_history,spreads;
 END $$;
+
+-- One row per segment comparison. score is the evaluated summary of C2 and C3: the
+-- maximum relative deviation over duration_s, std, crest and kurtosis (C2: AUROC 0.81 on
+-- Bosch CNC; C3: 0.88 on MillingVibes). score_quantile ranks it among leave-one-out
+-- scores of the same history (a per-context calibration; NULL above 2000 history
+-- segments), top_value names the value behind it, and the duration deviation is
+-- reported separately. calibrated_score (calibrated-v1: deviations divided by pooled
+-- spreads over all values) is experimental: it ranked worse than score in C3.
+CREATE FUNCTION public.morlet_compare_summary(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000)
+RETURNS TABLE(score float8,score_quantile float8,top_value text,top_relative_deviation float8,
+  duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text,query_occurrence jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; match jsonb; history text; flat float8[]; n integer; spreads float8[]; res float8[];
+  names text[]:=public.morlet_simple_value_names(); width integer; unit_spreads float8[];
+BEGIN
+  IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
+  END IF;
+  width:=cardinality(names);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  history:=public.morlet_history_sql(collection,false);
+  EXECUTE 'SELECT coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
+    ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO flat
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  n:=cardinality(flat)/width;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  query_occurrence:=q.occurrence; hist_n:=n;
+  SELECT c.relative_deviation INTO duration_relative_deviation
+    FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
+      max_candidates) c WHERE c.value_name='duration_s';
+  IF n<min_history THEN status:='insufficient_history'; RETURN NEXT; RETURN; END IF;
+  -- Spread 1 on the evaluated value set and NULL elsewhere turns the calibrated score
+  -- into the plain maximum relative deviation over that set.
+  unit_spreads:=ARRAY(SELECT CASE WHEN nm IN ('duration_s','std','crest','kurtosis') THEN 1.0::float8 END
+    FROM unnest(names) WITH ORDINALITY AS t(nm,o) ORDER BY o);
+  res:=public.morlet_calibrated_score(q.vals,flat,width,unit_spreads);
+  score:=res[1]; score_quantile:=res[2];
+  IF res[3]>0 THEN top_value:=names[res[3]::integer]; top_relative_deviation:=score; END IF;
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels);
+  calibrated_score:=(public.morlet_calibrated_score(q.vals,flat,width,spreads))[1];
+  status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
+  RETURN NEXT;
+END $$;
+
+CREATE FUNCTION "morlet_calibrated_score"(
+	"query" double precision[], /* alloc::vec::Vec<core::option::Option<f64>> */
+	"history" double precision[], /* alloc::vec::Vec<core::option::Option<f64>> */
+	"width" INT, /* i32 */
+	"spreads" double precision[] /* alloc::vec::Vec<core::option::Option<f64>> */
+) RETURNS double precision[] /* alloc::vec::Vec<core::option::Option<f64>> */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_calibrated_score_wrapper';
