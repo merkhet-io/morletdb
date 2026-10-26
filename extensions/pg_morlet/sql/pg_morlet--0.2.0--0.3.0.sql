@@ -524,3 +524,58 @@ BEGIN
   GET DIAGNOSTICS n = ROW_COUNT;
   RETURN n;
 END $$;
+
+-- Stored-interval search uses the shared exact candidate scorer, then
+-- applies source exclusion and greedy, rank-ordered non-overlap selection BEFORE
+-- top_k. Fetching only top_k first could discard valid independent matches.
+CREATE OR REPLACE FUNCTION public.morlet_search_interval(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,
+  top_k integer DEFAULT 10,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  max_candidates integer DEFAULT 4096)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,
+  extractor_version text,sample_rate_hz float8,channel text,unit text,metadata jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; source_state jsonb; normalization text; extractor text; hit record;
+  picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
+  picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
+BEGIN
+  IF interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start NOT BETWEEN 512 AND 4096
+    OR top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid query interval, top_k or metadata filter';
+  END IF;
+  SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
+  EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1',collection)
+    INTO source_state USING source_recording_id;
+  IF source_state->>'extractor_version'='none' THEN
+    RAISE EXCEPTION 'recording % stores raw samples only (extractor none); use morlet_search_envelope_interval or the context comparison',
+      source_recording_id;
+  END IF;
+  IF (source_state->>'window')::bigint<>interval_end-interval_start THEN
+    RAISE EXCEPTION 'query interval must match the stored representation window';
+  END IF;
+  normalization:=source_state->>'normalization';
+  extractor:=source_state->>'extractor_version';
+  FOR hit IN SELECT h.* FROM public.morlet_stream_candidates(collection,source.samples,
+    source.sample_rate_hz,source.channel,source.unit,metadata_filter,normalization,max_candidates,extractor) h
+    WHERE NOT exclude_source OR h.recording_id<>source_recording_id
+      OR h.end_sample<=interval_start OR h.start_sample>=interval_end
+    ORDER BY h.distance,h.recording_id,h.start_sample
+  LOOP
+    blocked:=false;
+    IF suppress_overlaps AND picked>0 THEN
+      FOR idx IN 1..picked LOOP
+        IF picked_ids[idx]=hit.recording_id AND picked_starts[idx]<hit.end_sample AND picked_ends[idx]>hit.start_sample THEN
+          blocked:=true; EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+    IF blocked THEN CONTINUE; END IF;
+    RETURN QUERY SELECT hit.recording_id,hit.start_sample,hit.end_sample,hit.distance,
+      hit.extractor_version,source.sample_rate_hz,source.channel,source.unit,hit.metadata;
+    picked:=picked+1;
+    picked_ids:=array_append(picked_ids,hit.recording_id);
+    picked_starts:=array_append(picked_starts,hit.start_sample);
+    picked_ends:=array_append(picked_ends,hit.end_sample);
+    EXIT WHEN picked=top_k;
+  END LOOP;
+END $$;

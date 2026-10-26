@@ -21,6 +21,10 @@ tested):
   default is unchanged; add `p75` for level signals such as motor current.
 - `morlet_history_neighbors`: the nearest other (or, with `before_only`, earlier)
   occurrences of a segment's context. Each comes with its values and labels.
+- `morlet_search_interval` on a raw-only recording now says so, and points to
+  envelope search or the context comparison, instead of a window-mismatch error.
+- `morlet_version()` reports 0.3.0. A test now ties it to the SQL extension's
+  default version, so the two cannot drift apart again.
 
 Repository:
 - Viewer:

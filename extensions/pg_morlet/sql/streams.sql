@@ -293,6 +293,10 @@ BEGIN
   SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
   EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1',collection)
     INTO source_state USING source_recording_id;
+  IF source_state->>'extractor_version'='none' THEN
+    RAISE EXCEPTION 'recording % stores raw samples only (extractor none); use morlet_search_envelope_interval or the context comparison',
+      source_recording_id;
+  END IF;
   IF (source_state->>'window')::bigint<>interval_end-interval_start THEN
     RAISE EXCEPTION 'query interval must match the stored representation window';
   END IF;
