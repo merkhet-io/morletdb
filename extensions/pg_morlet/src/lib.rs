@@ -661,6 +661,75 @@ mod tests {
         );
     }
 
+    #[pg_test]
+    fn time_to_samples_uses_exact_boundaries() {
+        // 25.6 kHz: sample 1 sits at 39062.5 ns.
+        assert_eq!(Spi::get_one::<String>("SELECT start_sample||'-'||end_sample FROM morlet_time_to_samples(25600,0,39062,39063)").unwrap().unwrap(), "1-2");
+        assert_eq!(
+            Spi::get_one::<String>(
+                "SELECT start_sample||'-'||end_sample FROM morlet_time_to_samples(25600,0,0,39062)"
+            )
+            .unwrap()
+            .unwrap(),
+            "0-1"
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT start_sample||'-'||end_sample FROM morlet_time_to_samples(100,5000000,9990000000,10010000000)").unwrap().unwrap(), "999-1001");
+        assert_eq!(
+            Spi::get_one::<String>("SELECT (morlet_sample_time_ns(25600,1000,3)=118187.5)::text")
+                .unwrap()
+                .unwrap(),
+            "true"
+        );
+    }
+
+    fn acquisition_fixture() {
+        // Two acquisitions a day apart; each: vib 1 kHz (offset 0) and current 100 Hz (offset 5 ms),
+        // 20 s, blocks N1 [0,10 s) and N2 [10 s,20 s), one part each. A2's N1 vibration is louder.
+        Spi::run("SELECT morlet_create_stream_collection('public','cell'); SELECT morlet_enable_context('cell'); SELECT morlet_enable_acquisitions('cell'); SELECT morlet_create_acquisition('cell',a,'M7',o::timestamptz) FROM (VALUES ('A1','2026-01-01 00:00Z'),('A2','2026-01-02 00:00Z')) v(a,o); SELECT morlet_start_recording('cell',a||'-'||c,r,c,'u','{}',512,256,'zscore','none') FROM (VALUES ('A1'),('A2')) x(a), (VALUES ('vib',1000.0),('cur',100.0)) y(c,r); SELECT morlet_append_chunk('cell',a||'-vib',0,ARRAY(SELECT (CASE WHEN a='A2' AND i<10000 THEN 3 ELSE 1 END)*sin(i/3.)+0.01*(i%5) FROM generate_series(0,19999) i)) FROM unnest(ARRAY['A1','A2']) a; SELECT morlet_append_chunk('cell',a||'-cur',0,ARRAY(SELECT 5+0.1*sin(i/7.)+0.001*(i%3) FROM generate_series(0,1999) i)) FROM unnest(ARRAY['A1','A2']) a; SELECT morlet_add_acquisition_channel('cell',a,a||'-vib','vib',0) FROM unnest(ARRAY['A1','A2']) a; SELECT morlet_add_acquisition_channel('cell',a,a||'-cur','cur',5000000,'wallclock',200000) FROM unnest(ARRAY['A1','A2']) a; SELECT morlet_add_acquisition_context('cell',a,'ctl',jsonb_build_array(jsonb_build_object('key','block','value','N1','t_start_ns',0,'t_end_ns',10000000000),jsonb_build_object('key','block','value','N2','t_start_ns',10000000000,'t_end_ns',20000000000),jsonb_build_object('key','part','value',a,'t_start_ns',0,'t_end_ns',20000000000),jsonb_build_object('key','tool_change','value',7,'t_start_ns',0))) FROM unnest(ARRAY['A1','A2']) a; SELECT morlet_build_context_segments('cell',r.recording_id,ARRAY['block'],ARRAY['part']) FROM cell r; SELECT morlet_build_context_values('cell',r.recording_id) FROM cell r").unwrap();
+    }
+
+    #[pg_test]
+    fn acquisitions_align_channels_and_compare_side_by_side() {
+        acquisition_fixture();
+        // Context mapped per channel in its own samples.
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(recording_id||':'||start_sample||'-'||end_sample,',' ORDER BY recording_id) FROM cell_ctx WHERE key='block' AND value='\"N1\"' AND recording_id LIKE 'A1-%'").unwrap().unwrap(), "A1-cur:0-1000,A1-vib:0-10000");
+        // Identical retries are no-ops; a conflicting channel is an error elsewhere.
+        assert_eq!(
+            Spi::get_one::<bool>(
+                "SELECT morlet_create_acquisition('cell','A1','M7','2026-01-01 00:00Z')"
+            )
+            .unwrap(),
+            Some(false)
+        );
+        assert_eq!(Spi::get_one::<bool>("SELECT morlet_add_acquisition_channel('cell','A1','A1-cur','cur',5000000,'wallclock',200000)").unwrap(), Some(false));
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_add_acquisition_context('cell','A1','ctl',jsonb_build_array(jsonb_build_object('key','block','value','N1','t_start_ns',0,'t_end_ns',10000000000),jsonb_build_object('key','block','value','N2','t_start_ns',10000000000,'t_end_ns',20000000000),jsonb_build_object('key','part','value','A1','t_start_ns',0,'t_end_ns',20000000000),jsonb_build_object('key','tool_change','value',7,'t_start_ns',0)))").unwrap(), Some(0));
+        // One acquisition-time interval read from both channels.
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(role||':'||start_sample||'-'||end_sample||':'||cardinality(samples),',' ORDER BY role) FROM morlet_read_acquisition('cell','A1',9990000000,10010000000)").unwrap().unwrap(), "cur:999-1001:2,vib:9990-10010:20");
+        // A2's N1 against A1's: vibration louder (std), current unchanged.
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(role||':'||CASE role WHEN 'vib' THEN top_value ELSE '' END||':'||hist_n,',' ORDER BY role) FROM morlet_compare_acquisition('cell','A2','{\"block\":\"N1\"}','{\"part\":\"A2\"}',min_history=>1)").unwrap().unwrap(), "cur::1,vib:std:1");
+        assert_eq!(Spi::get_one::<bool>("SELECT bool_and(CASE role WHEN 'vib' THEN score>1 ELSE score<0.1 END) FROM morlet_compare_acquisition('cell','A2','{\"block\":\"N1\"}','{\"part\":\"A2\"}',min_history=>1)").unwrap(), Some(true));
+        assert_eq!(Spi::get_one::<String>("SELECT status FROM morlet_compare_acquisition('cell','A2','{\"block\":\"N9\"}','{\"part\":\"A2\"}') LIMIT 1").unwrap().unwrap(), "no_segment");
+        // History before this point only: A1 (earlier) has none, A2 sees A1.
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(coalesce(hist_n::text,'-')||':'||status,',' ORDER BY role) FROM morlet_compare_acquisition('cell','A1','{\"block\":\"N1\"}','{\"part\":\"A1\"}',min_history=>1,before_only=>true)").unwrap().unwrap(), "0:insufficient_history,0:insufficient_history");
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(hist_n::text,',' ORDER BY role) FROM morlet_compare_acquisition('cell','A2','{\"block\":\"N1\"}','{\"part\":\"A2\"}',min_history=>1,before_only=>true)").unwrap().unwrap(), "1,1");
+    }
+
+    #[pg_test(
+        error = "recording A1-vib already belongs to an acquisition with different attributes"
+    )]
+    fn acquisition_channel_conflict_is_an_error() {
+        acquisition_fixture();
+        Spi::run("SELECT morlet_add_acquisition_channel('cell','A2','A1-vib','vib',0)").unwrap();
+    }
+
+    #[pg_test(
+        error = "before_only needs the segment's recording in an acquisition with origin_utc"
+    )]
+    fn before_only_needs_an_acquisition() {
+        acquisition_fixture();
+        Spi::run("SELECT morlet_start_recording('cell','loose',1000,'vib','u','{}',512,256,'zscore','none'); SELECT morlet_append_chunk('cell','loose',0,array_fill(1.0::float8,ARRAY[100])); SELECT morlet_add_context('cell','l1','[{\"recording_id\":\"loose\",\"key\":\"block\",\"value\":\"N1\",\"start_sample\":0,\"end_sample\":100}]'); SELECT morlet_build_context_segments('cell','loose',ARRAY['block']); SELECT morlet_build_context_values('cell','loose'); SELECT * FROM morlet_compare_summary('cell',(SELECT segment_id FROM cell_ctx_segments WHERE recording_id='loose'),before_only=>true)").unwrap();
+    }
+
     #[pg_test(error = "context batch b1 already exists with different rows")]
     fn context_batch_retry_must_be_identical() {
         context_fixture();

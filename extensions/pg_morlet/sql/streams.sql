@@ -743,22 +743,34 @@ END $$;
 -- segment, $2 context match, $3 rate, $4 channel, $5 unit, $6 metadata filter, $7 query
 -- occurrence, $8 excluded labels. With population=true the context match and occurrence
 -- exclusion are dropped (all comparable segments, for pooled spreads) and the context is
--- returned with the values.
-CREATE FUNCTION public.morlet_history_sql(collection regclass,population boolean)
-RETURNS text LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record;
+-- returned with the values. cutoff_ns (absolute ns since 1970) keeps only segments that
+-- started earlier, for history "before this point"; it needs acquisitions.
+CREATE FUNCTION public.morlet_history_sql(collection regclass,population boolean,cutoff_ns numeric DEFAULT NULL)
+RETURNS text LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; acq record; before text:='';
 BEGIN
+  IF collection IS NULL OR population IS NULL THEN RAISE EXCEPTION 'collection and population are required'; END IF;
   SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF cutoff_ns IS NOT NULL THEN
+    -- Only segments that started before the cutoff on the absolute time axis
+    -- (acquisition origin + channel offset + sample time); others are excluded.
+    SELECT * INTO acq FROM public.morlet_acquisition_relations(collection);
+    before:=format(' AND EXISTS(SELECT 1 FROM %s ch JOIN %s a ON a.acquisition_id=ch.acquisition_id
+        WHERE ch.recording_id=s.recording_id AND a.origin_utc IS NOT NULL
+          AND extract(epoch FROM a.origin_utc)*1000000000+ch.offset_ns
+            +s.start_sample::numeric*1000000000/r.sample_rate_hz::numeric<%s)',acq.channels,acq.acq,cutoff_ns);
+  END IF;
   RETURN format('SELECT v.vals%5$s FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
         JOIN %3$s r ON r.recording_id=s.recording_id
       WHERE s.segment_id<>$1 AND NOT s.stale%6$s AND r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5
         AND r.metadata @> $6
         AND NOT EXISTS(SELECT 1 FROM %4$s l WHERE l.recording_id=s.recording_id AND NOT l.retracted AND l.label=ANY($8)
-          AND l.start_sample<s.end_sample AND s.start_sample<l.end_sample)',
+          AND l.start_sample<s.end_sample AND s.start_sample<l.end_sample)%7$s',
     rel.segments,rel.vals,collection,rel.labels,
     CASE WHEN population THEN ',s.context' ELSE '' END,
     CASE WHEN population THEN ' AND $2 IS NOT NULL AND $7 IS NOT NULL'
-      ELSE ' AND s.context @> $2 AND ($7=''{}''::jsonb OR s.occurrence<>$7)' END);
+      ELSE ' AND s.context @> $2 AND ($7=''{}''::jsonb OR s.occurrence<>$7)' END,
+    before);
 END $$;
 
 -- Pooled relative spread per simple-v1 value: for every context with at least 3
@@ -768,13 +780,17 @@ END $$;
 -- size is limited by max_candidates.
 CREATE FUNCTION public.morlet_value_spreads(collection regclass,segment_id bigint,
   metadata_filter jsonb DEFAULT '{}'::jsonb,exclude_labels text[] DEFAULT '{}'::text[],max_candidates integer DEFAULT 100000,
-  spread_floor float8 DEFAULT 0.01)
-RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  spread_floor float8 DEFAULT 0.01,cutoff_ns numeric DEFAULT NULL)
+RETURNS float8[] LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE q record; qr record; pop text; n bigint; spreads float8[];
 BEGIN
+  IF collection IS NULL OR segment_id IS NULL OR metadata_filter IS NULL OR exclude_labels IS NULL
+    OR max_candidates IS NULL OR spread_floor IS NULL THEN
+    RAISE EXCEPTION 'only cutoff_ns may be NULL';
+  END IF;
   SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
-  pop:=public.morlet_history_sql(collection,true);
+  pop:=public.morlet_history_sql(collection,true,cutoff_ns);
   EXECUTE 'SELECT count(*) FROM ('||pop||') h' INTO n
     USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
   IF n>max_candidates THEN
@@ -834,11 +850,12 @@ END $$;
 -- note); relative_deviation is the uncalibrated score of evaluations C1 and C2.
 CREATE FUNCTION public.morlet_compare_to_history(collection regclass,segment_id bigint,
   match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
-  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000)
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false)
 RETURNS TABLE(value_name text,value float8,hist_n integer,hist_median float8,relative_deviation float8,
   robust_z float8,quantile float8,spread float8,calibrated_deviation float8,status text,query_occurrence jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE q record; qr record; match jsonb; candidates bigint; history text; spreads float8[];
+DECLARE q record; qr record; match jsonb; candidates bigint; history text; spreads float8[]; cutoff numeric;
 BEGIN
   IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
     RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
@@ -846,13 +863,17 @@ BEGIN
   SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
   match:=public.morlet_context_match(q.context,match_keys);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
-  history:=public.morlet_history_sql(collection,false);
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
   EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO candidates
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
   IF candidates>max_candidates THEN
     RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
   END IF;
-  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels);
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
   RETURN QUERY EXECUTE 'WITH hist AS MATERIALIZED ('||history||'),
     budget AS (SELECT count(*)::integer AS n FROM hist),
     q AS (SELECT name,ord,$9[ord] AS x FROM unnest(public.morlet_simple_value_names()) WITH ORDINALITY AS t(name,ord)),
@@ -884,11 +905,12 @@ END $$;
 -- spreads over all values) is experimental: it ranked worse than score in C3.
 CREATE FUNCTION public.morlet_compare_summary(collection regclass,segment_id bigint,
   match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
-  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000)
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false)
 RETURNS TABLE(score float8,score_quantile float8,top_value text,top_relative_deviation float8,
   duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text,query_occurrence jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE q record; qr record; match jsonb; history text; flat float8[]; n integer; spreads float8[]; res float8[];
+DECLARE q record; qr record; match jsonb; history text; flat float8[]; n integer; spreads float8[]; res float8[]; cutoff numeric;
   names text[]:=public.morlet_simple_value_names(); width integer; unit_spreads float8[];
 BEGIN
   IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
@@ -898,7 +920,11 @@ BEGIN
   SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
   match:=public.morlet_context_match(q.context,match_keys);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
-  history:=public.morlet_history_sql(collection,false);
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
   EXECUTE 'SELECT coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
     ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO flat
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
@@ -909,7 +935,7 @@ BEGIN
   query_occurrence:=q.occurrence; hist_n:=n;
   SELECT c.relative_deviation INTO duration_relative_deviation
     FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
-      max_candidates) c WHERE c.value_name='duration_s';
+      max_candidates,before_only) c WHERE c.value_name='duration_s';
   IF n<min_history THEN status:='insufficient_history'; RETURN NEXT; RETURN; END IF;
   -- Spread 1 on the evaluated value set and NULL elsewhere turns the calibrated score
   -- into the plain maximum relative deviation over that set.
@@ -918,8 +944,221 @@ BEGIN
   res:=public.morlet_calibrated_score(q.vals,flat,width,unit_spreads);
   score:=res[1]; score_quantile:=res[2];
   IF res[3]>0 THEN top_value:=names[res[3]::integer]; top_relative_deviation:=score; END IF;
-  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels);
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
   calibrated_score:=(public.morlet_calibrated_score(q.vals,flat,width,spreads))[1];
   status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
   RETURN NEXT;
+END $$;
+
+-- Acquisitions (context model phase 2): several channel recordings on one time axis,
+-- acquisition time in integer nanoseconds from the acquisition origin. Each channel
+-- declares where its sample 0 lies (offset_ns), its clock source and the offset's
+-- uncertainty (NULL = exact, a shared DAQ clock). Channels keep their native rates;
+-- nothing is resampled. Recordings without an acquisition work as before.
+CREATE FUNCTION public.morlet_enable_acquisitions(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    acquisition_id text PRIMARY KEY CHECK(acquisition_id<>''''),
+    machine text NOT NULL,
+    origin_utc timestamptz,
+    metadata jsonb NOT NULL DEFAULT ''{}'' CHECK(jsonb_typeof(metadata)=''object''))',s,c||'_acq');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    acquisition_id text NOT NULL REFERENCES %1$I.%3$I(acquisition_id) ON DELETE CASCADE,
+    recording_id text NOT NULL UNIQUE REFERENCES %1$I.%4$I(recording_id) ON DELETE CASCADE,
+    role text NOT NULL CHECK(role<>''''),
+    offset_ns bigint NOT NULL,
+    clock_source text NOT NULL CHECK(clock_source IN (''daq'',''wallclock'',''controller'')),
+    offset_uncertainty_ns bigint CHECK(offset_uncertainty_ns>=0),
+    PRIMARY KEY(acquisition_id,role))',s,c||'_acq_channels',c||'_acq',c);
+END $$;
+
+CREATE FUNCTION public.morlet_acquisition_relations(collection regclass)
+RETURNS TABLE(acq regclass,channels regclass)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  acq:=to_regclass(format('%I.%I',s,c||'_acq')); channels:=to_regclass(format('%I.%I',s,c||'_acq_channels'));
+  IF acq IS NULL OR channels IS NULL THEN
+    RAISE EXCEPTION 'acquisitions are not enabled for this collection (morlet_enable_acquisitions)';
+  END IF;
+  RETURN NEXT;
+END $$;
+
+-- Half-open sample interval of acquisition-time interval [t_start_ns, t_end_ns) on a
+-- channel: sample n (at offset_ns + n*1e9/rate) belongs to it when its time does, i.e.
+-- [ceil((t_start - offset)*rate/1e9), ceil((t_end - offset)*rate/1e9)), clamped at 0 and
+-- computed in numeric so boundaries do not depend on float rounding (25.6 kHz has a
+-- 39062.5 ns period).
+CREATE FUNCTION public.morlet_time_to_samples(sample_rate_hz float8,offset_ns bigint,t_start_ns bigint,t_end_ns bigint,
+  OUT start_sample bigint,OUT end_sample bigint)
+LANGUAGE plpgsql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+BEGIN
+  IF NOT (sample_rate_hz>0 AND sample_rate_hz<'Infinity') OR t_end_ns<t_start_ns THEN
+    RAISE EXCEPTION 'sample rate must be positive and t_end_ns >= t_start_ns';
+  END IF;
+  start_sample:=greatest(0,ceil((t_start_ns-offset_ns)::numeric*sample_rate_hz::numeric/1000000000))::bigint;
+  end_sample:=greatest(0,ceil((t_end_ns-offset_ns)::numeric*sample_rate_hz::numeric/1000000000))::bigint;
+END $$;
+
+-- Acquisition time (ns, exact numeric) of a channel sample.
+CREATE FUNCTION public.morlet_sample_time_ns(sample_rate_hz float8,offset_ns bigint,sample bigint)
+RETURNS numeric LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+  SELECT offset_ns+sample::numeric*1000000000/sample_rate_hz::numeric
+$$;
+
+-- Creates an acquisition, or verifies that an identical one exists (returns false).
+CREATE FUNCTION public.morlet_create_acquisition(collection regclass,acquisition_id text,machine text,
+  origin_utc timestamptz DEFAULT NULL,metadata jsonb DEFAULT '{}'::jsonb)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; existing record;
+BEGIN
+  IF collection IS NULL OR acquisition_id IS NULL OR machine IS NULL OR metadata IS NULL THEN
+    RAISE EXCEPTION 'only origin_utc may be NULL';
+  END IF;
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  EXECUTE format('SELECT machine,origin_utc,metadata FROM %s WHERE acquisition_id=$1',rel.acq) INTO existing USING acquisition_id;
+  IF existing.machine IS NOT NULL THEN
+    IF existing.machine=machine AND existing.origin_utc IS NOT DISTINCT FROM origin_utc AND existing.metadata=metadata THEN
+      RETURN false;
+    END IF;
+    RAISE EXCEPTION 'acquisition % already exists with different attributes',acquisition_id;
+  END IF;
+  EXECUTE format('INSERT INTO %s(acquisition_id,machine,origin_utc,metadata) VALUES ($1,$2,$3,$4)',rel.acq)
+    USING acquisition_id,machine,origin_utc,metadata;
+  RETURN true;
+END $$;
+
+-- Adds a channel recording to an acquisition, or verifies an identical membership.
+CREATE FUNCTION public.morlet_add_acquisition_channel(collection regclass,acquisition_id text,recording_id text,
+  role text,offset_ns bigint DEFAULT 0,clock_source text DEFAULT 'daq',offset_uncertainty_ns bigint DEFAULT NULL)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; existing record;
+BEGIN
+  IF collection IS NULL OR acquisition_id IS NULL OR recording_id IS NULL OR role IS NULL OR offset_ns IS NULL
+    OR clock_source IS NULL THEN
+    RAISE EXCEPTION 'only offset_uncertainty_ns may be NULL';
+  END IF;
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  EXECUTE format('SELECT * FROM %s WHERE recording_id=$1',rel.channels) INTO existing USING recording_id;
+  IF existing.recording_id IS NOT NULL THEN
+    IF existing.acquisition_id=acquisition_id AND existing.role=role AND existing.offset_ns=offset_ns
+      AND existing.clock_source=clock_source AND existing.offset_uncertainty_ns IS NOT DISTINCT FROM offset_uncertainty_ns THEN
+      RETURN false;
+    END IF;
+    RAISE EXCEPTION 'recording % already belongs to an acquisition with different attributes',recording_id;
+  END IF;
+  EXECUTE format('INSERT INTO %s(acquisition_id,recording_id,role,offset_ns,clock_source,offset_uncertainty_ns)
+    VALUES ($1,$2,$3,$4,$5,$6)',rel.channels)
+    USING acquisition_id,recording_id,role,offset_ns,clock_source,offset_uncertainty_ns;
+  RETURN true;
+END $$;
+
+-- Absolute start (ns since 1970) of a context segment, or NULL when its recording is not
+-- in an acquisition with origin_utc.
+CREATE FUNCTION public.morlet_segment_start_ns(collection regclass,segment_id bigint)
+RETURNS numeric LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE ctx record; acq record; t numeric;
+BEGIN
+  SELECT * INTO ctx FROM public.morlet_context_relations(collection);
+  SELECT * INTO acq FROM public.morlet_acquisition_relations(collection);
+  EXECUTE format('SELECT extract(epoch FROM a.origin_utc)*1000000000+public.morlet_sample_time_ns(r.sample_rate_hz,ch.offset_ns,s.start_sample)
+    FROM %s s JOIN %s r ON r.recording_id=s.recording_id JOIN %s ch ON ch.recording_id=s.recording_id
+      JOIN %s a ON a.acquisition_id=ch.acquisition_id WHERE s.segment_id=$1',ctx.segments,collection,acq.channels,acq.acq)
+    INTO t USING segment_id;
+  RETURN t;
+END $$;
+
+-- Context in acquisition time: rows {"key","value","t_start_ns"[,"t_end_ns"]} are mapped to
+-- every channel of the acquisition in its own sample coordinates (morlet_time_to_samples)
+-- and added with morlet_add_context under batch '<batch_id>@<acquisition_id>/<role>'. Intervals that map to
+-- no sample on a channel are skipped there. Returns the rows added over all channels; an
+-- identical retry returns 0.
+CREATE FUNCTION public.morlet_add_acquisition_context(collection regclass,acquisition_id text,batch_id text,rows jsonb)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; ch record; mapped jsonb; n bigint:=0;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  IF jsonb_typeof(rows)<>'array' OR jsonb_array_length(rows)=0 THEN RAISE EXCEPTION 'rows must be a non-empty JSON array'; END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(rows) r WHERE r->>'key' IS NULL OR r->'value' IS NULL OR r->>'t_start_ns' IS NULL) THEN
+    RAISE EXCEPTION 'every row needs key, value and t_start_ns';
+  END IF;
+  FOR ch IN EXECUTE format('SELECT c.recording_id,c.role,c.offset_ns,r.sample_rate_hz FROM %s c JOIN %s r ON r.recording_id=c.recording_id
+      WHERE c.acquisition_id=$1 ORDER BY c.role',rel.channels,collection) USING acquisition_id
+  LOOP
+    SELECT jsonb_agg(CASE WHEN r->>'t_end_ns' IS NULL
+        THEN jsonb_build_object('recording_id',ch.recording_id,'key',r->>'key','value',r->'value',
+          'start_sample',(public.morlet_time_to_samples(ch.sample_rate_hz,ch.offset_ns,(r->>'t_start_ns')::bigint,(r->>'t_start_ns')::bigint)).start_sample)
+        ELSE jsonb_build_object('recording_id',ch.recording_id,'key',r->>'key','value',r->'value',
+          'start_sample',m.start_sample,'end_sample',m.end_sample) END)
+      INTO mapped
+    FROM jsonb_array_elements(rows) r
+      LEFT JOIN LATERAL public.morlet_time_to_samples(ch.sample_rate_hz,ch.offset_ns,(r->>'t_start_ns')::bigint,
+        coalesce((r->>'t_end_ns')::bigint,(r->>'t_start_ns')::bigint)) m ON true
+    WHERE r->>'t_end_ns' IS NULL OR m.end_sample>m.start_sample;
+    IF mapped IS NOT NULL THEN
+      n:=n+public.morlet_add_context(collection,batch_id||'@'||acquisition_id||'/'||ch.role,mapped);
+    END IF;
+  END LOOP;
+  IF NOT FOUND THEN RAISE EXCEPTION 'acquisition % has no visible channels',acquisition_id; END IF;
+  RETURN n;
+END $$;
+
+-- One acquisition-time interval read from every channel, each in its own samples
+-- (at most 32768 per channel, clamped to the recording's length).
+CREATE FUNCTION public.morlet_read_acquisition(collection regclass,acquisition_id text,t_start_ns bigint,t_end_ns bigint)
+RETURNS TABLE(role text,recording_id text,sample_rate_hz float8,start_sample bigint,end_sample bigint,
+  start_time_ns numeric,samples float8[])
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; ch record; m record; recording_end bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  FOR ch IN EXECUTE format('SELECT c.recording_id,c.role,c.offset_ns,r.sample_rate_hz,(r.checkpoint->>''end'')::bigint AS n
+      FROM %s c JOIN %s r ON r.recording_id=c.recording_id WHERE c.acquisition_id=$1 ORDER BY c.role',rel.channels,collection)
+    USING acquisition_id
+  LOOP
+    SELECT * INTO m FROM public.morlet_time_to_samples(ch.sample_rate_hz,ch.offset_ns,t_start_ns,t_end_ns);
+    recording_end:=least(m.end_sample,ch.n);
+    CONTINUE WHEN recording_end<=m.start_sample;
+    IF recording_end-m.start_sample>32768 THEN
+      RAISE EXCEPTION 'channel % would return % samples; read at most 32768 per channel',ch.role,recording_end-m.start_sample;
+    END IF;
+    RETURN QUERY SELECT ch.role,ch.recording_id,ch.sample_rate_hz,m.start_sample,recording_end,
+      public.morlet_sample_time_ns(ch.sample_rate_hz,ch.offset_ns,m.start_sample),i.samples
+      FROM public.morlet_read_interval(collection,ch.recording_id,m.start_sample,recording_end) i;
+  END LOOP;
+END $$;
+
+-- Compares one occurrence of a context on every channel of an acquisition, side by side:
+-- for each channel, the non-stale segment with exactly this context and occurrence is
+-- compared with morlet_compare_summary (status 'no_segment' when a channel has none).
+CREATE FUNCTION public.morlet_compare_acquisition(collection regclass,acquisition_id text,context jsonb,occurrence jsonb,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false)
+RETURNS TABLE(role text,recording_id text,segment_id bigint,score float8,score_quantile float8,top_value text,
+  top_relative_deviation float8,duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; ctx record; ch record; seg bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  SELECT * INTO ctx FROM public.morlet_context_relations(collection);
+  FOR ch IN EXECUTE format('SELECT c.recording_id,c.role FROM %s c WHERE c.acquisition_id=$1 ORDER BY c.role',rel.channels)
+    USING acquisition_id
+  LOOP
+    EXECUTE format('SELECT min(s.segment_id) FROM %s s WHERE s.recording_id=$1 AND NOT s.stale AND s.context=$2 AND s.occurrence=$3',
+      ctx.segments) INTO seg USING ch.recording_id,context,occurrence;
+    IF seg IS NULL THEN
+      RETURN QUERY SELECT ch.role,ch.recording_id,NULL::bigint,NULL::float8,NULL::float8,NULL::text,NULL::float8,NULL::float8,
+        NULL::float8,NULL::integer,'no_segment'::text;
+      CONTINUE;
+    END IF;
+    RETURN QUERY SELECT ch.role,ch.recording_id,seg,s.score,s.score_quantile,s.top_value,s.top_relative_deviation,
+      s.duration_relative_deviation,s.calibrated_score,s.hist_n,s.status
+      FROM public.morlet_compare_summary(collection,seg,match_keys,metadata_filter,exclude_labels,min_history,max_candidates,
+        before_only) s;
+  END LOOP;
 END $$;
