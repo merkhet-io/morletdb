@@ -181,3 +181,10 @@ to store raw samples only. Such a recording accepts any sample rate up to
 200000 Hz, writes no segment rows and is skipped by feature search. Reads, storage
 accounting and replay work as usual. The default is still `morlet-energy-v1`.
 
+Materialized envelopes (`morlet_enable_envelopes`, `morlet_build_envelopes`,
+`morlet_search_envelopes`, `morlet_search_envelope_interval`) are an optional
+representation for search by envelope cross-correlation. Rust entry points:
+`morlet_envelope`, `morlet_envelope_encode`, `morlet_envelope_decode`,
+`morlet_envelope_distance` and `morlet_envelope_version`. See
+[materialized envelopes](../../docs/durable-ingestion.md#materialized-envelopes).
+

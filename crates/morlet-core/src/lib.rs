@@ -1,5 +1,6 @@
 //! Portable signal primitives and the versioned Morlet extractor.
 pub mod chunks;
+pub mod envelope;
 pub mod morlet;
 pub mod rawcodec;
 pub mod segments;
@@ -19,6 +20,8 @@ pub enum SignalError {
     InvalidLowSampleRate,
     UnknownExtractor,
     NumericalFailure,
+    EnvelopeLength,
+    InvalidEnvelope,
 }
 impl fmt::Display for SignalError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -35,6 +38,8 @@ impl fmt::Display for SignalError {
                 "extractor must be morlet-energy-v1 or morlet-energy-lowrate-v1"
             }
             Self::NumericalFailure => "signal produces non-finite features at this numeric scale",
+            Self::EnvelopeLength => "envelope windows must be a power of two in 512..32768 samples",
+            Self::InvalidEnvelope => "invalid stored envelope",
             Self::InvalidNormalization => "normalization must be none, demean or zscore",
         })
     }

@@ -28,6 +28,16 @@ Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
   search. The importer accepts `--extractor none`. Library-only change; the
   default is unchanged.
 
+- Materialized envelopes (`xc-envelope-f16-v1`): opt-in per collection
+  (`morlet_enable_envelopes`), built resumably from raw (`morlet_build_envelopes`),
+  searched exactly with server-side scoring (`morlet_search_envelopes`,
+  `morlet_search_envelope_interval`). They are a rebuildable representation, not
+  an index. Evaluated in R1/R1b:
+  - same results as decoding raw;
+  - about 13% of the raw chunk table at 4096-sample windows.
+
+  `morlet_collection_storage` gains `envelope_table_bytes`.
+
 Docs: the README's measured results now list the frozen held-out tests (Paderborn,
 seismic timing, PTB-XL, storage, materialized envelopes). In these tests Morlet
 features did not beat simple baselines.

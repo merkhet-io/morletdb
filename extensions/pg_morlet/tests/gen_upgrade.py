@@ -51,4 +51,9 @@ out += [fn(r).replace("CREATE FUNCTION public.", "CREATE OR REPLACE FUNCTION pub
         for r in ("morlet_create_stream_collection", "morlet_append_chunk", "morlet_read_interval")]
 out.append("\n-- New storage reports.\n")
 out += [fn("morlet_recording_storage"), fn("morlet_collection_storage")]
+out.append("\n-- Materialized envelopes (xc-envelope-f16-v1).\n")
+out += [rust(r) for r in ("morlet_envelope_version", "morlet_envelope", "morlet_envelope_encode",
+                          "morlet_envelope_decode", "morlet_envelope_distance")]
+out += [fn(r) for r in ("morlet_enable_envelopes", "morlet_envelope_relation", "morlet_build_envelopes",
+                        "morlet_envelope_ranked", "morlet_search_envelopes", "morlet_search_envelope_interval")]
 (EXT / "sql/pg_morlet--0.1.0--0.2.0.sql").write_text("\n".join(out))

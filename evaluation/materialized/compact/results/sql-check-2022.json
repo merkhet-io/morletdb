@@ -1,0 +1,32 @@
+{
+ "year": 2022,
+ "windows": 1826,
+ "provenance": {
+  "commit": "bb4ee6ff4cdbff63a0c1bd453e266f6a723acd26",
+  "dirty": true,
+  "machine": "arm64",
+  "os": "macOS-27.0.1-arm64-arm-64bit",
+  "cpu": "Apple M5 Max"
+ },
+ "build": {
+  "windows": 1826,
+  "ms_per_window": 4.195148138041727
+ },
+ "storage": {
+  "chunk_table_bytes": 13680640,
+  "envelope_table_bytes": 1794048,
+  "envelope_fraction_of_chunks": 0.1311377245508982
+ },
+ "queries": 1557,
+ "agreement_with_python_f16": {
+  "identical_set": 1.0,
+  "identical_order": 1.0,
+  "queries_with_fewer_than_10_eligible_in_top100": 0,
+  "max_abs_distance_difference": 3.3306690738754696e-15
+ },
+ "search_latency_ms": {
+  "p50": 10.322083020582795,
+  "p95": 13.284608162939547,
+  "note": "morlet_search_envelopes, same-station filter, top 100, server-side scoring"
+ }
+}

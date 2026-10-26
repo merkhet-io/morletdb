@@ -234,6 +234,59 @@ envelopes. In the frozen seismic timing test, envelope cross-correlation beat
 temporal Morlet features (see the README's measured results). The default stays `morlet-energy-v1`, and a
 recording's extractor cannot be changed after it starts.
 
+## Materialized envelopes
+
+An optional representation stored next to the raw chunks for search-by-example
+with envelope cross-correlation. It is materialized, not an index: rows are
+derived from raw samples, can be dropped and rebuilt at any time, and raw
+storage never depends on them.
+
+```sql
+SELECT morlet_enable_envelopes('signals');                  -- creates signals_envelopes
+SELECT morlet_build_envelopes('signals', 'pump-7', 4096, 2048);  -- resumable; bounded per call
+SELECT * FROM morlet_search_envelopes('signals', :query_samples, 25600, 'x', 'g',
+  '{"line": "A"}', 10);                                      -- top 10, overlaps suppressed
+SELECT * FROM morlet_search_envelope_interval('signals', 'pump-7', 81920, 86016);
+```
+
+- **Representation** `xc-envelope-f16-v1`:
+  - z-score, Hilbert magnitude, a 50-sample moving average, every 10th value,
+    z-score again;
+  - stored as IEEE binary16 behind a one-byte version header;
+  - windows are powers of two from 512 to 32768 samples. A 4096-sample window
+    stores 821 bytes.
+- **Matching:** 1 − the maximum biased cross-correlation over lags up to
+  `max_lag_fraction` of the envelope length. The default is 0.075, which is ±30
+  envelope values at 4096 samples.
+  - The query envelope is computed at full precision; stored ones are decoded and
+    z-scored again.
+  - Scoring runs in Rust inside the database.
+- **Eligibility:** the same rate, channel, unit and window size, plus metadata
+  containment. Above `max_candidates` (default 4096) the search fails rather than
+  sampling. Overlapping windows of one recording are suppressed in rank order.
+- **Building:** `morlet_build_envelopes` covers complete windows on the grid
+  `k × stride`, resuming after the last stored window of that size. At most
+  `max_windows` windows are built per call. Appends do not build envelopes
+  automatically; call it after appending, for example from the ingest job.
+- **Storage:** `morlet_collection_storage` reports `envelope_table_bytes`, which
+  is included in `total_bytes`.
+
+### Evidence
+
+Frozen evaluations on seismic event windows (CX, 4096-sample windows):
+- **R1** (`evaluation/materialized`): stored envelopes return the same top 10 as
+  decoding raw.
+- **R1b** (`evaluation/materialized/compact`, 2022 held out): the binary16 form
+  had recall@10 0.9999 against full raw decode, 0.012× the p95 latency, and 12.9%
+  of the raw chunk table.
+- **Implementation check** (`compact/sql_check.py`, the same 2022 windows): the
+  SQL API returned the identical top 10, in identical order, for all 1,557
+  queries. The largest distance difference was 3 × 10⁻¹⁵. p95 search latency was
+  13 ms, and the envelope table was 13.1% of the chunk table.
+
+**Not established:** relevance on machine data, behaviour beyond the tested
+gallery sizes (about 180 candidates per query), and concurrent workloads.
+
 ## Progress and search
 
 Status exposes received samples, next window start, visible segment count and
