@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent))
+sys.path[:0] = [str(HERE), str(HERE.parent)]  # also under python -I
 from retrieval import baseline_features  # noqa: E402  (the existing evaluator's baselines)
 
 RATE = 64000.0

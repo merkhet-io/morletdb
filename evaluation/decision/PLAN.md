@@ -167,6 +167,10 @@ Let Δ be the bearing-level P@10 of **M minus FS**, with its 95% interval.
 
 ## Changes after freezing
 
+- 2026-10-26, before any held-out file was read: `bearings.py` import path fixed so the
+  `prepare` stage runs under `python -I`. This is an implementation fix with no change to
+  the method.
+
 Any change after the freeze goes in a changelog here, with its reason. A change made
 after held-out results have been seen requires a rerun on data that has not been seen.
 For this dataset that is impossible, so such changes are reported as exploratory.
