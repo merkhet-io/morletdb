@@ -12,7 +12,11 @@
 use crate::{validate, SignalError, MAX_SAMPLES};
 use std::fmt;
 
-pub const FORMAT_VERSION: u8 = 1;
+/// Version 2 appends a CRC-32C of all preceding bytes. Version 1 (no checksum)
+/// existed only on an unreleased development branch and is rejected, never
+/// reinterpreted.
+pub const FORMAT_VERSION: u8 = 2;
+const CHECKSUM_BYTES: usize = 4;
 const KIND_RAW: u8 = 0;
 const KIND_GRID: u8 = 1;
 const KIND_FLOAT: u8 = 2;
@@ -30,6 +34,7 @@ const MAX_GRID_INDEX: f64 = 9_007_199_254_740_992.0;
 pub enum CodecError {
     Signal(SignalError),
     InvalidQuantum,
+    UnsupportedVersion(u8),
     Corrupt(&'static str),
 }
 impl fmt::Display for CodecError {
@@ -37,6 +42,10 @@ impl fmt::Display for CodecError {
         match self {
             Self::Signal(e) => e.fmt(f),
             Self::InvalidQuantum => f.write_str("sample_quantum must be finite and positive"),
+            Self::UnsupportedVersion(v) => write!(
+                f,
+                "unsupported encoded chunk format version {v}; re-append the samples"
+            ),
             Self::Corrupt(what) => write!(f, "corrupt encoded chunk: {what}"),
         }
     }
@@ -119,6 +128,13 @@ impl Grid {
 
 /// Encodes validated samples. The result decodes bitwise to the input.
 pub fn encode(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
+    let mut out = encode_body(samples, quantum)?;
+    let checksum = crc32c(&out);
+    out.extend_from_slice(&checksum.to_le_bytes());
+    Ok(out)
+}
+
+fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
     validate(samples).map_err(CodecError::Signal)?;
     let grid = Grid::new(quantum)?;
     let mut out = vec![FORMAT_VERSION];
@@ -202,18 +218,41 @@ fn encode_off_grid(samples: &[f64], out: &mut Vec<u8>) {
     }
 }
 
+/// The checksummed body (version byte through payload) of a version-2 chunk.
+fn verified(encoded: &[u8]) -> Result<&[u8], CodecError> {
+    match encoded.first() {
+        None => return Err(CodecError::Corrupt("empty")),
+        Some(&FORMAT_VERSION) => {}
+        Some(&v) if v < FORMAT_VERSION => return Err(CodecError::UnsupportedVersion(v)),
+        Some(_) => return Err(CodecError::Corrupt("unknown format version")),
+    }
+    if encoded.len() < 3 + CHECKSUM_BYTES {
+        return Err(CodecError::Corrupt("truncated"));
+    }
+    let (body, tail) = encoded.split_at(encoded.len() - CHECKSUM_BYTES);
+    if crc32c(body).to_le_bytes() != tail {
+        return Err(CodecError::Corrupt("checksum mismatch"));
+    }
+    Ok(body)
+}
+
+/// Verifies the checksum and returns the chunk's storage kind.
 pub fn kind(encoded: &[u8]) -> Result<Kind, CodecError> {
-    match encoded {
-        [FORMAT_VERSION, KIND_GRID, ..] => Ok(Kind::Grid),
-        [FORMAT_VERSION, KIND_FLOAT, ..] => Ok(Kind::Float),
-        [FORMAT_VERSION, KIND_RAW, ..] => Ok(Kind::Raw),
-        [FORMAT_VERSION, ..] => Err(CodecError::Corrupt("unknown kind")),
-        _ => Err(CodecError::Corrupt("unknown format version")),
+    kind_of(verified(encoded)?)
+}
+fn kind_of(body: &[u8]) -> Result<Kind, CodecError> {
+    match body[1] {
+        KIND_GRID => Ok(Kind::Grid),
+        KIND_FLOAT => Ok(Kind::Float),
+        KIND_RAW => Ok(Kind::Raw),
+        _ => Err(CodecError::Corrupt("unknown kind")),
     }
 }
 
+/// Verifies the checksum, then decodes and validates the samples.
 pub fn decode(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
-    let kind = kind(encoded)?;
+    let encoded = verified(encoded)?;
+    let kind = kind_of(encoded)?;
     let mut pos = 2;
     let n = get_varint(encoded, &mut pos)?;
     if n == 0 || n > MAX_SAMPLES as u64 {
@@ -271,6 +310,33 @@ pub fn decode(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
     };
     validate(&samples).map_err(CodecError::Signal)?;
     Ok(samples)
+}
+
+/// CRC-32C (Castagnoli, reflected polynomial 0x82F63B78), as used by iSCSI and ext4.
+const fn crc32c_table() -> [u32; 256] {
+    let mut table = [0u32; 256];
+    let mut i = 0;
+    while i < 256 {
+        let mut c = i as u32;
+        let mut bit = 0;
+        while bit < 8 {
+            c = if c & 1 == 1 {
+                (c >> 1) ^ 0x82F6_3B78
+            } else {
+                c >> 1
+            };
+            bit += 1;
+        }
+        table[i] = c;
+        i += 1;
+    }
+    table
+}
+const CRC32C_TABLE: [u32; 256] = crc32c_table();
+fn crc32c(bytes: &[u8]) -> u32 {
+    !bytes.iter().fold(!0u32, |c, &b| {
+        CRC32C_TABLE[((c ^ b as u32) & 0xff) as usize] ^ (c >> 8)
+    })
 }
 
 /// Monotonic float64 -> i64 map: +0 is 0, -0 is -1, and numeric order is kept,
@@ -632,7 +698,10 @@ mod tests {
         let noise: Vec<f64> = (0..777)
             .map(|_| (lcg(&mut seed) as f64 / 9_007_199_254_740_992.0 - 0.5) * 2e9)
             .collect();
-        assert_eq!(roundtrip(&noise, 1.0), (Kind::Raw, 2 + 2 + 8 * 777));
+        assert_eq!(
+            roundtrip(&noise, 1.0),
+            (Kind::Raw, 2 + 2 + 8 * 777 + CHECKSUM_BYTES)
+        );
     }
 
     #[test]
@@ -655,36 +724,112 @@ mod tests {
     }
 
     #[test]
-    fn rejects_bad_inputs_and_corruption() {
+    fn rejects_invalid_quanta() {
         assert_eq!(encode(&[1.0], 0.0), Err(CodecError::InvalidQuantum));
         assert_eq!(encode(&[1.0], f64::NAN), Err(CodecError::InvalidQuantum));
+    }
+
+    fn seal(mut body: Vec<u8>) -> Vec<u8> {
+        let checksum = crc32c(&body);
+        body.extend_from_slice(&checksum.to_le_bytes());
+        body
+    }
+
+    #[test]
+    fn checksum_detects_every_mutation_kind() {
+        assert_eq!(crc32c(b"123456789"), 0xE306_9283);
+        let mut seed = 5;
+        for samples in [
+            (0..1000).map(|i| (i % 17) as f64).collect::<Vec<f64>>(),
+            (0..1000).map(|i| (i as f64 / 9.).sin()).collect(),
+            vec![0.5, -0.0, 1e9],
+        ] {
+            let good = encode(&samples, 1.0).unwrap();
+            // Single-bit flips in the version, kind, header, payload and checksum.
+            for byte in 0..good.len() {
+                for bit in 0..8 {
+                    let mut bad = good.clone();
+                    bad[byte] ^= 1 << bit;
+                    assert!(decode(&bad).is_err(), "flip {byte}:{bit}");
+                    assert!(kind(&bad).is_err());
+                }
+            }
+            // Multi-byte overwrites.
+            for _ in 0..2000 {
+                let mut bad = good.clone();
+                let at = (lcg(&mut seed) as usize) % bad.len();
+                let len = 1 + (lcg(&mut seed) as usize) % 8;
+                for b in bad.iter_mut().skip(at).take(len) {
+                    *b = lcg(&mut seed) as u8;
+                }
+                if bad != good {
+                    assert!(decode(&bad).is_err());
+                }
+            }
+            for cut in 0..good.len() {
+                assert!(decode(&good[..cut]).is_err(), "truncated to {cut}");
+            }
+            for extra in 1..=8 {
+                let mut long = good.clone();
+                long.extend(std::iter::repeat_n(0u8, extra));
+                assert!(decode(&long).is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn checksum_catches_mutations_that_still_decode_to_valid_samples() {
+        let samples = [0.25f64, 0.5, 0.75];
+        let raw = seal({
+            let mut body = vec![FORMAT_VERSION, KIND_RAW, 3];
+            body.extend(samples.iter().flat_map(|x| x.to_le_bytes()));
+            body
+        });
+        let mut bad = raw.clone();
+        bad[3] ^= 1; // lowest mantissa bit of the first sample
+        let body = &bad[..bad.len() - CHECKSUM_BYTES];
+        // Structurally the mutated body still decodes to valid, different samples ...
+        assert!(decode(&seal(body.to_vec())).unwrap()[0] != samples[0]);
+        // ... so only the checksum detects it.
+        assert_eq!(decode(&bad), Err(CodecError::Corrupt("checksum mismatch")));
+    }
+
+    #[test]
+    fn version_one_is_rejected_not_reinterpreted() {
+        let mut v1 = encode(&[1.0, 2.0, 3.0], 1.0).unwrap();
+        v1.truncate(v1.len() - CHECKSUM_BYTES);
+        v1[0] = 1;
+        assert_eq!(decode(&v1), Err(CodecError::UnsupportedVersion(1)));
+        assert_eq!(kind(&v1), Err(CodecError::UnsupportedVersion(1)));
+        assert_eq!(
+            decode(&[3, 1, 1, 0, 0, 0, 0]),
+            Err(CodecError::Corrupt("unknown format version"))
+        );
+    }
+
+    #[test]
+    fn structural_checks_still_apply_behind_a_valid_checksum() {
         assert!(matches!(encode(&[], 1.0), Err(CodecError::Signal(_))));
         assert!(matches!(
             encode(&[f64::INFINITY], 1.0),
             Err(CodecError::Signal(_))
         ));
-        let samples: Vec<f64> = (0..1000).map(|i| (i % 17) as f64).collect();
-        let good = encode(&samples, 1.0).unwrap();
-        assert!(decode(&good[..good.len() - 1]).is_err());
-        let mut extra = good.clone();
-        extra.push(0);
-        assert!(decode(&extra).is_err());
-        assert!(decode(&[2, 1, 1]).is_err());
-        assert!(decode(&[]).is_err());
-        // Any single-bit flip either fails or decodes to valid bounded samples.
-        for byte in 0..good.len() {
-            for bit in 0..8 {
-                let mut bad = good.clone();
-                bad[byte] ^= 1 << bit;
-                if let Ok(v) = decode(&bad) {
-                    assert!(validate(&v).is_ok());
-                }
-            }
-        }
         let mut raw = vec![FORMAT_VERSION, KIND_RAW, 2];
         raw.extend(f64::INFINITY.to_le_bytes());
         raw.extend(1.5f64.to_le_bytes());
-        assert!(decode(&raw).is_err());
-        assert!(decode(&raw[..raw.len() - 1]).is_err());
+        assert!(matches!(
+            decode(&seal(raw.clone())),
+            Err(CodecError::Signal(_))
+        ));
+        raw.pop();
+        assert_eq!(decode(&seal(raw)), Err(CodecError::Corrupt("raw length")));
+        assert_eq!(
+            decode(&seal(vec![FORMAT_VERSION, 9, 1])),
+            Err(CodecError::Corrupt("unknown kind"))
+        );
+        let grid = encode(&[1.0, 2.0, 3.0, 4.0], 1.0).unwrap();
+        let mut body = grid[..grid.len() - CHECKSUM_BYTES].to_vec();
+        body.push(0);
+        assert!(decode(&seal(body)).is_err());
     }
 }

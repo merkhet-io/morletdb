@@ -252,20 +252,20 @@ mod tests {
             let same = Spi::get_one::<bool>(&format!("SELECT (SELECT array_agg(float8send(v) ORDER BY o) FROM unnest((SELECT samples FROM morlet_read_interval('encoded_streams','{id}',4000,10000))) WITH ORDINALITY u(v,o)) = (SELECT array_agg(float8send({column}) ORDER BY i) FROM source WHERE i>=4000)")).unwrap().unwrap();
             assert!(same, "{id}");
         }
-        let counts = Spi::get_three::<i64, i64, i64>("SELECT grid_chunks,raw_chunks,samples FROM morlet_stream_storage('encoded_streams','counts')").unwrap();
+        let counts = Spi::get_three::<i64, i64, i64>("SELECT grid_chunks,raw_chunks,samples FROM morlet_recording_storage('encoded_streams','counts')").unwrap();
         assert_eq!(
             (counts.0.unwrap(), counts.1.unwrap(), counts.2.unwrap()),
             (2, 0, 10000)
         );
         let bits = Spi::get_one::<f64>(
-            "SELECT bits_per_sample FROM morlet_stream_storage('encoded_streams','counts')",
+            "SELECT stored_value_bits_per_sample FROM morlet_recording_storage('encoded_streams','counts')",
         )
         .unwrap()
         .unwrap();
         assert!(bits < 16.0, "{bits}");
         assert_eq!(
             Spi::get_one::<i64>(
-                "SELECT grid_chunks FROM morlet_stream_storage('encoded_streams','milli')"
+                "SELECT grid_chunks FROM morlet_recording_storage('encoded_streams','milli')"
             )
             .unwrap()
             .unwrap(),
@@ -273,7 +273,7 @@ mod tests {
         );
         assert_eq!(
             Spi::get_one::<i64>(
-                "SELECT float_chunks FROM morlet_stream_storage('encoded_streams','floats')"
+                "SELECT float_chunks FROM morlet_recording_storage('encoded_streams','floats')"
             )
             .unwrap()
             .unwrap(),
@@ -288,11 +288,36 @@ mod tests {
             4
         );
     }
+    #[pg_test]
+    fn storage_reports_separate_payload_and_physical_size() {
+        Spi::run("SELECT morlet_create_stream_collection('public','sized_streams'); SELECT morlet_start_recording('sized_streams','A',4096,'x','g'); SELECT morlet_start_recording('sized_streams','B',4096,'x','g'); SELECT morlet_append_chunk('sized_streams','A',0,ARRAY(SELECT round(100*sin(i/9.))::float8 FROM generate_series(0,4095) i)); SELECT morlet_append_chunk('sized_streams','B',0,ARRAY(SELECT i::float8 FROM generate_series(0,999) i))").unwrap();
+        let payload = Spi::get_two::<i64, i64>("SELECT encoded_bytes,(SELECT sum(octet_length(encoded))::bigint FROM sized_streams_chunks WHERE recording_id='A') FROM morlet_recording_storage('sized_streams','A')").unwrap();
+        assert_eq!(payload.0, payload.1);
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT original_float64_bytes FROM morlet_recording_storage('sized_streams','A')"
+            )
+            .unwrap()
+            .unwrap(),
+            8 * 4096
+        );
+        let consistent = Spi::get_one::<bool>("SELECT recordings=2 AND samples=5096 AND original_float64_bytes=8*5096 AND total_bytes=recordings_table_bytes+chunk_table_bytes+segment_table_bytes AND chunk_table_bytes=pg_total_relation_size('sized_streams_chunks') AND segment_table_bytes>0 FROM morlet_collection_storage('sized_streams')").unwrap().unwrap();
+        assert!(consistent);
+    }
+    #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
+    fn reads_verify_chunk_integrity() {
+        // Bypass the table CHECK, as storage corruption would, then read.
+        Spi::run("SELECT morlet_create_stream_collection('public','rot_streams'); SELECT morlet_start_recording('rot_streams','A',4096,'x','g'); SELECT morlet_append_chunk('rot_streams','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,999) i)); ALTER TABLE rot_streams_chunks DROP CONSTRAINT rot_streams_chunks_check; UPDATE rot_streams_chunks SET encoded=set_byte(encoded,20,get_byte(encoded,20) # 1); SELECT * FROM morlet_read_interval('rot_streams','A',0,10)").unwrap();
+    }
+    #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
+    fn encoded_chunk_check_rejects_checksum_mismatch() {
+        Spi::run("SELECT morlet_create_stream_collection('public','crc_streams'); SELECT morlet_start_recording('crc_streams','A',4096,'x','g'); SELECT morlet_append_chunk('crc_streams','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,999) i)); UPDATE crc_streams_chunks SET encoded=set_byte(encoded,20,get_byte(encoded,20) # 1)").unwrap();
+    }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn encoded_chunks_reject_conflicting_replay() {
         Spi::run("SELECT morlet_create_stream_collection('public','encoded_replay'); SELECT morlet_start_recording('encoded_replay','A',4096,'x','g'); SELECT morlet_append_chunk('encoded_replay','A',0,array_fill(3.::float8,ARRAY[137])); SELECT morlet_append_chunk('encoded_replay','A',0,array_cat(array_fill(3.::float8,ARRAY[136]),ARRAY[3.5::float8]))").unwrap();
     }
-    #[pg_test(error = "corrupt encoded chunk: trailing data")]
+    #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
     fn encoded_chunk_check_rejects_direct_corruption() {
         Spi::run("SELECT morlet_create_stream_collection('public','encoded_corrupt'); SELECT morlet_start_recording('encoded_corrupt','A',4096,'x','g'); INSERT INTO encoded_corrupt_chunks VALUES ('A',0,3,morlet_encode_chunk(ARRAY[1,2,3]::float8[],1)||'\\x00'::bytea)").unwrap();
     }
@@ -317,7 +342,7 @@ mod tests {
             vec![598., 599., 600., 601.]
         );
         let storage = Spi::get_three::<i64, i64, i64>(
-            "SELECT chunks,samples,grid_chunks FROM morlet_stream_storage('legacy_streams','A')",
+            "SELECT chunks,samples,grid_chunks FROM morlet_recording_storage('legacy_streams','A')",
         )
         .unwrap();
         assert_eq!(

@@ -33,6 +33,7 @@ files.
    TOAST-compressed). Native integers with FLAC take **4.6 bits/sample** on comparable
    held-out CX counts, losslessly.
    - That is about a **5× reduction from a standard codec and the right sample type**
+     *(superseded: measured 1.7–3.3× in Postgres; see the correction above)*
      (estimate across reports).
    - Naive float64 Parquet is equally wasteful: 36.9 vs 9.1 bits/sample on Paderborn.
 2. **Lossless specialized coding barely beats optimized Parquet** (H1 lossless: no
@@ -205,7 +206,7 @@ ingestion at any realistic condition-monitoring rate.
 
 | Capability | Recommendation |
 |---|---|
-| Integer sample storage + standard lossless codec | **Continue (highest value).** About 5× smaller than the current `float8[]` chunks (estimate), bit-exact, and cheap to encode. This is a storage-format change in the extension and needs its own reviewed PR. |
+| Integer sample storage + standard lossless codec | **Continue (highest value).** About 5× smaller than the current `float8[]` chunks (estimate; *superseded: measured 1.7–3.3×, see the correction above*), bit-exact, and cheap to encode. This is a storage-format change in the extension and needs its own reviewed PR. |
 | Error-bounded lossy tier (scalar quantization) | **Narrow:** opt-in for aged data, with the declared ε and the original detector checks stored. It reached about 3× vs Parquet on bearings, but it can shift kurtosis alarms (IMS). |
 | Wavelet / decomposition codecs | **Pause.** No size advantage after overhead. Not justified by these data. |
 | Progressive reconstruction | **Pause.** Use a separate retrieval representation instead. |

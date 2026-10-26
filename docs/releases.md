@@ -1,8 +1,10 @@
 # Alpha releases
 
 The current package identifier is in VERSION (`0.1.0-alpha.3`). GitHub tags use
-a leading v; GHCR image tags do not. The SQL extension version remains 0.1.0,
-with no upgrade scripts between alpha releases. Releases target PostgreSQL 17 on
+a leading v; GHCR image tags do not. Alpha releases up to
+0.1.0-alpha.3 all report SQL extension version 0.1.0, with no upgrade scripts
+between them. The next release's SQL version is 0.2.0, with an update script from
+alpha.3's 0.1.0 objects only (see durable-ingestion.md, Upgrading). Releases target PostgreSQL 17 on
 Linux amd64.
 
 `0.1.0-alpha.1` was published before the repository's

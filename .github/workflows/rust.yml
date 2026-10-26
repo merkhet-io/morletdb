@@ -122,6 +122,39 @@ jobs:
           name: benchmark-smoke-report
           path: |
             benchmark-output/report.json
+  upgrade:
+    # Populates a database with the previous release's extension, then updates it
+    # in place to this branch (extensions/pg_morlet/tests/upgrade.sh).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the previous release tag
+        run: git fetch --no-tags --depth=1 origin +refs/tags/v0.1.0-alpha.3:refs/tags/v0.1.0-alpha.3
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - name: Cache pgrx CLI
+        id: pgrx-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-pgrx
+          key: pgrx-cli-${{ runner.os }}-rust-1.91.1-pgrx-0.16.1-debug
+      - name: Install matching pgrx CLI
+        if: steps.pgrx-cli.outputs.cache-hit != 'true'
+        run: cargo install cargo-pgrx --version 0.16.1 --locked --debug
+      - name: Cache user-owned PostgreSQL build
+        id: postgres-build
+        uses: actions/cache@v4
+        with:
+          path: ~/.pgrx
+          key: pgrx-managed-${{ runner.os }}-pgrx-0.16.1-pg17-minimal-v1
+      - name: Configure user-owned PostgreSQL
+        if: steps.postgres-build.outputs.cache-hit != 'true'
+        run: cargo pgrx init --pg17 download --configure-flag=--without-icu --configure-flag=--without-readline --configure-flag=--without-zlib
+      - name: Upgrade a populated database from v0.1.0-alpha.3
+        run: |
+          export PG_CONFIG=$(python3 -c 'import pathlib,tomllib; print(tomllib.loads((pathlib.Path.home()/".pgrx/config.toml").read_text())["configs"]["pg17"])')
+          extensions/pg_morlet/tests/upgrade.sh v0.1.0-alpha.3
   seismic-example:
     # Synthetic contract tests for examples/seismic against a fresh extension
     # install. No public services or downloads beyond pinned packages.

@@ -1,0 +1,240 @@
+{
+ "hardware": {
+  "machine": "arm64",
+  "cpu": "Apple M5 Max",
+  "os": "macOS-27.0.1-arm64-arm-64bit"
+ },
+ "samples": 16252928,
+ "data": "Paderborn development bearings, int16 counts as float8 (quantum 1)",
+ "configs": {
+  "legacy-4096": {
+   "ingest_seconds": 56.043242583051324,
+   "ingest_msamples_per_s": 0.2900069169965414,
+   "chunk_table_bytes": 39313408,
+   "chunk_table_bits_per_sample": 19.350806451612904,
+   "pg_cold_short_512": {
+    "n": 300,
+    "p50_ms": 4.091478476766497,
+    "p95_ms": 6.049027020344512,
+    "p99_ms": 13.320834166370224,
+    "max_ms": 34.39108293969184,
+    "mean_ms": 4.428702336736023
+   },
+   "pg_cold_sequential_server": {
+    "seconds": 9.451310749980621,
+    "msamples_per_s": 1.7196480392979698
+   },
+   "warm_short_512": {
+    "n": 1000,
+    "p50_ms": 3.3897709799930453,
+    "p95_ms": 4.801032674731686,
+    "p99_ms": 6.543582439189774,
+    "max_ms": 9.026416926644742,
+    "mean_ms": 3.55975796491839
+   },
+   "warm_long_4096": {
+    "n": 300,
+    "p50_ms": 4.862500005401671,
+    "p95_ms": 6.368810345884413,
+    "p99_ms": 6.998914275318382,
+    "max_ms": 7.538374979048967,
+    "mean_ms": 4.999200124681617
+   },
+   "warm_boundary_512": {
+    "n": 1000,
+    "p50_ms": 3.881458018440753,
+    "p95_ms": 5.149289901601151,
+    "p99_ms": 6.036236677318811,
+    "max_ms": 20.754165947437286,
+    "mean_ms": 4.04252295254264
+   },
+   "warm_sequential_server": {
+    "seconds": 9.374132332974114,
+    "msamples_per_s": 1.7338061190825396
+   },
+   "warm_sequential_client": {
+    "seconds": 11.841027582995594,
+    "msamples_per_s": 1.3725943872759956
+   },
+   "decode_amplification": {
+    "short_512": 8.976,
+    "long_4096": 2.0,
+    "boundary_512": 16.0,
+    "sequential_32768": 1.0
+   }
+  },
+  "legacy-32768": {
+   "ingest_seconds": 44.59389462508261,
+   "ingest_msamples_per_s": 0.36446531832764073,
+   "chunk_table_bytes": 37765120,
+   "chunk_table_bits_per_sample": 18.588709677419356,
+   "pg_cold_short_512": {
+    "n": 300,
+    "p50_ms": 3.648416488431394,
+    "p95_ms": 3.9403643808327615,
+    "p99_ms": 5.503989013377576,
+    "max_ms": 19.33337503578514,
+    "mean_ms": 3.736427929640437
+   },
+   "pg_cold_sequential_server": {
+    "seconds": 6.983721208991483,
+    "msamples_per_s": 2.3272589946853106
+   },
+   "warm_short_512": {
+    "n": 1000,
+    "p50_ms": 3.65327054169029,
+    "p95_ms": 3.922393755055964,
+    "p99_ms": 4.171706647612143,
+    "max_ms": 5.882041994482279,
+    "mean_ms": 3.6676638239296153
+   },
+   "warm_long_4096": {
+    "n": 300,
+    "p50_ms": 4.876854014582932,
+    "p95_ms": 6.845687847817317,
+    "p99_ms": 7.190747892018408,
+    "max_ms": 7.256582961417735,
+    "mean_ms": 5.101305402737732
+   },
+   "warm_boundary_512": {
+    "n": 495,
+    "p50_ms": 5.772542092017829,
+    "p95_ms": 6.170645647216588,
+    "p99_ms": 6.265056941192597,
+    "max_ms": 6.525916047394276,
+    "mean_ms": 5.766120627804687
+   },
+   "warm_sequential_server": {
+    "seconds": 6.940214499947615,
+    "msamples_per_s": 2.34184807978524
+   },
+   "warm_sequential_client": {
+    "seconds": 8.86819933296647,
+    "msamples_per_s": 1.8327201937806794
+   },
+   "decode_amplification": {
+    "short_512": 64.64,
+    "long_4096": 9.04,
+    "boundary_512": 128.0,
+    "sequential_32768": 1.0
+   }
+  },
+  "encoded-4096": {
+   "ingest_seconds": 39.26670683303382,
+   "ingest_msamples_per_s": 0.413911155552442,
+   "chunk_table_bytes": 21020672,
+   "chunk_table_bits_per_sample": 10.346774193548388,
+   "pg_cold_short_512": {
+    "n": 300,
+    "p50_ms": 1.8383954302407801,
+    "p95_ms": 2.1813493978697807,
+    "p99_ms": 2.3083017417229703,
+    "max_ms": 19.06787499319762,
+    "mean_ms": 1.9461230367111664
+   },
+   "pg_cold_sequential_server": {
+    "seconds": 6.990595208015293,
+    "msamples_per_s": 2.3249705520589545
+   },
+   "warm_short_512": {
+    "n": 1000,
+    "p50_ms": 1.8225829699076712,
+    "p95_ms": 2.1126351261045784,
+    "p99_ms": 2.2295099799521267,
+    "max_ms": 2.3739170283079147,
+    "mean_ms": 1.8630730928853154
+   },
+   "warm_long_4096": {
+    "n": 300,
+    "p50_ms": 3.185333975125104,
+    "p95_ms": 3.3863913209643215,
+    "p99_ms": 3.449964604806155,
+    "max_ms": 3.494874923489988,
+    "mean_ms": 3.1978895604455224
+   },
+   "warm_boundary_512": {
+    "n": 1000,
+    "p50_ms": 2.140687545761466,
+    "p95_ms": 2.3232665902469307,
+    "p99_ms": 2.371147844241932,
+    "max_ms": 2.537250053137541,
+    "mean_ms": 2.152960753417574
+   },
+   "warm_sequential_server": {
+    "seconds": 6.947658832999878,
+    "msamples_per_s": 2.3393388176751144
+   },
+   "warm_sequential_client": {
+    "seconds": 8.859087207936682,
+    "msamples_per_s": 1.8346052610746761
+   },
+   "decode_amplification": {
+    "short_512": 8.976,
+    "long_4096": 2.0,
+    "boundary_512": 16.0,
+    "sequential_32768": 1.0
+   }
+  },
+  "encoded-32768": {
+   "ingest_seconds": 32.31188991700765,
+   "ingest_msamples_per_s": 0.5030014660778207,
+   "chunk_table_bytes": 17432576,
+   "chunk_table_bits_per_sample": 8.580645161290322,
+   "pg_cold_short_512": {
+    "n": 300,
+    "p50_ms": 3.4648124710656703,
+    "p95_ms": 4.262946074595675,
+    "p99_ms": 5.106052207993341,
+    "max_ms": 25.648958049714565,
+    "mean_ms": 3.597596521722153
+   },
+   "pg_cold_sequential_server": {
+    "seconds": 6.829099624999799,
+    "msamples_per_s": 2.3799518080687654
+   },
+   "warm_short_512": {
+    "n": 1000,
+    "p50_ms": 3.405312483664602,
+    "p95_ms": 3.6011728749144822,
+    "p99_ms": 3.742082925746205,
+    "max_ms": 5.521874991245568,
+    "mean_ms": 3.4273448291933164
+   },
+   "warm_long_4096": {
+    "n": 300,
+    "p50_ms": 4.607729555573314,
+    "p95_ms": 6.319212535163388,
+    "p99_ms": 6.49668668047525,
+    "max_ms": 6.62183400709182,
+    "mean_ms": 4.807675012076895
+   },
+   "warm_boundary_512": {
+    "n": 495,
+    "p50_ms": 5.2132499404251575,
+    "p95_ms": 5.45154568972066,
+    "p99_ms": 5.560195555444807,
+    "max_ms": 5.6904160883277655,
+    "mean_ms": 5.22751219152012
+   },
+   "warm_sequential_server": {
+    "seconds": 6.796879458939657,
+    "msamples_per_s": 2.3912338151919394
+   },
+   "warm_sequential_client": {
+    "seconds": 8.767791165970266,
+    "msamples_per_s": 1.8537083847390439
+   },
+   "decode_amplification": {
+    "short_512": 64.64,
+    "long_4096": 9.04,
+    "boundary_512": 128.0,
+    "sequential_32768": 1.0
+   }
+  }
+ },
+ "postgres": {
+  "server_version": "17.11",
+  "shared_buffers": "128MB",
+  "effective_cache_size": "4GB"
+ }
+}

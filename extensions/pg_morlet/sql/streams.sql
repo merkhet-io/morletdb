@@ -323,18 +323,41 @@ BEGIN
   END LOOP;
 END $$;
 
--- Stored raw-chunk footprint, including TOAST compression of each value.
-CREATE FUNCTION public.morlet_stream_storage(collection regclass,recording_id text)
-RETURNS TABLE(chunks bigint,samples bigint,grid_chunks bigint,float_chunks bigint,raw_chunks bigint,stored_bytes bigint,bits_per_sample float8)
+-- Per-recording value sizes. encoded_bytes is the logical encoded payload
+-- (NULL for float8[] collections); stored_value_bytes is each value's datum size
+-- after any TOAST compression. Neither includes tuple, page, TOAST-chunk or index
+-- overhead, which is shared across recordings: see morlet_collection_storage.
+CREATE FUNCTION public.morlet_recording_storage(collection regclass,recording_id text)
+RETURNS TABLE(chunks bigint,samples bigint,grid_chunks bigint,float_chunks bigint,raw_chunks bigint,
+  original_float64_bytes bigint,encoded_bytes bigint,stored_value_bytes bigint,stored_value_bits_per_sample float8)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE relations record;
 BEGIN
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
   RETURN QUERY EXECUTE format('SELECT count(*),coalesce(sum(%2$s),0)::bigint,%3$s,%4$s,%5$s,
-      coalesce(sum(pg_column_size(%6$s)),0)::bigint,(8.0*sum(pg_column_size(%6$s))/nullif(sum(%2$s),0))::float8
+      8*coalesce(sum(%2$s),0)::bigint,%6$s,coalesce(sum(pg_column_size(%7$s)),0)::bigint,
+      (8.0*sum(pg_column_size(%7$s))/nullif(sum(%2$s),0))::float8
     FROM %1$s c WHERE c.recording_id=$1',relations.chunks,relations.count_expr,
     CASE WHEN relations.encoded THEN 'count(*) FILTER (WHERE public.morlet_encoded_chunk_kind(c.encoded)=''grid'')' ELSE 'NULL::bigint' END,
     CASE WHEN relations.encoded THEN 'count(*) FILTER (WHERE public.morlet_encoded_chunk_kind(c.encoded)=''float'')' ELSE 'NULL::bigint' END,
     CASE WHEN relations.encoded THEN 'count(*) FILTER (WHERE public.morlet_encoded_chunk_kind(c.encoded)=''raw'')' ELSE 'NULL::bigint' END,
+    CASE WHEN relations.encoded THEN 'coalesce(sum(octet_length(c.encoded)),0)::bigint' ELSE 'NULL::bigint' END,
     CASE WHEN relations.encoded THEN 'c.encoded' ELSE 'c.samples' END) USING recording_id;
+END $$;
+
+-- Physical collection footprint: pg_total_relation_size (heap, TOAST, indexes)
+-- of each sibling table. Samples are the received counts of visible recordings.
+CREATE FUNCTION public.morlet_collection_storage(collection regclass)
+RETURNS TABLE(recordings bigint,samples bigint,original_float64_bytes bigint,recordings_table_bytes bigint,
+  chunk_table_bytes bigint,segment_table_bytes bigint,total_bytes bigint,
+  chunk_table_bits_per_sample float8,total_bits_per_sample float8)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record; n bigint; total bigint; r bigint; c bigint; g bigint;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  EXECUTE format('SELECT count(*),coalesce(sum((checkpoint->>''end'')::bigint),0)::bigint FROM %s',collection)
+    INTO recordings,n;
+  r:=pg_total_relation_size(collection); c:=pg_total_relation_size(relations.chunks);
+  g:=pg_total_relation_size(relations.segments); total:=r+c+g;
+  RETURN QUERY SELECT recordings,n,8*n,r,c,g,total,(8.0*c/nullif(n,0))::float8,(8.0*total/nullif(n,0))::float8;
 END $$;

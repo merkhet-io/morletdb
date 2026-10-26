@@ -2,18 +2,26 @@
 
 ## Unreleased
 
-Extension:
+Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
+0.1.0-alpha.3):
 - New stream collections store raw chunks losslessly encoded (`sample_count`,
   `encoded bytea`) instead of `float8[]`. Samples on or within 1/1000 step of
-  the recording's grid (`sample_quantum`, default 1) use integer prediction +
-  Rice coding with last-place corrections; other chunks code float64 bit
-  patterns or are stored plain. Every chunk decodes bitwise to its input.
-  Measured chunk tables are 2-3.3x smaller than `float8[]` at 32768-sample
-  chunks on held-out seismic and bearing data (see docs/durable-ingestion.md).
-  New trailing `sample_quantum` argument on `morlet_start_recording` and
-  `morlet_ensure_recording`, new `morlet_stream_storage` report, and
-  `morlet_encode_chunk` / `morlet_decode_chunk` helpers. Existing `float8[]`
-  collections keep working unchanged; there is no in-place migration.
+  the recording's grid (`sample_quantum`, default 1) use established fixed
+  polynomial prediction + Rice coding with last-place corrections; other chunks
+  code float64 bit patterns or are stored plain. Every chunk carries a CRC-32C
+  checksum that is verified before samples are returned, and decodes bitwise to
+  its input. Format: docs/chunk-format.md.
+- Measured chunk tables (physical size) are 1.9-3.3x smaller than the previous
+  `float8[]` storage at 32768-sample chunks and 1.7-2.9x at 4096, on held-out
+  seismic and bearing data. This is relative to previous MorletDB storage, not
+  to optimized Parquet.
+- New trailing `sample_quantum` argument on `morlet_start_recording` and
+  `morlet_ensure_recording`; new `morlet_recording_storage` (per-recording value
+  sizes) and `morlet_collection_storage` (physical table sizes) reports;
+  `morlet_encode_chunk` / `morlet_decode_chunk` / `morlet_encoded_chunk_kind`.
+- `ALTER EXTENSION pg_morlet UPDATE TO '0.2.0'` keeps existing `float8[]`
+  collections unchanged and working; re-encoding them is a separate, documented
+  data transfer. alpha.1 databases need a reinstall (docs/durable-ingestion.md).
 - Importer: `--sample-quantum`.
 
 ## 0.1.0-alpha.3

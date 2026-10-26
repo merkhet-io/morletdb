@@ -49,7 +49,7 @@ with psycopg.connect(DSN, autocommit=True) as conn:
             secs = time.perf_counter() - t0
             conn.execute(f"VACUUM ANALYZE {t}_chunks")
             size = conn.execute("SELECT pg_total_relation_size(%s::regclass)", (f"{t}_chunks",)).fetchone()[0]
-            st = conn.execute("SELECT chunks,samples,grid_chunks,float_chunks,raw_chunks,stored_bytes,bits_per_sample FROM morlet_stream_storage(%s,'r')", (t,)).fetchone()
+            st = conn.execute("SELECT chunks,samples,grid_chunks,float_chunks,raw_chunks,encoded_bytes,stored_value_bits_per_sample FROM morlet_recording_storage(%s,'r')", (t,)).fetchone()
             # Read back a random interval and compare bitwise with the source.
             flat = np.concatenate([np.asarray(c) for c, _ in data])
             for a in (0, 4095, len(flat) // 2 + 17, len(flat) - 20000):
