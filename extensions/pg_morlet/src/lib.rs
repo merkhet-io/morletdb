@@ -1019,7 +1019,7 @@ mod tests {
             Spi::get_one::<String>("SELECT morlet_version()")
                 .unwrap()
                 .unwrap(),
-            "0.1.0"
+            "0.2.0"
         );
         assert_eq!(
             Spi::get_one::<f64>("SELECT morlet_rms(ARRAY[3.0,4.0]::float8[])")
