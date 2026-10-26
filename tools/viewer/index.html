@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MorletDB Viewer</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10); --wash: rgba(11,11,11,0.05);
+  --series-1: #2a78d6; --sel: rgba(42,120,214,0.14);
+  --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --pos: #e34948; --neg: #2a78d6;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.06);
+    --series-1: #3987e5; --sel: rgba(57,135,229,0.20);
+    --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --pos: #e66767; --neg: #3987e5;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; gap: 16px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--ring); }
+header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+header .ro { color: var(--muted); font-size: 12px; }
+select, input, button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--ring); border-radius: 6px; padding: 4px 8px; }
+button { cursor: pointer; } button:hover { background: var(--wash); } button:disabled { color: var(--muted); cursor: default; }
+.layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 47px); }
+aside { border-right: 1px solid var(--ring); padding: 12px; overflow: auto; max-height: calc(100vh - 47px); }
+aside input { width: 100%; margin-bottom: 8px; }
+.rec { padding: 6px 8px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.rec:hover { background: var(--wash); } .rec.on { background: var(--sel); }
+.rec small { color: var(--muted); font-variant-numeric: tabular-nums; }
+main { padding: 12px 16px; min-width: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink-2); margin-bottom: 8px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.toolbar .info { color: var(--ink-2); font-variant-numeric: tabular-nums; margin-left: 6px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 8px; margin-bottom: 12px; position: relative; }
+canvas { display: block; width: 100%; }
+#tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--ring);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); display: none; z-index: 10; max-width: 340px; }
+#tip .k { color: var(--muted); }
+.panels { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; }
+h2 { font-size: 13px; margin: 0 0 8px; font-weight: 600; }
+.empty { color: var(--muted); }
+.tiles { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-bottom: 10px; }
+.tile .v { font-size: 20px; font-weight: 600; }
+.tile .l { color: var(--muted); font-size: 12px; }
+.status { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; }
+.status i { font-style: normal; display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; color: #fff; font-size: 11px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--grid); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.bar { width: 120px; } .barbox { position: relative; height: 10px; }
+.barbox .mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--axis); }
+.barbox .b { position: absolute; top: 0; height: 10px; border-radius: 2px; }
+tr.hit { cursor: pointer; } tr.hit:hover td { background: var(--wash); }
+#err { position: fixed; right: 16px; bottom: 16px; background: var(--surface); border: 1px solid var(--critical); color: var(--ink);
+  border-radius: 8px; padding: 8px 12px; display: none; max-width: 420px; z-index: 20; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--ink-2); font-size: 12px; margin: 2px 0 6px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; background: var(--c); vertical-align: -1px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } aside { max-height: 240px; border-right: 0; border-bottom: 1px solid var(--ring); } .panels { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>MorletDB viewer</h1>
+  <select id="coll" aria-label="Collection"></select>
+  <span class="ro">read-only · local</span>
+</header>
+<div class="layout">
+  <aside>
+    <input id="filter" placeholder="Filter recordings" aria-label="Filter recordings">
+    <div id="recs"></div>
+  </aside>
+  <main>
+    <div id="meta" class="meta"><span class="empty">Select a recording.</span></div>
+    <div class="toolbar">
+      <button id="left" title="Pan left">◀</button><button id="right" title="Pan right">▶</button>
+      <button id="zin" title="Zoom in">+</button><button id="zout" title="Zoom out">−</button>
+      <button id="zsel" title="Zoom to selection" disabled>Zoom to selection</button>
+      <button id="full" title="Show the start of the recording">Reset</button>
+      <button id="similar" title="Find similar windows (materialized envelopes)" disabled>Find similar</button>
+      <span id="range" class="info"></span>
+    </div>
+    <div class="card"><canvas id="wave" height="220" aria-label="Waveform"></canvas></div>
+    <div class="card"><div id="legend" class="legend"></div><canvas id="lanes" height="60" aria-label="Context, segments and labels"></canvas></div>
+    <div class="panels">
+      <div class="card"><h2>Compare segment with history</h2><label style="display:block;color:var(--ink-2);font-size:12px;margin:-4px 0 8px"><input type="checkbox" id="exl" checked style="padding:0;vertical-align:-2px"> exclude labelled segments from history</label><div id="compare"><span class="empty">Click a segment in the segments lane.</span></div></div>
+      <div class="card"><h2>Similar windows</h2><div id="similarOut"><span class="empty">Drag over the waveform to select at least 512 samples, then “Find similar”.</span></div></div>
+    </div>
+  </main>
+</div>
+<div id="tip"></div><div id="err" role="alert"></div>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SLOTS = ["--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
+const st = { coll: null, colls: [], recs: [], rec: null, view: [0, 0], data: null, ctx: null, sel: null, seg: null, drag: null, req: 0 };
+// Values the summary score uses (morlet_compare_summary); others are shown dimmed.
+const SCORED = new Set(["duration_s", "std", "crest", "kurtosis"]);
+
+async function get(path, params) {
+  const r = await fetch(path + "?" + new URLSearchParams(params));
+  const body = await r.json();
+  if (!r.ok) throw new Error(body.error || r.statusText);
+  return body;
+}
+function fail(e) { const el = $("err"); el.textContent = e.message || String(e); el.style.display = "block"; setTimeout(() => el.style.display = "none", 6000); }
+const fmt = (v, d = 3) => v === null || v === undefined ? "—" : (Math.abs(v) >= 1e4 || (Math.abs(v) < 1e-3 && v !== 0) ? v.toExponential(2) : (+v).toFixed(d));
+const secs = (s) => st.rec ? (s / st.rec.sample_rate_hz) : 0;
+const fmtT = (s) => { const t = secs(s); return t >= 100 ? t.toFixed(1) + " s" : t >= 1 ? t.toFixed(3) + " s" : (t * 1000).toFixed(2) + " ms"; };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const valText = (v) => typeof v === "string" ? v : JSON.stringify(v);
+
+async function loadCollections() {
+  st.colls = (await get("/api/collections", {})).collections;
+  $("coll").innerHTML = st.colls.map((c) => `<option>${esc(c.name)}</option>`).join("") || "<option>(no collections)</option>";
+  if (st.colls.length) selectCollection(st.colls[0].name);
+}
+async function selectCollection(name) {
+  st.coll = st.colls.find((c) => c.name === name); st.rec = null;
+  st.recs = (await get("/api/recordings", { collection: name })).recordings;
+  renderRecs();
+  if (st.recs.length) selectRecording(st.recs[0].recording_id);
+}
+function renderRecs() {
+  const f = $("filter").value.toLowerCase();
+  $("recs").innerHTML = st.recs.filter((r) => r.recording_id.toLowerCase().includes(f)).slice(0, 1000).map((r) =>
+    `<div class="rec${st.rec && st.rec.recording_id === r.recording_id ? " on" : ""}" data-id="${esc(r.recording_id)}"><span>${esc(r.recording_id)}</span><small>${esc(r.channel)}</small></div>`).join("");
+}
+async function selectRecording(id, range) {
+  st.rec = st.recs.find((r) => r.recording_id === id); st.sel = null; st.seg = null; st.data = null; st.ctx = null; draw();
+  renderRecs();
+  const r = st.rec;
+  $("meta").innerHTML = `<span><b>${esc(r.recording_id)}</b></span><span>${esc(r.channel)} · ${esc(r.unit)}</span><span>${fmt(r.sample_rate_hz, 1)} Hz</span>` +
+    `<span>${r.samples.toLocaleString()} samples (${fmtT(r.samples)})</span><span>metadata ${esc(JSON.stringify(r.metadata))}</span>`;
+  $("compare").innerHTML = '<span class="empty">Click a segment in the segments lane.</span>';
+  st.view = range ? [Math.max(0, range[0]), Math.min(r.samples, range[1])] : [0, Math.min(r.samples, 1 << 20)];
+  await refresh();
+}
+async function refresh() {
+  if (!st.rec) return;
+  const [a, b] = st.view;
+  $("range").textContent = `${fmtT(a)} – ${fmtT(b)}  (${(b - a).toLocaleString()} samples)`;
+  const p = { collection: st.coll.name, recording: st.rec.recording_id, start: a, end: b };
+  const req = ++st.req;  // responses to older requests are discarded
+  try {
+    const [data, ctx] = await Promise.all([get("/api/overview", { ...p, buckets: Math.round($("wave").clientWidth * devicePixelRatio) }), get("/api/context", p)]);
+    if (req !== st.req) return;
+    st.data = data; st.ctx = ctx;
+  } catch (e) { if (req === st.req) fail(e); }
+  draw();
+}
+
+function setup(canvas, h) {
+  const r = devicePixelRatio || 1, w = canvas.clientWidth;
+  canvas.width = Math.round(w * r); canvas.height = Math.round(h * r); canvas.style.height = h + "px";
+  const g = canvas.getContext("2d"); g.setTransform(r, 0, 0, r, 0, 0); return [g, w, h];
+}
+const PAD_L = 56, PAD_R = 8;
+const xOf = (s, w) => PAD_L + (s - st.view[0]) / (st.view[1] - st.view[0]) * (w - PAD_L - PAD_R);
+const sOf = (x, w) => st.view[0] + (x - PAD_L) / (w - PAD_L - PAD_R) * (st.view[1] - st.view[0]);
+
+function draw() { drawWave(); drawLanes(); $("zsel").disabled = !st.sel; $("similar").disabled = !(st.sel && st.coll.envelopes && st.sel[1] - st.sel[0] >= 512); }
+
+function drawWave() {
+  const [g, w, h] = setup($("wave"), 220), d = st.data, top = 8, bot = h - 22;
+  g.clearRect(0, 0, w, h);
+  if (!d) return;
+  const lo = d.raw ? d.raw : d.min, hi = d.raw ? d.raw : d.max;
+  let mn = Math.min(...lo), mx = Math.max(...hi); if (mn === mx) { mn -= 1; mx += 1; }
+  const pad = (mx - mn) * 0.05; mn -= pad; mx += pad;
+  const y = (v) => bot - (v - mn) / (mx - mn) * (bot - top);
+  g.font = "11px system-ui"; g.fillStyle = css("--muted"); g.strokeStyle = css("--grid"); g.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const v = mn + (mx - mn) * i / 4, yy = Math.round(y(v)) + 0.5;
+    g.beginPath(); g.moveTo(PAD_L, yy); g.lineTo(w - PAD_R, yy); g.stroke(); g.fillText(fmt(v, 2), 4, yy + 4); }
+  for (let i = 0; i <= 6; i++) { const s = st.view[0] + (st.view[1] - st.view[0]) * i / 6; g.fillText(fmtT(s), Math.min(xOf(s, w), w - 60), h - 6); }
+  if (st.sel) { g.fillStyle = css("--sel"); const a = xOf(st.sel[0], w), b = xOf(st.sel[1], w); g.fillRect(a, top, Math.max(1, b - a), bot - top); }
+  g.strokeStyle = css("--series-1"); g.fillStyle = css("--series-1"); g.lineWidth = d.raw ? 1.5 : 1;
+  if (d.raw) {
+    g.beginPath(); d.raw.forEach((v, i) => { const xx = xOf(d.start + i, w); i ? g.lineTo(xx, y(v)) : g.moveTo(xx, y(v)); }); g.stroke();
+  } else {
+    g.beginPath();
+    d.offsets.forEach((o, i) => { const xx = Math.round(xOf(o, w)) + 0.5; g.moveTo(xx, y(d.max[i])); g.lineTo(xx, Math.max(y(d.min[i]), y(d.max[i]) + 1)); });
+    g.stroke();
+  }
+}
+
+function lanesModel() {
+  const c = st.ctx || { intervals: [], events: [], segments: [], labels: [] };
+  const keys = [...new Set(c.intervals.map((i) => i.key))].sort();
+  const rows = keys.map((k, i) => ({ name: k, color: i < SLOTS.length ? css(SLOTS[i]) : css("--muted"), items: c.intervals.filter((x) => x.key === k) }));
+  if (c.events.length) rows.push({ name: "events", events: c.events });
+  rows.push({ name: "segments", segments: c.segments });
+  if (c.labels.length) rows.push({ name: "labels", labels: c.labels });
+  return rows;
+}
+const ROW = 22;
+function drawLanes() {
+  const rows = lanesModel(), h = Math.max(1, rows.length) * ROW + 6;
+  const [g, w] = setup($("lanes"), h);
+  $("legend").innerHTML = rows.filter((r) => r.items).map((r) => `<span style="--c:${r.color}">${esc(r.name)}</span>`).join("");
+  g.clearRect(0, 0, w, h); g.font = "11px system-ui"; g.textBaseline = "middle";
+  const clip = (s) => Math.max(PAD_L, Math.min(w - PAD_R, xOf(s, w)));
+  rows.forEach((r, i) => {
+    const y0 = i * ROW + 3, cy = y0 + ROW / 2 - 1;
+    g.fillStyle = css("--muted"); g.fillText(r.name.slice(0, 9), 4, cy);
+    const bar = (s, e, fill, text, outline) => {
+      const a = clip(s) + 1, b = clip(e) - 1; if (b <= a) return;
+      g.fillStyle = fill; g.beginPath(); g.roundRect(a, y0 + 2, b - a, ROW - 6, 3); g.fill();
+      if (outline) { g.strokeStyle = css("--ink"); g.lineWidth = 2; g.stroke(); }
+      if (text && b - a > 34) { g.fillStyle = css("--ink"); g.save(); g.beginPath(); g.rect(a, y0, b - a, ROW); g.clip(); g.fillText(text, a + 5, cy); g.restore(); }
+    };
+    if (r.items) { g.globalAlpha = 0.35; r.items.forEach((x) => bar(x.start_sample, x.end_sample, r.color, null)); g.globalAlpha = 1;
+      r.items.forEach((x) => { const a = clip(x.start_sample) + 1, b = clip(x.end_sample) - 1;
+        g.fillStyle = r.color; g.fillRect(a, y0 + 2, 3, ROW - 6);
+        if (b - a > 34) { g.fillStyle = css("--ink"); g.save(); g.beginPath(); g.rect(a, y0, b - a, ROW); g.clip(); g.fillText(valText(x.value), a + 8, cy); g.restore(); } }); }
+    if (r.events) { g.strokeStyle = css("--ink-2"); g.lineWidth = 2; r.events.forEach((x) => { const xx = clip(x.start_sample); g.beginPath(); g.moveTo(xx, y0 + 2); g.lineTo(xx, y0 + ROW - 4); g.stroke(); }); }
+    if (r.segments) r.segments.forEach((x) => bar(x.start_sample, x.end_sample, css("--wash"), Object.keys(x.context).sort().map((k) => `${k} ${valText(x.context[k])}`).join(" · "), st.seg === x.segment_id));
+    if (r.labels) r.labels.forEach((x) => bar(x.start_sample, x.end_sample, css("--s7"), x.label));
+    if (r.segments) { g.strokeStyle = css("--ring"); g.lineWidth = 1; r.segments.forEach((x) => { const a = clip(x.start_sample) + 1, b = clip(x.end_sample) - 1; if (b > a) g.strokeRect(a + 0.5, y0 + 2.5, b - a - 1, ROW - 7); }); }
+  });
+}
+function laneHit(ev) {
+  const c = $("lanes"), rect = c.getBoundingClientRect(), x = ev.clientX - rect.left, row = Math.floor((ev.clientY - rect.top - 3) / ROW);
+  const r = lanesModel()[row]; if (!r || x < PAD_L) return null;
+  const s = sOf(x, rect.width), list = r.items || r.segments || r.labels || r.events || [];
+  const tol = (st.view[1] - st.view[0]) / rect.width * 3;
+  const hit = list.find((it) => it.end_sample == null ? Math.abs(it.start_sample - s) <= tol : it.start_sample <= s && s < it.end_sample);
+  return hit ? { row: r, hit } : null;
+}
+function tip(ev, html) { const t = $("tip"); if (!html) { t.style.display = "none"; return; } t.innerHTML = html; t.style.display = "block";
+  t.style.left = Math.min(ev.clientX + 14, innerWidth - t.offsetWidth - 8) + "px"; t.style.top = (ev.clientY + 14) + "px"; }
+
+$("lanes").addEventListener("mousemove", (ev) => {
+  const h = laneHit(ev); if (!h) return tip(ev, null);
+  const x = h.hit, r = h.row, span = x.end_sample != null ? `${fmtT(x.start_sample)} – ${fmtT(x.end_sample)}` : fmtT(x.start_sample);
+  const body = r.segments ? `segment ${x.segment_id}<br><span class="k">context</span> ${esc(JSON.stringify(x.context))}<br><span class="k">occurrence</span> ${esc(JSON.stringify(x.occurrence))}<br><span class="k">click to compare with history</span>`
+    : r.labels ? `<b>${esc(x.label)}</b> ${esc(x.note || "")}<br><span class="k">by</span> ${esc(x.author)}`
+    : `<b>${esc(x.key)}</b> = ${esc(valText(x.value))}`;
+  tip(ev, `${body}<br><span class="k">${span}</span>`);
+  $("lanes").style.cursor = r.segments ? "pointer" : "default";
+});
+$("lanes").addEventListener("mouseleave", (ev) => tip(ev, null));
+$("lanes").addEventListener("click", async (ev) => { if (!st.ctx || st.ctx.recording.recording_id !== st.rec.recording_id) return;
+  const h = laneHit(ev); if (h && h.row.segments) { st.seg = h.hit.segment_id; drawLanes(); compare(h.hit); } });
+
+const wave = $("wave");
+wave.addEventListener("mousemove", (ev) => {
+  const rect = wave.getBoundingClientRect(), x = ev.clientX - rect.left;
+  if (st.drag !== null) { const s = Math.round(sOf(x, rect.width)); st.sel = [Math.max(st.view[0], Math.min(st.drag, s)), Math.min(st.view[1], Math.max(st.drag, s))]; drawWave(); }
+  if (!st.data || x < PAD_L) return tip(ev, null);
+  const s = sOf(x, rect.width), d = st.data;
+  let txt;
+  if (d.raw) { const i = Math.round(s - d.start); if (i < 0 || i >= d.raw.length) return tip(ev, null); txt = `value ${fmt(d.raw[i])}`; }
+  else { let i = d.offsets.findIndex((o) => o > s) - 1; if (i < 0) i = d.offsets.length - 1; txt = `min ${fmt(d.min[i])} · max ${fmt(d.max[i])}`; }
+  tip(ev, `${fmtT(s)} <span class="k">(sample ${Math.round(s).toLocaleString()})</span><br>${txt} ${esc(st.rec.unit)}` +
+    (st.sel ? `<br><span class="k">selection ${(st.sel[1] - st.sel[0]).toLocaleString()} samples</span>` : ""));
+});
+wave.addEventListener("mousedown", (ev) => { const rect = wave.getBoundingClientRect(); st.drag = Math.round(sOf(ev.clientX - rect.left, rect.width)); st.sel = null; });
+addEventListener("mouseup", () => { if (st.drag !== null) { st.drag = null; if (st.sel && st.sel[1] - st.sel[0] < 2) st.sel = null; draw(); } });
+wave.addEventListener("mouseleave", (ev) => tip(ev, null));
+wave.addEventListener("dblclick", () => { st.sel = null; draw(); });
+
+function setView(a, b) {
+  const n = st.rec.samples, len = Math.max(64, Math.min(b - a, n, 1 << 22));
+  a = Math.max(0, Math.min(Math.round(a), n - len)); st.view = [a, a + len]; refresh();
+}
+const span = () => st.view[1] - st.view[0], mid = () => (st.view[0] + st.view[1]) / 2;
+$("left").onclick = () => setView(st.view[0] - span() * 0.5, st.view[1] - span() * 0.5);
+$("right").onclick = () => setView(st.view[0] + span() * 0.5, st.view[1] + span() * 0.5);
+$("zin").onclick = () => setView(mid() - span() / 4, mid() + span() / 4);
+$("zout").onclick = () => setView(mid() - span(), mid() + span());
+$("zsel").onclick = () => { if (st.sel) setView(st.sel[0], st.sel[1]); };
+$("full").onclick = () => setView(0, 1 << 20);
+$("filter").oninput = renderRecs;
+$("recs").onclick = (ev) => { const el = ev.target.closest(".rec"); if (el) selectRecording(el.dataset.id).catch(fail); };
+$("coll").onchange = (ev) => selectCollection(ev.target.value).catch(fail);
+addEventListener("resize", () => draw());
+
+// The leave-one-out quantile is coarse with few history segments: exceeding all of 7 happens by
+// chance one time in eight. Status badges therefore need at least MIN_CAL history segments.
+const MIN_CAL = 20;
+function statusBadge(q, n) {
+  if (q === null || q === undefined) return `<span class="status" style="color:var(--muted)"><i style="background:var(--muted)">?</i>no calibration</span>`;
+  if (n < MIN_CAL) return `<span class="status" style="color:var(--ink-2)"><i style="background:var(--muted)">~</i>too little history to calibrate</span>`;
+  if (q >= 0.99) return `<span class="status"><i style="background:var(--serious)">!</i>unusual for this context</span>`;
+  if (q >= 0.95) return `<span class="status"><i style="background:var(--warning);color:#0b0b0b">▲</i>elevated</span>`;
+  return `<span class="status"><i style="background:var(--good)">✓</i>within history</span>`;
+}
+async function compare(seg) {
+  $("compare").innerHTML = '<span class="empty">Comparing…</span>';
+  try {
+    const r = await get("/api/compare", { collection: st.coll.name, segment: seg.segment_id, exclude_labelled: $("exl").checked ? "1" : "0" });
+    const s = r.summary;
+    const maxDev = Math.max(0.05, ...r.values.map((v) => Math.abs(v.relative_deviation || 0)));
+    $("compare").innerHTML =
+      `<div class="tiles"><div class="tile"><div class="v">${s.score == null ? "—" : (100 * s.score).toFixed(1) + "%"}</div><div class="l">score: largest relative deviation${s.top_value ? " (" + esc(s.top_value) + ")" : ""}</div></div>` +
+      `<div class="tile"><div class="v">${statusBadge(s.score_quantile, s.hist_n || 0)}</div><div class="l">${s.score_quantile == null ? "" : `exceeds ${Math.round(s.score_quantile * s.hist_n)} of ${s.hist_n} history segments (leave-one-out)`}</div></div>` +
+      `<div class="tile"><div class="v">${fmt(s.duration_relative_deviation, 3)}</div><div class="l">duration deviation</div></div>` +
+      `<div class="tile"><div class="v">${s.hist_n ?? "—"}</div><div class="l">history segments · ${esc(s.status)}</div></div></div>` +
+      `<div class="l" style="color:var(--muted);margin-bottom:6px">segment ${seg.segment_id} · ${esc(JSON.stringify(seg.context))} · occurrence ${esc(JSON.stringify(s.query_occurrence))}</div>` +
+      `<table><thead><tr><th>value</th><th>this segment</th><th>history median</th><th>relative deviation</th><th></th><th>quantile</th><th>status</th></tr></thead><tbody>` +
+      r.values.map((v) => { const d = v.relative_deviation, wpx = d == null ? 0 : Math.min(50, Math.abs(d) / maxDev * 50);
+        const bar = d == null ? "" : `<div class="barbox"><div class="mid"></div><div class="b" style="background:${d >= 0 ? "var(--pos)" : "var(--neg)"};${d >= 0 ? "left:50%" : "right:50%"};width:${wpx}%"></div></div>`;
+        return `<tr${SCORED.has(v.value_name) ? "" : ' style="color:var(--muted)" title="not used by the summary score"'}><td>${esc(v.value_name)}${SCORED.has(v.value_name) ? "" : " ·"}</td><td>${fmt(v.value)}</td><td>${fmt(v.hist_median)}</td><td>${d == null ? "—" : (d >= 0 ? "+" : "") + fmt(d, 3)}</td><td class="bar">${bar}</td><td>${fmt(v.quantile, 2)}</td><td>${esc(v.status)}</td></tr>`; }).join("") +
+      `</tbody></table><div class="l" style="color:var(--muted);margin-top:6px">Dimmed values (·) are not used by the score. Read with tool age in mind: for gradual wear, time in use tracks nearly as well (C1).</div>`;
+  } catch (e) { $("compare").innerHTML = `<span class="empty">${esc(e.message)}</span>`; }
+}
+$("similar").onclick = async () => {
+  if (!st.sel) return;
+  $("similarOut").innerHTML = '<span class="empty">Searching…</span>';
+  try {
+    const r = await get("/api/similar", { collection: st.coll.name, recording: st.rec.recording_id, start: st.sel[0], end: st.sel[1] });
+    $("similarOut").innerHTML = `<div class="l" style="color:var(--muted);margin-bottom:6px">query window ${fmtT(r.window[0])} – ${fmtT(r.window[1])} (${(r.window[1] - r.window[0]).toLocaleString()} samples)</div>` +
+      (r.hits.length ? `<table><thead><tr><th>recording</th><th>start</th><th>distance</th></tr></thead><tbody>` +
+        r.hits.map((h) => `<tr class="hit" data-r="${esc(h.recording_id)}" data-s="${h.start_sample}" data-e="${h.end_sample}"><td>${esc(h.recording_id)}</td><td>${h.start_sample.toLocaleString()}</td><td>${fmt(h.distance, 4)}</td></tr>`).join("") +
+        "</tbody></table>" : '<span class="empty">No comparable windows (same rate, channel, unit and window size, envelopes built).</span>');
+  } catch (e) { $("similarOut").innerHTML = `<span class="empty">${esc(e.message)}</span>`; }
+};
+$("similarOut").onclick = (ev) => { const tr = ev.target.closest("tr.hit"); if (!tr) return;
+  const s = +tr.dataset.s, e = +tr.dataset.e, pad = (e - s); selectRecording(tr.dataset.r, [Math.max(0, s - pad), e + pad]).then(() => { st.sel = [s, e]; draw(); }).catch(fail); };
+
+loadCollections().catch(fail);
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ context. Built with Rust, PostgreSQL 17 and Python. A
 > production-scale performance remain to be established. A similar feature
 > vector is a lead for investigation, not a diagnosis or a confidence score.
 
-[Quickstart](#quickstart) · [On real data](#on-real-data-seismic-replay) · [What has been measured](#what-has-been-measured) · [SQL guide](extensions/pg_morlet/README.md) · [Visual notebook](examples/notebooks/README.md) · [Architecture](docs/architecture.md) · [Demo ideas](docs/demo-catalog.md)
+[Quickstart](#quickstart) · [On real data](#on-real-data-seismic-replay) · [What has been measured](#what-has-been-measured) · [SQL guide](extensions/pg_morlet/README.md) · [Viewer](tools/viewer/README.md) · [Visual notebook](examples/notebooks/README.md) · [Architecture](docs/architecture.md) · [Demo ideas](docs/demo-catalog.md)
 
 ## How it works
 

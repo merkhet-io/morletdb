@@ -60,6 +60,11 @@ Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
   The spread-calibrated variant (`morlet_value_spreads`, `calibrated_deviation`)
   ranked worse in evaluation C3 and is not the default.
 
+- Viewer (`tools/viewer`): a local, read-only web page.
+  - Waveform with zoom; context, segment and label lanes.
+  - Compare-to-history per segment; envelope search for a selected window.
+  - Plus a synthetic demo collection.
+
 Docs: the README's measured results now list the frozen held-out tests (Paderborn,
 seismic timing, PTB-XL, storage, materialized envelopes). In these tests Morlet
 features did not beat simple baselines.
