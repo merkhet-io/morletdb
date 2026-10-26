@@ -812,6 +812,13 @@ mod tests {
         Spi::run("SELECT morlet_create_stream_collection('public','plain'); SELECT morlet_build_context_segments('plain','x',ARRAY['block'])").unwrap();
     }
 
+    #[pg_test(
+        error = "recording r stores raw samples only (extractor none); use morlet_search_envelope_interval or the context comparison"
+    )]
+    fn interval_search_explains_raw_only_recordings() {
+        Spi::run("SELECT morlet_create_stream_collection('public','raw_search'); SELECT morlet_start_recording('raw_search','r',4096,'x','g','{}',512,256,'zscore','none'); SELECT morlet_append_chunk('raw_search','r',0,array_fill(1.0::float8,ARRAY[2048])); SELECT * FROM morlet_search_interval('raw_search','r',0,512)").unwrap();
+    }
+
     #[pg_test(error = "incompatible stream representation")]
     fn search_rejects_mixed_extractor_population() {
         Spi::run("SELECT morlet_create_stream_collection('public','mixed_streams'); SELECT morlet_start_recording('mixed_streams','A',100,'HHZ','counts','{}',512,256,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_append_chunk('mixed_streams','A',0,array_fill(0.::float8,ARRAY[512])); UPDATE mixed_streams SET checkpoint=jsonb_set(checkpoint,'{extractor_version}','\"morlet-energy-v1\"'); SELECT * FROM morlet_search_streams('mixed_streams',array_fill(0.::float8,ARRAY[512]),100,'HHZ','counts','{}','zscore',10,4096,'morlet-energy-lowrate-v1')").unwrap();
@@ -1135,11 +1142,11 @@ mod tests {
     }
     #[pg_test]
     fn sql_functions() {
+        // The crate version must follow the SQL extension version (it drifted twice).
         assert_eq!(
-            Spi::get_one::<String>("SELECT morlet_version()")
-                .unwrap()
+            Spi::get_one::<bool>("SELECT morlet_version() = (SELECT default_version FROM pg_available_extensions WHERE name = 'pg_morlet')")
                 .unwrap(),
-            "0.2.0"
+            Some(true)
         );
         assert_eq!(
             Spi::get_one::<f64>("SELECT morlet_rms(ARRAY[3.0,4.0]::float8[])")
