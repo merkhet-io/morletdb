@@ -1,0 +1,22 @@
+{
+ "cx": {
+  "samples": 68812800,
+  "flac_bytes": 40759252,
+  "flac_bits_per_sample": 4.738566313244047
+ },
+ "ims": {
+  "samples": 59965440,
+  "flac_bytes": 61289737,
+  "flac_bits_per_sample": 8.176674697959358
+ },
+ "paderborn-physical": {
+  "samples": 46727168,
+  "flac_bytes": 45713097,
+  "flac_bits_per_sample": 7.826384342402261
+ },
+ "paderborn-counts": {
+  "samples": 46727168,
+  "flac_bytes": 45713097,
+  "flac_bits_per_sample": 7.826384342402261
+ }
+}

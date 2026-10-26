@@ -25,6 +25,44 @@ typed feature vectors. Collection names allow 1..46 bytes so sibling names fit
 Postgres identifier limits. Do not rename or detach sibling tables. Start creates
 a recording once; reusing its ID raises a uniqueness error.
 
+## Raw chunk storage
+
+New collections store each raw chunk losslessly encoded in a `bytea` column
+(`sample_count`, `encoded`) instead of `float8[]`. A recording declares its sample
+grid with the trailing `sample_quantum` argument of `morlet_start_recording` /
+`morlet_ensure_recording` (default 1, i.e. integer ADC counts):
+
+```sql
+SELECT morlet_start_recording('signals','imsB1',20000,'vibration','g',
+  '{"asset":"B1"}',512,256,'zscore','morlet-energy-v1',0.001);
+```
+
+Encoding per chunk:
+
+- **grid**: every sample is within a thousandth of a step of a grid point
+  `k * quantum` (or `k / d` when the quantum is `1/d` for an integer `d`, so
+  parsed decimals such as 0.123 match exactly). The integers `k` are stored with a
+  fixed polynomial predictor and partitioned Rice coding (the scheme of FLAC's
+  fixed subframes). The step is refined per chunk, so floats produced as
+  `count * calibrated_step` need no corrections; remaining differences (rounding
+  noise, signed zeros) are stored as last-place corrections.
+- **float**: other chunks code the float64 bit patterns, mapped to
+  order-preserving integers, with the same coder.
+- **raw**: plain float64 when neither is smaller.
+
+Every kind decodes bitwise to its input; reads, replays and searches return
+exactly what was appended. The quantum is a storage hint, not a conversion: a
+wrong quantum costs space, never accuracy. `morlet_stream_storage(collection,
+recording_id)` reports chunk counts per kind, stored bytes and bits per sample.
+
+Collections created before this change keep `float8[]` chunks and work unchanged;
+they reject a `sample_quantum` other than 1. There is no in-place migration: copy
+recordings into a new collection to re-encode them. Measured on held-out seismic and bearing data,
+chunk tables are 1.7-2.9x smaller than `float8[]` at 4096-sample chunks and
+1.9-3.3x at 32768 (CX seismic counts: 5.1 vs 16.9 bits/sample); see the
+[engineering check](../evaluation/compression/extension/README.md). Prefer large
+chunks: per-row and TOAST overhead adds 1-2 bits/sample at 4096.
+
 ## Append, replay and recovery
 
 Append locks the recording row, restores its versioned checkpoint, and validates

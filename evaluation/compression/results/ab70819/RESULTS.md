@@ -19,6 +19,13 @@ files.
   (different days and stations), so it is an **estimate**, labelled as such.
 - Paper and vendor compression claims (instinct PR #1) remain untested.
 
+> **Correction (2026-10-26, after this report):** the "about 5×" comparison with
+> MorletDB's `float8[]` chunks below was an estimate across reports and was too high.
+> Measured directly in Postgres on this benchmark's held-out data, TOAST already
+> compresses `float8[]` chunks to 16–20 bits/sample. The integer codec gives
+> **1.7–3.3×** smaller chunk tables. See
+> [`../../extension/README.md`](../../extension/README.md).
+
 ## Headline
 
 1. **The biggest, safest saving is not a new codec.** MorletDB stores raw chunks as

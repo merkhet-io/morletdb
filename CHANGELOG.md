@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+Extension:
+- New stream collections store raw chunks losslessly encoded (`sample_count`,
+  `encoded bytea`) instead of `float8[]`. Samples on or within 1/1000 step of
+  the recording's grid (`sample_quantum`, default 1) use integer prediction +
+  Rice coding with last-place corrections; other chunks code float64 bit
+  patterns or are stored plain. Every chunk decodes bitwise to its input.
+  Measured chunk tables are 2-3.3x smaller than `float8[]` at 32768-sample
+  chunks on held-out seismic and bearing data (see docs/durable-ingestion.md).
+  New trailing `sample_quantum` argument on `morlet_start_recording` and
+  `morlet_ensure_recording`, new `morlet_stream_storage` report, and
+  `morlet_encode_chunk` / `morlet_decode_chunk` helpers. Existing `float8[]`
+  collections keep working unchanged; there is no in-place migration.
+- Importer: `--sample-quantum`.
+
 ## 0.1.0-alpha.3
 
 First release built from the rewritten public repository history (author

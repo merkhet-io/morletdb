@@ -1,0 +1,106 @@
+{
+ "cx": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "quantum": 1.0,
+  "legacy": {
+   "table_bytes": 9109504,
+   "table_bits_per_sample": 17.375,
+   "value_bits_per_sample": 16.158960342407227,
+   "grid_chunks": null,
+   "float_chunks": null,
+   "raw_chunks": null,
+   "append_s": 32.44756533403415,
+   "samples_per_s": 129264.05900786052
+  },
+  "encoded": {
+   "table_bytes": 3112960,
+   "table_bits_per_sample": 5.9375,
+   "value_bits_per_sample": 4.6040802001953125,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "append_s": 32.648554916959256,
+   "samples_per_s": 128468.28935210464
+  },
+  "table_reduction": 2.9263157894736844
+ },
+ "ims": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "quantum": 0.001,
+  "legacy": {
+   "table_bytes": 9969664,
+   "table_bits_per_sample": 19.015625,
+   "value_bits_per_sample": 17.498388290405273,
+   "grid_chunks": null,
+   "float_chunks": null,
+   "raw_chunks": null,
+   "append_s": 19.2844464170048,
+   "samples_per_s": 217496.72815609118
+  },
+  "encoded": {
+   "table_bytes": 5873664,
+   "table_bits_per_sample": 11.203125,
+   "value_bits_per_sample": 8.801036834716797,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "append_s": 18.162553458008915,
+   "samples_per_s": 230931.40563616564
+  },
+  "table_reduction": 1.697350069735007
+ },
+ "paderborn-counts": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "quantum": 1.0,
+  "legacy": {
+   "table_bytes": 9601024,
+   "table_bits_per_sample": 18.3125,
+   "value_bits_per_sample": 17.038896560668945,
+   "grid_chunks": null,
+   "float_chunks": null,
+   "raw_chunks": null,
+   "append_s": 19.04313100001309,
+   "samples_per_s": 220252.85652853604
+  },
+  "encoded": {
+   "table_bytes": 5136384,
+   "table_bits_per_sample": 9.796875,
+   "value_bits_per_sample": 7.875131607055664,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "append_s": 18.223752500023693,
+   "samples_per_s": 230155.89132888778
+  },
+  "table_reduction": 1.8692185007974482
+ },
+ "paderborn-physical": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "quantum": 0.0030517578104827248,
+  "legacy": {
+   "table_bytes": 11517952,
+   "table_bits_per_sample": 21.96875,
+   "value_bits_per_sample": 19.794803619384766,
+   "grid_chunks": null,
+   "float_chunks": null,
+   "raw_chunks": null,
+   "append_s": 21.45936370792333,
+   "samples_per_s": 195453.3255080326
+  },
+  "encoded": {
+   "table_bytes": 5963776,
+   "table_bits_per_sample": 11.375,
+   "value_bits_per_sample": 9.159196853637695,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "append_s": 22.41674120805692,
+   "samples_per_s": 187105.87596436645
+  },
+  "table_reduction": 1.9313186813186813
+ }
+}

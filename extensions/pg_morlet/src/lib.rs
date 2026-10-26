@@ -182,6 +182,34 @@ fn morlet_valid_chunk(samples: Vec<Option<f64>>) -> bool {
     true
 }
 
+/// Lossless chunk encoding: integer grid + Rice coding, or raw float64 off the grid.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_encode_chunk(samples: Vec<Option<f64>>, sample_quantum: f64) -> Vec<u8> {
+    morlet_core::rawcodec::encode(&checked_samples(samples), sample_quantum)
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_decode_chunk(encoded: &[u8]) -> Vec<f64> {
+    morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_encoded_chunk_kind(encoded: &[u8]) -> &'static str {
+    morlet_core::rawcodec::kind(encoded)
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+        .name()
+}
+
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_valid_encoded_chunk(encoded: &[u8], sample_count: i32) -> bool {
+    let samples = morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e));
+    if samples.len() != sample_count as usize {
+        pgrx::error!("encoded chunk length does not match sample_count");
+    }
+    true
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: Vec<Option<f64>>) -> JsonB {
     if start_sample < 0 {
@@ -211,6 +239,103 @@ mod tests {
     #[pg_test]
     fn continuous_interval_workflow() {
         Spi::run(include_str!("../sql/interval_tests.sql")).unwrap();
+    }
+    #[pg_test]
+    fn encoded_chunks_roundtrip_bitwise_and_report_storage() {
+        Spi::run("SELECT morlet_create_stream_collection('public','encoded_streams'); SELECT morlet_start_recording('encoded_streams','counts',100,'HHZ','counts','{}',512,256,'none','morlet-energy-lowrate-v1'); SELECT morlet_start_recording('encoded_streams','milli',4096,'x','g','{}',512,256,'none','morlet-energy-v1',0.001); SELECT morlet_start_recording('encoded_streams','floats',4096,'x','g'); CREATE TEMP TABLE source AS SELECT i,round(1000*sin(i/7.)+((i*7919)%61))::float8 AS counts,(round(1000*sin(i/7.))/1000)::float8 AS milli,sin(i/7.)::float8 AS floats FROM generate_series(0,9999) i; SELECT morlet_append_chunk('encoded_streams','counts',0,ARRAY(SELECT counts FROM source WHERE i<4096 ORDER BY i)); SELECT morlet_append_chunk('encoded_streams','counts',4096,ARRAY(SELECT counts FROM source WHERE i>=4096 ORDER BY i)); SELECT morlet_append_chunk('encoded_streams','milli',0,ARRAY(SELECT milli FROM source ORDER BY i)); SELECT morlet_append_chunk('encoded_streams','floats',0,ARRAY(SELECT floats FROM source ORDER BY i))").unwrap();
+        for (id, column) in [
+            ("counts", "counts"),
+            ("milli", "milli"),
+            ("floats", "floats"),
+        ] {
+            // float8send compares bit patterns, so -0/+0 or rounding drift would fail here.
+            let same = Spi::get_one::<bool>(&format!("SELECT (SELECT array_agg(float8send(v) ORDER BY o) FROM unnest((SELECT samples FROM morlet_read_interval('encoded_streams','{id}',4000,10000))) WITH ORDINALITY u(v,o)) = (SELECT array_agg(float8send({column}) ORDER BY i) FROM source WHERE i>=4000)")).unwrap().unwrap();
+            assert!(same, "{id}");
+        }
+        let counts = Spi::get_three::<i64, i64, i64>("SELECT grid_chunks,raw_chunks,samples FROM morlet_stream_storage('encoded_streams','counts')").unwrap();
+        assert_eq!(
+            (counts.0.unwrap(), counts.1.unwrap(), counts.2.unwrap()),
+            (2, 0, 10000)
+        );
+        let bits = Spi::get_one::<f64>(
+            "SELECT bits_per_sample FROM morlet_stream_storage('encoded_streams','counts')",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(bits < 16.0, "{bits}");
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT grid_chunks FROM morlet_stream_storage('encoded_streams','milli')"
+            )
+            .unwrap()
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT float_chunks FROM morlet_stream_storage('encoded_streams','floats')"
+            )
+            .unwrap()
+            .unwrap(),
+            1
+        );
+        // Identical replay is a no-op against the decoded chunk.
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_append_chunk('encoded_streams','counts',0,ARRAY(SELECT counts FROM source WHERE i<4096 ORDER BY i))").unwrap().unwrap(), 10000);
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM encoded_streams_chunks")
+                .unwrap()
+                .unwrap(),
+            4
+        );
+    }
+    #[pg_test(error = "conflicting replay at chunk offset")]
+    fn encoded_chunks_reject_conflicting_replay() {
+        Spi::run("SELECT morlet_create_stream_collection('public','encoded_replay'); SELECT morlet_start_recording('encoded_replay','A',4096,'x','g'); SELECT morlet_append_chunk('encoded_replay','A',0,array_fill(3.::float8,ARRAY[137])); SELECT morlet_append_chunk('encoded_replay','A',0,array_cat(array_fill(3.::float8,ARRAY[136]),ARRAY[3.5::float8]))").unwrap();
+    }
+    #[pg_test(error = "corrupt encoded chunk: trailing data")]
+    fn encoded_chunk_check_rejects_direct_corruption() {
+        Spi::run("SELECT morlet_create_stream_collection('public','encoded_corrupt'); SELECT morlet_start_recording('encoded_corrupt','A',4096,'x','g'); INSERT INTO encoded_corrupt_chunks VALUES ('A',0,3,morlet_encode_chunk(ARRAY[1,2,3]::float8[],1)||'\\x00'::bytea)").unwrap();
+    }
+    #[pg_test(error = "encoded chunk length does not match sample_count")]
+    fn encoded_chunk_check_rejects_wrong_count() {
+        Spi::run("SELECT morlet_create_stream_collection('public','encoded_count'); SELECT morlet_start_recording('encoded_count','A',4096,'x','g'); INSERT INTO encoded_count_chunks VALUES ('A',0,4,morlet_encode_chunk(ARRAY[1,2,3]::float8[],1))").unwrap();
+    }
+    #[pg_test(error = "recording metadata or extraction specification conflicts with import")]
+    fn ensure_recording_rejects_changed_quantum() {
+        Spi::run("SELECT morlet_create_stream_collection('public','quantum_import'); SELECT morlet_ensure_recording('quantum_import','A',4096,'x','g','{}',512,256,'zscore','morlet-energy-v1',0.001); SELECT morlet_ensure_recording('quantum_import','A',4096,'x','g','{}',512,256,'zscore','morlet-energy-v1',0.001); SELECT morlet_ensure_recording('quantum_import','A',4096,'x','g','{}',512,256,'zscore','morlet-energy-v1',1)").unwrap();
+    }
+    #[pg_test]
+    fn legacy_float_chunk_collections_keep_working() {
+        // The chunk table layout created before encoded storage.
+        Spi::run("CREATE TABLE legacy_streams (recording_id text PRIMARY KEY, sample_rate_hz float8 NOT NULL, channel text NOT NULL, unit text NOT NULL, metadata jsonb NOT NULL, checkpoint jsonb NOT NULL); CREATE TABLE legacy_streams_chunks (recording_id text NOT NULL REFERENCES legacy_streams ON DELETE CASCADE, start_sample bigint NOT NULL, samples float8[] NOT NULL, PRIMARY KEY(recording_id,start_sample)); CREATE TABLE legacy_streams_segments (recording_id text NOT NULL REFERENCES legacy_streams ON DELETE CASCADE, start_sample bigint NOT NULL, features float8[] NOT NULL, PRIMARY KEY(recording_id,start_sample)); SELECT morlet_ensure_recording('legacy_streams','A',4096,'x','g'); SELECT morlet_append_chunk('legacy_streams','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,599) i)); SELECT morlet_append_chunk('legacy_streams','A',600,ARRAY(SELECT i::float8 FROM generate_series(600,1199) i)); SELECT morlet_append_chunk('legacy_streams','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,599) i))").unwrap();
+        assert_eq!(
+            Spi::get_one::<Vec<f64>>(
+                "SELECT samples FROM morlet_read_interval('legacy_streams','A',598,602)"
+            )
+            .unwrap()
+            .unwrap(),
+            vec![598., 599., 600., 601.]
+        );
+        let storage = Spi::get_three::<i64, i64, i64>(
+            "SELECT chunks,samples,grid_chunks FROM morlet_stream_storage('legacy_streams','A')",
+        )
+        .unwrap();
+        assert_eq!(
+            (storage.0.unwrap(), storage.1.unwrap(), storage.2),
+            (2, 1200, None)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT indexed_segments FROM morlet_stream_status('legacy_streams','A')"
+            )
+            .unwrap()
+            .unwrap(),
+            3
+        );
+    }
+    #[pg_test(error = "sample_quantum requires a collection with encoded chunk storage")]
+    fn legacy_collections_reject_sample_quantum() {
+        Spi::run("CREATE TABLE legacy_quantum (recording_id text PRIMARY KEY, sample_rate_hz float8 NOT NULL, channel text NOT NULL, unit text NOT NULL, metadata jsonb NOT NULL, checkpoint jsonb NOT NULL); CREATE TABLE legacy_quantum_chunks (recording_id text, start_sample bigint, samples float8[]); CREATE TABLE legacy_quantum_segments (recording_id text, start_sample bigint, features float8[]); SELECT morlet_start_recording('legacy_quantum','A',4096,'x','g','{}',512,256,'zscore','morlet-energy-v1',0.5)").unwrap();
     }
     #[pg_test]
     fn stream_search_keeps_parent_visibility_and_compatibility() {

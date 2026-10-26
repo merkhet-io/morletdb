@@ -56,6 +56,12 @@ columns, duplicate source mappings, or explicitly mapped missing metadata fail.
 No implicit timestamp-to-sample conversion, resampling, channel mixing, sorting,
 remote/S3 credentials or format guessing is performed in this first importer.
 
+`--sample-quantum` (default 1) declares the recordings' sample grid for lossless
+integer chunk storage, e.g. 0.001 for three-decimal values; see
+[raw chunk storage](../../docs/durable-ingestion.md#raw-chunk-storage). It is part
+of the recording specification checked on resume, and requires a collection
+created with encoded chunk storage when it is not 1.
+
 ## Batching, transactions and replay
 
 `--chunk-size` defaults to 4096; chunks are packed across Parquet row and Arrow
