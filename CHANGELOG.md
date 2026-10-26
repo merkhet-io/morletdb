@@ -1,9 +1,27 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-alpha.1
 
-Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
-0.1.0-alpha.3):
+The first release after the evidence-first research round.
+- **New:** lossless, checksummed raw storage; raw-only recordings; materialized
+  envelopes for search; the context model (context timeline, segments,
+  compare-to-history, labels); a local viewer.
+- **Evaluations behind these features** (frozen protocols, each run once on held-out
+  data; see the README's measured results):
+  - **Storage:** 1.7–3.3× smaller than the previous storage.
+  - **Envelopes:** same results as decoding raw at about 13% of raw storage
+    (R1/R1b).
+  - **Context-conditioned comparison:** supported on lab milling wear (C1) and real
+    CNC anomalies (C2).
+  - **Calibrated score:** rejected (C3).
+  - **Wavelets:** wavelet features did not beat simple baselines (H2, timing test,
+    W1).
+- **Upgrade:** the SQL extension moves to 0.2.0. `ALTER EXTENSION pg_morlet UPDATE`
+  from 0.1.0 as released in 0.1.0-alpha.3 is tested in CI; 0.1.0-alpha.1 databases
+  need a reinstall.
+
+Extension (in the image; SQL version 0.2.0, with an update script from 0.1.0 as
+released in 0.1.0-alpha.3):
 - New stream collections store raw chunks losslessly encoded (`sample_count`,
   `encoded bytea`) instead of `float8[]`. Samples on or within 1/1000 step of
   the recording's grid (`sample_quantum`, default 1) use established fixed
@@ -23,6 +41,8 @@ Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
   collections unchanged and working; re-encoding them is a separate, documented
   data transfer. alpha.1 databases need a reinstall (docs/durable-ingestion.md).
 - Importer: `--sample-quantum`.
+- `morlet_version()` reports 0.2.0, the crate version, in step with the SQL
+  extension version.
 - Raw-only recordings: `extractor => 'none'` stores samples without segments
   or features. It accepts any rate up to 200000 Hz and is skipped by feature
   search. The importer accepts `--extractor none`. Library-only change; the
@@ -60,14 +80,24 @@ Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
   The spread-calibrated variant (`morlet_value_spreads`, `calibrated_deviation`)
   ranked worse in evaluation C3 and is not the default.
 
+Repository (not in the image):
 - Viewer (`tools/viewer`): a local, read-only web page.
   - Waveform with zoom; context, segment and label lanes.
   - Compare-to-history per segment; envelope search for a selected window.
   - Plus a synthetic demo collection.
+- Evaluations with frozen protocols, results and reproduction scripts:
+  - `evaluation/compression`, `evaluation/materialized` (R1, R1b);
+  - `evaluation/wavelets` (W1);
+  - `evaluation/context` (C1, C2, C3);
+  - the decision milestone (`evaluation/decision`).
+- Docs:
+  - `docs/chunk-format.md`, `docs/context-model.md`, `docs/context-workflow.md`;
+  - the README's measured results now list the frozen held-out tests. In these
+    tests Morlet features did not beat simple baselines.
 
-Docs: the README's measured results now list the frozen held-out tests (Paderborn,
-seismic timing, PTB-XL, storage, materialized envelopes). In these tests Morlet
-features did not beat simple baselines.
+Linux amd64 / PostgreSQL 17 only. Production capacity, concurrent workloads and
+performance on real shop-floor data with NC-block context remain unproven. See
+SUPPORT.md and evaluation/README.md.
 
 ## 0.1.0-alpha.3
 
