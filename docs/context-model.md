@@ -10,36 +10,24 @@ subject to implementation review. Related documents: the
 
 ## 1. Problem and non-goals
 
-### The question
-
-A condition-monitoring engineer on a CNC machine tool asks:
-
-> Is this cut different from the same cut on previous parts?
-
-"The same cut" is defined by controller context: NC program, NC block, tool
-number, commanded feed and spindle speed, and the part being made. Examples of
-"different": an air cut (the tool moves at feed without engaging material),
-tool wear, chatter, a wrong setup or a wrong offset.
-
-Such machines record several channels at once: three-axis vibration, spindle
-and axis motor current, temperature, and controller signals. The comparison is
-only meaningful against history with the same context. A vibration window from a
-roughing block and one from a finishing block differ for reasons that are not
-faults.
+A condition-monitoring engineer on a CNC machine tool asks: **"Is this cut
+different from the same cut on previous parts?"** "The same cut" is defined by
+controller context: NC program, block, tool, commanded feed and spindle speed,
+and the part. "Different" means, for example, an air cut (the tool moves at feed
+without engaging material), tool wear, chatter or a wrong setup. The machine
+records three-axis vibration, motor currents, temperature and controller
+signals at once. A roughing block and a finishing block differ for reasons that
+are not faults, so the comparison is meaningful only within the same context.
 
 ### What MorletDB does today
 
-| Aspect | Today |
-|---|---|
-| Recording | One uniformly sampled channel, append-only, global sample offsets |
-| Raw storage | Lossless encoded chunks; raw stays authoritative |
-| Segments | Fixed windows (512..4096 samples) with `morlet-energy-v1` features at append time, or none with `extractor => 'none'` |
-| Context | Recording-level JSONB `metadata`; containment filters at search time |
-| Search | Exact scans, explicit candidate budgets, errors on incompatible representations |
-| Access | SECURITY INVOKER functions, caller-owned tables, table grants and RLS |
-
-Nothing relates two recordings in time, and nothing describes what the machine
-was doing inside a recording.
+A recording is one uniformly sampled, append-only channel stored as lossless
+encoded chunks. Segments are fixed windows (512..4096 samples) with
+`morlet-energy-v1` features computed at append time, or none with
+`extractor => 'none'`. Context is recording-level JSONB `metadata`. Search is an
+exact, budgeted scan that errors on incompatible representations; functions run
+as SECURITY INVOKER over caller-owned tables with RLS. Nothing relates two
+recordings in time or describes what the machine did inside a recording.
 
 ### Evidence that shapes this proposal
 
@@ -57,24 +45,18 @@ This proposal moves the question from "where else does this look similar?" to
 "how does this compare with the same context in the past?". Whether that is more
 useful is a hypothesis; section 8 proposes how to test it.
 
-### Relation to the CNC spindle spec
-
 The [CNC spindle spec](cnc-spindle-experiment.md) gates *Morlet-based*
-context-aware retrieval on a Morlet advantage over baselines. This proposal does
-not assume that advantage. It conditions on context and uses simple values. The
-[architecture](architecture.md) also states that formal multichannel
-synchronization requires partner evidence. Phase 2 (multichannel) is gated on
-the phase 1 pilot for that reason.
+context-aware retrieval on a Morlet advantage; this proposal does not assume
+one. The [architecture](architecture.md) requires partner evidence before
+multichannel synchronization, so phase 2 is gated on the phase 1 pilot.
 
 ### Non-goals
 
 - Lossy retention, downsampling of originals, or automatic deletion.
-- ML models, learned embeddings, or automatic diagnosis.
+- ML models, learned embeddings, automatic diagnosis or calibrated probabilities.
 - A new index type or access method. All scans stay exact and budgeted.
-- A specific controller protocol. OPC UA, MQTT, MTConnect and vendor logs are
-  handled by adapters outside the database.
+- A specific controller protocol; adapters outside the database handle them.
 - Time warping (DTW) in the first phases.
-- Calibrated probabilities. A deviation score is a lead for an engineer.
 
 ## 2. Acquisitions and synchronized channels
 
@@ -111,9 +93,8 @@ to the interval when its timestamp `t(n)` does. The same rule is used for
 segmenting, reading and labels, so a time interval always maps to the same
 samples.
 
-25.6 kHz gives non-integer nanosecond periods (39,062.5 ns). This is why the
-mapping is computed rather than stored per sample, and why stored interval
-bounds are times, not per-channel sample indexes.
+25.6 kHz has a non-integer period in nanoseconds (39,062.5 ns), so stored
+interval bounds are times and the mapping to samples is computed.
 
 ### Minimal schema (illustrative)
 
@@ -140,15 +121,12 @@ CREATE TABLE signals_acq_channels (
 );
 ```
 
-- Rate, channel and unit stay on the recording row; they are not duplicated.
-- A recording without an acquisition keeps working exactly as today.
-- Drift between clocks is not modelled in phase 1. A later option is a table of
-  sync points (piecewise-linear mapping per channel), filled from a shared
-  transient seen on all channels (see the CNC spec's timestamp mapping).
-- Gaps inside a recording are handled as today: a new recording starts after
-  a gap, with its own `offset_ns`. Several recordings may share a role in one
-  acquisition only if their time ranges do not overlap (an open question for
-  the key).
+- Rate, channel and unit stay on the recording row. A recording without an
+  acquisition works exactly as today.
+- Clock drift is not modelled in phase 1. A later option is per-channel sync
+  points (piecewise-linear), fitted on a transient seen on all channels.
+- After a gap a new recording starts, with its own `offset_ns`. How several
+  recordings share one role is an open question.
 
 ## 3. Context timeline
 
@@ -177,15 +155,13 @@ CREATE TABLE signals_ctx (
 );
 ```
 
-- **Key/value, not typed columns.** Controllers differ, and a fixed column set
-  would need migrations for each new key. A small set of well-known keys is
-  documented (program, block, tool, feed_cmd, speed_cmd, part, operation,
-  tool_change, alarm) with their value types. Numeric values carry units in the
-  key name or in a key registry (open question).
-- **Events** have one timestamp: tool change, alarm, door open, operator stop.
-- **Commanded vs actual.** `feed_cmd` and `speed_cmd` are commanded values from
-  the program. Actual speed is a signal and belongs in a recording. Overrides
-  should be ingested as their own key.
+- **Key/value, not typed columns.** Controllers differ; a fixed column set
+  would need a migration per new key. Well-known keys (program, block, tool,
+  feed_cmd, speed_cmd, part, operation, tool_change, alarm) are documented with
+  value types; units per key are an open question.
+- **Events** have one timestamp: tool change, alarm, operator stop.
+- **Commanded vs actual.** `feed_cmd` and `speed_cmd` are commanded values.
+  Actual speed is a signal and belongs in a recording; overrides are their own key.
 
 ### Overlap and nesting
 
@@ -208,11 +184,10 @@ and CSV into that format, and convert controller timestamps to acquisition time
 with the channel's declared offset. The adapter records which clock its
 timestamps came from.
 
-Ingest follows the durable-ingestion contract: an identical retry of a
-`batch_id` is verified and ignored; a changed retry with the same `batch_id` is
-an error. Change-on-value streams (block number every time it changes) are
-turned into intervals by the adapter; an interval still open at the end of a
-batch is closed by a later batch, or by an explicit end-of-acquisition marker.
+As in durable ingestion, an identical retry of a `batch_id` is verified and
+ignored; a changed retry is an error. Adapters turn change-on-value streams into
+intervals; an interval open at the end of a batch is closed by a later batch or
+an end-of-acquisition marker.
 
 ### Corrections and versioning
 
@@ -260,9 +235,8 @@ an explicit call, never implicitly:
   superseded, the segment is marked `stale`. It is rebuilt explicitly, never
   silently changed.
 
-Segment boundaries inherit the clock uncertainty of the context source. With a
-controller clock and an estimated offset, a block boundary may be off by
-milliseconds; trims can exclude the uncertain edges.
+Segment boundaries inherit the context clock's uncertainty (possibly
+milliseconds for a controller clock); trims can exclude uncertain edges.
 
 ### Derived representations
 
@@ -270,22 +244,11 @@ Derived values attach to segments as **materialized representations**: stored
 next to raw, versioned, replaceable, rebuildable from raw. They are not
 indexes, and raw samples stay the source of truth.
 
-```sql
-CREATE TABLE signals_repr (
-  repr_id     text PRIMARY KEY,           -- e.g. 'simple-v1/25600'
-  name        text NOT NULL,
-  version     text NOT NULL,
-  params      jsonb NOT NULL,             -- bands, tooth count, envelope bin width, ...
-  value_names text[] NOT NULL,
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE signals_repr_values (
-  segment_id  bigint NOT NULL REFERENCES signals_ctx_segments ON DELETE CASCADE,
-  repr_id     text NOT NULL REFERENCES signals_repr,
-  vals        float4[] NOT NULL,          -- scalars, or a sequence (envelope bins)
-  PRIMARY KEY (segment_id, repr_id)
-);
-```
+Illustratively: `signals_repr(repr_id, name, version, params jsonb,
+value_names text[])` describes a representation (bands, tooth count, envelope
+bin width in `params`), and `signals_repr_values(segment_id, repr_id, vals
+float4[])` holds scalars or a sequence such as envelope bins, one row per
+segment and representation.
 
 Candidate representations, in order of priority:
 
@@ -299,14 +262,12 @@ Candidate representations, in order of priority:
 
 Rules:
 
-- Computation is synchronous and explicit, for example
-  `morlet_build_representation(collection, repr_id, segment_filter, max_segments)`,
-  using the Rust core. The call reads raw through the same path as
-  `morlet_read_interval` and errors when `max_segments` would be exceeded.
-- A new parameter set or algorithm is a new `repr_id`. Old values remain until
-  dropped explicitly. Two representations are never mixed in one comparison.
-- Values are per channel. Cross-channel values (for example the ratio of
-  vibration to current) wait for phase 2.
+- Building is synchronous and explicit, for example
+  `morlet_build_representation(collection, repr_id, segment_filter, max_segments)`.
+  It reads raw like `morlet_read_interval` and errors above `max_segments`.
+- New parameters or algorithm means a new `repr_id`. Old values remain until
+  dropped explicitly. Representations are never mixed in one comparison.
+- Values are per channel; cross-channel values wait for phase 2.
 
 ## 5. Compare-to-history query
 
@@ -344,8 +305,7 @@ RETURNS TABLE (segment_id bigint, recording_id text, start_sample bigint,
   of the same occurrence (same part) are excluded. With `before_only`, only
   segments that started earlier in UTC (or in acquisition order when no UTC
   anchor exists) are used, so the score never uses the future.
-- **Rate and unit.** The channel's rate, channel name and unit must match, as
-  in existing search. Different rates are an error, not a resampling.
+- **Rate and unit** must match, as in existing search. No resampling.
 - **Deviation.** Per value: `robust_z = (x - median) / (1.4826 * MAD)` and the
   empirical quantile of `x` with `hist_n` reported beside it. `MAD = 0` gives
   `NULL` with status `zero_spread`; fewer than `min_history` segments give
@@ -366,8 +326,7 @@ RETURNS TABLE (segment_id bigint, recording_id text, start_sample bigint,
 
 ### Variable segment lengths
 
-The same block can take different durations: feed overrides, dwell, an
-interrupted cycle.
+The same block can take different durations (feed override, dwell, interruption).
 
 - **Scalar values** (RMS, crest, kurtosis, band energy per second) are defined
   to be length-independent. Duration is itself a value and often the first
@@ -380,40 +339,24 @@ interrupted cycle.
 
 ## 6. Labels
 
-Engineer labels are ordinary rows, not model output:
+Engineer labels are ordinary rows, not model output. An illustrative `signals_labels` table holds: `label_id`, `acquisition_id`,
+an optional `segment_id`, a time range `[t_start_ns, t_end_ns)`, `label`
+(`air_cut`, `chatter`, `worn_tool`, `normal`, ...), free-text `note`, `author`
+(default `current_user`), `created_at`, and `supersedes`/`retracted` for
+revisions, as for context rows.
 
-```sql
-CREATE TABLE signals_labels (
-  label_id       bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  acquisition_id text NOT NULL REFERENCES signals_acq ON DELETE CASCADE,
-  segment_id     bigint REFERENCES signals_ctx_segments ON DELETE SET NULL,
-  t_start_ns     bigint NOT NULL,
-  t_end_ns       bigint NOT NULL CHECK (t_end_ns > t_start_ns),
-  label          text NOT NULL,           -- 'air_cut','chatter','worn_tool','normal',...
-  note           text,
-  author         text NOT NULL DEFAULT current_user,
-  created_at     timestamptz NOT NULL DEFAULT now(),
-  supersedes     bigint REFERENCES signals_labels(label_id),
-  retracted      boolean NOT NULL DEFAULT false
-);
-```
-
-- Labels refer to a time range, so they survive segment rebuilds; `segment_id`
-  is a convenience link.
-- `author` comes from the session role, not from a client argument. A caller
-  cannot claim another reviewer's authority by supplying a name.
+- Labels refer to a time range, so they survive segment rebuilds.
+- `author` comes from the session role, not a client argument.
 - **Gallery use.** `morlet_history_neighbors` returns labels overlapping each
   neighbor. An engineer sees "the three closest past executions of this block
   were labelled air cut".
 - **Evaluation use.** An evaluation freezes a label set by exporting it with
   its label IDs, revisions and a hash. Labels added later do not change a frozen
   result.
-- **Permissions.** All functions are SECURITY INVOKER. Tables are caller-owned,
-  created by an explicit owner call. Label and context visibility derive from
-  the parent recordings: a caller who cannot read a recording must not see its
-  labels, context or segments through joins. Write access to labels is granted
-  separately from read access. Tests use ordinary roles with RLS enabled, as in
-  the existing suites.
+- **Permissions.** SECURITY INVOKER functions over caller-owned tables. Label,
+  context and segment visibility derive from the parent recordings, including
+  through joins. Label writes are granted separately from reads. Tests use
+  ordinary roles with RLS, as in the existing suites.
 
 ## 7. Migration and compatibility
 
@@ -431,7 +374,6 @@ CREATE TABLE signals_labels (
 - The CI `upgrade` job is extended: populate a database with the 0.2.0 release,
   update to 0.3.0, check identical results for existing APIs, enable context on
   an old collection, and compare the catalog with a fresh 0.3.0 install.
-- Dump and restore: all new objects are ordinary tables owned by the caller.
 
 ## 8. Validation plan (proposals)
 
@@ -458,18 +400,18 @@ Limits to record in advance:
 - Wear grows with time in use. A **time-in-use baseline** (run index or
   cumulative cutting time) must be included; a method that only tracks elapsed
   use is not evidence of signal value.
-- The number of cutters is small. Grouped bootstrap intervals over cutters
-  will be wide; report them as they are.
+- The number of cutters is likely small (verify). Grouped bootstrap intervals
+  over cutters will be wide; report them as they are.
 
 **Protocol sketch.**
 - Unit: one run (cut) per channel, as one context segment. Context key:
   (depth of cut, feed, material).
 - Split: whole-cutter holdout. Thresholds and feature choices are fixed on
   development cutters only.
-- Methods, all on the same runs and the same `simple-v1` and `bands-v1` values:
-  (1) context-conditioned robust z against earlier runs of the same context;
-  (2) context-free nearest-neighbor distance to earlier runs; (3) time-in-use;
-  (4) pooled Morlet features, for reference.
+- History: runs of the reference cutters only. Methods, on the same runs and
+  the same `simple-v1` and `bands-v1` values: (1) robust z against reference
+  runs with the same context; (2) context-free nearest-neighbor distance to all
+  reference runs; (3) time-in-use; (4) pooled Morlet features, for reference.
 - Outcome: a wear threshold fixed from the documentation before the run (verify
   the wear criterion used by the provider). Metrics: AUROC of each score for
   "worn", per-cutter results, paired differences with grouped bootstrap 95%
@@ -496,8 +438,8 @@ Each event has a time range and a label in the frozen set.
   error, noise).
 - Time-to-cause: an engineer's time from an alarm to a stated cause, with and
   without compare-to-history, on matched events. Small n; report each case.
-- Context quality: fraction of segments with missing or corrected context, and
-  the measured clock offset between controller and DAQ.
+- Context quality: share of segments with missing or corrected context; the
+  measured controller-to-DAQ clock offset.
 
 **Decision.** Phase 2 starts only if engineers judge the alarms useful and the
 false-alarm rate is acceptable to them at the chosen budget.
