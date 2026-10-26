@@ -1,5 +1,8 @@
 # C1: does comparing within the same operating context track tool wear better?
 
+**Result: SUPPORTED.** Δρ (conditioned − context-free) = +0.31 [+0.08, +0.54]. See
+[results/RESULTS.md](results/RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line. The archive was downloaded
 and its documentation and structure inspected (field names, runs per case,
 signal shapes, which runs have a VB entry). **No signal value or VB value was
