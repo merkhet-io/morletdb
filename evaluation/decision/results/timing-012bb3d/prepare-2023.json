@@ -1,0 +1,40 @@
+{
+ "year": 2023,
+ "windows": 1413,
+ "event_windows": 1213,
+ "events": 259,
+ "noise_windows": 200,
+ "excluded": {
+  "missing": 387,
+  "clipped": 13,
+  "no_data": 122,
+  "gap_or_overlap": 12
+ },
+ "per_station": {
+  "PB01": 220,
+  "PB02": 215,
+  "PB03": 143,
+  "PB06": 136,
+  "PB08": 74,
+  "PB09": 135,
+  "PB15": 79,
+  "PB16": 46,
+  "PSGCX": 113,
+  "MNMCX": 52
+ },
+ "hypo_km_quantiles": [
+  42.2,
+  146.1,
+  176.0,
+  205.1,
+  249.7
+ ],
+ "provenance": {
+  "commit": "012bb3df1d7fce691919a249e1587c3fb272b295",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "numpy": "2.2.6",
+  "scipy": "1.16.3"
+ }
+}

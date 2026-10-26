@@ -1,0 +1,14 @@
+{
+ "note": "Descriptive, computed after the single held-out evaluation. 'chance' is the expected P@10 of a random ranking over the same eligible gallery (label prior); 'same_bearing_at_10' is exploratory (not pre-registered): the fraction of a query's top-10 from its own bearing when only its own file is excluded.",
+ "chance_p10": {
+  "T1": 0.266197561072626,
+  "T2": 0.26659094535886785,
+  "T3": 0.2615246020818777
+ },
+ "same_bearing_at_10": {
+  "S": 0.15047619047619049,
+  "F": 0.8473015873015873,
+  "FS": 0.577936507936508,
+  "M": 0.9093650793650794
+ }
+}

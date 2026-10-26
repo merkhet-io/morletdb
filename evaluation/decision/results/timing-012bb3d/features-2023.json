@@ -1,0 +1,26 @@
+{
+ "per_window_ms": {
+  "S+FS": 0.31176079267283974,
+  "ST": 0.3553869130066151,
+  "M+MT (rust, incl. JSON adapter)": 6.527979653236382,
+  "XC envelope": 0.5606215498927566
+ },
+ "features_bin_sha256": "674528d33b50f20b5a86944badf44f59ec0fe3c4fc97651ac1627bb2e1bdb450",
+ "extractor": "morlet-energy-lowrate-v1",
+ "dims": {
+  "S": 3,
+  "FS": 15,
+  "ST": 51,
+  "M": 15,
+  "MT": 51,
+  "XC": 410
+ },
+ "provenance": {
+  "commit": "012bb3df1d7fce691919a249e1587c3fb272b295",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "numpy": "2.2.6",
+  "scipy": "1.16.3"
+ }
+}
