@@ -1,5 +1,8 @@
 # C2: does same-operation history flag anomalous CNC machining runs?
 
+**Result: SUPPORTED.** AUROC 0.81 (same machine + operation) vs 0.64 (context-free),
+Δ +0.17 [+0.07, +0.28]. See [results/RESULTS.md](results/RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line, before the data was downloaded.
 Only the README and the repository's file listing (`file-listing.txt`: paths and
 byte sizes) have been read. No vibration value has been seen.
@@ -115,4 +118,6 @@ Plus `duration_s` once: 10 values in all.
 
 ## Changes after freeze
 
-(none)
+1. **Serialization fix in `c2.py`,** after the first execution. That execution
+   computed the results but could not write a NumPy scalar to JSON. The identical
+   computation was run again. No change to data, values, scores or rules.

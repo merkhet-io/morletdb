@@ -1,0 +1,7161 @@
+{
+ "history_files": 1180,
+ "evaluation_files": 469,
+ "scored": 469,
+ "scored_bad": 17,
+ "excluded": [],
+ "auroc_machine_operation": 0.8101249349297241,
+ "auroc_context_free": 0.6370380010411244,
+ "delta": 0.17308693388859975,
+ "ci95": [
+  0.06501940607658699,
+  0.2826279003734361
+ ],
+ "bootstrap": {
+  "valid": 2000,
+  "dropped_one_class": 0
+ },
+ "decision": "supported",
+ "reported": {
+  "auroc_operation_any_machine": 0.7502602811035919,
+  "per_machine": {
+   "M01": {
+    "machine_operation": 0.9611581920903954,
+    "context_free": 0.7231638418079096
+   },
+   "M02": {
+    "machine_operation": 0.9161904761904762,
+    "context_free": 0.7428571428571429
+   },
+   "M03": {
+    "machine_operation": 0.39,
+    "context_free": 0.25666666666666665
+   }
+  },
+  "per_period": {
+   "Feb_2021": {
+    "machine_operation": 0.8405425219941349,
+    "context_free": 0.6843841642228738
+   },
+   "Aug_2021": {
+    "machine_operation": 0.7537537537537538,
+    "context_free": 0.5525525525525525
+   }
+  },
+  "per_value_auroc_machine_operation": {
+   "duration_s": 0.9062988027069234,
+   "std_x": 0.7894976574700677,
+   "kurtosis_x": 0.8077173347214992,
+   "crest_x": 0.5931155648099948,
+   "std_y": 0.823204060385216,
+   "kurtosis_y": 0.6542816241540864,
+   "crest_y": 0.7233862571577303,
+   "std_z": 0.8410333159812597,
+   "kurtosis_z": 0.6105543987506507,
+   "crest_z": 0.6348906819364915
+  },
+  "usefulness_at_history_threshold": {
+   "machine_operation": {
+    "threshold": 2.2323894634079107,
+    "history_scores": 1180,
+    "true_positives": 2,
+    "bad": 17,
+    "false_positives": 13,
+    "good": 452
+   },
+   "context_free": {
+    "threshold": 3.2256896453009127,
+    "history_scores": 1180,
+    "true_positives": 0,
+    "bad": 17,
+    "false_positives": 13,
+    "good": 452
+   }
+  },
+  "history_per_context": {
+   "M01/OP00": 20,
+   "M01/OP01": 23,
+   "M01/OP02": 25,
+   "M01/OP03": 21,
+   "M01/OP04": 20,
+   "M01/OP05": 23,
+   "M01/OP06": 11,
+   "M01/OP07": 25,
+   "M01/OP08": 21,
+   "M01/OP09": 24,
+   "M01/OP10": 21,
+   "M01/OP11": 11,
+   "M01/OP12": 25,
+   "M01/OP13": 25,
+   "M01/OP14": 13,
+   "M02/OP00": 16,
+   "M02/OP01": 35,
+   "M02/OP02": 36,
+   "M02/OP03": 27,
+   "M02/OP04": 19,
+   "M02/OP05": 29,
+   "M02/OP06": 28,
+   "M02/OP07": 36,
+   "M02/OP08": 29,
+   "M02/OP09": 30,
+   "M02/OP10": 29,
+   "M02/OP11": 29,
+   "M02/OP12": 29,
+   "M02/OP13": 35,
+   "M02/OP14": 35,
+   "M03/OP00": 25,
+   "M03/OP01": 38,
+   "M03/OP02": 40,
+   "M03/OP03": 9,
+   "M03/OP04": 35,
+   "M03/OP05": 32,
+   "M03/OP06": 25,
+   "M03/OP07": 42,
+   "M03/OP08": 33,
+   "M03/OP09": 26,
+   "M03/OP10": 33,
+   "M03/OP11": 20,
+   "M03/OP12": 32,
+   "M03/OP13": 40
+  }
+ },
+ "rows": [
+  {
+   "file": "M01_Aug_2021_OP00_002.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.22269674644413656,
+   "operation": 0.3136999526835952,
+   "context_free": 2.0465116279069773
+  },
+  {
+   "file": "M01_Aug_2021_OP00_003.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.17451555541642227,
+   "operation": 0.24205265164903614,
+   "context_free": 2.0581395348837215
+  },
+  {
+   "file": "M01_Feb_2021_OP00_003.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.35683103087339063,
+   "operation": 0.47777691388097754,
+   "context_free": 2.0581395348837215
+  },
+  {
+   "file": "M01_Feb_2021_OP00_004.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.23296296046611775,
+   "operation": 0.39014828971757387,
+   "context_free": 2.034883720930233
+  },
+  {
+   "file": "M01_Feb_2021_OP00_005.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.21415722363104,
+   "operation": 0.3765473704787214,
+   "context_free": 2.034883720930233
+  },
+  {
+   "file": "M01_Feb_2021_OP00_006.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3661482450130475,
+   "operation": 0.45682078715842184,
+   "context_free": 2.0465116279069773
+  },
+  {
+   "file": "M01_Feb_2021_OP00_007.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3553119317865412,
+   "operation": 0.44702387539297805,
+   "context_free": 2.065952034883721
+  },
+  {
+   "file": "M01_Feb_2021_OP00_008.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.24394027520099415,
+   "operation": 0.37319542592932886,
+   "context_free": 2.0465116279069773
+  },
+  {
+   "file": "M01_Feb_2021_OP00_009.h5",
+   "machine": "M01",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.26204841264439854,
+   "operation": 0.39706007772881524,
+   "context_free": 2.0465116279069773
+  },
+  {
+   "file": "M01_Feb_2021_OP01_000.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.12863694230576192,
+   "operation": 0.917651777200392,
+   "context_free": 0.5793908662828431
+  },
+  {
+   "file": "M01_Feb_2021_OP01_001.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2624681138339474,
+   "operation": 1.2541562018954442,
+   "context_free": 0.8565381675530623
+  },
+  {
+   "file": "M01_Feb_2021_OP01_002.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4418831717638087,
+   "operation": 1.5745045426688429,
+   "context_free": 1.1203792097390537
+  },
+  {
+   "file": "M01_Feb_2021_OP01_003.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5172483550636913,
+   "operation": 1.709070234650163,
+   "context_free": 1.2312084162494272
+  },
+  {
+   "file": "M01_Feb_2021_OP01_004.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.41159537769483273,
+   "operation": 1.5204252213028744,
+   "context_free": 1.075839117926931
+  },
+  {
+   "file": "M01_Feb_2021_OP01_005.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.23165440104148505,
+   "operation": 1.199137844573439,
+   "context_free": 0.811224679428998
+  },
+  {
+   "file": "M01_Feb_2021_OP01_006.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.42526850815864525,
+   "operation": 1.544838805690941,
+   "context_free": 1.0959463097821855
+  },
+  {
+   "file": "M01_Feb_2021_OP01_007.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.26991682349022456,
+   "operation": 1.2674559873584013,
+   "context_free": 0.8674919600681883
+  },
+  {
+   "file": "M01_Feb_2021_OP01_008.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4145240951183555,
+   "operation": 1.5256544912317476,
+   "context_free": 1.0801459797154918
+  },
+  {
+   "file": "M01_Feb_2021_OP01_009.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2529706425569672,
+   "operation": 1.2371983211008846,
+   "context_free": 0.842571543186285
+  },
+  {
+   "file": "M01_Feb_2021_OP01_010.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.41816217467518696,
+   "operation": 1.5321503381415882,
+   "context_free": 1.0854960028010971
+  },
+  {
+   "file": "M01_Feb_2021_OP01_011.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1273489196346999,
+   "operation": 0.7617854539935666,
+   "context_free": 0.4510183170219223
+  },
+  {
+   "file": "M01_Feb_2021_OP01_012.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.11325478118112625,
+   "operation": 0.7670441654762954,
+   "context_free": 0.45534942707171666
+  },
+  {
+   "file": "M01_Feb_2021_OP01_013.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.10623643261191121,
+   "operation": 0.7701695702983817,
+   "context_free": 0.45792353144672787
+  },
+  {
+   "file": "M01_Feb_2021_OP01_014.h5",
+   "machine": "M01",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.0869016455343878,
+   "operation": 0.7523045271945099,
+   "context_free": 0.4432097621172424
+  },
+  {
+   "file": "M01_Aug_2021_OP02_000.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.47813961586738096,
+   "operation": 0.5535718133008681,
+   "context_free": 0.6614422957766096
+  },
+  {
+   "file": "M01_Aug_2021_OP02_001.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6236290420948377,
+   "operation": 0.33883672474354626,
+   "context_free": 0.4317973218771136
+  },
+  {
+   "file": "M01_Aug_2021_OP02_002.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6888965468434256,
+   "operation": 0.7554753108076823,
+   "context_free": 0.8773647317728682
+  },
+  {
+   "file": "M01_Aug_2021_OP02_003.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29892414466664813,
+   "operation": 0.2631469475956368,
+   "context_free": 0.27271305662673423
+  },
+  {
+   "file": "M01_Aug_2021_OP02_004.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29549956378685116,
+   "operation": 0.17101522196853922,
+   "context_free": 0.23344129769839936
+  },
+  {
+   "file": "M01_Feb_2021_OP02_000.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6052394679422132,
+   "operation": 0.6871578058136926,
+   "context_free": 0.8043036789350343
+  },
+  {
+   "file": "M01_Feb_2021_OP02_001.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7057416255092943,
+   "operation": 0.7927887742932955,
+   "context_free": 0.9172690129307474
+  },
+  {
+   "file": "M01_Feb_2021_OP02_002.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.8488294677538273,
+   "operation": 0.9431786536733312,
+   "context_free": 1.078101041627154
+  },
+  {
+   "file": "M01_Feb_2021_OP02_003.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6343148019763075,
+   "operation": 0.7177169078990325,
+   "context_free": 0.8369846173318655
+  },
+  {
+   "file": "M01_Feb_2021_OP02_004.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5689779992164569,
+   "operation": 0.6490458472974002,
+   "context_free": 0.7635454601570338
+  },
+  {
+   "file": "M01_Feb_2021_OP02_005.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4649260679775414,
+   "operation": 0.5396839536325445,
+   "context_free": 0.6465901484518342
+  },
+  {
+   "file": "M01_Feb_2021_OP02_006.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.84667940382886,
+   "operation": 0.9409188680111602,
+   "context_free": 1.0756843503314082
+  },
+  {
+   "file": "M01_Feb_2021_OP02_007.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7243127977489466,
+   "operation": 0.8123076677873646,
+   "context_free": 0.9381431784763377
+  },
+  {
+   "file": "M01_Feb_2021_OP02_008.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7936113222303735,
+   "operation": 0.8851426240945935,
+   "context_free": 1.016035346694014
+  },
+  {
+   "file": "M01_Feb_2021_OP02_009.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7178061720637297,
+   "operation": 0.8054689969637558,
+   "context_free": 0.9308296723635459
+  },
+  {
+   "file": "M01_Feb_2021_OP02_010.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.9191934314244603,
+   "operation": 1.0171334205014126,
+   "context_free": 1.1571907731287876
+  },
+  {
+   "file": "M01_Feb_2021_OP02_011.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5076779285833989,
+   "operation": 0.5846175207262412,
+   "context_free": 0.6946436263988661
+  },
+  {
+   "file": "M01_Feb_2021_OP02_012.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5611646176038203,
+   "operation": 0.64083373437542,
+   "context_free": 0.7547631485641874
+  },
+  {
+   "file": "M01_Feb_2021_OP02_013.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6620642769175427,
+   "operation": 0.7468824898507103,
+   "context_free": 0.8681752781179286
+  },
+  {
+   "file": "M01_Feb_2021_OP02_014.h5",
+   "machine": "M01",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5838794219896996,
+   "operation": 0.6647077172250286,
+   "context_free": 0.780294794115035
+  },
+  {
+   "file": "M01_Feb_2021_OP03_002.h5",
+   "machine": "M01",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6886933838226637,
+   "operation": 1.6220980494759458,
+   "context_free": 1.0232558139534884
+  },
+  {
+   "file": "M01_Feb_2021_OP03_003.h5",
+   "machine": "M01",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7226182493023162,
+   "operation": 1.6747744704621916,
+   "context_free": 1.0232558139534884
+  },
+  {
+   "file": "M01_Feb_2021_OP03_004.h5",
+   "machine": "M01",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5143054943948353,
+   "operation": 1.351319381719316,
+   "context_free": 1.0348837209302326
+  },
+  {
+   "file": "M01_Feb_2021_OP03_005.h5",
+   "machine": "M01",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6389927350984004,
+   "operation": 1.5449259735230114,
+   "context_free": 1.0116279069767442
+  },
+  {
+   "file": "M01_Feb_2021_OP03_006.h5",
+   "machine": "M01",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14559608527018292,
+   "operation": 0.8979354204341178,
+   "context_free": 0.8023255813953489
+  },
+  {
+   "file": "M01_Feb_2021_OP03_007.h5",
+   "machine": "M01",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2044913177535418,
+   "operation": 1.0371722573217705,
+   "context_free": 0.8023255813953489
+  },
+  {
+   "file": "M01_Aug_2021_OP04_000.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2954048287512627,
+   "operation": 0.2537729645667217,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Aug_2021_OP04_001.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.24762333938505823,
+   "operation": 0.23444001780807905,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Feb_2021_OP04_000.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14971369078168711,
+   "operation": 0.2578971813723737,
+   "context_free": 0.5601380813953489
+  },
+  {
+   "file": "M01_Feb_2021_OP04_001.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20614949195470397,
+   "operation": 0.2867530078664575,
+   "context_free": 0.5465116279069769
+  },
+  {
+   "file": "M01_Feb_2021_OP04_002.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1576765006673274,
+   "operation": 0.25139240789711575,
+   "context_free": 0.5465116279069769
+  },
+  {
+   "file": "M01_Feb_2021_OP04_003.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14750085662734178,
+   "operation": 0.2428564230027384,
+   "context_free": 0.5897529069767443
+  },
+  {
+   "file": "M01_Feb_2021_OP04_004.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20982535064064428,
+   "operation": 0.2688730230666399,
+   "context_free": 0.5897529069767443
+  },
+  {
+   "file": "M01_Feb_2021_OP04_005.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1950790854330233,
+   "operation": 0.2639163330058478,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Feb_2021_OP04_006.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1635518490282464,
+   "operation": 0.2655222540728431,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Feb_2021_OP04_007.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1552221387777462,
+   "operation": 0.2609210466296695,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Feb_2021_OP04_008.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15099800556297546,
+   "operation": 0.2594556821982669,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Feb_2021_OP04_009.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.16305708538810124,
+   "operation": 0.2731746138923674,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Feb_2021_OP04_010.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20897324670397505,
+   "operation": 0.2811086614564108,
+   "context_free": 0.5465116279069769
+  },
+  {
+   "file": "M01_Feb_2021_OP04_011.h5",
+   "machine": "M01",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 20,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14658032200254925,
+   "operation": 0.2689989569920757,
+   "context_free": 0.5581395348837211
+  },
+  {
+   "file": "M01_Feb_2021_OP05_000.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7816327075372538,
+   "operation": 0.6891220339201896,
+   "context_free": 0.6593386627906976
+  },
+  {
+   "file": "M01_Aug_2021_OP05_000.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.48412339533392823,
+   "operation": 0.26557375970530495,
+   "context_free": 0.5232558139534883
+  },
+  {
+   "file": "M01_Aug_2021_OP05_001.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3195630525697866,
+   "operation": 0.24143939021097374,
+   "context_free": 0.5465116279069767
+  },
+  {
+   "file": "M01_Feb_2021_OP05_000.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5749147251759268,
+   "operation": 1.2421228059846152,
+   "context_free": 2.462859655893187
+  },
+  {
+   "file": "M01_Feb_2021_OP05_001.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.32843561153700096,
+   "operation": 0.8912235267700047,
+   "context_free": 1.9209112157671953
+  },
+  {
+   "file": "M01_Feb_2021_OP05_002.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.24929861148815494,
+   "operation": 0.7785603649045882,
+   "context_free": 1.7469079377630772
+  },
+  {
+   "file": "M01_Feb_2021_OP05_003.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2073416125939606,
+   "operation": 0.7188284044450555,
+   "context_free": 1.6546545627514042
+  },
+  {
+   "file": "M01_Feb_2021_OP05_004.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2054983422880813,
+   "operation": 0.716204237990618,
+   "context_free": 1.6506016535525125
+  },
+  {
+   "file": "M01_Feb_2021_OP05_005.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.10615911581789284,
+   "operation": 0.4871877400771742,
+   "context_free": 1.2968957864868829
+  },
+  {
+   "file": "M01_Feb_2021_OP05_006.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.16568248204290584,
+   "operation": 0.5224994748223323,
+   "context_free": 1.3514332013431185
+  },
+  {
+   "file": "M01_Feb_2021_OP05_007.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2396215583020362,
+   "operation": 0.26738120704388596,
+   "context_free": 0.8445868603862989
+  },
+  {
+   "file": "M01_Feb_2021_OP05_008.h5",
+   "machine": "M01",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 23,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.31391654292900445,
+   "operation": 0.3176634245342105,
+   "context_free": 0.9567492677084346
+  },
+  {
+   "file": "M01_Aug_2021_OP06_000.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 2.141605377670631,
+   "operation": 1.9659998579708982,
+   "context_free": 1.967391154853576
+  },
+  {
+   "file": "M01_Aug_2021_OP06_001.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.8141701991763035,
+   "operation": 0.5621001728732761,
+   "context_free": 0.8168604651162792
+  },
+  {
+   "file": "M01_Aug_2021_OP06_002.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 2.0907691417447287,
+   "operation": 1.9180052022424317,
+   "context_free": 1.919373985700262
+  },
+  {
+   "file": "M01_Aug_2021_OP06_000.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.23806271957503594,
+   "operation": 0.30189199183766985,
+   "context_free": 1.1627906976744187
+  },
+  {
+   "file": "M01_Feb_2021_OP06_000.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.22663386434449903,
+   "operation": 0.5997880391576704,
+   "context_free": 1.1744186046511629
+  },
+  {
+   "file": "M01_Feb_2021_OP06_001.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2796771757953505,
+   "operation": 0.4626563856319465,
+   "context_free": 1.1744186046511629
+  },
+  {
+   "file": "M01_Feb_2021_OP06_002.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.19946714329647774,
+   "operation": 0.6895177592128062,
+   "context_free": 1.1627906976744187
+  },
+  {
+   "file": "M01_Feb_2021_OP06_003.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1975370606551806,
+   "operation": 0.5963058835895649,
+   "context_free": 1.1627906976744187
+  },
+  {
+   "file": "M01_Feb_2021_OP06_004.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2742001079869526,
+   "operation": 0.45839981830947124,
+   "context_free": 1.1627906976744187
+  },
+  {
+   "file": "M01_Feb_2021_OP06_005.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.27387259967345845,
+   "operation": 0.44893424065419385,
+   "context_free": 1.1627906976744187
+  },
+  {
+   "file": "M01_Feb_2021_OP06_006.h5",
+   "machine": "M01",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.24780441615577117,
+   "operation": 0.4433088412533227,
+   "context_free": 1.186046511627907
+  },
+  {
+   "file": "M01_Aug_2021_OP07_000.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 1.6473238000441093,
+   "operation": 1.3357516560333436,
+   "context_free": 1.0346684443657819
+  },
+  {
+   "file": "M01_Aug_2021_OP07_001.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 2.333581593543298,
+   "operation": 1.941241538912352,
+   "context_free": 1.5621094310367827
+  },
+  {
+   "file": "M01_Aug_2021_OP07_000.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3930886911254645,
+   "operation": 0.24295747123969305,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M01_Aug_2021_OP07_001.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4581677838606686,
+   "operation": 0.18817647322202005,
+   "context_free": 0.4186046511627906
+  },
+  {
+   "file": "M01_Aug_2021_OP07_002.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2597979618014557,
+   "operation": 0.1578335673116279,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M01_Feb_2021_OP07_000.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.21753643031359046,
+   "operation": 0.1892551993266181,
+   "context_free": 0.43223110465116277
+  },
+  {
+   "file": "M01_Feb_2021_OP07_001.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.25540374808062755,
+   "operation": 0.23047192147254747,
+   "context_free": 0.441860465116279
+  },
+  {
+   "file": "M01_Feb_2021_OP07_002.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2931128142372952,
+   "operation": 0.9374621406896382,
+   "context_free": 0.8554972030089651
+  },
+  {
+   "file": "M01_Feb_2021_OP07_003.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.19947686619282526,
+   "operation": 0.7971680361487707,
+   "context_free": 0.7211382841391658
+  },
+  {
+   "file": "M01_Feb_2021_OP07_004.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1017823974467729,
+   "operation": 0.3457933290022596,
+   "context_free": 0.441860465116279
+  },
+  {
+   "file": "M01_Feb_2021_OP07_005.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1896090878507455,
+   "operation": 0.21420319570044766,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M01_Feb_2021_OP07_006.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.28618725835459286,
+   "operation": 0.9270856273814158,
+   "context_free": 0.8455596713194229
+  },
+  {
+   "file": "M01_Feb_2021_OP07_007.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.09043709629819108,
+   "operation": 0.6337944900247465,
+   "context_free": 0.5646763066313726
+  },
+  {
+   "file": "M01_Feb_2021_OP07_008.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.11600354768893952,
+   "operation": 0.4714283998312643,
+   "context_free": 0.4289607558139535
+  },
+  {
+   "file": "M01_Feb_2021_OP07_009.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.09785821164551955,
+   "operation": 0.644913496710656,
+   "context_free": 0.5753249202856241
+  },
+  {
+   "file": "M01_Feb_2021_OP07_010.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.24793663116076503,
+   "operation": 0.8697749726344159,
+   "context_free": 0.7906735616234578
+  },
+  {
+   "file": "M01_Feb_2021_OP07_011.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.28247580442799053,
+   "operation": 0.20730836247867704,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M01_Feb_2021_OP07_012.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.11104063608352872,
+   "operation": 0.34696855333282406,
+   "context_free": 0.4186046511627906
+  },
+  {
+   "file": "M01_Feb_2021_OP07_013.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.16395012696761496,
+   "operation": 0.2526478423957352,
+   "context_free": 0.441860465116279
+  },
+  {
+   "file": "M01_Feb_2021_OP07_014.h5",
+   "machine": "M01",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.11830565650002689,
+   "operation": 0.37536251662850734,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M01_Aug_2021_OP08_000.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1397814687643807,
+   "operation": 0.4561727032397864,
+   "context_free": 0.3328339245710354
+  },
+  {
+   "file": "M01_Feb_2021_OP08_000.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6178382877980296,
+   "operation": 1.3146449684096337,
+   "context_free": 0.8068953922471355
+  },
+  {
+   "file": "M01_Feb_2021_OP08_001.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.42869269145762523,
+   "operation": 1.0440339276349502,
+   "context_free": 0.5956466481242128
+  },
+  {
+   "file": "M01_Feb_2021_OP08_002.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6744803899395632,
+   "operation": 1.3956829545364722,
+   "context_free": 0.8701565686815415
+  },
+  {
+   "file": "M01_Feb_2021_OP08_003.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.40552162325810126,
+   "operation": 1.0108830269391198,
+   "context_free": 0.5697678587056805
+  },
+  {
+   "file": "M01_Feb_2021_OP08_004.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.39154304197467543,
+   "operation": 0.9908838384681731,
+   "context_free": 0.5541557704631951
+  },
+  {
+   "file": "M01_Feb_2021_OP08_005.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20955947665055633,
+   "operation": 0.7305195319811306,
+   "context_free": 0.35090599690492047
+  },
+  {
+   "file": "M01_Feb_2021_OP08_006.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3683282810890066,
+   "operation": 0.9576704265455384,
+   "context_free": 0.5282281825251413
+  },
+  {
+   "file": "M01_Feb_2021_OP08_007.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20305066999037183,
+   "operation": 0.7212073672858246,
+   "context_free": 0.34532934242537944
+  },
+  {
+   "file": "M01_Feb_2021_OP08_008.h5",
+   "machine": "M01",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29464567078856396,
+   "operation": 0.8522525461074789,
+   "context_free": 0.44593518078031424
+  },
+  {
+   "file": "M01_Aug_2021_OP09_000.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.39481935463355994,
+   "operation": 0.40877475323617923,
+   "context_free": 1.348837209302326
+  },
+  {
+   "file": "M01_Aug_2021_OP09_001.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3613925902561891,
+   "operation": 0.37611880634025574,
+   "context_free": 1.3953488372093024
+  },
+  {
+   "file": "M01_Feb_2021_OP09_000.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.21441067447707685,
+   "operation": 0.36392170570747395,
+   "context_free": 1.4767441860465118
+  },
+  {
+   "file": "M01_Feb_2021_OP09_001.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.303601193876094,
+   "operation": 0.41078120067513896,
+   "context_free": 1.488372093023256
+  },
+  {
+   "file": "M01_Feb_2021_OP09_002.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.23673893075486857,
+   "operation": 0.40286591018110757,
+   "context_free": 1.488372093023256
+  },
+  {
+   "file": "M01_Feb_2021_OP09_003.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2614553093787255,
+   "operation": 0.43242444343131536,
+   "context_free": 1.4767441860465118
+  },
+  {
+   "file": "M01_Feb_2021_OP09_004.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.22682248469926725,
+   "operation": 0.3934323111982335,
+   "context_free": 1.488372093023256
+  },
+  {
+   "file": "M01_Feb_2021_OP09_005.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.26175798830327723,
+   "operation": 0.39132950013853424,
+   "context_free": 1.5000000000000002
+  },
+  {
+   "file": "M01_Feb_2021_OP09_006.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3056911881107027,
+   "operation": 0.41748559243109185,
+   "context_free": 1.488372093023256
+  },
+  {
+   "file": "M01_Feb_2021_OP09_007.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.27189339597252105,
+   "operation": 0.3943288784779926,
+   "context_free": 1.3846293604651165
+  },
+  {
+   "file": "M01_Feb_2021_OP09_008.h5",
+   "machine": "M01",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 24,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.25705561266762333,
+   "operation": 0.4287166955474689,
+   "context_free": 1.3508357558139537
+  },
+  {
+   "file": "M01_Aug_2021_OP10_000.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 1.1341051001507183,
+   "operation": 0.6042953360584071,
+   "context_free": 0.904609076601992
+  },
+  {
+   "file": "M01_Feb_2021_OP10_000.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14706137908458733,
+   "operation": 0.36483669154428994,
+   "context_free": 0.4859511884078941
+  },
+  {
+   "file": "M01_Feb_2021_OP10_001.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3008271800552905,
+   "operation": 0.5477956952176551,
+   "context_free": 0.6851458251162221
+  },
+  {
+   "file": "M01_Feb_2021_OP10_002.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.21753878799453466,
+   "operation": 0.41568888261281606,
+   "context_free": 0.412094644238263
+  },
+  {
+   "file": "M01_Feb_2021_OP10_003.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.17528489946030856,
+   "operation": 0.3276066029670979,
+   "context_free": 0.42636575506881313
+  },
+  {
+   "file": "M01_Feb_2021_OP10_004.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.17863387557419547,
+   "operation": 0.2584540234215486,
+   "context_free": 0.3440366252172495
+  },
+  {
+   "file": "M01_Feb_2021_OP10_005.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15957681318240352,
+   "operation": 0.2822626810872608,
+   "context_free": 0.39604962748825445
+  },
+  {
+   "file": "M01_Feb_2021_OP10_006.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.24888632963783364,
+   "operation": 0.25637773001872577,
+   "context_free": 0.32806709860134464
+  },
+  {
+   "file": "M01_Feb_2021_OP10_007.h5",
+   "machine": "M01",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 21,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.21450157004184736,
+   "operation": 0.4134208082489321,
+   "context_free": 0.2989719956860354
+  },
+  {
+   "file": "M01_Feb_2021_OP11_000.h5",
+   "machine": "M01",
+   "op": "OP11",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 1.3954298231418965,
+   "operation": 1.172598668032557,
+   "context_free": 0.9483922088205214
+  },
+  {
+   "file": "M01_Aug_2021_OP11_000.h5",
+   "machine": "M01",
+   "op": "OP11",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3083174634943172,
+   "operation": 0.37712452501047705,
+   "context_free": 0.35969022582803684
+  },
+  {
+   "file": "M01_Feb_2021_OP11_000.h5",
+   "machine": "M01",
+   "op": "OP11",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.40550886476916814,
+   "operation": 1.6634397539561545,
+   "context_free": 0.4304568895298681
+  },
+  {
+   "file": "M01_Feb_2021_OP11_001.h5",
+   "machine": "M01",
+   "op": "OP11",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.12740448656348002,
+   "operation": 1.0945863767654291,
+   "context_free": 0.372093023255814
+  },
+  {
+   "file": "M01_Feb_2021_OP11_002.h5",
+   "machine": "M01",
+   "op": "OP11",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20777150122826601,
+   "operation": 1.2887273860026343,
+   "context_free": 0.34883720930232576
+  },
+  {
+   "file": "M01_Feb_2021_OP11_007.h5",
+   "machine": "M01",
+   "op": "OP11",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15332561407206238,
+   "operation": 1.134578554705343,
+   "context_free": 0.372093023255814
+  },
+  {
+   "file": "M01_Feb_2021_OP11_008.h5",
+   "machine": "M01",
+   "op": "OP11",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 11,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.13905576261705654,
+   "operation": 1.120099897757166,
+   "context_free": 0.36046511627906996
+  },
+  {
+   "file": "M01_Feb_2021_OP12_000.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.07571089377308465,
+   "operation": 0.26939295440030064,
+   "context_free": 0.359201555211508
+  },
+  {
+   "file": "M01_Feb_2021_OP12_001.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15459227511650556,
+   "operation": 0.24524515502362704,
+   "context_free": 0.3380220820886672
+  },
+  {
+   "file": "M01_Feb_2021_OP12_002.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.11132661060340054,
+   "operation": 0.27366830361636746,
+   "context_free": 0.3342000997233329
+  },
+  {
+   "file": "M01_Feb_2021_OP12_003.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.09524520779433204,
+   "operation": 0.25863211037788464,
+   "context_free": 0.3329757834735272
+  },
+  {
+   "file": "M01_Feb_2021_OP12_004.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.18286093018702024,
+   "operation": 0.2969403764965805,
+   "context_free": 0.38336275834189776
+  },
+  {
+   "file": "M01_Feb_2021_OP12_005.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.304505004011301,
+   "operation": 0.2770484727868846,
+   "context_free": 0.36591603231067976
+  },
+  {
+   "file": "M01_Feb_2021_OP12_006.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.12975051387274705,
+   "operation": 0.26123603832925907,
+   "context_free": 0.352047313866486
+  },
+  {
+   "file": "M01_Feb_2021_OP12_007.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.25757022529827556,
+   "operation": 0.2904124625729709,
+   "context_free": 0.37763727688759746
+  },
+  {
+   "file": "M01_Feb_2021_OP12_008.h5",
+   "machine": "M01",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.21546786945057286,
+   "operation": 0.30344500239257655,
+   "context_free": 0.35043356566316075
+  },
+  {
+   "file": "M01_Aug_2021_OP13_000.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.22438848512963105,
+   "operation": 0.30840302661232916,
+   "context_free": 0.29812593182012553
+  },
+  {
+   "file": "M01_Aug_2021_OP13_001.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2120065502707362,
+   "operation": 0.33881098494058715,
+   "context_free": 0.3829226356079293
+  },
+  {
+   "file": "M01_Aug_2021_OP13_002.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1988226338159743,
+   "operation": 0.3340052403423916,
+   "context_free": 0.3692125811703583
+  },
+  {
+   "file": "M01_Feb_2021_OP13_000.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1747284886708114,
+   "operation": 0.30285654000987494,
+   "context_free": 0.38124090360862933
+  },
+  {
+   "file": "M01_Feb_2021_OP13_001.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20134827451176773,
+   "operation": 0.3242273577779269,
+   "context_free": 0.33668788494255253
+  },
+  {
+   "file": "M01_Feb_2021_OP13_002.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 3.0266814655939207,
+   "operation": 2.277113461619498,
+   "context_free": 4.302087498601506
+  },
+  {
+   "file": "M01_Feb_2021_OP13_003.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.23983239281038954,
+   "operation": 0.27697743617678805,
+   "context_free": 0.3846342026588153
+  },
+  {
+   "file": "M01_Feb_2021_OP13_004.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20851582348672001,
+   "operation": 0.3403973465047297,
+   "context_free": 0.3261535275150767
+  },
+  {
+   "file": "M01_Feb_2021_OP13_005.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.17216869052511516,
+   "operation": 0.3327881679548578,
+   "context_free": 0.3855251880596005
+  },
+  {
+   "file": "M01_Feb_2021_OP13_006.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 3.870066746295752,
+   "operation": 2.963502310684332,
+   "context_free": 3.3754166471311247
+  },
+  {
+   "file": "M01_Feb_2021_OP13_007.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 3.8771845651144003,
+   "operation": 2.9692951453218046,
+   "context_free": 3.599575155278911
+  },
+  {
+   "file": "M01_Feb_2021_OP13_008.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 3.4136095381118485,
+   "operation": 2.5920147534056763,
+   "context_free": 3.7006505042588307
+  },
+  {
+   "file": "M01_Feb_2021_OP13_009.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 3.486550260843954,
+   "operation": 2.6513775379735836,
+   "context_free": 3.6535413260511156
+  },
+  {
+   "file": "M01_Feb_2021_OP13_010.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 3.0172830951570293,
+   "operation": 2.26946460075499,
+   "context_free": 4.916788984581314
+  },
+  {
+   "file": "M01_Feb_2021_OP13_011.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14746465465179898,
+   "operation": 0.2896577967995193,
+   "context_free": 0.4540520735778846
+  },
+  {
+   "file": "M01_Feb_2021_OP13_012.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.16767536756678772,
+   "operation": 0.29211916363537554,
+   "context_free": 0.47864100858681174
+  },
+  {
+   "file": "M01_Feb_2021_OP13_013.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15609829655878152,
+   "operation": 0.30380961826511366,
+   "context_free": 0.4796422361621339
+  },
+  {
+   "file": "M01_Feb_2021_OP13_014.h5",
+   "machine": "M01",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1526360589894936,
+   "operation": 0.27692853056173333,
+   "context_free": 0.4732499368813287
+  },
+  {
+   "file": "M01_Aug_2021_OP14_000.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.45010784733232184,
+   "operation": 1.180115726090453,
+   "context_free": 0.94322640740838
+  },
+  {
+   "file": "M01_Aug_2021_OP14_001.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7231056431825822,
+   "operation": 0.4608462500707471,
+   "context_free": 0.33528264000745583
+  },
+  {
+   "file": "M01_Aug_2021_OP14_002.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6937930935491139,
+   "operation": 0.3927800064030203,
+   "context_free": 0.3392138034944096
+  },
+  {
+   "file": "M01_Feb_2021_OP14_000.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5792516738167742,
+   "operation": 0.6681089886231474,
+   "context_free": 0.486853839149498
+  },
+  {
+   "file": "M01_Feb_2021_OP14_001.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6737619615677151,
+   "operation": 0.35117723818909596,
+   "context_free": 0.27204969681304575
+  },
+  {
+   "file": "M01_Feb_2021_OP14_002.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29636249824269917,
+   "operation": 2.1880660842666186,
+   "context_free": 1.8416538302851946
+  },
+  {
+   "file": "M01_Feb_2021_OP14_003.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.49117100604330527,
+   "operation": 1.0173157340657164,
+   "context_free": 0.7981161089768115
+  },
+  {
+   "file": "M01_Feb_2021_OP14_004.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5668256894581729,
+   "operation": 0.7173733466993978,
+   "context_free": 0.5307651785394787
+  },
+  {
+   "file": "M01_Feb_2021_OP14_005.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.42389227170016835,
+   "operation": 1.2840506311930382,
+   "context_free": 1.035867843745805
+  },
+  {
+   "file": "M01_Feb_2021_OP14_006.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5571342559851902,
+   "operation": 0.7557962382069583,
+   "context_free": 0.5650130748932987
+  },
+  {
+   "file": "M01_Feb_2021_OP14_007.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5085124272602268,
+   "operation": 0.9485635161546941,
+   "context_free": 0.7368344422222776
+  },
+  {
+   "file": "M01_Feb_2021_OP14_008.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5693869638747522,
+   "operation": 0.7072188562100741,
+   "context_free": 0.5217140654098024
+  },
+  {
+   "file": "M01_Feb_2021_OP14_009.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5550374576858502,
+   "operation": 0.7641092554498019,
+   "context_free": 0.5724228075227236
+  },
+  {
+   "file": "M01_Feb_2021_OP14_010.h5",
+   "machine": "M01",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 13,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29566686868895653,
+   "operation": 2.1762954697931893,
+   "context_free": 1.831162199679324
+  },
+  {
+   "file": "M02_Feb_2021_OP00_000.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 3.5063116845902567,
+   "operation": 2.691355124960259,
+   "context_free": 2.776323168009905
+  },
+  {
+   "file": "M02_Aug_2021_OP00_000.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.9439588368673301,
+   "operation": 0.5923981556181414,
+   "context_free": 2.0697674418604657
+  },
+  {
+   "file": "M02_Aug_2021_OP00_001.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.9641402157172297,
+   "operation": 0.6089297764780764,
+   "context_free": 2.0697674418604657
+  },
+  {
+   "file": "M02_Aug_2021_OP00_002.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.938599204304009,
+   "operation": 0.5880078008190773,
+   "context_free": 2.0465116279069773
+  },
+  {
+   "file": "M02_Aug_2021_OP00_003.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5762958271186736,
+   "operation": 0.5982897461082379,
+   "context_free": 2.604651162790698
+  },
+  {
+   "file": "M02_Feb_2021_OP00_000.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6631071893696412,
+   "operation": 0.5138359258522551,
+   "context_free": 2.1046511627906983
+  },
+  {
+   "file": "M02_Feb_2021_OP00_001.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6616448464085524,
+   "operation": 0.5117256445125199,
+   "context_free": 2.1046511627906983
+  },
+  {
+   "file": "M02_Feb_2021_OP00_002.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6606543754219696,
+   "operation": 0.5102963132980566,
+   "context_free": 2.1162790697674425
+  },
+  {
+   "file": "M02_Feb_2021_OP00_003.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6686527755633531,
+   "operation": 0.5218386634958037,
+   "context_free": 2.1046511627906983
+  },
+  {
+   "file": "M02_Feb_2021_OP00_004.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6506785401204319,
+   "operation": 0.4959003612913996,
+   "context_free": 2.093023255813954
+  },
+  {
+   "file": "M02_Feb_2021_OP00_005.h5",
+   "machine": "M02",
+   "op": "OP00",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 16,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6669030862092082,
+   "operation": 0.5193137176434053,
+   "context_free": 2.1046511627906983
+  },
+  {
+   "file": "M02_Aug_2021_OP01_000.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6865754068211272,
+   "operation": 0.3388808500210793,
+   "context_free": 0.3524393947392789
+  },
+  {
+   "file": "M02_Aug_2021_OP01_001.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7028557013088409,
+   "operation": 0.34231717497398556,
+   "context_free": 0.3558052459121687
+  },
+  {
+   "file": "M02_Aug_2021_OP01_002.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7735128207907042,
+   "operation": 0.3465607257559047,
+   "context_free": 0.35996176794436485
+  },
+  {
+   "file": "M02_Aug_2021_OP01_003.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7123867853446947,
+   "operation": 0.3470483122556371,
+   "context_free": 0.36043935478917755
+  },
+  {
+   "file": "M02_Feb_2021_OP01_000.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5232741828998505,
+   "operation": 0.2776571339599878,
+   "context_free": 0.3833566584759237
+  },
+  {
+   "file": "M02_Feb_2021_OP01_001.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5370566219003696,
+   "operation": 0.2985405141578873,
+   "context_free": 0.3828699984961082
+  },
+  {
+   "file": "M02_Feb_2021_OP01_002.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5817864722211297,
+   "operation": 0.3663159253466018,
+   "context_free": 0.3793118185432714
+  },
+  {
+   "file": "M02_Feb_2021_OP01_003.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.9389318381363213,
+   "operation": 0.2906446395876996,
+   "context_free": 0.3386797750225774
+  },
+  {
+   "file": "M02_Feb_2021_OP01_004.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5677039478750895,
+   "operation": 0.3304427558900044,
+   "context_free": 0.36493637996469724
+  },
+  {
+   "file": "M02_Feb_2021_OP01_005.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5211750624092397,
+   "operation": 0.2744765117722187,
+   "context_free": 0.34491862099211074
+  },
+  {
+   "file": "M02_Feb_2021_OP01_006.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7528373277214139,
+   "operation": 0.34244545320284936,
+   "context_free": 0.35593089335034606
+  },
+  {
+   "file": "M02_Feb_2021_OP01_007.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5406184114425203,
+   "operation": 0.30709121080923574,
+   "context_free": 0.4293156735616049
+  },
+  {
+   "file": "M02_Feb_2021_OP01_008.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5728203386027001,
+   "operation": 0.3132307365894388,
+   "context_free": 0.3273153259850628
+  },
+  {
+   "file": "M02_Feb_2021_OP01_009.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7774322997762507,
+   "operation": 0.30166771926547176,
+   "context_free": 0.3159894484980969
+  },
+  {
+   "file": "M02_Feb_2021_OP01_010.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6455682131302352,
+   "operation": 0.3473651689798633,
+   "context_free": 0.3607497132655995
+  },
+  {
+   "file": "M02_Feb_2021_OP01_011.h5",
+   "machine": "M02",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.9837885925595522,
+   "operation": 0.3489861529513079,
+   "context_free": 0.3623374533298528
+  },
+  {
+   "file": "M02_Aug_2021_OP02_000.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3325137053400739,
+   "operation": 0.39750879026878083,
+   "context_free": 0.3556755020199335
+  },
+  {
+   "file": "M02_Aug_2021_OP02_001.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4349572249362543,
+   "operation": 0.47168626436120814,
+   "context_free": 0.4269980123224564
+  },
+  {
+   "file": "M02_Aug_2021_OP02_002.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.44006806552377514,
+   "operation": 0.47270194214737987,
+   "context_free": 0.43486710186247646
+  },
+  {
+   "file": "M02_Aug_2021_OP02_003.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4164597606651385,
+   "operation": 0.42265765131899735,
+   "context_free": 0.4082399921121317
+  },
+  {
+   "file": "M02_Feb_2021_OP02_000.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.35651006893264314,
+   "operation": 0.31028422655148985,
+   "context_free": 0.3474458468910013
+  },
+  {
+   "file": "M02_Feb_2021_OP02_001.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.40763138283656597,
+   "operation": 0.312847265882635,
+   "context_free": 0.39928725743966414
+  },
+  {
+   "file": "M02_Feb_2021_OP02_002.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.32100328783421367,
+   "operation": 0.4122276614581845,
+   "context_free": 0.35313046329997755
+  },
+  {
+   "file": "M02_Feb_2021_OP02_003.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.40572016394317767,
+   "operation": 0.3686587253317673,
+   "context_free": 0.39734911704901
+  },
+  {
+   "file": "M02_Feb_2021_OP02_004.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4207439320610771,
+   "operation": 0.39174391857748764,
+   "context_free": 0.41258451049863276
+  },
+  {
+   "file": "M02_Feb_2021_OP02_005.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.38812712464639404,
+   "operation": 0.31055284596973004,
+   "context_free": 0.3795082615753534
+  },
+  {
+   "file": "M02_Feb_2021_OP02_006.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.39480189509044117,
+   "operation": 0.2790744725966769,
+   "context_free": 0.38627705307312776
+  },
+  {
+   "file": "M02_Feb_2021_OP02_007.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.37724880911676695,
+   "operation": 0.2659064871226545,
+   "context_free": 0.36847671370651
+  },
+  {
+   "file": "M02_Feb_2021_OP02_008.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3729639343855846,
+   "operation": 0.3625611878329316,
+   "context_free": 0.3641314820775598
+  },
+  {
+   "file": "M02_Feb_2021_OP02_009.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.42008073177659505,
+   "operation": 0.39218996215380836,
+   "context_free": 0.41191196835137034
+  },
+  {
+   "file": "M02_Feb_2021_OP02_010.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3728821742508259,
+   "operation": 0.24456017458459248,
+   "context_free": 0.36404857026663684
+  },
+  {
+   "file": "M02_Feb_2021_OP02_011.h5",
+   "machine": "M02",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4259987901256283,
+   "operation": 0.2294695535219666,
+   "context_free": 0.4179133886806634
+  },
+  {
+   "file": "M02_Feb_2021_OP03_000.h5",
+   "machine": "M02",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 27,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 1.1308149854340857,
+   "operation": 1.1341605654204225,
+   "context_free": 1.1246334847774235
+  },
+  {
+   "file": "M02_Aug_2021_OP03_000.h5",
+   "machine": "M02",
+   "op": "OP03",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 27,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6023011404608669,
+   "operation": 0.3377678108335532,
+   "context_free": 0.7790697674418606
+  },
+  {
+   "file": "M02_Aug_2021_OP04_000.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3668097418976573,
+   "operation": 0.45490787606709127,
+   "context_free": 0.5930232558139538
+  },
+  {
+   "file": "M02_Aug_2021_OP04_001.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.35306863293124296,
+   "operation": 0.4127283331187179,
+   "context_free": 0.5813953488372096
+  },
+  {
+   "file": "M02_Aug_2021_OP04_002.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3657231880161605,
+   "operation": 0.3282958722262091,
+   "context_free": 0.5930232558139538
+  },
+  {
+   "file": "M02_Aug_2021_OP04_003.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3305103375498756,
+   "operation": 0.4345543671567474,
+   "context_free": 0.6395348837209303
+  },
+  {
+   "file": "M02_Feb_2021_OP04_000.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3656726952540924,
+   "operation": 0.31435010857173856,
+   "context_free": 0.5465116279069769
+  },
+  {
+   "file": "M02_Feb_2021_OP04_001.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3386862798613142,
+   "operation": 0.28158007068816465,
+   "context_free": 0.5697674418604654
+  },
+  {
+   "file": "M02_Feb_2021_OP04_002.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3722063814080668,
+   "operation": 0.4442215728114515,
+   "context_free": 0.5232558139534885
+  },
+  {
+   "file": "M02_Feb_2021_OP04_003.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3425557332718601,
+   "operation": 0.28094203652969213,
+   "context_free": 0.5813953488372096
+  },
+  {
+   "file": "M02_Feb_2021_OP04_004.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.32798941732035836,
+   "operation": 0.2928435406573292,
+   "context_free": 0.604651162790698
+  },
+  {
+   "file": "M02_Feb_2021_OP04_005.h5",
+   "machine": "M02",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 19,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3664993073491229,
+   "operation": 0.3112636736440504,
+   "context_free": 0.5465116279069769
+  },
+  {
+   "file": "M02_Aug_2021_OP05_000.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.18843393198584224,
+   "operation": 0.27135618213099855,
+   "context_free": 0.5232558139534883
+  },
+  {
+   "file": "M02_Aug_2021_OP05_001.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2052723274427549,
+   "operation": 0.2769292388453054,
+   "context_free": 0.5232558139534883
+  },
+  {
+   "file": "M02_Feb_2021_OP05_000.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1940095385825321,
+   "operation": 0.3083862605261793,
+   "context_free": 0.5116279069767441
+  },
+  {
+   "file": "M02_Feb_2021_OP05_001.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.18307682708182876,
+   "operation": 0.28240277216991794,
+   "context_free": 0.5
+  },
+  {
+   "file": "M02_Feb_2021_OP05_002.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20036672328506194,
+   "operation": 0.30085914188857793,
+   "context_free": 0.5097475486116194
+  },
+  {
+   "file": "M02_Feb_2021_OP05_003.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.26841722208737756,
+   "operation": 0.31894471510971406,
+   "context_free": 0.5116279069767441
+  },
+  {
+   "file": "M02_Feb_2021_OP05_004.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.18444805810099432,
+   "operation": 0.2745641454894775,
+   "context_free": 0.5
+  },
+  {
+   "file": "M02_Feb_2021_OP05_005.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2577838945467264,
+   "operation": 0.29470794589319566,
+   "context_free": 0.5465116279069767
+  },
+  {
+   "file": "M02_Feb_2021_OP05_006.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.18449139760744743,
+   "operation": 0.2818010730623089,
+   "context_free": 0.5
+  },
+  {
+   "file": "M02_Feb_2021_OP05_007.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.524392822251106,
+   "operation": 0.2883748390069619,
+   "context_free": 0.62647088688948
+  },
+  {
+   "file": "M02_Feb_2021_OP05_008.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2388602274353091,
+   "operation": 0.26344365598266706,
+   "context_free": 0.5116279069767441
+  },
+  {
+   "file": "M02_Feb_2021_OP05_009.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.18949771746208174,
+   "operation": 0.28811211637909556,
+   "context_free": 0.5165290147908681
+  },
+  {
+   "file": "M02_Feb_2021_OP05_010.h5",
+   "machine": "M02",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2368526464008759,
+   "operation": 0.27594735623414274,
+   "context_free": 0.5116279069767441
+  },
+  {
+   "file": "M02_Aug_2021_OP06_000.h5",
+   "machine": "M02",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 28,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.497508063145655,
+   "operation": 0.4665084131872419,
+   "context_free": 1.1395348837209303
+  },
+  {
+   "file": "M02_Aug_2021_OP06_001.h5",
+   "machine": "M02",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 28,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.595686355460241,
+   "operation": 0.4571623685274875,
+   "context_free": 1.1511627906976745
+  },
+  {
+   "file": "M02_Aug_2021_OP07_000.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.11524498202218503,
+   "operation": 0.21702117914313412,
+   "context_free": 0.4186046511627906
+  },
+  {
+   "file": "M02_Aug_2021_OP07_001.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15688728059177381,
+   "operation": 0.3225485852206265,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M02_Aug_2021_OP07_002.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.12963897001042524,
+   "operation": 0.28597820276384023,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M02_Aug_2021_OP07_003.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.30006563645796114,
+   "operation": 0.17617430510612378,
+   "context_free": 0.4302325581395348
+  },
+  {
+   "file": "M02_Feb_2021_OP07_000.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.25676264860425096,
+   "operation": 0.40279966885883056,
+   "context_free": 0.44093357643872866
+  },
+  {
+   "file": "M02_Feb_2021_OP07_001.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14153491308322527,
+   "operation": 0.31021276955866006,
+   "context_free": 0.4069767441860465
+  },
+  {
+   "file": "M02_Feb_2021_OP07_002.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.12176253972777885,
+   "operation": 0.2943254249665931,
+   "context_free": 0.3953488372093023
+  },
+  {
+   "file": "M02_Feb_2021_OP07_003.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.10776283891965123,
+   "operation": 0.23026951907036325,
+   "context_free": 0.3837209302325581
+  },
+  {
+   "file": "M02_Feb_2021_OP07_004.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1473799053859634,
+   "operation": 0.2512619648305791,
+   "context_free": 0.4069767441860465
+  },
+  {
+   "file": "M02_Feb_2021_OP07_005.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20399296750300822,
+   "operation": 0.2246930491592654,
+   "context_free": 0.3837209302325581
+  },
+  {
+   "file": "M02_Feb_2021_OP07_006.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.27781728628294866,
+   "operation": 0.24941642582856194,
+   "context_free": 0.4069767441860465
+  },
+  {
+   "file": "M02_Feb_2021_OP07_007.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.13623520887803228,
+   "operation": 0.2745793238441351,
+   "context_free": 0.4069767441860465
+  },
+  {
+   "file": "M02_Feb_2021_OP07_008.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15985630181905328,
+   "operation": 0.22942164177594218,
+   "context_free": 0.4069767441860465
+  },
+  {
+   "file": "M02_Feb_2021_OP07_009.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.12020564332417656,
+   "operation": 0.2930744396036566,
+   "context_free": 0.4069767441860465
+  },
+  {
+   "file": "M02_Feb_2021_OP07_010.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.16965790758947474,
+   "operation": 0.24730149386360967,
+   "context_free": 0.3837209302325581
+  },
+  {
+   "file": "M02_Feb_2021_OP07_011.h5",
+   "machine": "M02",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 36,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.11952676453137952,
+   "operation": 0.27994454426160836,
+   "context_free": 0.4069767441860465
+  },
+  {
+   "file": "M02_Aug_2021_OP08_000.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5883360064621779,
+   "operation": 0.612966142444909,
+   "context_free": 0.44996277674607277
+  },
+  {
+   "file": "M02_Aug_2021_OP08_000.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4571018340088595,
+   "operation": 0.4626361485286335,
+   "context_free": 0.385040101386584
+  },
+  {
+   "file": "M02_Aug_2021_OP08_001.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4447699294265961,
+   "operation": 0.4915683789474542,
+   "context_free": 0.39024469767122016
+  },
+  {
+   "file": "M02_Feb_2021_OP08_000.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4660166262995135,
+   "operation": 0.5122299642865535,
+   "context_free": 0.46113698382143287
+  },
+  {
+   "file": "M02_Feb_2021_OP08_001.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4971332395211779,
+   "operation": 0.5170922004551001,
+   "context_free": 0.4485824946801257
+  },
+  {
+   "file": "M02_Feb_2021_OP08_002.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.49432627188032213,
+   "operation": 0.5380895650083755,
+   "context_free": 0.4854821192130121
+  },
+  {
+   "file": "M02_Feb_2021_OP08_003.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5491195054714921,
+   "operation": 0.5607282764289517,
+   "context_free": 0.4991759352782635
+  },
+  {
+   "file": "M02_Feb_2021_OP08_004.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4749368678745252,
+   "operation": 0.5203782077823454,
+   "context_free": 0.46727964312184145
+  },
+  {
+   "file": "M02_Feb_2021_OP08_005.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.48799336709786134,
+   "operation": 0.5323047384687324,
+   "context_free": 0.4856963859866535
+  },
+  {
+   "file": "M02_Feb_2021_OP08_006.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6334704504340202,
+   "operation": 0.5381048457345301,
+   "context_free": 0.46684656656932355
+  },
+  {
+   "file": "M02_Feb_2021_OP08_007.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4991508769163251,
+   "operation": 0.5424966268882354,
+   "context_free": 0.4790634986529104
+  },
+  {
+   "file": "M02_Feb_2021_OP08_008.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.48322306341710725,
+   "operation": 0.5279472784590682,
+   "context_free": 0.4897391711908304
+  },
+  {
+   "file": "M02_Feb_2021_OP08_009.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5891784009030814,
+   "operation": 0.5287219517537425,
+   "context_free": 0.466025137473027
+  },
+  {
+   "file": "M02_Feb_2021_OP08_010.h5",
+   "machine": "M02",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5147812028753308,
+   "operation": 0.5567742336953593,
+   "context_free": 0.4559093557070084
+  },
+  {
+   "file": "M02_Aug_2021_OP09_000.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.8211832054473303,
+   "operation": 0.573507342640743,
+   "context_free": 1.4534883720930234
+  },
+  {
+   "file": "M02_Aug_2021_OP09_001.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7897265555534989,
+   "operation": 0.5810843697311295,
+   "context_free": 1.4186046511627908
+  },
+  {
+   "file": "M02_Feb_2021_OP09_000.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6637757397926991,
+   "operation": 0.5055211825867632,
+   "context_free": 1.4418604651162792
+  },
+  {
+   "file": "M02_Feb_2021_OP09_001.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6672076777360901,
+   "operation": 0.5105684704137549,
+   "context_free": 1.4651162790697676
+  },
+  {
+   "file": "M02_Feb_2021_OP09_002.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.670352494097295,
+   "operation": 0.5151934938261392,
+   "context_free": 1.4534883720930234
+  },
+  {
+   "file": "M02_Feb_2021_OP09_003.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6734193342686515,
+   "operation": 0.5197038390944813,
+   "context_free": 1.4418604651162792
+  },
+  {
+   "file": "M02_Feb_2021_OP09_004.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6745579767632047,
+   "operation": 0.5213784196075469,
+   "context_free": 1.4651162790697676
+  },
+  {
+   "file": "M02_Feb_2021_OP09_005.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6648090894789825,
+   "operation": 0.507040910908963,
+   "context_free": 1.4186046511627908
+  },
+  {
+   "file": "M02_Feb_2021_OP09_006.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6551752553652114,
+   "operation": 0.4933977418438495,
+   "context_free": 1.4534883720930234
+  },
+  {
+   "file": "M02_Feb_2021_OP09_007.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6689797318268135,
+   "operation": 0.5131745976772454,
+   "context_free": 1.4651162790697676
+  },
+  {
+   "file": "M02_Feb_2021_OP09_008.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6730464376540299,
+   "operation": 0.5191554269218981,
+   "context_free": 1.4186046511627908
+  },
+  {
+   "file": "M02_Feb_2021_OP09_009.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6575422515550737,
+   "operation": 0.4963537064201121,
+   "context_free": 1.5000000000000002
+  },
+  {
+   "file": "M02_Feb_2021_OP09_010.h5",
+   "machine": "M02",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 30,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6648164693128338,
+   "operation": 0.5332701634412688,
+   "context_free": 1.4651162790697676
+  },
+  {
+   "file": "M02_Aug_2021_OP10_000.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7692458739471212,
+   "operation": 0.4636699288711579,
+   "context_free": 0.6287635138847891
+  },
+  {
+   "file": "M02_Aug_2021_OP10_001.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6974748012550258,
+   "operation": 0.3110841077327568,
+   "context_free": 0.562691236269433
+  },
+  {
+   "file": "M02_Feb_2021_OP10_000.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3968790091017021,
+   "operation": 0.3385824334705744,
+   "context_free": 0.40234680636266223
+  },
+  {
+   "file": "M02_Feb_2021_OP10_001.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3605411871061738,
+   "operation": 0.33223058104660863,
+   "context_free": 0.3893049731277205
+  },
+  {
+   "file": "M02_Feb_2021_OP10_002.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.41607760976244196,
+   "operation": 0.3602345043032808,
+   "context_free": 0.4219114958067748
+  },
+  {
+   "file": "M02_Feb_2021_OP10_003.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4560721474979344,
+   "operation": 0.3439612200740571,
+   "context_free": 0.3613118263305469
+  },
+  {
+   "file": "M02_Feb_2021_OP10_004.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.42951897250778615,
+   "operation": 0.3277004858673772,
+   "context_free": 0.3401092460462125
+  },
+  {
+   "file": "M02_Feb_2021_OP10_005.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3886860857602231,
+   "operation": 0.3739581597391596,
+   "context_free": 0.41618387336848717
+  },
+  {
+   "file": "M02_Feb_2021_OP10_006.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3685261340896249,
+   "operation": 0.3219743841953853,
+   "context_free": 0.38733986643289037
+  },
+  {
+   "file": "M02_Feb_2021_OP10_007.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.396038947690682,
+   "operation": 0.39354682868820373,
+   "context_free": 0.4232059928915397
+  },
+  {
+   "file": "M02_Feb_2021_OP10_008.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3712330561134436,
+   "operation": 0.3638606324277742,
+   "context_free": 0.3995159063403865
+  },
+  {
+   "file": "M02_Feb_2021_OP10_009.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3882807352577995,
+   "operation": 0.35346737532875244,
+   "context_free": 0.4157967561203097
+  },
+  {
+   "file": "M02_Feb_2021_OP10_010.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.37508287248603184,
+   "operation": 0.38321828895445753,
+   "context_free": 0.3602853049472538
+  },
+  {
+   "file": "M02_Feb_2021_OP10_011.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3569485078877629,
+   "operation": 0.32035200956226284,
+   "context_free": 0.38587389783781717
+  },
+  {
+   "file": "M02_Feb_2021_OP10_012.h5",
+   "machine": "M02",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3661398718279211,
+   "operation": 0.3375682282986827,
+   "context_free": 0.39023355445536156
+  },
+  {
+   "file": "M02_Aug_2021_OP11_000.h5",
+   "machine": "M02",
+   "op": "OP11",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5145160722823159,
+   "operation": 0.5255329375717277,
+   "context_free": 0.5058983407100585
+  },
+  {
+   "file": "M02_Aug_2021_OP11_001.h5",
+   "machine": "M02",
+   "op": "OP11",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 60,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5281382624497417,
+   "operation": 0.538846005592254,
+   "context_free": 0.49947157719166035
+  },
+  {
+   "file": "M02_Aug_2021_OP12_000.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3804195405706388,
+   "operation": 0.2683837749054497,
+   "context_free": 0.6158170002960663
+  },
+  {
+   "file": "M02_Aug_2021_OP12_001.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.486635833901897,
+   "operation": 0.39748021227035296,
+   "context_free": 0.6348134176766081
+  },
+  {
+   "file": "M02_Aug_2021_OP12_002.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 1.624773467215897,
+   "operation": 1.6883437527372747,
+   "context_free": 1.150193437078849
+  },
+  {
+   "file": "M02_Feb_2021_OP12_000.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29570412030579835,
+   "operation": 0.2941423646586933,
+   "context_free": 0.3342648312517394
+  },
+  {
+   "file": "M02_Feb_2021_OP12_001.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3236396159360273,
+   "operation": 0.23544913884097798,
+   "context_free": 0.2995109173652123
+  },
+  {
+   "file": "M02_Feb_2021_OP12_002.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4014009498720956,
+   "operation": 0.3040002997661461,
+   "context_free": 0.38004633421804473
+  },
+  {
+   "file": "M02_Feb_2021_OP12_003.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2984420668918927,
+   "operation": 0.2958919624931375,
+   "context_free": 0.335914978181144
+  },
+  {
+   "file": "M02_Feb_2021_OP12_004.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.30604900714400546,
+   "operation": 0.29855304691750234,
+   "context_free": 0.3384248008417026
+  },
+  {
+   "file": "M02_Feb_2021_OP12_005.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3232097066824715,
+   "operation": 0.28927971887374465,
+   "context_free": 0.3370068197462235
+  },
+  {
+   "file": "M02_Feb_2021_OP12_006.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3762452919574513,
+   "operation": 0.2634547169170827,
+   "context_free": 0.35399326524640456
+  },
+  {
+   "file": "M02_Feb_2021_OP12_007.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.35898151013081636,
+   "operation": 0.24306920814475738,
+   "context_free": 0.3361136096966749
+  },
+  {
+   "file": "M02_Feb_2021_OP12_008.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3583257126277426,
+   "operation": 0.24229482592155566,
+   "context_free": 0.3354344170618815
+  },
+  {
+   "file": "M02_Feb_2021_OP12_009.h5",
+   "machine": "M02",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 29,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3543222607399071,
+   "operation": 0.2697545727178124,
+   "context_free": 0.33128814473967344
+  },
+  {
+   "file": "M02_Aug_2021_OP13_000.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6786922024362473,
+   "operation": 1.1677786447342748,
+   "context_free": 3.068915541071996
+  },
+  {
+   "file": "M02_Aug_2021_OP13_001.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5986551502345648,
+   "operation": 1.0644228226851289,
+   "context_free": 2.874916900289375
+  },
+  {
+   "file": "M02_Aug_2021_OP13_002.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6643468504517867,
+   "operation": 1.1492537789858195,
+   "context_free": 3.0341444105770727
+  },
+  {
+   "file": "M02_Aug_2021_OP13_003.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5994132370272889,
+   "operation": 1.0654017778251703,
+   "context_free": 2.8767543968405116
+  },
+  {
+   "file": "M02_Feb_2021_OP13_000.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5340679074658886,
+   "operation": 0.981018107161336,
+   "context_free": 2.718366440666663
+  },
+  {
+   "file": "M02_Feb_2021_OP13_001.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5599780784873674,
+   "operation": 1.0144771983159027,
+   "context_free": 2.7811690779745186
+  },
+  {
+   "file": "M02_Feb_2021_OP13_002.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4619571475755187,
+   "operation": 0.8878979001817355,
+   "context_free": 2.543580025878643
+  },
+  {
+   "file": "M02_Feb_2021_OP13_003.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.44543591896959756,
+   "operation": 0.8665632168462722,
+   "context_free": 2.5035348742214922
+  },
+  {
+   "file": "M02_Feb_2021_OP13_004.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3889084497883887,
+   "operation": 0.7935664873957741,
+   "context_free": 2.366520180571824
+  },
+  {
+   "file": "M02_Feb_2021_OP13_005.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5859220410466391,
+   "operation": 1.0479799261621117,
+   "context_free": 2.8440536212524394
+  },
+  {
+   "file": "M02_Feb_2021_OP13_006.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6010271025610795,
+   "operation": 1.0674858425718503,
+   "context_free": 2.8806661815870607
+  },
+  {
+   "file": "M02_Feb_2021_OP13_007.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3554690150303667,
+   "operation": 0.7503844838961313,
+   "context_free": 2.2854676591065344
+  },
+  {
+   "file": "M02_Feb_2021_OP13_008.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4960086667236032,
+   "operation": 0.9318703186649155,
+   "context_free": 2.6261161544540146
+  },
+  {
+   "file": "M02_Feb_2021_OP13_009.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5563655039744825,
+   "operation": 1.0098121013611554,
+   "context_free": 2.7724127016969464
+  },
+  {
+   "file": "M02_Feb_2021_OP13_010.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3509410610418861,
+   "operation": 0.7445373119450599,
+   "context_free": 2.2744925307737467
+  },
+  {
+   "file": "M02_Feb_2021_OP13_011.h5",
+   "machine": "M02",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.32631065561477574,
+   "operation": 0.7127308456860586,
+   "context_free": 2.214791866602061
+  },
+  {
+   "file": "M02_Aug_2021_OP14_000.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5496635758628569,
+   "operation": 0.6502937510019507,
+   "context_free": 0.5924813536218267
+  },
+  {
+   "file": "M02_Aug_2021_OP14_001.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5689649463742216,
+   "operation": 0.6708484905188441,
+   "context_free": 0.6123160281392167
+  },
+  {
+   "file": "M02_Aug_2021_OP14_002.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5571366518148274,
+   "operation": 0.6582521045029247,
+   "context_free": 0.6001609134263388
+  },
+  {
+   "file": "M02_Aug_2021_OP14_003.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.36714100207751277,
+   "operation": 0.45591874753255063,
+   "context_free": 0.40491561361507583
+  },
+  {
+   "file": "M02_Feb_2021_OP14_000.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3697692720603902,
+   "operation": 0.3825454705954096,
+   "context_free": 0.449637497425615
+  },
+  {
+   "file": "M02_Feb_2021_OP14_001.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3353740915458986,
+   "operation": 0.34884755797887923,
+   "context_free": 0.4196011682127569
+  },
+  {
+   "file": "M02_Feb_2021_OP14_002.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.32573739493905096,
+   "operation": 0.3394062189507922,
+   "context_free": 0.4111857161791281
+  },
+  {
+   "file": "M02_Feb_2021_OP14_003.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.26583186448260065,
+   "operation": 0.2520436561356725,
+   "context_free": 0.29742542408928413
+  },
+  {
+   "file": "M02_Feb_2021_OP14_004.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3860662068445216,
+   "operation": 0.39851202974870653,
+   "context_free": 0.46386914531972645
+  },
+  {
+   "file": "M02_Feb_2021_OP14_005.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2935894414825616,
+   "operation": 0.30790997703048495,
+   "context_free": 0.38311182620108547
+  },
+  {
+   "file": "M02_Feb_2021_OP14_006.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.35032672103880863,
+   "operation": 0.4380126010902084,
+   "context_free": 0.3876367477723498
+  },
+  {
+   "file": "M02_Feb_2021_OP14_007.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2951441173218482,
+   "operation": 0.30943313608345857,
+   "context_free": 0.3844694802278877
+  },
+  {
+   "file": "M02_Feb_2021_OP14_008.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29358356436794975,
+   "operation": 0.16936323173684548,
+   "context_free": 0.3239828812091165
+  },
+  {
+   "file": "M02_Feb_2021_OP14_009.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.25163759944992564,
+   "operation": 0.23169628249805718,
+   "context_free": 0.3151794398377459
+  },
+  {
+   "file": "M02_Feb_2021_OP14_010.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2518110473460193,
+   "operation": 0.22764274768855644,
+   "context_free": 0.3892243097824745
+  },
+  {
+   "file": "M02_Feb_2021_OP14_011.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3485723978169713,
+   "operation": 0.327324271549695,
+   "context_free": 0.36432853975836554
+  },
+  {
+   "file": "M02_Feb_2021_OP14_012.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.24759098945742442,
+   "operation": 0.2096382928105016,
+   "context_free": 0.3749864900141946
+  },
+  {
+   "file": "M02_Feb_2021_OP14_013.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2566234403080365,
+   "operation": 0.2372323287720302,
+   "context_free": 0.3968076955636361
+  },
+  {
+   "file": "M02_Feb_2021_OP14_014.h5",
+   "machine": "M02",
+   "op": "OP14",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 48,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2835495616239403,
+   "operation": 0.21442743958185193,
+   "context_free": 0.3787737198434874
+  },
+  {
+   "file": "M03_Aug_2021_OP00_000.h5",
+   "machine": "M03",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 1.3628809909816881,
+   "operation": 1.8364726897717907,
+   "context_free": 2.260405287505261
+  },
+  {
+   "file": "M03_Aug_2021_OP00_001.h5",
+   "machine": "M03",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 1.1767209562555343,
+   "operation": 1.6130006416902138,
+   "context_free": 2.0035336279253397
+  },
+  {
+   "file": "M03_Aug_2021_OP00_002.h5",
+   "machine": "M03",
+   "op": "OP00",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 61,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4749908251106346,
+   "operation": 0.8608466766748479,
+   "context_free": 2.023255813953489
+  },
+  {
+   "file": "M03_Feb_2021_OP01_000.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.45411697398957845,
+   "operation": 0.9558900587396117,
+   "context_free": 0.6108841714404482
+  },
+  {
+   "file": "M03_Aug_2021_OP01_000.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5897252518196994,
+   "operation": 1.147930548325837,
+   "context_free": 0.7690500067683679
+  },
+  {
+   "file": "M03_Aug_2021_OP01_001.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 1.0762481971973177,
+   "operation": 1.8052878467910005,
+   "context_free": 1.310453886984808
+  },
+  {
+   "file": "M03_Aug_2021_OP01_002.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 1.7777392751012002,
+   "operation": 2.753095723581687,
+   "context_free": 2.091074811696998
+  },
+  {
+   "file": "M03_Aug_2021_OP01_003.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5223534705755091,
+   "operation": 0.7663670920725875,
+   "context_free": 0.5500835666851078
+  },
+  {
+   "file": "M03_Feb_2021_OP01_000.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 0.43680418680056793,
+   "operation": 0.941313822158134,
+   "context_free": 0.5988790852223583
+  },
+  {
+   "file": "M03_Feb_2021_OP01_001.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 1.2010419922041262,
+   "operation": 1.9739008849432294,
+   "context_free": 1.4493247161728966
+  },
+  {
+   "file": "M03_Feb_2021_OP01_002.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 2.1184183548936644,
+   "operation": 3.2133985349160086,
+   "context_free": 2.4701832945765627
+  },
+  {
+   "file": "M03_Feb_2021_OP01_003.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 1.0108024098267299,
+   "operation": 1.7168618714272612,
+   "context_free": 1.23762566056117
+  },
+  {
+   "file": "M03_Feb_2021_OP01_004.h5",
+   "machine": "M03",
+   "op": "OP01",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 38,
+    "operation": 96,
+    "context_free": 1180
+   },
+   "machine_operation": 1.217776332860097,
+   "operation": 1.9965112079911314,
+   "context_free": 1.4679467298930806
+  },
+  {
+   "file": "M03_Feb_2021_OP02_000.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 1.970352601535118,
+   "operation": 2.2901919448734906,
+   "context_free": 2.3752674745606766
+  },
+  {
+   "file": "M03_Aug_2021_OP02_000.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 1.2857987848269345,
+   "operation": 1.7288917065028453,
+   "context_free": 1.9183691818820305
+  },
+  {
+   "file": "M03_Aug_2021_OP02_001.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 1.0731029933914917,
+   "operation": 1.4749656894321064,
+   "context_free": 1.646812102159372
+  },
+  {
+   "file": "M03_Aug_2021_OP02_002.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.9567650906934607,
+   "operation": 1.3360761511525465,
+   "context_free": 1.4982789275980644
+  },
+  {
+   "file": "M03_Aug_2021_OP02_003.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 1.1343119640881114,
+   "operation": 1.5480397734706224,
+   "context_free": 1.7249600016689346
+  },
+  {
+   "file": "M03_Aug_2021_OP02_004.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3284507821768594,
+   "operation": 0.5859656353147136,
+   "context_free": 0.6960853457823316
+  },
+  {
+   "file": "M03_Feb_2021_OP02_000.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6891799907549145,
+   "operation": 1.016620753392625,
+   "context_free": 1.1566425095654937
+  },
+  {
+   "file": "M03_Feb_2021_OP02_001.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 0.428783908363288,
+   "operation": 0.7057479353820306,
+   "context_free": 0.8241845928936752
+  },
+  {
+   "file": "M03_Feb_2021_OP02_002.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 1.7701308850908797,
+   "operation": 2.307109640809541,
+   "context_free": 2.5367350173129535
+  },
+  {
+   "file": "M03_Feb_2021_OP02_003.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 1.842967850057259,
+   "operation": 2.39406575914462,
+   "context_free": 2.629728834297503
+  },
+  {
+   "file": "M03_Feb_2021_OP02_004.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 2.282126608460418,
+   "operation": 2.9183536805485164,
+   "context_free": 3.1904200880442284
+  },
+  {
+   "file": "M03_Feb_2021_OP02_005.h5",
+   "machine": "M03",
+   "op": "OP02",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 101,
+    "context_free": 1180
+   },
+   "machine_operation": 1.8173877961054246,
+   "operation": 2.3635271143853256,
+   "context_free": 2.5970697736577604
+  },
+  {
+   "file": "M03_Feb_2021_OP03_000.h5",
+   "machine": "M03",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 9,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4084349903814312,
+   "operation": 1.0115621620764996,
+   "context_free": 0.7209302325581396
+  },
+  {
+   "file": "M03_Feb_2021_OP03_001.h5",
+   "machine": "M03",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 9,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.20787971972631158,
+   "operation": 0.6844197615803032,
+   "context_free": 0.7325581395348838
+  },
+  {
+   "file": "M03_Feb_2021_OP03_002.h5",
+   "machine": "M03",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 9,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29743065962180565,
+   "operation": 0.8645294025121838,
+   "context_free": 0.7790697674418606
+  },
+  {
+   "file": "M03_Feb_2021_OP03_004.h5",
+   "machine": "M03",
+   "op": "OP03",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 9,
+    "operation": 57,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3248402650041916,
+   "operation": 0.8429096941799327,
+   "context_free": 0.7325581395348838
+  },
+  {
+   "file": "M03_Feb_2021_OP04_000.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.44053836050359185,
+   "operation": 0.5161540381467694,
+   "context_free": 0.8471197128646392
+  },
+  {
+   "file": "M03_Aug_2021_OP04_000.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15813171444653212,
+   "operation": 0.43948176216190427,
+   "context_free": 0.48837209302325596
+  },
+  {
+   "file": "M03_Aug_2021_OP04_001.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.30358310684545825,
+   "operation": 0.6397639793864619,
+   "context_free": 0.46642535849007416
+  },
+  {
+   "file": "M03_Feb_2021_OP04_000.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2591298718827155,
+   "operation": 0.5838467056228414,
+   "context_free": 0.5116279069767443
+  },
+  {
+   "file": "M03_Feb_2021_OP04_001.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5387995086410124,
+   "operation": 0.6622830338697981,
+   "context_free": 0.9206005125378818
+  },
+  {
+   "file": "M03_Feb_2021_OP04_002.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.925358138109572,
+   "operation": 1.4218884900484858,
+   "context_free": 0.965971405535865
+  },
+  {
+   "file": "M03_Feb_2021_OP04_003.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 1.3680552970722646,
+   "operation": 1.9787527599456292,
+   "context_free": 1.4180067638444027
+  },
+  {
+   "file": "M03_Feb_2021_OP04_004.h5",
+   "machine": "M03",
+   "op": "OP04",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 35,
+    "operation": 74,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3533190738717864,
+   "operation": 0.702326348276836,
+   "context_free": 0.5116279069767443
+  },
+  {
+   "file": "M03_Aug_2021_OP05_000.h5",
+   "machine": "M03",
+   "op": "OP05",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 2.4050870276698246,
+   "operation": 2.4764978553947583,
+   "context_free": 4.369297406508027
+  },
+  {
+   "file": "M03_Aug_2021_OP05_001.h5",
+   "machine": "M03",
+   "op": "OP05",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 1.4883078536871637,
+   "operation": 1.540492165577674,
+   "context_free": 2.9236779550209913
+  },
+  {
+   "file": "M03_Feb_2021_OP05_000.h5",
+   "machine": "M03",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 0.8737350307127555,
+   "operation": 0.9130306400152781,
+   "context_free": 1.9545913391159202
+  },
+  {
+   "file": "M03_Feb_2021_OP05_001.h5",
+   "machine": "M03",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 1.0951031228621182,
+   "operation": 1.1390412210537113,
+   "context_free": 2.3036547003171703
+  },
+  {
+   "file": "M03_Feb_2021_OP05_002.h5",
+   "machine": "M03",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 2.623079960748699,
+   "operation": 2.6990624941783175,
+   "context_free": 4.713038662078359
+  },
+  {
+   "file": "M03_Feb_2021_OP05_003.h5",
+   "machine": "M03",
+   "op": "OP05",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 84,
+    "context_free": 1180
+   },
+   "machine_operation": 2.576692507130439,
+   "operation": 2.6517022118387903,
+   "context_free": 4.639892797557687
+  },
+  {
+   "file": "M03_Aug_2021_OP06_000.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.312134437668086,
+   "operation": 0.6662440228447711,
+   "context_free": 0.7674418604651164
+  },
+  {
+   "file": "M03_Aug_2021_OP06_001.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6240266151925271,
+   "operation": 0.9796881676818563,
+   "context_free": 1.1279069767441863
+  },
+  {
+   "file": "M03_Aug_2021_OP06_002.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 1.1011209602464398,
+   "operation": 1.6681566619853436,
+   "context_free": 1.0930232558139537
+  },
+  {
+   "file": "M03_Aug_2021_OP06_003.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4834028219027469,
+   "operation": 0.8837331103505082,
+   "context_free": 0.6976744186046512
+  },
+  {
+   "file": "M03_Feb_2021_OP06_000.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7182725066568986,
+   "operation": 1.181987768664747,
+   "context_free": 1.1511627906976745
+  },
+  {
+   "file": "M03_Feb_2021_OP06_001.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5217020834092722,
+   "operation": 0.8038170366229769,
+   "context_free": 1.1511627906976745
+  },
+  {
+   "file": "M03_Feb_2021_OP06_002.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2420506606075894,
+   "operation": 0.5255406767548112,
+   "context_free": 0.7790697674418606
+  },
+  {
+   "file": "M03_Feb_2021_OP06_003.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7771604539192996,
+   "operation": 1.2567679796909546,
+   "context_free": 1.0930232558139537
+  },
+  {
+   "file": "M03_Feb_2021_OP06_004.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5302894901267186,
+   "operation": 0.8654226281707958,
+   "context_free": 1.1627906976744187
+  },
+  {
+   "file": "M03_Feb_2021_OP06_005.h5",
+   "machine": "M03",
+   "op": "OP06",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 25,
+    "operation": 64,
+    "context_free": 1180
+   },
+   "machine_operation": 0.25741341316182625,
+   "operation": 0.5023848092921159,
+   "context_free": 0.7906976744186047
+  },
+  {
+   "file": "M03_Aug_2021_OP07_000.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2549029965316944,
+   "operation": 0.5130837565090843,
+   "context_free": 0.5457848837209301
+  },
+  {
+   "file": "M03_Feb_2021_OP07_000.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6420964723233811,
+   "operation": 0.858764472079806,
+   "context_free": 0.9178197179328181
+  },
+  {
+   "file": "M03_Aug_2021_OP07_000.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 2.104429673620308,
+   "operation": 2.5022319804075925,
+   "context_free": 2.3540689686053655
+  },
+  {
+   "file": "M03_Aug_2021_OP07_001.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 2.302645547715389,
+   "operation": 2.7258472805637344,
+   "context_free": 2.5682241540285196
+  },
+  {
+   "file": "M03_Aug_2021_OP07_002.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 1.4225655725133353,
+   "operation": 1.7329936621809032,
+   "context_free": 1.6173735163737726
+  },
+  {
+   "file": "M03_Aug_2021_OP07_003.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6688850287192457,
+   "operation": 0.8827363263758204,
+   "context_free": 0.8030865812687478
+  },
+  {
+   "file": "M03_Aug_2021_OP07_004.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7745108205589382,
+   "operation": 1.0018970306044486,
+   "context_free": 0.9172061548910209
+  },
+  {
+   "file": "M03_Feb_2021_OP07_000.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7683918854134565,
+   "operation": 0.9949940137525466,
+   "context_free": 0.910595172311269
+  },
+  {
+   "file": "M03_Feb_2021_OP07_001.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 0.590688587269783,
+   "operation": 0.7945197755789049,
+   "context_free": 0.7186020590553168
+  },
+  {
+   "file": "M03_Feb_2021_OP07_002.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 1.6428969893791165,
+   "operation": 1.9815583956625205,
+   "context_free": 1.8554226415957198
+  },
+  {
+   "file": "M03_Feb_2021_OP07_003.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 1.8742020806755966,
+   "operation": 2.242502972649807,
+   "context_free": 2.1053278771983743
+  },
+  {
+   "file": "M03_Feb_2021_OP07_004.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 2.1866840324936287,
+   "operation": 2.5950264310669056,
+   "context_free": 2.4429377212055177
+  },
+  {
+   "file": "M03_Feb_2021_OP07_005.h5",
+   "machine": "M03",
+   "op": "OP07",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 42,
+    "operation": 103,
+    "context_free": 1180
+   },
+   "machine_operation": 2.025083212469663,
+   "operation": 2.412718046129968,
+   "context_free": 2.2683419491223726
+  },
+  {
+   "file": "M03_Aug_2021_OP08_000.h5",
+   "machine": "M03",
+   "op": "OP08",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5846935595135542,
+   "operation": 0.7503907332874281,
+   "context_free": 1.4875861368531018
+  },
+  {
+   "file": "M03_Aug_2021_OP08_001.h5",
+   "machine": "M03",
+   "op": "OP08",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 1.210568864301507,
+   "operation": 1.6229718835933387,
+   "context_free": 1.5152295536233915
+  },
+  {
+   "file": "M03_Feb_2021_OP08_000.h5",
+   "machine": "M03",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.45492710114254686,
+   "operation": 0.6070557617653223,
+   "context_free": 1.2838841397481644
+  },
+  {
+   "file": "M03_Feb_2021_OP08_001.h5",
+   "machine": "M03",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.29650750068760157,
+   "operation": 0.4320716464184072,
+   "context_free": 1.035203630174756
+  },
+  {
+   "file": "M03_Feb_2021_OP08_002.h5",
+   "machine": "M03",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7531658808558707,
+   "operation": 1.0802359460595805,
+   "context_free": 1.5762371466694753
+  },
+  {
+   "file": "M03_Feb_2021_OP08_003.h5",
+   "machine": "M03",
+   "op": "OP08",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4392408026794562,
+   "operation": 0.5897292879467481,
+   "context_free": 1.259260439878202
+  },
+  {
+   "file": "M03_Aug_2021_OP09_000.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 1.1907324984187213,
+   "operation": 2.212484516590674,
+   "context_free": 3.378527061202431
+  },
+  {
+   "file": "M03_Aug_2021_OP09_001.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5246652310573818,
+   "operation": 1.2357651841524924,
+   "context_free": 2.0472857723513993
+  },
+  {
+   "file": "M03_Aug_2021_OP09_002.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15417748629352734,
+   "operation": 0.6924829055084493,
+   "context_free": 1.348837209302326
+  },
+  {
+   "file": "M03_Aug_2021_OP09_003.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.6597280299097692,
+   "operation": 1.4338209259620818,
+   "context_free": 2.3172302407717913
+  },
+  {
+   "file": "M03_Feb_2021_OP09_000.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5676378750127448,
+   "operation": 1.298780159026518,
+   "context_free": 2.133173430742274
+  },
+  {
+   "file": "M03_Feb_2021_OP09_001.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 1.3260536574884596,
+   "operation": 2.4109191171603093,
+   "context_free": 3.6489879035772086
+  },
+  {
+   "file": "M03_Feb_2021_OP09_002.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 1.1121186434051813,
+   "operation": 2.0972053612383936,
+   "context_free": 3.221404778216862
+  },
+  {
+   "file": "M03_Feb_2021_OP09_003.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 1.8593818605499728,
+   "operation": 3.1929902261765455,
+   "context_free": 4.714929076811664
+  },
+  {
+   "file": "M03_Feb_2021_OP09_004.h5",
+   "machine": "M03",
+   "op": "OP09",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 26,
+    "operation": 80,
+    "context_free": 1180
+   },
+   "machine_operation": 0.7125105537050103,
+   "operation": 1.5112210834715822,
+   "context_free": 2.422724503062071
+  },
+  {
+   "file": "M03_Aug_2021_OP10_000.h5",
+   "machine": "M03",
+   "op": "OP10",
+   "period": "Aug_2021",
+   "bad": true,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.501464169531001,
+   "operation": 0.6915776995825971,
+   "context_free": 0.5605411296905162
+  },
+  {
+   "file": "M03_Aug_2021_OP10_000.h5",
+   "machine": "M03",
+   "op": "OP10",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 1.2911473741126827,
+   "operation": 1.614391019500431,
+   "context_free": 1.846389950136774
+  },
+  {
+   "file": "M03_Aug_2021_OP10_001.h5",
+   "machine": "M03",
+   "op": "OP10",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.5958938492130957,
+   "operation": 0.8210485255556904,
+   "context_free": 0.982646889157222
+  },
+  {
+   "file": "M03_Feb_2021_OP10_000.h5",
+   "machine": "M03",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4007530853202177,
+   "operation": 0.5983765724441734,
+   "context_free": 0.7484566847612725
+  },
+  {
+   "file": "M03_Feb_2021_OP10_001.h5",
+   "machine": "M03",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 1.172910552278618,
+   "operation": 1.479472904380505,
+   "context_free": 1.699499311320957
+  },
+  {
+   "file": "M03_Feb_2021_OP10_002.h5",
+   "machine": "M03",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 2.2075299209863837,
+   "operation": 2.6600602453403344,
+   "context_free": 2.9848510117750373
+  },
+  {
+   "file": "M03_Feb_2021_OP10_003.h5",
+   "machine": "M03",
+   "op": "OP10",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 33,
+    "operation": 83,
+    "context_free": 1180
+   },
+   "machine_operation": 2.082813604560737,
+   "operation": 2.517748484284518,
+   "context_free": 2.829910620902311
+  },
+  {
+   "file": "M03_Aug_2021_OP12_000.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 2.317317225038092,
+   "operation": 2.7333430057051107,
+   "context_free": 2.4760624097233572
+  },
+  {
+   "file": "M03_Aug_2021_OP12_001.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.1214382190805077,
+   "operation": 0.25772072756720116,
+   "context_free": 0.6030108941908661
+  },
+  {
+   "file": "M03_Aug_2021_OP12_002.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.4443195451736984,
+   "operation": 0.6254521066840381,
+   "context_free": 0.7210142856732561
+  },
+  {
+   "file": "M03_Aug_2021_OP12_003.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 1.3853462426548244,
+   "operation": 1.6844932537611315,
+   "context_free": 1.4994933694265777
+  },
+  {
+   "file": "M03_Feb_2021_OP12_000.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.27322818813099875,
+   "operation": 0.3263616171710337,
+   "context_free": 0.8556945258411847
+  },
+  {
+   "file": "M03_Feb_2021_OP12_001.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.2365079019395025,
+   "operation": 0.38252787309632225,
+   "context_free": 0.608775966686276
+  },
+  {
+   "file": "M03_Feb_2021_OP12_002.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 3.389922643554387,
+   "operation": 3.940464201976363,
+   "context_free": 3.5999957338049184
+  },
+  {
+   "file": "M03_Feb_2021_OP12_003.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.3713946330926342,
+   "operation": 0.5433816587918034,
+   "context_free": 0.6599109305567196
+  },
+  {
+   "file": "M03_Feb_2021_OP12_004.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 0.297635795809493,
+   "operation": 0.46037270287960713,
+   "context_free": 0.7624639812828975
+  },
+  {
+   "file": "M03_Feb_2021_OP12_005.h5",
+   "machine": "M03",
+   "op": "OP12",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 32,
+    "operation": 86,
+    "context_free": 1180
+   },
+   "machine_operation": 2.0724836639239324,
+   "operation": 2.4578047918591537,
+   "context_free": 2.21951270986224
+  },
+  {
+   "file": "M03_Aug_2021_OP13_000.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.16107954370078126,
+   "operation": 0.37741774475658507,
+   "context_free": 1.1465659448065686
+  },
+  {
+   "file": "M03_Aug_2021_OP13_001.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.25053447638415544,
+   "operation": 0.25053447638415544,
+   "context_free": 0.8762210259459824
+  },
+  {
+   "file": "M03_Aug_2021_OP13_002.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.15577440166455872,
+   "operation": 0.21067555671542074,
+   "context_free": 0.7426284412849412
+  },
+  {
+   "file": "M03_Aug_2021_OP13_003.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.18388810868315247,
+   "operation": 0.1957686774525291,
+   "context_free": 1.0391650489141793
+  },
+  {
+   "file": "M03_Aug_2021_OP13_004.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Aug_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.19628019660128926,
+   "operation": 0.18320845103427877,
+   "context_free": 1.011667829602728
+  },
+  {
+   "file": "M03_Feb_2021_OP13_000.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.14336597367106801,
+   "operation": 0.3005246997269384,
+   "context_free": 0.8812035632602563
+  },
+  {
+   "file": "M03_Feb_2021_OP13_001.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 1.0274057243214154,
+   "operation": 1.4697984176032084,
+   "context_free": 1.232161160045477
+  },
+  {
+   "file": "M03_Feb_2021_OP13_002.h5",
+   "machine": "M03",
+   "op": "OP13",
+   "period": "Feb_2021",
+   "bad": false,
+   "history_n": {
+    "machine_operation": 40,
+    "operation": 100,
+    "context_free": 1180
+   },
+   "machine_operation": 0.8991897629798373,
+   "operation": 1.31360492626891,
+   "context_free": 1.0768499423220517
+  }
+ ],
+ "rejected": [],
+ "loaded": 1702
+}
