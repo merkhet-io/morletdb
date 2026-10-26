@@ -1,0 +1,27 @@
+{
+ "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2024-03-01&endtime=2024-03-03&latitude=-20.8&longitude=-69.5&maxradiuskm=300&minmagnitude=2.5",
+ "events": 3,
+ "arrivals": [
+  {
+   "event": "us6000mgbw",
+   "station": "PB06",
+   "mag": 4.4,
+   "hypo_km": 219.93657646531486,
+   "p_time": "2024-03-02T16:06:23.263501Z"
+  },
+  {
+   "event": "us6000mfz9",
+   "station": "PB01",
+   "mag": 4.2,
+   "hypo_km": 181.1131691032072,
+   "p_time": "2024-03-01T03:25:06.298132Z"
+  },
+  {
+   "event": "us6000mfz9",
+   "station": "PB02",
+   "mag": 4.2,
+   "hypo_km": 211.3829442194756,
+   "p_time": "2024-03-01T03:25:10.158753Z"
+  }
+ ]
+}

@@ -1,0 +1,788 @@
+{
+ "cases": {
+  "set1:B3": {
+   "role": "dev",
+   "snapshots": 2156,
+   "duration_h": 828.5588888888889,
+   "alarms": {
+    "d_kurt": {
+     "orig": {
+      "index": 964,
+      "hours": 564.2061111111111,
+      "threshold": 4.148122366910908
+     },
+     "dwt-q@24.4": {
+      "index": 964,
+      "hours": 564.2061111111111,
+      "threshold": 4.117747012246576,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 906,
+      "hours": 554.0980555555556,
+      "threshold": 4.117824419810048,
+      "delay_snapshots": -58,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 906,
+      "hours": 554.0980555555556,
+      "threshold": 4.0995584446747,
+      "delay_snapshots": -58,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 906,
+      "hours": 554.0980555555556,
+      "threshold": 4.0995584446747,
+      "delay_snapshots": -58,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 964,
+      "hours": 564.2061111111111,
+      "threshold": 4.142052094056897,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 964,
+      "hours": 564.2061111111111,
+      "threshold": 4.138311997525126,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 964,
+      "hours": 564.2061111111111,
+      "threshold": 4.134244436986924,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 964,
+      "hours": 564.2061111111111,
+      "threshold": 4.145302280194859,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "d_env": {
+     "orig": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.626646050532862
+     },
+     "dwt-q@24.4": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.415841391075027,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.522383163939173,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.604578085881714,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.604578085881714,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.523025933795745,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.431234047771499,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.56448830358419,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 2144,
+      "hours": 819.8522222222222,
+      "threshold": 12.563881357163526,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "rms": {
+     "orig": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 114.09309337553063
+     },
+     "dwt-q@24.4": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 114.75792825960313,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 115.0515063511767,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 115.33584067138045,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 115.33584067138045,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 114.67325783393616,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 114.86877888182813,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 114.2857049736853,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 914,
+      "hours": 555.4313888888889,
+      "threshold": 114.03878346396542,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    }
+   }
+  },
+  "set1:B4": {
+   "role": "dev",
+   "snapshots": 2156,
+   "duration_h": 828.5588888888889,
+   "alarms": {
+    "d_kurt": {
+     "orig": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.996659595057002
+     },
+     "dwt-q@24.4": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.851553191340652,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.851433524539489,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.770590257044328,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.770590257044328,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.937616384297603,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.884679934531767,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.949339860569679,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 1440,
+      "hours": 672.1619444444444,
+      "threshold": 5.945386040985766,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "d_env": {
+     "orig": {
+      "index": 1684,
+      "hours": 722.2033333333334,
+      "threshold": 17.78576483357049
+     },
+     "dwt-q@24.4": {
+      "index": 1683,
+      "hours": 722.0366666666666,
+      "threshold": 17.32164147556329,
+      "delay_snapshots": -1,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 1683,
+      "hours": 722.0366666666666,
+      "threshold": 17.32409484858435,
+      "delay_snapshots": -1,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 1683,
+      "hours": 722.0366666666666,
+      "threshold": 17.188524484764134,
+      "delay_snapshots": -1,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 1683,
+      "hours": 722.0366666666666,
+      "threshold": 17.188524484764134,
+      "delay_snapshots": -1,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 1683,
+      "hours": 722.0366666666666,
+      "threshold": 17.45753805775954,
+      "delay_snapshots": -1,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 1684,
+      "hours": 722.2033333333334,
+      "threshold": 17.333398887737317,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 1684,
+      "hours": 722.2033333333334,
+      "threshold": 17.595330894622204,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 1684,
+      "hours": 722.2033333333334,
+      "threshold": 17.658839485766773,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "rms": {
+     "orig": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 82.94333848755181
+     },
+     "dwt-q@24.4": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 83.96993386240138,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 84.16141103551756,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 84.57512083971515,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 84.57512083971515,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 83.5819484150596,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 83.78012985529843,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 83.32477068447729,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 1277,
+      "hours": 629.935,
+      "threshold": 83.12173733087114,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    }
+   }
+  },
+  "set2:B1": {
+   "role": "heldout",
+   "snapshots": 984,
+   "duration_h": 163.83333333333334,
+   "alarms": {
+    "d_kurt": {
+     "orig": {
+      "index": 690,
+      "hours": 115.0,
+      "threshold": 4.488745494810298
+     },
+     "dwt-q@24.4": {
+      "index": 686,
+      "hours": 114.33333333333333,
+      "threshold": 4.413565819102061,
+      "delay_snapshots": -4,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 657,
+      "hours": 109.5,
+      "threshold": 4.3772820111995285,
+      "delay_snapshots": -33,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 686,
+      "hours": 114.33333333333333,
+      "threshold": 4.410684833155855,
+      "delay_snapshots": -4,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 686,
+      "hours": 114.33333333333333,
+      "threshold": 4.410684833155855,
+      "delay_snapshots": -4,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 690,
+      "hours": 115.0,
+      "threshold": 4.4774342702202645,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 690,
+      "hours": 115.0,
+      "threshold": 4.434460606658536,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 690,
+      "hours": 115.0,
+      "threshold": 4.448252499482794,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 690,
+      "hours": 115.0,
+      "threshold": 4.454972742217081,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "d_env": {
+     "orig": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.384790706374325
+     },
+     "dwt-q@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.201459568335418,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.255393280341618,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.302765974611898,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.302765974611898,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.187621065610427,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.311759416781618,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.391043890126133,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 8.223287870213177,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "rms": {
+     "orig": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 79.78903443795826
+     },
+     "dwt-q@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 80.81770623205638,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 80.94801064444434,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 80.68001637397133,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 80.68001637397133,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 80.3448908920802,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 80.80284499910749,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 80.15173599480619,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 532,
+      "hours": 88.66666666666667,
+      "threshold": 79.97970371018677,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    }
+   }
+  },
+  "set3:B3": {
+   "role": "heldout",
+   "snapshots": 6324,
+   "duration_h": 1072.2525,
+   "alarms": {
+    "d_kurt": {
+     "orig": {
+      "index": 6170,
+      "hours": 1046.7525,
+      "threshold": 4.345310981107572
+     },
+     "dwt-q@24.4": {
+      "index": 6170,
+      "hours": 1046.7525,
+      "threshold": 4.242396450028999,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 6169,
+      "hours": 1046.5858333333333,
+      "threshold": 4.209948658702812,
+      "delay_snapshots": -1,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 6170,
+      "hours": 1046.7525,
+      "threshold": 4.28052325045558,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 6170,
+      "hours": 1046.7525,
+      "threshold": 4.28052325045558,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 6170,
+      "hours": 1046.7525,
+      "threshold": 4.2412618382112255,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 6169,
+      "hours": 1046.5858333333333,
+      "threshold": 4.19857211331528,
+      "delay_snapshots": -1,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 6170,
+      "hours": 1046.7525,
+      "threshold": 4.290465244256345,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 6170,
+      "hours": 1046.7525,
+      "threshold": 4.317046574562662,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "d_env": {
+     "orig": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.756560054669339
+     },
+     "dwt-q@24.4": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.513213171386978,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.509701750817303,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.455170066226719,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.455170066226719,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.6996770530504115,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.647425930725586,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.71719751279133,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 6070,
+      "hours": 1030.0858333333333,
+      "threshold": 7.678947631056054,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    },
+    "rms": {
+     "orig": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 70.95752564364096
+     },
+     "dwt-q@24.4": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 72.17959375973071,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "harmonic@24.4": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 72.38046344634299,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-flac@24.4": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 72.02418155953978,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "quant-zstd@24.4": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 72.02418155953978,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sperr@24.4": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 71.6828838688061,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "sz3@24.4": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 72.06930561919565,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "tsa@12.2": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 71.29747811205114,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     },
+     "zfp@48.8": {
+      "index": 3279,
+      "hours": 557.9030555555555,
+      "threshold": 71.17083480046438,
+      "delay_snapshots": 0,
+      "non_inferior_6_snapshots": true
+     }
+    }
+   }
+  }
+ }
+}

@@ -166,8 +166,9 @@ def figures(summary, out: Path):
                     ax.plot(xs, ys, "-o", color=PALETTE[name], lw=1.5, ms=4, label=name)
                 else:
                     key = "trigger_recall" if ds == "cx" else "p95_abs_dkurt_rel"
-                    xs = [p["bits_per_sample"] for p in pts]
-                    ys = [p[key] for p in pts]
+                    keep = [p for p in pts if ds == "cx" or p[key] > 0]  # exact (zero-change) points are off a log axis
+                    xs = [p["bits_per_sample"] for p in keep]
+                    ys = [p[key] for p in keep]
                     ax.plot(xs, ys, "-o", color=PALETTE[name], lw=1.5, ms=4, label=name)
             if kind == "rate":
                 ax.axhline(d["bits_per_sample"]["optimized_parquet"], color=INK2, lw=1, ls="--")
