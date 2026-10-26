@@ -44,6 +44,18 @@ descriptive only:
 
 All comparisons, mAP, MRR and the T1/T3 tasks are in `evaluation-heldout.json`.
 
+## Disclosure: feature scaling in the frozen configuration (found after the result)
+
+Unscaled log FFT band energies have per-dimension SDs of about 0.005–0.045. The
+statistics have 0.27–0.60, and Morlet bands 0.18–0.59. In the frozen, unscaled
+configuration, FS distances are therefore dominated by the 3 statistics, so the primary
+comparison was effectively Morlet vs mostly-statistics.
+- This artefact **favoured Morlet**, and Morlet still did not win.
+- The scale-matched comparison is the standardized variant (development-fit):
+  M − FS = −0.002 [−0.046, +0.044]. Its upper bound is also below +0.05, so the verdict
+  is unchanged.
+- Future plans standardize features in the primary configuration (`PLAN_TIMING.md`).
+
 ## Is retrieval useful at all here?
 
 - **Barely above chance.** A random ranking scores P@10 = 0.267 on T2 (label prior,
