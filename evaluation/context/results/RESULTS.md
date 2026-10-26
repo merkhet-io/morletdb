@@ -35,6 +35,30 @@ The rule (Δρ ≥ 0.10 and CI lower bound > 0) is met.
 - **Scored:** 64 runs with VB from cases 9–13, four cast-iron settings and one
   steel setting. 33 of them have VB ≥ 0.3 mm.
 
+## Data-quality finding after the run (sensitivity check)
+
+The database rejected one run when the data was loaded through pg_morlet for the
+phase-1 implementation check, because of samples beyond ±1e9.
+- **The run:** case 2, run 1, a sharp reference run (VB 0.08 mm).
+- **The corruption:** values up to about 1e34 on every channel, in roughly 1% of
+  samples at each tail.
+- **Effect on C1:** `c1.py` did not screen for it, so the run entered C1's history
+  for its setting and the global history.
+  - Its 75th-percentile values look normal.
+  - Its standard deviation (`ac`) is meaningless.
+
+**Sensitivity:** the C1 analysis without that run (descriptive; the frozen
+result above stands as run):
+
+| | ρ conditioned | ρ context-free | Δρ [95% CI] | Decision |
+|---|---|---|---|---|
+| As run (frozen) | 0.908 | 0.598 | +0.31 [+0.08, +0.54] | supported |
+| Without case 2 run 1 | 0.891 | 0.576 | +0.31 [+0.06, +0.57] | supported |
+
+The conclusion does not depend on the corrupt run. **Lesson for the product:**
+input validation at ingest catches corrupt acquisitions that an offline
+analysis silently averages over.
+
 ## What else the run shows (reported, not decided on)
 
 - **Robust z fails with small histories, as the synthetic control predicted.**
