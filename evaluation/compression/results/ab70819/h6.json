@@ -1,0 +1,53 @@
+{
+ "stations": {
+  "PB01": {
+   "samples": 17280584,
+   "kept": 6794962,
+   "full_flac": 9497143,
+   "kept_flac": 4297265,
+   "segments": 1,
+   "features": 1762619
+  },
+  "PB02": {
+   "samples": 17280856,
+   "kept": 6482310,
+   "full_flac": 11653298,
+   "kept_flac": 4932268,
+   "segments": 1,
+   "features": 1762647
+  },
+  "PB06": {
+   "samples": 17280521,
+   "kept": 4749166,
+   "full_flac": 10272855,
+   "kept_flac": 3302387,
+   "segments": 1,
+   "features": 1762613
+  },
+  "PSGCX": {
+   "samples": 17249089,
+   "kept": 5769543,
+   "full_flac": 8119806,
+   "kept_flac": 3162191,
+   "segments": 101,
+   "features": 1759407
+  }
+ },
+ "policy": {
+  "pre_s": 30.0,
+  "post_s": 60.0,
+  "detector": "STA/LTA 2-10 Hz, 1/30 s, on 4, off 1.5"
+ },
+ "total": {
+  "samples": 69091050,
+  "kept": 23795981,
+  "full_flac": 39543102,
+  "kept_flac": 15694111,
+  "features": 7047286
+ },
+ "fraction_raw_kept": 0.3444148120487386,
+ "bytes_retained_over_full_flac": 0.5751040219353555,
+ "catalog_arrivals_in_data": 3,
+ "catalog_arrivals_retained": 3,
+ "catalog_coverage": 1.0
+}

@@ -1,0 +1,180 @@
+{
+ "provenance": {
+  "commit": "f2814840ea0ccc5fdaaf6f7f9fd516799dd7762b",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "cpu_count": 18,
+  "versions": {
+   "numpy": "2.2.6",
+   "scipy": "1.16.3",
+   "pyarrow": "26.0.0",
+   "zstandard": "0.25.0",
+   "h5py": "3.16.0",
+   "hdf5plugin": "7.1.0",
+   "zfpy": "1.0.1",
+   "soundfile": "0.14.0",
+   "PyWavelets": "1.10.0"
+  }
+ },
+ "datasets": {
+  "paderborn": {
+   "blocks": 12,
+   "samples_per_block": 253952,
+   "codecs": {
+    "int-zstd": {
+     "encode_msamples_s": 2.7362823956389337,
+     "decode_msamples_s": 221.5589964715078
+    },
+    "delta-zstd": {
+     "encode_msamples_s": 2.7397469218192056,
+     "decode_msamples_s": 149.60139229716322
+    },
+    "flac": {
+     "encode_msamples_s": 49.798599190825776,
+     "decode_msamples_s": 93.91286056504373
+    },
+    "lift53-zstd": {
+     "encode_msamples_s": 2.2797633429337876,
+     "decode_msamples_s": 123.03083000594303
+    },
+    "dwt-q@27.7": {
+     "encode_msamples_s": 3.7666829343216883,
+     "decode_msamples_s": 165.91755624199666
+    },
+    "harmonic@13.9": {
+     "encode_msamples_s": 11.135827271527576,
+     "decode_msamples_s": 33.21322406888436
+    },
+    "quant-flac@13.9": {
+     "encode_msamples_s": 52.525403925553604,
+     "decode_msamples_s": 90.8668791748895
+    },
+    "quant-zstd@13.9": {
+     "encode_msamples_s": 4.441473750246911,
+     "decode_msamples_s": 473.295363413767
+    },
+    "sperr@13.9": {
+     "encode_msamples_s": 12.183944446036138,
+     "decode_msamples_s": 21.601713917280414
+    },
+    "sz3@13.9": {
+     "encode_msamples_s": 38.25599861385946,
+     "decode_msamples_s": 70.92143216589702
+    },
+    "tsa@13.9": {
+     "encode_msamples_s": 30.327396635387977,
+     "decode_msamples_s": 47.054854255415236
+    },
+    "zfp@55.4": {
+     "encode_msamples_s": 59.03453083219321,
+     "decode_msamples_s": 81.1122691934463
+    }
+   }
+  },
+  "ims": {
+   "blocks": 12,
+   "samples_per_block": 20480,
+   "codecs": {
+    "int-zstd": {
+     "encode_msamples_s": 1.9291702668589537,
+     "decode_msamples_s": 167.43533535780796
+    },
+    "delta-zstd": {
+     "encode_msamples_s": 1.9665922098238988,
+     "decode_msamples_s": 128.8988507477146
+    },
+    "flac": {
+     "encode_msamples_s": 46.14548904322,
+     "decode_msamples_s": 82.192854849676
+    },
+    "lift53-zstd": {
+     "encode_msamples_s": 2.4106052479424025,
+     "decode_msamples_s": 79.78464621863765
+    },
+    "dwt-q@24.4": {
+     "encode_msamples_s": 4.725911579277914,
+     "decode_msamples_s": 94.731621571998
+    },
+    "harmonic@24.4": {
+     "encode_msamples_s": 13.328593721769407,
+     "decode_msamples_s": 30.91083329802792
+    },
+    "quant-flac@24.4": {
+     "encode_msamples_s": 50.06938849459155,
+     "decode_msamples_s": 87.81631626393026
+    },
+    "quant-zstd@24.4": {
+     "encode_msamples_s": 5.753866018635455,
+     "decode_msamples_s": 423.6733189144891
+    },
+    "sperr@24.4": {
+     "encode_msamples_s": 15.105474927797962,
+     "decode_msamples_s": 23.265015491220733
+    },
+    "sz3@24.4": {
+     "encode_msamples_s": 26.017900164749534,
+     "decode_msamples_s": 55.5789492602146
+    },
+    "tsa@12.2": {
+     "encode_msamples_s": 28.090600098143252,
+     "decode_msamples_s": 45.587442728298164
+    },
+    "zfp@48.8": {
+     "encode_msamples_s": 59.348602263508916,
+     "decode_msamples_s": 75.39937722155224
+    }
+   }
+  },
+  "cx": {
+   "blocks": 12,
+   "samples_per_block": 65536,
+   "codecs": {
+    "int-zstd": {
+     "encode_msamples_s": 3.8568147241648254,
+     "decode_msamples_s": 190.65340045034284
+    },
+    "delta-zstd": {
+     "encode_msamples_s": 1.4866091205609666,
+     "decode_msamples_s": 113.2446124912292
+    },
+    "flac": {
+     "encode_msamples_s": 49.809775691362205,
+     "decode_msamples_s": 96.8426296489866
+    },
+    "lift53-zstd": {
+     "encode_msamples_s": 2.5037145270977095,
+     "decode_msamples_s": 108.98049317824459
+    },
+    "dwt-q@3.09": {
+     "encode_msamples_s": 2.51039833588505,
+     "decode_msamples_s": 111.68065699351268
+    },
+    "harmonic@1.54": {
+     "encode_msamples_s": 7.6894804879400285,
+     "decode_msamples_s": 12.141435926739558
+    },
+    "quant-flac@1.54": {
+     "encode_msamples_s": 50.51814586929553,
+     "decode_msamples_s": 88.39556978077906
+    },
+    "quant-zstd@1.54": {
+     "encode_msamples_s": 6.310883748786314,
+     "decode_msamples_s": 152.74480637819798
+    },
+    "sperr@1.54": {
+     "encode_msamples_s": 12.260164384985892,
+     "decode_msamples_s": 19.354990807751214
+    },
+    "sz3@1.54": {
+     "encode_msamples_s": 20.099028671993658,
+     "decode_msamples_s": 37.279339658581485
+    },
+    "zfp@12.3": {
+     "encode_msamples_s": 61.199683127192735,
+     "decode_msamples_s": 69.16263782943663
+    }
+   }
+  }
+ }
+}

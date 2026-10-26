@@ -1,0 +1,53 @@
+{
+ "dataset": "paderborn",
+ "role": "heldout",
+ "blocks": 184,
+ "units": [
+  "K003",
+  "K004",
+  "K005",
+  "K006",
+  "KA03",
+  "KA05",
+  "KA06",
+  "KA07",
+  "KA09",
+  "KA16",
+  "KA22",
+  "KA30",
+  "KB23",
+  "KB24",
+  "KB27",
+  "KI03",
+  "KI05",
+  "KI07",
+  "KI08",
+  "KI16",
+  "KI17",
+  "KI18",
+  "KI21"
+ ],
+ "sigma_counts": 110.87599329412917,
+ "rows": 12512,
+ "bound_violations": 0,
+ "wall_s": 355.9245756249875,
+ "workers": 16,
+ "provenance": {
+  "commit": "f2814840ea0ccc5fdaaf6f7f9fd516799dd7762b",
+  "dirty": false,
+  "python": "3.12.13",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "cpu_count": 18,
+  "versions": {
+   "numpy": "2.2.6",
+   "scipy": "1.16.3",
+   "pyarrow": "26.0.0",
+   "zstandard": "0.25.0",
+   "h5py": "3.16.0",
+   "hdf5plugin": "7.1.0",
+   "zfpy": "1.0.1",
+   "soundfile": "0.14.0",
+   "PyWavelets": "1.10.0"
+  }
+ }
+}

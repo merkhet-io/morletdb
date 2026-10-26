@@ -1,0 +1,239 @@
+{
+ "paderborn": {
+  "parquet": "DELTA_BINARY_PACKED/zstd19",
+  "parquet_dev_totals": {
+   "PLAIN/zstd3": 24210389,
+   "PLAIN/zstd9": 23042709,
+   "PLAIN/zstd19": 22030426,
+   "DELTA_BINARY_PACKED/zstd3": 19089491,
+   "DELTA_BINARY_PACKED/zstd9": 19089491,
+   "DELTA_BINARY_PACKED/zstd19": 18892639,
+   "BYTE_STREAM_SPLIT/zstd3": 22902316,
+   "BYTE_STREAM_SPLIT/zstd9": 24040801,
+   "BYTE_STREAM_SPLIT/zstd19": 19004751
+  },
+  "operating": {
+   "dwt-q|1.0": {
+    "r": 0.25,
+    "eps": 27.718998323532293,
+    "dev_bytes": 6508885
+   },
+   "dwt-q|2.0": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 7459970
+   },
+   "dwt-q|4.0": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 7660726
+   },
+   "harmonic|16": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 6725248
+   },
+   "harmonic|4": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 6722758
+   },
+   "quant-flac|None": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 6721806
+   },
+   "quant-zstd|None": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 6921634
+   },
+   "sperr|None": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 8839878
+   },
+   "sz3|None": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 7579879
+   },
+   "tsa|None": {
+    "r": 0.125,
+    "eps": 13.859499161766147,
+    "dev_bytes": 7548356
+   },
+   "zfp|None": {
+    "r": 0.5,
+    "eps": 55.43799664706459,
+    "dev_bytes": 15405488
+   }
+  },
+  "params": {
+   "tsa": null,
+   "zfp": null,
+   "harmonic": 4,
+   "quant-flac": null,
+   "sperr": null,
+   "sz3": null,
+   "dwt-q": 1.0,
+   "quant-zstd": null
+  }
+ },
+ "ims": {
+  "parquet": "BYTE_STREAM_SPLIT/zstd19",
+  "parquet_dev_totals": {
+   "PLAIN/zstd3": 24750363,
+   "PLAIN/zstd9": 23163278,
+   "PLAIN/zstd19": 21559236,
+   "DELTA_BINARY_PACKED/zstd3": 22018850,
+   "DELTA_BINARY_PACKED/zstd9": 22018850,
+   "DELTA_BINARY_PACKED/zstd19": 21734580,
+   "BYTE_STREAM_SPLIT/zstd3": 21587469,
+   "BYTE_STREAM_SPLIT/zstd9": 21061945,
+   "BYTE_STREAM_SPLIT/zstd19": 19238619
+  },
+  "operating": {
+   "dwt-q|1.0": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 9223769
+   },
+   "dwt-q|2.0": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 8183129
+   },
+   "dwt-q|4.0": {
+    "r": 0.125,
+    "eps": 12.1947692727233,
+    "dev_bytes": 10654034
+   },
+   "harmonic|16": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 7023237
+   },
+   "harmonic|4": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 6965063
+   },
+   "quant-flac|None": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 7010147
+   },
+   "quant-zstd|None": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 7000125
+   },
+   "sperr|None": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 8740041
+   },
+   "sz3|None": {
+    "r": 0.25,
+    "eps": 24.3895385454466,
+    "dev_bytes": 8273797
+   },
+   "tsa|None": {
+    "r": 0.125,
+    "eps": 12.1947692727233,
+    "dev_bytes": 10895982
+   },
+   "zfp|None": {
+    "r": 0.5,
+    "eps": 48.7790770908932,
+    "dev_bytes": 19068256
+   }
+  },
+  "params": {
+   "tsa": null,
+   "zfp": null,
+   "harmonic": 4,
+   "quant-flac": null,
+   "sperr": null,
+   "sz3": null,
+   "dwt-q": 2.0,
+   "quant-zstd": null
+  }
+ },
+ "cx": {
+  "parquet": "DELTA_BINARY_PACKED/zstd19",
+  "parquet_dev_totals": {
+   "PLAIN/zstd3": 97389337,
+   "PLAIN/zstd9": 91216228,
+   "PLAIN/zstd19": 75265153,
+   "DELTA_BINARY_PACKED/zstd3": 49586708,
+   "DELTA_BINARY_PACKED/zstd9": 49268029,
+   "DELTA_BINARY_PACKED/zstd19": 48982809,
+   "BYTE_STREAM_SPLIT/zstd3": 73778959,
+   "BYTE_STREAM_SPLIT/zstd9": 72840949,
+   "BYTE_STREAM_SPLIT/zstd19": 69363123
+  },
+  "operating": {
+   "dwt-q|1.0": {
+    "r": 0.015625,
+    "eps": 3.086355623015016,
+    "dev_bytes": 34773247
+   },
+   "dwt-q|2.0": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 39065648
+   },
+   "dwt-q|4.0": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 37987561
+   },
+   "harmonic|16": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 30000021
+   },
+   "harmonic|4": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 30113798
+   },
+   "quant-flac|None": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 30532940
+   },
+   "quant-zstd|None": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 49346053
+   },
+   "sperr|None": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 47795055
+   },
+   "sz3|None": {
+    "r": 0.0078125,
+    "eps": 1.543177811507508,
+    "dev_bytes": 36390379
+   },
+   "zfp|None": {
+    "r": 0.0625,
+    "eps": 12.345422492060065,
+    "dev_bytes": 100887696
+   }
+  },
+  "params": {
+   "zfp": null,
+   "harmonic": 16,
+   "quant-flac": null,
+   "sperr": null,
+   "sz3": null,
+   "dwt-q": 1.0,
+   "quant-zstd": null
+  }
+ }
+}
