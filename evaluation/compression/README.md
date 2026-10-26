@@ -1,5 +1,19 @@
 # Compression, progressive access and retention benchmark (stage 1)
 
+> **Current status (2026-10-26).** The lossless integer codec recommended here is
+> implemented in pg_morlet 0.2.0 (PR #8). Its measured results are in
+> [extension/README.md](extension/README.md). The stage-1 "about 5×" estimate is
+> superseded (correction note in RESULTS.md).
+>
+> Three different baselines; each ratio below is a measurement, not a product
+> of other ratios:
+>
+> | Baseline | Measured | Source |
+> |---|---|---|
+> | Previous MorletDB storage (`float8[]` chunk table, physical) | 1.9–3.3× smaller at 32768-sample chunks; 1.7–2.9× at 4096 | extension/README.md |
+> | Optimized lossless Parquet (payload bits/sample, same held-out samples) | 0.98–1.15× (IMS 8.29 vs 8.15; CX 4.91 vs 5.45; Paderborn 7.95 vs 9.12) | extension/results/codec.json vs results/ab70819 |
+> | Original sample payload | 7.7–13× smaller than float64 (64 bits/sample); 1.9–3.3× smaller than the stage-1 native-integer sizes (16–16.1 bits/sample) | extension/results/codec.json |
+
 | File | Contents |
 |---|---|
 | [STEERING.md](STEERING.md) | Rewritten steering prompt: hypotheses H1–H4, H6 (H5 deferred), gates, minimum effect |

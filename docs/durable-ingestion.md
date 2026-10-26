@@ -25,6 +25,168 @@ typed feature vectors. Collection names allow 1..46 bytes so sibling names fit
 Postgres identifier limits. Do not rename or detach sibling tables. Start creates
 a recording once; reusing its ID raises a uniqueness error.
 
+## Raw chunk storage
+
+New collections store each raw chunk losslessly encoded in a `bytea` column
+(`sample_count`, `encoded`) instead of `float8[]`. A recording declares its sample
+grid with the trailing `sample_quantum` argument of `morlet_start_recording` /
+`morlet_ensure_recording` (default 1, i.e. integer ADC counts):
+
+```sql
+SELECT morlet_start_recording('signals','imsB1',20000,'vibration','g',
+  '{"asset":"B1"}',512,256,'zscore','morlet-energy-v1',0.001);
+```
+
+Each chunk is encoded as one of three kinds:
+
+- **grid**: every sample is within a thousandth of a step of `k * quantum`
+  (or of `k / d` when the quantum is `1/d` for an integer `d`, so parsed
+  decimals such as 0.123 match exactly). The integers are coded with fixed
+  polynomial prediction and Rice coding, with the step refined per chunk.
+  Remaining differences (rounding noise, signed zeros) are stored as last-place
+  corrections.
+- **float**: the float64 bit patterns, mapped to order-preserving integers and
+  coded the same way.
+- **raw**: plain float64, when neither of the others is smaller.
+
+The [format specification](chunk-format.md) gives the layout, the established
+techniques used, and why MorletDB owns the format.
+
+Every chunk carries a CRC-32C checksum. Reads, replay comparisons and the table's
+CHECK verify it before returning or accepting samples. Every kind decodes
+bitwise to its input, so reads, replays and searches return exactly what was
+appended.
+
+The quantum is a storage hint, not a conversion: a wrong quantum costs space,
+never accuracy.
+
+### Storage accounting
+
+Three different sizes are reported. Do not compare them with each other.
+
+- `morlet_recording_storage(collection, recording_id)` reports per-recording
+  value sizes:
+  - chunk counts per kind;
+  - `original_float64_bytes` (8 bytes per sample);
+  - `encoded_bytes`, the logical encoded payload;
+  - `stored_value_bytes`, the datum sizes after any TOAST compression.
+
+  None of these include tuple, page, TOAST-chunk or index overhead. That overhead
+  is shared, so it is not divided among recordings.
+- `morlet_collection_storage(collection)` reports physical sizes,
+  `pg_total_relation_size` (heap, TOAST and indexes):
+  - for the recordings, chunk and segment tables separately;
+  - and for the whole collection, with bits per received sample for the chunk
+    table and for everything.
+
+The benchmark headline below uses the chunk-table physical size.
+
+### Measured footprint
+
+These were measured on held-out stage-1 seismic and bearing data; see the
+[engineering check](../evaluation/compression/extension/README.md). Chunk tables
+are physically:
+- 1.7–2.9× smaller than the previous `float8[]` storage at 4096-sample chunks;
+- 1.9–3.3× smaller at 32768-sample chunks. For example, CX seismic counts take
+  5.1 instead of 16.9 bits/sample.
+
+These ratios compare with MorletDB's previous storage only. They are not
+comparisons with optimized Parquet, and not compression ratios against the
+original 64-bit samples. For chunk-size trade-offs, including read latency, see
+[Choosing a chunk size](#choosing-a-chunk-size).
+
+### Upgrading
+
+pg_morlet 0.2.0 ships an update script from the 0.1.0 SQL objects of release
+0.1.0-alpha.3. To use it, install the new extension files, restart PostgreSQL,
+then run in each database:
+
+```sql
+ALTER EXTENSION pg_morlet UPDATE TO '0.2.0';
+```
+
+The update changes extension functions only:
+- it adds the codec and storage functions;
+- it adds a trailing `sample_quantum` argument to `morlet_start_recording` and
+  `morlet_ensure_recording`;
+- it redefines `morlet_stream_relations` (new return columns) and three function
+  bodies.
+
+It does not modify existing collections or data. Collections created before the
+update keep their `float8[]` chunks and remain fully supported (reads, appends,
+replays, search). They reject a `sample_quantum` other than 1. Until the update
+runs, the old SQL keeps working with the new library.
+
+`extensions/pg_morlet/tests/upgrade.sh` checks all of this in CI against a
+populated alpha.3 database. It confirms that:
+- results are identical before and after the update;
+- legacy appends continue;
+- the upgraded catalog equals a fresh 0.2.0 install;
+- the guard rejects older objects.
+
+Databases created with **0.1.0-alpha.1** report the same version, 0.1.0, but
+have different objects; the update script refuses them. For those databases:
+
+1. Dump the data: `pg_dump --data-only` of the collection tables, or export the
+   samples through the application.
+2. Drop the extension, then the old collections.
+3. Install 0.2.0 into the database.
+4. Recreate the collections and re-append the samples.
+
+Keep the original data until the new collection has been verified.
+
+**Re-encoding existing recordings is a separate data transfer, not part of the
+extension update.** After the update, an old collection stays `float8[]`. To
+store its recordings encoded, create a new collection and append the chunks in
+order; features are recomputed and match:
+
+```sql
+SELECT morlet_create_stream_collection('public','signals_v2');
+DO $$
+DECLARE r record; c record;
+BEGIN
+  FOR r IN SELECT * FROM signals ORDER BY recording_id LOOP
+    PERFORM morlet_start_recording('signals_v2',r.recording_id,r.sample_rate_hz,r.channel,
+      r.unit,r.metadata,(r.checkpoint->>'window')::integer,(r.checkpoint->>'stride')::integer,
+      r.checkpoint->>'normalization',r.checkpoint->>'extractor_version',1 /* sample_quantum */);
+    FOR c IN SELECT start_sample,samples FROM signals_chunks
+             WHERE recording_id=r.recording_id ORDER BY start_sample LOOP
+      PERFORM morlet_append_chunk('signals_v2',r.recording_id,c.start_sample,c.samples);
+    END LOOP;
+  END LOOP;
+END $$;
+```
+
+The upgrade test runs this procedure and compares the result bitwise. For large
+collections, run it per recording, in separate transactions. Drop the old
+collection only after verifying the copy.
+
+### Choosing a chunk size
+
+Chunk size trades storage against short-read latency. The figures below are
+from the [read benchmark](../evaluation/compression/extension/README.md#read-and-ingest-performance):
+one 16.3 M-sample recording of development-period bearing counts, on an Apple M5
+Max, PostgreSQL 17.11 with default settings, warm cache.
+
+| | `float8[]` 4096 | encoded 4096 | encoded 32768 |
+|---|---|---|---|
+| chunk table, bits/sample | 19.4 | 10.3 | 8.6 |
+| 512-sample random read p50 / p95 | 3.4 / 4.8 ms | **1.8 / 2.1 ms** | 3.4 / 3.6 ms |
+| 512-sample read across a chunk boundary, p50 | 3.9 ms | 2.1 ms | 5.2 ms |
+| samples decoded per sample returned (512 read) | 9 | 9 | 65 |
+| sequential read, server side | 1.7 M/s | 2.3 M/s | 2.4 M/s |
+| ingest including features | 0.29 M/s | 0.41 M/s | 0.50 M/s |
+
+- **Keep the 4096 default for interactive access to short windows.** Large chunks
+  save about 17% of chunk storage but nearly double short-read latency, because
+  every read decodes whole chunks.
+- **Use 32768 for archive-style data** that is mostly ingested and read in long
+  spans.
+- Sequential reads are limited to about 2.3 M samples/s in every layout by
+  `morlet_read_interval`'s SQL assembly of the result array, not by decoding.
+- Cold-cache latency was not measured: a PostgreSQL restart left the OS page
+  cache warm, and results matched the warm figures.
+
 ## Append, replay and recovery
 
 Append locks the recording row, restores its versioned checkpoint, and validates

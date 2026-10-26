@@ -27,6 +27,7 @@ class Config:
     normalization: str = "zscore"
     rpc_chunks: int = 1
     extractor: str = "morlet-energy-v1"
+    sample_quantum: float = 1.0
 
     def validate(self):
         if self.layout not in ("chunks", "samples"):
@@ -45,6 +46,8 @@ class Config:
             raise ValueError("invalid normalization")
         if self.extractor not in RATE_DOMAINS:
             raise ValueError("extractor must be one of " + ", ".join(RATE_DOMAINS))
+        if not (math.isfinite(self.sample_quantum) and self.sample_quantum > 0):
+            raise ValueError("sample_quantum must be finite and positive")
 
 
 # Disjoint sample-rate domains of the server's representation versions.
@@ -233,8 +236,10 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
                 if ensured != (recording, spec):
                     flush()
                     rate, channel, unit, meta = spec
-                    # Omit the default extractor so older installed servers keep working.
-                    extra = () if config.extractor == "morlet-energy-v1" else (config.extractor,)
+                    # Omit defaults so older installed servers keep working.
+                    extra = () if config.extractor == "morlet-energy-v1" and config.sample_quantum == 1 \
+                        else (config.extractor,)
+                    extra += () if config.sample_quantum == 1 else (config.sample_quantum,)
                     conn.execute("SELECT morlet_ensure_recording(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s"
                                  + ",%s"*len(extra) + ")",
                                  (collection, recording, rate, channel, unit, Jsonb(meta),
@@ -288,6 +293,8 @@ def main():
     parser.add_argument("--normalization", choices=["none", "demean", "zscore"], default="zscore")
     parser.add_argument("--extractor", choices=sorted(RATE_DOMAINS), default="morlet-energy-v1",
                         help="representation version; low-rate recordings (<128 Hz) need morlet-energy-lowrate-v1")
+    parser.add_argument("--sample-quantum", type=float, default=1.0,
+                        help="sample grid for lossless integer chunk storage, e.g. 0.001 for 3-decimal values")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     try:
@@ -296,7 +303,7 @@ def main():
             raise ValueError("column mapping must be a JSON object")
         config = Config(args.layout, args.chunk_size, args.batch_rows, args.commit_chunks,
                         args.window, args.stride, args.normalization, args.rpc_chunks,
-                        args.extractor)
+                        args.extractor, args.sample_quantum)
         report = import_files(args.files, args.collection, config, mapping, args.dsn, args.validate_only)
     except ImportFailure as exc:
         print(json.dumps(exc.report, indent=2), file=sys.stderr)

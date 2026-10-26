@@ -1,0 +1,90 @@
+[
+ {
+  "file": "cx-32768.bin",
+  "samples": 68812800,
+  "bytes": 42263724,
+  "bits_per_sample": 4.9135,
+  "grid_chunks": 2100,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 13.0,
+  "decode_msamples_s": 54.3
+ },
+ {
+  "file": "cx-4096.bin",
+  "samples": 68812800,
+  "bytes": 42899468,
+  "bits_per_sample": 4.9874,
+  "grid_chunks": 16800,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 7.0,
+  "decode_msamples_s": 57.5
+ },
+ {
+  "file": "ims-32768.bin",
+  "samples": 59965440,
+  "bytes": 62140136,
+  "bits_per_sample": 8.2901,
+  "grid_chunks": 2928,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 12.6,
+  "decode_msamples_s": 45.7
+ },
+ {
+  "file": "ims-4096.bin",
+  "samples": 59965440,
+  "bytes": 62363977,
+  "bits_per_sample": 8.32,
+  "grid_chunks": 14640,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 7.3,
+  "decode_msamples_s": 50.0
+ },
+ {
+  "file": "paderborn-counts-32768.bin",
+  "samples": 46727168,
+  "bytes": 46443526,
+  "bits_per_sample": 7.9514,
+  "grid_chunks": 1472,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 13.7,
+  "decode_msamples_s": 51.4
+ },
+ {
+  "file": "paderborn-counts-4096.bin",
+  "samples": 46727168,
+  "bytes": 46646006,
+  "bits_per_sample": 7.9861,
+  "grid_chunks": 11408,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 7.1,
+  "decode_msamples_s": 51.7
+ },
+ {
+  "file": "paderborn-physical-32768.bin",
+  "samples": 46727168,
+  "bytes": 54142142,
+  "bits_per_sample": 9.2695,
+  "grid_chunks": 1472,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 6.9,
+  "decode_msamples_s": 35.6
+ },
+ {
+  "file": "paderborn-physical-4096.bin",
+  "samples": 46727168,
+  "bytes": 54365133,
+  "bits_per_sample": 9.3077,
+  "grid_chunks": 11408,
+  "float_chunks": 0,
+  "raw_chunks": 0,
+  "encode_msamples_s": 3.4,
+  "decode_msamples_s": 35.0
+ }
+]

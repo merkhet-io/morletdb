@@ -9,11 +9,13 @@ BEGIN
     recording_id text PRIMARY KEY, sample_rate_hz float8 NOT NULL,
     channel text NOT NULL, unit text NOT NULL,
     metadata jsonb NOT NULL CHECK(jsonb_typeof(metadata)=''object''),
-    checkpoint jsonb NOT NULL)',schema_name,collection_name);
+    checkpoint jsonb NOT NULL,
+    sample_quantum float8 NOT NULL DEFAULT 1 CHECK(sample_quantum>0 AND sample_quantum<''Infinity''))',schema_name,collection_name);
   EXECUTE format('CREATE TABLE %I.%I (
     recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
     start_sample bigint NOT NULL CHECK(start_sample>=0),
-    samples float8[] NOT NULL CHECK(array_ndims(samples)=1 AND array_lower(samples,1)=1 AND public.morlet_valid_chunk(samples)),
+    sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
+    encoded bytea NOT NULL CHECK(public.morlet_valid_encoded_chunk(encoded,sample_count)),
     PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_chunks',schema_name,collection_name);
   EXECUTE format('CREATE TABLE %I.%I (
     recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
@@ -22,30 +24,45 @@ BEGIN
   RETURN format('%I.%I',schema_name,collection_name)::regclass;
 END $$;
 
+-- Collections created before encoded storage keep float8[] chunks; the
+-- expressions let every reader handle both layouts with one query text.
 CREATE FUNCTION public.morlet_stream_relations(collection regclass)
-RETURNS TABLE(chunks regclass,segments regclass)
+RETURNS TABLE(chunks regclass,segments regclass,encoded boolean,samples_expr text,count_expr text)
 LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-  SELECT format('%I.%I',n.nspname,c.relname||'_chunks')::regclass,
-    format('%I.%I',n.nspname,c.relname||'_segments')::regclass
-    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection
+  SELECT r.chunks,r.segments,e.encoded,
+    CASE WHEN e.encoded THEN 'public.morlet_decode_chunk(c.encoded)' ELSE 'c.samples' END,
+    CASE WHEN e.encoded THEN 'c.sample_count' ELSE 'cardinality(c.samples)' END
+  FROM (SELECT format('%I.%I',n.nspname,c.relname||'_chunks')::regclass AS chunks,
+      format('%I.%I',n.nspname,c.relname||'_segments')::regclass AS segments
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection) r
+  CROSS JOIN LATERAL (SELECT EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=r.chunks
+    AND a.attname='encoded' AND NOT a.attisdropped) AS encoded) e
 $$;
 
 CREATE FUNCTION public.morlet_start_recording(collection regclass,recording_id text,
   sample_rate_hz float8,channel text,unit text,metadata jsonb DEFAULT '{}'::jsonb,
   window_size integer DEFAULT 512,stride integer DEFAULT 256,normalization text DEFAULT 'zscore',
-  extractor text DEFAULT 'morlet-energy-v1')
+  extractor text DEFAULT 'morlet-energy-v1',sample_quantum float8 DEFAULT 1)
 RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE initial jsonb;
+DECLARE initial jsonb; relations record;
 BEGIN
   -- The checkpoint records the explicitly selected representation version.
   initial:=public.morlet_chunk_checkpoint(sample_rate_hz,window_size,stride,normalization,extractor);
-  EXECUTE format('INSERT INTO %s(recording_id,sample_rate_hz,channel,unit,metadata,checkpoint) VALUES ($1,$2,$3,$4,$5,$6)',collection)
-    USING recording_id,sample_rate_hz,channel,unit,metadata,initial;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF relations.encoded THEN
+    EXECUTE format('INSERT INTO %s(recording_id,sample_rate_hz,channel,unit,metadata,checkpoint,sample_quantum) VALUES ($1,$2,$3,$4,$5,$6,$7)',collection)
+      USING recording_id,sample_rate_hz,channel,unit,metadata,initial,sample_quantum;
+  ELSIF sample_quantum<>1 THEN
+    RAISE EXCEPTION 'sample_quantum requires a collection with encoded chunk storage';
+  ELSE
+    EXECUTE format('INSERT INTO %s(recording_id,sample_rate_hz,channel,unit,metadata,checkpoint) VALUES ($1,$2,$3,$4,$5,$6)',collection)
+      USING recording_id,sample_rate_hz,channel,unit,metadata,initial;
+  END IF;
 END $$;
 
 CREATE FUNCTION public.morlet_append_chunk(collection regclass,recording_id text,start_sample bigint,samples float8[])
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE state jsonb; previous float8[]; result jsonb; relations record; updated_rows bigint;
+DECLARE state jsonb; quantum float8:=1; previous float8[]; result jsonb; relations record; updated_rows bigint;
 BEGIN
   IF array_ndims(samples) IS DISTINCT FROM 1 OR array_lower(samples,1) IS DISTINCT FROM 1 THEN
     RAISE EXCEPTION 'chunk must be a one-dimensional array starting at 1';
@@ -53,17 +70,27 @@ BEGIN
   PERFORM public.morlet_valid_chunk(samples);
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
   -- Serializes concurrent appenders of the same recording, under READ COMMITTED.
-  EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1 FOR UPDATE',collection) INTO state USING recording_id;
+  IF relations.encoded THEN
+    EXECUTE format('SELECT checkpoint,sample_quantum FROM %s WHERE recording_id=$1 FOR UPDATE',collection)
+      INTO state,quantum USING recording_id;
+  ELSE
+    EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1 FOR UPDATE',collection) INTO state USING recording_id;
+  END IF;
   IF state IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
-  EXECUTE format('SELECT samples FROM %s WHERE recording_id=$1 AND start_sample=$2',relations.chunks)
+  EXECUTE format('SELECT %s FROM %s c WHERE c.recording_id=$1 AND c.start_sample=$2',relations.samples_expr,relations.chunks)
     INTO previous USING recording_id,start_sample;
   IF previous IS NOT NULL THEN
     IF previous IS DISTINCT FROM samples THEN RAISE EXCEPTION 'conflicting replay at chunk offset'; END IF;
     RETURN (state->>'end')::bigint;
   END IF;
   result:=public.morlet_chunk_step(state,start_sample,samples);
-  EXECUTE format('INSERT INTO %s(recording_id,start_sample,samples) VALUES ($1,$2,$3)',relations.chunks)
-    USING recording_id,start_sample,samples;
+  IF relations.encoded THEN
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded) VALUES ($1,$2,$3,public.morlet_encode_chunk($4,$5))',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),samples,quantum;
+  ELSE
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,samples) VALUES ($1,$2,$3)',relations.chunks)
+      USING recording_id,start_sample,samples;
+  END IF;
   EXECUTE format('INSERT INTO %s(recording_id,start_sample,features)
     SELECT $1,(s->>''start_sample'')::bigint,ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8)
     FROM jsonb_array_elements($2->''segments'') s',relations.segments) USING recording_id,result;
@@ -148,23 +175,35 @@ END $$;
 CREATE FUNCTION public.morlet_ensure_recording(collection regclass,recording_id text,
   sample_rate_hz float8,channel text,unit text,metadata jsonb DEFAULT '{}'::jsonb,
   window_size integer DEFAULT 512,stride integer DEFAULT 256,normalization text DEFAULT 'zscore',
-  extractor text DEFAULT 'morlet-energy-v1')
+  extractor text DEFAULT 'morlet-energy-v1',sample_quantum float8 DEFAULT 1)
 RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE initial jsonb; existing record;
+DECLARE initial jsonb; existing record; relations record;
 BEGIN
   initial:=public.morlet_chunk_checkpoint(sample_rate_hz,window_size,stride,normalization,extractor);
-  EXECUTE format('INSERT INTO %s(recording_id,sample_rate_hz,channel,unit,metadata,checkpoint)
-    VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(recording_id) DO NOTHING',collection)
-    USING recording_id,sample_rate_hz,channel,unit,metadata,initial;
-  EXECUTE format('SELECT sample_rate_hz,channel,unit,metadata,checkpoint FROM %s WHERE recording_id=$1 FOR UPDATE',collection)
-    INTO existing USING recording_id;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF relations.encoded THEN
+    EXECUTE format('INSERT INTO %s(recording_id,sample_rate_hz,channel,unit,metadata,checkpoint,sample_quantum)
+      VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(recording_id) DO NOTHING',collection)
+      USING recording_id,sample_rate_hz,channel,unit,metadata,initial,sample_quantum;
+    EXECUTE format('SELECT sample_rate_hz,channel,unit,metadata,checkpoint,sample_quantum FROM %s WHERE recording_id=$1 FOR UPDATE',collection)
+      INTO existing USING recording_id;
+  ELSIF sample_quantum<>1 THEN
+    RAISE EXCEPTION 'sample_quantum requires a collection with encoded chunk storage';
+  ELSE
+    EXECUTE format('INSERT INTO %s(recording_id,sample_rate_hz,channel,unit,metadata,checkpoint)
+      VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT(recording_id) DO NOTHING',collection)
+      USING recording_id,sample_rate_hz,channel,unit,metadata,initial;
+    EXECUTE format('SELECT sample_rate_hz,channel,unit,metadata,checkpoint,1::float8 AS sample_quantum FROM %s WHERE recording_id=$1 FOR UPDATE',collection)
+      INTO existing USING recording_id;
+  END IF;
   IF existing.checkpoint IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
   IF existing.sample_rate_hz IS DISTINCT FROM sample_rate_hz OR existing.channel IS DISTINCT FROM channel
     OR existing.unit IS DISTINCT FROM unit OR existing.metadata IS DISTINCT FROM metadata
     OR existing.checkpoint->>'extractor_version' IS DISTINCT FROM initial->>'extractor_version'
     OR (existing.checkpoint->>'window')::integer IS DISTINCT FROM window_size
     OR (existing.checkpoint->>'stride')::integer IS DISTINCT FROM stride
-    OR existing.checkpoint->>'normalization' IS DISTINCT FROM normalization THEN
+    OR existing.checkpoint->>'normalization' IS DISTINCT FROM normalization
+    OR existing.sample_quantum IS DISTINCT FROM sample_quantum THEN
     RAISE EXCEPTION 'recording metadata or extraction specification conflicts with import';
   END IF;
 END $$;
@@ -219,12 +258,12 @@ BEGIN
   -- Chunks hold at most 32768 samples, so the lower start bound is implied; it
   -- keeps reads late in long recordings to an index range instead of a prefix scan.
   EXECUTE format('SELECT array_agg(v.value ORDER BY c.start_sample,v.ordinality),count(*)
-    FROM %s c CROSS JOIN LATERAL unnest(c.samples[
+    FROM %1$s c CROSS JOIN LATERAL unnest((%2$s)[
       greatest(1,$2-c.start_sample+1)::integer:
-      least(cardinality(c.samples)::bigint,$3-c.start_sample)::integer
+      least((%3$s)::bigint,$3-c.start_sample)::integer
     ]) WITH ORDINALITY AS v(value,ordinality)
     WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
-      AND c.start_sample+cardinality(c.samples)>$2',relations.chunks)
+      AND c.start_sample+(%3$s)>$2',relations.chunks,relations.samples_expr,relations.count_expr)
     INTO recovered,covered USING source_recording_id,interval_start,interval_end;
   IF covered<>interval_end-interval_start THEN
     RAISE EXCEPTION 'source interval is incomplete or not fully visible';
@@ -282,4 +321,43 @@ BEGIN
     picked_ends:=array_append(picked_ends,hit.end_sample);
     EXIT WHEN picked=top_k;
   END LOOP;
+END $$;
+
+-- Per-recording value sizes. encoded_bytes is the logical encoded payload
+-- (NULL for float8[] collections); stored_value_bytes is each value's datum size
+-- after any TOAST compression. Neither includes tuple, page, TOAST-chunk or index
+-- overhead, which is shared across recordings: see morlet_collection_storage.
+CREATE FUNCTION public.morlet_recording_storage(collection regclass,recording_id text)
+RETURNS TABLE(chunks bigint,samples bigint,grid_chunks bigint,float_chunks bigint,raw_chunks bigint,
+  original_float64_bytes bigint,encoded_bytes bigint,stored_value_bytes bigint,stored_value_bits_per_sample float8)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  RETURN QUERY EXECUTE format('SELECT count(*),coalesce(sum(%2$s),0)::bigint,%3$s,%4$s,%5$s,
+      8*coalesce(sum(%2$s),0)::bigint,%6$s,coalesce(sum(pg_column_size(%7$s)),0)::bigint,
+      (8.0*sum(pg_column_size(%7$s))/nullif(sum(%2$s),0))::float8
+    FROM %1$s c WHERE c.recording_id=$1',relations.chunks,relations.count_expr,
+    CASE WHEN relations.encoded THEN 'count(*) FILTER (WHERE public.morlet_encoded_chunk_kind(c.encoded)=''grid'')' ELSE 'NULL::bigint' END,
+    CASE WHEN relations.encoded THEN 'count(*) FILTER (WHERE public.morlet_encoded_chunk_kind(c.encoded)=''float'')' ELSE 'NULL::bigint' END,
+    CASE WHEN relations.encoded THEN 'count(*) FILTER (WHERE public.morlet_encoded_chunk_kind(c.encoded)=''raw'')' ELSE 'NULL::bigint' END,
+    CASE WHEN relations.encoded THEN 'coalesce(sum(octet_length(c.encoded)),0)::bigint' ELSE 'NULL::bigint' END,
+    CASE WHEN relations.encoded THEN 'c.encoded' ELSE 'c.samples' END) USING recording_id;
+END $$;
+
+-- Physical collection footprint: pg_total_relation_size (heap, TOAST, indexes)
+-- of each sibling table. Samples are the received counts of visible recordings.
+CREATE FUNCTION public.morlet_collection_storage(collection regclass)
+RETURNS TABLE(recordings bigint,samples bigint,original_float64_bytes bigint,recordings_table_bytes bigint,
+  chunk_table_bytes bigint,segment_table_bytes bigint,total_bytes bigint,
+  chunk_table_bits_per_sample float8,total_bits_per_sample float8)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record; n bigint; total bigint; r bigint; c bigint; g bigint;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  EXECUTE format('SELECT count(*),coalesce(sum((checkpoint->>''end'')::bigint),0)::bigint FROM %s',collection)
+    INTO recordings,n;
+  r:=pg_total_relation_size(collection); c:=pg_total_relation_size(relations.chunks);
+  g:=pg_total_relation_size(relations.segments); total:=r+c+g;
+  RETURN QUERY SELECT recordings,n,8*n,r,c,g,total,(8.0*c/nullif(n,0))::float8,(8.0*total/nullif(n,0))::float8;
 END $$;
