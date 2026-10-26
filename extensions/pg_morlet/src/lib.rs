@@ -637,13 +637,15 @@ mod tests {
         let normal = "(SELECT segment_id FROM cal_ctx_segments WHERE recording_id='A3')";
         assert_eq!(Spi::get_one::<String>(&format!("SELECT status||':'||hist_n||':'||score_quantile||':'||(duration_relative_deviation=0) FROM morlet_compare_summary('cal',{anomalous})")).unwrap().unwrap(), "ok:5:1:true");
         assert_eq!(Spi::get_one::<bool>(&format!("SELECT a.score>5*n.score AND n.score_quantile<1 FROM morlet_compare_summary('cal',{anomalous}) a, morlet_compare_summary('cal',{normal}) n")).unwrap(), Some(true));
+        // The evaluated score is the plain maximum relative deviation; calibrated is reported alongside.
+        assert_eq!(Spi::get_one::<bool>(&format!("SELECT abs(s.score-c.relative_deviation)<1e-12 AND s.calibrated_score>0 FROM morlet_compare_summary('cal',{anomalous}) s, morlet_compare_to_history('cal',{anomalous}) c WHERE c.value_name='std'")).unwrap(), Some(true));
         assert!(matches!(
             Spi::get_one::<String>(&format!(
                 "SELECT top_value FROM morlet_compare_summary('cal',{anomalous})"
             ))
             .unwrap()
             .as_deref(),
-            Some("std" | "rms" | "p75" | "peak_abs")
+            Some("std")
         ));
         // The near-constant mean (0.3% shift) no longer leads: spreads are floored at 1%.
         assert_eq!(Spi::get_one::<bool>(&format!("SELECT calibrated_deviation<1 FROM morlet_compare_to_history('cal',{anomalous}) WHERE value_name='mean'")).unwrap(), Some(true));

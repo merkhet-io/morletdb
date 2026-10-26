@@ -38,7 +38,7 @@ SELECT * FROM morlet_compare_to_history('spindle', :segment_id);
 SELECT max(abs(relative_deviation)) AS score
 FROM morlet_compare_to_history('spindle', :segment_id, exclude_labels => ARRAY['air_cut','crash']);
 
--- One calibrated row per comparison (phase 2, calibrated-v1, not yet evaluated on fresh data).
+-- One row per comparison: evaluated score, its per-context quantile, top value, duration.
 SELECT * FROM morlet_compare_summary('spindle', :segment_id, exclude_labels => ARRAY['air_cut']);
 
 -- 5. Labels, used as data: exclude known-bad history, build evaluation sets.
@@ -87,37 +87,46 @@ SELECT morlet_add_label('spindle', 'shift-0412', 25600, 128000, 'air_cut', 'tool
 - **Compare without context:** add a key every segment shares (for example
   `machine`) and pass `match_keys => ARRAY['machine']`.
 
-## Calibrated comparison (phase 2, `calibrated-v1`)
+## Summary and calibration (phase 2)
 
-C2's follow-up (`evaluation/context/c2/results/M03.md`) showed a failure of the
-unweighted maximum. One naturally noisy value (kurtosis) drifted and hid
-anomalies that were clear in duration and vibration level. Calibration addresses
-this.
-- **`morlet_value_spreads`:** each value's typical relative spread.
-  - For every context with ≥ 3 comparable segments, compute the median absolute
-    deviation relative to the median.
-  - Take the median over contexts, floored at `spread_floor` (default 1%).
-  - Pooling keeps it stable with small histories (C1). The floor stops
-    near-constant values from turning negligible shifts into alarms.
-- **`morlet_compare_to_history`** adds `spread` and
-  `calibrated_deviation = |relative_deviation| / spread`.
-  - `status` now says whether the calibrated deviation could be computed:
-    `insufficient_history`, `zero_median`, `no_pooled_spread` or `ok`.
-  - `robust_z` is NULL when the history's MAD is 0.
-- **`morlet_compare_summary`** returns one row per comparison:
-  - `score`: the maximum calibrated deviation, and `top_value`;
-  - `score_quantile`: the score's rank among leave-one-out scores of the same
-    history. This is a per-context calibration; 0.99 means "more unusual than 99%
-    of normal history segments are in their own context". It is NULL above 2000
-    history segments.
-  - `duration_relative_deviation`, separately, because duration was the strongest
-    single value in C2.
+**`morlet_compare_summary` returns one row per comparison:**
+- **`score`:** the maximum relative deviation over `duration_s`, `std`, `crest` and
+  `kurtosis`, with `top_value` naming the value behind it. This is the evaluated
+  score: AUROC 0.81 on the Bosch CNC anomalies (C2) and 0.88 on the MillingVibes
+  surface-quality labels (C3).
+- **`score_quantile`:** the score's rank among leave-one-out scores of the same
+  history, so 0.99 means "more unusual than 99% of normal history segments are in
+  their own context".
+  - This is a per-context calibration of the alarm. It is NULL above 2000 history
+    segments.
+  - It has not been evaluated with several contexts yet.
+- **`duration_relative_deviation`,** separately, because duration was the
+  strongest single value in C2.
+- **`calibrated_score`:** experimental, see below.
 
-**Status: implemented, not yet evaluated.** It was designed from what C1 and C2
-taught, so it must be tested on data not used before (planned: C3) before its
-scores are trusted over the relative deviations of C1 and C2. Spreads are
-computed per call over all comparable segments; on the milling check this doubled
-compare latency (p50 23 ms → 46 ms).
+**Calibration by spread (`calibrated-v1`) is experimental, and ranked worse in
+C3.**
+- **How it works:**
+  - `morlet_value_spreads` gives each value's typical relative spread: the median
+    over contexts, floored at 1%;
+  - `morlet_compare_to_history` reports `spread` and
+    `calibrated_deviation = |relative_deviation| / spread`;
+  - `calibrated_score` is their maximum over all values.
+- **Why it is not the default:**
+  - In C2's M03 case it would have suppressed a drifting noisy value.
+  - In C3 it up-weighted low-spread but uninformative values (crest, kurtosis,
+    mean) and lost AUROC (0.845 against 0.884).
+  - A spread says how noisy a value is, not whether it matters. Weighting values
+    by relevance needs labelled history per context.
+- **Status semantics:** `status` reports whether the calibrated deviation could be
+  computed (`insufficient_history`, `zero_median`, `no_pooled_spread`, `ok`).
+  `robust_z` is NULL when the history's MAD is 0.
+- **Cost:** spreads are computed per call over all comparable segments. On the
+  milling check this doubled compare latency (p50 23 ms → 46 ms).
+
+**Read per-value deviations first.** C2's M03 case and C3 fail in opposite
+directions under any one fixed combination; the per-value rows show which value
+moved.
 
 ## Read with care
 

@@ -847,19 +847,21 @@ BEGIN
       q.vals,min_history,spreads;
 END $$;
 
--- One row per segment comparison (calibrated-v1): score = max calibrated deviation;
--- score_quantile = its rank among leave-one-out scores of the same history (a
--- per-context calibration; NULL above 2000 history segments); the top value and the
--- duration deviation are reported separately, since duration was the strongest single
--- value in evaluation C2. Status is 'ok' or why the score is NULL.
+-- One row per segment comparison. score is the evaluated summary of C2 and C3: the
+-- maximum relative deviation over duration_s, std, crest and kurtosis (C2: AUROC 0.81 on
+-- Bosch CNC; C3: 0.88 on MillingVibes). score_quantile ranks it among leave-one-out
+-- scores of the same history (a per-context calibration; NULL above 2000 history
+-- segments), top_value names the value behind it, and the duration deviation is
+-- reported separately. calibrated_score (calibrated-v1: deviations divided by pooled
+-- spreads over all values) is experimental: it ranked worse than score in C3.
 CREATE FUNCTION public.morlet_compare_summary(collection regclass,segment_id bigint,
   match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
   exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000)
-RETURNS TABLE(score float8,score_quantile float8,top_value text,top_calibrated_deviation float8,
-  duration_relative_deviation float8,hist_n integer,status text,query_occurrence jsonb)
+RETURNS TABLE(score float8,score_quantile float8,top_value text,top_relative_deviation float8,
+  duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text,query_occurrence jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE q record; qr record; match jsonb; history text; flat float8[]; n integer; spreads float8[]; res float8[];
-  names text[]:=public.morlet_simple_value_names(); width integer;
+  names text[]:=public.morlet_simple_value_names(); width integer; unit_spreads float8[];
 BEGIN
   IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
     RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
@@ -869,8 +871,8 @@ BEGIN
   match:=public.morlet_context_match(q.context,match_keys);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
   history:=public.morlet_history_sql(collection,false);
-  EXECUTE 'SELECT count(*)::integer,coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
-    ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO n,flat
+  EXECUTE 'SELECT coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
+    ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO flat
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
   n:=cardinality(flat)/width;
   IF n>max_candidates THEN
@@ -881,14 +883,16 @@ BEGIN
     FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
       max_candidates) c WHERE c.value_name='duration_s';
   IF n<min_history THEN status:='insufficient_history'; RETURN NEXT; RETURN; END IF;
-  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels);
-  res:=public.morlet_calibrated_score(q.vals,flat,width,spreads);
+  -- Spread 1 on the evaluated value set and NULL elsewhere turns the calibrated score
+  -- into the plain maximum relative deviation over that set.
+  unit_spreads:=ARRAY(SELECT CASE WHEN nm IN ('duration_s','std','crest','kurtosis') THEN 1.0::float8 END
+    FROM unnest(names) WITH ORDINALITY AS t(nm,o) ORDER BY o);
+  res:=public.morlet_calibrated_score(q.vals,flat,width,unit_spreads);
   score:=res[1]; score_quantile:=res[2];
-  IF res[3]>0 THEN top_value:=names[res[3]::integer]; END IF;
-  SELECT c.calibrated_deviation INTO top_calibrated_deviation
-    FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
-      max_candidates) c WHERE c.value_name=top_value;
-  status:=CASE WHEN score IS NULL THEN 'no_calibrated_value' ELSE 'ok' END;
+  IF res[3]>0 THEN top_value:=names[res[3]::integer]; top_relative_deviation:=score; END IF;
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels);
+  calibrated_score:=(public.morlet_calibrated_score(q.vals,flat,width,spreads))[1];
+  status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
   RETURN NEXT;
 END $$;
 

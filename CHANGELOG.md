@@ -51,12 +51,14 @@ Extension (SQL version 0.2.0, with an update script from 0.1.0 as released in
   Evaluation C1 (NASA milling) supports the context-conditioned comparison: ρ 0.91
   against 0.60 context-free.
 
-- Calibrated comparison (context model phase 2 start; not yet evaluated on fresh
-  data):
-  - `morlet_value_spreads` (pooled per-value relative spread, floored at 1%);
-  - `calibrated_deviation` and `spread` columns in `morlet_compare_to_history`;
-  - `morlet_compare_summary`, returning the score, its leave-one-out quantile, the
-    top value and the duration deviation.
+- `morlet_compare_summary` (context model phase 2 start):
+  - the evaluated score (maximum relative deviation over duration, std, crest and
+    kurtosis), with its leave-one-out per-context quantile, the top value and the
+    duration deviation;
+  - `calibrated_score` as an experimental column.
+
+  The spread-calibrated variant (`morlet_value_spreads`, `calibrated_deviation`)
+  ranked worse in evaluation C3 and is not the default.
 
 Docs: the README's measured results now list the frozen held-out tests (Paderborn,
 seismic timing, PTB-XL, storage, materialized envelopes). In these tests Morlet
