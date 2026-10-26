@@ -1,10 +1,9 @@
 # Decision milestone: precommitted retrieval experiment (H2)
 
-Status: **DRAFT, not frozen.** It freezes in a later commit that sets the status to
-FROZEN. Freezing happens before any Paderborn file is opened for evaluation. It requires:
-- dataset access with recorded hashes (Zenodo copy; `DATASET.md`);
-- the licence question answered (done: non-commercial);
-- the channel units and `.mat` structure inspected on **development bearings only**.
+Status: **FROZEN** (in the commit that sets this status). It was frozen before any
+held-out bearing file was read and before any retrieval was run on real data. Before the
+freeze, only development bearing K002 was inspected: file structure, rates, units and
+operating context (see "Data facts from K002").
 
 Researcher-selected thresholds are marked **(provisional)**. Phases 3 (external users)
 and 4 (operating envelope) have their own documents; this plan covers phase 2.
@@ -43,6 +42,24 @@ usefulness. Human relevance validation is **pending**.
   - Query and gallery always come from different bearings, so no query material overlaps
     the gallery.
 
+## Data facts from K002 (development bearing; the only file inspection before freezing)
+
+- MATLAB 5 files hold one struct with channels `vibration_1`, `phase_current_1/2`
+  (raster HostService), `force`, `speed`, `torque` (Mech_4kHz) and
+  `temp_2_bearing_module` (Temp_1Hz).
+- **Every unit field is empty**, so the vibration unit is unknown but constant across
+  bearings (same sensor chain).
+- The stored time stamps are quantized; the rate is taken from the span. 74 of 80 files
+  have 256,000 ± 8 samples in 4 s (64 kHz). 6 hold extra samples in the same span
+  (effective 64.03–72.96 kHz), so they are not uniformly sampled.
+- **Data-quality rule:** a file is excluded if its span-derived rate deviates from 64 kHz
+  by more than 6.4 Hz (0.01%). The rule applies identically to all methods, and
+  exclusions are counted per bearing and setting.
+- Measured speed (≈900 / 1500 rpm) and radial force (≈400 / 1000 N) agree with the
+  file-name settings. Measured torque reads ≈1.3 (M07) and ≈0.66 (M01), against nominal
+  0.7 and 0.1 Nm: an undocumented offset or calibration, consistent in ordering. Settings
+  are taken from the file names, which the speed and force checks corroborate.
+
 ## Tasks
 
 | Task | Gallery restriction | Role |
@@ -51,6 +68,9 @@ usefulness. Human relevance validation is **pending**.
 | T1 same-condition | setting = the query's setting | secondary |
 | T3 cross-origin | real-damage queries vs artificial + healthy gallery, and the reverse | secondary |
 | N no-match | queries whose class is removed from the gallery: KB queries with every KB bearing removed; healthy queries with every healthy bearing removed | negative-query behaviour |
+
+T3 and N do not restrict settings. The N positives are all class-present queries
+against the unrestricted eligible gallery.
 
 **Relevance (proxy):** same damage location class (healthy, outer, inner, combined).
 A secondary relevance level also requires the same origin (artificial or real).
@@ -109,6 +129,11 @@ contract.
   - extraction time per window per method (Rust Morlet including the adapter, NumPy
     baselines);
   - exhaustive search time per query.
+- **Implementation:** `bearings.py` and `paderborn_mat.py` at the freeze commit. The Rust
+  adapter `target/release/examples/features` is built from the same commit; its hash is
+  in `features.json`. Development thresholds come from `evaluate --role dev`, which runs
+  before the single `evaluate --role heldout`. Match lists are stored for the frozen
+  configuration on T2.
 - **Failure gallery:** for M and FS, the 3 worst held-out query bearings on T2. For each,
   one misleading top match and one useful match, with raw waveform, spectrum and setting.
 
