@@ -19,10 +19,16 @@ tested):
   `morlet_compare_acquisition`: history only from segments that started earlier.
 - `score_values` on `morlet_compare_summary` and `morlet_compare_acquisition`. The
   default is unchanged; add `p75` for level signals such as motor current.
+- `morlet_history_neighbors`: the nearest other (or, with `before_only`, earlier)
+  occurrences of a segment's context. Each comes with its values and labels.
 
 Repository:
-- Viewer: sibling channels on the same time axis; per-channel comparison; options
-  for "history before this point only" and level.
+- Viewer:
+  - sibling channels on the same time axis; per-channel comparison; options for
+    "history before this point only" and level;
+  - per-value history distributions and the nearest occurrences;
+  - opt-in label entry (`--allow-labels`), guarded by a per-run token, origin and
+    host checks.
 - Demo: two channels per part as acquisitions.
 - The 0.1.0 to 0.2.0 update script is frozen as released. The CI upgrade job also
   updates a populated 0.2.0-alpha.1 database.

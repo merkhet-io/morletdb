@@ -72,5 +72,62 @@ class Api(unittest.TestCase):
             self.assertEqual(conn.execute("SHOW statement_timeout").fetchone()["statement_timeout"], "20s")
 
 
+@unittest.skipUnless(os.environ.get("MORLET_VIEWER_TEST_DSN"), "needs MORLET_VIEWER_TEST_DSN with demo data")
+class LabelWrites(unittest.TestCase):
+    """The write path through a real server: token, JSON, Origin and Host checks."""
+
+    @classmethod
+    def setUpClass(cls):
+        import threading
+        from http.server import ThreadingHTTPServer
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), viewer.Handler)
+        viewer.Handler.db = viewer.Database(os.environ["MORLET_VIEWER_TEST_DSN"])
+        viewer.Handler.port = cls.server.server_address[1]
+        viewer.Handler.token = "test-token"
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        cls.base = f"http://127.0.0.1:{viewer.Handler.port}"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        viewer.Handler.token = None
+
+    def post(self, path, body, headers):
+        import json
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request(self.base + path, data=json.dumps(body).encode(), method="POST", headers=headers)
+        try:
+            with urllib.request.urlopen(req) as r:
+                return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            return e.code, e.read()
+
+    def test_guards_and_round_trip(self):
+        ok = {"Content-Type": "application/json", "X-Morlet-Token": "test-token"}
+        body = {"collection": "public.demo_spindle", "recording": "part-003-vib", "start": 100, "end": 200,
+                "label": "unit_test", "note": "x"}
+        self.assertEqual(self.post("/api/label", body, {"Content-Type": "application/json"})[0], 403)
+        self.assertEqual(self.post("/api/label", body, {**ok, "X-Morlet-Token": "wrong"})[0], 403)
+        self.assertEqual(self.post("/api/label", body, {**ok, "Origin": "https://example.org"})[0], 403)
+        self.assertEqual(self.post("/api/label", body, {**ok, "Content-Type": "text/plain"})[0], 403)
+        self.assertEqual(self.post("/api/label", body, {**ok, "Host": "attacker.example"})[0], 403)
+        self.assertEqual(self.post("/api/label", {**body, "label": ""}, ok)[0], 400)
+        code, out = self.post("/api/label", body, {**ok, "Origin": self.base})
+        self.assertEqual(code, 200)
+        code, out = self.post("/api/retract_label", {"collection": "public.demo_spindle", "label_id": out["label_id"]}, ok)
+        self.assertEqual(code, 200)
+
+    def test_page_carries_the_token_and_reads_check_host(self):
+        import urllib.error
+        import urllib.request
+        with urllib.request.urlopen(self.base + "/") as r:
+            self.assertIn('content="test-token"', r.read().decode())
+        req = urllib.request.Request(self.base + "/api/collections", headers={"Host": "rebind.example:80"})
+        with self.assertRaises(urllib.error.HTTPError) as e:
+            urllib.request.urlopen(req)
+        self.assertEqual(e.exception.code, 421)
+
+
 if __name__ == "__main__":
     unittest.main()

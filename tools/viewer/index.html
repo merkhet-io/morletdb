@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MorletDB Viewer</title>
+<meta name="morlet-write" content="">
 <style>
 :root {
   color-scheme: light;
@@ -89,9 +90,11 @@ tr.hit { cursor: pointer; } tr.hit:hover td { background: var(--wash); }
       <button id="zsel" title="Zoom to selection" disabled>Zoom to selection</button>
       <button id="full" title="Show the start of the recording">Reset</button>
       <button id="similar" title="Find similar windows (materialized envelopes)" disabled>Find similar</button>
+      <button id="labelbtn" title="Label the selection or the selected segment" disabled hidden>Label…</button>
       <span id="range" class="info"></span>
     </div>
     <div class="card"><canvas id="wave" height="220" aria-label="Waveform"></canvas><div id="siblings"></div></div>
+    <div id="labelform" class="card" hidden></div>
     <div class="card"><div id="legend" class="legend"></div><canvas id="lanes" height="60" aria-label="Context, segments and labels"></canvas></div>
     <div class="panels">
       <div class="card"><h2>Compare segment with history</h2><div style="display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--ink-2);font-size:12px;margin:-4px 0 8px">
@@ -177,7 +180,7 @@ const PAD_L = 56, PAD_R = 8;
 const xOf = (s, w) => PAD_L + (s - st.view[0]) / (st.view[1] - st.view[0]) * (w - PAD_L - PAD_R);
 const sOf = (x, w) => st.view[0] + (x - PAD_L) / (w - PAD_L - PAD_R) * (st.view[1] - st.view[0]);
 
-function draw() { drawWave(); drawSiblings(); drawLanes(); $("zsel").disabled = !st.sel; $("similar").disabled = !(st.sel && st.coll.envelopes && st.sel[1] - st.sel[0] >= 512); }
+function draw() { drawWave(); drawSiblings(); drawLanes(); $("zsel").disabled = !st.sel; $("labelbtn").disabled = !labelRange(); $("similar").disabled = !(st.sel && st.coll.envelopes && st.sel[1] - st.sel[0] >= 512); }
 
 // Sibling channels of the acquisition, over the same acquisition-time window as the view.
 const me = () => st.acq && st.acq.channels.find((c) => c.recording_id === st.rec.recording_id);
@@ -293,7 +296,9 @@ $("lanes").addEventListener("mousemove", (ev) => {
 });
 $("lanes").addEventListener("mouseleave", (ev) => tip(ev, null));
 $("lanes").addEventListener("click", async (ev) => { if (!st.ctx || st.ctx.recording.recording_id !== st.rec.recording_id) return;
-  const h = laneHit(ev); if (h && h.row.segments) { st.seg = h.hit.segment_id; drawLanes(); compare(h.hit); } });
+  const h = laneHit(ev); if (!h) return;
+  if (h.row.segments) { st.seg = h.hit.segment_id; draw(); compare(h.hit); }
+  else if (h.row.labels && TOKEN) offerRetract(h.hit); });
 
 const wave = $("wave");
 wave.addEventListener("mousemove", (ev) => {
@@ -338,6 +343,28 @@ function statusBadge(q, n) {
   if (q >= 0.95) return `<span class="status"><i style="background:var(--warning);color:#0b0b0b">▲</i>elevated</span>`;
   return `<span class="status"><i style="background:var(--good)">✓</i>within history</span>`;
 }
+// History of one value as dots, this segment as a bar (the table holds the numbers).
+function strip(hist, x) {
+  if (!hist.length || x == null) return "—";
+  const all = hist.concat([x]); let lo = Math.min(...all), hi = Math.max(...all); if (lo === hi) { lo -= 1; hi += 1; }
+  const px = (v) => 4 + (v - lo) / (hi - lo) * 112;
+  return `<svg width="120" height="16" role="img" aria-label="history distribution"><line x1="4" x2="116" y1="8" y2="8" style="stroke:var(--grid)"/>` +
+    hist.map((v) => `<circle cx="${px(v).toFixed(1)}" cy="8" r="2.5" style="fill:var(--muted);fill-opacity:0.7"/>`).join("") +
+    `<rect x="${(px(x) - 1.5).toFixed(1)}" y="1" width="3" height="14" rx="1" style="fill:var(--ink)"/></svg>`;
+}
+function neighborsTable(nb) {
+  if (!nb.length) return "";
+  return `<h2 style="margin-top:12px">Nearest ${$("bef").checked ? "earlier" : "other"} occurrences of this context</h2><table><thead><tr><th>occurrence</th><th>recording</th><th>start</th><th>distance</th><th>labels</th></tr></thead><tbody>` +
+    nb.slice(0, 10).map((n) => `<tr class="hit" data-r="${esc(n.recording_id)}" data-s="${n.start_sample}" data-e="${n.end_sample}" data-id="${n.neighbor_segment_id}"><td>${esc(Object.values(n.occurrence).map(valText).join(" · ") || "—")}</td><td>${esc(n.recording_id)}</td><td>${fmtT(n.start_sample)}</td><td>${fmt(n.distance, 3)}</td><td>${n.labels.map((l) => esc(l.label)).join(", ") || "—"}</td></tr>`).join("") +
+    `</tbody></table>`;
+}
+$("compare").addEventListener("click", async (ev) => {
+  const tr = ev.target.closest("tr.hit"); if (!tr) return;
+  const s0 = +tr.dataset.s, e0 = +tr.dataset.e, pad = Math.round((e0 - s0) * 0.25), id = +tr.dataset.id;
+  try { await selectRecording(tr.dataset.r, [Math.max(0, s0 - pad), e0 + pad]);
+    const seg = st.ctx && st.ctx.segments.find((x) => x.segment_id === id);
+    if (seg) { st.seg = id; draw(); compare(seg); } } catch (e) { fail(e); }
+});
 async function compare(seg) {
   $("compare").innerHTML = '<span class="empty">Comparing…</span>';
   try {
@@ -356,11 +383,11 @@ async function compare(seg) {
         r.channels.map((c) => `<tr${c.recording_id === st.rec.recording_id ? ' style="font-weight:600"' : ""}><td>${esc(c.role)}</td><td>${c.score == null ? "—" : (100 * c.score).toFixed(1) + "%"}</td><td>${esc(c.top_value || "—")}</td>` +
           `<td>${c.score_quantile == null ? "—" : `${Math.round(c.score_quantile * c.hist_n)} of ${c.hist_n}`}</td><td>${statusBadge(c.score_quantile, c.hist_n || 0)}${c.status !== "ok" ? " · " + esc(c.status) : ""}</td></tr>`).join("") +
         "</tbody></table>" : "") +
-      `<table><thead><tr><th>value</th><th>this segment</th><th>history median</th><th>relative deviation</th><th></th><th>quantile</th><th>status</th></tr></thead><tbody>` +
-      r.values.map((v) => { const d = v.relative_deviation, wpx = d == null ? 0 : Math.min(50, Math.abs(d) / maxDev * 50);
+      `<table><thead><tr><th>value</th><th>this segment</th><th>history median</th><th>relative deviation</th><th></th><th>history (dots) · this segment (bar)</th><th>quantile</th><th>status</th></tr></thead><tbody>` +
+      r.values.map((v, i) => { const d = v.relative_deviation, wpx = d == null ? 0 : Math.min(50, Math.abs(d) / maxDev * 50);
         const bar = d == null ? "" : `<div class="barbox"><div class="mid"></div><div class="b" style="background:${d >= 0 ? "var(--pos)" : "var(--neg)"};${d >= 0 ? "left:50%" : "right:50%"};width:${wpx}%"></div></div>`;
-        return `<tr${SCORED.has(v.value_name) ? "" : ' style="color:var(--muted)" title="not used by the summary score"'}><td>${esc(v.value_name)}${SCORED.has(v.value_name) ? "" : " ·"}</td><td>${fmt(v.value)}</td><td>${fmt(v.hist_median)}</td><td>${d == null ? "—" : (d >= 0 ? "+" : "") + fmt(d, 3)}</td><td class="bar">${bar}</td><td>${fmt(v.quantile, 2)}</td><td>${esc(v.status)}</td></tr>`; }).join("") +
-      `</tbody></table><div class="l" style="color:var(--muted);margin-top:6px">Dimmed values (·) are not used by the score. Read with tool age in mind: for gradual wear, time in use tracks nearly as well (C1).</div>`;
+        return `<tr${SCORED.has(v.value_name) ? "" : ' style="color:var(--muted)" title="not used by the summary score"'}><td>${esc(v.value_name)}${SCORED.has(v.value_name) ? "" : " ·"}</td><td>${fmt(v.value)}</td><td>${fmt(v.hist_median)}</td><td>${d == null ? "—" : (d >= 0 ? "+" : "") + fmt(d, 3)}</td><td class="bar">${bar}</td><td>${strip(r.neighbors.map((n) => n.vals[i]), v.value)}</td><td>${fmt(v.quantile, 2)}</td><td>${esc(v.status)}</td></tr>`; }).join("") +
+      `</tbody></table>` + neighborsTable(r.neighbors) + `<div class="l" style="color:var(--muted);margin-top:6px">Dimmed values (·) are not used by the score. Read with tool age in mind: for gradual wear, time in use tracks nearly as well (C1).</div>`;
   } catch (e) { $("compare").innerHTML = `<span class="empty">${esc(e.message)}</span>`; }
 }
 $("similar").onclick = async () => {
@@ -376,6 +403,43 @@ $("similar").onclick = async () => {
 };
 $("similarOut").onclick = (ev) => { const tr = ev.target.closest("tr.hit"); if (!tr) return;
   const s = +tr.dataset.s, e = +tr.dataset.e, pad = (e - s); selectRecording(tr.dataset.r, [Math.max(0, s - pad), e + pad]).then(() => { st.sel = [s, e]; draw(); }).catch(fail); };
+
+// Label entry (only when the server runs with --allow-labels).
+const TOKEN = document.querySelector('meta[name="morlet-write"]').content;
+if (TOKEN) $("labelbtn").hidden = false;
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Morlet-Token": TOKEN }, body: JSON.stringify(body) });
+  const out = await r.json(); if (!r.ok) throw new Error(out.error || r.statusText); return out;
+}
+function labelRange() {
+  if (st.sel) return st.sel;
+  const seg = st.ctx && st.ctx.segments.find((x) => x.segment_id === st.seg);
+  return seg ? [seg.start_sample, seg.end_sample] : null;
+}
+$("labelbtn").onclick = () => {
+  const rg = labelRange(); if (!rg) return;
+  const known = [...new Set(((st.ctx && st.ctx.labels) || []).map((l) => l.label))];
+  const f = $("labelform"); f.hidden = false;
+  f.innerHTML = `<h2>Add a label to ${esc(st.rec.recording_id)} · ${fmtT(rg[0])} – ${fmtT(rg[1])}</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <input id="lname" placeholder="label, e.g. air_cut" list="lknown" maxlength="100"><datalist id="lknown">${known.map((k) => `<option value="${esc(k)}">`).join("")}</datalist>
+    <input id="lnote" placeholder="note (optional)" maxlength="1000" style="flex:1;min-width:200px">
+    <button id="ladd">Add label</button><button id="lcancel">Cancel</button></div>`;
+  $("lname").focus();
+  $("lcancel").onclick = () => { f.hidden = true; };
+  $("ladd").onclick = async () => {
+    try { await post("/api/label", { collection: st.coll.name, recording: st.rec.recording_id, start: rg[0], end: rg[1], label: $("lname").value, note: $("lnote").value });
+      f.hidden = true; await refresh(); } catch (e) { fail(e); }
+  };
+};
+function offerRetract(l) {
+  const f = $("labelform"); f.hidden = false;
+  f.innerHTML = `<h2>Label <b>${esc(l.label)}</b> on ${esc(st.rec.recording_id)} · ${fmtT(l.start_sample)} – ${fmtT(l.end_sample)}</h2>
+    <div style="color:var(--ink-2);margin-bottom:8px">${esc(l.note || "")} · by ${esc(l.author)}</div>
+    <button id="lretract">Retract label</button> <button id="lcancel">Cancel</button>`;
+  $("lcancel").onclick = () => { f.hidden = true; };
+  $("lretract").onclick = async () => { try { await post("/api/retract_label", { collection: st.coll.name, label_id: l.label_id }); f.hidden = true; await refresh(); } catch (e) { fail(e); } };
+}
 
 loadCollections().catch(fail);
 </script>

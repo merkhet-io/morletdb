@@ -626,11 +626,43 @@ mod tests {
         assert_eq!(Spi::get_one::<String>("SELECT string_agg(start_sample||'-'||end_sample,',' ORDER BY start_sample) FROM mill_ctx_segments").unwrap().unwrap(), "0-10000,10000-19000,20000-30000");
     }
 
+    fn cal_fixture() {
+        // Blocks A (amplitude ~100) and B (~10), parts 1..6 each with small variation; part 6
+        // of block A has amplitude 160.
+        Spi::run("SELECT morlet_create_stream_collection('public','cal'); SELECT morlet_enable_context('cal'); SELECT morlet_start_recording('cal',b||p,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_append_chunk('cal',b||p,0,ARRAY(SELECT (CASE WHEN b='A' AND p=6 THEN 160 WHEN b='A' THEN 100*(1+0.01*p) ELSE 10*(1+0.01*p) END)*sin(i/3.)+(i%7) FROM generate_series(0,1999) i)) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_add_context('cal','c-'||b||p,jsonb_build_array(jsonb_build_object('recording_id',b||p,'key','block','value',b,'start_sample',0,'end_sample',2000),jsonb_build_object('recording_id',b||p,'key','part','value',p,'start_sample',0,'end_sample',2000))) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_segments('cal',b||p,ARRAY['block'],ARRAY['part']) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_values('cal',b||p) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p").unwrap();
+    }
+
+    #[pg_test]
+    fn history_neighbors_rank_past_occurrences_with_labels() {
+        cal_fixture();
+        let a3 = "(SELECT segment_id FROM cal_ctx_segments WHERE recording_id='A3')";
+        // Same context (block A), other parts; the anomalous A6 is the farthest.
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT string_agg(recording_id,',' ORDER BY distance) FROM morlet_history_neighbors('cal',{a3})")).unwrap().unwrap().split(',').last(), Some("A6"));
+        assert_eq!(
+            Spi::get_one::<i64>(&format!(
+                "SELECT count(*) FROM morlet_history_neighbors('cal',{a3})"
+            ))
+            .unwrap(),
+            Some(5)
+        );
+        assert_eq!(Spi::get_one::<bool>(&format!("SELECT bool_and(cardinality(vals)=8 AND labels='[]') FROM morlet_history_neighbors('cal',{a3})")).unwrap(), Some(true));
+        Spi::run("SELECT morlet_add_label('cal','A6',0,2000,'chipped','test')").unwrap();
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT labels->0->>'label' FROM morlet_history_neighbors('cal',{a3}) WHERE recording_id='A6'")).unwrap().unwrap(), "chipped");
+        assert_eq!(Spi::get_one::<i64>(&format!("SELECT count(*) FROM morlet_history_neighbors('cal',{a3},exclude_labels=>ARRAY['chipped'])")).unwrap(), Some(4));
+        assert_eq!(
+            Spi::get_one::<i64>(&format!(
+                "SELECT count(*) FROM morlet_history_neighbors('cal',{a3},top_k=>2)"
+            ))
+            .unwrap(),
+            Some(2)
+        );
+    }
+
     #[pg_test]
     fn calibrated_summary_ranks_an_anomalous_part_against_its_context() {
         // Blocks A (amplitude ~100) and B (~10), parts 1..6 each with small variation; part 6
         // of block A has amplitude 160.
-        Spi::run("SELECT morlet_create_stream_collection('public','cal'); SELECT morlet_enable_context('cal'); SELECT morlet_start_recording('cal',b||p,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_append_chunk('cal',b||p,0,ARRAY(SELECT (CASE WHEN b='A' AND p=6 THEN 160 WHEN b='A' THEN 100*(1+0.01*p) ELSE 10*(1+0.01*p) END)*sin(i/3.)+(i%7) FROM generate_series(0,1999) i)) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_add_context('cal','c-'||b||p,jsonb_build_array(jsonb_build_object('recording_id',b||p,'key','block','value',b,'start_sample',0,'end_sample',2000),jsonb_build_object('recording_id',b||p,'key','part','value',p,'start_sample',0,'end_sample',2000))) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_segments('cal',b||p,ARRAY['block'],ARRAY['part']) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_values('cal',b||p) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p").unwrap();
+        cal_fixture();
         assert_eq!(Spi::get_one::<i32>("SELECT cardinality(morlet_value_spreads('cal',(SELECT min(segment_id) FROM cal_ctx_segments)))").unwrap(), Some(8));
         assert_eq!(Spi::get_one::<bool>("SELECT (morlet_value_spreads('cal',(SELECT min(segment_id) FROM cal_ctx_segments)))[3]>0").unwrap(), Some(true));
         let anomalous = "(SELECT segment_id FROM cal_ctx_segments WHERE recording_id='A6')";
