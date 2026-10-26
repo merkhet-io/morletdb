@@ -1,0 +1,17 @@
+{
+ "regional": {
+  "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2024-01-01&endtime=2025-01-01&latitude=-20.8&longitude=-69.5&maxradiuskm=300&minmagnitude=2.5&orderby=time-asc",
+  "events": 317,
+  "sha256": "2dde7b051a0e27908fdc5b9d8ccfbac19b2508386d31d96d319856551a9359d9"
+ },
+ "wide": {
+  "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2024-01-01&endtime=2025-01-01&latitude=-20.8&longitude=-69.5&maxradiuskm=400&minmagnitude=2.5",
+  "events": 406,
+  "sha256": "e5c7ea7764b0849fbd2e4b21dca6a33c68620f86d01b4d4d5a816d1c6d41824a"
+ },
+ "global": {
+  "url": "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=2023-12-31&endtime=2025-01-02&minmagnitude=6.0",
+  "events": 100,
+  "sha256": "a6704916e7c5de5dd324bcef7b9fd47325f35a30a559458fa41df96520ce27d4"
+ }
+}

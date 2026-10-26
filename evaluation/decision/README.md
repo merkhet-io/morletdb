@@ -4,8 +4,10 @@
 |---|---|
 | [ASSESSMENT.md](ASSESSMENT.md) | What existing reports establish, per hypothesis |
 | [DATASET.md](DATASET.md) | Paderborn KAt verification record, source and licence decisions |
-| [PLAN.md](PLAN.md) | Precommitted H2 retrieval experiment (frozen) |
+| [PLAN.md](PLAN.md) | Precommitted H2 retrieval experiment (frozen); result in `results/e6bf274/` |
+| [PLAN_TIMING.md](PLAN_TIMING.md) | Precommitted timing test (frozen); result in `results/timing-012bb3d/` |
 | `bearings.py`, `paderborn_mat.py` | Harness: verify, prepare, features, evaluate |
+| `timing.py`, `test_timing.py` | Timing test harness (GEOFON + ComCat) and its synthetic controls |
 | `test_bearings.py` | Synthetic controls (leakage, task masks, metrics); not evidence |
 
 ## Reproduce
