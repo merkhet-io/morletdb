@@ -30,13 +30,14 @@ def rust(name):
 NEW_SQL = ["morlet_enable_acquisitions", "morlet_acquisition_relations", "morlet_time_to_samples",
            "morlet_sample_time_ns", "morlet_create_acquisition", "morlet_add_acquisition_channel",
            "morlet_segment_start_ns", "morlet_add_acquisition_context", "morlet_read_acquisition",
-           "morlet_compare_acquisition"]
+           "morlet_compare_acquisition", "morlet_build_acquisition_segments"]
 NEW_RUST = []
 CHANGED_SIGNATURE = {   # name -> old identity argument list, dropped before recreation
     "morlet_history_sql": "regclass,boolean",
     "morlet_value_spreads": "regclass,bigint,jsonb,text[],integer,double precision",
     "morlet_compare_to_history": "regclass,bigint,text[],jsonb,text[],integer,integer",
     "morlet_compare_summary": "regclass,bigint,text[],jsonb,text[],integer,integer",
+    "morlet_build_context_segments": "regclass,text,text[],text[],integer",
 }
 CHANGED_BODY = []
 

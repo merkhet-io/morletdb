@@ -9,6 +9,8 @@ DROP FUNCTION public.morlet_compare_to_history(regclass,bigint,text[],jsonb,text
 
 DROP FUNCTION public.morlet_compare_summary(regclass,bigint,text[],jsonb,text[],integer,integer);
 
+DROP FUNCTION public.morlet_build_context_segments(regclass,text,text[],text[],integer);
+
 -- Acquisitions (context model phase 2): several channel recordings on one time axis,
 -- acquisition time in integer nanoseconds from the acquisition origin. Each channel
 -- declares where its sample 0 lies (offset_ns), its clock source and the offset's
@@ -197,7 +199,7 @@ END $$;
 CREATE FUNCTION public.morlet_compare_acquisition(collection regclass,acquisition_id text,context jsonb,occurrence jsonb,
   match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
   exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
-  before_only boolean DEFAULT false)
+  before_only boolean DEFAULT false,score_values text[] DEFAULT ARRAY['duration_s','std','crest','kurtosis'])
 RETURNS TABLE(role text,recording_id text,segment_id bigint,score float8,score_quantile float8,top_value text,
   top_relative_deviation float8,duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -218,8 +220,29 @@ BEGIN
     RETURN QUERY SELECT ch.role,ch.recording_id,seg,s.score,s.score_quantile,s.top_value,s.top_relative_deviation,
       s.duration_relative_deviation,s.calibrated_score,s.hist_n,s.status
       FROM public.morlet_compare_summary(collection,seg,match_keys,metadata_filter,exclude_labels,min_history,max_candidates,
-        before_only) s;
+        before_only,score_values) s;
   END LOOP;
+END $$;
+
+-- Builds context segments and simple-v1 values on every channel of an acquisition. Each
+-- channel's segments are trimmed by its clock uncertainty, ceil(offset_uncertainty_ns *
+-- rate / 1e9) samples at each end, so samples that may belong to a neighbouring context
+-- interval are left out. Returns the number of new segments over all channels.
+CREATE FUNCTION public.morlet_build_acquisition_segments(collection regclass,acquisition_id text,keys text[],
+  occurrence_keys text[] DEFAULT '{}'::text[],min_samples integer DEFAULT 1)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; ch record; n bigint:=0;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  FOR ch IN EXECUTE format('SELECT c.recording_id,ceil(coalesce(c.offset_uncertainty_ns,0)::numeric*r.sample_rate_hz::numeric
+      /1000000000)::integer AS trim FROM %s c JOIN %s r ON r.recording_id=c.recording_id WHERE c.acquisition_id=$1
+      ORDER BY c.role',rel.channels,collection) USING acquisition_id
+  LOOP
+    n:=n+public.morlet_build_context_segments(collection,ch.recording_id,keys,occurrence_keys,min_samples,ch.trim);
+    PERFORM public.morlet_build_context_values(collection,ch.recording_id,100000);
+  END LOOP;
+  IF NOT FOUND THEN RAISE EXCEPTION 'acquisition % has no visible channels',acquisition_id; END IF;
+  RETURN n;
 END $$;
 
 -- History selection shared by compare-to-history and its summary. Parameters: $1 query
@@ -350,9 +373,12 @@ BEGIN
       q.vals,min_history,spreads;
 END $$;
 
--- One row per segment comparison. score is the evaluated summary of C2 and C3: the
--- maximum relative deviation over duration_s, std, crest and kurtosis (C2: AUROC 0.81 on
--- Bosch CNC; C3: 0.88 on MillingVibes). score_quantile ranks it among leave-one-out
+-- One row per segment comparison. score is the maximum relative deviation over
+-- score_values. The default, duration_s, std, crest and kurtosis, is the evaluated summary of
+-- C2 and C3 on vibration (C2: AUROC 0.81 on Bosch CNC; C3: 0.88 on MillingVibes). For
+-- level signals such as motor current add the level (p75 or mean): their level is the
+-- signal (C1 found the p75 of DC spindle current informative), while for vibration the mean
+-- is near zero and noisy. score_quantile ranks it among leave-one-out
 -- scores of the same history (a per-context calibration; NULL above 2000 history
 -- segments), top_value names the value behind it, and the duration deviation is
 -- reported separately. calibrated_score (calibrated-v1: deviations divided by pooled
@@ -360,7 +386,8 @@ END $$;
 CREATE FUNCTION public.morlet_compare_summary(collection regclass,segment_id bigint,
   match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
   exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
-  before_only boolean DEFAULT false)
+  before_only boolean DEFAULT false,
+  score_values text[] DEFAULT ARRAY['duration_s','std','crest','kurtosis'])
 RETURNS TABLE(score float8,score_quantile float8,top_value text,top_relative_deviation float8,
   duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text,query_occurrence jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -369,6 +396,9 @@ DECLARE q record; qr record; match jsonb; history text; flat float8[]; n integer
 BEGIN
   IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
     RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
+  END IF;
+  IF cardinality(score_values)=0 OR NOT score_values <@ names THEN
+    RAISE EXCEPTION 'score_values must be a non-empty subset of %',names;
   END IF;
   width:=cardinality(names);
   SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
@@ -393,7 +423,7 @@ BEGIN
   IF n<min_history THEN status:='insufficient_history'; RETURN NEXT; RETURN; END IF;
   -- Spread 1 on the evaluated value set and NULL elsewhere turns the calibrated score
   -- into the plain maximum relative deviation over that set.
-  unit_spreads:=ARRAY(SELECT CASE WHEN nm IN ('duration_s','std','crest','kurtosis') THEN 1.0::float8 END
+  unit_spreads:=ARRAY(SELECT CASE WHEN nm=ANY(score_values) THEN 1.0::float8 END
     FROM unnest(names) WITH ORDINALITY AS t(nm,o) ORDER BY o);
   res:=public.morlet_calibrated_score(q.vals,flat,width,unit_spreads);
   score:=res[1]; score_quantile:=res[2];
@@ -402,4 +432,45 @@ BEGIN
   calibrated_score:=(public.morlet_calibrated_score(q.vals,flat,width,spreads))[1];
   status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
   RETURN NEXT;
+END $$;
+
+-- One segment per maximal intersection of the active intervals of all `keys`,
+-- within committed samples. occurrence holds the values of `occurrence_keys`
+-- intervals that cover the whole segment (for example the part). Stale segments
+-- of this recording and spec are replaced. Returns the number of new segments.
+CREATE FUNCTION public.morlet_build_context_segments(collection regclass,recording_id text,keys text[],
+  occurrence_keys text[] DEFAULT '{}'::text[],min_samples integer DEFAULT 1,trim_samples integer DEFAULT 0)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; recording_end bigint; spec jsonb; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF cardinality(keys)=0 OR min_samples<1 OR trim_samples<0 OR keys && occurrence_keys THEN
+    RAISE EXCEPTION 'keys must be non-empty, disjoint from occurrence_keys, min_samples >= 1 and trim_samples >= 0';
+  END IF;
+  keys:=ARRAY(SELECT DISTINCT k FROM unnest(keys) k ORDER BY k);
+  occurrence_keys:=ARRAY(SELECT DISTINCT k FROM unnest(occurrence_keys) k ORDER BY k);
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  spec:=jsonb_build_object('version','ctx-seg-v1','keys',to_jsonb(keys),'occurrence_keys',to_jsonb(occurrence_keys),
+    'min_samples',min_samples);
+  -- Trimmed segments drop trim_samples at each end (uncertain edges); the spec records it.
+  IF trim_samples>0 THEN spec:=spec||jsonb_build_object('trim_samples',trim_samples); END IF;
+  EXECUTE format('DELETE FROM %s WHERE recording_id=$1 AND spec=$2 AND stale',rel.segments) USING recording_id,spec;
+  EXECUTE format('WITH act AS (SELECT * FROM %1$s x WHERE x.recording_id=$1 AND x.kind=''interval'' AND NOT x.retracted
+        AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id)),
+      pts AS (SELECT DISTINCT p FROM act, LATERAL (VALUES (act.start_sample),(act.end_sample)) v(p) WHERE act.key=ANY($2)),
+      pieces AS (SELECT p AS a,lead(p) OVER (ORDER BY p) AS b FROM pts),
+      cov AS (SELECT pc.a,pc.b,array_agg(act.ctx_id ORDER BY act.key) AS ids,jsonb_object_agg(act.key,act.value) AS ctx,
+          count(*) AS n FROM pieces pc JOIN act ON act.key=ANY($2) AND act.start_sample<=pc.a AND act.end_sample>=pc.b
+        WHERE pc.b IS NOT NULL GROUP BY pc.a,pc.b)
+    INSERT INTO %2$s(recording_id,start_sample,end_sample,context,occurrence,ctx_ids,spec)
+    SELECT $1,cov.a+$7,cov.b-$7,cov.ctx,coalesce(o.occ,''{}''::jsonb),cov.ids||coalesce(o.ids,''{}''::bigint[]),$3
+    FROM cov LEFT JOIN LATERAL (SELECT jsonb_object_agg(act.key,act.value) AS occ,array_agg(act.ctx_id ORDER BY act.key) AS ids
+        FROM act WHERE act.key=ANY($4) AND act.start_sample<=cov.a AND act.end_sample>=cov.b) o ON true
+    WHERE cov.n=cardinality($2) AND cov.b<=$5 AND cov.b-cov.a-2*$7>=$6
+    ON CONFLICT DO NOTHING',rel.ctx,rel.segments)
+    USING recording_id,keys,spec,occurrence_keys,recording_end,min_samples,trim_samples;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
 END $$;

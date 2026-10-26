@@ -714,6 +714,25 @@ mod tests {
         assert_eq!(Spi::get_one::<String>("SELECT string_agg(hist_n::text,',' ORDER BY role) FROM morlet_compare_acquisition('cell','A2','{\"block\":\"N1\"}','{\"part\":\"A2\"}',min_history=>1,before_only=>true)").unwrap().unwrap(), "1,1");
     }
 
+    #[pg_test]
+    fn acquisition_segments_trim_edges_and_select_score_values() {
+        acquisition_fixture();
+        // Current logger: 0.2 ms uncertainty at 100 Hz -> 1 sample trimmed at each end; vib exact.
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_build_acquisition_segments('cell','A1',ARRAY['block'],ARRAY['part'])").unwrap(), Some(2));
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(start_sample||'-'||end_sample,',' ORDER BY start_sample) FROM cell_ctx_segments WHERE recording_id='A1-cur' AND spec ? 'trim_samples'").unwrap().unwrap(), "1-999,1001-1999");
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM cell_ctx_values v JOIN cell_ctx_segments s USING (segment_id) WHERE s.recording_id='A1-cur' AND s.spec ? 'trim_samples'").unwrap(), Some(2));
+        // score_values selects the values behind the score.
+        assert_eq!(Spi::get_one::<String>("SELECT top_value FROM morlet_compare_summary('cell',(SELECT segment_id FROM cell_ctx_segments WHERE recording_id='A2-vib' AND context->>'block'='N1'),min_history=>1,score_values=>ARRAY['p75'])").unwrap().unwrap(), "p75");
+    }
+
+    #[pg_test(
+        error = "score_values must be a non-empty subset of {duration_s,mean,std,rms,p75,peak_abs,crest,kurtosis}"
+    )]
+    fn score_values_are_validated() {
+        acquisition_fixture();
+        Spi::run("SELECT * FROM morlet_compare_summary('cell',(SELECT min(segment_id) FROM cell_ctx_segments),score_values=>ARRAY['level'])").unwrap();
+    }
+
     #[pg_test(
         error = "recording A1-vib already belongs to an acquisition with different attributes"
     )]
