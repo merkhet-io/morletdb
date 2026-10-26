@@ -1,7 +1,9 @@
 # W1: do wavelet features detect bearing degradation earlier than standard methods?
 
-Status: **DRAFT.** It will be frozen in a commit before the FEMTO archive is
-downloaded. Changes after the freeze are logged under "Changes after freeze".
+Status: **FROZEN** in the commit that adds this line, before the FEMTO archive was
+downloaded. Development (the FEMTO learning set and IMS) may only make the choices
+listed under "Development". Changes after the freeze are logged under "Changes
+after freeze".
 
 ## Why
 
