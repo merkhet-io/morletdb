@@ -1,8 +1,20 @@
 # Precommitted timing test: does *when* frequencies occur help retrieval?
 
-Status: **DRAFT.** It freezes, by setting this line to FROZEN in a commit, after
-development data (2023) has been inspected and before any held-out (2024) waveform is
-downloaded. Thresholds marked **(provisional)** are researcher-selected.
+Status: **FROZEN** (in the commit that sets this line). It was frozen before any held-out
+(2024) waveform or catalogue was downloaded. Thresholds marked **(provisional)** are
+researcher-selected.
+
+Before the freeze, the development year (2023) was fetched, inspected and run through the
+whole pipeline as a sanity check:
+- 1,213 event windows from 259 events, and 200 no-match windows;
+- exclusions: 387 station gaps, 122 empty responses (GEOFON returns 204: genuine
+  archive gaps), 13 clipped, 12 gap/overlap.
+
+The decision rules, margins and methods above were written before the development
+results were computed and are unchanged by them. Two design changes were made before any
+evaluation:
+- the station set (from availability);
+- standardized primary features (from the bearing test's scale artefact).
 
 ## Question
 
@@ -128,3 +140,4 @@ Anything else is inconclusive. Also reported: Δ(M, FS) (H2 replication on trans
 ## Changelog
 
 - 2026-10-26: draft.
+- 2026-10-26: frozen (see the status note).
