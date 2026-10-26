@@ -261,8 +261,12 @@ def cmd_decide(a):
         niche = ci[0] > 0 and delta >= 0.05 and unstable[cand] <= unstable[base] + 1
         res["families"][fam] = {"candidate": cand, "baseline": base, "delta": delta, "ci95": ci,
                                 "unstable": unstable, "niche": bool(niche), "closed": ci[1] < 0.05}
-    f = res["families"].values()
-    res["decision"] = "niche" if any(x["niche"] for x in f) else "close" if all(x["closed"] for x in f) else "inconclusive"
+    # Amendment 2 (PROTOCOL.md): only the impulsiveness family decides; novelty is descriptive.
+    imp = res["families"]["impulsiveness"]
+    res["families"]["novelty"]["role"] = "descriptive (drift concern, amendment 2)"
+    res["decision"] = "niche" if imp["niche"] else "close" if imp["closed"] else "inconclusive"
+    res["alarm_minutes_after_calibration"] = {
+        u: {m: None if r[m]["alarm"] is None else (r[m]["alarm"] - CALIB) / 6 for m in r} for u, r in rows.items()}
     (a.out / "decision.json").write_text(json.dumps(res, indent=1))
     print(json.dumps(res, indent=1))
 

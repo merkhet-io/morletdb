@@ -132,6 +132,7 @@ counted per indicator.
   - the candidate has no more unstable alarms than the baseline + 1.
 - **Close** (wavelets add nothing here; no further wavelet work in this project
   without new evidence) if, in both families, the CI upper bound of Δ is < 0.05.
+  *Amended (change 2): only the impulsiveness family decides.*
 - **Inconclusive** otherwise. Report it, and do not tune further. Eleven bearings
   may be too few; a next test would need new run-to-failure data, frozen first.
 
@@ -182,6 +183,14 @@ The IMS harness check runs separately and does not affect the selection.
    `Test_set` repeats the evaluation bearing names, so the loader now reads
    `Learning_set` and `Full_Test_Set` explicitly instead of searching by name.
    No method change.
+2. **Decision scope amendment**, after development and before any evaluation
+   feature was computed. It was decided by the project owner.
+   - Only the **impulsiveness family** (B-SK vs W-MSK) can produce "niche" or
+     "close".
+   - The novelty family (B-FFT vs W-MDB) is computed and reported as
+     **descriptive**, with the drift caveat recorded under "Development run".
+   - No threshold, indicator or alarm parameter changed.
+   - This removes a route to a spurious "niche" and adds none.
 
 Archive check (layout only, no features computed):
 - the NASA zip has SHA-256 `e21bb22b…d81f`;
