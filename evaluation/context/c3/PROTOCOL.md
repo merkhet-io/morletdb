@@ -1,5 +1,8 @@
 # C3: does calibrated scoring rank bad milling segments better than the C2 score?
 
+**Result: WORSE.** calibrated-v1 0.845 vs C2 score 0.884 AUROC, Δ −0.039 [−0.061, −0.020]. See
+[results/RESULTS.md](results/RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line. Read so far:
 - the archive README and its example loader;
 - the `.npy` headers;
