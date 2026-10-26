@@ -1,5 +1,7 @@
 # MorletDB viewer
 
+![The viewer on the synthetic demo: waveform, context lanes, segments, an air-cut label and the comparison of the selected segment with history.](../../assets/screenshots/viewer-demo.jpg)
+
 A local, read-only web page for looking at recordings the way the context workflow
 sees them:
 - the waveform, with zoom, pan and min/max per pixel computed in the database;
@@ -14,7 +16,8 @@ DATABASE_URL=postgresql://user@localhost/db python tools/viewer/viewer.py   # ht
 ```
 
 To try it on synthetic data, run `python tools/viewer/demo.py` against a scratch
-database first. It creates `demo_spindle`: 8 parts with program/block/tool/part
+database first. Unlike the viewer, the demo script writes: it drops and recreates
+`demo_spindle*` tables, so use a role and database meant for that. It creates `demo_spindle`: 8 parts with program/block/tool/part
 context, an air cut in part 6 (labelled) and chatter in part 7.
 
 ## Safety
