@@ -1,0 +1,35 @@
+{
+ "year": 2025,
+ "windows": 1687,
+ "provenance": {
+  "commit": "6ec192cf3db93bf647e6754fd16a0e433dff5030",
+  "dirty": false,
+  "machine": "arm64",
+  "os": "macOS-27.0.1-arm64-arm-64bit",
+  "cpu": "Apple M5 Max"
+ },
+ "raw_append_s": 37.34581387497019,
+ "generation_ms_per_window": {
+  "read_s": 11.614537183565231,
+  "envelope_cpu_s": 0.979479976720494,
+  "st_cpu_s": 0.9165775262301862,
+  "insert_s": 3.51348279959621
+ },
+ "update_ms_per_window": {
+  "p50": 27.735833486076444,
+  "p95": 42.690789268817745,
+  "n": 200
+ },
+ "storage_bytes": {
+  "r1_y2025": 13950976,
+  "r1_y2025_chunks": 12754944,
+  "r1_y2025_segments": 1941504,
+  "r1_y2025_envelopes": 3555328,
+  "r1_y2025_st": 565248
+ },
+ "original_float64_bytes": 55279616,
+ "derived_fraction_of_raw_chunks": {
+  "envelopes": 0.27874116891457934,
+  "st": 0.04431599229287091
+ }
+}

@@ -1,0 +1,69 @@
+{
+ "year": 2025,
+ "queries": 1444,
+ "events": 275,
+ "methods": {
+  "E": {
+   "latency_ms": {
+    "p50": 1212.5969375483692,
+    "p95": 1609.4838168297426
+   },
+   "bytes_fetched_mean": 6042337.506925208,
+   "samples_decoded_mean": 755292.188365651,
+   "rows_read_mean": 184.39750692520775,
+   "recall10_vs_E": 1.0,
+   "identical_set": 1.0,
+   "identical_order": 1.0,
+   "median_abs_dkm_mean_over_events": 11.599142236064253
+  },
+  "M": {
+   "latency_ms": {
+    "p50": 120.6091454369016,
+    "p95": 165.92133392114192
+   },
+   "bytes_fetched_mean": 333539.9113573407,
+   "samples_decoded_mean": 4096.0,
+   "rows_read_mean": 184.39750692520775,
+   "recall10_vs_E": 1.0,
+   "identical_set": 1.0,
+   "identical_order": 1.0,
+   "median_abs_dkm_mean_over_events": 11.599142236064253,
+   "relevance_vs_E": {
+    "m_minus_e_km": -0.0,
+    "ci95": [
+     -0.0,
+     -0.0
+    ],
+    "events": 275
+   }
+  },
+  "C200": {
+   "latency_ms": {
+    "p50": 125.37854153197259,
+    "p95": 171.13998583517966
+   },
+   "bytes_fetched_mean": 354846.02216066484,
+   "samples_decoded_mean": 4096.0,
+   "rows_read_mean": 357.9736842105263,
+   "recall10_vs_E": 0.9931440443213295,
+   "identical_set": 0.9494459833795014,
+   "identical_order": 0.9494459833795014,
+   "median_abs_dkm_mean_over_events": 11.624094875527907,
+   "relevance_vs_E": {
+    "m_minus_e_km": 0.024952639463651664,
+    "ci95": [
+     0.004520179643372705,
+     0.05092005622161152
+    ],
+    "events": 275
+   }
+  }
+ },
+ "provenance": {
+  "commit": "6ec192cf3db93bf647e6754fd16a0e433dff5030",
+  "dirty": false,
+  "machine": "arm64",
+  "os": "macOS-27.0.1-arm64-arm-64bit",
+  "cpu": "Apple M5 Max"
+ }
+}

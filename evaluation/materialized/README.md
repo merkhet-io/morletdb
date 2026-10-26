@@ -1,6 +1,8 @@
 # R1: materialized envelope representation
 
 - [PROTOCOL.md](PROTOCOL.md): frozen protocol, with the development-run summary.
+- [results/eval-2025/RESULTS.md](results/eval-2025/RESULTS.md): the single 2025
+  evaluation. Decision: **narrow** (exact agreement, p95 at 0.10×, storage 27.9% > 25%).
 - `r1.py`: harness (`load`, `run`), using pg_morlet 0.2.0 encoded storage and the
   timing test's window pipeline.
 

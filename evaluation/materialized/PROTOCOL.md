@@ -132,6 +132,12 @@ Thresholds are researcher-chosen and were written before the development run.
 They were **not changed after seeing development results**, including the one
 result that fails a bound (envelope storage, below).
 
+## Evaluation result (2025)
+
+**Narrow.** M matched E exactly and cut p95 latency to 0.10×, but the envelopes
+take 27.9% of the raw chunk table, above the 25% bound. See
+[results/eval-2025/RESULTS.md](results/eval-2025/RESULTS.md).
+
 ## Development run (2023, before the freeze)
 
 Run: `data/r1-runs/dev` (`load-2023.json`, `run-2023.json`), this harness,
