@@ -167,8 +167,9 @@ def main():
     res = analyse(rows)
     res["rejected"] = rejected
     res["loaded"] = len(rows)
-    (out / "c2.json").write_text(json.dumps(res, indent=1))
-    print(json.dumps({k: v for k, v in res.items() if k != "rows"}, indent=1))
+    plain = lambda o: o.item() if hasattr(o, "item") else str(o)  # noqa: E731  numpy scalars
+    (out / "c2.json").write_text(json.dumps(res, indent=1, default=plain))
+    print(json.dumps({k: v for k, v in res.items() if k != "rows"}, indent=1, default=plain))
 
 
 if __name__ == "__main__":
