@@ -1,0 +1,13 @@
+unit                                 W-WPK   W-MSK    B-SK   W-MDB   W-WPN   B-FFT     RMS    KURT     ENV
+femto-Bearing1_3-horizontal          0.00u   0.00u   0.00u    0.81    0.73    0.46    0.42    0.31       -
+femto-Bearing1_4-horizontal          0.00u    0.26    0.26    0.90    0.93    0.83    0.26    0.27    0.26
+femto-Bearing1_5-horizontal           0.02    0.02    0.02    0.86    0.84    0.72    0.01    0.02    0.00
+femto-Bearing1_6-horizontal          0.00u   0.00u   0.00u    0.95    0.91    0.91   0.00u   0.00u   0.00u
+femto-Bearing1_7-horizontal          0.00u    0.03    0.64    0.89    0.88    0.95    0.02    0.57    0.02
+femto-Bearing2_3-horizontal          0.00u   0.00u   0.00u   0.00u    0.92    0.92    0.00   0.00u    0.00
+femto-Bearing2_4-horizontal          0.00u   0.00u   0.00u    0.76    0.76    0.76    0.01   0.00u       -
+femto-Bearing2_5-horizontal          0.00u   0.00u   0.00u    0.92    0.96    0.92       -   0.00u       -
+femto-Bearing2_6-horizontal              -       -       -    0.87    0.91    0.86    0.02    0.02    0.01
+femto-Bearing2_7-horizontal          0.00u   0.00u   0.00u    0.45    0.63    0.05    0.05   0.00u       -
+femto-Bearing3_3-horizontal              -       -       -    0.38    0.40    0.37    0.32    0.02    0.02
+cells: stable lead (fraction of post-calibration life); 'u' = unstable alarm (lead 0); '-' = no alarm

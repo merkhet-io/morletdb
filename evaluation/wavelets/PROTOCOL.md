@@ -1,5 +1,8 @@
 # W1: do wavelet features detect bearing degradation earlier than standard methods?
 
+**Result: CLOSE.** Morlet spectral kurtosis vs the STFT kurtogram: Δ stable lead −0.056
+[−0.168, 0.000]. See [results/eval/RESULTS.md](results/eval/RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line, before the FEMTO archive was
 downloaded. Development (the FEMTO learning set and IMS) may only make the choices
 listed under "Development". Changes after the freeze are logged under "Changes
