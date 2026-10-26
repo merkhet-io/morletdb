@@ -54,13 +54,16 @@ FEMTO_EVAL = ("Bearing1_3", "Bearing1_4", "Bearing1_5", "Bearing1_6", "Bearing1_
 
 
 def femto_units(root: Path, names, channel):
-    """Snapshots from acc_*.csv: hour, minute, second, microsecond, horizontal, vertical."""
+    """Snapshots from acc_*.csv: hour, minute, second, microsecond, horizontal, vertical.
+
+    Development reads Learning_set, evaluation Full_Test_Set; the truncated Test_set has
+    directories with the same names and is not used."""
     col = {"horizontal": 4, "vertical": 5}[channel]
+    subset = "Learning_set" if names == FEMTO_DEV else "Full_Test_Set"
     for name in names:
-        dirs = [p for p in root.rglob(name) if p.is_dir()]
-        if len(dirs) != 1:
-            raise FileNotFoundError(f"{name}: expected one directory, found {len(dirs)}")
-        files = sorted(dirs[0].glob("acc_*.csv"))
+        files = sorted((root / subset / name).glob("acc_*.csv"))
+        if not files:
+            raise FileNotFoundError(f"{subset}/{name}: no acc_*.csv files")
         snaps = []
         for f in files:
             text = f.read_text()

@@ -158,4 +158,15 @@ The thresholds are researcher-chosen and provisional until the freeze.
 
 ## Changes after freeze
 
-(none)
+1. **Loader fix**, before any feature was computed on FEMTO. The archive's truncated
+   `Test_set` repeats the evaluation bearing names, so the loader now reads
+   `Learning_set` and `Full_Test_Set` explicitly instead of searching by name.
+   No method change.
+
+Archive check (layout only, no features computed):
+- the NASA zip has SHA-256 `e21bb22b…d81f`;
+- it contains `FEMTOBearingDataSet.zip` with three inner archives (hashes in
+  `data/femto/archive/SHA256SUM`);
+- the snapshot counts match the documented set. Learning: 2803, 871, 911, 797,
+  515 and 1637. Full test: 2375, 1428, 2463, 2448, 2259, 1955, 751, 2311, 701,
+  230 and 434.
