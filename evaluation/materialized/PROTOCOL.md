@@ -176,4 +176,7 @@ the timing test. These numbers inform the evaluation design (N), not the decisio
 
 ## Changes after freeze
 
-(none)
+1. Added `fetch_windows.py`. `timing.py`'s CLI accepts only 2023 and 2024, so this
+   driver calls its unchanged `catalog`, `plan_windows`, `fetch` and `prepare`
+   functions for 2025, reusing the timing run's station coordinates. No method,
+   threshold or rule changed. Added before any 2025 download.
