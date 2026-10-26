@@ -201,6 +201,44 @@ fn morlet_encoded_chunk_kind(encoded: &[u8]) -> &'static str {
         .name()
 }
 
+/// Materialized envelope representation (`xc-envelope-f16-v1`), see morlet_core::envelope.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelope_version() -> &'static str {
+    morlet_core::envelope::ENVELOPE_VERSION
+}
+
+/// Full-precision envelope of one window (used for queries).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelope(samples: Vec<Option<f64>>) -> Vec<f64> {
+    morlet_core::envelope::envelope(&checked_samples(samples))
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
+/// Stored form: version byte + binary16 values.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelope_encode(samples: Vec<Option<f64>>) -> Vec<u8> {
+    morlet_core::envelope::encode(&checked_samples(samples))
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
+/// Decoded and z-scored stored envelope, as matching sees it.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelope_decode(envelope: &[u8]) -> Vec<f64> {
+    morlet_core::envelope::decode(envelope).unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
+/// 1 - max over |lag| <= max_lag of the biased cross-correlation of a query envelope
+/// (morlet_envelope) and a stored envelope.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelope_distance(query_envelope: Vec<Option<f64>>, stored: &[u8], max_lag: i32) -> f64 {
+    let stored = morlet_core::envelope::decode(stored).unwrap_or_else(|e| pgrx::error!("{}", e));
+    if max_lag < 0 {
+        pgrx::error!("max_lag must be nonnegative");
+    }
+    morlet_core::envelope::distance(&checked_samples(query_envelope), &stored, max_lag as usize)
+        .unwrap_or_else(|_| pgrx::error!("envelope lengths differ or max_lag is too large"))
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_valid_encoded_chunk(encoded: &[u8], sample_count: i32) -> bool {
     let samples = morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e));
@@ -431,6 +469,65 @@ mod tests {
     fn raw_only_recordings_validate_rate() {
         Spi::run("SELECT morlet_create_stream_collection('public','raw_only_bad'); SELECT morlet_start_recording('raw_only_bad','A',0,'x','g','{}',512,256,'zscore','none')").unwrap();
     }
+    fn envelope_fixture() {
+        // A: noise with a burst centred at 3000; B: the same burst at 10100 (68 samples later
+        // relative to its window) plus other noise; C: noise only.
+        Spi::run("SELECT morlet_create_stream_collection('public','env'); SELECT morlet_enable_envelopes('env'); SELECT morlet_start_recording('env',r,100,'HHZ','counts','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B','C']) r; CREATE TEMP TABLE burst AS SELECT i,round(800*exp(-power((i-300)/40.,2))*sin(i/2.))::float8 AS v FROM generate_series(0,599) i; SELECT morlet_append_chunk('env',r,0,ARRAY(SELECT (round(20*sin(s.i*1.7+off)+((s.i*7919+off*13)%23))+coalesce(b.v,0))::float8 FROM generate_series(0,16383) s(i) LEFT JOIN burst b ON b.i=s.i-at ORDER BY s.i)) FROM (VALUES ('A',2700,1),('B',9800,2),('C',-100000,3)) x(r,at,off)").unwrap();
+    }
+
+    #[pg_test]
+    fn envelope_functions_match_the_core_definition() {
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_envelope_version()")
+                .unwrap()
+                .unwrap(),
+            "xc-envelope-f16-v1"
+        );
+        assert_eq!(Spi::get_one::<i32>("SELECT cardinality(morlet_envelope(ARRAY(SELECT sin(i/5.)*i FROM generate_series(0,4095) i)))").unwrap(), Some(410));
+        assert_eq!(Spi::get_one::<i32>("SELECT octet_length(morlet_envelope_encode(ARRAY(SELECT sin(i/5.)*i FROM generate_series(0,4095) i)))").unwrap(), Some(821));
+        assert_eq!(Spi::get_one::<bool>("WITH x AS (SELECT ARRAY(SELECT sin(i/5.)*i FROM generate_series(0,2047) i) s) SELECT morlet_envelope_distance(morlet_envelope(s),morlet_envelope_encode(s),20)<1e-3 FROM x").unwrap(), Some(true));
+    }
+
+    #[pg_test]
+    fn envelope_build_resumes_and_search_finds_matching_burst() {
+        envelope_fixture();
+        assert_eq!(Spi::get_one::<i64>("SELECT sum(morlet_build_envelopes('env',r,2048,1024,3))::bigint FROM unnest(ARRAY['A','B','C']) r").unwrap(), Some(9));
+        assert_eq!(Spi::get_one::<i64>("SELECT sum(morlet_build_envelopes('env',r,2048,1024))::bigint FROM unnest(ARRAY['A','B','C']) r").unwrap(), Some(36));
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('env','A',2048,1024)").unwrap(),
+            Some(0)
+        );
+        Spi::run("SELECT morlet_append_chunk('env','A',16384,array_fill(1.::float8,ARRAY[2048]))")
+            .unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('env','A',2048,1024)").unwrap(),
+            Some(2)
+        );
+        // Query: A's window around its burst; best match outside A is B's burst window.
+        let top = Spi::get_one::<String>("SELECT recording_id||':'||start_sample FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',3) LIMIT 1").unwrap().unwrap();
+        assert_eq!(top, "B:9216");
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',10) WHERE recording_id='A' AND start_sample<4096 AND start_sample+2048>2048").unwrap(), Some(0));
+        // Results never overlap within one recording.
+        assert_eq!(Spi::get_one::<i64>("WITH h AS (SELECT * FROM morlet_search_envelopes('env',(SELECT samples FROM morlet_read_interval('env','A',2048,4096)),100,'HHZ','counts','{}',20)) SELECT count(*) FROM h a JOIN h b ON a.recording_id=b.recording_id AND a.start_sample<b.start_sample AND b.start_sample<a.end_sample").unwrap(), Some(0));
+        assert_eq!(Spi::get_one::<bool>("SELECT envelope_table_bytes>0 AND total_bytes=recordings_table_bytes+chunk_table_bytes+segment_table_bytes+envelope_table_bytes FROM morlet_collection_storage('env')").unwrap(), Some(true));
+    }
+
+    #[pg_test(error = "envelope search exceeds 5 candidates; narrow the metadata filter")]
+    fn envelope_search_enforces_its_budget() {
+        envelope_fixture();
+        Spi::run("SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r; SELECT * FROM morlet_search_envelope_interval('env','A',0,2048,'{}',10,0.075,true,true,5)").unwrap();
+    }
+
+    #[pg_test(error = "envelopes are not enabled for this collection (morlet_enable_envelopes)")]
+    fn envelope_search_requires_enabled_envelopes() {
+        Spi::run("SELECT morlet_create_stream_collection('public','no_env'); SELECT * FROM morlet_search_envelopes('no_env',array_fill(0.::float8,ARRAY[512]),100,'x','g')").unwrap();
+    }
+
+    #[pg_test(error = "envelope windows must be a power of two in 512..32768 samples")]
+    fn envelope_rejects_other_window_lengths() {
+        Spi::run("SELECT morlet_envelope(array_fill(0.::float8,ARRAY[1000]))").unwrap();
+    }
+
     #[pg_test(error = "incompatible stream representation")]
     fn search_rejects_mixed_extractor_population() {
         Spi::run("SELECT morlet_create_stream_collection('public','mixed_streams'); SELECT morlet_start_recording('mixed_streams','A',100,'HHZ','counts','{}',512,256,'zscore','morlet-energy-lowrate-v1'); SELECT morlet_append_chunk('mixed_streams','A',0,array_fill(0.::float8,ARRAY[512])); UPDATE mixed_streams SET checkpoint=jsonb_set(checkpoint,'{extractor_version}','\"morlet-energy-v1\"'); SELECT * FROM morlet_search_streams('mixed_streams',array_fill(0.::float8,ARRAY[512]),100,'HHZ','counts','{}','zscore',10,4096,'morlet-energy-lowrate-v1')").unwrap();

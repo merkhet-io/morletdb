@@ -349,15 +349,161 @@ END $$;
 -- of each sibling table. Samples are the received counts of visible recordings.
 CREATE FUNCTION public.morlet_collection_storage(collection regclass)
 RETURNS TABLE(recordings bigint,samples bigint,original_float64_bytes bigint,recordings_table_bytes bigint,
-  chunk_table_bytes bigint,segment_table_bytes bigint,total_bytes bigint,
+  chunk_table_bytes bigint,segment_table_bytes bigint,envelope_table_bytes bigint,total_bytes bigint,
   chunk_table_bits_per_sample float8,total_bits_per_sample float8)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE relations record; n bigint; total bigint; r bigint; c bigint; g bigint;
+DECLARE relations record; n bigint; total bigint; r bigint; c bigint; g bigint; e bigint; envelopes regclass;
 BEGIN
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
   EXECUTE format('SELECT count(*),coalesce(sum((checkpoint->>''end'')::bigint),0)::bigint FROM %s',collection)
     INTO recordings,n;
+  SELECT to_regclass(format('%I.%I',ns.nspname,cl.relname||'_envelopes')) INTO envelopes
+    FROM pg_class cl JOIN pg_namespace ns ON ns.oid=cl.relnamespace WHERE cl.oid=collection;
   r:=pg_total_relation_size(collection); c:=pg_total_relation_size(relations.chunks);
-  g:=pg_total_relation_size(relations.segments); total:=r+c+g;
-  RETURN QUERY SELECT recordings,n,8*n,r,c,g,total,(8.0*c/nullif(n,0))::float8,(8.0*total/nullif(n,0))::float8;
+  g:=pg_total_relation_size(relations.segments);
+  e:=CASE WHEN envelopes IS NULL THEN 0 ELSE pg_total_relation_size(envelopes) END; total:=r+c+g+e;
+  RETURN QUERY SELECT recordings,n,8*n,r,c,g,e,total,(8.0*c/nullif(n,0))::float8,(8.0*total/nullif(n,0))::float8;
+END $$;
+
+-- Materialized envelopes (xc-envelope-f16-v1): an opt-in, rebuildable
+-- representation stored next to raw chunks; not an index. Rows hold binary16
+-- envelopes of fixed windows; the payload's first byte is its encoding version.
+CREATE FUNCTION public.morlet_enable_envelopes(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE schema_name text; collection_name text;
+BEGIN
+  SELECT n.nspname,c.relname INTO schema_name,collection_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
+    window_size integer NOT NULL CHECK(window_size IN (512,1024,2048,4096,8192,16384,32768)),
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    envelope bytea NOT NULL CHECK(octet_length(envelope)=1+2*((window_size+9)/10) AND get_byte(envelope,0)=1),
+    PRIMARY KEY(recording_id,window_size,start_sample))',schema_name,collection_name||'_envelopes',schema_name,collection_name);
+  RETURN format('%I.%I',schema_name,collection_name||'_envelopes')::regclass;
+END $$;
+
+CREATE FUNCTION public.morlet_envelope_relation(collection regclass)
+RETURNS regclass LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass;
+BEGIN
+  SELECT to_regclass(format('%I.%I',n.nspname,c.relname||'_envelopes')) INTO rel
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  IF rel IS NULL THEN RAISE EXCEPTION 'envelopes are not enabled for this collection (morlet_enable_envelopes)'; END IF;
+  RETURN rel;
+END $$;
+
+-- Builds envelopes for complete windows on the grid start_sample = k*stride,
+-- resuming after the last stored window of this size. At most max_windows per
+-- call, so long recordings can be built in bounded transactions. Returns the
+-- number of rows written; 0 means the recording is up to date.
+CREATE FUNCTION public.morlet_build_envelopes(collection regclass,recording_id text,
+  window_size integer DEFAULT 4096,stride integer DEFAULT 2048,max_windows integer DEFAULT 10000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass; recording_end bigint; s bigint; last bigint; written bigint:=0;
+BEGIN
+  IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) OR stride NOT BETWEEN 1 AND 32768
+    OR max_windows NOT BETWEEN 1 AND 1000000 THEN
+    RAISE EXCEPTION 'window_size must be a power of two in 512..32768, stride 1..32768, max_windows 1..1000000';
+  END IF;
+  rel:=public.morlet_envelope_relation(collection);
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
+    INTO last USING recording_id,window_size;
+  s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
+  WHILE s+window_size<=recording_end AND written<max_windows LOOP
+    EXECUTE format('INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
+      FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
+      USING recording_id,window_size,s,collection;
+    written:=written+1;
+    s:=s+stride;
+  END LOOP;
+  RETURN written;
+END $$;
+
+-- Exact scan of every eligible stored envelope (same rate, channel, unit and
+-- window; metadata containment), scored in Rust against the query's
+-- full-precision envelope. Lag tolerance is a fraction of the envelope length
+-- (0.075 reproduces the evaluated +/-30 envelope samples at 4096-sample windows). Above max_candidates the
+-- call fails rather than sampling. Source exclusion uses the optional
+-- exclude_* arguments (NULL disables it). Overlapping windows of one recording
+-- are suppressed greedily in rank order before top_k.
+CREATE FUNCTION public.morlet_envelope_ranked(collection regclass,query_samples float8[],query_rate_hz float8,
+  query_channel text,query_unit text,metadata_filter jsonb,top_k integer,max_lag_fraction float8,
+  suppress_overlaps boolean,max_candidates integer,
+  exclude_recording_id text,exclude_start bigint,exclude_end bigint)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; hit record;
+  picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
+  picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
+BEGIN
+  IF top_k IS NULL OR top_k NOT BETWEEN 1 AND 100 OR metadata_filter IS NULL OR jsonb_typeof(metadata_filter)<>'object'
+    OR max_lag_fraction IS NULL OR NOT (max_lag_fraction BETWEEN 0 AND 0.5) OR max_candidates IS NULL OR max_candidates<1
+    OR query_rate_hz IS NULL OR suppress_overlaps IS NULL THEN
+    RAISE EXCEPTION 'invalid top_k, metadata filter, max_lag_fraction (0..0.5) or max_candidates';
+  END IF;
+  rel:=public.morlet_envelope_relation(collection);
+  width:=cardinality(query_samples);
+  query_envelope:=public.morlet_envelope(query_samples);
+  lag:=floor(max_lag_fraction*cardinality(query_envelope));
+  EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id
+    WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection)
+    INTO candidates USING width,query_rate_hz,query_channel,query_unit,metadata_filter;
+  IF candidates>max_candidates THEN
+    RAISE EXCEPTION 'envelope search exceeds % candidates; narrow the metadata filter',max_candidates;
+  END IF;
+  FOR hit IN EXECUTE format('SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+      public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
+    FROM %s e JOIN %s r ON r.recording_id=e.recording_id
+    WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5
+      AND ($8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10)
+    ORDER BY distance,e.recording_id,e.start_sample',rel,collection)
+    USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
+      exclude_recording_id,exclude_start,exclude_end
+  LOOP
+    blocked:=false;
+    IF suppress_overlaps AND picked>0 THEN
+      FOR idx IN 1..picked LOOP
+        IF picked_ids[idx]=hit.recording_id AND picked_starts[idx]<hit.end_sample AND picked_ends[idx]>hit.start_sample THEN
+          blocked:=true; EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+    IF blocked THEN CONTINUE; END IF;
+    RETURN QUERY SELECT hit.recording_id,hit.start_sample,hit.end_sample,hit.distance,hit.metadata;
+    picked:=picked+1;
+    picked_ids:=array_append(picked_ids,hit.recording_id);
+    picked_starts:=array_append(picked_starts,hit.start_sample);
+    picked_ends:=array_append(picked_ends,hit.end_sample);
+    EXIT WHEN picked=top_k;
+  END LOOP;
+END $$;
+
+CREATE FUNCTION public.morlet_search_envelopes(collection regclass,query_samples float8[],query_rate_hz float8,
+  query_channel text,query_unit text,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,suppress_overlaps boolean DEFAULT true,max_candidates integer DEFAULT 4096)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT * FROM public.morlet_envelope_ranked(collection,query_samples,query_rate_hz,query_channel,query_unit,
+    metadata_filter,top_k,max_lag_fraction,suppress_overlaps,max_candidates,NULL,NULL,NULL)
+$$;
+
+-- Query by a stored interval. With exclude_source, windows overlapping the
+-- source interval in its own recording are not returned.
+CREATE FUNCTION public.morlet_search_envelope_interval(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  max_candidates integer DEFAULT 4096)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record;
+BEGIN
+  SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
+  RETURN QUERY SELECT * FROM public.morlet_envelope_ranked(collection,source.samples,source.sample_rate_hz,
+    source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,max_candidates,
+    CASE WHEN exclude_source THEN source_recording_id END,interval_start,interval_end);
 END $$;

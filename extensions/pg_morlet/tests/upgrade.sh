@@ -119,8 +119,20 @@ DO $$ BEGIN
      IS DISTINCT FROM (SELECT array_agg(features ORDER BY recording_id,start_sample) FROM plant_v2_segments)
   THEN RAISE EXCEPTION 'transfer mismatch'; END IF;
 END $$;
+-- Materialized envelopes also work on an upgraded legacy (float8[]) collection.
+SELECT morlet_enable_envelopes('plant');
+DO $$
+DECLARE first bigint; second bigint;
+BEGIN
+  first:=morlet_build_envelopes('plant','A',4096,4096);
+  second:=morlet_build_envelopes('plant','A',4096,4096);
+  IF first<>4 OR second<>0
+    OR (SELECT count(*) FROM morlet_search_envelope_interval('plant','A',0,4096,'{}',5))<>3
+    OR (SELECT envelope_table_bytes FROM morlet_collection_storage('plant'))=0
+  THEN RAISE EXCEPTION 'envelopes on a legacy collection failed (built %, then %)',first,second; END IF;
+END $$;
 SQL
-echo "ok: legacy appends continue; transfer into an encoded collection is bitwise identical"
+echo "ok: legacy appends continue; transfer into an encoded collection is bitwise identical; envelopes work on legacy collections"
 
 psql -d morlet_upgrade_fresh -c "CREATE EXTENSION pg_morlet"
 catalog morlet_upgrade_old > "$WORK/upgraded.cat"
