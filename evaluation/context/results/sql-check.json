@@ -1,0 +1,38 @@
+{
+ "runs": 166,
+ "rejected_runs": [
+  [
+   2,
+   1
+  ]
+ ],
+ "c1_without_rejected": {
+  "rho_conditioned": 0.890927028234969,
+  "rho_context_free": 0.5763946356682732,
+  "delta": 0.31453239256669585,
+  "ci95": [
+   0.05655621841528713,
+   0.5740020351637891
+  ],
+  "decision": "supported",
+  "excluded_cases": [
+   14,
+   15,
+   16
+  ]
+ },
+ "load_s": 36.63763229199685,
+ "scored_runs": 64,
+ "rho_conditioned": 0.890927028234969,
+ "rho_context_free": 0.5763946356682732,
+ "max_abs_score_difference_vs_c1": 5.10702591327572e-14,
+ "compare_latency_ms": {
+  "p50": 22.744374989997596,
+  "p95": 39.120856346562505
+ },
+ "storage": {
+  "recordings": 996,
+  "chunk_table_bytes": 25354240,
+  "total_bytes": 26173440
+ }
+}

@@ -56,4 +56,10 @@ out += [rust(r) for r in ("morlet_envelope_version", "morlet_envelope", "morlet_
                           "morlet_envelope_decode", "morlet_envelope_distance")]
 out += [fn(r) for r in ("morlet_enable_envelopes", "morlet_envelope_relation", "morlet_build_envelopes",
                         "morlet_envelope_ranked", "morlet_search_envelopes", "morlet_search_envelope_interval")]
+out.append("\n-- Context model, phase 1.\n")
+out += [rust(r) for r in ("morlet_simple_values", "morlet_simple_value_names", "morlet_simple_values_version")]
+out += [fn(r) for r in ("morlet_enable_context", "morlet_context_relations", "morlet_check_context_overlaps",
+                        "morlet_add_context", "morlet_revise_context", "morlet_build_context_segments",
+                        "morlet_build_context_values", "morlet_add_label", "morlet_retract_label",
+                        "morlet_compare_to_history")]
 (EXT / "sql/pg_morlet--0.1.0--0.2.0.sql").write_text("\n".join(out))

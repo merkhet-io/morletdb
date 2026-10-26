@@ -507,3 +507,297 @@ BEGIN
     source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,max_candidates,
     CASE WHEN exclude_source THEN source_recording_id END,interval_start,interval_end);
 END $$;
+
+-- Context model, phase 1 (docs/context-model.md): a context timeline, context
+-- segments, simple-v1 values and compare-to-history, on single recordings in
+-- sample coordinates. Opt-in per collection; all tables are caller-owned.
+CREATE FUNCTION public.morlet_enable_context(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    ctx_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    kind text NOT NULL CHECK(kind IN (''interval'',''event'')),
+    key text NOT NULL CHECK(key<>''''),
+    value jsonb NOT NULL,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint CHECK(end_sample>start_sample),
+    batch_id text NOT NULL,
+    supersedes bigint REFERENCES %1$I.%2$I(ctx_id),
+    retracted boolean NOT NULL DEFAULT false,
+    recorded_at timestamptz NOT NULL DEFAULT now(),
+    recorded_by text NOT NULL DEFAULT current_user,
+    CHECK((kind=''event'')=(end_sample IS NULL)))',s,c||'_ctx',c);
+  EXECUTE format('CREATE INDEX ON %I.%I(recording_id,key,start_sample)',s,c||'_ctx');
+  EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_ctx');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    context jsonb NOT NULL, occurrence jsonb NOT NULL, ctx_ids bigint[] NOT NULL, spec jsonb NOT NULL,
+    stale boolean NOT NULL DEFAULT false,
+    UNIQUE(recording_id,start_sample,end_sample,spec))',s,c||'_ctx_segments',c);
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint NOT NULL REFERENCES %1$I.%3$I(segment_id) ON DELETE CASCADE,
+    representation text NOT NULL, vals float8[] NOT NULL,
+    PRIMARY KEY(segment_id,representation))',s,c||'_ctx_values',c||'_ctx_segments');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    label_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
+    author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
+    retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+END $$;
+
+CREATE FUNCTION public.morlet_context_relations(collection regclass)
+RETURNS TABLE(ctx regclass,segments regclass,vals regclass,labels regclass)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  ctx:=to_regclass(format('%I.%I',s,c||'_ctx')); segments:=to_regclass(format('%I.%I',s,c||'_ctx_segments'));
+  vals:=to_regclass(format('%I.%I',s,c||'_ctx_values')); labels:=to_regclass(format('%I.%I',s,c||'_labels'));
+  IF ctx IS NULL OR segments IS NULL OR vals IS NULL OR labels IS NULL THEN
+    RAISE EXCEPTION 'context is not enabled for this collection (morlet_enable_context)';
+  END IF;
+  RETURN NEXT;
+END $$;
+
+-- Rejects overlapping active intervals of one key in one recording. Active rows
+-- are neither retracted nor superseded by a later revision.
+CREATE FUNCTION public.morlet_check_context_overlaps(collection regclass,recording_ids text[])
+RETURNS void LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; clash record;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('WITH act AS (SELECT * FROM %1$s x WHERE x.kind=''interval'' AND NOT x.retracted
+      AND x.recording_id=ANY($1) AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id))
+    SELECT a.recording_id,a.key,a.ctx_id AS a_id,b.ctx_id AS b_id FROM act a JOIN act b
+      ON a.recording_id=b.recording_id AND a.key=b.key AND a.ctx_id<b.ctx_id
+      AND a.start_sample<b.end_sample AND b.start_sample<a.end_sample LIMIT 1',rel.ctx)
+    INTO clash USING recording_ids;
+  IF clash.a_id IS NOT NULL THEN
+    RAISE EXCEPTION 'overlapping context intervals for key % in recording % (ctx_id % and %)',
+      clash.key,clash.recording_id,clash.a_id,clash.b_id;
+  END IF;
+END $$;
+
+-- rows: JSON array of {"recording_id","key","value","start_sample"[,"end_sample"]};
+-- rows without end_sample are events. An identical retry of batch_id returns 0;
+-- a different batch under the same id is an error.
+CREATE FUNCTION public.morlet_add_context(collection regclass,batch_id text,rows jsonb)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; existing jsonb; incoming jsonb; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF jsonb_typeof(rows)<>'array' OR jsonb_array_length(rows)=0 OR batch_id='' THEN
+    RAISE EXCEPTION 'context rows must be a non-empty JSON array and batch_id non-empty';
+  END IF;
+  SELECT jsonb_agg(o ORDER BY o::text) INTO incoming FROM (SELECT jsonb_build_object('recording_id',r->>'recording_id',
+      'key',r->>'key','value',r->'value','start_sample',(r->>'start_sample')::bigint,
+      'end_sample',(r->>'end_sample')::bigint) AS o FROM jsonb_array_elements(rows) r) x;
+  EXECUTE format('SELECT jsonb_agg(o ORDER BY o::text) FROM (SELECT jsonb_build_object(''recording_id'',recording_id,
+      ''key'',key,''value'',value,''start_sample'',start_sample,''end_sample'',end_sample) AS o
+    FROM %s WHERE batch_id=$1) x',rel.ctx) INTO existing USING batch_id;
+  IF existing IS NOT NULL THEN
+    IF existing=incoming THEN RETURN 0; END IF;
+    RAISE EXCEPTION 'context batch % already exists with different rows',batch_id;
+  END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(incoming) r WHERE r->>'recording_id' IS NULL OR r->>'key' IS NULL
+      OR r->'value' IS NULL OR r->>'start_sample' IS NULL) THEN
+    RAISE EXCEPTION 'every context row needs recording_id, key, value and start_sample';
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,kind,key,value,start_sample,end_sample,batch_id)
+    SELECT r->>''recording_id'',CASE WHEN r->>''end_sample'' IS NULL THEN ''event'' ELSE ''interval'' END,
+      r->>''key'',r->''value'',(r->>''start_sample'')::bigint,(r->>''end_sample'')::bigint,$2
+    FROM jsonb_array_elements($1) r',rel.ctx) USING incoming,batch_id;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  PERFORM public.morlet_check_context_overlaps(collection,
+    ARRAY(SELECT DISTINCT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
+  RETURN n;
+END $$;
+
+-- Appends a revision of an active row (changes may set value, start_sample,
+-- end_sample) or a retraction. Segments built from the old row become stale.
+CREATE FUNCTION public.morlet_revise_context(collection regclass,ctx_id bigint,changes jsonb DEFAULT '{}'::jsonb,
+  retract boolean DEFAULT false)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; old record; new_id bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('SELECT * FROM %1$s x WHERE x.ctx_id=$1 AND NOT x.retracted
+    AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id) FOR UPDATE',rel.ctx) INTO old USING ctx_id;
+  IF old.ctx_id IS NULL THEN RAISE EXCEPTION 'context row % is not active or not visible',ctx_id; END IF;
+  IF jsonb_typeof(changes)<>'object' OR EXISTS(SELECT 1 FROM jsonb_object_keys(changes) k
+      WHERE k NOT IN ('value','start_sample','end_sample')) THEN
+    RAISE EXCEPTION 'changes may only set value, start_sample and end_sample';
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,kind,key,value,start_sample,end_sample,batch_id,supersedes,retracted)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING ctx_id',rel.ctx) INTO new_id
+    USING old.recording_id,old.kind,old.key,coalesce(changes->'value',old.value),
+      coalesce((changes->>'start_sample')::bigint,old.start_sample),
+      CASE WHEN changes ? 'end_sample' THEN (changes->>'end_sample')::bigint ELSE old.end_sample END,
+      'revision:'||old.ctx_id,old.ctx_id,retract;
+  PERFORM public.morlet_check_context_overlaps(collection,ARRAY[old.recording_id]);
+  EXECUTE format('UPDATE %s SET stale=true WHERE $1=ANY(ctx_ids)',rel.segments) USING old.ctx_id;
+  RETURN new_id;
+END $$;
+
+-- One segment per maximal intersection of the active intervals of all `keys`,
+-- within committed samples. occurrence holds the values of `occurrence_keys`
+-- intervals that cover the whole segment (for example the part). Stale segments
+-- of this recording and spec are replaced. Returns the number of new segments.
+CREATE FUNCTION public.morlet_build_context_segments(collection regclass,recording_id text,keys text[],
+  occurrence_keys text[] DEFAULT '{}'::text[],min_samples integer DEFAULT 1)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; recording_end bigint; spec jsonb; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF cardinality(keys)=0 OR min_samples<1 OR keys && occurrence_keys THEN
+    RAISE EXCEPTION 'keys must be non-empty, disjoint from occurrence_keys, and min_samples >= 1';
+  END IF;
+  keys:=ARRAY(SELECT DISTINCT k FROM unnest(keys) k ORDER BY k);
+  occurrence_keys:=ARRAY(SELECT DISTINCT k FROM unnest(occurrence_keys) k ORDER BY k);
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  spec:=jsonb_build_object('version','ctx-seg-v1','keys',to_jsonb(keys),'occurrence_keys',to_jsonb(occurrence_keys),
+    'min_samples',min_samples);
+  EXECUTE format('DELETE FROM %s WHERE recording_id=$1 AND spec=$2 AND stale',rel.segments) USING recording_id,spec;
+  EXECUTE format('WITH act AS (SELECT * FROM %1$s x WHERE x.recording_id=$1 AND x.kind=''interval'' AND NOT x.retracted
+        AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id)),
+      pts AS (SELECT DISTINCT p FROM act, LATERAL (VALUES (act.start_sample),(act.end_sample)) v(p) WHERE act.key=ANY($2)),
+      pieces AS (SELECT p AS a,lead(p) OVER (ORDER BY p) AS b FROM pts),
+      cov AS (SELECT pc.a,pc.b,array_agg(act.ctx_id ORDER BY act.key) AS ids,jsonb_object_agg(act.key,act.value) AS ctx,
+          count(*) AS n FROM pieces pc JOIN act ON act.key=ANY($2) AND act.start_sample<=pc.a AND act.end_sample>=pc.b
+        WHERE pc.b IS NOT NULL GROUP BY pc.a,pc.b)
+    INSERT INTO %2$s(recording_id,start_sample,end_sample,context,occurrence,ctx_ids,spec)
+    SELECT $1,cov.a,cov.b,cov.ctx,coalesce(o.occ,''{}''::jsonb),cov.ids||coalesce(o.ids,''{}''::bigint[]),$3
+    FROM cov LEFT JOIN LATERAL (SELECT jsonb_object_agg(act.key,act.value) AS occ,array_agg(act.ctx_id ORDER BY act.key) AS ids
+        FROM act WHERE act.key=ANY($4) AND act.start_sample<=cov.a AND act.end_sample>=cov.b) o ON true
+    WHERE cov.n=cardinality($2) AND cov.b<=$5 AND cov.b-cov.a>=$6
+    ON CONFLICT DO NOTHING',rel.ctx,rel.segments)
+    USING recording_id,keys,spec,occurrence_keys,recording_end,min_samples;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
+-- Computes simple-v1 values for this recording's non-stale segments that lack
+-- them, at most max_segments per call. Segments are read in 32768-sample pieces.
+CREATE FUNCTION public.morlet_build_context_values(collection regclass,recording_id text,max_segments integer DEFAULT 1000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; seg record; samples float8[]; piece float8[]; s bigint; rate float8; n bigint:=0;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF max_segments NOT BETWEEN 1 AND 100000 THEN RAISE EXCEPTION 'max_segments must be 1..100000'; END IF;
+  EXECUTE format('SELECT sample_rate_hz FROM %s WHERE recording_id=$1',collection) INTO rate USING recording_id;
+  IF rate IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  FOR seg IN EXECUTE format('SELECT s.segment_id,s.start_sample,s.end_sample FROM %s s WHERE s.recording_id=$1 AND NOT s.stale
+      AND NOT EXISTS(SELECT 1 FROM %s v WHERE v.segment_id=s.segment_id AND v.representation=''simple-v1'')
+      ORDER BY s.start_sample LIMIT $2',rel.segments,rel.vals) USING recording_id,max_segments
+  LOOP
+    IF seg.end_sample-seg.start_sample>1048576 THEN
+      RAISE EXCEPTION 'segment % has % samples; simple-v1 supports at most 1048576',seg.segment_id,seg.end_sample-seg.start_sample;
+    END IF;
+    samples:=ARRAY[]::float8[];
+    s:=seg.start_sample;
+    WHILE s<seg.end_sample LOOP
+      SELECT i.samples INTO piece FROM public.morlet_read_interval(collection,recording_id,s,least(s+32768,seg.end_sample)) i;
+      samples:=samples||piece;
+      s:=least(s+32768,seg.end_sample);
+    END LOOP;
+    EXECUTE format('INSERT INTO %s(segment_id,representation,vals) VALUES ($1,''simple-v1'',public.morlet_simple_values($2,$3))',
+      rel.vals) USING seg.segment_id,samples,rate;
+    n:=n+1;
+  END LOOP;
+  RETURN n;
+END $$;
+
+CREATE FUNCTION public.morlet_add_label(collection regclass,recording_id text,start_sample bigint,end_sample bigint,
+  label text,note text DEFAULT '')
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; id bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('INSERT INTO %s(recording_id,start_sample,end_sample,label,note) VALUES ($1,$2,$3,$4,$5) RETURNING label_id',
+    rel.labels) INTO id USING recording_id,start_sample,end_sample,label,note;
+  RETURN id;
+END $$;
+
+CREATE FUNCTION public.morlet_retract_label(collection regclass,label_id bigint)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('UPDATE %s SET retracted=true WHERE label_id=$1 AND NOT retracted',rel.labels) USING label_id;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n<>1 THEN RAISE EXCEPTION 'label % is not active or not visible',label_id; END IF;
+END $$;
+
+-- Compares one segment's simple-v1 values with history: other non-stale
+-- segments whose context contains the query's values for match_keys (all of the
+-- query's context keys when empty), on recordings with the same rate, channel
+-- and unit and matching metadata, excluding the query's own occurrence and any
+-- segment overlapping an active label in exclude_labels. relative_deviation is
+-- the recommended score for small histories (evaluation C1); robust_z needs a
+-- stable spread. NULL with a status when a value cannot be computed.
+CREATE FUNCTION public.morlet_compare_to_history(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000)
+RETURNS TABLE(value_name text,value float8,hist_n integer,hist_median float8,relative_deviation float8,
+  robust_z float8,quantile float8,status text,query_occurrence jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; q record; qr record; match jsonb; candidates bigint; history text;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
+  END IF;
+  EXECUTE format('SELECT s.*,v.vals FROM %s s LEFT JOIN %s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
+    WHERE s.segment_id=$1',rel.segments,rel.vals) INTO q USING segment_id;
+  IF q.segment_id IS NULL THEN RAISE EXCEPTION 'segment % does not exist or is not visible',segment_id; END IF;
+  IF q.stale THEN RAISE EXCEPTION 'segment % is stale; rebuild context segments',segment_id; END IF;
+  IF q.vals IS NULL THEN RAISE EXCEPTION 'segment % has no simple-v1 values (morlet_build_context_values)',segment_id; END IF;
+  IF cardinality(match_keys)=0 THEN
+    match:=q.context;
+  ELSE
+    IF EXISTS(SELECT 1 FROM unnest(match_keys) k WHERE NOT q.context ? k) THEN
+      RAISE EXCEPTION 'match_keys must be keys of the segment context %',q.context;
+    END IF;
+    SELECT jsonb_object_agg(k,q.context->k) INTO match FROM unnest(match_keys) k;
+  END IF;
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  history:=format('SELECT v.vals FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
+        JOIN %3$s r ON r.recording_id=s.recording_id
+      WHERE s.segment_id<>$1 AND NOT s.stale AND s.context @> $2 AND r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5
+        AND r.metadata @> $6 AND ($7=''{}''::jsonb OR s.occurrence<>$7)
+        AND NOT EXISTS(SELECT 1 FROM %4$s l WHERE l.recording_id=s.recording_id AND NOT l.retracted AND l.label=ANY($8)
+          AND l.start_sample<s.end_sample AND s.start_sample<l.end_sample)',rel.segments,rel.vals,collection,rel.labels);
+  EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO candidates
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  IF candidates>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  RETURN QUERY EXECUTE 'WITH hist AS MATERIALIZED ('||history||'),
+    budget AS (SELECT count(*)::integer AS n FROM hist),
+    q AS (SELECT name,ord,$9[ord] AS x FROM unnest(public.morlet_simple_value_names()) WITH ORDINALITY AS t(name,ord)),
+    st AS (SELECT q.name,q.ord,q.x,b.n,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[q.ord]) AS med,
+        count(*) FILTER (WHERE h.vals[q.ord]<q.x) AS below,count(*) FILTER (WHERE h.vals[q.ord]=q.x) AS equal
+      FROM q CROSS JOIN budget b LEFT JOIN hist h ON true GROUP BY q.name,q.ord,q.x,b.n),
+    sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad FROM st)
+    SELECT name,x,n,CASE WHEN n>=$10 THEN med END,
+      CASE WHEN n>=$10 AND med<>0 THEN (x-med)/abs(med) END,
+      CASE WHEN n>=$10 AND mad>0 THEN (x-med)/(1.4826*mad) END,
+      CASE WHEN n>=$10 THEN (below+0.5*equal)::float8/n END,
+      CASE WHEN n<$10 THEN ''insufficient_history'' WHEN med=0 THEN ''zero_median'' WHEN mad=0 THEN ''zero_spread''
+        ELSE ''ok'' END,$7
+    FROM sp ORDER BY ord'
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      q.vals,min_history;
+END $$;

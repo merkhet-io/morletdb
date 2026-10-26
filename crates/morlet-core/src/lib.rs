@@ -4,6 +4,7 @@ pub mod envelope;
 pub mod morlet;
 pub mod rawcodec;
 pub mod segments;
+pub mod values;
 use std::fmt;
 
 pub const MAX_SAMPLES: usize = 32_768;
@@ -21,6 +22,7 @@ pub enum SignalError {
     UnknownExtractor,
     NumericalFailure,
     EnvelopeLength,
+    SegmentLength,
     InvalidEnvelope,
 }
 impl fmt::Display for SignalError {
@@ -38,6 +40,7 @@ impl fmt::Display for SignalError {
                 "extractor must be morlet-energy-v1 or morlet-energy-lowrate-v1"
             }
             Self::NumericalFailure => "signal produces non-finite features at this numeric scale",
+            Self::SegmentLength => "segments must contain 1..1048576 samples",
             Self::EnvelopeLength => "envelope windows must be a power of two in 512..32768 samples",
             Self::InvalidEnvelope => "invalid stored envelope",
             Self::InvalidNormalization => "normalization must be none, demean or zscore",

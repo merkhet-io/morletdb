@@ -131,8 +131,19 @@ BEGIN
     OR (SELECT envelope_table_bytes FROM morlet_collection_storage('plant'))=0
   THEN RAISE EXCEPTION 'envelopes on a legacy collection failed (built %, then %)',first,second; END IF;
 END $$;
+-- Context model on the same upgraded legacy collection.
+SELECT morlet_enable_context('plant');
+SELECT morlet_add_context('plant','u1','[{"recording_id":"A","key":"block","value":"N1","start_sample":0,"end_sample":8192},
+  {"recording_id":"A","key":"block","value":"N1","start_sample":8192,"end_sample":16384},
+  {"recording_id":"A","key":"part","value":1,"start_sample":0,"end_sample":8192},
+  {"recording_id":"A","key":"part","value":2,"start_sample":8192,"end_sample":16384}]');
+DO $$ BEGIN
+  IF morlet_build_context_segments('plant','A',ARRAY['block'],ARRAY['part'])<>2 OR morlet_build_context_values('plant','A')<>2
+    OR (SELECT hist_n FROM morlet_compare_to_history('plant',(SELECT max(segment_id) FROM plant_ctx_segments),min_history=>1) LIMIT 1)<>1
+  THEN RAISE EXCEPTION 'context on a legacy collection failed'; END IF;
+END $$;
 SQL
-echo "ok: legacy appends continue; transfer into an encoded collection is bitwise identical; envelopes work on legacy collections"
+echo "ok: legacy appends continue; transfer into an encoded collection is bitwise identical; envelopes and context work on legacy collections"
 
 psql -d morlet_upgrade_fresh -c "CREATE EXTENSION pg_morlet"
 catalog morlet_upgrade_old > "$WORK/upgraded.cat"
