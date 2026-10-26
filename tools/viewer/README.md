@@ -8,7 +8,11 @@ sees them:
 - context, segment and label lanes;
 - a click on a segment compares it with history (`morlet_compare_summary` and
   per-value `morlet_compare_to_history`);
-- a selected window searches for similar windows (`morlet_search_envelope_interval`).
+- a selected window searches for similar windows (`morlet_search_envelope_interval`);
+- for recordings in an acquisition, the other channels are drawn under the waveform
+  on the same acquisition-time axis. The comparison then also lists every channel
+  side by side (`morlet_compare_acquisition`), with options for "history before
+  this point only" and "include level (p75) in score".
 
 ```sh
 python -m pip install -r tools/viewer/requirements.txt
@@ -18,7 +22,9 @@ DATABASE_URL=postgresql://user@localhost/db python tools/viewer/viewer.py   # ht
 To try it on synthetic data, run `python tools/viewer/demo.py` against a scratch
 database first. Unlike the viewer, the demo script writes: it drops and recreates
 `demo_spindle*` tables, so use a role and database meant for that. It creates `demo_spindle`: 8 parts with program/block/tool/part
-context, an air cut in part 6 (labelled) and chatter in part 7.
+context, an air cut in part 6 (labelled) and chatter in part 7. Each part is an
+acquisition with two channels: spindle vibration (5 kHz) and spindle current
+(500 Hz, a separately clocked logger, +2 ms ± 1 ms).
 
 ## Safety
 

@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+Extension (SQL version 0.3.0, with an update script from 0.2.0 as released in
+0.2.0-alpha.1; the chained update from 0.1.0 as released in 0.1.0-alpha.3 is also
+tested):
+- Acquisitions (context model phase 2):
+  - `morlet_enable_acquisitions`, `morlet_create_acquisition` and
+    `morlet_add_acquisition_channel`, with per-channel `offset_ns`, clock source and
+    offset uncertainty;
+  - exact time mapping: `morlet_time_to_samples`, `morlet_sample_time_ns`;
+  - acquisition-time context (`morlet_add_acquisition_context`);
+  - segments trimmed by clock uncertainty (`morlet_build_acquisition_segments`;
+    `trim_samples` on `morlet_build_context_segments`);
+  - aligned reads (`morlet_read_acquisition`);
+  - per-channel comparison (`morlet_compare_acquisition`).
+- `before_only` on `morlet_compare_to_history`, `morlet_compare_summary` and
+  `morlet_compare_acquisition`: history only from segments that started earlier.
+- `score_values` on `morlet_compare_summary` and `morlet_compare_acquisition`. The
+  default is unchanged; add `p75` for level signals such as motor current.
+
+Repository:
+- Viewer: sibling channels on the same time axis; per-channel comparison; options
+  for "history before this point only" and level.
+- Demo: two channels per part as acquisitions.
+- The 0.1.0 to 0.2.0 update script is frozen as released. The CI upgrade job also
+  updates a populated 0.2.0-alpha.1 database.
+
 ## 0.2.0-alpha.1
 
 The first release after the evidence-first research round.
