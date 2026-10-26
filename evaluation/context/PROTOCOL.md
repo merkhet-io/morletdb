@@ -58,7 +58,9 @@ exit. No value or definition is tuned.
 - **Robust z per value:** z = (x − median_ref) / (1.4826 · MAD_ref). A value
   with MAD = 0 in its reference is skipped.
 - **Score:** the run's maximum |z| over the values, as defined in
-  `docs/context-model.md` §5.
+  `docs/context-model.md` §5. *Amended (change 1): the primary score is the
+  maximum relative deviation |x − median_ref| / |median_ref|; robust z is
+  reported.*
 - **Arms:**
   - **conditioned:** the reference is the history runs with the same (depth of
     cut, feed, material), i.e. the twin case's sharp runs;
@@ -113,4 +115,18 @@ exit. No value or definition is tuned.
 
 ## Changes after freeze
 
-(none)
+1. **Primary score changed from robust z to relative deviation.** This was
+   prompted by the synthetic controls (`test_c1.py`), before any milling value
+   was read.
+   - **Problem:** with 3–4 sharp reference runs per setting, the MAD in the
+     conditioned arm is so noisy that the conditioned robust z loses 0.35 in
+     Spearman ρ on synthetic data *without any context effect*. Each case gets its
+     own noisy scale. The comparison would then measure history size, not context.
+   - **New primary score:** max over values of |x − median_ref| / |median_ref|.
+     It needs no spread estimate, so the arms differ only in which runs count as
+     the same context.
+   - **Robust z** (the score sketched in `docs/context-model.md`) is still
+     computed and reported for both arms.
+   - **Kept:** the decision rules, split, values and reference set.
+   - **Product finding:** robust z needs either more history or a pooled or
+     floored scale. This feeds back into the context-model design.
