@@ -415,7 +415,13 @@ mod tests {
     #[pg_test]
     fn raw_only_recordings_store_samples_without_segments() {
         Spi::run("SELECT morlet_create_stream_collection('public','raw_only'); SELECT morlet_start_recording('raw_only','slow',10,'T','C','{}',512,256,'zscore','none'); SELECT morlet_start_recording('raw_only','fast',4096,'x','g','{}',512,256,'zscore','none',0.001); SELECT morlet_start_recording('raw_only','indexed',4096,'x','g','{}',512,256,'zscore'); SELECT morlet_append_chunk('raw_only',r,0,ARRAY(SELECT (round(1000*sin(i/7.))/1000)::float8 FROM generate_series(0,4999) i)) FROM unnest(ARRAY['slow','fast','indexed']) r; SELECT morlet_append_chunk('raw_only','fast',5000,ARRAY(SELECT (round(1000*sin(i/7.))/1000)::float8 FROM generate_series(5000,5999) i))").unwrap();
-        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM raw_only_segments WHERE recording_id<>'indexed'").unwrap(), Some(0));
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM raw_only_segments WHERE recording_id<>'indexed'"
+            )
+            .unwrap(),
+            Some(0)
+        );
         assert_eq!(Spi::get_one::<String>("SELECT received_samples||' '||indexed_segments||' '||extractor_version FROM morlet_stream_status('raw_only','fast')").unwrap().unwrap(), "6000 0 none");
         assert_eq!(Spi::get_one::<bool>("SELECT samples=ARRAY(SELECT (round(1000*sin(i/7.))/1000)::float8 FROM generate_series(100,5899) i) FROM morlet_read_interval('raw_only','fast',100,5900)").unwrap(), Some(true));
         // Feature search sees only recordings that have segments.
