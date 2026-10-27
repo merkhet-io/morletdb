@@ -10,8 +10,11 @@ sees them:
   per-value `morlet_compare_to_history`);
 - a selected window searches for similar windows (`morlet_search_envelope_interval`);
 - per value, where the segment sits in its history (dots: history, bar: this
-  segment), and the nearest other occurrences of the context
-  (`morlet_history_neighbors`) with their labels; click one to open it;
+  segment), and similar other occurrences of the context
+  (`morlet_history_neighbors`) with their labels; click one to open it. They are
+  for browsing, not diagnosis: their labels describe those occurrences, and in
+  [C4](../../evaluation/context/c4/results/RESULTS.md) they named the event worse
+  than the machine's last label;
 - with `--allow-labels`, label a selection or a segment, or retract a label, from
   the page;
 - for recordings in an acquisition, the other channels are drawn under the waveform

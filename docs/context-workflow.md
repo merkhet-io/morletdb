@@ -213,6 +213,14 @@ comparison, with the same filters, budget, `before_only` and `score_values`.
   `simple-v1` values and overlapping labels.
 - **Size:** `top_k` goes up to 1000, so a caller can also draw the whole history
   distribution, as the viewer does.
+- **Use:** a browsing aid, not a classifier. Evaluation
+  [C4](../evaluation/context/c4/results/RESULTS.md) (Petrobras 3W, held out) tested whether the majority
+  label of the 5 nearest earlier occurrences names the current event. It did worse
+  than the machine's most recent label: balanced accuracy 0.39 against 0.61, Δ −0.21,
+  95% CI [−0.28, −0.05]. Most correct matches came from the same well. Paderborn
+  bearings (PR #6) showed the same pattern: `simple-v1` values mostly identify the
+  machine and period, not the fault. Show neighbours as occurrences to look at; do
+  not present their labels as a prediction for the query.
 
 ## Not yet
 

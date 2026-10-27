@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+Repository:
+- Viewer and docs present `morlet_history_neighbors` as similar occurrences to look
+  at, not a prediction: evaluation C4 (3W) found their labels name the event worse
+  than the machine's last label.
+
 ## 0.3.0-alpha.1
 
 Extension (SQL version 0.3.0, with an update script from 0.2.0 as released in

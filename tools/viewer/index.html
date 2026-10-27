@@ -354,9 +354,9 @@ function strip(hist, x) {
 }
 function neighborsTable(nb) {
   if (!nb.length) return "";
-  return `<h2 style="margin-top:12px">Nearest ${$("bef").checked ? "earlier" : "other"} occurrences of this context</h2><table><thead><tr><th>occurrence</th><th>recording</th><th>start</th><th>distance</th><th>labels</th></tr></thead><tbody>` +
+  return `<h2 style="margin-top:12px">Similar ${$("bef").checked ? "earlier" : "other"} occurrences to look at</h2><table><thead><tr><th>occurrence</th><th>recording</th><th>start</th><th>distance</th><th>their labels</th></tr></thead><tbody>` +
     nb.slice(0, 10).map((n) => `<tr class="hit" data-r="${esc(n.recording_id)}" data-s="${n.start_sample}" data-e="${n.end_sample}" data-id="${n.neighbor_segment_id}"><td>${esc(Object.values(n.occurrence).map(valText).join(" · ") || "—")}</td><td>${esc(n.recording_id)}</td><td>${fmtT(n.start_sample)}</td><td>${fmt(n.distance, 3)}</td><td>${n.labels.map((l) => esc(l.label)).join(", ") || "—"}</td></tr>`).join("") +
-    `</tbody></table>`;
+    `</tbody></table><div class="l" style="color:var(--muted);margin-top:6px">Similar in these values, not a diagnosis: their labels describe those occurrences, not this one. In C4 they named the event worse than the machine's last label, and close matches came mostly from the same machine.</div>`;
 }
 $("compare").addEventListener("click", async (ev) => {
   const tr = ev.target.closest("tr.hit"); if (!tr) return;
