@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# Upgrade test from the 0.2.0 release (default v0.2.0-alpha.1) against a real database.
+# Upgrade test from a 0.2.0 or later release against a real database.
 #
-#   tests/upgrade_from_0.2.0.sh [OLD_REF]
+#   tests/upgrade_from_release.sh [OLD_REF [OLD_VERSION]]   (default v0.2.0-alpha.1 0.2.0)
 #
 # Installs OLD_REF into the pgrx-managed PostgreSQL 17, populates a database through the
 # 0.2.0 API (encoded chunks, envelopes, context, segments, values, labels), installs this
 # checkout, then checks that:
-#  1. the 0.2.0 SQL keeps working with the new shared library (before UPDATE);
+#  1. the old SQL keeps working with the new shared library (before UPDATE);
 #  2. ALTER EXTENSION ... UPDATE reaches the control file's default version and every
 #     read, search and comparison returns identical results;
 #  3. the new acquisition API works on the upgraded data (before_only included);
 #  4. the upgraded catalog equals a fresh installation.
-# It drops and recreates the databases morlet_upgrade02_{old,fresh}.
+# It drops and recreates the databases morlet_upgrade_rel_{old,fresh}.
 set -euo pipefail
 OLD_REF=${1:-v0.2.0-alpha.1}
+OLD_VERSION=${2:-0.2.0}
 EXT=$(cd "$(dirname "$0")/.." && pwd)
 ROOT=$(cd "$EXT/../.." && pwd)
 PG_CONFIG=${PG_CONFIG:-$HOME/.pgrx/17.11/pgrx-install/bin/pg_config}
@@ -54,10 +55,10 @@ echo "== installing $OLD_REF"
 git -C "$ROOT" worktree add -q --detach "$WORK/old" "$OLD_REF"
 install "$WORK/old"
 restart
-for db in morlet_upgrade02_old morlet_upgrade02_fresh; do
+for db in morlet_upgrade_rel_old morlet_upgrade_rel_fresh; do
   psql -d postgres -c "DROP DATABASE IF EXISTS $db" -c "CREATE DATABASE $db"
 done
-psql -d morlet_upgrade02_old <<'SQL'
+psql -d morlet_upgrade_rel_old <<'SQL'
 CREATE EXTENSION pg_morlet;
 SELECT morlet_create_stream_collection('public', 'line');
 SELECT morlet_enable_envelopes('line');
@@ -76,24 +77,24 @@ SELECT morlet_build_context_segments('line', p, ARRAY['block'], ARRAY['part']) F
 SELECT morlet_build_context_values('line', p) FROM unnest(ARRAY['p1','p2','p3']) p;
 SELECT morlet_add_label('line', 'p2', 8000, 16000, 'checked', 'upgrade test');
 SQL
-test "$(psql -d morlet_upgrade02_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = 0.2.0
-snapshot morlet_upgrade02_old > "$WORK/before.txt"
+test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$OLD_VERSION"
+snapshot morlet_upgrade_rel_old > "$WORK/before.txt"
 test "$(wc -l < "$WORK/before.txt")" -gt 20
 
 echo "== installing this checkout ($NEW_VERSION)"
 install "$ROOT"
 restart
-snapshot morlet_upgrade02_old > "$WORK/library.txt"
+snapshot morlet_upgrade_rel_old > "$WORK/library.txt"
 diff "$WORK/before.txt" "$WORK/library.txt"
-echo "ok: 0.2.0 SQL with the new library returns identical results"
+echo "ok: $OLD_VERSION SQL with the new library returns identical results"
 
-psql -d morlet_upgrade02_old -c "ALTER EXTENSION pg_morlet UPDATE"
-test "$(psql -d morlet_upgrade02_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
-snapshot morlet_upgrade02_old > "$WORK/after.txt"
+psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
+test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
+snapshot morlet_upgrade_rel_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
 echo "ok: updated to $NEW_VERSION; reads, envelope search and comparisons are identical"
 
-psql -d morlet_upgrade02_old <<'SQL'
+psql -d morlet_upgrade_rel_old <<'SQL'
 SELECT morlet_enable_acquisitions('line');
 SELECT morlet_create_acquisition('line', 'a-'||p, 'M1', ('2026-03-0'||n||' 08:00Z')::timestamptz)
   FROM (VALUES ('p1',1),('p2',2),('p3',3)) v(p,n);
@@ -111,9 +112,9 @@ END $$;
 SQL
 echo "ok: acquisitions, aligned reads and before_only work on upgraded data"
 
-psql -d morlet_upgrade02_fresh -c "CREATE EXTENSION pg_morlet"
-catalog morlet_upgrade02_old > "$WORK/upgraded.cat"
-catalog morlet_upgrade02_fresh > "$WORK/fresh.cat"
+psql -d morlet_upgrade_rel_fresh -c "CREATE EXTENSION pg_morlet"
+catalog morlet_upgrade_rel_old > "$WORK/upgraded.cat"
+catalog morlet_upgrade_rel_fresh > "$WORK/fresh.cat"
 diff "$WORK/fresh.cat" "$WORK/upgraded.cat"
 echo "ok: upgraded catalog equals a fresh $NEW_VERSION install ($(wc -l < "$WORK/fresh.cat") objects)"
 echo "PASS"

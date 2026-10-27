@@ -876,7 +876,7 @@ dependencies = [
 
 [[package]]
 name = "morlet-core"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1008,7 +1008,7 @@ dependencies = [
 
 [[package]]
 name = "pg_morlet"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "morlet-core",
  "pgrx",
