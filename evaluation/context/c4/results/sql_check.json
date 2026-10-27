@@ -1,0 +1,29 @@
+[
+ {
+  "label": 0,
+  "query": "8/WELL-00019_20120601165020#1338573020",
+  "references": 10,
+  "channels": 9,
+  "max_relative_distance_error": 0.0,
+  "same_ids_and_order": true,
+  "pass": true
+ },
+ {
+  "label": 7,
+  "query": "7/WELL-00024_20160704180000#1467662400",
+  "references": 522,
+  "channels": 8,
+  "max_relative_distance_error": 2.216175087095741e-16,
+  "same_ids_and_order": true,
+  "pass": true
+ },
+ {
+  "label": 8,
+  "query": "8/WELL-00019_20120601165020#1338677420",
+  "references": 23,
+  "channels": 9,
+  "max_relative_distance_error": 1.9992783091982052e-16,
+  "same_ids_and_order": true,
+  "pass": true
+ }
+]
