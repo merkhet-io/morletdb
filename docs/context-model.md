@@ -4,7 +4,9 @@ Status: **phases 1 and 2 implemented** ([context workflow](context-workflow.md))
 - **Phase 2 (SQL 0.3.0)** adds acquisitions with per-channel offsets, clock
   sources and uncertainty; context in acquisition time; trimmed segments; aligned
   reads; per-channel comparison; and `before_only`.
-- **Not implemented:** neighbour search, clock drift and sync points. Evaluation C1 changed two things, see
+- **Not implemented:** clock drift and sync points. Neighbour search
+  (`morlet_history_neighbors`) shipped in 0.3.0; evaluation C4 found it a browsing
+  aid, not a way to label new data (see the workflow guide). Evaluation C1 changed two things, see
 the workflow guide: relative deviation is the recommended score, because robust z
 fails with small histories, and tool age belongs in every report. The rest of this
 document is still a **proposal**. Nothing here changes the current SQL or
@@ -356,7 +358,9 @@ revisions, as for context rows.
 - `author` comes from the session role, not a client argument.
 - **Gallery use.** `morlet_history_neighbors` returns labels overlapping each
   neighbor. An engineer sees "the three closest past executions of this block
-  were labelled air cut".
+  were labelled air cut" and opens them to compare. That is a lead, not a
+  diagnosis: in evaluation C4 neighbour labels named the event worse than the
+  machine's last label.
 - **Evaluation use.** An evaluation freezes a label set by exporting it with
   its label IDs, revisions and a hash. Labels added later do not change a frozen
   result.
