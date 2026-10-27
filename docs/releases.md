@@ -1,11 +1,14 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.2.0-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.0-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
 - **0.2.0-alpha.1:** reports SQL version 0.2.0, with an update script from
   alpha.3's 0.1.0 objects only (see durable-ingestion.md, Upgrading).
+- **0.3.0-alpha.1:** reports SQL version 0.3.0, with an update script from
+  0.2.0-alpha.1's 0.2.0 objects; the chained update from alpha.3's 0.1.0 is also
+  tested.
 
 Releases target PostgreSQL 17 on Linux amd64.
 
@@ -39,7 +42,7 @@ Verify the release exists and copy its exact image digest from image-digest.txt:
 ```sh
 git clone https://github.com/merkhet-io/morletdb.git
 cd morletdb
-git checkout v0.2.0-alpha.1
+git checkout v0.3.0-alpha.1
 export MORLET_IMAGE=ghcr.io/merkhet-io/morletdb@sha256:REPLACE_WITH_RELEASE_DIGEST
 docker compose -f compose.release.yaml pull db
 docker compose -f compose.release.yaml run --rm walkthrough
@@ -68,6 +71,7 @@ record environment, time to first match, unclear instructions and any manual fix
 Do not claim that human trial until it occurs.
 
 Image digests identify published bytes. Apt inputs/base tags are not fully
-content-addressed, so this does not promise bit-for-bit rebuilds. The only upgrade
-path is 0.1.0 (alpha.3) to 0.2.0, tested by the `upgrade` CI job. Keep
+content-addressed, so this does not promise bit-for-bit rebuilds. The tested upgrade
+paths are 0.1.0 (alpha.3) and 0.2.0 (0.2.0-alpha.1) to 0.3.0, both run by the
+`upgrade` CI job. Keep
 authoritative input files and back up databases before updating.
