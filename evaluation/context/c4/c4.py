@@ -25,14 +25,22 @@ NAME = re.compile(r"^(WELL-\d{5})_(\d{14})\.parquet$")
 DAY = 86400
 
 
+def seq_sum(a):
+    """Left-to-right float64 sum, as Rust's Iterator::sum in morlet_core (numpy's sum is pairwise)."""
+    return np.cumsum(a)[-1]
+
+
 def channel_values(x):
-    """simple-v1 std, crest, kurtosis, p75 (morlet_core::values) of one window; None if the product rejects it."""
+    """simple-v1 std, crest, kurtosis, p75 (morlet_core::values) of one window; None if the product rejects it.
+    Sums are sequential so that near-constant windows give the product's exact values."""
     if not np.isfinite(x).all() or np.abs(x).max() > 1e9:
         return None
-    m = x.mean()
-    m2 = np.mean((x - m) ** 2)
-    m4 = np.mean((x - m) ** 4)
-    rms = np.sqrt(np.mean(x ** 2))
+    n = len(x)
+    m = seq_sum(x) / n
+    d = x - m
+    m2 = seq_sum(d * d) / n
+    m4 = seq_sum((d * d) * (d * d)) / n
+    rms = np.sqrt(seq_sum(x * x) / n)
     peak = np.max(np.abs(x))
     return [np.sqrt(m2), peak / rms if rms > 0 else 0.0, m4 / (m2 * m2) if m2 > 0 else 0.0,
             float(np.percentile(x, 75))]

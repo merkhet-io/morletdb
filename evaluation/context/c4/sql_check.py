@@ -5,7 +5,7 @@
   sql_check.py check OUT                        (seismic environment: numpy, psycopg; MORLET_DSN)
 
 export picks the queries (for each of the three largest eligible classes, the earliest query
-window that is the first window of its instance), and writes the raw samples of each query and
+window of that class), and writes the raw samples of each query and
 its same-context references to OUT/check.npz with OUT/check.json. check loads every window as its
 own acquisition (origin_utc = window start, one raw-only recording per channel, context
 state + instance as occurrence) and compares morlet_history_neighbors, per channel, with the
@@ -34,18 +34,14 @@ def export(dataset_dir, c4_json, out):
     counts = Counter(r["label"] for r in rows)
     classes = sorted(res["eligible_classes"], key=lambda c: (-counts[c], c))[:3]
     windows, _, _ = c4.load(dataset_dir)
-    first = {}
-    for w in windows:
-        first.setdefault(w["instance"], w["start"])
-    picks = []
+    picks = []  # change after freeze 1: the earliest query window of each class (see PROTOCOL.md)
     for c in classes:
-        cand = [r for r in rows if r["label"] == c and first[r["instance"]] == r["start"]]
-        picks.append(min(cand, key=lambda r: (r["start"], r["instance"])))
+        picks.append(min((r for r in rows if r["label"] == c), key=lambda r: (r["start"], r["instance"])))
     needed, meta = {}, {"queries": []}
     for q in picks:
         refs = [w for w in windows if w["label"] is not None and w["instance"] != q["instance"]
                 and w["start"] < q["start"] and w["context"] == q["context"]]
-        ids = [(q["instance"], q["start"])] + [(w["instance"], w["start"]) for w in refs]
+        ids = [(q["instance"], int(q["start"]))] + [(w["instance"], int(w["start"])) for w in refs]
         meta["queries"].append({"label": q["label"], "context": q["context"], "windows": [list(i) for i in ids]})
         for inst, start in ids:
             needed.setdefault(inst, set()).add(start)
@@ -115,8 +111,8 @@ def check(out):
             qinst, qstart = map(str, qm["windows"][0])
             worst, order_ok, n_ch = 0.0, True, 0
             for ch, qx in by_window[(qinst, int(qstart))].items():
-                refs = {f"{i}#{s}/{ch}": w[ch] for (i, s), w in by_window.items()
-                        if ch in w and (i, s) != (qinst, int(qstart))}
+                refs = {f"{i}#{s}/{ch}": by_window[(i, s)][ch] for i, s in map(tuple, qm["windows"][1:])
+                        if ch in by_window.get((i, s), {})}
                 if not refs:
                     continue
                 expected = harness_channel(qx, refs)
@@ -134,8 +130,8 @@ def check(out):
                 order_ok &= [r for r, _ in got] == exp_order
                 n_ch += 1
             report.append({"label": qm["label"], "query": f"{qinst}#{qstart}", "references": len(qm["windows"]) - 1,
-                           "channels": n_ch, "max_relative_distance_error": worst, "same_ids_and_order": order_ok,
-                           "pass": order_ok and worst <= 1e-9})
+                           "channels": n_ch, "max_relative_distance_error": float(worst),
+                           "same_ids_and_order": bool(order_ok), "pass": bool(order_ok and worst <= 1e-9)})
     (Path(out) / "sql_check.json").write_text(json.dumps(report, indent=1))
     print(json.dumps(report, indent=1))
     sys.exit(0 if all(r["pass"] for r in report) else 1)

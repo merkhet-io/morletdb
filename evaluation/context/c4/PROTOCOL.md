@@ -185,4 +185,19 @@ the same references.)
 
 ## Changes after freeze
 
-None.
+1. **Product-check queries.** In every 3W instance the first hour has no state label
+   (NaN), so a first window is never a query, and the frozen rule found no query.
+   The check uses the earliest query window of each of the three largest classes
+   instead. The query's own instance is excluded through the `instance` occurrence
+   key, so the product and the harness select the same references. No effect on the
+   evaluation.
+2. **Harness numerical fix, found by the product check.** The harness summed with
+   numpy (pairwise); the product sums left to right. For frozen channels, the two
+   give different rounding residues in `std` and `kurtosis`. Relative to a median
+   near zero, that changes distances completely (up to 98% on one channel). The
+   protocol defines the values "as the product computes them", so the harness now
+   sums sequentially, and the product check passes. The first run (pairwise sums)
+   had already been completed. It is kept and reported as run 1. The decision is
+   taken from run 2, the only change being the summation.
+3. **Check-script fix.** The first version of `sql_check.py` pooled the references
+   of all three queries. Fixed before its passing run; no effect on the evaluation.
