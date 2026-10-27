@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0-alpha.1
 
 Extension (SQL version 0.3.0, with an update script from 0.2.0 as released in
 0.2.0-alpha.1; the chained update from 0.1.0 as released in 0.1.0-alpha.3 is also
