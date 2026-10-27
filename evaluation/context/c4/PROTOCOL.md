@@ -1,12 +1,12 @@
 # C4: do labelled earlier occurrences name the event better than a trivial rule?
 
-Status: **DRAFT**, not frozen. Nothing has been downloaded. Read so far: the 3W
-repository README, `3W_DATASET_STRUCTURE.md`, `dataset/dataset.ini`, the Figshare
-record's file list, and the data article (Vargas et al., arXiv:2507.01048). The
-article shows plots of seven example real instances and a map of all real
-instances by well and date (its Fig. 9). No data file has been read. The
-protocol is frozen in its own commit before the download. Changes after the freeze
-are logged under "Changes after freeze".
+Status: **FROZEN** in the commit that adds this line, before the download. Read so
+far: the 3W repository README, `3W_DATASET_STRUCTURE.md`, `dataset/dataset.ini`, the
+Figshare record's file list, the data article (Vargas et al., arXiv:2507.01048) and
+pg_morlet's own `simple-v1` and `morlet_history_neighbors` code. The article shows
+plots of seven example real instances and a map of all real instances by well and
+date (its Fig. 9). **No data file has been read.** Changes after the freeze are
+logged under "Changes after freeze".
 
 ## Why
 
@@ -77,7 +77,8 @@ came from the query's own bearing.
 - **Channels:** the continuous variables, i.e. pressures, temperatures, flow rates
   and choke openings, each as one channel of the acquisition (the instance).
   - Valve-state variables are excluded: they define the context.
-  - A variable that is missing in a window is an absent channel. No imputation.
+  - A channel is absent from a window if any of its observations there is missing
+    (NaN). The product rejects non-finite samples, and nothing is imputed.
 - **Independent unit:** the well.
 
 ## Values and distance (as the product)
@@ -87,9 +88,11 @@ came from the query's own bearing.
   `duration_s` is constant (one hour) and is left out.
 - **Per channel:** the relative difference (x_query − x_ref) / |median_ref|, with the
   median over the reference windows of the same context and channel.
-- **Distance:** the RMS over every (channel, value) pair that is finite in both
-  windows. A pair is not finite when the median is 0 or the value is undefined,
-  e.g. the kurtosis of a frozen variable.
+- **Values as the product computes them:** a frozen (constant) channel has `std` 0,
+  `kurtosis` 0 and `crest` 1, and these are compared like any other values.
+- **Distance:** the RMS over every (channel, value) pair present in both windows
+  whose reference median is not 0. As in the product, a value whose median is 0 is
+  left out.
 - **Comparable:** a reference window needs at least 3 channels shared with the query.
   Otherwise it is not a candidate.
 - This acquisition-level distance generalises `morlet_history_neighbors`, which
@@ -98,9 +101,10 @@ came from the query's own bearing.
 ## Time order (as `before_only`)
 
 - **Query:** every labelled window in a context other than `mixed` or `unknown`.
-- **References for a query:** labelled windows of **other instances** whose instance
-  started before the query's instance. They may come from any well, including the
-  query's own. Windows of the query's own instance are never references.
+- **References for a query:** labelled windows of **other instances** that started
+  before the query window started, as `before_only` does. They may come from any
+  well, including the query's own. Windows of the query's own instance are never
+  references.
 - A query needs at least 5 comparable references. Otherwise it is excluded and
   counted.
 
@@ -153,15 +157,19 @@ came from the query's own bearing.
 
 ## Product check
 
-For 3 queries chosen now (the first eligible query window in time of the three
-largest classes), the neighbours are also computed through the public SQL API:
-- instances loaded as acquisitions with one recording per channel;
-- context added as `state`;
-- 1-hour windows as segments;
-- `morlet_history_neighbors` per channel, with `before_only`.
-
-For single-channel distances, IDs and distances must agree with the harness to 1e-9
-relative.
+Three queries are chosen now: for each of the three largest eligible classes, the
+earliest query window that is the first window of its instance. (The first window
+has no earlier windows in its own instance, so `before_only` and the harness select
+the same references.)
+- For each query, a collection holds exactly the query's instance and its
+  references:
+  - instances as acquisitions with `origin_utc`, one recording per channel;
+  - the state as context;
+  - the 1-hour windows as segments.
+- `morlet_history_neighbors` is run per channel (`match_keys` state, `before_only`,
+  `score_values` std, crest, kurtosis and p75, `top_k` 1000).
+- Its single-channel distances must agree with the harness's single-channel
+  distances to 1e-9 relative, and its ordering must be the same.
 
 ## Limitations
 
