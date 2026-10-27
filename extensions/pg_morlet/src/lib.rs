@@ -248,7 +248,9 @@ fn morlet_simple_values(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f
 
 /// calibrated-v1 summary of one query against history rows (flattened, `width` values
 /// each) with per-value spreads (NULL = undefined): {score, score_quantile, top value index
-/// (1-based, 0 if none), history size}. Elements are NULL when undefined.
+/// (1-based, 0 if none), history size}. Elements are NULL when undefined. Rows of simple-v1
+/// width are simple-v1 values: a value whose history median is negligible against the
+/// history's median rms is skipped (morlet_simple_value_floors).
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_calibrated_score(
     query: Vec<Option<f64>>,
@@ -263,7 +265,20 @@ fn morlet_calibrated_score(
         pgrx::error!("query, spreads and history rows must all have width values");
     }
     let rows: Vec<&[f64]> = flat.chunks_exact(w).collect();
-    let dev = morlet_core::compare::calibrated_deviations(&q, &rows, &spreads);
+    let floors: Vec<f64> = if w == morlet_core::values::VALUE_NAMES.len() && !rows.is_empty() {
+        let mut rms: Vec<f64> = rows.iter().map(|r| r[morlet_core::values::RMS]).collect();
+        rms.sort_by(f64::total_cmp);
+        let n = rms.len();
+        let level = if n % 2 == 1 {
+            rms[n / 2]
+        } else {
+            (rms[n / 2 - 1] + rms[n / 2]) / 2.0
+        };
+        morlet_core::values::negligible_floors(level).to_vec()
+    } else {
+        Vec::new()
+    };
+    let dev = morlet_core::compare::calibrated_deviations(&q, &rows, &spreads, &floors);
     let top = dev
         .iter()
         .enumerate()
@@ -272,9 +287,9 @@ fn morlet_calibrated_score(
         .map(|(i, _)| (i + 1) as f64)
         .unwrap_or(0.0);
     vec![
-        morlet_core::compare::score(&q, &rows, &spreads),
+        morlet_core::compare::score(&q, &rows, &spreads, &floors),
         if rows.len() <= 2000 {
-            morlet_core::compare::score_quantile(&q, &rows, &spreads)
+            morlet_core::compare::score_quantile(&q, &rows, &spreads, &floors)
         } else {
             None
         },
@@ -286,6 +301,13 @@ fn morlet_calibrated_score(
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_simple_value_names() -> Vec<&'static str> {
     morlet_core::values::VALUE_NAMES.to_vec()
+}
+
+/// Per simple-v1 value, the largest history median treated as zero, given the history's
+/// median rms: comparisons skip such a value, as they skip a median of exactly zero.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_simple_value_floors(level: f64) -> Vec<f64> {
+    morlet_core::values::negligible_floors(level).to_vec()
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -630,6 +652,32 @@ mod tests {
         // Blocks A (amplitude ~100) and B (~10), parts 1..6 each with small variation; part 6
         // of block A has amplitude 160.
         Spi::run("SELECT morlet_create_stream_collection('public','cal'); SELECT morlet_enable_context('cal'); SELECT morlet_start_recording('cal',b||p,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_append_chunk('cal',b||p,0,ARRAY(SELECT (CASE WHEN b='A' AND p=6 THEN 160 WHEN b='A' THEN 100*(1+0.01*p) ELSE 10*(1+0.01*p) END)*sin(i/3.)+(i%7) FROM generate_series(0,1999) i)) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_add_context('cal','c-'||b||p,jsonb_build_array(jsonb_build_object('recording_id',b||p,'key','block','value',b,'start_sample',0,'end_sample',2000),jsonb_build_object('recording_id',b||p,'key','part','value',p,'start_sample',0,'end_sample',2000))) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_segments('cal',b||p,ARRAY['block'],ARRAY['part']) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p; SELECT morlet_build_context_values('cal',b||p) FROM unnest(ARRAY['A','B']) b, generate_series(1,6) p").unwrap();
+    }
+
+    #[pg_test]
+    fn negligible_medians_are_skipped_like_zero() {
+        // A frozen channel: parts 1..5 hold a constant level, so their std is rounding
+        // residue (about 1e-14), not 0. Part 6 comes back to life with a small real std.
+        Spi::run("SELECT morlet_create_stream_collection('public','frz'); SELECT morlet_enable_context('frz'); SELECT morlet_start_recording('frz','F'||p,1000,'x','bar','{}',512,256,'zscore','none') FROM generate_series(1,6) p; SELECT morlet_append_chunk('frz','F'||p,0,ARRAY(SELECT 0.1*(1+0.01*p)+CASE WHEN p=6 THEN 0.001*sin(i/3.) ELSE 0 END FROM generate_series(0,1999) i)) FROM generate_series(1,6) p; SELECT morlet_add_context('frz','c-'||p,jsonb_build_array(jsonb_build_object('recording_id','F'||p,'key','block','value','F','start_sample',0,'end_sample',2000),jsonb_build_object('recording_id','F'||p,'key','part','value',p,'start_sample',0,'end_sample',2000))) FROM generate_series(1,6) p; SELECT morlet_build_context_segments('frz','F'||p,ARRAY['block'],ARRAY['part']) FROM generate_series(1,6) p; SELECT morlet_build_context_values('frz','F'||p) FROM generate_series(1,6) p").unwrap();
+        let f6 = "(SELECT segment_id FROM frz_ctx_segments WHERE recording_id='F6')";
+        assert_eq!(Spi::get_one::<bool>("SELECT bool_and(v.vals[3]>0 AND v.vals[3]<1e-12) FROM frz_ctx_values v JOIN frz_ctx_segments s USING (segment_id) WHERE s.recording_id<>'F6' AND v.representation='simple-v1'").unwrap(), Some(true));
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT status||':'||coalesce(relative_deviation::text,'-') FROM morlet_compare_to_history('frz',{f6},min_history=>1) WHERE value_name='std'")).unwrap().unwrap(), "zero_median:-");
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT status FROM morlet_compare_to_history('frz',{f6},min_history=>1) WHERE value_name='kurtosis'")).unwrap().unwrap(), "ok");
+        // Without the floor, std's relative deviation would be about 1e11 and decide all three.
+        assert_eq!(Spi::get_one::<bool>(&format!("SELECT score<10 AND top_value<>'std' AND calibrated_score<1000 FROM morlet_compare_summary('frz',{f6},min_history=>1)")).unwrap(), Some(true));
+        assert_eq!(
+            Spi::get_one::<bool>(&format!(
+                "SELECT bool_and(distance<10) FROM morlet_history_neighbors('frz',{f6})"
+            ))
+            .unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            Spi::get_one::<Vec<f64>>("SELECT morlet_simple_value_floors(2)")
+                .unwrap()
+                .unwrap(),
+            vec![0.0, 2e-9, 2e-9, 2e-9, 2e-9, 2e-9, 0.0, 0.0]
+        );
     }
 
     #[pg_test]

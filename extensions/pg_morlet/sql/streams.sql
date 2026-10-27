@@ -807,8 +807,10 @@ BEGIN
       k AS (SELECT generate_series(1,cardinality(public.morlet_simple_value_names())) AS ord),
       g AS (SELECT p.context,k.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[k.ord]) AS med,count(*) AS n
         FROM pop p CROSS JOIN k GROUP BY p.context,k.ord HAVING count(*)>=3),
+      lv AS (SELECT p.context,public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM pop p GROUP BY p.context),
       r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
-        FROM g JOIN pop p ON p.context=g.context WHERE g.med<>0 GROUP BY g.context,g.ord,g.med)
+        FROM g JOIN lv ON lv.context=g.context JOIN pop p ON p.context=g.context WHERE abs(g.med)>lv.fl[g.ord]
+        GROUP BY g.context,g.ord,g.med)
     SELECT array_agg(greatest((SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) FROM r WHERE r.ord=k.ord),$9)
       ORDER BY k.ord) FROM k'
     INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
@@ -851,6 +853,8 @@ END $$;
 -- and unit and matching metadata, excluding the query's own occurrence and any
 -- segment overlapping an active label in exclude_labels. status says whether the
 -- calibrated deviation could be computed; robust_z is NULL when the history's MAD is 0.
+-- zero_median: the history median is 0 or, for values in channel units, at or below
+-- morlet_simple_value_floors of the history's median rms (rounding residue).
 -- calibrated_deviation divides relative_deviation by the
 -- value's pooled spread (morlet_value_spreads), so noisy values weigh less (C2's M03
 -- note); relative_deviation is the uncalibrated score of evaluations C1 and C2.
@@ -887,15 +891,16 @@ BEGIN
         percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[q.ord]) AS med,
         count(*) FILTER (WHERE h.vals[q.ord]<q.x) AS below,count(*) FILTER (WHERE h.vals[q.ord]=q.x) AS equal
       FROM q CROSS JOIN budget b LEFT JOIN hist h ON true GROUP BY q.name,q.ord,q.x,b.n),
+    lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
     sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad,
-        $11[st.ord] AS spread FROM st)
+        $11[st.ord] AS spread,(SELECT lv.fl[st.ord] FROM lv) AS fl FROM st)
     SELECT name,x,n,CASE WHEN n>=$10 THEN med END,
-      CASE WHEN n>=$10 AND med<>0 THEN (x-med)/abs(med) END,
+      CASE WHEN n>=$10 AND abs(med)>fl THEN (x-med)/abs(med) END,
       CASE WHEN n>=$10 AND mad>0 THEN (x-med)/(1.4826*mad) END,
       CASE WHEN n>=$10 THEN (below+0.5*equal)::float8/n END,
       spread,
-      CASE WHEN n>=$10 AND med<>0 AND spread>0 THEN abs(x-med)/abs(med)/spread END,
-      CASE WHEN n<$10 THEN ''insufficient_history'' WHEN med=0 THEN ''zero_median''
+      CASE WHEN n>=$10 AND abs(med)>fl AND spread>0 THEN abs(x-med)/abs(med)/spread END,
+      CASE WHEN n<$10 THEN ''insufficient_history'' WHEN abs(med)<=fl THEN ''zero_median''
         WHEN spread IS NULL THEN ''no_pooled_spread'' ELSE ''ok'' END,$7
     FROM sp ORDER BY ord'
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
@@ -1200,7 +1205,8 @@ END $$;
 -- Nearest past segments of the same context: the history of morlet_compare_summary
 -- (same filters, budget and before_only), ranked by the root mean square over
 -- score_values of (x_query - x_history) / |history median|, ties by recording and
--- start. vals are the history segment's simple-v1 values, labels its overlapping active
+-- start, skipping values whose median is zero or negligible (morlet_compare_to_history's
+-- zero_median). vals are the history segment's simple-v1 values, labels its overlapping active
 -- labels. top_k up to 1000, so a caller can also draw the whole history distribution.
 CREATE FUNCTION public.morlet_history_neighbors(collection regclass,segment_id bigint,
   match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
@@ -1235,8 +1241,9 @@ BEGIN
   END IF;
   RETURN QUERY EXECUTE format('WITH hist AS MATERIALIZED ('||history||'),
       med AS (SELECT o,percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[o]) AS m FROM hist h, unnest($10) o GROUP BY o),
+      lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
       d AS (SELECT h.segment_id,sqrt(avg(((($9)[med.o]-h.vals[med.o])/abs(med.m))^2)) AS dist
-        FROM hist h CROSS JOIN med WHERE med.m<>0 GROUP BY h.segment_id)
+        FROM hist h CROSS JOIN med CROSS JOIN lv WHERE abs(med.m)>lv.fl[med.o] GROUP BY h.segment_id)
     SELECT h.segment_id,h.recording_id,h.start_sample,h.end_sample,h.occurrence,d.dist,h.vals,
       coalesce((SELECT jsonb_agg(jsonb_build_object(''label_id'',l.label_id,''label'',l.label,''note'',l.note) ORDER BY l.label_id)
         FROM %s l WHERE l.recording_id=h.recording_id AND NOT l.retracted

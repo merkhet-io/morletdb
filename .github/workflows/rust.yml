@@ -138,6 +138,7 @@ jobs:
         run: |
           git fetch --no-tags --depth=1 origin +refs/tags/v0.1.0-alpha.3:refs/tags/v0.1.0-alpha.3
           git fetch --no-tags --depth=1 origin +refs/tags/v0.2.0-alpha.1:refs/tags/v0.2.0-alpha.1
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.3.0-alpha.1:refs/tags/v0.3.0-alpha.1
       - name: Install pinned Rust toolchain
         run: rustup show
       - name: Cache pgrx CLI
@@ -165,7 +166,11 @@ jobs:
       - name: Upgrade a populated database from v0.2.0-alpha.1
         run: |
           export PG_CONFIG=$(python3 -c 'import pathlib,tomllib; print(tomllib.loads((pathlib.Path.home()/".pgrx/config.toml").read_text())["configs"]["pg17"])')
-          extensions/pg_morlet/tests/upgrade_from_0.2.0.sh v0.2.0-alpha.1
+          extensions/pg_morlet/tests/upgrade_from_release.sh v0.2.0-alpha.1 0.2.0
+      - name: Upgrade a populated database from v0.3.0-alpha.1
+        run: |
+          export PG_CONFIG=$(python3 -c 'import pathlib,tomllib; print(tomllib.loads((pathlib.Path.home()/".pgrx/config.toml").read_text())["configs"]["pg17"])')
+          extensions/pg_morlet/tests/upgrade_from_release.sh v0.3.0-alpha.1 0.3.0
   seismic-example:
     # Synthetic contract tests for examples/seismic against a fresh extension
     # install. No public services or downloads beyond pinned packages.

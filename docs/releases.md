@@ -9,6 +9,8 @@ a leading v; GHCR image tags do not.
 - **0.3.0-alpha.1:** reports SQL version 0.3.0, with an update script from
   0.2.0-alpha.1's 0.2.0 objects; the chained update from alpha.3's 0.1.0 is also
   tested.
+- **Unreleased (main):** SQL version 0.3.1, with an update script from
+  0.3.0-alpha.1's 0.3.0 objects.
 
 Releases target PostgreSQL 17 on Linux amd64.
 
@@ -72,6 +74,6 @@ Do not claim that human trial until it occurs.
 
 Image digests identify published bytes. Apt inputs/base tags are not fully
 content-addressed, so this does not promise bit-for-bit rebuilds. The tested upgrade
-paths are 0.1.0 (alpha.3) and 0.2.0 (0.2.0-alpha.1) to 0.3.0, both run by the
-`upgrade` CI job. Keep
+paths are 0.1.0 (alpha.3), 0.2.0 (0.2.0-alpha.1) and 0.3.0 (0.3.0-alpha.1) to the
+current SQL version, all run by the `upgrade` CI job. Keep
 authoritative input files and back up databases before updating.

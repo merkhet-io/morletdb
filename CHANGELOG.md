@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
+0.3.0-alpha.1):
+- A history median that is rounding residue now counts as zero. This applies to
+  values in channel units whose median is at most 1e-9 of the history's median rms.
+  Before, a frozen channel's `std` median (about 1e-15) made any real `std` deviate
+  by about 1e11. That dominated `morlet_compare_summary`, the calibrated score and
+  `morlet_history_neighbors`. Per-value rows report such values as `zero_median`;
+  `morlet_simple_value_floors` returns the per-value floors. Comparisons without
+  such medians are unchanged.
+
 Repository:
 - Viewer and docs present `morlet_history_neighbors` as similar occurrences to look
   at, not a prediction: evaluation C4 (3W) found their labels name the event worse

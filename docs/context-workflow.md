@@ -124,6 +124,15 @@ C3.**
 - **Status semantics:** `status` reports whether the calibrated deviation could be
   computed (`insufficient_history`, `zero_median`, `no_pooled_spread`, `ok`).
   `robust_z` is NULL when the history's MAD is 0.
+- **Zero or negligible median:** a relative deviation needs a non-zero history
+  median. Since 0.3.1, a value in channel units (`mean`, `std`, `rms`, `p75`,
+  `peak_abs`) whose history median is at most 1e-9 of the history's median `rms`
+  counts as zero (`morlet_simple_value_floors`). Every comparison skips it: the
+  per-value rows (`zero_median`), the summary and calibrated scores, the pooled
+  spreads and the neighbour ranking. The reason is rounding: a constant window's
+  `std` comes out about 1e-13 of its level, not 0. Before 0.3.1 a frozen sensor's
+  history thus had a `std` median of about 1e-15, and any real `std` in the query
+  deviated from it by about 1e11. Evaluation C4 found this on 3W.
 - **Cost:** spreads are computed per call over all comparable segments. On the
   milling check this doubled compare latency (p50 23 ms → 46 ms).
 

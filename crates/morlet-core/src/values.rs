@@ -19,6 +19,30 @@ pub const VALUE_NAMES: [&str; 8] = [
     "crest",
     "kurtosis",
 ];
+/// Values in channel units, which scale with the signal level; duration_s is in seconds,
+/// crest and kurtosis are dimensionless.
+pub const IN_CHANNEL_UNITS: [bool; 8] = [false, true, true, true, true, true, false, false];
+/// Index of rms, the level that channel-unit values are judged against.
+pub const RMS: usize = 3;
+/// A typical (median) channel-unit value at or below this fraction of the typical rms is
+/// treated as zero. Rounding residue is far smaller: a constant window's std comes out
+/// about 1e-13 of its level, not 0, because its mean is a rounded sum (at most 2^20
+/// samples, 2^-33 relative). Real resolution is far larger: a 24-bit converter
+/// resolves 6e-8 of full scale.
+pub const NEGLIGIBLE_FRACTION: f64 = 1e-9;
+
+/// Per value, the largest typical value treated as zero, given the typical rms (`level`)
+/// of the same history. Comparisons skip a value whose typical value is at or below its
+/// floor, as they skip an exact zero: a relative deviation from rounding residue is noise.
+pub fn negligible_floors(level: f64) -> [f64; 8] {
+    let floor = if level.is_finite() {
+        level.abs() * NEGLIGIBLE_FRACTION
+    } else {
+        0.0
+    };
+    IN_CHANNEL_UNITS.map(|scaled| if scaled { floor } else { 0.0 })
+}
+
 /// Longest segment summarized in one call (2^20 samples, about 41 s at 25.6 kHz).
 pub const MAX_SEGMENT_SAMPLES: usize = 1 << 20;
 
@@ -88,5 +112,35 @@ mod tests {
         assert!(simple(&[1.0], 0.0).is_err());
         assert!(simple(&vec![0.0; MAX_SEGMENT_SAMPLES + 1], 1.0).is_err());
         assert!(simple(&vec![0.0; 40000], 1.0).is_ok());
+    }
+
+    #[test]
+    fn constant_window_residue_is_below_the_floor() {
+        // A constant non-zero window's std is rounding residue, not 0.
+        for (x, n) in [(0.1, 2000), (101325.3, 3600), (-7.3, MAX_SEGMENT_SAMPLES)] {
+            let v = simple(&vec![x; n], 1.0).unwrap();
+            let floors = negligible_floors(v[RMS]);
+            assert!(
+                v[2] <= floors[2],
+                "{x} {n}: std {} floor {}",
+                v[2],
+                floors[2]
+            );
+            assert!(floors[2] > 0.0);
+        }
+        assert_eq!(
+            negligible_floors(2.0),
+            [0.0, 2e-9, 2e-9, 2e-9, 2e-9, 2e-9, 0.0, 0.0]
+        );
+        assert_eq!(negligible_floors(f64::NAN), [0.0; 8]);
+        // A real 24-bit signal stays above it.
+        let v = simple(
+            &(0..4096)
+                .map(|i| 1.0 + 6e-8 * ((i % 2) as f64))
+                .collect::<Vec<_>>(),
+            1.0,
+        )
+        .unwrap();
+        assert!(v[2] > negligible_floors(v[RMS])[2]);
     }
 }
