@@ -1,5 +1,8 @@
 # C4: do labelled earlier occurrences name the event better than a trivial rule?
 
+**Result: NOT SUPPORTED.** Balanced accuracy 0.39 (5 nearest earlier occurrences) vs 0.61
+(the well's last label), Δ −0.21 [−0.28, −0.05]. See [results/RESULTS.md](results/RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line, before the download. Read so
 far: the 3W repository README, `3W_DATASET_STRUCTURE.md`, `dataset/dataset.ini`, the
 Figshare record's file list, the data article (Vargas et al., arXiv:2507.01048) and
