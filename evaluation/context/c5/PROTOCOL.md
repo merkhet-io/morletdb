@@ -210,3 +210,7 @@ H-ALL for Q2.
    decision is also **reported** with running time: gaps over 10 minutes shortened to the
    bearing's median interval (`running_time` in `c5.py`). If the two disagree, the
    frozen verdict stands and the disagreement is stated.
+3. **Product-check chunk size** (2026-10-28, implementation error, before any result).
+   `sql_check.py` appended 65,536 samples per call; `morlet_append_chunk` accepts at most
+   32,768, which the synthetic check (shorter signals) did not reach. Chunks are now
+   32,768 samples. Nothing else changed.

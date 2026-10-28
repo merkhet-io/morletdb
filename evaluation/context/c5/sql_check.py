@@ -26,7 +26,7 @@ DSN = os.environ.get("MORLET_DSN", "host=localhost port=28817 dbname=morlet_c5_c
 COLL = "c5chk"
 BEARINGS = ("B02", "B03", "B10")
 QUERIES = 3
-CHUNK = 65536
+CHUNK = 32768  # morlet_append_chunk accepts 1..32768 samples
 
 
 def export(data_dir, out):
