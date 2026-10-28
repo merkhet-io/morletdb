@@ -79,4 +79,8 @@ become.
 
 ## Changes after freeze
 
-None yet.
+1. **Post-hoc EMA at the filter's gain** (2026-10-28, after the run; decides nothing). The
+   frozen rule chose one EMA α (0.5) for development data that mixes hourly and gapped
+   sequences, a compromise that makes the EMA noisy on hourly data. To show where the
+   filter's advantage comes from, `evaluate.py` also reports an EMA whose α is the filter's
+   hourly steady-state gain (0.27). The verdict is unchanged.
