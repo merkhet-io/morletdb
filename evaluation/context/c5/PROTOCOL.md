@@ -203,3 +203,10 @@ H-ALL for Q2.
    row. `.mat` files hold `measTime` relative to the measurement start, so the k-th file is
    matched to the k-th row by measurement number, as frozen. Some ZIPs exceed 4 GB (zip64)
    and are extracted with Python's `zipfile`.
+2. **Pauses: running time reported** (2026-10-28, before any arm or alarm was computed).
+   B07's measurements pause for 31.2 h at about 47% of its measurements (wall-clock span
+   67.6 h; Table 3 gives 37 h), and B01's for 0.3 h. Table 3's durations therefore count
+   running time. The decision rules stay as frozen, on measurement timestamps. Every
+   decision is also **reported** with running time: gaps over 10 minutes shortened to the
+   bearing's median interval (`running_time` in `c5.py`). If the two disagree, the
+   frozen verdict stands and the disagreement is stated.

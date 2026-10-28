@@ -111,6 +111,12 @@ class Alarms(unittest.TestCase):
         self.assertGreater(r_ctx["lead"], r_all["lead"])
 
 
+class RunningTime(unittest.TestCase):
+    def test_pauses_shortened(self):
+        t = np.array([0.0, 12, 24, 24 + 3600, 24 + 3612])
+        self.assertEqual(c5.running_time(t).tolist(), [0.0, 12, 24, 36, 48])
+
+
 class Decision(unittest.TestCase):
     def test_decision_rule(self):
         rows = {f"B{i}": {"X": {"lead": 0.5, "alarm": 1, "stable": True},

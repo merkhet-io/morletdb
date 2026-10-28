@@ -249,6 +249,18 @@ def alarm(raw, t, t_end):
 
 
 # -- analysis -------------------------------------------------------------------------
+PAUSE_S = 600
+
+
+def running_time(t):
+    """Measurement times with pauses (gaps > 10 min) shortened to the median interval; Table 3's
+    durations count running time (change after freeze 2, reported only)."""
+    t = np.asarray(t, float)
+    d = np.diff(t)
+    d[d > PAUSE_S] = np.median(d)
+    return np.concatenate([[t[0]], t[0] + np.cumsum(d)])
+
+
 def bootstrap_diff(a, b, resamples=RESAMPLES, seed=SEED):
     a, b = np.asarray(a, float), np.asarray(b, float)
     idx = np.random.default_rng(seed).integers(0, len(a), (resamples, len(a)))
@@ -349,6 +361,12 @@ def cmd_run(a):
         "channel C": {q: decide(res["channel C"], PRIMARY, "H-CTX", c) for q, c in (("Q1", "B-RMS"), ("Q2", "H-ALL"))},
         "H-RMS vs B-RMS": decide(rows, PRIMARY, "H-RMS", "B-RMS"),
     }
+    run = {}
+    for b in EXPERIMENTS:
+        d = dict(np.load(a.out / "values" / f"{b}.npz"))
+        run[b] = unit_rows(dict(d, t=running_time(d["t"])))
+    res["running time"] = run
+    res["reported"]["running time"] = {q: decide(run, PRIMARY, "H-CTX", c) for q, c in (("Q1", "B-RMS"), ("Q2", "H-ALL"))}
     (a.out / "c5.json").write_text(json.dumps(res, indent=1))
     print_rows(rows)
     print(json.dumps(res["decisions"], indent=1))
