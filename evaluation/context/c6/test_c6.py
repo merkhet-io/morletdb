@@ -79,6 +79,11 @@ class Bearing(unittest.TestCase):
         self.assertLess(r["swap"]["flag_rate_true"], 0.1)
 
 
+class RunningTime(unittest.TestCase):
+    def test_pauses_shortened(self):
+        self.assertEqual(c6.running_time([0.0, 12, 24, 3624, 3636]).tolist(), [0.0, 12, 24, 36, 48])
+
+
 class Decision(unittest.TestCase):
     def rows(self, e, gate=True):
         return {f"B{i}": {"gate": {"pass": gate}, "Q1": {"enrichment": x}} for i, x in enumerate(e)}

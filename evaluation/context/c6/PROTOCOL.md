@@ -133,4 +133,9 @@ describes for machines.
 
 ## Changes after freeze
 
-None yet.
+1. **Pauses: running time reported** (2026-10-28, before any resemblance or result was
+   computed; C5 change 2). B07 pauses for 31.2 h at about 47% of its measurements, B01
+   for 0.3 h; Table 3's durations count running time. The late/early split stays on
+   measurement timestamps as frozen. Both decisions are also **reported** with running
+   time (gaps over 10 minutes shortened to the bearing's median interval). If the two
+   disagree, the frozen verdict stands and the disagreement is stated.

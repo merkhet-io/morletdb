@@ -28,6 +28,15 @@ MIN_GATE, MIN_SIDE, MIN_UNITS = 20, 20, 5
 LATE = 0.25                       # late = last quarter of post-library time
 EFFECT = 0.10                     # enrichment that counts as a useful clue
 SWAP_FRACTION = 0.10
+PAUSE_S = 600
+
+
+def running_time(t):
+    """As C5's change after freeze 2: pauses (gaps > 10 min) shortened to the median interval."""
+    t = np.asarray(t, float)
+    d = np.diff(t)
+    d[d > PAUSE_S] = np.median(d)
+    return np.concatenate([[t[0]], t[0] + np.cumsum(d)])
 
 
 # -- resemblance ----------------------------------------------------------------------
@@ -174,6 +183,12 @@ def cmd_run(a):
         "channel C": {q: decide(res["channel C"], c5.PRIMARY, q) for q in ("Q1", "Q2")},
         "all 17": {q: decide(rows, c5.EXPERIMENTS, q) for q in ("Q1", "Q2")},
     }
+    run = {}
+    for b in c5.EXPERIMENTS:
+        d = dict(np.load(a.c5_out / "values" / f"{b}.npz"))
+        run[b] = unit(dict(d, t=running_time(d["t"])))
+    res["running time"] = run
+    res["reported"]["running time"] = {q: decide(run, c5.PRIMARY, q) for q in ("Q1", "Q2")}
     (out / "c6.json").write_text(json.dumps(res, indent=1))
     print("bearing  gate(rate/chance)   Q1 early->late        Q2 early->late")
     for b, r in rows.items():
