@@ -27,7 +27,7 @@ sys.path.insert(0, str(HERE.parent / "context" / "c5"))
 import c5  # noqa: E402
 import kalman  # noqa: E402
 
-DSN = os.environ.get("MORLET_DSN", "host=localhost port=28817 dbname=morlet_level_dev")
+DSN = os.environ.get("MORLET_DSN", "host=localhost port=28817 dbname=morlet_level_check")
 COLL = "lvl"
 RATE, N = 1000.0, 2048
 Q, R = 0.004, 0.01  # per hour, ln units squared
@@ -179,8 +179,8 @@ def main():
                 pass
         report["checks"]["invalid configuration rejected"] = {"accepted": [str(x) for x in bad], "pass": not bad}
         # Access: a role without privileges is refused; row-level security hides episodes.
-        conn.execute("DROP ROLE IF EXISTS lvl_reader")
-        conn.execute("CREATE ROLE lvl_reader")
+        # Roles are cluster-wide; the role may hold grants in another database from an earlier run.
+        conn.execute("DO $$ BEGIN CREATE ROLE lvl_reader; EXCEPTION WHEN duplicate_object THEN NULL; END $$")
         seg = segment(conn, query)
         refused = False
         with conn.transaction():
