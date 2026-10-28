@@ -148,7 +148,7 @@ B-RMS for Q2.
 - **Product check:** for 3 bearings, at least 3 segments each, including at least one
   pinned and one after the pin, the harness's H-PIN score must match
   `morlet_compare_summary(..., metadata_filter => '{"c7_pin": true}', before_only =>
-  true, min_history => 5)` on pg_morlet 0.3.1 to 1e-9 relative. Each snapshot is
+  false, min_history => 5)` on pg_morlet 0.3.1 (change after freeze 1) to 1e-9 relative. Each snapshot is
   loaded as a raw-only recording in its own acquisition (origin = snapshot time), and
   pinned snapshots carry the metadata `{"c7_pin": true}`. A mismatch stops the
   evaluation until the harness is fixed and logged.
@@ -175,4 +175,18 @@ B-RMS for Q2.
 
 ## Changes after freeze
 
-None yet.
+1. **Product check: `before_only => false`** (2026-10-28, error in the protocol text, found
+   while writing the check on synthetic data, before any download). With `before_only =>
+   true`, a pinned snapshot would be compared only with the pinned snapshots *before* it,
+   not with the other 29 as the H-PIN definition says. The pin filter already keeps every
+   later snapshot out of the history, so `before_only` is not needed. Nothing else
+   changed.
+2. **H-GATED's threshold, made explicit** (2026-10-28, before any download). "Its
+   threshold" is H-PIN's alarm-rule threshold over the calibration window. Inside the pin
+   the two arms are identical, so the threshold is known before the first gated decision.
+3. **Archive, from the official Google Drive mirror's folder listing** (2026-10-28,
+   before any download). `Data/XJTU-SY_Bearing_Datasets.part01.rar` to `part06.rar`, six
+   parts of 744,488,960 bytes (the last 722,155,640), 4,444,600,440 bytes in total. The
+   folder also holds two notes saying to download all parts and extract them together.
+   Multi-volume RAR needs an extractor that this machine does not have yet; whichever is
+   used is recorded.
