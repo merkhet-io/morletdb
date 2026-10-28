@@ -231,6 +231,69 @@ comparison, with the same filters, budget, `before_only` and `score_values`.
   machine and period, not the fault. Show neighbours as occurrences to look at; do
   not present their labels as a prediction for the query.
 
+## Level track (SQL 0.3.1, opt-in)
+
+`morlet_level_track(collection, segment_id, process_variance_per_hour,
+observation_variance, value_name => 'std', transform => 'log', ...)` asks: under the
+same operating conditions, is this machine's level changing, or is it short-lived
+variation?
+- **Episodes:** the segments a comparison would use (same context for `match_keys`,
+  rate, channel, unit, `metadata_filter`, `exclude_labels`, other occurrences). They
+  are restricted to the query's machine and to segments that start before the query
+  (and at or after `since_utc`), in start-time order, followed by the query itself.
+  Ties are ordered by segment id.
+- **Model `local-level-v1`:** a scalar local-level Kalman filter on y = ln(value), or
+  on the value itself with `transform => 'none'`.
+  - The level may move by a variance of `process_variance_per_hour` × hours between
+    valid episodes.
+  - Each observation scatters around it with `observation_variance`.
+  - Both are in squared units of y.
+  - The first valid episode sets the level, with variance `observation_variance`.
+- **No defaults for the variances.** Calibrate them on development history by maximum
+  likelihood (`evaluation/level/kalman.py`, `calibrate`). Do not reuse them across
+  machines or values without checking.
+- **Output per episode:**
+  - the observed value and y;
+  - the predicted level before the episode and its variance;
+  - the innovation and `innovation_var`, the model-based variance of the observation
+    predicted before it was seen;
+  - the standardized innovation;
+  - the filtered `level` and `level_var`, the uncertainty of the level itself;
+  - `status` (`initialized`, `ok`, `invalid_value`) and `model`.
+- **Invalid values:** with `transform => 'log'`, a value ≤ 0 is reported as
+  `invalid_value` and skipped. There is no epsilon.
+- **Nothing is stored.** The track is recomputed from the stored values on every call,
+  as the caller, so privileges and row-level security apply. Late episodes,
+  corrections and new parameters take effect on the next call.
+  - A maintenance reset is `since_utc`.
+  - A change of operating context is a different track.
+- **Read the residuals, not just the level.** A short disturbance stays visible as a
+  large standardized innovation even when the level smooths it. A persistent change
+  shows up as a run of innovations with the same sign while the level catches up.
+  The function does not alarm, classify or estimate wear.
+- **Assumptions:** Gaussian, independent errors. Overlapping or correlated episodes
+  make both variances too small. In evaluation L1, correlated noise brought 95% level
+  intervals down to 85% coverage.
+- **Evidence, synthetic only** ([L1](../evaluation/level/RESULTS.md)):
+  - On evenly spaced episodes the filter equals an exponential moving average with the
+    same gain.
+  - It adds uncertainty, and a faster catch-up after long gaps: 39% lower level error
+    than that moving average with 48 h pauses.
+  - Real-world value is not established.
+
+```sql
+-- Track ln(std) of this segment's channel in its context, since the last bearing change.
+SELECT episode, occurrence, round(observed::numeric, 4) AS std,
+       round(exp(level)::numeric, 4) AS level_std,
+       round(exp(level - 1.96 * sqrt(level_var))::numeric, 4) AS level_low,
+       round(exp(level + 1.96 * sqrt(level_var))::numeric, 4) AS level_high,
+       round(standardized_innovation::numeric, 1) AS z, status
+FROM morlet_level_track('cell', 4711, 0.001, 0.01, since_utc => '2026-03-01 00:00Z')
+ORDER BY episode;
+```
+
+`exp(level)` is a geometric level of `std`; the interval is model-based.
+
 ## Not yet
 
 - **Clock drift and sync points.** One fixed offset per channel.

@@ -795,6 +795,32 @@ mod tests {
     }
 
     #[pg_test]
+    fn level_track_filters_one_value_over_earlier_episodes() {
+        acquisition_fixture();
+        let seg = "(SELECT segment_id FROM cell_ctx_segments WHERE recording_id='A2-vib' AND context->>'block'='N1')";
+        // Same machine, channel and block, earlier part first; the current channel is left out.
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT string_agg(episode||':'||(occurrence->>'part')||':'||status||':'||coalesce(hours_since_previous::text,'-')||':'||model,',' ORDER BY episode) FROM morlet_level_track('cell',{seg},0.01,0.04)")).unwrap().unwrap(), "1:A1:initialized:-:local-level-v1,2:A2:ok:24:local-level-v1");
+        // Second episode: predicted variance 0.04 + 0.01*24, gain 0.28/0.32, on ln(std).
+        assert_eq!(Spi::get_one::<bool>(&format!("WITH t AS (SELECT * FROM morlet_level_track('cell',{seg},0.01,0.04)), a AS (SELECT * FROM t WHERE episode=1), b AS (SELECT * FROM t WHERE episode=2)
+            SELECT abs(a.y-ln(a.observed))<1e-12 AND a.level=a.y AND a.level_var=0.04 AND b.predicted_level=a.level
+              AND abs(b.predicted_level_var-0.28)<1e-12 AND abs(b.innovation_var-0.32)<1e-12 AND abs(b.innovation-(b.y-a.y))<1e-12
+              AND abs(b.level-(a.y+0.875*(b.y-a.y)))<1e-12 AND abs(b.level_var-0.28*0.04/0.32)<1e-12
+              AND abs(b.standardized_innovation-b.innovation/sqrt(0.32))<1e-12 AND b.observed>2*a.observed FROM a, b")).unwrap(), Some(true));
+        // transform none keeps the value; since_utc drops the earlier episode.
+        assert_eq!(Spi::get_one::<bool>(&format!("SELECT bool_and(y=observed) FROM morlet_level_track('cell',{seg},0.01,0.04,transform=>'none')")).unwrap(), Some(true));
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT string_agg(status,',') FROM morlet_level_track('cell',{seg},0.01,0.04,since_utc=>'2026-01-01 12:00Z')")).unwrap().unwrap(), "initialized");
+        // Invalid configurations and a segment before since_utc are errors.
+        Spi::run(r#"DO $$ DECLARE s bigint; a text; failed int:=0; BEGIN
+            SELECT segment_id INTO s FROM cell_ctx_segments WHERE recording_id='A2-vib' AND context->>'block'='N1';
+            FOREACH a IN ARRAY ARRAY['-1,0.04','0.01,0','''NaN'',0.04','0.01,0.04,value_name=>''nope''','0.01,0.04,transform=>''sqrt''',
+                '0.01,0.04,max_candidates=>1','0.01,0.04,since_utc=>''2026-01-03 00:00Z'''] LOOP
+              BEGIN EXECUTE 'SELECT * FROM morlet_level_track(''cell'','||s||','||a||')';
+              EXCEPTION WHEN others THEN failed:=failed+1; END;
+            END LOOP;
+            IF failed<>7 THEN RAISE EXCEPTION 'only % of 7 invalid calls failed',failed; END IF; END $$"#).unwrap();
+    }
+
+    #[pg_test]
     fn acquisition_segments_trim_edges_and_select_score_values() {
         acquisition_fixture();
         // Current logger: 0.2 ms uncertainty at 100 Hz -> 1 sample trimmed at each end; vib exact.

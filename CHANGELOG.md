@@ -11,6 +11,14 @@ Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
   `morlet_history_neighbors`. Per-value rows report such values as `zero_median`;
   `morlet_simple_value_floors` returns the per-value floors. Comparisons without
   such medians are unchanged.
+- `morlet_level_track` (opt-in, read-only): a local-level Kalman filter (`local-level-v1`)
+  over one `simple-v1` value per episode, by default ln(std). Episodes are the segment's
+  history in its context on the same machine, up to the segment itself. It returns the
+  predicted and filtered level, their variances, and innovations per episode. It is
+  computed at query time and stores nothing. Process and observation variances are
+  explicit arguments with no defaults. Evaluation L1 (synthetic) found it equal to an
+  exponential moving average on evenly spaced episodes, with uncertainty and faster
+  catch-up after gaps as its additions.
 
 Repository:
 - Viewer and docs present `morlet_history_neighbors` as similar occurrences to look
