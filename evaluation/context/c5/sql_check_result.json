@@ -1,0 +1,38 @@
+[
+ {
+  "bearing": "B02",
+  "queries": [
+   5,
+   6,
+   7
+  ],
+  "segments": 8,
+  "max_relative_score_error": 0.0,
+  "same_scored_segments": true,
+  "pass": true
+ },
+ {
+  "bearing": "B03",
+  "queries": [
+   11,
+   13,
+   14
+  ],
+  "segments": 15,
+  "max_relative_score_error": 0.0,
+  "same_scored_segments": true,
+  "pass": true
+ },
+ {
+  "bearing": "B10",
+  "queries": [
+   5,
+   6,
+   7
+  ],
+  "segments": 8,
+  "max_relative_score_error": 0.0,
+  "same_scored_segments": true,
+  "pass": true
+ }
+]
