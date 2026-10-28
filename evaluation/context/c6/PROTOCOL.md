@@ -139,3 +139,7 @@ describes for machines.
    measurement timestamps as frozen. Both decisions are also **reported** with running
    time (gaps over 10 minutes shortened to the bearing's median interval). If the two
    disagree, the frozen verdict stands and the disagreement is stated.
+2. **Product-check chunk size** (2026-10-28, implementation error, before any result).
+   `sql_check.py` appended 65,536 samples per call; `morlet_append_chunk` accepts at most
+   32,768, which the synthetic check (shorter signals) did not reach. Chunks are now
+   32,768 samples. Nothing else changed.

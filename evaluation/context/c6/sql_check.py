@@ -28,7 +28,7 @@ from c6 import c5  # noqa: E402
 
 DSN = os.environ.get("MORLET_DSN", "host=localhost port=28817 dbname=morlet_c6_check")
 COLL = "c6chk"
-CHUNK = 65536
+CHUNK = 32768  # morlet_append_chunk accepts 1..32768 samples
 
 
 def scored(d):
