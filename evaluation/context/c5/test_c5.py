@@ -30,6 +30,11 @@ class Values(unittest.TestCase):
         with self.assertRaises(ValueError):
             c5.simple_values([1.0, np.nan], 1.0)
 
+    def test_file_headers_and_times(self):
+        row = dict(zip(["Time", "setSpeed"], ["19-Oct-2021 08:46:54", "750"]))
+        self.assertEqual(c5.row_time(row), 1634633214.0)  # read as UTC, whatever the machine's zone
+        self.assertEqual(c5.row_time({"dateTime": "2021-10-19 08:46:54"}), 1634633214.0)
+
     def test_context_bands(self):
         self.assertEqual(c5.context_key(1500, 2500, 750, "noise"), (0, 5, 1, "noise"))
         self.assertEqual(c5.context_key(3600, 3999, 1000, "sine"), (4, 7, 2, "sine"))

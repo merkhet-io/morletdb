@@ -17,7 +17,7 @@ import csv
 import json
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -96,10 +96,15 @@ def parse_time(s):
     for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%d-%b-%Y %H:%M:%S.%f", "%d-%b-%Y %H:%M:%S",
                 "%d.%m.%Y %H:%M:%S.%f", "%d.%m.%Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
         try:
-            return datetime.strptime(s, fmt).timestamp()
+            return datetime.strptime(s, fmt).replace(tzinfo=timezone.utc).timestamp()
         except ValueError:
             pass
     raise ValueError(f"unrecognised dateTime {s!r}")
+
+
+def row_time(r):
+    """The files name the timestamp column "Time"; the documentation calls it dateTime (change after freeze 1)."""
+    return parse_time(r["Time"] if "Time" in r else r["dateTime"])
 
 
 def read_table(path):
@@ -132,11 +137,11 @@ def experiment_values(root: Path, experiment):
     oc = read_table(find_one(root, f"{experiment}_operatingConditions.csv"))
     if len(files) != len(oc):
         raise ValueError(f"{experiment}: {len(files)} .mat files but {len(oc)} operating-condition rows")
-    t = np.array([parse_time(r["dateTime"]) for r in oc])
+    t = np.array([row_time(r) for r in oc])
     if not (np.diff(t) > 0).all():
         raise ValueError(f"{experiment}: measurement times are not increasing")
     temps = read_table(find_one(root, f"{experiment}_meanTemperatures.csv"))
-    tt = np.array([parse_time(r["dateTime"]) for r in temps])
+    tt = np.array([row_time(r) for r in temps])
     t1 = np.array([float(r["Mean Abs. Temp. T1"]) for r in temps])
     rate = rate_hz(experiment)
     vals = np.empty((2, len(files), len(NAMES)))

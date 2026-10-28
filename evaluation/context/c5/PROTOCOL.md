@@ -194,4 +194,12 @@ H-ALL for Q2.
 
 ## Changes after freeze
 
-None yet.
+1. **Timestamp column name** (2026-10-28, before any value was computed). The operating
+   condition and temperature CSVs name their timestamp column `Time` (e.g.
+   `19-Oct-2021 08:46:54`), not `dateTime` as written above. `c5.py` reads `Time`, and
+   parses timestamps as UTC so results do not depend on the machine's time zone (only
+   differences are used). Found while checking B01, B03 and B16 against Table 3: file and
+   row counts match (377, 614, 5,891), times strictly increase, every row has a temperature
+   row. `.mat` files hold `measTime` relative to the measurement start, so the k-th file is
+   matched to the k-th row by measurement number, as frozen. Some ZIPs exceed 4 GB (zip64)
+   and are extracted with Python's `zipfile`.
