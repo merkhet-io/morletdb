@@ -16,3 +16,6 @@ $P -I evaluation/context/c7/c7.py run data/xjtu-sy/run
 # Only after the XJTU-SY verdicts are committed (consumed data, exploratory):
 $P -I evaluation/context/c7/c7.py paderborn data/paderborn-rtf/run
 ```
+
+Results: [RESULTS.md](RESULTS.md); outputs in `results/`. Post hoc (decides nothing):
+`$P -I evaluation/context/c7/posthoc_direction.py data/xjtu-sy/run`.
