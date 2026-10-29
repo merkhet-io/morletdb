@@ -1,8 +1,9 @@
 # S1: explainable sleep staging by retrieval of similar epochs
 
-Status: **DRAFT.** Not frozen, and no data has been downloaded or read. It is frozen in a later
-commit, before any recording is read. Read so far: the PhysioNet pages of Sleep-EDF Expanded
-1.0.0 and Apnea-ECG 1.0.0, and the morlet-extractor contract.
+Status: **FROZEN** in the commit that adds this line and `split.json`, before any recording is
+read. Read so far: the PhysioNet pages of Sleep-EDF Expanded 1.0.0 and Apnea-ECG 1.0.0, the
+morlet-extractor contract, and the file names in the release's `SHA256SUMS.txt` (for the split).
+Changes after the freeze are logged under "Changes after freeze".
 
 ## Why
 
@@ -62,8 +63,11 @@ evaluation.
 
 - **Morlet:** `morlet_features(epoch, 100, 'morlet-energy-lowrate-v1')` with **no**
   normalization, because amplitude defines N3. That gives 12 band energies (log1p, centres
-  1.56–40 Hz), AC RMS, crest factor and kurtosis. SQL and the harness must agree to 1e-9
-  relative on 20 epochs (product check).
+  1.56–40 Hz), AC RMS, crest factor and kurtosis.
+  - The harness computes them **by calling pg_morlet 0.3.1 itself** (the SQL function, one
+    night per query with array slices), so they are the product's features by construction.
+  - **Product check:** recomputing 20 random epochs in separate calls reproduces the stored
+    vectors exactly.
 - **FFT, same layout:** Welch power spectrum of the epoch (4-s Hann segments, 50% overlap). Band
   power is summed between the geometric midpoints of the same 12 centres, then log1p. The arm
   keeps the same three statistics (RMS, crest, kurtosis). This isolates the transform.
@@ -77,13 +81,15 @@ evaluation.
 |---|---|---|
 | **M-KNN** (candidate) | Morlet | k nearest development epochs by Euclidean distance; majority vote, ties broken by the nearest neighbour |
 | **F-KNN** (Q1 comparator) | FFT, same layout | same |
-| **M-LR** (Q2 comparator) | Morlet | multinomial logistic regression, L2 penalty, class-balanced weights |
+| **M-LR** (Q2 comparator) | Morlet | multinomial logistic regression with intercept, L2 penalty 1/(2C)·‖W‖², class-balanced weights (n / (5 · n_class)), fitted by L-BFGS (scipy) to convergence (gradient norm 1e-6, max 1,000 iterations) |
 
 - **Fixed on development data only,** by leave-subjects-out cross-validation (5 folds of
   development subjects):
   - k for each KNN arm, from {5, 10, 20, 40};
-  - the L2 strength for M-LR, from {0.01, 0.1, 1, 10}.
-- **Selection criterion:** mean per-subject Cohen's kappa.
+  - C for M-LR, from {0.01, 0.1, 1, 10}.
+- **Selection criterion:** mean per-subject Cohen's kappa. Ties go to the smaller k or C.
+- Folds: development subjects in `split.json` order, assigned round-robin to 5 folds.
+- KNN distance ties are broken by gallery order (subject, night, epoch).
 
 ## Metric and decision rules
 
