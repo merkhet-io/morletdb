@@ -1,0 +1,705 @@
+{
+ "protocol": "C7 exploratory (consumed Paderborn, decides nothing)",
+ "per_bearing": {
+  "B02": {
+   "H-PIN": {
+    "scored": 1062,
+    "alarm": 866,
+    "stable": true,
+    "lead": 0.27045225002805523,
+    "calibration_extended": false,
+    "calibration": 142,
+    "threshold": 0.2907361196054053,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 216.7,
+    "life_fraction": 0.7616339449087582,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 1071,
+    "alarm": 866,
+    "stable": true,
+    "lead": 0.27045225002805523,
+    "calibration_extended": false,
+    "calibration": 112,
+    "threshold": 0.32558004817417685,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 216.7,
+    "life_fraction": 0.7616339449087582,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 1116,
+    "alarm": 868,
+    "stable": true,
+    "lead": 0.2685444955672764,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.16783494034850263,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 217.26666666666668,
+    "life_fraction": 0.763315365214381
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 1116,
+   "minutes": 337.01666666666665,
+   "pin_scored": 1062
+  },
+  "B03": {
+   "H-PIN": {
+    "scored": 587,
+    "alarm": 554,
+    "stable": true,
+    "lead": 0.12687164247342553,
+    "calibration_extended": false,
+    "calibration": 146,
+    "threshold": 0.3893087962866308,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 127.31666666666666,
+    "life_fraction": 0.9041202384037316,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 574,
+    "alarm": 556,
+    "stable": true,
+    "lead": 0.12195679506229283,
+    "calibration_extended": false,
+    "calibration": 116,
+    "threshold": 0.4046671368576362,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 128.03333333333333,
+    "life_fraction": 0.9078344994385419,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 614,
+    "alarm": 554,
+    "stable": true,
+    "lead": 0.12687164247342553,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.12367042915373909,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 127.31666666666666,
+    "life_fraction": 0.9041202384037316
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 0.9830508474576272
+   },
+   "snapshots": 614,
+   "minutes": 192.95,
+   "pin_scored": 587
+  },
+  "B04": {
+   "H-PIN": {
+    "scored": 931,
+    "alarm": 442,
+    "stable": true,
+    "lead": 0.695132081741153,
+    "calibration_extended": false,
+    "calibration": 120,
+    "threshold": 0.24299839002485363,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 91.75,
+    "life_fraction": 0.38797601053196157,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 1034,
+    "alarm": 442,
+    "stable": true,
+    "lead": 0.695132081741153,
+    "calibration_extended": false,
+    "calibration": 80,
+    "threshold": 0.21872259783245215,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 91.75,
+    "life_fraction": 0.38797601053196157,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 1114,
+    "alarm": 465,
+    "stable": true,
+    "lead": 0.6707648003544332,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.22695508310566523,
+    "fraction_above_after": 0.765793528505393,
+    "minutes_after_calibration": 99.08333333333333,
+    "life_fraction": 0.4094300063386806
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 1114,
+   "minutes": 341.81666666666666,
+   "pin_scored": 931
+  },
+  "B06": {
+   "H-PIN": {
+    "scored": 2627,
+    "alarm": 9890,
+    "stable": true,
+    "lead": 0.24135470413876386,
+    "calibration_extended": false,
+    "calibration": 120,
+    "threshold": 0.21650141864036324,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 2994.55,
+    "life_fraction": 0.7610665708051532,
+    "top_value": "kurtosis"
+   },
+   "H-CTX": {
+    "scored": 12827,
+    "alarm": 9876,
+    "stable": true,
+    "lead": 0.2424609642196644,
+    "calibration_extended": false,
+    "calibration": 80,
+    "threshold": 0.18834705765756155,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 2990.1833333333334,
+    "life_fraction": 0.7599714087462485,
+    "top_value": "kurtosis"
+   },
+   "B-RMS": {
+    "scored": 12965,
+    "alarm": 12836,
+    "stable": true,
+    "lead": 0.010028120962361824,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.16092242864459483,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 3907.65,
+    "life_fraction": 0.9900724813362649
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 12965,
+   "minutes": 3987.233333333333,
+   "pin_scored": 2627
+  },
+  "B07": {
+   "H-PIN": {
+    "scored": 6393,
+    "alarm": 6327,
+    "stable": true,
+    "lead": 0.0059235705805680315,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.31567034588984344,
+    "fraction_above_after": 0.9545454545454546,
+    "minutes_after_calibration": 3991.25,
+    "life_fraction": 0.9941397025909332,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 6343,
+    "alarm": 6327,
+    "stable": true,
+    "lead": 0.0059235705805680315,
+    "calibration_extended": false,
+    "calibration": 100,
+    "threshold": 0.3102788537426354,
+    "fraction_above_after": 0.8636363636363636,
+    "minutes_after_calibration": 3991.25,
+    "life_fraction": 0.9941397025909332,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 6393,
+    "alarm": 6387,
+    "stable": true,
+    "lead": 0.000427559754589003,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.24156516022294647,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 4013.3166666666666,
+    "life_fraction": 0.9995770072647976
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 6393,
+   "minutes": 4058.383333333333,
+   "pin_scored": 6393
+  },
+  "B08": {
+   "H-PIN": {
+    "scored": 1827,
+    "alarm": 1215,
+    "stable": true,
+    "lead": 0.3656856606136506,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.21442618004080644,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 371.43333333333334,
+    "life_fraction": 0.6640870110855469,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 1792,
+    "alarm": 1215,
+    "stable": true,
+    "lead": 0.3656856606136506,
+    "calibration_extended": false,
+    "calibration": 115,
+    "threshold": 0.2544987328741864,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 371.43333333333334,
+    "life_fraction": 0.6640870110855469,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 1827,
+    "alarm": 1215,
+    "stable": true,
+    "lead": 0.3656856606136506,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.19714644051720126,
+    "fraction_above_after": 0.815359477124183,
+    "minutes_after_calibration": 371.43333333333334,
+    "life_fraction": 0.6640870110855469
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 1827,
+   "minutes": 637.4666666666667,
+   "pin_scored": 1827
+  },
+  "B09": {
+   "H-PIN": {
+    "scored": 1414,
+    "alarm": 242,
+    "stable": true,
+    "lead": 0.9412342767295597,
+    "calibration_extended": false,
+    "calibration": 125,
+    "threshold": 0.5612598523630404,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 39.86666666666667,
+    "life_fraction": 0.12289377289377289,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 1733,
+    "alarm": 244,
+    "stable": false,
+    "lead": 0.0,
+    "calibration_extended": false,
+    "calibration": 85,
+    "threshold": 0.44254293852331417,
+    "fraction_above_after": 0.23739629865985962,
+    "minutes_after_calibration": 40.7,
+    "life_fraction": 0.12403846153846154,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 1813,
+    "alarm": 278,
+    "stable": true,
+    "lead": 0.921955656064107,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.18578667578965635,
+    "fraction_above_after": 0.9576547231270358,
+    "minutes_after_calibration": 52.916666666666664,
+    "life_fraction": 0.14132326007326007
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 0.21997389033942558
+   },
+   "snapshots": 1813,
+   "minutes": 728.0,
+   "pin_scored": 1414
+  },
+  "B10": {
+   "H-PIN": {
+    "scored": 2494,
+    "alarm": 2676,
+    "stable": true,
+    "lead": 0.17534966676053693,
+    "calibration_extended": false,
+    "calibration": 121,
+    "threshold": 0.47496728493312257,
+    "fraction_above_after": 0.9955056179775281,
+    "minutes_after_calibration": 878.5,
+    "life_fraction": 0.8361044088615924,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 3138,
+    "alarm": 2673,
+    "stable": true,
+    "lead": 0.1763509496542445,
+    "calibration_extended": false,
+    "calibration": 76,
+    "threshold": 0.36412510820640054,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 877.4333333333333,
+    "life_fraction": 0.8351685311106237,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 3224,
+    "alarm": 2681,
+    "stable": true,
+    "lead": 0.1738878536867983,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.19412760786395022,
+    "fraction_above_after": 0.7845303867403315,
+    "minutes_after_calibration": 879.3,
+    "life_fraction": 0.8376105871170578
+   },
+   "absorption": {
+    "H-PIN": 0.9954545454545455,
+    "H-CTX": 1.0
+   },
+   "snapshots": 3224,
+   "minutes": 1139.75,
+   "pin_scored": 2494
+  },
+  "B11": {
+   "H-PIN": {
+    "scored": 1953,
+    "alarm": 707,
+    "stable": true,
+    "lead": 0.6922605885354652,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.1756293611565558,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 150.76666666666668,
+    "life_fraction": 0.3606773696943039,
+    "top_value": "crest"
+   },
+   "H-CTX": {
+    "scored": 1938,
+    "alarm": 707,
+    "stable": true,
+    "lead": 0.6922605885354652,
+    "calibration_extended": false,
+    "calibration": 135,
+    "threshold": 0.2005343194390065,
+    "fraction_above_after": 0.9871589085072231,
+    "minutes_after_calibration": 150.76666666666668,
+    "life_fraction": 0.3606773696943039,
+    "top_value": "crest"
+   },
+   "B-RMS": {
+    "scored": 1953,
+    "alarm": 709,
+    "stable": true,
+    "lead": 0.6911719680217724,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.0651020113973568,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 151.3,
+    "life_fraction": 0.36168274215338214
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 0.9871279163314561
+   },
+   "snapshots": 1953,
+   "minutes": 530.4833333333333,
+   "pin_scored": 1953
+  },
+  "B12": {
+   "H-PIN": {
+    "scored": 767,
+    "alarm": 629,
+    "stable": false,
+    "lead": 0.0,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 1.2395606183070038,
+    "fraction_above_after": 0.30434782608695654,
+    "minutes_after_calibration": 95.83333333333333,
+    "life_fraction": 0.8210239651416122,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 752,
+    "alarm": null,
+    "stable": false,
+    "lead": 0.0,
+    "calibration_extended": false,
+    "calibration": 135,
+    "threshold": 4.630955903904751
+   },
+   "B-RMS": {
+    "scored": 767,
+    "alarm": null,
+    "stable": false,
+    "lead": 0.0,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.5291587079298137
+   },
+   "snapshots": 767,
+   "minutes": 153.0,
+   "pin_scored": 767
+  },
+  "B13": {
+   "H-PIN": {
+    "scored": 19417,
+    "alarm": 17656,
+    "stable": true,
+    "lead": 0.0923058456367783,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.2829409988394856,
+    "fraction_above_after": 0.9994321408290744,
+    "minutes_after_calibration": 3528.9333333333334,
+    "life_fraction": 0.9088063766078107,
+    "top_value": "crest"
+   },
+   "H-CTX": {
+    "scored": 19402,
+    "alarm": 17656,
+    "stable": true,
+    "lead": 0.0923058456367783,
+    "calibration_extended": false,
+    "calibration": 135,
+    "threshold": 0.2903209381426039,
+    "fraction_above_after": 0.9994321408290744,
+    "minutes_after_calibration": 3528.9333333333334,
+    "life_fraction": 0.9088063766078107,
+    "top_value": "crest"
+   },
+   "B-RMS": {
+    "scored": 19417,
+    "alarm": 17668,
+    "stable": true,
+    "lead": 0.09167995610199427,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.07228579189863936,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 3531.366666666667,
+    "life_fraction": 0.9094247246022031
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 19417,
+   "minutes": 3935.2166666666667,
+   "pin_scored": 19417
+  },
+  "B14": {
+   "H-PIN": {
+    "scored": 12317,
+    "alarm": 9211,
+    "stable": true,
+    "lead": 0.05908119167117001,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.23817613985943692,
+    "fraction_above_after": 0.5441081777205409,
+    "minutes_after_calibration": 9895.533333333333,
+    "life_fraction": 0.9410857441754991,
+    "top_value": "crest"
+   },
+   "H-CTX": {
+    "scored": 12307,
+    "alarm": 9211,
+    "stable": false,
+    "lead": 0.0,
+    "calibration_extended": false,
+    "calibration": 140,
+    "threshold": 0.2266449647015239,
+    "fraction_above_after": 0.4967804249839021,
+    "minutes_after_calibration": 9895.533333333333,
+    "life_fraction": 0.9410857441754991,
+    "top_value": "crest"
+   },
+   "B-RMS": {
+    "scored": 12317,
+    "alarm": 11756,
+    "stable": true,
+    "lead": 0.010681237945969417,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.1054991596228974,
+    "fraction_above_after": 0.9714795008912656,
+    "minutes_after_calibration": 10404.55,
+    "life_fraction": 0.9893489422425059
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 12317,
+   "minutes": 10546.683333333332,
+   "pin_scored": 12317
+  },
+  "B15": {
+   "H-PIN": {
+    "scored": 22567,
+    "alarm": 21075,
+    "stable": true,
+    "lead": 0.06671645140286274,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.186897570952471,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 4228.35,
+    "life_fraction": 0.9337197488542756,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 22557,
+    "alarm": 21032,
+    "stable": true,
+    "lead": 0.06863304112390882,
+    "calibration_extended": false,
+    "calibration": 140,
+    "threshold": 0.19058103812160243,
+    "fraction_above_after": 0.9824104234527687,
+    "minutes_after_calibration": 4219.666666666667,
+    "life_fraction": 0.9318156900294563,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 22567,
+    "alarm": 21129,
+    "stable": true,
+    "lead": 0.06429956186979698,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.09845657056072227,
+    "fraction_above_after": 0.9617524339360223,
+    "minutes_after_calibration": 4239.3,
+    "life_fraction": 0.9361208364702185
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 22567,
+   "minutes": 4560.433333333333,
+   "pin_scored": 22567
+  },
+  "B17": {
+   "H-PIN": {
+    "scored": 2733,
+    "alarm": 2190,
+    "stable": true,
+    "lead": 0.21004664129094516,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.23516235925388163,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 736.75,
+    "life_fraction": 0.8012546287685363,
+    "top_value": "std"
+   },
+   "H-CTX": {
+    "scored": 2723,
+    "alarm": 2189,
+    "stable": true,
+    "lead": 0.21045765649850784,
+    "calibration_extended": false,
+    "calibration": 140,
+    "threshold": 0.20930707641441043,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 736.3666666666667,
+    "life_fraction": 0.800865727667777,
+    "top_value": "std"
+   },
+   "B-RMS": {
+    "scored": 2733,
+    "alarm": 2190,
+    "stable": true,
+    "lead": 0.21004664129094516,
+    "calibration_extended": false,
+    "calibration": 150,
+    "threshold": 0.10392244326141006,
+    "fraction_above_after": 1.0,
+    "minutes_after_calibration": 736.75,
+    "life_fraction": 0.8012546287685363
+   },
+   "absorption": {
+    "H-PIN": 1.0,
+    "H-CTX": 1.0
+   },
+   "snapshots": 2733,
+   "minutes": 985.6833333333333,
+   "pin_scored": 2733
+  }
+ },
+ "H-PIN vs H-CTX": {
+  "candidate": "H-PIN",
+  "comparator": "H-CTX",
+  "units": 14,
+  "delta": 0.07148536913633183,
+  "ci95": [
+   -0.0003304877767349896,
+   0.20658928581534153
+  ],
+  "mean_lead": {
+   "H-PIN": 0.281601040828781,
+   "H-CTX": 0.21011567169244924
+  },
+  "unstable": {
+   "H-PIN": 1,
+   "H-CTX": 2
+  },
+  "verdict": "inconclusive"
+ },
+ "H-PIN vs B-RMS": {
+  "candidate": "H-PIN",
+  "comparator": "B-RMS",
+  "units": 14,
+  "delta": 0.024026386921129596,
+  "ci95": [
+   0.002781619318269915,
+   0.0589553115362138
+  ],
+  "mean_lead": {
+   "H-PIN": 0.281601040828781,
+   "B-RMS": 0.2575746539076514
+  },
+  "unstable": {
+   "H-PIN": 1,
+   "B-RMS": 0
+  },
+  "verdict": "inconclusive"
+ },
+ "late_alarms": {
+  "H-PIN": 5,
+  "H-CTX": 5,
+  "B-RMS": 6
+ },
+ "absorption": {
+  "H-PIN": {
+   "bearings": 13,
+   "mean_share_above_after_rms_alarm": 0.9996503496503497
+  },
+  "H-CTX": {
+   "bearings": 13,
+   "mean_share_above_after_rms_alarm": 0.9377040503175776
+  }
+ }
+}
