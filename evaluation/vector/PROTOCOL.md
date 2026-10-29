@@ -87,4 +87,16 @@ Reported without a criterion:
 
 ## Changes after freeze
 
-None yet.
+1. **Tie-aware recall** (2026-10-29, found while developing the harness on fold 1 in a separate
+   database, `morlet_vector_dev`, before the run on folds 1–8). Many reports are identical
+   (fold 1: 2,175 records, 1,256 distinct reports; "sinus rhythm. normal ecg." 181 times), so
+   many text distances are exactly equal. The exact top-10 is then an arbitrary pick by
+   `ecg_id`, and plain set recall penalised HNSW for returning other, equally close records
+   (0.65 at `ef_search` 40 and 100). C2 and C3 now count a returned row as a hit if its
+   distance is no larger than the exact 10th distance (relative tolerance 1e-6), the usual
+   definition for ranked search with ties. C1 keeps plain set overlap, since it compares two
+   scorers rather than an index with an exact scan. Thresholds are unchanged.
+2. **Harness development mode** (same date). `vr1.py load` takes an optional maximum fold so
+   the harness could be debugged on fold 1 in `morlet_vector_dev`. C4's owner check now
+   requires rows beyond the reader's folds rather than exactly fold 8. The run itself loads
+   folds 1–8 as frozen.
