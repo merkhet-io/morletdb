@@ -217,7 +217,7 @@ def causal_median(v, w=SMOOTH):
     return np.array([np.median(v[max(0, i - w + 1):i + 1]) for i in range(len(v))])
 
 
-def alarm(raw, t, t_end):
+def alarm(raw, t, t_end, calibration=CALIB_MEASUREMENTS):
     """Frozen rule over scored segments (non-NaN raw), measurement times t, end of life t_end."""
     raw, t = np.asarray(raw, float), np.asarray(t, float)
     measurement = np.flatnonzero(np.isfinite(raw))
@@ -225,7 +225,7 @@ def alarm(raw, t, t_end):
     if len(measurement) == 0:
         return res
     v, ts = causal_median(raw[measurement]), t[measurement]
-    ncal = int(np.sum(measurement < CALIB_MEASUREMENTS))
+    ncal = int(np.sum(measurement < calibration))
     res["calibration_extended"] = ncal < CALIB_MIN_SCORED
     ncal = max(ncal, CALIB_MIN_SCORED)
     res["calibration"] = ncal
