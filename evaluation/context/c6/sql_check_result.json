@@ -1,0 +1,62 @@
+[
+ {
+  "bearing": "B03",
+  "query": 150,
+  "library": 150,
+  "same_library": true,
+  "max_relative_distance_error": 0.0,
+  "S": -0.17405924351278645,
+  "S_harness": -0.17405924351278645,
+  "pass": true
+ },
+ {
+  "bearing": "B03",
+  "query": 379,
+  "library": 150,
+  "same_library": true,
+  "max_relative_distance_error": 0.0,
+  "S": -0.0034617578855606823,
+  "S_harness": -0.0034617578855606823,
+  "pass": true
+ },
+ {
+  "bearing": "B03",
+  "query": 613,
+  "library": 150,
+  "same_library": true,
+  "max_relative_distance_error": 0.0,
+  "S": -0.002238674045910436,
+  "S_harness": -0.002238674045910436,
+  "pass": true
+ },
+ {
+  "bearing": "B10",
+  "query": 150,
+  "library": 150,
+  "same_library": true,
+  "max_relative_distance_error": 0.0,
+  "S": 0.5045731745700317,
+  "S_harness": 0.5045731745700317,
+  "pass": true
+ },
+ {
+  "bearing": "B10",
+  "query": 1684,
+  "library": 150,
+  "same_library": true,
+  "max_relative_distance_error": 0.0,
+  "S": 0.08149328986548318,
+  "S_harness": 0.08149328986548318,
+  "pass": true
+ },
+ {
+  "bearing": "B10",
+  "query": 3223,
+  "library": 150,
+  "same_library": true,
+  "max_relative_distance_error": 0.0,
+  "S": 0.0026706982408255804,
+  "S_harness": 0.0026706982408255804,
+  "pass": true
+ }
+]
