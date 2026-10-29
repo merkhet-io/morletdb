@@ -141,4 +141,9 @@ challenge, whose entrants reached 85–93% per-minute accuracy. A minute (6,000 
 
 ## Changes after freeze
 
-None (not frozen).
+1. **Split regenerated: the file-name pattern missed subjects** (2026-10-29, before any recording
+   was read). The first `split.json` (commit 158c153) matched only PSG names with an `E` in the
+   seventh position. The release also has `F0` (31 files) and `G0` (20 files) names, so 26 of the
+   78 subjects were left out. The pattern now accepts any two characters there. The regenerated
+   split, with the same seed and rule, has 39 development and 39 held-out subjects. Nothing else
+   changed.

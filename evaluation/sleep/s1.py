@@ -30,7 +30,7 @@ CS = (0.01, 0.1, 1.0, 10.0)
 FOLDS = 5
 RESAMPLES = 2000
 DSN = os.environ.get("MORLET_DSN", "host=localhost port=28817 dbname=morlet_sleep")
-NAME = re.compile(r"sleep-cassette/SC4(\d\d)(\d)E\w-PSG\.edf$")
+NAME = re.compile(r"sleep-cassette/SC4(\d\d)(\d)\w\w-PSG\.edf$")
 
 
 # -- split ---------------------------------------------------------------------------------
