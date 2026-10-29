@@ -1,0 +1,16 @@
+{
+ "records": 17418,
+ "empty_reports": 1,
+ "load_seconds": 43.123536958009936,
+ "index": {
+  "wave": {
+   "seconds": 2.3519006659917068,
+   "bytes": 6430720
+  },
+  "text": {
+   "seconds": 2.101326042000437,
+   "bytes": 15343616
+  }
+ },
+ "table_bytes": 102686720
+}
