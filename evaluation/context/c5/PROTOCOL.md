@@ -194,4 +194,23 @@ H-ALL for Q2.
 
 ## Changes after freeze
 
-None yet.
+1. **Timestamp column name** (2026-10-28, before any value was computed). The operating
+   condition and temperature CSVs name their timestamp column `Time` (e.g.
+   `19-Oct-2021 08:46:54`), not `dateTime` as written above. `c5.py` reads `Time`, and
+   parses timestamps as UTC so results do not depend on the machine's time zone (only
+   differences are used). Found while checking B01, B03 and B16 against Table 3: file and
+   row counts match (377, 614, 5,891), times strictly increase, every row has a temperature
+   row. `.mat` files hold `measTime` relative to the measurement start, so the k-th file is
+   matched to the k-th row by measurement number, as frozen. Some ZIPs exceed 4 GB (zip64)
+   and are extracted with Python's `zipfile`.
+2. **Pauses: running time reported** (2026-10-28, before any arm or alarm was computed).
+   B07's measurements pause for 31.2 h at about 47% of its measurements (wall-clock span
+   67.6 h; Table 3 gives 37 h), and B01's for 0.3 h. Table 3's durations therefore count
+   running time. The decision rules stay as frozen, on measurement timestamps. Every
+   decision is also **reported** with running time: gaps over 10 minutes shortened to the
+   bearing's median interval (`running_time` in `c5.py`). If the two disagree, the
+   frozen verdict stands and the disagreement is stated.
+3. **Product-check chunk size** (2026-10-28, implementation error, before any result).
+   `sql_check.py` appended 65,536 samples per call; `morlet_append_chunk` accepts at most
+   32,768, which the synthetic check (shorter signals) did not reach. Chunks are now
+   32,768 samples. Nothing else changed.

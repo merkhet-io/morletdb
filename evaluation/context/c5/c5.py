@@ -17,7 +17,7 @@ import csv
 import json
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -96,10 +96,15 @@ def parse_time(s):
     for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S", "%d-%b-%Y %H:%M:%S.%f", "%d-%b-%Y %H:%M:%S",
                 "%d.%m.%Y %H:%M:%S.%f", "%d.%m.%Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
         try:
-            return datetime.strptime(s, fmt).timestamp()
+            return datetime.strptime(s, fmt).replace(tzinfo=timezone.utc).timestamp()
         except ValueError:
             pass
     raise ValueError(f"unrecognised dateTime {s!r}")
+
+
+def row_time(r):
+    """The files name the timestamp column "Time"; the documentation calls it dateTime (change after freeze 1)."""
+    return parse_time(r["Time"] if "Time" in r else r["dateTime"])
 
 
 def read_table(path):
@@ -132,11 +137,11 @@ def experiment_values(root: Path, experiment):
     oc = read_table(find_one(root, f"{experiment}_operatingConditions.csv"))
     if len(files) != len(oc):
         raise ValueError(f"{experiment}: {len(files)} .mat files but {len(oc)} operating-condition rows")
-    t = np.array([parse_time(r["dateTime"]) for r in oc])
+    t = np.array([row_time(r) for r in oc])
     if not (np.diff(t) > 0).all():
         raise ValueError(f"{experiment}: measurement times are not increasing")
     temps = read_table(find_one(root, f"{experiment}_meanTemperatures.csv"))
-    tt = np.array([parse_time(r["dateTime"]) for r in temps])
+    tt = np.array([row_time(r) for r in temps])
     t1 = np.array([float(r["Mean Abs. Temp. T1"]) for r in temps])
     rate = rate_hz(experiment)
     vals = np.empty((2, len(files), len(NAMES)))
@@ -244,6 +249,18 @@ def alarm(raw, t, t_end):
 
 
 # -- analysis -------------------------------------------------------------------------
+PAUSE_S = 600
+
+
+def running_time(t):
+    """Measurement times with pauses (gaps > 10 min) shortened to the median interval; Table 3's
+    durations count running time (change after freeze 2, reported only)."""
+    t = np.asarray(t, float)
+    d = np.diff(t)
+    d[d > PAUSE_S] = np.median(d)
+    return np.concatenate([[t[0]], t[0] + np.cumsum(d)])
+
+
 def bootstrap_diff(a, b, resamples=RESAMPLES, seed=SEED):
     a, b = np.asarray(a, float), np.asarray(b, float)
     idx = np.random.default_rng(seed).integers(0, len(a), (resamples, len(a)))
@@ -344,6 +361,12 @@ def cmd_run(a):
         "channel C": {q: decide(res["channel C"], PRIMARY, "H-CTX", c) for q, c in (("Q1", "B-RMS"), ("Q2", "H-ALL"))},
         "H-RMS vs B-RMS": decide(rows, PRIMARY, "H-RMS", "B-RMS"),
     }
+    run = {}
+    for b in EXPERIMENTS:
+        d = dict(np.load(a.out / "values" / f"{b}.npz"))
+        run[b] = unit_rows(dict(d, t=running_time(d["t"])))
+    res["running time"] = run
+    res["reported"]["running time"] = {q: decide(run, PRIMARY, "H-CTX", c) for q, c in (("Q1", "B-RMS"), ("Q2", "H-ALL"))}
     (a.out / "c5.json").write_text(json.dumps(res, indent=1))
     print_rows(rows)
     print(json.dumps(res["decisions"], indent=1))
