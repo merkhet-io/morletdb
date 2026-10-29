@@ -1,0 +1,38 @@
+{
+ "checks": {
+  "track equals reference": {
+   "episodes": 29,
+   "max_relative_error": 0.0,
+   "statuses": [
+    "initialized",
+    "invalid_value",
+    "ok"
+   ],
+   "problems": [],
+   "pass": true
+  },
+  "earlier episodes and since_utc only": {
+   "episodes": 9,
+   "problems": [],
+   "pass": true
+  },
+  "recursion equals batch conditioning": {
+   "max_error": 4.781970628041708e-08,
+   "pass": true
+  },
+  "repeat calls identical": {
+   "pass": true
+  },
+  "invalid configuration rejected": {
+   "accepted": [],
+   "pass": true
+  },
+  "access and row-level security": {
+   "refused_without_grant": true,
+   "owner_episodes": 29,
+   "reader_episodes": 26,
+   "pass": true
+  }
+ },
+ "pass": true
+}

@@ -1,0 +1,148 @@
+{
+ "protocol": "L1",
+ "model": "local-level-v1",
+ "calibration": {
+  "q": 0.001,
+  "r": 0.01,
+  "log_likelihood": 6426.596261140863,
+  "ema_alpha": 0.5,
+  "rolling_window": 5
+ },
+ "scenarios": {
+  "S1 constant": {
+   "rmse": {
+    "kalman": 0.03961263001749879,
+    "ema": 0.05787422601505119,
+    "rolling": 0.053506741979880486
+   },
+   "level_coverage": 0.9898333333333333,
+   "prediction_coverage": 0.9664166666666665
+  },
+  "S2 drift": {
+   "rmse": {
+    "kalman": 0.03976311783916116,
+    "ema": 0.05787817700057016,
+    "rolling": 0.05357473942895291
+   },
+   "level_coverage": 0.9891666666666665,
+   "prediction_coverage": 0.966611111111111
+  },
+  "S3 spike": {
+   "rmse": {
+    "kalman": 0.046384584532493195,
+    "ema": 0.06764171579815502,
+    "rolling": 0.05396245235346399
+   },
+   "level_coverage": 0.9724444444444444,
+   "prediction_coverage": 0.955861111111111,
+   "spike_visibility": {
+    "kalman": 7.329634145237056,
+    "ema": 6.736937694848935,
+    "rolling": 7.134544481130618
+   },
+   "spike_leakage": {
+    "kalman": 0.220219674018245,
+    "ema": 0.403383866136285,
+    "rolling": 0.07982011911108042
+   }
+  },
+  "S4 step": {
+   "rmse": {
+    "kalman": 0.04588212611231162,
+    "ema": 0.05914886723127166,
+    "rolling": 0.05988482233522368
+   },
+   "level_coverage": 0.9735555555555555,
+   "prediction_coverage": 0.9575277777777776,
+   "step_half": {
+    "kalman": {
+     "median": 2.0,
+     "never": 0
+    },
+    "ema": {
+     "median": 0.0,
+     "never": 0
+    },
+    "rolling": {
+     "median": 2.0,
+     "never": 0
+    }
+   },
+   "step_90": {
+    "kalman": {
+     "median": 6.0,
+     "never": 0
+    },
+    "ema": {
+     "median": 2.0,
+     "never": 0
+    },
+    "rolling": {
+     "median": 3.0,
+     "never": 0
+    }
+   }
+  },
+  "S5 gaps": {
+   "rmse": {
+    "kalman": 0.06302964262906956,
+    "ema": 0.07756599542779581,
+    "rolling": 0.12159514407128245
+   },
+   "level_coverage": 0.9509166666666666,
+   "prediction_coverage": 0.9501666666666665
+  },
+  "S6 correlated": {
+   "rmse": {
+    "kalman": 0.0695454978594547,
+    "ema": 0.08329106003100419,
+    "rolling": 0.0820195449651352
+   },
+   "level_coverage": 0.8526666666666668,
+   "prediction_coverage": 0.9937222222222221
+  }
+ },
+ "decision": {
+  "rmse_within_5pct": {
+   "S1 constant": true,
+   "S2 drift": true,
+   "S3 spike": true,
+   "S4 step": true,
+   "S5 gaps": true
+  },
+  "coverage_S1_S5": {
+   "S1 constant": [
+    0.9898333333333333,
+    0.9664166666666665
+   ],
+   "S5 gaps": [
+    0.9509166666666666,
+    0.9501666666666665
+   ]
+  },
+  "gap_advantage": true,
+  "verdict": "unclear"
+ },
+ "post_hoc_ema_at_kalman_gain": {
+  "alpha": 0.27015621187164246,
+  "S1 constant": {
+   "rmse": 0.03961276275011844
+  },
+  "S2 drift": {
+   "rmse": 0.039763240737994726
+  },
+  "S3 spike": {
+   "rmse": 0.04638469745494784
+  },
+  "S4 step": {
+   "rmse": 0.04588224472258154,
+   "step_90_median": 6.0
+  },
+  "S5 gaps": {
+   "rmse": 0.1036484419534133
+  },
+  "S6 correlated": {
+   "rmse": 0.0695455313358828
+  }
+ }
+}

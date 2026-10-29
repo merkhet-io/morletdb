@@ -1253,3 +1253,92 @@ BEGIN
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
       q.vals,ords,top_k;
 END $$;
+
+-- Level track (local-level Kalman filter, model local-level-v1) of one simple-v1 value
+-- over the episodes of a segment's history: the segments morlet_compare_summary would
+-- compare with (same context for match_keys, rate, channel, unit, metadata_filter and
+-- exclude_labels; other occurrences), restricted to the query's machine and to segments
+-- starting before the query and at or after since_utc, followed by the query segment.
+-- Computed at query time from the stored values; nothing is persisted.
+--   y = ln(value) with transform 'log' (a value <= 0 is reported as invalid_value and
+--   skipped; there is no epsilon), or the value itself with transform 'none'.
+--   Level x: x_k = x_{k-1} + w, Var(w) = process_variance_per_hour * hours since the
+--   last valid episode; y_k = x_k + v, Var(v) = observation_variance (units of y squared).
+--   The first valid episode sets x = y, Var(x) = observation_variance (the diffuse-prior limit).
+-- Episodes are ordered by start time, then segment id; equal start times add no process
+-- variance. level_var is the uncertainty of the level; innovation_var
+-- (= predicted_level_var + observation_variance) is the model-based variance of the
+-- observation predicted before it was seen. Gaussian, independent errors are assumed:
+-- correlated or overlapping episodes make both variances too small.
+CREATE FUNCTION public.morlet_level_track(collection regclass,segment_id bigint,
+  process_variance_per_hour float8,observation_variance float8,value_name text DEFAULT 'std',
+  transform text DEFAULT 'log',match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],since_utc timestamptz DEFAULT '-infinity',max_candidates integer DEFAULT 10000)
+RETURNS TABLE(episode integer,episode_segment_id bigint,occurrence jsonb,start_ns numeric,hours_since_previous float8,
+  observed float8,y float8,predicted_level float8,predicted_level_var float8,innovation float8,innovation_var float8,
+  standardized_innovation float8,level float8,level_var float8,status text,model text)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE acq record; q record; qr record; match jsonb; history text; n bigint; cutoff numeric; machine text;
+  ord integer:=array_position(public.morlet_simple_value_names(),value_name); since numeric; r record;
+  m float8; p float8; last_t numeric; k float8;
+BEGIN
+  IF ord IS NULL THEN
+    RAISE EXCEPTION 'value_name must be one of %',public.morlet_simple_value_names();
+  END IF;
+  IF transform NOT IN ('log','none') THEN RAISE EXCEPTION 'transform must be log or none'; END IF;
+  IF NOT (process_variance_per_hour>=0 AND process_variance_per_hour<'Infinity')
+    OR NOT (observation_variance>0 AND observation_variance<'Infinity') THEN
+    RAISE EXCEPTION 'process_variance_per_hour must be finite and >= 0, observation_variance finite and > 0';
+  END IF;
+  IF max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid max_candidates or metadata filter';
+  END IF;
+  SELECT * INTO acq FROM public.morlet_acquisition_relations(collection);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=public.morlet_segment_start_ns(collection,q.segment_id);
+  IF cutoff IS NULL THEN
+    RAISE EXCEPTION 'a level track needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  EXECUTE format('SELECT a.machine FROM %s ch JOIN %s a ON a.acquisition_id=ch.acquisition_id WHERE ch.recording_id=$1',
+    acq.channels,acq.acq) INTO machine USING q.recording_id;
+  since:=CASE WHEN isfinite(since_utc) THEN extract(epoch FROM since_utc)*1000000000 END;
+  IF since IS NOT NULL AND cutoff<since THEN RAISE EXCEPTION 'the segment starts before since_utc'; END IF;
+  history:=format('SELECT h.segment_id,h.occurrence,h.vals[$9] AS x,
+      extract(epoch FROM a.origin_utc)*1000000000+public.morlet_sample_time_ns(r.sample_rate_hz,ch.offset_ns,h.start_sample) AS t
+    FROM (%s) h JOIN %s r ON r.recording_id=h.recording_id JOIN %s ch ON ch.recording_id=h.recording_id
+      JOIN %s a ON a.acquisition_id=ch.acquisition_id WHERE a.machine=$10',
+    public.morlet_history_sql(collection,false,cutoff),collection,acq.channels,acq.acq);
+  history:='SELECT * FROM ('||history||') e WHERE $11::numeric IS NULL OR e.t>=$11';
+  EXECUTE 'SELECT count(*) FROM ('||history||') c' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since;
+  IF n+1>max_candidates THEN
+    RAISE EXCEPTION 'track exceeds % episodes; narrow match_keys, the metadata filter or since_utc',max_candidates;
+  END IF;
+  episode:=0; model:='local-level-v1';
+  FOR r IN EXECUTE history||' UNION ALL SELECT $1,$7,$12,$13 ORDER BY t,segment_id'
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since,
+      q.vals[ord],cutoff
+  LOOP
+    episode:=episode+1; episode_segment_id:=r.segment_id; occurrence:=r.occurrence; start_ns:=r.t; observed:=r.x;
+    y:=CASE WHEN transform='none' THEN r.x WHEN r.x>0 THEN ln(r.x) END;
+    hours_since_previous:=CASE WHEN last_t IS NOT NULL THEN ((r.t-last_t)/3600000000000)::float8 END;
+    predicted_level:=m;
+    predicted_level_var:=p+process_variance_per_hour*hours_since_previous;
+    innovation_var:=predicted_level_var+observation_variance;
+    innovation:=y-predicted_level;
+    standardized_innovation:=innovation/sqrt(innovation_var);
+    IF y IS NULL THEN
+      status:='invalid_value';
+    ELSIF m IS NULL THEN
+      m:=y; p:=observation_variance; last_t:=r.t; status:='initialized';
+    ELSE
+      k:=predicted_level_var/innovation_var;
+      m:=m+k*innovation; p:=predicted_level_var*observation_variance/innovation_var; last_t:=r.t; status:='ok';
+    END IF;
+    level:=CASE WHEN status='invalid_value' THEN NULL ELSE m END;
+    level_var:=CASE WHEN status='invalid_value' THEN NULL ELSE p END;
+    RETURN NEXT;
+  END LOOP;
+END $$;
