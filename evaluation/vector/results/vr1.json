@@ -1,0 +1,169 @@
+{
+ "protocol": "VR1",
+ "versions": {
+  "postgres": "17.11",
+  "extensions": {
+   "pg_morlet": "0.3.1",
+   "vector": "0.8.0"
+  }
+ },
+ "machine": {
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm"
+ },
+ "rows": 17418,
+ "queries": 200,
+ "empty_report_queries": 0,
+ "C1 float4 fidelity": {
+  "mean_overlap": 1.0,
+  "min_overlap": 1.0,
+  "max_relative_distance_error": 4.5945994331179115e-07,
+  "median_relative_distance_error": 6.507282982573341e-08,
+  "pass": true
+ },
+ "C2 hnsw recall": {
+  "wave": {
+   "ef_search=40": {
+    "recall_at_10": 0.9995,
+    "queries": 200,
+    "fewer_than_10_rows": 0
+   },
+   "ef_search=100": {
+    "recall_at_10": 0.9995,
+    "queries": 200,
+    "fewer_than_10_rows": 0
+   },
+   "ef_search=200": {
+    "recall_at_10": 1.0,
+    "queries": 200,
+    "fewer_than_10_rows": 0
+   },
+   "plan_uses_hnsw": true
+  },
+  "text": {
+   "ef_search=40": {
+    "recall_at_10": 0.9005,
+    "queries": 200,
+    "fewer_than_10_rows": 0
+   },
+   "ef_search=100": {
+    "recall_at_10": 0.912,
+    "queries": 200,
+    "fewer_than_10_rows": 0
+   },
+   "ef_search=200": {
+    "recall_at_10": 0.922,
+    "queries": 200,
+    "fewer_than_10_rows": 0
+   },
+   "plan_uses_hnsw": true
+  },
+  "pass": false
+ },
+ "C3 filtered under RLS": {
+  "wave": {
+   "off": {
+    "recall_at_10": 1.0,
+    "fewer_than_10_rows": 0,
+    "rows_outside_policy": 0,
+    "queries": 200
+   },
+   "relaxed_order": {
+    "recall_at_10": 1.0,
+    "fewer_than_10_rows": 0,
+    "rows_outside_policy": 0,
+    "queries": 200
+   },
+   "plan_uses_hnsw": true
+  },
+  "text": {
+   "off": {
+    "recall_at_10": 0.924,
+    "fewer_than_10_rows": 0,
+    "rows_outside_policy": 0,
+    "queries": 200
+   },
+   "relaxed_order": {
+    "recall_at_10": 0.924,
+    "fewer_than_10_rows": 0,
+    "rows_outside_policy": 0,
+    "queries": 200
+   },
+   "plan_uses_hnsw": true
+  },
+  "pass": false
+ },
+ "C4 access": {
+  "refused_without_grant": {
+   "wave": true,
+   "text": true,
+   "fused": true
+  },
+  "reader_rows_outside_policy": {
+   "wave": 0,
+   "text": 0,
+   "fused": 0
+  },
+  "reader_rows_seen": 6000,
+  "owner_max_fold": 8,
+  "pass": true
+ },
+ "C5 generated columns": {
+  "insert": {
+   "max_relative_error": 5.967363181591306e-08,
+   "extractor": "morlet-energy-lowrate-v1"
+  },
+  "update": {
+   "max_relative_error": 4.325098469758937e-08,
+   "extractor": "morlet-energy-lowrate-v1"
+  },
+  "pass": true
+ },
+ "C6 fusion determinism": {
+  "queries": 20,
+  "identical_across_runs": true,
+  "rank_mismatches": 0,
+  "pass": true
+ },
+ "reported": {
+  "latency": {
+   "wave exact": {
+    "median_ms": 9.551562492561061,
+    "p95_ms": 11.394967001251644
+   },
+   "wave hnsw": {
+    "median_ms": 1.0719999991124496,
+    "p95_ms": 1.4339231951453255
+   },
+   "text exact": {
+    "median_ms": 6.29889550327789,
+    "p95_ms": 7.6306291528453585
+   },
+   "text hnsw": {
+    "median_ms": 1.2672289958572946,
+    "p95_ms": 1.7555455051478928
+   },
+   "fused hnsw": {
+    "median_ms": 2.5502084972686134,
+    "p95_ms": 3.4935916519316375
+   },
+   "wave float8 scorer": {
+    "median_ms": 15.52349999838043,
+    "p95_ms": 18.741560754278904
+   }
+  },
+  "wave_text_top10_overlap": {
+   "mean": 0.0030000000000000005,
+   "max": 0.1
+  }
+ },
+ "pass": {
+  "C1 float4 fidelity": true,
+  "C2 hnsw recall": false,
+  "C3 filtered under RLS": false,
+  "C4 access": true,
+  "C5 generated columns": true,
+  "C6 fusion determinism": true
+ }
+}
