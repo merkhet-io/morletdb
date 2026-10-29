@@ -1,0 +1,2850 @@
+{
+ "protocol": "C7",
+ "bearings": [
+  "Bearing1_1",
+  "Bearing1_2",
+  "Bearing1_3",
+  "Bearing1_4",
+  "Bearing1_5",
+  "Bearing2_1",
+  "Bearing2_2",
+  "Bearing2_3",
+  "Bearing2_4",
+  "Bearing2_5",
+  "Bearing3_1",
+  "Bearing3_2",
+  "Bearing3_3",
+  "Bearing3_4",
+  "Bearing3_5"
+ ],
+ "channels": {
+  "horizontal": {
+   "per_bearing": {
+    "Bearing1_1": {
+     "H-PIN": {
+      "scored": 123,
+      "alarm": 80,
+      "stable": true,
+      "lead": 0.45161290322580644,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.0444291666236978,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 51.0,
+      "life_fraction": 0.6557377049180327,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 118,
+      "alarm": 79,
+      "stable": true,
+      "lead": 0.48863636363636365,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.7070511552607871,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 45.0,
+      "life_fraction": 0.6475409836065574,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 123,
+      "alarm": 79,
+      "stable": true,
+      "lead": 0.46236559139784944,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.168733631985319,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 50.0,
+      "life_fraction": 0.6475409836065574
+     },
+     "H-GATED": {
+      "scored": 123,
+      "alarm": 80,
+      "stable": true,
+      "lead": 0.45161290322580644,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.0444291666236978,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 51.0,
+      "life_fraction": 0.6557377049180327,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 123,
+      "alarm": 80,
+      "stable": true,
+      "lead": 0.45161290322580644,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.9861170638658123,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 51.0,
+      "life_fraction": 0.6557377049180327
+     },
+     "H-ALL-no-crest": {
+      "scored": 118,
+      "alarm": 79,
+      "stable": true,
+      "lead": 0.48863636363636365,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.7589713352472676,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 45.0,
+      "life_fraction": 0.6475409836065574
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 123,
+     "minutes": 122.0
+    },
+    "Bearing1_2": {
+     "H-PIN": {
+      "scored": 161,
+      "alarm": 45,
+      "stable": true,
+      "lead": 0.8778625954198473,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.4126987593455296,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 16.0,
+      "life_fraction": 0.28125,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 156,
+      "alarm": 39,
+      "stable": true,
+      "lead": 0.9603174603174603,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.20896892321046345,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 5.0,
+      "life_fraction": 0.24375,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 161,
+      "alarm": 39,
+      "stable": true,
+      "lead": 0.9236641221374046,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.6774374102556866,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 10.0,
+      "life_fraction": 0.24375
+     },
+     "H-GATED": {
+      "scored": 161,
+      "alarm": 46,
+      "stable": true,
+      "lead": 0.8702290076335878,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.4126987593455296,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 17.0,
+      "life_fraction": 0.2875,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 161,
+      "alarm": 38,
+      "stable": true,
+      "lead": 0.9312977099236641,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.11394152993279863,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 9.0,
+      "life_fraction": 0.2375
+     },
+     "H-ALL-no-crest": {
+      "scored": 156,
+      "alarm": 40,
+      "stable": true,
+      "lead": 0.9523809523809523,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.18174252412700292,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 6.0,
+      "life_fraction": 0.25
+     },
+     "absorption": {
+      "H-PIN": 0.9586776859504132,
+      "H-ALL": 1.0,
+      "H-GATED": 0.9504132231404959,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 161,
+     "minutes": 160.0
+    },
+    "Bearing1_3": {
+     "H-PIN": {
+      "scored": 158,
+      "alarm": 60,
+      "stable": true,
+      "lead": 0.7578125,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.08145830034256632,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 31.0,
+      "life_fraction": 0.3821656050955414,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 153,
+      "alarm": 60,
+      "stable": true,
+      "lead": 0.7886178861788617,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.08684938794225414,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 26.0,
+      "life_fraction": 0.3821656050955414,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 158,
+      "alarm": 72,
+      "stable": true,
+      "lead": 0.6640625,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.6028238141832737,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 43.0,
+      "life_fraction": 0.4585987261146497
+     },
+     "H-GATED": {
+      "scored": 158,
+      "alarm": 60,
+      "stable": true,
+      "lead": 0.7578125,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.08145830034256632,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 31.0,
+      "life_fraction": 0.3821656050955414,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 158,
+      "alarm": 60,
+      "stable": true,
+      "lead": 0.7578125,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.05263834840347571,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 31.0,
+      "life_fraction": 0.3821656050955414
+     },
+     "H-ALL-no-crest": {
+      "scored": 153,
+      "alarm": 60,
+      "stable": true,
+      "lead": 0.7886178861788617,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.07313484633783777,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 26.0,
+      "life_fraction": 0.3821656050955414
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 158,
+     "minutes": 157.0
+    },
+    "Bearing1_4": {
+     "H-PIN": {
+      "scored": 122,
+      "alarm": 81,
+      "stable": true,
+      "lead": 0.43478260869565216,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1559494218572594,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 52.0,
+      "life_fraction": 0.6694214876033058,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 117,
+      "alarm": 86,
+      "stable": true,
+      "lead": 0.40229885057471265,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.2661044398548065,
+      "fraction_above_after": 0.6944444444444444,
+      "minutes_after_calibration": 52.0,
+      "life_fraction": 0.7107438016528925,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 122,
+      "alarm": 84,
+      "stable": true,
+      "lead": 0.40217391304347827,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.4625046876774928,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 55.0,
+      "life_fraction": 0.6942148760330579
+     },
+     "H-GATED": {
+      "scored": 122,
+      "alarm": 81,
+      "stable": true,
+      "lead": 0.43478260869565216,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1559494218572594,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 52.0,
+      "life_fraction": 0.6694214876033058,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 122,
+      "alarm": 82,
+      "stable": true,
+      "lead": 0.42391304347826086,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.11592659529977326,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 53.0,
+      "life_fraction": 0.6776859504132231
+     },
+     "H-ALL-no-crest": {
+      "scored": 117,
+      "alarm": 85,
+      "stable": true,
+      "lead": 0.41379310344827586,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.17981123619112951,
+      "fraction_above_after": 0.972972972972973,
+      "minutes_after_calibration": 51.0,
+      "life_fraction": 0.7024793388429752
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 0.6756756756756757,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 0.972972972972973
+     },
+     "snapshots": 122,
+     "minutes": 121.0
+    },
+    "Bearing1_5": {
+     "H-PIN": {
+      "scored": 52,
+      "alarm": 36,
+      "stable": true,
+      "lead": 0.6818181818181818,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15730253852605414,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 7.0,
+      "life_fraction": 0.7058823529411765,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 47,
+      "alarm": 36,
+      "stable": true,
+      "lead": 0.8823529411764706,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.23167905433120745,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2.0,
+      "life_fraction": 0.7058823529411765,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 52,
+      "alarm": 36,
+      "stable": true,
+      "lead": 0.6818181818181818,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.0722450114148974,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 7.0,
+      "life_fraction": 0.7058823529411765
+     },
+     "H-GATED": {
+      "scored": 52,
+      "alarm": 36,
+      "stable": true,
+      "lead": 0.6818181818181818,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15730253852605414,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 7.0,
+      "life_fraction": 0.7058823529411765,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 52,
+      "alarm": 31,
+      "stable": true,
+      "lead": 0.9090909090909091,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.03914717152080856,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2.0,
+      "life_fraction": 0.6078431372549019
+     },
+     "H-ALL-no-crest": {
+      "scored": 47,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.9411764705882353,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.05721849097527519,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.6862745098039216
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 52,
+     "minutes": 51.0
+    },
+    "Bearing2_1": {
+     "H-PIN": {
+      "scored": 491,
+      "alarm": 454,
+      "stable": true,
+      "lead": 0.07809110629067245,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.16632813668789503,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 425.0,
+      "life_fraction": 0.926530612244898,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 486,
+      "alarm": 454,
+      "stable": true,
+      "lead": 0.07894736842105263,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.16446974500692335,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 420.0,
+      "life_fraction": 0.926530612244898,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 491,
+      "alarm": 454,
+      "stable": true,
+      "lead": 0.07809110629067245,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.4724751184637736,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 425.0,
+      "life_fraction": 0.926530612244898
+     },
+     "H-GATED": {
+      "scored": 491,
+      "alarm": 454,
+      "stable": true,
+      "lead": 0.07809110629067245,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.16632813668789503,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 425.0,
+      "life_fraction": 0.926530612244898,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 491,
+      "alarm": 49,
+      "stable": true,
+      "lead": 0.9566160520607375,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.05679393526019692,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 20.0,
+      "life_fraction": 0.1
+     },
+     "H-ALL-no-crest": {
+      "scored": 486,
+      "alarm": 454,
+      "stable": true,
+      "lead": 0.07894736842105263,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.055781319135706546,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 420.0,
+      "life_fraction": 0.926530612244898
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 491,
+     "minutes": 490.0
+    },
+    "Bearing2_2": {
+     "H-PIN": {
+      "scored": 161,
+      "alarm": 43,
+      "stable": true,
+      "lead": 0.8931297709923665,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.09486119301633864,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 14.0,
+      "life_fraction": 0.26875,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 156,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8888888888888888,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.10683789444548385,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 14.0,
+      "life_fraction": 0.3,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 161,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8549618320610687,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.5559371013174113,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 19.0,
+      "life_fraction": 0.3
+     },
+     "H-GATED": {
+      "scored": 161,
+      "alarm": 46,
+      "stable": true,
+      "lead": 0.8702290076335878,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.09486119301633864,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 17.0,
+      "life_fraction": 0.2875,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 161,
+      "alarm": 47,
+      "stable": true,
+      "lead": 0.8625954198473282,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.03405968577050823,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 18.0,
+      "life_fraction": 0.29375
+     },
+     "H-ALL-no-crest": {
+      "scored": 156,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8888888888888888,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.06557103780518224,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 14.0,
+      "life_fraction": 0.3
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 161,
+     "minutes": 160.0
+    },
+    "Bearing2_3": {
+     "H-PIN": {
+      "scored": 533,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8011928429423459,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15265781499103004,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 100.0,
+      "life_fraction": 0.2424812030075188,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 528,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8092369477911646,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.17666744755575042,
+      "fraction_above_after": 0.8861386138613861,
+      "minutes_after_calibration": 95.0,
+      "life_fraction": 0.2424812030075188,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 533,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8011928429423459,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.4779955175428537,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 100.0,
+      "life_fraction": 0.2424812030075188
+     },
+     "H-GATED": {
+      "scored": 533,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8011928429423459,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15265781499103004,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 100.0,
+      "life_fraction": 0.2424812030075188,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 533,
+      "alarm": 30,
+      "stable": true,
+      "lead": 0.9980119284294234,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.059532754436810796,
+      "fraction_above_after": 0.9860834990059643,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.05639097744360902
+     },
+     "H-ALL-no-crest": {
+      "scored": 528,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.9979919678714859,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.08227734306658607,
+      "fraction_above_after": 0.8594377510040161,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.06578947368421052
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 0.8858560794044665,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 533,
+     "minutes": 532.0
+    },
+    "Bearing2_4": {
+     "H-PIN": {
+      "scored": 42,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.75,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.5885786804807777,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.7804878048780488,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 37,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.8571428571428571,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.9996929888280817,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.8536585365853658,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 42,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.75,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.9165260492341898,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.7804878048780488
+     },
+     "H-GATED": {
+      "scored": 42,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.75,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.5885786804807777,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.7804878048780488,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 42,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.75,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.2919315113202151,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.7804878048780488
+     },
+     "H-ALL-no-crest": {
+      "scored": 37,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.8571428571428571,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.23327251653783843,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.8536585365853658
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 42,
+     "minutes": 41.0
+    },
+    "Bearing2_5": {
+     "H-PIN": {
+      "scored": 339,
+      "alarm": 138,
+      "stable": true,
+      "lead": 0.6472491909385113,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.23882855610598974,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 109.0,
+      "life_fraction": 0.40828402366863903,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 334,
+      "alarm": 123,
+      "stable": true,
+      "lead": 0.7072368421052632,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.18140615635727142,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 89.0,
+      "life_fraction": 0.363905325443787,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 339,
+      "alarm": 152,
+      "stable": true,
+      "lead": 0.6019417475728155,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.5001678266694676,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 123.0,
+      "life_fraction": 0.44970414201183434
+     },
+     "H-GATED": {
+      "scored": 339,
+      "alarm": 123,
+      "stable": true,
+      "lead": 0.6957928802588996,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.23882855610598974,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 94.0,
+      "life_fraction": 0.363905325443787,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 339,
+      "alarm": 124,
+      "stable": true,
+      "lead": 0.6925566343042071,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.18496851432193698,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 95.0,
+      "life_fraction": 0.3668639053254438
+     },
+     "H-ALL-no-crest": {
+      "scored": 334,
+      "alarm": 123,
+      "stable": true,
+      "lead": 0.7072368421052632,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.22481198818609338,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 89.0,
+      "life_fraction": 0.363905325443787
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 339,
+     "minutes": 338.0
+    },
+    "Bearing3_1": {
+     "H-PIN": {
+      "scored": 2538,
+      "alarm": 2379,
+      "stable": true,
+      "lead": 0.06299840510366826,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.18070505842140372,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2350.0,
+      "life_fraction": 0.9377217185652346,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 2533,
+      "alarm": 2345,
+      "stable": true,
+      "lead": 0.07670795045944866,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.14564535712244986,
+      "fraction_above_after": 0.9896373056994818,
+      "minutes_after_calibration": 2311.0,
+      "life_fraction": 0.9243200630666141,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 2538,
+      "alarm": 2389,
+      "stable": true,
+      "lead": 0.05901116427432217,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.6596276120748926,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2360.0,
+      "life_fraction": 0.9416633819471817
+     },
+     "H-GATED": {
+      "scored": 2538,
+      "alarm": 2376,
+      "stable": true,
+      "lead": 0.0641945773524721,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.18070505842140372,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2347.0,
+      "life_fraction": 0.9365392195506503,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 2538,
+      "alarm": 2379,
+      "stable": true,
+      "lead": 0.06299840510366826,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15195638863270375,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2350.0,
+      "life_fraction": 0.9377217185652346
+     },
+     "H-ALL-no-crest": {
+      "scored": 2533,
+      "alarm": 2344,
+      "stable": true,
+      "lead": 0.07710747103475829,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.10351974700262573,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2310.0,
+      "life_fraction": 0.9239258967284194
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 2538,
+     "minutes": 2537.0
+    },
+    "Bearing3_2": {
+     "H-PIN": {
+      "scored": 2496,
+      "alarm": 1233,
+      "stable": true,
+      "lead": 0.5117599351175993,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.3136399418446194,
+      "fraction_above_after": 0.7949326999208234,
+      "minutes_after_calibration": 1204.0,
+      "life_fraction": 0.494188376753507,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 2491,
+      "alarm": 979,
+      "stable": true,
+      "lead": 0.6160097521332791,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.21031956390934523,
+      "fraction_above_after": 0.7567567567567568,
+      "minutes_after_calibration": 945.0,
+      "life_fraction": 0.39238476953907814,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 2496,
+      "alarm": 1232,
+      "stable": true,
+      "lead": 0.5121654501216545,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.1013520188060921,
+      "fraction_above_after": 0.8710443037974683,
+      "minutes_after_calibration": 1203.0,
+      "life_fraction": 0.4937875751503006
+     },
+     "H-GATED": {
+      "scored": 2496,
+      "alarm": 1634,
+      "stable": true,
+      "lead": 0.3491484184914842,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.3136399418446194,
+      "fraction_above_after": 0.8781902552204176,
+      "minutes_after_calibration": 1605.0,
+      "life_fraction": 0.6549098196392785,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 2496,
+      "alarm": 169,
+      "stable": true,
+      "lead": 0.943227899432279,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.21606597806163075,
+      "fraction_above_after": 0.5161151697464547,
+      "minutes_after_calibration": 140.0,
+      "life_fraction": 0.06773547094188377
+     },
+     "H-ALL-no-crest": {
+      "scored": 2491,
+      "alarm": 1232,
+      "stable": true,
+      "lead": 0.5132060138155221,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.19572758796131662,
+      "fraction_above_after": 0.8425632911392406,
+      "minutes_after_calibration": 1198.0,
+      "life_fraction": 0.4937875751503006
+     },
+     "absorption": {
+      "H-PIN": 0.7949326999208234,
+      "H-ALL": 0.8606492478226445,
+      "H-GATED": 0.599366587490103,
+      "H-PIN-no-crest": 0.9231987331749802,
+      "H-ALL-no-crest": 0.8424386381631037
+     },
+     "snapshots": 2496,
+     "minutes": 2495.0
+    },
+    "Bearing3_3": {
+     "H-PIN": {
+      "scored": 371,
+      "alarm": 197,
+      "stable": true,
+      "lead": 0.5073313782991202,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1594138952260704,
+      "fraction_above_after": 0.8275862068965517,
+      "minutes_after_calibration": 168.0,
+      "life_fraction": 0.5324324324324324,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 366,
+      "alarm": 342,
+      "stable": true,
+      "lead": 0.08333333333333333,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.22716492753249848,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 308.0,
+      "life_fraction": 0.9243243243243243,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 371,
+      "alarm": 343,
+      "stable": true,
+      "lead": 0.07917888563049853,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.7222623655918029,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 314.0,
+      "life_fraction": 0.927027027027027
+     },
+     "H-GATED": {
+      "scored": 371,
+      "alarm": 342,
+      "stable": true,
+      "lead": 0.08211143695014662,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1594138952260704,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 313.0,
+      "life_fraction": 0.9243243243243243,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 371,
+      "alarm": 119,
+      "stable": true,
+      "lead": 0.7360703812316716,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.07207510518853194,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 90.0,
+      "life_fraction": 0.3216216216216216
+     },
+     "H-ALL-no-crest": {
+      "scored": 366,
+      "alarm": 342,
+      "stable": true,
+      "lead": 0.08333333333333333,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.15851105554563305,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 308.0,
+      "life_fraction": 0.9243243243243243
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 371,
+     "minutes": 370.0
+    },
+    "Bearing3_4": {
+     "H-PIN": {
+      "scored": 1515,
+      "alarm": 59,
+      "stable": true,
+      "lead": 0.9797979797979798,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.18797438212004092,
+      "fraction_above_after": 0.9739010989010989,
+      "minutes_after_calibration": 30.0,
+      "life_fraction": 0.03896961690885073,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 1510,
+      "alarm": 1419,
+      "stable": true,
+      "lead": 0.06418918918918919,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.24348371610843467,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1385.0,
+      "life_fraction": 0.9372523117569352,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 1515,
+      "alarm": 1419,
+      "stable": true,
+      "lead": 0.06397306397306397,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.5884040630980764,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1390.0,
+      "life_fraction": 0.9372523117569352
+     },
+     "H-GATED": {
+      "scored": 1515,
+      "alarm": 1419,
+      "stable": true,
+      "lead": 0.06397306397306397,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.18797438212004092,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1390.0,
+      "life_fraction": 0.9372523117569352,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 1515,
+      "alarm": 37,
+      "stable": true,
+      "lead": 0.9946127946127946,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.08897447330248767,
+      "fraction_above_after": 0.9959404600811907,
+      "minutes_after_calibration": 8.0,
+      "life_fraction": 0.02443857331571995
+     },
+     "H-ALL-no-crest": {
+      "scored": 1510,
+      "alarm": 59,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.14391449015504432,
+      "fraction_above_after": 0.07486263736263736,
+      "minutes_after_calibration": 25.0,
+      "life_fraction": 0.03896961690885073
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 1515,
+     "minutes": 1514.0
+    },
+    "Bearing3_5": {
+     "H-PIN": {
+      "scored": 114,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 2.5954144728912576
+     },
+     "H-ALL": {
+      "scored": 109,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 2.0981557111402704
+     },
+     "B-RMS": {
+      "scored": 114,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 14.978138809183232
+     },
+     "H-GATED": {
+      "scored": 114,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 2.5954144728912576
+     },
+     "H-PIN-no-crest": {
+      "scored": 114,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 2.5954144728912576
+     },
+     "H-ALL-no-crest": {
+      "scored": 109,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 2.0981557111402704
+     },
+     "snapshots": 114,
+     "minutes": 113.0
+    }
+   },
+   "Q1": {
+    "candidate": "H-PIN",
+    "comparator": "H-ALL",
+    "units": 15,
+    "delta": 0.048768184486227065,
+    "ci95": [
+     -0.059433518041292384,
+     0.1957314154420823
+    ],
+    "mean_lead": {
+     "H-PIN": 0.5623626265761168,
+     "H-ALL": 0.5135944420898897
+    },
+    "unstable": {
+     "H-PIN": 0,
+     "H-ALL": 0
+    },
+    "verdict": "inconclusive"
+   },
+   "Q2": {
+    "candidate": "H-PIN",
+    "comparator": "B-RMS",
+    "units": 15,
+    "delta": 0.10005593315855972,
+    "ci95": [
+     0.00527185386074896,
+     0.24211533151278525
+    ],
+    "mean_lead": {
+     "H-PIN": 0.5623626265761168,
+     "B-RMS": 0.46230669341755704
+    },
+    "unstable": {
+     "H-PIN": 0,
+     "B-RMS": 0
+    },
+    "verdict": "supported"
+   },
+   "no crest": {
+    "Q1": {
+     "candidate": "H-PIN-no-crest",
+     "comparator": "H-ALL-no-crest",
+     "units": 15,
+     "delta": 0.17879713745966,
+     "ci95": [
+      0.014838086442619214,
+      0.3852096551376788
+     ],
+     "mean_lead": {
+      "H-PIN-no-crest": 0.6980277720493834,
+      "H-ALL-no-crest": 0.5192306345897234
+     },
+     "unstable": {
+      "H-PIN-no-crest": 0,
+      "H-ALL-no-crest": 1
+     },
+     "verdict": "supported"
+    },
+    "Q2": {
+     "candidate": "H-PIN-no-crest",
+     "comparator": "B-RMS",
+     "units": 15,
+     "delta": 0.2357210786318263,
+     "ci95": [
+      0.08292189677319167,
+      0.4137067608718273
+     ],
+     "mean_lead": {
+      "H-PIN-no-crest": 0.6980277720493834,
+      "B-RMS": 0.46230669341755704
+     },
+     "unstable": {
+      "H-PIN-no-crest": 0,
+      "B-RMS": 0
+     },
+     "verdict": "supported"
+    }
+   },
+   "gated": {
+    "vs H-ALL": {
+     "candidate": "H-GATED",
+     "comparator": "H-ALL",
+     "units": 15,
+     "delta": -0.050195206405496316,
+     "ci95": [
+      -0.09463396288980261,
+      -0.013878161379336458
+     ],
+     "mean_lead": {
+      "H-GATED": 0.46339923568439345,
+      "H-ALL": 0.5135944420898897
+     },
+     "unstable": {
+      "H-GATED": 0,
+      "H-ALL": 0
+     },
+     "verdict": "not supported"
+    },
+    "vs B-RMS": {
+     "candidate": "H-GATED",
+     "comparator": "B-RMS",
+     "units": 15,
+     "delta": 0.00109254226683634,
+     "ci95": [
+      -0.028678381174972473,
+      0.027717649197607632
+     ],
+     "mean_lead": {
+      "H-GATED": 0.46339923568439345,
+      "B-RMS": 0.46230669341755704
+     },
+     "unstable": {
+      "H-GATED": 0,
+      "B-RMS": 0
+     },
+     "verdict": "not supported"
+    }
+   },
+   "late_alarms": {
+    "H-PIN": 2,
+    "H-ALL": 4,
+    "B-RMS": 4,
+    "H-GATED": 4,
+    "H-PIN-no-crest": 1,
+    "H-ALL-no-crest": 3
+   },
+   "absorption": {
+    "H-PIN": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9824007418479453
+    },
+    "H-ALL": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9587272144930562
+    },
+    "H-GATED": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9678414150450427
+    },
+    "H-PIN-no-crest": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9945141952267843
+    },
+    "H-ALL-no-crest": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9868151150811483
+    }
+   }
+  },
+  "vertical": {
+   "per_bearing": {
+    "Bearing1_1": {
+     "H-PIN": {
+      "scored": 123,
+      "alarm": 75,
+      "stable": true,
+      "lead": 0.5053763440860215,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.25104486612406396,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 46.0,
+      "life_fraction": 0.6147540983606558,
+      "top_value": "kurtosis"
+     },
+     "H-ALL": {
+      "scored": 118,
+      "alarm": 71,
+      "stable": true,
+      "lead": 0.5795454545454546,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.15996123880292124,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 37.0,
+      "life_fraction": 0.5819672131147541,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 123,
+      "alarm": 77,
+      "stable": true,
+      "lead": 0.4838709677419355,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.7443721385930796,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 48.0,
+      "life_fraction": 0.6311475409836066
+     },
+     "H-GATED": {
+      "scored": 123,
+      "alarm": 76,
+      "stable": true,
+      "lead": 0.4946236559139785,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.25104486612406396,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 47.0,
+      "life_fraction": 0.6229508196721312,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 123,
+      "alarm": 72,
+      "stable": true,
+      "lead": 0.5376344086021505,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15050690590482937,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 43.0,
+      "life_fraction": 0.5901639344262295
+     },
+     "H-ALL-no-crest": {
+      "scored": 118,
+      "alarm": 70,
+      "stable": true,
+      "lead": 0.5909090909090909,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.09218077511680106,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 36.0,
+      "life_fraction": 0.5737704918032787
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 123,
+     "minutes": 122.0
+    },
+    "Bearing1_2": {
+     "H-PIN": {
+      "scored": 161,
+      "alarm": 33,
+      "stable": true,
+      "lead": 0.9694656488549618,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1821163520899822,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 4.0,
+      "life_fraction": 0.20625,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 156,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.9920634920634921,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.2174148816005636,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.21875,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 161,
+      "alarm": 33,
+      "stable": true,
+      "lead": 0.9694656488549618,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.6427099505881405,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 4.0,
+      "life_fraction": 0.20625
+     },
+     "H-GATED": {
+      "scored": 161,
+      "alarm": 33,
+      "stable": true,
+      "lead": 0.9694656488549618,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1821163520899822,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 4.0,
+      "life_fraction": 0.20625,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 161,
+      "alarm": 33,
+      "stable": true,
+      "lead": 0.9694656488549618,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.07233964424655029,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 4.0,
+      "life_fraction": 0.20625
+     },
+     "H-ALL-no-crest": {
+      "scored": 156,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.9920634920634921,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.07970172017457791,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.21875
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 161,
+     "minutes": 160.0
+    },
+    "Bearing1_3": {
+     "H-PIN": {
+      "scored": 158,
+      "alarm": 65,
+      "stable": true,
+      "lead": 0.71875,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15478549772693817,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 36.0,
+      "life_fraction": 0.4140127388535032,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 153,
+      "alarm": 59,
+      "stable": true,
+      "lead": 0.7967479674796748,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.11413483010979274,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 25.0,
+      "life_fraction": 0.37579617834394907,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 158,
+      "alarm": 66,
+      "stable": true,
+      "lead": 0.7109375,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.6063579455660522,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 37.0,
+      "life_fraction": 0.42038216560509556
+     },
+     "H-GATED": {
+      "scored": 158,
+      "alarm": 66,
+      "stable": true,
+      "lead": 0.7109375,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15478549772693817,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 37.0,
+      "life_fraction": 0.42038216560509556,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 158,
+      "alarm": 60,
+      "stable": true,
+      "lead": 0.7578125,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.04848597731992897,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 31.0,
+      "life_fraction": 0.3821656050955414
+     },
+     "H-ALL-no-crest": {
+      "scored": 153,
+      "alarm": 60,
+      "stable": true,
+      "lead": 0.7886178861788617,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.06289817006537063,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 26.0,
+      "life_fraction": 0.3821656050955414
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 158,
+     "minutes": 157.0
+    },
+    "Bearing1_4": {
+     "H-PIN": {
+      "scored": 122,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.31072194476246917
+     },
+     "H-ALL": {
+      "scored": 117,
+      "alarm": 87,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.20337289510421785,
+      "fraction_above_after": 0.45714285714285713,
+      "minutes_after_calibration": 53.0,
+      "life_fraction": 0.71900826446281,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 122,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.718851128205424
+     },
+     "H-GATED": {
+      "scored": 122,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.31072194476246917
+     },
+     "H-PIN-no-crest": {
+      "scored": 122,
+      "alarm": 72,
+      "stable": true,
+      "lead": 0.532608695652174,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.07631952720598499,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 43.0,
+      "life_fraction": 0.5950413223140496
+     },
+     "H-ALL-no-crest": {
+      "scored": 117,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.20815813817332066
+     },
+     "snapshots": 122,
+     "minutes": 121.0
+    },
+    "Bearing1_5": {
+     "H-PIN": {
+      "scored": 52,
+      "alarm": 36,
+      "stable": true,
+      "lead": 0.6818181818181818,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.20370068123138715,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 7.0,
+      "life_fraction": 0.7058823529411765,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 47,
+      "alarm": 36,
+      "stable": true,
+      "lead": 0.8823529411764706,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.2623146180139686,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2.0,
+      "life_fraction": 0.7058823529411765,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 52,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.8636363636363636,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.8175610567022548,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.6274509803921569
+     },
+     "H-GATED": {
+      "scored": 52,
+      "alarm": 36,
+      "stable": true,
+      "lead": 0.6818181818181818,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.20370068123138715,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 7.0,
+      "life_fraction": 0.7058823529411765,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 52,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.8636363636363636,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.04410143395060799,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.6274509803921569
+     },
+     "H-ALL-no-crest": {
+      "scored": 47,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.9411764705882353,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.06972266010467804,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.6862745098039216
+     },
+     "absorption": {
+      "H-PIN": 0.8421052631578947,
+      "H-ALL": 0.8421052631578947,
+      "H-GATED": 0.8421052631578947,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 0.9473684210526315
+     },
+     "snapshots": 52,
+     "minutes": 51.0
+    },
+    "Bearing2_1": {
+     "H-PIN": {
+      "scored": 491,
+      "alarm": 456,
+      "stable": true,
+      "lead": 0.0737527114967462,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.22496620829484604,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 427.0,
+      "life_fraction": 0.9306122448979591,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 486,
+      "alarm": 453,
+      "stable": true,
+      "lead": 0.08114035087719298,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.16370073691330547,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 419.0,
+      "life_fraction": 0.9244897959183673,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 491,
+      "alarm": 455,
+      "stable": true,
+      "lead": 0.07592190889370933,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.6162149559894885,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 426.0,
+      "life_fraction": 0.9285714285714286
+     },
+     "H-GATED": {
+      "scored": 491,
+      "alarm": 453,
+      "stable": true,
+      "lead": 0.08026030368763558,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.22496620829484604,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 424.0,
+      "life_fraction": 0.9244897959183673,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 491,
+      "alarm": 43,
+      "stable": true,
+      "lead": 0.9696312364425163,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.07214451867772398,
+      "fraction_above_after": 0.9620535714285714,
+      "minutes_after_calibration": 14.0,
+      "life_fraction": 0.08775510204081632
+     },
+     "H-ALL-no-crest": {
+      "scored": 486,
+      "alarm": 454,
+      "stable": true,
+      "lead": 0.07894736842105263,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.12819126137673925,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 420.0,
+      "life_fraction": 0.926530612244898
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 491,
+     "minutes": 490.0
+    },
+    "Bearing2_2": {
+     "H-PIN": {
+      "scored": 161,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8549618320610687,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.14303324264911868,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 19.0,
+      "life_fraction": 0.3,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 156,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8888888888888888,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.08973764181045867,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 14.0,
+      "life_fraction": 0.3,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 161,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8549618320610687,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.5308178482692882,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 19.0,
+      "life_fraction": 0.3
+     },
+     "H-GATED": {
+      "scored": 161,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8549618320610687,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.14303324264911868,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 19.0,
+      "life_fraction": 0.3,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 161,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8549618320610687,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.041215982374750625,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 19.0,
+      "life_fraction": 0.3
+     },
+     "H-ALL-no-crest": {
+      "scored": 156,
+      "alarm": 48,
+      "stable": true,
+      "lead": 0.8888888888888888,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.054694870305531364,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 14.0,
+      "life_fraction": 0.3
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 161,
+     "minutes": 160.0
+    },
+    "Bearing2_3": {
+     "H-PIN": {
+      "scored": 533,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8011928429423459,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.11834111380693613,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 100.0,
+      "life_fraction": 0.2424812030075188,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 528,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8092369477911646,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.13739324684021814,
+      "fraction_above_after": 0.9455445544554455,
+      "minutes_after_calibration": 95.0,
+      "life_fraction": 0.2424812030075188,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 533,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8011928429423459,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.7591643834069134,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 100.0,
+      "life_fraction": 0.2424812030075188
+     },
+     "H-GATED": {
+      "scored": 533,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8011928429423459,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.11834111380693613,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 100.0,
+      "life_fraction": 0.2424812030075188,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 533,
+      "alarm": 123,
+      "stable": true,
+      "lead": 0.8131212723658051,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.0563617559964327,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 94.0,
+      "life_fraction": 0.231203007518797
+     },
+     "H-ALL-no-crest": {
+      "scored": 528,
+      "alarm": 129,
+      "stable": true,
+      "lead": 0.8092369477911646,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.11507380296605249,
+      "fraction_above_after": 0.9232673267326733,
+      "minutes_after_calibration": 95.0,
+      "life_fraction": 0.2424812030075188
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 0.9454094292803971,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 0.9230769230769231
+     },
+     "snapshots": 533,
+     "minutes": 532.0
+    },
+    "Bearing2_4": {
+     "H-PIN": {
+      "scored": 42,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.75,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.37632696431593604,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.7804878048780488,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 37,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.8571428571428571,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.5479206563076138,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.8536585365853658,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 42,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.75,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.1789615457606464,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.7804878048780488
+     },
+     "H-GATED": {
+      "scored": 42,
+      "alarm": 32,
+      "stable": true,
+      "lead": 0.75,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.37632696431593604,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 3.0,
+      "life_fraction": 0.7804878048780488,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 42,
+      "alarm": 31,
+      "stable": true,
+      "lead": 0.8333333333333334,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.23840374843514484,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2.0,
+      "life_fraction": 0.7560975609756098
+     },
+     "H-ALL-no-crest": {
+      "scored": 37,
+      "alarm": 35,
+      "stable": true,
+      "lead": 0.8571428571428571,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.20539801090995558,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 1.0,
+      "life_fraction": 0.8536585365853658
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 42,
+     "minutes": 41.0
+    },
+    "Bearing2_5": {
+     "H-PIN": {
+      "scored": 339,
+      "alarm": 162,
+      "stable": true,
+      "lead": 0.56957928802589,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.2574911234478356,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 133.0,
+      "life_fraction": 0.47928994082840237,
+      "top_value": "kurtosis"
+     },
+     "H-ALL": {
+      "scored": 334,
+      "alarm": 122,
+      "stable": true,
+      "lead": 0.7105263157894737,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.17465998561980495,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 88.0,
+      "life_fraction": 0.3609467455621302,
+      "top_value": "std"
+     },
+     "B-RMS": {
+      "scored": 339,
+      "alarm": 167,
+      "stable": true,
+      "lead": 0.5533980582524272,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.6196613828761683,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 138.0,
+      "life_fraction": 0.4940828402366864
+     },
+     "H-GATED": {
+      "scored": 339,
+      "alarm": 147,
+      "stable": true,
+      "lead": 0.6181229773462783,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.2574911234478356,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 118.0,
+      "life_fraction": 0.4349112426035503,
+      "top_value": "std"
+     },
+     "H-PIN-no-crest": {
+      "scored": 339,
+      "alarm": 148,
+      "stable": true,
+      "lead": 0.6148867313915858,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.2556635866969874,
+      "fraction_above_after": 0.9738219895287958,
+      "minutes_after_calibration": 119.0,
+      "life_fraction": 0.4378698224852071
+     },
+     "H-ALL-no-crest": {
+      "scored": 334,
+      "alarm": 123,
+      "stable": true,
+      "lead": 0.7072368421052632,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.19369618968456898,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 89.0,
+      "life_fraction": 0.363905325443787
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 339,
+     "minutes": 338.0
+    },
+    "Bearing3_1": {
+     "H-PIN": {
+      "scored": 2538,
+      "alarm": 212,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.11058012434467454,
+      "fraction_above_after": 0.13370593293207222,
+      "minutes_after_calibration": 183.0,
+      "life_fraction": 0.08356326369728025,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 2533,
+      "alarm": 752,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.1093120108026087,
+      "fraction_above_after": 0.15509518477043674,
+      "minutes_after_calibration": 718.0,
+      "life_fraction": 0.2964130863224281,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 2538,
+      "alarm": 2343,
+      "stable": true,
+      "lead": 0.0773524720893142,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.5770017367379114,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 2314.0,
+      "life_fraction": 0.9235317303902246
+     },
+     "H-GATED": {
+      "scored": 2538,
+      "alarm": 752,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.11058012434467454,
+      "fraction_above_after": 0.15789473684210525,
+      "minutes_after_calibration": 723.0,
+      "life_fraction": 0.2964130863224281,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 2538,
+      "alarm": 49,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.04249888290057745,
+      "fraction_above_after": 0.39775010044194453,
+      "minutes_after_calibration": 20.0,
+      "life_fraction": 0.01931415057154119
+     },
+     "H-ALL-no-crest": {
+      "scored": 2533,
+      "alarm": 209,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.059040234876594724,
+      "fraction_above_after": 0.09789609274366681,
+      "minutes_after_calibration": 175.0,
+      "life_fraction": 0.0823807646826961
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 2538,
+     "minutes": 2537.0
+    },
+    "Bearing3_2": {
+     "H-PIN": {
+      "scored": 2496,
+      "alarm": 141,
+      "stable": true,
+      "lead": 0.9545823195458232,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15073135207392174,
+      "fraction_above_after": 0.8072186836518047,
+      "minutes_after_calibration": 112.0,
+      "life_fraction": 0.05651302605210421,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 2491,
+      "alarm": 1235,
+      "stable": true,
+      "lead": 0.5119869971556278,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.25787988177613086,
+      "fraction_above_after": 0.5685963521015067,
+      "minutes_after_calibration": 1201.0,
+      "life_fraction": 0.49498997995991983,
+      "top_value": "kurtosis"
+     },
+     "B-RMS": {
+      "scored": 2496,
+      "alarm": 1849,
+      "stable": true,
+      "lead": 0.2619626926196269,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.3427873303810829,
+      "fraction_above_after": 0.8778979907264297,
+      "minutes_after_calibration": 1820.0,
+      "life_fraction": 0.7410821643286574
+     },
+     "H-GATED": {
+      "scored": 2496,
+      "alarm": 145,
+      "stable": true,
+      "lead": 0.9529602595296026,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.15073135207392174,
+      "fraction_above_after": 0.6005954912803062,
+      "minutes_after_calibration": 116.0,
+      "life_fraction": 0.05811623246492986,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 2496,
+      "alarm": 345,
+      "stable": true,
+      "lead": 0.8718572587185726,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.14139298319381996,
+      "fraction_above_after": 0.7870757787075778,
+      "minutes_after_calibration": 316.0,
+      "life_fraction": 0.13827655310621242
+     },
+     "H-ALL-no-crest": {
+      "scored": 2491,
+      "alarm": 1038,
+      "stable": true,
+      "lead": 0.5920357578220236,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.16037403646100604,
+      "fraction_above_after": 0.8545953360768176,
+      "minutes_after_calibration": 1004.0,
+      "life_fraction": 0.4160320641282565
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 0.9071207430340558,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 0.9736842105263158
+     },
+     "snapshots": 2496,
+     "minutes": 2495.0
+    },
+    "Bearing3_3": {
+     "H-PIN": {
+      "scored": 371,
+      "alarm": 322,
+      "stable": true,
+      "lead": 0.14076246334310852,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.2042741540815304,
+      "fraction_above_after": 0.8979591836734694,
+      "minutes_after_calibration": 293.0,
+      "life_fraction": 0.8702702702702703,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 366,
+      "alarm": 342,
+      "stable": true,
+      "lead": 0.08333333333333333,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.2096211546844438,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 308.0,
+      "life_fraction": 0.9243243243243243,
+      "top_value": "kurtosis"
+     },
+     "B-RMS": {
+      "scored": 371,
+      "alarm": 343,
+      "stable": true,
+      "lead": 0.07917888563049853,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.9507428809324363,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 314.0,
+      "life_fraction": 0.927027027027027
+     },
+     "H-GATED": {
+      "scored": 371,
+      "alarm": 342,
+      "stable": true,
+      "lead": 0.08211143695014662,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.2042741540815304,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 313.0,
+      "life_fraction": 0.9243243243243243,
+      "top_value": "kurtosis"
+     },
+     "H-PIN-no-crest": {
+      "scored": 371,
+      "alarm": 142,
+      "stable": true,
+      "lead": 0.6686217008797654,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.10203618872509512,
+      "fraction_above_after": 0.9781659388646288,
+      "minutes_after_calibration": 113.0,
+      "life_fraction": 0.3837837837837838
+     },
+     "H-ALL-no-crest": {
+      "scored": 366,
+      "alarm": 342,
+      "stable": true,
+      "lead": 0.08333333333333333,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.17702111338458634,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 308.0,
+      "life_fraction": 0.9243243243243243
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 1.0,
+      "H-GATED": 1.0,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 1.0
+     },
+     "snapshots": 371,
+     "minutes": 370.0
+    },
+    "Bearing3_4": {
+     "H-PIN": {
+      "scored": 1515,
+      "alarm": 1016,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1806614201628223,
+      "fraction_above_after": 0.22845691382765532,
+      "minutes_after_calibration": 987.0,
+      "life_fraction": 0.6710700132100397,
+      "top_value": "crest"
+     },
+     "H-ALL": {
+      "scored": 1510,
+      "alarm": 1016,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.14605387228330158,
+      "fraction_above_after": 0.24048096192384769,
+      "minutes_after_calibration": 982.0,
+      "life_fraction": 0.6710700132100397,
+      "top_value": "crest"
+     },
+     "B-RMS": {
+      "scored": 1515,
+      "alarm": 957,
+      "stable": true,
+      "lead": 0.3750841750841751,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.64294715360477,
+      "fraction_above_after": 0.8064516129032258,
+      "minutes_after_calibration": 928.0,
+      "life_fraction": 0.6321003963011889
+     },
+     "H-GATED": {
+      "scored": 1515,
+      "alarm": 1016,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.1806614201628223,
+      "fraction_above_after": 0.22044088176352705,
+      "minutes_after_calibration": 987.0,
+      "life_fraction": 0.6710700132100397,
+      "top_value": "crest"
+     },
+     "H-PIN-no-crest": {
+      "scored": 1515,
+      "alarm": 636,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 0.043976557597949925,
+      "fraction_above_after": 0.49146757679180886,
+      "minutes_after_calibration": 607.0,
+      "life_fraction": 0.4200792602377807
+     },
+     "H-ALL-no-crest": {
+      "scored": 1510,
+      "alarm": 439,
+      "stable": true,
+      "lead": 0.7263513513513513,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 0.025694633272656156,
+      "fraction_above_after": 0.766728624535316,
+      "minutes_after_calibration": 405.0,
+      "life_fraction": 0.2899603698811096
+     },
+     "absorption": {
+      "H-PIN": 0.20466786355475763,
+      "H-ALL": 0.21543985637342908,
+      "H-GATED": 0.19748653500897667,
+      "H-PIN-no-crest": 0.6822262118491921,
+      "H-ALL-no-crest": 0.9515260323159784
+     },
+     "snapshots": 1515,
+     "minutes": 1514.0
+    },
+    "Bearing3_5": {
+     "H-PIN": {
+      "scored": 114,
+      "alarm": 74,
+      "stable": true,
+      "lead": 0.4642857142857143,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.4503013461573335,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 45.0,
+      "life_fraction": 0.6548672566371682,
+      "top_value": "std"
+     },
+     "H-ALL": {
+      "scored": 109,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 3.1361321866033496
+     },
+     "B-RMS": {
+      "scored": 114,
+      "alarm": 95,
+      "stable": true,
+      "lead": 0.21428571428571427,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 9.0710012551645,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 66.0,
+      "life_fraction": 0.8407079646017699
+     },
+     "H-GATED": {
+      "scored": 114,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.4503013461573335
+     },
+     "H-PIN-no-crest": {
+      "scored": 114,
+      "alarm": 73,
+      "stable": true,
+      "lead": 0.47619047619047616,
+      "calibration_extended": false,
+      "calibration": 30,
+      "threshold": 1.3957915263500018,
+      "fraction_above_after": 1.0,
+      "minutes_after_calibration": 44.0,
+      "life_fraction": 0.6460176991150443
+     },
+     "H-ALL-no-crest": {
+      "scored": 109,
+      "alarm": null,
+      "stable": false,
+      "lead": 0.0,
+      "calibration_extended": true,
+      "calibration": 30,
+      "threshold": 3.289812511895378
+     },
+     "absorption": {
+      "H-PIN": 1.0,
+      "H-ALL": 0.0,
+      "H-GATED": 0.1111111111111111,
+      "H-PIN-no-crest": 1.0,
+      "H-ALL-no-crest": 0.0
+     },
+     "snapshots": 114,
+     "minutes": 113.0
+    }
+   },
+   "Q1": {
+    "candidate": "H-PIN",
+    "comparator": "H-ALL",
+    "units": 15,
+    "delta": 0.01943745334774876,
+    "ci95": [
+     -0.0599555808395351,
+     0.11751459153466733
+    ],
+    "mean_lead": {
+     "H-PIN": 0.49896848976399083,
+     "H-ALL": 0.479531036416242
+    },
+    "unstable": {
+     "H-PIN": 2,
+     "H-ALL": 3
+    },
+    "verdict": "inconclusive"
+   },
+   "Q2": {
+    "candidate": "H-PIN",
+    "comparator": "B-RMS",
+    "units": 15,
+    "delta": 0.02755188562451472,
+    "ci95": [
+     -0.06972213367102428,
+     0.14405687919293914
+    ],
+    "mean_lead": {
+     "H-PIN": 0.49896848976399083,
+     "B-RMS": 0.4714166041394761
+    },
+    "unstable": {
+     "H-PIN": 2,
+     "B-RMS": 0
+    },
+    "verdict": "inconclusive"
+   },
+   "no crest": {
+    "Q1": {
+     "candidate": "H-PIN-no-crest",
+     "comparator": "H-ALL-no-crest",
+     "units": 15,
+     "delta": 0.11385474476887722,
+     "ci95": [
+      -0.08004812827325233,
+      0.3165905389473897
+     ],
+     "mean_lead": {
+      "H-PIN-no-crest": 0.6509174305419182,
+      "H-ALL-no-crest": 0.5370626857730408
+     },
+     "unstable": {
+      "H-PIN-no-crest": 2,
+      "H-ALL-no-crest": 1
+     },
+     "verdict": "inconclusive"
+    },
+    "Q2": {
+     "candidate": "H-PIN-no-crest",
+     "comparator": "B-RMS",
+     "units": 15,
+     "delta": 0.17950082640244214,
+     "ci95": [
+      0.023531401548512135,
+      0.355224305574774
+     ],
+     "mean_lead": {
+      "H-PIN-no-crest": 0.6509174305419182,
+      "B-RMS": 0.4714166041394761
+     },
+     "unstable": {
+      "H-PIN-no-crest": 2,
+      "B-RMS": 0
+     },
+     "verdict": "inconclusive"
+    }
+   },
+   "gated": {
+    "vs H-ALL": {
+     "candidate": "H-GATED",
+     "comparator": "H-ALL",
+     "units": 15,
+     "delta": -0.013100727142628702,
+     "ci95": [
+      -0.06684270157292742,
+      0.06158921929166863
+     ],
+     "mean_lead": {
+      "H-GATED": 0.46643030927361323,
+      "H-ALL": 0.479531036416242
+     },
+     "unstable": {
+      "H-GATED": 2,
+      "H-ALL": 3
+     },
+     "verdict": "inconclusive"
+    },
+    "vs B-RMS": {
+     "candidate": "H-GATED",
+     "comparator": "B-RMS",
+     "units": 15,
+     "delta": -0.004986294865862745,
+     "ci95": [
+      -0.10006982164255772,
+      0.1225416889303014
+     ],
+     "mean_lead": {
+      "H-GATED": 0.46643030927361323,
+      "B-RMS": 0.4714166041394761
+     },
+     "unstable": {
+      "H-GATED": 2,
+      "B-RMS": 0
+     },
+     "verdict": "inconclusive"
+    }
+   },
+   "late_alarms": {
+    "H-PIN": 1,
+    "H-ALL": 2,
+    "B-RMS": 3,
+    "H-GATED": 2,
+    "H-PIN-no-crest": 0,
+    "H-ALL-no-crest": 2
+   },
+   "absorption": {
+    "H-PIN": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9319123661937608
+    },
+    "H-ALL": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.8507196637032698
+    },
+    "H-GATED": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.867907350662713
+    },
+    "H-PIN-no-crest": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9773018722749424
+    },
+    "H-ALL-no-crest": {
+     "bearings": 14,
+     "mean_share_above_after_rms_alarm": 0.9139753990694178
+    }
+   }
+  }
+ },
+ "decided": {
+  "Q1": "inconclusive",
+  "Q2": "supported"
+ }
+}

@@ -1,0 +1,59 @@
+[
+ {
+  "bearing": "Bearing1_1",
+  "queries": [
+   0,
+   29,
+   30,
+   61,
+   122
+  ],
+  "history_n": {
+   "0": 29,
+   "29": 29,
+   "30": 30,
+   "61": 30,
+   "122": 30
+  },
+  "max_relative_score_error": 0.0,
+  "pass": true
+ },
+ {
+  "bearing": "Bearing2_1",
+  "queries": [
+   0,
+   29,
+   30,
+   245,
+   490
+  ],
+  "history_n": {
+   "0": 29,
+   "29": 29,
+   "30": 30,
+   "245": 30,
+   "490": 30
+  },
+  "max_relative_score_error": 0.0,
+  "pass": true
+ },
+ {
+  "bearing": "Bearing3_1",
+  "queries": [
+   0,
+   29,
+   30,
+   1269,
+   2537
+  ],
+  "history_n": {
+   "0": 29,
+   "29": 29,
+   "30": 30,
+   "1269": 30,
+   "2537": 30
+  },
+  "max_relative_score_error": 0.0,
+  "pass": true
+ }
+]
