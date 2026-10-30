@@ -1,0 +1,45 @@
+{
+ "plan": "README.md",
+ "windows": 1826,
+ "representation": {
+  "values_per_envelope": 410,
+  "max_lag": 30,
+  "client_f16_identical_to_stored": "1826/1826"
+ },
+ "storage_bytes": {
+  "pg_morlet_envelopes_table": 1794048,
+  "plain_halfvec_table": 1794048,
+  "plain_halfvec_hnsw_index": 2146304
+ },
+ "hnsw_build_ms": 471.18070800206624,
+ "hnsw_plan_uses_index": false,
+ "recall_at_10_vs_pg_morlet": {
+  "B": 0.6474260679079956,
+  "C": 0.6474260679079956,
+  "D": 1.0
+ },
+ "identical_order_vs_pg_morlet": {
+  "B": 0.001095290251916758,
+  "C": 0.001095290251916758,
+  "D": 1.0
+ },
+ "recall_C_vs_B": 1.0,
+ "latency_ms": {
+  "A": {
+   "p50": 9.395271001267247,
+   "p95": 10.978416990838014
+  },
+  "B": {
+   "p50": 0.476333501865156,
+   "p95": 0.5452707700897008
+  },
+  "D": {
+   "p50": 19.973333503003232,
+   "p95": 26.99397874675924
+  },
+  "C": {
+   "p50": 0.475270499009639,
+   "p95": 0.5112815124448389
+  }
+ }
+}

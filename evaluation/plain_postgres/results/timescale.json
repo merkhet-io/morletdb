@@ -1,0 +1,192 @@
+{
+ "versions": {
+  "pg_morlet": "0.3.1",
+  "timescaledb": "2.30.2",
+  "timescaledb_license": "timescale"
+ },
+ "cx": {
+  "samples": 4194304,
+  "quantum": 1.0,
+  "M": {
+   "total_bytes": 3211264,
+   "bits_per_sample": 6.125,
+   "chunk_table_bits_per_sample": 5.96875,
+   "grid_float_raw_chunks": [
+    1024,
+    0,
+    0
+   ],
+   "ingest_s": 4.379846041003475,
+   "read_back_bitwise": true
+  },
+  "T-f": {
+   "uncompressed_bytes": 389488640,
+   "uncompressed_bits_per_sample": 742.890625,
+   "total_bytes": 7520256,
+   "bits_per_sample": 14.34375,
+   "compress_s": 0.509298166987719,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 8667136,
+   "ingest_s": 6.282876290992135,
+   "read_back_bitwise": true
+  },
+  "T-i": {
+   "uncompressed_bytes": 389488640,
+   "uncompressed_bits_per_sample": 742.890625,
+   "total_bytes": 4325376,
+   "bits_per_sample": 8.25,
+   "compress_s": 0.4495088749972638,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 4677632,
+   "ingest_s": 6.039080457994714,
+   "read_back_bitwise": true
+  },
+  "T-a": {
+   "uncompressed_bytes": 13991936,
+   "uncompressed_bits_per_sample": 26.6875,
+   "total_bytes": 13107200,
+   "bits_per_sample": 25.0,
+   "compress_s": 0.16145441599655896,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 12926976,
+   "ingest_s": 1.7219858750177082,
+   "read_back_bitwise": true
+  }
+ },
+ "ims": {
+  "samples": 4194304,
+  "quantum": 0.001,
+  "M": {
+   "total_bytes": 5955584,
+   "bits_per_sample": 11.359375,
+   "chunk_table_bits_per_sample": 11.203125,
+   "grid_float_raw_chunks": [
+    1024,
+    0,
+    0
+   ],
+   "ingest_s": 4.72397908300627,
+   "read_back_bitwise": true
+  },
+  "T-f": {
+   "uncompressed_bytes": 389488640,
+   "uncompressed_bits_per_sample": 742.890625,
+   "total_bytes": 37724160,
+   "bits_per_sample": 71.953125,
+   "compress_s": 0.6560433330014348,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 37748736,
+   "ingest_s": 8.613125542004127,
+   "read_back_bitwise": true
+  },
+  "T-i": {
+   "uncompressed_bytes": 389488640,
+   "uncompressed_bits_per_sample": 742.890625,
+   "total_bytes": 7372800,
+   "bits_per_sample": 14.0625,
+   "compress_s": 0.46274512499803677,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 8814592,
+   "ingest_s": 5.871537708007963,
+   "read_back_bitwise": true
+  },
+  "T-a": {
+   "uncompressed_bytes": 15654912,
+   "uncompressed_bits_per_sample": 29.859375,
+   "total_bytes": 14721024,
+   "bits_per_sample": 28.078125,
+   "compress_s": 0.17866912501631305,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 14540800,
+   "ingest_s": 3.072652125003515,
+   "read_back_bitwise": true
+  }
+ },
+ "paderborn-counts": {
+  "samples": 4194304,
+  "quantum": 1.0,
+  "M": {
+   "total_bytes": 5218304,
+   "bits_per_sample": 9.953125,
+   "chunk_table_bits_per_sample": 9.796875,
+   "grid_float_raw_chunks": [
+    1024,
+    0,
+    0
+   ],
+   "ingest_s": 4.504188332997728,
+   "read_back_bitwise": true
+  },
+  "T-f": {
+   "uncompressed_bytes": 389488640,
+   "uncompressed_bits_per_sample": 742.890625,
+   "total_bytes": 12886016,
+   "bits_per_sample": 24.578125,
+   "compress_s": 0.6288902499945834,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 12877824,
+   "ingest_s": 6.163255207997281,
+   "read_back_bitwise": true
+  },
+  "T-i": {
+   "uncompressed_bytes": 389488640,
+   "uncompressed_bits_per_sample": 742.890625,
+   "total_bytes": 6758400,
+   "bits_per_sample": 12.890625,
+   "compress_s": 0.4505971659964416,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 7766016,
+   "ingest_s": 5.897215958975721,
+   "read_back_bitwise": true
+  },
+  "T-a": {
+   "uncompressed_bytes": 14974976,
+   "uncompressed_bits_per_sample": 28.5625,
+   "total_bytes": 13819904,
+   "bits_per_sample": 26.359375,
+   "compress_s": 0.16932708397507668,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 13639680,
+   "ingest_s": 1.6605259999923874,
+   "read_back_bitwise": true
+  }
+ },
+ "paderborn-physical": {
+  "samples": 4194304,
+  "quantum": 0.0030517578104827248,
+  "M": {
+   "total_bytes": 6045696,
+   "bits_per_sample": 11.53125,
+   "chunk_table_bits_per_sample": 11.375,
+   "grid_float_raw_chunks": [
+    1024,
+    0,
+    0
+   ],
+   "ingest_s": 6.940395375015214,
+   "read_back_bitwise": true
+  },
+  "T-f": {
+   "uncompressed_bytes": 389488640,
+   "uncompressed_bits_per_sample": 742.890625,
+   "total_bytes": 36765696,
+   "bits_per_sample": 70.125,
+   "compress_s": 0.6565209580003284,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 36790272,
+   "ingest_s": 8.786872333002975,
+   "read_back_bitwise": true
+  },
+  "T-a": {
+   "uncompressed_bytes": 17145856,
+   "uncompressed_bits_per_sample": 32.703125,
+   "total_bytes": 15466496,
+   "bits_per_sample": 29.5,
+   "compress_s": 0.18745520801167004,
+   "chunks_compressed": "4/4",
+   "stats_after_bytes": 15286272,
+   "ingest_s": 3.5737149999768008,
+   "read_back_bitwise": true
+  }
+ }
+}
