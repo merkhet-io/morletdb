@@ -1,0 +1,30 @@
+{
+ "same_station": {
+  "candidates_per_query": 181.6,
+  "ms": {
+   "full_search": 6.48437,
+   "query_read_and_envelope": 1.08892,
+   "candidate_count": 1.03531,
+   "scan_sort_without_scoring": 1.29334,
+   "scan_sort_with_scoring": 3.64512
+  },
+  "scoring_ms": 2.3517799999999998,
+  "scoring_us_per_candidate": 12.95033039647577,
+  "non_scoring_ms": 4.13259,
+  "ceiling_perfect_pruning": 1.569081375118267
+ },
+ "unfiltered": {
+  "candidates_per_query": 1825.0,
+  "ms": {
+   "full_search": 27.17838,
+   "query_read_and_envelope": 1.07065,
+   "candidate_count": 1.27688,
+   "scan_sort_without_scoring": 3.59471,
+   "scan_sort_with_scoring": 24.29592
+  },
+  "scoring_ms": 20.70121,
+  "scoring_us_per_candidate": 11.343128767123288,
+  "non_scoring_ms": 6.477170000000001,
+  "ceiling_perfect_pruning": 4.196026968568062
+ }
+}
