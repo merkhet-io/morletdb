@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sleep by Example</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3ef; --surface-1: #fcfcfb; --border: #dddcd5; --grid: #e9e8e2;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #77766f;
+  --accent: #2a78d6; --overlay: #eb6834; --diff: #c3c2b7;
+  --s0: #2a78d6; --s1: #eb6834; --s2: #1baf7a; --s3: #eda100; --s4: #e87ba4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #111110; --surface-1: #1a1a19; --border: #33332f; --grid: #262624;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --accent: #3987e5; --overlay: #d95926; --diff: #52514e;
+    --s0: #3987e5; --s1: #d95926; --s2: #199e70; --s3: #c98500; --s4: #d55181;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #111110; --surface-1: #1a1a19; --border: #33332f; --grid: #262624;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --accent: #3987e5; --overlay: #d95926; --diff: #52514e;
+  --s0: #3987e5; --s1: #d95926; --s2: #199e70; --s3: #c98500; --s4: #d55181;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 48px; }
+h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; letter-spacing: -0.01em; }
+h2 { font-size: 15px; margin: 0 0 8px; font-weight: 600; }
+.sub { color: var(--text-secondary); margin: 0 0 16px; max-width: 72ch; }
+.note { color: var(--text-muted); font-size: 12px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+select, button { font: inherit; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; }
+button { cursor: pointer; }
+button:hover, select:hover { border-color: var(--text-muted); }
+.stats { display: flex; gap: 22px; flex-wrap: wrap; margin-left: auto; }
+.stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.stat span { color: var(--text-secondary); font-size: 12px; }
+svg text { fill: var(--text-secondary); font-size: 11px; font-family: inherit; }
+.axis line, .axis path { stroke: var(--border); }
+.gridline { stroke: var(--grid); }
+.split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 14px; }
+@media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
+.chip i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.headline { display: flex; gap: 18px; flex-wrap: wrap; align-items: baseline; margin-bottom: 6px; }
+.headline .label { color: var(--text-secondary); font-size: 12px; margin-right: 4px; }
+.vote { display: grid; grid-template-columns: 44px 1fr 28px; gap: 6px 8px; align-items: center; font-variant-numeric: tabular-nums; }
+.vote .bar { height: 12px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.vote .bar div { height: 100%; border-radius: 0 3px 3px 0; }
+.vote .n { text-align: right; color: var(--text-secondary); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.nb { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px 4px; cursor: pointer; background: var(--surface-1); text-align: left; }
+.nb:hover { border-color: var(--text-muted); }
+.nb[aria-pressed="true"] { border-color: var(--overlay); box-shadow: 0 0 0 1px var(--overlay); }
+.nb .top { display: flex; justify-content: space-between; font-size: 12px; }
+.nb .meta { color: var(--text-muted); font-size: 11px; }
+.nb svg { display: block; width: 100%; height: 38px; }
+.nb polygon { fill: var(--text-secondary); opacity: 0.75; }
+code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--grid); padding: 2px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); }
+.legend i { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 5px; }
+#tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgb(0 0 0 / 0.12); display: none; z-index: 5; }
+.banner { border-left: 3px solid var(--text-muted); padding: 2px 10px; color: var(--text-secondary); font-size: 12px; margin-bottom: 14px; }
+.err { color: var(--text-primary); border-left-color: var(--overlay); }
+table { border-collapse: collapse; font-size: 12px; width: 100%; }
+td, th { text-align: left; padding: 3px 8px 3px 0; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+details summary { cursor: pointer; color: var(--text-secondary); font-size: 12px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sleep by example</h1>
+  <p class="sub">Each 30-second EEG epoch of a held-out night is staged by the 40 most similar
+    expert-scored epochs from other people, so every answer comes with its evidence: the examples,
+    their scores and their raw waveforms, read back from MorletDB.</p>
+  <div class="banner" id="banner">Research demo on Sleep-EDF (PhysioNet), one EEG channel. Not a medical device; it supports no diagnosis.</div>
+
+  <section class="card">
+    <div class="controls">
+      <label>Night <select id="night" aria-label="Held-out night"></select></label>
+      <span>
+        <button id="prev" aria-label="Previous epoch">◀</button>
+        <button id="next" aria-label="Next epoch">▶</button>
+        <span class="note">or ← →</span>
+      </span>
+      <div class="stats">
+        <div class="stat"><b id="kappa">–</b><span>Cohen's kappa, this night</span></div>
+        <div class="stat"><b id="acc">–</b><span>epochs matching the expert</span></div>
+        <div class="stat"><b id="gallery">–</b><span>gallery epochs (other people)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Hypnogram</h2>
+    <div class="legend"><span><i style="background:var(--text-primary)"></i>Expert scoring</span>
+      <span><i style="background:var(--accent)"></i>Staged by the 40 nearest examples</span>
+      <span><i style="background:var(--diff);height:8px"></i>Disagreement</span></div>
+    <svg id="hyp" width="100%" height="270" role="img" aria-label="Hypnogram: expert scoring and retrieval staging"></svg>
+    <div class="note">Click the hypnogram to pick an epoch. Gaps are epochs the expert left unscored.</div>
+  </section>
+
+  <div class="split">
+    <section class="card">
+      <div class="headline" id="headline"></div>
+      <svg id="wave" width="100%" height="220" role="img" aria-label="EEG waveform of the selected epoch"></svg>
+      <div class="legend" id="waveLegend"></div>
+      <div class="note" id="prov"></div>
+    </section>
+    <section class="card">
+      <h2>How the 40 examples voted</h2>
+      <div class="vote" id="vote"></div>
+      <p class="note" id="voteNote"></p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>The 40 nearest expert-scored epochs</h2>
+    <p class="note" style="margin-top:-4px">Nearest first. Drawn on the same µV scale as the query. Click one to overlay it and see where it lives in MorletDB.</p>
+    <div class="grid" id="nbs"></div>
+    <details><summary>Table view</summary><table id="nbTable"></table></details>
+  </section>
+
+  <p class="note">Features: pg_morlet <code>morlet-energy-lowrate-v1</code> (12 band energies 1.6–40 Hz, RMS, crest factor, kurtosis),
+    computed from the samples stored in MorletDB, standardized with development statistics and searched with a pgvector HNSW index.
+    Same setup as the frozen S1 evaluation: development subjects are the gallery, held-out subjects are the queries, never the same person.
+    Data: Sleep-EDF Expanded (Kemp et al. 2000; Goldberger et al. 2000, PhysioNet).</p>
+</main>
+<div id="tip"></div>
+<script>
+"use strict";
+const STAGES = ["W", "N1", "N2", "N3", "REM"];
+const ROW = {0: 0, 4: 1, 1: 2, 2: 3, 3: 4};   // hypnogram order top to bottom: W, REM, N1, N2, N3
+const ROW_LABELS = ["W", "REM", "N1", "N2", "N3"];
+const NS = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+const col = (s) => `var(--s${s})`;
+const state = { night: null, idx: 0, epoch: null, overlay: null, req: 0 };
+
+async function get(path) {
+  const r = await fetch(path);
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function chip(s) { return `<span class="chip"><i style="background:${col(s)}"></i>${STAGES[s]}</span>`; }
+function showError(e) { const b = $("banner"); b.textContent = "Error: " + e.message; b.classList.add("err"); }
+function tip(evt, html) {
+  const t = $("tip"); t.innerHTML = html; t.style.display = "block";
+  const x = Math.min(evt.clientX + 14, innerWidth - t.offsetWidth - 8);
+  t.style.left = x + "px"; t.style.top = (evt.clientY + 14) + "px";
+}
+function untip() { $("tip").style.display = "none"; }
+function clockAt(n, i) {
+  const [h, m, s] = n.clock.split(":").map(Number);
+  const t = (h * 3600 + m * 60 + s + (n.epochs[i] - n.epochs[0]) * 30) % 86400;
+  return [t / 3600 | 0, (t / 60 | 0) % 60, t % 60].map((v) => String(v).padStart(2, "0")).join(":");
+}
+
+// ---- hypnogram -------------------------------------------------------------------------
+function drawHypnogram() {
+  const n = state.night, svg = $("hyp");
+  svg.replaceChildren();
+  const W = svg.clientWidth, L = 44, R = 10, panelH = 100, gap = 26, top = 18;
+  const e0 = n.epochs[0], e1 = n.epochs[n.epochs.length - 1] + 1;
+  const x = (e) => L + (e - e0) / (e1 - e0) * (W - L - R);
+  const panels = [["Expert scoring", n.expert, "var(--text-primary)"], ["Staged by the 40 nearest examples", n.retrieved, "var(--accent)"]];
+  panels.forEach(([title, stages, stroke], p) => {
+    const y0 = top + p * (panelH + gap), y = (s) => y0 + ROW[s] * (panelH / 4.6) + 4;
+    el("text", { x: L, y: y0 - 5, style: "font-weight:600;fill:var(--text-primary)" }, svg).textContent = title;
+    ROW_LABELS.forEach((lab, r) => {
+      const yy = y0 + r * (panelH / 4.6) + 4;
+      el("line", { x1: L, x2: W - R, y1: yy, y2: yy, class: "gridline" }, svg);
+      el("text", { x: L - 6, y: yy + 4, "text-anchor": "end" }, svg).textContent = lab;
+    });
+    if (p === 1) {   // disagreement band below the retrieval panel's N3 row
+      n.epochs.forEach((e, i) => {
+        if (n.expert[i] !== n.retrieved[i])
+          el("rect", { x: x(e), y: y0 + panelH - 2, width: Math.max(1, x(e + 1) - x(e)), height: 5, fill: "var(--diff)" }, svg);
+      });
+    }
+    let d = "";
+    n.epochs.forEach((e, i) => {
+      const yy = y(stages[i]), contiguous = i > 0 && n.epochs[i - 1] === e - 1;
+      d += (contiguous ? `L${x(e)},${yy}` : `M${x(e)},${yy}`) + `L${x(e + 1)},${yy}`;
+    });
+    el("path", { d, fill: "none", stroke, "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+  });
+  // time axis: whole hours
+  const axisY = top + 2 * panelH + gap + 6;
+  const [h, m, s] = n.clock.split(":").map(Number), start = h * 3600 + m * 60 + s;
+  for (let t = Math.ceil(start / 3600) * 3600; t < start + (e1 - e0) * 30; t += 3600) {
+    const xx = x(e0 + (t - start) / 30);
+    el("line", { x1: xx, x2: xx, y1: axisY - 4, y2: axisY, class: "gridline", stroke: "var(--border)" }, svg);
+    el("text", { x: xx, y: axisY + 12, "text-anchor": "middle" }, svg).textContent = String((t / 3600) % 24).padStart(2, "0") + ":00";
+  }
+  const cross = el("line", { y1: top - 2, y2: axisY - 2, stroke: "var(--overlay)", "stroke-width": 2, id: "cross" }, svg);
+  const hit = el("rect", { x: L, y: 0, width: W - L - R, height: axisY, fill: "transparent", style: "cursor:pointer" }, svg);
+  const indexAt = (evt) => {
+    const r = svg.getBoundingClientRect(), e = e0 + (evt.clientX - r.left - L) / (W - L - R) * (e1 - e0);
+    let best = 0;
+    for (let i = 0; i < n.epochs.length; i++) if (Math.abs(n.epochs[i] + 0.5 - e) < Math.abs(n.epochs[best] + 0.5 - e)) best = i;
+    return best;
+  };
+  hit.addEventListener("mousemove", (evt) => {
+    const i = indexAt(evt);
+    tip(evt, `<b>${clockAt(n, i)}</b><br>Expert ${chip(n.expert[i])}<br>Retrieved ${chip(n.retrieved[i])}` +
+             `<br>${Math.round(n.agreement[i] * 40)} of 40 examples agree`);
+  });
+  hit.addEventListener("mouseleave", untip);
+  hit.addEventListener("click", (evt) => select(indexAt(evt)));
+  state.crossX = (i) => { const xx = (x(n.epochs[i]) + x(n.epochs[i] + 1)) / 2; cross.setAttribute("x1", xx); cross.setAttribute("x2", xx); };
+  state.crossX(state.idx);
+}
+
+// ---- waveform --------------------------------------------------------------------------
+function drawWave() {
+  const ep = state.epoch, svg = $("wave");
+  svg.replaceChildren();
+  if (!ep) return;
+  const W = svg.clientWidth, H = 220, L = 44, R = 10, T = 10, B = 24;
+  const series = [ep.samples].concat(state.overlay ? [state.overlay.samples] : []);
+  const peak = Math.max(...series.map((s) => Math.max(...s.map(Math.abs))));
+  const lim = Math.max(25, Math.ceil(peak / 25) * 25);
+  state.scale = lim;
+  const x = (i) => L + i / (ep.samples.length - 1) * (W - L - R), y = (v) => T + (lim - v) / (2 * lim) * (H - T - B);
+  for (const v of [-lim, 0, lim]) {
+    el("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), class: "gridline" }, svg);
+    el("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = v;
+  }
+  el("text", { x: 4, y: T + 8 }, svg).textContent = "µV";
+  for (let t = 0; t <= 30; t += 5)
+    el("text", { x: x(t * 100 - (t === 30 ? 1 : 0)), y: H - 6, "text-anchor": t === 0 ? "start" : t === 30 ? "end" : "middle" }, svg).textContent = t + " s";
+  const path = (s, stroke, width, opacity) => {
+    let d = "";
+    s.forEach((v, i) => { d += (i ? "L" : "M") + x(i).toFixed(1) + "," + y(Math.max(-lim, Math.min(lim, v))).toFixed(1); });
+    el("path", { d, fill: "none", stroke, "stroke-width": width, opacity, "stroke-linejoin": "round" }, svg);
+  };
+  if (state.overlay) path(state.overlay.samples, "var(--overlay)", 1.2, 0.85);
+  path(ep.samples, "var(--text-primary)", 1, 1);
+  const ov = state.overlay;
+  $("waveLegend").innerHTML = `<span><i style="background:var(--text-primary)"></i>Query: subject ${ep.subject}, night ${ep.night}, ${ep.clock}</span>` +
+    (ov ? `<span><i style="background:var(--overlay)"></i>Example: subject ${ov.subject}, night ${ov.night}, ${ov.clock} (${STAGES[ov.stage]})</span>` : "");
+  const p = ov || ep;
+  $("prov").innerHTML = `${ov ? "Example" : "Query"} in MorletDB: <code>SELECT samples FROM morlet_read_interval('sleep_eeg', '${p.recording_id}', ${p.start_sample}, ${p.end_sample})</code>`;
+}
+
+// ---- epoch panel -----------------------------------------------------------------------
+function drawEpoch() {
+  const ep = state.epoch;
+  const top = ep.votes.indexOf(Math.max(...ep.votes));
+  $("headline").innerHTML = `<span><span class="label">Expert</span>${chip(ep.stage)}</span>` +
+    `<span><span class="label">Retrieved</span>${chip(ep.retrieved)}</span>` +
+    `<span class="note">${ep.clock} · epoch ${ep.epoch}${ep.stage === ep.retrieved ? "" : " · disagreement"}</span>`;
+  $("vote").innerHTML = ep.votes.map((v, s) =>
+    `<span>${chip(s)}</span><div class="bar" title="${v} of 40"><div style="width:${v / 40 * 100}%;background:${col(s)}"></div></div><span class="n">${v}</span>`).join("");
+  const subjects = new Set(ep.neighbours.map((n) => n.subject)).size;
+  $("voteNote").textContent = `${ep.votes[ep.retrieved]} of 40 examples (${Math.round(ep.votes[ep.retrieved] / 0.4)}%) carry the retrieved stage. ` +
+    `They come from ${subjects} different people. A lower share means a less certain answer, not a probability.`;
+  const lim = state.scale;
+  $("nbs").replaceChildren(...ep.neighbours.map((nb, i) => {
+    const b = document.createElement("button");
+    b.className = "nb";
+    b.setAttribute("aria-pressed", state.overlay && state.overlay.recording_id === nb.recording_id && state.overlay.epoch === nb.epoch);
+    b.innerHTML = `<div class="top">${chip(nb.stage)}<span class="note">#${i + 1} · d ${nb.distance.toFixed(2)}</span></div>` +
+      `<div class="meta">subject ${nb.subject} · night ${nb.night} · ${nb.clock}</div>`;
+    const svg = el("svg", { viewBox: `0 0 ${nb.hi.length} 38`, preserveAspectRatio: "none", "aria-hidden": "true" });
+    const yy = (v) => (19 - Math.max(-lim, Math.min(lim, v)) / lim * 18).toFixed(2);
+    const pts = nb.hi.map((v, j) => `${j},${yy(v)}`).concat(nb.lo.map((v, j) => `${j},${yy(v)}`).reverse());
+    el("polygon", { points: pts.join(" ") }, svg);
+    b.appendChild(svg);
+    b.addEventListener("click", () => overlay(nb));
+    return b;
+  }));
+  $("nbTable").innerHTML = "<tr><th>#</th><th>Stage</th><th>Subject</th><th>Night</th><th>Clock</th><th>Distance</th><th>Interval</th></tr>" +
+    ep.neighbours.map((nb, i) => `<tr><td>${i + 1}</td><td>${STAGES[nb.stage]}</td><td>${nb.subject}</td><td>${nb.night}</td>` +
+      `<td>${nb.clock}</td><td>${nb.distance.toFixed(3)}</td><td>${nb.recording_id} [${nb.start_sample}, ${nb.end_sample})</td></tr>`).join("");
+}
+
+async function overlay(nb) {
+  try {
+    const same = state.overlay && state.overlay.recording_id === nb.recording_id && state.overlay.epoch === nb.epoch;
+    state.overlay = same ? null : await get(`/api/interval?recording=${encodeURIComponent(nb.recording_id)}&epoch=${nb.epoch}`);
+    drawWave(); drawEpoch();
+  } catch (e) { showError(e); }
+}
+
+async function select(i) {
+  const n = state.night;
+  state.idx = Math.max(0, Math.min(n.epochs.length - 1, i));
+  state.crossX(state.idx);
+  const req = ++state.req;
+  try {
+    const ep = await get(`/api/epoch?recording=${encodeURIComponent(n.recording_id)}&epoch=${n.epochs[state.idx]}`);
+    if (req !== state.req) return;
+    state.epoch = ep; state.overlay = null;
+    drawWave(); drawEpoch();
+  } catch (e) { showError(e); }
+}
+
+async function loadNight(rid) {
+  try {
+    $("kappa").textContent = $("acc").textContent = "…";
+    const n = await get(`/api/night?recording=${encodeURIComponent(rid)}`);
+    state.night = n;
+    $("kappa").textContent = n.kappa.toFixed(2);
+    $("acc").textContent = Math.round(n.accuracy * 100) + "%";
+    drawHypnogram();
+    const firstSleep = n.expert.findIndex((s) => s !== 0);
+    await select(firstSleep + 60 < n.epochs.length ? firstSleep + 60 : 0);
+  } catch (e) { showError(e); }
+}
+
+(async function init() {
+  try {
+    const info = await get("/api/nights");
+    $("gallery").textContent = `${(info.gallery.epochs / 1000).toFixed(1)} k`;
+    $("gallery").title = `${info.gallery.epochs} epochs, ${info.gallery.recordings} nights, ${info.gallery.subjects} people`;
+    const sel = $("night");
+    for (const n of info.nights) {
+      const o = document.createElement("option");
+      o.value = n.recording_id;
+      o.textContent = `Subject ${n.subject}, night ${n.night} (${n.epochs} epochs)`;
+      sel.appendChild(o);
+    }
+    sel.addEventListener("change", () => loadNight(sel.value));
+    $("prev").addEventListener("click", () => select(state.idx - 1));
+    $("next").addEventListener("click", () => select(state.idx + 1));
+    addEventListener("keydown", (e) => {
+      if (!state.night || e.target.tagName === "SELECT") return;
+      if (e.key === "ArrowLeft") { select(state.idx - 1); e.preventDefault(); }
+      if (e.key === "ArrowRight") { select(state.idx + 1); e.preventDefault(); }
+    });
+    let t; addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => { if (state.night) { drawHypnogram(); drawWave(); } }, 150); });
+    await loadNight(sel.value);
+  } catch (e) { showError(e); }
+})();
+</script>
+</body>
+</html>

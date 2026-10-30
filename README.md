@@ -152,6 +152,16 @@ What it showed, reported with its limits in the [investigation summary](docs/sei
 It is an investigation tool, not an earthquake classifier or warning service.
 Seismic rates use the explicit `morlet-energy-lowrate-v1` representation.
 
+## On real data: sleep staging by example
+
+The [sleep example](examples/sleep/README.md) stores 153 Sleep-EDF nights (EEG
+Fpz-Cz) as raw MorletDB recordings and indexes every 30-second epoch in pgvector.
+In a local page you click an epoch of a held-out night and see the 40 most similar
+expert-scored epochs from other people: their stages, waveforms and the interval
+each is read back from. It reproduces the [S1](evaluation/sleep/RESULTS.md) staging:
+kappa 0.583, with 3 of 98,159 epochs staged differently. A research demo,
+not a medical device.
+
 ## Import waveform archives
 
 The [Parquet importer](tools/ingest/README.md) accepts sample-array rows or individual
