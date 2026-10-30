@@ -1,5 +1,7 @@
 # W2: does a Legendre multiwavelet expose bearing fault frequencies better than the kurtogram?
 
+**Result: CLOSE.** The gain over the kurtogram comes from frequency-aware band selection, not the multiwavelet: under the same rule the kurtogram bands do better (Δ −0.185). See [RESULTS.md](RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line. The harness and its synthetic tests
 are in the same commit. No XJTU-SY envelope spectrum has been computed. Changes after the
 freeze are logged under "Changes after freeze".
