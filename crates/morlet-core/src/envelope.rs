@@ -109,16 +109,53 @@ pub fn distance(q: &[f64], g: &[f64], max_lag: usize) -> Result<f64, SignalError
         return Err(SignalError::LengthMismatch);
     }
     let n = q.len();
-    let mut best = f64::NEG_INFINITY;
-    for lag in 0..=max_lag {
-        let pos: f64 = (0..n - lag).map(|t| q[t + lag] * g[t]).sum();
-        best = best.max(pos);
-        if lag > 0 {
-            let neg: f64 = (0..n - lag).map(|t| q[t] * g[t + lag]).sum();
-            best = best.max(neg);
-        }
-    }
+    // Positive lags pair q[t + lag] with g[t]; negative lags pair g[t + lag] with q[t].
+    let best = max_lagged_sum(q, g, 0, max_lag).max(max_lagged_sum(g, q, 1, max_lag));
     Ok(1.0 - best / n as f64)
+}
+
+const LAG_BLOCK: usize = 8;
+
+/// max over lag in first..=last of sum_{t < n - lag} a[t + lag] * b[t].
+///
+/// Lags are scored LAG_BLOCK at a time with one accumulator each, so the loop
+/// vectorizes across lags. Every accumulator still adds its products in ascending t,
+/// starting from the same neutral element as `Iterator::sum`, so each lagged sum is
+/// bitwise identical to summing it on its own.
+fn max_lagged_sum(a: &[f64], b: &[f64], first: usize, last: usize) -> f64 {
+    let n = a.len();
+    let zero: f64 = std::iter::empty::<f64>().sum();
+    let mut best = f64::NEG_INFINITY;
+    let mut l0 = first;
+    while l0 <= last {
+        let k = LAG_BLOCK.min(last + 1 - l0);
+        let mut acc = [zero; LAG_BLOCK];
+        // Products valid for every lag in the block, then each lag's own tail.
+        let common = n - (l0 + k - 1);
+        if k == LAG_BLOCK {
+            for t in 0..common {
+                let bt = b[t];
+                let w = &a[t + l0..t + l0 + LAG_BLOCK];
+                for j in 0..LAG_BLOCK {
+                    acc[j] += w[j] * bt;
+                }
+            }
+        } else {
+            for t in 0..common {
+                for j in 0..k {
+                    acc[j] += a[t + l0 + j] * b[t];
+                }
+            }
+        }
+        for (j, s) in acc.iter_mut().enumerate().take(k) {
+            for t in common..n - l0 - j {
+                *s += a[t + l0 + j] * b[t];
+            }
+            best = best.max(*s);
+        }
+        l0 += k;
+    }
+    best
 }
 
 /// In-place iterative radix-2 FFT; `inverse` includes the 1/n scaling.
@@ -349,5 +386,50 @@ mod tests {
             "{aligned} {unaligned}"
         );
         assert!(distance(&a, &b[..400], 30).is_err());
+    }
+
+    /// The scoring loop before lags were blocked; kept as the bitwise reference.
+    fn distance_one_lag_at_a_time(q: &[f64], g: &[f64], max_lag: usize) -> f64 {
+        let n = q.len();
+        let mut best = f64::NEG_INFINITY;
+        for lag in 0..=max_lag {
+            let pos: f64 = (0..n - lag).map(|t| q[t + lag] * g[t]).sum();
+            best = best.max(pos);
+            if lag > 0 {
+                let neg: f64 = (0..n - lag).map(|t| q[t] * g[t + lag]).sum();
+                best = best.max(neg);
+            }
+        }
+        1.0 - best / n as f64
+    }
+
+    #[test]
+    fn blocked_lags_are_bitwise_identical() {
+        let mut state = 0x9e37_79b9_7f4a_7c15u64;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            (state >> 11) as f64 / (1u64 << 53) as f64 * 6.0 - 3.0
+        };
+        for n in [52, 103, 410, 820, 3277] {
+            for _ in 0..20 {
+                let q: Vec<f64> = (0..n).map(|_| next()).collect();
+                let g: Vec<f64> = (0..n).map(|_| next()).collect();
+                for max_lag in [0, 1, 7, 8, 9, 15, 16, 17, 30, 61, n / 2, n - 1]
+                    .into_iter()
+                    .filter(|&l| l < n)
+                {
+                    let got = distance(&q, &g, max_lag).unwrap();
+                    let want = distance_one_lag_at_a_time(&q, &g, max_lag);
+                    assert_eq!(got.to_bits(), want.to_bits(), "n {n} max_lag {max_lag}");
+                }
+            }
+        }
+        let zeros = vec![0.0; 410];
+        assert_eq!(
+            distance(&zeros, &zeros, 30).unwrap(),
+            distance_one_lag_at_a_time(&zeros, &zeros, 30)
+        );
     }
 }

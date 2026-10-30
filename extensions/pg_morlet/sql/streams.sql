@@ -28,16 +28,19 @@ END $$;
 -- expressions let every reader handle both layouts with one query text.
 CREATE FUNCTION public.morlet_stream_relations(collection regclass)
 RETURNS TABLE(chunks regclass,segments regclass,encoded boolean,samples_expr text,count_expr text)
-LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-  SELECT r.chunks,r.segments,e.encoded,
+-- PL/pgSQL so the catalog query plan is cached per session; a SQL function with a
+-- SET clause cannot be inlined and was re-planned on every call (~0.8 ms).
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  RETURN QUERY SELECT r.chunks,r.segments,e.encoded,
     CASE WHEN e.encoded THEN 'public.morlet_decode_chunk(c.encoded)' ELSE 'c.samples' END,
     CASE WHEN e.encoded THEN 'c.sample_count' ELSE 'cardinality(c.samples)' END
   FROM (SELECT format('%I.%I',n.nspname,c.relname||'_chunks')::regclass AS chunks,
       format('%I.%I',n.nspname,c.relname||'_segments')::regclass AS segments
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection) r
   CROSS JOIN LATERAL (SELECT EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=r.chunks
-    AND a.attname='encoded' AND NOT a.attisdropped) AS encoded) e
-$$;
+    AND a.attname='encoded' AND NOT a.attisdropped) AS encoded) e;
+END $$;
 
 CREATE FUNCTION public.morlet_start_recording(collection regclass,recording_id text,
   sample_rate_hz float8,channel text,unit text,metadata jsonb DEFAULT '{}'::jsonb,
@@ -257,6 +260,21 @@ BEGIN
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
   -- Chunks hold at most 32768 samples, so the lower start bound is implied; it
   -- keeps reads late in long recordings to an index range instead of a prefix scan.
+  -- Encoded chunks are decoded and sliced in one call; float8[] chunks go through SQL.
+  IF relations.encoded THEN
+    EXECUTE format('SELECT public.morlet_decode_interval(coalesce(array_agg(c.encoded ORDER BY c.start_sample),''{}''),
+        coalesce(array_agg(c.start_sample ORDER BY c.start_sample),''{}''),$2,$3)
+      FROM %1$s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
+        AND c.start_sample+c.sample_count>$2',relations.chunks)
+      INTO recovered USING source_recording_id,interval_start,interval_end;
+    covered:=coalesce(cardinality(recovered),0);
+    IF covered<>interval_end-interval_start THEN
+      RAISE EXCEPTION 'source interval is incomplete or not fully visible';
+    END IF;
+    RETURN QUERY SELECT source_recording_id,interval_start,interval_end,recovered,
+      source.sample_rate_hz,source.channel,source.unit,source.metadata,source.checkpoint->>'extractor_version';
+    RETURN;
+  END IF;
   EXECUTE format('SELECT array_agg(v.value ORDER BY c.start_sample,v.ordinality),count(*)
     FROM %1$s c CROSS JOIN LATERAL unnest((%2$s)[
       greatest(1,$2-c.start_sample+1)::integer:
