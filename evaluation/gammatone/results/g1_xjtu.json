@@ -1,0 +1,120 @@
+{
+ "arms": {
+  "RAW horizontal": {
+   "mean_score": 1.0528246592314037,
+   "detected": 11,
+   "pairs": 19
+  },
+  "FK horizontal": {
+   "mean_score": 0.6614412322462953,
+   "detected": 9,
+   "pairs": 19
+  },
+  "FK-RER horizontal": {
+   "mean_score": 1.2094703465524657,
+   "detected": 13,
+   "pairs": 19
+  },
+  "GTFK-K horizontal": {
+   "mean_score": 0.6728670224701926,
+   "detected": 10,
+   "pairs": 19
+  },
+  "GTFK-RER horizontal": {
+   "mean_score": 1.148847414495096,
+   "detected": 12,
+   "pairs": 19
+  },
+  "GTERB-K horizontal": {
+   "mean_score": 0.6783691820287411,
+   "detected": 10,
+   "pairs": 19
+  },
+  "GTERB-RER horizontal": {
+   "mean_score": 1.5638629906874577,
+   "detected": 13,
+   "pairs": 19
+  },
+  "RAW vertical": {
+   "mean_score": 1.082682182574307,
+   "detected": 11,
+   "pairs": 19
+  },
+  "FK vertical": {
+   "mean_score": 0.707854329874049,
+   "detected": 10,
+   "pairs": 19
+  },
+  "FK-RER vertical": {
+   "mean_score": 1.2311009172984337,
+   "detected": 12,
+   "pairs": 19
+  },
+  "GTFK-K vertical": {
+   "mean_score": 0.7061320079768736,
+   "detected": 11,
+   "pairs": 19
+  },
+  "GTFK-RER vertical": {
+   "mean_score": 1.1554591013019866,
+   "detected": 11,
+   "pairs": 19
+  },
+  "GTERB-K vertical": {
+   "mean_score": 0.7813280273649229,
+   "detected": 11,
+   "pairs": 19
+  },
+  "GTERB-RER vertical": {
+   "mean_score": 1.5872154083774723,
+   "detected": 13,
+   "pairs": 19
+  }
+ },
+ "comparisons": {
+  "GTFK-RER vs FK-RER": {
+   "candidate": "GTFK-RER",
+   "comparator": "FK-RER",
+   "pairs": 19,
+   "delta": -0.060622932057369634,
+   "ci95": [
+    -0.11085759684099228,
+    -0.016682773245881247
+   ],
+   "pairs_ahead": 3
+  },
+  "GTERB-RER vs FK-RER": {
+   "candidate": "GTERB-RER",
+   "comparator": "FK-RER",
+   "pairs": 19,
+   "delta": 0.35439264413499216,
+   "ci95": [
+    0.24567798065850938,
+    0.44807267023616637
+   ],
+   "pairs_ahead": 18
+  },
+  "GTFK-K vs FK": {
+   "candidate": "GTFK-K",
+   "comparator": "FK",
+   "pairs": 19,
+   "delta": 0.011425790223897375,
+   "ci95": [
+    -0.005992782862045309,
+    0.03861616850429086
+   ],
+   "pairs_ahead": 11
+  },
+  "GTERB-K vs FK": {
+   "candidate": "GTERB-K",
+   "comparator": "FK",
+   "pairs": 19,
+   "delta": 0.016927949782445804,
+   "ci95": [
+    -0.016317858319596725,
+    0.04498033454733757
+   ],
+   "pairs_ahead": 11
+  }
+ }
+}
