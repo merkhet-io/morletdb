@@ -154,6 +154,8 @@ Seismic rates use the explicit `morlet-energy-lowrate-v1` representation.
 
 ## On real data: sleep staging by example
 
+![MorletDB sleep example: a held-out night's hypnogram, expert scoring above and staging by the 40 nearest examples below; the selected epoch's EEG with its MorletDB interval; how the 40 examples voted (24 N2, 16 N3, against the expert's N3); and the nearest expert-scored epochs from other people with their waveforms.](assets/screenshots/sleep-demo.jpg)
+
 The [sleep example](examples/sleep/README.md) stores 153 Sleep-EDF nights (EEG
 Fpz-Cz) as raw MorletDB recordings and indexes every 30-second epoch in pgvector.
 In a local page you click an epoch of a held-out night and see the 40 most similar

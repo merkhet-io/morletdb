@@ -1,5 +1,7 @@
 # Example: sleep staging by example
 
+![MorletDB sleep example: a held-out night's hypnogram, expert scoring above and staging by the 40 nearest examples below; the selected epoch's EEG with its MorletDB interval; how the 40 examples voted (24 N2, 16 N3, against the expert's N3); and the nearest expert-scored epochs from other people with their waveforms.](../../assets/screenshots/sleep-demo.jpg)
+
 A small local application on top of MorletDB and pgvector. Pick a held-out night
 from Sleep-EDF, click any 30-second epoch of its EEG, and see:
 
