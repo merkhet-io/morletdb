@@ -1,6 +1,6 @@
 # F1 screen: framelets and multiwavelets for sleep staging by retrieval
 
-**Status: plan, written and committed before any framelet or multiwavelet feature is
+**Result: nothing advances; see [RESULTS.md](RESULTS.md).** Status: plan, written and committed before any framelet or multiwavelet feature is
 computed.** This is an exploratory screen on development data only. It decides
 whether a frozen protocol is worth writing; it is not evidence on its own.
 
