@@ -8,6 +8,16 @@ IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_simple_value_floors_wrapper';
 
+CREATE FUNCTION "morlet_decode_interval"(
+	"chunks" bytea[], /* pgrx::datum::array::Array<'_, &[u8]> */
+	"starts" bigint[], /* alloc::vec::Vec<core::option::Option<i64>> */
+	"interval_start" bigint, /* i64 */
+	"interval_end" bigint /* i64 */
+) RETURNS double precision[] /* alloc::vec::Vec<f64> */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_decode_interval_wrapper';
+
 -- Pooled relative spread per simple-v1 value: for every context with at least 3
 -- comparable segments, median(|x - median|)/|median|; then the median over contexts,
 -- floored at spread_floor (default 1%) so near-constant values cannot turn negligible
@@ -157,6 +167,75 @@ BEGIN
     ORDER BY d.dist,h.recording_id,h.start_sample LIMIT $11',rel.labels)
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
       q.vals,ords,top_k;
+END $$;
+
+-- Collections created before encoded storage keep float8[] chunks; the
+-- expressions let every reader handle both layouts with one query text.
+CREATE OR REPLACE FUNCTION public.morlet_stream_relations(collection regclass)
+RETURNS TABLE(chunks regclass,segments regclass,encoded boolean,samples_expr text,count_expr text)
+-- PL/pgSQL so the catalog query plan is cached per session; a SQL function with a
+-- SET clause cannot be inlined and was re-planned on every call (~0.8 ms).
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  RETURN QUERY SELECT r.chunks,r.segments,e.encoded,
+    CASE WHEN e.encoded THEN 'public.morlet_decode_chunk(c.encoded)' ELSE 'c.samples' END,
+    CASE WHEN e.encoded THEN 'c.sample_count' ELSE 'cardinality(c.samples)' END
+  FROM (SELECT format('%I.%I',n.nspname,c.relname||'_chunks')::regclass AS chunks,
+      format('%I.%I',n.nspname,c.relname||'_segments')::regclass AS segments
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection) r
+  CROSS JOIN LATERAL (SELECT EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=r.chunks
+    AND a.attname='encoded' AND NOT a.attisdropped) AS encoded) e;
+END $$;
+
+-- Read a bounded half-open interval without exposing table internals. Both
+-- parent and chunk privileges/RLS apply; missing or hidden chunks fail closed.
+CREATE OR REPLACE FUNCTION public.morlet_read_interval(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,samples float8[],
+  sample_rate_hz float8,channel text,unit text,metadata jsonb,extractor_version text)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; relations record; recovered float8[]; covered bigint;
+BEGIN
+  IF interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start>32768 THEN
+    RAISE EXCEPTION 'read interval must contain 1..32768 samples at nonnegative coordinates';
+  END IF;
+  EXECUTE format('SELECT r.sample_rate_hz,r.channel,r.unit,r.metadata,r.checkpoint FROM %s r WHERE r.recording_id=$1',collection)
+    INTO source USING source_recording_id;
+  IF source.checkpoint IS NULL THEN RAISE EXCEPTION 'source recording does not exist or is not visible'; END IF;
+  IF interval_end>(source.checkpoint->>'end')::bigint THEN
+    RAISE EXCEPTION 'source interval exceeds recording length';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  -- Chunks hold at most 32768 samples, so the lower start bound is implied; it
+  -- keeps reads late in long recordings to an index range instead of a prefix scan.
+  -- Encoded chunks are decoded and sliced in one call; float8[] chunks go through SQL.
+  IF relations.encoded THEN
+    EXECUTE format('SELECT public.morlet_decode_interval(coalesce(array_agg(c.encoded ORDER BY c.start_sample),''{}''),
+        coalesce(array_agg(c.start_sample ORDER BY c.start_sample),''{}''),$2,$3)
+      FROM %1$s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
+        AND c.start_sample+c.sample_count>$2',relations.chunks)
+      INTO recovered USING source_recording_id,interval_start,interval_end;
+    covered:=coalesce(cardinality(recovered),0);
+    IF covered<>interval_end-interval_start THEN
+      RAISE EXCEPTION 'source interval is incomplete or not fully visible';
+    END IF;
+    RETURN QUERY SELECT source_recording_id,interval_start,interval_end,recovered,
+      source.sample_rate_hz,source.channel,source.unit,source.metadata,source.checkpoint->>'extractor_version';
+    RETURN;
+  END IF;
+  EXECUTE format('SELECT array_agg(v.value ORDER BY c.start_sample,v.ordinality),count(*)
+    FROM %1$s c CROSS JOIN LATERAL unnest((%2$s)[
+      greatest(1,$2-c.start_sample+1)::integer:
+      least((%3$s)::bigint,$3-c.start_sample)::integer
+    ]) WITH ORDINALITY AS v(value,ordinality)
+    WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
+      AND c.start_sample+(%3$s)>$2',relations.chunks,relations.samples_expr,relations.count_expr)
+    INTO recovered,covered USING source_recording_id,interval_start,interval_end;
+  IF covered<>interval_end-interval_start THEN
+    RAISE EXCEPTION 'source interval is incomplete or not fully visible';
+  END IF;
+  RETURN QUERY SELECT source_recording_id,interval_start,interval_end,recovered,
+    source.sample_rate_hz,source.channel,source.unit,source.metadata,source.checkpoint->>'extractor_version';
 END $$;
 
 -- Level track (local-level Kalman filter, model local-level-v1) of one simple-v1 value

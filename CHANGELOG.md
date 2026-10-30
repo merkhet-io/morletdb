@@ -19,6 +19,22 @@ Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
   explicit arguments with no defaults. Evaluation L1 (synthetic) found it equal to an
   exponential moving average on evenly spaced episodes, with uncertainty and faster
   catch-up after gaps as its additions.
+- Faster reads and envelope search, with identical results. On the R1b CX 2022
+  windows (1,826 queries), every top 10 is identical in order and bitwise in
+  distance. Median latency changed as follows:
+
+  | Operation | Before | After |
+  |---|---|---|
+  | `morlet_read_interval` of 4096 samples | 2.9 ms | 1.1 ms |
+  | Same-station envelope search | 9.4 ms | 6.5 ms |
+  | Unfiltered envelope search (1,825 candidates) | 38 ms | 27 ms |
+
+  Three changes produce this:
+  - Encoded chunks are decoded and sliced in one Rust call (`morlet_decode_interval`)
+    instead of being expanded to one row per sample.
+  - `morlet_stream_relations` is PL/pgSQL, so its catalog query plan is cached.
+  - Envelope cross-correlation scores 8 lags per pass while keeping each lag's
+    summation order.
 
 Repository:
 - Viewer and docs present `morlet_history_neighbors` as similar occurrences to look

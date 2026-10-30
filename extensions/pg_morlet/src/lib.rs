@@ -194,6 +194,40 @@ fn morlet_decode_chunk(encoded: &[u8]) -> Vec<f64> {
     morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
+/// Samples of [interval_start, interval_end) from encoded chunks given in ascending
+/// start order, concatenated. Parts of the interval not covered by a chunk are simply
+/// absent, so callers compare the length with the interval to detect gaps.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_decode_interval(
+    chunks: pgrx::Array<'_, &[u8]>,
+    starts: Vec<Option<i64>>,
+    interval_start: i64,
+    interval_end: i64,
+) -> Vec<f64> {
+    if chunks.len() != starts.len() {
+        pgrx::error!("chunks and starts differ in length");
+    }
+    let mut out = Vec::with_capacity((interval_end - interval_start).clamp(0, 32768) as usize);
+    let mut previous = i64::MIN;
+    for (chunk, start) in chunks.iter().zip(&starts) {
+        let (Some(chunk), Some(start)) = (chunk, *start) else {
+            pgrx::error!("chunks and starts must not contain NULL");
+        };
+        if start <= previous {
+            pgrx::error!("chunk starts must be strictly ascending");
+        }
+        previous = start;
+        let samples =
+            morlet_core::rawcodec::decode(chunk).unwrap_or_else(|e| pgrx::error!("{}", e));
+        let lo = interval_start.max(start) - start;
+        let hi = interval_end.min(start + samples.len() as i64) - start;
+        if lo < hi {
+            out.extend_from_slice(&samples[lo as usize..hi as usize]);
+        }
+    }
+    out
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_encoded_chunk_kind(encoded: &[u8]) -> &'static str {
     morlet_core::rawcodec::kind(encoded)
@@ -422,6 +456,25 @@ mod tests {
     fn reads_verify_chunk_integrity() {
         // Bypass the table CHECK, as storage corruption would, then read.
         Spi::run("SELECT morlet_create_stream_collection('public','rot_streams'); SELECT morlet_start_recording('rot_streams','A',4096,'x','g'); SELECT morlet_append_chunk('rot_streams','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,999) i)); ALTER TABLE rot_streams_chunks DROP CONSTRAINT rot_streams_chunks_check; UPDATE rot_streams_chunks SET encoded=set_byte(encoded,20,get_byte(encoded,20) # 1); SELECT * FROM morlet_read_interval('rot_streams','A',0,10)").unwrap();
+    }
+    #[pg_test]
+    fn decode_interval_slices_chunks_and_leaves_gaps_out() {
+        let got = Spi::get_one::<Vec<f64>>("SELECT morlet_decode_interval(ARRAY[morlet_encode_chunk(ARRAY[1,2,3]::float8[],1),morlet_encode_chunk(ARRAY[6,7,8]::float8[],1)],ARRAY[0,5]::bigint[],1,7)").unwrap().unwrap();
+        assert_eq!(got, vec![2.0, 3.0, 6.0, 7.0]);
+        let empty = Spi::get_one::<Vec<f64>>(
+            "SELECT morlet_decode_interval('{}'::bytea[],'{}'::bigint[],0,10)",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(empty.is_empty());
+    }
+    #[pg_test(error = "chunk starts must be strictly ascending")]
+    fn decode_interval_requires_ascending_starts() {
+        Spi::run("SELECT morlet_decode_interval(ARRAY[morlet_encode_chunk(ARRAY[1]::float8[],1),morlet_encode_chunk(ARRAY[2]::float8[],1)],ARRAY[5,0]::bigint[],0,10)").unwrap();
+    }
+    #[pg_test(error = "chunks and starts differ in length")]
+    fn decode_interval_requires_matching_arrays() {
+        Spi::run("SELECT morlet_decode_interval(ARRAY[morlet_encode_chunk(ARRAY[1]::float8[],1)],ARRAY[0,5]::bigint[],0,10)").unwrap();
     }
     #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
     fn encoded_chunk_check_rejects_checksum_mismatch() {

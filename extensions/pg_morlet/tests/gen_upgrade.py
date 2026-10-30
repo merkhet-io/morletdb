@@ -26,8 +26,9 @@ def rust(name):
 
 
 # Filled in as 0.3.1 changes land.
-NEW_RUST = ["morlet_simple_value_floors"]
-CHANGED_BODY = ["morlet_value_spreads", "morlet_compare_to_history", "morlet_history_neighbors"]
+NEW_RUST = ["morlet_simple_value_floors", "morlet_decode_interval"]
+CHANGED_BODY = ["morlet_value_spreads", "morlet_compare_to_history", "morlet_history_neighbors",
+                "morlet_stream_relations", "morlet_read_interval"]
 NEW_SQL = ["morlet_level_track"]
 
 out = ["""-- pg_morlet 0.3.0 (as released in 0.3.0-alpha.1) -> 0.3.1.
