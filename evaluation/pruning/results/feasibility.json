@@ -1,0 +1,49 @@
+{
+ "same_station": {
+  "queries": 1826,
+  "candidates_per_query": 198.61555312157722,
+  "prunable_fraction_mean": {
+   "spectral_full": 0.21143937155986986,
+   "keogh_full": 0.3787015902058608,
+   "min_full": 0.458833291959421,
+   "spectral_32": 0.17873159038010356,
+   "keogh_32": 0.27907569966315865,
+   "min_32": 0.37428854367545034
+  },
+  "prunable_fraction_p10": {
+   "spectral_full": 0.0,
+   "keogh_full": 0.12025316455696203,
+   "min_full": 0.1444866920152091,
+   "spectral_32": 0.0,
+   "keogh_32": 0.03310599284436494,
+   "min_32": 0.04176356589147287
+  },
+  "median_bound_over_true_correlation_min_full": 1.8318214224117557
+ },
+ "unfiltered": {
+  "queries": 1826,
+  "candidates_per_query": 1825,
+  "prunable_fraction_mean": {
+   "spectral_full": 0.45477771609476514,
+   "keogh_full": 0.45377755105102857,
+   "min_full": 0.6305444942909871,
+   "spectral_32": 0.40061426277963663,
+   "keogh_32": 0.34360635568425635,
+   "min_32": 0.5519872766283065
+  },
+  "prunable_fraction_p10": {
+   "spectral_full": 0.03287671232876712,
+   "keogh_full": 0.2347945205479452,
+   "min_full": 0.34356164383561644,
+   "spectral_32": 0.02904109589041096,
+   "keogh_32": 0.1147945205479452,
+   "min_32": 0.2019178082191781
+  },
+  "median_bound_over_true_correlation_min_full": 1.8295250571647135
+ },
+ "summary_bytes_float16": {
+  "spectral_32": 64,
+  "keogh_32": 64,
+  "stored_envelope": 821
+ }
+}
