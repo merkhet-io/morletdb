@@ -1,5 +1,10 @@
 # G1: does a gammatone filter bank expose bearing fault frequencies better than kurtogram bands?
 
+**Result: CLOSE.** With the same bands and selection rule, the gammatone shape makes no
+difference: Δ −0.021 [−0.071, +0.025]. The auditory ERB bank's higher score is a
+bandwidth effect of the peak/median measure, and it brings no gain in detections. See
+[RESULTS.md](RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this line. The harness and its synthetic tests
 are in the same commit. No CWRU envelope spectrum has been computed; only file names,
 variable names and lengths were read. Changes after the freeze are logged under "Changes

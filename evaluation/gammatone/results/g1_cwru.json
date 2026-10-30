@@ -1,0 +1,253 @@
+{
+ "arms": {
+  "RAW DE": {
+   "mean_score": 1.7520334120870005,
+   "detected": 41,
+   "files": 60,
+   "by_element": {
+    "inner": "13/16",
+    "ball": "4/16",
+    "outer": "24/28"
+   }
+  },
+  "FK DE": {
+   "mean_score": 1.6466296790065391,
+   "detected": 41,
+   "files": 60,
+   "by_element": {
+    "inner": "12/16",
+    "ball": "5/16",
+    "outer": "24/28"
+   }
+  },
+  "FK-RER DE": {
+   "mean_score": 1.8596416404220284,
+   "detected": 46,
+   "files": 60,
+   "by_element": {
+    "inner": "15/16",
+    "ball": "5/16",
+    "outer": "26/28"
+   }
+  },
+  "GTFK-K DE": {
+   "mean_score": 1.624300314104753,
+   "detected": 38,
+   "files": 60,
+   "by_element": {
+    "inner": "12/16",
+    "ball": "2/16",
+    "outer": "24/28"
+   }
+  },
+  "GTFK-RER DE": {
+   "mean_score": 1.8386184729818582,
+   "detected": 47,
+   "files": 60,
+   "by_element": {
+    "inner": "16/16",
+    "ball": "6/16",
+    "outer": "25/28"
+   }
+  },
+  "GTERB-K DE": {
+   "mean_score": 1.681635407940717,
+   "detected": 38,
+   "files": 60,
+   "by_element": {
+    "inner": "11/16",
+    "ball": "3/16",
+    "outer": "24/28"
+   }
+  },
+  "GTERB-RER DE": {
+   "mean_score": 1.9338310895603157,
+   "detected": 40,
+   "files": 60,
+   "by_element": {
+    "inner": "12/16",
+    "ball": "3/16",
+    "outer": "25/28"
+   }
+  },
+  "RAW FE": {
+   "mean_score": 1.582505697040511,
+   "detected": 35,
+   "files": 52,
+   "by_element": {
+    "inner": "12/12",
+    "ball": "0/12",
+    "outer": "23/28"
+   }
+  },
+  "FK FE": {
+   "mean_score": 1.5390434915939033,
+   "detected": 32,
+   "files": 52,
+   "by_element": {
+    "inner": "10/12",
+    "ball": "0/12",
+    "outer": "22/28"
+   }
+  },
+  "FK-RER FE": {
+   "mean_score": 1.7175975046093308,
+   "detected": 35,
+   "files": 52,
+   "by_element": {
+    "inner": "12/12",
+    "ball": "0/12",
+    "outer": "23/28"
+   }
+  },
+  "GTFK-K FE": {
+   "mean_score": 1.5654196594565284,
+   "detected": 34,
+   "files": 52,
+   "by_element": {
+    "inner": "12/12",
+    "ball": "0/12",
+    "outer": "22/28"
+   }
+  },
+  "GTFK-RER FE": {
+   "mean_score": 1.698402335732073,
+   "detected": 37,
+   "files": 52,
+   "by_element": {
+    "inner": "12/12",
+    "ball": "1/12",
+    "outer": "24/28"
+   }
+  },
+  "GTERB-K FE": {
+   "mean_score": 1.5694410837356638,
+   "detected": 35,
+   "files": 52,
+   "by_element": {
+    "inner": "12/12",
+    "ball": "1/12",
+    "outer": "22/28"
+   }
+  },
+  "GTERB-RER FE": {
+   "mean_score": 1.891940877328478,
+   "detected": 34,
+   "files": 52,
+   "by_element": {
+    "inner": "9/12",
+    "ball": "0/12",
+    "outer": "25/28"
+   }
+  }
+ },
+ "comparisons": {
+  "primary GTFK-RER vs FK-RER": {
+   "candidate": "GTFK-RER",
+   "comparator": "FK-RER",
+   "files": 60,
+   "clusters": 15,
+   "delta": -0.021023167440170028,
+   "ci95": [
+    -0.07144686373779018,
+    0.024733652943626557
+   ],
+   "files_ahead": 28
+  },
+  "secondary GTERB-RER vs FK-RER": {
+   "candidate": "GTERB-RER",
+   "comparator": "FK-RER",
+   "files": 60,
+   "clusters": 15,
+   "delta": 0.07418944913828729,
+   "ci95": [
+    -0.0135766719319445,
+    0.16796147103532882
+   ],
+   "files_ahead": 39
+  },
+  "GTFK-K vs FK": {
+   "candidate": "GTFK-K",
+   "comparator": "FK",
+   "files": 60,
+   "clusters": 15,
+   "delta": -0.022329364901786233,
+   "ci95": [
+    -0.09082198718136668,
+    0.04746974187090052
+   ],
+   "files_ahead": 24
+  },
+  "GTERB-K vs FK": {
+   "candidate": "GTERB-K",
+   "comparator": "FK",
+   "files": 60,
+   "clusters": 15,
+   "delta": 0.0350057289341782,
+   "ci95": [
+    -0.04838131673580943,
+    0.12754663922971612
+   ],
+   "files_ahead": 38
+  },
+  "FK-RER vs FK": {
+   "candidate": "FK-RER",
+   "comparator": "FK",
+   "files": 60,
+   "clusters": 15,
+   "delta": 0.21301196141548956,
+   "ci95": [
+    0.07731594792622794,
+    0.344416534242192
+   ],
+   "files_ahead": 40
+  },
+  "RAW vs FK": {
+   "candidate": "RAW",
+   "comparator": "FK",
+   "files": 60,
+   "clusters": 15,
+   "delta": 0.10540373308046146,
+   "ci95": [
+    0.008525500705941448,
+    0.21530416735855148
+   ],
+   "files_ahead": 42
+  },
+  "GTERB-RER vs GTFK-RER": {
+   "candidate": "GTERB-RER",
+   "comparator": "GTFK-RER",
+   "files": 60,
+   "clusters": 15,
+   "delta": 0.09521261657845732,
+   "ci95": [
+    -0.009717940941762461,
+    0.20248712072699232
+   ],
+   "files_ahead": 35
+  },
+  "FE GTFK-RER vs FK-RER": {
+   "candidate": "GTFK-RER",
+   "comparator": "FK-RER",
+   "files": 52,
+   "clusters": 13,
+   "delta": -0.01919516887725816,
+   "ci95": [
+    -0.06173936334056485,
+    0.03714705510649102
+   ],
+   "files_ahead": 25
+  }
+ },
+ "normal_false_detections": {
+  "RAW": "0/12",
+  "FK": "0/12",
+  "FK-RER": "4/12",
+  "GTFK-K": "0/12",
+  "GTFK-RER": "3/12",
+  "GTERB-K": "0/12",
+  "GTERB-RER": "4/12"
+ },
+ "decision": "close",
+ "secondary_rule": "inconclusive"
+}
