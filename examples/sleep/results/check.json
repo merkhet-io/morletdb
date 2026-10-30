@@ -1,0 +1,31 @@
+{
+ "raw_and_features": {
+  "raw_epochs_checked": 300,
+  "raw_bitwise_equal": 300,
+  "feature_epochs": 195469,
+  "feature_epochs_in_s1": 195469,
+  "feature_max_abs_difference": 0.0,
+  "feature_exact": 195469
+ },
+ "index": {
+  "queries": 500,
+  "k": 40,
+  "ef_search": 200,
+  "recall_tie_aware": 1.0,
+  "uses_hnsw": true
+ },
+ "sizes": {
+  "chunks_bytes": 3169533952,
+  "epochs_bytes": 153198592,
+  "index_bytes": 35913728
+ },
+ "samples_stored": 587271000,
+ "reproduction": {
+  "held_out_epochs": 98159,
+  "epoch_agreement_with_s1": 0.9999694373414562,
+  "mean_kappa_demo": 0.5827744142303524,
+  "mean_kappa_s1_recomputed": 0.5827868448889758,
+  "mean_kappa_s1_reported": 0.5827868448889758,
+  "max_subject_kappa_difference": 0.000466189246361548
+ }
+}
