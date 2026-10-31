@@ -7,6 +7,9 @@
 //! its fixed subframes, plus last-place corrections when needed. A chunk with any sample off the grid codes the float64
 //! bit patterns, mapped to order-preserving integers, with the same coder, or is
 //! stored as plain float64 when that is not smaller. Every kind decodes bitwise.
+//! A chunk off the plain grid but on a shifted one, offset + k * step (EDF and
+//! other calibrated formats whose physical range is not symmetric), uses an
+//! offset grid (format version 3) when that is smaller than plain float64.
 //! The stage-1 compression benchmark (evaluation/compression) motivates this:
 //! a standard codec on native integers beat every decomposition codec tested.
 use crate::{validate, SignalError, MAX_SAMPLES};
@@ -14,8 +17,10 @@ use std::fmt;
 
 /// Version 2 appends a CRC-32C of all preceding bytes. Version 1 (no checksum)
 /// existed only on an unreleased development branch and is rejected, never
-/// reinterpreted.
-pub const FORMAT_VERSION: u8 = 2;
+/// reinterpreted. Version 3 is version 2 plus an offset in the grid header; it
+/// is written only for offset grids, so every other chunk keeps its version-2 bytes.
+pub const FORMAT_VERSION: u8 = 3;
+const BASE_VERSION: u8 = 2;
 const CHECKSUM_BYTES: usize = 4;
 const KIND_RAW: u8 = 0;
 const KIND_GRID: u8 = 1;
@@ -75,6 +80,9 @@ impl Kind {
 struct Grid {
     mode: u8,
     scale: f64,
+    /// Added to every grid value; None for version-2 grids, which never add it
+    /// (0.0 + -0.0 would lose the sign of a negative zero).
+    offset: Option<f64>,
 }
 impl Grid {
     fn new(quantum: f64) -> Result<Self, CodecError> {
@@ -88,11 +96,13 @@ impl Grid {
             Ok(Self {
                 mode: MODE_DIV,
                 scale: rounded,
+                offset: None,
             })
         } else {
             Ok(Self {
                 mode: MODE_MUL,
                 scale: quantum,
+                offset: None,
             })
         }
     }
@@ -106,6 +116,8 @@ impl Grid {
     /// Nearest grid index, if `x` is within NEAR_GRID steps of it. The exact
     /// float64 is restored from a correction in units of the last place.
     fn index(self, x: f64) -> Option<i64> {
+        let x0 = x;
+        let x = self.offset.map_or(x, |o| x - o);
         let k = if self.mode == MODE_DIV {
             (x * self.scale).round()
         } else {
@@ -115,13 +127,19 @@ impl Grid {
             return None;
         }
         let k = k as i64;
-        ((self.value(k) - x).abs() <= NEAR_GRID * self.step()).then_some(k)
+        ((self.value(k) - x0).abs() <= NEAR_GRID * self.step()).then_some(k)
     }
-    fn value(self, k: i64) -> f64 {
+    fn unshifted(self, k: i64) -> f64 {
         if self.mode == MODE_DIV {
             k as f64 / self.scale
         } else {
             k as f64 * self.scale
+        }
+    }
+    fn value(self, k: i64) -> f64 {
+        match self.offset {
+            Some(o) => o + self.unshifted(k),
+            None => self.unshifted(k),
         }
     }
 }
@@ -137,10 +155,134 @@ pub fn encode(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
 fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
     validate(samples).map_err(CodecError::Signal)?;
     let grid = Grid::new(quantum)?;
+    // Chunks on the plain grid keep their version-2 encoding. Only a chunk off it
+    // tries a shifted grid, before the costlier float-bit coding it would replace.
+    match samples
+        .iter()
+        .map(|&x| grid.index(x))
+        .collect::<Option<Vec<i64>>>()
+    {
+        Some(ints) => Ok(encode_version2(samples, grid, ints)),
+        None => Ok(encode_offset_grid(samples, grid).unwrap_or_else(|| {
+            let mut out = vec![BASE_VERSION];
+            encode_off_grid(samples, &mut out);
+            out
+        })),
+    }
+}
+
+/// Least-cost corrections (fewest nonzero, then smallest) over candidate grids.
+fn best_grid(samples: &[f64], ints: &[i64], candidates: Vec<Grid>) -> (Grid, Vec<i64>) {
+    let corrections = |g: Grid| -> Vec<i64> {
+        ints.iter()
+            .zip(samples)
+            .map(|(&k, &x)| ordered_bits(x).wrapping_sub(ordered_bits(g.value(k))))
+            .collect()
+    };
+    let cost = |c: &Vec<i64>| {
+        let nonzero = c.iter().filter(|&&v| v != 0).count();
+        let size: u128 = c.iter().map(|&v| v.unsigned_abs() as u128).sum();
+        (nonzero, size)
+    };
+    candidates
+        .into_iter()
+        .map(|g| (g, corrections(g)))
+        .min_by_key(|(_, c)| cost(c))
+        .expect("at least one candidate")
+}
+
+/// Floats within `ulps` units in the last place of `x`, in increasing order.
+fn ulp_neighbours(x: f64, ulps: u64) -> Vec<f64> {
+    let base = ordered_bits(x);
+    (0..=2 * ulps)
+        .map(|i| float_from_ordered(base - ulps as i64 + i as i64))
+        .filter(|v| v.is_finite())
+        .collect()
+}
+
+fn put_grid(out: &mut Vec<u8>, n: usize, grid: Grid, ints: &[i64], fix: &[i64]) {
+    out.push(KIND_GRID);
+    put_varint(out, n as u64);
+    out.push(grid.mode);
+    out.extend_from_slice(&grid.scale.to_le_bytes());
+    if let Some(o) = grid.offset {
+        out.extend_from_slice(&o.to_le_bytes());
+    }
+    let has_fix = fix.iter().any(|&v| v != 0);
+    out.push(has_fix as u8);
+    let mut stream = Vec::new();
+    encode_ints(ints, &mut stream);
+    put_varint(out, stream.len() as u64);
+    out.extend(stream);
+    if has_fix {
+        encode_ints(fix, out);
+    }
+}
+
+/// Version 3: samples at offset + k * step. The offset comes from the first sample;
+/// step and offset are then refitted to within one ulp of the values that need
+/// the fewest corrections. None when the chunk is not on any shifted grid or the
+/// result is not smaller than plain float64.
+fn encode_offset_grid(samples: &[f64], grid: Grid) -> Option<Vec<u8>> {
+    let x0 = samples[0];
+    let k0 = (if grid.mode == MODE_DIV {
+        x0 * grid.scale
+    } else {
+        x0 / grid.scale
+    })
+    .round();
+    if !k0.is_finite() || k0.abs() > MAX_GRID_INDEX {
+        return None;
+    }
+    let first = x0 - grid.unshifted(k0 as i64);
+    let start = Grid {
+        offset: Some(first),
+        ..grid
+    };
+    let ints: Vec<i64> = samples
+        .iter()
+        .map(|&x| start.index(x))
+        .collect::<Option<_>>()?;
+    let (lo, hi) = (0..ints.len()).fold((0, 0), |(lo, hi), i| {
+        (
+            if ints[i] < ints[lo] { i } else { lo },
+            if ints[i] > ints[hi] { i } else { hi },
+        )
+    });
+    let mut scales = vec![grid.scale];
+    if grid.mode == MODE_MUL && ints[hi] > ints[lo] {
+        let fitted = (samples[hi] - samples[lo]) / (ints[hi] - ints[lo]) as f64;
+        if fitted.is_finite() && fitted > 0.0 {
+            scales.extend(ulp_neighbours(fitted, 1));
+        }
+    }
+    let mut candidates = vec![start];
+    for scale in scales {
+        let g = Grid {
+            scale,
+            offset: Some(0.0),
+            ..grid
+        };
+        let fitted = samples[lo] - g.unshifted(ints[lo]);
+        for offset in ulp_neighbours(fitted, 1) {
+            candidates.push(Grid {
+                offset: Some(offset),
+                ..g
+            });
+        }
+    }
+    let (grid, fix) = best_grid(samples, &ints, candidates);
     let mut out = vec![FORMAT_VERSION];
-    let indices: Option<Vec<i64>> = samples.iter().map(|&x| grid.index(x)).collect();
-    match indices {
-        Some(ints) => {
+    put_grid(&mut out, samples.len(), grid, &ints, &fix);
+    (out.len() < 3 + 8 * samples.len()).then_some(out)
+}
+
+/// The version-2 grid encoding of samples at grid indices `ints`, or float-bit
+/// coding when that grid encoding is not smaller than plain float64.
+fn encode_version2(samples: &[f64], grid: Grid, ints: Vec<i64>) -> Vec<u8> {
+    let mut out = vec![BASE_VERSION];
+    {
+        {
             // Data scaled in float64 by a slightly different step (e.g. a
             // calibrated ADC step) needs no corrections at the fitted step.
             let mut candidates = vec![grid];
@@ -160,48 +302,21 @@ fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
                     candidates.push(Grid {
                         mode: MODE_MUL,
                         scale: s,
+                        offset: None,
                     });
                     s = f64::from_bits(s.to_bits() + 1);
                 }
             }
-            let corrections = |g: Grid| -> Vec<i64> {
-                ints.iter()
-                    .zip(samples)
-                    .map(|(&k, &x)| ordered_bits(x).wrapping_sub(ordered_bits(g.value(k))))
-                    .collect()
-            };
-            let cost = |c: &Vec<i64>| {
-                let nonzero = c.iter().filter(|&&v| v != 0).count();
-                let size: u128 = c.iter().map(|&v| v.unsigned_abs() as u128).sum();
-                (nonzero, size)
-            };
-            let (grid, fix) = candidates
-                .into_iter()
-                .map(|g| (g, corrections(g)))
-                .min_by_key(|(_, c)| cost(c))
-                .expect("at least one candidate");
-            out.push(KIND_GRID);
-            put_varint(&mut out, samples.len() as u64);
-            out.push(grid.mode);
-            out.extend_from_slice(&grid.scale.to_le_bytes());
-            let has_fix = fix.iter().any(|&v| v != 0);
-            out.push(has_fix as u8);
-            let mut stream = Vec::new();
-            encode_ints(&ints, &mut stream);
-            put_varint(&mut out, stream.len() as u64);
-            out.extend(stream);
-            if has_fix {
-                encode_ints(&fix, &mut out);
-            }
+            let (grid, fix) = best_grid(samples, &ints, candidates);
+            put_grid(&mut out, samples.len(), grid, &ints, &fix);
             if out.len() < 3 + 8 * samples.len() {
-                return Ok(out);
+                return out;
             }
             out.truncate(1);
             encode_off_grid(samples, &mut out);
         }
-        None => encode_off_grid(samples, &mut out),
     }
-    Ok(out)
+    out
 }
 
 fn encode_off_grid(samples: &[f64], out: &mut Vec<u8>) {
@@ -222,8 +337,8 @@ fn encode_off_grid(samples: &[f64], out: &mut Vec<u8>) {
 fn verified(encoded: &[u8]) -> Result<&[u8], CodecError> {
     match encoded.first() {
         None => return Err(CodecError::Corrupt("empty")),
-        Some(&FORMAT_VERSION) => {}
-        Some(&v) if v < FORMAT_VERSION => return Err(CodecError::UnsupportedVersion(v)),
+        Some(&BASE_VERSION) | Some(&FORMAT_VERSION) => {}
+        Some(&v) if v < BASE_VERSION => return Err(CodecError::UnsupportedVersion(v)),
         Some(_) => return Err(CodecError::Corrupt("unknown format version")),
     }
     if encoded.len() < 3 + CHECKSUM_BYTES {
@@ -241,10 +356,10 @@ pub fn kind(encoded: &[u8]) -> Result<Kind, CodecError> {
     kind_of(verified(encoded)?)
 }
 fn kind_of(body: &[u8]) -> Result<Kind, CodecError> {
-    match body[1] {
-        KIND_GRID => Ok(Kind::Grid),
-        KIND_FLOAT => Ok(Kind::Float),
-        KIND_RAW => Ok(Kind::Raw),
+    match (body[0], body[1]) {
+        (_, KIND_GRID) => Ok(Kind::Grid),
+        (BASE_VERSION, KIND_FLOAT) => Ok(Kind::Float),
+        (BASE_VERSION, KIND_RAW) => Ok(Kind::Raw),
         _ => Err(CodecError::Corrupt("unknown kind")),
     }
 }
@@ -274,16 +389,27 @@ pub fn decode(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
             .map(float_from_ordered)
             .collect(),
         Kind::Grid => {
+            let shifted = encoded[0] == FORMAT_VERSION;
+            let size = if shifted { 17 } else { 9 };
             let header = encoded
-                .get(pos..pos + 9)
+                .get(pos..pos + size)
                 .ok_or(CodecError::Corrupt("truncated"))?;
             let mode = header[0];
             let scale = f64::from_le_bytes(header[1..9].try_into().unwrap());
-            if mode > MODE_DIV || !scale.is_finite() || scale <= 0.0 {
+            let offset = shifted.then(|| f64::from_le_bytes(header[9..17].try_into().unwrap()));
+            if mode > MODE_DIV
+                || !scale.is_finite()
+                || scale <= 0.0
+                || offset.is_some_and(|o| !o.is_finite())
+            {
                 return Err(CodecError::Corrupt("grid header"));
             }
-            let grid = Grid { mode, scale };
-            pos += 9;
+            let grid = Grid {
+                mode,
+                scale,
+                offset,
+            };
+            pos += size;
             let has_fix = *encoded.get(pos).ok_or(CodecError::Corrupt("truncated"))?;
             pos += 1;
             if has_fix > 1 {
@@ -668,6 +794,106 @@ mod tests {
         assert!(noisy_bytes < exact_bytes + 32768 / 8 * 3, "{noisy_bytes}");
     }
 
+    /// EDF physical values, computed as Sleep-EDF readers do:
+    /// (d - dmin) * (pmax - pmin) / (dmax - dmin) + pmin.
+    fn edf(pmin: f64, pmax: f64, n: usize, seed: &mut u64) -> (Vec<f64>, f64) {
+        let (dmin, dmax) = (-2048.0, 2047.0);
+        let mut d = 0i64;
+        let x = (0..n)
+            .map(|i| {
+                d = (d + (lcg(seed) % 41) as i64 - 20).clamp(-2048, 2047);
+                let d = d + ((i as f64 / 30.).sin() * 300.) as i64;
+                (d.clamp(-2048, 2047) as f64 - dmin) * (pmax - pmin) / (dmax - dmin) + pmin
+            })
+            .collect();
+        (x, (pmax - pmin) / (dmax - dmin))
+    }
+
+    #[test]
+    fn asymmetric_edf_ranges_use_an_offset_grid() {
+        let mut seed = 21;
+        let (x, step) = edf(-208.0, 209.0, 4096, &mut seed);
+        // The offset (5.41 steps) puts the samples on no grid through zero ...
+        let grid = Grid::new(step).unwrap();
+        assert!(x.iter().any(|&v| grid.index(v).is_none()));
+        let mut plain = vec![BASE_VERSION];
+        encode_off_grid(&x, &mut plain);
+        assert_eq!(plain[1], KIND_FLOAT);
+        // ... but on step and offset they are integers: version 3, a fraction of float coding.
+        for quantum in [step, step / 2.0] {
+            let encoded = encode(&x, quantum).unwrap();
+            assert_eq!(encoded[0], FORMAT_VERSION);
+            let (kind, bytes) = roundtrip(&x, quantum);
+            assert_eq!(kind, Kind::Grid);
+            assert!(
+                bytes * 8 < 4096 * 12 && bytes * 3 < plain.len(),
+                "{bytes} vs {}",
+                plain.len()
+            );
+        }
+    }
+
+    #[test]
+    fn chunks_on_the_plain_grid_keep_version_2() {
+        let mut seed = 22;
+        // Symmetric range: a half-step grid through zero, version 2.
+        let (x, step) = edf(-192.0, 192.0, 4096, &mut seed);
+        assert_eq!(encode(&x, step / 2.0).unwrap()[0], BASE_VERSION);
+        assert_eq!(roundtrip(&x, step / 2.0).0, Kind::Grid);
+        // Exact grids keep their version-2 bytes.
+        let counts: Vec<f64> = (0..4096)
+            .map(|i| ((i * 37) % 1001) as f64 - 500.0)
+            .collect();
+        assert_eq!(encode(&counts, 1.0).unwrap()[0], BASE_VERSION);
+        let decimals: Vec<f64> = (0..2000)
+            .map(|k| format!("{:.3}", k as f64 / 1000.).parse().unwrap())
+            .collect();
+        assert_eq!(encode(&decimals, 0.001).unwrap()[0], BASE_VERSION);
+    }
+
+    #[test]
+    fn offset_grids_roundtrip_signs_decimals_and_extremes() {
+        // Decimal grid shifted by 0.4 of a step, in division mode.
+        let shifted: Vec<f64> = (-3000..3000).map(|k| 0.0004 + k as f64 / 1000.).collect();
+        let encoded = encode(&shifted, 0.001).unwrap();
+        assert_eq!(
+            (encoded[0], roundtrip(&shifted, 0.001).0),
+            (FORMAT_VERSION, Kind::Grid)
+        );
+        // Negative zero and both range ends inside an offset chunk.
+        let mut x: Vec<f64> = (0..512).map(|k| 0.25 + k as f64).collect();
+        x[7] = -0.0;
+        x[8] = 1e9 - 0.75;
+        x[9] = -1e9 + 0.25;
+        roundtrip(&x, 1.0);
+        for n in [1, 2, 3, 257] {
+            roundtrip(&vec![0.3; n], 1.0);
+            roundtrip(&(0..n).map(|k| 0.3 + k as f64).collect::<Vec<_>>(), 1.0);
+        }
+    }
+
+    #[test]
+    fn malformed_version3_chunks_are_rejected() {
+        let x: Vec<f64> = (0..100).map(|k| 0.25 + (k % 9) as f64).collect();
+        let good = encode(&x, 1.0).unwrap();
+        assert_eq!(good[0], FORMAT_VERSION);
+        let body = &good[..good.len() - CHECKSUM_BYTES];
+        // Non-finite offset (bytes 12..20: version, kind, n, mode, scale, offset).
+        let mut bad = body.to_vec();
+        bad[12..20].copy_from_slice(&f64::NAN.to_le_bytes());
+        assert_eq!(decode(&seal(bad)), Err(CodecError::Corrupt("grid header")));
+        // Version 3 carries grids only.
+        for k in [KIND_FLOAT, KIND_RAW] {
+            let mut bad = body.to_vec();
+            bad[1] = k;
+            assert_eq!(decode(&seal(bad)), Err(CodecError::Corrupt("unknown kind")));
+        }
+        // A version-2 reader layout (no offset) misparses and is caught.
+        let mut bad = body.to_vec();
+        bad[0] = BASE_VERSION;
+        assert!(decode(&seal(bad)).is_err());
+    }
+
     #[test]
     fn off_grid_chunks_code_float_bits_or_fall_back_to_raw() {
         let mut samples: Vec<f64> = (0..1000).map(|i| i as f64).collect();
@@ -743,6 +969,7 @@ mod tests {
             (0..1000).map(|i| (i % 17) as f64).collect::<Vec<f64>>(),
             (0..1000).map(|i| (i as f64 / 9.).sin()).collect(),
             vec![0.5, -0.0, 1e9],
+            (0..1000).map(|i| (i % 17) as f64 + 0.3).collect(),
         ] {
             let good = encode(&samples, 1.0).unwrap();
             // Single-bit flips in the version, kind, header, payload and checksum.
@@ -781,7 +1008,7 @@ mod tests {
     fn checksum_catches_mutations_that_still_decode_to_valid_samples() {
         let samples = [0.25f64, 0.5, 0.75];
         let raw = seal({
-            let mut body = vec![FORMAT_VERSION, KIND_RAW, 3];
+            let mut body = vec![BASE_VERSION, KIND_RAW, 3];
             body.extend(samples.iter().flat_map(|x| x.to_le_bytes()));
             body
         });
@@ -802,7 +1029,7 @@ mod tests {
         assert_eq!(decode(&v1), Err(CodecError::UnsupportedVersion(1)));
         assert_eq!(kind(&v1), Err(CodecError::UnsupportedVersion(1)));
         assert_eq!(
-            decode(&[3, 1, 1, 0, 0, 0, 0]),
+            decode(&[4, 1, 1, 0, 0, 0, 0]),
             Err(CodecError::Corrupt("unknown format version"))
         );
     }
@@ -814,7 +1041,7 @@ mod tests {
             encode(&[f64::INFINITY], 1.0),
             Err(CodecError::Signal(_))
         ));
-        let mut raw = vec![FORMAT_VERSION, KIND_RAW, 2];
+        let mut raw = vec![BASE_VERSION, KIND_RAW, 2];
         raw.extend(f64::INFINITY.to_le_bytes());
         raw.extend(1.5f64.to_le_bytes());
         assert!(matches!(
@@ -824,7 +1051,7 @@ mod tests {
         raw.pop();
         assert_eq!(decode(&seal(raw)), Err(CodecError::Corrupt("raw length")));
         assert_eq!(
-            decode(&seal(vec![FORMAT_VERSION, 9, 1])),
+            decode(&seal(vec![BASE_VERSION, 9, 1])),
             Err(CodecError::Corrupt("unknown kind"))
         );
         let grid = encode(&[1.0, 2.0, 3.0, 4.0], 1.0).unwrap();

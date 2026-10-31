@@ -1,0 +1,223 @@
+{
+ "main": [
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 5.8514680420048535,
+    "samples_per_s": 578316.4114898866,
+    "grid_float_raw": [
+     0,
+     826,
+     1
+    ],
+    "stored_value_bits_per_sample": 60.207574468085106
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 4.005095166998217,
+    "samples_per_s": 629947.5779725269,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  },
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 5.859284332982497,
+    "samples_per_s": 577544.9368365904,
+    "grid_float_raw": [
+     0,
+     826,
+     1
+    ],
+    "stored_value_bits_per_sample": 60.207574468085106
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 3.994828458002303,
+    "samples_per_s": 631566.543225658,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  },
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 5.896023540990427,
+    "samples_per_s": 573946.1480222564,
+    "grid_float_raw": [
+     0,
+     826,
+     1
+    ],
+    "stored_value_bits_per_sample": 60.207574468085106
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 4.018733292003162,
+    "samples_per_s": 627809.7640917085,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  },
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 6.025386208988493,
+    "samples_per_s": 561623.7503501184,
+    "grid_float_raw": [
+     0,
+     826,
+     1
+    ],
+    "stored_value_bits_per_sample": 60.207574468085106
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 4.182418582990067,
+    "samples_per_s": 603239.4773352105,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  },
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 6.103362958005164,
+    "samples_per_s": 554448.4283966022,
+    "grid_float_raw": [
+     0,
+     826,
+     1
+    ],
+    "stored_value_bits_per_sample": 60.207574468085106
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 4.051812999998219,
+    "samples_per_s": 622684.2156834753,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  }
+ ],
+ "offset_grid": [
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 5.465488958987407,
+    "samples_per_s": 619157.7780859619,
+    "grid_float_raw": [
+     827,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 15.354971631205673
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 3.995598292007344,
+    "samples_per_s": 631444.8589706632,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  },
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 5.443899917008821,
+    "samples_per_s": 621613.1912027061,
+    "grid_float_raw": [
+     827,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 15.354971631205673
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 4.041752749995794,
+    "samples_per_s": 624234.1271376943,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  },
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 5.530227499984903,
+    "samples_per_s": 611909.727042737,
+    "grid_float_raw": [
+     827,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 15.354971631205673
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 3.987309541000286,
+    "samples_per_s": 632757.4957641893,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  },
+  {
+   "SC4002": {
+    "samples": 3384000,
+    "append_s": 5.3648514579981565,
+    "samples_per_s": 630772.3571647047,
+    "grid_float_raw": [
+     827,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 15.354971631205673
+   },
+   "SC4001": {
+    "samples": 2523000,
+    "append_s": 4.0119800829852466,
+    "samples_per_s": 628866.5316909247,
+    "grid_float_raw": [
+     616,
+     0,
+     0
+    ],
+    "stored_value_bits_per_sample": 14.031261196987712
+   }
+  }
+ ],
+ "note": "main runs 4-5 were intended as offset-grid runs but a shared cargo target directory installed main's library; they are main measurements (SC4002 float-coded at 60.2 bits/sample)."
+}
