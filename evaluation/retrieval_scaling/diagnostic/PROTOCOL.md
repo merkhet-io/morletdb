@@ -71,3 +71,22 @@ Coverage minus final recall identifies loss from interactions, not from the shor
 ## Not in R2-D
 
 No HNSW tuning, no larger K, no new index or data, no change to R2's committed results.
+
+## Amendment 1 (committed after the run above, before H\* is measured)
+
+**Finding from the first run:** `EXPLAIN` of the H statement (R2's stage 1, unchanged)
+shows `Seq Scan on r2_hv` + `Sort`, not the HNSW index. The query vector comes from a
+subquery, which pgvector's index scan cannot use as its ordering key. R2's H arms and this
+study's H arms were therefore **exact** zero-lag shortlists, which is why they match E-K
+exactly. R2's conclusions about HNSW do not hold; its numbers measure the zero-lag
+candidate metric only.
+
+**Added arm H\*-K, K ∈ {100, 1000}:** the same statement with the query vector passed as a
+`halfvec` parameter (fetched first by primary key), so that the existing index
+`r2_hv_hnsw` can be used; same `ef_search = max(K, 100)` and `iterative_scan =
+relaxed_order`; candidates sorted explicitly; same re-ranking. No new index, no tuning.
+- **Plan check:** for one query per tier, `EXPLAIN` must show an index scan using
+  `r2_hv_hnsw`; otherwise H\* is reported as not exercisable at that tier (the planner may
+  prefer a sequential scan for selective tier filters) and its numbers are not used.
+- **Measures:** as for H, plus agreement with E-K.
+- **Interpretation:** the rules above, applied to H\*-1000 instead of H-1000.
