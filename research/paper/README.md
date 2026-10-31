@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-Working draft 0.2: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
+Working draft 0.3: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
 
 Not yet submission-ready; see "Before submission" below.
 
@@ -16,6 +16,27 @@ cd research/paper && tectonic -X compile morletdb.tex    # or: latexmk -pdf morl
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in draft 0.3 (review of 0.2)
+
+- **R2-D diagnostic** (`evaluation/retrieval_scaling/diagnostic/`, protocol frozen before
+  measuring; consumed data, not a confirmation). Exact zero-lag shortlists (E-K, plan-checked
+  sequential scans) against HNSW shortlists, both re-ranked exactly.
+  - Found that **R2's HNSW arms never used the index** (subquery query vector; planner ran an
+    exact scan). Logged in R2's protocol and report; an amendment added H\*-K with the
+    index actually used.
+  - Result: H\*-1000 recall 0.744 vs E-1000 0.743 at 235k windows; shortlist agreement
+    0.98–1.00; coverage = recall. The loss is the zero-lag candidate metric, not ANN.
+- **Storage overhead:** 12.9% (R1b) vs 60.2% (R2) of raw now in the abstract and Section 6,
+  with a measured decomposition (stride ×2.0, raw compressibility ×2.46, overheads ×0.95)
+  and which structures coexist or could replace each other.
+- **Narrowed claims:** compression findings tied to the tested DuckDB ALP implementation,
+  the nominal quantum and the fixed Parquet encoding; the correction stream explains the
+  extra cost over MorletDB's integer path, not the whole FLAC gap; calibration replay is an
+  untested hypothesis; linear scaling and the ~8,000-window mark qualified as measured range
+  and interpolation; freshness stated per data slice.
+- **Corrections to earlier reports:** R2's slice overlaps 0.1% of samples read by R1;
+  B1's Sleep-EDF input had been measured for MorletDB storage by the offset-grid check.
 
 ## What changed from draft 0.1
 

@@ -45,37 +45,45 @@ def storage():
 
 
 def scaling():
-    path = ROOT / "evaluation/retrieval_scaling/results/bench.json"
-    if not path.exists():
-        return
-    b = json.loads(path.read_text())
-    load = json.loads((ROOT / "evaluation/retrieval_scaling/results/load.json").read_text())
-    tiers = sorted(b["tiers"], key=int)
-    n = [load["windows_per_tier"][t] for t in tiers]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(3.33, 1.7))
-    arms = [("A", "exact scan", BLUE, "o"), ("H-1000", "HNSW 1000 + re-rank", ORANGE, "D"),
-            ("H-100", "HNSW 100 + re-rank", AQUA, "s")]
-    for arm, label, color, marker in arms:
-        a1.plot(n, [b["tiers"][t]["latency_ms"][arm]["p50"] for t in tiers], color=color, marker=marker, ms=3.5,
-                lw=1.2, label=label)
-    a1.set_xscale("log")
+    """R2 latency of the exhaustive scan; R2-D shortlists: exact zero-lag (E, solid) vs HNSW (H*, dashed)."""
+    rs = ROOT / "evaluation/retrieval_scaling"
+    b = json.loads((rs / "results/bench.json").read_text())
+    load = json.loads((rs / "results/load.json").read_text())
+    d = json.loads((rs / "diagnostic/results/diag.json").read_text())
+    h = json.loads((rs / "diagnostic/results/hstar.json").read_text())
+    tiers = ["0", "1", "2", "3"]
+    n = {t: load["windows_per_tier"][t] for t in tiers}
+
+    def series(src, key, arm):
+        pts = [(n[t], src["tiers"][t][key][arm]) for t in tiers if arm in src["tiers"][t][key]]
+        return [p[0] for p in pts], [p[1] for p in pts]
+
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(3.33, 1.75))
+    a1.plot([n[t] for t in tiers], [b["tiers"][t]["latency_ms"]["A"]["p50"] for t in tiers], color=BLUE, marker="o",
+            ms=3.5, lw=1.2, label="exhaustive lag-tolerant")
+    for src, arm, color, ls, mk, label in [(d, "E-1000", ORANGE, "-", "D", "exact zero-lag top 1000"),
+                                           (h, "H*-1000", ORANGE, "--", "D", "HNSW top 1000"),
+                                           (d, "E-100", AQUA, "-", "s", "exact zero-lag top 100"),
+                                           (h, "H*-100", AQUA, "--", "s", "HNSW top 100")]:
+        x, y = series(src, "latency_ms", arm)
+        a1.plot(x, [v["p50"] for v in y], color=color, ls=ls, marker=mk, ms=3.5, lw=1.2,
+                mfc="white" if ls == "--" else color, label=label + " + re-rank")
+        x, y = series(src, "recall_at_10", arm)
+        a2.plot(x, y, color=color, ls=ls, marker=mk, ms=3.5, lw=1.2, mfc="white" if ls == "--" else color)
+    x, y = series(d, "recall_at_10", "ZE")
+    a2.plot(x, y, color=YELLOW, marker="^", ms=3.5, lw=1.2, label="exact zero-lag top 10")
+    for ax in (a1, a2):
+        ax.set_xscale("log")
+        ax.set_xlabel("windows in gallery")
+        ax.grid(color=GRID, lw=0.5)
     a1.set_yscale("log")
-    a1.set_xlabel("windows in gallery")
     a1.set_ylabel("median latency (ms)")
-    a1.grid(color=GRID, lw=0.5)
-    for arm, label, color, marker in [("H-1000", "HNSW 1000 + re-rank", ORANGE, "D"), ("H-100", "HNSW 100 + re-rank", AQUA, "s"),
-                                      ("Z", "zero-lag HNSW", YELLOW, "^")]:
-        a2.plot(n, [b["tiers"][t]["recall_at_10"][arm] for t in tiers], color=color, marker=marker, ms=3.5, lw=1.2,
-                label=label)
-    a2.set_xscale("log")
     a2.set_ylim(0, 1.02)
-    a2.set_xlabel("windows in gallery")
-    a2.set_ylabel("recall@10 vs exact")
-    a2.grid(color=GRID, lw=0.5)
+    a2.set_ylabel("recall@10 vs exhaustive")
     h1, l1 = a1.get_legend_handles_labels()
     h2, l2 = a2.get_legend_handles_labels()
-    fig.legend(h1 + h2[-1:], l1 + l2[-1:], loc="upper center", bbox_to_anchor=(0.5, -0.02), ncol=2,
-               handletextpad=0.3, columnspacing=1.0)
+    fig.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, -0.02), ncol=2, fontsize=6.3,
+               handletextpad=0.3, columnspacing=0.8)
     fig.tight_layout(w_pad=1.2)
     fig.savefig(OUT / "scaling.pdf", bbox_inches="tight")
 
