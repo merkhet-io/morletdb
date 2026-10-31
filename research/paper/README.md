@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-Working draft 0.4: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
+Working draft 0.5: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
 
 Not yet submission-ready; see "Before submission" below.
 
@@ -16,6 +16,18 @@ cd research/paper && tectonic -X compile morletdb.tex    # or: latexmk -pdf morl
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in draft 0.5
+
+New results since 0.4, all merged on `main`:
+- **Faster exact scan (#64):** exact search now runs as one parallel statement, about 2.5× faster with identical results. Noted in the design section and next to R2's exact-scan figures, which describe the original implementation.
+- **Filtered search (SS3, #66 and #69), new Section 6.5 and Table 6:**
+  - post-filtered probes lost up to half the top ten under selective filters;
+  - routing plus filter-aware probes keeps recall at 0.977–1.0, with no filter or RLS violations;
+  - the latency verdict was narrowly missed (0.8 ms at the unfiltered level).
+- **One stored representation (SS1, #65), new Section 6.6:** exact and saves about 250 MB per 235k windows, but costs 23% exact or 27–32% probe latency. The two-copy layout stays the default.
+- **Building representations (CW1, #67 and #68), new Section 6.7:** external workers are exact and crash-safe and move 90% of database CPU. Batching the in-database builder gave a 4.2× cut in database CPU per window, which is most of that benefit.
+- **Kept in step:** abstract, design, studies table, limitations, conclusion, evidence ledger and references.
 
 ## What changed in draft 0.4
 
