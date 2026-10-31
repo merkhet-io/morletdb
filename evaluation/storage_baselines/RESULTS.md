@@ -9,7 +9,7 @@ Software: DuckDB 2.0.0, pyarrow 26.0.0, zstandard 0.25.0, pyflac 3.0.0 (libFLAC)
 
 **None of the three pre-registered claims holds.** The two that fail do so informatively:
 - **Calibrated floats:** pg_morlet is 1.5–1.6× smaller than the best metadata-free float codec, not the 2× the claim required. It is 3.8–6.8× smaller than ALP, which falls back to ALP-RD on these inputs and saves almost nothing.
-- **Integer ceiling:** within 5% of FLAC on four inputs, but 19% (Paderborn physical) and 79% (Sleep-EDF) larger. The whole gap is last-place corrections.
+- **Integer ceiling:** within 5% of FLAC on four inputs, but 19% (Paderborn physical) and 79% (Sleep-EDF) larger. Most of that gap is last-place corrections (1.3 and 6.7 bits/sample over pg_morlet's own integer-input path); the rest (0.18 and 0.15 bits/sample) is pg_morlet's integer path being slightly larger than FLAC.
 - **Decimals:** 20% smaller than ALP on IMS (claim needs ≤ 0.80; measured 0.8008) and 42% on ECG. The claim required both, and IMS misses by 0.0008.
 
 ## Bits per sample
@@ -47,24 +47,26 @@ Software: DuckDB 2.0.0, pyarrow 26.0.0, zstandard 0.25.0, pyflac 3.0.0 (libFLAC)
 
 ## What the numbers say (descriptive)
 
-- **Calibrated floats defeat decimal-oriented float codecs.** ALP looks for a decimal
-  exponent that turns doubles into integers. Values like (d − dmin)·417/4095 − 208 have
-  none, so DuckDB chose ALP-RD and stored ~60 bits/sample, close to raw. zstd is the
-  best metadata-free codec on both inputs, and pg_morlet with the nominal quantum is
-  1.5–1.6× smaller than zstd.
-- **The remaining gap is the correction stream, not prediction or entropy coding.** M on
-  the counts (M-i) is within 2–5% of FLAC everywhere. M on the calibrated floats costs
-  1.3 (Paderborn) and 6.7 (Sleep-EDF) bits/sample more than M-i. Those bits store the
+- **On these two calibrated inputs, DuckDB's ALP implementation selected ALP-RD** and
+  stored ~60 bits/sample, close to raw. ALP looks for a decimal exponent that turns
+  doubles into integers; values like (d − dmin)·417/4095 − 208 have none. zstd was the
+  best of the three metadata-free arms on both inputs; pg_morlet, which additionally
+  receives the nominal quantum, was 1.5–1.6× smaller than zstd. The Parquet float arm is
+  one fixed encoding (BYTE_STREAM_SPLIT + zstd), not a tuned Parquet baseline.
+- **The extra cost of calibrated floats over pg_morlet's own integer-input path is the
+  correction stream.** M on the counts (M-i) is within 2–5% of FLAC everywhere. M on the
+  calibrated floats costs 1.3 (Paderborn) and 6.7 (Sleep-EDF) bits/sample more than M-i;
+  its gap to FLAC is that plus M-i's own 0.18 / 0.15 bits/sample. Those bits store the
   ±ulp differences between the encoder's refitted affine grid and the floats as the
   source software computed them. On Sleep-EDF the source computes
   ((d − dmin)·(pmax − pmin))/(dmax − dmin) + pmin, whose rounding a single
   multiply-add on a fitted step cannot reproduce.
-- **Implication:** a grid that replays the source's calibration arithmetic exactly would
-  remove the corrections and bring calibrated floats to the integer-codec cost (about
-  8.8 rather than 15.5 bits/sample on Sleep-EDF). That is a codec change, not tested here.
+- **Hypothesis, untested:** a grid that replays the source's calibration arithmetic might
+  remove the corrections, provided the correct source parameters and operation sequence
+  are available. It is not implemented; B1 does not show what size it would reach.
 - **Decimals:** on ECG (gain 1000) and IMS, both pg_morlet and ALP recover the integers;
-  pg_morlet's predictor-plus-Rice coding beats ALP's frame-of-reference bit-packing
-  because consecutive samples are correlated.
+  pg_morlet's predictor-plus-Rice coding was smaller than ALP's frame-of-reference
+  bit-packing, plausibly because consecutive samples are correlated (not isolated here).
 - **Parquet BYTE_STREAM_SPLIT** helps on integer-valued doubles (CX, Paderborn counts)
   but hurts on decimals and calibrated values, where the low mantissa bytes are noise.
 - **Throughput** (pg_morlet, single thread): encode 5–13 M samples/s, decode 33–78 M
@@ -77,8 +79,10 @@ Software: DuckDB 2.0.0, pyarrow 26.0.0, zstandard 0.25.0, pyflac 3.0.0 (libFLAC)
   library call, so ALP's own per-vector overhead and DuckDB's segment layout are both
   included.
 - FLAC is LPC-based and the strongest integer baseline here; pg_morlet has no LPC stage.
-- The P2 inputs were measured before; Sleep-EDF slice and PTB-XL are new to the storage
-  studies but not to the repository.
+- Data reuse: the P2 inputs were measured before. The offset-grid engineering check had
+  already measured pg_morlet's storage of the full Sleep-EDF collection (not the other
+  arms). PTB-XL had been used for retrieval (VR1), not storage. Correction: the protocol's
+  phrase "new to the storage studies" is true only for PTB-XL.
 
 ## Reproduce
 

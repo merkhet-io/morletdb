@@ -98,3 +98,6 @@ changing other arms.
    uncompressed (bit-packing is never chosen); at 64 KiB it bit-packs. 64 KiB is the
    smallest power of two tried at which it does. Both DuckDB arms use 64 KiB; the
    rounding to whole blocks is then at most 0.125 bits/sample per arm on these inputs.
+2. **Correction (recorded after the run).** "Two inputs are new to the storage studies" is
+   true only for PTB-XL: the offset-grid engineering check had measured pg_morlet's own
+   storage of the whole Sleep-EDF collection. No arm, input or result changes.

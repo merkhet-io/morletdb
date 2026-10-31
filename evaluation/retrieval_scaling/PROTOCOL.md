@@ -94,3 +94,11 @@ PostgreSQL 17.11 via pgrx, pgvector 0.8.0).
    queries now cast to `int[]`; nothing else changed.
 2. **Side-table values are decoded in SQL** (`morlet_envelope_decode(envelope)::halfvec`)
    rather than in the client as written above; the values are the same float16 numbers.
+3. **Correction to "new data" (recorded during R2-D, after R2 ran).** The 1–14 March 2025
+   slice overlaps 48 short windows (about 5,050 s, 0.1% of samples) that R1's 2025
+   evaluation had downloaded at these stations. Nothing in R2's method or results changes.
+4. **The H arms did not use the HNSW index (found during R2-D).** The stage-1 statement
+   took its query vector from a subquery, which pgvector cannot use as an index ordering
+   key; the planner ran a sequential scan with an exact sort. H-K were exact zero-lag
+   shortlists and Z exact zero-lag retrieval. The protocol had no plan check for these
+   arms. Results are kept as measured and relabelled; HNSW is measured in R2-D.
