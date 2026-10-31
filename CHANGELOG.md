@@ -36,6 +36,12 @@ Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
   - Envelope cross-correlation scores 8 lags per pass while keeping each lag's
     summation order.
 
+- `simple-v1` values are finite for tiny amplitudes (#51). Before, a nonconstant
+  segment such as [-1e-100, 1e-100] returned kurtosis NaN, because m4 and m2^2
+  underflowed to 0. Moments that would underflow are now taken on values divided
+  by their largest magnitude. Values are unchanged bit for bit wherever m2^2 and
+  peak^2 are normal floats, which covers any real sensor amplitude.
+
 Repository:
 - Viewer and docs present `morlet_history_neighbors` as similar occurrences to look
   at, not a prediction: evaluation C4 (3W) found their labels name the event worse

@@ -60,8 +60,42 @@ pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalEr
     let mean = samples.iter().sum::<f64>() / n;
     let m2 = samples.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
     let m4 = samples.iter().map(|v| (v - mean).powi(4)).sum::<f64>() / n;
-    let rms = (samples.iter().map(|v| v * v).sum::<f64>() / n).sqrt();
     let peak = samples.iter().fold(0.0f64, |a, v| a.max(v.abs()));
+    // Tiny amplitudes underflow squares and fourth powers: for [-1e-100, 1e-100],
+    // m4 and m2^2 are both 0 and kurtosis would be 0/0. There the moments are taken
+    // on values divided by their largest magnitude. Where m2^2 (or peak^2) is a
+    // normal float, m4 >= m2^2 is too and the plain formulas are used, bit for bit;
+    // std keeps sqrt(m2) wherever m2 itself is normal.
+    let (std, kurtosis) = if m2 * m2 >= f64::MIN_POSITIVE {
+        (m2.sqrt(), m4 / (m2 * m2))
+    } else {
+        let s = samples.iter().fold(0.0f64, |a, v| a.max((v - mean).abs()));
+        if s > 0.0 {
+            let c2 = samples
+                .iter()
+                .map(|v| ((v - mean) / s).powi(2))
+                .sum::<f64>()
+                / n;
+            let c4 = samples
+                .iter()
+                .map(|v| ((v - mean) / s).powi(4))
+                .sum::<f64>()
+                / n;
+            let std = if m2 >= f64::MIN_POSITIVE {
+                m2.sqrt()
+            } else {
+                s * c2.sqrt()
+            };
+            (std, c4 / (c2 * c2))
+        } else {
+            (0.0, 0.0)
+        }
+    };
+    let rms = if peak * peak >= f64::MIN_POSITIVE || peak == 0.0 {
+        (samples.iter().map(|v| v * v).sum::<f64>() / n).sqrt()
+    } else {
+        peak * (samples.iter().map(|v| (v / peak).powi(2)).sum::<f64>() / n).sqrt()
+    };
     let mut sorted = samples.to_vec();
     sorted.sort_by(f64::total_cmp);
     let pos = 0.75 * (sorted.len() - 1) as f64;
@@ -74,12 +108,12 @@ pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalEr
     Ok(vec![
         n / sample_rate_hz,
         mean,
-        m2.sqrt(),
+        std,
         rms,
         p75,
         peak,
         if rms > 0.0 { peak / rms } else { 0.0 },
-        if m2 > 0.0 { m4 / (m2 * m2) } else { 0.0 },
+        kurtosis,
     ])
 }
 
@@ -99,6 +133,78 @@ mod tests {
         assert!((v[6] - 4.0 / 7.5f64.sqrt()).abs() < 1e-15);
         assert!((v[7] - 1.64).abs() < 1e-12);
         assert_eq!(VALUE_NAMES.len(), v.len());
+    }
+
+    /// The formulas before tiny amplitudes were handled; the bitwise reference.
+    fn plain(samples: &[f64]) -> [f64; 3] {
+        let n = samples.len() as f64;
+        let mean = samples.iter().sum::<f64>() / n;
+        let m2 = samples.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
+        let m4 = samples.iter().map(|v| (v - mean).powi(4)).sum::<f64>() / n;
+        let rms = (samples.iter().map(|v| v * v).sum::<f64>() / n).sqrt();
+        [m2.sqrt(), rms, if m2 > 0.0 { m4 / (m2 * m2) } else { 0.0 }]
+    }
+
+    #[test]
+    fn tiny_amplitudes_give_finite_scale_free_values() {
+        // Issue #51: m4 and m2^2 underflow to 0 here; Pearson kurtosis is exactly 1.
+        let v = simple(&[-1e-100, 1e-100], 1.0).unwrap();
+        assert_eq!(v[7], 1.0);
+        assert_eq!(v[2], 1e-100);
+        let wave: Vec<f64> = (0..4096)
+            .map(|i| (i as f64 / 37.).sin() + 0.3 * (i as f64 / 5.).cos())
+            .collect();
+        let base = simple(&wave, 100.0).unwrap();
+        for scale in [1e-50, 1e-100, 1e-160, 1e-200, 1e-300, 1e-310] {
+            let x: Vec<f64> = wave.iter().map(|v| v * scale).collect();
+            let v = simple(&x, 100.0).unwrap();
+            assert!(v.iter().all(|x| x.is_finite()), "{scale}: {v:?}");
+            // Subnormal inputs keep few significant bits; the values still describe the shape.
+            let tol = if scale < 1e-300 { 1e-3 } else { 1e-9 };
+            assert!(
+                (v[7] / base[7] - 1.0).abs() < tol,
+                "{scale}: kurtosis {} vs {}",
+                v[7],
+                base[7]
+            );
+            assert!(
+                (v[6] / base[6] - 1.0).abs() < tol,
+                "{scale}: crest {} vs {}",
+                v[6],
+                base[6]
+            );
+            assert!((v[2] / (base[2] * scale) - 1.0).abs() < tol, "{scale}: std");
+            assert!((v[3] / (base[3] * scale) - 1.0).abs() < tol, "{scale}: rms");
+        }
+        // A constant tiny window's std is rounding residue, as at ordinary levels, and
+        // stays below the negligible floor; an all-zero window keeps exact zeros.
+        let v = simple(&[1e-300; 64], 1.0).unwrap();
+        assert!(v.iter().all(|x| x.is_finite()) && v[2] <= negligible_floors(v[RMS])[2]);
+        assert_eq!(simple(&[0.0; 64], 1.0).unwrap()[2..8], [0.0; 6]);
+    }
+
+    #[test]
+    fn ordinary_amplitudes_are_unchanged_bit_for_bit() {
+        let mut seed = 0x2545_f491_4f6c_dd1du64;
+        for scale in [1e-70, 1e-20, 1e-3, 1.0, 1e3, 1e8] {
+            for len in [1, 2, 3, 100, 4096] {
+                let x: Vec<f64> = (0..len)
+                    .map(|_| {
+                        seed ^= seed << 13;
+                        seed ^= seed >> 7;
+                        seed ^= seed << 17;
+                        ((seed >> 11) as f64 / (1u64 << 53) as f64 - 0.5) * scale
+                    })
+                    .collect();
+                let v = simple(&x, 1.0).unwrap();
+                let [std, rms, kurtosis] = plain(&x);
+                assert_eq!(
+                    [v[2].to_bits(), v[3].to_bits(), v[7].to_bits()],
+                    [std.to_bits(), rms.to_bits(), kurtosis.to_bits()],
+                    "{scale} {len}"
+                );
+            }
+        }
     }
 
     #[test]
