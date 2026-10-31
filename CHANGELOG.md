@@ -4,6 +4,16 @@
 
 Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
 0.3.0-alpha.1):
+- Probe search for envelopes (opt-in, needs pgvector; pg_morlet itself does not
+  depend on it). `morlet_enable_envelope_probes` keeps a float16 copy of one window
+  size's envelopes with an inner-product HNSW index. `morlet_search_envelope_probes`
+  retrieves candidates with zero-padded shifted query probes (`morlet_envelope_probe`)
+  and re-ranks them with the exact scorer. `morlet_build_envelopes` maintains the
+  copy in the same transaction.
+  - It is approximate. Evaluation BL1 (`evaluation/bounded_lag`) used unfiltered
+    galleries of about 235,000 windows: on held-out data, recall@10 0.976 against
+    the exact search, at p95 131 ms instead of 2,854 ms.
+  - Selective metadata filters lower recall.
 - A history median that is rounding residue now counts as zero. This applies to
   values in channel units whose median is at most 1e-9 of the history's median rms.
   Before, a frozen channel's `std` median (about 1e-15) made any real `std` deviate

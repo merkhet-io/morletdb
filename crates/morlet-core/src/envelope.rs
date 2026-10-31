@@ -114,6 +114,26 @@ pub fn distance(q: &[f64], g: &[f64], max_lag: usize) -> Result<f64, SignalError
     Ok(1.0 - best / n as f64)
 }
 
+/// Zero-padded shift of a query envelope for probe search: `p[t] = q[t + lag]` where
+/// `0 <= t + lag < n`, else 0. The inner product of the probe with a stored envelope `g`
+/// is exactly the lag term of `distance`, `sum_t q[t + lag] g[t]` over the overlap, so the
+/// best score over all |lag| <= max_lag equals `n * (1 - distance)`.
+pub fn shifted(q: &[f64], lag: isize) -> Result<Vec<f64>, SignalError> {
+    let n = q.len();
+    if n == 0 || lag.unsigned_abs() >= n {
+        return Err(SignalError::LengthMismatch);
+    }
+    let mut p = vec![0.0; n];
+    if lag >= 0 {
+        let l = lag as usize;
+        p[..n - l].copy_from_slice(&q[l..]);
+    } else {
+        let l = lag.unsigned_abs();
+        p[l..].copy_from_slice(&q[..n - l]);
+    }
+    Ok(p)
+}
+
 const LAG_BLOCK: usize = 8;
 
 /// max over lag in first..=last of sum_{t < n - lag} a[t + lag] * b[t].
@@ -386,6 +406,40 @@ mod tests {
             "{aligned} {unaligned}"
         );
         assert!(distance(&a, &b[..400], 30).is_err());
+    }
+
+    #[test]
+    fn shifted_probes_reproduce_every_lag_term_and_the_distance() {
+        let mut seed = 7u64;
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (seed >> 11) as f64 / (1u64 << 53) as f64 - 0.5
+        };
+        let q: Vec<f64> = (0..410).map(|_| next()).collect();
+        let g: Vec<f64> = (0..410).map(|_| next()).collect();
+        let n = q.len();
+        let mut best = f64::NEG_INFINITY;
+        for lag in -30isize..=30 {
+            let p = shifted(&q, lag).unwrap();
+            let dot: f64 = p.iter().zip(&g).map(|(a, b)| a * b).sum();
+            let term: f64 = if lag >= 0 {
+                (0..n - lag as usize)
+                    .map(|t| q[t + lag as usize] * g[t])
+                    .sum()
+            } else {
+                let l = lag.unsigned_abs();
+                (0..n - l).map(|t| g[t + l] * q[t]).sum()
+            };
+            assert!((dot - term).abs() < 1e-12, "lag {lag}");
+            best = best.max(dot);
+        }
+        assert!((1.0 - best / n as f64 - distance(&q, &g, 30).unwrap()).abs() < 1e-12);
+        assert_eq!(shifted(&q, 0).unwrap(), q);
+        assert!(
+            shifted(&q, 410).is_err() && shifted(&q, -410).is_err() && shifted(&[], 0).is_err()
+        );
     }
 
     /// The scoring loop before lags were blocked; kept as the bitwise reference.

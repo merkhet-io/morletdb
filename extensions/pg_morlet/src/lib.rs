@@ -273,6 +273,14 @@ fn morlet_envelope_distance(query_envelope: Vec<Option<f64>>, stored: &[u8], max
         .unwrap_or_else(|_| pgrx::error!("envelope lengths differ or max_lag is too large"))
 }
 
+/// Zero-padded shift of a query envelope by `lag` values. Its inner product with a stored
+/// envelope is the distance's lag term, so probe search can use an inner-product index.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelope_probe(query_envelope: Vec<Option<f64>>, lag: i32) -> Vec<f64> {
+    morlet_core::envelope::shifted(&checked_samples(query_envelope), lag as isize)
+        .unwrap_or_else(|_| pgrx::error!("lag must be smaller than the envelope length"))
+}
+
 /// `simple-v1` values of one segment, in the order of morlet_simple_value_names().
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_simple_values(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f64> {
@@ -615,6 +623,98 @@ mod tests {
         assert_eq!(Spi::get_one::<i32>("SELECT cardinality(morlet_envelope(ARRAY(SELECT sin(i/5.)*i FROM generate_series(0,4095) i)))").unwrap(), Some(410));
         assert_eq!(Spi::get_one::<i32>("SELECT octet_length(morlet_envelope_encode(ARRAY(SELECT sin(i/5.)*i FROM generate_series(0,4095) i)))").unwrap(), Some(821));
         assert_eq!(Spi::get_one::<bool>("WITH x AS (SELECT ARRAY(SELECT sin(i/5.)*i FROM generate_series(0,2047) i) s) SELECT morlet_envelope_distance(morlet_envelope(s),morlet_envelope_encode(s),20)<1e-3 FROM x").unwrap(), Some(true));
+    }
+
+    fn pgvector_available() -> bool {
+        Spi::get_one::<bool>(
+            "SELECT EXISTS(SELECT 1 FROM pg_available_extensions WHERE name='vector')",
+        )
+        .unwrap()
+        .unwrap()
+    }
+
+    #[pg_test]
+    fn envelope_probe_is_the_lag_term() {
+        // inner product of the probe with a stored envelope = n * (1 - distance) at its best lag
+        assert_eq!(Spi::get_one::<bool>("WITH x AS (SELECT morlet_envelope(ARRAY(SELECT sin(i/5.)*i FROM generate_series(0,4095) i)) q, morlet_envelope_encode(ARRAY(SELECT cos(i/7.)*(i%300) FROM generate_series(0,4095) i)) g), s AS (SELECT max((SELECT sum(a*b) FROM unnest(morlet_envelope_probe(q,l),morlet_envelope_decode(g)) t(a,b))) m FROM x, generate_series(-30,30) l) SELECT abs(1-(SELECT m FROM s)/410-(SELECT morlet_envelope_distance(q,g,30) FROM x))<1e-9").unwrap(), Some(true));
+        assert_eq!(
+            Spi::get_one::<String>(
+                "SELECT morlet_envelope_probe(ARRAY[1,2,3,4]::float8[],-1)::text"
+            )
+            .unwrap()
+            .unwrap(),
+            "{0,1,2,3}"
+        );
+        assert_eq!(
+            Spi::get_one::<String>(
+                "SELECT morlet_envelope_probe(ARRAY[1,2,3,4]::float8[],2)::text"
+            )
+            .unwrap()
+            .unwrap(),
+            "{3,4,0,0}"
+        );
+    }
+
+    #[pg_test(
+        error = "probe search is not enabled for window_size 2048 (morlet_enable_envelope_probes)"
+    )]
+    fn probe_search_requires_enabling() {
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        Spi::run("SELECT * FROM morlet_search_envelope_probes('env','A',2048,4096)").unwrap();
+    }
+
+    #[pg_test]
+    fn probe_search_is_maintained_and_exact_on_small_galleries() {
+        if !pgvector_available() {
+            return; // pgvector is optional; CI does not install it
+        }
+        Spi::run("CREATE EXTENSION IF NOT EXISTS vector").unwrap();
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024,3) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_enable_envelope_probes('env',2048)::text")
+                .unwrap()
+                .unwrap(),
+            "env_probes_2048"
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM env_probes_2048").unwrap(),
+            Some(9)
+        ); // backfilled
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        assert_eq!(Spi::get_one::<bool>("SELECT (SELECT count(*) FROM env_probes_2048)=(SELECT count(*) FROM env_envelopes WHERE window_size=2048)").unwrap(), Some(true));
+        // per_probe covers the whole gallery here, so probe search must equal the exact search
+        let exact = "SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',10)";
+        let probe = "SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_probes('env','A',2048,4096,'{}',10,0.075,true,true,100)";
+        assert_eq!(
+            Spi::get_one::<String>(exact).unwrap(),
+            Spi::get_one::<String>(probe).unwrap()
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT recording_id||':'||start_sample FROM morlet_search_envelope_probes('env','A',2048,4096,'{}',1)").unwrap().unwrap(), "B:9216");
+        // the session's ef_search is restored
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('hnsw.ef_search')")
+                .unwrap()
+                .unwrap(),
+            "40"
+        );
+        // rows follow their envelopes
+        Spi::run("DELETE FROM env_envelopes WHERE recording_id='C'").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM env_probes_2048 WHERE recording_id='C'")
+                .unwrap(),
+            Some(0)
+        );
     }
 
     #[pg_test]
