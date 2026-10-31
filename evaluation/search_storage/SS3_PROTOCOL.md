@@ -73,3 +73,21 @@ selective-filter problem by itself?).
 If the router is dependable, the product change is: route inside
 `morlet_search_envelope_probes` (and use filter-aware probes if A = PI), in a separate PR with
 its own tests and upgrade checks.
+
+## Amendment 1 — SS3b (after SS3's routing results, before SS3b is measured)
+
+**Finding:** the router met recall (0.977–1.0), filter and RLS conditions at every level on both
+databases, but missed the latency bound at L4 and L5 on the confirmation database (L4 112 vs
+108 ms, L5 78 vs 55 ms) and at L5 on development. Cause: counting eligible windows with
+`count(*)` over the envelope table costs about 20 ms at full gallery size, on every query.
+
+**SS3b:** the same router with A = PI and T = 5,518 unchanged, but the eligible count is computed
+from the recordings table alone: Σ over eligible recordings of max(0, (checkpoint end − 4096) /
+2048 + 1) — the number of complete windows on the stride grid. Cost scales with the number of
+recordings, not windows. It equals the window count when envelopes are built up to the
+checkpoint (true here); it overestimates while building lags, which can only route toward the
+approximate path near T.
+
+**Measures and decision:** as for the router above, on both databases (confirmation again
+reported as previously used), with the same per-level bound computed from the first
+measurement's E and A p95 values.

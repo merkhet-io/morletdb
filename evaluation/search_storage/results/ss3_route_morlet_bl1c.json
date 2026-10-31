@@ -1,0 +1,78 @@
+{
+ "database": "morlet_bl1c",
+ "A": "PI",
+ "T": 5518.05585011565,
+ "levels": {
+  "L1": {
+   "recall_mean": 1.0,
+   "recall_min": 1.0,
+   "recall_p5": 1.0,
+   "p50_ms": 55.94674950407352,
+   "p95_ms": 57.11083539354149,
+   "paths": {
+    "E": 100
+   },
+   "filter_violations": 0,
+   "routing_mistakes": 0,
+   "p95_bound": 85.43488879513461,
+   "dependable": true
+  },
+  "L2": {
+   "recall_mean": 0.997,
+   "recall_min": 0.9,
+   "recall_p5": 1.0,
+   "p50_ms": 155.42479199939407,
+   "p95_ms": 199.65886699937982,
+   "paths": {
+    "PI": 100
+   },
+   "filter_violations": 0,
+   "routing_mistakes": 0,
+   "p95_bound": 411.26930946848006,
+   "dependable": true
+  },
+  "L3": {
+   "recall_mean": 0.986,
+   "recall_min": 0.6,
+   "recall_p5": 0.9,
+   "p50_ms": 60.34072898910381,
+   "p95_ms": 83.63589760265313,
+   "paths": {
+    "PI": 100
+   },
+   "filter_violations": 0,
+   "routing_mistakes": 4,
+   "p95_bound": 106.36268006783212,
+   "dependable": true
+  },
+  "L4": {
+   "recall_mean": 0.9939999999999999,
+   "recall_min": 0.8,
+   "recall_p5": 0.995,
+   "p50_ms": 63.675666504423134,
+   "p95_ms": 112.44565034576219,
+   "paths": {
+    "PI": 100
+   },
+   "filter_violations": 0,
+   "routing_mistakes": 1,
+   "p95_bound": 108.18604770429374,
+   "dependable": false
+  },
+  "L5": {
+   "recall_mean": 0.9770000000000002,
+   "recall_min": 0.7,
+   "recall_p5": 0.895,
+   "p50_ms": 63.27483299537562,
+   "p95_ms": 77.54508272046223,
+   "paths": {
+    "PI": 100
+   },
+   "filter_violations": 0,
+   "routing_mistakes": 5,
+   "p95_bound": 54.838388450662016,
+   "dependable": false
+  }
+ },
+ "dependable": false
+}

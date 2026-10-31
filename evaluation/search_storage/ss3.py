@@ -26,6 +26,9 @@ SQL = {
 }
 COUNT = """SELECT count(*) FROM public.r2_envelopes e JOIN public.r2 r ON r.recording_id = e.recording_id
            WHERE e.window_size = 4096 AND r.sample_rate_hz = 100 AND r.channel = 'HHZ' AND r.unit = 'counts' AND r.metadata @> %s"""
+# SS3b: complete windows on the stride grid from each eligible recording's checkpoint (cost ~ recordings, not windows)
+COUNT_FAST = """SELECT coalesce(sum(greatest(0, ((checkpoint->>'end')::bigint - 4096) / 2048 + 1)), 0) FROM public.r2
+                WHERE sample_rate_hz = 100 AND channel = 'HHZ' AND unit = 'counts' AND metadata @> %s"""
 
 
 def dsn(db):
@@ -129,7 +132,7 @@ def decide(out):
     print(json.dumps(res))
 
 
-def route(db, qpath, out):
+def route(db, qpath, out, count_sql=None, tag=""):
     d = json.loads((out / "ss3_decision.json").read_text())
     A, T = d["A"], d["T"]
     queries = load_queries(qpath)
@@ -142,7 +145,7 @@ def route(db, qpath, out):
                 for qi, (rid, s, _) in enumerate(queries):
                     flt = level_filter(level, rid)
                     t = time.perf_counter()
-                    n = conn.execute(COUNT, (Jsonb(flt),)).fetchone()[0]
+                    n = conn.execute(count_sql or COUNT, (Jsonb(flt),)).fetchone()[0]
                     arm = "E" if n <= T else A
                     got, bad = call(conn, arm, rid, s, flt)
                     if timed:
@@ -161,7 +164,7 @@ def route(db, qpath, out):
             res["levels"][level] = st
             print(level, json.dumps({k: (round(v, 3) if isinstance(v, float) else v) for k, v in st.items()}), flush=True)
     res["dependable"] = all(v["dependable"] for v in res["levels"].values())
-    json.dump(res, open(out / f"ss3_route_{db}.json", "w"), indent=1)
+    json.dump(res, open(out / f"ss3{tag}_route_{db}.json", "w"), indent=1)
     print("dependable:", res["dependable"])
 
 
@@ -207,6 +210,8 @@ def main():
         return decide(Path(sys.argv[2]))
     db, qpath, out = sys.argv[2], sys.argv[3], Path(sys.argv[4])
     out.mkdir(parents=True, exist_ok=True)
+    if cmd == "route_fast":
+        return route(db, qpath, out, COUNT_FAST, "b")
     {"measure": measure, "route": route, "rls": rls}[cmd](db, qpath, out)
 
 
