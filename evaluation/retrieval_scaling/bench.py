@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import psycopg
-from psycopg.types.json import Json
+from psycopg.types.json import Jsonb as Json
 
 DSN = os.environ.get("MORLET_DSN", "host=localhost port=28817 dbname=morlet_r2")
 COLL, WINDOW, TOP, LAG_FRACTION, LAG = "public.r2", 4096, 10, 0.075, 30
@@ -67,7 +67,7 @@ def stage1(conn, rid, s, tier, k):
     conn.execute(f"SET hnsw.ef_search = {max(k, 100)}")
     return conn.execute("""SELECT h.recording_id, h.start_sample, h.v <=> q.v AS d
                            FROM public.r2_hv h, (SELECT v FROM public.r2_hv WHERE recording_id = %s AND start_sample = %s) q
-                           WHERE h.tiers @> ARRAY[%s] ORDER BY h.v <=> q.v LIMIT %s""", (rid, s, tier, k)).fetchall()
+                           WHERE h.tiers @> ARRAY[%s]::int[] ORDER BY h.v <=> q.v LIMIT %s""", (rid, s, tier, k)).fetchall()
 
 
 def arm_h(conn, rid, s, tier, k):

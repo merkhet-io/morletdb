@@ -82,3 +82,15 @@ which A's p95 exceeds 100 ms; recall per query type (random vs energetic).
 No change to pg_morlet, no tuning of HNSW parameters after the first run, no cold-cache or
 concurrent-client runs (stated as a limitation), one machine (Apple M5 Max, macOS,
 PostgreSQL 17.11 via pgrx, pgvector 0.8.0).
+
+## Changes after freeze
+
+1. **Load restarted after the envelope build** (no query had run). The first load stopped
+   at its final statement (`int[] @> smallint[]`, a missing cast also present in the
+   benchmark's stage-1 query). Raw appends (481,214,308 samples, 128 recordings, 451 s)
+   and envelopes (234,762 windows, 275 s) were complete and are kept with their measured
+   times. The side table and HNSW index were dropped and rebuilt by `load.py
+   --resume-side-table`, so their build times are measured on a clean build. Both
+   queries now cast to `int[]`; nothing else changed.
+2. **Side-table values are decoded in SQL** (`morlet_envelope_decode(envelope)::halfvec`)
+   rather than in the client as written above; the values are the same float16 numbers.

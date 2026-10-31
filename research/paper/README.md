@@ -1,25 +1,49 @@
 # MorletDB research manuscript
 
-Working draft 0.1: **MorletDB: Lossless Waveform Storage and Provenance-Preserving Similarity Retrieval in PostgreSQL**.
+Working draft 0.2: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
 
-This is an early manuscript, not a submission-ready paper. It synthesizes existing repository experiments; it does not report new experimental runs. Authorship, related-work coverage, dataset citations, and additional validation remain open and are marked in the manuscript.
+Not yet submission-ready; see "Before submission" below.
 
 ## Build
 
-From this directory, with a TeX Live installation including latexmk and the packages used in `morletdb.tex`:
-
 ```sh
-latexmk -pdf -interaction=nonstopmode -halt-on-error morletdb.tex
+.venv-paper/bin/python -I research/paper/figures.py      # fig/*.pdf from committed result files
+cd research/paper && tectonic -X compile morletdb.tex    # or: latexmk -pdf morletdb.tex
 ```
 
-The self-contained source includes its bibliography; BibTeX and external assets are not required. The build produces `morletdb.pdf`.
+`figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
+`evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
+the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
 
-```sh
-latexmk -C morletdb.tex
-```
+## What changed from draft 0.1
 
-## Evidence and revision scope
+- **New evidence, each from a protocol frozen before measuring:**
+  - **B1** (`evaluation/storage_baselines/`): the codec against ALP (DuckDB), Parquet,
+    zstd, FLAC and DuckDB integers on identical samples, including two inputs new to the
+    storage studies (Sleep-EDF, PTB-XL). None of its three pre-registered claims held;
+    the paper reports the weaker results and the correction-stream diagnosis.
+  - **R2** (`evaluation/retrieval_scaling/`): exact lag-tolerant search on fresh CX 2025
+    data up to about 236k windows, against an HNSW prefilter with exact re-ranking.
+- **Reframed contributions** around findings that hold beyond the prototype: calibrated
+  floats as a blind spot of decimal-oriented float codecs, and lag tolerance as a change
+  of query rather than of speed.
+- Architecture figure, SQL example, B1 figure, R2 figure, studies table, expanded related
+  work and references with full bibliographic data, X1 reported, F1/F2/CV1 declared out of
+  scope, corrected compression citation.
 
-The manuscript distinguishes bitwise sample recovery, agreement with a reference ranking, and domain relevance. Its appendix maps headline numbers to P2, R1b, P1, and S1. Historical timings are kept separate from the later same-run benchmark.
+## Before submission
 
-Before submission, audit the reported outputs and implementation revisions, complete primary references, strengthen compression baselines, measure retrieval at larger scales in a common environment, and add an independent confirmation workload. The manuscript's next-revision section describes these as planned work, not completed results.
+- Authors, affiliations and venue formatting (the layout targets an ACM venue such as
+  SSDBM; check the call's page limit).
+- References were checked against Crossref/DOI, RFC Editor, NTRS, DataCite and PubMed
+  records on 2026-10-31 (DOIs added). Not confirmable from a primary source: ALP's article
+  number 230 (dblp only) and the IMS dataset citation (no recommended form or DOI; the
+  commonly used form is given). Paderborn data is CC BY-NC 4.0 and asks for credit to the
+  KAt-DataCenter.
+- Independent read of all numbers against `evaluation/*/results/`; the evidence ledger in
+  the appendix maps each headline number to its study.
+- Open technical step the paper names but does not take: a grid that replays a source's
+  calibration arithmetic exactly (closing the B1 correction gap). It would be a codec
+  change with its own frozen evaluation.
+- Cold-cache and concurrent-client measurements, if a reviewer asks for latency claims
+  beyond warm, single-client runs.
