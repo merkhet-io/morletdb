@@ -1,0 +1,227 @@
+{
+ "tiers": {
+  "0": {
+   "index_used": {
+    "H*-100": true,
+    "H*-1000": false
+   },
+   "recall_at_10": {
+    "H*-100": 0.716
+   },
+   "coverage": {
+    "H*-100": 0.716
+   },
+   "covered_but_lost": {
+    "H*-100": {
+     "mean_per_query": 0.0,
+     "queries_affected": 0
+    }
+   },
+   "shortlist_size": {
+    "H*-100": {
+     "mean": 100.0,
+     "min": 100
+    }
+   },
+   "agreement_with_exact": {
+    "H*-100": {
+     "mean": 0.9908000000000001,
+     "min": 0.94
+    }
+   },
+   "latency_ms": {
+    "H*-100": {
+     "p50": 67.85529150511138,
+     "p95": 72.22169230954023,
+     "path": "HNSW index scan (parameter vector) + in-DB re-rank"
+    }
+   },
+   "E_recall_at_10": {
+    "E-100": 0.7140000000000001,
+    "E-1000": 0.9769999999999999
+   }
+  },
+  "1": {
+   "index_used": {
+    "H*-100": true,
+    "H*-1000": true
+   },
+   "recall_at_10": {
+    "H*-100": 0.637,
+    "H*-1000": 0.873
+   },
+   "coverage": {
+    "H*-100": 0.637,
+    "H*-1000": 0.873
+   },
+   "covered_but_lost": {
+    "H*-100": {
+     "mean_per_query": 0.0,
+     "queries_affected": 0
+    },
+    "H*-1000": {
+     "mean_per_query": 0.0,
+     "queries_affected": 0
+    }
+   },
+   "shortlist_size": {
+    "H*-100": {
+     "mean": 100.0,
+     "min": 100
+    },
+    "H*-1000": {
+     "mean": 1000.0,
+     "min": 1000
+    }
+   },
+   "agreement_with_exact": {
+    "H*-100": {
+     "mean": 0.9934999999999999,
+     "min": 0.95
+    },
+    "H*-1000": {
+     "mean": 0.8889200000000002,
+     "min": 0.746
+    }
+   },
+   "latency_ms": {
+    "H*-100": {
+     "p50": 46.14885349292308,
+     "p95": 54.02611635217908,
+     "path": "HNSW index scan (parameter vector) + in-DB re-rank"
+    },
+    "H*-1000": {
+     "p50": 275.26502100226935,
+     "p95": 281.7972940931213,
+     "path": "HNSW index scan (parameter vector) + in-DB re-rank"
+    }
+   },
+   "E_recall_at_10": {
+    "E-100": 0.638,
+    "E-1000": 0.866
+   }
+  },
+  "2": {
+   "index_used": {
+    "H*-100": true,
+    "H*-1000": true
+   },
+   "recall_at_10": {
+    "H*-100": 0.612,
+    "H*-1000": 0.7560000000000002
+   },
+   "coverage": {
+    "H*-100": 0.612,
+    "H*-1000": 0.7560000000000002
+   },
+   "covered_but_lost": {
+    "H*-100": {
+     "mean_per_query": 0.0,
+     "queries_affected": 0
+    },
+    "H*-1000": {
+     "mean_per_query": 0.0,
+     "queries_affected": 0
+    }
+   },
+   "shortlist_size": {
+    "H*-100": {
+     "mean": 100.0,
+     "min": 100
+    },
+    "H*-1000": {
+     "mean": 1000.0,
+     "min": 1000
+    }
+   },
+   "agreement_with_exact": {
+    "H*-100": {
+     "mean": 0.991,
+     "min": 0.93
+    },
+    "H*-1000": {
+     "mean": 0.9926699999999999,
+     "min": 0.949
+    }
+   },
+   "latency_ms": {
+    "H*-100": {
+     "p50": 33.979749990976416,
+     "p95": 37.60083991510328,
+     "path": "HNSW index scan (parameter vector) + in-DB re-rank"
+    },
+    "H*-1000": {
+     "p50": 254.61914550396614,
+     "p95": 273.6440100823529,
+     "path": "HNSW index scan (parameter vector) + in-DB re-rank"
+    }
+   },
+   "E_recall_at_10": {
+    "E-100": 0.612,
+    "E-1000": 0.7550000000000001
+   }
+  },
+  "3": {
+   "index_used": {
+    "H*-100": true,
+    "H*-1000": true
+   },
+   "recall_at_10": {
+    "H*-100": 0.604,
+    "H*-1000": 0.7439999999999999
+   },
+   "coverage": {
+    "H*-100": 0.604,
+    "H*-1000": 0.7439999999999999
+   },
+   "covered_but_lost": {
+    "H*-100": {
+     "mean_per_query": 0.0,
+     "queries_affected": 0
+    },
+    "H*-1000": {
+     "mean_per_query": 0.0,
+     "queries_affected": 0
+    }
+   },
+   "shortlist_size": {
+    "H*-100": {
+     "mean": 100.0,
+     "min": 100
+    },
+    "H*-1000": {
+     "mean": 1000.0,
+     "min": 1000
+    }
+   },
+   "agreement_with_exact": {
+    "H*-100": {
+     "mean": 0.9799,
+     "min": 0.89
+    },
+    "H*-1000": {
+     "mean": 0.9962199999999999,
+     "min": 0.981
+    }
+   },
+   "latency_ms": {
+    "H*-100": {
+     "p50": 26.180187502177432,
+     "p95": 31.12076635297853,
+     "path": "HNSW index scan (parameter vector) + in-DB re-rank"
+    },
+    "H*-1000": {
+     "p50": 231.39062500558794,
+     "p95": 337.56062769389246,
+     "path": "HNSW index scan (parameter vector) + in-DB re-rank"
+    }
+   },
+   "E_recall_at_10": {
+    "E-100": 0.605,
+    "E-1000": 0.743
+   }
+  }
+ },
+ "tier3_E1000_minus_Hstar1000": -0.0009999999999998899,
+ "interpretation": "zero-lag candidate metric is the main loss"
+}
