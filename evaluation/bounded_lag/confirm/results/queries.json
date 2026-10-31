@@ -1,0 +1,505 @@
+{
+"rule": "R2 pick_queries, seed 2021",
+"queries": [
+{
+"recording_id": "PB11.d01.0",
+"start": 53248,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 7714816,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 149504,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 5574656,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 4818944,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 3831808,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 518144,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 7622656,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 163840,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 7049216,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 2930688,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 3139584,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 7428096,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1800192,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 8120320,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 1693696,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 2349056,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 7616512,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 2516992,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 4247552,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 6160384,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1718272,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 5158912,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 716800,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 2340864,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 6520832,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1644544,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 186368,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1751040,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 616448,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 4474880,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 755712,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 5791744,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 1159168,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 8527872,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 2035712,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 8296448,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 2574336,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 4302848,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 4909056,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 5578752,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 690176,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 6750208,
+"type": "random"
+},
+{
+"recording_id": "PB05.d01.0",
+"start": 1222656,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 5593088,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 2803712,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 339968,
+"type": "random"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 3608576,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 5416960,
+"type": "random"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 8083456,
+"type": "random"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 2615296,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 2619392,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1333248,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 2611200,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 616448,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 7141376,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1333248,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1329152,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 2619392,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 2623488,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1947648,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 3088384,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 8220672,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1273856,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 612352,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 4431872,
+"type": "energetic"
+},
+{
+"recording_id": "PB14.d01.0",
+"start": 3969024,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1943552,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 620544,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 272384,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1107968,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1951744,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 7137280,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 4388864,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 608256,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 612352,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 5273600,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 3784704,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1329152,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 5105664,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1337344,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1945600,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 7145472,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 3917824,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 8509440,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 3534848,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 4055040,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 7174144,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 2627584,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 6639616,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 7327744,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 5011456,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 8108032,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1277952,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 784384,
+"type": "energetic"
+},
+{
+"recording_id": "PB11.d01.0",
+"start": 1949696,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1939456,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 2557952,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1955840,
+"type": "energetic"
+},
+{
+"recording_id": "PB18.d01.0",
+"start": 1337344,
+"type": "energetic"
+}
+]
+}
