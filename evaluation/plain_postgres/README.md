@@ -69,7 +69,8 @@ pg_morlet's stored values.
     order.
   - Re-scoring with shifts in the client reproduces A exactly, at about 2× A's latency,
     because the client fetches about 180 envelopes per query.
-- **pgvector is 20× faster when shifts are not needed.** A scores about 180 candidates in
+- **pgvector is 20× faster when shifts are not needed** (this run, before #47's
+  search speed-up; see the re-run below). A scores about 180 candidates in
   about 9 ms. That is slower than a zero-lag halfvec scan and leaves room to optimise A,
   for example with an FFT cross-correlation or a halfvec pre-filter followed by a lagged
   re-rank.
@@ -80,6 +81,31 @@ pg_morlet's stored values.
   (VR1).
 - **Numerics:** macOS Accelerate printed spurious matmul warnings (as in S1). D's recall
   of 1.000 against A shows the scores are finite and correct.
+
+### P1 re-run after the search speed-up
+
+#47 made pg_morlet's reads and envelope search faster with identical results, so the
+20× above is historical. The same script (`halfvec_bench.py`, unchanged) was rerun
+once on 2026-10-31, with all four arms in **one run**.
+
+**Setup:**
+- **Database:** `morlet_speed_after`, a fresh pg_morlet 0.3.1 install created with
+  #47's SQL, holding the same 1,826 CX 2022 windows.
+- **Extension build:** `main` at 31bd134 plus the chunk-codec change under review
+  (offset grids). That change does not touch reading encoded version-2 chunks or
+  envelope search.
+- **Results:** `results/rerun-main/halfvec.json`.
+
+| | A: pg_morlet | B: halfvec exact cosine | C: halfvec HNSW | D: halfvec + client lag scoring |
+|---|---|---|---|---|
+| Recall@10 vs A | 1 | 0.647 | 0.647 | 1.000 |
+| Latency p50 / p95 | **6.85 / 8.06 ms** | **0.49 / 0.53 ms** | 0.50 / 0.55 ms | 20.3 / 27.7 ms |
+
+- **Same-run ratio:** A to B is **14×** at p50 (15× at p95). This is the figure the
+  root README quotes.
+- **Unchanged:** storage (1,794,048 bytes each), representation identity (1826/1826)
+  and the recall figures.
+- **C** again did not use its HNSW index.
 
 ## P2: TimescaleDB compression of raw samples (plan, written before running)
 
