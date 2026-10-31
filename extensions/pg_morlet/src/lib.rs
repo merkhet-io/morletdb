@@ -718,6 +718,49 @@ mod tests {
     }
 
     #[pg_test]
+    fn envelope_search_refetches_after_suppression() {
+        envelope_fixture();
+        // stride 64 at 2048-sample windows: each pick suppresses up to 63 neighbours, so the
+        // first batch of 200 rows can run out before top_k survive
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,64) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        // reference: the previous cursor-loop algorithm, scanning every row in order
+        Spi::run(r#"CREATE FUNCTION pg_temp.ranked_ref(top_k integer,suppress boolean)
+RETURNS TABLE(recording_id text,start_sample bigint,distance float8) LANGUAGE plpgsql AS $$
+DECLARE q float8[]; hit record; ids text[]:='{}'; st bigint[]:='{}'; en bigint[]:='{}'; i integer; blocked boolean;
+BEGIN
+  q:=morlet_envelope((SELECT samples FROM morlet_read_interval('env','A',2048,4096)));
+  FOR hit IN SELECT e.recording_id r,e.start_sample s,e.start_sample+2048 e_,morlet_envelope_distance(q,e.envelope,15) d
+    FROM env_envelopes e WHERE e.window_size=2048 AND (e.recording_id<>'A' OR e.start_sample+2048<=2048 OR e.start_sample>=4096)
+    ORDER BY d,e.recording_id,e.start_sample LOOP
+    blocked:=false;
+    IF suppress THEN
+      FOR i IN 1..coalesce(cardinality(ids),0) LOOP
+        IF ids[i]=hit.r AND st[i]<hit.e_ AND en[i]>hit.s THEN blocked:=true; EXIT; END IF;
+      END LOOP;
+    END IF;
+    CONTINUE WHEN blocked;
+    recording_id:=hit.r; start_sample:=hit.s; distance:=hit.d; RETURN NEXT;
+    ids:=ids||hit.r; st:=st||hit.s; en:=en||hit.e_;
+    EXIT WHEN cardinality(ids)=top_k;
+  END LOOP;
+END $$"#).unwrap();
+        for (k, sup) in [(10, true), (30, true), (10, false)] {
+            let new = format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_interval('env','A',2048,4096,'{{}}',{k},0.075,true,{sup},100000)");
+            let reference = format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM pg_temp.ranked_ref({k},{sup})");
+            assert_eq!(
+                Spi::get_one::<String>(&new).unwrap(),
+                Spi::get_one::<String>(&reference).unwrap(),
+                "top_k {k}, suppress {sup}"
+            );
+        }
+        // 3 recordings of 16384 samples hold at most 24 non-overlapping 2048-sample windows
+        assert!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',30,0.075,true,true,100000)").unwrap().unwrap() < 30);
+    }
+
+    #[pg_test]
     fn envelope_build_resumes_and_search_finds_matching_burst() {
         envelope_fixture();
         assert_eq!(Spi::get_one::<i64>("SELECT sum(morlet_build_envelopes('env',r,2048,1024,3))::bigint FROM unnest(ARRAY['A','B','C']) r").unwrap(), Some(9));

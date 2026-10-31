@@ -289,8 +289,9 @@ gallery sizes (about 180 candidates per query), and concurrent workloads.
 
 ### Probe search (opt-in, needs pgvector)
 
-The exact envelope search scans every eligible window: about 12 µs per window, so
-2.8 s for 235,000 windows on the test machine. Probe search makes large galleries
+The exact envelope search scans every eligible window, with PostgreSQL's parallel
+workers: about 1.3 s for 235,000 windows with 2 workers on the test machine (about
+12 µs per window on one core). Probe search makes large galleries
 interactive. It is approximate.
 
 ```sql
