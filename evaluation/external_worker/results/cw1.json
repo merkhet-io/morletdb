@@ -1,0 +1,225 @@
+{
+ "runs": [
+  {
+   "kind": "in",
+   "n": 1,
+   "wall_s": 45.58676604201901,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 740.039334417894,
+   "db_cpu_s": 44.22,
+   "db_cpu_ms_per_window": 1.3107659473559403,
+   "worker_cpu_s": 0.29,
+   "worker_cpu_ms_per_window": 0.008596158406450083,
+   "wal_bytes": 35117736,
+   "killed_at_s": null,
+   "backend_pids": [
+    14996
+   ],
+   "identical_to_in": true
+  },
+  {
+   "kind": "in",
+   "n": 2,
+   "wall_s": 22.704543916974217,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 1485.869970494255,
+   "db_cpu_s": 43.86,
+   "db_cpu_ms_per_window": 1.3000948541617263,
+   "worker_cpu_s": 0.44000000000000006,
+   "worker_cpu_ms_per_window": 0.013042447237372542,
+   "wal_bytes": 35975224,
+   "killed_at_s": null,
+   "backend_pids": [
+    15164,
+    15165
+   ],
+   "identical_to_in": true
+  },
+  {
+   "kind": "in",
+   "n": 4,
+   "wall_s": 12.683375458000228,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 2659.8597598654637,
+   "db_cpu_s": 48.05,
+   "db_cpu_ms_per_window": 1.4242945221721603,
+   "worker_cpu_s": 1.1199999999999997,
+   "worker_cpu_ms_per_window": 0.033198956604221,
+   "wal_bytes": 35845264,
+   "killed_at_s": null,
+   "backend_pids": [
+    15243,
+    15241,
+    15242,
+    15244
+   ],
+   "identical_to_in": true
+  },
+  {
+   "kind": "in",
+   "n": 8,
+   "wall_s": 7.366193833004218,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 4579.841471024821,
+   "db_cpu_s": 54.25,
+   "db_cpu_ms_per_window": 1.6080744605169552,
+   "worker_cpu_s": 1.4999999999999996,
+   "worker_cpu_ms_per_window": 0.044462888309224555,
+   "wal_bytes": 35964984,
+   "killed_at_s": null,
+   "backend_pids": [
+    15290,
+    15291,
+    15292,
+    15294,
+    15293,
+    15295,
+    15296,
+    15297
+   ],
+   "identical_to_in": true
+  },
+  {
+   "kind": "ext",
+   "n": 1,
+   "wall_s": 11.811110165988794,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 2856.29373749692,
+   "db_cpu_s": 4.51,
+   "db_cpu_ms_per_window": 0.13368508418306854,
+   "worker_cpu_s": 7.070000000000001,
+   "worker_cpu_ms_per_window": 0.20956841356414516,
+   "wal_bytes": 35117616,
+   "killed_at_s": null,
+   "backend_pids": [
+    15327
+   ],
+   "identical_to_in": true
+  },
+  {
+   "kind": "ext",
+   "n": 2,
+   "wall_s": 5.910101832996588,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 5708.192676418724,
+   "db_cpu_s": 4.529999999999999,
+   "db_cpu_ms_per_window": 0.13427792269385816,
+   "worker_cpu_s": 7.230000000000002,
+   "worker_cpu_ms_per_window": 0.21431112165046245,
+   "wal_bytes": 36014912,
+   "killed_at_s": null,
+   "backend_pids": [
+    15373,
+    15374
+   ],
+   "identical_to_in": true
+  },
+  {
+   "kind": "ext",
+   "n": 4,
+   "wall_s": 3.0168055840185843,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 11182.689457588918,
+   "db_cpu_s": 4.380000000000001,
+   "db_cpu_ms_per_window": 0.12983163386293575,
+   "worker_cpu_s": 7.550000000000001,
+   "worker_cpu_ms_per_window": 0.22379653782309702,
+   "wal_bytes": 35841560,
+   "killed_at_s": null,
+   "backend_pids": [
+    15392,
+    15393,
+    15394,
+    15398
+   ],
+   "identical_to_in": true
+  },
+  {
+   "kind": "ext",
+   "n": 8,
+   "wall_s": 2.4817920409841463,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 13593.403251717296,
+   "db_cpu_s": 5.43,
+   "db_cpu_ms_per_window": 0.16095565567939293,
+   "worker_cpu_s": 11.720000000000002,
+   "worker_cpu_ms_per_window": 0.34740336732274135,
+   "wal_bytes": 35960432,
+   "killed_at_s": null,
+   "backend_pids": [
+    15423,
+    15424,
+    15425,
+    15426,
+    15431,
+    15432,
+    15435,
+    15436
+   ],
+   "identical_to_in": true
+  }
+ ],
+ "kill_restart": {
+  "kind": "ext",
+  "n": 2,
+  "wall_s": 6.094926999998279,
+  "windows": 33736,
+  "expected": 33736,
+  "unique": 33736,
+  "windows_per_s": 5535.0950060615205,
+  "db_cpu_s": 3.37,
+  "db_cpu_ms_per_window": 0.09989328906805786,
+  "worker_cpu_s": 7.399999999999999,
+  "worker_cpu_ms_per_window": 0.21935024899217448,
+  "wal_bytes": 35672480,
+  "killed_at_s": 3.046507166000083,
+  "backend_pids": [
+   15462,
+   15453
+  ],
+  "identical_to_in": true
+ },
+ "duplicate_workers": {
+  "kind": "ext",
+  "n": 2,
+  "wall_s": 11.552664040995296,
+  "windows": 33736,
+  "expected": 33736,
+  "unique": 33736,
+  "windows_per_s": 2920.1922500546934,
+  "db_cpu_s": 7.24,
+  "db_cpu_ms_per_window": 0.21460754090585724,
+  "worker_cpu_s": 14.040000000000006,
+  "worker_cpu_ms_per_window": 0.4161726345743421,
+  "wal_bytes": 35118736,
+  "killed_at_s": null,
+  "backend_pids": [
+   15485,
+   15484
+  ],
+  "identical_to_in": true
+ },
+ "decision": {
+  "identity": true,
+  "robustness": true,
+  "db_cpu_moved_70pct": true,
+  "ext4_throughput_ge_in4": true,
+  "verdict": "PURSUE"
+ }
+}
