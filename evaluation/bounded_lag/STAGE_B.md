@@ -94,3 +94,9 @@ The recommended mode is the one satisfying all, preferring S if both do. Otherwi
 
 No change to pg_morlet, no Kafka/RisingWave/distributed parts, no tuning after results, no
 deletes or index rebuilds, one machine.
+
+## Changes after freeze
+
+1. **Restart after a crash while saving S-max** (no result printed or inspected). The WAL
+   byte count is returned as `Decimal`, which `json` cannot serialise; it is now converted
+   to `int`. All four runs are repeated from the start; nothing else changed.

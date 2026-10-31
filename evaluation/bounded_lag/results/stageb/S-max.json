@@ -1,0 +1,9 @@
+{
+ "tag": "S-max",
+ "mode": "S",
+ "paced": false,
+ "samples": 34560000,
+ "append_s": 37.821595907211304,
+ "append_samples_per_s": 913763.662559003,
+ "drain_s": 4.291534423828125e-06,
+ "wal_bytes": 

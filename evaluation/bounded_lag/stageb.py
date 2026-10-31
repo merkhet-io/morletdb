@@ -203,7 +203,7 @@ def run(root, out, mode, paced, kill_worker_after=None):
     samples = sum(c_["end"] - (c_["end"] - 1) // CHUNK * CHUNK for c_ in commits)
     res = {"tag": tag, "mode": mode, "paced": paced, "samples": samples, "append_s": t_appended - t_start,
            "append_samples_per_s": samples / (t_appended - t_start), "drain_s": t_drained - t_appended,
-           "wal_bytes": conn.execute("SELECT pg_wal_lsn_diff(%s, %s)", (lsn1, lsn0)).fetchone()[0],
+           "wal_bytes": int(conn.execute("SELECT pg_wal_lsn_diff(%s, %s)", (lsn1, lsn0)).fetchone()[0]),
            "worker_killed_at_s": (killed - t_start) if killed else None}
     res.update(check(conn, recs))
     res["bytes"] = {k: conn.execute(f"SELECT pg_total_relation_size('{r}')").fetchone()[0]
