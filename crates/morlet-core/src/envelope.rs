@@ -12,7 +12,7 @@
 //! coordinates, like the Morlet extractor. Windows are powers of two in 512..=32768.
 //! Stored values are IEEE binary16 (round to nearest even), decoded and z-scored again
 //! before matching. Matching is `1 - max` over lags of the biased cross-correlation.
-use crate::{validate, SignalError};
+use crate::{rawcodec, validate, SignalError};
 
 pub const ENVELOPE_VERSION: &str = "xc-envelope-f16-v1";
 const SMOOTH: usize = 50;
@@ -97,6 +97,41 @@ pub fn decode(bytes: &[u8]) -> Result<Vec<f64>, SignalError> {
         return Err(SignalError::InvalidEnvelope);
     }
     Ok(zscore(v))
+}
+
+/// Stored envelopes of the windows `first, first + stride, ...` that end at or before `end`
+/// (at most `max_windows`), from contiguous encoded raw chunks `(start_sample, encoded)` that
+/// cover them. Each chunk is decoded once; every envelope is `encode` of the same samples
+/// that reading the interval returns, so the bytes equal the per-window path.
+pub fn encode_windows(
+    chunks: &[(i64, &[u8])],
+    first: i64,
+    end: i64,
+    window: usize,
+    stride: usize,
+    max_windows: usize,
+) -> Result<Vec<(i64, Vec<u8>)>, SignalError> {
+    let Some(&(base, _)) = chunks.first() else {
+        return Ok(Vec::new());
+    };
+    let mut samples: Vec<f64> = Vec::new();
+    for &(start, encoded) in chunks {
+        if start != base + samples.len() as i64 {
+            return Err(SignalError::LengthMismatch);
+        }
+        samples.extend(rawcodec::decode(encoded).map_err(|_| SignalError::LengthMismatch)?);
+    }
+    let mut out = Vec::new();
+    let mut s = first;
+    while s + window as i64 <= end && out.len() < max_windows {
+        if s < base || (s - base) as usize + window > samples.len() {
+            return Err(SignalError::LengthMismatch);
+        }
+        let a = (s - base) as usize;
+        out.push((s, encode(&samples[a..a + window])?));
+        s += stride as i64;
+    }
+    Ok(out)
 }
 
 fn valid_window_values(m: usize) -> bool {
@@ -440,6 +475,43 @@ mod tests {
         assert!(
             shifted(&q, 410).is_err() && shifted(&q, -410).is_err() && shifted(&[], 0).is_err()
         );
+    }
+
+    #[test]
+    fn batched_windows_equal_per_window_encoding() {
+        let x: Vec<f64> = (0..20_000)
+            .map(|i| ((i * 7919 % 211) as f64 - 105.0) + ((i as f64) / 40.0).sin() * 300.0)
+            .collect();
+        let sizes = [4096usize, 3000, 4096, 5000, 3808];
+        let mut chunks = vec![];
+        let mut at = 0usize;
+        for n in sizes {
+            chunks.push((
+                at as i64,
+                crate::rawcodec::encode(&x[at..at + n], 1.0).unwrap(),
+            ));
+            at += n;
+        }
+        let refs: Vec<(i64, &[u8])> = chunks.iter().map(|(s, e)| (*s, e.as_slice())).collect();
+        let got = encode_windows(&refs, 2048, 20_000, 4096, 2048, 100).unwrap();
+        let expected: Vec<i64> = (1..)
+            .map(|k| k * 2048)
+            .take_while(|s| s + 4096 <= 20_000)
+            .collect();
+        assert_eq!(got.iter().map(|(s, _)| *s).collect::<Vec<_>>(), expected);
+        for (s, env) in &got {
+            let a = *s as usize;
+            assert_eq!(env, &encode(&x[a..a + 4096]).unwrap());
+        }
+        assert_eq!(
+            encode_windows(&refs, 0, 20_000, 4096, 2048, 3)
+                .unwrap()
+                .len(),
+            3
+        );
+        assert!(encode_windows(&refs[1..], 0, 20_000, 4096, 2048, 3).is_err()); // window before the chunks
+        let gap = [refs[0], refs[2]];
+        assert!(encode_windows(&gap, 0, 20_000, 4096, 2048, 10).is_err()); // not contiguous
     }
 
     /// The scoring loop before lags were blocked; kept as the bitwise reference.

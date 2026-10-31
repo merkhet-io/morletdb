@@ -1,0 +1,112 @@
+{
+ "external_reference": {
+  "kind": "ext",
+  "n": 4,
+  "wall_s": 4.30609616698348,
+  "windows": 33736,
+  "expected": 33736,
+  "unique": 33736,
+  "windows_per_s": 7834.474357230357,
+  "db_cpu_s": 5.699999999999999,
+  "db_cpu_ms_per_window": 0.16895897557505332,
+  "worker_cpu_s": 10.6,
+  "worker_cpu_ms_per_window": 0.3142044107185203,
+  "wal_bytes": 35842104,
+  "killed_at_s": null,
+  "backend_pids": [
+   19231,
+   19230,
+   19229,
+   19232
+  ]
+ },
+ "batched_in": [
+  {
+   "kind": "in",
+   "n": 1,
+   "wall_s": 10.939760667009978,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 3083.7968971053024,
+   "db_cpu_s": 10.49,
+   "db_cpu_ms_per_window": 0.3109437989091771,
+   "worker_cpu_s": 0.28999999999999915,
+   "worker_cpu_ms_per_window": 0.008596158406450057,
+   "wal_bytes": 35123776,
+   "killed_at_s": null,
+   "backend_pids": [
+    19250
+   ],
+   "identical_to_old_bytes": true
+  },
+  {
+   "kind": "in",
+   "n": 2,
+   "wall_s": 5.535554625006625,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 6094.4209361784815,
+   "db_cpu_s": 10.47,
+   "db_cpu_ms_per_window": 0.3103509603983875,
+   "worker_cpu_s": 0.4300000000000015,
+   "worker_cpu_ms_per_window": 0.012746027981977753,
+   "wal_bytes": 35605800,
+   "killed_at_s": null,
+   "backend_pids": [
+    19271,
+    19272
+   ],
+   "identical_to_old_bytes": true
+  },
+  {
+   "kind": "in",
+   "n": 4,
+   "wall_s": 2.8034406249935273,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 12033.784378821254,
+   "db_cpu_s": 10.25,
+   "db_cpu_ms_per_window": 0.3038297367797012,
+   "worker_cpu_s": 0.7200000000000006,
+   "worker_cpu_ms_per_window": 0.021342186388427813,
+   "wal_bytes": 35841584,
+   "killed_at_s": null,
+   "backend_pids": [
+    19293,
+    19294,
+    19295,
+    19296
+   ],
+   "identical_to_old_bytes": true
+  },
+  {
+   "kind": "in",
+   "n": 8,
+   "wall_s": 1.8483588749950286,
+   "windows": 33736,
+   "expected": 33736,
+   "unique": 33736,
+   "windows_per_s": 18251.86680811146,
+   "db_cpu_s": 12.42,
+   "db_cpu_ms_per_window": 0.3681527152003794,
+   "worker_cpu_s": 1.3800000000000008,
+   "worker_cpu_ms_per_window": 0.04090585724448662,
+   "wal_bytes": 35960424,
+   "killed_at_s": null,
+   "backend_pids": [
+    19313,
+    19314,
+    19315,
+    19316,
+    19317,
+    19318,
+    19319,
+    19320
+   ],
+   "identical_to_old_bytes": true
+  }
+ ]
+}

@@ -261,6 +261,47 @@ fn morlet_envelope_decode(envelope: &[u8]) -> Vec<f64> {
     morlet_core::envelope::decode(envelope).unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
+/// Stored envelopes of windows `first_start, first_start + stride, ...` ending at or before
+/// `range_end` (at most `max_windows`), from the contiguous encoded chunks that cover them,
+/// each chunk decoded once. Element k is the envelope of the window at
+/// `first_start + k * stride`; bytes equal `morlet_envelope_encode` of the read interval.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelopes_from_chunks(
+    chunks: pgrx::Array<'_, &[u8]>,
+    starts: Vec<Option<i64>>,
+    first_start: i64,
+    range_end: i64,
+    window_size: i32,
+    stride: i32,
+    max_windows: i32,
+) -> Vec<Vec<u8>> {
+    if chunks.len() != starts.len() {
+        pgrx::error!("chunks and starts differ in length");
+    }
+    if window_size <= 0 || stride <= 0 || max_windows < 0 {
+        pgrx::error!("window_size and stride must be positive");
+    }
+    let mut pairs = Vec::with_capacity(starts.len());
+    for (chunk, start) in chunks.iter().zip(&starts) {
+        let (Some(chunk), Some(start)) = (chunk, *start) else {
+            pgrx::error!("chunks and starts must not contain NULL");
+        };
+        pairs.push((start, chunk));
+    }
+    morlet_core::envelope::encode_windows(
+        &pairs,
+        first_start,
+        range_end,
+        window_size as usize,
+        stride as usize,
+        max_windows as usize,
+    )
+    .unwrap_or_else(|_| pgrx::error!("chunks are not contiguous or do not cover the windows"))
+    .into_iter()
+    .map(|(_, envelope)| envelope)
+    .collect()
+}
+
 /// 1 - max over |lag| <= max_lag of the biased cross-correlation of a query envelope
 /// (morlet_envelope) and a stored envelope.
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -758,6 +799,23 @@ END $$"#).unwrap();
         }
         // 3 recordings of 16384 samples hold at most 24 non-overlapping 2048-sample windows
         assert!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',30,0.075,true,true,100000)").unwrap().unwrap() < 30);
+    }
+
+    #[pg_test]
+    fn batched_envelope_build_equals_the_per_window_encoding() {
+        envelope_fixture();
+        // uneven calls so batches start mid-recording; then one large call
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024,5) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        Spi::run("SELECT morlet_build_envelopes('env',r,2048,1024,300) FROM unnest(ARRAY['A','B','C']) r").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM env_envelopes").unwrap(),
+            Some(45)
+        );
+        assert_eq!(Spi::get_one::<bool>("SELECT bool_and(e.envelope = (SELECT morlet_envelope_encode(i.samples) FROM morlet_read_interval('env',e.recording_id,e.start_sample,e.start_sample+2048) i)) FROM env_envelopes e").unwrap(), Some(true));
+        assert_eq!(Spi::get_one::<i64>("SELECT cardinality(morlet_envelopes_from_chunks(ARRAY[]::bytea[],ARRAY[]::bigint[],0,4096,2048,1024,10))::bigint").unwrap(), Some(0));
     }
 
     #[pg_test]
