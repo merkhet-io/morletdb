@@ -1,5 +1,7 @@
 # F1: does a similar past imply a similar future? Retrieval forecasting of bearing log-RMS trajectories
 
+**Result: STOP at the gate (PAUSE).** kNN against the best baseline at H = 10 is 0.894 [0.836, 1.076], better on 7 of 15 bearings, and not distinguishable from random or shuffled retrieval. The gain is confined to the two shortest bearings. See [RESULTS.md](RESULTS.md).
+
 Status: **development gate FROZEN** in the commit that adds this file.
 - **Computed so far:** only the trajectories (`trajectories.py`). No forecast or baseline
   has been computed, and the trajectories have not been inspected beyond their lengths.
