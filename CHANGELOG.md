@@ -4,6 +4,24 @@
 
 Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
 0.3.0-alpha.1):
+- Exact envelope search runs with parallel workers, with identical results.
+  `morlet_envelope_ranked` (behind `morlet_search_envelopes` and
+  `morlet_search_envelope_interval`) used to walk a cursor over every scored
+  candidate, and PostgreSQL never parallelises a cursor. It now fetches the best rows
+  in one statement, which PostgreSQL can parallelise. Overlap suppression then walks
+  those rows, and the statement is repeated with a larger limit if suppression uses
+  them up before `top_k` survive.
+  - Checked on R2's CX 2025 gallery (234,762 windows, 100 queries) with four
+    settings: unfiltered; one station; one station with top 100; one station without
+    suppression. All 400 result lists were identical and distances bitwise equal.
+  - Median / p95 latency, warm, one client, 2 workers launched, machine load
+    average 6–7 during both measurements:
+
+  | Gallery | Before | After |
+  |---|---|---|
+  | 234,762 windows, unfiltered | 3,323 / 3,798 ms | 1,255 / 1,341 ms |
+  | one station (58,764 windows) | 780 / 896 ms | 306 / 364 ms |
+  | one station, top 100 | 785 / 943 ms | 370 / 537 ms |
 - Probe search for envelopes (opt-in, needs pgvector; pg_morlet itself does not
   depend on it). `morlet_enable_envelope_probes` keeps a float16 copy of one window
   size's envelopes with an inner-product HNSW index. `morlet_search_envelope_probes`
