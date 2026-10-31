@@ -66,3 +66,14 @@ legitimate **storage-saving operating point**: same results, exact search unchan
 p95 about 20 ms higher and still far below exact search. Whether to offer it as an opt-in
 "compact" mode is a product decision, not something this protocol's thresholds decide.
 No further variants were tried, per the protocol's stop rule.
+
+## Reproducing
+
+The prototype functions (`morlet_core::envelope::decode_halfvec_send` and
+`morlet_envelope_distance_send`, with a bitwise test) are in commit 6a34b63 and were removed
+from this branch afterwards, because SS1 is not adopted and an unused SQL function would need
+its own upgrade-script entry. Build that commit's extension, then create the function in a
+scratch database (`CREATE FUNCTION public.morlet_envelope_distance_send(double precision[], bytea,
+integer) RETURNS double precision IMMUTABLE PARALLEL SAFE STRICT LANGUAGE c AS '$libdir/pg_morlet',
+'morlet_envelope_distance_send_wrapper'`) before running `ss1.py`; `ss1b.py` needs only
+`morlet_envelope_probe` (on `main`).

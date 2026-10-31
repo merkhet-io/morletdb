@@ -281,23 +281,6 @@ fn morlet_envelope_probe(query_envelope: Vec<Option<f64>>, lag: i32) -> Vec<f64>
         .unwrap_or_else(|_| pgrx::error!("lag must be smaller than the envelope length"))
 }
 
-/// `morlet_envelope_distance` for an envelope stored in a pgvector `halfvec` column, passed as
-/// `halfvec_send(v)`. Takes `bytea`, so pg_morlet needs no pgvector type at install time.
-#[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_envelope_distance_send(
-    query_envelope: Vec<Option<f64>>,
-    stored_send: &[u8],
-    max_lag: i32,
-) -> f64 {
-    let stored = morlet_core::envelope::decode_halfvec_send(stored_send)
-        .unwrap_or_else(|e| pgrx::error!("{}", e));
-    if max_lag < 0 {
-        pgrx::error!("max_lag must be nonnegative");
-    }
-    morlet_core::envelope::distance(&checked_samples(query_envelope), &stored, max_lag as usize)
-        .unwrap_or_else(|_| pgrx::error!("envelope lengths differ or max_lag is too large"))
-}
-
 /// `simple-v1` values of one segment, in the order of morlet_simple_value_names().
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_simple_values(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f64> {
