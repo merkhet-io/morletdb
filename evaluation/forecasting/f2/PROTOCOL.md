@@ -1,5 +1,7 @@
 # F2: does retrieval help forecast a fast-degrading unit? (C-MAPSS FD001)
 
+**Result: STOP.** Retrieval beats random and shuffled controls (0.84), but a tuned AR model beats retrieval: kNN/AR = 1.067 [1.044, 1.090] at H = 10 on fast-regime origins. The confirmation units are untouched. See [RESULTS.md](RESULTS.md).
+
 Status: **FROZEN** in the commit that adds this file.
 - **What has been read:** only the readme and the first rows of `train_FD001.txt`. No
   statistic of the data has been computed.
