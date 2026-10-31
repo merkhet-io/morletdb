@@ -4,6 +4,14 @@
 
 Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
 0.3.0-alpha.1):
+- `morlet_build_envelopes` builds encoded collections in batches of up to 256 windows. It
+  decodes each raw chunk once (`morlet_envelopes_from_chunks`) instead of reading every window
+  through its own SQL statement, with byte-identical envelopes. On 33,736 windows of CX seismic
+  data (4096 / 2048):
+  - one session: 740 → 3,084 windows/s;
+  - database CPU per window: 1.31 → 0.31 ms;
+  - four sessions: 2,660 → 12,034 windows/s.
+  Legacy `float8[]` collections keep the per-window path.
 - Exact envelope search runs with parallel workers, with identical results.
   `morlet_envelope_ranked` (behind `morlet_search_envelopes` and
   `morlet_search_envelope_interval`) used to walk a cursor over every scored

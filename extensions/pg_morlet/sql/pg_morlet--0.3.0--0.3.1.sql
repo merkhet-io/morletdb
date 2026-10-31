@@ -26,6 +26,19 @@ IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_envelope_probe_wrapper';
 
+CREATE FUNCTION "morlet_envelopes_from_chunks"(
+	"chunks" bytea[], /* pgrx::datum::array::Array<'_, &[u8]> */
+	"starts" bigint[], /* alloc::vec::Vec<core::option::Option<i64>> */
+	"first_start" bigint, /* i64 */
+	"range_end" bigint, /* i64 */
+	"window_size" INT, /* i32 */
+	"stride" INT, /* i32 */
+	"max_windows" INT /* i32 */
+) RETURNS bytea[] /* alloc::vec::Vec<alloc::vec::Vec<u8>> */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelopes_from_chunks_wrapper';
+
 -- Pooled relative spread per simple-v1 value: for every context with at least 3
 -- comparable segments, median(|x - median|)/|median|; then the median over contexts,
 -- floored at spread_floor (default 1%) so near-constant values cannot turn negligible
@@ -254,6 +267,7 @@ CREATE OR REPLACE FUNCTION public.morlet_build_envelopes(collection regclass,rec
   window_size integer DEFAULT 4096,stride integer DEFAULT 2048,max_windows integer DEFAULT 10000)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; recording_end bigint; s bigint; last bigint; written bigint:=0; probes regclass; vschema text;
+  rels record; n integer; hi bigint;
 BEGIN
   IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) OR stride NOT BETWEEN 1 AND 32768
     OR max_windows NOT BETWEEN 1 AND 1000000 THEN
@@ -272,7 +286,30 @@ BEGIN
   EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
     INTO last USING recording_id,window_size;
   s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
-  WHILE s+window_size<=recording_end AND written<max_windows LOOP
+  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  -- Encoded collections: batches of up to 256 windows from chunks decoded once
+  -- (morlet_envelopes_from_chunks); the bytes equal the per-window path below.
+  WHILE rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
+    n:=least(max_windows-written,256,(recording_end-window_size-s)/stride+1);
+    hi:=s+(n-1)::bigint*stride+window_size;
+    EXECUTE format('WITH c AS (SELECT array_agg(c.encoded ORDER BY c.start_sample) enc,
+        array_agg(c.start_sample ORDER BY c.start_sample) st
+        FROM %s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample+c.sample_count>$2)
+      INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$4,$2+(w.k-1)*$5,w.envelope
+      FROM c, unnest(public.morlet_envelopes_from_chunks(c.enc,c.st,$2,$3,$4,$5,$6)) WITH ORDINALITY w(envelope,k)
+      ON CONFLICT DO NOTHING',rels.chunks,rel)
+      USING recording_id,s,hi,window_size,stride,n;
+    IF probes IS NOT NULL THEN
+      EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+        FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample BETWEEN $3 AND $4 ON CONFLICT DO NOTHING',probes,vschema,rel)
+        USING recording_id,window_size,s,s+(n-1)::bigint*stride;
+    END IF;
+    written:=written+n;
+    s:=s+n::bigint*stride;
+  END LOOP;
+  -- Legacy float8[] collections: one window at a time.
+  WHILE NOT rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
     EXECUTE format('INSERT INTO %s(recording_id,window_size,start_sample,envelope)
       SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
       FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
