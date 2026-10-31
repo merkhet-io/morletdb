@@ -1,0 +1,20 @@
+{
+ "modes": {
+  "S": {
+   "recall_ge_0.95": true,
+   "p_p95_below_exact_p95": true,
+   "complete_and_unique": true,
+   "throughput_ge_half_of_W": true,
+   "usable": true
+  },
+  "W": {
+   "recall_ge_0.95": true,
+   "p_p95_below_exact_p95": true,
+   "complete_and_unique": true,
+   "processing_delay_p95_le_5s": true,
+   "usable": true
+  }
+ },
+ "recommended": "S",
+ "verdict": "USABLE DURING INGESTION"
+}

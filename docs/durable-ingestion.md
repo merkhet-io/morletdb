@@ -287,6 +287,65 @@ Frozen evaluations on seismic event windows (CX, 4096-sample windows):
 **Not established:** relevance on machine data, behaviour beyond the tested
 gallery sizes (about 180 candidates per query), and concurrent workloads.
 
+### Probe search (opt-in, needs pgvector)
+
+The exact envelope search scans every eligible window: about 12 µs per window, so
+2.8 s for 235,000 windows on the test machine. Probe search makes large galleries
+interactive. It is approximate.
+
+```sql
+CREATE EXTENSION vector;                                   -- pgvector, 0.7 or later
+SELECT morlet_enable_envelope_probes('signals', 4096);     -- creates signals_probes_4096
+SELECT * FROM morlet_search_envelope_probes('signals', 'pump-7', 81920, 86016);
+```
+
+- **Why it works:** each lag term of the envelope distance is the inner product of
+  the stored envelope with the query envelope shifted by that lag and zero-padded
+  (`morlet_envelope_probe`). The search issues probes at lags −L, −L+5, …, L, where
+  L is ±30 at 4096 samples, so 13 probes. It takes the 50 best windows per probe from
+  an inner-product HNSW index on a float16 copy of the envelopes. It then re-ranks
+  their union with the exact scorer, applying the same eligibility, source exclusion,
+  ordering and overlap suppression as `morlet_search_envelope_interval`. Returned
+  distances are therefore exact; only the candidate set is approximate.
+- **Arguments:** the same as `morlet_search_envelope_interval`, plus `per_probe`
+  (default 50) and `probe_step` (default 5). `max_candidates` does not apply.
+- **Maintenance:** `morlet_enable_envelope_probes` fills the table from the
+  envelopes already stored and builds the index. After that,
+  `morlet_build_envelopes` adds each new window's row in the same transaction.
+  Calling it in the append transaction makes a window searchable when it commits.
+  Rows follow their envelopes: deleting an envelope or a recording deletes them.
+  `DROP TABLE signals_probes_4096` disables probe search.
+- **Storage:** the copy and its index take about 1.0–1.4× the raw chunk table at
+  4096-sample windows with stride 2048. That is in addition to the envelope table.
+- **Filters:** eligibility is applied after probing. A selective metadata filter
+  therefore discards candidates and lowers recall. For small filtered galleries the
+  exact search is fast and should be used.
+- **pgvector is optional.** pg_morlet does not depend on it. The probe table and its
+  index are created at enable time, and only these two functions use it.
+
+**Evidence** (`evaluation/bounded_lag`, PR #62). One machine, warm, one client,
+unfiltered galleries of about 235,000 windows; fidelity against the exact search,
+not relevance. Development and confirmation used the experiment harness, which
+issues the same probes and re-rank as these functions; the product check ran the
+functions themselves.
+- **Development** (CX 2025):
+  - recall@10 0.998;
+  - p95 115 ms against 2,835 ms for the exact search.
+- **Independent confirmation** (CX stations and a year no earlier study had read,
+  March 2021):
+  - recall@10 0.976;
+  - p95 131 ms against 2,854 ms for the exact search and 713 ms for an exact parallel
+    SQL scan;
+  - with the same number of candidates, a zero-lag shortlist reached 0.613.
+- **These functions, on the same held-out data:**
+  - recall@10 0.977 (random queries 0.998, high-energy 0.956);
+  - p50 37 ms, p95 50 ms;
+  - enabling on 234,622 existing windows took 5.1 minutes, including the backfill and
+    the index build.
+- **During replayed ingestion:** with synchronous maintenance, every window was
+  searchable at commit and appends ran at 919,000 samples/s with 4 writers. Recall
+  against the exact search on the same snapshot was 0.9997.
+
 ## Progress and search
 
 Status exposes received samples, next window start, visible segment count and

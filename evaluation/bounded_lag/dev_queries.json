@@ -1,0 +1,505 @@
+{
+"source": "PR #61 evaluation/retrieval_scaling/results/bench.json (R2, commit c07396e)",
+"queries": [
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 3133440
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 518144
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 7913472
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 6776832
+},
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 4644864
+},
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 5799936
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 1937408
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 5990400
+},
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 2441216
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 7940096
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 4765696
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 8284160
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 2179072
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 6944768
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 7038976
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 5758976
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 2588672
+},
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 4759552
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 495616
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 4513792
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 5292032
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 4673536
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 1218560
+},
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 4276224
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 3926016
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 8331264
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 5791744
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 2940928
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 7032832
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 8345600
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 8007680
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 4524032
+},
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 6029312
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 4945920
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 7718912
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 3792896
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 3356672
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 7585792
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 7161856
+},
+{
+"type": "random",
+"recording_id": "PB06.d01.0",
+"start": 2721792
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 1316864
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 7700480
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 4747264
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 7305216
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 4796416
+},
+{
+"type": "random",
+"recording_id": "PB01.d01.0",
+"start": 2660352
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 2306048
+},
+{
+"type": "random",
+"recording_id": "PB02.d01.0",
+"start": 8157184
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 1507328
+},
+{
+"type": "random",
+"recording_id": "PSGCX.d01.0",
+"start": 7380992
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 2617344
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 2617344
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 2621440
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 2617344
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 7919616
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 2621440
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 1619968
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 1617920
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 2621440
+},
+{
+"type": "energetic",
+"recording_id": "PSGCX.d01.0",
+"start": 2621440
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 7919616
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 6387712
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 2625536
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 6387712
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 5701632
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 1615872
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 3463168
+},
+{
+"type": "energetic",
+"recording_id": "PSGCX.d01.0",
+"start": 2617344
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 1996800
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 2625536
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 3207168
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 2625536
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 1069056
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 8042496
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 8042496
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 7923712
+},
+{
+"type": "energetic",
+"recording_id": "PSGCX.d01.0",
+"start": 2625536
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 1343488
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 5701632
+},
+{
+"type": "energetic",
+"recording_id": "PSGCX.d01.0",
+"start": 1619968
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 1064960
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 6330368
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 3409920
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 8355840
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 5185536
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 1622016
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 7921664
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 5185536
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 2629632
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 4249600
+},
+{
+"type": "energetic",
+"recording_id": "PSGCX.d01.0",
+"start": 3459072
+},
+{
+"type": "energetic",
+"recording_id": "PB06.d01.0",
+"start": 7221248
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 3459072
+},
+{
+"type": "energetic",
+"recording_id": "PB01.d01.0",
+"start": 6830080
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 6832128
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 3346432
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 1624064
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 2152448
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 1347584
+},
+{
+"type": "energetic",
+"recording_id": "PB02.d01.0",
+"start": 6524928
+}
+]
+}

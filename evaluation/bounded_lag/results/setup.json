@@ -1,0 +1,10 @@
+{
+ "ip_index_build_s": 54.196664874994894,
+ "bytes": {
+  "raw_chunks": 370851840,
+  "envelopes": 223330304,
+  "halfvec_table": 240500736,
+  "cosine_hnsw": 274857984,
+  "ip_hnsw": 274841600
+ }
+}

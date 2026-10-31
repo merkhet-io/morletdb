@@ -18,6 +18,14 @@ IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_decode_interval_wrapper';
 
+CREATE FUNCTION "morlet_envelope_probe"(
+	"query_envelope" double precision[], /* alloc::vec::Vec<core::option::Option<f64>> */
+	"lag" INT /* i32 */
+) RETURNS double precision[] /* alloc::vec::Vec<f64> */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_probe_wrapper';
+
 -- Pooled relative spread per simple-v1 value: for every context with at least 3
 -- comparable segments, median(|x - median|)/|median|; then the median over contexts,
 -- floored at spread_floor (default 1%) so near-constant values cannot turn negligible
@@ -238,6 +246,48 @@ BEGIN
     source.sample_rate_hz,source.channel,source.unit,source.metadata,source.checkpoint->>'extractor_version';
 END $$;
 
+-- Builds envelopes for complete windows on the grid start_sample = k*stride,
+-- resuming after the last stored window of this size. At most max_windows per
+-- call, so long recordings can be built in bounded transactions. Returns the
+-- number of rows written; 0 means the recording is up to date.
+CREATE OR REPLACE FUNCTION public.morlet_build_envelopes(collection regclass,recording_id text,
+  window_size integer DEFAULT 4096,stride integer DEFAULT 2048,max_windows integer DEFAULT 10000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass; recording_end bigint; s bigint; last bigint; written bigint:=0; probes regclass; vschema text;
+BEGIN
+  IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) OR stride NOT BETWEEN 1 AND 32768
+    OR max_windows NOT BETWEEN 1 AND 1000000 THEN
+    RAISE EXCEPTION 'window_size must be a power of two in 512..32768, stride 1..32768, max_windows 1..1000000';
+  END IF;
+  rel:=public.morlet_envelope_relation(collection);
+  -- With probe search enabled for this window size, each new envelope's vector row is
+  -- written in the same transaction (morlet_enable_envelope_probes).
+  probes:=public.morlet_envelope_probe_relation(collection,window_size);
+  IF probes IS NOT NULL THEN
+    SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+  END IF;
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
+    INTO last USING recording_id,window_size;
+  s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
+  WHILE s+window_size<=recording_end AND written<max_windows LOOP
+    EXECUTE format('INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
+      FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
+      USING recording_id,window_size,s,collection;
+    IF probes IS NOT NULL THEN
+      EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+        FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample=$3 ON CONFLICT DO NOTHING',probes,vschema,rel)
+        USING recording_id,window_size,s;
+    END IF;
+    written:=written+1;
+    s:=s+stride;
+  END LOOP;
+  RETURN written;
+END $$;
+
 -- Level track (local-level Kalman filter, model local-level-v1) of one simple-v1 value
 -- over the episodes of a segment's history: the segments morlet_compare_summary would
 -- compare with (same context for match_keys, rate, channel, unit, metadata_filter and
@@ -324,5 +374,129 @@ BEGIN
     level:=CASE WHEN status='invalid_value' THEN NULL ELSE m END;
     level_var:=CASE WHEN status='invalid_value' THEN NULL ELSE p END;
     RETURN NEXT;
+  END LOOP;
+END $$;
+
+-- Probe search (opt-in; needs pgvector). A float16 vector copy of one window size's
+-- envelopes with an inner-product HNSW index. Each lag term of morlet_envelope_distance is
+-- the inner product of the stored envelope with a zero-padded shifted query
+-- (morlet_envelope_probe), so a grid of shifted probes retrieves candidates that the exact
+-- scorer then re-ranks. Approximate: see docs/durable-ingestion.md#probe-search. Objects
+-- that use pgvector are created with dynamic SQL so pg_morlet does not depend on it.
+CREATE FUNCTION public.morlet_envelope_probe_relation(collection regclass,window_size integer)
+RETURNS regclass LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass;
+BEGIN
+  SELECT to_regclass(format('%I.%I',n.nspname,c.relname||'_probes_'||window_size)) INTO rel
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  RETURN rel;
+END $$;
+
+-- Creates <collection>_probes_<window_size>, fills it from the stored envelopes and builds
+-- the index. Afterwards morlet_build_envelopes keeps it current; rows follow their envelope
+-- (foreign key, ON DELETE CASCADE). DROP TABLE disables it.
+CREATE FUNCTION public.morlet_enable_envelope_probes(collection regclass,window_size integer DEFAULT 4096)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE env regclass; vschema text; schema_name text; collection_name text; rel regclass;
+BEGIN
+  IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) THEN
+    RAISE EXCEPTION 'window_size must be a power of two in 512..32768';
+  END IF;
+  env:=public.morlet_envelope_relation(collection);
+  SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+  IF vschema IS NULL THEN
+    RAISE EXCEPTION 'probe search needs the pgvector extension (CREATE EXTENSION vector)';
+  END IF;
+  IF public.morlet_envelope_probe_relation(collection,window_size) IS NOT NULL THEN
+    RAISE EXCEPTION 'probe search is already enabled for window_size %',window_size;
+  END IF;
+  SELECT n.nspname,c.relname INTO schema_name,collection_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    recording_id text NOT NULL,
+    window_size integer NOT NULL CHECK(window_size=%5$s),
+    start_sample bigint NOT NULL,
+    v %3$I.halfvec(%4$s) NOT NULL,
+    PRIMARY KEY(recording_id,start_sample),
+    FOREIGN KEY(recording_id,window_size,start_sample) REFERENCES %6$s(recording_id,window_size,start_sample) ON DELETE CASCADE)',
+    schema_name,collection_name||'_probes_'||window_size,vschema,(window_size+9)/10,window_size,env);
+  rel:=public.morlet_envelope_probe_relation(collection,window_size);
+  EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+    FROM %s WHERE window_size=$1',rel,vschema,env) USING window_size;
+  EXECUTE format('CREATE INDEX ON %s USING hnsw (v %I.halfvec_ip_ops) WITH (m=16,ef_construction=64)',rel,vschema);
+  RETURN rel;
+END $$;
+
+-- Query by a stored interval, like morlet_search_envelope_interval, but candidates come
+-- from shifted probes at lags -L, -L+probe_step, ..., L (L = floor(max_lag_fraction*n)),
+-- per_probe each from the index; their union is re-ranked by the exact scorer with the
+-- same eligibility, exclusion, ordering and overlap suppression. Eligibility is applied
+-- after probing, so a selective metadata filter lowers recall; use the exact search for
+-- small filtered galleries.
+CREATE FUNCTION public.morlet_search_envelope_probes(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  per_probe integer DEFAULT 50,probe_step integer DEFAULT 5)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; env regclass; probes regclass; vschema text; q float8[]; width integer; lag integer;
+  l integer; lags integer[]; ids text[]:=ARRAY[]::text[]; starts bigint[]:=ARRAY[]::bigint[]; got_ids text[];
+  got_starts bigint[]; ef text; hit record; picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
+  picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
+BEGIN
+  IF top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' OR NOT (max_lag_fraction BETWEEN 0 AND 0.5)
+    OR per_probe NOT BETWEEN 1 AND 1000 OR probe_step<1 THEN
+    RAISE EXCEPTION 'invalid top_k (1..100), metadata filter, max_lag_fraction (0..0.5), per_probe (1..1000) or probe_step (>= 1)';
+  END IF;
+  SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
+  env:=public.morlet_envelope_relation(collection);
+  width:=cardinality(source.samples);
+  probes:=public.morlet_envelope_probe_relation(collection,width);
+  IF probes IS NULL THEN
+    RAISE EXCEPTION 'probe search is not enabled for window_size % (morlet_enable_envelope_probes)',width;
+  END IF;
+  SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+  q:=public.morlet_envelope(source.samples);
+  lag:=floor(max_lag_fraction*cardinality(q));
+  lags:=ARRAY(SELECT generate_series(-lag,lag,probe_step));
+  IF lags[cardinality(lags)]<>lag THEN lags:=lags||lag; END IF;
+  -- The index returns at most hnsw.ef_search rows per scan. Use max(per_probe, 100), as in
+  -- the evaluated configuration, for this call only.
+  ef:=current_setting('hnsw.ef_search',true);
+  PERFORM set_config('hnsw.ef_search',greatest(per_probe,100)::text,true);
+  FOREACH l IN ARRAY lags LOOP
+    EXECUTE format('SELECT array_agg(p.recording_id),array_agg(p.start_sample) FROM (SELECT recording_id,start_sample
+      FROM %s ORDER BY v OPERATOR(%I.<#>) $1::%I.halfvec LIMIT $2) p',probes,vschema,vschema)
+      INTO got_ids,got_starts USING public.morlet_envelope_probe(q,l),per_probe;
+    ids:=ids||coalesce(got_ids,ARRAY[]::text[]);
+    starts:=starts||coalesce(got_starts,ARRAY[]::bigint[]);
+  END LOOP;
+  PERFORM set_config('hnsw.ef_search',coalesce(nullif(ef,''),'40'),true);
+  FOR hit IN EXECUTE format('SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+      public.morlet_envelope_distance($1,e.envelope,$2) AS distance,r.metadata
+    FROM (SELECT DISTINCT * FROM unnest($3::text[],$4::bigint[]) c(recording_id,start_sample)) c
+    JOIN %s e ON e.recording_id=c.recording_id AND e.start_sample=c.start_sample AND e.window_size=$5
+    JOIN %s r ON r.recording_id=e.recording_id
+    WHERE r.sample_rate_hz=$6 AND r.channel=$7 AND r.unit=$8 AND r.metadata @> $9
+      AND (NOT $10 OR e.recording_id<>$11 OR e.start_sample+e.window_size<=$12 OR e.start_sample>=$13)
+    ORDER BY distance,e.recording_id,e.start_sample',env,collection)
+    USING q,lag,ids,starts,width,source.sample_rate_hz,source.channel,source.unit,metadata_filter,exclude_source,
+      source_recording_id,interval_start,interval_end
+  LOOP
+    blocked:=false;
+    IF suppress_overlaps AND picked>0 THEN
+      FOR idx IN 1..picked LOOP
+        IF picked_ids[idx]=hit.recording_id AND picked_starts[idx]<hit.end_sample AND picked_ends[idx]>hit.start_sample THEN
+          blocked:=true; EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+    IF blocked THEN CONTINUE; END IF;
+    RETURN QUERY SELECT hit.recording_id,hit.start_sample,hit.end_sample,hit.distance,hit.metadata;
+    picked:=picked+1;
+    picked_ids:=array_append(picked_ids,hit.recording_id);
+    picked_starts:=array_append(picked_starts,hit.start_sample);
+    picked_ends:=array_append(picked_ends,hit.end_sample);
+    EXIT WHEN picked=top_k;
   END LOOP;
 END $$;
