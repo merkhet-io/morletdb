@@ -1,5 +1,7 @@
 # CV1: does motor current carry vibration information beyond the measured operating conditions?
 
+**Result: PAUSE.** D/B = 0.975 [0.905, 1.055], 18 of 31 bearings better, not separable from shuffled current. An improvement of 10% or more is ruled out. Descriptively, current helps only in the 15–30 kHz band, probably through electrical coupling. See [RESULTS.md](RESULTS.md).
+
 Status: **gate FROZEN** in the commit that adds this file.
 - **Inspected so far:** only the file structure (one development file, `K002/N15_M07_F10_K002_1.mat`).
   No feature or model has been computed.
