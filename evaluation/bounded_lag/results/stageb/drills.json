@@ -1,0 +1,10 @@
+{
+ "duplicate_replay": {
+  "unchanged": true
+ },
+ "gap": {
+  "rejected": true,
+  "error": "chunk offset must equal the next sample offset (no gaps, overlaps or replays)",
+  "unchanged": true
+ }
+}

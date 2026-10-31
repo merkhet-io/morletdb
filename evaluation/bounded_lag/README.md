@@ -11,3 +11,7 @@ that stay true while recordings are ingested?
 
 Stage B (streaming maintenance), the confirmation slice and the RisingWave ADR are not in
 this PR.
+
+Update: [CONFIRMATION.md](CONFIRMATION.md) and [STAGE_B.md](STAGE_B.md) were frozen and run;
+results in [STAGE_B_RESULTS.md](STAGE_B_RESULTS.md) (**confirmed**; **usable during
+ingestion**, synchronous maintenance recommended). The RisingWave ADR is still deferred.

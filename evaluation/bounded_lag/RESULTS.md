@@ -122,7 +122,14 @@ scans (`UNION ALL`), deduplication in the client, and the in-database exact re-r
   constructive counterpart: probing the lag terms directly removes that loss. It is
   development evidence until confirmed on independent data.
 
-## Next steps (not started)
+## Update: confirmation and Stage B (see [STAGE_B_RESULTS.md](STAGE_B_RESULTS.md))
+
+- **Confirmed** on CX stations and a year no study had read (PB05/PB11/PB14/PB18, March
+  2021): recall 0.976, p95 131 ms against 2,854 ms exhaustive and 713 ms exact parallel.
+- **Usable during ingestion:** synchronous maintenance keeps every window searchable at
+  commit with 919k samples/s of appends; probe recall against the same snapshot 0.9997.
+
+## Next steps (as written before confirmation and Stage B)
 
 1. **Stage B** (own protocol): maintain the inner-product index during replayed ingestion;
    measure visibility delay, query latency and recall against the visible snapshot.
