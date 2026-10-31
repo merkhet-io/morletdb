@@ -48,7 +48,7 @@ All bits/sample = 8 × bytes / samples, lossless, verified bitwise (floats) or e
 - **PQ-f:** one Parquet file, float64 column, BYTE_STREAM_SPLIT + zstd level 19, no
   dictionary, one row group, pyarrow.
 - **ALP:** DuckDB `DOUBLE` column, automatic compression (ALP or ALP-RD), database with
-  `BLOCK_SIZE 16384`, bytes = used blocks × block size after `CHECKPOINT`, minus the same
+  `BLOCK_SIZE 65536` (changed from 16384, see "Changes after freeze"), bytes = used blocks × block size after `CHECKPOINT`, minus the same
   measure for an empty table. The chosen compression per segment is reported.
 
 **Float input + quantum:**
@@ -90,3 +90,11 @@ weaker result.
 No database-level comparison beyond what P2 measured, no lossy coding, no tuning of any
 arm after the first run. If an arm fails to run, the failure is reported, not fixed by
 changing other arms.
+
+## Changes after freeze
+
+1. **DuckDB block size 16,384 → 65,536** (found by the synthetic harness test, before any
+   B1 input was measured). With 16 KiB blocks DuckDB 2.0.0 stores `BIGINT` columns
+   uncompressed (bit-packing is never chosen); at 64 KiB it bit-packs. 64 KiB is the
+   smallest power of two tried at which it does. Both DuckDB arms use 64 KiB; the
+   rounding to whole blocks is then at most 0.125 bits/sample per arm on these inputs.
