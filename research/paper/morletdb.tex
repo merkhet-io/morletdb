@@ -17,8 +17,7 @@
 \affiliation{\institution{Affiliation to be confirmed}\country{}}
 
 \begin{abstract}
-Vibration, seismic and physiological archives hold uniformly sampled recordings, yet relational systems store them as rows of samples or as detached feature vectors. We describe \M{}, a PostgreSQL extension that stores each recording as losslessly coded chunks with transactional, replay-safe appends, keeps search representations as replaceable materialized views of those chunks, and returns search hits as sample intervals that read back bit-exactly. We evaluate it with frozen protocols on six real sensor inputs and on fresh seismic data. Three findings generalize beyond the prototype. First, sensor floats are usually calibrated integers, and decimal-oriented float codecs miss this: on two calibrated inputs ALP falls back to about 60 bits per sample, while grid recovery with last-place corrections needs 9.2--15.5, 1.5--1.6$\times$ less than the best metadata-free codec tested; the remaining gap to integer codecs is entirely correction cost. Second, storing the same envelopes in pgvector costs identical space, but zero-lag cosine search shares only 65\% of the lag-tolerant top ten: lag tolerance changes the query, not just its speed. Third, %R2-ABSTRACT
-We also report the negative results that shaped the design: wavelet and progressive codecs, cross-recording reference coding and a Morlet transform all failed to beat simpler alternatives.
+Vibration, seismic and physiological archives hold uniformly sampled recordings, yet relational systems store them as rows of samples or as detached feature vectors. We describe \M{}, a PostgreSQL extension that stores each recording as losslessly coded chunks with transactional, replay-safe appends, keeps search representations as replaceable materialized views of those chunks, and returns search hits as sample intervals that read back bit-exactly. We evaluate it with frozen protocols on six real sensor inputs and on fresh seismic data. Three findings generalize beyond the prototype. First, sensor floats are usually calibrated integers, and decimal-oriented float codecs miss this: on two calibrated inputs ALP falls back to about 60 bits per sample, while grid recovery with last-place corrections needs 9.2--15.5, 1.5--1.6$\times$ less than the best metadata-free codec tested; the remaining gap to integer codecs is entirely correction cost. Second, storing the same envelopes in pgvector costs identical space, but zero-lag cosine search shares only 65\% of the lag-tolerant top ten: lag tolerance changes the query, not just its speed. Third, on 235 thousand fresh seismic windows, exact in-database lag-tolerant search costs a predictable 12\,\textmu s per window, and an HNSW index on the same envelopes is not a usable prefilter: re-ranking its top 1000 recovers only 74\% of the exact top ten. We also report the negative results that shaped the design: wavelet and progressive codecs, cross-recording reference coding and a Morlet transform all failed to beat simpler alternatives.
 \end{abstract}
 \maketitle
 
@@ -33,7 +32,7 @@ This paper makes four contributions.
 \begin{enumerate}
 \item \textbf{A recording-oriented design inside PostgreSQL}: replay-safe chunk appends at global offsets, lossless chunk coding, materialized and replaceable search representations, and interval read-back, under PostgreSQL transactions and permissions (Section~\ref{sec:design}).
 \item \textbf{A storage characterization of calibrated sensor floats} on identical samples against ALP, Parquet, zstd, FLAC and DuckDB (Section~\ref{sec:storage}). Calibrated floats defeat decimal-oriented float codecs; recovering the digitizer grid closes most of the gap to integer codecs; the remaining gap is the cost of reproducing the source's floating-point rounding.
-\item \textbf{An analysis of lag-tolerant retrieval in a relational engine}: precision of materialized envelopes, equal storage but unequal queries against pgvector, and %R2-CONTRIB
+\item \textbf{An analysis of lag-tolerant retrieval in a relational engine}: precision of materialized envelopes, equal storage but unequal queries against pgvector, a scaling study on fresh data showing that exact lag-tolerant scans are linear and that a standard vector index is not a sufficient prefilter for them
 (Section~\ref{sec:retrieval}).
 \item \textbf{Negative results that shaped the system}, each from a frozen protocol (Section~\ref{sec:negative}).
 \end{enumerate}
@@ -157,7 +156,7 @@ B1 compares codecs on identical samples, each verified lossless~\cite{b1}. Float
 \begin{table}[t]
 \caption{B1: bits per sample. Z: zstd-19; PQ: Parquet; DDB: DuckDB.}
 \label{tab:b1}
-\small\setlength{\tabcolsep}{3.2pt}
+\small\setlength{\tabcolsep}{2.7pt}
 \begin{tabular}{@{}lrrrr|rrr@{}}
 \toprule
 & \multicolumn{4}{c|}{float input} & \multicolumn{3}{c}{integer input} \\
@@ -210,7 +209,20 @@ Float16 envelopes met all frozen criteria (Table~\ref{tab:r1b}): recall@10 of 0.
 P1 stored the identical float16 envelopes in a pgvector \code{halfvec(410)} column~\cite{pgvector}. Both tables occupied exactly 1,794,048 bytes, and all 1,826 envelopes were bit-identical, so envelope storage itself is no advantage. Zero-lag cosine search, however, shared only 64.7\% of the lag-tolerant top ten and reproduced its order for 0.1\% of queries. Scoring lags in the client on the same \code{halfvec} rows reproduced \M{}'s ranking exactly. In a later same-run comparison, median latency was 6.85\,ms for \M{}, 0.49\,ms for zero-lag cosine and 20.3\,ms for client lag scoring. The first two answer different questions, so their ratio is not a like-for-like speed comparison.
 
 \subsection{Scaling and approximate prefiltering (R2)}\label{sec:r2}
-%R2-SECTION
+R2 asked how exact search scales and whether a standard approximate index can serve as its first stage~\cite{r2}. We loaded 14 days of four CX stations from 2025, data no earlier study had read: 481\,M samples in 128 gap-free recordings, appended in 451\,s and stored at 6.2 bits per sample. Envelopes over 4096-sample windows at stride 2048 gave 234,762 windows (275\,s to build). Galleries were nested by day, from 4,217 to 234,762 windows. The 100 queries were 50 random and 50 high-energy windows from the first day. Arm H-$K'$ took the top $K'$ windows by zero-lag cosine from a pgvector HNSW index ($m$ 16, \code{ef_construction} 64) on the same float16 envelopes and re-ranked them with the exact lag-tolerant distance in the database; arm Z used the cosine order alone. The pre-registered bar for the prefilter was recall@10 $\ge 0.95$ at no more than a tenth of the exact p95 latency on the largest gallery.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig/scaling.pdf}
+\caption{R2 on fresh 2025 data. Left: median latency of exact lag-tolerant search and of HNSW-prefiltered re-ranking. Right: recall@10 of the approximate arms against the exact top ten. 100 queries per gallery; one client, warm cache.}
+\label{fig:scaling}
+\end{figure}
+
+Exact search was linear at 12.1--12.8\,\textmu s per stored window at every size (Figure~\ref{fig:scaling}): 54\,ms for 4,217 windows, 0.86\,s for 67,472 and 2.8\,s for 234,762. It stays interactive (under 100\,ms) up to about 8,000 windows, which in practice means search filtered to one station-day or one machine.
+
+The prefilter failed its bar. With $K'{=}1000$, recall@10 fell from 0.977 on the smallest gallery, where 1000 candidates are a quarter of it, to 0.743 on the largest, at 0.28\,s; with $K'{=}100$ it fell to 0.61. Zero-lag cosine alone shared 43--47\% of the exact top ten on these continuous recordings, below the 64.7\% of P1's event windows. Random and high-energy queries behaved alike. The lag-tolerant neighbours of a window are thus not concentrated among its zero-lag neighbours, and a fixed candidate budget captures a shrinking share of them as the gallery grows. The index also costs more than the data: side table and HNSW took 516\,MB, 1.4$\times$ the raw samples, while the envelopes themselves took 0.60$\times$ (more than R1b's 12.9\% because half-overlapping windows store every sample in two envelopes).
+
+Lag-tolerant search therefore needs either a filter that keeps galleries in the thousands, which the metadata predicates provide, or a shift-invariant first-stage key; an off-the-shelf vector index over the shifted representation is not one.
 
 \section{Application evidence and negative results}\label{sec:negative}
 \textbf{Sleep staging by example (S1).} On 153 Sleep-EDF nights with a subject-disjoint split, staging each 30-second epoch by the 40 most similar expert-scored epochs from other subjects gave a mean per-subject Cohen's $\kappa$ of 0.583, against 0.541 for logistic regression on the same features ($+0.042$, 95\% CI $[0.016, 0.068]$), with equal macro-F1~\cite{sleep}. Retrieval thus exposes source-linked neighbours at no measured accuracy cost against this simple comparator; part of the $\kappa$ difference comes from the regression's class-balanced weights. The result is far from state-of-the-art staging and makes no clinical claim.
@@ -233,7 +245,7 @@ P1 stored the identical float16 envelopes in a pgvector \code{halfvec(410)} colu
 \textbf{Similarity search.} FAST~\cite{fast} fingerprints seismic waveforms for large-scale similarity search; the UCR suite~\cite{ucr} and matrix-profile methods~\cite{matrixprofile} search subsequences under shift and warping. Graph indexes such as HNSW~\cite{hnsw}, available in PostgreSQL through pgvector~\cite{pgvector}, give approximate nearest neighbours under fixed metrics. \M{}'s contribution is not the measure but its placement, a lag-tolerant scorer inside the database next to the samples it links back to, and its measurement against these alternatives.
 
 \section{Limitations}
-\textbf{One machine, warm caches.} All timings come from one laptop-class machine, one client and warm caches; we did not measure disk-cold or concurrent workloads. Storage sizes are deterministic and transfer; latencies do not.
+\textbf{One machine, warm caches.} All timings come from one laptop-class machine, one client and warm caches; we did not measure disk-cold or concurrent workloads. R2 tested one HNSW configuration; larger graphs might raise recall, but not beyond the ranking disagreement that zero-lag search shows. Storage sizes are deterministic and transfer; latencies do not.
 
 \textbf{Baselines.} TimescaleDB was tested in one configuration; ALP was measured inside DuckDB, including its block layout; FLAC is the only LPC-based integer codec. A codec that replays calibration arithmetic exactly would change the calibrated-float comparison.
 
@@ -242,7 +254,7 @@ P1 stored the identical float16 envelopes in a pgvector \code{halfvec(410)} colu
 \textbf{Correctness.} Bitwise round trips on every measured chunk, replay tests and permission checks are engineering evidence, not formal verification of the codec, the transaction logic or access control.
 
 \section{Conclusion}
-Treating a recording, rather than a sample or a vector, as the unit of storage lets a relational engine keep original samples compact, keep search representations replaceable, and return results that read back exactly. On calibrated sensor floats, declaring the digitizer grid mattered more than codec sophistication: it turned a 60-bit fallback into 9--16 bits, and exact replay of calibration arithmetic is the remaining step to integer-codec size. For retrieval, an ordinary vector column stores envelopes equally well, but lag tolerance changes the answer; %R2-CONCLUSION
+Treating a recording, rather than a sample or a vector, as the unit of storage lets a relational engine keep original samples compact, keep search representations replaceable, and return results that read back exactly. On calibrated sensor floats, declaring the digitizer grid mattered more than codec sophistication: it turned a 60-bit fallback into 9--16 bits, and exact replay of calibration arithmetic is the remaining step to integer-codec size. For retrieval, an ordinary vector column stores envelopes equally well, but lag tolerance changes the answer, and a standard vector index over the same envelopes cannot stand in for the exact lag-tolerant scan, which is linear and interactive only on filtered galleries of thousands of windows. A shift-invariant index, and exact replay of calibration arithmetic, are the two open problems these results point to.
 
 \section*{Artifact availability and disclosure}
 Code (Apache-2.0), frozen protocols with their commits, harnesses, tests and raw result files are at \url{https://github.com/merkhet-io/morletdb}; datasets keep their own licences. This draft was prepared with AI assistance from the repository's reports; the author(s) must audit text, numbers and references before submission.
@@ -298,7 +310,8 @@ ALP $\approx$60 bits on calibrated & B1 & DuckDB 2.0.0 implementation \\
 1.3 / 6.7 bits of corrections & B1 & two calibrated inputs \\
 12.9\% size, recall 0.9999 & R1b & fidelity, not relevance \\
 64.7\% zero-lag overlap & P1 & different similarity semantics \\
-%R2-LEDGER
+12\,\textmu s per window, linear & R2 & one machine, warm, one client \\
+HNSW+re-rank recall 0.74 at 235\,k & R2 & one HNSW configuration \\
 $\kappa$ 0.583 vs 0.541 & S1 & one EEG channel; no clinical claim \\
 \bottomrule
 \end{tabularx}
