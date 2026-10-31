@@ -4,6 +4,8 @@ Working draft 0.2: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tol
 
 Not yet submission-ready; see "Before submission" below.
 
+**Preview:** [morletdb.pdf](morletdb.pdf) (committed build of the current source; rebuild and recommit it when the source changes).
+
 ## Build
 
 ```sh
