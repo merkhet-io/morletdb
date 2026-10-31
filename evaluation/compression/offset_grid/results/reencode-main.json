@@ -1,0 +1,87 @@
+{
+ "morlet_p2_bench:m_cx": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "stored_bytes": 2417280,
+  "reencoded_bytes": 2417280,
+  "stored_bits_per_sample": 4.610595703125,
+  "reencoded_bits_per_sample": 4.610595703125,
+  "kinds": {
+   "grid": 1024,
+   "float": 0,
+   "raw": 0
+  },
+  "version3_chunks": 0,
+  "bitwise_mismatched_chunks": 0,
+  "byte_identical_chunks": 1024,
+  "encode_msamples_per_s": 12.637613912731243
+ },
+ "morlet_p2_bench:m_ims": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "stored_bytes": 4618374,
+  "reencoded_bytes": 4618374,
+  "stored_bits_per_sample": 8.808849334716797,
+  "reencoded_bits_per_sample": 8.808849334716797,
+  "kinds": {
+   "grid": 1024,
+   "float": 0,
+   "raw": 0
+  },
+  "version3_chunks": 0,
+  "bitwise_mismatched_chunks": 0,
+  "byte_identical_chunks": 1024,
+  "encode_msamples_per_s": 12.314963034093077
+ },
+ "morlet_p2_bench:m_paderborn_counts": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "stored_bytes": 4132933,
+  "reencoded_bytes": 4132933,
+  "stored_bits_per_sample": 7.882944107055664,
+  "reencoded_bits_per_sample": 7.882944107055664,
+  "kinds": {
+   "grid": 1024,
+   "float": 0,
+   "raw": 0
+  },
+  "version3_chunks": 0,
+  "bitwise_mismatched_chunks": 0,
+  "byte_identical_chunks": 1024,
+  "encode_msamples_per_s": 11.906885208658446
+ },
+ "morlet_p2_bench:m_paderborn_physical": {
+  "chunks": 1024,
+  "samples": 4194304,
+  "stored_bytes": 4806153,
+  "reencoded_bytes": 4806153,
+  "stored_bits_per_sample": 9.167009353637695,
+  "reencoded_bits_per_sample": 9.167009353637695,
+  "kinds": {
+   "grid": 1024,
+   "float": 0,
+   "raw": 0
+  },
+  "version3_chunks": 0,
+  "bitwise_mismatched_chunks": 0,
+  "byte_identical_chunks": 1024,
+  "encode_msamples_per_s": 6.475680204363526
+ },
+ "morlet_sleep_demo:sleep_eeg": {
+  "chunks": 143450,
+  "samples": 587271000,
+  "stored_bytes": 3349928706,
+  "reencoded_bytes": 3349928706,
+  "stored_bits_per_sample": 45.63383795215497,
+  "reencoded_bits_per_sample": 45.63383795215497,
+  "kinds": {
+   "grid": 46582,
+   "float": 95246,
+   "raw": 1622
+  },
+  "version3_chunks": 0,
+  "bitwise_mismatched_chunks": 0,
+  "byte_identical_chunks": 143450,
+  "encode_msamples_per_s": 7.590304878848986
+ }
+}

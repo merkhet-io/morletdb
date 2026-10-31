@@ -41,6 +41,12 @@ Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
   underflowed to 0. Moments that would underflow are now taken on values divided
   by their largest magnitude. Values are unchanged bit for bit wherever m2^2 and
   peak^2 are normal floats, which covers any real sensor amplitude.
+- Offset grids (chunk format version 3). Samples at offset + k·step, as EDF writes
+  them when the physical range is not symmetric, are stored as grid indices instead
+  of float bits. The 153-night Sleep-EDF example goes from 45.6 to 15.6 bits/sample
+  (3.35 GB to 1.15 GB), bitwise identical. Chunks on the plain grid keep their
+  version-2 bytes; the P2 benchmark data encodes byte-identically. Version-3 chunks
+  are not readable by 0.3.0 and earlier.
 
 Repository:
 - Viewer and docs present `morlet_history_neighbors` as similar occurrences to look

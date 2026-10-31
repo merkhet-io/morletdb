@@ -13,7 +13,8 @@ seismic techniques:
 - Rice (Golomb power-of-two) coding of zigzag-mapped residuals, with up to 2^8
   partitions, each with its own parameter or a raw escape (as in FLAC);
 - for samples on a known grid, integer indices plus a scale (as SEED/miniSEED and
-  WAV/FLAC store counts plus a gain). The scale is refined per chunk, and any
+  WAV/FLAC store counts plus a gain), and, for calibrated formats such as EDF whose
+  physical range is not symmetric, an offset (as EDF stores a gain and an offset). The scale is refined per chunk, and any
   remaining differences are stored as last-place (ULP) corrections so the
   float64 values reproduce bitwise;
 - a CRC-32C (Castagnoli) checksum.
@@ -21,13 +22,13 @@ seismic techniques:
 It has no linear-prediction (LPC) stage. On the stage-1 benchmark data it is 2–7%
 larger than FLAC.
 
-## Layout (format version 2)
+## Layout (format versions 2 and 3)
 
 All integers are little-endian; `varint` is unsigned LEB128.
 
 | Field | Size | Meaning |
 |---|---|---|
-| version | 1 byte | `2` |
+| version | 1 byte | `2`, or `3` for an offset grid |
 | kind | 1 byte | `1` grid, `2` float, `0` raw |
 | n | varint | sample count, 1..32768 |
 | body | — | per kind, below |
@@ -36,12 +37,27 @@ All integers are little-endian; `varint` is unsigned LEB128.
 - **grid**:
   - `mode` u8: 0 means `x = k * scale`; 1 means `x = k / scale` for integer-valued `scale`.
   - `scale` f64.
+  - Version 3 only: `offset` f64, finite. The value is then `offset + k * scale` or
+    `offset + k / scale`.
   - `has_fix` u8.
   - `varint` byte length of the index stream, then the index stream.
   - If `has_fix`, a correction stream: corrections are differences of
     order-preserving float64 integers.
 - **float**: one stream of order-preserving integers of the float64 bit patterns.
 - **raw**: `n` little-endian float64 values.
+
+Version 3 has the grid kind only. The encoder tries it only for a chunk with a
+sample off the plain grid, before float-bit coding:
+- **Offset:** taken from the first sample.
+- **On-grid check:** every sample must lie within a thousandth of a step of
+  offset + k * step.
+- **Refit:** step and offset are refitted to within 1 ulp of the values needing the
+  fewest corrections.
+- **Size check:** the result must be smaller than plain float64.
+
+Otherwise the chunk is coded as float bits or raw, as before. A chunk on the plain
+grid (ADC counts, fixed decimals, a calibrated step through zero) keeps its version-2
+encoding byte for byte.
 
 A stream is a bit-packed (MSB-first) sequence with these fields:
 - predictor order (3 bits) and partition order (4 bits);
@@ -66,8 +82,13 @@ the table can write a valid chunk.
 - The version byte is never reinterpreted. Version 1 had no checksum and existed
   only on the unreleased development branch of PR #8; it is rejected with
   "unsupported encoded chunk format version 1; re-append the samples".
-- A future version 3 must keep decoding version 2. The extension would then
-  decode both and encode the newest.
+- Version 3 (SQL 0.3.1) adds the offset grid. Decoders accept versions 2 and 3.
+  Chunks that do not need an offset are still written as version 2, byte for byte
+  as before.
+- **Downgrade:** a version-3 chunk is reported as "unknown format version" by
+  pg_morlet 0.3.0 and earlier, so downgrading after appending such chunks needs
+  them re-appended.
+- **A future version 4** must keep decoding versions 2 and 3.
 - `float8[]` collections from pg_morlet 0.1.0 are a separate layout, detected
   per collection, and remain supported (see durable-ingestion.md, Upgrading).
 
