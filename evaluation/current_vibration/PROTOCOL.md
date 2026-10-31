@@ -118,3 +118,13 @@ hold:
 - no neural networks, wavelets or learned representations;
 - no MorletDB integration;
 - no changes to production code.
+
+## Changes after freeze
+
+1. **Short recordings** (found while extracting features, before any feature value was
+   computed or any model fitted):
+   - 53 accepted files hold 255,996–255,999 `HostService` samples, consistent across all
+     three channels, instead of 256,000.
+   - Their incomplete 8th window is dropped rather than computed on a shorter frequency
+     grid.
+   - This affects 53 of about 19,700 windows. Nothing else changed.
