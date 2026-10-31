@@ -13,8 +13,8 @@
 \begin{document}
 \title{Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL}
 \subtitle{Working draft 0.2 --- not for distribution}
-\author{Author(s) to be confirmed}
-\affiliation{\institution{Affiliation to be confirmed}\country{}}
+\author{Zin Nam}
+\affiliation{\institution{}\country{}}
 
 \begin{abstract}
 Vibration, seismic and physiological archives hold uniformly sampled recordings, yet relational systems store them as rows of samples or as detached feature vectors. We describe \M{}, a PostgreSQL extension that stores each recording as losslessly coded chunks with transactional, replay-safe appends, keeps search representations as replaceable materialized views of those chunks, and returns search hits as sample intervals that read back bit-exactly. We evaluate it with frozen protocols on six real sensor inputs and on fresh seismic data. Three findings generalize beyond the prototype. First, sensor floats are usually calibrated integers, and decimal-oriented float codecs miss this: on two calibrated inputs ALP falls back to about 60 bits per sample, while grid recovery with last-place corrections needs 9.2--15.5, 1.5--1.6$\times$ less than the best metadata-free codec tested; the remaining gap to integer codecs is entirely correction cost. Second, storing the same envelopes in pgvector costs identical space, but zero-lag cosine search shares only 65\% of the lag-tolerant top ten: lag tolerance changes the query, not just its speed. Third, on 235 thousand fresh seismic windows, exact in-database lag-tolerant search costs a predictable 12\,\textmu s per window, and an HNSW index on the same envelopes is not a usable prefilter: re-ranking its top 1000 recovers only 74\% of the exact top ten. We also report the negative results that shaped the design: wavelet and progressive codecs, cross-recording reference coding and a Morlet transform all failed to beat simpler alternatives.
@@ -257,7 +257,7 @@ Lag-tolerant search therefore needs either a filter that keeps galleries in the 
 Treating a recording, rather than a sample or a vector, as the unit of storage lets a relational engine keep original samples compact, keep search representations replaceable, and return results that read back exactly. On calibrated sensor floats, declaring the digitizer grid mattered more than codec sophistication: it turned a 60-bit fallback into 9--16 bits, and exact replay of calibration arithmetic is the remaining step to integer-codec size. For retrieval, an ordinary vector column stores envelopes equally well, but lag tolerance changes the answer, and a standard vector index over the same envelopes cannot stand in for the exact lag-tolerant scan, which is linear and interactive only on filtered galleries of thousands of windows. A shift-invariant index, and exact replay of calibration arithmetic, are the two open problems these results point to.
 
 \section*{Artifact availability and disclosure}
-Code (Apache-2.0), frozen protocols with their commits, harnesses, tests and raw result files are at \url{https://github.com/merkhet-io/morletdb}; datasets keep their own licences. This draft was prepared with AI assistance from the repository's reports; the author(s) must audit text, numbers and references before submission.
+Code (Apache-2.0), frozen protocols with their commits, harnesses, tests and raw result files are at \url{https://github.com/merkhet-io/morletdb}; datasets keep their own licences. This draft was prepared with AI assistance from the repository's reports; the author must audit text, numbers and references before submission.
 
 \begin{thebibliography}{40}\small
 \bibitem{alp} Azim Afroozeh, Leonardo X. Kuffo, and Peter Boncz. 2023. ALP: Adaptive Lossless floating-Point Compression. \emph{Proc. ACM Manag. Data} 1, 4, Article 230 (Dec. 2023), 26 pages. doi:10.1145/3626717.

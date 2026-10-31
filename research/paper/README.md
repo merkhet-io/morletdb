@@ -35,8 +35,8 @@ the paper builds without Python. Tectonic fetches the TeX packages it needs on f
 
 ## Before submission
 
-- Authors, affiliations and venue formatting (the layout targets an ACM venue such as
-  SSDBM; check the call's page limit).
+- Venue formatting (the layout targets an ACM venue such as SSDBM; check the call's
+  page limit and whether it is double-blind, which would need the author line removed).
 - References were checked against Crossref/DOI, RFC Editor, NTRS, DataCite and PubMed
   records on 2026-10-31 (DOIs added). Not confirmable from a primary source: ALP's article
   number 230 (dblp only) and the IMS dataset citation (no recommended form or DOI; the
