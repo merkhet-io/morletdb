@@ -88,7 +88,31 @@ def scaling():
     fig.savefig(OUT / "scaling.pdf", bbox_inches="tight")
 
 
+def probes():
+    """BL1-C (held-out CX 2021): recall@10 by the best lag of each exact top-ten item."""
+    r = json.loads((ROOT / "evaluation/bounded_lag/confirm/results/confirm.json").read_text())["summary"]
+    bins = ["0-5", "6-15", "16-30"]
+    arms = [("EZ-G13-50", "zero-lag shortlist, same size", YELLOW), ("P-G13-50", "13 shifted probes (HNSW)", AQUA),
+            ("PX-G13-50", "13 shifted probes (exact)", BLUE)]
+    fig, ax = plt.subplots(figsize=(3.33, 1.7))
+    w = 0.26
+    for j, (arm, label, color) in enumerate(arms):
+        ys = [r[arm]["recall_by_lstar"][b]["recall"] for b in bins]
+        ax.bar([i + (j - 1) * w for i in range(len(bins))], ys, width=w - 0.03, color=color, label=label)
+        for i, y in enumerate(ys):
+            if y < 0.05:
+                ax.text(i + (j - 1) * w, 0.02, "0", ha="center", va="bottom", fontsize=6.5, color=MUTED)
+    n = [r["A"]["recall_by_lstar"][b]["items"] for b in bins]
+    ax.set_xticks(range(len(bins)), [f"|lag| {b}\n({k} items)" for b, k in zip(bins, n)])
+    ax.set_ylabel("recall@10 vs exact")
+    ax.set_ylim(0, 1.05)
+    ax.grid(axis="y", color=GRID, lw=0.5)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.32), ncol=2, fontsize=6.3, handlelength=1.2, columnspacing=0.8)
+    fig.savefig(OUT / "probes.pdf", bbox_inches="tight")
+
+
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
     storage()
     scaling()
+    probes()

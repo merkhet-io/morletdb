@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-Working draft 0.3: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
+Working draft 0.4: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
 
 Not yet submission-ready; see "Before submission" below.
 
@@ -16,6 +16,20 @@ cd research/paper && tectonic -X compile morletdb.tex    # or: latexmk -pdf morl
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in draft 0.4
+
+- **Shifted-probe search (BL1, merged in #62/#63)** becomes the paper's constructive
+  retrieval contribution: the identity between lag terms and inner products with shifted
+  queries; development result; held-out confirmation on CX stations and a year no study had
+  read (recall 0.976, p95 131 ms vs 2,854 ms); the product function on the same queries
+  (0.977, p95 50 ms); maintenance during replayed ingestion (BL1-S).
+- New Section 6.4, Table 5 and Figure 4 (recall by best lag, from committed results);
+  probe search added to the design section, studies table, related work (k-Shape, MASS,
+  FreshDiskANN, VStream; no novelty claimed for multi-probe search in general),
+  limitations, conclusion and evidence ledger.
+- References added from the BL1 related-work matrix use only details verified there;
+  first names of the VStream and FreshDiskANN authors still need checking.
 
 ## What changed in draft 0.3 (review of 0.2)
 
