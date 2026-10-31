@@ -40,7 +40,7 @@ def build(conn):
     conn.execute("""CREATE TABLE public.r2_env1 (recording_id text NOT NULL, window_size integer NOT NULL,
                     start_sample bigint NOT NULL, v halfvec(410) NOT NULL, PRIMARY KEY (recording_id, window_size, start_sample))""")
     t = time.perf_counter()
-    with conn.cursor(name="env") as cur, conn.cursor() as out:
+    with conn.transaction(), conn.cursor(name="env") as cur, conn.cursor() as out:
         cur.itersize = 5000
         cur.execute("SELECT recording_id, start_sample, envelope FROM public.r2_envelopes WHERE window_size = %s", (W,))
         with out.copy("COPY public.r2_env1 (recording_id, window_size, start_sample, v) FROM STDIN") as cp:
@@ -58,7 +58,7 @@ def build(conn):
 def value_identity(conn):
     """Every window: halfvec_send(v) float16 values == bytea payload, bit for bit."""
     bad = n = 0
-    with conn.cursor(name="cmp") as cur:
+    with conn.transaction(), conn.cursor(name="cmp") as cur:
         cur.itersize = 5000
         cur.execute("""SELECT e.envelope, halfvec_send(n.v) FROM public.r2_envelopes e JOIN public.r2_env1 n
                        USING (recording_id, window_size, start_sample) WHERE e.window_size = %s""", (W,))
