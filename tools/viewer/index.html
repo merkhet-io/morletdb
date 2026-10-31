@@ -111,7 +111,7 @@ tr.hit { cursor: pointer; } tr.hit:hover td { background: var(--wash); }
 const $ = (id) => document.getElementById(id);
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const SLOTS = ["--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
-const st = { coll: null, colls: [], recs: [], rec: null, view: [0, 0], data: null, ctx: null, sel: null, seg: null, drag: null, req: 0, acq: null, sib: [] };
+const st = { coll: null, colls: [], recs: [], rec: null, view: [0, 0], data: null, ctx: null, sel: null, seg: null, drag: null, req: 0, pick: 0, acq: null, sib: [] };
 
 async function get(path, params) {
   const r = await fetch(path + "?" + new URLSearchParams(params));
@@ -132,8 +132,11 @@ async function loadCollections() {
   if (st.colls.length) selectCollection(st.colls[0].name);
 }
 async function selectCollection(name) {
+  const pick = ++st.pick;  // a later collection or recording selection supersedes this one
   st.coll = st.colls.find((c) => c.name === name); st.rec = null;
-  st.recs = (await get("/api/recordings", { collection: name })).recordings;
+  const recs = (await get("/api/recordings", { collection: name })).recordings;
+  if (pick !== st.pick) return;
+  st.recs = recs;
   renderRecs();
   if (st.recs.length) selectRecording(st.recs[0].recording_id);
 }
@@ -143,8 +146,11 @@ function renderRecs() {
     `<div class="rec${st.rec && st.rec.recording_id === r.recording_id ? " on" : ""}" data-id="${esc(r.recording_id)}"><span>${esc(r.recording_id)}</span><small>${esc(r.channel)}</small></div>`).join("");
 }
 async function selectRecording(id, range) {
-  st.rec = st.recs.find((r) => r.recording_id === id); st.sel = null; st.seg = null; st.data = null; st.ctx = null; st.sib = []; draw();
-  st.acq = st.coll.acquisitions ? await get("/api/acquisition", { collection: st.coll.name, recording: id }) : { acquisition: null, channels: [] };
+  const pick = ++st.pick;  // only the latest selection may continue after the await
+  st.rec = st.recs.find((r) => r.recording_id === id); st.sel = null; st.seg = null; st.data = null; st.ctx = null; st.sib = []; st.acq = null; draw();
+  const acq = st.coll.acquisitions ? await get("/api/acquisition", { collection: st.coll.name, recording: id }) : { acquisition: null, channels: [] };
+  if (pick !== st.pick) return;
+  st.acq = acq;
   renderRecs();
   const r = st.rec;
   $("meta").innerHTML = `<span><b>${esc(r.recording_id)}</b></span><span>${esc(r.channel)} · ${esc(r.unit)}</span><span>${fmt(r.sample_rate_hz, 1)} Hz</span>` +
