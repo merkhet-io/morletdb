@@ -696,6 +696,54 @@ mod tests {
         );
     }
 
+    #[pg_test]
+    fn probe_search_routes_and_respects_filters() {
+        if !pgvector_available() {
+            return; // pgvector is optional; CI does not install it
+        }
+        Spi::run("CREATE EXTENSION IF NOT EXISTS vector").unwrap();
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        Spi::run("SELECT morlet_enable_envelope_probes('env',2048)").unwrap();
+        Spi::run(r#"UPDATE env SET metadata='{"site":"north"}' WHERE recording_id='B'"#).unwrap();
+        let routed = |filter: &str, threshold: i32| {
+            format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_probes('env','A',2048,4096,'{filter}',10,0.075,true,true,100,5,{threshold})")
+        };
+        let exact = |filter: &str| {
+            format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_interval('env','A',2048,4096,'{filter}',10)")
+        };
+        for filter in ["{}", r#"{"site":"north"}"#] {
+            let reference = Spi::get_one::<String>(&exact(filter)).unwrap();
+            // routed to exact search (default threshold) and forced onto filter-aware probes (threshold 0)
+            assert_eq!(
+                Spi::get_one::<String>(&routed(filter, 5000)).unwrap(),
+                reference
+            );
+            assert_eq!(
+                Spi::get_one::<String>(&routed(filter, 0)).unwrap(),
+                reference
+            );
+        }
+        // filtered probes never return windows outside the filter
+        assert_eq!(Spi::get_one::<i64>(r#"SELECT count(*) FROM morlet_search_envelope_probes('env','A',2048,4096,'{"site":"north"}',10,0.075,true,true,100,5,0) WHERE recording_id<>'B'"#).unwrap(), Some(0));
+        // session settings are restored
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('hnsw.iterative_scan')")
+                .unwrap()
+                .unwrap(),
+            "off"
+        );
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('hnsw.ef_search')")
+                .unwrap()
+                .unwrap(),
+            "40"
+        );
+    }
+
     #[pg_test(
         error = "probe search is not enabled for window_size 2048 (morlet_enable_envelope_probes)"
     )]

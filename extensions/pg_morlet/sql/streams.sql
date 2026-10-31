@@ -627,26 +627,26 @@ BEGIN
   RETURN rel;
 END $$;
 
--- Query by a stored interval, like morlet_search_envelope_interval, but candidates come
--- from shifted probes at lags -L, -L+probe_step, ..., L (L = floor(max_lag_fraction*n)),
--- per_probe each from the index; their union is re-ranked by the exact scorer with the
--- same eligibility, exclusion, ordering and overlap suppression. Eligibility is applied
--- after probing, so a selective metadata filter lowers recall; use the exact search for
--- small filtered galleries.
+-- Query by a stored interval, like morlet_search_envelope_interval. Routing (evaluation
+-- SS3): when at most exact_threshold windows are eligible, the exact search runs instead.
+-- Otherwise candidates come from shifted probes at lags -L, -L+probe_step, ..., L
+-- (L = floor(max_lag_fraction*n)), per_probe each from the index, each probe scan restricted
+-- to eligible recordings (iterative scan); their union is re-ranked by the exact scorer with
+-- the same eligibility, exclusion, ordering and overlap suppression.
 CREATE FUNCTION public.morlet_search_envelope_probes(collection regclass,source_recording_id text,
   interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
   max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
-  per_probe integer DEFAULT 50,probe_step integer DEFAULT 5)
+  per_probe integer DEFAULT 50,probe_step integer DEFAULT 5,exact_threshold integer DEFAULT 5000)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
 LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE source record; env regclass; probes regclass; vschema text; q float8[]; width integer; lag integer;
   l integer; lags integer[]; ids text[]:=ARRAY[]::text[]; starts bigint[]:=ARRAY[]::bigint[]; got_ids text[];
-  got_starts bigint[]; ef text; hit record; picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
+  got_starts bigint[]; ef text; its text; eligible text[]; eligible_windows bigint; hit record; picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
   picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
 BEGIN
   IF top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' OR NOT (max_lag_fraction BETWEEN 0 AND 0.5)
-    OR per_probe NOT BETWEEN 1 AND 1000 OR probe_step<1 THEN
-    RAISE EXCEPTION 'invalid top_k (1..100), metadata filter, max_lag_fraction (0..0.5), per_probe (1..1000) or probe_step (>= 1)';
+    OR per_probe NOT BETWEEN 1 AND 1000 OR probe_step<1 OR exact_threshold NOT BETWEEN 0 AND 1000000 THEN
+    RAISE EXCEPTION 'invalid top_k (1..100), metadata filter, max_lag_fraction (0..0.5), per_probe (1..1000), probe_step (>= 1) or exact_threshold (0..1000000)';
   END IF;
   SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
   env:=public.morlet_envelope_relation(collection);
@@ -656,6 +656,18 @@ BEGIN
     RAISE EXCEPTION 'probe search is not enabled for window_size % (morlet_enable_envelope_probes)',width;
   END IF;
   SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+  EXECUTE format('SELECT array_agg(r.recording_id) FROM %s r WHERE r.sample_rate_hz=$1 AND r.channel=$2 AND r.unit=$3
+    AND r.metadata @> $4',collection) INTO eligible USING source.sample_rate_hz,source.channel,source.unit,metadata_filter;
+  eligible:=coalesce(eligible,ARRAY[]::text[]);
+  -- Counting stops after exact_threshold+1 windows, so routing costs at most that many index entries.
+  EXECUTE format('SELECT count(*) FROM (SELECT 1 FROM %s e WHERE e.recording_id=ANY($1) AND e.window_size=$2 LIMIT $3) x',env)
+    INTO eligible_windows USING eligible,width,exact_threshold::bigint+1;
+  IF eligible_windows<=exact_threshold THEN
+    RETURN QUERY SELECT * FROM public.morlet_envelope_ranked(collection,source.samples,source.sample_rate_hz,
+      source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,greatest(exact_threshold,1),
+      CASE WHEN exclude_source THEN source_recording_id END,interval_start,interval_end);
+    RETURN;
+  END IF;
   q:=public.morlet_envelope(source.samples);
   lag:=floor(max_lag_fraction*cardinality(q));
   lags:=ARRAY(SELECT generate_series(-lag,lag,probe_step));
@@ -663,15 +675,18 @@ BEGIN
   -- The index returns at most hnsw.ef_search rows per scan. Use max(per_probe, 100), as in
   -- the evaluated configuration, for this call only.
   ef:=current_setting('hnsw.ef_search',true);
+  its:=current_setting('hnsw.iterative_scan',true);
   PERFORM set_config('hnsw.ef_search',greatest(per_probe,100)::text,true);
+  PERFORM set_config('hnsw.iterative_scan','relaxed_order',true);
   FOREACH l IN ARRAY lags LOOP
     EXECUTE format('SELECT array_agg(p.recording_id),array_agg(p.start_sample) FROM (SELECT recording_id,start_sample
-      FROM %s ORDER BY v OPERATOR(%I.<#>) $1::%I.halfvec LIMIT $2) p',probes,vschema,vschema)
-      INTO got_ids,got_starts USING public.morlet_envelope_probe(q,l),per_probe;
+      FROM %s WHERE recording_id=ANY($3) ORDER BY v OPERATOR(%I.<#>) $1::%I.halfvec LIMIT $2) p',probes,vschema,vschema)
+      INTO got_ids,got_starts USING public.morlet_envelope_probe(q,l),per_probe,eligible;
     ids:=ids||coalesce(got_ids,ARRAY[]::text[]);
     starts:=starts||coalesce(got_starts,ARRAY[]::bigint[]);
   END LOOP;
   PERFORM set_config('hnsw.ef_search',coalesce(nullif(ef,''),'40'),true);
+  PERFORM set_config('hnsw.iterative_scan',coalesce(nullif(its,''),'off'),true);
   FOR hit IN EXECUTE format('SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
       public.morlet_envelope_distance($1,e.envelope,$2) AS distance,r.metadata
     FROM (SELECT DISTINCT * FROM unnest($3::text[],$4::bigint[]) c(recording_id,start_sample)) c

@@ -312,7 +312,12 @@ SELECT * FROM morlet_search_envelope_probes('signals', 'pump-7', 81920, 86016);
   ordering and overlap suppression as `morlet_search_envelope_interval`. Returned
   distances are therefore exact; only the candidate set is approximate.
 - **Arguments:** the same as `morlet_search_envelope_interval`, plus `per_probe`
-  (default 50) and `probe_step` (default 5). `max_candidates` does not apply.
+  (default 50), `probe_step` (default 5) and `exact_threshold` (default 5000).
+  `max_candidates` does not apply.
+- **Enabling on a large collection:** raise `maintenance_work_mem` for the session
+  first, for example `SET maintenance_work_mem = '2GB'`. With the default 64 MB, the
+  HNSW graph for 235,000 windows did not fit, and the build took about 25 minutes
+  instead of about 1.
 - **Maintenance:** `morlet_enable_envelope_probes` fills the table from the
   envelopes already stored and builds the index. After that,
   `morlet_build_envelopes` adds each new window's row in the same transaction.
@@ -321,9 +326,16 @@ SELECT * FROM morlet_search_envelope_probes('signals', 'pump-7', 81920, 86016);
   `DROP TABLE signals_probes_4096` disables probe search.
 - **Storage:** the copy and its index take about 1.0–1.4× the raw chunk table at
   4096-sample windows with stride 2048. That is in addition to the envelope table.
-- **Filters:** eligibility is applied after probing. A selective metadata filter
-  therefore discards candidates and lowers recall. For small filtered galleries the
-  exact search is fast and should be used.
+- **Filters and routing:** the eligible recordings are determined first.
+  - If at most `exact_threshold` windows are eligible (default 5,000), the exact search
+    runs instead. Counting stops at the threshold, so routing costs at most that many
+    index entries.
+  - Otherwise each probe scans only eligible recordings, using pgvector's iterative index
+    scan.
+  - Results never include windows outside the filter or hidden by row-level security.
+  - Evaluation SS3 (#66) used five filter levels on held-out CX data. The router reached
+    recall 0.977–1.0 at every level; post-filtering had dropped to 0.52 when 1.8% of
+    windows were eligible.
 - **pgvector is optional.** pg_morlet does not depend on it. The probe table and its
   index are created at enable time, and only these two functions use it.
 
