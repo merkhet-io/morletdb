@@ -99,6 +99,27 @@ pub fn decode(bytes: &[u8]) -> Result<Vec<f64>, SignalError> {
     Ok(zscore(v))
 }
 
+/// Decodes a stored envelope kept in a pgvector `halfvec` column, from its binary send
+/// format (`halfvec_send`: int16 dim, int16 unused, then big-endian binary16 values). Holding
+/// the same binary16 values as the `bytea` form, it decodes to the same z-scored envelope.
+pub fn decode_halfvec_send(bytes: &[u8]) -> Result<Vec<f64>, SignalError> {
+    if bytes.len() < 4 {
+        return Err(SignalError::InvalidEnvelope);
+    }
+    let dim = u16::from_be_bytes([bytes[0], bytes[1]]) as usize;
+    if bytes.len() != 4 + 2 * dim {
+        return Err(SignalError::InvalidEnvelope);
+    }
+    let v: Vec<f64> = bytes[4..]
+        .chunks_exact(2)
+        .map(|c| f16_to_f64(u16::from_be_bytes([c[0], c[1]])))
+        .collect();
+    if !valid_window_values(v.len()) || v.iter().any(|x| !x.is_finite()) {
+        return Err(SignalError::InvalidEnvelope);
+    }
+    Ok(zscore(v))
+}
+
 fn valid_window_values(m: usize) -> bool {
     (9..=15).any(|p| (1usize << p).div_ceil(DECIMATE) == m)
 }
@@ -440,6 +461,25 @@ mod tests {
         assert!(
             shifted(&q, 410).is_err() && shifted(&q, -410).is_err() && shifted(&[], 0).is_err()
         );
+    }
+
+    #[test]
+    fn halfvec_send_decodes_like_the_stored_bytes() {
+        let x: Vec<f64> = (0..4096)
+            .map(|i| ((i as f64) / 9.0).sin() * (i % 311) as f64)
+            .collect();
+        let stored = encode(&x).unwrap();
+        let mut send = vec![];
+        send.extend_from_slice(&(((stored.len() - 1) / 2) as u16).to_be_bytes());
+        send.extend_from_slice(&0u16.to_be_bytes());
+        for c in stored[1..].chunks_exact(2) {
+            send.extend_from_slice(&u16::from_le_bytes([c[0], c[1]]).to_be_bytes());
+        }
+        let a = decode(&stored).unwrap();
+        let b = decode_halfvec_send(&send).unwrap();
+        assert!(a.iter().zip(&b).all(|(p, q)| p.to_bits() == q.to_bits()));
+        assert!(decode_halfvec_send(&send[..send.len() - 2]).is_err());
+        assert!(decode_halfvec_send(&send[..3]).is_err());
     }
 
     /// The scoring loop before lags were blocked; kept as the bitwise reference.
