@@ -66,3 +66,25 @@ Otherwise report which condition failed and keep the two tables.
 
 Quantized or compact keys (SS2) and filtered retrieval (SS3) come later under their own
 protocols. No change to raw storage or to the search contract.
+
+## Amendment 1 — SS1b (committed after SS1's results, before SS1b is measured)
+
+SS1 failed condition 5 because of per-row `halfvec_send` conversion in exact scans. One
+follow-up candidate, aimed at that cause only:
+
+**SS1b:** no second table. An HNSW index on an expression over the existing envelope table:
+`CREATE INDEX ... ON <c>_envelopes USING hnsw ((morlet_envelope_decode(envelope)::halfvec(410))
+halfvec_ip_ops) WITH (m = 16, ef_construction = 64) WHERE window_size = 4096`. Probes order by
+that same expression; exact search and re-ranking read `bytea` exactly as today. The indexed
+values equal today's probe table's values (decoded, re-z-scored, float16), so probe recall
+should be unchanged; new envelopes enter the index on insert, with no extra write.
+
+**Measures (same queries and databases):** plan uses the expression index for every probe;
+probe recall@10 and p50/p95 (13 × 50, ef_search 100, same harness procedure as SS1's
+`probe_current`); exact scan unchanged by construction (same table and statement — not
+re-measured); bytes (envelope table + expression index vs envelope table + probe table +
+index); index build time.
+
+**Adopt SS1b** if: the index is used; recall changes by ≤ 0.005 against `probe_current` on
+both databases; probe p95 is no more than 10% above `probe_current`'s; and storage falls by at
+least the probe table's size minus 5%. Otherwise keep the current two-table design.
