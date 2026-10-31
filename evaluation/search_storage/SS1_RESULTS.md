@@ -31,3 +31,38 @@ Development `morlet_r2` (234,762 windows) and `morlet_bl1c` (234,622); 100 queri
 The index, not the table, needs `halfvec`: HNSW keeps its own copy of each vector in its
 pages. An **expression index on the existing envelope table** would remove the second table
 and keep the exact path reading `bytea` unchanged.
+
+## SS1b results: expression index — also not adopted (latency)
+
+Run once per database (amendment 1, 6a34b63; harness committed before measuring). Both arms
+in the same session, alternated; the second pass of each is reported.
+
+| Condition | morlet_r2 | morlet_bl1c | Met |
+|---|---|---|---|
+| expression index used by every probe (plan check) | yes | yes | yes |
+| probe recall change ≤ 0.005 vs current probe table | 0.998 → 0.998 | 0.976 → 0.977 | yes |
+| probe p95 ≤ +10% | **62 → 82 ms (+32%)** | **73 → 93 ms (+27%)** | **no** |
+| storage saved ≥ probe table − 5% | 250.1 MB (whole probe table) | 249.9 MB | yes |
+
+- Index build 54–56 s, the same as the probe table's index; index size identical (274.8 MB).
+- **Likely cause** (not isolated by a separate measurement): the index scan returns heap rows of
+  the envelope table and PostgreSQL evaluates the `ORDER BY` expression (decode + cast) for each
+  returned row, about 650 per query; the probe table returns its stored vector instead.
+
+## Verdict for SS1 and SS1b: keep the current two-table design as the default
+
+Both single-representation designs are **exact** (identical values, distances and rankings)
+and **save about 250 MB per 235k windows** (0.67× raw on R2's data, 0.49× on BL1-C's), but
+each costs latency on one path:
+
+| Design | Search storage beyond raw (R2) | Exact search | Probe search p95 |
+|---|---|---|---|
+| Current: envelopes + probe table + index | 748 MB (2.02×) | baseline | baseline |
+| SS1: single halfvec table + index | 498 MB (1.34×) | +23% | slower (re-rank through `halfvec_send`) |
+| SS1b: envelopes + expression index | 498 MB (1.34×) | unchanged | +27–32% (+20 ms) |
+
+The failures are execution costs, not representation loss. SS1b in particular is a
+legitimate **storage-saving operating point**: same results, exact search unchanged, probe
+p95 about 20 ms higher and still far below exact search. Whether to offer it as an opt-in
+"compact" mode is a product decision, not something this protocol's thresholds decide.
+No further variants were tried, per the protocol's stop rule.
