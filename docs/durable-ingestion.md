@@ -268,6 +268,9 @@ SELECT * FROM morlet_search_envelope_interval('signals', 'pump-7', 81920, 86016)
   `k × stride`, resuming after the last stored window of that size. At most
   `max_windows` windows are built per call. Appends do not build envelopes
   automatically; call it after appending, for example from the ingest job.
+  Encoded collections are built in batches of up to 256 windows, each raw chunk decoded
+  once: about 0.3 ms of database CPU per 4096-sample window (3,000 windows/s per
+  session on the test machine).
 - **Storage:** `morlet_collection_storage` reports `envelope_table_bytes`, which
   is included in `total_bytes`.
 
@@ -289,8 +292,9 @@ gallery sizes (about 180 candidates per query), and concurrent workloads.
 
 ### Probe search (opt-in, needs pgvector)
 
-The exact envelope search scans every eligible window: about 12 µs per window, so
-2.8 s for 235,000 windows on the test machine. Probe search makes large galleries
+The exact envelope search scans every eligible window, with PostgreSQL's parallel
+workers: about 1.3 s for 235,000 windows with 2 workers on the test machine (about
+12 µs per window on one core). Probe search makes large galleries
 interactive. It is approximate.
 
 ```sql

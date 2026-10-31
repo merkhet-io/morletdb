@@ -423,6 +423,7 @@ CREATE FUNCTION public.morlet_build_envelopes(collection regclass,recording_id t
   window_size integer DEFAULT 4096,stride integer DEFAULT 2048,max_windows integer DEFAULT 10000)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; recording_end bigint; s bigint; last bigint; written bigint:=0; probes regclass; vschema text;
+  rels record; n integer; hi bigint;
 BEGIN
   IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) OR stride NOT BETWEEN 1 AND 32768
     OR max_windows NOT BETWEEN 1 AND 1000000 THEN
@@ -441,7 +442,30 @@ BEGIN
   EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
     INTO last USING recording_id,window_size;
   s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
-  WHILE s+window_size<=recording_end AND written<max_windows LOOP
+  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  -- Encoded collections: batches of up to 256 windows from chunks decoded once
+  -- (morlet_envelopes_from_chunks); the bytes equal the per-window path below.
+  WHILE rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
+    n:=least(max_windows-written,256,(recording_end-window_size-s)/stride+1);
+    hi:=s+(n-1)::bigint*stride+window_size;
+    EXECUTE format('WITH c AS (SELECT array_agg(c.encoded ORDER BY c.start_sample) enc,
+        array_agg(c.start_sample ORDER BY c.start_sample) st
+        FROM %s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample+c.sample_count>$2)
+      INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$4,$2+(w.k-1)*$5,w.envelope
+      FROM c, unnest(public.morlet_envelopes_from_chunks(c.enc,c.st,$2,$3,$4,$5,$6)) WITH ORDINALITY w(envelope,k)
+      ON CONFLICT DO NOTHING',rels.chunks,rel)
+      USING recording_id,s,hi,window_size,stride,n;
+    IF probes IS NOT NULL THEN
+      EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+        FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample BETWEEN $3 AND $4 ON CONFLICT DO NOTHING',probes,vschema,rel)
+        USING recording_id,window_size,s,s+(n-1)::bigint*stride;
+    END IF;
+    written:=written+n;
+    s:=s+n::bigint*stride;
+  END LOOP;
+  -- Legacy float8[] collections: one window at a time.
+  WHILE NOT rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
     EXECUTE format('INSERT INTO %s(recording_id,window_size,start_sample,envelope)
       SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
       FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
@@ -464,15 +488,19 @@ END $$;
 -- call fails rather than sampling. Source exclusion uses the optional
 -- exclude_* arguments (NULL disables it). Overlapping windows of one recording
 -- are suppressed greedily in rank order before top_k.
+-- The scan is one statement fetching the best m rows into arrays (not a cursor
+-- loop), so PostgreSQL can run it with parallel workers. Suppression then walks
+-- those rows; if it uses them up before top_k survive while more candidates
+-- remain, the statement is repeated with 4x m. Results equal a full ordered scan.
 CREATE FUNCTION public.morlet_envelope_ranked(collection regclass,query_samples float8[],query_rate_hz float8,
   query_channel text,query_unit text,metadata_filter jsonb,top_k integer,max_lag_fraction float8,
   suppress_overlaps boolean,max_candidates integer,
   exclude_recording_id text,exclude_start bigint,exclude_end bigint)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; hit record;
-  picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
-  picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
+DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; m bigint;
+  ids text[]; starts bigint[]; ends bigint[]; dists float8[]; metas jsonb[]; n integer; i integer;
+  picked integer[]; idx integer; blocked boolean;
 BEGIN
   IF top_k IS NULL OR top_k NOT BETWEEN 1 AND 100 OR metadata_filter IS NULL OR jsonb_typeof(metadata_filter)<>'object'
     OR max_lag_fraction IS NULL OR NOT (max_lag_fraction BETWEEN 0 AND 0.5) OR max_candidates IS NULL OR max_candidates<1
@@ -489,31 +517,39 @@ BEGIN
   IF candidates>max_candidates THEN
     RAISE EXCEPTION 'envelope search exceeds % candidates; narrow the metadata filter',max_candidates;
   END IF;
-  FOR hit IN EXECUTE format('SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
-      public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
-    FROM %s e JOIN %s r ON r.recording_id=e.recording_id
-    WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5
-      AND ($8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10)
-    ORDER BY distance,e.recording_id,e.start_sample',rel,collection)
-    USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
-      exclude_recording_id,exclude_start,exclude_end
+  m:=CASE WHEN suppress_overlaps THEN greatest(200,20*top_k) ELSE top_k END;
   LOOP
-    blocked:=false;
-    IF suppress_overlaps AND picked>0 THEN
-      FOR idx IN 1..picked LOOP
-        IF picked_ids[idx]=hit.recording_id AND picked_starts[idx]<hit.end_sample AND picked_ends[idx]>hit.start_sample THEN
-          blocked:=true; EXIT;
-        END IF;
-      END LOOP;
-    END IF;
-    IF blocked THEN CONTINUE; END IF;
-    RETURN QUERY SELECT hit.recording_id,hit.start_sample,hit.end_sample,hit.distance,hit.metadata;
-    picked:=picked+1;
-    picked_ids:=array_append(picked_ids,hit.recording_id);
-    picked_starts:=array_append(picked_starts,hit.start_sample);
-    picked_ends:=array_append(picked_ends,hit.end_sample);
-    EXIT WHEN picked=top_k;
+    EXECUTE format('SELECT array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
+        array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
+      FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
+        SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+          public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
+        FROM %s e JOIN %s r ON r.recording_id=e.recording_id
+        WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5
+          AND ($8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10)
+        ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection)
+      INTO ids,starts,ends,dists,metas
+      USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
+        exclude_recording_id,exclude_start,exclude_end,m;
+    n:=coalesce(cardinality(ids),0);
+    picked:=ARRAY[]::integer[];
+    FOR i IN 1..n LOOP
+      blocked:=false;
+      IF suppress_overlaps THEN
+        FOREACH idx IN ARRAY picked LOOP
+          IF ids[idx]=ids[i] AND starts[idx]<ends[i] AND ends[idx]>starts[i] THEN
+            blocked:=true; EXIT;
+          END IF;
+        END LOOP;
+      END IF;
+      CONTINUE WHEN blocked;
+      picked:=picked||i;
+      EXIT WHEN cardinality(picked)=top_k;
+    END LOOP;
+    EXIT WHEN cardinality(picked)=top_k OR n<m;
+    m:=m*4;
   END LOOP;
+  RETURN QUERY SELECT ids[p],starts[p],ends[p],dists[p],metas[p] FROM unnest(picked) WITH ORDINALITY u(p,k) ORDER BY k;
 END $$;
 
 CREATE FUNCTION public.morlet_search_envelopes(collection regclass,query_samples float8[],query_rate_hz float8,

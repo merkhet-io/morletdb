@@ -26,9 +26,11 @@ def rust(name):
 
 
 # Filled in as 0.3.1 changes land.
-NEW_RUST = ["morlet_simple_value_floors", "morlet_decode_interval", "morlet_envelope_probe"]
+NEW_RUST = ["morlet_simple_value_floors", "morlet_decode_interval", "morlet_envelope_probe",
+            "morlet_envelopes_from_chunks"]
 CHANGED_BODY = ["morlet_value_spreads", "morlet_compare_to_history", "morlet_history_neighbors",
-                "morlet_stream_relations", "morlet_read_interval", "morlet_build_envelopes"]
+                "morlet_stream_relations", "morlet_read_interval", "morlet_build_envelopes",
+                "morlet_envelope_ranked"]
 NEW_SQL = ["morlet_level_track", "morlet_envelope_probe_relation", "morlet_enable_envelope_probes",
            "morlet_search_envelope_probes"]
 

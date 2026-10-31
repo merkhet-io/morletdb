@@ -1,0 +1,17 @@
+{
+ "station": "PB06",
+ "E": {
+  "rows": 10,
+  "other_station_rows": 0
+ },
+ "PP": {
+  "rows": 10,
+  "other_station_rows": 0
+ },
+ "PI": {
+  "rows": 10,
+  "other_station_rows": 0
+ },
+ "hidden_source": "rejected: source recording does not exist or is not visible",
+ "ok": true
+}
