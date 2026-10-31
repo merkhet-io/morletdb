@@ -40,13 +40,15 @@ def build(conn):
     conn.execute("""CREATE TABLE public.r2_env1 (recording_id text NOT NULL, window_size integer NOT NULL,
                     start_sample bigint NOT NULL, v halfvec(410) NOT NULL, PRIMARY KEY (recording_id, window_size, start_sample))""")
     t = time.perf_counter()
-    with conn.transaction(), conn.cursor(name="env") as cur, conn.cursor() as out:
+    writer = psycopg.connect(conn.info.dsn, autocommit=True)          # COPY needs its own connection
+    with conn.transaction(), conn.cursor(name="env") as cur, writer.cursor() as out:
         cur.itersize = 5000
         cur.execute("SELECT recording_id, start_sample, envelope FROM public.r2_envelopes WHERE window_size = %s", (W,))
         with out.copy("COPY public.r2_env1 (recording_id, window_size, start_sample, v) FROM STDIN") as cp:
             for rid, s, env in cur:
                 vals = np.frombuffer(bytes(env)[1:], "<f2").astype(np.float64)    # exact: binary16 -> binary64
                 cp.write_row((rid, W, s, "[" + ",".join(repr(float(x)) for x in vals) + "]"))
+    writer.close()
     load_s = time.perf_counter() - t
     t = time.perf_counter()
     conn.execute("SET maintenance_work_mem = '2GB'")
