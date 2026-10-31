@@ -1,5 +1,7 @@
 # X1: lossless reference coding across repeated machining operations
 
+**Result: PAUSE.** Upper-bound saving 0.002% against the 25% gate; executions of the same operation are uncorrelated sample by sample (median residual correlation 0.018). See [RESULTS.md](RESULTS.md).
+
 Status: **feasibility gate FROZEN** in the commit that adds this file. No Bosch statistic
 of the kind below has been computed yet. Only the file listing and the HDF5 dtypes and
 value grid were read: one execution per file, float64 holding integer counts.
