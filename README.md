@@ -201,7 +201,7 @@ negative ones.
   - retrieval of similar labelled examples as an explanation;
   - access control;
   - compact lossless storage, 1.2–6× smaller than TimescaleDB compression on the
-    same samples ([below](#compared-with-plain-postgresql));
+    same samples ([below](#why-an-extension-instead-of-postgresql--timescaledb--pgvector));
   - envelope search that tolerates time shifts, which pgvector's distances do not.
 
 | Evaluation | Result |
@@ -236,9 +236,9 @@ experiment is in memory, not a PostgreSQL index, and needs a source checkout
 rather than a release image; its next steps are in the
 [advanced retrieval design](docs/advanced-retrieval.md).
 
-### Compared with plain PostgreSQL
+### Why an extension instead of PostgreSQL + TimescaleDB + pgvector?
 
-Could the same be had without the extension? Bits per sample on the same 4.2 million
+Could the same be had with existing PostgreSQL extensions? Bits per sample on the same 4.2 million
 held-out samples per dataset, every layout read back bit-exact
 ([P2](evaluation/plain_postgres/README.md); lower is better):
 
@@ -257,8 +257,13 @@ held-out samples per dataset, every layout read back bit-exact
 - **Envelopes:** pgvector's `halfvec` stores them in the same space
   ([P1](evaluation/plain_postgres/README.md)). What it lacks is matching that
   tolerates time shifts.
-- **Speed:** this is not a speed claim. pgvector is about 13× faster when time shifts
-  are not needed.
+- **Speed:** this is not a speed claim. When time shifts are not needed, pgvector's
+  zero-lag scan is about 14× faster: 0.49 vs 6.8 ms median, both in one run on
+  `main` after the search speed-up
+  ([P1 re-run](evaluation/plain_postgres/README.md#p1-re-run-after-the-search-speed-up)).
+  P1's original 20× was measured before that speed-up. The two searches have
+  different semantics (zero-lag cosine vs lag-tolerant cross-correlation), so this is
+  neither a like-for-like comparison nor evidence about relevance.
 
 One machine (Apple M5 Max), TimescaleDB 2.30.2 with default compression settings
 (`segmentby` recording, `orderby` sample index). Other layouts were not tried.
