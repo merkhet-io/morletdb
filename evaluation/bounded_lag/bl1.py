@@ -210,13 +210,14 @@ def run(conn, out):
 def summarize(res, queries, out):
     per = res["per_query"]
     arms = [a for a in per[0] if a not in ("ms", "cands", "cand_sets", "lstar", "x_exhausted")]
+    # summary needs per-query "cand_sets" only for coverage; absent after a reload
     types = np.array([t for _, _, t in queries])
     bins = {"0-5": (0, 5), "6-15": (6, 15), "16-30": (16, 30)}
     summ = {}
     for arm in arms:
         rec = [len(set(map(tuple, per[q][arm])) & set(map(tuple, per[q]["A"]))) / len(per[q]["A"]) for q in per]
         cov = [len(set(map(tuple, per[q]["cand_sets"][arm])) & set(map(tuple, per[q]["A"]))) / len(per[q]["A"])
-               for q in per] if arm in per[0].get("cand_sets", {}) else None
+               for q in per] if arm in per[0].get("cand_sets", {}) else res.get("summary", {}).get(arm, {}).get("coverage_mean")
         bylag = {}
         for b, (lo, hi) in bins.items():
             hit = tot = 0
@@ -232,7 +233,7 @@ def summarize(res, queries, out):
              "recall_by_type": {t: float(np.mean(np.array(rec)[types == t])) for t in ("random", "energetic")},
              "recall_by_lstar": bylag, "per_query_recall": rec}
         if cov is not None:
-            s["coverage_mean"] = float(np.mean(cov))
+            s["coverage_mean"] = float(np.mean(cov)) if isinstance(cov, list) else cov
         if arm in per[0]["cands"]:
             c = [per[q]["cands"][arm] for q in per]
             s["unique_candidates"] = {"mean": float(np.mean(c)), "p95": float(np.percentile(c, 95)), "max": int(max(c))}
@@ -265,11 +266,38 @@ def summarize(res, queries, out):
     print(verdict, xwins, json.dumps(gate))
 
 
+def xrerun(conn, out):
+    """Amendment 1: re-time X2/X8 with custom plans forced; keep the original timings as generic-plan."""
+    res = json.loads((out / "bl1.json").read_text())
+    queries = [(q["recording_id"], q["start"], q["type"]) for q in json.loads((HERE / "dev_queries.json").read_text())["queries"]]
+    conn.execute("SET plan_cache_mode = force_custom_plan")
+    per = res["per_query"]
+    for arm in ("X2", "X8"):
+        conn.execute(f"SET max_parallel_workers_per_gather = {arm[1:]}")
+        rid0, s0, _ = queries[0]
+        q = query_envelope(conn, rid0, s0)
+        res["plans"][arm + "_custom"] = "\n".join(r[0] for r in conn.execute(
+            "EXPLAIN (ANALYZE, TIMING OFF) " + X_SQL, (q.tolist(), P.MAX_LAG, Jsonb({"tiers": [TIER]}), rid0, s0 + P.WINDOW, s0, X_LIMIT)).fetchall())
+        for timed_pass in (False, True):
+            for qi, (rid, s, _) in enumerate(queries):
+                (top, flag), ms = timed(lambda: arm_x(conn, rid, s))
+                rec = per[str(qi)]
+                if timed_pass:
+                    rec[arm + "_generic"], rec["ms"][arm + "_generic"] = rec.get(arm + "_generic", rec[arm]), rec["ms"].get(arm + "_generic", rec["ms"][arm])
+                    rec[arm], rec["ms"][arm] = top, ms
+                    rec.setdefault("x_exhausted", {})[arm] = flag
+        print("re-timed", arm, flush=True)
+    conn.execute("RESET max_parallel_workers_per_gather")
+    res["per_query"] = {int(k): v for k, v in per.items()}
+    res["amendment_1"] = "X2/X8 re-timed with plan_cache_mode = force_custom_plan; *_generic are the original timings"
+    summarize(res, queries, out)
+
+
 def main():
     cmd, out = sys.argv[1], Path(sys.argv[2])
     out.mkdir(parents=True, exist_ok=True)
     with psycopg.connect(DSN, autocommit=True) as conn:
-        {"setup": setup, "run": run}[cmd](conn, out)
+        {"setup": setup, "run": run, "xrerun": xrerun}[cmd](conn, out)
 
 
 if __name__ == "__main__":

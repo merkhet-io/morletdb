@@ -112,3 +112,19 @@ No configuration, grid or K is added after results are seen.
 
 No tuning of HNSW, grids or K after results; no new data; no change to pg_morlet; no
 Stage B; no learned embeddings; no Fourier-magnitude bounds.
+
+## Amendment 1 (after the run; before re-timing X)
+
+**Finding:** the X arms' statement is executed repeatedly with bound parameters. psycopg
+prepares it after 5 executions and PostgreSQL switches to a generic plan after 5 more; the
+generic plan is serial. Measured on 16 queries: about 1.0 s per query for the first 10, then
+2.8 s (= the serial scan). EXPLAIN ANALYZE of a custom plan shows 2 workers launched (957 ms)
+and 3 workers for the 8-worker setting (749 ms). The run's X timings therefore mostly
+measured a serial plan and understate the exact baseline.
+
+**Change:** X2 and X8 are re-timed (warm-up pass, then timed pass, same 100 queries) with
+`plan_cache_mode = force_custom_plan`, and the first query's EXPLAIN ANALYZE is saved to
+show the workers launched. Recall is recomputed from the new lists. The original X numbers
+stay in the results, labelled as generic-plan timings. The gate's condition 3 uses the
+re-timed X. Nothing else is re-run; A (PL/pgSQL) and P are unaffected by this mechanism
+(P's latency is consistent with index scans; a sequential scan per probe would exceed 1 s).
