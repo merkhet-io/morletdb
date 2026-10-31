@@ -1,0 +1,234 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype,booktabs,tabularx,amsmath,amssymb,graphicx}
+\usepackage[margin=25mm]{geometry}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[colorlinks=true,linkcolor=MidnightBlue,citecolor=MidnightBlue,urlcolor=MidnightBlue]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}\fancyhead[L]{MorletDB}\fancyhead[R]{Working draft 0.1}\fancyfoot[C]{\thepage}
+\setlength{\headheight}{13pt}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\pending}[1]{\par\smallskip\noindent\textcolor{BrickRed}{\textbf{Open before submission:} #1}\par\smallskip}
+\title{MorletDB: Lossless Waveform Storage and\\Provenance-Preserving Similarity Retrieval\\in PostgreSQL}
+\author{Author and affiliation to be confirmed}
+\date{Working draft 0.1 --- 31 October 2026}
+\begin{document}
+\maketitle
+\begin{center}\small\textbf{Research manuscript in development.} Results below summarize existing repository reports; no new experiments were performed for this draft. This is not a submission-ready manuscript.\end{center}
+\begin{abstract}
+High-rate sensor archives require compact storage of original samples as well as efficient retrieval of comparable intervals. Treating every sample as an independent database row can be expensive, while storing only feature vectors disconnects search results from their source recordings. We present MorletDB, a PostgreSQL extension implemented in Rust that combines lossless chunk storage, transactional extraction, compatibility-aware similarity queries, and interval-based source read-back. Its design separates the authoritative waveform from replaceable search representations. Existing evaluations cover industrial vibration, seismic recordings, and sleep electroencephalography. In a four-input storage benchmark, total database storage was 6.12--11.53 bits per sample; the tested TimescaleDB integer layouts were 24--35\% larger. In a separate seismic confirmation experiment, half-precision materialized envelopes required 12.9\% of raw-table storage and achieved recall@10 of 0.9999 relative to a raw-derived reference matcher. These results support the feasibility of compact, source-linked waveform retrieval, but do not establish a novel compression algorithm, a scalable search index, or general superiority over existing systems. We describe the implementation, report controlled comparisons and negative findings, and identify the additional experiments needed to establish the system's operating envelope.
+\end{abstract}
+
+\section{Introduction}
+Vibration, acoustic, electrical, and seismic measurements are often uniformly sampled sequences rather than sparse streams of independent business events. An investigator may first locate an interesting interval and then ask where comparable behavior occurred, under which acquisition conditions, and what the original samples show. This workflow requires both a search representation and durable access to the underlying recording.
+
+Two common layouts serve different parts of this problem. A relational row per sample makes timestamps and values directly addressable but introduces substantial physical overhead. A vector per window provides a compact search interface, but the application must maintain the link to the source samples, enforce representation compatibility, and define what similarity means. Neither layout by itself specifies the complete recording-to-evidence workflow.
+
+MorletDB explores an integrated design within PostgreSQL. A recording is one uniformly sampled channel. Original samples are appended in chunks; derived windows can cross chunk boundaries. Search returns recording identifiers and half-open sample intervals that can be reconstructed through the same extension. Acquisition metadata and PostgreSQL permissions remain part of the query path.
+
+The motivating hypothesis is architectural: \emph{authoritative storage and retrieval representations should be separate, but connected by explicit interval semantics and transactional ingestion}. The implementation initially used Morlet energy features. Subsequent experiments did not establish an advantage over simpler spectral baselines, and the design consequently treats the feature extractor as versioned and replaceable rather than as the central scientific contribution.
+
+This draft develops three candidate contributions:
+\begin{enumerate}
+\item A recording-oriented PostgreSQL design combining bitwise sample recovery, replay-aware ingestion, versioned representations, and source-linked retrieval.
+\item An empirical analysis of storage, representation precision, and lag-tolerant retrieval, with codec-level and database-level costs distinguished.
+\item An account of negative results that constrain the design: transform complexity, progressive reconstruction, and reference coding are not assumed to improve waveform archives.
+\end{enumerate}
+These are proposed systems contributions. Their novelty relative to prior database systems and waveform-search tools requires a fuller literature review.
+
+\section{Problem and Semantics}
+\subsection{Recordings, intervals, and compatibility}
+A recording is a sequence $x=(x_0,\ldots,x_{N-1})$ with sample rate $f_s$, channel identity, unit, and acquisition metadata. An interval $[a,b)$ denotes samples $x_a,\ldots,x_{b-1}$. Sample offsets are authoritative; converting an interval to wall-clock time additionally requires a time origin. Real acquisition gaps must not silently become adjacent samples in a continuous recording.
+
+A search representation is $\phi_v(x_{a:b})$, where $v$ identifies the extractor and its parameters. Candidates are compared only under the implementation's compatibility rules for sample rate, channel, unit, window, and extractor. Metadata filters further constrain eligibility. These rules prevent technically computable but semantically ill-defined comparisons, such as distances between features extracted with different frequency layouts.
+
+\subsection{Three different notions of correctness}
+\textbf{Sample identity} means that decoding reproduces the accepted float64 bit patterns. It does not establish that the sensor was calibrated correctly or that the original acquisition was authentic.
+
+\textbf{Search fidelity} means that a stored or approximate representation reproduces a specified reference ranking. In this paper, recall@10 against a reference matcher measures ranking agreement, not event detection accuracy.
+
+\textbf{Task relevance} asks whether the retrieved intervals help answer a domain question. Catalog-distance proxies and sleep-stage labels provide limited task evidence; they cannot be inferred from numerical ranking fidelity alone.
+
+We use \emph{provenance-preserving} in the operational sense that a result retains its recording identifier, sample interval, and associated context. It does not imply cryptographic acquisition attestation, immutable custody, or a causal explanation of machine behavior.
+
+\section{System Design}
+\subsection{Transactional recording ingestion}
+The extension stores recording metadata, raw chunks, derived windows, and extraction progress in PostgreSQL. Appends use global sample offsets. Raw samples, derived features, and checkpoints commit in one transaction, so a committed checkpoint refers to committed source data. Identical retries are verified rather than duplicated; changed retries, gaps, and overlaps fail explicitly under the recording append contract~\cite{repo}.
+
+The interface includes operations to start a recording, append chunks, inspect progress, search a stored interval, and read an interval. A result can therefore be followed back to samples without exporting the complete archive into a separate analysis store. PostgreSQL remains responsible for transaction isolation and access control. The SQL functions are intended to respect caller permissions; reported integration checks include row-level-security cases, but those checks are not a general security proof.
+
+\subsection{Lossless chunk representation}
+Raw chunks are encoded as binary values rather than expanded into one row per sample. The codec combines fixed polynomial predictors of order zero through four, partitioned Rice coding, and a CRC-32C checksum~\cite{format}. These are established techniques, not a new entropy coder.
+
+Many physical-valued samples originate from integer digitizer codes and a calibration map. The encoder attempts a grid representation of the form
+\begin{equation}
+ x_i = o + k_i s + \delta_i,
+\end{equation}
+where $k_i$ is an integer index, $s$ a scale, $o$ an optional offset, and $\delta_i$ denotes the correction needed to recover the exact input float64. This equation is conceptual: the implementation specifies floating-point operation order and stores corrections in an order-preserving integer mapping of float64 values. It also supports division-mode grids for fixed decimals.
+
+The encoder may refine the scale and offset per chunk. Near-grid acceptance is not lossy quantization: any remaining discrepancy is represented by the correction stream. If grid coding is unsuitable or uneconomical, the codec uses mapped float-bit coding or raw float64 storage. Format version 3 adds offset grids while retaining version-2 decoding. A checksum detects accidental corruption; it is not a cryptographic authenticator.
+
+The supplied sample quantum is part of the encoding configuration. Therefore, comparisons must disclose whether competing methods receive equivalent digitizer or calibration knowledge. Integer-coded baselines are especially important: comparing only with generic float compression would overstate the benefit.
+
+\subsection{Replaceable materialized search representations}
+Lossless storage is optimized for faithful sample recovery. Search representations are optimized for a chosen comparison. MorletDB supports pooled spectral/statistical features and materialized envelopes for lag-tolerant matching. These are distinct retrieval paths, not interchangeable distance functions.
+
+The evaluated envelope representation has 410 values for a 4096-sample window. The matcher evaluates normalized correlations over a bounded set of time shifts. Conceptually, a similarity score takes the form
+\begin{equation}
+ S(q,g)=\max_{\ell\in\mathcal{L}} C_\ell(q,g),
+\end{equation}
+where $C_\ell$ is the implemented normalized envelope correlation and $\mathcal{L}$ is the allowed lag set. Boundary handling, normalization, and deterministic tie-breaking are part of the representation contract and must be pinned to the evaluated implementation.
+
+Storing envelopes in half precision changes their numerical values. Exhaustively scoring all eligible stored envelopes can be exact with respect to those envelopes while remaining only approximately faithful to the full-precision raw-derived reference. The current implementation is not a demonstrated sublinear search index.
+
+\section{Evaluation Methodology}
+The repository records frozen protocols, source revisions, development selections, results, and deviations. This draft synthesizes those reports rather than treating all studies as one unified experiment. Datasets used in earlier studies are not newly held out merely because a later question differs.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+Study & Workload & Scope \\
+\midrule
+P2 & Four inputs; 4,194,304 samples each & Physical database storage, raw-only collections \\
+R1b & 1,826 seismic windows; 1,557 event queries & Precision/storage trade-off, 2022 confirmation \\
+P1 & Same 1,826 windows; every window queried & pgvector storage and scoring comparison \\
+S1 & 153 sleep nights; 39 held-out subjects & Example-based staging, separate task evidence \\
+\bottomrule
+\end{tabularx}
+\caption{Principal existing evaluations. P1 reuses R1b data and is an engineering benchmark, not an independent confirmation.}
+\end{table}
+
+P2 compares raw-only MorletDB storage with TimescaleDB 2.30.2 on PostgreSQL 17. Layouts include individual float64 samples, individual integer samples where applicable, and float64 arrays per chunk. Sizes include the reported tables, indexes, TOAST, and recording metadata. Correctness was checked on four read-back intervals per layout; this does not amount to exhaustive read-back of every stored sample~\cite{plain}.
+
+R1b selected a representation on 2023 development windows and evaluated it once on 2022 windows after a protocol freeze. The data comprises northern Chile seismic recordings at ten stations, event windows from 284 events, and no-match distractors. Candidate eligibility includes station and event-exclusion rules. Its reference decodes raw samples and computes envelopes for matching~\cite{r1b}.
+
+P1 stores the same envelopes in pgvector \code{halfvec} and compares zero-lag cosine with lag-tolerant scoring. The same-run latency rerun followed an extension optimization. S1 evaluates retrieval-based sleep staging on a subject-disjoint split; it is supporting application evidence rather than an extension performance benchmark~\cite{sleep}.
+
+\section{Results}
+\subsection{Raw storage}
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Input & MorletDB & TS integer & TS float64 & TS arrays \\
+\midrule
+CX seismic counts & 6.12 & 8.25 & 14.34 & 25.0 \\
+IMS decimal vibration & 11.36 & 14.06 & 71.95 & 28.1 \\
+Paderborn ADC counts & 9.95 & 12.89 & 24.58 & 26.4 \\
+Paderborn physical floats & 11.53 & --- & 70.12 & 29.5 \\
+\bottomrule
+\end{tabular}
+\caption{P2 total storage in bits/sample. TS denotes the tested TimescaleDB layouts, not all possible configurations.}
+\label{tab:storage}
+\end{table}
+
+MorletDB required 6.12--11.53 bits/sample (Table~\ref{tab:storage}). Integer TimescaleDB layouts were 24--35\% larger. Float layouts were substantially larger, particularly for the noisy decimal and calibrated physical inputs. The result supports preserving or recovering the digitizer's numerical structure before coding. It does not establish superiority over tuned column formats, modern floating-point codecs, or optimized archive files.
+
+Earlier codec-level measurements found the implemented lossless coding close to optimized Parquet, with modest dataset-dependent differences; they did not show an order-of-magnitude improvement over that stronger baseline~\cite{compression}. P2 did not compare ingestion speed because MorletDB ran natively while TimescaleDB ran in a Docker virtual machine. Such timings must not be used as an end-to-end speed claim.
+
+\subsection{Materialization and precision}
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Representation & Storage/raw & Recall@10 & Identical order & p95 (ms) \\
+\midrule
+Raw-derived reference & --- & 1.000 & 1.000 & 1324 \\
+Float32 envelopes & 28.1\% & 1.000 & 1.000 & 14 \\
+Float16 envelopes & 12.9\% & 0.9999 & 0.987 & 16 \\
+Uint8 envelopes & 7.2\% & 0.998 & 0.845 & 17 \\
+Uint8, more decimation & 4.2\% & 0.952 & 0.067 & 16 \\
+\bottomrule
+\end{tabular}
+\caption{R1b confirmation. Storage is relative to the raw chunk table. Latencies include the experiment's client path and are not current product latency measurements.}
+\label{tab:r1b}
+\end{table}
+
+The selected float16 representation met the frozen criteria on confirmation data. Its p95 latency was 0.012 times that of raw-derived matching, and its table occupied 12.9\% of raw-table storage. The catalog-distance proxy changed by +0.001 km, with a reported 95\% interval of [$-0.002$, +0.004] km~\cite{r1b}.
+
+This large latency ratio belongs to a specific implementation path: the reference decodes candidates and computes envelopes in the client. It measures the benefit of materialization against that path, not the speedup over the strongest possible raw-scanning engine. Float16 ranking was near-identical, not identical. More aggressive quantization preserved much of the top-ten membership but reordered results more frequently.
+
+\subsection{Storage equivalence does not imply query equivalence}
+P1 found identical physical table size for MorletDB envelopes and pgvector \code{halfvec}: 1,794,048 bytes in each layout. Client-computed envelopes were bit-identical for all 1,826 windows. Thus, envelope storage itself is not an advantage over pgvector~\cite{plain}.
+
+Zero-lag cosine shared 64.7\% of MorletDB's lag-tolerant top ten. Client-side lag scoring reproduced its ranking. In the later same-run comparison, median latency was 6.85 ms for MorletDB, 0.49 ms for zero-lag cosine, and 20.3 ms for client lag scoring. The first two operations have different semantics; their ratio is not a like-for-like performance result. The nominal HNSW arm used the station B-tree and an exact sort, so this experiment does not measure HNSW scalability.
+
+The engineering lesson is specific: an ordinary vector column can hold the representation, but reproducing bounded-shift matching requires an appropriate scorer. Whether that scorer belongs in an extension, an application, or another execution engine remains a systems trade-off.
+
+\subsection{Application evidence and negative findings}
+S1 retrieved the 40 nearest expert-scored sleep epochs from other subjects. Mean per-subject Cohen's kappa was 0.583 for Morlet features, 0.589 for matched FFT features, and 0.541 for logistic regression on Morlet features. The retrieval-minus-regression difference was +0.042 [0.016, 0.068], while macro-F1 was approximately equal. Class-balanced regression weights explain part of the kappa difference~\cite{sleep}.
+
+This supports a modest claim: example-based prediction can expose source-linked neighbors without a measured accuracy penalty against this simple comparator. It does not establish clinical utility, human interpretability, or competitiveness with modern sleep-staging models.
+
+Compression experiments likewise favored simple alternatives. At matched error bounds, the tested wavelet decomposition codec was 19--57\% larger than simple quantization with conventional coding. Progressive raw reconstruction failed its byte-saving gate, whereas a separately materialized retrieval representation was more effective~\cite{compression}. These findings motivate separation of raw storage and retrieval features; they do not prove that wavelet methods are generally inferior.
+
+\section{Related Work and Positioning}
+\textbf{Floating-point compression.} ALP provides adaptive lossless floating-point compression, and FCBench evaluates methods across database and scientific-computing workloads~\cite{alp,fcbench}. MorletDB must be evaluated against such methods before its grid-aware float handling can be positioned as a distinct technical contribution. The current codec intentionally combines established predictor and Rice-coding techniques~\cite{format}.
+
+\textbf{Waveform similarity search.} FAST uses compact fingerprints for efficient seismic similarity search~\cite{fast}. It predates MorletDB and demonstrates that waveform retrieval and compact representations are established topics. This paper's candidate contribution is the database integration and its measured trade-offs, not the invention of waveform search.
+
+\textbf{Relational vector and time-series extensions.} PostgreSQL, TimescaleDB, and pgvector provide the infrastructure used as both building blocks and baselines. The present evidence shows that some MorletDB capabilities can be reproduced with those components; the extension integrates recording semantics, raw reconstruction, and custom scoring. Integration alone may justify a software or demonstration paper, but a stronger research paper needs a generalizable empirical or architectural finding.
+
+\pending{Expand the literature review to include Searchlight, subsequence and cross-correlation indexing, calibrated-data compression, scientific array databases, and source-linked example retrieval. Establish novelty through full-text comparison rather than titles or abstracts.}
+
+\section{Limitations and Threats to Validity}
+\textbf{Scale and execution environment.} The main retrieval studies contain thousands rather than millions of windows. Data fits in memory. Measurements come from one machine, without true disk-cold experiments or concurrent clients. Several studies ran on macOS with PostgreSQL through pgrx; storage comparisons span native and virtualized execution. These results cannot establish production capacity.
+
+\textbf{Baseline completeness.} TimescaleDB settings were limited, newer column formats were not tested, and ALP was not included. Client-side reconstruction makes the raw-derived retrieval reference expensive. A baseline implemented with equivalent in-database kernels is needed to separate materialization benefits from language and transport overhead.
+
+\textbf{Dataset independence.} Some engineering benchmarks reuse previously evaluated seismic windows. Reports explicitly distinguish these from confirmation data. Repeated development across datasets creates selection risk even when individual protocols are frozen. A dataset-consumption ledger and a new independent confirmation workload are needed.
+
+\textbf{Task validity.} Seismic windows are catalog-placed, and catalog distance is an imperfect relevance proxy. Sleep staging uses one historical dataset and a modest classifier baseline. Neither result establishes usefulness in industrial troubleshooting. Numerical provenance does not establish acquisition authenticity.
+
+\textbf{Correctness evidence.} Round trips, replay tests, independent scorers, and permission checks are valuable engineering evidence. They are not formal verification of the codec, transaction behavior, or access-control implementation. Error-bound checks in lossy-codec experiments were empirical and must not be described as mathematical guarantees.
+
+\section{Experiments Required for the Next Revision}
+The next iteration should strengthen the existing claim rather than open unrelated modeling programs.
+\begin{enumerate}
+\item \textbf{Common-environment storage comparison.} Compare grid-aware coding with ALP, tuned Parquet, TimescaleDB, and integer-plus-standard-codec baselines on identical samples. Report payload and full database bytes separately; include offset grids and non-grid floats.
+\item \textbf{Controlled retrieval scaling.} Pin one implementation revision and measure increasing candidate sets, multiple query selectivities, warm and cold conditions, concurrent clients, ingestion overhead, and latency distributions. Compare equivalent lag-tolerant scorers and distinguish exact from approximate paths.
+\item \textbf{Independent task confirmation.} Freeze a protocol on new data before inspecting values. Test representation fidelity and a domain-relevant retrieval outcome; do not claim usefulness from fidelity alone.
+\item \textbf{Evidence audit.} Reproduce headline tables from committed outputs, verify dataset licenses and citations, document data exclusions, and pin an archival release. Review all results for leakage and post-hoc interpretation.
+\end{enumerate}
+These are planned experiments; no results are asserted here.
+
+\section{Conclusion}
+MorletDB demonstrates a practical way to combine compact lossless waveform chunks with replaceable search representations and interval-based source access in PostgreSQL. Existing results favor numerical-grid-aware storage and materialized retrieval representations over several more elaborate alternatives. They also show that vector storage can match envelope storage, and that lag tolerance changes the query rather than simply making a conventional vector query faster. The current evidence supports a reproducible systems prototype and a focused research manuscript. Establishing scale, novelty, and independent task value remains necessary before stronger claims are justified.
+
+\section*{Artifact and Draft Status}
+The implementation and experiment reports are available at \url{https://github.com/merkhet-io/morletdb}. Software is reported under Apache 2.0; source datasets retain their own terms. This draft was prepared with AI assistance from repository reports and inspected source excerpts. Its author must independently audit the text, calculations, references, and underlying experiments before submission. Authorship and affiliation have intentionally not been inferred.
+
+\begin{thebibliography}{10}\small
+\bibitem{repo} MorletDB contributors. \emph{MorletDB source repository and README}. Snapshot inspected 31 October 2026. \url{https://github.com/merkhet-io/morletdb}.
+\bibitem{format} MorletDB contributors. \emph{Encoded chunk format}. Inspected Git blob \code{bfd5e0e2e2ff2b6f8a710a33e7bf110a7d926c0d}. \url{https://github.com/merkhet-io/morletdb/blob/main/docs/chunk-format.md}.
+\bibitem{plain} MorletDB contributors. \emph{Plain PostgreSQL baselines: P1 and P2}. Inspected Git blob \code{65297f679149926dca1a6ffb9d39f648c7eebd09}; includes the 31 October same-run P1 rerun. \url{https://github.com/merkhet-io/morletdb/blob/main/evaluation/plain_postgres/README.md}.
+\bibitem{r1b} MorletDB contributors. \emph{R1b confirmation (2022): compact materialized envelopes}. Run revision \code{bfdf6fe}; inspected report blob \code{2925ed4dc3d918ebca06db9dc3631f54baaeef62}. \url{https://github.com/merkhet-io/morletdb/blob/main/evaluation/materialized/compact/results/conf-2022/RESULTS.md}.
+\bibitem{sleep} MorletDB contributors. \emph{S1 results: explainable sleep staging by retrieval of similar epochs}. Inspected report blob \code{e7194c4017f3417882477b8fc1338d62ffc5f8e7}. \url{https://github.com/merkhet-io/morletdb/blob/main/evaluation/sleep/RESULTS.md}.
+\bibitem{compression} MorletDB contributors. \emph{Stage-1 compression benchmark: results and gate decisions}. Includes correction to an earlier cross-report storage estimate. \url{https://github.com/merkhet-io/morletdb/blob/main/evaluation/compression/results/ab70819/RESULTS.md}.
+\bibitem{alp} A. Afroozeh, L. Kuffo, and P. Boncz. \emph{ALP: Adaptive Lossless floating-Point Compression}. Research implementation and publication materials. \url{https://github.com/cwida/ALP}. Bibliographic details to be checked against the final publication.
+\bibitem{fcbench} X. Chen, J. Tian, I. Beaver, C. Freeman, Y. Yan, J. Wang, and D. Tao. \emph{FCBench: Cross-Domain Benchmarking of Lossless Compression for Floating-Point Data}. arXiv:2312.10301, 2023; revised 2024. \url{https://arxiv.org/abs/2312.10301}.
+\bibitem{fast} C. E. Yoon, O. O'Reilly, K. J. Bergen, and G. C. Beroza. \emph{Earthquake detection through computationally efficient similarity search}. Science Advances, 2015. \url{https://pubmed.ncbi.nlm.nih.gov/26665176/}. Full-text comparison remains pending.
+\end{thebibliography}
+
+\appendix
+\section{Evidence Ledger for Revision}
+\small
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+Claim & Evidence & Restriction \\
+\midrule
+6.12--11.53 bits/sample & P2, four inputs & Raw-only storage; limited competitor settings \\
+24--35\% integer gap & P2 integer layouts & Extra bytes relative to MorletDB, not percent saving \\
+12.9\% envelope overhead & R1b confirmation & Fraction of raw chunk table, not whole deployment \\
+0.9999 recall@10 & R1b selected float16 & Agreement with reference, not relevance \\
+0.012 p95 ratio & R1b client-inclusive timing & Not a general engine speedup \\
+64.7\% top-ten overlap & P1 & Different similarity semantics \\
+6.85/0.49/20.3 ms & P1 same-run rerun & Different operations; small filtered galleries \\
+0.583 sleep kappa & S1 & One channel; weak N1 and REM; no clinical claim \\
+\bottomrule
+\end{tabularx}
+\par\medskip
+\noindent\textbf{Reference work still required.} Add verified primary dataset references for IPOC/GEOFON, IMS/NASA, Paderborn KAt, and Sleep-EDF/PhysioNet; cite PostgreSQL, pgvector, TimescaleDB, FLAC, and Rice coding appropriately. Resolve final publication metadata and archive a single audited artifact release before submission.
+\end{document}
