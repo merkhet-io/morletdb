@@ -1,6 +1,10 @@
 """Viewer helper tests; the API test runs only with MORLET_VIEWER_TEST_DSN (a database where
 tools/viewer/demo.py has been run)."""
+import json
 import os
+import re
+import shutil
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -30,6 +34,50 @@ class Helpers(unittest.TestCase):
         page = (Path(viewer.__file__).parent / "index.html").read_text()
         self.assertNotIn("http://", page.replace("http://127.0.0.1", ""))
         self.assertNotIn("https://", page)
+
+
+# The page's own selection functions, run in Node with stubbed helpers and API responses
+# that the script resolves in a chosen order.
+RACE = r"""
+const st = { coll: null, colls: [], recs: [], rec: null, view: [0, 0], req: 0, pick: 0, acq: null, sib: [] };
+const pending = {}, refreshed = [], shown = [];
+const get = (path, p) => new Promise((resolve) => { pending[path + ":" + (p.recording || p.collection)] = resolve; });
+const $ = () => ({ innerHTML: "", textContent: "", value: "" });
+const draw = () => {}, renderRecs = () => {}, esc = String, fmt = String, fmtT = String;
+const refresh = async () => { refreshed.push(st.rec.recording_id); shown.push([st.rec.recording_id, st.acq.acquisition]); };
+const tick = () => new Promise((r) => setTimeout(r, 0));
+%s
+%s
+(async () => {
+  st.coll = { name: "c", acquisitions: true };
+  st.recs = [{ recording_id: "A", channel: "x", unit: "g", sample_rate_hz: 1, samples: 10, metadata: {} },
+             { recording_id: "B", channel: "x", unit: "g", sample_rate_hz: 1, samples: 10, metadata: {} }];
+  const a = selectRecording("A"); await tick();
+  const b = selectRecording("B"); await tick();
+  pending["/api/acquisition:B"]({ acquisition: "acq-B", channels: [] }); await b;
+  pending["/api/acquisition:A"]({ acquisition: "acq-A", channels: [] }); await a;
+  const recordings = { rec: st.rec.recording_id, acq: st.acq.acquisition, refreshed: [...refreshed], shown: [...shown] };
+  // A collection switch overtaken by another: the first response must not replace the recordings.
+  st.colls = [{ name: "c1" }, { name: "c2" }];
+  const c1 = selectCollection("c1"); await tick();
+  const c2 = selectCollection("c2"); await tick();
+  pending["/api/recordings:c2"]({ recordings: [] }); await c2;
+  pending["/api/recordings:c1"]({ recordings: [{ recording_id: "Z" }] }); await c1;
+  console.log(JSON.stringify({ recordings, collection: st.coll.name, recs: st.recs.length }));
+})();
+"""
+
+
+@unittest.skipUnless(shutil.which("node"), "needs node")
+class SelectionRace(unittest.TestCase):
+    def test_out_of_order_responses_keep_the_latest_selection(self):
+        page = (Path(viewer.__file__).parent / "index.html").read_text()
+        fns = [re.search(r"async function %s\(.*?\n}\n" % name, page, re.S).group(0)
+               for name in ("selectCollection", "selectRecording")]
+        out = subprocess.run(["node", "-e", RACE % tuple(fns)], capture_output=True, text=True, check=True).stdout
+        got = json.loads(out)
+        self.assertEqual(got["recordings"], {"rec": "B", "acq": "acq-B", "refreshed": ["B"], "shown": [["B", "acq-B"]]})
+        self.assertEqual((got["collection"], got["recs"]), ("c2", 0))
 
 
 @unittest.skipUnless(os.environ.get("MORLET_VIEWER_TEST_DSN"), "needs MORLET_VIEWER_TEST_DSN with demo data")
