@@ -210,7 +210,7 @@ recovers the shift-tolerant top ten.
 On held-out seismic data (234,622 windows):
 
 - **97.7%** of the exact top ten
-- **57 ms** p95, against **740 ms** for the fastest exact path
+- **57 ms** p95, against **740 ms** for the fastest in-database exact path
 - zero-lag candidates from the same index: **64–66%**
 
 </td>
