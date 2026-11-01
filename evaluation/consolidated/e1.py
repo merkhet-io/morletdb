@@ -151,6 +151,16 @@ def offline(conn, rid, s, ids, G, keys, index, ref):
     S61 = G @ Q61
     lstar = [int(P.GRIDS["G61"][int(np.argmax(S61[index[a]]))]) for a in ref]
     out, cands = {}, {}
+    # Deviation 1: for each reference item, the correlation kept by the best 13-grid probe relative to its best lag,
+    # and its rank (1 = best) among all windows in that probe's exact ordering.
+    gcols = [P.GRIDS["G61"].index(l) for l in P.GRIDS["G13"]]
+    grid_items = []
+    for a in ref:
+        i = index[a]
+        best = float(S61[i].max())
+        c = max(gcols, key=lambda c: S61[i, c])
+        rank = int((S61[:, c] > S61[i, c]).sum()) + 1
+        grid_items.append({"kept": float(S61[i, c]) / best if best > 0 else None, "rank_in_probe": rank})
 
     def union(S, cols, k=50):
         seen, cand = set(), []
@@ -170,7 +180,7 @@ def offline(conn, rid, s, ids, G, keys, index, ref):
     cands["EZ"] = [ids[i] for i in P.topk(S61[:, col[0]], len(cands["PX-13"]), keys)]
     for arm, cand in cands.items():
         out[arm] = {"top": P.suppress(rerank(conn, q, cand), rid, s), "cands": len(cand)}
-    return out, lstar
+    return out, lstar, grid_items
 
 
 def stats(xs):
@@ -244,7 +254,7 @@ def main(db, queries_path, out_path, build):
         for rid, s, _ in queries:
             key = f"{rid}:{s}"
             ref = [tuple(x) for x in per[key]["top"]["EX-2"]]
-            off, lstar = offline(conn, rid, s, ids, G, keys, index, ref)
+            off, lstar, per[key]["grid_items"] = offline(conn, rid, s, ids, G, keys, index, ref)
             refs[key], lstars[key] = ref, lstar
             for arm, v in off.items():
                 per[key]["top"][arm] = v["top"]
@@ -265,6 +275,13 @@ def main(db, queries_path, out_path, build):
             "Z-650": "1 HNSW scan (ef_search 650, LIMIT 650), re-rank of 650", "Z-1000": "1 HNSW scan (ef_search 1000), re-rank of 1000",
         }
         res["offline_union_sizes"] = {a: stats([per[q]["work"][a]["cands"] for q in per]) for a in ("PX-61", "PX-13", "PX-7", "PQ-13", "EZ")}
+        gi = [it for q in per for it in per[q]["grid_items"]]
+        kept = [it["kept"] for it in gi if it["kept"] is not None]
+        ranks = [it["rank_in_probe"] for it in gi]
+        res["grid_items"] = {"items": len(gi), "kept": {"min": float(min(kept)), "p1": float(np.percentile(kept, 1)),
+                                                         "p5": float(np.percentile(kept, 5)), "median": float(np.median(kept))},
+                             "rank_in_best_grid_probe": {"median": float(np.median(ranks)), "p95": float(np.percentile(ranks, 95)),
+                                                         "max": int(max(ranks)), "beyond_50": int(sum(r > 50 for r in ranks))}}
         hardest = sorted(per, key=lambda q: per[q]["recall"]["PR"])[:10]
         res["hardest_PR"] = [{"query": q, "type": per[q]["type"], "recall": per[q]["recall"]} for q in hardest]
         res["round2_differs"] = {q: per[q]["round2_differs"] for q in per if per[q]["round2_differs"]}
