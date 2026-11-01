@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="330" viewBox="0 0 1280 330" role="img" aria-labelledby="t d">
+<title id="t">Agent workflow: retrieve, inspect, explain</title>
+<desc id="d">An investigation agent asks whether a signal has been seen before, retrieves similar intervals with SQL, reads the original samples into analysis, and links its answer to recording IDs and sample ranges.</desc>
+<rect width="1280" height="330" rx="18" fill="#090c0d"/>
+<rect x="0.5" y="0.5" width="1279" height="329" rx="18" fill="none" stroke="#24302e"/>
+<g font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<text x="64" y="58" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#8a9793" letter-spacing="1.8">EXAMPLE / FACTORY INVESTIGATION AGENT</text>
+<text x="64" y="100" font-family="Georgia, 'Times New Roman', serif" font-size="25" font-style="italic" fill="#e4e8e6">“This cycle looks unusual. Have we seen this signal before? Compare earlier</text>
+<text x="64" y="132" font-family="Georgia, 'Times New Roman', serif" font-size="25" font-style="italic" fill="#e4e8e6">runs and bring back the evidence for review.”</text>
+<rect x="64.0" y="168" width="368.0" height="124" rx="10" fill="none" stroke="#24302e"/>
+<text x="84.0" y="200" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#a8df73" letter-spacing="1.8">01 / RETRIEVE</text>
+<text x="84.0" y="230" font-size="18" font-weight="600" fill="#e4e8e6">Search the relevant history.</text>
+<text x="84.0" y="256" font-size="14" fill="#8a9793">The agent calls a bounded SQL tool with a</text>
+<text x="84.0" y="276" font-size="14" fill="#8a9793">source interval, asset filter and result limit.</text>
+<text x="444.0" y="234" font-size="16" fill="#a8df73" text-anchor="middle">→</text>
+<rect x="456.0" y="168" width="368.0" height="124" rx="10" fill="none" stroke="#24302e"/>
+<text x="476.0" y="200" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#a8df73" letter-spacing="1.8">02 / INSPECT</text>
+<text x="476.0" y="230" font-size="18" font-weight="600" fill="#e4e8e6">Bring samples into analysis.</text>
+<text x="476.0" y="256" font-size="14" fill="#8a9793">Read matching intervals and pass them to a</text>
+<text x="476.0" y="276" font-size="14" fill="#8a9793">plotting, signal-processing or model tool.</text>
+<text x="836.0" y="234" font-size="16" fill="#a8df73" text-anchor="middle">→</text>
+<rect x="848.0" y="168" width="368.0" height="124" rx="10" fill="none" stroke="#24302e"/>
+<text x="868.0" y="200" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#a8df73" letter-spacing="1.8">03 / EXPLAIN</text>
+<text x="868.0" y="230" font-size="18" font-weight="600" fill="#e4e8e6">Link the answer to its evidence.</text>
+<text x="868.0" y="256" font-size="14" fill="#8a9793">Return recording IDs and sample ranges so an</text>
+<text x="868.0" y="276" font-size="14" fill="#8a9793">engineer can inspect the source.</text>
+</g>
+</svg>
