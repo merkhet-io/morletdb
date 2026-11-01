@@ -86,4 +86,9 @@ gallery sizes, new data or paper edits without the owner.
 
 ## Deviations
 
-(none yet)
+Appended after the runs, with the results (not before the affected run, as intended above):
+
+1. N3's in-database exact search refused under the harness's `max_candidates = 1000000` (1,026,010 eligible
+   windows). N3's gate and run used `max_candidates = 2000000` via `run_e4.py`'s optional argument. The cap only
+   decides whether the function refuses; lists and timing method are unchanged. N1 and N2 used 1,000,000.
+2. N2 and N3 were loaded in parallel; their recorded index build times include that contention.
