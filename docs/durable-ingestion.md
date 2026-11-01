@@ -305,7 +305,7 @@ workers: about 1.3 s for 235,000 windows with 2 workers on the test machine (abo
 interactive. It is approximate.
 
 ```sql
-CREATE EXTENSION vector;                                   -- pgvector, 0.7 or later
+CREATE EXTENSION vector;                                   -- pgvector, 0.8 or later (iterative index scans)
 SELECT morlet_enable_envelope_probes('signals', 4096);     -- creates signals_probes_4096
 SELECT * FROM morlet_search_envelope_probes('signals', 'pump-7', 81920, 86016);
 ```
