@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="300" viewBox="0 0 1280 300" role="img" aria-labelledby="t d">
+<title id="t">From recording to evidence</title>
+<desc id="d">A recording is appended as lossless raw chunks; envelopes and their index rows are written in the same transaction; a query interval is searched exactly or through probes with exact re-ranking; each match is read back as original samples with its context.</desc>
+<rect width="1280" height="300" rx="18" fill="#090c0d"/>
+<rect x="0.5" y="0.5" width="1279" height="299" rx="18" fill="none" stroke="#24302e"/>
+<g font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<text x="56" y="56" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#8a9793" letter-spacing="1.8">FROM RECORDING TO EVIDENCE · INSIDE POSTGRESQL</text>
+<rect x="285.2" y="86" width="470.4" height="164" rx="12" fill="none" stroke="#a8df73" stroke-opacity="0.45" stroke-dasharray="5 5"/>
+<text x="520.4" y="276" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#a8df73" letter-spacing="1.6" text-anchor="middle">ONE TRANSACTION</text>
+<rect x="56.0" y="104" width="211.2" height="128" rx="10" fill="#090c0d" fill-opacity="1" stroke="#24302e"/>
+<text x="74.0" y="134" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#a8df73" letter-spacing="1.6">01 / APPEND</text>
+<text x="74.0" y="164" font-size="17" font-weight="600" fill="#e4e8e6">Recording</text>
+<text x="74.0" y="190" font-size="13.5" fill="#8a9793">one channel, rate,</text>
+<text x="74.0" y="210" font-size="13.5" fill="#8a9793">unit, metadata</text>
+<text x="281.2" y="174.0" font-size="16" fill="#a8df73" text-anchor="middle">→</text>
+<rect x="295.2" y="104" width="211.2" height="128" rx="10" fill="#090c0d" fill-opacity="1" stroke="#24302e"/>
+<text x="313.2" y="134" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#a8df73" letter-spacing="1.6">02 / STORE</text>
+<text x="313.2" y="164" font-size="17" font-weight="600" fill="#e4e8e6">Raw chunks</text>
+<text x="313.2" y="190" font-size="13.5" fill="#8a9793">lossless, at global</text>
+<text x="313.2" y="210" font-size="13.5" fill="#8a9793">sample offsets</text>
+<text x="520.4" y="174.0" font-size="16" fill="#a8df73" text-anchor="middle">→</text>
+<rect x="534.4" y="104" width="211.2" height="128" rx="10" fill="#090c0d" fill-opacity="1" stroke="#24302e"/>
+<text x="552.4" y="134" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#a8df73" letter-spacing="1.6">03 / BUILD</text>
+<text x="552.4" y="164" font-size="17" font-weight="600" fill="#e4e8e6">Envelopes + index</text>
+<text x="552.4" y="190" font-size="13.5" fill="#8a9793">searchable at</text>
+<text x="552.4" y="210" font-size="13.5" fill="#8a9793">commit</text>
+<text x="759.6" y="174.0" font-size="16" fill="#a8df73" text-anchor="middle">→</text>
+<rect x="773.6" y="104" width="211.2" height="128" rx="10" fill="#090c0d" fill-opacity="1" stroke="#24302e"/>
+<text x="791.6" y="134" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#a8df73" letter-spacing="1.6">04 / SEARCH</text>
+<text x="791.6" y="164" font-size="17" font-weight="600" fill="#e4e8e6">Similar intervals</text>
+<text x="791.6" y="190" font-size="13.5" fill="#8a9793">exact, or probes</text>
+<text x="791.6" y="210" font-size="13.5" fill="#8a9793">with exact re-rank</text>
+<text x="998.8" y="174.0" font-size="16" fill="#a8df73" text-anchor="middle">→</text>
+<rect x="1012.8" y="104" width="211.2" height="128" rx="10" fill="#a8df73" fill-opacity="0.08" stroke="#a8df73"/>
+<text x="1030.8" y="134" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#a8df73" letter-spacing="1.6">05 / READ</text>
+<text x="1030.8" y="164" font-size="17" font-weight="600" fill="#e4e8e6">Original samples</text>
+<text x="1030.8" y="190" font-size="13.5" fill="#8a9793">each match read back</text>
+<text x="1030.8" y="210" font-size="13.5" fill="#8a9793">with its context</text>
+</g>
+</svg>

@@ -1,23 +1,21 @@
-![MorletDB — Search your waveforms.](assets/brand/hero.svg)
-
-<h1 align="center">Find the signal you have seen before</h1>
+<p align="center"><img src="assets/brand/readme-hero.svg" alt="MorletDB — Recordings, not rows. Signal retrieval for agents and engineers in PostgreSQL: store recordings losslessly, retrieve similar intervals, and bring the original samples and metadata into the analysis." width="100%"></p>
 
 <p align="center">
 <b>MorletDB is a PostgreSQL extension for waveform archives.</b><br>
-Store raw sensor recordings losslessly, select an interval, and ask<br>
-<i>“Where else does something like this occur?”</i> — every answer is a recording and a sample interval you can read back.
+Select an interval and ask <i>“Have we seen a signal like this before?”</i> — every answer is a recording<br>
+and a sample interval you can read back, for an engineer or for an AI agent.
 </p>
 
 <p align="center">
-<a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache_2.0-39C9DF?labelColor=0B1523"></a>
+<a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache_2.0-a8df73?labelColor=090c0d"></a>
 <a href="https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml"><img alt="Rust & Postgres checks" src="https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml/badge.svg"></a>
-<img alt="PostgreSQL 17 | 18" src="https://img.shields.io/badge/PostgreSQL-17_|_18-718DFF?labelColor=0B1523&logo=postgresql&logoColor=F1F7FA">
-<img alt="Rust + pgrx" src="https://img.shields.io/badge/Rust-pgrx_0.16-70F0CA?labelColor=0B1523&logo=rust&logoColor=F1F7FA">
-<img alt="Status: developer alpha" src="https://img.shields.io/badge/status-developer_alpha-F1F7FA?labelColor=0B1523">
+<img alt="PostgreSQL 17 | 18" src="https://img.shields.io/badge/PostgreSQL-17_|_18-a8df73?labelColor=090c0d&logo=postgresql&logoColor=e4e8e6">
+<img alt="Rust + pgrx" src="https://img.shields.io/badge/Rust-pgrx_0.16-a8df73?labelColor=090c0d&logo=rust&logoColor=e4e8e6">
+<img alt="Status: developer alpha" src="https://img.shields.io/badge/status-developer_alpha-24302e?labelColor=090c0d">
 </p>
 
 <p align="center">
-<a href="#install">Install</a> · <a href="#use">Use</a> · <a href="#research">Research</a> · <a href="#explore">Explore</a> · <a href="#what-has-been-measured">Evidence</a> · <a href="https://merkhet-io.github.io/morletdb/">Website</a>
+<a href="#for-ai-agents">AI agents</a> · <a href="#install">Install</a> · <a href="#use">Use</a> · <a href="#research">Research</a> · <a href="#explore">Explore</a> · <a href="#what-has-been-measured">Evidence</a> · <a href="https://merkhet-io.github.io/morletdb/">Website</a>
 </p>
 
 ---
@@ -40,15 +38,47 @@ PostgreSQL, instead of scattering samples over rows or vectors.
 - **Plain PostgreSQL.** SQL functions, your roles and row-level security, your
   backups. pgvector is optional.
 
-> [!NOTE]
-> **Developer alpha.** The recording workflow is implemented and tested in CI on
-> PostgreSQL 17 and 18. Retrieval has been evaluated on public seismic data; usefulness
-> for other domains and production operation remain to be established. A similar
-> waveform is a lead for an investigation, not a diagnosis.
+## For AI agents
+
+**Give your agents signal evidence to reason with.** An investigation agent can search
+your recording archive before it answers: *have we seen a signal like this before?*
+MorletDB supplies the matching intervals and their original samples; your application
+connects them to analysis tools, maintenance notes or experiment records.
+
+<p align="center"><img src="assets/brand/readme-agent.svg" alt="Agent workflow: 01 retrieve — search the relevant history with a bounded SQL tool; 02 inspect — read matching intervals into analysis; 03 explain — return recording IDs and sample ranges as evidence." width="100%"></p>
+
+The tool is plain SQL, so it runs with the agent's database role, row-level security
+and limits:
+
+```sql
+-- a bounded tool an agent can call: similar intervals for a source interval and an asset
+CREATE FUNCTION agent_similar_intervals(recording text, from_sample bigint, to_sample bigint,
+                                        asset text, k integer DEFAULT 5)
+RETURNS TABLE (recording_id text, start_sample bigint, end_sample bigint, distance float8)
+LANGUAGE sql STABLE AS $$
+  SELECT recording_id, start_sample, end_sample, distance
+  FROM morlet_search_envelope_probes('signals', recording, from_sample, to_sample,
+                                     jsonb_build_object('asset', asset), least(k, 20))
+$$;
+-- and to bring evidence into analysis: morlet_read_interval('signals', recording_id, start, end)
+```
+
+| Use case | What the agent does |
+|---|---|
+| **Anomaly investigation** | an external detector flags an interval; the agent checks whether it resembles earlier events and under which operating conditions |
+| **Autonomous factory workflows** | gathers signal evidence across machine runs before proposing maintenance, a quality check or an escalation; your application decides which actions need approval |
+| **Engineering investigation** | retrieves earlier test runs to explain a changed transient, with the experiment metadata |
+| **Research and labelling assistants** | collects similar intervals for human review, annotation or model evaluation |
+
+> [!IMPORTANT]
+> This is an integration pattern on the SQL functions MorletDB ships. Detection models,
+> agent orchestration and machine controls come from your application; no agent or MCP
+> server is bundled. The effectiveness of agent and anomaly workflows has not been
+> evaluated, and similarity alone does not establish normality, a fault or its cause.
 
 ## How it works
 
-![From recording to evidence: a recording is appended as raw chunks into PostgreSQL (pg_morlet), search representations are written in the same transaction, a query interval is searched against compatible recordings, and ranked matches are read back as original samples with their context.](assets/brand/pipeline.svg)
+<p align="center"><img src="assets/brand/readme-pipeline.svg" alt="From recording to evidence: a recording is appended as lossless raw chunks; envelopes and their index rows are written in the same transaction; a query interval is searched exactly or through probes with exact re-ranking; each match is read back as original samples with its context." width="100%"></p>
 
 1. **Append** chunks of a recording at their global sample offset.
 2. **Build** search representations, such as amplitude envelopes of 4096-sample
