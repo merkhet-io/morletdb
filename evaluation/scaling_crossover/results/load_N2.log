@@ -1,0 +1,25 @@
+appended {'database': 'morlet_e4_30', 'last_day': 30, 'append_s': 1003.9914707499847, 'recordings': 192, 'samples': 1034174308}
+{
+ "database": "morlet_e4_30",
+ "last_day": 30,
+ "append_s": 1003.9914707499847,
+ "recordings": 192,
+ "samples": 1034174308,
+ "envelope_build_s": 140.4452331670036,
+ "enable_probes_s": 132.8876191249874,
+ "windows": 504650,
+ "windows_days_1_14": 234762,
+ "status": [
+  4096,
+  504650,
+  504650,
+  0
+ ],
+ "bytes": {
+  "raw_chunks": 796098560,
+  "envelopes": 480026624,
+  "probe_table": 1070817280,
+  "probe_index": 590790656
+ },
+ "database_bytes": 2363143859
+}
