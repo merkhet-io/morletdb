@@ -4,6 +4,17 @@
 
 Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
 0.3.0-alpha.1):
+- `morlet_enable_row_security(collection)` (opt-in) closes a data leak in multi-tenant setups.
+  - **The leak:** with RLS only on the recordings table, a restricted role that had the
+    `SELECT` grants search needs could read other tenants' raw chunks, envelopes and probe
+    vectors directly.
+  - **The fix:** every companion table gets a policy following its recording's visibility.
+    Writes for hidden recordings are rejected, and tables enabled later are covered
+    automatically.
+  - **Cost** on 234,622 windows: exact unfiltered search 946 → 995 ms; probe search +6 ms at
+    p95.
+  - See `docs/access-control.md` for roles, grants, the external-worker trust boundary and
+    limits.
 - `morlet_search_envelope_probes` routes and filters (evaluation SS3).
   - When at most `exact_threshold` windows are eligible (new argument, default 5000), it runs
     the exact search.
