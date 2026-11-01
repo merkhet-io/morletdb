@@ -1,4 +1,4 @@
-# Pilot Stage 2 results: recovery passes; sustained ingest at the target rate passes; 2× overload does not
+# Pilot Stage 2 results: recovery passes; target ingest holds for 15 min and for 111 min before an unexplained stall; 2× overload does not
 
 Plan: [STAGE2_PLAN.md](STAGE2_PLAN.md) (frozen 5ad1f12, deviations logged at its end). `main` at
 e31e1a3 plus `morlet_collection_status` (#74). One Apple M5 Max, **shared with an unrelated
@@ -48,18 +48,50 @@ abort rule (lag > 60 s and growing for 5 min) stopped the run after 5.2 min, bef
 recovery phase. Capacity on this shared machine with 4 writers and synchronous maintenance is
 therefore about **1.3–1.4× the target**, not 2×.
 
-**C4 (2 h stability) was not run:** the plan requires C2 and C3 to pass first.
+**C2p, pilot configuration, 15 min — passed** (Amendment 1: `shared_buffers` 8 GB, `max_wal_size`
+16 GB, `checkpoint_timeout` 15 min, `wal_compression` on, changed together; load average mean 7.3,
+max 9.7, against 11.7 in C2, which confounds the latency comparison):
 
-**Verdict C: narrow.** The target rate is sustained for 15 minutes with interactive search; the
-headroom is about 1.35×, and overload is not absorbed (synchronous maintenance has no
-backlog to drain — writers simply fall behind). A long stability run has not been made.
+| Measure | C2 (defaults) | C2p (pilot configuration) |
+|---|---|---|
+| Ingest | 409,527 samples/s; lag peak 21.7 s | 409,527 samples/s; lag peak 2.0 s |
+| Append transaction p50 / p95 / max | 117 / 251 / 859 ms | 54 / 101 / 357 ms |
+| Filtered search p95 | 167 ms | 81 ms |
+| Unfiltered probe search p95, recall | 337 ms, 0.998 | 100 ms, 0.994 (146 checks) |
+| Unfiltered exact search p95 | 9.7 s | 7.8 s |
+| Database growth / WAL | 0.76 GB / 13.8 GB | 0.65 GB / **1.91 GB** |
+| Errors | 0 | 0 |
+
+**C4, pilot configuration, planned 2 h — stopped at 112.5 min; not completed.** For the
+110.9 minutes before an unexplained pause of all client processes (deviation 4), the target was met:
+
+| Measure (11:13:25–13:04:18, from `c4_reanalysis.json`) | Result |
+|---|---|
+| Ingest | 409,585 samples/s; writer lag max 24.4 s in the first hour (background job running), 3.4 s in the second |
+| Append transaction p50 / p95 / p99 | 98 / 190 / 245 ms |
+| Filtered search p50 / p95 (4,393) | 72 / 118 ms |
+| Unfiltered probe search p50 / p95 (4,465), recall | 84 / 138 ms, 0.993 (890 checks) |
+| Unfiltered exact search p50 / p95 (102) | 11.3 / 14.5 s |
+| Database growth / WAL | 4.68 GB / 11.96 GB |
+| Errors | 0 |
+| Load average | mean 11.7, max 29.0 (background job stopped at about 12:15) |
+
+Then no writer, client or monitor process recorded anything for 89–106 s; the writers' lag reached
+90.8 s, and the harness's lag rule (stricter than the plan's wording) stopped the run. The stored
+`c4.json` reports 378,980 samples/s because it divides by the scheduled 7,200 s; over the elapsed
+6,752 s the rate was 404,135 samples/s including the pause.
+
+**Verdict C: narrow.** With the pilot configuration, the target rate held for 111 minutes with
+interactive search and bounded lag, but the planned 2-hour run did not complete, the cause of the
+pause is unknown, and overload is not absorbed (headroom about 1.35×; synchronous maintenance has
+no backlog to drain). WAL with the pilot configuration was about 2.6× the database growth.
 
 ## Findings that change operations
 
-1. **WAL volume:** 13.8 GB of WAL for 0.76 GB of growth in 15 minutes (default
-   `max_wal_size` 1 GB). HNSW maintenance touches pages across a 1.2 GB index, and each
-   checkpoint forces full-page images. About 1.3 TB/day at the target rate unless checkpoint
-   settings change — measure `max_wal_size` / `wal_compression` before a pilot.
+1. **WAL volume:** 13.8 GB of WAL for 0.76 GB of growth in 15 minutes with default settings;
+   1.91 GB for 0.65 GB with the pilot configuration (four settings changed together, so no single
+   one is credited), and 11.96 GB for 4.68 GB over 111 minutes. Plausibly, fewer checkpoints force
+   fewer full-page images of HNSW pages, but this was not isolated.
 2. **After deletions, rebuild the probe index online** instead of vacuuming it (10 s vs 113 s,
    and only the rebuild reclaims space).
 3. **External workers must also fill probe rows**; `morlet_collection_status` shows the
@@ -69,16 +101,18 @@ backlog to drain — writers simply fall behind). A long stability run has not b
 
 ## Pilot operating range (tested)
 
-16 channels × 25.6 kHz with synchronous maintenance, an archive of about 1 M windows, 4
-analysts — for **15 minutes**, on shared hardware. Everything else, including a multi-hour or
-multi-day run, rates above about 1.35× this, and cold caches, is untested. MorletDB is **not
-yet pilot-ready** by the plan's own criteria: a stability run (C4) and the WAL question are open.
+16 channels × 25.6 kHz with synchronous maintenance, an archive of about 1 M windows growing by
+about 2.5 GB/h, 4 analysts: 15 minutes with default settings, and 111 minutes with the pilot
+configuration, on shared hardware. Longer runs, rates above about 1.35× this, cold caches and other
+machines are untested. By the plan's criteria MorletDB is **not yet pilot-ready**: the 2-hour
+stability run did not complete. A measured stability duration is not a production release.
 
 ## Next steps (by finding)
 
-1. WAL: measure ingest with `max_wal_size` (e.g. 16 GB) and `wal_compression = on` (C2
-   repeated, 15 min), then the 2-hour stability run (C4) at the target rate, ideally in a quiet
-   window or on dedicated hardware.
+1. Repeat C4 for the full 2 hours on a quiet machine, with the lag rule implemented as worded
+   (above 60 s and still growing after 5 minutes) and the rate computed over elapsed time; record
+   system-wide activity (for example `vm_stat`, `iostat`) so that a pause like the one in C4 can be
+   attributed.
 2. Overload behaviour: either accept 1.35× headroom as the pilot limit, or measure background
    (worker) maintenance, which decouples appends from index work at the cost of visibility delay.
 3. Make the external worker write probe rows (or add a maintenance function for them).
@@ -91,6 +125,14 @@ yet pilot-ready** by the plan's own criteria: a stability run (C4) and the WAL q
 .venv-seismic/bin/python -I evaluation/pilot/load.py fill data/cx-scale data/cx-confirm-2021 evaluation/pilot/results
 .venv-seismic/bin/python -I evaluation/pilot/load.py run data/cx-confirm-2021 evaluation/pilot/results c2 15 1
 .venv-seismic/bin/python -I evaluation/pilot/load.py run data/cx-confirm-2021 evaluation/pilot/results c3 10 2 10 1
+# Amendment 1: ALTER SYSTEM SET shared_buffers = '8GB', max_wal_size = '16GB',
+#   checkpoint_timeout = '15min', wal_compression = on; restart; then
+.venv-seismic/bin/python -I evaluation/pilot/load.py run data/cx-confirm-2021 evaluation/pilot/results c2p 15 1
+.venv-seismic/bin/python -I evaluation/pilot/load.py run data/cx-confirm-2021 evaluation/pilot/results c4 120 1
+python3 evaluation/pilot/c4_reanalysis.py evaluation/pilot/results
+# afterwards: ALTER SYSTEM RESET ALL; restart
 ```
+
+Raw logs: `results/c2_logs.tgz`, `c2p_logs.tgz`, `c3_logs.tgz`, `c4_logs.tgz`.
 
 Per-transaction and per-query logs are in `results/c2_logs.tgz` and `results/c3_logs.tgz`.

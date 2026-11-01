@@ -110,3 +110,17 @@ pilot configuration: `shared_buffers` 8 GB, `max_wal_size` 16 GB, `checkpoint_ti
 so C2p shows whether a sensible configuration makes WAL manageable, not which setting matters.
 **C4** (2 h at the target rate, same configuration) runs if C2p passes C2's criteria. Criteria
 and abort rules are unchanged. The server's defaults are restored afterwards.
+
+## Deviations after Amendment 1
+
+4. **C4 stopped early; recorded after the run.** C4 ran from 11:13:25 to 13:05:57 CET (6,752 s of the
+   planned 7,200 s). Between 13:04:26 and 13:05:57 no writer, client or monitor process wrote a record
+   (gaps of 89–106 s in every log); the PostgreSQL log shows no error or stall, and the cause was not
+   identified. The first monitor sample after the pause showed a writer lag of 90.8 s, and the harness's
+   lag rule stopped the run. That rule, as implemented (`lag > 60 s` and larger than 30 samples earlier),
+   fires on a single sample and is stricter than this plan's wording ("above 60 s and still growing after
+   5 min"); by the wording, the criterion was not established, and whether the lag would have recovered is
+   unknown. The harness's `achieved_samples_per_s` divides by the scheduled 7,200 s, not the elapsed time.
+   `c4.json` is kept unchanged; `c4_reanalysis.py` recomputes the rate over the elapsed time and all
+   metrics up to the pause. The unrelated background job was stopped by the owner at about 12:15, about
+   one hour into C4.
