@@ -4,6 +4,32 @@
 
 Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
 0.3.0-alpha.1):
+- `morlet_collection_status(collection)`: operational status per envelope window size.
+  - Recordings and raw samples.
+  - Stored envelopes, recordings without envelopes, and raw samples not yet covered by an
+    envelope window.
+  - Probe rows and probe backlog.
+  - Whether row security is applied.
+  - Bytes per structure: recordings, chunks, segments, envelopes, probe table, probe index.
+- `morlet_enable_row_security(collection)` (opt-in) closes a data leak in multi-tenant setups.
+  - **The leak:** with RLS only on the recordings table, a restricted role that had the
+    `SELECT` grants search needs could read other tenants' raw chunks, envelopes and probe
+    vectors directly.
+  - **The fix:** every companion table gets a policy following its recording's visibility.
+    Writes for hidden recordings are rejected, and tables enabled later are covered
+    automatically.
+  - **Cost** on 234,622 windows: exact unfiltered search 946 → 995 ms; probe search +6 ms at
+    p95.
+  - See `docs/access-control.md` for roles, grants, the external-worker trust boundary and
+    limits.
+- `morlet_search_envelope_probes` routes and filters (evaluation SS3).
+  - When at most `exact_threshold` windows are eligible (new argument, default 5000), it runs
+    the exact search.
+  - Otherwise each probe scans only the eligible recordings, using pgvector's iterative scan.
+  - Before, eligibility was applied after probing, and recall fell to 0.52 under a filter
+    leaving 1.8% of windows.
+  - On held-out CX data at five filter levels it now reaches recall 0.977–1.0, with no
+    results outside the filter.
 - `morlet_build_envelopes` builds encoded collections in batches of up to 256 windows. It
   decodes each raw chunk once (`morlet_envelopes_from_chunks`) instead of reading every window
   through its own SQL statement, with byte-identical envelopes. On 33,736 windows of CX seismic

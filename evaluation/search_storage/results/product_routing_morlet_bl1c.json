@@ -1,0 +1,40 @@
+{
+ "database": "morlet_bl1c",
+ "levels": {
+  "L1": {
+   "recall_mean": 1.0,
+   "recall_min": 1.0,
+   "filter_violations": 0,
+   "p50_ms": 64.64047949702945,
+   "p95_ms": 84.54493365716189
+  },
+  "L2": {
+   "recall_mean": 0.997,
+   "recall_min": 0.9,
+   "filter_violations": 0,
+   "p50_ms": 154.07752098690253,
+   "p95_ms": 207.21583719714545
+  },
+  "L3": {
+   "recall_mean": 0.986,
+   "recall_min": 0.6,
+   "filter_violations": 0,
+   "p50_ms": 69.0331455116393,
+   "p95_ms": 98.24631845258409
+  },
+  "L4": {
+   "recall_mean": 0.9939999999999999,
+   "recall_min": 0.8,
+   "filter_violations": 0,
+   "p50_ms": 65.30662499426398,
+   "p95_ms": 88.36598952766506
+  },
+  "L5": {
+   "recall_mean": 0.9770000000000002,
+   "recall_min": 0.7,
+   "filter_violations": 0,
+   "p50_ms": 49.36181250377558,
+   "p95_ms": 69.38084195280679
+  }
+ }
+}

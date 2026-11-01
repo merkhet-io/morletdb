@@ -643,6 +643,56 @@ mod tests {
         // Feature search sees only recordings that have segments.
         assert_eq!(Spi::get_one::<i64>("SELECT count(DISTINCT recording_id) FROM morlet_search_streams('raw_only',ARRAY(SELECT sin(i/7.) FROM generate_series(0,511) i),4096,'x','g','{}','zscore',100)").unwrap(), Some(1));
     }
+    fn contract_fixture() {
+        // A and its exact copy D (ties), B with a shifted burst, C noise; 16,384 samples each
+        envelope_fixture();
+        Spi::run("SELECT morlet_start_recording('env','D',100,'HHZ','counts','{\"g\":\"d\"}',512,256,'zscore','none');
+                  SELECT morlet_append_chunk('env','D',0,(SELECT samples FROM morlet_read_interval('env','A',0,16384)))").unwrap();
+    }
+
+    #[pg_test]
+    fn search_contract_ties_order_by_recording_then_start() {
+        contract_fixture();
+        Spi::run("SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C','D']) r").unwrap();
+        // D is a bitwise copy of A, so D's windows tie with A's; ties order by recording_id, then start_sample
+        let rows = Spi::get_one::<String>("SELECT string_agg(recording_id||':'||start_sample,',' ORDER BY ord) FROM (SELECT *, row_number() OVER () ord FROM morlet_search_envelopes('env',(SELECT samples FROM morlet_read_interval('env','B',8192,10240)),100,'HHZ','counts','{}',4,0.075,false)) x").unwrap().unwrap();
+        let hits: Vec<&str> = rows.split(',').collect();
+        let mut pairs = 0;
+        for (k, h) in hits.iter().enumerate() {
+            // the last hit may be an A whose tied D copy falls just beyond top_k
+            if let (Some(start), true) = (h.strip_prefix("A:"), k + 1 < hits.len()) {
+                assert_eq!(
+                    hits.get(k + 1).copied(),
+                    Some(format!("D:{start}").as_str()),
+                    "tie order: {rows}"
+                );
+                pairs += 1;
+            }
+        }
+        assert!(pairs > 0, "{rows}");
+    }
+
+    #[pg_test]
+    fn search_contract_fewer_than_top_k_and_searchable_at_commit() {
+        contract_fixture();
+        // nothing built yet: no envelopes, so no results (not an error)
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',10)"
+            )
+            .unwrap(),
+            Some(0)
+        );
+        // append and build in one transaction (this test's): searchable immediately
+        Spi::run("SELECT morlet_build_envelopes('env','D',2048,1024)").unwrap();
+        // only D is eligible (filter) and overlapping windows are suppressed: at most 16384/2048 = 8 hits,
+        // fewer than top_k = 20, returned without error
+        let n = Spi::get_one::<i64>(r#"SELECT count(*) FROM morlet_search_envelope_interval('env','A',2048,4096,'{"g":"d"}',20)"#).unwrap().unwrap();
+        assert!(n > 0 && n <= 8, "{n}");
+        assert_eq!(Spi::get_one::<i64>(r#"WITH h AS (SELECT * FROM morlet_search_envelope_interval('env','A',2048,4096,'{"g":"d"}',20))
+            SELECT count(*) FROM h a JOIN h b ON a.start_sample<b.start_sample AND b.start_sample<a.end_sample"#).unwrap(), Some(0));
+    }
+
     #[pg_test(error = "sample_rate_hz must be finite and in (0,200000]")]
     fn raw_only_recordings_validate_rate() {
         Spi::run("SELECT morlet_create_stream_collection('public','raw_only_bad'); SELECT morlet_start_recording('raw_only_bad','A',0,'x','g','{}',512,256,'zscore','none')").unwrap();
@@ -651,6 +701,141 @@ mod tests {
         // A: noise with a burst centred at 3000; B: the same burst at 10100 (68 samples later
         // relative to its window) plus other noise; C: noise only.
         Spi::run("SELECT morlet_create_stream_collection('public','env'); SELECT morlet_enable_envelopes('env'); SELECT morlet_start_recording('env',r,100,'HHZ','counts','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B','C']) r; CREATE TEMP TABLE burst AS SELECT i,round(800*exp(-power((i-300)/40.,2))*sin(i/2.))::float8 AS v FROM generate_series(0,599) i; SELECT morlet_append_chunk('env',r,0,ARRAY(SELECT (round(20*sin(s.i*1.7+off)+((s.i*7919+off*13)%23))+coalesce(b.v,0))::float8 FROM generate_series(0,16383) s(i) LEFT JOIN burst b ON b.i=s.i-at ORDER BY s.i)) FROM (VALUES ('A',2700,1),('B',9800,2),('C',-100000,3)) x(r,at,off)").unwrap();
+    }
+
+    fn tenant_fixture() {
+        Spi::run(r#"
+            SELECT morlet_create_stream_collection('public','ten');
+            SELECT morlet_enable_envelopes('ten');
+            SELECT morlet_start_recording('ten',r,100,'HHZ','counts',jsonb_build_object('tenant',t),512,256,'zscore','none')
+              FROM (VALUES ('a1','a'),('b1','b')) v(r,t);
+            SELECT morlet_append_chunk('ten',r,0,ARRAY(SELECT round(100*sin(i/7.0+o))::float8 FROM generate_series(0,8191) i))
+              FROM (VALUES ('a1',1),('b1',2)) v(r,o);
+            SELECT morlet_build_envelopes('ten',r,2048,1024) FROM unnest(ARRAY['a1','b1']) r;
+            CREATE ROLE morlet_tenant_a;
+            GRANT USAGE ON SCHEMA public TO morlet_tenant_a;
+            ALTER TABLE ten ENABLE ROW LEVEL SECURITY;
+            CREATE POLICY own ON ten FOR SELECT TO morlet_tenant_a USING (metadata->>'tenant'='a');
+        "#).unwrap();
+    }
+
+    #[pg_test]
+    fn row_security_covers_companion_tables() {
+        tenant_fixture();
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT morlet_row_security_enabled('ten')").unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_enable_row_security('ten')").unwrap(),
+            Some(3)
+        ); // chunks, segments, envelopes
+        Spi::run("SELECT morlet_enable_context('ten')").unwrap(); // created later: covered automatically
+        Spi::run("GRANT SELECT ON ten, ten_chunks, ten_segments, ten_envelopes, ten_ctx, ten_ctx_segments, ten_ctx_values, ten_labels TO morlet_tenant_a").unwrap();
+        Spi::run("SET LOCAL ROLE morlet_tenant_a").unwrap();
+        for t in [
+            "ten",
+            "ten_chunks",
+            "ten_segments",
+            "ten_envelopes",
+            "ten_ctx",
+            "ten_ctx_segments",
+            "ten_labels",
+        ] {
+            assert_eq!(
+                Spi::get_one::<i64>(&format!("SELECT count(*) FROM {t} WHERE recording_id='b1'"))
+                    .unwrap(),
+                Some(0),
+                "{t} leaks the hidden recording"
+            );
+        }
+        assert!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ten_envelopes WHERE recording_id='a1'")
+                .unwrap()
+                .unwrap()
+                > 0
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(DISTINCT recording_id,',') FROM morlet_search_envelope_interval('ten','a1',0,2048,'{}',10)").unwrap(), Some("a1".into()));
+    }
+
+    #[pg_test(error = "new row violates row-level security policy for table \"ten_envelopes\"")]
+    fn row_security_rejects_writes_for_hidden_recordings() {
+        tenant_fixture();
+        Spi::run("SELECT morlet_enable_row_security('ten'); GRANT SELECT, INSERT ON ten, ten_envelopes TO morlet_tenant_a; SET LOCAL ROLE morlet_tenant_a").unwrap();
+        Spi::run("INSERT INTO ten_envelopes SELECT 'b1',2048,99999,envelope FROM ten_envelopes WHERE recording_id='a1' LIMIT 1").unwrap();
+    }
+
+    #[pg_test]
+    fn row_security_covers_probe_tables() {
+        if !pgvector_available() {
+            return; // pgvector is optional; CI's pgvector job runs this
+        }
+        Spi::run(r#"
+            CREATE EXTENSION IF NOT EXISTS vector;
+            SELECT morlet_create_stream_collection('public','tenp');
+            SELECT morlet_enable_envelopes('tenp');
+            SELECT morlet_start_recording('tenp',r,100,'HHZ','counts',jsonb_build_object('tenant',t),512,256,'zscore','none')
+              FROM (VALUES ('a1','a'),('b1','b')) v(r,t);
+            SELECT morlet_append_chunk('tenp',r,0,ARRAY(SELECT round(100*sin(i/7.0+o))::float8 FROM generate_series(0,8191) i))
+              FROM (VALUES ('a1',1),('b1',2)) v(r,o);
+            SELECT morlet_build_envelopes('tenp',r,2048,1024) FROM unnest(ARRAY['a1','b1']) r;
+            CREATE ROLE morlet_tenant_p;
+            GRANT USAGE ON SCHEMA public TO morlet_tenant_p;
+            ALTER TABLE tenp ENABLE ROW LEVEL SECURITY;
+            CREATE POLICY own ON tenp FOR SELECT TO morlet_tenant_p USING (metadata->>'tenant'='a');
+            SELECT morlet_enable_row_security('tenp');
+            SELECT morlet_enable_envelope_probes('tenp',2048);
+            GRANT SELECT ON tenp, tenp_chunks, tenp_envelopes, tenp_probes_2048 TO morlet_tenant_p;
+            SET LOCAL ROLE morlet_tenant_p;
+        "#).unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM tenp_probes_2048 WHERE recording_id='b1'")
+                .unwrap(),
+            Some(0)
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(DISTINCT recording_id,',') FROM morlet_search_envelope_probes('tenp','a1',0,2048,'{}',10,0.075,true,true,50,5,0)").unwrap(), Some("a1".into()));
+    }
+
+    #[pg_test]
+    fn collection_status_reports_progress_and_backlog() {
+        envelope_fixture(); // 3 recordings x 16,384 samples
+        let row = |q: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT {q}::text FROM morlet_collection_status('env') LIMIT 1"
+            ))
+            .unwrap()
+        };
+        // nothing built: one row, everything unbuilt
+        assert_eq!(row("(window_size, recordings, raw_samples, envelopes, recordings_without_envelopes, unbuilt_samples)"), Some("(,3,49152,0,3,49152)".into()));
+        // three windows of 2048 at stride 1024 per recording: last window ends at 4096
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024,3) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        assert_eq!(
+            row("(window_size, envelopes, recordings_without_envelopes, unbuilt_samples)"),
+            Some("(2048,9,0,36864)".into())
+        );
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        assert_eq!(
+            row("(envelopes, unbuilt_samples, probe_rows, row_security)"),
+            Some("(45,0,,f)".into())
+        );
+        assert!(Spi::get_one::<bool>(
+            "SELECT chunk_bytes > 0 AND envelope_bytes > 0 FROM morlet_collection_status('env')"
+        )
+        .unwrap()
+        .unwrap());
+        if pgvector_available() {
+            Spi::run("CREATE EXTENSION IF NOT EXISTS vector; SELECT morlet_enable_envelope_probes('env',2048)").unwrap();
+            assert_eq!(
+                row("(probe_rows, probe_backlog, probe_index_bytes > 0)"),
+                Some("(45,0,t)".into())
+            );
+        }
     }
 
     #[pg_test]
@@ -693,6 +878,54 @@ mod tests {
             .unwrap()
             .unwrap(),
             "{3,4,0,0}"
+        );
+    }
+
+    #[pg_test]
+    fn probe_search_routes_and_respects_filters() {
+        if !pgvector_available() {
+            return; // pgvector is optional; CI does not install it
+        }
+        Spi::run("CREATE EXTENSION IF NOT EXISTS vector").unwrap();
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        Spi::run("SELECT morlet_enable_envelope_probes('env',2048)").unwrap();
+        Spi::run(r#"UPDATE env SET metadata='{"site":"north"}' WHERE recording_id='B'"#).unwrap();
+        let routed = |filter: &str, threshold: i32| {
+            format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_probes('env','A',2048,4096,'{filter}',10,0.075,true,true,100,5,{threshold})")
+        };
+        let exact = |filter: &str| {
+            format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_interval('env','A',2048,4096,'{filter}',10)")
+        };
+        for filter in ["{}", r#"{"site":"north"}"#] {
+            let reference = Spi::get_one::<String>(&exact(filter)).unwrap();
+            // routed to exact search (default threshold) and forced onto filter-aware probes (threshold 0)
+            assert_eq!(
+                Spi::get_one::<String>(&routed(filter, 5000)).unwrap(),
+                reference
+            );
+            assert_eq!(
+                Spi::get_one::<String>(&routed(filter, 0)).unwrap(),
+                reference
+            );
+        }
+        // filtered probes never return windows outside the filter
+        assert_eq!(Spi::get_one::<i64>(r#"SELECT count(*) FROM morlet_search_envelope_probes('env','A',2048,4096,'{"site":"north"}',10,0.075,true,true,100,5,0) WHERE recording_id<>'B'"#).unwrap(), Some(0));
+        // session settings are restored
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('hnsw.iterative_scan')")
+                .unwrap()
+                .unwrap(),
+            "off"
+        );
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('hnsw.ef_search')")
+                .unwrap()
+                .unwrap(),
+            "40"
         );
     }
 

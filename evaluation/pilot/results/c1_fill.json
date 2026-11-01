@@ -1,0 +1,22 @@
+{
+ "fill_s": 569.7098097080016,
+ "probe_enable_s": 275.3527088749979,
+ "status": {
+  "window_size": 4096,
+  "recordings": 374,
+  "raw_samples": 1923856638,
+  "envelopes": 938768,
+  "recordings_without_envelopes": 0,
+  "unbuilt_samples": 493822,
+  "probe_rows": 938768,
+  "probe_backlog": 0,
+  "row_security": false,
+  "recordings_bytes": 27361280,
+  "chunk_bytes": 1777418240,
+  "segment_bytes": 16384,
+  "envelope_bytes": 934723584,
+  "probe_table_bytes": 854728704,
+  "probe_index_bytes": 1172144128
+ },
+ "db_bytes": 4774475443
+}
