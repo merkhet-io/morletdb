@@ -236,7 +236,8 @@ recording's extractor cannot be changed after it starts.
 
 ## Materialized envelopes
 
-The guarantees of envelope search (exact versus probe path, distances, eligibility, ties,
+Operating guidance (configuration, backup and restore, maintenance, tested limits) is in
+[operations](operations.md). The guarantees of envelope search (exact versus probe path, distances, eligibility, ties,
 suppression, searchability) are collected in the [search contract](search-contract.md).
 
 An optional representation stored next to the raw chunks for search-by-example
