@@ -13,7 +13,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "research/paper/RELEASE_MANIFEST.json"
 PDFS = ["research/paper/morletdb.pdf", "research/paper/supplement.pdf", "docs/morletdb.pdf", "docs/morletdb-supplement.pdf"]
-WATCHED = ["research/paper", "docs/morletdb.pdf", "docs/morletdb-supplement.pdf"]
+# What the released PDFs are built from, and the PDFs themselves. Study logs and READMEs in research/paper
+# (STUDIES.md, README.md, ...) keep changing after a release and are not part of it.
+WATCHED = ["research/paper/morletdb.tex", "research/paper/supplement.tex", "research/paper/generated",
+           "research/paper/fig", "research/paper/REPORT_VERSION", "research/paper/morletdb.pdf",
+           "research/paper/supplement.pdf", "docs/morletdb.pdf", "docs/morletdb-supplement.pdf"]
 STATIC = {
     "title": "MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL",
     "version": (ROOT / "research/paper/REPORT_VERSION").read_text().strip(),
