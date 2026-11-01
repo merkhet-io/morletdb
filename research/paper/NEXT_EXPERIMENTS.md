@@ -1,4 +1,8 @@
-# Remaining evidence for the paper: two experiments (proposed, not started)
+# Remaining evidence for the paper
+
+**Status (draft 0.8):** E1 was run (`evaluation/consolidated/`, H1 and H2 hold on both databases). E2 is not started.
+
+## Original plan: two experiments
 
 After the literature and evidence review for draft 0.7, two gaps decide whether the paper's claims
 hold as stated. Each needs a frozen protocol committed before any measurement, and the owner's go.

@@ -83,10 +83,13 @@ probe) and re-ranks with `D`. A router sends galleries of ≤ 5,000 eligible win
   eligibility filters, row-level security on all companion tables, commit-time visibility; and measured
   costs of storage, filters and maintenance.
 
-**Single-traversal alternative (the design of Rafiei/Keogh):** tested before probe search on our scorer
-(`evaluation/pruning/`): lag-uniform Keogh-style and spectral bounds pruned at most 63% of candidates
-even with an oracle threshold and a free bound, capping an exact pruned scan near 1.9× (2.3× in the
-large-gallery limit) against 5.4× for probes. Finer per-lag-group wedges were not tested.
+**Single-traversal alternative (the design of Rafiei/Keogh):** examined before probe search on our scorer
+(`evaluation/pruning/`, a feasibility study, not an implemented search): under idealized assumptions (oracle
+threshold, bounds at no cost) lag-uniform Keogh-style and spectral bounds pruned at most 63% of candidates;
+inserted into that study's cost model this gives about 1.9× on its gallery and 2.3× in the large-gallery
+limit. These are model values for one construction, not measurements, not comparable one-to-one with the
+measured probe speed-up (13× in E1), and not a bound on exact methods in general; finer per-lag-group
+wedges, other bounds or a faster exact scorer could do better.
 
 **Not found** (which is not proof of absence): a work that serves a bounded linear cross-correlation by
 a sparse grid of query-side shifted probes into one stock inner-product ANN index with exact re-ranking.

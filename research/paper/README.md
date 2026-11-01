@@ -1,12 +1,12 @@
 # MorletDB research manuscript
 
-Working draft 0.7: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
+Working draft 0.8: **MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL** (ACM `sigconf` layout).
 
 Not yet submission-ready; see "Before submission" below.
 
 **Preview:** [morletdb.pdf](morletdb.pdf) and [supplement.pdf](supplement.pdf) (committed builds of the current sources; rebuild and recommit them when a source changes).
 
-**Companion documents:** [related/RELATED_MATRIX.md](related/RELATED_MATRIX.md) (comparison with the closest prior work and the novelty assessment, with raw notes), Appendix A of the paper (which result supports each claim), [NEXT_EXPERIMENTS.md](NEXT_EXPERIMENTS.md) (the two experiments that would close the remaining evidence gaps; not started), [analysis/](analysis/) (grid-spacing analysis on development data).
+**Companion documents:** [related/RELATED_MATRIX.md](related/RELATED_MATRIX.md) (closest prior work on shift-tolerant search, novelty assessment), [related/PG_SYSTEMS.md](related/PG_SYSTEMS.md) (PostgreSQL vector systems, extensibility and temporal types, mapped to code; with [code_audit.md](related/code_audit.md)), [`evaluation/consolidated/`](../../evaluation/consolidated/RESULTS.md) (E1 and diagnostics D1–D2, the source of the main tables), Appendix A of the paper (which result supports each claim), [NEXT_EXPERIMENTS.md](NEXT_EXPERIMENTS.md) (the two experiments that would close the remaining evidence gaps; not started), [analysis/](analysis/) (grid-spacing analysis on development data).
 
 ## Build
 
@@ -14,6 +14,7 @@ Not yet submission-ready; see "Before submission" below.
 .venv-paper/bin/python -I research/paper/figures.py      # fig/*.pdf from committed result files
 cd research/paper && tectonic -X compile morletdb.tex    # or: latexmk -pdf morletdb.tex
 cd research/paper && tectonic -X compile supplement.tex
+# main tables and figure 3 come from evaluation/consolidated/results (E1); figures.py reads them
 .venv-seismic/bin/python -I research/paper/analysis/grid_spacing.py morlet_r2 \
   evaluation/bounded_lag/results/bl1.json research/paper/analysis/grid_spacing.json   # needs R2's database
 ```
@@ -21,6 +22,27 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in draft 0.8
+
+- **Title** *MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL*, with a
+  short paragraph on the name (Jean Morlet; the system is not tied to the transform; no shown wavelet
+  advantage).
+- **E1, consolidated comparison on one build** (`main` 68594d7, PostgreSQL defaults, quiet machine), now
+  the source of the main tables: held-out probes 0.977 at p95 57 ms against 740 ms for the fastest exact
+  path (13×); zero-lag from the same index 0.64–0.66; offline controls attribute the remaining loss to
+  HNSW, not to the grid or to float16 probes. The earlier 131 / 713 ms figures are labelled historic.
+- **Diagnostics** (development data only): D1, where probe time goes (index statements dominate; per-call
+  planning overhead); D2, filters correlated with the query's neighbourhood change latency, not recall.
+- **Operations:** C4 (stopped at 112.5 of 120 min after an unexplained pause) and C2p reported with their
+  restrictions; details in the supplement.
+- **Literature:** VBASE, PostgreSQL-V, the filtered-search study, the extensibility survey and
+  MobilityDB/MEOS added where they change positioning or interpretation; a four-way separation of what is
+  demonstrated, supported by profiling, plausible from other systems, and hypothesis.
+- **Scope:** empirical retrieval claims limited to seismic data; condition monitoring as motivation only.
+- **Bounds and grid wording:** the lower-bound figures are idealized values for one construction; the grid
+  analysis explains, but does not guarantee, top-k preservation.
+- **References** for the new sources checked against Crossref or the papers themselves.
 
 ## What changed in draft 0.7
 
