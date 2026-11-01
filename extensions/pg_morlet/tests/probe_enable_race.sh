@@ -9,9 +9,7 @@
 # the "no probe table" it had looked up before waiting and wrote envelopes without vector rows.
 # It drops and recreates the database morlet_probe_race.
 set -euo pipefail
-PG_CONFIG=${PG_CONFIG:-$HOME/.pgrx/17.11/pgrx-install/bin/pg_config}
-BIN=$("$PG_CONFIG" --bindir)
-PORT=${PGPORT:-28817}
+. "$(dirname "$0")/pg_env.sh"  # PG_CONFIG, PG_MAJOR, PORT, BIN
 DB=morlet_probe_race
 psql() { "$BIN/psql" -h localhost -p "$PORT" -v ON_ERROR_STOP=1 -qAtX "$@"; }
 

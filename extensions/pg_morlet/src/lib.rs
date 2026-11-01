@@ -975,6 +975,19 @@ mod tests {
         );
     }
 
+    // Runs with and without pgvector installed: the vector extension is never created in this
+    // database outside a test's own (rolled back) transaction.
+    #[pg_test(error = "probe search needs the pgvector extension (CREATE EXTENSION vector)")]
+    fn probe_search_requires_the_vector_extension() {
+        serialize_shared_ddl();
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        Spi::run("SELECT morlet_enable_envelope_probes('env',2048)").unwrap();
+    }
+
     #[pg_test(
         error = "probe search is not enabled for window_size 2048 (morlet_enable_envelope_probes)"
     )]
@@ -1549,6 +1562,30 @@ END $$"#).unwrap();
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn rejects_conflicting_chunk_replay() {
         Spi::run("SELECT morlet_create_stream_collection('public','replay_streams'); SELECT morlet_start_recording('replay_streams','A',4096,'x','g'); SELECT morlet_append_chunk('replay_streams','A',0,array_fill(0.::float8,ARRAY[137])); SELECT morlet_append_chunk('replay_streams','A',0,array_fill(1.::float8,ARRAY[137]))").unwrap();
+    }
+    #[pg_test]
+    fn rejects_gapped_and_overlapping_chunk_offsets() {
+        // After 0..1000: a gap (1001), an overlap of the stored chunk's tail (999) and an offset
+        // inside it (500) are each rejected and leave the recording unchanged.
+        Spi::run("SELECT morlet_create_stream_collection('public','offset_streams'); SELECT morlet_start_recording('offset_streams','A',4096,'x','g'); SELECT morlet_append_chunk('offset_streams','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,999) i))").unwrap();
+        Spi::run(r#"DO $$ DECLARE s bigint; msg text; BEGIN
+          FOREACH s IN ARRAY ARRAY[1001,999,500] LOOP
+            msg:=NULL;
+            BEGIN
+              PERFORM morlet_append_chunk('offset_streams','A',s,ARRAY(SELECT i::float8 FROM generate_series(s,s+99) i));
+            EXCEPTION WHEN OTHERS THEN msg:=SQLERRM;
+            END;
+            IF msg IS DISTINCT FROM 'chunk offset must equal the next sample offset (no gaps, overlaps or replays)' THEN
+              RAISE EXCEPTION 'offset %: %',s,coalesce(msg,'accepted');
+            END IF;
+          END LOOP;
+        END $$"#).unwrap();
+        assert_eq!(
+            Spi::get_two::<i64, i64>("SELECT (SELECT received_samples FROM morlet_stream_status('offset_streams','A')),(SELECT count(*) FROM offset_streams_chunks)").unwrap(),
+            (Some(1000), Some(1))
+        );
+        // the next contiguous offset is still accepted
+        assert_eq!(Spi::get_one::<i64>("SELECT morlet_append_chunk('offset_streams','A',1000,ARRAY(SELECT i::float8 FROM generate_series(1000,1099) i))").unwrap(), Some(1100));
     }
     #[pg_test(error = "new row violates row-level security policy for table \"rls_streams\"")]
     fn blocked_checkpoint_update_rolls_back_append() {
