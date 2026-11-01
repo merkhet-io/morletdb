@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+Fixes:
+- Chunk encoding with a subnormal `sample_quantum` (for example 5e-324) no longer panics with
+  an integer overflow in builds with overflow checks (debug builds and `cargo pgrx test`).
+  - **Cause:** the encoder tries steps within two units in the last place of a fitted step and
+    computed the lower ones by unsigned subtraction, which underflowed when the fitted step
+    was the smallest subnormal.
+  - **Release builds:** they wrapped to a step that was never chosen. An exhaustive check of
+    158,976 three-sample chunks of tiny subnormals with 23 subnormal quanta found every round
+    trip bit-exact before and after the fix.
+  - **Encoded bytes:** identical whenever the fitted step is at least three units in the last
+    place above zero. Below that, only an unusable zero or wrapped step is no longer offered.
+
 ## 0.3.1-alpha.1
 
 The image contains PostgreSQL 17 and pg_morlet only. Probe search needs pgvector 0.8 or later,

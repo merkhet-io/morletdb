@@ -294,17 +294,17 @@ fn encode_version2(samples: &[f64], grid: Grid, ints: Vec<i64>) -> Vec<u8> {
                 .expect("nonempty chunk");
             let fitted = x_max / *k_max as f64;
             if grid.mode == MODE_MUL && fitted.is_finite() && fitted > 0.0 {
-                let mut s = fitted;
-                for _ in 0..2 {
-                    s = f64::from_bits(s.to_bits() - 1);
-                }
-                for _ in 0..5 {
-                    candidates.push(Grid {
-                        mode: MODE_MUL,
-                        scale: s,
-                        offset: None,
-                    });
-                    s = f64::from_bits(s.to_bits() + 1);
+                // Steps within two ulps of the fitted one. Near the smallest subnormal
+                // there are fewer, and a zero step is not a grid the decoder accepts.
+                let bits = fitted.to_bits();
+                for scale in (bits.saturating_sub(2)..=bits + 2).map(f64::from_bits) {
+                    if scale > 0.0 {
+                        candidates.push(Grid {
+                            mode: MODE_MUL,
+                            scale,
+                            offset: None,
+                        });
+                    }
                 }
             }
             let (grid, fix) = best_grid(samples, &ints, candidates);
@@ -947,6 +947,21 @@ mod tests {
         // Tiny quanta push indices to the 2^53 limit, beyond it the chunk is raw.
         roundtrip(&[1e9, -1e9, 0.0], 1e-6);
         assert_eq!(roundtrip(&[1e9, 1.0], 1e-9).0, Kind::Raw);
+    }
+
+    #[test]
+    fn subnormal_steps_roundtrip_without_overflow() {
+        // A fitted step of one or two ulps above zero once underflowed the candidate
+        // search: a panic with overflow checks, a wrapped (unused) step without them.
+        for q in [5e-324, 1e-323, 1.5e-323] {
+            for x in [
+                vec![5e-324],
+                vec![1e-323, 5e-324],
+                vec![5e-324, 0.0, -5e-324],
+            ] {
+                roundtrip(&x, q);
+            }
+        }
     }
 
     #[test]
