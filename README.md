@@ -38,12 +38,6 @@ PostgreSQL, instead of scattering samples over rows or vectors.
 - **Plain PostgreSQL.** SQL functions, your roles and row-level security, your
   backups. pgvector is optional.
 
-> [!NOTE]
-> **Developer alpha.** The recording workflow is implemented and tested in CI on
-> PostgreSQL 17 and 18. Retrieval has been evaluated on public seismic data; usefulness
-> for other domains and production operation remain to be established. A similar
-> waveform is a lead for an investigation, not a diagnosis.
-
 ## For AI agents
 
 **Give your agents signal evidence to reason with.** An investigation agent can search
