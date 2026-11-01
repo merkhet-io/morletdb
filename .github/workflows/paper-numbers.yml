@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # release_manifest.py --check diffs against report_source_commit
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -25,3 +27,5 @@ jobs:
           git diff --exit-code -- evaluation/consolidated/results/e1_distribution.json
       - name: Website PDFs are byte-identical to the report PDFs
         run: research/paper/sync_site.sh --check
+      - name: Release manifest matches the report files
+        run: python3 research/paper/release_manifest.py --check

@@ -7,7 +7,7 @@
 | Version | 0.11, 2026-11-01 |
 | Author | Zin Nam (no affiliation stated) |
 | Report sources | the commit recorded as `report_source_commit` in [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json); the sources first entered `main` with merge commit cdf8b4b |
-| Measured software | pg_morlet at `main` 68594d7, library SHA-256 `3c786684…` (see [ARTIFACT.md](ARTIFACT.md)) |
+| Measured software | E1 (main retrieval tables) and diagnostics D1–D2: pg_morlet at `main` 68594d7, library SHA-256 `3c786684…`; earlier studies used earlier implementation states, labelled in the report and in [STUDIES.md](STUDIES.md) (see [ARTIFACT.md](ARTIFACT.md)) |
 | Licence | code: Apache-2.0 (repository `LICENSE`); report text and figures: **not yet chosen**, CC BY 4.0 proposed in [LICENSE-REPORT-PROPOSAL.md](LICENSE-REPORT-PROPOSAL.md), not applied |
 | Proposed tag | `paper-v0.11` (not created) |
 | Funding, conflicts of interest | none stated; to be confirmed by the author before publication |
@@ -45,7 +45,8 @@ The same statement appears at the end of the report.
    `RELEASE_MANIFEST.json`, and commit the manifest on its own. The manifest therefore names the commit
    *before* its own.
 3. `research/paper/release_manifest.py --check` verifies the hashes and that no report file changed since
-   the recorded commit.
+   the recorded commit. CI runs it, so any later change under `research/paper/` or to the website PDFs
+   needs a regenerated manifest (step 2).
 
 ## Before publishing (author decisions)
 
