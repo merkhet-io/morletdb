@@ -54,6 +54,26 @@ A recording is one uniformly sampled channel. MorletDB started with vibration
 investigation, and the same model accepts acoustic, electrical and seismic
 recordings.
 
+## Installation and PostgreSQL support
+
+**PostgreSQL 17 is the only currently supported server major.** The extension's
+Cargo feature and CI target PG17; PG16 and PG18 are not enabled yet. The documented
+container target is **Linux amd64**. Source builds use the repository-pinned
+Rust 1.91.1 and matching pgrx / cargo-pgrx 0.16.1.
+
+pgvector is optional: exact feature and envelope search do not require it.
+Indexed envelope probes require pgvector 0.8 or later; CI exercises 0.8.0.
+The default Docker walkthrough does not install it.
+
+For a first installation, clone this repository and run the walkthrough below.
+For a native development installation, use the
+[installation and query guide](docs/installation-and-queries.md#build-a-development-installation).
+`CREATE EXTENSION pg_morlet` enables files already installed on the server; it
+does not download the extension. Managed PostgreSQL providers must permit it.
+
+[Installation & SQL examples](docs/installation-and-queries.md) ·
+[Search semantics](docs/search-contract.md) · [Operations](docs/operations.md)
+
 ## Quickstart
 
 ```sh
@@ -66,7 +86,7 @@ covers prerequisites, the public demo credentials, persistence, restart/replay
 checks and teardown. The verified container target is Linux amd64. Tagged images
 and exact digests are listed in [releases](docs/releases.md).
 
-Or install the extension with the [Rust/pgrx guide](extensions/pg_morlet/README.md#setup)
+Or install the extension with the [Rust/pgrx guide](docs/installation-and-queries.md#build-a-development-installation)
 and use it directly:
 
 ```sql
@@ -97,6 +117,28 @@ check committed ingestion progress. See the [recording API](docs/recording-workf
 > needs a fresh install. See
 > [existing installations](extensions/pg_morlet/README.md#existing-installations)
 > and [upgrading](docs/durable-ingestion.md#upgrading).
+
+## Query primitives
+
+| Task | Main functions |
+| --- | --- |
+| Create a collection and recording | `morlet_create_stream_collection`, `morlet_start_recording` |
+| Append and inspect progress | `morlet_append_chunk`, `morlet_stream_status`, `morlet_collection_status` |
+| Read original samples | `morlet_read_interval` |
+| Search Morlet/statistical features | `morlet_search_streams`, `morlet_search_interval` |
+| Materialize envelopes | `morlet_enable_envelopes`, `morlet_build_envelopes` |
+| Search bounded-lag envelopes exactly | `morlet_search_envelopes`, `morlet_search_envelope_interval` |
+| Enable and query optional indexed probes | `morlet_enable_envelope_probes`, `morlet_search_envelope_probes` |
+| Inspect storage | `morlet_recording_storage`, `morlet_collection_storage` |
+
+The [SQL guide](docs/installation-and-queries.md#store-search-read-back) walks
+through storing two synthetic recordings, building envelopes, filtering a query,
+and reading its matches. Intervals are zero-based and half-open; feature and
+envelope search use different scorers. Envelopes require an explicit builder;
+raw ingestion alone does not make a recording searchable through that path.
+Probe candidate selection is approximate above the exact-routing threshold.
+See the [search contract](docs/search-contract.md) for budgets, permissions,
+source exclusion, overlap suppression and snapshot semantics.
 
 ## See it: the viewer
 
