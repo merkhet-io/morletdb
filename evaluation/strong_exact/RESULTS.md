@@ -1,6 +1,6 @@
 # E3: optimized exact baseline — results
 
-Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at 686a7d4 (2026-11-01 19:49). Harness and correctness gate
+Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at 686a7d4 (2026-11-01 19:49); results committed at 24d58fb. Harness and correctness gate
 c237457 (19:55). Timed runs 19:56–20:07, development data only (`morlet_r2`, 234,762 windows, E1's 100
 development queries). Build: `main` 68594d7, library `3c786684…`, pg_morlet 0.3.1, pgvector 0.8.0,
 PostgreSQL 17.11; numpy 2.2.6 with Accelerate. Raw results: `results/gate.json`, `results/run_{full,matched}.json`;
