@@ -6,8 +6,8 @@ MorletDB is a developer-alpha PostgreSQL extension. The SQL extension is named `
 
 | Component | Current scope |
 | --- | --- |
-| PostgreSQL 17 | The only server major currently enabled in Cargo and targeted by integration and upgrade CI |
-| PostgreSQL 16 / 18 | Not currently supported by the checked-in extension features; do not assume compatibility |
+| PostgreSQL 17 | Reference version; functional CI with and without pgvector; upgrades and release images target 17 |
+| PostgreSQL 18 | Supported for fresh source installations; functional CI with and without pgvector; no release image or measured performance |
 | Rust / pgrx | Repository-pinned Rust 1.91.1; pgrx and cargo-pgrx 0.16.1 |
 | Container | Linux amd64 is the documented verified target; other container architectures are unverified |
 | pgvector | Optional. Version 0.8.0 is exercised by CI; probe search requires 0.8 or later |
@@ -48,6 +48,8 @@ cargo pgrx init --pg17 download
 cd extensions/pg_morlet
 cargo pgrx run pg17
 ```
+
+For PostgreSQL 18, initialize with cargo pgrx init --pg18 download and run cargo pgrx run pg18 --no-default-features --features pg18. Build only one PostgreSQL feature at a time. Probe search on 18 needs pgvector 0.8.1 or later (CI uses 0.8.7). PostgreSQL 16 and older are not supported. See the compatibility matrix.
 
 This builds a user-owned PostgreSQL 17 installation and opens psql. In the selected database:
 
