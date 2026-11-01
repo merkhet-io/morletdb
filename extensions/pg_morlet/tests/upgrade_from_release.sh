@@ -88,6 +88,20 @@ snapshot morlet_upgrade_rel_old > "$WORK/library.txt"
 diff "$WORK/before.txt" "$WORK/library.txt"
 echo "ok: $OLD_VERSION SQL with the new library returns identical results"
 
+# A failed update must roll back completely (pilot Stage 2, B7): block it with an object that
+# already has the signature of a function the update creates, check that nothing changed,
+# then remove the blocker and update for real.
+psql -d morlet_upgrade_rel_old -c "CREATE FUNCTION public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)
+  RETURNS double precision[] LANGUAGE sql AS 'SELECT NULL::double precision[]'"
+if psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE" 2>/dev/null; then
+  echo "FAIL: the blocked update succeeded"; exit 1
+fi
+test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$OLD_VERSION"
+snapshot morlet_upgrade_rel_old > "$WORK/failed.txt"
+diff "$WORK/before.txt" "$WORK/failed.txt"
+psql -d morlet_upgrade_rel_old -c "DROP FUNCTION public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)"
+echo "ok: a failed update rolls back; $OLD_VERSION stays installed and reads are identical"
+
 psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
 snapshot morlet_upgrade_rel_old > "$WORK/after.txt"
