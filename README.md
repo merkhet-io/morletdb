@@ -89,6 +89,9 @@ $$;
 
 ## Install
 
+Full setup and query examples: [installation and query guide](docs/installation-and-queries.md).
+Source builds use Rust 1.91.1 and pgrx 0.16.1.
+
 **Try it in a container** (Linux amd64; builds a PostgreSQL 17 preview, imports
 synthetic data, finds a known interval and reconstructs its matches):
 
@@ -163,6 +166,28 @@ the caller's permissions, including row-level security.
 More: [SQL reference](extensions/pg_morlet/README.md) · [search contract](docs/search-contract.md) ·
 [recording workflow](docs/recording-workflow.md) · [operations](docs/operations.md) ·
 [access control](docs/access-control.md) · [Parquet import](tools/ingest/README.md)
+
+## Query primitives
+
+| Task | Main functions |
+| --- | --- |
+| Create a collection and recording | `morlet_create_stream_collection`, `morlet_start_recording` |
+| Append and inspect progress | `morlet_append_chunk`, `morlet_stream_status`, `morlet_collection_status` |
+| Read original samples | `morlet_read_interval` |
+| Search Morlet/statistical features | `morlet_search_streams`, `morlet_search_interval` |
+| Materialize envelopes | `morlet_enable_envelopes`, `morlet_build_envelopes` |
+| Search bounded-lag envelopes exactly | `morlet_search_envelopes`, `morlet_search_envelope_interval` |
+| Enable and query optional indexed probes | `morlet_enable_envelope_probes`, `morlet_search_envelope_probes` |
+| Inspect storage | `morlet_recording_storage`, `morlet_collection_storage` |
+
+The [SQL guide](docs/installation-and-queries.md#store-search-read-back) walks
+through storing two synthetic recordings, building envelopes, filtering a query,
+and reading its matches. Intervals are zero-based and half-open; feature and
+envelope search use different scorers. Envelopes require an explicit builder;
+raw ingestion alone does not make a recording searchable through that path.
+Probe candidate selection is approximate above the exact-routing threshold.
+See the [search contract](docs/search-contract.md) for budgets, permissions,
+source exclusion, overlap suppression and snapshot semantics.
 
 ## Research
 
