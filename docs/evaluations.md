@@ -88,4 +88,4 @@ held-out samples per dataset, every layout read back bit-exact
 One machine (Apple M5 Max), TimescaleDB 2.30.2 with default compression settings
 (`segmentby` recording, `orderby` sample index). Other layouts were not tried.
 
-For the lag-tolerant retrieval results, see the [technical report](../research/paper/morletdb.pdf) and [E1](../evaluation/consolidated/RESULTS.md).
+For the lag-tolerant retrieval results, see the [paper](../research/paper/morletdb.pdf) and [E1](../evaluation/consolidated/RESULTS.md).

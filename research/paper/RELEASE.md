@@ -1,9 +1,9 @@
-# Technical report release package (prepared, not published)
+# Paper release package (prepared, not published)
 
 | | |
 |---|---|
 | Title | MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL |
-| Type | technical report / preprint; **not peer reviewed** |
+| Type | paper and supplement |
 | Version | 0.10, 2026-11-01 |
 | Author | Zin Nam |
 | Report sources | branch `docs/morletdb-research-paper-v01` (PR #61); the exact commit is recorded in the PR description when the package is frozen |
@@ -42,4 +42,4 @@ working under the author's direction. The author reviewed the results and is res
 
 - confirm the AI statement wording and the report licence (for example CC BY 4.0);
 - freeze the package at one commit and record it in the PR description and on the report's title page;
-- choose where to publish the technical report (repository release, institutional or preprint server).
+- choose where to publish the paper (repository release, institutional or preprint server).

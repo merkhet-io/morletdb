@@ -10,4 +10,4 @@ For a local preview, run `python3 -m http.server 8080 --directory docs` from the
 
 ## Content
 
-The CNC schematic and waveform are illustrative, not real measurements. Condition monitoring is motivation; the retrieval benchmark is seismic. Research links and figures are pinned to draft 0.9 (`1d1c938`); update both together when a newer public paper is ready. The page explicitly labels the paper as not peer reviewed.
+The CNC schematic and waveform are illustrative, not real measurements. Condition monitoring is motivation; the retrieval benchmark is seismic. The paper link opens `docs/morletdb.pdf`, a copy of `research/paper/morletdb.pdf` (version 0.10); replace the copy whenever the paper changes.

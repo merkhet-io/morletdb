@@ -196,7 +196,7 @@ source exclusion, overlap suppression and snapshot semantics.
 <td width="62%">
 
 **[MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL](research/paper/morletdb.pdf)**<br>
-Technical report, version 0.10, 2026-11-01. *Not peer reviewed.*
+Version 0.10
 
 Bounded-lag cross-correlation is the right score when matches may be shifted in
 time, but standard vector indexes rank by an unshifted metric. Because each lag term
@@ -307,7 +307,7 @@ to that transform, and our evaluations have not shown a general advantage for it
 | [tools](tools) | Parquet import, Python client, recording viewer, independent numerical reference |
 | [examples](examples) | sleep staging, notebooks and other worked examples |
 | [evaluation](evaluation) · [benchmarks](benchmarks) | frozen evaluations and workload benchmarks |
-| [research/paper](research/paper) | the technical report, supplement and reproduction package |
+| [research/paper](research/paper) | the paper, supplement and reproduction package |
 
 ```sh
 make test       # Rust core and formatting
