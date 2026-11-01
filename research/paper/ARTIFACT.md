@@ -10,7 +10,8 @@ Two commits matter, and they are different:
 
 | Item | Value |
 |---|---|
-| **Measured software** | `main` at **68594d7** (pg_morlet SQL 0.3.1); every measured number in the report comes from this build |
+| **Measured software (E1, D1, D2)** | `main` at **68594d7** (pg_morlet SQL 0.3.1). The consolidated comparison E1, the source of the main retrieval tables, records this build commit and library hash in its result files; the diagnostics D1 and D2 ran on the same build and server under a protocol that fixes it (`evaluation/consolidated/DIAGNOSTICS_PROTOCOL.md`), but their result files do not record the hash |
+| Earlier studies | R1b, R2, R2-D, BL1, BL1-C, BL1-S, SS1, SS3, the pruning study and the load runs (C2–C4) were measured on earlier implementation states, several on a machine shared with an unrelated job; the report labels their numbers as such. Each study's commits are in [STUDIES.md](STUDIES.md) and its protocol; this document reproduces E1, D1 and D2 only |
 | Measured library | `pg_morlet.dylib` SHA-256 `3c786684421f3132e7a97b5ff38801e802948bf3e014aaae656b16bb109de7b7` (recorded in `evaluation/consolidated/results/e1_*.json`) |
 | Build reproducibility | a clean release build of 68594d7 from a fresh clone gave a different hash (`a6f7bce8…`): builds are not bit-identical across checkout paths. Behaviour was checked instead (sections 4 and 7) |
 | SQL objects | the measured search functions in the evaluation databases are byte-identical to 68594d7 |
@@ -55,6 +56,7 @@ The first compile downloads the TeX support files it needs.
 cargo install cargo-pgrx --version 0.16.1 --locked
 cargo pgrx init --pg17 download                     # builds PostgreSQL 17.x under ~/.pgrx
 PGC=~/.pgrx/17.11/pgrx-install/bin/pg_config        # adjust if pgrx installed a different 17.x
+export PG_CONFIG="$PGC"                             # read by evaluation/consolidated/prepare_db.sh
 P="$("$PGC" --bindir)/psql"
 
 git worktree add ../morletdb-68594d7 68594d7        # the measured state, next to this clone
@@ -67,7 +69,9 @@ git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git ../pgvector
 ```
 
 Install the extension from the 68594d7 worktree, not from `main`; keep `main` checked out for the harnesses
-and results. `cargo pgrx init` may download a PostgreSQL 17 minor release newer than 17.11, which the
+and results. Run the later sections in the same shell, so that `PGC`, `PG_CONFIG` and `P` point at the
+installation chosen here. The server must listen on port 28817: `e1.py`, `diag.py`, `repeat_check.py`,
+`cases.py` and the load scripts connect there. `cargo pgrx init` may download a PostgreSQL 17 minor release newer than 17.11, which the
 measurements used. See also [`docs/installation-and-queries.md`](../../docs/installation-and-queries.md) and
 [`docs/compatibility.md`](../../docs/compatibility.md).
 
@@ -124,10 +128,11 @@ Figure 4 (`fig/cases.pdf`) is committed and not regenerated here: it needs the h
 
 ## 7. Check a preserved index
 
-"Preserved" means the same HNSW graph that produced the stored results. The author's original evaluation
-databases are **not distributed**, so this procedure applies on the author's machine, or to a database you
-built yourself, compared with your own earlier run of section 8. Work on a copy, because `e1.py` rebuilds
-the probe index at its end (for the build-time measurement):
+"Preserved" means the same, unchanged HNSW graph that produced the baseline results. `repeat_check.py`
+works on the development database only (100 dev queries). It reads `e1_dev.json` and `d1_dev.json` from the
+directory given as its second argument and compares, per query, exact lists with E1's exact lists, probe
+lists with D1's probe hits (same graph) and probe lists with E1's probe lists (the graph before E1's
+rebuild). It writes nothing to the database; run it on a copy anyway:
 
 ```sh
 $P -h localhost -p 28817 -d postgres -c "CREATE DATABASE morlet_r2_check TEMPLATE morlet_r2"
@@ -135,8 +140,18 @@ $P -h localhost -p 28817 -d postgres -c "CREATE DATABASE morlet_r2_check TEMPLAT
 $P -h localhost -p 28817 -d postgres -c "DROP DATABASE morlet_r2_check"
 ```
 
-Exact lists must equal E1's stored exact lists. Probe lists on the same graph must equal D1's stored probe
-hits (D1 searched the index left by E1's rebuild).
+**This example checks the author's original database** against its recorded results in
+`evaluation/consolidated/results/` (2026-11-01: 100/100 equal in all three comparisons,
+`results/repeat_check_dev.json`). That database is not distributed. On any other database, only the exact
+comparison is meaningful against these files: exact lists must match, but probe lists from an
+independently built HNSW graph can differ from the stored ones, and that is not a failure.
+
+To check **your own** preserved index, first produce a baseline on it with section 8.2 (`e1.py` on
+`morlet_r2`, which rebuilds the probe index at its end, then `diag.py d1` on the rebuilt index), save the
+two outputs as `mine/e1_dev.json` and `mine/d1_dev.json` as written there, leave the database unchanged,
+and pass `mine` instead of `evaluation/consolidated/results`. Probe lists are then expected to equal your D1 hits
+(same graph); equality with your E1 probe lists is not expected, because E1 searched the graph before its
+rebuild.
 
 ## 8. Rebuild databases and indexes
 
@@ -149,7 +164,8 @@ $P -h localhost -p 28817 -d morlet_r2   -f evaluation/consolidated/universe_chec
 $P -h localhost -p 28817 -d morlet_bl1c -f evaluation/consolidated/universe_check.sql
 ```
 
-Each loads recordings, chunks and envelopes with the study's load script and enables product probe search
+`prepare_db.sh` uses `PG_CONFIG` from section 2.3 (otherwise it defaults to the 17.11 path). Each loads
+recordings, chunks and envelopes with the study's load script and enables product probe search
 (`morlet_enable_envelope_probes`); the original databases' probe tables were created with the same call.
 About 15 minutes and 2–3 GB per database.
 
@@ -157,10 +173,11 @@ About 15 minutes and 2–3 GB per database.
 
 ```sh
 B=../morletdb-68594d7    # the measured checkout from section 2.3; e1.py records its library hash
-.venv-seismic/bin/python -I evaluation/consolidated/e1.py morlet_r2   evaluation/bounded_lag/dev_queries.json              e1_dev.json     $B
-.venv-seismic/bin/python -I evaluation/consolidated/e1.py morlet_bl1c evaluation/bounded_lag/confirm/results/queries.json e1_heldout.json $B
-.venv-seismic/bin/python -I evaluation/consolidated/diag.py d1 morlet_r2 evaluation/bounded_lag/dev_queries.json d1.json
-.venv-seismic/bin/python -I evaluation/consolidated/diag.py d2 morlet_r2 evaluation/bounded_lag/dev_queries.json d2.json
+mkdir -p mine            # your own results; keep them apart from the stored ones
+.venv-seismic/bin/python -I evaluation/consolidated/e1.py morlet_r2   evaluation/bounded_lag/dev_queries.json              mine/e1_dev.json     $B
+.venv-seismic/bin/python -I evaluation/consolidated/e1.py morlet_bl1c evaluation/bounded_lag/confirm/results/queries.json mine/e1_heldout.json $B
+.venv-seismic/bin/python -I evaluation/consolidated/diag.py d1 morlet_r2 evaluation/bounded_lag/dev_queries.json mine/d1_dev.json
+.venv-seismic/bin/python -I evaluation/consolidated/diag.py d2 morlet_r2 evaluation/bounded_lag/dev_queries.json mine/d2_dev.json
 .venv-seismic/bin/python -I research/paper/cases/cases.py figure morlet_bl1c
 ```
 
