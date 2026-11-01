@@ -84,3 +84,63 @@ cargo pgrx install --release          # in a checkout of 68594d7, extensions/pg_
 ```
 
 Each run takes about 8 minutes and needs the two evaluation databases (R2's and BL1-C's loads).
+
+# Diagnostics D1 and D2 (development database only)
+
+Protocol: [DIAGNOSTICS_PROTOCOL.md](DIAGNOSTICS_PROTOCOL.md) (frozen fa367ed). Same build and
+settings as E1; run after E1 on the rebuilt development index; quiet machine (load average 2.2–3.9).
+
+## D1: where probe-search time goes (100 queries × 2 passes)
+
+| Stage (instrumented copy, `d1_profile.sql`) | p50 ms | share |
+|---|---|---|
+| read source interval | 1.2 | 3% |
+| routing (eligible ids, bounded count) | 1.3 | 3% |
+| query envelope | 0.2 | 1% |
+| **13 index statements** | **25.5** (1.9 per probe) | **65%** |
+| re-rank (materialized in a temporary table) | 9.9 | 26% |
+| suppression | 0.5 | 1% |
+| total | 38.9 | |
+
+- The product function took p50 28.7 ms on the same queries, so instrumentation added about 13 ms,
+  mostly by materializing the re-rank; the re-rank share above is therefore an upper bound, and the
+  13 index statements account for most of the product's time. **Hypothesis (index statements > half):
+  holds.**
+- One probe statement executed in 0.79–0.82 ms under `EXPLAIN ANALYZE` (1,737 shared-buffer hits),
+  against about 1.9 ms per probe inside the function, which issues each probe through `EXECUTE` and
+  plans it every time. The `recording_id = ANY(eligible)` predicate cost about 0.03 ms. ANN traversal,
+  heap fetches and visibility checks happen inside one index-scan node and were not separated.
+- Candidates: every probe returned 50 rows; the union held 335 unique windows (p50; max 453); one
+  window (the source) was excluded; suppression removed none; the loop read 11 rows to return 10.
+  **No short results** (hypothesis holds).
+
+## D2: filter–neighbourhood correlation at equal selectivity (synthetic predicate choice)
+
+For each query, the day (≈ 7% of windows, 16.7–16.9 k) or station (25%) filter holding the most
+(positive), fewest (negative) or a random share (neutral) of the query's unfiltered exact top 100.
+
+| Filter | top-100 neighbours inside | recall mean / min | probe p50 / p95 ms | exact p95 ms |
+|---|---|---|---|---|
+| day, positive | 16.4 | 0.999 / 0.9 | 76 / 121 | 209 |
+| day, neutral | 6.6 | 0.999 / 0.9 | 108 / 178 | 210 |
+| day, negative | 1.5 | 1.000 / 1.0 | 146 / 227 | 210 |
+| station, positive | 35.9 | 0.997 / 0.9 | 40 / 58 | 264 |
+| station, neutral | 23.7 | 0.999 / 0.9 | 41 / 63 | 264 |
+| station, negative | 14.5 | 1.000 / 1.0 | 49 / 63 | 264 |
+
+- **Recall did not depend on correlation** (difference < 0.003); **hypothesis holds**.
+- **Latency did:** with negatively correlated day filters, the index scans must pass more ineligible
+  rows, and p95 rose 1.9× (just under the 2× bound). At this selectivity the probe path was no faster
+  than exact search on this quiet machine (p95 178–227 vs 210 ms), although the router sends it to
+  probes: its threshold (5,000 windows) was set where exact search reached 100 ms on a loaded machine.
+  At 25% selectivity probes were 4–5× faster than exact search regardless of correlation.
+- Decision: routing by eligible-window count keeps recall in the tested workload; its latency
+  crossover depends on correlation and machine load and is documented as a limitation. Recalibrating
+  the threshold is engineering work on development data, not done here.
+
+## Reproduce
+
+```sh
+.venv-seismic/bin/python -I evaluation/consolidated/diag.py d1 morlet_r2 evaluation/bounded_lag/dev_queries.json evaluation/consolidated/results/d1_dev.json
+.venv-seismic/bin/python -I evaluation/consolidated/diag.py d2 morlet_r2 evaluation/bounded_lag/dev_queries.json evaluation/consolidated/results/d2_dev.json
+```
