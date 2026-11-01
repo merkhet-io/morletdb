@@ -1,0 +1,21 @@
+{
+ "append_s": 451.1540092090145,
+ "recordings": 128,
+ "samples": 481214308,
+ "envelope_build_s": 275.2,
+ "windows": 234762,
+ "side_table_s": 19.758566291973693,
+ "hnsw_build_s": 36.69445858398103,
+ "bytes": {
+  "raw_chunks": 370851840,
+  "envelopes": 223330304,
+  "halfvec_table": 240500736,
+  "hnsw_index": 274857984
+ },
+ "windows_per_tier": {
+  "0": 4217,
+  "1": 16868,
+  "2": 67472,
+  "3": 234762
+ }
+}

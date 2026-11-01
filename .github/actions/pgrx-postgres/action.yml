@@ -1,0 +1,100 @@
+name: pgrx-managed PostgreSQL
+description: >
+  Installs the cargo-pgrx CLI matching Cargo.lock and a user-owned PostgreSQL in ~/.pgrx, at a
+  pinned minor version, optionally with a pinned pgvector built into it. Each combination is
+  cached separately and saved right after it is built, before any test installs pg_morlet into it.
+  Exports PGRX_HOME and PG_CONFIG.
+inputs:
+  pg-minor:
+    description: PostgreSQL version that cargo pgrx init must resolve to, e.g. 17.11
+    required: true
+  pgvector:
+    description: pgvector release tag to build into it (e.g. v0.8.0), or none
+    default: none
+  pgvector-commit:
+    description: commit the pgvector tag must point to
+    default: ''
+outputs:
+  rust:
+    description: Rust toolchain from rust-toolchain.toml
+    value: ${{ steps.versions.outputs.rust }}
+  pgrx:
+    description: pgrx version from Cargo.lock
+    value: ${{ steps.versions.outputs.pgrx }}
+runs:
+  using: composite
+  steps:
+    - name: Read pinned versions
+      id: versions
+      shell: bash
+      run: |
+        rust=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+        pgrx=$(awk '$0=="name = \"pgrx\"" {getline; gsub(/version = |"/,""); print}' Cargo.lock)
+        major=${PG_MINOR%%.*}
+        test -n "$rust" && test -n "$pgrx" && test -n "$major"
+        echo "rust=$rust" >> "$GITHUB_OUTPUT"
+        echo "pgrx=$pgrx" >> "$GITHUB_OUTPUT"
+        echo "major=$major" >> "$GITHUB_OUTPUT"
+        echo "Rust $rust, pgrx $pgrx, PostgreSQL $PG_MINOR, pgvector $PGVECTOR"
+      env:
+        PG_MINOR: ${{ inputs.pg-minor }}
+        PGVECTOR: ${{ inputs.pgvector }}
+    - name: Install pinned Rust toolchain
+      shell: bash
+      run: rustup show
+    - name: Restore pgrx CLI
+      id: pgrx-cli
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cargo/bin/cargo-pgrx
+        key: pgrx-cli-${{ runner.os }}-${{ runner.arch }}-rust-${{ steps.versions.outputs.rust }}-pgrx-${{ steps.versions.outputs.pgrx }}-debug
+    - name: Install matching pgrx CLI
+      if: steps.pgrx-cli.outputs.cache-hit != 'true'
+      shell: bash
+      run: cargo install cargo-pgrx --version "${{ steps.versions.outputs.pgrx }}" --locked --debug
+    - name: Save pgrx CLI
+      if: steps.pgrx-cli.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cargo/bin/cargo-pgrx
+        key: ${{ steps.pgrx-cli.outputs.cache-primary-key }}
+    - name: Restore PostgreSQL ${{ inputs.pg-minor }} (pgvector ${{ inputs.pgvector }})
+      id: postgres
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.pgrx
+        key: pgrx-home-${{ runner.os }}-${{ runner.arch }}-rust-${{ steps.versions.outputs.rust }}-pgrx-${{ steps.versions.outputs.pgrx }}-pg${{ inputs.pg-minor }}-pgvector-${{ inputs.pgvector }}-v1
+    - name: Build PostgreSQL with cargo pgrx init
+      if: steps.postgres.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        cargo pgrx init --pg${{ steps.versions.outputs.major }} download \
+          --configure-flag=--without-icu --configure-flag=--without-readline --configure-flag=--without-zlib
+    - name: Require the pinned PostgreSQL minor version
+      shell: bash
+      run: |
+        pg_config=$(sed -n "s/^pg${{ steps.versions.outputs.major }} *= *\"\(.*\)\"/\1/p" "$HOME/.pgrx/config.toml")
+        got=$("$pg_config" --version)
+        # cargo pgrx init downloads the latest minor release; a new one needs an explicit pin bump.
+        if [ "$got" != "PostgreSQL ${{ inputs.pg-minor }}" ]; then
+          echo "::error::expected PostgreSQL ${{ inputs.pg-minor }}, got '$got': update pg-minor in .github/workflows/rust.yml and docs/compatibility.md"
+          exit 1
+        fi
+        echo "PGRX_HOME=$HOME/.pgrx" >> "$GITHUB_ENV"
+        echo "PG_CONFIG=$pg_config" >> "$GITHUB_ENV"
+    - name: Build pgvector ${{ inputs.pgvector }} into it
+      if: steps.postgres.outputs.cache-hit != 'true' && inputs.pgvector != 'none'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch "${{ inputs.pgvector }}" https://github.com/pgvector/pgvector.git "$RUNNER_TEMP/pgvector"
+        test "$(git -C "$RUNNER_TEMP/pgvector" rev-parse HEAD)" = "${{ inputs.pgvector-commit }}"
+        # OPTFLAGS="": no -march=native, so the cached build runs on any runner CPU (a native
+        # build restored onto a different CPU crashed backends with SIGILL)
+        make -C "$RUNNER_TEMP/pgvector" PG_CONFIG="$PG_CONFIG" OPTFLAGS=""
+        make -C "$RUNNER_TEMP/pgvector" install PG_CONFIG="$PG_CONFIG" OPTFLAGS=""
+    - name: Save PostgreSQL before any test installs into it
+      if: steps.postgres.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.pgrx
+        key: ${{ steps.postgres.outputs.cache-primary-key }}

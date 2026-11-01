@@ -12,7 +12,8 @@ a leading v; GHCR image tags do not.
 - **Unreleased (main):** SQL version 0.3.1, with an update script from
   0.3.0-alpha.1's 0.3.0 objects.
 
-Releases target PostgreSQL 17 on Linux amd64.
+Releases target PostgreSQL 17 on Linux amd64. Building from source also supports PostgreSQL 18
+([compatibility](compatibility.md)).
 
 `0.1.0-alpha.1` was published before the repository's
 [history rewrite](history-rewrite.md). Its release record was transferred

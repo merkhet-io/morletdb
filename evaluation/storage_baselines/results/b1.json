@@ -1,0 +1,314 @@
+{
+ "inputs": {
+  "cx": {
+   "samples": 4194304,
+   "chunks": 1024,
+   "Z": 8.334102630615234,
+   "PQ-f": 6.838981628417969,
+   "ALP": 9.5,
+   "ALP_compression": {
+    "ALP": 4194304,
+    "Constant": 4194304
+   },
+   "M": 4.6106,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 2417280,
+    "bits_per_sample": 4.6106,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 13.0,
+    "decode_msamples_s": 78.3
+   },
+   "FLAC": 4.376819610595703,
+   "PQ-i": 5.241230010986328,
+   "DDB-i": 6.375,
+   "DDB-i_compression": {
+    "BitPacking": 4194304,
+    "Constant": 4194304
+   },
+   "M-i": 4.6106,
+   "M-i_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 2417280,
+    "bits_per_sample": 4.6106,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 13.0,
+    "decode_msamples_s": 78.4
+   },
+   "seconds": 12.596289999986766
+  },
+  "ims": {
+   "samples": 4194304,
+   "chunks": 1024,
+   "Z": 13.240962982177734,
+   "PQ-f": 42.93692207336426,
+   "ALP": 11.0,
+   "ALP_compression": {
+    "ALP": 4194304,
+    "Constant": 4194304
+   },
+   "M": 8.8088,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4618374,
+    "bits_per_sample": 8.8088,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 13.1,
+    "decode_msamples_s": 67.1
+   },
+   "FLAC": 8.41170883178711,
+   "PQ-i": 9.864887237548828,
+   "DDB-i": 10.875,
+   "DDB-i_compression": {
+    "BitPacking": 4194304,
+    "Constant": 4194304
+   },
+   "M-i": 8.8088,
+   "M-i_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4618374,
+    "bits_per_sample": 8.8088,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 13.0,
+    "decode_msamples_s": 66.7
+   },
+   "seconds": 11.225388250022661
+  },
+  "pad-c": {
+   "samples": 4194304,
+   "chunks": 1024,
+   "Z": 12.038721084594727,
+   "PQ-f": 9.481267929077148,
+   "ALP": 10.75,
+   "ALP_compression": {
+    "ALP": 4194304,
+    "Constant": 4194304
+   },
+   "M": 7.8829,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4132933,
+    "bits_per_sample": 7.8829,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 12.8,
+    "decode_msamples_s": 67.6
+   },
+   "FLAC": 7.697347640991211,
+   "PQ-i": 9.60551643371582,
+   "DDB-i": 11.25,
+   "DDB-i_compression": {
+    "BitPacking": 4194304,
+    "Constant": 4194304
+   },
+   "M-i": 7.8829,
+   "M-i_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4132933,
+    "bits_per_sample": 7.8829,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 12.7,
+    "decode_msamples_s": 67.6
+   },
+   "seconds": 15.22648291598307
+  },
+  "pad-p": {
+   "samples": 4194304,
+   "chunks": 1024,
+   "Z": 14.822477340698242,
+   "PQ-f": 30.57044792175293,
+   "ALP": 62.125,
+   "ALP_compression": {
+    "ALPRD": 4194304,
+    "Constant": 4194304
+   },
+   "M": 9.167,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4806153,
+    "bits_per_sample": 9.167,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 6.6,
+    "decode_msamples_s": 49.0
+   },
+   "FLAC": 7.697347640991211,
+   "PQ-i": 9.60551643371582,
+   "DDB-i": 11.25,
+   "DDB-i_compression": {
+    "BitPacking": 4194304,
+    "Constant": 4194304
+   },
+   "M-i": 7.8829,
+   "M-i_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4132933,
+    "bits_per_sample": 7.8829,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 12.9,
+    "decode_msamples_s": 67.6
+   },
+   "seconds": 12.666051333013456
+  },
+  "sleep": {
+   "samples": 4194304,
+   "chunks": 1024,
+   "Z": 23.543350219726562,
+   "PQ-f": 38.14751625061035,
+   "ALP": 59.625,
+   "ALP_compression": {
+    "ALPRD": 4194304,
+    "Constant": 4194304
+   },
+   "M": 15.5094,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 8131385,
+    "bits_per_sample": 15.5094,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 6.0,
+    "decode_msamples_s": 32.7
+   },
+   "FLAC": 8.652141571044922,
+   "PQ-i": 10.22137451171875,
+   "DDB-i": 12.0,
+   "DDB-i_compression": {
+    "BitPacking": 4194304,
+    "Constant": 4194304
+   },
+   "M-i": 8.7999,
+   "M-i_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4613696,
+    "bits_per_sample": 8.7999,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 12.8,
+    "decode_msamples_s": 63.0
+   },
+   "seconds": 8.725540290994104
+  },
+  "ecg": {
+   "samples": 4194000,
+   "chunks": 4194,
+   "Z": 18.94386647591798,
+   "PQ-f": 44.64253695755842,
+   "ALP": 12.75092417739628,
+   "ALP_compression": {
+    "ALP": 4194000,
+    "Constant": 4194000
+   },
+   "M": 7.4022,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194000,
+    "bytes": 3880583,
+    "bits_per_sample": 7.4022,
+    "grid_chunks": 4194,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 5.1,
+    "decode_msamples_s": 63.5
+   },
+   "FLAC": 7.454668574153553,
+   "PQ-i": 10.266203147353362,
+   "DDB-i": 12.75092417739628,
+   "DDB-i_compression": {
+    "BitPacking": 4194000,
+    "Constant": 4194000
+   },
+   "M-i": 7.4022,
+   "M-i_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpr7fl2vv5/b1-morlet.bin",
+    "samples": 4194000,
+    "bytes": 3880583,
+    "bits_per_sample": 7.4022,
+    "grid_chunks": 4194,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 5.0,
+    "decode_msamples_s": 62.6
+   },
+   "seconds": 10.040378957986832
+  }
+ },
+ "comparisons": {
+  "cx": {
+   "best_float": "PQ-f",
+   "M_over_best_float": 0.6741647003176041,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.0534133023984689,
+   "M_over_ALP": 0.48532631578947366
+  },
+  "ims": {
+   "best_float": "ALP",
+   "M_over_best_float": 0.8008,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.0472069559412611,
+   "M_over_ALP": 0.8008
+  },
+  "pad-c": {
+   "best_float": "PQ-f",
+   "M_over_best_float": 0.8314183354975895,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.0241060125725197,
+   "M_over_ALP": 0.733293023255814
+  },
+  "pad-p": {
+   "best_float": "Z",
+   "M_over_best_float": 0.6184526236265556,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.1909297107983468,
+   "M_over_ALP": 0.1475573440643863
+  },
+  "sleep": {
+   "best_float": "Z",
+   "M_over_best_float": 0.6587592613308255,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.7925504191821637,
+   "M_over_ALP": 0.26011572327044025
+  },
+  "ecg": {
+   "best_float": "ALP",
+   "M_over_best_float": 0.580522626989028,
+   "best_int": "FLAC",
+   "M_over_best_int": 0.992961648981221,
+   "M_over_ALP": 0.580522626989028
+  }
+ },
+ "claims": {
+  "calibrated_2x_vs_metadata_free": false,
+  "within_15pct_of_best_integer": false,
+  "decimal_beats_ALP_by_20pct": false
+ },
+ "duckdb": "2.0.0",
+ "pyarrow": "26.0.0",
+ "zstandard": "0.25.0"
+}
