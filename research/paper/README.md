@@ -75,8 +75,7 @@ the paper builds without Python. Tectonic fetches the TeX packages it needs on f
 - **Artifact:** [ARTIFACT.md](ARTIFACT.md) rewritten for a fresh checkout (environments, PostgreSQL,
   pgrx and pgvector, four separate procedures, stable commits instead of branch and PR references).
 - **Release package:** version 0.11 throughout; [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json) with PDF
-  hashes; proposed report licence (CC BY 4.0, not applied:
-  [LICENSE-REPORT-PROPOSAL.md](LICENSE-REPORT-PROPOSAL.md)); website copies of both PDFs checked for byte
+  hashes; report text and figures licensed under CC BY 4.0 ([LICENSE.md](LICENSE.md)); website copies of both PDFs checked for byte
   equality in CI.
 - **Shorter abstract**; supplement bibliography no longer leaves a nearly empty last page.
 

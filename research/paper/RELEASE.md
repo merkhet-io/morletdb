@@ -1,4 +1,4 @@
-# Technical report release package (prepared, not published)
+# Technical report release package
 
 | | |
 |---|---|
@@ -8,9 +8,10 @@
 | Author | Zin Nam (no affiliation stated) |
 | Report sources | the commit recorded as `report_source_commit` in [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json); the sources first entered `main` with merge commit cdf8b4b |
 | Measured software | E1 (main retrieval tables) and diagnostics D1–D2: pg_morlet at `main` 68594d7, library SHA-256 `3c786684…`; earlier studies used earlier implementation states, labelled in the report and in [STUDIES.md](STUDIES.md) (see [ARTIFACT.md](ARTIFACT.md)) |
-| Licence | code: Apache-2.0 (repository `LICENSE`); report text and figures: **not yet chosen**, CC BY 4.0 proposed in [LICENSE-REPORT-PROPOSAL.md](LICENSE-REPORT-PROPOSAL.md), not applied |
-| Proposed tag | `paper-v0.11` (not created) |
-| Funding, conflicts of interest | none stated; to be confirmed by the author before publication |
+| Licence | report text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0 (repository `LICENSE`) |
+| Tag | `paper-v0.11`, on the commit that contains this manifest |
+| Funding | none |
+| Conflicts of interest | no statement (author's decision) |
 
 ## Contents
 
@@ -48,11 +49,9 @@ The same statement appears at the end of the report.
    the recorded commit. CI runs it, so any later change under `research/paper/` or to the website PDFs
    needs a regenerated manifest (step 2).
 
-## Before publishing (author decisions)
+## Author decisions (2026-11-01)
 
-- confirm the AI statement wording;
-- choose the report licence (CC BY 4.0 proposed; apply it by adding the notice to the title page, README and
-  this file);
-- confirm that no funding or conflict-of-interest statement is needed;
-- decide whether and where to publish (repository release under tag `paper-v0.11`, a preprint server, or
-  both); creating the tag, a release, a DOI or a submission has not been done.
+- licence of text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code stays Apache-2.0;
+- funding: none; no conflict-of-interest statement;
+- AI statement: as printed at the end of the report;
+- publication: GitHub release under tag `paper-v0.11`; no preprint server, DOI or journal submission yet.
