@@ -196,7 +196,7 @@ source exclusion, overlap suppression and snapshot semantics.
 <td width="62%">
 
 **[MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL](research/paper/morletdb.pdf)**<br>
-Version <span data-version="report">0.12</span>
+Version <span data-version="report">0.13</span>
 
 Bounded-lag cross-correlation is the right score when matches may be shifted in
 time, but standard vector indexes rank by an unshifted metric. Because each lag term
@@ -210,7 +210,7 @@ recovers the shift-tolerant top ten.
 On held-out seismic data (234,622 windows):
 
 - **97.7%** of the exact top ten
-- **57 ms** p95, against **740 ms** for the fastest exact path
+- **57 ms** p95, against **740 ms** for the fastest in-database exact path
 - zero-lag candidates from the same index: **64–66%**
 
 </td>

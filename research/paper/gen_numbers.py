@@ -211,7 +211,7 @@ def readme_block(s):
         x = a[arm]
         L.append(f"| {label} | {fmt(x['mean'])} | {fmt(x['min'], 1)} | {x['below_0.9']} | {x['p50']:.0f} / {x['p95']:.0f} |")
     L += ["",
-          f"- Ratio of p95 latencies, fastest exact arm to probes: {h['p95_ratio']:.0f} (held-out), {d['p95_ratio']:.0f} (dev); "
+          f"- Ratio of p95 latencies, fastest in-database exact arm to probes: {h['p95_ratio']:.0f} (held-out), {d['p95_ratio']:.0f} (dev); "
           "not a per-query speed-up.",
           f"- Held-out recall by query group: random {fmt(a['PR']['by_type']['random'])}, high-energy {fmt(a['PR']['by_type']['energetic'])}; "
           f"{a['PR']['hist']['1.0']} / {a['PR']['hist']['0.9']} / {a['PR']['hist']['0.8']} / {a['PR']['hist']['0.7']} queries at 1.0 / 0.9 / 0.8 / 0.7; "

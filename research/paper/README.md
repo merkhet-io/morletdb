@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.12, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.13, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -32,7 +32,7 @@ E1: all arms on one build (`main` 68594d7), 100 queries per database (50 random,
 | zero-lag HNSW, 650 candidates | 0.639 | 0.1 | 69 | 28 / 40 |
 | zero-lag HNSW, 1000 candidates | 0.658 | 0.1 | 67 | 34 / 50 |
 
-- Ratio of p95 latencies, fastest exact arm to probes: 13 (held-out), 15 (dev); not a per-query speed-up.
+- Ratio of p95 latencies, fastest in-database exact arm to probes: 13 (held-out), 15 (dev); not a per-query speed-up.
 - Held-out recall by query group: random 0.998, high-energy 0.956; 83 / 12 / 4 / 1 queries at 1.0 / 0.9 / 0.8 / 0.7; 23 of 1,000 reference intervals missed, 3 of them the exact best match.
 - Candidate generators (held-out): all 61 lags exact 1.000; 13-lag grid exact 0.999; with float16 probes 0.999; with HNSW 0.977; zero-lag exact, same count 0.613.
 - Storage (held-out): raw chunks 514 MB; envelopes 223 MB; probe table 223 MB; HNSW index 275 MB; probe structures / raw 0.97 (dev 1.34).
@@ -58,6 +58,18 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.13 (tone and speed scope; no new measurement in the report)
+
+- **Claims stated once, limitations collected.** The abstract, introduction, contributions, related work and
+  conclusion lead with the findings: the zero-lag diagnosis, the simplicity of the method, the single
+  contract on both paths, and the evaluation design. Scope appears once per claim; the qualifications that
+  were spread through those sections now live in Limitations and the claims ledger. The codec's central
+  observation (calibrated floats as integers on an affine grid) moves from the supplement into Section 4.
+- **Speed scoped to in-database exact search.** E3 and E4 (development data, frozen protocols) found an exact
+  scan of a materialized copy outside the database faster than probe search at p95 up to 1.03 M windows. The
+  report now compares probes with in-database exact search throughout, adds one paragraph on the
+  materialized scan (Section 7), a Limitations item, two ledger rows and the studies to Table 1.
 
 ## What changed in 0.12 (no new measurement)
 
