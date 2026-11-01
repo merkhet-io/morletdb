@@ -1,0 +1,2846 @@
+[
+ {
+  "station": "PB01",
+  "day": 15,
+  "mseed": "CX.PB01.HHZ.d15.mseed",
+  "mseed_bytes": 7254016,
+  "mseed_sha256": "f29fabeda4a8e76fe3dcf34102128183a756b19bb65ca11b3cd8bdac4c8275d9",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d15.000.npy",
+    "start": "2025-03-14T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 15,
+  "mseed": "CX.PB02.HHZ.d15.mseed",
+  "mseed_bytes": 8305664,
+  "mseed_sha256": "f79864c671af9575086cd9d0ad01d18dd11f645ab060f5f3d13ed6a594db22bd",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d15.000.npy",
+    "start": "2025-03-14T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 15,
+  "mseed": "CX.PB06.HHZ.d15.mseed",
+  "mseed_bytes": 7674880,
+  "mseed_sha256": "4e730a2cf4cddeabf53b7f687ced3a8668bf0ded032e2473bdb05aa980318597",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d15.000.npy",
+    "start": "2025-03-14T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 15,
+  "mseed": "CX.PSGCX.HHZ.d15.mseed",
+  "mseed_bytes": 6771200,
+  "mseed_sha256": "f8c65421208857793c5b3d5ddbc4f1892836a55a23404d37f25a2ee6d7f069b0",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d15.000.npy",
+    "start": "2025-03-15T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 16,
+  "mseed": "CX.PB01.HHZ.d16.mseed",
+  "mseed_bytes": 7311872,
+  "mseed_sha256": "4f3661c489268bde51868778e1ca9bb5e28287afc90b4d1f0b79ef98649b61b2",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d16.000.npy",
+    "start": "2025-03-15T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 16,
+  "mseed": "CX.PB02.HHZ.d16.mseed",
+  "mseed_bytes": 8578048,
+  "mseed_sha256": "26316820bb569e9c0cea0a4a4fc8985b18b449345c98eba0b7bc87948572826c",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d16.000.npy",
+    "start": "2025-03-15T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 16,
+  "mseed": "CX.PB06.HHZ.d16.mseed",
+  "mseed_bytes": 7752192,
+  "mseed_sha256": "e4808cb609f6ac5974b4786c5c1d88d56f60b4d447fa17b6a2e30c302689b3a3",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d16.000.npy",
+    "start": "2025-03-15T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 16,
+  "mseed": "CX.PSGCX.HHZ.d16.mseed",
+  "mseed_bytes": 6836736,
+  "mseed_sha256": "bfa71cdafeb8084fba86f5dc4e3e005bed90550fed094a079420074a7510de0c",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d16.000.npy",
+    "start": "2025-03-16T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 17,
+  "mseed": "CX.PB01.HHZ.d17.mseed",
+  "mseed_bytes": 7206400,
+  "mseed_sha256": "71acf550551ce0929d2ff3f923c17f02eeef1eac3a114145cb810a3e4990c3b1",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d17.000.npy",
+    "start": "2025-03-16T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 17,
+  "mseed": "CX.PB02.HHZ.d17.mseed",
+  "mseed_bytes": 8494080,
+  "mseed_sha256": "d0843189a43eae82617c52495425713086753c8683d67b06e0114c79c0de0fbf",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d17.000.npy",
+    "start": "2025-03-16T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 17,
+  "mseed": "CX.PB06.HHZ.d17.mseed",
+  "mseed_bytes": 7627264,
+  "mseed_sha256": "959e8db9ba32f668b217a7e04c1c0fa8bd9c794d0e495acc678e4367de48ad3a",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d17.000.npy",
+    "start": "2025-03-16T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 17,
+  "mseed": "CX.PSGCX.HHZ.d17.mseed",
+  "mseed_bytes": 6767104,
+  "mseed_sha256": "912682408cf8dc2d9c5b497e7b1d1d88aa3c3701cba5ef3f2de100c14ed2fdf2",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d17.000.npy",
+    "start": "2025-03-17T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 18,
+  "mseed": "CX.PB01.HHZ.d18.mseed",
+  "mseed_bytes": 7272960,
+  "mseed_sha256": "766f21a5e3f3d86fbba15b2d8ebf57a8f91dd0bac78245a5bd9fc9ef911ccfa5",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d18.000.npy",
+    "start": "2025-03-17T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 18,
+  "mseed": "CX.PB02.HHZ.d18.mseed",
+  "mseed_bytes": 8574976,
+  "mseed_sha256": "118b36e555c205881d8c295f50c36b66a197c910f680b913aa354b698e800247",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d18.000.npy",
+    "start": "2025-03-17T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 18,
+  "mseed": "CX.PB06.HHZ.d18.mseed",
+  "mseed_bytes": 7742976,
+  "mseed_sha256": "5bca761fd0777ab9cfab7d77002ccb0d1436eda7f097573252fe370720f6f87f",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d18.000.npy",
+    "start": "2025-03-17T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 18,
+  "mseed": "CX.PSGCX.HHZ.d18.mseed",
+  "mseed_bytes": 6828544,
+  "mseed_sha256": "9229ba83195b986750d0a59be5d4e95063d84c800fa18dea848bd8c01cf4b5f7",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d18.000.npy",
+    "start": "2025-03-18T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 19,
+  "mseed": "CX.PB01.HHZ.d19.mseed",
+  "mseed_bytes": 7423488,
+  "mseed_sha256": "de4050e99e8b46dab3ff1b012ba0f188aca8b9345eebad7d283d15f7dc80bc4b",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d19.000.npy",
+    "start": "2025-03-18T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 19,
+  "mseed": "CX.PB02.HHZ.d19.mseed",
+  "mseed_bytes": 8431616,
+  "mseed_sha256": "cb9fd4bb7154b45ae4c97a41ebd2069560cc8da8a454dce2854e021020d48906",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d19.000.npy",
+    "start": "2025-03-18T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 19,
+  "mseed": "CX.PB06.HHZ.d19.mseed",
+  "mseed_bytes": 7829504,
+  "mseed_sha256": "65a5ea9c0c47ddcb61925651754c403f4f424af95deb11594ba9fa39171cd814",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d19.000.npy",
+    "start": "2025-03-18T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 19,
+  "mseed": "CX.PSGCX.HHZ.d19.mseed",
+  "mseed_bytes": 6983680,
+  "mseed_sha256": "bb1ecd77f44b7b1e5a2b55139370fe478466803d91e562755af19996bad7f0da",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d19.000.npy",
+    "start": "2025-03-19T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 20,
+  "mseed": "CX.PB01.HHZ.d20.mseed",
+  "mseed_bytes": 7323648,
+  "mseed_sha256": "bb1d492f73a6be1d5e07cfc8ce5f9b31fbc5d8c5a55f646a493b1054de760afa",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d20.000.npy",
+    "start": "2025-03-19T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 20,
+  "mseed": "CX.PB02.HHZ.d20.mseed",
+  "mseed_bytes": 8414208,
+  "mseed_sha256": "32210246670aaa05f7aa38bf1fabc4ea5459e99fb2597c578b67cba8858469fc",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d20.000.npy",
+    "start": "2025-03-19T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 20,
+  "mseed": "CX.PB06.HHZ.d20.mseed",
+  "mseed_bytes": 7738368,
+  "mseed_sha256": "ef70dfbb71fe36a149f2166a3a8945a07d005b6378012731558383b89fa86546",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d20.000.npy",
+    "start": "2025-03-19T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 20,
+  "mseed": "CX.PSGCX.HHZ.d20.mseed",
+  "mseed_bytes": 6905856,
+  "mseed_sha256": "d56cdf207a75459e6e9aef0b27b148893d80a9b5f49e9359c389b9e37e68fc7a",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d20.000.npy",
+    "start": "2025-03-20T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 21,
+  "mseed": "CX.PB01.HHZ.d21.mseed",
+  "mseed_bytes": 7269376,
+  "mseed_sha256": "d15f61284e3048b4510a8f08b947c3e1260dc0ee9288a3eb9173e0b63e8f40cd",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d21.000.npy",
+    "start": "2025-03-20T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 21,
+  "mseed": "CX.PB02.HHZ.d21.mseed",
+  "mseed_bytes": 8506880,
+  "mseed_sha256": "5365c93238f6ce20bc94e19575d98033c775ab4ec72ee62c3c226aba471e9c61",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d21.000.npy",
+    "start": "2025-03-20T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 21,
+  "mseed": "CX.PB06.HHZ.d21.mseed",
+  "mseed_bytes": 7693824,
+  "mseed_sha256": "5636660314fb5bf1cf0cab18c411d5db8138e05057c2e1124deff17e37e0b297",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d21.000.npy",
+    "start": "2025-03-20T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 21,
+  "mseed": "CX.PSGCX.HHZ.d21.mseed",
+  "mseed_bytes": 6839808,
+  "mseed_sha256": "104d62340c486c2256606ff950d3334cc25255664d7795d6e7b6df04540ddec4",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d21.000.npy",
+    "start": "2025-03-21T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 22,
+  "mseed": "CX.PB01.HHZ.d22.mseed",
+  "mseed_bytes": 7326720,
+  "mseed_sha256": "81b00443b222c8606a47626483d2b9ae561d33e200ca310db1398870efec505d",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d22.000.npy",
+    "start": "2025-03-21T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 22,
+  "mseed": "CX.PB02.HHZ.d22.mseed",
+  "mseed_bytes": 8431104,
+  "mseed_sha256": "be587b5805c2e5b264b82bcf1642c01e047ff90eb79764c320902cf5c3dc400c",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d22.000.npy",
+    "start": "2025-03-21T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 22,
+  "mseed": "CX.PB06.HHZ.d22.mseed",
+  "mseed_bytes": 7712768,
+  "mseed_sha256": "ad3ec16e6aa34f8752efa35e1db30fda2e86e99638f555c11506bdeabe6a9b34",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d22.000.npy",
+    "start": "2025-03-21T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 22,
+  "mseed": "CX.PSGCX.HHZ.d22.mseed",
+  "mseed_bytes": 6856192,
+  "mseed_sha256": "cebb36081be5bcef8ba61bca099d33158d9d2e4d7887d7bd5005e865ca531d77",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d22.000.npy",
+    "start": "2025-03-22T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 23,
+  "mseed": "CX.PB01.HHZ.d23.mseed",
+  "mseed_bytes": 7339520,
+  "mseed_sha256": "37cb46579be2dabb6f01e4499e54112b401b061a3d345c7f78234271d64fa547",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d23.000.npy",
+    "start": "2025-03-22T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 23,
+  "mseed": "CX.PB02.HHZ.d23.mseed",
+  "mseed_bytes": 8540160,
+  "mseed_sha256": "617a611312ddc28658a9615b682407f71363902bd6888d4f0c6fb8b1f6e6a1eb",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d23.000.npy",
+    "start": "2025-03-22T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 23,
+  "mseed": "CX.PB06.HHZ.d23.mseed",
+  "mseed_bytes": 7754240,
+  "mseed_sha256": "48ad780a920038f013794c4600ef5aa9167db203d83e38062312ca9c3e80cf1b",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d23.000.npy",
+    "start": "2025-03-22T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 23,
+  "mseed": "CX.PSGCX.HHZ.d23.mseed",
+  "mseed_bytes": 6904320,
+  "mseed_sha256": "076fba8c436c81331b7c3296cf32d14d7125d67c3246aa8c4336dab0a099b9e9",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d23.000.npy",
+    "start": "2025-03-23T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 24,
+  "mseed": "CX.PB01.HHZ.d24.mseed",
+  "mseed_bytes": 7313408,
+  "mseed_sha256": "19f3f0a74cc702fd2f90f28f53956fd23257dd3517d15fa21ad8efa8a50f1204",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d24.000.npy",
+    "start": "2025-03-23T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 24,
+  "mseed": "CX.PB02.HHZ.d24.mseed",
+  "mseed_bytes": 8423936,
+  "mseed_sha256": "61562f9e8dfe623499676e42549bb1be955b961bb2647e7584955e052a81ccb0",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d24.000.npy",
+    "start": "2025-03-23T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 24,
+  "mseed": "CX.PB06.HHZ.d24.mseed",
+  "mseed_bytes": 7740928,
+  "mseed_sha256": "2136d5673d924ff99c439f619aa43a08c26054095351cfb7501c6447fa216af3",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d24.000.npy",
+    "start": "2025-03-23T23:59:59.998394Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 24,
+  "mseed": "CX.PSGCX.HHZ.d24.mseed",
+  "mseed_bytes": 6877184,
+  "mseed_sha256": "4214a2f73ab04dcd87a68becc6de9a39d720b0ec486411616c21ea559fca01c6",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d24.000.npy",
+    "start": "2025-03-24T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 25,
+  "mseed": "CX.PB01.HHZ.d25.mseed",
+  "mseed_bytes": 7460864,
+  "mseed_sha256": "100849f0d43b1137f991c96bb0b66669040c5c90f42d141caf1a24cb8a4af164",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d25.000.npy",
+    "start": "2025-03-24T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 25,
+  "mseed": "CX.PB02.HHZ.d25.mseed",
+  "mseed_bytes": 8526336,
+  "mseed_sha256": "74d78ed6bdcd2f5e886d5a02b223c176f9bfd953337affd168e3fbb5ad2a88a8",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d25.000.npy",
+    "start": "2025-03-24T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 25,
+  "mseed": "CX.PB06.HHZ.d25.mseed",
+  "mseed_bytes": 7780864,
+  "mseed_sha256": "297d42f4db6a4d28b5f560e0c9b5d8e1eb3e725d33832ab14b001fb92cc4ab5c",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d25.000.npy",
+    "start": "2025-03-24T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 25,
+  "mseed": "CX.PSGCX.HHZ.d25.mseed",
+  "mseed_bytes": 6996992,
+  "mseed_sha256": "b39bbce002e729d264d2a3dd4c992ef3339a3a1b8512d38cf226063097f50707",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d25.000.npy",
+    "start": "2025-03-25T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 26,
+  "mseed": "CX.PB01.HHZ.d26.mseed",
+  "mseed_bytes": 7391232,
+  "mseed_sha256": "7c84dffecffc35c721de2a6ffc005af6a5bad92312d77892feb419da00eb9355",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d26.000.npy",
+    "start": "2025-03-25T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 26,
+  "mseed": "CX.PB02.HHZ.d26.mseed",
+  "mseed_bytes": 8539136,
+  "mseed_sha256": "40cfdd7cf02f3695bb7555eec5627544389dbdb94e2051e22d481b476754bc7a",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d26.000.npy",
+    "start": "2025-03-25T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 26,
+  "mseed": "CX.PB06.HHZ.d26.mseed",
+  "mseed_bytes": 7722496,
+  "mseed_sha256": "241a346a9640751291f2ceac835bdef741982b4cbbb563f4d4d51b9f372f1fb1",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d26.000.npy",
+    "start": "2025-03-25T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 26,
+  "mseed": "CX.PSGCX.HHZ.d26.mseed",
+  "mseed_bytes": 6894080,
+  "mseed_sha256": "1f595505566e0f57ce13d690d11255a712c0d745aa0f4b28d63a62d40bec2e3a",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d26.000.npy",
+    "start": "2025-03-26T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 27,
+  "mseed": "CX.PB01.HHZ.d27.mseed",
+  "mseed_bytes": 7243264,
+  "mseed_sha256": "b7763658f30fa3bcf47c64224c6227fb92ed6be876f722757bb936aa41e84ea4",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d27.000.npy",
+    "start": "2025-03-26T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 27,
+  "mseed": "CX.PB02.HHZ.d27.mseed",
+  "mseed_bytes": 8355840,
+  "mseed_sha256": "765950aaa51d234f674212e3c91b4fe6f410ee3f9b9d53401884dd56f0b6d809",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d27.000.npy",
+    "start": "2025-03-26T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 27,
+  "mseed": "CX.PB06.HHZ.d27.mseed",
+  "mseed_bytes": 7612416,
+  "mseed_sha256": "36f36403421ff500825dc367d029492454a7bccf22a43b775670045c2cbd0604",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d27.000.npy",
+    "start": "2025-03-26T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 27,
+  "mseed": "CX.PSGCX.HHZ.d27.mseed",
+  "mseed_bytes": 6784512,
+  "mseed_sha256": "ea29fe22e3e473c0c29a1ce40a86da99cef79a5e1c814999ccbc3eae575ced66",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d27.000.npy",
+    "start": "2025-03-27T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 28,
+  "mseed": "CX.PB01.HHZ.d28.mseed",
+  "mseed_bytes": 7265792,
+  "mseed_sha256": "1fb98a0d9087bfda2c15cbbe9a36cdb9ac700aac4935f2ca31ade4b458481b9c",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d28.000.npy",
+    "start": "2025-03-27T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 28,
+  "mseed": "CX.PB02.HHZ.d28.mseed",
+  "mseed_bytes": 8243200,
+  "mseed_sha256": "d9d81109685768136c9f4ce5c2a9d541c4a7edfbaa61b0133d8a2ba2a04cb704",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d28.000.npy",
+    "start": "2025-03-27T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 28,
+  "mseed": "CX.PB06.HHZ.d28.mseed",
+  "mseed_bytes": 7691776,
+  "mseed_sha256": "e03132dd5518f6064c33584e2c9401da6979e468abac44fb895afae3ac799389",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d28.000.npy",
+    "start": "2025-03-27T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 28,
+  "mseed": "CX.PSGCX.HHZ.d28.mseed",
+  "mseed_bytes": 6874624,
+  "mseed_sha256": "80fbd1b8fac229352a73509e0f0176afa1bcbe5a9da35bee1285370e35a3117f",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d28.000.npy",
+    "start": "2025-03-28T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 29,
+  "mseed": "CX.PB01.HHZ.d29.mseed",
+  "mseed_bytes": 7292416,
+  "mseed_sha256": "5385b4cff37ed2bb21fa0428815ef8e5ea41d5655e4a917bbe7d894324d3f9bb",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d29.000.npy",
+    "start": "2025-03-28T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 29,
+  "mseed": "CX.PB02.HHZ.d29.mseed",
+  "mseed_bytes": 8360448,
+  "mseed_sha256": "2ef614332b8a8e4ed1cd9d34c4992bec0d7651e4fa2bb489ea4bda13055dc935",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d29.000.npy",
+    "start": "2025-03-28T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 29,
+  "mseed": "CX.PB06.HHZ.d29.mseed",
+  "mseed_bytes": 7650816,
+  "mseed_sha256": "ce16cedab6863c016075a1831e8435df66d5d5b71a10f93eef77ba6d4692bacc",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d29.000.npy",
+    "start": "2025-03-28T23:59:59.998394Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 29,
+  "mseed": "CX.PSGCX.HHZ.d29.mseed",
+  "mseed_bytes": 6809600,
+  "mseed_sha256": "bdb627505e28eaa9c214a7f2d244b8ecf109f081ea210129abe43f4e6dbcbe30",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d29.000.npy",
+    "start": "2025-03-29T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 30,
+  "mseed": "CX.PB01.HHZ.d30.mseed",
+  "mseed_bytes": 7252480,
+  "mseed_sha256": "0fd8418b9c3b19a050e764d2c674c87a3a8414a0181497d0b977223ec898bc74",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d30.000.npy",
+    "start": "2025-03-29T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 30,
+  "mseed": "CX.PB02.HHZ.d30.mseed",
+  "mseed_bytes": 8414208,
+  "mseed_sha256": "d277d61a1b7df7b153c8e406a2ba1f0f74d8e454a1c9080e7ccfb4338df55def",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d30.000.npy",
+    "start": "2025-03-29T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 30,
+  "mseed": "CX.PB06.HHZ.d30.mseed",
+  "mseed_bytes": 7624192,
+  "mseed_sha256": "64d30ac7df5f33d7105393bead52dea87ade0289aed1705a6fffa36bd092ccf1",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d30.000.npy",
+    "start": "2025-03-29T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 30,
+  "mseed": "CX.PSGCX.HHZ.d30.mseed",
+  "mseed_bytes": 6808576,
+  "mseed_sha256": "eef56c51f5cca5c0981fa3c397cabd5ce7cceca05318dc2795acead7a209faa0",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d30.000.npy",
+    "start": "2025-03-30T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 31,
+  "mseed": "CX.PB01.HHZ.d31.mseed",
+  "mseed_bytes": 7348736,
+  "mseed_sha256": "e54f16b10b3aef70cb53f261e4479b6dc12a974a5e568873cf22ae5f09079a22",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d31.000.npy",
+    "start": "2025-03-30T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 31,
+  "mseed": "CX.PB02.HHZ.d31.mseed",
+  "mseed_bytes": 8595968,
+  "mseed_sha256": "2315cb5e893f8cc275013a0ffc7faf93bd7ca2bb2c37f12e3430a147b64cba73",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d31.000.npy",
+    "start": "2025-03-30T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 31,
+  "mseed": "CX.PB06.HHZ.d31.mseed",
+  "mseed_bytes": 7809024,
+  "mseed_sha256": "d4b2ff7cc46f151eb2579f0c04e0045e46849a25c206e1aaeb3c50e091d442b5",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d31.000.npy",
+    "start": "2025-03-30T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 31,
+  "mseed": "CX.PSGCX.HHZ.d31.mseed",
+  "mseed_bytes": 6858752,
+  "mseed_sha256": "ab78c1b6fce79d87c494a4fca7603f193bcea5adde4348555205dc4937732ecd",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d31.000.npy",
+    "start": "2025-03-31T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 32,
+  "mseed": "CX.PB01.HHZ.d32.mseed",
+  "mseed_bytes": 7358464,
+  "mseed_sha256": "7fad706acb62f954dfb78fe63f0bb2f7e90eaf9617d483067aab3d6123bb01c8",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d32.000.npy",
+    "start": "2025-03-31T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 32,
+  "mseed": "CX.PB02.HHZ.d32.mseed",
+  "mseed_bytes": 8459776,
+  "mseed_sha256": "0a1d0f27ff568daa735f5afcce7ce6e15c0a7e146ff2c7b47f712524ad418cfc",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d32.000.npy",
+    "start": "2025-03-31T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 32,
+  "mseed": "CX.PB06.HHZ.d32.mseed",
+  "mseed_bytes": 7781376,
+  "mseed_sha256": "87e89e6459cefcee351da46d09eea984a5da848c4ff49ddd5d7cf13006ecf5e5",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d32.000.npy",
+    "start": "2025-03-31T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 32,
+  "mseed": "CX.PSGCX.HHZ.d32.mseed",
+  "mseed_bytes": 6929920,
+  "mseed_sha256": "0a63e8abe80107e652f0cdb8dc3c4e571d8310e001ad14e69a1c1c4b9be89244",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d32.000.npy",
+    "start": "2025-04-01T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 33,
+  "mseed": "CX.PB01.HHZ.d33.mseed",
+  "mseed_bytes": 7395840,
+  "mseed_sha256": "db732b13af952a926a257d8841091d03443d859ef14232237d75fabf9c2e4458",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d33.000.npy",
+    "start": "2025-04-01T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 33,
+  "mseed": "CX.PB02.HHZ.d33.mseed",
+  "mseed_bytes": 8450048,
+  "mseed_sha256": "ac1601167cd3f6bf4e0e2fdd4c5090498658d087c264cbaece33e05351783117",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d33.000.npy",
+    "start": "2025-04-01T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 33,
+  "mseed": "CX.PB06.HHZ.d33.mseed",
+  "mseed_bytes": 7793152,
+  "mseed_sha256": "a252d2b41d16aa61663c56b4d303d1cd415744cb9dfbffa5ad7b4fa682cf51c7",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d33.000.npy",
+    "start": "2025-04-01T23:59:59.998394Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 33,
+  "mseed": "CX.PSGCX.HHZ.d33.mseed",
+  "mseed_bytes": 6938624,
+  "mseed_sha256": "29d46bc68bae5b562543c4a88d6b91fe4ab64ce5a79d12ee6ea8d21ea5caa79a",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d33.000.npy",
+    "start": "2025-04-02T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 34,
+  "mseed": "CX.PB01.HHZ.d34.mseed",
+  "mseed_bytes": 7336448,
+  "mseed_sha256": "a8562fdc3e9afea3da0a9e9b0a8f0aafb304892ebe8a7de4bde9d26c97d7ac42",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d34.000.npy",
+    "start": "2025-04-02T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 34,
+  "mseed": "CX.PB02.HHZ.d34.mseed",
+  "mseed_bytes": 8254976,
+  "mseed_sha256": "bc16b4864c3c1ca968d6e266af04a9419f37852b90a4b8db92fe9aac6773364b",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d34.000.npy",
+    "start": "2025-04-02T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 34,
+  "mseed": "CX.PB06.HHZ.d34.mseed",
+  "mseed_bytes": 7745024,
+  "mseed_sha256": "e91481f951cf41fe8334a0a48c8d0f6ba9b2019d30d66ff24f6802731e762b91",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d34.000.npy",
+    "start": "2025-04-02T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 34,
+  "mseed": "CX.PSGCX.HHZ.d34.mseed",
+  "mseed_bytes": 6894592,
+  "mseed_sha256": "284f79889de214e62a0a01de7046bf7307ba64678cd7f5aa1cf993986f2ecdba",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d34.000.npy",
+    "start": "2025-04-03T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 35,
+  "mseed": "CX.PB01.HHZ.d35.mseed",
+  "mseed_bytes": 7481856,
+  "mseed_sha256": "26ae14e7d9479bdb56aa6b2ea07bdd5f13059d006042afcf9b5754c05c628db6",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d35.000.npy",
+    "start": "2025-04-03T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 35,
+  "mseed": "CX.PB02.HHZ.d35.mseed",
+  "mseed_bytes": 7991296,
+  "mseed_sha256": "ae7b8a383385e61ca7b05ac7a524085a6eb567fd3e7e4f67488c3cb07343eb29",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d35.000.npy",
+    "start": "2025-04-03T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 35,
+  "mseed": "CX.PB06.HHZ.d35.mseed",
+  "mseed_bytes": 7769088,
+  "mseed_sha256": "6c402529c02a9e63b189f4f4e841dfa42eb65ca550399383b5e239da508bbbf0",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d35.000.npy",
+    "start": "2025-04-03T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 35,
+  "mseed": "CX.PSGCX.HHZ.d35.mseed",
+  "mseed_bytes": 6869504,
+  "mseed_sha256": "efa6623962328d06524616cd37f6848b6faba4fad3b620faed0869140d0e0954",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d35.000.npy",
+    "start": "2025-04-04T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 36,
+  "mseed": "CX.PB01.HHZ.d36.mseed",
+  "mseed_bytes": 7165952,
+  "mseed_sha256": "38f65f54d172aedb8acab39fdc488695d2e086572df102b6b61b0eedd16f5551",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d36.000.npy",
+    "start": "2025-04-04T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 36,
+  "mseed": "CX.PB02.HHZ.d36.mseed",
+  "mseed_bytes": 7922176,
+  "mseed_sha256": "1e355f8cecf5eb187cbc2d5e78d5d0591735f2fcc3ae74732e2833dfa4875c16",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d36.000.npy",
+    "start": "2025-04-04T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 36,
+  "mseed": "CX.PB06.HHZ.d36.mseed",
+  "mseed_bytes": 7668736,
+  "mseed_sha256": "dd1e5bb54621a9f36cb0bdb6044a2b0a3368adbb54c8cc67efae26ae2da08d0a",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d36.000.npy",
+    "start": "2025-04-04T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 36,
+  "mseed": "CX.PSGCX.HHZ.d36.mseed",
+  "mseed_bytes": 6728192,
+  "mseed_sha256": "4f425a95e9cbf9a1e2b9b8e587e318d0442e4185831f47607bb34f4b08a2b076",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d36.000.npy",
+    "start": "2025-04-05T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 37,
+  "mseed": "CX.PB01.HHZ.d37.mseed",
+  "mseed_bytes": 7276032,
+  "mseed_sha256": "9bfd34474e2c621bbe5b2a33460b9bee82e8f9c7c6b471cffa75c21d89cf4200",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d37.000.npy",
+    "start": "2025-04-05T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 37,
+  "mseed": "CX.PB02.HHZ.d37.mseed",
+  "mseed_bytes": 8401408,
+  "mseed_sha256": "f5e039ed02fe363ae9b2fccc60631d05281fc1dc0bc23657befcdb81ecbbfbb7",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d37.000.npy",
+    "start": "2025-04-05T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 37,
+  "mseed": "CX.PB06.HHZ.d37.mseed",
+  "mseed_bytes": 7714816,
+  "mseed_sha256": "03ffc9c679d5d9a6072e14ef6ae769359ead2cf5e7b334cc0bc0bd14736b9712",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d37.000.npy",
+    "start": "2025-04-05T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 37,
+  "mseed": "CX.PSGCX.HHZ.d37.mseed",
+  "mseed_bytes": 6799360,
+  "mseed_sha256": "2db56a8fb823772445150be07e2a4b31b4ea336ae59a49f65c9ee3507e0c61c9",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d37.000.npy",
+    "start": "2025-04-06T00:00:00.000001Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 38,
+  "mseed": "CX.PB01.HHZ.d38.mseed",
+  "mseed_bytes": 7155712,
+  "mseed_sha256": "a5aa534a66f5aa2d7f65741a38ba3fbd89a0346e8c84d901b6ea48049bb24760",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d38.000.npy",
+    "start": "2025-04-06T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 38,
+  "mseed": "CX.PB02.HHZ.d38.mseed",
+  "mseed_bytes": 8353280,
+  "mseed_sha256": "63c01125afc455ce3e518dbef3c06489f6d23a518b7b25af60756fee34e53700",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d38.000.npy",
+    "start": "2025-04-06T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 38,
+  "mseed": "CX.PB06.HHZ.d38.mseed",
+  "mseed_bytes": 7616512,
+  "mseed_sha256": "5a458c4ba46ea5c2b797aab8dac8e803aee85b9f75d2e4be0ec6dc2a7e8a6fec",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d38.000.npy",
+    "start": "2025-04-06T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 38,
+  "mseed": "CX.PSGCX.HHZ.d38.mseed",
+  "mseed_bytes": 6744576,
+  "mseed_sha256": "78b85f72c32dab2bf90739aa146b4be55bfb6847d18cba70263b37e6d2f3f90f",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d38.000.npy",
+    "start": "2025-04-07T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 39,
+  "mseed": "CX.PB01.HHZ.d39.mseed",
+  "mseed_bytes": 7220224,
+  "mseed_sha256": "736ed55ba7bc9d5c4589333b6a8c7bc123e7deb45e4b2719c34f6a67272b4776",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d39.000.npy",
+    "start": "2025-04-07T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 39,
+  "mseed": "CX.PB02.HHZ.d39.mseed",
+  "mseed_bytes": 8306688,
+  "mseed_sha256": "71bac78e16bae99d06c0cc51c0dc8c7b4a70c7bdfe607106c613e54622c08723",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d39.000.npy",
+    "start": "2025-04-07T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 39,
+  "mseed": "CX.PB06.HHZ.d39.mseed",
+  "mseed_bytes": 7685632,
+  "mseed_sha256": "4be360ed8d29655f989ef66737f5e87a3c987fc251274b8b614a3475fa032da7",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d39.000.npy",
+    "start": "2025-04-07T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 39,
+  "mseed": "CX.PSGCX.HHZ.d39.mseed",
+  "mseed_bytes": 6808064,
+  "mseed_sha256": "0c9a16f0575481d60bb2e87b8100f28a4aa9e017304feb59126315939af7db99",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d39.000.npy",
+    "start": "2025-04-08T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 40,
+  "mseed": "CX.PB01.HHZ.d40.mseed",
+  "mseed_bytes": 7186944,
+  "mseed_sha256": "726955cfcba3caedf527129042ed07759df0e7b925f7ac3d50cfc75cd7da9475",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d40.000.npy",
+    "start": "2025-04-08T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 40,
+  "mseed": "CX.PB02.HHZ.d40.mseed",
+  "mseed_bytes": 8137216,
+  "mseed_sha256": "600e2a5d8399c46a402a9237612e5ae64dbd92fe25410dde2bfac6fceda57be5",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d40.000.npy",
+    "start": "2025-04-08T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 40,
+  "mseed": "CX.PB06.HHZ.d40.mseed",
+  "mseed_bytes": 7616512,
+  "mseed_sha256": "4dc6275fb74a7c8236e1775bd5cf862e6f3e8622054c6f4c390dd88ffcb0f325",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d40.000.npy",
+    "start": "2025-04-08T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 40,
+  "mseed": "CX.PSGCX.HHZ.d40.mseed",
+  "mseed_bytes": 6764544,
+  "mseed_sha256": "a7e1a4d94e61d6b3e1c550dcc1a5916ae4a34dd369501ab76491defcefad5ad8",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d40.000.npy",
+    "start": "2025-04-09T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 41,
+  "mseed": "CX.PB01.HHZ.d41.mseed",
+  "mseed_bytes": 7551488,
+  "mseed_sha256": "c757da8fda78a68948f3a22fff7031690c9a395bd4099e8d2a2350db9d1176d3",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d41.000.npy",
+    "start": "2025-04-09T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 41,
+  "mseed": "CX.PB02.HHZ.d41.mseed",
+  "mseed_bytes": 8763392,
+  "mseed_sha256": "d1ab5215e141ba2b0a804dee1e01ae3aab0efdf2a03790f640b6acd687f72f48",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d41.000.npy",
+    "start": "2025-04-09T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 41,
+  "mseed": "CX.PB06.HHZ.d41.mseed",
+  "mseed_bytes": 7855104,
+  "mseed_sha256": "c63c9b01205c4c16c560353fa4223af48d054a7079a8eda1ebe6925b8405497d",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d41.000.npy",
+    "start": "2025-04-09T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 41,
+  "mseed": "CX.PSGCX.HHZ.d41.mseed",
+  "mseed_bytes": 7100928,
+  "mseed_sha256": "c341012565b69b05d84959fe1811f06ec759d418d021619d7ab870bcc7d0eca7",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d41.000.npy",
+    "start": "2025-04-10T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 42,
+  "mseed": "CX.PB01.HHZ.d42.mseed",
+  "mseed_bytes": 7507968,
+  "mseed_sha256": "e1da92fe6d2bec6b53b03a49d6b827abc4ccadb302bf28e45a04d2c3d3d8a292",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d42.000.npy",
+    "start": "2025-04-10T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 42,
+  "mseed": "CX.PB02.HHZ.d42.mseed",
+  "mseed_bytes": 8656896,
+  "mseed_sha256": "bd7a85f76973778adbb973f6692a12fc9db6913cbe691c5cd057e9ac390c24e3",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d42.000.npy",
+    "start": "2025-04-10T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 42,
+  "mseed": "CX.PB06.HHZ.d42.mseed",
+  "mseed_bytes": 7831552,
+  "mseed_sha256": "c6e4127ba8b4e49ce1b0af3e3a7cba32fd0f4d97282a716a6114899e16998863",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d42.000.npy",
+    "start": "2025-04-10T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 42,
+  "mseed": "CX.PSGCX.HHZ.d42.mseed",
+  "mseed_bytes": 7070208,
+  "mseed_sha256": "fd765c0fc2e3e9ad31753f58ea0f09576574a498044ef1cb8218b2c9d7472e95",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d42.000.npy",
+    "start": "2025-04-11T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 43,
+  "mseed": "CX.PB01.HHZ.d43.mseed",
+  "mseed_bytes": 7336448,
+  "mseed_sha256": "7b211535e00612add92943491813be4516c41ed6e1f8e83144038b382a5c992d",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d43.000.npy",
+    "start": "2025-04-11T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 43,
+  "mseed": "CX.PB02.HHZ.d43.mseed",
+  "mseed_bytes": 8241664,
+  "mseed_sha256": "f39a8f8372626ba11c4a6307738db758e0f51931a9668ed66d0dfadd408473f1",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d43.000.npy",
+    "start": "2025-04-11T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 43,
+  "mseed": "CX.PB06.HHZ.d43.mseed",
+  "mseed_bytes": 7808000,
+  "mseed_sha256": "368ff4972b49cdf1714165835fbf79bda86ef528347d75ef4225717c8e2bdd19",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d43.000.npy",
+    "start": "2025-04-11T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 43,
+  "mseed": "CX.PSGCX.HHZ.d43.mseed",
+  "mseed_bytes": 6895616,
+  "mseed_sha256": "25acf3c979fd93d6cbb1167f3c54d046e0c6ecd9b791582f26ecc418f08a015a",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d43.000.npy",
+    "start": "2025-04-12T00:00:00.000001Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 44,
+  "mseed": "CX.PB01.HHZ.d44.mseed",
+  "mseed_bytes": 7351808,
+  "mseed_sha256": "72dbe5d28a2a5a8fa562036c5deefe33c1730a554dc35274e7010f99340f86a7",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d44.000.npy",
+    "start": "2025-04-12T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 44,
+  "mseed": "CX.PB02.HHZ.d44.mseed",
+  "mseed_bytes": 8525824,
+  "mseed_sha256": "145f8cba97d9d77e1d6e778b604c0abcb00aab86ab70e6d33fe569c08c100ef1",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d44.000.npy",
+    "start": "2025-04-12T23:59:59.998394Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 44,
+  "mseed": "CX.PB06.HHZ.d44.mseed",
+  "mseed_bytes": 7766016,
+  "mseed_sha256": "4571a60e270faa99b9ce29d3ea7bc591b398530b9adbb8a7a782238fb2290197",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d44.000.npy",
+    "start": "2025-04-12T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 44,
+  "mseed": "CX.PSGCX.HHZ.d44.mseed",
+  "mseed_bytes": 6946304,
+  "mseed_sha256": "5ff459841e85557a4f1f01e29c5e815fdd7da0856cbf17200e1ed9b6fe249005",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d44.000.npy",
+    "start": "2025-04-13T00:00:00.000001Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 45,
+  "mseed": "CX.PB01.HHZ.d45.mseed",
+  "mseed_bytes": 7284736,
+  "mseed_sha256": "aa49c5468dfae1ed7c3bd9bb05498b772ea480c55f0f7c02c4b0e75fff51888b",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d45.000.npy",
+    "start": "2025-04-13T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 45,
+  "mseed": "CX.PB02.HHZ.d45.mseed",
+  "mseed_bytes": 8552448,
+  "mseed_sha256": "bfa0635837e01b51593c5b9a7e0d3881a23b1ad8ae9f8576a7a2c41bc9741171",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d45.000.npy",
+    "start": "2025-04-13T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 45,
+  "mseed": "CX.PB06.HHZ.d45.mseed",
+  "mseed_bytes": 7670272,
+  "mseed_sha256": "fd6edc03e3fb206442dca58e6cdbcba51b42545241dd3b7eaff482d91a617683",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d45.000.npy",
+    "start": "2025-04-13T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 45,
+  "mseed": "CX.PSGCX.HHZ.d45.mseed",
+  "mseed_bytes": 6870016,
+  "mseed_sha256": "5e00bbbe72ece2c70b8e1b783fa86e7931a6b632ee3e564bd0493a1406a28b37",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d45.000.npy",
+    "start": "2025-04-14T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 46,
+  "mseed": "CX.PB01.HHZ.d46.mseed",
+  "mseed_bytes": 7208960,
+  "mseed_sha256": "5bd86821604225183a90ae503bfecf5bcfcb705170f612af002bcd3e94290bf5",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d46.000.npy",
+    "start": "2025-04-14T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 46,
+  "mseed": "CX.PB02.HHZ.d46.mseed",
+  "mseed_bytes": 7928320,
+  "mseed_sha256": "2c9c6646337d74a5b56f0f748e2f72a1051fb431ea68c239a9ad8e748ffcbcec",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d46.000.npy",
+    "start": "2025-04-14T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 46,
+  "mseed": "CX.PB06.HHZ.d46.mseed",
+  "mseed_bytes": 7589376,
+  "mseed_sha256": "adb3ba9c5df640f1a3ea57e7daf841128a2d8a3b6978b3280590bf688cb832d0",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d46.000.npy",
+    "start": "2025-04-14T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 46,
+  "mseed": "CX.PSGCX.HHZ.d46.mseed",
+  "mseed_bytes": 6790144,
+  "mseed_sha256": "70d83f0c2c937e09b17a65721331bbfc3342394d121cfceffac8f7378b5a0dc7",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d46.000.npy",
+    "start": "2025-04-15T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 47,
+  "mseed": "CX.PB01.HHZ.d47.mseed",
+  "mseed_bytes": 7204864,
+  "mseed_sha256": "0a7a69a412602a41ddaf6f94301c21cdba4cd83b28f4d33c32c713fefafee750",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d47.000.npy",
+    "start": "2025-04-15T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 47,
+  "mseed": "CX.PB02.HHZ.d47.mseed",
+  "mseed_bytes": 8243200,
+  "mseed_sha256": "9ba5970d26c01d36a408a45201230f0a37a7cf57c6fab109d0df2e72d61b7595",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d47.000.npy",
+    "start": "2025-04-15T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 47,
+  "mseed": "CX.PB06.HHZ.d47.mseed",
+  "mseed_bytes": 7618560,
+  "mseed_sha256": "4bd0d17686138d131b7481bb176301f0362a91e1e0ad7ca8490d4d5c16ab73e7",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d47.000.npy",
+    "start": "2025-04-15T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 47,
+  "mseed": "CX.PSGCX.HHZ.d47.mseed",
+  "mseed_bytes": 6753792,
+  "mseed_sha256": "20d8b4cc1626507cfbff13d2852f4a71449880779258451dc9d2061e76fd016e",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d47.000.npy",
+    "start": "2025-04-16T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 48,
+  "mseed": "CX.PB01.HHZ.d48.mseed",
+  "mseed_bytes": 7139328,
+  "mseed_sha256": "0485567528c7df318c3f664161dccb30307e172234d8ebfc02c97db15a78eee6",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d48.000.npy",
+    "start": "2025-04-16T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 48,
+  "mseed": "CX.PB02.HHZ.d48.mseed",
+  "mseed_bytes": 8131072,
+  "mseed_sha256": "798cd800b3ba7295184d35469a32330bb0bf390253f65d19718fdce989037ede",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d48.000.npy",
+    "start": "2025-04-16T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 48,
+  "mseed": "CX.PB06.HHZ.d48.mseed",
+  "mseed_bytes": 7595520,
+  "mseed_sha256": "e98d1679b98fa94b6db99c175e121dd19f0fc8e7cf07b7e0c7f8f24a525a0195",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d48.000.npy",
+    "start": "2025-04-16T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 48,
+  "mseed": "CX.PSGCX.HHZ.d48.mseed",
+  "mseed_bytes": 6726144,
+  "mseed_sha256": "cc6cf8474e0aa88f507f69501e6e465dbe768f6d0cadbdf00303cadcfd8d0ce0",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d48.000.npy",
+    "start": "2025-04-17T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 49,
+  "mseed": "CX.PB01.HHZ.d49.mseed",
+  "mseed_bytes": 7202304,
+  "mseed_sha256": "4298b84f41f46bc38310654aab514ffa0ae591875e09ca98365972dc4b1bb6db",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d49.000.npy",
+    "start": "2025-04-17T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 49,
+  "mseed": "CX.PB02.HHZ.d49.mseed",
+  "mseed_bytes": 8076800,
+  "mseed_sha256": "2028b6e8704beff7e54d144990d3280081df6e07bc4e4ade6fcb5230d5cbf4ff",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d49.000.npy",
+    "start": "2025-04-17T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 49,
+  "mseed": "CX.PB06.HHZ.d49.mseed",
+  "mseed_bytes": 7639552,
+  "mseed_sha256": "c8b32079b010ae557607f01e9de47cfcc2541777b65b56b93f99a6a6074c833c",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d49.000.npy",
+    "start": "2025-04-17T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 49,
+  "mseed": "CX.PSGCX.HHZ.d49.mseed",
+  "mseed_bytes": 6765056,
+  "mseed_sha256": "cef32774604edc22beafc5aa4da33c9281d09abf7651a78e8807d5ae35278eeb",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d49.000.npy",
+    "start": "2025-04-18T00:00:00.000001Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 50,
+  "mseed": "CX.PB01.HHZ.d50.mseed",
+  "mseed_bytes": 7237632,
+  "mseed_sha256": "22421435785f4d6f60d9e62ec74a28a178abb9e243dc5b59df6a2fabd179a644",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d50.000.npy",
+    "start": "2025-04-18T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 50,
+  "mseed": "CX.PB02.HHZ.d50.mseed",
+  "mseed_bytes": 7996416,
+  "mseed_sha256": "f5063f47f15b2dd531d226c6c3b40c76d176705fe28df9d9524834c2db174ff0",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d50.000.npy",
+    "start": "2025-04-18T23:59:59.998391Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 50,
+  "mseed": "CX.PB06.HHZ.d50.mseed",
+  "mseed_bytes": 7631872,
+  "mseed_sha256": "a096068214b806a8e59c47c2d5ceab9bbcb8bf8008d1126db7c8ef541a4c2e7f",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d50.000.npy",
+    "start": "2025-04-18T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 50,
+  "mseed": "CX.PSGCX.HHZ.d50.mseed",
+  "mseed_bytes": 6758912,
+  "mseed_sha256": "76876d357d56030e259c2e6527ebcdda4141b0e473308b308489b8720308f8cb",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d50.000.npy",
+    "start": "2025-04-19T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 51,
+  "mseed": "CX.PB01.HHZ.d51.mseed",
+  "mseed_bytes": 7185408,
+  "mseed_sha256": "7d8c675f9632aaa1577439e31819bad6ab5c04cfe96b701b39c85c1af5b73083",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d51.000.npy",
+    "start": "2025-04-19T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 51,
+  "mseed": "CX.PB02.HHZ.d51.mseed",
+  "mseed_bytes": 7824384,
+  "mseed_sha256": "55e9ae84c2dcbacc2ce029922701f31385dc3c3a6b7e72409ee3683dc83c4881",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d51.000.npy",
+    "start": "2025-04-19T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 51,
+  "mseed": "CX.PB06.HHZ.d51.mseed",
+  "mseed_bytes": 7491584,
+  "mseed_sha256": "a6bd787736416bf87852febe65ffe8789190b307c71f66715127665d002cab13",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d51.000.npy",
+    "start": "2025-04-19T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 51,
+  "mseed": "CX.PSGCX.HHZ.d51.mseed",
+  "mseed_bytes": 6741504,
+  "mseed_sha256": "b0abc7c8abbfbe1cc1cb0ec5c8e9fd98023e796317b1f1028c0e702378e041b3",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d51.000.npy",
+    "start": "2025-04-20T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 52,
+  "mseed": "CX.PB01.HHZ.d52.mseed",
+  "mseed_bytes": 7244800,
+  "mseed_sha256": "50cd238b40218cf522f66891a752c1d5c8a62509d5913c53e600a2160affded4",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d52.000.npy",
+    "start": "2025-04-20T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 52,
+  "mseed": "CX.PB02.HHZ.d52.mseed",
+  "mseed_bytes": 8429056,
+  "mseed_sha256": "7ffb1c04610d238ba4d8f9dfa3d3b0dd448ef8acea103e2ef86a4cdaad482e00",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d52.000.npy",
+    "start": "2025-04-20T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 52,
+  "mseed": "CX.PB06.HHZ.d52.mseed",
+  "mseed_bytes": 7648256,
+  "mseed_sha256": "c2da16b61f5d6dbab8a01ae10a5b5f7845eb5db781e6786daf179f02a5c9ca88",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d52.000.npy",
+    "start": "2025-04-20T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 52,
+  "mseed": "CX.PSGCX.HHZ.d52.mseed",
+  "mseed_bytes": 6782464,
+  "mseed_sha256": "55dae45490bbfdd7100662865b5a2d612dc9bb6ec5b74daca5b3efc972e8119f",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d52.000.npy",
+    "start": "2025-04-21T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 53,
+  "mseed": "CX.PB01.HHZ.d53.mseed",
+  "mseed_bytes": 6244352,
+  "mseed_sha256": "8aa9a81e74ea4b5c38658ed4bb8b2820ea2d0c8d32408263a5d5b3f8449729da",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d53.000.npy",
+    "start": "2025-04-21T23:59:59.998393Z",
+    "samples": 2307597,
+    "rate": 100.0
+   },
+   {
+    "file": "CX.PB01.HHZ.d53.001.npy",
+    "start": "2025-04-22T09:46:07.968393Z",
+    "samples": 155600,
+    "rate": 100.0
+   },
+   {
+    "file": "CX.PB01.HHZ.d53.002.npy",
+    "start": "2025-04-22T10:12:59.968393Z",
+    "samples": 4962003,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 53,
+  "mseed": "CX.PB02.HHZ.d53.mseed",
+  "mseed_bytes": 8054272,
+  "mseed_sha256": "e7a47e92fd0a58c85bf929d6d46f48a8306b5cd81be038992345efbce208b087",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d53.000.npy",
+    "start": "2025-04-21T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 53,
+  "mseed": "CX.PB06.HHZ.d53.mseed",
+  "mseed_bytes": 7650816,
+  "mseed_sha256": "2775ea3337ae4359c0df51a69a4e936b15f2850c9fe99588d72be4c8da6ea037",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d53.000.npy",
+    "start": "2025-04-21T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 53,
+  "mseed": "CX.PSGCX.HHZ.d53.mseed",
+  "mseed_bytes": 6759936,
+  "mseed_sha256": "10645d4d95f3df19bb1e8c35f94839f54693771014a7cdc61817bdf305f6ebc9",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d53.000.npy",
+    "start": "2025-04-22T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 54,
+  "mseed": "CX.PB01.HHZ.d54.mseed",
+  "mseed_bytes": 7220224,
+  "mseed_sha256": "33e3c3bdaf83f3456968f9d83f04495c85494d8baf83fa452d48373a38ec79fe",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d54.000.npy",
+    "start": "2025-04-22T23:59:59.998393Z",
+    "samples": 3500997,
+    "rate": 100.0
+   },
+   {
+    "file": "CX.PB01.HHZ.d54.001.npy",
+    "start": "2025-04-23T09:54:33.968393Z",
+    "samples": 5072603,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 54,
+  "mseed": "CX.PB02.HHZ.d54.mseed",
+  "mseed_bytes": 8068096,
+  "mseed_sha256": "33b5dcdf5fab455f0886ae791c59ba50ab1c52f9f9395829981832ff3674551a",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d54.000.npy",
+    "start": "2025-04-22T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 54,
+  "mseed": "CX.PB06.HHZ.d54.mseed",
+  "mseed_bytes": 7714304,
+  "mseed_sha256": "0c422a4ebd79814dae4ace39e535ca963763b2a6b256cae551cdbbefde5e6d39",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d54.000.npy",
+    "start": "2025-04-22T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 54,
+  "mseed": "CX.PSGCX.HHZ.d54.mseed",
+  "mseed_bytes": 6816768,
+  "mseed_sha256": "bcf663b0ed06dfe4826b6c1f2515aaa5b39efc16443cb6da9f3bfd7b9254982c",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d54.000.npy",
+    "start": "2025-04-23T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 55,
+  "mseed": "CX.PB01.HHZ.d55.mseed",
+  "mseed_bytes": 7234560,
+  "mseed_sha256": "20fbb46e3f855608ffcebe620c10dbd0d12db82b57ec2692e105d764b72afbe7",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d55.000.npy",
+    "start": "2025-04-23T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 55,
+  "mseed": "CX.PB02.HHZ.d55.mseed",
+  "mseed_bytes": 7917056,
+  "mseed_sha256": "af1776b1defdfa01f8f5b5769d033dc6569ffc9384c0bffb03380e7d957b60bf",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d55.000.npy",
+    "start": "2025-04-23T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 55,
+  "mseed": "CX.PB06.HHZ.d55.mseed",
+  "mseed_bytes": 5991936,
+  "mseed_sha256": "1bbd5fed0fc785fb47f2e2ec434cae5df3f3e6d5cdecda71517aa87b01770332",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d55.000.npy",
+    "start": "2025-04-23T23:59:59.998393Z",
+    "samples": 2683997,
+    "rate": 100.0
+   },
+   {
+    "file": "CX.PB06.HHZ.d55.001.npy",
+    "start": "2025-04-24T12:39:48.968394Z",
+    "samples": 4081103,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 55,
+  "mseed": "CX.PSGCX.HHZ.d55.mseed",
+  "mseed_bytes": 6835200,
+  "mseed_sha256": "f3630c214ce101801db29ad5cad3e875f07480a049f4c3a55818227eec0ea142",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d55.000.npy",
+    "start": "2025-04-24T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 56,
+  "mseed": "CX.PB01.HHZ.d56.mseed",
+  "mseed_bytes": 7403520,
+  "mseed_sha256": "1f3f981ed35f2ec9184fc7f1490a14a35297fd91a51681311638433157d108f4",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d56.000.npy",
+    "start": "2025-04-24T23:59:59.998394Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 56,
+  "mseed": "CX.PB02.HHZ.d56.mseed",
+  "mseed_bytes": 8473600,
+  "mseed_sha256": "ba77734ee4de281300dbf349079193c0d55d905988ab905cc2f072ae497c609c",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d56.000.npy",
+    "start": "2025-04-24T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 56,
+  "mseed": "CX.PB06.HHZ.d56.mseed",
+  "mseed_bytes": 7768576,
+  "mseed_sha256": "3024fd911e5a0f37dd3681b7ea723494d29507142742c1fbf0d43d612c8d4516",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d56.000.npy",
+    "start": "2025-04-24T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 56,
+  "mseed": "CX.PSGCX.HHZ.d56.mseed",
+  "mseed_bytes": 6983680,
+  "mseed_sha256": "2210760239930797be406d2f280508b5ba70199f56c6f4dcc3705efc721af369",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d56.000.npy",
+    "start": "2025-04-24T23:59:59.999998Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 57,
+  "mseed": "CX.PB01.HHZ.d57.mseed",
+  "mseed_bytes": 7444480,
+  "mseed_sha256": "b3bd57a2e1666f0cdadedc15f76bd7abd5c257d4549c82bfbf47b1fe9f2fa393",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d57.000.npy",
+    "start": "2025-04-25T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 57,
+  "mseed": "CX.PB02.HHZ.d57.mseed",
+  "mseed_bytes": 8465920,
+  "mseed_sha256": "d1308388f5ec5c8ca0a28d65e0da95505adc7fd1c02c67f9ad221a86246ec005",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d57.000.npy",
+    "start": "2025-04-25T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 57,
+  "mseed": "CX.PB06.HHZ.d57.mseed",
+  "mseed_bytes": 7792640,
+  "mseed_sha256": "60141fdd368305e668bacb56a489540e5194cccdbdd4dd5867fd50f38549ec91",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d57.000.npy",
+    "start": "2025-04-25T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 57,
+  "mseed": "CX.PSGCX.HHZ.d57.mseed",
+  "mseed_bytes": 7009280,
+  "mseed_sha256": "80621bc39899254f4d606730a3dff542549aa01d0ba1835c5d3b0a1e34723a43",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d57.000.npy",
+    "start": "2025-04-26T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 58,
+  "mseed": "CX.PB01.HHZ.d58.mseed",
+  "mseed_bytes": 7426560,
+  "mseed_sha256": "e6e66b9ce66c61cb3eab1c68e9f33d27a5e48334836f33d78bb501d475d56c5b",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d58.000.npy",
+    "start": "2025-04-26T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 58,
+  "mseed": "CX.PB02.HHZ.d58.mseed",
+  "mseed_bytes": 8305664,
+  "mseed_sha256": "c4d80aa53df133c809db584522d25316a2b96bf5961a1a00797424295783ba55",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d58.000.npy",
+    "start": "2025-04-26T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 58,
+  "mseed": "CX.PB06.HHZ.d58.mseed",
+  "mseed_bytes": 7800320,
+  "mseed_sha256": "fa3d82742858d6a8ab0289507bbc3f2d0454c350e59ef28fb5971c81febb3230",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d58.000.npy",
+    "start": "2025-04-26T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 58,
+  "mseed": "CX.PSGCX.HHZ.d58.mseed",
+  "mseed_bytes": 6989312,
+  "mseed_sha256": "31ef25a446c9e4da0c63f6a786881da61fe24f98796b12e1695f058a24662215",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d58.000.npy",
+    "start": "2025-04-27T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 59,
+  "mseed": "CX.PB01.HHZ.d59.mseed",
+  "mseed_bytes": 7450624,
+  "mseed_sha256": "721b02a1e51d131e1e4ad7dcec2130f7175958a3787808b6fdbb0b65ddd7f341",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d59.000.npy",
+    "start": "2025-04-27T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 59,
+  "mseed": "CX.PB02.HHZ.d59.mseed",
+  "mseed_bytes": 8342528,
+  "mseed_sha256": "270503607f3e804f0b4206cef9d3a5481a2ed20c088d267962126815be4d5d9e",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d59.000.npy",
+    "start": "2025-04-27T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 59,
+  "mseed": "CX.PB06.HHZ.d59.mseed",
+  "mseed_bytes": 7832576,
+  "mseed_sha256": "5f776923d3e5cda912f4c7deda283d0acc44c19477ad1f1ab50b68a5b7e83123",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d59.000.npy",
+    "start": "2025-04-27T23:59:59.998394Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 59,
+  "mseed": "CX.PSGCX.HHZ.d59.mseed",
+  "mseed_bytes": 6995968,
+  "mseed_sha256": "a34b3cdf341cc670d81f854876c5baa2d369b333637e7769f16158dafbcbac26",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d59.000.npy",
+    "start": "2025-04-28T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 60,
+  "mseed": "CX.PB01.HHZ.d60.mseed",
+  "mseed_bytes": 7496192,
+  "mseed_sha256": "0cb7edae347d104f4b5ac2f90c93b7913ef12e50b586a2c0dc2c1caae19ce66d",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d60.000.npy",
+    "start": "2025-04-28T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 60,
+  "mseed": "CX.PB02.HHZ.d60.mseed",
+  "mseed_bytes": 8536064,
+  "mseed_sha256": "416c296c4ab1856459cf4cb09d77cb2c0f243237969665deec42771dbf6b8a46",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d60.000.npy",
+    "start": "2025-04-28T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 60,
+  "mseed": "CX.PB06.HHZ.d60.mseed",
+  "mseed_bytes": 7895552,
+  "mseed_sha256": "b086790625b4e9e744300aaef877a59fe579bb44fc262c6e9a59781ac3154f33",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d60.000.npy",
+    "start": "2025-04-28T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 60,
+  "mseed": "CX.PSGCX.HHZ.d60.mseed",
+  "mseed_bytes": 6989312,
+  "mseed_sha256": "d19b02f3cad49a18b80c8211da979e3f895d5e410bb0aa1b3d648ede4ed72e47",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d60.000.npy",
+    "start": "2025-04-29T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB01",
+  "day": 61,
+  "mseed": "CX.PB01.HHZ.d61.mseed",
+  "mseed_bytes": 7461888,
+  "mseed_sha256": "f50c6c5861638ae3bdc49b049a11c28cce6160217c82d3241a194b763f942e71",
+  "segments": [
+   {
+    "file": "CX.PB01.HHZ.d61.000.npy",
+    "start": "2025-04-29T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB02",
+  "day": 61,
+  "mseed": "CX.PB02.HHZ.d61.mseed",
+  "mseed_bytes": 8503296,
+  "mseed_sha256": "8461b207432b7264b8daae7f117a4cc3ad69f74a6089ae2afd7a610a4807be90",
+  "segments": [
+   {
+    "file": "CX.PB02.HHZ.d61.000.npy",
+    "start": "2025-04-29T23:59:59.998393Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PB06",
+  "day": 61,
+  "mseed": "CX.PB06.HHZ.d61.mseed",
+  "mseed_bytes": 7851520,
+  "mseed_sha256": "311186df1d55fdb2fc86e977a7f6f2369899e8891dc523e7bde9533d824a7ff2",
+  "segments": [
+   {
+    "file": "CX.PB06.HHZ.d61.000.npy",
+    "start": "2025-04-29T23:59:59.998394Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ },
+ {
+  "station": "PSGCX",
+  "day": 61,
+  "mseed": "CX.PSGCX.HHZ.d61.mseed",
+  "mseed_bytes": 6980608,
+  "mseed_sha256": "6341d653c48c4d7f3e3c5711ce4620ee6527ec7ab89daa03d59cbdcd65838113",
+  "segments": [
+   {
+    "file": "CX.PSGCX.HHZ.d61.000.npy",
+    "start": "2025-04-30T00:00:00.000000Z",
+    "samples": 8640000,
+    "rate": 100.0
+   }
+  ]
+ }
+]
