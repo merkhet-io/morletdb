@@ -12,5 +12,6 @@ notebook-output/
 .ipynb_checkpoints/
 
 .venv-seismic/
+.venv-paper/
 
 .venv-research/

@@ -1,0 +1,24 @@
+name: paper-numbers
+# Fails when the report's generated numbers or tables are stale relative to the stored results.
+# Standard library only; runs no benchmark and needs no database.
+on:
+  pull_request:
+    paths: ["research/paper/**", "evaluation/consolidated/**", ".github/workflows/paper-numbers.yml"]
+  push:
+    branches: [main]
+    paths: ["research/paper/**", "evaluation/consolidated/**"]
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generated numbers, tables and README block are up to date
+        run: python3 research/paper/gen_numbers.py --check
+      - name: Result distribution file is up to date
+        run: |
+          python3 evaluation/consolidated/e1_distribution.py evaluation/consolidated/results >/dev/null
+          git diff --exit-code -- evaluation/consolidated/results/e1_distribution.json

@@ -1,0 +1,59 @@
+{
+ "rule": "SELECTION.md",
+ "source": "evaluation/consolidated/results/e1_heldout.json",
+ "cases": [
+  {
+   "case": "A: zero-lag misses, probes find",
+   "query": {
+    "recording_id": "PB18.d01.0",
+    "start": 1800192,
+    "end": 1804288,
+    "type": "random"
+   },
+   "recall": {
+    "PR": 1.0,
+    "Z-1000": 0.1,
+    "PX-13": 1.0
+   },
+   "item": {
+    "recording_id": "PB05.d09.0",
+    "start": 3147776,
+    "end": 3151872,
+    "exact_rank": 3,
+    "best_lag_values": 30,
+    "returned_by": [
+     "PR",
+     "PX-13"
+    ],
+    "distance": 0.14713016892721875,
+    "best_lag_samples": 300
+   }
+  },
+  {
+   "case": "B: probes miss",
+   "query": {
+    "recording_id": "PB18.d01.0",
+    "start": 3534848,
+    "end": 3538944,
+    "type": "energetic"
+   },
+   "recall": {
+    "PR": 0.7,
+    "Z-1000": 0.5,
+    "PX-13": 1.0
+   },
+   "item": {
+    "recording_id": "PB18.d02.0",
+    "start": 4870144,
+    "end": 4874240,
+    "exact_rank": 3,
+    "best_lag_values": 25,
+    "returned_by": [
+     "PX-13"
+    ],
+    "distance": 0.4729585731704852,
+    "best_lag_samples": 250
+   }
+  }
+ ]
+}
