@@ -1,12 +1,13 @@
 name: paper-numbers
-# Fails when the report's generated numbers or tables are stale relative to the stored results.
+# Fails when the report's generated numbers or tables are stale relative to the stored results, or when the
+# website copies of the report PDFs differ from the canonical ones in research/paper/.
 # Standard library only; runs no benchmark and needs no database.
 on:
   pull_request:
-    paths: ["research/paper/**", "evaluation/consolidated/**", ".github/workflows/paper-numbers.yml"]
+    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", ".github/workflows/paper-numbers.yml"]
   push:
     branches: [main]
-    paths: ["research/paper/**", "evaluation/consolidated/**"]
+    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf"]
 jobs:
   check:
     runs-on: ubuntu-24.04
@@ -22,3 +23,5 @@ jobs:
         run: |
           python3 evaluation/consolidated/e1_distribution.py evaluation/consolidated/results >/dev/null
           git diff --exit-code -- evaluation/consolidated/results/e1_distribution.json
+      - name: Website PDFs are byte-identical to the report PDFs
+        run: research/paper/sync_site.sh --check
