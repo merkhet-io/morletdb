@@ -99,3 +99,14 @@ or stop.
    the CPU parser; writers and clients started for a few seconds and were stopped. Their few
    seconds of live data stay in the live recordings, and the next run resumes from the stored
    checkpoints.
+
+## Amendment 1 — pilot configuration (after C3, before C2p)
+
+C2 wrote 13.8 GB of WAL for 0.76 GB of growth with the server's defaults: `shared_buffers`
+128 MB (the probe index alone is 1.2 GB), `max_wal_size` 1 GB, `checkpoint_timeout` 5 min,
+`wal_compression` off. **C2p** repeats C2 unchanged (15 min, target rate, same clients) with a
+pilot configuration: `shared_buffers` 8 GB, `max_wal_size` 16 GB, `checkpoint_timeout` 15 min,
+`wal_compression` on (pglz; this build has no lz4/zstd). The four settings change together,
+so C2p shows whether a sensible configuration makes WAL manageable, not which setting matters.
+**C4** (2 h at the target rate, same configuration) runs if C2p passes C2's criteria. Criteria
+and abort rules are unchanged. The server's defaults are restored afterwards.
