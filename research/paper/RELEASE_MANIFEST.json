@@ -8,17 +8,17 @@
  "measured_commit_scope": "E1 consolidated comparison and diagnostics D1-D2; earlier studies used earlier implementation states (STUDIES.md)",
  "measured_library_sha256": "3c786684421f3132e7a97b5ff38801e802948bf3e014aaae656b16bb109de7b7",
  "sources_first_merged": "cdf8b4b",
- "proposed_tag": "paper-v0.11",
- "tag_created": false,
+ "tag": "paper-v0.11",
+ "funding": "none",
  "licence": {
   "code": "Apache-2.0",
-  "report_text_and_figures": "not chosen; CC BY 4.0 proposed (LICENSE-REPORT-PROPOSAL.md)"
+  "report_text_and_figures": "CC-BY-4.0 (LICENSE.md)"
  },
- "report_source_commit": "779b1f254c46b4082b390d05b5921f80cf5a4e79",
+ "report_source_commit": "31ec6f23a3b62d16e8f91ad01bfd189c6e301115",
  "pdf_sha256": {
-  "research/paper/morletdb.pdf": "511cfebdb6a35a6e19c73c20a033af170cc23a468231107d1a75a31082c5da95",
-  "research/paper/supplement.pdf": "62506b785702cbd53770270bf2116874038cbf55a2b83f0b6e55809e684d067d",
-  "docs/morletdb.pdf": "511cfebdb6a35a6e19c73c20a033af170cc23a468231107d1a75a31082c5da95",
-  "docs/morletdb-supplement.pdf": "62506b785702cbd53770270bf2116874038cbf55a2b83f0b6e55809e684d067d"
+  "research/paper/morletdb.pdf": "67cf78f6fbac25435bcaa8ee866539e75b6cae4226e1f6630389961fd54cfb21",
+  "research/paper/supplement.pdf": "a3e09fae9e671ca2ac110a4860370d9565609dd63fed974eb63ff84be84a742e",
+  "docs/morletdb.pdf": "67cf78f6fbac25435bcaa8ee866539e75b6cae4226e1f6630389961fd54cfb21",
+  "docs/morletdb-supplement.pdf": "a3e09fae9e671ca2ac110a4860370d9565609dd63fed974eb63ff84be84a742e"
  }
 }
