@@ -9,7 +9,7 @@ during the runs, mostly E1 itself); warm caches; one client. 100 queries per dat
 200 timings per arm. Results: `results/e1_dev.json`, `results/e1_heldout.json`.
 
 **Verdict: H1 and H2 hold on both databases.** No arm returned fewer than 10 rows; round 2 returned
-the same lists as round 1 for every arm and query; EX-2 and EX-8 returned identical lists.
+the same lists as round 1 for every arm and query (same index, no rebuild in between); EX-2 and EX-8 returned identical lists. A rebuilt HNSW index can return different candidates.
 
 ## Main table (held-out, 234,622 windows)
 
@@ -67,9 +67,9 @@ the initial load. Exact and probe arms searched the same complete, unchanging se
 | product probes (HNSW) | 0.998 | 0.977 |
 | zero-lag exact, same count as PX-13 (EZ) | 0.681 | 0.613 |
 
-- **Grid sparsity** (spacing 5) cost at most 0.001; spacing 10 cost 0.013–0.014.
+- **Grid sparsity** (spacing 5): exact grid candidates recovered 99.9% of held-out reference intervals (one of 1,000 missed, rank 9 of a high-energy query; the product result misses it too) and 100% on dev; spacing 10 recovered 98.6–98.7%.
 - **Probe quantization** to float16 cost nothing measurable (PQ-13 = PX-13).
-- **Index approximation** cost 0.002 (dev) and 0.022 (held-out). All six hardest held-out queries
+- **Approximate candidate selection** (HNSW) reduced recall from 0.999 to 0.977 on held-out data (1.000 to 0.998 on dev): most of the observed loss, with one held-out interval already missed by the grid. All six hardest held-out queries
   (recall 0.7–0.9) are high-energy windows of station PB18; for each, PX-13 and PQ-13 reach 1.0.
 - **Zero-lag candidates** recovered 0.99 of items whose best lag is within ±5, 0.57–0.84 at 6–15 and
   0.00–0.10 beyond 15; probes recovered 0.973–1.0 in every band.

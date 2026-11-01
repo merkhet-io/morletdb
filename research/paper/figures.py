@@ -41,7 +41,7 @@ def storage():
     ax.grid(axis="x", color=GRID, lw=0.5)
     ax.tick_params(axis="y", length=0)
     ax.legend(loc="upper center", bbox_to_anchor=(0.42, -0.25), ncol=2, handletextpad=0.2, columnspacing=1.0)
-    fig.savefig(OUT / "storage.pdf", bbox_inches="tight")
+    fig.savefig(OUT / "storage.pdf", bbox_inches="tight", metadata={"CreationDate": None})
 
 
 def scaling():
@@ -85,7 +85,7 @@ def scaling():
     fig.legend(h1 + h2, l1 + l2, loc="upper center", bbox_to_anchor=(0.5, -0.02), ncol=2, fontsize=6.3,
                handletextpad=0.3, columnspacing=0.8)
     fig.tight_layout(w_pad=1.2)
-    fig.savefig(OUT / "scaling.pdf", bbox_inches="tight")
+    fig.savefig(OUT / "scaling.pdf", bbox_inches="tight", metadata={"CreationDate": None})
 
 
 def probes():
@@ -108,7 +108,7 @@ def probes():
     ax.set_ylim(0, 1.05)
     ax.grid(axis="y", color=GRID, lw=0.5)
     ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.32), ncol=2, fontsize=6.3, handlelength=1.2, columnspacing=0.8)
-    fig.savefig(OUT / "probes.pdf", bbox_inches="tight")
+    fig.savefig(OUT / "probes.pdf", bbox_inches="tight", metadata={"CreationDate": None})
 
 
 if __name__ == "__main__":

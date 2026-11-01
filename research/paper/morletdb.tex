@@ -7,17 +7,18 @@
 \DeclareUrlCommand\code{\urlstyle{tt}}
 \emergencystretch=1.5em
 \newcommand{\M}{MorletDB}
+\input{generated/numbers.tex}
 \lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,keepspaces=true,frame=tb,framerule=0.4pt,
   morekeywords={SELECT,FROM,WHERE,AS},keywordstyle=\bfseries,aboveskip=4pt,belowskip=4pt}
 
 \begin{document}
 \title{MorletDB: Recordings, Not Rows --- Lag-Tolerant Waveform Retrieval in PostgreSQL}
-\subtitle{Draft 0.9 (submission candidate) --- not for distribution}
+\subtitle{Technical report, version 0.10 (2026-11-01). Not peer reviewed.}
 \author{Zin Nam}
 \affiliation{\institution{}\country{}}
 
 \begin{abstract}
-Analysts of waveform archives look for intervals that resemble a query up to a small time shift, and then need the original samples of each hit. We define this as top-$k$ search under a bounded-lag cross-correlation scorer and ask how it can use a standard vector index while keeping the link to the recording, the semantics of filters and transactional updates. Zero-lag vector search ranks candidates by a different quantity: on 235,000 seismic windows a zero-lag shortlist of 1000 recovered 74\% of the scorer's top ten whether taken exactly or from an HNSW index, so the loss comes from the candidate metric, not from approximate search. Each lag term is an inner product with a zero-padded, shifted copy of the query; we send a sparse grid of shifted probes (13, spacing five lags, chosen empirically) to one unmodified inner-product HNSW index over unshifted stored vectors and re-rank the union with the unchanged scorer. Query-side shifting and multi-query candidate generation are known; we study their combination for this scorer inside PostgreSQL. In a consolidated comparison on one build, on seismic stations and a year held out from development, probe search recovered 97.7\% of the exact top ten (no query below 70\%) at a p95 latency of 57\,ms against 740\,ms for the fastest exact path; zero-lag candidates from the same index recovered 64--66\%. In this configuration, controls show no measurable additional loss from the sparse grid or from float16 probes; the residual loss comes from approximate candidate selection. \M{}, a PostgreSQL extension, returns hits as sample intervals of losslessly stored recordings, with one search contract for the exact and the approximate path. The price: the probe table and index add 0.97--1.34$\times$ the raw storage; selective filters require routing small galleries to exact search, and filters that exclude a query's neighbourhood slow probe search down; and maintaining the index at commit multiplied write-ahead logging unless checkpoint settings changed. All retrieval results are for seismic recordings.
+Analysts of waveform archives look for intervals that resemble a query up to a small time shift, and then need the original samples of each hit. We define this as top-$k$ search under a bounded-lag cross-correlation scorer and ask how it can use a standard vector index while keeping the link to the recording, the semantics of filters and transactional updates. Zero-lag vector search ranks candidates by a different quantity: on 235,000 seismic windows a zero-lag shortlist of 1000 recovered 74\% of the scorer's top ten whether taken exactly or from an HNSW index, so the loss comes from the candidate metric, not from approximate search. Each lag term is an inner product with a zero-padded, shifted copy of the query; we send a sparse grid of shifted probes (13, spacing five lags, chosen empirically) to one unmodified inner-product HNSW index over unshifted stored vectors and re-rank the union with the unchanged scorer. Query-side shifting and multi-query candidate generation are known; we study their combination for this scorer inside PostgreSQL. In a consolidated comparison on one build, on seismic stations and a year held out from development, probe search recovered \EHoPctPR\% of the exact top ten (no query below \EHoMinPR) at a p95 latency of \EHoPninetyfivePR\,ms against \EHoPninetyfiveExact\,ms for the fastest exact path; zero-lag candidates from the same index recovered \EHoRecallZsix--\EHoRecallZthousand. Exact candidates on the sparse grid recovered 99.9\%, float16 probes added no further observed loss, and approximate candidate selection accounted for most of the loss. \M{}, a PostgreSQL extension, returns hits as sample intervals of losslessly stored recordings, with one search contract for the exact and the approximate path. The price: the probe table and index add 0.97--1.34$\times$ the raw storage; selective filters require routing small galleries to exact search, and filters that exclude a query's neighbourhood slow probe search down; and maintaining the index at commit wrote 18 times as much write-ahead log as the database grew with default settings, and 2.9 times at a second operating point where four settings and the background load differed. All retrieval results are for seismic recordings.
 \end{abstract}
 \maketitle
 
@@ -36,6 +37,8 @@ Our argument has six steps. (1)~Waveform investigations need intervals similar u
 \item \textbf{A recording-oriented integration in PostgreSQL:} results are sample intervals of losslessly stored recordings; search representations and their index rows are maintained in the append transaction; eligibility filters and row-level security apply to both paths; a router chooses exact or probe search by the number of eligible windows (Section~\ref{sec:system}).
 \item \textbf{A controlled evaluation of benefit and limits:} a diagnosis of why zero-lag shortlists fail, an ablation that separates lag-grid sparsity from approximate search, confirmation on held-out stations and year, and measured costs of filters, storage and index maintenance (Sections~\ref{sec:zerolag}--\ref{sec:maint}).
 \end{enumerate}
+\textbf{Findings in brief.} (1)~\emph{What works:} on held-out seismic data, shifted probes recovered \EHoPctPR\% of the bounded-lag top ten at a p95 latency of \EHoPninetyfivePR\,ms, against \EHoPninetyfiveExact\,ms for the fastest exact path (Table~\ref{tab:e1}). (2)~\emph{Why:} zero-lag candidates rank by a different quantity and miss most matches whose best lag exceeds $\pm5$ values, whether taken exactly or from HNSW (Figure~\ref{fig:scaling}); probes on a sparse lag grid cover them (Figure~\ref{fig:probes}, Table~\ref{tab:ablation}). (3)~\emph{Cost:} a probe table and index of about one times the raw data, 13 index passes per query, slower search under filters that exclude a query's neighbours, and write-ahead logging from index maintenance (Sections~\ref{sec:filters}--\ref{sec:maint}). (4)~\emph{Not shown:} other signal domains, diagnostic relevance, cold caches, and operation beyond 111 minutes (Section~\ref{sec:limits}).
+
 Section~\ref{sec:related} compares these with the closest prior work and states what we consider new. We do not claim a new similarity measure, a new index, lossless compression, or guarantees for probe search: probe search is approximate in the candidates it considers, and its recall is measured, not bounded. Recall in this paper is fidelity to the scorer, not relevance to a domain question, and all retrieval measurements use seismic recordings; condition monitoring motivated the work, but we show no diagnostic value for machines. Code, frozen protocols and raw results are public~\cite{repo}; a supplement reports storage, recovery and other studies not needed for the argument here.
 
 \section{Problem and search contract}\label{sec:problem}
@@ -169,40 +172,19 @@ BL1 chose the configuration on dev data: grids of 7 and 13 probes and budgets of
 \caption{E1, held-out data (234,622 windows, 100 queries, 200 timings per arm). Recall@10: mean / minimum / queries below 0.9.}
 \label{tab:e1}
 \small\setlength{\tabcolsep}{2.5pt}
-\begin{tabular}{@{}lccl@{}}
-\toprule
-Arm & Recall@10 & p50 / p95 ms & Work per query \\
-\midrule
-exact, 2 workers & 1 & 958 / 971 & score all windows \\
-exact, 8 allowed (3 used) & 1 & 728 / \textbf{740} & score all windows \\
-\textbf{probes (product)} & \textbf{0.977 / 0.7 / 5} & 39 / \textbf{57} & 13 scans, re-rank $\approx$350 \\
-zero-lag HNSW, 650 & 0.639 / 0.1 / 69 & 29 / 41 & 1 scan, re-rank 650 \\
-zero-lag HNSW, 1000 & 0.658 / 0.1 / 67 & 34 / 50 & 1 scan, re-rank 1000 \\
-\bottomrule
-\end{tabular}
+\input{generated/tab_e1.tex}
 \end{table}
 
-\textbf{Benefit.} On held-out data the product probe function recovered 97.7\% of the exact top ten at a p95 latency of 57\,ms against 740\,ms for the fastest exact path, a ratio of 13 between the p95 latencies (Table~\ref{tab:e1}); on dev data, 99.8\% at 53 against 783\,ms. Zero-lag candidates from the same index recovered 64--66\%, even with a larger re-rank budget. Equal candidate counts are not equal work: the 650-row zero-lag arm traverses the index once with a wide search list, the probe arm thirteen times with a narrow one. No arm returned fewer than ten rows, and repeated runs returned identical lists. Recall is the share of the exact ten that a result contains, averaged over queries; every exact reference had ten rows. Of the 100 held-out queries, 83 reached 1.0, 12 reached 0.9, four 0.8 and one 0.7; the 23 missed intervals (of 1,000) ranged from rank 1 to 10 in the exact list, three were the exact best match, and none was replaced by an overlapping window of the same recording. A recall of 0.7 thus means that three of the ten exact intervals are absent and lower-ranked admissible intervals take their place. The factor 13 is the ratio of the two arms' p95 latencies over 200 timings each; probe p95 was 58.5 and 49.7\,ms in the two rounds, exact p95 740 and 738\,ms. It is not a per-query speed-up. These numbers supersede the experiment-harness figures reported earlier for BL1-C (131\,ms against 713\,ms), which came from an earlier implementation on a shared machine.
+\textbf{Benefit.} On held-out data the product probe function recovered \EHoPctPR\% of the exact top ten at a p95 latency of \EHoPninetyfivePR\,ms against \EHoPninetyfiveExact\,ms for the fastest exact path, a ratio of \EHoRatio{} between the p95 latencies (Table~\ref{tab:e1}); on dev data, 99.8\% at 53 against 783\,ms. Zero-lag candidates from the same index recovered 64--66\%, even with a larger re-rank budget. Equal candidate counts are not equal work: the 650-row zero-lag arm traverses the index once with a wide search list, the probe arm thirteen times with a narrow one. No arm returned fewer than ten rows, and the two rounds on the same index returned identical lists; a rebuilt HNSW index can return different candidates. By query group, held-out recall was \EHoRandomPR{} for the 50 random windows and \EHoEnergeticPR{} for the 50 high-energy windows; energy is a selection rule for queries, not a measure of relevance. Recall is the share of the exact ten that a result contains, averaged over queries; every exact reference had ten rows. Of the \EHoQueries{} held-out queries, \EHoHist{} reached 1.0/0.9/0.8/0.7; the \EHoMissed{} missed intervals (of \EHoRefItems) ranged from rank 1 to 10 in the exact list, \EHoMissedRankOne{} were the exact best match, and none was replaced by an overlapping window of the same recording. A recall of 0.7 thus means that three of the ten exact intervals are absent and lower-ranked admissible intervals take their place. The factor 13 is the ratio of the two arms' p95 latencies over 200 timings each; probe p95 was 58.5 and 49.7\,ms in the two rounds, exact p95 740 and 738\,ms. It is not a per-query speed-up. These numbers supersede the experiment-harness figures reported earlier for BL1-C (131\,ms against 713\,ms), which came from an earlier implementation on a shared machine.
 
 \begin{table}[t]
 \caption{E1: recall@10 by candidate generator. All arms re-rank with $D$.}
 \label{tab:ablation}
 \small\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-Candidates & dev & held-out \\
-\midrule
-all 61 lags, exact (PX-61) & 1.000 & 1.000 \\
-13-lag grid, exact (PX-13) & 1.000 & 0.999 \\
-13-lag grid, float16 probes, exact (PQ-13) & 1.000 & 0.999 \\
-7-lag grid, exact (PX-7) & 0.986 & 0.987 \\
-\textbf{13-lag grid, HNSW (product)} & \textbf{0.998} & \textbf{0.977} \\
-zero-lag, exact, same count (EZ) & 0.681 & 0.613 \\
-\bottomrule
-\end{tabular}
+\input{generated/tab_ablation.tex}
 \end{table}
 
-\textbf{Where the loss comes from.} Table~\ref{tab:ablation} separates the approximations of Section~\ref{sec:method}. Each control keeps the 50-row budget per probe and the stored float16 envelopes. Grid sparsity alone (PX-13 against PX-61) cost at most 0.001 at spacing five and 0.013--0.014 at spacing ten; float16 rounding of the probes on top of the grid (PQ-13 against PX-13) cost nothing measurable; the product, which adds approximate candidate selection by HNSW, lost 0.002 on dev and 0.022 on held-out data. HNSW with full-precision probes cannot be measured separately, because the \code{halfvec} index takes float16 queries. In the evaluated configuration, therefore, the controls show no additional measurable recall loss from the sparse lag grid or float16 probes; the observed residual loss is attributable to approximate candidate selection. Missing probe rows, differences between searched windows and concurrent writes are separate possible sources of loss; they were excluded here by construction and by the checks above. This does not guarantee the same split on other data or with other HNSW settings. The six hardest held-out queries are all high-energy windows of one station, and each reaches 1.0 with exact grid candidates. Figure~\ref{fig:probes} shows the mechanism: zero-lag candidates find items whose best lag is within $\pm5$ but almost none beyond $\pm15$, whereas probes are flat across lags.
+\textbf{Where the loss comes from.} Table~\ref{tab:ablation} separates the approximations of Section~\ref{sec:method}. Each control keeps the 50-row budget per probe and the stored float16 envelopes. On held-out data, exact candidate generation on the sparse grid recovered \EHoPXthirteen{} of reference intervals (99.9\%); rounding the probes to float16 introduced no further observed loss (\EHoPQthirteen). HNSW candidate generation reduced recall to \EHoRecallPR. Most observed loss therefore arose from approximate candidate selection, with one reference interval already missed by the sparse grid. On dev data the grid lost nothing and HNSW 0.002. A grid at spacing ten lost 0.013--0.014. HNSW with full-precision probes cannot be measured separately, because the \code{halfvec} index takes float16 queries. Missing probe rows, differences between searched windows and concurrent writes are separate possible sources of loss; they were excluded here by construction and by the checks above. None of this guarantees the same split on other data or with other HNSW settings. The six hardest held-out queries are all high-energy windows of one station, and each reaches 1.0 with exact grid candidates. Figure~\ref{fig:probes} shows the mechanism: zero-lag candidates find items whose best lag is within $\pm5$ but almost none beyond $\pm15$, whereas probes are flat across lags. Figure~\ref{fig:cases} shows one case of each kind.
 
 \begin{figure}[t]
 \centering
@@ -210,6 +192,13 @@ zero-lag, exact, same count (EZ) & 0.681 & 0.613 \\
 \caption{E1, held-out: recall of the exact top ten by the lag at which each item scores best.}
 \label{fig:probes}
 \end{figure}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{fig/cases.pdf}
+\caption{Two held-out cases, selected by a rule fixed before the figure was made: (A) the query with the largest recall gain of probes over a zero-lag shortlist of 1000, and the reference interval with the largest best lag among those the probes find and the shortlist misses; (B) the query with the lowest probe recall, and its best-ranked missed interval, which exact grid candidates (PX-13) do find. They illustrate, and do not replace, the distribution in Table~\ref{tab:e1}; no domain label is implied. Top rows: raw samples in counts, unaligned. Bottom: z-scored envelopes as the scorer uses them, the query shifted by the best lag $\ell^*$ with zero padding; the distance $D$ is the product scorer's and was checked against $1-\max_\ell c(\ell)/n$.}
+\label{fig:cases}
+\end{figure*}
 
 \textbf{Why spacing five sufficed here.} For each of the 1,000 reference items per database, the best of the 13 grid probes kept a median 0.999 of the item's best-lag correlation (5th percentile 0.98, minimum 0.84), and ranked the item at median 2 and 95th percentile 7--8 among all windows in that probe's exact ordering; one held-out item ranked 324th, outside the 50-row budget, which is the single PX-13 miss. On 3,000 dev envelopes the envelope's own biased autocorrelation is 0.973 at an offset of two values and 0.895 at five~\cite{grid}, consistent with the smoothing applied before decimation (about five envelope values). This explains the observed behaviour of spacing five on these data; it guarantees neither top-$k$ preservation nor recall on other signals, because what decides recall is the rank inside a probe, and closely spaced scores can reorder even when most of the correlation is kept.
 
@@ -304,10 +293,15 @@ ColBERT 2020~\cite{colbert} & sum of max inner products & --- & query: one vecto
 
 \textbf{Grid choice.} The 13-probe grid was chosen on dev data and explained post hoc by envelope smoothness; it was confirmed on held-out data, for this representation only.
 
-\textbf{What the evidence shows, and what it suggests.} Demonstrated by our measurements: the zero-lag failure and its cause, the recall and latency of probe search on these data, the attribution of its residual loss to approximate candidate selection in the evaluated configuration, the costs of storage, filters and maintenance. Supported by profiling: that index statements dominate probe time, and that a probe statement costs more inside the function than on its own, for reasons not yet resolved. Plausible from other systems but not measured here: that coordinated or resumable probe budgets, or index contents outside PostgreSQL pages, would change these costs. Open hypotheses: that the grid and budget transfer to other smooth representations, and that the method helps a domain task.
+\textbf{Kinds of evidence.} \emph{Demonstrated} on these data: zero-lag shortlists lose a quarter of the top ten for this scorer, exactly or with HNSW; exact grid candidates recover \EHoPXthirteen{} on held-out data, a measurable loss of one interval in 1,000; float16 probes add no further observed loss; HNSW lowers recall to \EHoRecallPR; random queries reach \EHoRandomPR{} and high-energy queries \EHoEnergeticPR; the measured costs of storage, filters and maintenance. \emph{Empirical explanation:} spacing five suffices because envelopes are smooth relative to the spacing (Section~\ref{sec:ablation}); index statements dominate probe time (D1). \emph{Inconclusive:} the 0.7\,ms per probe statement that D1 did not resolve; which of four jointly changed PostgreSQL settings reduced write-ahead logging; whether the system runs stably for two hours, since C4 stopped at 112.5 minutes. \emph{Open hypotheses:} that the grid and budget transfer to other smooth representations and signals; that scorer fidelity translates into relevance for any domain task.
+
+\textbf{When to use it.} In the conditions we tested, probe search paid off for unfiltered or weakly filtered galleries of about a quarter of a million windows, where it was 4--15 times faster at p95 than exact search at recall 0.977--1.0 (Tables~\ref{tab:e1} and~\ref{tab:ss3}, D2). Exact search was the better or equal choice for small galleries (a few thousand eligible windows) and for selective filters that exclude the query's neighbourhood, and it is the only choice when every true neighbour must be found. Galleries of other sizes, other signals, other hardware and cold caches are untested; the crossover points measured here are not general thresholds.
 
 \section{Conclusion}
-Bounded-lag waveform search can use a standard inner-product index if the index is asked the right question. A zero-lag shortlist asks a different one, and lost a quarter of the scorer's top ten whether it was computed exactly or approximately. Because each lag term is an inner product with a shifted query, thirteen shifted probes into one unmodified HNSW index, re-ranked with the unchanged scorer, recovered 97.7\% of the top ten on held-out seismic stations and year with a p95 latency 13 times lower than that of the fastest exact path, in a comparison of all arms on one build; in this configuration, controls showed no measurable additional loss from the sparse grid or from float16 probes, and the residual loss came from approximate candidate selection. Inside PostgreSQL, one contract holds on both paths: hits are sample intervals of losslessly stored recordings, filters and row-level security apply, and new windows are searchable at commit. The benefit is bounded by three costs: probe structures of 1.0--1.3$\times$ the raw data; a router that must send selective filters to exact search, with a latency crossover that depends on how filters relate to the query; and write-ahead logging from index maintenance that default checkpoint settings do not contain. A second signal domain is the evidence still missing for a claim beyond seismic data.
+Bounded-lag waveform search can use a standard inner-product index if the index is asked the right question. A zero-lag shortlist asks a different one, and lost a quarter of the scorer's top ten whether it was computed exactly or approximately. Because each lag term is an inner product with a shifted query, thirteen shifted probes into one unmodified HNSW index, re-ranked with the unchanged scorer, recovered 97.7\% of the top ten on held-out seismic stations and year with a p95 latency 13 times lower than that of the fastest exact path, in a comparison of all arms on one build; exact candidates on the sparse grid recovered 99.9\%, float16 probes added no further observed loss, and approximate candidate selection accounted for most of the loss. Inside PostgreSQL, one contract holds on both paths: hits are sample intervals of losslessly stored recordings, filters and row-level security apply, and new windows are searchable at commit. The benefit is bounded by three costs: probe structures of 1.0--1.3$\times$ the raw data; a router that must send selective filters to exact search, with a latency crossover that depends on how filters relate to the query; and write-ahead logging from index maintenance, which was 18 times the database growth with default settings and 2.9 times at a second operating point that differed in four settings and in background load. A second signal domain is the evidence still missing for a claim beyond seismic data.
+
+\section*{Use of AI assistance and responsibility}
+Code, experiment harnesses, analyses and text of this report were developed with Claude (Anthropic), an AI assistant, working under the author's direction. Protocols were committed before measurements as described in the supplement; the author reviewed the results and is responsible for the content and for any errors.
 
 \begin{thebibliography}{40}\small
 \bibitem{pgvector} pgvector contributors. pgvector: open-source vector similarity search for Postgres, version 0.8.0. \url{https://github.com/pgvector/pgvector}.
@@ -366,13 +360,14 @@ zero-lag HNSW 1000 from probe index: 0.744 / 0.658 & E1; P, D / C & one HNSW con
 probes 0.977 (min 0.7; 5/100 $<$0.9), p95 57\,ms & E1; P, C & seismic; unfiltered; quiet machine \\
 fastest exact p95 740\,ms (8 workers allowed) & E1; P, C & PG 17 defaults, warm cache \\
 probes 0.998, p95 53 vs 783\,ms & E1; P, D & development data \\
-grid exact = all lags; float16 probes cost 0 & E1; E, D+C & offline controls \\
-residual loss 0.002 / 0.022 from approximate candidates & E1; P vs E & this configuration only \\
+exact grid candidates 0.999 (1 of 1,000 missed); float16 probes no further loss & E1; E, C & offline controls \\
+HNSW candidates: 0.999 $\to$ 0.977 (held-out) & E1; P vs E & this configuration only \\
+random 0.998, high-energy 0.956 (held-out) & E1; P, C & energy is a query rule, not relevance \\
 83/12/4/1 held-out queries at 1.0/0.9/0.8/0.7 & E1; P, C & 3 of 23 misses were rank 1 \\
 same complete universe on both paths & E1 check & static databases \\
 7-lag grid loses 0.013--0.014 & E1; E, D+C & offline control \\
 grid probe keeps $\ge$0.98 correlation (p5), rank $\le$8 (p95) & E1; E, D+C & explains, does not guarantee \\
-no short results; identical repeated lists & E1; P, D+C & 100 queries each \\
+no short results; identical lists on the same index & E1; P, D+C & rebuilt index may differ \\
 \bottomrule
 \end{tabularx}
 
@@ -390,7 +385,7 @@ one stored copy: $-$250\,MB, +23\% or +27--32\% p95 & SS1; E, D+C & earlier buil
 lag-uniform bounds prune $\le$63\% (idealized) & pruning; E & one construction; model \\
 searchable at commit; 919k samples/s & BL1-S; E, D & one day, four channels \\
 409.6k samples/s: 15\,min (defaults), 111\,min (tuned) & C2, C4; P & 2-h run not completed \\
-WAL 13.8 $\to$ 1.91\,GB per 15\,min & C2, C2p; P & four settings changed together \\
+WAL/growth 18$\times$ (defaults), 2.9$\times$ (second point) & C2, C2p; P & four settings and load differed \\
 companion-table RLS: exact +5\% & Stage 1; P & one tenant layout \\
 \bottomrule
 \end{tabularx}

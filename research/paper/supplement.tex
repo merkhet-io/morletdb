@@ -12,7 +12,7 @@
 
 \begin{document}
 \title{Supplement to ``MorletDB: Recordings, Not Rows''}
-\subtitle{Draft 0.9 (submission candidate) --- not for distribution}
+\subtitle{Technical report, version 0.10 (2026-11-01). Not peer reviewed.}
 \author{Zin Nam}
 \affiliation{\institution{}\country{}}
 \maketitle
@@ -130,6 +130,33 @@ Before a bounded pilot with human review of results, we tested access control, r
 \textbf{Recovery.} On a 50,604-window database every check passed: each recording hashed identically afterwards, each complete window had exactly one envelope and probe row, and exact searches returned identical lists. A full dump restored in 18\,s; dumping only recordings and chunks took a third of the space (146 against 459\,MB), and rebuilding envelopes and the probe index after restore took 23\,s. Twenty backends terminated at random points inside append transactions left no partial rows, and replaying the chunk succeeded; aborted builds resumed, and an aborted probe enable could be retried. Killed and duplicated external workers produced exactly one byte-identical row per window, but did not write probe rows, so their windows stayed invisible to probe search until filled. After deleting 15\% of recordings, \code{VACUUM} took 113\,s and left the index size unchanged, whereas an online \code{REINDEX} \code{CONCURRENTLY} took 10\,s while four clients searched (p95 23 to 31\,ms). An extension update forced to fail midway rolled back completely.
 
 \textbf{Sustained load.} On an archive of 938,768 windows (4.8\,GB), sixteen channels at 25.6\,kHz (409,600 samples/s) were appended by four writers, each building envelopes and probe rows in the append transaction, while four analysts issued one query every two seconds, half filtered to about 2\% of windows and half unfiltered. With PostgreSQL's default configuration the run met its criteria (filtered p95 167\,ms; probe p95 337\,ms, spot-check recall 0.998; ingest lag at most 22\,s, recovered), but wrote 13.8\,GB of write-ahead log for 0.76\,GB of database growth in 15 minutes: HNSW insertions touch pages across a 1.2\,GB index, and each checkpoint forces full-page images of them. At twice the rate the writers fell behind without recovering; capacity was about 1.3--1.4$\times$ the target. With a pilot configuration (8\,GB shared buffers, 16\,GB \code{max\_wal\_size}, 15-minute checkpoints, WAL compression, changed together) the same run wrote 1.91\,GB of WAL for 0.65\,GB of growth, kept ingest lag at or below 2\,s, and gave filtered and probe p95 of 81 and 100\,ms (recall 0.994); background load was lower in this run (7.3 against 11.7), which confounds the latency comparison but not the WAL volume. Unfiltered exact search over the full archive stayed at 7.8--9.7\,s p95, which is why the router sends large galleries to probes. A run planned for two hours with the same configuration met the target for 111 minutes (409,585 samples/s; writer lag at most 24\,s in the first hour, with the unrelated job running, and 3.4\,s in the second; filtered and probe p95 118 and 138\,ms, recall 0.993; no errors; 12.0\,GB of WAL for 4.7\,GB of growth). Then all client processes paused for 90--106\,s; the server log shows no error, which does not rule out a system-side cause; and the harness's lag rule, stricter than the protocol's wording, stopped the run at 112.5 minutes; the stored result divides the ingest rate by the scheduled duration, and a re-analysis from the raw logs reports the rate over the elapsed time. The two-hour run therefore did not complete. A measured stability duration is not a production qualification.
+
+\section{Study overview}\label{sec:studies}
+Each study's protocol (questions, data, arms, metrics, decision rule) was committed to the repository before its first result; these are internal plans with commit times set by the author's machine, not registrations with a third party. The full table with questions, results and limitations is \code{research/paper/STUDIES.md}.
+
+\begin{table*}[h]
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}Xllll@{}}
+\toprule
+Study & Question & Protocol & Results & Data & Status \\
+\midrule
+R1b & float16 envelopes precise enough? & bfdf6fe 10-26 17:41 & db63d58 19:16 & unread 2022 slice & confirmation \\
+R2 & exact scaling; zero-lag first stage? & 12cad82 10-31 14:20 & c07396e 14:55 & 99.9\% unread & corrected by R2-D \\
+R2-D & ANN error or candidate metric? & 7a7b276 15:57 & 246c91a 16:24 & R2's & reuse \\
+BL1 & shifted probes, configuration & a5381d7 16:44 & e831e51 17:29 & R2's & development \\
+BL1-C & frozen configuration on unread data & cc99d09 17:31 & 635ebd4 18:01 & unread stations, year & confirmation \\
+BL1-S & maintenance at commit & ceb63ad 17:33 & 0d5df8b 18:19 & R2's & development \\
+SS1 & one stored copy enough? & 1942b83 19:20 & 6a34b63 20:03 & R2's, BL1-C's & reuse; bounds missed \\
+SS3 & filters and routing & 71fb9ae 20:21 & 136c81a 20:54 & R2's, BL1-C's & reuse; corrected (SS3b) \\
+Pruning & exact pruning $\ge 2\times$? & --- & 9aea409 10-30 & 2022 slice & exploratory; stopped \\
+Grid analysis & why spacing five? & --- & 0ef13d1 11-01 & dev & post hoc \\
+C2, C3 & target ingest; $2\times$ overload & 5ad1f12 11-01 09:32 & 5fadadb 10:56 & both & C3 failed \\
+C2p, C4 & tuned configuration; 2 hours & 2412a77 10:57 & 167feb6 (\#76) & both & C4 aborted \\
+E1 & all arms, one build & 34904f6 12:12 & 9c2b6b0 13:26 & dev, BL1-C's & re-measurement \\
+D1, D2 & time per stage; correlated filters & fa367ed 13:02 & e335217 13:32 & dev & exploratory \\
+\bottomrule
+\end{tabularx}
+\end{table*}
 
 \section{Application evidence and negative results}\label{sec:negative}
 \textbf{Sleep staging by example (S1).} On 153 Sleep-EDF nights with a subject-disjoint split, staging each 30-second epoch by the 40 most similar expert-scored epochs from other subjects gave a mean per-subject Cohen's $\kappa$ of 0.583, against 0.541 for logistic regression on the same features ($+0.042$, 95\% CI $[0.016, 0.068]$), with equal macro-F1~\cite{sleep}. Retrieval thus exposes source-linked neighbours at no measured accuracy cost against this simple comparator; part of the $\kappa$ difference comes from the regression's class-balanced weights. The result is far from state-of-the-art staging and makes no clinical claim.
