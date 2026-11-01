@@ -1,21 +1,54 @@
 # MorletDB research manuscript
 
-Working draft 0.6: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
+Working draft 0.7: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
 
 Not yet submission-ready; see "Before submission" below.
 
-**Preview:** [morletdb.pdf](morletdb.pdf) (committed build of the current source; rebuild and recommit it when the source changes).
+**Preview:** [morletdb.pdf](morletdb.pdf) and [supplement.pdf](supplement.pdf) (committed builds of the current sources; rebuild and recommit them when a source changes).
+
+**Companion documents:** [related/RELATED_MATRIX.md](related/RELATED_MATRIX.md) (comparison with the closest prior work and the novelty assessment, with raw notes), Appendix A of the paper (which result supports each claim), [NEXT_EXPERIMENTS.md](NEXT_EXPERIMENTS.md) (the two experiments that would close the remaining evidence gaps; not started), [analysis/](analysis/) (grid-spacing analysis on development data).
 
 ## Build
 
 ```sh
 .venv-paper/bin/python -I research/paper/figures.py      # fig/*.pdf from committed result files
 cd research/paper && tectonic -X compile morletdb.tex    # or: latexmk -pdf morletdb.tex
+cd research/paper && tectonic -X compile supplement.tex
+.venv-seismic/bin/python -I research/paper/analysis/grid_spacing.py morlet_r2 \
+  evaluation/bounded_lag/results/bl1.json research/paper/analysis/grid_spacing.json   # needs R2's database
 ```
 
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in draft 0.7
+
+A focused revision around one question: how bounded-lag waveform search can use standard vector
+indexes while keeping the link to the recording, filter semantics and transactional updates, and which
+costs limit it.
+
+- **Argument and contributions.** Six-step argument (need → zero-lag fails → R2-D isolates the cause →
+  shifted probes target it → integration in PostgreSQL → costs). Three contributions: a specific
+  candidate-generation method, its recording-oriented integration, and a controlled evaluation.
+- **Novelty.** New section "Related work and what is new" with a comparison table. Query-side shifting
+  (Rafiei 1999; Keogh et al. 2006/2009), multi-query union with exact re-ranking (ColBERT), ANN
+  candidates for seismic cross-correlation (Tibi et al. 2017) and selectivity-based routing (vector
+  databases) are stated as known. The remaining claim is their combination for a bounded, zero-padded
+  lag scorer on an unmodified approximate inner-product index, the diagnosis and ablation, and the
+  integration. The single-traversal lower-bound alternative is answered with the earlier pruning study.
+- **Evidence corrections.** Speed-up quoted against the fastest exact path (713 ms, not the historic
+  2.9 s scan); per-query minima and queries below 0.9 reported; exact distances distinguished from exact
+  candidate selection; float16 probes and HNSW separated from the full-precision identity; measurement
+  kinds (experiment, product, historic) labelled; 15-minute load runs not presented as sustained
+  operation; jointly changed PostgreSQL settings not attributed individually; background load reported.
+- **New analysis.** Why 13 probes at spacing five suffice and seven at spacing ten lose hits: envelope
+  autocorrelation on development data (`analysis/grid_spacing.py`). 13 × 50 is labelled an empirically
+  chosen configuration.
+- **Moved to the supplement** (`supplement.tex`, text unchanged from 0.6): codec and storage studies
+  (P2, B1), envelope precision and zero-lag storage (R1b, P1), external and batched builders (CW1),
+  access control, recovery and load details, sleep staging and other negative results.
+- **Title.** Unchanged for now; alternatives proposed in the PR.
 
 ## What changed in draft 0.6
 
@@ -104,8 +137,8 @@ New results since 0.4, all merged on `main`:
   KAt-DataCenter.
 - Independent read of all numbers against `evaluation/*/results/`; the evidence ledger in
   the appendix maps each headline number to its study.
-- Open technical step the paper names but does not take: a grid that replays a source's
-  calibration arithmetic exactly (closing the B1 correction gap). It would be a codec
-  change with its own frozen evaluation.
+- References added in draft 0.7 (related-work section) were taken from the papers' own PDFs,
+  publisher pages or the authors' notes in `related/`; page numbers were left out where they were
+  not seen in a primary source. Check them against Crossref like the earlier ones.
 - Cold-cache and concurrent-client measurements, if a reviewer asks for latency claims
   beyond warm, single-client runs.

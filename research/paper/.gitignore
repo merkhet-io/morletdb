@@ -7,3 +7,4 @@
 *.synctex.gz
 !fig/*.pdf
 !morletdb.pdf
+!supplement.pdf

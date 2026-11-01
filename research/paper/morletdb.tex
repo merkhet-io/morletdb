@@ -1,5 +1,5 @@
 \documentclass[sigconf,nonacm]{acmart}
-\usepackage{booktabs,tabularx,tikz,listings,xurl}
+\usepackage{booktabs,tabularx,tikz,listings,xurl,algorithm,algpseudocode}
 \usetikzlibrary{positioning,arrows.meta,fit,calc}
 \settopmatter{printacmref=false,printccs=false,printfolios=true}
 \renewcommand\footnotetextcopyrightpermission[1]{}
@@ -12,419 +12,359 @@
 
 \begin{document}
 \title{Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL}
-\subtitle{Working draft 0.6 --- not for distribution}
+\subtitle{Working draft 0.7 --- not for distribution}
 \author{Zin Nam}
 \affiliation{\institution{}\country{}}
 
 \begin{abstract}
-Finding windows in a waveform archive that resemble a query interval up to a small time shift is a bounded-lag cross-correlation search. Exhaustive scans grow linearly with the archive, and standard vector indexes rank by a zero-lag metric that misses shifted matches. Each lag term of a biased, zero-padded cross-correlation is an inner product with a shifted copy of the query, so a small grid of shifted probes through an ordinary inner-product HNSW index, followed by exact re-ranking, recovers the bounded-lag top ten. On seismic stations and a year that no earlier study had read, recall@10 was 0.976 at a p95 of 131\,ms, against 2.9\,s exhaustively; a zero-lag shortlist of the same size reached 0.61. We implement the method in \M{}, a PostgreSQL extension that stores recordings as losslessly coded chunks with transactional appends and returns hits as sample intervals that read back bit-exactly. We then measure what bounds its useful range. Post-filtering loses recall under selective metadata filters (0.52 when 1.8\% of windows qualify) unless small galleries are routed to exact search and probes are restricted to eligible recordings (0.977--1.0). The vector copy and its index add 1.0--1.4$\times$ the raw storage. Maintaining the index at commit sustained 16 channels at 25.6\,kHz over a 0.94-million-window archive with a probe p95 of about 0.1\,s, once checkpoint settings kept write-ahead logging near three times the data growth. We also report lossless storage of calibrated sensor floats against ALP, Parquet, zstd and FLAC, recovery and access-control tests, and the negative results that shaped the design.
+Analysts of waveform archives look for intervals that resemble a query up to a small time shift, and then need the original samples of each hit. We define this as a top-$k$ search under a bounded-lag cross-correlation scorer and ask how it can use a standard vector index without losing the link to the recording, the semantics of metadata filters, or transactional updates. Zero-lag vector search ranks candidates by a different quantity: on 235,000 seismic windows a zero-lag shortlist of 1000 recovered only 74\% of the scorer's top ten, whether taken exactly or from an HNSW index, so the loss is caused by the candidate metric, not by approximate search. Each lag term is an inner product with a zero-padded, shifted copy of the query; we therefore send a sparse grid of shifted probes (13, spacing five lags, chosen empirically) to one unmodified inner-product HNSW index over unshifted stored vectors and re-rank the union with the unchanged scorer. Query-side shifting and multi-query candidate generation are known; we contribute their combination for this scorer, its integration in PostgreSQL, and its evaluation. On stations and a year held out from development, this recovered 97.6\% of the top ten (per query at least 70\%) at a p95 latency of 131\,ms, against 713\,ms for the fastest exact path we measured; zero-lag candidates of the same number recovered 61\%. \M{}, a PostgreSQL extension, implements candidate generation, exact re-ranking and the return of hits as sample intervals of losslessly stored recordings. The speed-up has a price: the indexed copy added 1.0--1.4$\times$ the raw storage; selective filters required routing small galleries to exact search, without which recall fell to 0.52; and maintaining the index at commit multiplied write-ahead logging unless checkpoint settings were changed.
 \end{abstract}
 \maketitle
 
 \section{Introduction}
-Condition monitoring, seismology and clinical physiology produce long, uniformly sampled recordings. An analyst first finds an interval of interest, then asks where similar behaviour occurred and what the original samples show. That workflow needs three things at once: compact storage of the original samples, a search representation, and a reliable link from every hit back to its samples and acquisition context.
+Seismic, vibration and physiological archives consist of long, uniformly sampled recordings. A common investigation starts from one interval and asks where similar behaviour occurred, then inspects the original samples and acquisition context of each candidate. Two practical requirements follow. Similarity must tolerate a small time shift, because a window grid rarely aligns two occurrences of the same event; and a result is useful only if it identifies an interval of a recording that can be read back exactly.
 
-Relational systems offer two layouts, each covering part of the problem. One row per sample makes every value addressable but costs about 93 bytes per sample uncompressed in our measurements; compressed time-series extensions shrink this but treat samples as independent floats. A vector per window gives a compact search key, but the application must maintain the link to the source samples, keep representations compatible, and decide what similarity means. Neither layout captures a \emph{recording}: a channel with a sample rate, a unit, a calibration and a half-open sample coordinate system.
+A bounded-lag cross-correlation captures the first requirement: two windows are similar if some shift of at most $L$ samples correlates them strongly (Section~\ref{sec:problem}). Exhaustive evaluation is linear in the archive. The obvious acceleration is a vector index, which PostgreSQL users already have through pgvector~\cite{pgvector}; but such indexes rank by a fixed metric between unshifted vectors. This paper asks:
 
-\M{} is a PostgreSQL extension (Rust, via pgrx) built around that unit. Recordings are appended in chunks at global sample offsets; raw chunks, derived representations and checkpoints commit in one transaction; and every search result is a recording identifier plus a sample interval that reads back through the same extension. The design rests on one premise: \emph{authoritative samples and search representations should be stored separately, but connected by explicit interval semantics and transactional ingestion}. The name reflects the first representation tried, Morlet wavelet energies; our experiments later showed no advantage over FFT band powers (Section~\ref{sec:negative}), and the representation is now a versioned, replaceable part.
+\begin{quote}\emph{How can bounded-lag waveform search be accelerated with standard vector indexes while preserving the link to the recording, the semantics of filters and transactional updates, and which costs limit its use?}\end{quote}
 
-This paper makes five contributions.
+Our argument has six steps. (1)~Waveform investigations need intervals similar under a bounded shift, with access to their original samples. (2)~Zero-lag vector search optimizes a different candidate ranking and loses neighbours of the defined scorer. (3)~A diagnostic on the same data separates this effect from approximate search: an exact and an HNSW zero-lag shortlist lose the same neighbours (Section~\ref{sec:zerolag}). (4)~Shifted inner-product probes target exactly this difference: each lag term of the scorer is an inner product with a shifted query, so a few shifted queries against one index generate candidates for the scorer actually used (Section~\ref{sec:method}). (5)~\M{} places candidate generation, exact re-ranking and sample-interval results in PostgreSQL, next to losslessly stored recordings (Section~\ref{sec:system}). (6)~Filters, index storage and maintenance cost determine the range in which this is worthwhile (Sections~\ref{sec:filters}--\ref{sec:maint}).
+
+\textbf{Contributions.}
 \begin{enumerate}
-\item \textbf{Shifted-probe retrieval for bounded-lag search} (Sections~\ref{sec:r2}--\ref{sec:bl1}): the identity between lag terms and inner products with zero-padded shifted queries; a diagnosis that zero-lag shortlists fail because of their candidate metric, not because of approximate search; and recovery of the bounded-lag top ten through a standard inner-product index, confirmed on held-out data.
-\item \textbf{The costs that bound its operating range} (Sections~\ref{sec:ss3}--\ref{sec:ops}): filtered search needs routing and filter-aware probes; the index copy costs storage that a single representation can save only at a latency cost; and index maintenance at commit is sustainable at the tested rate only with checkpoint settings that contain write-ahead logging.
-\item \textbf{A recording-oriented design inside PostgreSQL} (Section~\ref{sec:design}): replay-safe chunk appends at global offsets, lossless chunk coding, replaceable search representations and interval read-back, with access control, recovery and upgrades tested end to end (Section~\ref{sec:ops}).
-\item \textbf{A storage characterization of calibrated sensor floats} on identical samples against ALP, Parquet, zstd, FLAC and DuckDB (Section~\ref{sec:storage}).
-\item \textbf{Negative results that shaped the system}, each from a frozen protocol (Section~\ref{sec:negative}).
+\item \textbf{A specific candidate-generation method for a bounded-lag scorer:} query-side, zero-padded shifted probes on a sparse lag grid sent to an unmodified inner-product ANN index, a union of their candidates, and re-ranking with the unchanged scorer. Its ingredients are known (Section~\ref{sec:related}); the combination needs neither a trained embedding, nor per-shift copies of the data, nor lower bounds, at the price of approximate candidate selection (Section~\ref{sec:method}).
+\item \textbf{A recording-oriented integration in PostgreSQL:} results are sample intervals of losslessly stored recordings; search representations and their index rows are maintained in the append transaction; eligibility filters and row-level security apply to both paths; a router chooses exact or probe search by the number of eligible windows (Section~\ref{sec:system}).
+\item \textbf{A controlled evaluation of benefit and limits:} a diagnosis of why zero-lag shortlists fail, an ablation that separates lag-grid sparsity from approximate search, confirmation on held-out stations and year, and measured costs of filters, storage and index maintenance (Sections~\ref{sec:zerolag}--\ref{sec:maint}).
 \end{enumerate}
-We do not claim a new entropy coder, a new similarity measure, or a lag-tolerant index with guarantees: probe search is approximate and evaluated empirically. Code, protocols, raw results and the commit at which each protocol was frozen are public~\cite{repo}.
+Section~\ref{sec:related} compares these with the closest prior work and states what we consider new. We do not claim a new similarity measure, a new index, lossless compression, or guarantees for probe search: probe search is approximate in the candidates it considers, and its recall is measured, not bounded. Recall in this paper is fidelity to the scorer, not relevance to a domain question. Code, frozen protocols and raw results are public~\cite{repo}; a supplement reports storage, recovery and other studies not needed for the argument here.
 
-\section{Data model and semantics}\label{sec:model}
-A \emph{recording} is a sequence $x_0,\ldots,x_{N-1}$ of float64 values with a sample rate $f_s$, a channel, a unit, a declared sample quantum $q$ (Section~\ref{sec:codec}) and JSON acquisition metadata. An \emph{interval} $[a,b)$ denotes $x_a,\ldots,x_{b-1}$. Sample offsets are authoritative; wall-clock time additionally needs a time origin, and a real acquisition gap starts a new recording rather than silently joining samples.
+\section{Problem and search contract}\label{sec:problem}
+A \emph{recording} is a sequence $x_0,\ldots,x_{N-1}$ of float64 samples with a sample rate, a channel, a unit and JSON acquisition metadata. An \emph{interval} $[a,b)$ denotes $x_a,\ldots,x_{b-1}$; sample offsets, not wall-clock times, are authoritative. A \emph{window} is an interval of fixed length $w$ on a stride grid. A search representation $\phi(x_{a:b})\in\mathbb{R}^n$ is derived from a window by a versioned extractor.
 
-A search representation $\phi_v(x_{a:b})$ is identified by a versioned extractor name $v$. Two windows are comparable only if their recordings share sample rate, channel and unit and their windows share length and extractor; metadata containment filters restrict candidates further. These rules reject comparisons that are computable but meaningless, such as distances between features from different sample rates.
+We study envelopes: for $w=4096$, z-score the window, take the magnitude of the analytic signal, smooth with a 50-sample moving mean, keep every tenth value and z-score again ($n=410$). Stored envelopes are float16. For a query envelope $q$ computed at full precision and a stored envelope $g$, the scorer is
+\begin{equation}\label{eq:d}
+D(q,g) \;=\; 1-\max_{|\ell|\le L}\;\frac{1}{n}\sum_{t} q_{t+\ell}\,g_t ,\qquad L=\lfloor 0.075\,n\rfloor=30,
+\end{equation}
+where terms with $t+\ell$ outside $[0,n)$ are zero. This is a \emph{biased} cross-correlation: no per-lag renormalization of the overlapping part, no circular shift, and one z-score per window rather than per overlapping subsequence. At 100\,Hz, $L=30$ envelope values correspond to $\pm3$\,s.
 
-We separate three notions of correctness that are often conflated. \emph{Sample identity}: decoding returns the appended float64 bit patterns. \emph{Search fidelity}: a stored or approximate representation reproduces a reference ranking, measured here by recall@10. \emph{Task relevance}: retrieved intervals help answer a domain question. Each needs its own evidence; fidelity says nothing about relevance. We call results \emph{source-linked} in the operational sense that each hit carries its recording, interval and metadata; this is not cryptographic provenance.
+\textbf{Contract.} A query names a source interval (or supplies samples), a metadata filter and $k$. The \emph{eligible} windows are those whose recordings have the query's sample rate, channel and unit, whose window size and extractor match, whose metadata contain the filter, and which the caller may see under row-level security. The \emph{exact result} is the first $k$ eligible windows in the order $(D,\text{recording},\text{start})$, after excluding windows overlapping the source interval and greedily skipping windows that overlap a better window of the same recording. Each result row is a recording identifier, an interval and its distance; the interval reads back the original samples bit-exactly from the raw store.
 
-\section{System design}\label{sec:design}
+\textbf{Three kinds of exactness.} We keep apart (i) \emph{exact distances}: every returned distance is $D$ computed on the stored envelope; (ii) \emph{exact candidate selection}: the returned set equals the exact result; and (iii) \emph{relevance}: the returned intervals help answer the analyst's question. Probe search guarantees (i) but not (ii); we measure (ii) as recall@10 against the exhaustive search; neither implies (iii).
+
+\section{Shifted inner-product probes}\label{sec:method}
+For a lag $\ell$, define the zero-padded shifted query $s_\ell[t]=q_{t+\ell}$ if $0\le t+\ell<n$ and $0$ otherwise. Then $\sum_t q_{t+\ell}g_t=\langle s_\ell,g\rangle$ and
+\begin{equation}\label{eq:probe}
+1-D(q,g)\;=\;\frac{1}{n}\max_{|\ell|\le L}\,\langle s_\ell,g\rangle .
+\end{equation}
+The bounded-lag top-$k$ is therefore the top-$k$ of a maximum over $2L{+}1$ inner-product queries against the \emph{unshifted} stored vectors. Two consequences matter. The shift is applied to the query, so the index holds one copy of each window, not one per lag. And the probes must be inner-product queries, not cosine: $\|s_\ell\|$ shrinks with $|\ell|$ because of zero padding, exactly as the biased scorer weights a shifted overlap.
+
+\begin{algorithm}[t]
+\caption{Probe search (product function, simplified)}\label{alg:probe}
+\begin{algorithmic}[1]
+\Require query envelope $q$ (full precision), eligibility predicate $E$, $k$; grid $\Lambda=\{-L,-L{+}5,\dots,L\}$; per-probe budget $c=50$; threshold $T=5000$
+\If{$|\{g : E(g)\}| \le T$} \Comment{counted from recordings, stopping at $T$}
+  \State \Return \Call{ExactScan}{$q,E,k$}
+\EndIf
+\State $C\gets\emptyset$
+\For{$\ell\in\Lambda$}
+  \State $C\gets C\,\cup$ top-$c$ by $\langle \mathrm{f16}(s_\ell), g\rangle$ over $g$ with $E(g)$ \Comment{HNSW, iterative scan}
+\EndFor
+\State score every $g\in C$ with $D(q,g)$ on its stored envelope
+\State \Return first $k$ in order $(D,\text{rec},\text{start})$ after source exclusion and overlap suppression
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm~\ref{alg:probe} replaces the full lag set by a sparse grid ($|\Lambda|=13$ at spacing 5) and each exact inner-product top-$c$ by an HNSW search. Three approximations are thus stacked, and the evaluation separates them: (a) \emph{grid sparsity}: a window whose best lag lies between grid points must still rank in the top $c$ of a neighbouring probe, which holds when envelopes are smooth relative to the spacing, but is not guaranteed; 13 probes at spacing five are an empirically chosen configuration for these envelopes, not a general setting; (b) \emph{per-probe budget}: a window that is the global top ten under $D$ need not be in any single probe's top $c$; (c) \emph{index approximation}: HNSW returns an approximate top-$c$, and it compares a float16 copy of the probe with float16 stored vectors, whereas Equation~\ref{eq:probe} holds for the full-precision query. Re-ranking uses the full-precision query and the stored envelope, so (a)--(c) affect only which windows are considered, never a returned distance. Properties of $D$, such as tolerance to shifts within $\pm L$, do not transfer to the quantized index probes without measurement; Section~\ref{sec:ablation} measures them.
+
+\section{Integration in PostgreSQL}\label{sec:system}
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[font=\footnotesize, box/.style={draw, rounded corners=2pt, align=center, minimum height=7mm, inner sep=3pt},
-  tbl/.style={box, fill=black!4}, arr/.style={-Stealth, thick}]
-\node[box] (client) {client appends\\chunk at offset $s$};
-\node[tbl, right=7mm of client, yshift=7mm] (raw) {raw chunks\\(coded \code{bytea})};
-\node[tbl, right=7mm of client, yshift=-7mm] (rep) {representations\\(envelopes, features)};
-\node[tbl, right=6mm of raw] (rec) {recording,\\checkpoint};
-\node[draw, dashed, rounded corners=3pt, fit=(raw)(rep)(rec), inner sep=3pt, label={[font=\scriptsize]above:one transaction}] (tx) {};
-\node[box, below=6mm of rep] (search) {search: exact\\scan in Rust};
-\node[box, right=6mm of search] (read) {interval read:\\bit-exact samples};
-\draw[arr] (client) -- (raw);
-\draw[arr] (client) -- (rep);
-\draw[arr] (raw) -- (rec);
-\draw[arr] (rep) -- (search);
-\draw[arr] (search) -- node[above, font=\scriptsize]{$[a,b)$} (read);
-\draw[arr] (rec.south) -- (read.north);
+\begin{tikzpicture}[font=\scriptsize, x=1mm, y=1mm,
+  box/.style={draw, rounded corners=2pt, align=center, minimum height=6mm, inner sep=1.5pt, text width=#1},
+  box/.default=13mm, tbl/.style={box=#1, fill=black!5}, tbl/.default=13mm, arr/.style={-Stealth, thick}, rd/.style={-Stealth, densely dotted}]
+% write path
+\node[box=13mm] (client) at (0,24) {append chunk at offset $s$};
+\node[tbl] (raw) at (19,30) {raw chunks (lossless)};
+\node[tbl] (rec) at (19,18) {recording, checkpoint};
+\node[tbl] (env) at (37,30) {envelopes (float16)};
+\node[tbl] (vec) at (37,18) {vector rows + IP HNSW};
+\node[draw, dashed, rounded corners=3pt, fit=(raw)(rec)(env)(vec), inner sep=2pt, label={[font=\scriptsize]above:one transaction}] (tx) {};
+\draw[arr] (client) -- (raw); \draw[arr] (client) -- (rec);
+\draw[arr] (raw) -- (env); \draw[arr] (env) -- (vec);
+% search paths
+\node[box=13mm] (query) at (0,2) {query interval, filter, $k$};
+\node[box=13mm] (router) at (19,2) {router: eligible $\le T$?};
+\node[box=13mm] (exact) at (37,7) {exact scan with $D$};
+\node[box=13mm] (probe) at (37,-3) {13 probes, re-rank with $D$};
+\node[box=13mm] (read) at (55,2) {interval $[a,b)$ read from raw chunks};
+\draw[arr] (query) -- (router);
+\draw[arr] (router) -- node[above, pos=0.4]{yes} (exact.west);
+\draw[arr] (router) -- node[below, pos=0.4]{no} (probe.west);
+\draw[arr] (exact.east) -- (read);
+\draw[arr] (probe.east) -- (read);
 \end{tikzpicture}
-\caption{Write and read paths of a collection. Raw chunks, derived representations and the checkpoint commit together; search returns intervals, which are read back from the raw chunks, not from the representation.}
+\caption{Write path and the two search paths. Raw chunks, envelopes, vector rows and the checkpoint commit together. Both search paths score candidates with $D$ on stored envelopes and return sample intervals, which are read from the raw chunks, not from a representation. The exact path reads envelopes; the probe path reads vector rows for candidates and envelopes for re-ranking.}
 \label{fig:arch}
 \end{figure}
 
-\subsection{Collections and transactional appends}
-A collection is a set of caller-owned tables created by \code{morlet_create_stream_collection}: recordings with their checkpoint, raw chunks, and per-representation tables (Figure~\ref{fig:arch}). All functions run as \code{SECURITY INVOKER}, so PostgreSQL privileges and row-level security apply to every read and search. An append names its global start offset:
-\begin{lstlisting}
-SELECT morlet_start_recording('signals', 'pump7', 25600,
-  'accel_x', 'g', '{"asset":"P7"}', 512, 256, 'zscore',
-  'none', 0.001);                       -- quantum q
-SELECT morlet_append_chunk('signals', 'pump7', 0, :x);
-SELECT * FROM morlet_search_envelope_interval('signals',
-  'pump7', 81920, 86016, '{"asset":"P7"}', 10);
-SELECT samples FROM morlet_read_interval('signals',
-  'pump7', 81920, 86016);
-\end{lstlisting}
-Raw samples, derived representation rows and the checkpoint commit in one transaction, so a committed checkpoint always refers to committed samples. An append that repeats a committed range with identical samples is verified and accepted as a no-op; a changed retry, a gap or an overlap fails. Collectors can therefore retry after a crash without their own deduplication. Windows of derived representations may cross chunk boundaries.
+\M{} is a PostgreSQL 17 extension written in Rust with pgrx. Figure~\ref{fig:arch} shows the paths that matter for search; the supplement describes storage.
 
-\subsection{Lossless chunk coding}\label{sec:codec}
-Each raw chunk is one \code{bytea} value. The codec combines established techniques: fixed polynomial predictors of order 0--4 as in Shorten and FLAC~\cite{shorten,flac}, partitioned Rice coding of zig-zag mapped residuals~\cite{rice}, and a CRC-32C checksum. Its distinctive part is how it treats floats.
+\textbf{Recordings and appends.} A collection is a set of caller-owned tables: recordings with a checkpoint, raw chunks, envelopes and, optionally, a pgvector table of \code{halfvec} rows with an inner-product HNSW index. An append names its global start offset; raw chunk, new envelopes, their vector rows and the checkpoint commit in one transaction, so a window is searchable exactly when the transaction that completes it commits, and a committed checkpoint never refers to uncommitted samples. A repeated identical append is a verified no-op; a gap, overlap or changed retry fails. Raw chunks are coded losslessly (polynomial prediction, Rice coding and a float-to-integer grid with exact corrections; supplement), so a result interval reads back the appended float64 bit patterns. Envelopes and vector rows are derived and can be dropped and rebuilt without touching raw data.
 
-Most sensor values are calibrated integers: a digitizer emits counts $d$, and acquisition software stores $x=f(d)$, for example $x=d\cdot s$ (seismic counts, WAV) or, in EDF~\cite{edf}, $x=(d-d_{\min})(p_{\max}-p_{\min})/(d_{\max}-d_{\min})+p_{\min}$. The recording declares a nominal quantum $q$: 1 for counts, 0.001 for three decimals, the ADC step for calibrated values. Per chunk, the encoder seeks a grid
-\begin{equation}
-x_i \;=\; o + k_i\,s \;\oplus\; \delta_i,
-\end{equation}
-with integer indices $k_i$, a step $s$ refined from $q$ to within one unit in the last place (ulp), an offset $o$ (format version 3; zero in version 2), and corrections $\delta_i$, stored as differences of order-preserving integer images of float64, so that decoding reproduces every bit pattern. A division mode $x=k/d$ covers decimal steps exactly. Indices are predicted and Rice-coded like integers; corrections form a second stream. If no grid fits within a thousandth of a step, the chunk is coded as order-preserving float bits, and if that is not smaller, as raw float64. The quantum is a storage hint, never a conversion: a wrong quantum costs space, not accuracy.
+\textbf{Two search paths, one contract.} The exact path scores every eligible stored envelope with $D$ in one parallel SQL statement. The probe path implements Algorithm~\ref{alg:probe}; both apply the same eligibility, exclusion, ordering and suppression, and both return distances computed by the same Rust scorer. All functions run as \code{SECURITY INVOKER}, so privileges and row-level security apply to every table read.
 
-\subsection{Materialized, replaceable search representations}
-Search representations are rows derived from raw chunks and keyed by recording, window size and start sample. We study the envelope representation: for a 4096-sample window, z-score, take the magnitude of the analytic signal, smooth with a 50-sample moving mean, keep every tenth value, and z-score again. This gives 410 values, stored as float16 (821 bytes with a version byte). The distance between a query envelope $q$ (full precision) and a stored envelope $g$ is
-\begin{equation}
-D(q,g) \;=\; 1-\max_{|\ell|\le L}\;\frac{1}{n}\sum_{t} q_{t+\ell}\,g_t ,\qquad L=\lfloor 0.075\,n\rfloor=30,
-\end{equation}
-a biased cross-correlation over bounded shifts. Search is an exhaustive scan of eligible envelopes scored in Rust (\code{morlet_envelope_distance}, eight lags per inner block), issued as one statement that PostgreSQL can run with parallel workers, with the source interval excluded and overlapping windows of one recording suppressed greedily in rank order. Materialization and float16 storage change values relative to envelopes computed from raw samples; Section~\ref{sec:retrieval} measures the effect. Dropping and rebuilding a representation never touches raw chunks.
+\textbf{Filters.} An approximate index answers ``nearest overall''; a filter asks ``nearest among eligible''. Applying eligibility after probing silently discards candidates when few windows qualify. The router therefore counts eligible windows from the recordings table, stopping at the threshold $T$, and sends small galleries to the exact path; above $T$, each probe scans only eligible recordings, using pgvector's iterative index scan. Choosing between brute force and an index by filter selectivity is established practice in vector databases (Section~\ref{sec:related}); we include it because it decides whether probe search keeps the contract under filters.
 
-\textbf{Probe search.} Each lag term of $D$ is an inner product: with the zero-padded shifted query $s_\ell[t]=q_{t+\ell}$ for $0\le t+\ell<n$ (else 0), $\sum_t q_{t+\ell}g_t=\langle s_\ell,g\rangle$, so $1-D(q,g)=\max_\ell \langle s_\ell,g\rangle/n$. An optional, pgvector-backed table holds a float16 copy of the envelopes with an inner-product HNSW index. \code{morlet_search_envelope_probes} issues probes at lags $-L,-L{+}5,\dots,L$ (13 at $n=410$), takes 50 candidates per probe, and re-ranks their union with the exact scorer under the same eligibility, exclusion, ordering and suppression; returned distances are exact, only the candidate set is approximate. Probes must use inner product rather than cosine, because $\|s_\ell\|$ differs between lags. \code{morlet_build_envelopes} writes each new window's vector row in the same transaction, and rows reference their envelopes with cascading deletes. pgvector remains optional: the objects that use it are created on demand. Filters are handled by routing: when at most a threshold of windows (default 5,000) is eligible, the exact scan runs; otherwise each probe scans only eligible recordings with pgvector's iterative index scan (Section~\ref{sec:ss3}).
+\textbf{Access control.} Row-level security on the recordings table protects search functions but not direct reads of the derived tables: a first deployment test found that another tenant's chunks, envelopes and vector rows were readable directly. \code{morlet_enable_row_security} now attaches a policy to every companion table that admits rows whose recording is visible; written as membership in an array of visible identifiers it kept parallel scans (exact search $+5\%$), whereas a correlated \code{EXISTS} tripled exact search time.
 
-\section{Evaluation method}\label{sec:method}
-Every study follows the same discipline: a protocol with questions, data, arms, metrics and decision thresholds is committed before data is read or measured; harness and tests are committed before the run; each study runs once; deviations are logged in the protocol. Table~\ref{tab:studies} lists the studies used here and which data each reused.
+\section{Evaluation setup}\label{sec:setup}
+\textbf{Protocols.} Each study committed its questions, data, arms, metrics and decision thresholds before reading or measuring data, ran once, and logged deviations~\cite{repo}. Table~\ref{tab:studies} lists the studies used here.
+
+\textbf{Data.} Development data (\emph{dev}) are CX HHZ recordings~\cite{ipoc} of stations PB01, PB02, PB06 and PSGCX, 1--14 March 2025: 481\,M samples at 100\,Hz, 234,762 windows of 4096 samples at stride 2048. Held-out data (\emph{held-out}) are stations PB05, PB11, PB14 and PB18, 1--14 March 2021 (234,622 windows), chosen from the data centre's availability listing before any waveform was downloaded; no earlier study had read them. Each set has 100 queries from its first day: 50 random and 50 high-energy windows. Seismic envelopes are one signal domain; we discuss generality in Section~\ref{sec:limits}.
+
+\textbf{Measurements.} We separate three kinds: \emph{experiment} (harness code that issues SQL arms and scores offline controls), \emph{product} (the released SQL functions on the same queries), and \emph{historic} (an earlier implementation, reported where it explains a design decision). Recall@10 is against the exhaustive exact result. All runs used one Apple M5 Max (128\,GB), PostgreSQL 17.11, pgvector 0.8.0 (HNSW $m{=}16$, \code{ef_construction} 64, \code{ef_search} 100), warm caches and, except Section~\ref{sec:maint}, one client. During the later studies an unrelated CPU-intensive job shared the machine; we report its load average where it changed between compared runs.
 
 \begin{table}[t]
-\caption{Studies and data reuse. Data slices are specified in the text.}
+\caption{Studies, data and measurement kind.}
 \label{tab:studies}
 \small
 \begin{tabularx}{\linewidth}{@{}lXl@{}}
 \toprule
-Study & Workload & Data \\
+Study & Question & Data \\
 \midrule
-P2 & DB storage vs TimescaleDB; 4 inputs $\times$ 4.2\,M samples & reused \\
-B1 & codec vs ALP, Parquet, zstd, FLAC, DuckDB; 6 inputs & 1 new input \\
-R1b & envelope precision; 1,826 windows, 1,557 queries & unread slice \\
-P1 & the same envelopes in pgvector & R1b's \\
-R2 & search scaling to 235\,k windows; zero-lag shortlist & 99.9\% unread \\
-R2-D & diagnostic: exact vs HNSW shortlists & R2's (consumed) \\
-BL1 & shifted probes, development & R2's (consumed) \\
-BL1-C & shifted probes, confirmation; 234,622 windows & unread stations and year \\
-BL1-S & maintenance during replayed ingestion & R2's (consumed) \\
-SS1 & one stored envelope representation & R2's and BL1-C's \\
-SS3 & filtered search, routing; 5 filter levels & R2's; BL1-C's for confirmation \\
-CW1 & external workers vs in-database building & R2's (consumed) \\
-S1 & sleep staging by retrieval; 39 held-out subjects & held-out split \\
+R2, R2-D & exact scaling; zero-lag shortlists, exact vs HNSW & dev \\
+BL1 & probe grids and budgets, ablation controls & dev \\
+BL1-C & frozen configuration, once & held-out \\
+SS3 & filtered search and router; product check & dev, held-out \\
+SS1, R1b & one stored copy; float16 precision & dev, held-out; 2022 \\
+BL1-S, C2 & index maintenance during ingestion & dev; dev+held-out \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-All runs used one Apple M5 Max (macOS, 128\,GB), PostgreSQL 17.11 built by pgrx, pgvector 0.8.0 and one client over localhost. TimescaleDB 2.30.2 ran in Docker; we compare its sizes, not its speed.
-
-\section{Storage}\label{sec:storage}
-\subsection{Database footprint (P2)}
-P2 appended the same 4,194,304 samples of four inputs (CX seismic counts~\cite{ipoc}, IMS bearing vibration~\cite{ims}, Paderborn bearing vibration~\cite{paderborn} as ADC counts and as physical floats) to \M{} and to TimescaleDB hypertables with native compression (Gorilla for floats; delta-of-delta and Simple-8b for integers), and measured total on-disk bytes, including indexes, TOAST and metadata tables, after verifying that four intervals per layout read back bit-exactly~\cite{plain}.
-
-\begin{table}[t]
-\caption{P2: total database storage in bits per sample. T: the TimescaleDB layouts tested (a row per sample with an integer or float column; a row per 4096-sample array).}
-\label{tab:p2}
-\small
-\begin{tabular}{@{}lrrrr@{}}
-\toprule
-Input & \M{} & T int & T float & T array \\
-\midrule
-CX seismic counts & \textbf{6.12} & 8.25 & 14.34 & 25.0 \\
-IMS three-decimal & \textbf{11.36} & 14.06 & 71.95 & 28.1 \\
-Paderborn counts & \textbf{9.95} & 12.89 & 24.58 & 26.4 \\
-Paderborn physical & \textbf{11.53} & --- & 70.12 & 29.5 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-TimescaleDB on integer columns comes closest but is 24--35\% larger (Table~\ref{tab:p2}), and requires the user to convert values to counts first. On float columns, Gorilla's XOR coding \emph{expands} noisy decimal and calibrated values beyond 64 bits per sample. We tested one \code{segmentby}/\code{orderby} configuration and not TimescaleDB's newer column formats. Of \M{}'s footprint, the codec payload is 4.6--9.2 bits per sample (Table~\ref{tab:b1}); PostgreSQL row and TOAST overhead adds 1.5--2.6 bits per sample at 4096-sample chunks.
-
-\subsection{Codec against modern baselines (B1)}
-B1 compares codecs on identical samples, each verified lossless~\cite{b1}. Float codecs receive only float64 values: zstd level 19 per chunk, Parquet with \code{BYTE_STREAM_SPLIT} and zstd, and DuckDB 2.0's automatic float compression, which uses ALP and its fallback ALP-RD~\cite{alp,duckdb}. \M{} receives the values plus the nominal quantum. Integer codecs receive the exact digitizer counts: FLAC~\cite{flac}, Parquet delta coding with zstd, and DuckDB bit-packing. Two inputs extend the earlier storage inputs: a Sleep-EDF EEG slice~\cite{sleepedf,physionet} from 32 nights with symmetric and asymmetric calibration ranges (an earlier engineering check had measured \M{}'s own storage of this collection, not the other arms), and PTB-XL ECG lead~I~\cite{ptbxl}, new to the storage studies. The Parquet float arm is one fixed encoding, not a tuned Parquet baseline; ALP is DuckDB 2.0.0's implementation, measured as table blocks.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{fig/storage.pdf}
-\caption{B1: lossless bits per sample on identical samples. Float codecs see only float64 values; \M{} also sees the nominal quantum; FLAC sees integer counts. Table~\ref{tab:b1} gives all arms.}
-\label{fig:storage}
-\end{figure}
-
-\begin{table}[t]
-\caption{B1: bits per sample. Z: zstd-19; PQ: Parquet; DDB: DuckDB.}
-\label{tab:b1}
-\small\setlength{\tabcolsep}{2.7pt}
-\begin{tabular}{@{}lrrrr|rrr@{}}
-\toprule
-& \multicolumn{4}{c|}{float input} & \multicolumn{3}{c}{integer input} \\
-Input & Z & PQ & ALP & \textbf{\M{}} & FLAC & PQ & DDB \\
-\midrule
-CX counts & 8.33 & 6.84 & 9.50 & \textbf{4.61} & 4.38 & 5.24 & 6.38 \\
-IMS 3-decimal & 13.24 & 42.94 & 11.00 & \textbf{8.81} & 8.41 & 9.87 & 10.88 \\
-Paderborn counts & 12.04 & 9.48 & 10.75 & \textbf{7.88} & 7.70 & 9.61 & 11.25 \\
-Paderborn physical & 14.82 & 30.57 & 62.13 & \textbf{9.17} & 7.70 & 9.61 & 11.25 \\
-Sleep-EDF EEG & 23.54 & 38.15 & 59.63 & \textbf{15.51} & 8.65 & 10.22 & 12.00 \\
-PTB-XL ECG & 18.94 & 44.64 & 12.75 & \textbf{7.40} & 7.46 & 10.27 & 12.75 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Figure~\ref{fig:storage} and Table~\ref{tab:b1} show three regimes.
-
-\emph{Counts and decimals.} When values are integers or short decimals (CX, IMS, Paderborn counts, ECG with gain 1000), ALP and \M{} both recover integers; \M{} is 20--51\% smaller than ALP, plausibly because consecutive samples are correlated and prediction exploits that, while ALP's frame-of-reference bit-packing does not; B1 does not isolate this. \M{} is within 5\% of FLAC, whose LPC stage it lacks, and slightly below FLAC on ECG.
-
-\emph{Calibrated floats.} On Paderborn physical values and Sleep-EDF, no decimal exponent turns values into integers, and the tested DuckDB ALP implementation selected ALP-RD, storing about 60 bits per sample, near raw. Of the three metadata-free arms, zstd was smallest. \M{}, which additionally receives the nominal quantum, was 1.5--1.6$\times$ smaller than zstd. Our pre-registered claim of at least 2$\times$ was not met.
-
-\emph{The correction gap.} Given counts, \M{} codes the two calibrated inputs at 7.9 and 8.8 bits per sample; given the calibrated floats, it needs 1.3 and 6.7 bits per sample more. That extra cost, relative to \M{}'s own integer-input path, is the correction stream: the source software computed $x$ with a particular sequence of roundings (on Sleep-EDF a multiplication, a division and an addition), which a single fitted step and offset does not reproduce for every sample. It does not explain the whole difference from FLAC, which also includes \M{}'s integer path being 0.15--0.18 bits per sample larger than FLAC's. Replaying the source's calibration arithmetic might remove the corrections when the correct parameters and operation sequence are known; this is neither implemented nor tested. Our pre-registered claim that \M{} stays within 15\% of the best integer codec held on four of six inputs and failed on these two.
-
-For float compression, these inputs illustrate that real-valued sensor data can be neither decimal nor arbitrary but an affine image of integers under floating-point rounding. On the two such inputs we tested, the decimal-oriented ALP implementation fell back to near-raw size and the best byte-oriented arm was 1.5--1.6$\times$ larger than coding with a declared quantum.
-
-\section{Retrieval}\label{sec:retrieval}
-\subsection{Precision of materialized envelopes (R1b)}
-R1b selected an envelope precision on 2023 seismic windows and evaluated it once on 2022 event and noise windows that, according to its report, no earlier study had read: 1,826 windows at ten CX stations~\cite{ipoc}, 1,557 event windows from 284 catalogued events and 269 no-match distractors~\cite{r1b}. The reference decodes raw samples and computes envelopes in the client.
-
-\begin{table}[t]
-\caption{R1b on 2022 windows. Size relative to the raw chunk table; latency includes the client path.}
-\label{tab:r1b}
-\small\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lrrrr@{}}
-\toprule
-Envelopes & Size/raw & Recall@10 & Same order & p95 ms \\
-\midrule
-from raw (reference) & --- & 1 & 1 & 1324 \\
-float32 & 28.1\% & 1.000 & 1.000 & 14 \\
-\textbf{float16} & \textbf{12.9\%} & \textbf{0.9999} & \textbf{0.987} & \textbf{16} \\
-uint8 & 7.2\% & 0.998 & 0.845 & 17 \\
-uint8, coarser & 4.2\% & 0.952 & 0.067 & 16 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Float16 envelopes met all frozen criteria (Table~\ref{tab:r1b}): recall@10 of 0.9999, 12.9\% of the raw table, and an unchanged catalogue-distance relevance proxy ($+0.001$\,km, 95\% interval $[-0.002, +0.004]$). The roughly 80-fold latency reduction measures materialization against a client that decodes and recomputes; it is not a speedup over an optimized raw-scanning engine.
-
-\subsection{Same storage, different query (P1)}
-P1 stored the identical float16 envelopes in a pgvector \code{halfvec(410)} column~\cite{pgvector}. Both tables occupied exactly 1,794,048 bytes, and all 1,826 envelopes were bit-identical, so envelope storage itself is no advantage. Zero-lag cosine search, however, shared only 64.7\% of the lag-tolerant top ten and reproduced its order for 0.1\% of queries. Scoring lags in the client on the same \code{halfvec} rows reproduced \M{}'s ranking exactly. In a later same-run comparison, median latency was 6.85\,ms for \M{}, 0.49\,ms for zero-lag cosine and 20.3\,ms for client lag scoring. The first two answer different questions, so their ratio is not a like-for-like speed comparison.
-
-\subsection{Scaling and zero-lag shortlists (R2, R2-D)}\label{sec:r2}
-R2 asked how exact search scales and whether a standard approximate index can serve as its first stage~\cite{r2}. We loaded CX HHZ at stations PB01, PB02, PB06 and PSGCX for 1--14 March 2025, downloaded as continuous station-days for R2 (48 short windows, 0.1\% of these samples, had been read by an earlier study): 481\,M samples in 128 gap-free recordings, appended in 451\,s and stored at 6.2 bits per sample. Envelopes over 4096-sample windows at stride 2048 gave 234,762 windows (275\,s to build). Galleries were nested by day, from 4,217 to 234,762 windows. The 100 queries were 50 random and 50 high-energy windows from the first day. A shortlist arm takes the top $K$ windows by zero-lag cosine on a pgvector \code{halfvec} copy of the same float16 envelopes and re-ranks them with the exact lag-tolerant distance in the database, under the same exclusion and suppression. R2 intended its shortlist to come from an HNSW index ($m$ 16, \code{ef_construction} 64), with a pre-registered bar of recall@10 $\ge 0.95$ at no more than a tenth of the exact p95 latency on the largest gallery. A diagnostic follow-up on the same data (R2-D, protocol frozen before measuring) found that R2's statement never used the index: its query vector came from a subquery, which pgvector cannot use as an index ordering key, so PostgreSQL computed an exact zero-lag top $K$. R2-D therefore compares an explicitly exact shortlist (E-$K$, plan-checked sequential scan) with the HNSW index actually used (H$^*$-$K$, query vector as a parameter, plan-checked index scan).
+\section{Why zero-lag shortlists fail}\label{sec:zerolag}
+A natural first stage takes the top $K$ windows by zero-lag cosine from an ANN index and re-ranks them with $D$. R2 measured this on dev galleries nested from 4,217 to 234,762 windows~\cite{r2}. R2's statement passed its query vector through a subquery, which pgvector cannot use as an index ordering key, so it silently computed an \emph{exact} zero-lag top $K$. A diagnostic on the same data (R2-D, protocol frozen before measuring) therefore compared an explicitly exact shortlist with an HNSW shortlist whose plan was checked to use the index.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig/scaling.pdf}
-\caption{R2 and R2-D on CX data, 1--14 March 2025. Left: median latency of the exhaustive lag-tolerant scan and of zero-lag shortlists (exact: solid; HNSW: dashed) followed by exact re-ranking. Right: recall@10 against the exhaustive top ten; HNSW lies on the exact shortlist. H$^*$-1000 is missing at the smallest gallery, where the planner did not use the index. 100 queries per gallery; one client, warm cache.}
+\caption{R2, R2-D on dev galleries. Left: median latency of the exhaustive scan (historic, single-threaded implementation) and of zero-lag shortlists plus re-ranking (exact: solid; HNSW: dashed). Right: recall@10; the HNSW curve lies on the exact one. 100 queries per gallery.}
 \label{fig:scaling}
 \end{figure}
 
-Over the measured range, exact search time grew linearly at 12.1--12.8\,\textmu s per stored window (Figure~\ref{fig:scaling}): 54\,ms for 4,217 windows, 0.86\,s for 67,472 and 2.8\,s for 234,762. These figures are for the original implementation, which iterated over candidates with a PL/pgSQL cursor that PostgreSQL never parallelizes; fetching the best rows in one parallel statement and suppressing overlaps on those (fetching more if suppression exhausts them) later returned identical lists with bitwise-equal distances about 2.5$\times$ faster (unfiltered p50 3.3 to 1.3\,s on a loaded machine; one station 0.78 to 0.31\,s). Interpolating between the two smallest galleries places the 100\,ms mark near 8,000 windows; no gallery of that size was measured.
+With $K{=}1000$, recall@10 fell from 0.977 on the smallest gallery to 0.743 on the largest; with $K{=}100$, from 0.714 to 0.605 (Figure~\ref{fig:scaling}). The HNSW shortlist agreed with the exact one on 98--100\% of candidates on the largest gallery and gave the same recall to within 0.007 at every size (0.744 at $K{=}1000$). Every top-ten item contained in a shortlist survived re-ranking and suppression, so coverage equalled recall. The loss is therefore caused by the zero-lag candidate metric, not by approximate search or by the contract's exclusion rules: a quarter of the bounded-lag top ten lies outside the 1000 windows nearest by zero-lag cosine. The exact zero-lag top ten alone shared 43--47\% of the bounded-lag top ten. These are two budgets and one HNSW configuration. The exhaustive scan in Figure~\ref{fig:scaling} is the historic implementation (linear, 12.1--12.8\,\textmu s per window); the current exact path runs as one parallel statement and is the baseline below.
 
-No shortlist arm met the bar (Figure~\ref{fig:scaling}). With $K{=}1000$, recall@10 fell from 0.977 on the smallest gallery, where 1000 candidates are a quarter of it, to 0.743 on the largest; with $K{=}100$, from 0.714 to 0.605. The HNSW shortlist agreed with the exact one on 98--100\% of candidates on the largest gallery and gave the same recall to within 0.007 at every size measured (0.744 for H$^*$-1000). Every shortlist returned $K$ candidates, and every member of the exhaustive top ten that a shortlist contained survived re-ranking, exclusion and suppression, so coverage equalled recall. The loss is therefore attributable to the zero-lag candidate metric at these budgets, not to approximate search or to the suppression rules: a quarter of the lag-tolerant top ten lies outside the 1000 nearest windows by zero-lag cosine. The exact zero-lag top ten alone shared 43--47\% of the exhaustive top ten on these continuous recordings, below P1's 64.7\% on event windows. These are measurements for two budgets and one HNSW configuration.
-
-With the index in use, the HNSW top 100 plus re-ranking took a median 26\,ms on the largest gallery, against 2.8\,s exhaustively, at recall 0.60; the top 1000 took 0.23\,s at recall 0.74. Re-ranking dominates the latter.
-
-\textbf{Representation overhead.} The materialized envelopes took 12.9\% of the raw chunk table in R1b but 60.2\% in R2. Measured sizes account for the factor of 4.68: halving the stride from 4096 (one envelope per event window) to 2048 doubles the number of envelopes per sample ($\times2.0$); R2's continuous, mostly ambient recordings compress to 5.04 payload bits per sample against 12.39 for R1b's event windows ($\times2.46$); row and TOAST overheads differ slightly ($\times0.95$ combined). The ratio thus depends on stride, raw compressibility and physical layout, and the 12.9\% figure does not transfer to continuous archives. R2's benchmark held four structures side by side: raw chunks (371\,MB, always required), envelopes (223\,MB, used by the exhaustive scan and every re-rank), the \code{halfvec} copy (241\,MB) and its HNSW index (275\,MB). The copy stores the same values as the envelopes, so a deployment would keep one of the two if its scorer read that format (\M{}'s reads its own); the index is needed only for an index-based shortlist.
-
-
-\subsection{Shifted-probe search (BL1)}\label{sec:bl1}
-BL1 asked whether candidate generation that respects the lag range recovers the exhaustive top ten~\cite{bl1}. Its protocol fixed grids of 7 and 13 probes (spacing 10 and 5) and 50 or 100 candidates per probe, re-ranked by the unchanged scorer, with controls that separate descriptor quality from approximate search: the same probes scored exactly (no ANN), and an exact zero-lag shortlist given the same number of candidates. The gate required recall@10 $\ge 0.95$, p95 at most a third of the exhaustive scan's and below the strongest exact baseline, and added storage at most 1.5$\times$ the raw chunk table. The strongest exact baseline was a single parallel SQL statement scoring every eligible envelope, 3--4$\times$ faster than the PL/pgSQL scan with identical results.
-
-On R2's development data all four configurations passed; the selected one (13 probes, 50 each) reached recall 0.998 at a p95 of 115\,ms against 2,835\,ms exhaustively and 954\,ms for the parallel exact scan, re-ranking 338 windows on average. We froze it and evaluated it once on CX stations PB05, PB11, PB14 and PB18, 1--14 March 2021: stations and a year that no earlier study in the repository had read, chosen from the availability service alone before any waveform was downloaded.
+\section{Shifted probes: ablation and confirmation}\label{sec:ablation}
+BL1 fixed grids of 7 and 13 probes and budgets of 50 and 100 per probe, with offline controls computed in the harness from the same stored float16 envelopes and the full-precision query: \emph{PX}, the same probe union taken \emph{exactly} (no index, no probe quantization); \emph{PX-61}, all 61 lags exactly; and \emph{EZ}, an exact zero-lag cosine shortlist with as many candidates as the probe union~\cite{bl1}. The gate required recall@10 $\ge 0.95$, p95 at most a third of the exhaustive scan and below the fastest exact path, and added storage at most $1.5\times$ raw. All four configurations passed on dev; 13 probes $\times$ 50 was frozen and run once on held-out data.
 
 \begin{table}[t]
-\caption{BL1-C, held-out confirmation: 234,622 windows, 100 queries (50 random, 50 high-energy).}
-\label{tab:bl1c}
-\small\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{@{}lrrr@{}}
+\caption{Recall@10 by candidate generator (13 probes $\times$ 50 unless noted), 100 queries per set: mean / minimum / queries below 0.9. All arms re-rank with $D$; union sizes 338--369 windows on average. ``---'': not run.}
+\label{tab:ablation}
+\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcc@{}}
 \toprule
-& Exhaustive & Parallel exact & \textbf{13 probes $\times$ 50} \\
+Candidates & dev & held-out \\
 \midrule
-Recall@10 & 1 & 1 & \textbf{0.976} \\
-p50 / p95 (ms) & 2,834 / 2,854 & 698 / 713 & \textbf{97 / 131} \\
-Windows re-ranked & 234,622 & 234,622 & 357 \\
-Added storage / raw & --- & --- & 1.00 \\
+all 61 lags, exact (PX-61) & 1.000 / 1.0 / 0 & --- \\
+13-lag grid, exact (PX) & 1.000 / 1.0 / 0 & 0.999 / 0.9 / 0 \\
+7-lag grid, exact & 0.986 / 0.7 / 3 & --- \\
+\textbf{13-lag grid, f16, HNSW} & \textbf{0.998 / 0.9 / 0} & \textbf{0.976 / 0.7 / 5} \\
+7-lag grid, f16, HNSW & 0.984 / 0.7 / 3 & --- \\
+zero-lag, exact, same count (EZ) & 0.681 / 0.0 / 66 & 0.613 / 0.0 / 69 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\textbf{Ablation.} Table~\ref{tab:ablation} separates the approximations of Section~\ref{sec:method}. On dev, the 13-lag grid taken exactly lost nothing against all 61 lags, while the 7-lag grid lost 0.014, so sparsity at spacing 5 cost nothing measurable and at spacing 10 did. Index approximation, including float16 probes, cost 0.002 on dev and 0.023 on held-out data, where five queries fell below 0.9 and the worst reached 0.7; the losses concentrated on high-energy queries (0.954 against 0.998 for random ones). With the same number of candidates, the zero-lag shortlist reached 0.61--0.68 and failed two thirds of queries.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{fig/probes.pdf}
-\caption{BL1-C: recall of the exhaustive top ten by the lag at which each item scores best. A zero-lag shortlist of the same size as the probe union finds aligned matches but none beyond $\pm15$.}
+\caption{Held-out: recall of the bounded-lag top ten by the lag at which each item scores best. Zero-lag candidates of the same number find aligned matches but none beyond $\pm15$; probes are flat across lags.}
 \label{fig:probes}
 \end{figure}
 
-All confirmation criteria held (Table~\ref{tab:bl1c}). The result was weaker than on development data in one respect: probes scored exactly reached 0.999, so HNSW cost 0.023 recall here (0.002 before), mostly on high-energy queries (0.954 against 0.998 for random ones). The equal-budget zero-lag control reached 0.613, and Figure~\ref{fig:probes} shows why: half the exhaustive top-ten items score best beyond $\pm5$ lags, and zero-lag candidates miss them while the probes do not. The \M{} functions themselves, run on the same queries, reached recall 0.977 at a p95 of 50\,ms, faster than the experiment's client-driven probes because the probe loop runs inside the server. A first product version used a smaller HNSW search breadth than the evaluated configuration and reached 0.963; it was aligned to the evaluated setting.
+\textbf{Why spacing five suffices here.} A window whose best lag lies $d$ lags from the nearest probe keeps, in that probe, roughly the envelope's own correlation at offset $d$. On 3,000 random dev envelopes this biased autocorrelation was 0.973 at $d{=}2$ (5th percentile 0.944) but 0.895 at $d{=}5$ (5th percentile 0.785)~\cite{grid}. With spacing five no top-ten item is more than two lags from a probe; with spacing ten 31\% of dev top-ten items lie three to five lags away, where 5\% of envelopes lose more than a fifth of their correlation. The spacing is thus tied to the representation's smoothing (a 50-sample moving mean before decimation by ten, about five envelope values); a less smooth representation would need a denser grid, which we have not measured.
 
-\textbf{During ingestion (BL1-S).} Replaying one day of four stations (16,868 windows) with maintenance in the append transaction made every window searchable at its commit while appends ran at 919,000 samples per second, 53\% of raw-only throughput. At 200$\times$ real time, probe queries during ingestion took a p95 of 82\,ms against 189\,ms for the exact scan, with recall 0.9997 against the exact scan on the same snapshot. A background worker instead kept up at that pace (p95 delay 0.09\,s) but fell behind unpaced appends at about 200 windows per second and drained a 13,284-window backlog in 64\,s; after it was killed and restarted, every window had exactly one envelope and one vector row. These runs used development data and one machine.
-
-\subsection{Filtered search (SS3)}\label{sec:ss3}
-Investigations usually restrict the gallery: one sensor, one period. The first probe implementation applied eligibility after probing, so a selective filter discarded most of its 650 candidates. SS3 measured three strategies at five filter levels per query (one station-day, 1.8\% of windows; one station over four days, 7.2\%; one station, 25\%; four days of all stations, 29\%; unfiltered)~\cite{ss3}: exact search, post-filtered probes, and filter-aware probes that restrict each index scan to eligible recordings with pgvector's iterative scan. A router, fixed on development data before the confirmation run, sends a query to exact search when at most 5,518 windows are eligible (where exact p95 reached 100\,ms) and to filter-aware probes otherwise.
+Figure~\ref{fig:probes} shows the mechanism. Of the held-out top-ten items, 55\% score best at a lag beyond $\pm5$. Zero-lag candidates recovered 0.998 of items with best lag within $\pm5$, 0.568 between 6 and 15, and none beyond 15; probes recovered 0.973--0.978 in each band.
 
 \begin{table}[t]
-\caption{SS3 on the BL1-C data: mean recall@10 against exact search, 100 queries per level. Routed: the product function.}
-\label{tab:ss3}
-\small\setlength{\tabcolsep}{4pt}
+\caption{Held-out confirmation, unfiltered, 234,622 windows, 100 queries. Exhaustive: historic implementation.}
+\label{tab:bl1c}
+\small\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
-Eligible windows & Post-filter & Filter-aware & Routed & Routed p95 \\
+& Exhaustive & Parallel exact & \textbf{Probes} & Product \\
 \midrule
-1.8\% (4,217) & 0.515 & 0.998 & \textbf{1.0} (exact) & 85\,ms \\
-7.2\% (16,868) & 0.848 & 0.997 & \textbf{0.997} & 207\,ms \\
-25\% (58.6\,k) & 0.972 & 0.986 & \textbf{0.986} & 98\,ms \\
-29\% (67.5\,k) & 0.976 & 0.994 & \textbf{0.994} & 88\,ms \\
-100\% (234.6\,k) & 0.976 & 0.977 & \textbf{0.977} & 69\,ms \\
+Kind & historic & experiment & \textbf{experiment} & product \\
+Recall@10 & 1 & 1 & \textbf{0.976} & 0.977 \\
+p50 / p95 (ms) & 2,834 / 2,854 & 698 / 713 & \textbf{97 / 131} & --- / 50 \\
+Windows re-ranked & 234,622 & 234,622 & 357 & --- \\
+Added storage / raw & --- & --- & 1.00 & 1.00 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Post-filtering lost up to half the top ten (Table~\ref{tab:ss3}). Filter-aware probes restored recall but were slow at the smallest level (p95 724\,ms), where the planner abandoned the index; exact search, at 68\,ms there, is the right path, and the router chooses it. No returned row violated its filter, and with row-level security restricting a role to one station every strategy returned only that station and rejected a hidden recording as the query source. The router met its recall and safety conditions at every level on both databases; it first missed its latency bound because counting eligible windows cost about 20\,ms, and after counting from the recordings table instead it missed only at the unfiltered level of the confirmation data, by 0.8\,ms. The product function counts exactly but stops at the threshold, and reproduced the router's recall at every level.
+\textbf{Confirmation and latency.} All confirmation criteria held (Table~\ref{tab:bl1c}). Against the fastest exact path measured on the same queries, a parallel SQL statement, the probe arm was 5.4$\times$ faster at p95. The product function, whose probe loop runs inside the server, reached 0.977 at 50\,ms on the same queries; it is a later implementation and not part of the frozen comparison. A first product version used a smaller HNSW search breadth than the evaluated configuration and reached 0.963; it was aligned with the evaluated setting.
 
-\subsection{Storage of search representations (SS1)}\label{sec:ss1}
-With probe search enabled every window is stored twice: as the scorer's \code{bytea} envelope and as the index's \code{halfvec} copy, which hold the same float16 values in 98.3\% of positions. SS1 tested whether one copy suffices~\cite{ss1}. A single \code{halfvec} table holding the stored bits was exact on both databases (no mismatching value among 469,384 windows, no unequal distance among about 9.4 million pairs, identical top-ten lists) and saved about 250\,MB per 235,000 windows, 0.49--0.67$\times$ the raw data, but made exact scans 23\% slower through per-row format conversion. An HNSW index on an expression over the existing envelope table kept exact search unchanged and was equally exact, but raised probe p95 by 27--32\% (about 20\,ms), most likely because the expression is re-evaluated for every returned row. Both missed their pre-registered latency bounds, so the two-copy layout remains the default; the expression index is a valid storage-saving operating point when 20\,ms matter less than 250\,MB.
+\section{Filters and routing}\label{sec:filters}
+Investigations usually restrict the gallery to one sensor or period. The first probe implementation applied eligibility after probing. SS3 compared three strategies at five filter levels per query~\cite{ss3}: exact search, post-filtered probes and filter-aware probes; a router threshold was fixed on dev data before the held-out run.
 
-\subsection{Building representations (CW1)}\label{sec:cw1}
-As a first step toward compaction-style workers that run representation work outside the database, CW1 compared building envelopes inside PostgreSQL with stateless external processes that read encoded chunks through SQL, compute with the same Rust code, and write rows back with key-idempotent inserts~\cite{cw1}. On 33,736 windows the external path produced byte-identical rows in every run, survived a killed and restarted worker and two workers processing the same recordings, and moved 90\% of the per-window CPU off the database server (0.13 against 1.31\,ms of database CPU per window). It also used about four times less CPU in total, which exposed the real inefficiency: the in-database builder issued one SQL statement per window and decoded every raw sample twice. Batching the in-database builder, so that each chunk is decoded once for up to 256 windows, reduced database CPU to 0.31\,ms per window and raised one session from 740 to 3,084 windows per second (four sessions: 12,034), byte-identical to before. External workers remain a viable basis for separating compute from storage, but on one machine batching delivered most of their benefit without them.
+\begin{table}[t]
+\caption{Filtered search on held-out data, mean recall@10 (product: also minimum) against exact search, 100 queries per level. Post-f.: post-filtered probes; F-aware: filter-aware probes; Routed: product function ($^*$routed to exact).}
+\label{tab:ss3}
+\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Eligible & Exact & Post-f. & F-aware & Routed & Routed \\
+ & p95 & & & mean/min & p95 \\
+\midrule
+1.8\% (4,217) & 68\,ms & 0.515 & 0.998 & \textbf{1.0}/1.0$^*$ & 85\,ms \\
+7.2\% (16,868) & 329\,ms & 0.848 & 0.997 & \textbf{0.997}/0.9 & 207\,ms \\
+25\% (58.6\,k) & 290\,ms & 0.972 & 0.986 & \textbf{0.986}/0.6 & 98\,ms \\
+29\% (67.5\,k) & 390\,ms & 0.976 & 0.994 & \textbf{0.994}/0.8 & 88\,ms \\
+100\% (234.6\,k) & $\sim$1.2\,s & 0.976 & 0.977 & \textbf{0.977}/0.7 & 69\,ms \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\section{Operating the system}\label{sec:ops}
-Before a bounded pilot with human review of results, we tested access control, recovery and sustained load against plans frozen before each run~\cite{pilot}. All runs shared the machine with an unrelated CPU-intensive job (load average 3--20), so latencies are indicative; correctness results are not affected.
+Post-filtering lost up to half the top ten (Table~\ref{tab:ss3}). Filter-aware probes restored recall but were slow at the smallest level (p95 724\,ms), where the planner abandoned the index and exact search took 68\,ms. The router sends that level to exact search. No returned row violated its filter, and with row-level security restricting a role to one station, every strategy returned only that station and rejected a hidden recording as query source. The router missed its pre-registered latency bound once, at the unfiltered held-out level, by 0.8\,ms. Low per-query minima at 25\% and 100\% coincide with the high-energy queries of Section~\ref{sec:ablation}, not with routing errors.
 
-\textbf{Access control.} With row-level security only on the recordings table, a tenant could still read other tenants' chunks, envelopes and probe vectors by querying the companion tables directly: search functions honoured the policy, the tables did not. \code{morlet\_enable\_row\_security} now applies a policy to every companion table that admits rows whose recording is visible. Its first form, a correlated \code{EXISTS}, prevented parallel plans and tripled exact search time (946 to 2,821\,ms on 235,000 windows); comparing against an array of visible recording identifiers kept the parallel scan (995\,ms, $+5\%$) and cost probe search 6\,ms. We did not test policies with thousands of visible recordings.
+\section{Storage, recall and latency}\label{sec:storage}
+Probe search costs space. On dev, raw chunks took 371\,MB, envelopes 223\,MB (used by both paths for scoring), the \code{halfvec} copy 241\,MB and its HNSW index 275\,MB: the index structures added 1.39$\times$ the raw data; on held-out data, whose raw data compress less well, 1.00$\times$. Envelopes alone were 12.9\% of raw on event windows at stride 4096 but 60.2\% on continuous recordings at stride 2048; the factor of 4.7 is explained by stride (2.0), raw compressibility (2.46) and row overhead (0.95)~\cite{r2}.
 
-\textbf{Recovery.} On a 50,604-window database every check passed: each recording hashed identically afterwards, each complete window had exactly one envelope and probe row, and exact searches returned identical lists. A full dump restored in 18\,s; dumping only recordings and chunks took a third of the space (146 against 459\,MB), and rebuilding envelopes and the probe index after restore took 23\,s. Twenty backends terminated at random points inside append transactions left no partial rows, and replaying the chunk succeeded; aborted builds resumed, and an aborted probe enable could be retried. Killed and duplicated external workers produced exactly one byte-identical row per window, but did not write probe rows, so their windows stayed invisible to probe search until filled. After deleting 15\% of recordings, \code{VACUUM} took 113\,s and left the index size unchanged, whereas an online \code{REINDEX CONCURRENTLY} took 10\,s while four clients searched (p95 23 to 31\,ms). An extension update forced to fail midway rolled back completely.
+Float16 storage is not the bottleneck: on 2022 windows that no earlier study had read, float16 envelopes kept recall@10 at 0.9999 against envelopes recomputed from raw samples~\cite{r1b}. The two stored copies hold the same float16 values in 98.3\% of positions. SS1 tested keeping one~\cite{ss1}: a single \code{halfvec} table was exact on both databases (identical distances for 9.4\,M pairs) and saved about 250\,MB per 235,000 windows, but made exact scans 23\% slower; an HNSW index on an expression over the envelope table kept exact search unchanged but raised probe p95 by 27--32\%. Both missed their pre-registered latency bounds. The trade-off is therefore three-way: about 1--1.4$\times$ raw storage bought a 5.4$\times$ lower p95 than the fastest exact path in the frozen comparison, at recall 0.976; saving a third of that storage costs 20--30\% latency on one path.
 
-\textbf{Sustained load.} On an archive of 938,768 windows (4.8\,GB), sixteen channels at 25.6\,kHz (409,600 samples/s) were appended by four writers, each building envelopes and probe rows in the append transaction, while four analysts issued one query every two seconds, half filtered to about 2\% of windows and half unfiltered. With PostgreSQL's default configuration the run met its criteria (filtered p95 167\,ms; probe p95 337\,ms, spot-check recall 0.998; ingest lag at most 22\,s, recovered), but wrote 13.8\,GB of write-ahead log for 0.76\,GB of database growth in 15 minutes: HNSW insertions touch pages across a 1.2\,GB index, and each checkpoint forces full-page images of them. At twice the rate the writers fell behind without recovering; capacity was about 1.3--1.4$\times$ the target. With a pilot configuration (8\,GB shared buffers, 16\,GB \code{max\_wal\_size}, 15-minute checkpoints, WAL compression, changed together) the same run wrote 1.91\,GB of WAL for 0.65\,GB of growth, kept ingest lag at or below 2\,s, and gave filtered and probe p95 of 81 and 100\,ms (recall 0.994); background load was lower in this run (7.3 against 11.7), which confounds the latency comparison but not the WAL volume. Unfiltered exact search over the full archive stayed at 7.8--9.7\,s p95, which is why the router sends large galleries to probes. A two-hour stability run at the target rate is pending.
+\section{Maintenance during ingestion}\label{sec:maint}
+Maintaining vector rows at commit makes new windows searchable immediately, but every append now updates an HNSW graph. Two measurements bound this cost; neither is a long-term stability result.
 
-\section{Application evidence and negative results}\label{sec:negative}
-\textbf{Sleep staging by example (S1).} On 153 Sleep-EDF nights with a subject-disjoint split, staging each 30-second epoch by the 40 most similar expert-scored epochs from other subjects gave a mean per-subject Cohen's $\kappa$ of 0.583, against 0.541 for logistic regression on the same features ($+0.042$, 95\% CI $[0.016, 0.068]$), with equal macro-F1~\cite{sleep}. Retrieval thus exposes source-linked neighbours at no measured accuracy cost against this simple comparator; part of the $\kappa$ difference comes from the regression's class-balanced weights. The result is far from state-of-the-art staging and makes no clinical claim.
+\textbf{Replay (BL1-S, dev, one day of four channels, 16,868 windows).} With maintenance in the append transaction, every window was searchable at its commit while appends ran at 919,000 samples/s, 53\% of raw-only throughput. At 200$\times$ real time, probe queries during ingestion had a p95 of 82\,ms against 189\,ms for exact search, at recall 0.9997 on the same snapshot~\cite{bl1}.
 
-\textbf{Morlet versus FFT.} In the same study, FFT band powers with the same band layout gave $\kappa$ 0.589 against 0.583 for Morlet energies. We found no advantage for the wavelet representation and made the extractor replaceable.
+\textbf{Sustained load (15-minute runs).} On an archive of 938,768 windows (dev and held-out recordings, each also replayed time-reversed), four writers appended 16 channels at 25.6\,kHz (409,600 samples/s, a vibration-monitoring rate) with maintenance in the append transaction, while four clients issued one query every two seconds (half filtered, half unfiltered)~\cite{pilot}. With PostgreSQL's default configuration the run met its pre-registered criteria (filtered p95 167\,ms; probe p95 337\,ms, spot-check recall 0.998 against exact search in the same snapshot; ingest lag at most 22\,s and recovered), but wrote 13.8\,GB of write-ahead log for 0.76\,GB of database growth. At twice the rate, the writers fell behind without recovering; capacity lay between 1.3 and 1.4$\times$ the target. A second 15-minute run changed four settings together (shared buffers 128\,MB$\to$8\,GB, \code{max_wal_size} 1$\to$16\,GB, checkpoint timeout 5$\to$15\,min, WAL compression on) and wrote 1.91\,GB of WAL for 0.65\,GB of growth, with probe p95 100\,ms (recall 0.994) and ingest lag at most 2\,s. Because the settings changed together, we cannot attribute the reduction to any one of them; plausibly, fewer checkpoints force fewer full-page images of index pages touched by HNSW insertions, but we did not isolate this. The background load average was 11.7 in the first run and 7.3 in the second, so the latency difference is confounded; the WAL volume is less sensitive to it. A two-hour run at the target rate was in progress when this draft was written.
 
-\textbf{Wavelet and progressive storage.} A compression benchmark found the tested wavelet decomposition codec 19--57\% \emph{larger} than scalar quantization with conventional coding at matched error bounds, and progressive raw storage missed its byte-saving gate (0.59 against $\le 0.5$ of a cascade) because a separate envelope index dominated~\cite{compression}. This motivated storing a retrieval representation \emph{next to} losslessly coded raw data rather than a multiresolution raw format.
+\section{Related work and what is new}\label{sec:related}
+We looked for the strongest overlapping prior work, reading primary sources; Table~\ref{tab:related} records for each work whether we read the full text (F), parts (P) or only the abstract (A). The full matrix, with quotations and what we searched for, is in the repository~\cite{repo}. We use \emph{shift} for a displacement along the time axis. Invariance to a vertical offset (adding a constant), as in normalization-based methods~\cite{kvmatch}, and shift-invariant kernels that average over all circular shifts~\cite{grail} are different notions.
 
-\textbf{Reference coding.} Coding a machining recording as a residual against an earlier execution of the same operation would have saved at most 0.0019\% on the Bosch CNC data~\cite{bosch}, because executions were too dissimilar sample by sample~\cite{x1}.
+\begin{table*}[t]
+\caption{Closest prior work. Shift: which displacements along the time axis the similarity tolerates. Side: where the shift is applied. Cands.: whether the candidate set is exact for the stated similarity. Read: F full text, P parts, A abstract. $^a$exact for the magnitude feature, which itself approximates the rotation distance.}
+\label{tab:related}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.11\textwidth}>{\raggedright\arraybackslash}p{0.14\textwidth}>{\raggedright\arraybackslash}p{0.12\textwidth}>{\raggedright\arraybackslash}p{0.12\textwidth}>{\raggedright\arraybackslash}p{0.13\textwidth}>{\raggedright\arraybackslash}p{0.055\textwidth}>{\raggedright\arraybackslash}X>{\centering\arraybackslash}p{0.025\textwidth}@{}}
+\toprule
+Work & Similarity & Shift & Side & Index & Cands. & Copies, refinement & Read \\
+\midrule
+Rafiei 1999~\cite{rafiei} & Euclidean on normal form, truncated DFT & set of transformations incl.\ time shifts (circular in DFT) & transformations applied to index entries & R-tree on DFT coefficients, one traversal for all & exact & one copy; false positives removed exactly & F \\
+Keogh et al. 2006/09~\cite{keogh} & Euclidean (also DTW) & all circular rotations or a limited range & query: matrix of rotations, merged into wedges & lower bounds; VP-tree & exact & one copy; exact refinement & F \\
+Vlachos et al. 2005~\cite{vlachos} & Euclidean on Fourier magnitudes & all circular & data: invariant feature & VP-tree variant & exact$^a$ & one compressed signature & P \\
+Foulds et al. 2015~\cite{foulds} & distance over cyclic permutations of the query & all cyclic & query & none; parallel DFT-based search & exact & --- & A \\
+k-Shape, TODS 2017~\cite{kshape,kshapetods} & normalized CC incl.\ biased variant & all linear shifts (FFT) & pairwise & none & exact & --- & P \\
+GRAIL 2019~\cite{grail} & kernel over all circular shifts of NCC & all circular & data: learned embedding & any (Euclidean/IP) & approx. & one embedding per series & P \\
+Qiu et al. 2018~\cite{qiu} & Pearson at zero lag & none & data: learned embedding & Euclidean index & approx. & one embedding & P \\
+MASS, UCR suite~\cite{mass,ucr} & z-normalized ED per subsequence & every offset & scan & none & exact & --- & A \\
+FAST, Rong et al.~\cite{fast,rong} & Jaccard on binary fingerprints & data windows every 1\,s & data: dense windows & MinHash LSH & approx. & one fingerprint per overlapping window & F \\
+Tibi et al. 2017~\cite{tibi,gonzales} & max-over-lag CC of waveforms & bounded lags & data: kernel-PCA embedding of CC & KD-tree forest & approx. & projected vectors; exact CC on candidates & F \\
+ColBERT 2020~\cite{colbert} & sum of max inner products & --- & query: one vector per token & one ANN index, one search per vector & approx. & union of candidates re-ranked exactly & F \\
+\textbf{This paper} & biased, zero-padded CC & linear, $|\ell|\le L$ & query: sparse grid of shifted copies & unmodified IP HNSW, one search per probe & approx. & one vector copy + index; union re-ranked with $D$ & --- \\
+\bottomrule
+\end{tabularx}
+\end{table*}
 
-\textbf{Out of scope.} Three later studies tested retrieval-based forecasting of bearing and turbofan degradation and current-to-vibration estimation; none passed its gate~\cite{repo}. They concern analytics on top of the store rather than storage and retrieval.
+\textbf{What is known.} Three ideas we use are established. (i)~\emph{Shifting the query instead of the data.} Rafiei~\cite{rafiei} evaluates similarity under a set of transformations, explicitly including time shifts, against one index of untransformed sequences, and processes all transformations in one index traversal; Keogh et al.~\cite{keogh} expand a query into all its rotations, keep the database stored once, support rotation-limited queries by dropping rows of that matrix, and merge neighbouring rotations into a few envelopes, an exact counterpart of our sparse grid. Foulds et al.~\cite{foulds} search under cyclic permutations of the query. All three are exact, use Euclidean-type distances, and treat shifts as circular. (ii)~\emph{Several vector queries against one approximate index, union, exact re-ranking.} ColBERT's end-to-end retrieval issues one ANN search per query vector, takes the union of document identifiers and re-ranks it exhaustively~\cite{colbert}. (iii)~\emph{ANN candidates for cross-correlation.} In seismology, Tibi et al.~\cite{tibi} project waveforms with kernel PCA so that correlation maps to Euclidean distance, search a KD-tree forest and evaluate exact correlation on the returned set (25$\times$ faster than linear search at recall above 80\%); Gonzales et al.~\cite{gonzales} issue several internal queries to compensate for projection error. FAST obtains shift tolerance from densely overlapping data windows~\cite{fast,rong}, and GRAIL learns embeddings of a shift-invariant correlation kernel~\cite{grail}. The identity between a lag term and an inner product with a shifted signal is textbook; the biased statistic itself appears as NCC$_b$ in the k-Shape work~\cite{kshapetods}. On the database side, choosing brute force over an index when a filter is selective is standard in vector systems (AnalyticDB-V, Milvus, ACORN, and the documented thresholds of Weaviate, Qdrant, Vespa and Lucene)~\cite{adbv,milvus,acorn}; VBase and pgvector's iterative scans provide filtered index scans inside PostgreSQL~\cite{vbase,pgvector}; SingleStore-V makes vector search visible at commit by indexing immutable segments and scanning fresh rows exactly~\cite{singlestorev}; and KV-match and ULISSE return exact subsequence matches as offsets in stored series~\cite{kvmatch,ulisse}.
 
-\section{Related work}\label{sec:related}
-\textbf{Float compression.} Gorilla~\cite{gorilla} and Chimp~\cite{chimp} XOR consecutive values and suit slowly changing metrics; ALP~\cite{alp} finds decimal exponents and falls back to ALP-RD for high-precision doubles; FCBench~\cite{fcbench} compares such methods across domains. Our results add a data class to this picture: calibrated sensor floats. On the two such inputs we tested, a declared quantum with per-chunk step refinement was smaller than the tested ALP implementation and than zstd; whether replaying calibration arithmetic can remove the remaining corrections is open.
+\textbf{What is new here.} We claim neither query-side shifting, nor multi-query candidate generation, nor routing as new. What we did not find in the works above, which is not evidence that it does not exist, is their combination for a \emph{bounded, zero-padded, linear} lag scorer on an \emph{unmodified, approximate inner-product index}: Equation~\ref{eq:probe} lets a bounded-lag score use any inner-product ANN index without training an embedding (unlike Tibi et al.\ and GRAIL), without replicating windows per shift (unlike FAST), and without lower bounds (unlike Rafiei and Keogh et al.). The price is that candidate selection becomes approximate, which those exact methods avoid. The contribution we can support with evidence is therefore narrower than a new algorithm: (1)~a measured diagnosis that zero-lag candidates fail for this scorer because of their metric, not because of approximate search; (2)~an ablation separating grid sparsity from index error, with an explanation of the grid spacing from envelope smoothness; (3)~a held-out confirmation; and (4)~an integration that keeps one contract on both paths, with measured costs of storage, filters and maintenance. Implementing the method in PostgreSQL is not by itself a contribution; keeping intervals, filters, row-level security and commit-time visibility identical on the exact and approximate paths is the part we evaluate.
 
-\textbf{Waveform and audio coding.} Shorten and FLAC~\cite{shorten,flac} established polynomial or LPC prediction with Rice coding~\cite{rice}; seismology stores counts with Steim compression in miniSEED~\cite{seed}. \M{} reuses these techniques and adds the float grid with exact corrections.
+\textbf{The single-traversal alternative.} Rafiei and Keogh et al.\ show that processing all transformations in one exact traversal with lower bounds can beat one search per transformation. We tested the two bounds closest to this design on our scorer before building probe search~\cite{pruning}: a Keogh-style envelope bound and a spectral bound, each covering all lags $|\ell|\le L$, on 1,826 windows of 2022 data. Even with the true tenth-best distance as threshold and a free bound, their combination pruned 63\% of candidates (median overestimate of the best correlation 1.83$\times$), which caps an exact pruned scan at about 1.9$\times$ on that gallery and 2.3$\times$ in the limit of large galleries, against the 5.4$\times$ of probes over the fastest exact path. Finer wedges, one bound per group of neighbouring lags, would be tighter; we did not test them. Smooth, normalized seismic envelopes have similar spectra and running ranges, which is the information such bounds keep.
 
-\textbf{Time-series and array stores.} TimescaleDB~\cite{timescale} compresses rows of samples in PostgreSQL, with Gorilla-style coding for floats. SciDB~\cite{scidb} and TileDB~\cite{tiledb} manage dense arrays outside a relational engine. Columnar formats such as Parquet~\cite{parquet} and engines such as DuckDB~\cite{duckdb} store sample columns well (Table~\ref{tab:b1}) but leave recording semantics, replay-safe appends and interval read-back to the application.
+\section{Limitations}\label{sec:limits}
+\textbf{One signal domain.} All retrieval results use seismic envelopes from one network. The method needs only a bounded-lag inner-product scorer, but how many probes and candidates suffice depends on envelope smoothness and on how often best lags fall between grid points; we have not measured this on vibration, acoustic or physiological data. The title-level claim about \emph{waveforms} therefore rests on one domain.
 
-\textbf{Similarity search.} FAST~\cite{fast} fingerprints seismic waveforms for large-scale similarity search; the UCR suite~\cite{ucr} and matrix-profile methods~\cite{matrixprofile} search subsequences under shift and warping. Graph indexes such as HNSW~\cite{hnsw}, available in PostgreSQL through pgvector~\cite{pgvector}, give approximate nearest neighbours under fixed metrics. k-Shape's shape-based distance~\cite{kshape} and MASS~\cite{mass} evaluate normalized cross-correlation over all shifts exactly, the latter with per-subsequence normalization unlike \M{}'s biased, bounded-lag score; FAST obtains shift tolerance on the data side by indexing densely overlapping windows. Streaming vector indexes such as FreshDiskANN~\cite{freshdiskann} and VStream~\cite{vstream} keep zero-lag ANN indexes fresh under updates. Among the sources we read we found none that issues query-side shifted probes into an inner-product ANN index to recover a bounded-lag cross-correlation top-$k$; we do not claim the general idea of multi-probe search as new. \M{}'s contribution is the placement of an exact lag-tolerant scorer inside the database next to the samples it links back to, a candidate-generation method for it that uses standard indexes, and their measurement against these alternatives.
+\textbf{One implementation state per study.} Development, confirmation, product checks, filtered search and load runs were measured on successive implementation states over several weeks: exact search became a parallel statement, routing and filter-aware probes were added, and envelope building was batched. Each study compares arms within one state, but cross-study ratios (for example, product probe latency against an exact path from another study) mix states. A consolidated rerun on one frozen commit has not been made.
 
-\section{Limitations}
-\textbf{One machine, warm caches.} All timings come from one laptop-class machine with warm caches, most with one client; the load tests of Section~\ref{sec:ops} used four writers and four analysts on a machine shared with an unrelated workload, and we did not measure disk-cold caches, several tenants under load, or archives beyond about one million windows. R2 and R2-D tested one HNSW configuration and two candidate budgets; R2's own HNSW arm silently ran as an exact scan because no plan check covered it, which R2-D found and corrected. Probe search was evaluated on galleries of about 235,000 windows; filtered search was evaluated at five filter levels on the same two databases, and the router missed its pre-registered latency bound at the unfiltered level of the confirmation data by 0.8\,ms. Stage B used one day of four channels and one worker. Storage sizes are deterministic and transfer to other machines; latencies do not.
+\textbf{Measurement conditions.} One laptop-class machine, warm caches, pgvector's HNSW in one configuration and two budgets for zero-lag shortlists. Later runs shared the machine with an unrelated CPU-intensive job; we report its load average but cannot remove its effect. Load tests ran 15 minutes; a two-hour run was pending at the time of writing, and we make no claim about longer operation, archives beyond about one million windows, cold caches or several tenants under load.
 
-\textbf{Baselines.} TimescaleDB was tested in one configuration; ALP was measured inside DuckDB, including its block layout; FLAC is the only LPC-based integer codec. The Parquet float arm used one fixed encoding.
+\textbf{What recall means.} Recall@10 measures fidelity to the scorer $D$. Whether the bounded-lag top ten are the intervals an analyst wants is a separate question; we have a catalogue-distance proxy for seismic events in the supplement, but no task evaluation of probe search.
 
-\textbf{Data reuse and relevance.} P1 reuses R1b's data, the P2 inputs come from earlier studies, an earlier engineering check had measured \M{}'s storage of the Sleep-EDF collection, and R2-D is a diagnostic on R2's data. R1b's 2022 windows, BL1-C's March 2021 slice of four never-used CX stations and S1's held-out subjects had not been used before; R2's March 2025 slice overlapped 0.1\% of its samples with windows an earlier study had read. Our main retrieval metric is fidelity (recall against an exact reference). Task relevance is supported only by a catalogue-distance proxy for seismic events and by sleep staging; we make no claim about other domains or workloads.
+\textbf{Approximation without bounds.} Probe search can miss a window that the exact path returns (per query, down to 7 of 10 on held-out data). The router removes this risk only where it chooses the exact path. Exact pruning with lag-uniform lower bounds was capped near 2$\times$ on our data (Section~\ref{sec:related}); finer, per-lag-group bounds were not tested.
 
-\textbf{Correctness.} Bitwise round trips on every measured chunk, replay tests and permission checks are engineering evidence, not formal verification of the codec, the transaction logic or access control.
+\textbf{Grid choice.} The 13-probe grid was chosen on dev data and explained post hoc by envelope smoothness on dev data; it was confirmed on held-out data but only for this representation.
 
 \section{Conclusion}
-Treating a recording, rather than a sample or a vector, as the unit of storage lets a relational engine keep original samples compact, keep search representations replaceable, and return results that read back exactly. On the two calibrated inputs tested, declaring the digitizer grid mattered more than codec sophistication: where the tested ALP implementation stayed near 60 bits per sample, \M{} needed 9--16, and most of the remaining gap to integer codecs is the cost of reproducing the source's rounding. Whether replaying calibration arithmetic removes it is untested. For retrieval, an ordinary vector column stores envelopes equally well, but lag tolerance changes the answer: over the measured range the exhaustive scan grew linearly, and a zero-lag shortlist of 1000, exact or from HNSW, recovered three quarters of its top ten. Probing the lag terms directly, as inner products with shifted queries, recovered 97.6\% of the bounded-lag top ten on held-out data at a twentieth of the exhaustive latency, through an index PostgreSQL users already have, and kept new windows searchable at commit. Materialized representations are cheap relative to raw data only when windows are sparse or raw data compresses poorly. Two engineering results matter as much as the algorithm: filters need routing, because post-filtering an approximate candidate set silently loses recall when few windows qualify; and building representations in batches, decoding each raw chunk once, cut database CPU per window 4.2$\times$ with byte-identical output, which is most of what moving the work to external compute workers would have bought. Keeping a single stored representation is exact and saves a third of the search storage, but on PostgreSQL either design costs 20--30\% latency on one search path. Operating the index is part of the method's cost: maintaining it at commit sustained the tested ingest rate only once checkpoint settings contained write-ahead logging, and access control had to cover every companion table, not only recordings. Exact replay of calibration arithmetic, relevance beyond scorer fidelity, and long-run stability remain open.
-
-\section*{Artifact availability and disclosure}
-Code (Apache-2.0), frozen protocols with their commits, harnesses, tests and raw result files are at \url{https://github.com/merkhet-io/morletdb}; datasets keep their own licences. This draft was prepared with AI assistance from the repository's reports; the author must audit text, numbers and references before submission.
+Bounded-lag waveform search can use a standard inner-product index if the index is asked the right question. A zero-lag shortlist asks a different one, and lost a quarter of the scorer's top ten whether it was computed exactly or approximately. Because each lag term is an inner product with a shifted query, thirteen shifted probes into one unmodified HNSW index, re-ranked with the unchanged scorer, recovered 97.6\% of the top ten on held-out stations and year at about a fifth of the latency of the fastest exact path; an exact-candidate control showed that nearly all of the remaining loss comes from the index, not from the sparse grid. Inside PostgreSQL, the same contract holds on both paths: hits are sample intervals of losslessly stored recordings, filters and row-level security apply, and new windows are searchable at commit. The benefit is bounded by three costs: an index copy of 1.0--1.4$\times$ the raw data, a router that must send selective filters to exact search, and write-ahead logging from index maintenance that default checkpoint settings do not contain. A consolidated comparison on one frozen implementation, and a second signal domain, are the evidence still missing for a general claim.
 
 \begin{thebibliography}{40}\small
-\bibitem{alp} Azim Afroozeh, Leonardo X. Kuffo, and Peter Boncz. 2023. ALP: Adaptive Lossless floating-Point Compression. \emph{Proc. ACM Manag. Data} 1, 4, Article 230 (Dec. 2023), 26 pages. doi:10.1145/3626717.
-\bibitem{fcbench} Xinyu Chen, Jiannan Tian, Ian Beaver, Cynthia Freeman, Yan Yan, Jianguo Wang, and Dingwen Tao. 2024. FCBench: Cross-Domain Benchmarking of Lossless Compression for Floating-Point Data. \emph{Proc. VLDB Endow.} 17, 6 (2024), 1418--1431. doi:10.14778/3648160.3648180.
-\bibitem{gorilla} Tuomas Pelkonen, Scott Franklin, Justin Teller, Paul Cavallaro, Qi Huang, Justin Meza, and Kaushik Veeraraghavan. 2015. Gorilla: A Fast, Scalable, In-Memory Time Series Database. \emph{Proc. VLDB Endow.} 8, 12 (2015), 1816--1827. doi:10.14778/2824032.2824078.
-\bibitem{chimp} Panagiotis Liakos, Katia Papakonstantinopoulou, and Yannis Kotidis. 2022. Chimp: Efficient Lossless Floating Point Compression for Time Series Databases. \emph{Proc. VLDB Endow.} 15, 11 (2022), 3058--3070. doi:10.14778/3551793.3551852.
-\bibitem{shorten} Tony Robinson. 1994. SHORTEN: Simple lossless and near-lossless waveform compression. Technical Report CUED/F-INFENG/TR.156, Cambridge University Engineering Department.
-\bibitem{flac} Martijn van Beurden and Andrew Weaver. 2024. Free Lossless Audio Codec (FLAC). RFC 9639, RFC Editor. doi:10.17487/RFC9639.
-\bibitem{rice} Robert F. Rice. 1979. Some Practical Universal Noiseless Coding Techniques. JPL Publication 79-22 (NASA-CR-158515), Jet Propulsion Laboratory.
-\bibitem{edf} Bob Kemp, Alpo V\"arri, Agostinho C. Rosa, Kim D. Nielsen, and John Gade. 1992. A simple format for exchange of digitized polygraphic recordings. \emph{Electroencephalography and Clinical Neurophysiology} 82, 5, 391--393. doi:10.1016/0013-4694(92)90009-7.
-\bibitem{seed} International Federation of Digital Seismograph Networks. SEED Reference Manual, version 2.4. \url{https://www.fdsn.org/publications/}.
-\bibitem{timescale} Timescale, Inc. TimescaleDB documentation: hypertables and native compression. \url{https://docs.timescale.com}.
 \bibitem{pgvector} pgvector contributors. pgvector: open-source vector similarity search for Postgres, version 0.8.0. \url{https://github.com/pgvector/pgvector}.
-\bibitem{hnsw} Yu. A. Malkov and D. A. Yashunin. 2020. Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs. \emph{IEEE Trans. Pattern Anal. Mach. Intell.} 42, 4, 824--836. doi:10.1109/TPAMI.2018.2889473.
-\bibitem{duckdb} Mark Raasveldt and Hannes M\"uhleisen. 2019. DuckDB: an Embeddable Analytical Database. In \emph{Proc. 2019 Int. Conf. on Management of Data (SIGMOD '19)}, 1981--1984. doi:10.1145/3299869.3320212.
-\bibitem{parquet} Apache Software Foundation. Apache Parquet format specification. \url{https://parquet.apache.org/docs/}.
-\bibitem{scidb} Michael Stonebraker, Paul Brown, Donghui Zhang, and Jacek Becla. 2013. SciDB: A Database Management System for Applications with Complex Analytics. \emph{Computing in Science \& Engineering} 15, 3, 54--62. doi:10.1109/MCSE.2013.19.
-\bibitem{tiledb} Stavros Papadopoulos, Kushal Datta, Samuel Madden, and Timothy Mattson. 2016. The TileDB Array Data Storage Manager. \emph{Proc. VLDB Endow.} 10, 4, 349--360. doi:10.14778/3025111.3025117.
 \bibitem{fast} Clara E. Yoon, Ossian O'Reilly, Karianne J. Bergen, and Gregory C. Beroza. 2015. Earthquake detection through computationally efficient similarity search. \emph{Science Advances} 1, 11, e1501057. doi:10.1126/sciadv.1501057.
 \bibitem{ucr} Thanawin Rakthanmanon, Bilson Campana, Abdullah Mueen, Gustavo Batista, Brandon Westover, Qiang Zhu, Jesin Zakaria, and Eamonn Keogh. 2012. Searching and Mining Trillions of Time Series Subsequences under Dynamic Time Warping. In \emph{Proc. 18th ACM SIGKDD Int. Conf. on Knowledge Discovery and Data Mining (KDD '12)}, 262--270. doi:10.1145/2339530.2339576.
-\bibitem{matrixprofile} Chin-Chia Michael Yeh, Yan Zhu, Liudmila Ulanova, Nurjahan Begum, Yifei Ding, Hoang Anh Dau, Diego Furtado Silva, Abdullah Mueen, and Eamonn Keogh. 2016. Matrix Profile I: All Pairs Similarity Joins for Time Series: A Unifying View That Includes Motifs, Discords and Shapelets. In \emph{IEEE 16th Int. Conf. on Data Mining (ICDM)}, 1317--1322. doi:10.1109/ICDM.2016.0179.
-\bibitem{sleepedf} Bob Kemp, Aeilko H. Zwinderman, Bert Tuk, Hilbert A. C. Kamphuisen, and Josefien J. L. Obery\'e. 2000. Analysis of a sleep-dependent neuronal feedback loop: the slow-wave microcontinuity of the EEG. \emph{IEEE Trans. Biomed. Eng.} 47, 9, 1185--1194. doi:10.1109/10.867928.
-\bibitem{physionet} Ary L. Goldberger, Luis A. N. Amaral, Leon Glass, Jeffrey M. Hausdorff, Plamen Ch. Ivanov, Roger G. Mark, Joseph E. Mietus, George B. Moody, Chung-Kang Peng, and H. Eugene Stanley. 2000. PhysioBank, PhysioToolkit, and PhysioNet: Components of a New Research Resource for Complex Physiologic Signals. \emph{Circulation} 101, 23, e215--e220. doi:10.1161/01.CIR.101.23.e215.
-\bibitem{ptbxl} Patrick Wagner, Nils Strodthoff, Ralf-Dieter Bousseljot, Dieter Kreiseler, Fatima I. Lunze, Wojciech Samek, and Tobias Schaeffter. 2020. PTB-XL, a large publicly available electrocardiography dataset. \emph{Scientific Data} 7, Article 154. doi:10.1038/s41597-020-0495-6.
 \bibitem{ipoc} GFZ German Research Centre for Geosciences and Institut des Sciences de l'Univers--Centre National de la Recherche CNRS-INSU. 2006. IPOC Seismic Network. Integrated Plate boundary Observatory Chile. Network code CX. doi:10.14470/PK615318.
-\bibitem{bosch} Mohamed-Ali Tnani, Michael Feil, and Klaus Diepold. 2022. Smart Data Collection System for Brownfield CNC Milling Machines: A New Benchmark Dataset for Data-Driven Machine Monitoring. \emph{Procedia CIRP} 107, 131--136. doi:10.1016/j.procir.2022.04.022.
-\bibitem{paderborn} Christian Lessmeier, James Kuria Kimotho, Detmar Zimmer, and Walter Sextro. 2016. Condition Monitoring of Bearing Damage in Electromechanical Drive Systems by Using Motor Current Signals of Electric Motors: A Benchmark Data Set for Data-Driven Classification. In \emph{Proc. European Conf. of the PHM Society (PHME 2016)}. doi:10.36001/phme.2016.v3i1.1577.
-\bibitem{ims} J. Lee, H. Qiu, G. Yu, J. Lin, and Rexnord Technical Services. 2007. Bearing Data Set. IMS, University of Cincinnati. NASA Prognostics Data Repository, NASA Ames Research Center. \url{https://data.nasa.gov/dataset/ims-bearings}.
 \bibitem{repo} \M{} contributors. 2026. \M{} source repository, protocols and results. \url{https://github.com/merkhet-io/morletdb}.
-\bibitem{plain} \M{} contributors. Plain PostgreSQL baselines P1 and P2. \code{evaluation/plain_postgres/README.md} in~\cite{repo}.
-\bibitem{b1} \M{} contributors. B1: lossless storage against modern baselines. \code{evaluation/storage_baselines/} in~\cite{repo}.
 \bibitem{r1b} \M{} contributors. R1b confirmation (2022). \code{evaluation/materialized/compact/results/conf-2022/RESULTS.md} in~\cite{repo}.
 \bibitem{r2} \M{} contributors. R2: retrieval scaling, and R2-D diagnostic. \code{evaluation/retrieval_scaling/} in~\cite{repo}.
-\bibitem{sleep} \M{} contributors. S1: sleep staging by retrieval. \code{evaluation/sleep/RESULTS.md} in~\cite{repo}.
-\bibitem{compression} \M{} contributors. Stage-1 compression benchmark. \code{evaluation/compression/results/ab70819/RESULTS.md} in~\cite{repo}.
 \bibitem{kshape} John Paparrizos and Luis Gravano. 2015. k-Shape: Efficient and Accurate Clustering of Time Series. In \emph{Proc. 2015 ACM SIGMOD Int. Conf. on Management of Data (SIGMOD '15)}. doi:10.1145/2723372.2737793.
 \bibitem{mass} Abdullah Mueen et al. The Fastest Similarity Search Algorithm for Time Series Subsequences under Euclidean Distance. \url{https://www.cs.unm.edu/~mueen/FastestSimilaritySearch.html}.
-\bibitem{freshdiskann} Singh, Subramanya, Krishnaswamy, and Simhadri. 2021. FreshDiskANN: A Fast and Accurate Graph-Based ANN Index for Streaming Similarity Search. arXiv:2105.09613.
-\bibitem{vstream} Gong, Sun, Fang, Liu, Chen, and Gao. 2025. VStream: A Distributed Streaming Vector Search System. \emph{Proc. VLDB Endow.} 18, 6, 1593--1606. doi:10.14778/3725688.3725692.
 \bibitem{bl1} \M{} contributors. BL1: shifted-probe retrieval, confirmation and ingestion. \code{evaluation/bounded_lag/} in~\cite{repo}.
 \bibitem{ss1} \M{} contributors. SS1: one stored envelope representation. \code{evaluation/search_storage/SS1_RESULTS.md} in~\cite{repo}.
 \bibitem{ss3} \M{} contributors. SS3: filtered envelope search. \code{evaluation/search_storage/SS3_RESULTS.md} in~\cite{repo}.
 \bibitem{pilot} \M{} contributors. Pilot stages 1--2: access control, recovery and load. \code{evaluation/pilot/RESULTS.md} in~\cite{repo}.
-\bibitem{cw1} \M{} contributors. CW1: external compute workers. \code{evaluation/external_worker/CW1_RESULTS.md} in~\cite{repo}.
-\bibitem{x1} \M{} contributors. X1: reference coding across repeated operations. \code{evaluation/compression/reference/RESULTS.md} in~\cite{repo}.
+\bibitem{rafiei} Davood Rafiei. 1999. On Similarity-Based Queries for Time Series Data. In \emph{Proc. 15th Int. Conf. on Data Engineering (ICDE)}.
+\bibitem{keogh} Eamonn Keogh, Li Wei, Xiaopeng Xi, Sang-Hee Lee, and Michail Vlachos. 2006. LB\_Keogh Supports Exact Indexing of Shapes under Rotation Invariance with Arbitrary Representations and Distance Measures. In \emph{Proc. 32nd Int. Conf. on Very Large Data Bases}, 882--893. Extended in \emph{The VLDB Journal} 18 (2009), 611--630. doi:10.1007/s00778-008-0111-4.
+\bibitem{vlachos} Michail Vlachos, Zografoula Vagena, Philip S. Yu, and Vassilis Athitsos. 2005. Rotation Invariant Indexing of Shapes and Line Drawings. In \emph{Proc. 14th ACM Int. Conf. on Information and Knowledge Management (CIKM)}, 131--138. doi:10.1145/1099554.1099580.
+\bibitem{foulds} Leslie R. Foulds, Jorge P. de Morais Neto, Humberto J. Longo, Hugo A. D. do Nascimento, and Wellington S. Martins. 2015. A variant of k-nearest neighbors search with cyclically permuted query points for rotation-invariant image processing. \emph{Discrete Applied Mathematics} 197, 123--144. doi:10.1016/j.dam.2015.02.011.
+\bibitem{kshapetods} John Paparrizos and Luis Gravano. 2017. Fast and Accurate Time-Series Clustering. \emph{ACM Trans. Database Syst.} 42, 2, Article 8. doi:10.1145/3044711.
+\bibitem{grail} John Paparrizos and Michael J. Franklin. 2019. GRAIL: Efficient Time-Series Representation Learning. \emph{Proc. VLDB Endow.} 12, 11, 1762--1777. doi:10.14778/3342263.3342648.
+\bibitem{qiu} Han Qiu, Hoang Thanh Lam, Francesco Fusco, and Mathieu Sinn. 2018. Learning Correlation Space for Time Series. arXiv:1802.03628.
+\bibitem{rong} Kexin Rong, Clara E. Yoon, Karianne J. Bergen, Hashem Elezabi, Peter Bailis, Philip Levis, and Gregory C. Beroza. 2018. Locality-Sensitive Hashing for Earthquake Detection: A Case Study of Scaling Data-Driven Science. \emph{Proc. VLDB Endow.} 11, 11, 1674--1687.
+\bibitem{tibi} Rigobert Tibi, Christopher Young, Antonio Gonzales, Sanford Ballard, and Andre Encarnacao. 2017. Rapid and Robust Cross-Correlation-Based Seismic Signal Identification Using an Approximate Nearest Neighbor Method. \emph{Bull. Seismol. Soc. Am.} 107, 4, 1954--1968. doi:10.1785/0120170011.
+\bibitem{gonzales} Antonio Gonzales, Nicholas Blazier, et al. Seismic Waveform Matching via Approximate Nearest Neighbor with Projection Deficiency Compensation. Sandia National Laboratories, OSTI 1458306.
+\bibitem{colbert} Omar Khattab and Matei Zaharia. 2020. ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT. In \emph{Proc. 43rd Int. ACM SIGIR Conf.}, 39--48. doi:10.1145/3397271.3401075.
+\bibitem{adbv} Chuangxian Wei, Bin Wu, Sheng Wang, Renjie Lou, Chaoqun Zhan, Feifei Li, and Yuanzhe Cai. 2020. AnalyticDB-V: A Hybrid Analytical Engine Towards Query Fusion for Structured and Unstructured Data. \emph{Proc. VLDB Endow.} 13, 12, 3152--3165.
+\bibitem{milvus} Jianguo Wang et al. 2021. Milvus: A Purpose-Built Vector Data Management System. In \emph{Proc. 2021 Int. Conf. on Management of Data (SIGMOD)}. doi:10.1145/3448016.3457550.
+\bibitem{acorn} Liana Patel, Peter Kraft, Carlos Guestrin, and Matei Zaharia. 2024. ACORN: Performant and Predicate-Agnostic Search Over Vector Embeddings and Structured Data. \emph{Proc. ACM Manag. Data} 2, 2 (SIGMOD 2024). doi:10.1145/3654923.
+\bibitem{vbase} Qianxi Zhang et al. 2023. VBASE: Unifying Online Vector Similarity Search and Relational Queries via Relaxed Monotonicity. In \emph{17th USENIX Symp. on Operating Systems Design and Implementation (OSDI)}.
+\bibitem{singlestorev} Cheng Chen, Chenzhe Jin, Yunan Zhang, Sasha Podolsky, et al. 2024. SingleStore-V: An Integrated Vector Database System in SingleStore. \emph{Proc. VLDB Endow.} 17, 12.
+\bibitem{kvmatch} Jiaye Wu, Peng Wang, Ningting Pan, Chen Wang, Wei Wang, and Jianmin Wang. 2019. KV-Match: A Subsequence Matching Approach Supporting Normalization and Time Warping. In \emph{Proc. 35th IEEE Int. Conf. on Data Engineering (ICDE)}. arXiv:1710.00560.
+\bibitem{ulisse} Michele Linardi and Themis Palpanas. 2018. Scalable, Variable-Length Similarity Search in Data Series: The ULISSE Approach. \emph{Proc. VLDB Endow.} 11, 13, 2236--2248. doi:10.14778/3275366.3275372.
+\bibitem{pruning} \M{} contributors. Certified pruning for envelope search: headroom and feasibility. \code{evaluation/pruning/README.md} in~\cite{repo}.
+\bibitem{grid} \M{} contributors. Grid-spacing analysis on development data. \code{research/paper/analysis/} in~\cite{repo}.
 \end{thebibliography}
 
 \appendix
-\section{Evidence ledger}
+\section{Claims and evidence}\label{sec:ledger}
+Each claim of the paper with the study that supports it, the measurement kind (E: experiment, P: product, H: historic) and data (D: dev, C: held-out), and its main restriction. Full protocols and results: \cite{repo}.
+
 \small
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.40\linewidth}l>{\raggedright\arraybackslash}X@{}}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}l>{\raggedright\arraybackslash}X@{}}
 \toprule
-Claim & Source & Restriction \\
+Claim & Study & Restriction \\
 \midrule
-6.12--11.53 bits/sample in DB & P2 & one TimescaleDB configuration \\
-24--35\% larger (T int) & P2 & users must supply counts \\
-ALP $\approx$60 bits on calibrated & B1 & DuckDB 2.0.0 implementation \\
-1.5--1.6$\times$ below zstd & B1 & 2$\times$ claim not supported \\
-1.3 / 6.7 bits of corrections & B1 & two calibrated inputs \\
-12.9\% size, recall 0.9999 & R1b & fidelity, not relevance \\
-64.7\% zero-lag overlap & P1 & different similarity semantics \\
-12\,\textmu s per window, linear & R2 & measured range 4.2--235\,k; warm, one client \\
-zero-lag top 1000 + re-rank: recall 0.743 & R2, R2-D & exact shortlist; R2 never used HNSW \\
-HNSW top 1000 + re-rank: recall 0.744 & R2-D & consumed data; one configuration \\
-envelopes 12.9\% vs 60.2\% of raw & R1b, R2 & stride, compressibility, layout \\
-probes: recall 0.976, p95 131 vs 2,854\,ms & BL1-C & held out; unfiltered; one machine \\
-same-size zero-lag shortlist: 0.613 & BL1-C & descriptive control \\
-product function: 0.977, p95 50\,ms & product check & same held-out queries \\
-searchable at commit, 919k samples/s & BL1-S & development data; one day, 4 channels \\
-filtered recall 0.515 $\to$ 1.0 at 1.8\% eligible & SS3 & routed to exact; 5 levels \\
-router recall 0.977--1.0, no filter/RLS violations & SS3 & latency bound missed by 0.8\,ms (L5) \\
-single representation saves 250\,MB/235k windows & SS1 & +23\% exact or +27--32\% probe p95 \\
+zero-lag top 1000 + re-rank: recall 0.743 (exact), 0.744 (HNSW) & R2-D; E, D & two budgets, one HNSW configuration \\
+HNSW and exact shortlists share 98--100\% of candidates & R2-D; E, D & largest gallery \\
+13-lag grid exact = all 61 lags (1.000) & BL1; E, D & dev only; offline control \\
+7-lag grid loses 0.014 & BL1; E, D & dev only \\
+spacing 5 keeps $\ge$0.944 envelope autocorrelation (p5) & grid; E, D & post hoc; one representation \\
+lag-uniform bounds prune $\le$63\%, $\le$2.3$\times$ & pruning; E & 2022 windows; oracle threshold \\
+probes 0.976 (min 0.7; 5/100 $<$0.9) & BL1-C; E, C & seismic; unfiltered \\
+index approximation costs 0.023 & BL1-C; E, C & includes float16 probes \\
+same-count zero-lag: 0.613 & BL1-C; E, C & descriptive control \\
+p95 131 vs 713\,ms (fastest exact) & BL1-C; E, C & one machine, warm \\
+product function: 0.977, p95 50\,ms & product check; P, C & later implementation \\
 \bottomrule
 \end{tabularx}
 
 \medskip\noindent
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.40\linewidth}l>{\raggedright\arraybackslash}X@{}}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}l>{\raggedright\arraybackslash}X@{}}
 \toprule
-Claim & Source & Restriction \\
+Claim & Study & Restriction \\
 \midrule
-batched build: 1.31 $\to$ 0.31\,ms DB CPU/window & CW1, \#68 & byte-identical; one machine \\
-companion-table RLS: exact 946 $\to$ 995\,ms & Stage 1 & leak found and fixed; one tenant layout \\
-recovery B1--B7 pass & Stage 2 & 50k windows; one machine \\
-409.6k samples/s sustained, capacity 1.3--1.4$\times$ & C2, C3 & 939k windows; shared machine \\
-WAL 13.8 $\to$ 1.91\,GB per 15\,min & C2, C2p & four settings changed together \\
-$\kappa$ 0.583 vs 0.541 & S1 & one EEG channel; no clinical claim \\
+post-filter 0.515 at 1.8\% eligible; routed 1.0 & SS3; E/P, C & five filter levels \\
+routed recall 0.977--1.0, no filter or RLS violations & SS3; P, D+C & latency bound missed by 0.8\,ms \\
+index structures 1.00--1.39$\times$ raw & BL1, BL1-C; E & depends on raw compressibility \\
+float16 envelopes: recall 0.9999 & R1b; E & 2022 event windows \\
+one stored copy: $-$250\,MB, +23\% or +27--32\% p95 & SS1; E, D+C & both missed latency bounds \\
+searchable at commit; 919k samples/s & BL1-S; E, D & one day, four channels \\
+409.6k samples/s for 15\,min, capacity 1.3--1.4$\times$ & C2, C3; P & 15-min runs; shared machine \\
+WAL 13.8 $\to$ 1.91\,GB per 15\,min & C2, C2p; P & four settings changed together; load 11.7 vs 7.3 \\
+companion-table RLS: exact +5\% & Stage 1; P & one tenant layout \\
 \bottomrule
 \end{tabularx}
+
 \end{document}
