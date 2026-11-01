@@ -653,6 +653,99 @@ mod tests {
         Spi::run("SELECT morlet_create_stream_collection('public','env'); SELECT morlet_enable_envelopes('env'); SELECT morlet_start_recording('env',r,100,'HHZ','counts','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B','C']) r; CREATE TEMP TABLE burst AS SELECT i,round(800*exp(-power((i-300)/40.,2))*sin(i/2.))::float8 AS v FROM generate_series(0,599) i; SELECT morlet_append_chunk('env',r,0,ARRAY(SELECT (round(20*sin(s.i*1.7+off)+((s.i*7919+off*13)%23))+coalesce(b.v,0))::float8 FROM generate_series(0,16383) s(i) LEFT JOIN burst b ON b.i=s.i-at ORDER BY s.i)) FROM (VALUES ('A',2700,1),('B',9800,2),('C',-100000,3)) x(r,at,off)").unwrap();
     }
 
+    fn tenant_fixture() {
+        Spi::run(r#"
+            SELECT morlet_create_stream_collection('public','ten');
+            SELECT morlet_enable_envelopes('ten');
+            SELECT morlet_start_recording('ten',r,100,'HHZ','counts',jsonb_build_object('tenant',t),512,256,'zscore','none')
+              FROM (VALUES ('a1','a'),('b1','b')) v(r,t);
+            SELECT morlet_append_chunk('ten',r,0,ARRAY(SELECT round(100*sin(i/7.0+o))::float8 FROM generate_series(0,8191) i))
+              FROM (VALUES ('a1',1),('b1',2)) v(r,o);
+            SELECT morlet_build_envelopes('ten',r,2048,1024) FROM unnest(ARRAY['a1','b1']) r;
+            CREATE ROLE morlet_tenant_a;
+            GRANT USAGE ON SCHEMA public TO morlet_tenant_a;
+            ALTER TABLE ten ENABLE ROW LEVEL SECURITY;
+            CREATE POLICY own ON ten FOR SELECT TO morlet_tenant_a USING (metadata->>'tenant'='a');
+        "#).unwrap();
+    }
+
+    #[pg_test]
+    fn row_security_covers_companion_tables() {
+        tenant_fixture();
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT morlet_row_security_enabled('ten')").unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_enable_row_security('ten')").unwrap(),
+            Some(3)
+        ); // chunks, segments, envelopes
+        Spi::run("SELECT morlet_enable_context('ten')").unwrap(); // created later: covered automatically
+        Spi::run("GRANT SELECT ON ten, ten_chunks, ten_segments, ten_envelopes, ten_ctx, ten_ctx_segments, ten_ctx_values, ten_labels TO morlet_tenant_a").unwrap();
+        Spi::run("SET LOCAL ROLE morlet_tenant_a").unwrap();
+        for t in [
+            "ten",
+            "ten_chunks",
+            "ten_segments",
+            "ten_envelopes",
+            "ten_ctx",
+            "ten_ctx_segments",
+            "ten_labels",
+        ] {
+            assert_eq!(
+                Spi::get_one::<i64>(&format!("SELECT count(*) FROM {t} WHERE recording_id='b1'"))
+                    .unwrap(),
+                Some(0),
+                "{t} leaks the hidden recording"
+            );
+        }
+        assert!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ten_envelopes WHERE recording_id='a1'")
+                .unwrap()
+                .unwrap()
+                > 0
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(DISTINCT recording_id,',') FROM morlet_search_envelope_interval('ten','a1',0,2048,'{}',10)").unwrap(), Some("a1".into()));
+    }
+
+    #[pg_test(error = "new row violates row-level security policy for table \"ten_envelopes\"")]
+    fn row_security_rejects_writes_for_hidden_recordings() {
+        tenant_fixture();
+        Spi::run("SELECT morlet_enable_row_security('ten'); GRANT SELECT, INSERT ON ten, ten_envelopes TO morlet_tenant_a; SET LOCAL ROLE morlet_tenant_a").unwrap();
+        Spi::run("INSERT INTO ten_envelopes SELECT 'b1',2048,99999,envelope FROM ten_envelopes WHERE recording_id='a1' LIMIT 1").unwrap();
+    }
+
+    #[pg_test]
+    fn row_security_covers_probe_tables() {
+        if !pgvector_available() {
+            return; // pgvector is optional; CI's pgvector job runs this
+        }
+        Spi::run(r#"
+            CREATE EXTENSION IF NOT EXISTS vector;
+            SELECT morlet_create_stream_collection('public','tenp');
+            SELECT morlet_enable_envelopes('tenp');
+            SELECT morlet_start_recording('tenp',r,100,'HHZ','counts',jsonb_build_object('tenant',t),512,256,'zscore','none')
+              FROM (VALUES ('a1','a'),('b1','b')) v(r,t);
+            SELECT morlet_append_chunk('tenp',r,0,ARRAY(SELECT round(100*sin(i/7.0+o))::float8 FROM generate_series(0,8191) i))
+              FROM (VALUES ('a1',1),('b1',2)) v(r,o);
+            SELECT morlet_build_envelopes('tenp',r,2048,1024) FROM unnest(ARRAY['a1','b1']) r;
+            CREATE ROLE morlet_tenant_p;
+            GRANT USAGE ON SCHEMA public TO morlet_tenant_p;
+            ALTER TABLE tenp ENABLE ROW LEVEL SECURITY;
+            CREATE POLICY own ON tenp FOR SELECT TO morlet_tenant_p USING (metadata->>'tenant'='a');
+            SELECT morlet_enable_row_security('tenp');
+            SELECT morlet_enable_envelope_probes('tenp',2048);
+            GRANT SELECT ON tenp, tenp_chunks, tenp_envelopes, tenp_probes_2048 TO morlet_tenant_p;
+            SET LOCAL ROLE morlet_tenant_p;
+        "#).unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM tenp_probes_2048 WHERE recording_id='b1'")
+                .unwrap(),
+            Some(0)
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(DISTINCT recording_id,',') FROM morlet_search_envelope_probes('tenp','a1',0,2048,'{}',10,0.075,true,true,50,5,0)").unwrap(), Some("a1".into()));
+    }
+
     #[pg_test]
     fn envelope_functions_match_the_core_definition() {
         assert_eq!(

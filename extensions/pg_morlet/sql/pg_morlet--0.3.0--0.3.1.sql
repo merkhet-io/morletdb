@@ -396,6 +396,95 @@ BEGIN
   RETURN QUERY SELECT ids[p],starts[p],ends[p],dists[p],metas[p] FROM unnest(picked) WITH ORDINALITY u(p,k) ORDER BY k;
 END $$;
 
+CREATE OR REPLACE FUNCTION public.morlet_enable_envelopes(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE schema_name text; collection_name text;
+BEGIN
+  SELECT n.nspname,c.relname INTO schema_name,collection_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
+    window_size integer NOT NULL CHECK(window_size IN (512,1024,2048,4096,8192,16384,32768)),
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    envelope bytea NOT NULL CHECK(octet_length(envelope)=1+2*((window_size+9)/10) AND get_byte(envelope,0)=1),
+    PRIMARY KEY(recording_id,window_size,start_sample))',schema_name,collection_name||'_envelopes',schema_name,collection_name);
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
+  RETURN format('%I.%I',schema_name,collection_name||'_envelopes')::regclass;
+END $$;
+
+-- Context model, phase 1 (docs/context-model.md): a context timeline, context
+-- segments, simple-v1 values and compare-to-history, on single recordings in
+-- sample coordinates. Opt-in per collection; all tables are caller-owned.
+CREATE OR REPLACE FUNCTION public.morlet_enable_context(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    ctx_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    kind text NOT NULL CHECK(kind IN (''interval'',''event'')),
+    key text NOT NULL CHECK(key<>''''),
+    value jsonb NOT NULL,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint CHECK(end_sample>start_sample),
+    batch_id text NOT NULL,
+    supersedes bigint REFERENCES %1$I.%2$I(ctx_id),
+    retracted boolean NOT NULL DEFAULT false,
+    recorded_at timestamptz NOT NULL DEFAULT now(),
+    recorded_by text NOT NULL DEFAULT current_user,
+    CHECK((kind=''event'')=(end_sample IS NULL)))',s,c||'_ctx',c);
+  EXECUTE format('CREATE INDEX ON %I.%I(recording_id,key,start_sample)',s,c||'_ctx');
+  EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_ctx');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    context jsonb NOT NULL, occurrence jsonb NOT NULL, ctx_ids bigint[] NOT NULL, spec jsonb NOT NULL,
+    stale boolean NOT NULL DEFAULT false,
+    UNIQUE(recording_id,start_sample,end_sample,spec))',s,c||'_ctx_segments',c);
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint NOT NULL REFERENCES %1$I.%3$I(segment_id) ON DELETE CASCADE,
+    representation text NOT NULL, vals float8[] NOT NULL,
+    PRIMARY KEY(segment_id,representation))',s,c||'_ctx_values',c||'_ctx_segments');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    label_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
+    author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
+    retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
+END $$;
+
+-- Acquisitions (context model phase 2): several channel recordings on one time axis,
+-- acquisition time in integer nanoseconds from the acquisition origin. Each channel
+-- declares where its sample 0 lies (offset_ns), its clock source and the offset's
+-- uncertainty (NULL = exact, a shared DAQ clock). Channels keep their native rates;
+-- nothing is resampled. Recordings without an acquisition work as before.
+CREATE OR REPLACE FUNCTION public.morlet_enable_acquisitions(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    acquisition_id text PRIMARY KEY CHECK(acquisition_id<>''''),
+    machine text NOT NULL,
+    origin_utc timestamptz,
+    metadata jsonb NOT NULL DEFAULT ''{}'' CHECK(jsonb_typeof(metadata)=''object''))',s,c||'_acq');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    acquisition_id text NOT NULL REFERENCES %1$I.%3$I(acquisition_id) ON DELETE CASCADE,
+    recording_id text NOT NULL UNIQUE REFERENCES %1$I.%4$I(recording_id) ON DELETE CASCADE,
+    role text NOT NULL CHECK(role<>''''),
+    offset_ns bigint NOT NULL,
+    clock_source text NOT NULL CHECK(clock_source IN (''daq'',''wallclock'',''controller'')),
+    offset_uncertainty_ns bigint CHECK(offset_uncertainty_ns>=0),
+    PRIMARY KEY(acquisition_id,role))',s,c||'_acq_channels',c||'_acq',c);
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
+END $$;
+
 -- Level track (local-level Kalman filter, model local-level-v1) of one simple-v1 value
 -- over the episodes of a segment's history: the segments morlet_compare_summary would
 -- compare with (same context for match_keys, rate, channel, unit, metadata_filter and
@@ -532,6 +621,7 @@ BEGIN
   EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
     FROM %s WHERE window_size=$1',rel,vschema,env) USING window_size;
   EXECUTE format('CREATE INDEX ON %s USING hnsw (v %I.halfvec_ip_ops) WITH (m=16,ef_construction=64)',rel,vschema);
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
   RETURN rel;
 END $$;
 
@@ -623,3 +713,51 @@ BEGIN
     EXIT WHEN picked=top_k;
   END LOOP;
 END $$;
+
+-- Materialized envelopes (xc-envelope-f16-v1): an opt-in, rebuildable
+-- representation stored next to raw chunks; not an index. Rows hold binary16
+-- envelopes of fixed windows; the payload's first byte is its encoding version.
+-- Row-level security for companion tables (opt-in). Search and read functions are
+-- SECURITY INVOKER and need SELECT on the companion tables, which would otherwise let a
+-- role read every recording's chunks, envelopes, probe vectors and context directly. This
+-- adds one policy per companion table: a row is visible and writable only when its parent
+-- recording is visible to the caller in the collection table, so the collection's own RLS
+-- policies (for example one per tenant) govern every table. Idempotent; once used, the
+-- enable functions apply it to companion tables created later. Table owners bypass RLS.
+CREATE FUNCTION public.morlet_enable_row_security(collection regclass)
+RETURNS integer LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t record; covered integer:=0; cond text; chk text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  FOR t IN SELECT cl.relname FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace
+      WHERE n.nspname=s AND cl.relkind='r' AND (cl.relname IN (c||'_chunks',c||'_segments',c||'_envelopes',c||'_ctx',
+        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels') OR cl.relname LIKE c||'\_probes\_%')
+      ORDER BY cl.relname LOOP
+    IF t.relname=c||'_ctx_values' THEN
+      cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.segment_id=%I.segment_id)',s,c||'_ctx_segments',t.relname);
+      chk:=cond;
+    ELSIF t.relname=c||'_acq' THEN
+      -- visible through any visible channel; inserting an acquisition precedes its channels
+      cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.acquisition_id=%I.acquisition_id)',s,c||'_acq_channels',t.relname);
+      chk:='true';
+    ELSE
+      -- An uncorrelated ARRAY(...) becomes an InitPlan, which keeps scans parallel; a correlated
+      -- EXISTS compiled to a parallel-restricted SubPlan and made exact search 3x slower.
+      cond:=format('%I.recording_id = ANY (ARRAY(SELECT x.recording_id FROM %s x))',t.relname,collection);
+      chk:=cond;
+    END IF;
+    EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY',s,t.relname);
+    EXECUTE format('DROP POLICY IF EXISTS morlet_follows_recording ON %I.%I',s,t.relname);
+    EXECUTE format('CREATE POLICY morlet_follows_recording ON %I.%I USING (%s) WITH CHECK (%s)',s,t.relname,cond,chk);
+    covered:=covered+1;
+  END LOOP;
+  RETURN covered;
+END $$;
+
+-- Whether morlet_enable_row_security has been applied to this collection.
+CREATE FUNCTION public.morlet_row_security_enabled(collection regclass)
+RETURNS boolean LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT EXISTS(SELECT 1 FROM pg_policy p JOIN pg_class cl ON cl.oid=p.polrelid
+    WHERE p.polname='morlet_follows_recording' AND cl.relnamespace=(SELECT relnamespace FROM pg_class WHERE oid=collection)
+      AND cl.relname=(SELECT relname FROM pg_class WHERE oid=collection)||'_chunks')
+$$;

@@ -290,7 +290,10 @@ Frozen evaluations on seismic event windows (CX, 4096-sample windows):
 **Not established:** relevance on machine data, behaviour beyond the tested
 gallery sizes (about 180 candidates per query), and concurrent workloads.
 
-### Probe search (opt-in, needs pgvector)
+#Multi-tenant collections: enable RLS on the recordings table and call
+`morlet_enable_row_security`; see [access control](access-control.md).
+
+## Probe search (opt-in, needs pgvector)
 
 The exact envelope search scans every eligible window, with PostgreSQL's parallel
 workers: about 1.3 s for 235,000 windows with 2 workers on the test machine (about
