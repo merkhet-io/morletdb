@@ -1,7 +1,7 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, technical report
-draft 0.10 (ACM `sigconf` layout; not peer reviewed). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.10
+(ACM `sigconf` layout). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
 
