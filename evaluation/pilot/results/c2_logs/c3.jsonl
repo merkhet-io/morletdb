@@ -1,0 +1,5 @@
+{"t": 1793525646.874948, "kind": "unfiltered", "ms": 101.30645899334922, "recall": 1.0, "err": null}
+{"t": 1793525646.9694269, "kind": "filtered", "ms": 94.04383299988694, "recall": null, "err": null}
+{"t": 1793525648.94931, "kind": "unfiltered", "ms": 71.0252910212148, "recall": null, "err": null}
+{"t": 1793525650.942825, "kind": "filtered", "ms": 59.525958000449464, "recall": null, "err": null}
+{"t": 1793525652.947383, "kind": "unfiltered", "ms": 59.041625005193055, "recall": null, "err": null}

@@ -171,15 +171,17 @@ def client_main(idx, seconds, log_path):
 
 # -- driver ---------------------------------------------------------------------------------------------------------
 def postgres_cpu_rss():
-    out = subprocess.run(["ps", "-axo", "pid=,comm=,time=,rss="], capture_output=True, text=True).stdout
+    out = subprocess.run(["ps", "-axo", "pid=,time=,rss=,comm="], capture_output=True, text=True).stdout
     cpu, rss = 0.0, 0
     for line in out.splitlines():
-        parts = line.split()
-        if len(parts) >= 4 and "postgres" in parts[1]:
-            m = re.match(r"(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+(?:\.\d+)?)$", parts[2])
+        parts = line.split(None, 3)                                  # the command name may contain spaces
+        if len(parts) == 4 and "postgres" in parts[3]:
+            m = re.match(r"(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+(?:\.\d+)?)$", parts[1])
+            if m is None:
+                continue
             d, h, mi, s = (float(g) if g else 0.0 for g in m.groups())
             cpu += d * 86400 + h * 3600 + mi * 60 + s
-            rss = max(rss, int(parts[3]) * 1024)
+            rss = max(rss, int(parts[2]) * 1024)
     return cpu, rss
 
 
@@ -192,10 +194,10 @@ def run(source, out, tag, schedule):
     with connect() as c:
         lsn0 = c.execute("SELECT pg_current_wal_lsn()").fetchone()[0]
         db0 = c.execute("SELECT pg_database_size(current_database())").fetchone()[0]
+    cpu0, _ = postgres_cpu_rss()                                     # baseline before anything starts
     writers = [subprocess.Popen([sys.executable, "-I", __file__, "writer", str(i), str(source), json.dumps(schedule), str(logs / f"w{i}.jsonl")]) for i in range(WRITERS)]
     clients = [subprocess.Popen([sys.executable, "-I", __file__, "client", str(i), str(seconds), str(logs / f"c{i}.jsonl")]) for i in range(4)]
     samples, aborted, t_end = [], None, time.time() + seconds
-    cpu0, _ = postgres_cpu_rss()
     while time.time() < t_end and aborted is None:
         time.sleep(10)
         cpu, rss = postgres_cpu_rss()

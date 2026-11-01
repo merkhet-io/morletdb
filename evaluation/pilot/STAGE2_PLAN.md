@@ -87,3 +87,15 @@ Results per part with reproducible commands; `docs/operations.md` (installation,
 configuration, resource limits, backup/restore, upgrade, diagnostics, known limits); a stated
 pilot operating range consisting only of what passed; a verdict per part: continue, narrow,
 or stop.
+
+## Deviations
+
+1. **Recovery harness setup (before any B result):** the first run stopped because the installed
+   build lacked `morlet_collection_status` (#74, not yet merged); #74's build was installed and
+   the run repeated from the start.
+2. **B5 deleted 2 of 13 recordings (15%),** not 20%: the selection rule (every fifth recording,
+   excluding the abort-test recording) gave 2.
+3. **Load harness `ps` parsing (before any C2 measurement):** process names with spaces broke
+   the CPU parser; writers and clients started for a few seconds and were stopped. Their few
+   seconds of live data stay in the live recordings, and the next run resumes from the stored
+   checkpoints.
