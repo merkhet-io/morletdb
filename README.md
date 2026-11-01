@@ -12,7 +12,7 @@
 Keep raw sensor recordings in Postgres, select an interesting interval, and ask
 **“Where else does something like this occur?”** Every match comes back as a
 recording and sample interval you can read, plot and trace to its acquisition
-context. Built with Rust, PostgreSQL 17 and Python. A
+context. Built with Rust, PostgreSQL 17/18 and Python. A
 [Merkhet](https://github.com/merkhet-io) project, licensed under Apache 2.0.
 
 > [!NOTE]
@@ -56,8 +56,7 @@ recordings.
 
 ## Installation and PostgreSQL support
 
-**PostgreSQL 17 is the only currently supported server major.** The extension's
-Cargo feature and CI target PG17; PG16 and PG18 are not enabled yet. The documented
+**PostgreSQL 17 and 18 are supported by the compatibility matrix.** Both run functional CI with and without pgvector. PostgreSQL 17 is the reference for paper benchmarks and release images; 18 supports fresh source installations. See [compatibility](docs/compatibility.md). The documented
 container target is **Linux amd64**. Source builds use the repository-pinned
 Rust 1.91.1 and matching pgrx / cargo-pgrx 0.16.1.
 
