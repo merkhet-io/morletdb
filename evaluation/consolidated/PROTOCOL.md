@@ -108,4 +108,8 @@ At most 2 hours of measurement in total; one run. No parameter is changed after 
 
 ## Deviations
 
-(none yet)
+1. **Added before any measurement:** for each reference top-ten item, the fraction of its best-lag
+   correlation that the best of the 13 grid probes keeps, and the item's rank among all windows in that
+   probe's exact ordering (offline, from the stored envelopes). This measures directly what the
+   grid-spacing argument in the paper only approximated with envelope autocorrelation. No arm, query,
+   parameter or criterion changes.
