@@ -205,8 +205,10 @@ def recall_summary(per, arm, types, lstars, refs):
             "by_type": by_type}
 
 
-def main(db, queries_path, out_path, build):
+def main(db, queries_path, out_path, build, smoke=None):
     queries = [(q["recording_id"], int(q["start"]), q["type"]) for q in json.loads(Path(queries_path).read_text())["queries"]]
+    if smoke:
+        queries = queries[:3]
     with psycopg.connect(f"host=localhost port=28817 dbname={db}", autocommit=True) as conn:
         res = {"database": db, "queries": queries_path, "environment": environment(conn, build)}
         res["gallery_windows"] = conn.execute(f"SELECT count(*) FROM {ENV} WHERE window_size = {W}").fetchone()[0]
@@ -292,6 +294,10 @@ def main(db, queries_path, out_path, build):
         sizes["probe_index"] = conn.execute("SELECT pg_relation_size(%s::regclass)", (PROBE_INDEX,)).fetchone()[0]
         sizes["probe_table_heap_and_pkey"] = sizes["probe_table"] - sizes["probe_index"]
         res["sizes_bytes"] = sizes
+        if smoke:
+            print("smoke run: no index rebuild", flush=True)
+            Path(out_path).write_text(json.dumps(res, indent=1, default=str))
+            return
         conn.execute("SET maintenance_work_mem = '4GB'")
         la = loadavg()
         t = time.perf_counter()
@@ -316,4 +322,4 @@ def main(db, queries_path, out_path, build):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:5])
+    main(*sys.argv[1:6])

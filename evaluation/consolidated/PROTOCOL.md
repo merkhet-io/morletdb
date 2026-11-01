@@ -118,3 +118,11 @@ At most 2 hours of measurement in total; one run. No parameter is changed after 
    load average at the start and end of every round. Earlier studies ran with the job present, so E1's
    latencies are not directly comparable with theirs; that is one reason E1 replaces them as the source of
    the main tables.
+3. **Implementation check, before any measurement:** the databases were created on earlier builds of the
+   unreleased SQL version 0.3.1, so their plpgsql bodies were compared with `main` 68594d7. The search
+   functions E1 measures (`morlet_search_envelope_probes`, `morlet_envelope_ranked`,
+   `morlet_search_envelope_interval`) are byte-identical to 68594d7 in both databases; build, enable and
+   row-security functions are older but are not used by E1. The compiled library is 68594d7's
+   (`cargo pgrx install --release`). Pilot settings were reset (`ALTER SYSTEM RESET ALL`, restart) after C4.
+   A smoke mode (`smoke` as fifth argument: three queries, no index rebuild, output not kept) checks the
+   harness on the development database before the run.
