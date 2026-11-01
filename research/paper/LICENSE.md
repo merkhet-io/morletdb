@@ -11,7 +11,7 @@
 
 © 2026 Zin Nam. You may share and adapt the report's text and figures for any purpose, provided you give
 appropriate credit, link to the licence and indicate if changes were made. Suggested credit:
-"Zin Nam, *MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL*, version 0.11,
+"Zin Nam, *MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL*, version <n>,
 2026, CC BY 4.0."
 
 Figures or text quoted from other works keep their own terms.

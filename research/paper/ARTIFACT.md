@@ -1,7 +1,8 @@
 # Artifact: build, data, checks and reproduction
 
 For the technical report *MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL*,
-version 0.11. No release tag has been created; artifacts are identified by commit. Commands run from the
+in the version given in `REPORT_VERSION`. Released versions are tagged `paper-v<version>`; everything else
+is identified by commit. Commands run from the
 repository root of a fresh clone of `main` unless stated otherwise.
 
 ## 0. What was measured and what is offered
@@ -15,7 +16,7 @@ Two commits matter, and they are different:
 | Measured library | `pg_morlet.dylib` SHA-256 `3c786684421f3132e7a97b5ff38801e802948bf3e014aaae656b16bb109de7b7` (recorded in `evaluation/consolidated/results/e1_*.json`) |
 | Build reproducibility | a clean release build of 68594d7 from a fresh clone gave a different hash (`a6f7bce8…`): builds are not bit-identical across checkout paths. Behaviour was checked instead (sections 4 and 7) |
 | SQL objects | the measured search functions in the evaluation databases are byte-identical to 68594d7 |
-| **Report sources** | protocols, harnesses, stored results and report sources entered `main` with merge commit cdf8b4b; the commit that version 0.11 is built from is recorded in `RELEASE_MANIFEST.json` (`report_source_commit`) |
+| **Report sources** | protocols, harnesses, stored results and report sources entered `main` with merge commit cdf8b4b; the commit each released version is built from is recorded in `RELEASE_MANIFEST.json` (`report_source_commit`) |
 | Later fixes, not measured | fix commit 4a9c10c, merged into `main` at 14f7285; why they do not affect the measurements: section 9 |
 
 ## 1. Dependencies (versions used)
