@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-Working draft 0.5: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
+Working draft 0.6: **Recordings, Not Rows: Lossless Waveform Storage and Lag-Tolerant Retrieval Inside PostgreSQL** (ACM `sigconf` layout).
 
 Not yet submission-ready; see "Before submission" below.
 
@@ -16,6 +16,19 @@ cd research/paper && tectonic -X compile morletdb.tex    # or: latexmk -pdf morl
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in draft 0.6
+
+- Reframed around the main claim: bounded-lag waveform search can be accelerated with shifted
+  inner-product probes on standard vector indexes, and storage, filter and maintenance costs set
+  its useful operating range. The abstract and the contribution list lead with this; storage is
+  now a supporting contribution.
+- New Section "Operating the system" (pilot Stages 1–2, `evaluation/pilot/`): the companion-table
+  row-security leak and its fix (exact search 946 → 995 ms), recovery tests B1–B7, sustained load
+  at 409,600 samples/s on 0.94 M windows, capacity about 1.3–1.4×, and write-ahead logging
+  13.8 → 1.91 GB per 15 min with a pilot configuration. The 2-hour stability run (C4) is pending.
+- Limitations, conclusion and evidence ledger updated; ledger split in two so it fits the
+  two-column layout.
 
 ## What changed in draft 0.5
 
