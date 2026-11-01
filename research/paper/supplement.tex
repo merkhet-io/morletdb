@@ -12,7 +12,7 @@
 
 \begin{document}
 \title{Supplement to ``MorletDB: Recordings, Not Rows''}
-\subtitle{Version 0.10}
+\subtitle{Version 0.11}
 \author{Zin Nam}
 \affiliation{\institution{}\country{}}
 \maketitle
@@ -132,7 +132,7 @@ Before a bounded pilot with human review of results, we tested access control, r
 \textbf{Sustained load.} On an archive of 938,768 windows (4.8\,GB), sixteen channels at 25.6\,kHz (409,600 samples/s) were appended by four writers, each building envelopes and probe rows in the append transaction, while four analysts issued one query every two seconds, half filtered to about 2\% of windows and half unfiltered. With PostgreSQL's default configuration the run met its criteria (filtered p95 167\,ms; probe p95 337\,ms, spot-check recall 0.998; ingest lag at most 22\,s, recovered), but wrote 13.8\,GB of write-ahead log for 0.76\,GB of database growth in 15 minutes: HNSW insertions touch pages across a 1.2\,GB index, and each checkpoint forces full-page images of them. At twice the rate the writers fell behind without recovering; capacity was about 1.3--1.4$\times$ the target. With a pilot configuration (8\,GB shared buffers, 16\,GB \code{max\_wal\_size}, 15-minute checkpoints, WAL compression, changed together) the same run wrote 1.91\,GB of WAL for 0.65\,GB of growth, kept ingest lag at or below 2\,s, and gave filtered and probe p95 of 81 and 100\,ms (recall 0.994); background load was lower in this run (7.3 against 11.7), which confounds the latency comparison but not the WAL volume. Unfiltered exact search over the full archive stayed at 7.8--9.7\,s p95, which is why the router sends large galleries to probes. A run planned for two hours with the same configuration met the target for 111 minutes (409,585 samples/s; writer lag at most 24\,s in the first hour, with the unrelated job running, and 3.4\,s in the second; filtered and probe p95 118 and 138\,ms, recall 0.993; no errors; 12.0\,GB of WAL for 4.7\,GB of growth). Then all client processes paused for 90--106\,s; the server log shows no error, which does not rule out a system-side cause; and the harness's lag rule, stricter than the protocol's wording, stopped the run at 112.5 minutes; the stored result divides the ingest rate by the scheduled duration, and a re-analysis from the raw logs reports the rate over the elapsed time. The two-hour run therefore did not complete. A measured stability duration is not a production qualification.
 
 \section{Study overview}\label{sec:studies}
-Each study's protocol (questions, data, arms, metrics, decision rule) was committed to the repository before its first result; these are internal plans with commit times set by the author's machine, not registrations with a third party. The full table with questions, results and limitations is \code{research/paper/STUDIES.md}.
+Confirmatory studies committed their protocol (questions, data, arms, metrics, decision rule) to the repository before their first result; exploratory diagnostics fixed a protocol without a confirmatory decision, or had none (pruning); the grid analysis and the choice of illustrative cases are post hoc. Protocols are internal plans with commit times set by the author's machine, not registrations with a third party. E1 re-measured data already used for BL1-C's confirmation and is not another independent confirmation. The full table with questions, results and limitations is \code{research/paper/STUDIES.md}.
 
 \begin{table*}[h]
 \small
@@ -142,7 +142,7 @@ Study & Question & Protocol & Results & Data & Status \\
 \midrule
 R1b & float16 envelopes precise enough? & bfdf6fe 10-26 17:41 & db63d58 19:16 & unread 2022 slice & confirmation \\
 R2 & exact scaling; zero-lag first stage? & 12cad82 10-31 14:20 & c07396e 14:55 & 99.9\% unread & corrected by R2-D \\
-R2-D & ANN error or candidate metric? & 7a7b276 15:57 & 246c91a 16:24 & R2's & reuse \\
+R2-D & ANN error or candidate metric? & 7a7b276 15:57 & 246c91a 16:24 & R2's & exploratory; reuse \\
 BL1 & shifted probes, configuration & a5381d7 16:44 & e831e51 17:29 & R2's & development \\
 BL1-C & frozen configuration on unread data & cc99d09 17:31 & 635ebd4 18:01 & unread stations, year & confirmation \\
 BL1-S & maintenance at commit & ceb63ad 17:33 & 0d5df8b 18:19 & R2's & development \\
@@ -170,7 +170,7 @@ D1, D2 & time per stage; correlated filters & fa367ed 13:02 & e335217 13:32 & de
 \textbf{Out of scope.} Three later studies tested retrieval-based forecasting of bearing and turbofan degradation and current-to-vibration estimation; none passed its gate~\cite{repo}. They concern analytics on top of the store rather than storage and retrieval.
 
 
-\begin{thebibliography}{40}\small
+\begin{thebibliography}{40}\footnotesize\setlength{\itemsep}{0pt}
 \bibitem{alp} Azim Afroozeh, Leonardo X. Kuffo, and Peter Boncz. 2023. ALP: Adaptive Lossless floating-Point Compression. \emph{Proc. ACM Manag. Data} 1, 4, Article 230 (Dec. 2023), 26 pages. doi:10.1145/3626717.
 \bibitem{shorten} Tony Robinson. 1994. SHORTEN: Simple lossless and near-lossless waveform compression. Technical Report CUED/F-INFENG/TR.156, Cambridge University Engineering Department.
 \bibitem{flac} Martijn van Beurden and Andrew Weaver. 2024. Free Lossless Audio Codec (FLAC). RFC 9639, RFC Editor. doi:10.17487/RFC9639.

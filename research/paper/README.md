@@ -1,7 +1,7 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.10
-(ACM `sigconf` layout). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.11, a
+technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
 
@@ -38,9 +38,9 @@ E1: all arms on one build (`main` 68594d7), 100 queries per database (50 random,
 - Storage (held-out): raw chunks 514 MB; envelopes 223 MB; probe table 223 MB; HNSW index 275 MB; probe structures / raw 0.97 (dev 1.34).
 <!-- results:end -->
 
-**Preview:** [morletdb.pdf](morletdb.pdf) and [supplement.pdf](supplement.pdf) (committed builds of the current sources; rebuild and recommit them when a source changes).
+**Preview:** [morletdb.pdf](morletdb.pdf) and [supplement.pdf](supplement.pdf) (committed builds of the current sources; rebuild and recommit them when a source changes, then run `sync_site.sh` to update the website copies in `docs/`).
 
-**Artifact and commits:** [ARTIFACT.md](ARTIFACT.md) (measured state 68594d7, offered state, changes in between and why the measurements stay valid).
+**Artifact and commits:** [ARTIFACT.md](ARTIFACT.md) (measured state 68594d7, set-up from a fresh checkout, separate procedures for regenerating numbers, compiling the PDFs, checking a preserved index and rebuilding one, and why later fixes leave the measurements valid). Release manifest: [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json).
 
 **Companion documents:** [related/RELATED_MATRIX.md](related/RELATED_MATRIX.md) (closest prior work on shift-tolerant search, novelty assessment), [related/PG_SYSTEMS.md](related/PG_SYSTEMS.md) (PostgreSQL vector systems, extensibility and temporal types, mapped to code; with [code_audit.md](related/code_audit.md)), [`evaluation/consolidated/`](../../evaluation/consolidated/RESULTS.md) (E1 and diagnostics D1–D2, the source of the main tables), Appendix A of the paper (which result supports each claim), [NEXT_EXPERIMENTS.md](NEXT_EXPERIMENTS.md) (the two experiments that would close the remaining evidence gaps; not started), [analysis/](analysis/) (grid-spacing analysis on development data).
 
@@ -58,6 +58,27 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.11 (correctness and release pass; no new measurement)
+
+- **Visibility of new data corrected.** Appending a chunk does not build envelopes; building is an
+  explicit call (`morlet_build_envelopes`). Samples and their representations become visible together only
+  when the caller runs append and builder in one transaction; probe search additionally needs probes
+  enabled and probe rows present, and one builder call is bounded (`max_windows`), so it may not cover
+  every window. No claim is made that a multi-statement probe search is atomic under READ COMMITTED.
+  Corrected in the contributions, Figure 1 and its caption, Section 4, the BL1-S replay (Section 10),
+  related work and the conclusion.
+- **Kinds of evidence separated:** confirmatory studies (frozen protocol and decision rule), exploratory
+  diagnostics and post hoc analyses are named in the main text, the supplement's study overview and
+  [STUDIES.md](STUDIES.md); the main text states that E1 re-measured the held-out data already used by
+  BL1-C and is not a new confirmation. Protocols and recorded deviations are unchanged.
+- **Artifact:** [ARTIFACT.md](ARTIFACT.md) rewritten for a fresh checkout (environments, PostgreSQL,
+  pgrx and pgvector, four separate procedures, stable commits instead of branch and PR references).
+- **Release package:** version 0.11 throughout; [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json) with PDF
+  hashes; proposed report licence (CC BY 4.0, not applied:
+  [LICENSE-REPORT-PROPOSAL.md](LICENSE-REPORT-PROPOSAL.md)); website copies of both PDFs checked for byte
+  equality in CI.
+- **Shorter abstract**; supplement bibliography no longer leaves a nearly empty last page.
 
 ## What changed in draft 0.9 (consistency pass; no new measurement)
 
