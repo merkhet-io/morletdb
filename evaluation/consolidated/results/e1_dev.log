@@ -1,0 +1,25 @@
+plans {'Z': {'index_scan': True}, 'PR': {'probe_index_scans_per_call': 13}, 'EX-2': {'probe_index_scans_per_call': 0}, 'EX-8': {'parallel_seq_scan_on_envelopes': True, 'workers_planned': ['Workers Planned: 3']}}
+round 1 0 {'EX-2': 961, 'EX-8': 729, 'PR': 36, 'Z-650': 26, 'Z-1000': 32}
+round 1 20 {'EX-2': 958, 'EX-8': 731, 'PR': 53, 'Z-650': 37, 'Z-1000': 40}
+round 1 40 {'EX-2': 957, 'EX-8': 732, 'PR': 52, 'Z-650': 30, 'Z-1000': 36}
+round 1 60 {'EX-2': 975, 'EX-8': 731, 'PR': 38, 'Z-650': 30, 'Z-1000': 36}
+round 1 80 {'EX-2': 969, 'EX-8': 738, 'PR': 37, 'Z-650': 30, 'Z-1000': 33}
+round 2 0 {'EX-2': 969, 'EX-8': 782, 'PR': 34, 'Z-650': 23, 'Z-1000': 34}
+round 2 20 {'EX-2': 965, 'EX-8': 727, 'PR': 48, 'Z-650': 33, 'Z-1000': 41}
+round 2 40 {'EX-2': 957, 'EX-8': 729, 'PR': 40, 'Z-650': 28, 'Z-1000': 32}
+round 2 60 {'EX-2': 948, 'EX-8': 792, 'PR': 54, 'Z-650': 31, 'Z-1000': 36}
+round 2 80 {'EX-2': 955, 'EX-8': 722, 'PR': 38, 'Z-650': 26, 'Z-1000': 34}
+/Users/zin/sophia/morletdb-paper/evaluation/consolidated/e1.py:151: RuntimeWarning: divide by zero encountered in matmul
+  S61 = G @ Q61
+/Users/zin/sophia/morletdb-paper/evaluation/consolidated/e1.py:151: RuntimeWarning: overflow encountered in matmul
+  S61 = G @ Q61
+/Users/zin/sophia/morletdb-paper/evaluation/consolidated/e1.py:151: RuntimeWarning: invalid value encountered in matmul
+  S61 = G @ Q61
+/Users/zin/sophia/morletdb-paper/evaluation/consolidated/e1.py:179: RuntimeWarning: divide by zero encountered in matmul
+  cands["PQ-13"] = union(G @ Q13h, range(len(P.GRIDS["G13"])))
+/Users/zin/sophia/morletdb-paper/evaluation/consolidated/e1.py:179: RuntimeWarning: overflow encountered in matmul
+  cands["PQ-13"] = union(G @ Q13h, range(len(P.GRIDS["G13"])))
+/Users/zin/sophia/morletdb-paper/evaluation/consolidated/e1.py:179: RuntimeWarning: invalid value encountered in matmul
+  cands["PQ-13"] = union(G @ Q13h, range(len(P.GRIDS["G13"])))
+{"EX-2": {"recall": 1.0, "min": 1.0, "p95": 996.5}, "EX-8": {"recall": 1.0, "min": 1.0, "p95": 783.0}, "PR": {"recall": 0.998, "min": 0.9, "p95": 53.3}, "Z-650": {"recall": 0.717, "min": 0.0, "p95": 42.0}, "Z-1000": {"recall": 0.744, "min": 0.2, "p95": 49.0}, "PX-61": {"recall": 1.0, "min": 1.0, "p95": NaN}, "PX-13": {"recall": 1.0, "min": 1.0, "p95": NaN}, "PX-7": {"recall": 0.986, "min": 0.7, "p95": NaN}, "PQ-13": {"recall": 1.0, "min": 1.0, "p95": NaN}, "EZ": {"recall": 0.681, "min": 0.0, "p95": NaN}}
+verdict {'strongest_exact': 'EX-8', 'H1': True, 'H2': True}
