@@ -9,7 +9,7 @@ the [recording workflow](../../docs/recording-workflow.md).
 
 # pg_morlet
 
-Experimental Rust/pgrx extension for MorletDB on PostgreSQL. Initial target: **PostgreSQL 17**, `pgrx` and `cargo-pgrx` **0.16.1**. The crate, CLI and test framework versions must match. Rust is pinned at the repository root.
+Experimental Rust/pgrx extension for MorletDB on PostgreSQL. Targets: **PostgreSQL 17** (reference) and **18** ([compatibility](../../docs/compatibility.md)), `pgrx` and `cargo-pgrx` **0.16.1**. The crate, CLI and test framework versions must match. Rust is pinned at the repository root.
 
 ## Setup
 
@@ -29,7 +29,7 @@ Inspect `~/.pgrx/config.toml` to locate the managed `pg_config` for packaging.
 
 ```sh
 # From extensions/pg_morlet:
-cargo pgrx test pg17
+cargo pgrx test pg17        # or pg18
 cargo pgrx schema pg17
 cargo pgrx package --pg-config /path/to/pgrx-managed/pg_config
 ```

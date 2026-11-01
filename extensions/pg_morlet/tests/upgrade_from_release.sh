@@ -17,15 +17,13 @@ OLD_REF=${1:-v0.2.0-alpha.1}
 OLD_VERSION=${2:-0.2.0}
 EXT=$(cd "$(dirname "$0")/.." && pwd)
 ROOT=$(cd "$EXT/../.." && pwd)
-PG_CONFIG=${PG_CONFIG:-$HOME/.pgrx/17.11/pgrx-install/bin/pg_config}
-BIN=$("$PG_CONFIG" --bindir)
-PORT=${PGPORT:-28817}
+. "$(dirname "$0")/pg_env.sh"  # PG_CONFIG, PG_MAJOR, PORT, BIN
 NEW_VERSION=$(sed -n "s/^default_version = '\(.*\)'/\1/p" "$EXT/pg_morlet.control")
 WORK=$(mktemp -d)
 trap 'git -C "$ROOT" worktree remove --force "$WORK/old" >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
 psql() { "$BIN/psql" -h localhost -p "$PORT" -v ON_ERROR_STOP=1 -qAtX "$@"; }
 install() { (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" cargo pgrx install --release --pg-config "$PG_CONFIG" >/dev/null); }
-restart() { (cd "$EXT" && cargo pgrx stop pg17 >/dev/null 2>&1 || true; cargo pgrx start pg17 >/dev/null); }
+restart() { (cd "$EXT" && cargo pgrx stop "pg$PG_MAJOR" >/dev/null 2>&1 || true; cargo pgrx start "pg$PG_MAJOR" >/dev/null); }
 
 snapshot() {
   psql -d "$1" <<'SQL'

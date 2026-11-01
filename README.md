@@ -305,6 +305,7 @@ Next evaluations, all **candidate workloads** rather than demonstrated results:
 | PostgreSQL retrieval | Exact scan; default 4096 eligible segments; explicit experiments up to 1,000,000, with no capacity guarantee |
 | Consistency and access | Synchronous extraction; transactional publication; caller permissions and RLS |
 | Wave-index PoC | Offline temporal scoring and approximate postings; no persistence or SQL integration |
+| PostgreSQL | 17 (reference; all measurements) and 18, each tested in CI with and without pgvector; see [compatibility](docs/compatibility.md) |
 | Lifecycle | Alpha. `ALTER EXTENSION pg_morlet UPDATE` to the current version is tested in CI from 0.1.0-alpha.3 (SQL 0.1.0) and 0.2.0-alpha.1 (SQL 0.2.0); no stable API/schema guarantee |
 
 No resampling, speed invariance, gap interpolation, background extraction worker,
@@ -335,7 +336,7 @@ The Rust core is independent of PostgreSQL. Go is kept only for optional
 reference checks (`make test-reference`) and deliberate fixture maintenance
 (`make golden`).
 
-[Contributing](CONTRIBUTING.md) · [Development](docs/development.md) · [Support](SUPPORT.md) · [Security](SECURITY.md) · [Roadmap](docs/product-roadmap.md) · [Brand assets](assets/brand/README.md)
+[Contributing](CONTRIBUTING.md) · [Development](docs/development.md) · [PostgreSQL compatibility](docs/compatibility.md) · [Support](SUPPORT.md) · [Security](SECURITY.md) · [Roadmap](docs/product-roadmap.md) · [Brand assets](assets/brand/README.md)
 
 ## License
 
