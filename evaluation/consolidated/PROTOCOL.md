@@ -113,3 +113,8 @@ At most 2 hours of measurement in total; one run. No parameter is changed after 
    probe's exact ordering (offline, from the stored envelopes). This measures directly what the
    grid-spacing argument in the paper only approximated with envelope autocorrelation. No arm, query,
    parameter or criterion changes.
+2. **Environment, before any measurement:** the owner stopped the unrelated CPU-intensive job at about
+   12:15 on 2026-11-01. E1 therefore runs without it (after C4 has ended); the harness still records the
+   load average at the start and end of every round. Earlier studies ran with the job present, so E1's
+   latencies are not directly comparable with theirs; that is one reason E1 replaces them as the source of
+   the main tables.
