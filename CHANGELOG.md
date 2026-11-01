@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.1-alpha.1
+
+The image contains PostgreSQL 17 and pg_morlet only. Probe search needs pgvector 0.8 or later,
+installed separately; exact search and everything else work without it.
 
 Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
 0.3.0-alpha.1):
@@ -60,8 +63,8 @@ Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
   depend on it). `morlet_enable_envelope_probes` keeps a float16 copy of one window
   size's envelopes with an inner-product HNSW index. `morlet_search_envelope_probes`
   retrieves candidates with zero-padded shifted query probes (`morlet_envelope_probe`)
-  and re-ranks them with the exact scorer. `morlet_build_envelopes` maintains the
-  copy in the same transaction.
+  and re-ranks them with the exact scorer. `morlet_build_envelopes` writes the
+  vector rows together with the envelopes, in the transaction that calls it.
   - It is approximate. Evaluation BL1 (`evaluation/bounded_lag`) used unfiltered
     galleries of about 235,000 windows: on held-out data, recall@10 0.976 against
     the exact search, at p95 131 ms instead of 2,854 ms.
@@ -109,8 +112,19 @@ Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
   (3.35 GB to 1.15 GB), bitwise identical. Chunks on the plain grid keep their
   version-2 bytes; the P2 benchmark data encodes byte-identically. Version-3 chunks
   are not readable by 0.3.0 and earlier.
+- Search-path fixes (#77):
+  - `morlet_enable_row_security` treated `_` in a collection name as a wildcard, so
+    enabling it on `line_1` also replaced the policy on `line11`'s probe tables. It now
+    matches only its own probe tables.
+  - The router could raise "exceeds N candidates" when a window was committed between
+    its count and the exact search. The exact branch no longer gets a second cap.
+  - A build that started before `morlet_enable_envelope_probes` committed wrote
+    envelopes without vector rows, leaving a permanent probe backlog. The builder now
+    re-checks for the probe table after each insert.
 
 Repository:
+- Technical report *MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in
+  PostgreSQL*, version 0.11 (`research/paper/`, release `paper-v0.11`).
 - Viewer and docs present `morlet_history_neighbors` as similar occurrences to look
   at, not a prediction: evaluation C4 (3W) found their labels name the event worse
   than the machine's last label.
