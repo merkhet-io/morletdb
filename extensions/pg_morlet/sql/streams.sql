@@ -369,6 +369,57 @@ END $$;
 
 -- Physical collection footprint: pg_total_relation_size (heap, TOAST, indexes)
 -- of each sibling table. Samples are the received counts of visible recordings.
+-- Operational status of a collection: progress of raw data, envelopes and probe rows, and
+-- bytes per structure. One row per stored envelope window size (one row with NULL window_size
+-- when envelopes are not enabled or not built). The envelope stride is not stored, so the
+-- backlog is given in raw samples not yet covered by an envelope window; it includes each
+-- recording's partial tail shorter than one stride, which is never built.
+CREATE FUNCTION public.morlet_collection_status(collection regclass)
+RETURNS TABLE(window_size integer,recordings bigint,raw_samples bigint,envelopes bigint,
+  recordings_without_envelopes bigint,unbuilt_samples bigint,probe_rows bigint,probe_backlog bigint,
+  row_security boolean,recordings_bytes bigint,chunk_bytes bigint,segment_bytes bigint,
+  envelope_bytes bigint,probe_table_bytes bigint,probe_index_bytes bigint)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rels record; env regclass; probes regclass; w integer; n_rec bigint; n_samples bigint;
+BEGIN
+  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  SELECT to_regclass(format('%I.%I',ns.nspname,cl.relname||'_envelopes')) INTO env
+    FROM pg_class cl JOIN pg_namespace ns ON ns.oid=cl.relnamespace WHERE cl.oid=collection;
+  EXECUTE format('SELECT count(*),coalesce(sum((checkpoint->>''end'')::bigint),0)::bigint FROM %s',collection) INTO n_rec,n_samples;
+  row_security:=public.morlet_row_security_enabled(collection);
+  recordings:=n_rec; raw_samples:=n_samples;
+  recordings_bytes:=pg_total_relation_size(collection);
+  chunk_bytes:=pg_total_relation_size(rels.chunks);
+  segment_bytes:=pg_total_relation_size(rels.segments);
+  envelope_bytes:=CASE WHEN env IS NULL THEN 0 ELSE pg_total_relation_size(env) END;
+  FOR w IN EXECUTE CASE WHEN env IS NULL THEN 'SELECT NULL::integer WHERE false'
+      ELSE format('SELECT DISTINCT window_size FROM %s ORDER BY 1',env) END LOOP
+    window_size:=w;
+    EXECUTE format('SELECT count(*) FROM %s WHERE window_size=$1',env) INTO envelopes USING w;
+    EXECUTE format('WITH last AS (SELECT recording_id,max(start_sample) s FROM %s WHERE window_size=$1 GROUP BY 1)
+      SELECT count(*) FILTER (WHERE l.s IS NULL),
+             coalesce(sum(CASE WHEN l.s IS NULL THEN (r.checkpoint->>''end'')::bigint
+                               ELSE greatest(0,(r.checkpoint->>''end'')::bigint-(l.s+$1)) END),0)::bigint
+      FROM %s r LEFT JOIN last l ON l.recording_id=r.recording_id',env,collection)
+      INTO recordings_without_envelopes,unbuilt_samples USING w;
+    probes:=public.morlet_envelope_probe_relation(collection,w);
+    IF probes IS NULL THEN
+      probe_rows:=NULL; probe_backlog:=NULL; probe_table_bytes:=NULL; probe_index_bytes:=NULL;
+    ELSE
+      EXECUTE format('SELECT count(*) FROM %s',probes) INTO probe_rows;
+      probe_backlog:=envelopes-probe_rows;
+      probe_table_bytes:=pg_table_size(probes);
+      SELECT coalesce(sum(pg_relation_size(i.indexrelid)),0) INTO probe_index_bytes FROM pg_index i WHERE i.indrelid=probes;
+    END IF;
+    RETURN NEXT;
+  END LOOP;
+  IF NOT FOUND THEN
+    window_size:=NULL; envelopes:=0; recordings_without_envelopes:=n_rec; unbuilt_samples:=n_samples;
+    probe_rows:=NULL; probe_backlog:=NULL; probe_table_bytes:=NULL; probe_index_bytes:=NULL;
+    RETURN NEXT;
+  END IF;
+END $$;
+
 CREATE FUNCTION public.morlet_collection_storage(collection regclass)
 RETURNS TABLE(recordings bigint,samples bigint,original_float64_bytes bigint,recordings_table_bytes bigint,
   chunk_table_bytes bigint,segment_table_bytes bigint,envelope_table_bytes bigint,total_bytes bigint,

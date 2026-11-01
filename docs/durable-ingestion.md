@@ -370,6 +370,14 @@ functions themselves.
 
 ## Progress and search
 
+`SELECT * FROM morlet_collection_status('signals')` summarises one collection:
+- progress of raw data, envelopes and probe rows;
+- backlogs (raw samples not yet covered by an envelope window, and envelopes without a probe
+  row);
+- whether row security is applied;
+- bytes per structure.
+
+
 Status exposes received samples, next window start, visible segment count and
 extractor version. All complete windows made ready by a successful append are
 published with that append. The next-window offset is **not** an asynchronous
