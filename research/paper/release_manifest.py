@@ -24,9 +24,9 @@ STATIC = {
     "measured_commit_scope": "E1 consolidated comparison and diagnostics D1-D2; earlier studies used earlier implementation states (STUDIES.md)",
     "measured_library_sha256": "3c786684421f3132e7a97b5ff38801e802948bf3e014aaae656b16bb109de7b7",
     "sources_first_merged": "cdf8b4b",
-    "proposed_tag": "paper-v0.11",
-    "tag_created": False,
-    "licence": {"code": "Apache-2.0", "report_text_and_figures": "not chosen; CC BY 4.0 proposed (LICENSE-REPORT-PROPOSAL.md)"},
+    "tag": "paper-v0.11",
+    "funding": "none",
+    "licence": {"code": "Apache-2.0", "report_text_and_figures": "CC-BY-4.0 (LICENSE.md)"},
 }
 
 
