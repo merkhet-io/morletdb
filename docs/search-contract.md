@@ -10,7 +10,7 @@ follow from the implementation, or have been measured in an evaluation but have 
 |---|---|---|
 | `morlet_search_envelope_interval(collection, recording, start, end, ...)` | every eligible stored window (exhaustive) | exact |
 | `morlet_search_envelopes(collection, samples, rate, channel, unit, ...)` | every eligible stored window (exhaustive) | exact |
-| `morlet_search_envelope_probes(collection, recording, start, end, ...)` | routed: exhaustive when at most `exact_threshold` windows are eligible, otherwise the union of 13 shifted inner-product probes × `per_probe` from the HNSW index | exact for every returned row |
+| `morlet_search_envelope_probes(collection, recording, start, end, ...)` | routed: exhaustive when at most `exact_threshold` windows are eligible, otherwise the union of shifted inner-product probes (lags −L…L at step `probe_step`: 13 at 4096-sample windows, 7 at 2048) × `per_probe` from the HNSW index | exact for every returned row |
 
 The probe path is **approximate in which windows it considers**, never in the distances it
 reports. Its recall@10 against the exhaustive search was 0.977–1.0 at five filter levels on
@@ -62,7 +62,7 @@ Three kinds of progress are recorded separately:
 |---|---|---|
 | Raw | recording checkpoint (`checkpoint->>'end'`) | `morlet_append_chunk` |
 | Representation | stored envelopes (last `start_sample` per window size) | `morlet_build_envelopes` |
-| Index visibility | probe-table rows | `morlet_build_envelopes`, in the same statement as the envelope |
+| Index visibility | probe-table rows | `morlet_build_envelopes`, in the same call and transaction as the envelope |
 
 - **Appends do not build envelopes.** A window becomes searchable when the transaction
   that ran `morlet_build_envelopes` for it commits. To make windows searchable at the commit
@@ -76,6 +76,28 @@ Three kinds of progress are recorded separately:
   `ON DELETE CASCADE`). Deleting envelopes deletes their probe rows.
 - **Idempotency:** repeating an identical append is a no-op. Rebuilding envelopes skips stored
   windows (`ON CONFLICT DO NOTHING`). Neither implies exactly-once processing.
+
+## Probe path: candidates, coverage and snapshots
+
+- **Fixed budget, no refill.** Each probe returns at most `per_probe` rows; source exclusion,
+  eligibility re-checks and overlap suppression are applied to their union afterwards. If they
+  leave fewer than `top_k` windows, the function returns fewer rows; it does not probe again. The
+  exact path instead fetches more rows until `top_k` survive or the eligible windows run out.
+- **Searchable universe.** The probe path finds only windows that have a probe-table row; the exact
+  path searches every stored envelope. They coincide when `probe_backlog` in
+  `morlet_collection_status` is 0, which holds when envelopes are built only by
+  `morlet_build_envelopes` with probe search enabled. Envelopes written by other processes need
+  their vector rows filled before probe search covers them.
+- **Coverage.** `morlet_build_envelopes` continues after the last stored window, so windows built by
+  it form a contiguous prefix per recording and window size. Windows written out of order by other
+  processes can leave gaps that `unbuilt_samples` does not show.
+- **Snapshots.** The exact functions are `STABLE` and run in the calling statement's snapshot. The
+  probe function is `VOLATILE` (it sets index parameters for the call) and runs several statements;
+  under READ COMMITTED, windows committed while it runs may be seen by some of them and not others.
+  Use REPEATABLE READ for a single snapshot.
+- **Routing.** The router counts eligible windows (stopping above `exact_threshold`) and sends small
+  galleries to the exact path; windows committed between that count and the exact scan are
+  included, not rejected.
 
 ## Not guaranteed
 

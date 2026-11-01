@@ -26,7 +26,7 @@ cargo pgrx install --release --pg-config /path/to/pg_config     # PostgreSQL 17
 
 ```sql
 CREATE EXTENSION pg_morlet;
-CREATE EXTENSION vector;          -- optional: only for probe search (pgvector 0.7 or later)
+CREATE EXTENSION vector;          -- optional: only for probe search (pgvector 0.8 or later)
 ```
 
 pg_morlet does not depend on pgvector; CI tests both with and without it.

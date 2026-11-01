@@ -455,7 +455,7 @@ BEGIN
   SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
   FOR t IN SELECT cl.relname FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace
       WHERE n.nspname=s AND cl.relkind='r' AND (cl.relname IN (c||'_chunks',c||'_segments',c||'_envelopes',c||'_ctx',
-        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels') OR cl.relname LIKE c||'\_probes\_%')
+        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels') OR (left(cl.relname,length(c)+8)=c||'_probes_' AND substr(cl.relname,length(c)+9) ~ '^[0-9]+$'))
       ORDER BY cl.relname LOOP
     IF t.relname=c||'_ctx_values' THEN
       cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.segment_id=%I.segment_id)',s,c||'_ctx_segments',t.relname);
@@ -553,6 +553,14 @@ BEGIN
       FROM c, unnest(public.morlet_envelopes_from_chunks(c.enc,c.st,$2,$3,$4,$5,$6)) WITH ORDINALITY w(envelope,k)
       ON CONFLICT DO NOTHING',rels.chunks,rel)
       USING recording_id,s,hi,window_size,stride,n;
+    -- Probe search may have been enabled by a transaction that committed while this insert waited
+    -- for its lock; re-check so that these windows get their vector rows (no lasting probe_backlog).
+    IF probes IS NULL THEN
+      probes:=public.morlet_envelope_probe_relation(collection,window_size);
+      IF probes IS NOT NULL THEN
+        SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+      END IF;
+    END IF;
     IF probes IS NOT NULL THEN
       EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
         FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample BETWEEN $3 AND $4 ON CONFLICT DO NOTHING',probes,vschema,rel)
@@ -567,6 +575,14 @@ BEGIN
       SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
       FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
       USING recording_id,window_size,s,collection;
+    -- Probe search may have been enabled by a transaction that committed while this insert waited
+    -- for its lock; re-check so that these windows get their vector rows (no lasting probe_backlog).
+    IF probes IS NULL THEN
+      probes:=public.morlet_envelope_probe_relation(collection,window_size);
+      IF probes IS NOT NULL THEN
+        SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+      END IF;
+    END IF;
     IF probes IS NOT NULL THEN
       EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
         FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample=$3 ON CONFLICT DO NOTHING',probes,vschema,rel)
@@ -761,8 +777,10 @@ BEGIN
   EXECUTE format('SELECT count(*) FROM (SELECT 1 FROM %s e WHERE e.recording_id=ANY($1) AND e.window_size=$2 LIMIT $3) x',env)
     INTO eligible_windows USING eligible,width,exact_threshold::bigint+1;
   IF eligible_windows<=exact_threshold THEN
+    -- The count above already bounds the scan. Windows committed concurrently between that count and the
+    -- exact path's own count must not turn into an "exceeds max_candidates" error, so no lower cap here.
     RETURN QUERY SELECT * FROM public.morlet_envelope_ranked(collection,source.samples,source.sample_rate_hz,
-      source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,greatest(exact_threshold,1),
+      source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,2147483647,
       CASE WHEN exclude_source THEN source_recording_id END,interval_start,interval_end);
     RETURN;
   END IF;

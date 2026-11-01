@@ -697,6 +697,12 @@ mod tests {
     fn raw_only_recordings_validate_rate() {
         Spi::run("SELECT morlet_create_stream_collection('public','raw_only_bad'); SELECT morlet_start_recording('raw_only_bad','A',0,'x','g','{}',512,256,'zscore','none')").unwrap();
     }
+    // Tests that create the shared "env" collection or the vector extension run their DDL one at a
+    // time: pgrx runs tests in parallel, and concurrent transactions creating the same catalog
+    // objects in different orders deadlocked now and then. Must be each such test's first statement.
+    fn serialize_shared_ddl() {
+        Spi::run("SELECT pg_advisory_xact_lock(4711)").unwrap();
+    }
     fn envelope_fixture() {
         // A: noise with a burst centred at 3000; B: the same burst at 10100 (68 samples later
         // relative to its window) plus other noise; C: noise only.
@@ -767,6 +773,7 @@ mod tests {
 
     #[pg_test]
     fn row_security_covers_probe_tables() {
+        serialize_shared_ddl();
         if !pgvector_available() {
             return; // pgvector is optional; CI's pgvector job runs this
         }
@@ -797,7 +804,45 @@ mod tests {
     }
 
     #[pg_test]
+    fn row_security_matches_only_its_own_probe_tables() {
+        // '_' in a collection name must not act as a pattern wildcard: enabling row security on
+        // line_1 must leave line11's probe table alone.
+        Spi::run(
+            r#"
+            SELECT morlet_create_stream_collection('public','line_1');
+            SELECT morlet_create_stream_collection('public','line11');
+            CREATE TABLE line11_probes_4096 (recording_id text);
+            CREATE TABLE line_1_probes_notes (recording_id text);
+            SELECT morlet_enable_row_security('line_1');
+        "#,
+        )
+        .unwrap();
+        assert_eq!(
+            Spi::get_one::<bool>(
+                "SELECT relrowsecurity FROM pg_class WHERE relname='line11_probes_4096'"
+            )
+            .unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            Spi::get_one::<bool>(
+                "SELECT relrowsecurity FROM pg_class WHERE relname='line_1_probes_notes'"
+            )
+            .unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            Spi::get_one::<bool>(
+                "SELECT relrowsecurity FROM pg_class WHERE relname='line_1_chunks'"
+            )
+            .unwrap(),
+            Some(true)
+        );
+    }
+
+    #[pg_test]
     fn collection_status_reports_progress_and_backlog() {
+        serialize_shared_ddl();
         envelope_fixture(); // 3 recordings x 16,384 samples
         let row = |q: &str| {
             Spi::get_one::<String>(&format!(
@@ -883,8 +928,9 @@ mod tests {
 
     #[pg_test]
     fn probe_search_routes_and_respects_filters() {
+        serialize_shared_ddl();
         if !pgvector_available() {
-            return; // pgvector is optional; CI does not install it
+            return; // pgvector is optional; CI's pgvector job runs this
         }
         Spi::run("CREATE EXTENSION IF NOT EXISTS vector").unwrap();
         envelope_fixture();
@@ -933,6 +979,7 @@ mod tests {
         error = "probe search is not enabled for window_size 2048 (morlet_enable_envelope_probes)"
     )]
     fn probe_search_requires_enabling() {
+        serialize_shared_ddl();
         envelope_fixture();
         Spi::run(
             "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
@@ -943,8 +990,9 @@ mod tests {
 
     #[pg_test]
     fn probe_search_is_maintained_and_exact_on_small_galleries() {
+        serialize_shared_ddl();
         if !pgvector_available() {
-            return; // pgvector is optional; CI does not install it
+            return; // pgvector is optional; CI's pgvector job runs this
         }
         Spi::run("CREATE EXTENSION IF NOT EXISTS vector").unwrap();
         envelope_fixture();
@@ -969,12 +1017,12 @@ mod tests {
         assert_eq!(Spi::get_one::<bool>("SELECT (SELECT count(*) FROM env_probes_2048)=(SELECT count(*) FROM env_envelopes WHERE window_size=2048)").unwrap(), Some(true));
         // per_probe covers the whole gallery here, so probe search must equal the exact search
         let exact = "SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',10)";
-        let probe = "SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_probes('env','A',2048,4096,'{}',10,0.075,true,true,100)";
+        let probe = "SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_probes('env','A',2048,4096,'{}',10,0.075,true,true,100,5,0)";
         assert_eq!(
             Spi::get_one::<String>(exact).unwrap(),
             Spi::get_one::<String>(probe).unwrap()
         );
-        assert_eq!(Spi::get_one::<String>("SELECT recording_id||':'||start_sample FROM morlet_search_envelope_probes('env','A',2048,4096,'{}',1)").unwrap().unwrap(), "B:9216");
+        assert_eq!(Spi::get_one::<String>("SELECT recording_id||':'||start_sample FROM morlet_search_envelope_probes('env','A',2048,4096,'{}',1,0.075,true,true,50,5,0)").unwrap().unwrap(), "B:9216");
         // the session's ef_search is restored
         assert_eq!(
             Spi::get_one::<String>("SELECT current_setting('hnsw.ef_search')")
@@ -993,6 +1041,7 @@ mod tests {
 
     #[pg_test]
     fn envelope_search_refetches_after_suppression() {
+        serialize_shared_ddl();
         envelope_fixture();
         // stride 64 at 2048-sample windows: each pick suppresses up to 63 neighbours, so the
         // first batch of 200 rows can run out before top_k survive
@@ -1036,6 +1085,7 @@ END $$"#).unwrap();
 
     #[pg_test]
     fn batched_envelope_build_equals_the_per_window_encoding() {
+        serialize_shared_ddl();
         envelope_fixture();
         // uneven calls so batches start mid-recording; then one large call
         Spi::run(
@@ -1053,6 +1103,7 @@ END $$"#).unwrap();
 
     #[pg_test]
     fn envelope_build_resumes_and_search_finds_matching_burst() {
+        serialize_shared_ddl();
         envelope_fixture();
         assert_eq!(Spi::get_one::<i64>("SELECT sum(morlet_build_envelopes('env',r,2048,1024,3))::bigint FROM unnest(ARRAY['A','B','C']) r").unwrap(), Some(9));
         assert_eq!(Spi::get_one::<i64>("SELECT sum(morlet_build_envelopes('env',r,2048,1024))::bigint FROM unnest(ARRAY['A','B','C']) r").unwrap(), Some(36));
@@ -1077,6 +1128,7 @@ END $$"#).unwrap();
 
     #[pg_test(error = "envelope search exceeds 5 candidates; narrow the metadata filter")]
     fn envelope_search_enforces_its_budget() {
+        serialize_shared_ddl();
         envelope_fixture();
         Spi::run("SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r; SELECT * FROM morlet_search_envelope_interval('env','A',0,2048,'{}',10,0.075,true,true,5)").unwrap();
     }
