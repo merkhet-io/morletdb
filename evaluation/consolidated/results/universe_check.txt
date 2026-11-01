@@ -1,0 +1,12 @@
+db | envelopes | probe_rows | envelopes_without_probe_row | other_window_sizes | envelope_writes_since_stats_reset
+morlet_r2 | 234762 | 234762 | 0 | 0 | 234762
+(1 row)
+db | recordings | not_starting_at_zero | with_gaps | missing_tail_window
+morlet_r2 | 128 | 0 | 0 | 0
+(1 row)
+db | envelopes | probe_rows | envelopes_without_probe_row | other_window_sizes | envelope_writes_since_stats_reset
+morlet_bl1c | 234622 | 234622 | 0 | 0 | 234622
+(1 row)
+db | recordings | not_starting_at_zero | with_gaps | missing_tail_window
+morlet_bl1c | 59 | 0 | 0 | 0
+(1 row)

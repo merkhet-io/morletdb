@@ -28,6 +28,34 @@ The product probe function was **13× faster than the strongest exact arm at p95
 (57 vs 740 ms) and 15× on development data. Z-650 returns as many index rows as PR's 13 scans
 together but with one traversal; equal candidate counts are not equal work.
 
+## Distribution, worst queries and timing variability (`e1_distribution.py`, no new measurement)
+
+**Queries.** 100 per database from the first day: 50 random windows and 50 high-energy windows (rule in
+`evaluation/bounded_lag/`). **Aggregation.** Recall@10 per query = |arm top 10 ∩ exact top 10| / 10; every
+exact reference had 10 rows; the table reports the mean over queries.
+
+| Recall@10 of the product probe function | 1.0 | 0.9 | 0.8 | 0.7 |
+|---|---|---|---|---|
+| held-out (queries) | 83 | 12 | 4 | 1 |
+| dev (queries) | 98 | 2 | 0 | 0 |
+
+- **Missed items:** 23 of 1,000 reference items on held-out data (2 of 1,000 on dev). Their ranks in the
+  exact list spread from 1 to 10; **three were the exact best match**. None was replaced by an overlapping
+  window of the same recording, so the misses are not an artefact of overlap suppression: each missed
+  interval is absent and a lower-ranked admissible interval takes its place.
+- **Meaning of 0.7.** For the worst query (PB18, high-energy), the probe result lacked the exact ranks 3,
+  5 and 8; seven of its ten intervals are the exact ones. The six worst queries are all high-energy windows
+  of station PB18.
+- **Timing variability.** Probe p95 was 58.5 ms in round 1 and 49.7 ms in round 2 (median per-query
+  difference between rounds 12%); the strongest exact arm's p95 was 740 and 738 ms. The reported 13× is
+  the ratio of the two p95 latencies over all 200 timings (739.6 / 56.9 ms), not a per-query speed-up.
+
+## Search universe (`universe_check.sql`, `results/universe_check.txt`)
+
+Both databases: every 4096-sample envelope had its probe row (234,762; 234,622), no other window size,
+each recording a gap-free prefix from sample 0 without missing tail windows, and no envelope writes after
+the initial load. Exact and probe arms searched the same complete, unchanging set of windows.
+
 ## Error sources (offline controls, same stored envelopes, same re-ranking)
 
 | Candidates | dev | held-out |

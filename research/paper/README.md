@@ -1,10 +1,12 @@
 # MorletDB research manuscript
 
-Working draft 0.8: **MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL** (ACM `sigconf` layout).
+Draft 0.9 (submission candidate): **MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL** (ACM `sigconf` layout).
 
 Not yet submission-ready; see "Before submission" below.
 
 **Preview:** [morletdb.pdf](morletdb.pdf) and [supplement.pdf](supplement.pdf) (committed builds of the current sources; rebuild and recommit them when a source changes).
+
+**Artifact and commits:** [ARTIFACT.md](ARTIFACT.md) (measured state 68594d7, offered state, changes in between and why the measurements stay valid).
 
 **Companion documents:** [related/RELATED_MATRIX.md](related/RELATED_MATRIX.md) (closest prior work on shift-tolerant search, novelty assessment), [related/PG_SYSTEMS.md](related/PG_SYSTEMS.md) (PostgreSQL vector systems, extensibility and temporal types, mapped to code; with [code_audit.md](related/code_audit.md)), [`evaluation/consolidated/`](../../evaluation/consolidated/RESULTS.md) (E1 and diagnostics D1–D2, the source of the main tables), Appendix A of the paper (which result supports each claim), [NEXT_EXPERIMENTS.md](NEXT_EXPERIMENTS.md) (the two experiments that would close the remaining evidence gaps; not started), [analysis/](analysis/) (grid-spacing analysis on development data).
 
@@ -22,6 +24,28 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in draft 0.9 (consistency pass; no new measurement)
+
+- **Loss attribution bounded:** in the evaluated configuration, the controls show no additional
+  measurable loss from the sparse grid or float16 probes; the residual loss is attributable to
+  approximate candidate selection. Which sources were controlled singly and jointly is stated; missing
+  probe rows, differing search sets and concurrency are named as separate sources and excluded for E1.
+- **Distributions:** held-out per-query recall 83 / 12 / 4 / 1 queries at 1.0 / 0.9 / 0.8 / 0.7; 23
+  missed intervals of 1,000, three of them the exact best match, none replaced by an overlapping window;
+  13× stated as the ratio of p95 latencies (`evaluation/consolidated/e1_distribution.py`).
+- **Search universe and snapshots:** when both paths search the same windows, how missing probe rows
+  are detected and filled, the gap-free prefix invariant, snapshots per isolation level, effects of
+  concurrent appends, deletions and rebuilds; E1's universe verified complete and identical
+  (`universe_check.sql`).
+- **D1:** planning (0.38 ms) and execution (0.82 ms) of an isolated probe statement measured; the
+  remaining 0.7 ms per probe inside the function is reported as unresolved, not as planning.
+- **C4:** reported as an incomplete run; server log silence does not rule out a system-side cause;
+  no bearing on the retrieval comparison.
+- **Artifact:** [ARTIFACT.md](ARTIFACT.md) maps the measured commit and library, the offered state and
+  each PR #77 fix to its influence on E1/D1/D2.
+- **Shortened:** access-control history and envelope-size history (moved to the supplement);
+  supplement bibliography limited to cited works.
 
 ## What changed in draft 0.8
 
