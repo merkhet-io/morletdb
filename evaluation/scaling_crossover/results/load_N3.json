@@ -1,0 +1,24 @@
+{
+ "database": "morlet_e4_61",
+ "last_day": 61,
+ "append_s": 1998.216563666996,
+ "recordings": 320,
+ "samples": 2102378208,
+ "envelope_build_s": 283.67119024999556,
+ "enable_probes_s": 282.54455166700063,
+ "windows": 1026010,
+ "windows_days_1_14": 234762,
+ "status": [
+  4096,
+  1026010,
+  1026010,
+  0
+ ],
+ "bytes": {
+  "raw_chunks": 1608212480,
+  "envelopes": 975888384,
+  "probe_table": 2177048576,
+  "probe_index": 1201160192
+ },
+ "database_bytes": 4789860019
+}

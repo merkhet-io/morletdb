@@ -1,0 +1,7 @@
+/Users/zin/sophia/morletdb-p11/evaluation/strong_exact/e3.py:248: RuntimeWarning: divide by zero encountered in matmul
+  S = GAL["G64"][i] @ qmatrix(q, np.float64)
+/Users/zin/sophia/morletdb-p11/evaluation/strong_exact/e3.py:248: RuntimeWarning: overflow encountered in matmul
+  S = GAL["G64"][i] @ qmatrix(q, np.float64)
+/Users/zin/sophia/morletdb-p11/evaluation/strong_exact/e3.py:248: RuntimeWarning: invalid value encountered in matmul
+  S = GAL["G64"][i] @ qmatrix(q, np.float64)
+gate {'synthetic': {'trials': 3000, 'pool_sizes': [1, 2, 3, 200], 'failures': 0, 'examples': []}, 'scorer': {'kernel_finite_full_gallery_10_queries': True, 'decode_equal_20_rows': True, 'pairs': 500, 'max_abs_distance_diff': np.float64(1.5543122344752192e-15), 'edge_lag_pairs': 100, 'edge_pairs_with_best_lag_at_29_or_30': 94, 'edge_max_abs_diff': np.float64(1.5543122344752192e-15)}} mismatches 0 passed True
