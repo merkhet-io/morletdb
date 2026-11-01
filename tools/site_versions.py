@@ -2,7 +2,7 @@
 """Write the release and report versions into the website, or check them (standard library only).
 
 Sources: VERSION (software release) and research/paper/RELEASE_MANIFEST.json (report). Targets: every
-<span data-version="release"> and <span data-version="report"> in docs/*.html.
+<span data-version="release"> and <span data-version="report"> in docs/*.html and README.md.
 
   python3 tools/site_versions.py           # update docs/*.html
   python3 tools/site_versions.py --check   # fail if a page shows another version (CI)
@@ -23,7 +23,7 @@ SPAN = re.compile(r'(<span data-version="(release|report)">)([^<]*)(</span>)')
 def main():
     check = "--check" in sys.argv[1:]
     stale = []
-    for page in sorted((ROOT / "docs").glob("*.html")):
+    for page in [*sorted((ROOT / "docs").glob("*.html")), ROOT / "README.md"]:
         text = page.read_text()
         new = SPAN.sub(lambda m: m.group(1) + VERSIONS[m.group(2)] + m.group(4), text)
         for m in SPAN.finditer(text):

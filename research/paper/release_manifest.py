@@ -16,7 +16,7 @@ PDFS = ["research/paper/morletdb.pdf", "research/paper/supplement.pdf", "docs/mo
 WATCHED = ["research/paper", "docs/morletdb.pdf", "docs/morletdb-supplement.pdf"]
 STATIC = {
     "title": "MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL",
-    "version": "0.11",
+    "version": (ROOT / "research/paper/REPORT_VERSION").read_text().strip(),
     "date": "2026-11-01",
     "type": "technical report / preprint (not peer reviewed)",
     "author": "Zin Nam",
@@ -24,7 +24,6 @@ STATIC = {
     "measured_commit_scope": "E1 consolidated comparison and diagnostics D1-D2; earlier studies used earlier implementation states (STUDIES.md)",
     "measured_library_sha256": "3c786684421f3132e7a97b5ff38801e802948bf3e014aaae656b16bb109de7b7",
     "sources_first_merged": "cdf8b4b",
-    "tag": "paper-v0.11",
     "funding": "none",
     "licence": {"code": "Apache-2.0", "report_text_and_figures": "CC-BY-4.0 (LICENSE.md)"},
 }
@@ -52,7 +51,7 @@ def main():
         sys.exit(1 if bad or changed else 0)
     if git("status", "--porcelain", "--", *WATCHED):
         sys.exit("commit the report files first; the manifest records a commit, not a working tree")
-    m = dict(STATIC, report_source_commit=git("rev-parse", "HEAD"), pdf_sha256={p: sha(p) for p in PDFS})
+    m = dict(STATIC, tag="paper-v" + STATIC["version"], report_source_commit=git("rev-parse", "HEAD"), pdf_sha256={p: sha(p) for p in PDFS})
     OUT.write_text(json.dumps(m, indent=1, ensure_ascii=False) + "\n")
     print("wrote", OUT.relative_to(ROOT), "for", m["report_source_commit"][:7])
 

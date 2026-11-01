@@ -4,10 +4,10 @@ name: paper-numbers
 # Standard library only; runs no benchmark and needs no database.
 on:
   pull_request:
-    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "VERSION", "tools/site_versions.py", ".github/workflows/paper-numbers.yml"]
+    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "README.md", "VERSION", "tools/site_versions.py", ".github/workflows/paper-numbers.yml"]
   push:
     branches: [main]
-    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "VERSION", "tools/site_versions.py"]
+    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "README.md", "VERSION", "tools/site_versions.py"]
 jobs:
   check:
     runs-on: ubuntu-24.04

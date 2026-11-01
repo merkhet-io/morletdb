@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.11, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.12, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -58,6 +58,14 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.12 (no new measurement)
+
+- **Software version named.** The report states that E1 measured pg_morlet SQL version 0.3.1 at commit
+  68594d7, before that version was released, and that release 0.3.1-alpha.1 ships it with the later fixes.
+  PostgreSQL, pgvector and pg_morlet versions in that paragraph are generated from E1's result files.
+- **One source for the report version.** `REPORT_VERSION` feeds the title pages (via `gen_numbers.py`),
+  the release manifest and the website.
 
 ## What changed in 0.11 (correctness and release pass; no new measurement)
 
