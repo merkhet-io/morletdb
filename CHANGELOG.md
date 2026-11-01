@@ -4,6 +4,13 @@
 
 Extension (SQL version 0.3.1, with an update script from 0.3.0 as released in
 0.3.0-alpha.1):
+- `morlet_collection_status(collection)`: operational status per envelope window size.
+  - Recordings and raw samples.
+  - Stored envelopes, recordings without envelopes, and raw samples not yet covered by an
+    envelope window.
+  - Probe rows and probe backlog.
+  - Whether row security is applied.
+  - Bytes per structure: recordings, chunks, segments, envelopes, probe table, probe index.
 - `morlet_enable_row_security(collection)` (opt-in) closes a data leak in multi-tenant setups.
   - **The leak:** with RLS only on the recordings table, a restricted role that had the
     `SELECT` grants search needs could read other tenants' raw chunks, envelopes and probe

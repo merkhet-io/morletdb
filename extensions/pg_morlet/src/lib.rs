@@ -797,6 +797,48 @@ mod tests {
     }
 
     #[pg_test]
+    fn collection_status_reports_progress_and_backlog() {
+        envelope_fixture(); // 3 recordings x 16,384 samples
+        let row = |q: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT {q}::text FROM morlet_collection_status('env') LIMIT 1"
+            ))
+            .unwrap()
+        };
+        // nothing built: one row, everything unbuilt
+        assert_eq!(row("(window_size, recordings, raw_samples, envelopes, recordings_without_envelopes, unbuilt_samples)"), Some("(,3,49152,0,3,49152)".into()));
+        // three windows of 2048 at stride 1024 per recording: last window ends at 4096
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024,3) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        assert_eq!(
+            row("(window_size, envelopes, recordings_without_envelopes, unbuilt_samples)"),
+            Some("(2048,9,0,36864)".into())
+        );
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        assert_eq!(
+            row("(envelopes, unbuilt_samples, probe_rows, row_security)"),
+            Some("(45,0,,f)".into())
+        );
+        assert!(Spi::get_one::<bool>(
+            "SELECT chunk_bytes > 0 AND envelope_bytes > 0 FROM morlet_collection_status('env')"
+        )
+        .unwrap()
+        .unwrap());
+        if pgvector_available() {
+            Spi::run("CREATE EXTENSION IF NOT EXISTS vector; SELECT morlet_enable_envelope_probes('env',2048)").unwrap();
+            assert_eq!(
+                row("(probe_rows, probe_backlog, probe_index_bytes > 0)"),
+                Some("(45,0,t)".into())
+            );
+        }
+    }
+
+    #[pg_test]
     fn envelope_functions_match_the_core_definition() {
         assert_eq!(
             Spi::get_one::<String>("SELECT morlet_envelope_version()")
