@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.0-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.1-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -9,8 +9,10 @@ a leading v; GHCR image tags do not.
 - **0.3.0-alpha.1:** reports SQL version 0.3.0, with an update script from
   0.2.0-alpha.1's 0.2.0 objects; the chained update from alpha.3's 0.1.0 is also
   tested.
-- **Unreleased (main):** SQL version 0.3.1, with an update script from
-  0.3.0-alpha.1's 0.3.0 objects.
+- **0.3.1-alpha.1:** reports SQL version 0.3.1, with an update script from
+  0.3.0-alpha.1's 0.3.0 objects; the chained updates from 0.2.0 and 0.1.0 are also
+  tested. The image does not include pgvector, so probe search needs it installed
+  separately.
 
 Releases target PostgreSQL 17 on Linux amd64. Building from source also supports PostgreSQL 18
 ([compatibility](compatibility.md)).
@@ -45,7 +47,7 @@ Verify the release exists and copy its exact image digest from image-digest.txt:
 ```sh
 git clone https://github.com/merkhet-io/morletdb.git
 cd morletdb
-git checkout v0.3.0-alpha.1
+git checkout v0.3.1-alpha.1
 export MORLET_IMAGE=ghcr.io/merkhet-io/morletdb@sha256:REPLACE_WITH_RELEASE_DIGEST
 docker compose -f compose.release.yaml pull db
 docker compose -f compose.release.yaml run --rm walkthrough

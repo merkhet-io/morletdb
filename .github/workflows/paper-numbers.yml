@@ -4,10 +4,10 @@ name: paper-numbers
 # Standard library only; runs no benchmark and needs no database.
 on:
   pull_request:
-    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", ".github/workflows/paper-numbers.yml"]
+    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "VERSION", "tools/site_versions.py", ".github/workflows/paper-numbers.yml"]
   push:
     branches: [main]
-    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf"]
+    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "VERSION", "tools/site_versions.py"]
 jobs:
   check:
     runs-on: ubuntu-24.04
@@ -29,3 +29,5 @@ jobs:
         run: research/paper/sync_site.sh --check
       - name: Release manifest matches the report files
         run: python3 research/paper/release_manifest.py --check
+      - name: Website shows the current release and report versions
+        run: python3 tools/site_versions.py --check
