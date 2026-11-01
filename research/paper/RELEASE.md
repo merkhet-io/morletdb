@@ -46,8 +46,9 @@ The same statement appears at the end of the report.
    `RELEASE_MANIFEST.json`, and commit the manifest on its own. The manifest therefore names the commit
    *before* its own.
 3. `research/paper/release_manifest.py --check` verifies the hashes and that no report file changed since
-   the recorded commit. CI runs it, so any later change under `research/paper/` or to the website PDFs
-   needs a regenerated manifest (step 2).
+   the recorded commit. CI runs it, so any later change to what the PDFs are built from (the `.tex`
+   sources, `generated/`, `fig/`, `REPORT_VERSION`) or to the PDFs needs a new version and a regenerated
+   manifest (step 2). Study logs and READMEs may change without one.
 
 ## Author decisions (2026-11-01)
 

@@ -1,0 +1,8 @@
+matched round 1 0 {'X-PG': 724.9, 'P-PG': 33.5, 'X-MAT64': 45.0, 'X-MAT32R': 18.8}
+matched round 1 25 {'X-PG': 718.6, 'P-PG': 37.1, 'X-MAT64': 43.7, 'X-MAT32R': 19.1}
+matched round 1 50 {'X-PG': 716.2, 'P-PG': 34.0, 'X-MAT64': 44.7, 'X-MAT32R': 19.4}
+matched round 1 75 {'X-PG': 720.9, 'P-PG': 29.2, 'X-MAT64': 44.1, 'X-MAT32R': 19.0}
+matched round 2 0 {'X-PG': 718.3, 'P-PG': 30.3, 'X-MAT64': 44.1, 'X-MAT32R': 18.6}
+matched round 2 25 {'X-PG': 718.7, 'P-PG': 31.2, 'X-MAT64': 43.2, 'X-MAT32R': 18.6}
+matched round 2 50 {'X-PG': 719.4, 'P-PG': 36.7, 'X-MAT64': 44.8, 'X-MAT32R': 19.9}
+matched round 2 75 {'X-PG': 722.2, 'P-PG': 47.6, 'X-MAT64': 46.2, 'X-MAT32R': 20.2}
