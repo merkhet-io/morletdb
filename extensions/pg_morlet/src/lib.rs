@@ -643,6 +643,56 @@ mod tests {
         // Feature search sees only recordings that have segments.
         assert_eq!(Spi::get_one::<i64>("SELECT count(DISTINCT recording_id) FROM morlet_search_streams('raw_only',ARRAY(SELECT sin(i/7.) FROM generate_series(0,511) i),4096,'x','g','{}','zscore',100)").unwrap(), Some(1));
     }
+    fn contract_fixture() {
+        // A and its exact copy D (ties), B with a shifted burst, C noise; 16,384 samples each
+        envelope_fixture();
+        Spi::run("SELECT morlet_start_recording('env','D',100,'HHZ','counts','{\"g\":\"d\"}',512,256,'zscore','none');
+                  SELECT morlet_append_chunk('env','D',0,(SELECT samples FROM morlet_read_interval('env','A',0,16384)))").unwrap();
+    }
+
+    #[pg_test]
+    fn search_contract_ties_order_by_recording_then_start() {
+        contract_fixture();
+        Spi::run("SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C','D']) r").unwrap();
+        // D is a bitwise copy of A, so D's windows tie with A's; ties order by recording_id, then start_sample
+        let rows = Spi::get_one::<String>("SELECT string_agg(recording_id||':'||start_sample,',' ORDER BY ord) FROM (SELECT *, row_number() OVER () ord FROM morlet_search_envelopes('env',(SELECT samples FROM morlet_read_interval('env','B',8192,10240)),100,'HHZ','counts','{}',4,0.075,false)) x").unwrap().unwrap();
+        let hits: Vec<&str> = rows.split(',').collect();
+        let mut pairs = 0;
+        for (k, h) in hits.iter().enumerate() {
+            // the last hit may be an A whose tied D copy falls just beyond top_k
+            if let (Some(start), true) = (h.strip_prefix("A:"), k + 1 < hits.len()) {
+                assert_eq!(
+                    hits.get(k + 1).copied(),
+                    Some(format!("D:{start}").as_str()),
+                    "tie order: {rows}"
+                );
+                pairs += 1;
+            }
+        }
+        assert!(pairs > 0, "{rows}");
+    }
+
+    #[pg_test]
+    fn search_contract_fewer_than_top_k_and_searchable_at_commit() {
+        contract_fixture();
+        // nothing built yet: no envelopes, so no results (not an error)
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM morlet_search_envelope_interval('env','A',2048,4096,'{}',10)"
+            )
+            .unwrap(),
+            Some(0)
+        );
+        // append and build in one transaction (this test's): searchable immediately
+        Spi::run("SELECT morlet_build_envelopes('env','D',2048,1024)").unwrap();
+        // only D is eligible (filter) and overlapping windows are suppressed: at most 16384/2048 = 8 hits,
+        // fewer than top_k = 20, returned without error
+        let n = Spi::get_one::<i64>(r#"SELECT count(*) FROM morlet_search_envelope_interval('env','A',2048,4096,'{"g":"d"}',20)"#).unwrap().unwrap();
+        assert!(n > 0 && n <= 8, "{n}");
+        assert_eq!(Spi::get_one::<i64>(r#"WITH h AS (SELECT * FROM morlet_search_envelope_interval('env','A',2048,4096,'{"g":"d"}',20))
+            SELECT count(*) FROM h a JOIN h b ON a.start_sample<b.start_sample AND b.start_sample<a.end_sample"#).unwrap(), Some(0));
+    }
+
     #[pg_test(error = "sample_rate_hz must be finite and in (0,200000]")]
     fn raw_only_recordings_validate_rate() {
         Spi::run("SELECT morlet_create_stream_collection('public','raw_only_bad'); SELECT morlet_start_recording('raw_only_bad','A',0,'x','g','{}',512,256,'zscore','none')").unwrap();
