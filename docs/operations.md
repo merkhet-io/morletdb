@@ -9,9 +9,9 @@ average 3–20); treat latencies as indicative until re-measured on the pilot's 
 
 | Dimension | Tested | Notes |
 |---|---|---|
-| Ingest | 16 channels × 25.6 kHz (409,600 samples/s), 4 writer connections, envelopes and probe rows built in the append transaction | sustained for 15 min with 4 concurrent analysts; peak lag 22 s of signal, recovered to 0.1 s. Capacity about 500–570 k samples/s (1.3–1.4×); at 2× the writers fell behind without recovering. No multi-hour run yet |
+| Ingest | 16 channels × 25.6 kHz (409,600 samples/s), 4 writer connections, envelopes and probe rows built in the append transaction | held for 15 min with default settings (peak lag 22 s) and for 111 min with the configuration below (lag ≤ 24 s, ≤ 3.4 s after the first hour), with 4 concurrent analysts; the planned 2-hour run stopped at 112.5 min after an unexplained pause of all client processes. Capacity about 500–570 k samples/s (1.3–1.4×); at 2× the writers fell behind without recovering |
 | Archive | about 960,000 windows (4096 / 2048) in one collection, 4.8 GB database | larger archives are untested |
-| Search | 4 analysts, one query every 2 s, half filtered (exact path), half unfiltered (probe path), plus one unfiltered exact search per minute | filtered p95 167 ms; probe p95 337 ms, recall 0.998; unfiltered exact p95 9.7 s |
+| Search | 4 analysts, one query every 2 s, half filtered (exact path), half unfiltered (probe path), plus one unfiltered exact search per minute defaults: filtered p95 167 ms, probe p95 337 ms (recall 0.998), exact p95 9.7 s; configuration below, 111 min: filtered p95 118 ms, probe p95 138 ms (recall 0.993), exact p95 14.5 s on a growing archive |
 | Recovery | backup/restore, aborted appends/builds, worker kills, deletions, online index rebuild, failed upgrade | all checks passed (see below) |
 
 Outside this range — higher rates, larger archives, cold caches, many tenants under load,
@@ -26,7 +26,7 @@ cargo pgrx install --release --pg-config /path/to/pg_config     # PostgreSQL 17
 
 ```sql
 CREATE EXTENSION pg_morlet;
-CREATE EXTENSION vector;          -- optional: only for probe search (pgvector 0.7 or later)
+CREATE EXTENSION vector;          -- optional: only for probe search (pgvector 0.8 or later)
 ```
 
 pg_morlet does not depend on pgvector; CI tests both with and without it.
@@ -37,8 +37,8 @@ pg_morlet does not depend on pgvector; CI tests both with and without it.
 |---|---|---|
 | `maintenance_work_mem` | 2–4 GB for the session that runs `morlet_enable_envelope_probes` or rebuilds the probe index | with 64 MB the HNSW build for 235 k windows took ~25 min instead of ~1 min; 939 k windows took 4.6 min with 4 GB |
 | `max_parallel_workers_per_gather` | default (2) or higher | exact search runs as one parallel statement |
-| `max_wal_size`, `checkpoint_timeout`, `wal_compression` | raise `max_wal_size` well above the 1 GB default and enable `wal_compression` (to be confirmed by measurement) | sustained ingest with probe maintenance wrote 13.8 GB of WAL in 15 min for 0.76 GB of database growth (default `max_wal_size` 1 GB): HNSW updates touch pages across the index and every checkpoint forces full-page images |
-| WAL archiving / disk | size WAL storage for ~1 TB/day at the tested ingest rate unless the settings above reduce it | as above |
+| `shared_buffers`, `max_wal_size`, `checkpoint_timeout`, `wal_compression` | tested together: 8 GB, 16 GB, 15 min, on (pglz) | with defaults, 15 min of target ingest wrote 13.8 GB of WAL for 0.76 GB of growth; with these four settings, 1.91 GB for 0.65 GB (15 min) and 11.96 GB for 4.68 GB (111 min). They were changed together, so no single setting is credited |
+| WAL archiving / disk | with the settings above, about 6.5 GB of WAL per hour at the tested rate (about 2.6× the database growth); with defaults, about 55 GB per hour | as above |
 
 ## Ingest and maintenance
 
@@ -100,8 +100,9 @@ working. Take a backup before updating anyway.
 
 ## Known limits
 
-- **Not yet pilot-ready** by the Stage 2 plan's own criteria: the 2-hour stability run and the
-  WAL settings are still open (`evaluation/pilot/RESULTS.md`).
+- **Not yet pilot-ready** by the Stage 2 plan's own criteria: the 2-hour stability run stopped at
+  112.5 minutes after an unexplained pause (`evaluation/pilot/RESULTS.md`). A measured stability
+  duration is not a production release.
 
 - Timings are from one shared machine; cold-cache behaviour is not measured.
 - Unfiltered exact search over ~1 M windows takes several seconds (p95 9.7 s here); use probe
@@ -112,3 +113,7 @@ working. Take a backup before updating anyway.
   cost is untested with thousands of visible recordings.
 - WAL volume under sustained ingest with probe maintenance is high with default checkpoint
   settings (above).
+- Enable probe search (`morlet_enable_envelope_probes`) while no envelopes are being built: a build
+  that starts before the enable commits writes envelopes without probe rows, which then show as
+  `probe_backlog` in `morlet_collection_status` and are invisible to probe search.
+- Probe search needs pgvector 0.8 or later (`hnsw.iterative_scan`).
