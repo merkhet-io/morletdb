@@ -180,6 +180,13 @@ jobs:
       - name: Run extension integration tests with pgvector
         working-directory: extensions/pg_morlet
         run: cargo pgrx test pg17
+      - name: Enabling probe search during a concurrent envelope build leaves no backlog
+        working-directory: extensions/pg_morlet
+        run: |
+          export PG_CONFIG=$(python3 -c 'import pathlib,tomllib; print(tomllib.loads((pathlib.Path.home()/".pgrx/config.toml").read_text())["configs"]["pg17"])')
+          cargo pgrx install --pg-config "$PG_CONFIG"
+          cargo pgrx start pg17
+          tests/probe_enable_race.sh
   upgrade:
     # Populates a database with the previous release's extension, then updates it
     # in place to this branch (extensions/pg_morlet/tests/upgrade.sh).
