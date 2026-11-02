@@ -10,6 +10,9 @@ MCP server:
     so row-level security applies.
   - **Errors:** they reach the agent as tool errors with the database's message.
   - **Guide:** `docs/mcp.md`, with Claude Code and Claude Desktop set-up and a worked investigation.
+- **Agent demo:** `examples/agent-demo` loads four days of public seismic data (CX, GEOFON) into the release
+  image and runs the MCP server in Docker for Claude Code or Claude Desktop, with a scripted replay
+  (`replay.py`) that needs no language model.
 
 ## 0.3.2-alpha.1
 

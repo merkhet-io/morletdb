@@ -70,11 +70,17 @@ $$;
 | **Engineering investigation** | retrieves earlier test runs to explain a changed transient, with the experiment metadata |
 | **Research and labelling assistants** | collects similar intervals for human review, annotation or model evaluation |
 
+**Try it with Claude:** the [agent demo](examples/agent-demo/README.md) loads four days of public seismic
+recordings with Docker and lets Claude Code or Claude Desktop investigate an earthquake through the
+read-only [MCP server](docs/mcp.md). Four of the five closest matches it finds are other catalogued earthquakes.
+
 > [!IMPORTANT]
-> This is an integration pattern on the SQL functions MorletDB ships. Detection models,
-> agent orchestration and machine controls come from your application; no agent or MCP
-> server is bundled. The effectiveness of agent and anomaly workflows has not been
-> evaluated, and similarity alone does not establish normality, a fault or its cause.
+> The SQL function above is an integration pattern; the bundled MCP server only reads. Detection models,
+> agent orchestration and machine controls come from your application. On seismic data, this search
+> returns catalogued earthquakes about twice as often as zero-lag similarity
+> ([E5](evaluation/task_relevance/RESULTS.md), [E5-H](evaluation/task_relevance/RESULTS_HELDOUT.md));
+> anomaly workflows have not been evaluated, and similarity alone does not establish normality, a fault
+> or its cause.
 
 ## How it works
 
