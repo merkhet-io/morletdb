@@ -176,3 +176,36 @@ Recorded 2026-11-02 during and after the QuestDB stage's measurements.
    as such and no comparison statement rests on them.
 6. **Reads, MorletDB.** One SQL statement per channel fetches the interval as pieces of at most 32,768
    samples (`generate_series` with `LATERAL morlet_read_interval`, binary transfer), assembled in the client.
+
+## Amendment B3.1: MorletDB client path and SQL 0.3.3 (FROZEN before its confirmation run)
+
+Frozen 2026-11-02 in the commit that adds this section, after development on the development set
+(`B3_SET=dev`: every 20th file starting at the 11th, disjoint from the benchmark set; results in
+`results/dev/`) and before any B3.1 measurement on the benchmark set. Stage-1 results stay as published.
+
+**What changed (all lossless; existing SQL functions unchanged):** the importer core sends numpy chunks in
+binary (`tools/ingest/pg_numpy.py`) and, on SQL 0.3.3, as raw float64 bytes (`morlet_append_chunk_raw`, which
+calls `morlet_append_chunk`); reads use `morlet_read_interval_raw` (one call per interval and channel, mapped
+with `numpy.frombuffer`); interval analytics use `morlet_interval_stats`; the raw codec decodes with a
+word-based bit reader and encodes with a faster search that writes byte-identical chunks.
+
+**Image:** `morletdb:b31-dev`, built locally with `deploy/Dockerfile` from the commit that adds this section
+(PostgreSQL 17.6, pg_morlet SQL 0.3.3); its image id is recorded in the results.
+
+**Arms (benchmark set, same harness, same rules as stage 1):**
+- **M-031** (recommended configuration): chunk 4,096, 16 chunks per transaction (importer defaults). Three
+  fresh loads per durability class; D2 load 1 measures storage, reads (R1–R5) and analytics; full correctness
+  after every load.
+- **M-031c16** (documented bulk option): the same with 16,384-sample chunks; one D2 load with storage, reads
+  and analytics. Reported as a trade-off, not as the recommended configuration.
+- **QuestDB** is rerun unchanged in the same session (three loads per class; reads and analytics on D2 load
+  1; storage on D2 load 1), so that both systems' numbers come from the same machine state.
+
+**Acceptance criteria for adopting the change (all on the benchmark set, M-031):**
+1. Every correctness check passes; analytics within 1e-12 relative of numpy.
+2. Sample-data storage equal to stage 1 to within 0.1% (the encoder writes byte-identical chunks).
+3. Ingestion (D2, median of three) at least 2× stage-1 MorletDB (≥ 1.06 M samples/s).
+4. R2 p50 at most 12 ms.
+5. Analytics p50 at most 2× QuestDB-native p50 of the same session.
+
+Comparative statements keep the stage-1 rule (≥ 10%, all loads, or both p50 and p95).

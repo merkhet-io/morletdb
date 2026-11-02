@@ -192,3 +192,99 @@ cd evaluation/tsdb_b3
 Attribution runs (not part of the comparison): `run.py load morletdb-batched16 D2 1|2`,
 `run.py load morletdb-noquantum D2 1`, `diag_reads.py`. Docker volumes are created and removed per load;
 every database password is generated per process and never written.
+
+---
+
+# B3.1: MorletDB client path and SQL 0.3.3
+
+Amendment frozen in [PROTOCOL.md](PROTOCOL.md#amendment-b31-morletdb-client-path-and-sql-033-frozen-before-its-confirmation-run)
+before this run; developed on the disjoint development set ([`results/dev/`](results/dev/)), confirmed once
+on the benchmark set ([`results/b31/`](results/b31/)), with QuestDB rerun unchanged in the same session. Image
+`morletdb:b31-dev` (local build of the amendment's commit, image id `sha256:82581eb0e221…`).
+
+**What changed in MorletDB** (all lossless; existing SQL functions unchanged):
+- **Client:** numpy chunks are sent in binary rather than formatted sample by sample in Python, and on SQL
+  0.3.3 as raw float64 bytes (`morlet_append_chunk_raw`, which calls `morlet_append_chunk`).
+- **Reads:** `morlet_read_interval_raw` returns little-endian float64 bytes in one call per interval.
+- **Analytics:** `morlet_interval_stats` computes count, min, max, mean and RMS while decoding.
+- **Codec:** a faster decoder bit reader, and a faster encoder search that writes byte-identical chunks
+  (encode 154 → 61 ns per sample).
+
+## Acceptance criteria (frozen; M-031, benchmark set)
+
+| # | Criterion | Result | Met |
+|---|---|---|---|
+| 1 | every correctness check passes; analytics within 1e-12 | all 13 loads pass; largest difference 3.5e-16 | yes |
+| 2 | sample-data storage equal to stage 1 within 0.1% | 156.75 vs 156.71 MiB; per-group encoded bytes identical | yes |
+| 3 | ingestion D2 median ≥ 2× stage 1 (≥ 1.06 M samples/s) | 2.27 M samples/s (4.3×) | yes |
+| 4 | R2 p50 ≤ 12 ms | 11.43 ms | yes (narrowly) |
+| 5 | analytics p50 ≤ 2× QuestDB-native p50, same session | 3.93 vs 4.16 ms | yes |
+
+**Verdict: adopt** (SQL 0.3.3 and the client path; PR separate from this benchmark).
+
+## Same-session comparison (benchmark set)
+
+Ingestion, three fresh loads per class, median [range]:
+
+| System | Class | Samples/s | Ack per acquisition p50 | Server CPU mean | Peak memory |
+|---|---|---:|---:|---:|---:|
+| QuestDB | D1 | 6.56 M [6.11–6.68] | 119 ms | 277% | 2,095 MiB |
+| QuestDB | D2 | 5.73 M [5.70–8.23] | 122 ms | 307% | 1,966 MiB |
+| MorletDB (stage 1) | D2 | 0.53 M [0.52–0.56] | 1,558 ms | 28% | 169 MiB |
+| **MorletDB B3.1** | D1 | 2.22 M [2.11–2.26] | 363 ms | 53% | 168 MiB |
+| **MorletDB B3.1** | D2 | 2.27 M [2.24–2.31] | 354 ms | 54% | 168 MiB |
+| MorletDB B3.1, 16,384-sample chunks (1 load) | D2 | 3.55 M | | | |
+
+Reads (D2 load 1, p50 / p95 ms; R5 with throughput) and analytics:
+
+| Query | QuestDB native | MorletDB B3.1 | Statement (≥ 10% in p50 and p95) | MorletDB B3.1, 16,384 chunks |
+|---|---:|---:|---|---:|
+| R1 4,096 | 1.93 / 5.89 | **0.98 / 1.51** | MorletDB faster | 0.88 / 1.29 |
+| R2 128,000 | 10.73 / 20.11 | 11.43 / 14.36 | none (p50 within 10%) | 7.85 / 9.73 |
+| R3 3 × 64,000 | **15.42** / 23.41 | 20.58 / 25.93 | none (QuestDB 25% faster at p50, within 10% at p95) | 13.68 / 17.21 |
+| R4 recent | 1.25 / 3.18 | 1.42 / 2.71 | none (split) | 0.99 / 1.46 |
+| R4 older | 1.14 / 2.13 | **0.91 / 1.52** | MorletDB faster | 0.94 / 1.39 |
+| R5 4 threads | 1.81 / 9.22, 1,364 q/s | **1.42 / 3.06, 2,366 q/s** | MorletDB faster | 1.32 / 2.28, 2,701 q/s |
+| Analytics (R2 intervals) | 4.16 / 8.02 | 3.93 / 4.80 | none (p50 within 10%) | 3.67 / 4.03 |
+
+Storage is unchanged from stage 1 for the recommended configuration (byte-identical chunks); 16,384-sample
+chunks store 7.5% less sample data (145.0 vs 156.8 MiB).
+
+**Session variance.** This session's QuestDB numbers are slower and more variable than stage 1 (D2 ingestion
+5.7–8.2 M vs 7.2–7.8 M samples/s; R1 p50 1.93 vs 1.21 ms; R2 10.7 vs 8.4 ms) on the same image and
+configuration; the protocol compares within a session, so the statements above use this session only.
+Against stage 1's QuestDB numbers the conclusions change in one place: R2 becomes "QuestDB faster at p50
+(27%), equal at p95" (still no statement), and R1, R4-older and R5 remain MorletDB advantages. QuestDB's WAL
+directories held 11–320 MiB after the settled-state check, depending on when its asynchronous purge ran;
+its data, timestamps and metadata were byte-identical across sessions.
+
+## Updated trade-off map
+
+| Dimension | Stage 1 | B3.1 |
+|---|---|---|
+| Sample data on disk | MorletDB 33% smaller than Q-parquet-zstd9 | unchanged |
+| Ingestion, one client connection | QuestDB 13–15× | **QuestDB 2.5–3.7×** (1.6–2.3× with 16,384-sample chunks, one load) |
+| Server memory during ingestion | MorletDB 11–14× less | unchanged (168 vs 1,850–2,300 MiB) |
+| Short exact reads | tie | **MorletDB faster** (R1, R4 older); R4 recent tie |
+| Long exact reads | QuestDB 2–3× | **tie** (R2); QuestDB 25% at p50 for 3 × 64,000 (R3) |
+| Concurrent short reads (R5) | tie | **MorletDB faster**, 73% more queries/s |
+| Interval analytics | QuestDB 3–6× | **tie** |
+
+**Attribution:**
+- **Ingestion.** Most of the gain is the client: binary transfer removed Python's per-sample formatting
+  (0.51 → 1.84 M samples/s on development). The rest is server-side: the faster encoder, and raw bytes that
+  skip PostgreSQL's array parsing (→ 2.42 M on development).
+- **Remaining ingestion cost.** About 2 ms per 4,096-sample call ([`diag_append.json`](results/dev/diag_append.json)).
+  Of that, the old encoder took about 0.8 ms (now about 0.25 ms), parameter receive and parsing about 0.6 ms
+  (raw bytes about 0.15 ms), and plpgsql, insert, checkpoint and commit about 0.9 ms. Larger chunks amortise
+  that fixed part.
+- **Reads.** They no longer decode PostgreSQL arrays in Python.
+- **Server time for a 128,000-sample read.** About 4.7 ms, mostly decoding
+  ([`diag_server_read.json`](results/dev/diag_server_read.json)).
+- **Analytics.** These now run in one native pass.
+
+**Recommendation.**
+- **Default:** keep 4,096-sample chunks; they read short intervals fastest.
+- **Bulk archives:** document 16,384-sample chunks as an option. It gives faster ingestion and 7.5% less
+  storage. On development its reads were slower; in this session they were faster. That disagreement
+  needs its own measurement before any claim.

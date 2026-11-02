@@ -1,0 +1,5390 @@
+{
+ "dataset": "Paderborn bearing data (Zenodo 15845309 copy), every 20th of 2,480 files, starting at the 11th (development set)",
+ "set": "dev",
+ "slot_s": 60,
+ "groups": {
+  "high": {
+   "channels": [
+    "vibration_1",
+    "phase_current_1",
+    "phase_current_2"
+   ],
+   "rate": 64000.0,
+   "period_ns": 15625
+  },
+  "mid": {
+   "channels": [
+    "force",
+    "speed",
+    "torque"
+   ],
+   "rate": 4000.0,
+   "period_ns": 250000
+  },
+  "process": {
+   "channels": [
+    "temp_2_bearing_module"
+   ],
+   "rate": 1.0,
+   "period_ns": 1000000000
+  }
+ },
+ "quantum": {
+  "vibration_1": 0.0030517578125,
+  "phase_current_1": 0.0006887817378,
+  "phase_current_2": 0.0006887817378
+ },
+ "units": {
+  "vibration_1": "as distributed",
+  "phase_current_1": "A",
+  "phase_current_2": "A",
+  "force": "N",
+  "speed": "rpm",
+  "torque": "Nm",
+  "temp_2_bearing_module": "degC"
+ },
+ "acquisitions": [
+  {
+   "k": 0,
+   "acquisition": "N09_M07_F10_K001_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K001/N09_M07_F10_K001_19.mat",
+   "start_ns": 1767225600000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "69871bde90f8195404c8f970bfc372f57c2cdb50827633e9bf4a29bb45e264bb"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "b99e2a02165db1f3099579521e7f9f24e47d31494df0b08b4ce8b945710c37ab"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "90632f357fecda639b78621c544333652bc217a3722c7b1670c4ebd60a8d030f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d8b96f8cd9c8cf2168ff247f3d844525c357aafddf82d05a67815e0f622a661e"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b9b5cc88841e93d5c401679e5fdafafa7370f1d6ea2194fc93d59c2ee5b97eba"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1a991e7e9048138774fe31e93587410f549db6e12fe336991fefd4d2ab65d651"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "83ebe5d437755ed6af1952af9ae935902dac59b312fec9692b730e3bff8acf9e"
+    }
+   }
+  },
+  {
+   "k": 1,
+   "acquisition": "N15_M01_F10_K001_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K001/N15_M01_F10_K001_19.mat",
+   "start_ns": 1767225660000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "00226962d2fea2b06e4a6156a73bc66f6ea4eb91e8d03bdbc8cd734bdf518049"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "d9580e0160bed46a6f171a72aa7bca2af894bcc58c235401fedefdea7fde77ae"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "263f971e3430a5e59f98128c44d2ae8c9c1b43e1abe9d3e789651e1bb5b67a25"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "927cc26bd5b3df6cab86c6d443980930a233b2d1a4d1f0b649cdd2d661b279c5"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "33e5227e6bb36d2c5263bfe4d247deb7ed3aca1378fd27fc20931a9e73fe5b10"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a6cce6354a627a15ecfc3ee867bbf660a20db491c1b6ea7c1eb5f15d1f39a2c5"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "6d8bfe6bca8b77cab09d18498176b420918b9639b7471b81f304d01e2a831aa7"
+    }
+   }
+  },
+  {
+   "k": 2,
+   "acquisition": "N15_M07_F04_K001_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K001/N15_M07_F04_K001_19.mat",
+   "start_ns": 1767225720000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256724,
+     "sha256": "99c4da8df5abb84a4b7d4dfc1cb55c3b0aa08b2ca7ea0d997a09e444f88398b3"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256724,
+     "sha256": "e2c396b812552808a5c107afca3cdf88d4029f3e2f8af4b63e75e9fde3d4dd87"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256724,
+     "sha256": "3316d593478593fac6e6b12168d3e04401a9fdb0a40140ff6241b4b399884a1a"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "34f24ea5f5ce62a97f909be036f10d930021b956896e178051c8f8c81bcc2610"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "eeead6e5a0565ace0f7a5b14d19c83dbfa75bf42c17c94602999c458ff677855"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "d0066037b5e91133c37a8096cd9765c8a2c70a4de1b4271f3af0601fd413a2ed"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "b0d9233c4a00fe9be3af4e7b13ce279fe4febc55af44e08dece890048e08d908"
+    }
+   }
+  },
+  {
+   "k": 3,
+   "acquisition": "N15_M07_F10_K001_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K001/N15_M07_F10_K001_19.mat",
+   "start_ns": 1767225780000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "63593ce7b784d813b1138112e7284b81ec00647586942519830c2df1d5a9f823"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "4610017857c2631dc627b0dea593bcb60074e0ac087d52462a4e738f6fd15124"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "b5ec6e45f2085632015db7bbd9b3160a01e39533e7fdad3108ed9cbd9ee13fcf"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "416ba4d1b69effa67bdbd8db32a91ced566126415ff62274a4a3e409079edd1c"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ff4a90b2d8468595c5814150be2f4674311beb518af3436737e6d217f48c751d"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f9d41d20a58dc7c3a4f23b58a2b7d6c2b3d1edb02414379cb29daed03278a5c4"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "5b50c8e5a2cd72e9d85dd40729b4b5df60d5a8196446bac9d6dc9fd1ef1749d0"
+    }
+   }
+  },
+  {
+   "k": 4,
+   "acquisition": "N09_M07_F10_K002_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K002/N09_M07_F10_K002_19.mat",
+   "start_ns": 1767225840000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "338bfeca664d0a19e7afc416bc9cde5a467a420226a0ee3581cfdeacf51b4c89"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "6cc6e5004de30a1f5fdc85151bdce3f6b6444d7e2c0e80511d083278723c83d4"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "62df4ac85440bd50759ff9832fa1ed94f8b952557d045879048cd99d851d2ce5"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "35271c1d89f640aaec347a4aa66aac27cc1b6753f4590b2f91149b002757dcb1"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "583451946371f3f93eaf07b16b56ea25a6bf4fd0bdd93bd645f2db3495e4cb03"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a4be4965df58495278b1a35f7a8b69924ad3c57fd543f4196493d0e6b169d794"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "ce2245153fe416bffac3fa4a16f98022404c529721730222b2cf281494b180a2"
+    }
+   }
+  },
+  {
+   "k": 5,
+   "acquisition": "N15_M01_F10_K002_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K002/N15_M01_F10_K002_19.mat",
+   "start_ns": 1767225900000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "928663e5f0d52b933e36d9f3870a2016c7ac48ad15b98f8b202b184abfc63993"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "192bf042675258dddddec6e921bee180d8e31c653c9671773ad09f2dc10b76f0"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "de5f8cf95f93dd51cb5e539a13118d8b261ce9b382920257bc33e3f55ce8c2ba"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cdf663652c5e7ed34820d3b3e2e4cd36e48908f5851c507e6c0982fb6fb8a827"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "166fbbe402a856b42f28ce77de0de513a4bf439553d6c68557a0b2f147032c2c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a65fd00e6b57602854c0fb776a81b12b511e4045dd598e30ca772c50678616ee"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "847c201ead74f2ec077715f7c0ff6a136c1aea52632b05eea91c589ba6bfee7b"
+    }
+   }
+  },
+  {
+   "k": 6,
+   "acquisition": "N15_M07_F04_K002_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K002/N15_M07_F04_K002_19.mat",
+   "start_ns": 1767225960000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "0478c8a63cef07df3dedd45fdc807ff781ae9a7d37871d3d172a1ea3391ebd8e"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "d2a37555a518f4373cc45bb0931399e8e973e28e633851f841f88ba60834d591"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "5b4c5af39e6c3f2bffd4abef334b887814d6012ddf9b7911065a22a76486101f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6e82f8919bbea47d4995cea49db1a218055b2397c7d32b83ca1babe2e2123b88"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "976fe61dc100d99d623e3592b78e35ebe3f387a46e5426cf9e424bb7c2f527e3"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b52ddccce8535f98fa8b3409b4f799d5216e815026c66f2f6d936c9a26bd5ce3"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "4ceaae7d9441fe74f4993b3d64ed2327408ef3652b18d5d81a17e6510a20ec6b"
+    }
+   }
+  },
+  {
+   "k": 7,
+   "acquisition": "N15_M07_F10_K002_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K002/N15_M07_F10_K002_19.mat",
+   "start_ns": 1767226020000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "2ca507f60dd990ce352ae468792f39140ac7a6be499f9ce96cd33545e14c1044"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "94e9f39db1d7878833d937b288328f984df2d7a2c7497c9ed334649c43be1c53"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "ae2d0f66f7b42d26b7a2ab03d83e78ea864be7cf47e4bf9741dcb971cf08c1d4"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "43632203691533d49255b857ef06a644f6699153d147b64df5835f4b9b92dd5d"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "85e30a0a317af5128a0b525425d3e5758397dacf648979b2fbedb9b9d921b1ec"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "70644dd1567df4973f06cac1c2db000f80f3796cb36bc972d9f613ed4b9e5d25"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "e25ab29a02dc7ba5b0710c97a3d648d77bfd82e4b926e9774344328e29816a11"
+    }
+   }
+  },
+  {
+   "k": 8,
+   "acquisition": "N09_M07_F10_K003_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K003/N09_M07_F10_K003_19.mat",
+   "start_ns": 1767226080000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256867,
+     "sha256": "3b10fa0c9b756950e3098a7dd9f0bfe491c241e3fae5e7734631164ddfa9a742"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256867,
+     "sha256": "d86ec7978a374a1990d440baf314466595b7d95bb1f8c997c1a576989150a6a9"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256867,
+     "sha256": "bdab6a23fcd470019454d1f4b8191011c0cc527e89a6aa7bb88a87fa3deb3d38"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "c7b2052b4d8092bad79cb6a59d7910059399724e781f6f1f97e1667ca3e5c16d"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "290bdc06267bce7c940557527be2664d4281b89e64ce11577546e962ce8e8f37"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "2a1bde566cafbec4e053723a14cb0099356394f7d82eef60b316416b1d7de043"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "dc7e8b26315e96554774fdf4df371aa1e517568dfe9ad50ef97679bb62fb6a01"
+    }
+   }
+  },
+  {
+   "k": 9,
+   "acquisition": "N15_M01_F10_K003_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K003/N15_M01_F10_K003_19.mat",
+   "start_ns": 1767226140000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "c239d909f57674a51159c132fcf93b9be13d511212a66ee89069c6b658240434"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "8c69d7c7758fff3b93f99617e00dc3a54b9b54bf937c6e438c47cce5b708c34a"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "3597e86114f2178a97779fbd52afa011dc1129e66c577414216fc15e92068cba"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "057d0c4c14d1682f5436357b7bfb5cb48584af67738fbbd330b36116f06dc79d"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "05ab38a21bdbf6f7f7b3e5af5b9fc3b322119f5287ca1e2c46271eb4bfad9ec5"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "9a95ea6d8b7f8b07ef5b4614405122daa6b010051ec5f5f7cf3a4bfe1c8c1010"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "f6326d049f5f0da33acd9f141465bdbb186953289c1c0b46b9b0fa015a8e0afa"
+    }
+   }
+  },
+  {
+   "k": 10,
+   "acquisition": "N15_M07_F04_K003_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K003/N15_M07_F04_K003_19.mat",
+   "start_ns": 1767226200000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "52ebfde02800052cf08d7026c338651dad0919cf927f4e4880dbf13725dc6bcb"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "8b0d374782a3bce71b9757e587aef12aac1a5ed3d26b6bd0ae4c4e26df46efff"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "349cddcd308646d701973bbd1c1fe37b26fbe23a0eb5cc0280f1a19862943221"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cf8a19b784c28fd3aded6ac5b6ce54cfc2940b016225297190f09984a649b8e1"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5e1ce0423d9e1334adaec2b7707e3f47ec0626fc927ad340e20d4eac2863db5d"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "63651d4e234e6d2d7be4dddad07797fb2ceb09f8e6312ca5ac43890107ef2886"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "4bc17f74f2a857a04add79ef9755751627460ee9d25fd63dbb5cb7bf0acfaac1"
+    }
+   }
+  },
+  {
+   "k": 11,
+   "acquisition": "N15_M07_F10_K003_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K003/N15_M07_F10_K003_19.mat",
+   "start_ns": 1767226260000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9d237c518e93049f82a7eec906635b9c2ffe666191b17879cf377a770b83ed2c"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "546723d3099ba20ae523c432ff156015d2df32013290f0f9f2f395ace16e69ce"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "04e67ff0f50a659dcfbc7f1ee2d4abe76ac4f011c12ade4a205feea09e374a47"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "57e4f13392fb74bc83d883e4d0f78c4230677fc013b1909fc2991ea1071f4427"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ff0272ef32618dbb2ab6802864e87bc94271f650c54207197e8513665d54694c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "fab7433580de72d6ae9e936b73c9a547ad2a2de88f94fdb6b952e5a390e0a13a"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "f2582257bc514dc2e3e1b323b4f59d19e85164754ed965e8e60fcbad6325a992"
+    }
+   }
+  },
+  {
+   "k": 12,
+   "acquisition": "N09_M07_F10_K004_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K004/N09_M07_F10_K004_19.mat",
+   "start_ns": 1767226320000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "bb39d98fd82bdcb17a58a10b4460fdf5a50887244b8e9cad47a1e634dc1661a8"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "bb03c198875b8fe1a40753abf6828af16efde8d30dfbb35db9f8d94b4cb51a87"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "7598055b11a90a06a011b00ced67c40c0d79f893b657f8a2697aed771374eae1"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0ade9d6f8626cc0cd9695fbb324e2b74f6b267cad72a4a3e455b1ae6a92071a7"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cd48bfb90aba4511f9955df402d22261e8850b06e64fdb1029a8d7c0bec9bc0c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "49c6850c5db5808b858d67074ba5238abc1d563505fd69792389b7ae542aa746"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "c09efc8f2a332e2f555df11c63caf98e66b0a9e075878b02aa5db381912780b8"
+    }
+   }
+  },
+  {
+   "k": 13,
+   "acquisition": "N15_M01_F10_K004_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K004/N15_M01_F10_K004_19.mat",
+   "start_ns": 1767226380000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "8db28f87682dcb10c480fdefdc1311867580f238cff5de5f8d13836ba94fbb83"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "3a00cb4db7ec3a52415589fb1bdf1b93365ad5bef033cb035a59f30f7a75ef6c"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d4b11ca728697f0c14511d63a4bae21551b1227dc50599784c3ebb98a362c579"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1478e4fef1e609555d35b3bb39439ee2ff0a612a5968087f9a20be4816572885"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "3005d97db155c20b0e4dcc9c9363a1530cb69503d05ae52861373d6bfb630ec3"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4f1e07b17d002a850061ee3f03e1b297dc36153ee750e08dc514dbe3d96fdb19"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "fab88d595677fea056aedd7c598d6353a9f8d09feb2a5e333fe73b524ef9dd8f"
+    }
+   }
+  },
+  {
+   "k": 14,
+   "acquisition": "N15_M07_F04_K004_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K004/N15_M07_F04_K004_19.mat",
+   "start_ns": 1767226440000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "db3842d82d3f844ef1b709616fd3503881e4448544b50683da966278a20be998"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "509d77fd59a079a0a325b000bf89d668d4b8ed2c16c444ab1d64f20aea84efc4"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "512a14d9d08dbf08aee3d2270f09bf463809ae5896b330742857ff8b230da7ab"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "3a21801dd138785d6d39d6d35253b53acef4d608ae05402fa8842fc2d4fcf085"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ff113abd42d8191e8b5cadf6894e0dfa5282268a4fd1c2fe3e2eb67cc59482b9"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "9e0c92afa87c0bb9e0e60853d9790eee4e79759f5f55921186b0153b0176ba32"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "a7ab8b0e33f1b7d2cb38ac4d497738246f6b839e8d701c7539c606cd4735ca7c"
+    }
+   }
+  },
+  {
+   "k": 15,
+   "acquisition": "N15_M07_F10_K004_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K004/N15_M07_F10_K004_19.mat",
+   "start_ns": 1767226500000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "7b9904e537d266838e4eaf6d87e59895578822d9a58dba63c00062daff282297"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "2c22fe379d30059e04542627b9e02c40f227cc14862dc637bfe4594568e1a81b"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "6640f5e0f4f8f6f57bc543be4ff6f1a8442ee917d7d185571ec9f6ee6415ba5a"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "256d143057118a019da7254cbb3d61f1160b731fce781c34417c03ada7a772f6"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e349b3cfa7bf457a172e31de543170696fd9f72d79401bdeb60f12d26cf9cc75"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c32ac2d562bee8aa6dba479d70a27139dc29b3d2f4e769a2d44947e8aaa9201f"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "42c4e90102512084d2d58826f51e50d3821be47ced3dfaff9bb5cdf0d5cffd02"
+    }
+   }
+  },
+  {
+   "k": 16,
+   "acquisition": "N09_M07_F10_K005_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K005/N09_M07_F10_K005_19.mat",
+   "start_ns": 1767226560000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9b16b8c031cd17fe8d81cd9b05ad9828c90ab2b40b4a8cc8980d5d56995cc3f0"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "083860971a596b24e31c87d0cb80a415491825bece0eaaf436313a7dfa7fbb7f"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "21cc612d3af74791fb13a35eb9bdca201c64af10ee47c235cdc6069b106af6ea"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "8e34c52ba12a3a6812d3eee3ed2f995bed829ef4da7e19a4f85eb474faf8451a"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a02bc0626b26589271619702d4b7a40c570125477547642fe439eb8347dcbdb4"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "74059e4cbf9c56d0c635c46ecf1f3e95d65769cb16f537c0c2e766a3a304e604"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "8d897a91a72ea8e76e9a7e1df169cb853debb7439bb662379006155ae83df9e1"
+    }
+   }
+  },
+  {
+   "k": 17,
+   "acquisition": "N15_M01_F10_K005_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K005/N15_M01_F10_K005_19.mat",
+   "start_ns": 1767226620000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256288,
+     "sha256": "09a783f3b952b243068979cccdbd9b8e70849d4d9edc689fb66a03c7a624eeb5"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256288,
+     "sha256": "2da299b0d6770e43c1bf73e3ab3f22816fd439b725baea11a6d1ec5da3fd821a"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256288,
+     "sha256": "1dc07a77d46939117fc64cd05697ab716bf2ed33476822bd1ec0eb97eecab27f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "d48d57c96dfa6ee2d268f4133b1e8d432af43668a94447ca15ba095485367bef"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "9ebf9b8560d3fc3d33217e0a2a4ea3ad1f7b137f6fb7a13975b582494d32e5d9"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "4173cb9858c4cc1d2c1a3b0872b5c41745457aac17c1e9748841e824bf434d88"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "46a414c5ec78531f316a6cb1b4ae093a89778a6c0a8e8a1995f6bf7c78e4d0cc"
+    }
+   }
+  },
+  {
+   "k": 18,
+   "acquisition": "N15_M07_F04_K005_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K005/N15_M07_F04_K005_19.mat",
+   "start_ns": 1767226680000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "44efb973d6faefc80ff3c1d6f45b006d3ff2d2f8fa9722219d02978e12cb6b0a"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "ebd26716e5da72b56d01097c84f5215e73d17f83c200d1691d887b4f58fe45b8"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "e2bfbd5d32252a0e70989112b4040860f6eaaffc609c1f6c30875ab00fe3e47f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "bc81a12a971a00cbc8af4c9a3b355191a24edf8a596e6cecd40d93eca81bfdac"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e80f5140b970343be617f5b9d2c9aa9f54b1f690189d31aaac01831a72277d14"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2ec637059fb6cfacd39b9b6525486dae035c7d7cd1862a8a4951781778c94910"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "5eb76c2e1681b7b6854c923ec8d41d7b12a05c3481a000dab143b8e1221d510a"
+    }
+   }
+  },
+  {
+   "k": 19,
+   "acquisition": "N15_M07_F10_K005_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K005/N15_M07_F10_K005_19.mat",
+   "start_ns": 1767226740000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256783,
+     "sha256": "7393a4c7bea0989d0f6d96495686744bedbcc473303ebe6eac4423422f8c71c3"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256783,
+     "sha256": "141c025814dc6b0b2cd69056f3d656b373f48119b26dd4baa32ed8f4f7e92816"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256783,
+     "sha256": "74e0184baaed8cf0c5f30c85493c13fdc495030d6655a53c1c6ea1e041746f69"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "50d46e3de561df279172392f462e42f0c1f90d65fa17314c9b889e06d181e254"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "0bf39f6458ed6222dfcd411976f94609849b20a8382a128876b3f55f40dbb194"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "e0c8790004d8fa145afc7fe41971666aa72ef6d956459091d734d305df423bb4"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "3a230129ba54fe4a1cd4e7ccb40c1d058a902f546b0ba4dd47521496079924e5"
+    }
+   }
+  },
+  {
+   "k": 20,
+   "acquisition": "N09_M07_F10_K006_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K006/N09_M07_F10_K006_19.mat",
+   "start_ns": 1767226800000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256105,
+     "sha256": "e4eb07add88cf63a4a0bc0f2054f26eef3e680dd698f8bb551b6f2af9d891739"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256105,
+     "sha256": "1dd2300a85d96207ffb9710e4d7f2bab53a1995a3c47b363c1b8e79a8a3a4b39"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256105,
+     "sha256": "a760dbdabaf1482f41f7ccd4bec1c0cd5b66b17f50ab7f3bfebc7d218e98b704"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "2eb937892db9a16bb9f068fb10f5ed9411f8cebdddd0f7463a428cfe6df37e87"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "f32f7d5616bb5db81acadfe0ba4fe4964d0041eea8d36b2848b8d7679849c921"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "c0454b6a259b25aba2c5ae4a0ac8c6851e0a050d15e2670cf1395327beba42e3"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "bd9ff3beaa044332d68969bd0523c9cdd0c59c7597920dc24909108e79438a77"
+    }
+   }
+  },
+  {
+   "k": 21,
+   "acquisition": "N15_M01_F10_K006_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K006/N15_M01_F10_K006_19.mat",
+   "start_ns": 1767226860000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256590,
+     "sha256": "22637e6c557ac51dc8ad84b576ecc3b6c6193475444b19fde11418f5f1fabddb"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256590,
+     "sha256": "54365c2fc439245ded0af817940a9909382ae66b55684b2daf8d585032594030"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256590,
+     "sha256": "3aacf489f1338ef755543e9af2aaaf2683e4b59795034cd8003f7872bf629ecd"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "bc6f17b17ef3b481f070a5224093cce589e7749beda28b6fe5752362bce22ee9"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "6b6d18d8c40788b47bfa890787b01272883b1b236979f7938b160f6f760926ba"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "374b0905a7ae5c87116ab5f8bbe95ece02e20ec8f852d143a099cedcc8038d4b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "738550f7e172662fc3ea5d7bd88f55c7cf6789c63cbd6098a1ce15e8f9a56f14"
+    }
+   }
+  },
+  {
+   "k": 22,
+   "acquisition": "N15_M07_F04_K006_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K006/N15_M07_F04_K006_19.mat",
+   "start_ns": 1767226920000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "78a8e82d0c154aeef28d6923a77a38cab9a93483bbd7a2acb0f22646ee83cb71"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "45f94267fcf86b6cb724f197c1c3a86d56b90a2273927b7acbd47fb6679e1167"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "fe0f422a904dca2ad0890e47b2acbbdc9d655339754897b8de3c8ea2116a51e0"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "832c058d4d06d2860b2ad76b511bfb76c08daf8e071524e533422cb4cdb54da2"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0d858a2c0e41cfda13ee52f03ce6921b21b6f1c103960b2b2e1d1c6c72a640c9"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0833b5621fd4c5180deadf13e637c09b251958537a90fb2a816f373ea3af59fa"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "d46ea21808a5dbf8e92ce5216d8c26b7a881417a4cc9cd3a3959378b871c305d"
+    }
+   }
+  },
+  {
+   "k": 23,
+   "acquisition": "N15_M07_F10_K006_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/K006/N15_M07_F10_K006_19.mat",
+   "start_ns": 1767226980000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 257504,
+     "sha256": "c8d35c1f0e065953c3d5c88552c89ab788620201cc108cb5bd03a270a1837ca6"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 257504,
+     "sha256": "37c69189921a7883e7dbed9cf50e922225d765c60f79dce1c14daae0ddfef62f"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 257504,
+     "sha256": "9d9dddb3d48820f6410c6761bd7bea388ad9b9c6d6499eded4243da3ab33d327"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "08c1019a93775c4bd9d9a2cf016b34c0cd47bfffdb09aa55348ada87ce6560cc"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "e9f7fd4d33b5c4a7522b55eac6c76e2811b0a2417e4a5a72881a0618566fd612"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "08c12d2555c2d191e79919a0b94c776e1ff48637c4dce9f80013913ed181382d"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "ca1f0aa6b96149a307ba4c5b23377cc98495afd6050cc826162fe1b17ea68f6c"
+    }
+   }
+  },
+  {
+   "k": 24,
+   "acquisition": "N09_M07_F10_KA01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA01/N09_M07_F10_KA01_19.mat",
+   "start_ns": 1767227040000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "ffca4acda0b5996637a10ea6c1434c3c015579c388de5bd73aeb7fcade589d26"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "6efbb517c4e0c0c317a6248efb7aabeac42c17e9984b8bcd784dd579bc6c16fd"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "77711a417a812b02823647dc4612d04576630a6f7094b61eadb841a76ac83ae9"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2a40a814908ba0e29a887ada4a6cba9488740115797cd6c6260ac660a43d50bc"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c1d083a06f135edca9c1bed4e90183d7cad4a1d0b3b019929685e1539b388ced"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "488f298d86f5d354dc444e5da477a34ca5db42eb34a456de4f14e5a890afc49e"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "8d05759d8b4487a1f51bf7ce83f03369d30b239501c17eebbccdf96735265f6c"
+    }
+   }
+  },
+  {
+   "k": 25,
+   "acquisition": "N15_M01_F10_KA01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA01/N15_M01_F10_KA01_19.mat",
+   "start_ns": 1767227100000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "382d9e774def72055f97a07f71a77a6148ec057b51b6a8146ba1ac5a95da470c"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "48ea4bcee4181d9bc456bc2ecaf4372890f9d8d2e8a26dc4e0fd66f0a15e7656"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "706addcc06066b3297a3876f072e89b8c294ddb17156b15a1ac5ecb6c5b94940"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c379d99fb62edaedfcdb66f0edcc2eb348c725ae4ecb476c4b35fed3b8eb208b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "9b1dfca285d6144a6e5d09a32e12c4143236e7333b8d69f78b4d94c520c6445c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "59ccd1f6d427a29696e4ce5e24a5ce844af5bd18e46465193fcba8eaaba37351"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "b84adceb49a7692f1cf17075d7d32241167040fe259d1045a5c25ab664d795b9"
+    }
+   }
+  },
+  {
+   "k": 26,
+   "acquisition": "N15_M07_F04_KA01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA01/N15_M07_F04_KA01_19.mat",
+   "start_ns": 1767227160000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256419,
+     "sha256": "e1f3f388ef99f2248d4e83ff08121a222985f29d31f3b9df45e489197203c513"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256419,
+     "sha256": "eeb0b8c6e7d1a18f76c09ec480f36294c74aa995a78f356cf576532bbed4820b"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256419,
+     "sha256": "7d1cf67b1720389bc413515befdb202363bb72f086cd7732a3ab1389952082f7"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "71cd6b57341038b8d2d5d12082f98a39daee043b40b29c1fdef0555b4a17246a"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e9479c3b330f1e13be6e3fce5c2bebd43ec614b26e938bf614e5796074fa7745"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "16b84c844fc1f8740d80179895777872638d68b6cca5487f0d8271cb1011a2e6"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "32f103a649e233c7bd5acc7c98a1b0316044603298a9cd04649ac8525e6b56c8"
+    }
+   }
+  },
+  {
+   "k": 27,
+   "acquisition": "N15_M07_F10_KA01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA01/N15_M07_F10_KA01_19.mat",
+   "start_ns": 1767227220000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256079,
+     "sha256": "01d5a6fdaa8b97d4b2409c7a7dfa4aa1f4392aacc55080fa9b3fd4864776a3e4"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256079,
+     "sha256": "878f4cab019df656750b0439f87a5a71d115744d3efe3b5bac72c9a5e6c04cf0"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256079,
+     "sha256": "d6d91c71393bb07bb8fb3439a356fb91adafaffbf33ced2051a51978c80b9e55"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "bb58441926a0d64f48b20e12b934aa393b53e55b810abac72107c009e23b3ca5"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "a3c4af11e4b68f6190a269c3075179521d6461c233eeebfaa3270febbef99e0c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "84dcb474f6baa6dbc9570456894f1e7edb40ad9ec70fbb14661c8c819d82d139"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "d16a85f63d5dfe5570f1b7fed5d3ccac3494c4b124ffd3964774a23b04c1508b"
+    }
+   }
+  },
+  {
+   "k": 28,
+   "acquisition": "N09_M07_F10_KA03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA03/N09_M07_F10_KA03_19.mat",
+   "start_ns": 1767227280000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "2818b7b955b2109def3db10d0cfcf63ccc7eaf60fb348bdffdc1220ccd36934a"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "682f4bdacff270dc750dda0ba360a8fd9d08357e21f3fe749cffdcf67fd8b688"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "96c22f4ccf70f5d7c6337769c65f07d42f347efa517726bdbf395834953a9eea"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "25a72750690624f829751bed10f0975f180ae81dd65657686383c2ef51ae75d9"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cf0312e0f1b417b4508bcf0d609d5a3c7c25fd55e228911c0fedd2a1d79e572c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c0ff9d1572ac1f616c40be64ec8b7f3c2ac19664a1cc6cd6769b8d212de6f569"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "eb661dbc787f1c3878fd86a84d47afdb3532614a5f674467f053265e3dea7f0c"
+    }
+   }
+  },
+  {
+   "k": 29,
+   "acquisition": "N15_M01_F10_KA03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA03/N15_M01_F10_KA03_19.mat",
+   "start_ns": 1767227340000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "2167e4ce6d39d44ff4eda68b265403b43fe0e9d2b7963af8b0fee4c67a24195f"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "2d0538ce9ec6dfc964152da0e729d3fb2514d6bbf058c310d546a8acc173d7d3"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "6ef86630581388725814455973b498f06c521456165624174d17b042e88f848e"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a5f82971013f7fa078162e717967b5d671e555fa8c0eee2b472e51b1b719f065"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "792b95e165e3198f279bb397d722befc912fac964219582a967df0d04345438e"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5bf7c4df2396f113f0ef3b9428b66ffcab9438fc8abe25cb1c7c64d62ca018f3"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "f0d4b5000aee1732bb74c81583ca75ac6fb812b0e960bc01163faa34e1a0e568"
+    }
+   }
+  },
+  {
+   "k": 30,
+   "acquisition": "N15_M07_F04_KA03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA03/N15_M07_F04_KA03_19.mat",
+   "start_ns": 1767227400000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 278492,
+     "sha256": "1cbdc805936eb1f91edf7f2bb819d932d6d28ab6820b7f223932470c4c352f15"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 278492,
+     "sha256": "a0dd82b619e6fe90e3c0ac6dcf1afc59fbbfd3b026cf40a97f1ccc8a27a900ec"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 278492,
+     "sha256": "484392ccdd2310dd166aa85d58d990757836e41c6152eb128c964fa7ba533e33"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d3195e2128bb90f5fe78e724d8ac529a6e7db3760f9a39bbff6909e869dbc9f5"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "90bc481eacaa566f53db6a4c089ec7ca6c260c20ceeb9ccce3cf4e76ac45b07c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "46583581374a2766b5e8053a78e24371c8754812769d3a9b3baf443e4561181e"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "c99b3d8cb99e64156f029631dc49c53c7a0e12513d5a5d1d6b2bf9020daf6e61"
+    }
+   }
+  },
+  {
+   "k": 31,
+   "acquisition": "N15_M07_F10_KA03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA03/N15_M07_F10_KA03_19.mat",
+   "start_ns": 1767227460000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "5c4221b6e1229ffaa95d992d17537e042b34ac3dedac3af30e3ab6e316f13aaf"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "09fa224b824ba9f0ac4c4432c49f2b5019465aa629ae971546b6e51335c9877c"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "74b8233b63477767993da8ef87a1d750ace0c0d96509e1db6fd378c9dcba05ed"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a78a052735cc36eacffe8684d57af46c3f72d52d9697b9dc79bdefa843b3072a"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5440aed7f53d2a182253d2ce56ab5c67ad1dc5f07bb1ba7580086c75d8cbdfdd"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "96d625801d0fa94d5f009792a91392bd80761aff526cf01baf6d1b823ea13108"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "e207775bb37d909fc239efe46d022c6b0e103e82e1c506e852abd359720f5519"
+    }
+   }
+  },
+  {
+   "k": 32,
+   "acquisition": "N09_M07_F10_KA04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA04/N09_M07_F10_KA04_19.mat",
+   "start_ns": 1767227520000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "327077a44761d150ff58d74fc7a006f3e0a18e840abe6a86db1c5dd327b6a035"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "4243fb366eac18557d0f9a1c5beee4160ac770ba1d0ee01cf8f54f7a7ede0e91"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "fe4ab5c352ccd76d4a6c6930c470498cec41f62ee00c3b616a152c196f078ef4"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "8e5827d25ba00559c9abcbee3dc01e6a59411933d659f80b9213ac3ee62aa431"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a2ab6b5d8a4e130d3d463c1ac31d0cc4415706af61ee71191c31576e5603540f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "54ce47ef2498be136fa8e699877c65321d67ac4e8a03d306e445ac8e4c1c13d3"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "52a324dd7e3775b52463cba74064fcada5e6961b95a3e7b27d10284b3b70ec34"
+    }
+   }
+  },
+  {
+   "k": 33,
+   "acquisition": "N15_M01_F10_KA04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA04/N15_M01_F10_KA04_19.mat",
+   "start_ns": 1767227580000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256089,
+     "sha256": "ff2e0d01229c326dea5a6b19ca4806178c55edceb295ca11676c779d21cfe98a"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256089,
+     "sha256": "0747b635b8d94ac20537d748d56e7f0131c29a4f3807e7fc02a2ca1e71739cbc"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256089,
+     "sha256": "a14314922ffeeb5ce28cdc39ba74c98c26be2632aeffadedb82c4d3b11afc004"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "1d702503abe577d4be38f4f6207f005f0c846e0022d66d983ba605aa4a0b026f"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "729a4008f24cc8056306d7cf1a97f4ebbc8b63d14ff6e7886baff2cbb162f66a"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "fe876a10be252894487a5358e9278591c90558898fe54d3405dcd90f8f6c412b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "3c3f7e0ac9547e6a0a764041c1d743d351a9b5c6f964a60c4e70030aee7a09d9"
+    }
+   }
+  },
+  {
+   "k": 34,
+   "acquisition": "N15_M07_F04_KA04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA04/N15_M07_F04_KA04_19.mat",
+   "start_ns": 1767227640000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "cd153ed41fb6f234b3f8014b7368e8c60e3932c398b5561a255f5ff708595df9"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "be81b5ec83386cb03ea3baeef6e50db18966c09887eaada0791d64c539c769b4"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "768e5a6a2c29bd9a2586580ff8fb48ad992eb64f4c1e23d93fb071bd4da44b2f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6df33c17a4b09c881ce012becb22b564e453b973e6622bb72c596b703c70edec"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "3f1d700b3e61c6fabe2f962bed783117957f6b5f450db126670bdd0d9999effd"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "9884b4c0893ae0dd4bf05b87e24cba00fdd52dffee9a9705e90dad6f0770c2bb"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "91a6e9a073d14557f754cf566a4f7a019a3caf39475c0c85349985ad0052ab18"
+    }
+   }
+  },
+  {
+   "k": 35,
+   "acquisition": "N15_M07_F10_KA04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA04/N15_M07_F10_KA04_19.mat",
+   "start_ns": 1767227700000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "a87d3534c2b67755ae96f93fac4bc4ffef4d35b49f5598209cff356342ea93d9"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "958798b9972fc24df42bfd66873a2fb1192df82fa317b2980f94ecf168e3444a"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "f49cc8aa1fe8665bf639d0b300aecb96d492a0ed5b40447cda1e695588819104"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "57028711e47dda8b5a2e2693413de5834bca4db7977530cb6a7698e65dfba77b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "746b1bcc18463ea257e6c04a5d91020543bf1cced6b8ffe4f1fb58ec5bf5df28"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a5974387f7caf7ac7c983b7a75cc686ed61ff9ccf9d2c38d4db28d21dd480c78"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "184a26c134169c6f3dadfd156843020a4304fd2aac3bf21ef7225751ab1b8f7e"
+    }
+   }
+  },
+  {
+   "k": 36,
+   "acquisition": "N09_M07_F10_KA05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA05/N09_M07_F10_KA05_19.mat",
+   "start_ns": 1767227760000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 255999,
+     "sha256": "4b8ba6de6f1d46c3bb86fe79513f5141ca67de35abbba4bfeb0d89d4312153f7"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 255999,
+     "sha256": "d11ff519a1d801e35f808cc79aace70fe28bf3f16cd0d88e5fc9ef3666657ba5"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 255999,
+     "sha256": "1eaf564bbfbaf14634c9b426b015de26cd7a3b6fcd84a8f792dee07e5319f75f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ee66896cfcf46db54d7ac74b92f16d9ac42af8f1a6857bdb2bdbdf0e07e33c4a"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "47d2c75415dfc1d4f8e1313fe81797c718270beb47c9abf727c8ec0410b6af1f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c01852f868dfed450ee6ef9f84efa0a73894523e5d2438b3572a43dcd8853ede"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "53bad0a00b2a22cf888a2c122eb828d04786c8fec7e381c229a71f0fe5d5aa74"
+    }
+   }
+  },
+  {
+   "k": 37,
+   "acquisition": "N15_M01_F10_KA05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA05/N15_M01_F10_KA05_19.mat",
+   "start_ns": 1767227820000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "88a6369ec12c3fbac0e8ceb22511a072c8e255217970e0e78a8b1bf6017bc23e"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "f7d4c6bd41a86f3a9ca396fc2419929266d7f72248c996d110d355172506ef08"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "9b52e7ef56ffc4cb2634de86aafc12ab9d0eeacf5a6d77053712e868845bd5dd"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cfc16c678bc7e943de758db7852018d7e4e76e86f7cdf1436e7e3bfa3a58132d"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e6eb7742f264e790de061dc91df3f21fe09af0bef2ea784d29c410b92306c76d"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "eaf8638a8a330c12d19ba65cda8b8e16b2b6537be6375cb0856d59b0d77b5b1a"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "2812ed7570fa18a5084441f72639fea008319d265ad4734935af05fea7e8419f"
+    }
+   }
+  },
+  {
+   "k": 38,
+   "acquisition": "N15_M07_F04_KA05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA05/N15_M07_F04_KA05_19.mat",
+   "start_ns": 1767227880000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256070,
+     "sha256": "4260daffd7eff0d32752ba967d70d7434cf2eb772c7f266c999ea9eccde70ee7"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256070,
+     "sha256": "4bb1c894df0bbeaafdd1ac8252b3a61bddda978532130d4d772fb761097a8731"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256070,
+     "sha256": "8a18a739799cdbf792847fb537be87f3d43943b311170729f00561a9b20ab735"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "b0e405da889cc8a39426817c0937a1760f583707cf46117a1f0f7506b5a98e72"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "65ec9790efeceabcbaaf256214e2e4574f6dca1e475602756c53413e9e582e87"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "4ab42c01b6c02a43320630c8495579637e9623b07be3eee18be37011b8a6dbfd"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "e452d3abaeb9d38a7f20a4ee79fc1a375ded426ec29a96f8ab6fc7c5bcc263ab"
+    }
+   }
+  },
+  {
+   "k": 39,
+   "acquisition": "N15_M07_F10_KA05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA05/N15_M07_F10_KA05_19.mat",
+   "start_ns": 1767227940000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256090,
+     "sha256": "5447df4056295b169bec231131a4697cc19b1536714b6ee41a7394054de08b4b"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256090,
+     "sha256": "77e0aa9cfb70adcb069d95bca05ff25fa5ffd6de24009e60680d209e09ce214c"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256090,
+     "sha256": "3b55c4413dba6fdff2ad5eb9710702ef14a68cbb9979045d61f4b747310c1db4"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "a9b566aa6c1b90f6dc5274910931beefc9846b7fe8e5f89b8fd53f4bb5b24de0"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "eb018c69d1ac54a767c55083272672953e2cc5e38d40c812340430db894e4673"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "1736b0d5110f1d1d3f3a6ee1f4f0f1fbc88134044c59f770878d6cab4293b6ad"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "ce260eaf9a95880fcfbe6865f271370db24af79576e76efaa7ba4849b326eb94"
+    }
+   }
+  },
+  {
+   "k": 40,
+   "acquisition": "N09_M07_F10_KA06_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA06/N09_M07_F10_KA06_19.mat",
+   "start_ns": 1767228000000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "79c2b610ee4f7ec50933b2ae2aacb626fb9a0e73900e6649baa5f75810c345bc"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "6a44edbb44fa6610d5e24cdcad51033967d395ba29b0ad360702bbb7aa7ce629"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "27e6432809d33b1b1a2992edae75640817bf2b2d40ae9258b3ba40dc4a18046b"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c974f9f66495f1f165f8d5d7321670c4e1c2c6239fa2042747c2933fe3de5392"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "63700146a3a5548bbbdde5823a18bc7a0cc99ed8fd9256892f14709788ea96ce"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1da7ad6b49301ee7226bf0ca050a85b86d51fe87197281f31a66d3ffd06ff128"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "92cd5b18e86bea7d746fea504e5f424c32439997034d3f9ccee4ff8da7d7d5c2"
+    }
+   }
+  },
+  {
+   "k": 41,
+   "acquisition": "N15_M01_F10_KA06_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA06/N15_M01_F10_KA06_19.mat",
+   "start_ns": 1767228060000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "aaa63b40cf45b8a9aef18321190923daa03f1e9cfd1ae32d364820fe80f7ff34"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d120d449cb8b509200b1f81ca9bc19ba3c1559815418a83f06cb174200392727"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "1e139b6916c9a4fbe82876eeb4d13d85d123bc0e85d42a0605d5482962684054"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "bbf659e50b4a7bf45062967d6e8fc0c7a768c85209a1e0fb9ac6f3d99d904e9c"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "614b31c66dee3e2a6cd8db347ff444b007c73c2a7bfa9c3eb8bcba465d2a9faf"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5bc4d5f1de4adcde9e255a9dd5c8396ef1ff3eff8426a2678438ba76afcd905a"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "430f7e09c53b8c4b61fc8001979480ba5f07184c06cfccdc229c408779ebfd18"
+    }
+   }
+  },
+  {
+   "k": 42,
+   "acquisition": "N15_M07_F04_KA06_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA06/N15_M07_F04_KA06_19.mat",
+   "start_ns": 1767228120000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "936939d51c4822e0fd19dad04edb21dabbf9263767f32ceac230ca2884c27cdb"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "3a818aa60f988ca74b1ecf26cadb8449dbceda59a07e426fd2da5c292c0783b1"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "8b4d5f50a0cec2f5c599f3c653cadf3c8c4184a16ea1278a08f64103cd8633ae"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "990144a045c7e15b89489dc32005a6b91e8604ce6a52aa25f31612f6521736e8"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e1a4a2ec01a9af30f6faa9b2bd6d94b02250e2180a6541c317509961491f4333"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1ef0702397e92c24992c782a6fd02a2dfabee3c4be5ecab4ab6aab0769e41ef4"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "36bdb9ff5dd3ad261f46983eac87695feb54b4b2418761166aa01107c602182a"
+    }
+   }
+  },
+  {
+   "k": 43,
+   "acquisition": "N15_M07_F10_KA06_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA06/N15_M07_F10_KA06_19.mat",
+   "start_ns": 1767228180000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256081,
+     "sha256": "e1f95dd2957e354c36abcdc98e575d44732eff241f953fcef7bd1b295f54ced4"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256081,
+     "sha256": "4d4c432af6a68e631b1d8ce998ab86244cdf432051cfe877136615980c849813"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256081,
+     "sha256": "3f634f58947128cbd43048d853a2e454af6613d12de48d1d776af4c6f8a2d2cc"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "6ebb8d7a1468cfb3cb1c521eeaa35bdb22bd54036abc47900232a78545f197de"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "707672633d341493e8b9c66e927227193b022791c0b6b07db3401a30a7682449"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "715ef8c48cd57a78f15bbe07d1eaebce96487ae47fa07fb3371c497a3c6442fb"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "f3175b67d72dc3f955fc579213a6bc1d81ee78b41efcacf2c5b2adc66ce35814"
+    }
+   }
+  },
+  {
+   "k": 44,
+   "acquisition": "N09_M07_F10_KA07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA07/N09_M07_F10_KA07_19.mat",
+   "start_ns": 1767228240000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "36681a6b4339bbc806d1c6fff846c336d99fd51dd395fcc091926b99d18b65e8"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "20663b85e58aba75e56bea895aacd1fbfc53c932b4c00825b51e52fec24b5291"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "2f47f4cdce42de7a73cdc473e2f6e18ee1f2bc5de7def986fca64d71673ae48c"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f93740702cf25efa1d71c270f64e9edec75093e816ee85d07ac343f7f7bb1631"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f2da370ab4f56313841c82dac5597a3861285aed73de779b72fd285ef4a78dee"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "956523203c0cd4ab99ee5546fdf20a7379eb08f95430825f713aae68acbbadef"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "4a6b953f50e597f049d46c1ec5ae7a285173cc954c923a40f3ea05221cf0382b"
+    }
+   }
+  },
+  {
+   "k": 45,
+   "acquisition": "N15_M01_F10_KA07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA07/N15_M01_F10_KA07_19.mat",
+   "start_ns": 1767228300000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256084,
+     "sha256": "a7dbab44650f765bc22c1e753e167f7806510637df582d77921b9c67a0dfee58"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256084,
+     "sha256": "68efb85d644ab84476670f69aa43032134e123ea3ea4d8548ceea992a3a41306"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256084,
+     "sha256": "af291c7bb9dff993b612e6de85f0c63459275cd10b3b221f766eb1f2eda04edd"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "db84c3cc94a644c30b3b8c9c26528522d78552baf2b05aa73a6839f30a0d0158"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "14f6a451e4ad37ffa79fa3456cf439e1a5255d6f539ccd46fe5af0884fe1a18d"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "757ac724444f5fab504a34f5f6d7ad90579af962cf00571aa55f35212cf08092"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "25a5ab71e4fa44b571a340342f20b9c6641b164089769c9aea59d0846353ac52"
+    }
+   }
+  },
+  {
+   "k": 46,
+   "acquisition": "N15_M07_F04_KA07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA07/N15_M07_F04_KA07_19.mat",
+   "start_ns": 1767228360000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256482,
+     "sha256": "e5a6e8b1a30ccab7b4c433b02be4717ace330533dc9326e3851f87e8362c51e1"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256482,
+     "sha256": "18d4df97b2ed22445457e5fad8b33f1066208c73486518c0a5d9ed3164ee0c73"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256482,
+     "sha256": "24cb3590abba878aac1e6e446782644fa88471f0810834f8c68fb147057997e5"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "29f6cc8a1c4451cb362dcd56d54b45b0d07ec510761753673f3ae3a42d46c314"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1c4d34fbd9b61320deaba86f90faabedaa53d481649c32265cf5271a1b6db8f7"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "dc9da78d27ab60a55f07a16971813857b0ecf2fbe28ccfe96849b80988055805"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "0ed775efc38b807a2f4a554356bcc4c367eb6e820d86c5ffc1d029563d0b6458"
+    }
+   }
+  },
+  {
+   "k": 47,
+   "acquisition": "N15_M07_F10_KA07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA07/N15_M07_F10_KA07_19.mat",
+   "start_ns": 1767228420000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "db62f31bdd9f8e7c88f0977fa216519e9f80de522e7133ffd16002249251bae3"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "aac50dba8526bb17cad43c53594546cddae8aa0a58cb4f8ae34318b3067f9dea"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "d6d0148dabb7d0ed6adf959840557a096bc4006bca5d01f2467a4b3eb94dfa62"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e7bb7f61b1f5ab9289c2515521ee5754c55d74f8d3f111b5849d075852c70552"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "67e9dd76dc892ed272ee8ca5a73ff949e0add53944661657945d14632b6e8473"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b33943ecb98426c61169cb49a41797c9e9c36c923d042072bf1653d92e74926b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "a8d7eaf975f88818de9d03ce0704b5b6d162a22286910d0ff6591ff8d0780881"
+    }
+   }
+  },
+  {
+   "k": 48,
+   "acquisition": "N09_M07_F10_KA09_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA09/N09_M07_F10_KA09_19.mat",
+   "start_ns": 1767228480000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "01c26cd558219090826a95eb43fe05d1f8e987d4aae576e9bfe50a2074b639f7"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "f261afaf2d93ea20d7e1d2984b8365d6621f313e242635c979136c5f82484900"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "c77975ae7ce645ed9469daf2656ba143ac60cfd6148386a221d941a7d6e0b2df"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e5daa7514b86712b336abc2f9041140ecf5e6dfd3d797acd908e7bcf24d083a6"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c382989a984efad683f0667ec806af30c8ca57ecec966e43e3b5d28b13b969b6"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5142b1bd8619a2d48fbb3c44376107d605b6bcc705f52f481c6fbc69960441a8"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "99ac3e5fcc17702353837931c1287d1d323b88297317401adc18dbdbdd1c05dc"
+    }
+   }
+  },
+  {
+   "k": 49,
+   "acquisition": "N15_M01_F10_KA09_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA09/N15_M01_F10_KA09_19.mat",
+   "start_ns": 1767228540000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "368451b010795874c0acc019da020acfe336ac67bff45a867bd7561603e85520"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "90464e81fdbbc317f8895ae2df74baa1ae0e56e43aa931180aeab762dbd67839"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "93ac28d8f6bdf460e760735287c7ca9e410383dd2ebe8f95b115c807afe65864"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "653d1f601f1ed101d71619299b504de9658c2f4453d853c40cfc5be067eb62e5"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6f3723755b5601e3ba3dbf918f884aedb98861d2ae84432187960a857b0aad4c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "65d42e1706687d0055bed2d2663cdbe3b7a33f4e00219e798354a73262c5f26b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "f12d2b4362acb6172539066aed1b4d348848f5893fb76dd2055d5e2b5ea1ee67"
+    }
+   }
+  },
+  {
+   "k": 50,
+   "acquisition": "N15_M07_F04_KA09_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA09/N15_M07_F04_KA09_19.mat",
+   "start_ns": 1767228600000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "364c195c26eeb20d7912f0ab77fbee66e498b9e2e83946a3e1c662d60604584e"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "caf5384e220d78cd1dca098194188eebd1d057d7273bb9538b993dc4d7663ee2"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "2f136352df9323a38b88a7c7da1bc96deb345341f0e148720c83ad6a6ad6abe3"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "47ab8a95e369345363c937f7124b8064319ecfcd78edac72a33e20fe87846ae4"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e48ff84832bb9a9ef491468143fca67be4e1e9e76cbb64d230bdfff7b321d807"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "fc3adf943b83597da50f5b01ecdb481fd4b552550f5a623af18cd082f4b4bd10"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "c209fdb5db429cc9a889d29058c3b86eec7db70173169bc689ac460aa2adc96b"
+    }
+   }
+  },
+  {
+   "k": 51,
+   "acquisition": "N15_M07_F10_KA09_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA09/N15_M07_F10_KA09_19.mat",
+   "start_ns": 1767228660000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "16f9ea5a6176143d7c7af40d4c21286589c79c6dd3eac17913947eceef1a9b79"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "b0a98c4632637a288f7c3c0da0207f32f30e86433c268ef57f2f4f4a52a16ad8"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9ec4e510cf89183fb4a7dd79f4462b4c05e5d97a7f2c4ac23be90a85b7ce328d"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "95609ca09021934b52545224434cc480c9bb00be1e4d55ce95314524fa5520c0"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f0314f9c36da455f084a430aeb6cec163b6135519802dc84659e65f240faeb0f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "638e8cda13d5fabcab7b717b1cac4ab78f5e77b13e2bccd4647d9ef7db6d9136"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "722fcaa7e62258c149b95ff18e024257e5def53e99f45484716a3cddb918d95d"
+    }
+   }
+  },
+  {
+   "k": 52,
+   "acquisition": "N09_M07_F10_KA15_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA15/N09_M07_F10_KA15_19.mat",
+   "start_ns": 1767228720000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "e5f7a5fa65a13c6d8e8ef37bc201d5eda871885ff4f6a73843e6409c6718efc4"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "57e8886e61a3802420cf2031787beef160a791faf39b5437be6a6ec96b9b773f"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "3374c19f894c195d7befa8b3aacff5b6869992a53a74f64941d9da10bc1a613d"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "bc5adc1a8fe7ebd58d372e87c3f2a594a9b9f54388cff60e62496856b77ffca3"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "868d3a1cbe664cb97923a8b0c9c5bad94442a88440a31e7a36dd736fc78a9722"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f17f4b963ec4457dad6efc24def2defce9a3b76916f32da018dafe12d16f103c"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "b7b36f1a5ec2e992b5c87ace8449029b80712a61548ccd13b9eb2f40157a5d48"
+    }
+   }
+  },
+  {
+   "k": 53,
+   "acquisition": "N15_M01_F10_KA15_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA15/N15_M01_F10_KA15_19.mat",
+   "start_ns": 1767228780000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "dfa689629ecb8817f6ee40de6511d48e6a8f4c7e89a3ec74aea59c786df24d23"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "319261f19ad9eca8f318ec9d39e2fd17b5a133b147a446a8a36f6c54e61b1f31"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "c1b37400be3a48add068e00603c4080ee9b8a4b4e8218c788ca9e24254f7a6fb"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "76b6ba6371baa52db5a5c2df92126ed2c95b1b3c882f5a7a4253fcf04da476f0"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "7298bbe79b499b51e33461275c103a9eb59741e5fa73fe081afcb1954f43105b"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4dcae1a9eb171ae210536d8d1535a04b268b0b730963e523feb864a72e469ef1"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "9ac9087c1fdb35813270600d313f7aef68f144772d036f17136c0c05651624dc"
+    }
+   }
+  },
+  {
+   "k": 54,
+   "acquisition": "N15_M07_F04_KA15_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA15/N15_M07_F04_KA15_19.mat",
+   "start_ns": 1767228840000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "ca8971af81afe9023b16aa042b397a0cef7a1f242a67163849d87804a2163718"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "8a7abddb10d8b9c79761cbbc0d259c03bd74aeca20c8925b4cdc778cc5a9e484"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "f11c79128cda319da4377bf4a6c8e2b63e6547d06f8bfe480b785687eb6aa495"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "8d31a041225eedafa522cc7b1e069b5f709effbb7c3344f783f2833ab8ee0116"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "bef11492628540c10050c24f8cd48e6a8b17261726a9b162d702ba4600971956"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4419965d8899a7faf7dfb4e585bd963a15d8d24e1f00b7f9116ae0d4511ef81a"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "f7cb52b2d363c6ee2a0a0f975ee373929ab10bae19fa2f5bc5cac2b1c0b3df29"
+    }
+   }
+  },
+  {
+   "k": 55,
+   "acquisition": "N15_M07_F10_KA15_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA15/N15_M07_F10_KA15_19.mat",
+   "start_ns": 1767228900000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "8755cac348a1440c45ef08c0e96633aeca17fa68fa37c140a936fad2242b23d3"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "bf459be104f2ae3844a72f1c85e24cebc71e43cf195b89bd1fa2a3e15108cc9c"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "9ffbb47a2370e92ea88bd49c345849525c275a864a297acea8a6ee00d3c448ce"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5ad0c988cb883e2eebffad8d7c23a2ff8aa76f2cd89f5f5314c042b260e5c224"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0d87cd6f3f7dd4f27caa45bb0edd75edf8c3cef27806e82784163a61207817f0"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b56930694c7a06da62f60bba956b1ce4bb8068b2132854bf7d6f892f44de51ea"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "f75c3fd2466bae11ff846754547d71d62416a027d8b8827abf3f79f6f964394a"
+    }
+   }
+  },
+  {
+   "k": 56,
+   "acquisition": "N09_M07_F10_KA16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA16/N09_M07_F10_KA16_19.mat",
+   "start_ns": 1767228960000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "211c379ee57852c536cf9599938b8edb4b9c184f67a64539e22620849b734ac9"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "d0dd2046a92cc14046a4aab6f3f6440818d615cde12c87b96e1b92f315bcb891"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "b53a59b3e80a77d1a4771a7bea3d2fdb5eda3e12d16a737f2d604161b5930dd5"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0aac882cfb08633d1407fd50638198dc6b561c27abc975b18963a33ac4e31844"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "203d53501c59ded540f00f0f33bb00b5a6bf239c83f8384f1558207f75171beb"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6822de632988eb52849908fec60d3235e81bea623941ac3c7b57163ab84fe17f"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "688ff4ae790d6cf5f273604eaa407eef5d3f730f89598b250accdd8029367f23"
+    }
+   }
+  },
+  {
+   "k": 57,
+   "acquisition": "N15_M01_F10_KA16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA16/N15_M01_F10_KA16_19.mat",
+   "start_ns": 1767229020000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "dafb319a0d2b1be3d5673c727bd10cb7006b5eb9874068c5aa838dcd877f8a3f"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "ff224a0c6d1335a4dbe11de7d958e70805670736253010a0b9d0c342c542df55"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "912ccfbf8e59d525ec725a2cd2c99388cfa918b4be35d3a8ef9fc791d9db390e"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "063f7e240384ca5e38298d546fd6c933b94c27105a0bc9d9de492339bc177cca"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cb441c138c49844439ce3521a9601cfc7321a04968701f201e9624501280389a"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "96348217775b176145167fe17e8050240676ba2116651a5355d1994deca9ef89"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "a0d167aa036f18e838dc0bfe86b3e5d50d39b05e48c44371c5f47a5935e8b3f1"
+    }
+   }
+  },
+  {
+   "k": 58,
+   "acquisition": "N15_M07_F04_KA16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA16/N15_M07_F04_KA16_19.mat",
+   "start_ns": 1767229080000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "7da0acb23b67aaf73a38dec037c5f994824e37dfac5fa6348bf22402ad688f25"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "d8a1a50539696b4ede73d724b9f5f36222a7911146b80b858e33d4ddf21ea864"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "c9adfeace10164c47057fc47f9353d9764ceba86a10b99ef21db173aa0d2aaaa"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "7af65967db9a9ea883849e7dc487e99cabab213b5fa81fd5d45f4a749cb2374e"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "559d0e1bb84ca2bb7038dc994e4582a13f959bdccfe97d469e0ea9c233807648"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "8d91c49f8663522661002d268b531dbe51d998af1ac418eac13a4aebce73a3bb"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "915e78c86553563f011e4a78b09d6ede9e7de44b996da9f1b87c062d28420a4e"
+    }
+   }
+  },
+  {
+   "k": 59,
+   "acquisition": "N15_M07_F10_KA16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA16/N15_M07_F10_KA16_19.mat",
+   "start_ns": 1767229140000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "06534cc0d4563b303f4e18248e6f732a6aeca9fddc6e64c005379e3392089bb5"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "a6e5bddb8b18e7fb16f6a4477dbb8286f501477bd9ed9b6a0d01b40de14c01aa"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "483d50e706683dbadd22bc455c2480bdd920619c81df465cd0886439bba107e0"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6c4744b250a048a0c7b081b70625a80d497b14c398a80cbd0b0a97f226bd41c3"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c2df2b79ffb769be1b253d556f705dec640b4e685b8848ae66641f6f22073389"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "38498b6f1a4fac174a0115bc68f2dd71fcb0fc6f34abdc4236e3c1d8089f9295"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "21e66b96d643c14387535b77172c13a1437d1adfca59779e53b471482aa40a03"
+    }
+   }
+  },
+  {
+   "k": 60,
+   "acquisition": "N09_M07_F10_KA22_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA22/N09_M07_F10_KA22_19.mat",
+   "start_ns": 1767229200000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "55ef8b147bc8a806f6e2b43c2e3712aa2a17c1c04a6b0ba7612c4c0caa64f363"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "ceabf01a79a3c81531916d05c93723cb2ed1b8944e932e97eca2c5b25b137b28"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "66596dc9b610c160e9667b5ce2fa235e132ed48dc32309d76b48d27a82e714c8"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0bb9f1c825f664bdc98a811efe913863446be37449caa7da8ca5ca7e6a3ee916"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5cdcac4fa1782ef97cfe23a0e9f4ec1907ea7106c53b39c4ab56afd8887e495a"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2b9bf7009568481900c3933606aa815ef08fa06abecae532576501e196219f29"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "ec9d74d13c071def32b07a49998303fb6b956a1f5c8aa505bf132b07665c50c2"
+    }
+   }
+  },
+  {
+   "k": 61,
+   "acquisition": "N15_M01_F10_KA22_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA22/N15_M01_F10_KA22_19.mat",
+   "start_ns": 1767229260000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "41bdea4c716d1b5ce06fd5c4d7897d695622fa237ac515710ab6392398ed94d2"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "486cae3368e90ee869a45ce6675fccce6e47b6df61b735138b67487ae0cb72f7"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256006,
+     "sha256": "80d2c515793da38b833e39df2423f95c7b55d06ec24d56c9f7303b82bc78cb06"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ac0f20b634f19fb52ca7d020180929798369095cd908903d146167575355e24a"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "39ee7f6a312ef60bbc2a2d1821e50115a78c31af9fd95c913c227bcfd4c05715"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cb917b89862c94202fbb4c05753a7bc5974deda88770b11967044562c2214722"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "1eb50277417d8c3ebcefac998c43e7bfea4d3e7eef3537b2e490fa5d63d36603"
+    }
+   }
+  },
+  {
+   "k": 62,
+   "acquisition": "N15_M07_F04_KA22_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA22/N15_M07_F04_KA22_19.mat",
+   "start_ns": 1767229320000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "9e66fa962945518b4488c27d729c9991c9d9c9d02e7018da22c2ae981648981e"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "20473c5a775922845be820e077027b4b35ffc5098f6a9e36bf3afb74ad71a9d3"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "31bb4d899b15cad47951716f4449a04d52e027a13956d1425a35b4cbbd46ada5"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "65f506fdcd1377358e1cfa106b01958bccd4fa736093265762a775a3350862b3"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f8528fbba058af0e5e6de4a76f2963387ea040a648936232ea123a5872a7eafe"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "95b5e7ecbb5e108efd54b9646ef95b68a13a1060c2d42563e28a903239fb5ada"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "65cae2b45a9a62f0cd3bf9c402cfad2d2c03b0e5a761858ef71a0f11fb959c49"
+    }
+   }
+  },
+  {
+   "k": 63,
+   "acquisition": "N15_M07_F10_KA22_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA22/N15_M07_F10_KA22_19.mat",
+   "start_ns": 1767229380000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "c84e692f76a0d5ca93381fe4d88e6b3e6ce6fe7c51b54295602d50f9525abe11"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "c90e3f20fc7a48911d310c20443341aaf6307b3ed397a08de03d19f5a1e80396"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "1bf9464a61aef8c3f29e96f043205f2ce916764d30cbf6732948cb0da2c5728d"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1abfb2a110e1e1f8e03a968d1c15f815f11ede4755c8746f1fa561af90c7986b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "7d1115932f09bdf816e6ee191fa582a7d6f515131f0899bd7957094e9816e2a1"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "7bbbfd91e69edff4f1740af3bcb8520d77645b8584a1c22f5c4c4756b83e6049"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "44bfad414623a70f7c41e5dccce919c707ee3eea8e4723937166a95fa3311223"
+    }
+   }
+  },
+  {
+   "k": 64,
+   "acquisition": "N09_M07_F10_KA30_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA30/N09_M07_F10_KA30_19.mat",
+   "start_ns": 1767229440000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "f1acd1448acd20642c1659a2c51146c60d1f31e164e55e66baa5870030ed056f"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d33c6e4ff060115e103053b4eb5c9279196caaa0839aed623f90d5ab3464fc0d"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "38c0f653bb83842a6e0e4b3ff0fc73c0d82d82b1fa81a60f1cdfb7eb843f8527"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "61077b566baf18172324204e0fc0a7a589d4042f059e3ecfc49a9bdb1d6361c3"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0ba5852cc73dda0eba5af8586fdec3cce81c15c8824d772e4c35e6b9aeb0d220"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "28c1714f93e24b588a747faa49d035ac2d0e8c3beea790e9d152e31ec449a124"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "b130557e0e08a8d3592b6caf9305026d7645366903548c45fc12cd743017e02d"
+    }
+   }
+  },
+  {
+   "k": 65,
+   "acquisition": "N15_M01_F10_KA30_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA30/N15_M01_F10_KA30_19.mat",
+   "start_ns": 1767229500000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256086,
+     "sha256": "5f33b6c60330b0581a54207d69fe2fd2cb81286b3bac108a65fcc28c14d7623b"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256086,
+     "sha256": "64e82611cecf68475b3e7788829d179b6862a288dcbfe04e5bc04abaa4b7eee7"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256086,
+     "sha256": "2da445cfb602f4760e16ad122843ae131cec8c5cc9b2438bd1128b8d194bc3e5"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "83a4b14744af272563224ac3c4ae9d5116550a6dc6fb051ae717d70f2ecdaaf8"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "97da9c497840982143a0ab33678dabac962b728c2e1e1f3797dd9392108ca263"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "8ec6bc30b5884df385267fffef29720c94205d92cc07a65bd8205b33fad147ad"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "87bb18965512a4fa650f2a0145bd17eb90d92cf72a717ec8f332fababce32627"
+    }
+   }
+  },
+  {
+   "k": 66,
+   "acquisition": "N15_M07_F04_KA30_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA30/N15_M07_F04_KA30_19.mat",
+   "start_ns": 1767229560000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "2180b7976a17cdb5dcd29fe2ddbf6cbd992e6b5b27c83aa464e256ddae856221"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "1395f5ed843062c865c5a5928867b9811ebe54c83e0847ab9be02a4cda570bdc"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "6035ffa8469a6f1a6eedf48cdc76bb928fec4334365c9d60ecd7635df3528e9b"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f568bf40fceda2e0ecb3ab0137fd450ff13119297e3a4980e3e3661e932301fd"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e8432653d46a0fc41a3d30fbbc6996893742235f1ea757031360ba839a56ba87"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "225dd5b40374b51c4a840da9d3e07bb07427304f15b5bf935dd01ebac2b19046"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "7027024db5551e7d59cf24599d8f108abf9d873d7c7eb105ba2726580f4a9ec2"
+    }
+   }
+  },
+  {
+   "k": 67,
+   "acquisition": "N15_M07_F10_KA30_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KA30/N15_M07_F10_KA30_19.mat",
+   "start_ns": 1767229620000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "66c1fbaaa83bb059eebc5f0697380eba9d628b760838afdea12221fbae9967a0"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "2a27731408f35fbd89ecbb2a0ab6dd8fb2c3cd7d3f6681b2f93c55a1193f113e"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "db13231580a8a2a1c2ff3454ed8df9c8d9080aebdbb4d76c41ac407e96d2af7f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "7035851e78776d1405c4230e2de36748a8623bb0646c5c9446356409d66c4672"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2a63703241f4edc77c7195f9004a36d42fad4d0e7acaa359aab7e0d7cad6bece"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "de16905d733913c4845fb4bff4d478cc4d83606eb9e42c3db03eaca71f08e8d3"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "764c7ffcab38a02fde99280fe8fb8197fd65a86b1efda3e4fbcbf7f7ae0cd422"
+    }
+   }
+  },
+  {
+   "k": 68,
+   "acquisition": "N09_M07_F10_KB23_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB23/N09_M07_F10_KB23_19.mat",
+   "start_ns": 1767229680000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "038004164fd4e2afc42ba135e0de075173db8971c84f06c4cd3ff117ffa7aa3d"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "4779d19953bfd9d35a303e2f03f846199d07c267965f03daa39769ede8638fa3"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "20543528bb6643684c7b638be19b33f128b1f22861f8fa12563219e9f63d8c19"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d96ee2259ba1a5c58fa56453eafbe676d0ff38a54858df007c269cefe46a51aa"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "faee769ec95383cf8a3ae81153fd3b533426625dead32416b91e3e1125016712"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2e688894fd401e60f510c2fb644088a49ddee5cf73f2541a01c512155222a30a"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "12890ff3d869fabea21fd7eeba659d909124f2aa03dffbb9120da935cff64fc7"
+    }
+   }
+  },
+  {
+   "k": 69,
+   "acquisition": "N15_M01_F10_KB23_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB23/N15_M01_F10_KB23_19.mat",
+   "start_ns": 1767229740000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 282475,
+     "sha256": "34e81f06eb40e04db3bd7468378485d8b11420d0c83d67728d5e6cbf33910e18"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 282475,
+     "sha256": "45cd472b5bc4698ea9b3ef8859e39c1db17cf3c15d2ef33a19b3f739af2c28d7"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 282475,
+     "sha256": "19d9b2cbda25a292c2536e116ef7f4cffd4c70e7429cf1ce6853817b19bda7e7"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "60dbe2af15685930e1277e7a37c649bc53d47720a8ca0fcb646fe27961852567"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6416b923b40f17a921fda53d5139af8fa4e49d2bf7c35e5cce9e8a1e70c71c83"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b030445dd562902f8b237ff443b905dcda0a7fdd63ce3a4048aab2d2e1a6ebe1"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "10cad5fd389e57ccd2af72c61fa91d295be97031253aa20b0381c5260b15db26"
+    }
+   }
+  },
+  {
+   "k": 70,
+   "acquisition": "N15_M07_F04_KB23_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB23/N15_M07_F04_KB23_19.mat",
+   "start_ns": 1767229800000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "79caeaf6258ff7dfc52526cd2d02374d973b54d002dc8ea1911af763f2e59558"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "fc5722829d3a4471fdeee1d2eefa4aa4b7b4748d5d1d7fdabc3597914105bf66"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "da6e08d01aca316fa45717d92276e80bcb0bf23b414c3caaf72dfeb3028df3c6"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "141b44f79aebd93309fb2094b4a2ce21636e4d9a5cf6d21f00705b157a450439"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f17b5549187b3db783a42ff073d75f437b22083f8c84f78d46e1d06154d90efa"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "8979d766fcbf625c1ed2e69cce2d6b23e2287b02f4a7c89e50536fe3208a00c0"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "08475ab32f873d656d5e84ea73f8453b7cc821185b1208d2191be034a13ffdc7"
+    }
+   }
+  },
+  {
+   "k": 71,
+   "acquisition": "N15_M07_F10_KB23_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB23/N15_M07_F10_KB23_19.mat",
+   "start_ns": 1767229860000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "12f30d5903ad43edb874326c62d49f56e8a4722c764e12fa71c9fc63b29055c4"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "82db79a475af93d44531363d2cc8a6985beaf4da8e175af18f64a2fc2c94e447"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "a2ae2500a698d79847b378896736483f49bef125002feb22953bd4a0ce3ed576"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d00ed60398653155d789e57666b820504d33de5d47059b60ce2af880c7cfaa1a"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c4c25f98ea7c3e142b19f8cdb33a220c2d9e07c1ce2bf97a7c27387e69bff55f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4f71deaa8e7d42aaca85d68dfd14dd59afe6375151fd15083916dc7f042f7d04"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "9f7fb63010a694e33141efade8abea01399464c5863f694f7c9a0b87645872d5"
+    }
+   }
+  },
+  {
+   "k": 72,
+   "acquisition": "N09_M07_F10_KB24_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB24/N09_M07_F10_KB24_19.mat",
+   "start_ns": 1767229920000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256487,
+     "sha256": "fed57d4e7c9a8828fcdc948be8c2de2906ff5f1cdee54f80d7e923c05e29c3ae"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256487,
+     "sha256": "8f5e11f37b281364d9d2ef7d520a156eaf1c849a879286e9caaee0587ddfbfce"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256487,
+     "sha256": "36e899036b1fda6771e82aa84b1e398af44377d3c59ad171a9b0253818ad5a14"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "ac96372f3684c2b1eaf479ec17a354d5b8ae83898d159e29b5d2ec0a9ad7482b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "bfd260dfbfbffa0b28465549f94ce8550421d0b3e1e494ad2a22ea9415818c3f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "0aa717899262de6186f1d4e32774834c3484f0c22eada9ff4963ac1a55b63739"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "0b7070e374d4a4863cae382069211b228d6920229f981a0eb2115c4f5e691e8a"
+    }
+   }
+  },
+  {
+   "k": 73,
+   "acquisition": "N15_M01_F10_KB24_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB24/N15_M01_F10_KB24_19.mat",
+   "start_ns": 1767229980000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 257691,
+     "sha256": "86e04a6b1813ab8961c9b8ac51c734a57520be7ca42164032770be8f78ccffa1"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 257691,
+     "sha256": "532030a8dd49e8449c2733483591363a981d385ec8362ba61f28dc175180faa3"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 257691,
+     "sha256": "e34ac8ab6383555cd4290f9fcf44d6a62b713596dc6d31f3397ba90b06d642d9"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "882df7ce0178dbe78fffd6842fed5316e841ac5fa2f4fcc0230201e4d3ef90b7"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "f771e3ba27715c3931ab3035e9e6752c0f6721fc5b5ca4ff09042381b7465cc0"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "62a0c83ee750c58043284f71d97175448f592efdc79af2ac9c948817b5d8f49d"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "87919d3b1735bca8f315699fd43a73b8a4431be9279fff343248845ca096070d"
+    }
+   }
+  },
+  {
+   "k": 74,
+   "acquisition": "N15_M07_F04_KB24_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB24/N15_M07_F04_KB24_19.mat",
+   "start_ns": 1767230040000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "458f6e7d2701eea9390e24d16f5ae61d60ab8b85a14d4451044ca839e2691079"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "83b1e99f5f9b68f8d4b1abd7195beeb8b4a2aa3cd95a48296b43ef3139036fe7"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d23cf66d526980e2370b63292f700422a3f57f46e8c2cd10e28eb34da5bd7817"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "db52a480b0fede47698e7b8d9b5bcacc2a26ecf298be43eaa29dd2ace4871e8b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "71b8a876d952fa65eef1b64195ce207a6af8aeed26e83fc465c9bce171503cd6"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "38fd36b0aad533e3b70298fc88d5841cd13a01f0e10baec5b7a9f445f329892c"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "0e4de9cccb039bbbf27072ccf47d03613077079d85b959dc61a5f7251d4ab4de"
+    }
+   }
+  },
+  {
+   "k": 75,
+   "acquisition": "N15_M07_F10_KB24_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB24/N15_M07_F10_KB24_19.mat",
+   "start_ns": 1767230100000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256106,
+     "sha256": "372d35ea6d8fc1948d6e44315c3b84a3b639c3601eb10931cd2ec9b1262fb9c1"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256106,
+     "sha256": "48b4d86f68f7ddfba6e7a748a353368b408cb1fb46d331c95dfdc1840e8092a1"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256106,
+     "sha256": "6ba4067f59086df2fbc3bb99e9946ec53c573dd816c691cddae457aad84d58f4"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "bc13d76c57540d87e1a2fba5f835ff58b6c4cc4b3c71f8f35e7c9e43369172c4"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "d5a5a204ba34edf89e987fb1b72004dace6ded919dbe7f43c5addfab54fe67b1"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "f744431abbb16b87a218e1dfdb59064160c25e1185ba8745aedad044a3f30b0d"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "628838606c7838a63a840a2bc73bb509871f46ea474e35c05f66b2ad4c8fa5ea"
+    }
+   }
+  },
+  {
+   "k": 76,
+   "acquisition": "N09_M07_F10_KB27_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB27/N09_M07_F10_KB27_19.mat",
+   "start_ns": 1767230160000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256087,
+     "sha256": "8ab818fd167e9d4ac676233474eee59378a3813f13a4f3f7d46ccb7cb083a39c"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256087,
+     "sha256": "babd2e35f1bf334f651d88b1db63621bdc2becc1bf256fbccf886d8e7917c40f"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256087,
+     "sha256": "3f71c9f4fc513d1d0244c9e43fbe8cc36d96e3bb48303f052122503c26736e99"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "9fd53f83de69f4323f87afcaf3704ac52f6e422b19e94effe87367c9ed4c4208"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "edfc93d55a3d7f85a9e1c8f4663403e2ed581859c6a6027bdbe8bdedb5f5ff54"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "c3e4f6c1d05cb19743c64db3eab590eae48c266e6aa2b40c0319b36985e2f806"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "13a724929b536021ea0aa4fe4c90e9d237b4f1496aebb68a513e9081efdf807d"
+    }
+   }
+  },
+  {
+   "k": 77,
+   "acquisition": "N15_M01_F10_KB27_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB27/N15_M01_F10_KB27_19.mat",
+   "start_ns": 1767230220000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "e6b78db3434a0fe37ec49a1e0a8233aad7b0c0a30d7a390e75bf9a547bf27af1"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "a11c3c245ae8a84c1b16a44ab17d7480b34c3c92c70e5bf1c8d7d2a1d322e814"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "4b99b3ddf4d9c50879075610a8fd3005985dd316f75f5a3830d91baa7bdff47f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "39554e851a369d43c51fc93a4486410b3bd4212fed9c8ac3696abc2ecde35da2"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4d3d9d6833faabcd6b3989dce2bc12d7d794ac12ae972d3e7d18ffda005775d4"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d81373fe709641f40eefc2f15f8bcaa029d69f571201625420597bd56ea9dff2"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "5c964873576a21d234ccc14c7cf9d2d215af683986385ee53e2863b48a5f1a57"
+    }
+   }
+  },
+  {
+   "k": 78,
+   "acquisition": "N15_M07_F04_KB27_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB27/N15_M07_F04_KB27_19.mat",
+   "start_ns": 1767230280000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d6e422cf848e55b4c1b711da701754150a90ffc32da03a275c281e74c45c94b8"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9f5771a3e2f37cb2184e3a3bf4dc7b07ab7340cc66c9bd529d2ba8cfb4e778f0"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "c146ddd92b55e59ab953d7be2d75438ad7342043d50ca64f8f1797fa71a3fc2b"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2b13705530df3c40dc03ee4712f201b879b9027e59481db84d8263dd23ceebf8"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5502d1a928297539cd85be9a06eb1de5fcbeee5e8bf82006fb1381873c0c5a3c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "acb642619890f2e211c004ab6e773bdb23a46e51deab3b093019d7d8a24f94de"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "5b1cecc23e13ca5cdd52a01819a18472ea2c36bcffae1e2a22fd31825aa17b41"
+    }
+   }
+  },
+  {
+   "k": 79,
+   "acquisition": "N15_M07_F10_KB27_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KB27/N15_M07_F10_KB27_19.mat",
+   "start_ns": 1767230340000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "bacc0e45344b7b999b2afd63c731cc601463ab44a2007bc2aa871fa0f8ec8edc"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "19f039cfb8c6c1a491cc675451200d8fb06b92fbf50585899b2a3ab55e2c5283"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "b86047ef9c1d703abbad77eec06c0921fd22ab0197c51590470da0db0b110ac0"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "823019e3ca90dc35f60b64404f05b936ab0eb113d79500453bd651e60658361e"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "97f0f1946cb5b2f3b4162a3170afa68b3c7a21da9e69f2d51740c55942436beb"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "53dd982ead13bac06f0af1fe4d8953cfd8a96ec9eaaa39398a500c2941001aeb"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "ee9a2201c4064be8fec912ee1a02e01820a5e80246a8e2e696ebf7dada63e7be"
+    }
+   }
+  },
+  {
+   "k": 80,
+   "acquisition": "N09_M07_F10_KI01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI01/N09_M07_F10_KI01_19.mat",
+   "start_ns": 1767230400000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256103,
+     "sha256": "8b23b654e6085cb9254e05f2fe4b0e7ef373e4b03ca9d6c5b152f42968fb50d0"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256103,
+     "sha256": "3c42e414408a9e51f0e9f01f89862ccccf31c96536b889a99336a87da950fbb8"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256103,
+     "sha256": "926105cffad46a1d5d7624c029b4e67005d4cb8347fe09b95834edb804f8f77b"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "b7ffd2ddb04ad69a0746e885260d587d13193b1c2468c89b2fb44385e0cfdfe2"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "17e231f831967e8bb635d457f71b36e172ba601eb4a4f71ac05bf788f584c7d8"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "8c4431a9b4ad7fbef78ef92bfd534c8053132d0353cb640e889548c7be8d1e64"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "99ad799df02c9d1f1f9ffe52f484032ec1bc832f61ddb987dc22d78208cc90b4"
+    }
+   }
+  },
+  {
+   "k": 81,
+   "acquisition": "N15_M01_F10_KI01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI01/N15_M01_F10_KI01_19.mat",
+   "start_ns": 1767230460000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "e11b2b5b492914c59cd9576d39270b6a58df1c1e9aa608065adefa9d8168a0eb"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "ce7812106035c920af12ce25770d8a4528c2d38a4ea609c747902da3ba59b22b"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "98088a01e6bb8ebc945c63f7d3b8aa7a097d92d5bce9b81df1c45a4940f8a238"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b54efe9c6e6231f3f089adfb6a809410b59e6e7e3c1d1355ec82f3bccab430f7"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "89e8fc9587a89182f368a31fa782d7cc7b3c56168e972de2e132706e025b12b4"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "98edec7645ed5b001e8a303b247d565cf73c845c4b6b50d668b9254ccd5a8c8b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "4c7052164ae42b8fe4e4a860e6129e29e8b8e6aeee72f82b2a15c838b3949dda"
+    }
+   }
+  },
+  {
+   "k": 82,
+   "acquisition": "N15_M07_F04_KI01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI01/N15_M07_F04_KI01_19.mat",
+   "start_ns": 1767230520000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "e733d63e6de5c5e3698ba4498245698d3a77059f1083397d01b61f154aaae85a"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d00b159280fe5111b11300f664acfcf95ef8137b24343ab1dd6f7b457da109ea"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "007a7dae4ab99bc227d8bdc8d8e9465e542b3f6361e6b23d730818124a2640d7"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "545a4e0e989b2bbe671b5d66aa93cc3aa06526fe7274935d5cc8bf53477b392f"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d4093b5f9f6eab63e147137548f8fe99d1570e00a9f4553e915510f656410e82"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6d9261889dd111429d4521b6645e167ea1d8d5cb0a8171ea876bec7c0dc4f58f"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "023da8c7234c0a5c50d7d8828504923edf5a3526c80b364620f97785d7464bc1"
+    }
+   }
+  },
+  {
+   "k": 83,
+   "acquisition": "N15_M07_F10_KI01_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI01/N15_M07_F10_KI01_19.mat",
+   "start_ns": 1767230580000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "f3b6f05d0a6a2524fdfd8894aeeb8c67902a0390d740e5aaaf5507743b7abe2d"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9f2dad4a30e8bfed06de24750930d7bbcfaf67e30fe785129dba092c497a5d9b"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "47e7703455d2827644f82f8f0026d8d0b558d1fe940624e5fe60ba00d5683bee"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5be5eeefcb6d0e76ddaa0c2508e2373dd8fe2193aeacd73d4ca043e906ed631e"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2b90677285e79c52945c45cd71485d8a9fd4f6035a64b3ec457e089718ee3caf"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d4bb3f9f2604f8a703024930f26035639dda8ce5eaa812b3cfb72503c963dd6b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "5d693ed203a1eaba041efe894ca90da100dd287c6828792a5c8faf70070a78dc"
+    }
+   }
+  },
+  {
+   "k": 84,
+   "acquisition": "N09_M07_F10_KI03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI03/N09_M07_F10_KI03_19.mat",
+   "start_ns": 1767230640000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 255999,
+     "sha256": "0c3f039fdfb0c8f9b6a93711fa59842431f94962e60562b1345e36590cf889ed"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 255999,
+     "sha256": "89e85f12922c4ec113959f6997b9f2734d7fe4457bca6dec18048bdca96daaec"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 255999,
+     "sha256": "79b30f9c283fe32da15cb2c121c41e0b4c62f5b03dcfcefd9a0025a32601f188"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4242e239fa16a92de732b9b22909fc38b7c83b2f6a945b705ccadc86cc5fd13c"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c0941aa948a090ccddcc71e2580596a880e2d96c3b34872617ad0afe469aa95f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b51d810138af7f225219b15e86bf50d6f9b9be88b9757462eff8bda24f0e5887"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "9131b5daa17e95c3bcd5f542e8d110d70f4207d801dabb627460d5380b4fe6c3"
+    }
+   }
+  },
+  {
+   "k": 85,
+   "acquisition": "N15_M01_F10_KI03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI03/N15_M01_F10_KI03_19.mat",
+   "start_ns": 1767230700000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "2ce230e41b9416e7fe999a1a2b11de543bd73e88c260dea989f8bcfd006444ce"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "1e54937b5239a84ecb67c768a219ee926a61f747b959f643a97c03a55278801f"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "7ee716cac6494abce78393949b658ff38fbbe038db35e83141d21cbc98b6a560"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5b5776defafa11d2ee1b795bef9133001632b92477fa43cd3dba4b50d7cdabb8"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "9c30b117e6a616d406a2a6abfc93f879a7f605d309b93686ea554d27eeb2eabd"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b027b72f62ca81c7740f50c141599f2adc7faab7fda7b7d6553af03fd64741c7"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "957980a68060d6ea3788121fc795efa021cdd45bfdf09970c22b914c871ed31c"
+    }
+   }
+  },
+  {
+   "k": 86,
+   "acquisition": "N15_M07_F04_KI03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI03/N15_M07_F04_KI03_19.mat",
+   "start_ns": 1767230760000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 258610,
+     "sha256": "2d501650ac62242c0d2daea825da5aaca301e9b7ec4771ef28278ac1754ce7e4"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 258610,
+     "sha256": "a94d1ecd1c26df03182452e855a128bb71d45982c47ab8dfc775d76fd137cf80"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 258610,
+     "sha256": "4a37b320604029023819f8a2a734f517ea6e798a46c1f9b2634e144f7dded9a0"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "aec392f3143be8778789594166d218e01cdeadac027ee6cf7abb1fe715d20f35"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "449f4f9d5b3dd5827185d9190a9b482f3f8227e568fae05da66b0a8566779edb"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "32f4a026b3352bea304939931172ae8f614d137c8ebe45ab8d293502f787b32e"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "e4e49658264adb872d5d974acfb6f60b10b43f1e9127c68654b24526b24954b9"
+    }
+   }
+  },
+  {
+   "k": 87,
+   "acquisition": "N15_M07_F10_KI03_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI03/N15_M07_F10_KI03_19.mat",
+   "start_ns": 1767230820000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256087,
+     "sha256": "9630c51b5ce8f15130ac476b90d35783df40901e6921ea4ad2e8f4e3a260fc8a"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256087,
+     "sha256": "435839b787c32f69ea73400fec2b6c3dd70b726fceeed09599c33f56c30ecd5b"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256087,
+     "sha256": "e9cfaaeef3e883a60a856ed818ea3058d86eed5ef535ea026fd7becc1c87f50d"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "4a7ebf5f5f0fc27add67233d6124f8a9bb5cca6112d3b715f47e1ed8596706d6"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "f33f85ce75e40ca3692eb62b6e702765a4563052b096f1c08bc7beb1c4a0fb58"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "20d0ca784e9924b8e0796bdfb976be8457724d0657727203cd45cf3e6bcf504d"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "04c232a4831b937cbd10b861ad7f8c4b3de367e037cea2baef037e515e32f743"
+    }
+   }
+  },
+  {
+   "k": 88,
+   "acquisition": "N09_M07_F10_KI04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI04/N09_M07_F10_KI04_19.mat",
+   "start_ns": 1767230880000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "76198efdb62d6ddc9293178c4dcb63c7a16c305df1547efbbca3a55a19f1c550"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "5da0fd02ed75902957dc7eed08244909c64e99d02045cb33444ee2dceb3a2df2"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "885cace4a4498a7f9f0cfe5e65a451790d4d2ea3f437571fb4f5f983a8cd52b7"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f601126a8c0d2272402b690510e6e57358a62d482043544ff8b6bbdbc6434e77"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "97b1e0185db9f85d29efa6948b87b2b50f6bee061c8bffc391d89703df12d78a"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b69766a3c3f6263ada7d8c3da2656330cd8f0bcc388162fa83131bd24316180e"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "b4639d327785a22825002253389abbdd606347f681a5e943c3373f3e59f06ba3"
+    }
+   }
+  },
+  {
+   "k": 89,
+   "acquisition": "N15_M01_F10_KI04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI04/N15_M01_F10_KI04_19.mat",
+   "start_ns": 1767230940000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "7fa93121915a97dde85e24be58a26641bcec6adb6e7460a77b356b03d631a37f"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "19fcac2a587903af74ce11081c17c6b22945e7f20700fd152c05075cb13c8ff5"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "3716be014b17e28145f0ded42d969631ca039183a097d09a6db58bc2c009ff6b"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ee05f51e0aa73a70e9f1731b79239193b0c691bca5484e9026063623eb889fff"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "681d45fe1414cc39142d1455650d3c03cdae13119609d21922cc90c34779227f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ff667608aa80996ac44402e9ba74cd1c8a92dfa34d03b505e5037d9bbabef15a"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "77e5dca0150e424a83f2b3968762997b3d08f21e929af40945886ff07bd07ae5"
+    }
+   }
+  },
+  {
+   "k": 90,
+   "acquisition": "N15_M07_F04_KI04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI04/N15_M07_F04_KI04_19.mat",
+   "start_ns": 1767231000000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 261419,
+     "sha256": "fe7815e8353cb549bce11fbe09d0445bba4f7d47e5960018cdeda57dc1a272bd"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 261419,
+     "sha256": "a0c2f7bf026c2f5c505008a48bfdc1a60dd19093804fc5faa22506c2394240a3"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 261419,
+     "sha256": "32f38f7b63b5cf116008625250168fda4e330259bd7d64424fcca21e20814d62"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "27120d0425084075d04bbd5f81862faab6853b5d5ff0aa3bfc960c67dff92221"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4dcf70f2fbac4f89d325dd8976c6fa5acedd2345b7c7d30af230a36d144ec186"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0ec0c3ba2683703d49900df0986e2c454eafd9a27720142f428b5cad08add536"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "d228510722195056ebe708ee16089271ae74f413a1cb3dd12d66b10e86c073ae"
+    }
+   }
+  },
+  {
+   "k": 91,
+   "acquisition": "N15_M07_F10_KI04_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI04/N15_M07_F10_KI04_19.mat",
+   "start_ns": 1767231060000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "b54874ecf20c8cc74f811b6d00d1e5cbe2313f61e9e1ae8ceecca910e2c23a43"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "b7a6b5941080170dc8c91675977de547feb2becbadbbdceec53c1ddb25631f8e"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "4849247d405094d25cdae751c6dfc11ecfcf0574ebcaa11da13336fc827a3dd7"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ea62ecee259dd7a01d5217b652fb445f4c72d0d09e67816ce6f3e9f6533cfa11"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "72de4a230b6b5b153a91f26a46604e24bbcb8d8c2033a5897d80f8ff249f405f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ff4f0142b00671c6e7fabb974d035b5aac62566fd9e0886577243ab4356b5d87"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "9ecfa9ce5e82062b5bf528b71ebcd6a8d5f2eda1859e203e6b682946b8529c79"
+    }
+   }
+  },
+  {
+   "k": 92,
+   "acquisition": "N09_M07_F10_KI05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI05/N09_M07_F10_KI05_19.mat",
+   "start_ns": 1767231120000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256005,
+     "sha256": "34034655e755684de33334f21e989d966f5732037f41f526c076009f67925039"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256005,
+     "sha256": "7223933f7026882c42bcbd65f5754498ce26c554fb0a8cd8203e1f1d92a18161"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256005,
+     "sha256": "ecc2e40c3dd0b2bc23035c5e9d04d29eccbe0cbf2f4991cf3ed056f7c5d7a669"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "bf6eff3304799da4bf76103d64978bf96ba5cc86ef12ca9b96d0ed78f4e14a35"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "30e3bb4107170475e29b3bdea61d953a88b05c7a8fd271dacd81a217c9c06497"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "25ee773b55a20778871b92e3631218265e1a3736969d876949e8a96b5890e82f"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "c824a521f5a5e443a8f7dabfb3d630fe09d464e3dd867e35abca6338d66a22ea"
+    }
+   }
+  },
+  {
+   "k": 93,
+   "acquisition": "N15_M01_F10_KI05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI05/N15_M01_F10_KI05_19.mat",
+   "start_ns": 1767231180000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256085,
+     "sha256": "87fb7599921fe3036309375ee07cfe48c65c80a89689fb242d48c01dd117b029"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256085,
+     "sha256": "1b1924608985a93d4fcb6bd8565a62d15c6858b7f8fa0b3ca8734c3c48c141d6"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256085,
+     "sha256": "cd82e20377994637296f78e0b06721e81dc4930860f0f61179330230882a1846"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "a29e480680bffc3b343a3f901ba2cb65c2cf298ed84564067bdde76572cbf83b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "618ed107bd1cc962ab4c0a2b4af3c8c998828c32f0d2965fa64298eb061a576c"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "6447edf00e5dc034b60382e44085629f6530af21f1014ef3d07ba901c466423c"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "07797e91d8223c82b9f83bb435fea928bf0973ca012ec7a53d2fe5fca59cf843"
+    }
+   }
+  },
+  {
+   "k": 94,
+   "acquisition": "N15_M07_F04_KI05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI05/N15_M07_F04_KI05_19.mat",
+   "start_ns": 1767231240000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256107,
+     "sha256": "e463bff96a5bc4343dd90e5c530e1c0fe9a483734cb8afb62506d4c097d8c444"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256107,
+     "sha256": "c54eed1460ef0c6fe00c2b1fb7d5c0bbea7b53c7d618c873bdee526aeab5d45c"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256107,
+     "sha256": "d613303553563f65982643a38cd4f1ecfd0851ea922b873e9bc63c30d515842f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "79449a08dc301508a87fa09f6d334f58502ac655369955bf5f054b493ff12a9b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "4c898222f3390c08d727b7f693c93b95027057509ecf1ca1e3680e6d9f34c7e3"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "ea11909d30e3b38d84af63ceb390269f7a9acf57c0e8ce1c727623f094d24e26"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "5a9ae3d4f86d88ff7157e5564519e4316c29d12d9f15169f44c4b7a0fb0a910b"
+    }
+   }
+  },
+  {
+   "k": 95,
+   "acquisition": "N15_M07_F10_KI05_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI05/N15_M07_F10_KI05_19.mat",
+   "start_ns": 1767231300000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256089,
+     "sha256": "f53afcdcbbf2427b1c6afc2fc832944efba038f89ba6ab339b2372ba18c97371"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256089,
+     "sha256": "76f2ea1b97c14b73ec140e4a46783b4363e7a7ed67a8554b03fc6949804e11ac"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256089,
+     "sha256": "723d5b3e046d236b276073f94d7dd5de9e8e89f0815adc3cb32b85a2eb16361f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "23d83db6c9a3ff4116710fcaba39ed3503abe387f3da93e5d5265fed239042af"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "abc103cc80ff33257fd85a64e887210634efced2c8ee45d22b1833e114a67dc8"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "160297d257c1dcd8554f0a7a4d6e913e3d803ce7aba5153014d95f340d5c08a0"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "2f5ba6846d3f8f6f14c978c25565539e2552fc318abc265ca6d7ab083c2a34b4"
+    }
+   }
+  },
+  {
+   "k": 96,
+   "acquisition": "N09_M07_F10_KI07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI07/N09_M07_F10_KI07_19.mat",
+   "start_ns": 1767231360000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "4254dc86938d2ffdee02be28f638bb7ea1c988783b4b34982438a2fb5c01ae97"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "192ea043c1ae9a1fac51568f49cb3a0679c6ba25771898fcb7cf40eb2fe278e3"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "be2129571b6ade321adf8e5aeab70a0e042dbefa39c53718538dedc3b8b6c270"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "a1e509383943bc8ca2dc1d91b0a0bba668969af536e2c6aa329dda0f7747b32b"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6a678c97799b026658353817160eda53777838e049a22fde45d3b9373514a5c5"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4d0ca41adde2c621cf7ac54e72f07ca7331383a8e673d041d23b38dc22b91c7b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "46042b74d164a75e768366c4b27c34071f94c6c6e43adc387ab2e18f6d8434ac"
+    }
+   }
+  },
+  {
+   "k": 97,
+   "acquisition": "N15_M01_F10_KI07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI07/N15_M01_F10_KI07_19.mat",
+   "start_ns": 1767231420000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "e5fb17e3110cee82e88bfa12211d658180f467ec338f7a20217ae72a3f7cbc92"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "bfff9cb3d2eae51bb22156fff021418396258cba049f6cd332f6eb713d8d6ac5"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256003,
+     "sha256": "d2dadb0d2a27e6653d50ece005f4acbe2f099853afa5caa9797de65efdabf3a6"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "dbd0d46d676e915220992a493c0a851fa3569f6465a3a9035d5eff33e3824a82"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "92df35198be745be32e6c15a389a1e159817a03f19e1de4b90489fe3ea6a8478"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "66b135b7a5d89d672dd7b2c705d8fe00f7eef4ec26dd8507eac1c96af98b7372"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "922d0331901423aa55cabce55bd0349b989ee7256b3fad8579a49e3055961306"
+    }
+   }
+  },
+  {
+   "k": 98,
+   "acquisition": "N15_M07_F04_KI07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI07/N15_M07_F04_KI07_19.mat",
+   "start_ns": 1767231480000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "fea690404788749e76d39e76a907d4dfd06be1e099ce744258165803d1e6cd7b"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9b81b08f240ec927a8b8e59e1d458527d537c4a257ada92129254ee0b8127899"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "49ac8f371afe7826f80c1570facd0681d1ca0a80049253923ccb6c7e51bece8c"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "271b50e818b2a652228282a62269f4cc4985f13306278c6097bb6e52f92d1eb5"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "80535643a5adcf55e842fec792c5ffabcc03ce78cce25842f343b122f076303d"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "bb219199d7dd5c1771a31ccde4a93379e5017027791b8718501b2fbb8d1b6ba4"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "74b5ed3efa6df676bd82a7c12c47c99fd72e476475b10e98a5bb0683dc2f8702"
+    }
+   }
+  },
+  {
+   "k": 99,
+   "acquisition": "N15_M07_F10_KI07_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI07/N15_M07_F10_KI07_19.mat",
+   "start_ns": 1767231540000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "33c14e105092f89f52222362b99e5b1c65403d3c5956c2e3570b4aaca27d9f5c"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "ed03968f63f281d9871a802a0878c3945178838e2b48290a895d68888094f9b6"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "2e0b7e88b61db8cdb5d10ebda132f9fa4407d94ffe226b5851abf2c70fa65b8a"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "178bab2a0f29853f48791a8fa3a2cd6d462bdbba3f77e9ac2a757312985ee55d"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5aff006620e6d2e8d750c3ade70e73ec243872519501f5e90a6dae5a83ec9906"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0eb34c6065ab2b22b687d61423a3ba33f41f7abc2c9bb22b35eb4a5f2348cc4b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "0ec81ba72525c21d032848f08b3f3e6488e9e29db9299be7e7b4a0d2f7d21f9c"
+    }
+   }
+  },
+  {
+   "k": 100,
+   "acquisition": "N09_M07_F10_KI08_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI08/N09_M07_F10_KI08_19.mat",
+   "start_ns": 1767231600000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "702fa298328d4961069e3f63b159e1c74511c19983e78adf4238d06e93287a4d"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d88bde4230d48c49ad6941390f8c77e71ed939233790340e9076b14021b5be51"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "0907dbdf69e04cbb13d961cdd5559ef6028481fe3ba4feb3fe02dc5f2f54527e"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ef92bc9d44d9b182f6731bf4c2dab01c7707f83c21e5bfc993d776fa2a680e96"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "21fbc4f1ed09bfd5c9e543502ec82e157663af0e3a87b94d23c33e5efe86e47f"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "7348894ce5202e71375ba4855aa98098ab80139df738f30ca8216a0ab4cc52f5"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "3d2bbe98baecbb64f23caeea26577f2303244435dcb26d052a0769e0a4ee3cee"
+    }
+   }
+  },
+  {
+   "k": 101,
+   "acquisition": "N15_M01_F10_KI08_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI08/N15_M01_F10_KI08_19.mat",
+   "start_ns": 1767231660000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9f48f253727986f71b578bddea30e760f21f47c01c85f952ddd24de844f48d0b"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "d00a813c050da984537f4c8daa1e9776c43432446ebf895a996f89e026cdbad2"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "67414623f2e09123c06ff82a62e553e85b2f96d1b276de8da2eebe3ad534fc55"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "fb4a3b52457a7f59c19e3cdce2cdd0fc9d81950d6777dad970e4de63389a3c17"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "449f1467728ed7009771fb3ed50237f119b2653f39882fb11188fa4085f81d8a"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6090bad0c2e71483b1ceaa2e30ffdde667ce2903c73d72b4ca2fff89812e08a1"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "665952d802b446a161c025131fb7f37d743697ac9ff430ecda763c1f5ff7ee45"
+    }
+   }
+  },
+  {
+   "k": 102,
+   "acquisition": "N15_M07_F04_KI08_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI08/N15_M07_F04_KI08_19.mat",
+   "start_ns": 1767231720000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "2c82fc2b7f77e5ffd2011dab90034b5052feed5a5c045208c461bddb89b0ab92"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "343b76f506271377eacdad6c1380a4a2a66d82391ef10630b8cc7477123b7e48"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "aaf653330e8db14ce7dfa4c32cad0d6eb2064623cbe37f42519df086aca17bbf"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d26c28cc2d80d147338d4aca1a808b21a96a63d1c786e10148f784cf973acc51"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "90bbec66ece24d8906eca29858a9cfe8fbf0acfc7dad01780551554f1ff4f130"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d0bc60e03337613cceccf48cecd661b4240fd672c4303077d3928a844a4564ac"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "aa688fa03e830504a4797d2712609528f4ff1df9f246cb489c8ce4f592d9319b"
+    }
+   }
+  },
+  {
+   "k": 103,
+   "acquisition": "N15_M07_F10_KI08_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI08/N15_M07_F10_KI08_19.mat",
+   "start_ns": 1767231780000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256659,
+     "sha256": "b87c6a9dcc30bb2985407360ceaed3b8f521d01d079c3eec2020d6873f48821e"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256659,
+     "sha256": "310f600e1346237d3d3610c6f72fb6a0d19253896203b8a66632ccce15ae7bc9"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256659,
+     "sha256": "3d89daf261906662da204f459504f862705c1a2e36fbfbdd5e7f77a231473377"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ea83169564e9c46a5ae1f9d4ec9fb8a432fac894985909aa08df4733cb3e56ad"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cce764f51caec3beceb4362299c1d5a8bd66b7e8ac3d04219f77a87ab6f05cfb"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "442b42e293b7f54e99e156d260c89b5c833f65dd32eb8eca78c7c5668122ff16"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "fd8ea5c1e4e1cfc3401be66f5c86e0fa54964717b7e42a661f0174db435578ac"
+    }
+   }
+  },
+  {
+   "k": 104,
+   "acquisition": "N09_M07_F10_KI14_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI14/N09_M07_F10_KI14_19.mat",
+   "start_ns": 1767231840000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256083,
+     "sha256": "0b4e3b7308cdcf807b508fb8835495340496d023c1336dd4bcdb7982bbf63001"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256083,
+     "sha256": "d6da5feabfba3a5e20d4f97c4fa3741a7b37536ceb6305268c0d24ecad7dcdcd"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256083,
+     "sha256": "e96ecef6fc9772dcef872cd7af1a9926deda422615769d995cfca488cf2ed082"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "01f57b67344533254e72c4624c81dc0f022ddfb2154e7ab1a4dd507388c58610"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "30b1c2f563cae96291afab165677cc201f8a66282616e68bd5b2661fd2bd46b4"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16006,
+     "sha256": "a34e162831e462737f8f154bb433b191e3877d3e51f4feebebaea88c6aad831c"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "d511d2132808bdd66291bf75099a30eb8b79ed3cf9ac99ead4185a4a1d9c06d9"
+    }
+   }
+  },
+  {
+   "k": 105,
+   "acquisition": "N15_M01_F10_KI14_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI14/N15_M01_F10_KI14_19.mat",
+   "start_ns": 1767231900000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "995167e97928ac8bab11bd9207a4d0aa784b0876501c7ffdade21927cc647ea5"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "cd5f183b70f780805eb2d4802fd982642d644ccbc7b7343aeed41b6c76fc522f"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "c5012f280763ae99de0a914c496dfaf8d3916f8590f283e29e4d4f635b0d3c10"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c1b7d6a60819322ca689186f46ef956e776aa1ccd11e36cdab348b4531b70c8d"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "3d89e2c5d94d6ba62f637df5d2d2fa4b8113a901a6c52790f6f451b57b272114"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "33a55a39523631f180f0575878f547913c7fcc5164f424cf5f2ad2ead68ae6f4"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "e7e3cc8cd8333de2714a34e4e8918a624c2a98ae002fb172e842ea39868d0b92"
+    }
+   }
+  },
+  {
+   "k": 106,
+   "acquisition": "N15_M07_F04_KI14_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI14/N15_M07_F04_KI14_19.mat",
+   "start_ns": 1767231960000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256013,
+     "sha256": "fa9ea3366884887a70e11fbbea63553907593e70386983923e8b6a4123eb2e1d"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256013,
+     "sha256": "e18f9f1b7fc3c6a94d8aab6cd0b79a7dfd892c15da9435f72a5c6b35eee19856"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256013,
+     "sha256": "cf48cd300e08878c6f1cdf30fa927d0f1137539e250b570d9dc333d9167bb2f4"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "de63210983cf12e7009a838a97a3e57b331945cdaaeb3847e3e30912fd4eeb99"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "d566c26c33e17ebb6edfd378133fe487bbabe4a1147745e6fafa5cd2a8a97eac"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "400b7893670897cd0a4ea43b0e0af9323c822962b8899c22878a001e241184c1"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "894d38e96f07cb627d511bdb733d6609432620ef6f1fe1d1abfed468031b4d20"
+    }
+   }
+  },
+  {
+   "k": 107,
+   "acquisition": "N15_M07_F10_KI14_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI14/N15_M07_F10_KI14_19.mat",
+   "start_ns": 1767232020000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "647b482e14845910d7e349e5be6ad8459086e5162d407355fff86a439bdeee31"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "d1774cd6e521f245cf8a99d2487162ab5f484e2090a9fadd24265924cde20fce"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "63a0277c593e76f385c4c166f80c39b32f39febd780d7d7c858fd7c217acdd22"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1ecf4ac433b2098ac8eadcd390d18002963d7aec8b53fe3ea41e658e5c4567c7"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "34f0454ed22c767ceda12c963fdc4a3a2f51c8c72664ecd30b8aae0018ab42ec"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "462bdb8114b11c7868a6d49ce4c60a808394c8dd14c7bd7caba4d76719c9821e"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "018d08e8f71cd8625b38c8b00d8945913e67b6574b3c7d6c90d25f39a0f2510b"
+    }
+   }
+  },
+  {
+   "k": 108,
+   "acquisition": "N09_M07_F10_KI16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI16/N09_M07_F10_KI16_19.mat",
+   "start_ns": 1767232080000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "63008b39870d9fb48b574f90bc55549796c48d17909f7c1415af101080183bef"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "dc1bb76bb9e4c19a53c449a54fabddacdc638618b21977d4518a74c4bd821066"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "47408d96d89c0b059acb9a86f3d1cf870e0472596fc97458ba78f8f5fe81d49b"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "8d826824626610dbfc792facc69b91fa59c19b2d6bdfd2b9a13afa7352dda6a9"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ca53f3386a91a4b581169580c2605b6500e25029c26ac7365e4cfc3e33925197"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "5810accaa1a6ffc85aba892c1225fd7cee93ae8ef1e73225da51734db434e5a8"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "507649074a08934caad5ecc371532de563c2dc62db1d205d626e6e58202689a5"
+    }
+   }
+  },
+  {
+   "k": 109,
+   "acquisition": "N15_M01_F10_KI16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI16/N15_M01_F10_KI16_19.mat",
+   "start_ns": 1767232140000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "eb46a86eb616ca39b1a36bf84f7139b9332005d27b3e84a6e499427070718850"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "12aa3d8838a60b7c4176d7ac102fc2257d925c440d53ebfa7f5a4eaa5ff60bc7"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "b7216129d3e3534ad629b4b1abc6685c8cbeae16c4d481853859a923f9d0b2ba"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ac19aba961059b565f8a15894857e4ec4f7a82f54fc1ef09638630fa465f38c9"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "bec3b01465c4e7e22998d57e8eb11acab07e8d5578cda58eaaa3d8876222abff"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "7dadaad3301e43bec1b1a903d8f3897cd32a557f0502da409eaa7c5b755047cf"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "3ff937c018b4c359367455a17f0cf867e8a8fc2a0fd529b0cc9255fbf36770a6"
+    }
+   }
+  },
+  {
+   "k": 110,
+   "acquisition": "N15_M07_F04_KI16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI16/N15_M07_F04_KI16_19.mat",
+   "start_ns": 1767232200000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "45dbb91e269f20b9005843cda8aedc296b36420a66543765be72a3a346a0a1af"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "208537229e3b2f85df4c69584392a9c57bd326752a014fd0a706a47f0619fee4"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "f9d8366a1ed47fab3ec535682a734192c4b708191de94f10b755e36489492ff6"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "791cb23c4c7b24b128c8e9edff39d482135021bb46db4265628738c19e9403c9"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "2c1a686655201d7190c0695d8b833f7b5683363f915bec3a7a2a17b682d1a9da"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "b3bed57f3416918583418cdb2b4c6c665168990f6ebff8cb043fb4a63795ba16"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "fee87e76c6546f717181cde1327ab59e1d9d3d764c0ac95b3fc1eb3b419e15bd"
+    }
+   }
+  },
+  {
+   "k": 111,
+   "acquisition": "N15_M07_F10_KI16_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI16/N15_M07_F10_KI16_19.mat",
+   "start_ns": 1767232260000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "a507be19787d8ae6a87677cf184413c036cc3ceb80132f9160ef544d59bb56c9"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "7de0b80187d8309d1118d7b2b63f42484102e6cbede2a3f5dfd930b0271c10f8"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "1a8d65ae18b1dab7a4795cedb516980b279c4f1ea481626ca4c2510b25798d1f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "80975cdc8419e53c4cee9e8adf131d549ff54a10584d04ea2d6379682f1d8f20"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "087ca2ba6aab7c6e35b295403690276a301a95fd5a822a10b77f243b9ed58bd0"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "10d17608a57db6395ac322314deae2571b3a6d3b9dff27e7857823428bd9641c"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "740481f789e975ac53288b5e1f5bd919a66113c926bb82b56df793421bbdddc5"
+    }
+   }
+  },
+  {
+   "k": 112,
+   "acquisition": "N09_M07_F10_KI17_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI17/N09_M07_F10_KI17_19.mat",
+   "start_ns": 1767232320000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "bbe197dd4e68bc9a406f8a98dc10f8b445011f73ae9ccba5856ba461f1e785ec"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "65a03e454a3acb86ae5fd7382bc1a2c3499564e0f0d999169b1cf6264379b17c"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "86c01a330cb9450219e5bc404cad6044f28fdc6217d6edcfbaa4a4b7178d88e1"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "130a46d65088c27374539c5c8f315e8bad8dadf1359f63700d835ddafcef97db"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c86653f7bed6a16fac7db07f733e844352f1e787a5800e8fd0383ba9c6fa89de"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "4ba24d1451524c53c4a1ad4e8b1aa30b2241a5652754bd3664b63b3cc7085ffa"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "d43ca41cea03a638fe51bff90e7754ff16b69558be8db9a1b8ba07cb86ed9e26"
+    }
+   }
+  },
+  {
+   "k": 113,
+   "acquisition": "N15_M01_F10_KI17_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI17/N15_M01_F10_KI17_19.mat",
+   "start_ns": 1767232380000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 272671,
+     "sha256": "872bd5f3b13034e836c2601d086266066509fae3f8624db53a66e40e50cbd44f"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 272671,
+     "sha256": "7cc43fbb1df119f89d1934e69395974cb03040e764f1ea7a1f75afae51f86414"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 272671,
+     "sha256": "b3646b4e904a12c6838e7d18e076b377fe64718a044c09d37e1c717b247c044f"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0cebb88f33ff641b6e5df8635f41dd0650466f06f5c3bdf4ca643d873be602ba"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "cbc6bc371a78d3a8e56d1915942a8977981996ccdaaba1b5532eeb1e43989ee0"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "00214ac3e618ee04532006705839c414956ad1a5e1bf5b5c738743e3aa72e35b"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "48321186156299f05d6e1803d91d2a5c16e9dc1737c1bfc32a4d519aeda4d623"
+    }
+   }
+  },
+  {
+   "k": 114,
+   "acquisition": "N15_M07_F04_KI17_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI17/N15_M07_F04_KI17_19.mat",
+   "start_ns": 1767232440000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "3b581748e0d06b83e8e1062f73631f2a378ef5f179f484ec84476aaeb91e8b4a"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "8ace7b82a433402274dea3b30fd6874b11e41d1c19cd02237c1692899aaf0243"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "7542e36f0f9c3f96dd5406ad84b33a9b2c81e1f01718e6642f5b9a712a298aad"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "85d2490bccb92a9b287c2fe0dc0ba5c534803bafbe4fd7b43241cb6c09812908"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "0b8312308938d9077b1aaba1e46489a2ed819e6fe6357715a8dcb40501a03133"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "3999366c60fa20a6600b8dcc771f6c30e22f5c150435d70c11eee385eaea1e3e"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "9300a3abd3a52393e049d671eaa05eaee75e26bfd35a85f0fcde41c9060a3355"
+    }
+   }
+  },
+  {
+   "k": 115,
+   "acquisition": "N15_M07_F10_KI17_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI17/N15_M07_F10_KI17_19.mat",
+   "start_ns": 1767232500000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256004,
+     "sha256": "fd4b44d912a2da9c7bedd7e2d3908961ef23e486a76fc7eec0fc9d22edfa767f"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256004,
+     "sha256": "8b02359e43e67fd882f68a67c0cc7056fbac1cc3dfbd72d9c433eb7cf3ce2460"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256004,
+     "sha256": "444987b260c3a949d9a4c61743732e98cb7191c7e84335cd85b765907df8b0a5"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "41e83b14f7f52b2fba0ace48f8660930b2a501d3f60962032d5838fae7a8d44c"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "040e1378f7e6de88ed875afae23ee2e6b57972ccf8ce6f2f98d5b162a108caf5"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1a1b073254b9d7bdd7fb0b49a837767c2cdfba19133417883b9947dde7ee4217"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "13609d37b44f3821e25564f94d06dca873c45d57c8dd1bb67aa92c28c77fd02f"
+    }
+   }
+  },
+  {
+   "k": 116,
+   "acquisition": "N09_M07_F10_KI18_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI18/N09_M07_F10_KI18_19.mat",
+   "start_ns": 1767232560000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "f56f876795106b0c3f95f96873fd6f82661f27f1c5771a4daf34b6543c9d3a90"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "694efdf468a9832180fd6e2f43c7023b51e6730663b842d09e0bcf1b1a3edd77"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "3c106b2fbda12be5be4a7ece8cca751128b78f22fffb53e5f2d50ed4c160297e"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "73b423241c726fdd038e91c7f4418639c199ad75d4bdd011b7589c1cd9737c17"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e298809667eab8f382394ec47410a3c5c6cba34bd84f794d1b38815791993042"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "8d406eccff3edbf6752be808afa19d77402f5332832abb32d05e97c7dc850595"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "ddc5ed828e8e9e4d9029033a1ae1fb1a0a604189777a48eee90651281007e5cb"
+    }
+   }
+  },
+  {
+   "k": 117,
+   "acquisition": "N15_M01_F10_KI18_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI18/N15_M01_F10_KI18_19.mat",
+   "start_ns": 1767232620000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "7eeca8e4d1ff3d24542e249e82e2e75ec40628d952fc25fee48e539180d17d76"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "e04e00e0f6c40fc67183e83020508cd490fc72688bd8c8ef62842b794bf60c66"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256002,
+     "sha256": "cc62d952737326bbfebd7b03a7f04c629bcef42a017eb4a8225d0d28a700d94a"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e5f3da03adb9323f099f57edb6418e4252b437bf133db1f31091c8ff5fcfc11f"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "f7d5b909da464fddf2d0f4f33d27310d35b7030b6c1697967574b887512749cb"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ccb2de9334f1444d0260edecfc9075faab3a274b762334e983e0c245a45f7ccd"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "03f6f423756e8eebf78fa0a62902c8639404579d81451d925d49c53805e08873"
+    }
+   }
+  },
+  {
+   "k": 118,
+   "acquisition": "N15_M07_F04_KI18_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI18/N15_M07_F04_KI18_19.mat",
+   "start_ns": 1767232680000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 261513,
+     "sha256": "7598d58c04a740cf6a9e50f96c65fd49e95868e7f47ab1bf31587f912a607d05"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 261513,
+     "sha256": "96756110b4deb42fea9abd4aa61efd3213ddd57cbc5942d0c39f6edc85198a5a"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 261513,
+     "sha256": "b58b09bbc30c70b672604c659071bcbd5f39ba263b2f829d9ad378524e03b065"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "546cac97ec0533746efe5e97639ea8e296b404a0acc42aa9ca2c73e4be299e66"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "948d086bd9c5d36cedae44fc11991f3d3685c56b1e56270180ac7874ed764420"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "36d6341b923e39773c94e6ac20396f7eb5d84c83613cf6df9eb6f0f430682f26"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "8bf811f496dd13eb6f290a5bef45312cdbcdc5b2232b6bf1abd17f7b7dc69607"
+    }
+   }
+  },
+  {
+   "k": 119,
+   "acquisition": "N15_M07_F10_KI18_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI18/N15_M07_F10_KI18_19.mat",
+   "start_ns": 1767232740000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "8fe019b060e09c7969667673d217091c56b2ecf9349290e31d33b7bbb30be7e0"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "c30199d18e1540bb2a3c310e06e947c22b15b0daacffa6ecc39ad657493d8d50"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "1abd26fa61503fcdb88bd2b834143cd150ce2cf94382c7dc6c27f85c7e5dce93"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "ca9925f3672df5b30ac956dec36167230861cd071157970df2a5abf3c054b911"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "93c00e5c3c10b57c59b71aef3583647e060f9b52b53641d1b946e2a7584e9a04"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "99fa9b90c252afdc1c878b8db37ad0a843a2e7f8b1105a8586d2b13b3abc8d18"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "890ac321c29aacbe7a911e32cf4a86476728c2af9f6d0975eb8046ebd2027381"
+    }
+   }
+  },
+  {
+   "k": 120,
+   "acquisition": "N09_M07_F10_KI21_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI21/N09_M07_F10_KI21_19.mat",
+   "start_ns": 1767232800000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "47f12867edba98c8e9acd7ef648572e1e41ee8fbfff32b96e55260dcb8932ea2"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "9efec803685100fa72359b8ff5d44606390d5825e358c6031643f3f213cd0064"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "44767459164a5c79ec2858010c54656b2b040339efd21ead3687703b985dbf26"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "12da68a1b43047b60e19ecfa41d90c4c7c421d2fc7e83fe91eeccc233982f7dd"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "3234af6e1f4fd8e88679a02ec669e36b993ae709ba755b5684421bd86e8fc051"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "56795e99e5b2f5df9b5660a02fad19259b4d8302c72ce4ed2d896ffdb6686624"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "faa415dadc2012279311441a3201a976ef60e541ff850b841bd1d2f7d9b07595"
+    }
+   }
+  },
+  {
+   "k": 121,
+   "acquisition": "N15_M01_F10_KI21_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI21/N15_M01_F10_KI21_19.mat",
+   "start_ns": 1767232860000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "1531d0418fbcbe3c01ef12612618143ff219f18d3cb771bf8f5712a0ec626d6e"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "51e4a0d20ec8597ee6c1dccaccea4b0ac085b53f19571ac41326438da2bfdd5a"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256000,
+     "sha256": "e76e9009f381fafa433f3b8a3feab98867edc29e4a16b6af8883b34a00a66000"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c50f96a5e536b93295a59c141b26f55d4932b9f3118dce74ff40506b0cd02e28"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "c414decd94b05c83564b1325348156cda2d374235c9ab27dfbb514da08d6fff4"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "e8a7e2c7f5ad051e3df5ff75cbfee21d257aec216c1a3919149c0026e08f37cf"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "5fa7008c49fb5e631dfd089a6f1830902df2249985886f13017d7203bdff4690"
+    }
+   }
+  },
+  {
+   "k": 122,
+   "acquisition": "N15_M07_F04_KI21_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI21/N15_M07_F04_KI21_19.mat",
+   "start_ns": 1767232920000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "6d774ccac3c0244d7e5e19aede02e4bebe8c3bbeeb35007811f2203d4aed3275"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "706e24be2a51cbcaf5d5580d2ddcb332eff398a8ff2b33884173ba5114597735"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256001,
+     "sha256": "718bb83c6051558a67575cd265e09fbeccbd632c8c2e061acd314cc8994dffd8"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "1eed0e55af4f21b64f793e164cd226d7d932e407934342a0d7393ab16a168a93"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "6a41dbfc5933cb4f8fd1cbbd9051179ab965a73ff41b8f957918003763b91749"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16001,
+     "sha256": "fc7e5159ceeb71454e011484baf255f317cb6c8f10cb631aae8a7dcf9ab3570c"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 5,
+     "sha256": "d30cb4f3ce824a0c7814360d0afff710157457140ff6b5ee11bdcf8f161d7409"
+    }
+   }
+  },
+  {
+   "k": 123,
+   "acquisition": "N15_M07_F10_KI21_19",
+   "path": "data/paderborn/zenodo-15845309/extracted/KI21/N15_M07_F10_KI21_19.mat",
+   "start_ns": 1767232980000000000,
+   "channels": {
+    "vibration_1": {
+     "group": "high",
+     "samples": 256092,
+     "sha256": "37f2a98a58e81f4fbde5739b7aaadcf7ae78a17adee9270a24170e1c8d1746a7"
+    },
+    "phase_current_1": {
+     "group": "high",
+     "samples": 256092,
+     "sha256": "84722313c781098701591486e3b24adec279b8b4ddb2e456c24ffffcc0f3a2fe"
+    },
+    "phase_current_2": {
+     "group": "high",
+     "samples": 256092,
+     "sha256": "92571c22af13adc707ab9d6b46c6cffab14108009acf57cb49851b4482cef307"
+    },
+    "force": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "6bd4d2a8c58dec7b14e1bbdcb6974e7a0523c6880973b67bfd062d945233ba77"
+    },
+    "speed": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "2e7a25f7e86e888f96615a1a569d8d7a5f84be1a0751cdf99eed42aff51d5117"
+    },
+    "torque": {
+     "group": "mid",
+     "samples": 16007,
+     "sha256": "7c47db3a88d5c469147b084aec9002627306f5ea9cbcc1c3a0670403265929f2"
+    },
+    "temp_2_bearing_module": {
+     "group": "process",
+     "samples": 4,
+     "sha256": "a597996a08405c7f750129f232610cba656e60e93192b7cb883bf94b1b03f56b"
+    }
+   }
+  }
+ ],
+ "samples": {
+  "high": 95499936,
+  "mid": 5952756,
+  "process": 612
+ },
+ "canonical_bytes": {
+  "high": 763999488,
+  "mid": 47622048,
+  "process": 4896
+ }
+}

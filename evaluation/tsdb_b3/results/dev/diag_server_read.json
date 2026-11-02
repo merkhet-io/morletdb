@@ -1,0 +1,27 @@
+{
+ "note": "exploratory development diagnosis; medians of 30, ms, server round trip included",
+ "select_1": 0.273,
+ "fetch_chunks_only": 0.409,
+ "fetch_and_decode": 4.003,
+ "read_interval_raw_length_only": 4.69,
+ "read_interval_raw_transfer": 16.147,
+ "chunks_in_interval": [
+  32,
+  164469,
+  "5139.6562500000000000"
+ ],
+ "encoded_storage": [
+  "x",
+  ""
+ ],
+ "compressed_values": [
+  [
+   null,
+   1188
+  ],
+  [
+   "pglz",
+   24
+  ]
+ ]
+}

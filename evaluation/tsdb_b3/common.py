@@ -1,6 +1,7 @@
 """Shared B3 machinery: containers with fixed limits, resource sampling, volume sizes, manifest checks."""
 import hashlib
 import json
+import os
 import subprocess
 import threading
 import time
@@ -9,12 +10,14 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-RESULTS = HERE / "results"
+SET_DIR = HERE / "results" / ("dev" if os.environ.get("B3_SET") == "dev" else "")
+# B3_RUN=b31 writes this run's results to a subdirectory (the manifest stays with its set).
+RESULTS = SET_DIR / os.environ.get("B3_RUN", "")
 LIMITS = ["--cpus", "8", "--memory", "16g"]
 
 
 def manifest():
-    return json.loads((RESULTS / "manifest.json").read_text())
+    return json.loads((SET_DIR / "manifest.json").read_text())
 
 
 def sha(x):
