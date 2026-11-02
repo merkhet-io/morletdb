@@ -170,6 +170,9 @@ def load(system, durability, rep):
     if system == "morletdb-032w":   # B3.2 storage option: as morletdb-032 with a smaller WAL reservation
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
                            "one_statement": True, "min_wal_size": "32MB", "max_wal_size": "48MB"})
+    if system == "morletdb-auto":   # G1: as morletdb-032, but no declared quantum (the encoder detects the grid)
+        mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
+                           "one_statement": True, "quantum": False})
     if system == "morletdb-031c16":   # the same with 16,384-sample chunks (a documented importer option)
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "chunk_size": 16384})
     if system in ("morletdb-b30", "morletdb-batched16", "morletdb-noquantum"):
