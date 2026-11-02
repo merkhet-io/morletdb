@@ -8,6 +8,13 @@ Industrial collection:
   reconnects, identical duplicates accepted, altered duplicates refused, gaps reported with a new recording);
   scalar tags become context events with value, status code and source time. `scenarios.sh` reruns the checks.
 
+MQTT collection:
+- `examples/collectors/mqtt`: a reference collector and test publisher for the versioned `morlet-mqtt/1` JSON
+  contract (sample batches and context). Messages are acknowledged after their database commit on a persistent
+  session; duplicates are idempotent, altered duplicates refused, reordered batches wait, missing batches are
+  reported as gaps with a new recording, and context is placed in the recording covering its time. Plain MQTT,
+  not Sparkplug. `scenarios.sh` reruns the checks.
+
 Object storage:
 - `tools/ingest/morlet_s3.py` imports supported recording files from an S3-compatible bucket prefix (each
   recording records the object's bucket, key, ETag, version and SHA-256; reruns skip imported objects and a
