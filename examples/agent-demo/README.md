@@ -88,12 +88,15 @@ windows with catalogued earthquakes about twice as often as zero-lag similarity
 ([E5](../../evaluation/task_relevance/RESULTS.md), [E5-H](../../evaluation/task_relevance/RESULTS_HELDOUT.md)).
 It finds leads for review. It is not an earthquake detector.
 
-**A real session.** [`sessions/2026-11-02-earthquake-lead.md`](sessions/2026-11-02-earthquake-lead.md) is one
-unattended Claude Code run (Opus 5.5, 28 tool calls, 2 min) with a prompt close to the one above that also
-asks it to chase uncatalogued matches. Its query window started 15 s before the first arrival and only 1 of
-its 15 matches was catalogued. It then showed that the strongest uncatalogued match is one wavefront crossing
-all four stations from a shallow source near 23.0°S 69.5°W, found a larger event from the same place 90 s
-earlier, and left open whether they are earthquakes or mine blasts.
+**Real sessions.** Two unattended Claude Code runs (Opus 5.5, MCP tools only) with a prompt close to the one
+above that also asks Claude to chase uncatalogued matches:
+
+- [Run 1](sessions/2026-11-02-earthquake-lead-run1.md), before `search_from_time` existed: Claude framed the
+  query window itself, starting 15 s before the first arrival, and 1 of its 15 hits was catalogued.
+- [Run 2](sessions/2026-11-02-earthquake-lead-run2.md), with `search_from_time`: 8 of 15 hits are catalogued
+  earthquakes. Claude then showed that the strongest uncatalogued hit (13 March, 01:58 UTC) is an earthquake
+  about 100 km deep, seen at all four stations, and fitted a trial location to its arrivals. 22 tool calls,
+  91 s.
 
 A follow-up that needs both servers and the comparison tools:
 

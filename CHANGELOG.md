@@ -15,7 +15,9 @@ MCP server:
   per band in dB and how the energy above the reference splits across bands) and `find_onsets` (candidate
   onsets by STA/LTA with an optional band-pass). `describe_interval` takes your own bands and a minimum
   frequency, and reports power per band. `search_similar` can also search with the window moved a little
-  (`shifts`) and merge the results, and gives metadata once per recording instead of per hit.
+  (`shifts`) and merge the results, and gives metadata once per recording instead of per hit. `search_from_time` finds
+  the onset near a UTC time, frames the window (2 s before the onset, `shifts=2`, chosen on the demo's
+  development data) and searches.
 - **Agent demo:** `examples/agent-demo` loads four days of public seismic data (CX, GEOFON) into the release
   image and runs the MCP server in Docker for Claude Code or Claude Desktop, with a scripted replay
   (`replay.py`) that needs no language model. A second, offline MCP server (`seismo_mcp.py`) gives station
