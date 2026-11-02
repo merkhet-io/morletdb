@@ -97,4 +97,16 @@ About two hours of measurement, no new data, no disk beyond results. Stop after 
 
 ## Deviations
 
-(none yet)
+1. **System sleep during the N3 gate; N3 timing rerun twice.**
+   - **Sleep:** the machine entered clamshell sleep at 07:49:38 (lid closed, on battery), one minute after
+     N2's last timed run ended (07:48:44). N1 and N2 timings were complete before it. `caffeinate -i`
+     does not prevent clamshell sleep.
+   - **N3 gate:** it is not timed, ran through the sleep and passed, including 100/100 bitwise identity.
+   - **First N3 attempt:** it started at 09:34:27, directly after wake, at a load average of 18. It was
+     stopped and its output discarded.
+   - **Second N3 attempt:** it waited for the 1-minute load average to fall below 5, not the 5-minute
+     average intended. Its default run completed at a 5-minute load of 7.5–8.5, and its w8 run was
+     killed when the operator's session ended, leaving the envelope table's `parallel_workers` at 8.
+     The setting was reset and both outputs set aside unanalysed.
+   - **Final N3 runs:** both configurations ran from a detached process once the 5-minute load average
+     was below 5, on AC power.

@@ -1,0 +1,8 @@
+w8 round 1 0 {'X-PG': 881.1, 'P-PG': 343.2, 'X-MAT32R': 118.1}
+w8 round 1 25 {'X-PG': 1551.1, 'P-PG': 141.8, 'X-MAT32R': 106.7}
+w8 round 1 50 {'X-PG': 1729.2, 'P-PG': 113.9, 'X-MAT32R': 106.2}
+w8 round 1 75 {'X-PG': 1097.9, 'P-PG': 78.2, 'X-MAT32R': 75.6}
+w8 round 2 0 {'X-PG': 1172.6, 'P-PG': 77.8, 'X-MAT32R': 74.4}
+w8 round 2 25 {'X-PG': 943.2, 'P-PG': 62.3, 'X-MAT32R': 72.2}
+w8 round 2 50 {'X-PG': 1250.9, 'P-PG': 82.4, 'X-MAT32R': 85.3}
+w8 round 2 75 {'X-PG': 1268.9, 'P-PG': 95.7, 'X-MAT32R': 74.8}

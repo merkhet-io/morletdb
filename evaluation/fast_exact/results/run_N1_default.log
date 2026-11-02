@@ -1,0 +1,8 @@
+default round 1 0 {'X-PG': 334.8, 'P-PG': 32.2, 'X-MAT32R': 20.1}
+default round 1 25 {'X-PG': 331.9, 'P-PG': 50.0, 'X-MAT32R': 19.5}
+default round 1 50 {'X-PG': 333.3, 'P-PG': 47.7, 'X-MAT32R': 19.7}
+default round 1 75 {'X-PG': 329.1, 'P-PG': 33.2, 'X-MAT32R': 18.9}
+default round 2 0 {'X-PG': 331.6, 'P-PG': 29.1, 'X-MAT32R': 19.4}
+default round 2 25 {'X-PG': 329.4, 'P-PG': 29.9, 'X-MAT32R': 18.5}
+default round 2 50 {'X-PG': 328.6, 'P-PG': 34.6, 'X-MAT32R': 20.5}
+default round 2 75 {'X-PG': 329.2, 'P-PG': 44.0, 'X-MAT32R': 20.2}
