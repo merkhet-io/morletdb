@@ -1,0 +1,70 @@
+{
+ "system": "morletdb-batched16",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.22169270896119997,
+ "samples": 101586735,
+ "started": "2026-11-02T19:03:21",
+ "ingest": {
+  "wall_s": 177.205,
+  "samples_per_s": 573273,
+  "conversion_s": 0.874,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1417.575,
+   "p95_ms": 1485.43,
+   "max_ms": 2371.298
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.76,
+  "server": {
+   "cpu_percent_mean": 30.7,
+   "cpu_percent_p95": 32.5,
+   "memory_peak_mib": 172.6,
+   "samples": 79
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.9
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 2523136,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 2482176,
+    "toast": 161841152,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 177073299,
+  "volume": {
+   "apparent": 385080067,
+   "allocated": 385146880,
+   "pg_wal_allocated": 184549376
+  }
+ }
+}

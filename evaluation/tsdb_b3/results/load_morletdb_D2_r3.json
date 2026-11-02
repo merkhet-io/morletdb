@@ -1,0 +1,44 @@
+{
+ "system": "morletdb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.5167853329912759,
+ "samples": 101586735,
+ "started": "2026-11-02T18:41:28",
+ "ingest": {
+  "wall_s": 182.783,
+  "samples_per_s": 555776,
+  "conversion_s": 1.175,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1430.776,
+   "p95_ms": 1631.865,
+   "max_ms": 1828.535
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.896,
+  "server": {
+   "cpu_percent_mean": 28.1,
+   "cpu_percent_p95": 29.4,
+   "memory_peak_mib": 168.9,
+   "samples": 81
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.1
+  }
+ },
+ "correct": true
+}

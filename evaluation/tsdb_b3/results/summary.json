@@ -1,0 +1,360 @@
+{
+ "canonical_bytes": {
+  "high": 765067008,
+  "mid": 47621952,
+  "process": 4920
+ },
+ "storage": {
+  "Q-native": {
+   "data": 1219162108,
+   "index_meta": 163844,
+   "wal": 16416768,
+   "high_data": 1147660928,
+   "high_timestamps": 255037440
+  },
+  "Q-parquet-lz4": {
+   "data": 505479168,
+   "index_meta": 290816,
+   "wal": 348160,
+   "high_data": 467255296,
+   "high_timestamps": 0
+  },
+  "Q-parquet-zstd9": {
+   "data": 244006912,
+   "index_meta": 290816,
+   "wal": 348160,
+   "high_data": 210817024,
+   "high_timestamps": 0
+  },
+  "M-base": {
+   "data": 164339712,
+   "index_meta": 4849664,
+   "wal": 184549376,
+   "relations": {
+    "b3": {
+     "heap": 2646016,
+     "toast": 8192,
+     "indexes": 90112
+    },
+    "b3_chunks": {
+     "heap": 2482176,
+     "toast": 161857536,
+     "indexes": 2088960
+    },
+    "b3_segments": {
+     "heap": 0,
+     "toast": 8192,
+     "indexes": 8192
+    }
+   }
+  },
+  "M-search": {
+   "data": 164323328,
+   "index_meta": 204423168,
+   "wal": 486539264,
+   "relations": {
+    "b3": {
+     "heap": 778240,
+     "toast": 18497536,
+     "indexes": 90112
+    },
+    "b3_chunks": {
+     "heap": 2482176,
+     "toast": 161841152,
+     "indexes": 2088960
+    },
+    "b3_envelopes": {
+     "heap": 47915008,
+     "toast": 8192,
+     "indexes": 5062656
+    },
+    "b3_segments": {
+     "heap": 86794240,
+     "toast": 8192,
+     "indexes": 43180032
+    }
+   }
+  },
+  "packed-exchange": {
+   "data": 206774931
+  },
+  "packed-parquet": {
+   "data": 308317693,
+   "groups": {
+    "high": {
+     "bytes": 263621847,
+     "samples": 95633376,
+     "bytes_per_sample": 2.7566,
+     "ratio_to_float64": 0.3446
+    },
+    "mid": {
+     "bytes": 44601054,
+     "samples": 5952744,
+     "bytes_per_sample": 7.4925,
+     "ratio_to_float64": 0.9366
+    },
+    "process": {
+     "bytes": 94792,
+     "samples": 615,
+     "bytes_per_sample": 154.1333,
+     "ratio_to_float64": 19.2667
+    }
+   }
+  }
+ },
+ "ingestion": {
+  "questdb/D1": {
+   "samples_per_s": [
+    6567889,
+    6551904,
+    6856862
+   ],
+   "loads": 3,
+   "ack_p50": [
+    120.342,
+    122.536,
+    115.877
+   ],
+   "ack_p95": [
+    154.334,
+    147.096,
+    146.306
+   ]
+  },
+  "questdb/D2": {
+   "samples_per_s": [
+    7391926,
+    7157278,
+    7776483
+   ],
+   "loads": 3,
+   "ack_p50": [
+    103.877,
+    102.508,
+    101.65
+   ],
+   "ack_p95": [
+    161.338,
+    163.307,
+    129.345
+   ]
+  },
+  "morletdb/D1": {
+   "samples_per_s": [
+    511100,
+    481317,
+    481057
+   ],
+   "loads": 3,
+   "ack_p50": [
+    1597.126,
+    1703.881,
+    1694.244
+   ],
+   "ack_p95": [
+    1661.522,
+    1797.587,
+    1806.895
+   ]
+  },
+  "morletdb/D2": {
+   "samples_per_s": [
+    523529,
+    532843,
+    555776
+   ],
+   "loads": 3,
+   "ack_p50": [
+    1576.768,
+    1557.856,
+    1430.776
+   ],
+   "ack_p95": [
+    1676.255,
+    1697.257,
+    1631.865
+   ]
+  }
+ },
+ "reads": {
+  "Q-native": {
+   "R1": {
+    "n": 1000,
+    "p50_ms": 1.211,
+    "p95_ms": 2.835,
+    "max_ms": 6.779,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R2": {
+    "n": 1000,
+    "p50_ms": 8.385,
+    "p95_ms": 14.001,
+    "max_ms": 30.873,
+    "samples_per_query": 128000,
+    "mismatches": 0
+   },
+   "R3": {
+    "n": 1000,
+    "p50_ms": 13.282,
+    "p95_ms": 18.474,
+    "max_ms": 106.822,
+    "samples_per_query": 192000,
+    "mismatches": 0
+   },
+   "R4_recent": {
+    "n": 1000,
+    "p50_ms": 1.033,
+    "p95_ms": 1.408,
+    "max_ms": 5.282,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R4_older": {
+    "n": 1000,
+    "p50_ms": 1.098,
+    "p95_ms": 1.625,
+    "max_ms": 11.467,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R5": {
+    "n": 10000,
+    "p50_ms": 1.418,
+    "p95_ms": 6.207,
+    "max_ms": 45.184,
+    "threads": 4,
+    "queries": 10000,
+    "queries_per_s": 1774.5
+   }
+  },
+  "Q-parquet-zstd9": {
+   "R1": {
+    "n": 1000,
+    "p50_ms": 2.728,
+    "p95_ms": 5.641,
+    "max_ms": 18.021,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R2": {
+    "n": 1000,
+    "p50_ms": 10.743,
+    "p95_ms": 16.742,
+    "max_ms": 32.044,
+    "samples_per_query": 128000,
+    "mismatches": 0
+   },
+   "R3": {
+    "n": 1000,
+    "p50_ms": 17.733,
+    "p95_ms": 23.485,
+    "max_ms": 39.819,
+    "samples_per_query": 192000,
+    "mismatches": 0
+   },
+   "R4_recent": {
+    "n": 1000,
+    "p50_ms": 2.201,
+    "p95_ms": 2.994,
+    "max_ms": 5.215,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R4_older": {
+    "n": 1000,
+    "p50_ms": 2.094,
+    "p95_ms": 2.902,
+    "max_ms": 5.659,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R5": {
+    "n": 10000,
+    "p50_ms": 2.667,
+    "p95_ms": 7.985,
+    "max_ms": 34.917,
+    "threads": 4,
+    "queries": 10000,
+    "queries_per_s": 1113.2
+   }
+  },
+  "M-base": {
+   "R1": {
+    "n": 1000,
+    "p50_ms": 1.457,
+    "p95_ms": 1.945,
+    "max_ms": 3.228,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R2": {
+    "n": 1000,
+    "p50_ms": 23.549,
+    "p95_ms": 29.692,
+    "max_ms": 62.876,
+    "samples_per_query": 128000,
+    "mismatches": 0
+   },
+   "R3": {
+    "n": 1000,
+    "p50_ms": 39.169,
+    "p95_ms": 48.51,
+    "max_ms": 80.547,
+    "samples_per_query": 192000,
+    "mismatches": 0
+   },
+   "R4_recent": {
+    "n": 1000,
+    "p50_ms": 1.642,
+    "p95_ms": 2.5,
+    "max_ms": 5.179,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R4_older": {
+    "n": 1000,
+    "p50_ms": 1.479,
+    "p95_ms": 1.977,
+    "max_ms": 3.379,
+    "samples_per_query": 4096,
+    "mismatches": 0
+   },
+   "R5": {
+    "n": 10000,
+    "p50_ms": 2.169,
+    "p95_ms": 4.217,
+    "max_ms": 15.153,
+    "threads": 4,
+    "queries": 10000,
+    "queries_per_s": 1585.9
+   }
+  }
+ },
+ "analytics": {
+  "Q-native": {
+   "n": 400,
+   "p50_ms": 3.505,
+   "p95_ms": 6.674,
+   "max_ms": 21.543,
+   "max_relative_difference": 8.052762256150513e-14,
+   "within_1e-12": "True"
+  },
+  "Q-parquet-zstd9": {
+   "n": 400,
+   "p50_ms": 5.867,
+   "p95_ms": 13.903,
+   "max_ms": 17.606,
+   "max_relative_difference": 5.269747707370234e-14,
+   "within_1e-12": "True"
+  },
+  "M-base": {
+   "n": 400,
+   "p50_ms": 20.61,
+   "p95_ms": 21.807,
+   "max_ms": 25.631,
+   "max_relative_difference": 8.052762256150513e-14,
+   "within_1e-12": "True"
+  }
+ }
+}

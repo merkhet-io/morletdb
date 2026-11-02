@@ -1,0 +1,27 @@
+{
+ "codec": "zstd",
+ "level": 9,
+ "pyarrow": "21.0.0",
+ "groups": {
+  "high": {
+   "bytes": 263621847,
+   "samples": 95633376,
+   "bytes_per_sample": 2.7566,
+   "ratio_to_float64": 0.3446
+  },
+  "mid": {
+   "bytes": 44601054,
+   "samples": 5952744,
+   "bytes_per_sample": 7.4925,
+   "ratio_to_float64": 0.9366
+  },
+  "process": {
+   "bytes": 94792,
+   "samples": 615,
+   "bytes_per_sample": 154.1333,
+   "ratio_to_float64": 19.2667
+  }
+ },
+ "write_s": 6.5,
+ "mismatches": 0
+}

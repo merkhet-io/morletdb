@@ -153,4 +153,26 @@ fails, reported as a deviation).
 
 ## Deviations
 
-(none yet)
+Recorded 2026-11-02 during and after the QuestDB stage's measurements.
+
+1. **MorletDB bulk path wording.** The protocol says "batched `morlet_append_chunks`"; the importer's default
+   (`rpc_chunks=1`) sends one `morlet_append_chunk` per 4,096-sample chunk, 16 chunks per transaction. The
+   frozen arm uses the importer defaults as stated ("the importer defaults"); the batched mode (`rpc_chunks=16`)
+   is reported only as an attribution run, outside the comparison. `import_files` is called once per
+   acquisition with an in-memory reader (no Parquet file); its own SHA-256 of the source file (preflight) is
+   excluded from the timings and reported.
+2. **Environment.** scipy 1.16.3 (the 1.15.3 wheel does not load on macOS 27). Six unrelated, idle containers
+   of the user's own stack (about 8% CPU in total) ran alongside; the MorletDB demo containers were stopped.
+3. **Failed attempt.** The first QuestDB D2 load 1 completed its load, correctness check and part of the
+   reads, then stopped on a wrong column name in the client script (`table_partitions()`). It was rerun from a
+   fresh volume; none of its numbers are used.
+4. **Storage accounting.** QuestDB storage is the allocated size of the files under each table directory; the
+   per-row `acquisition` key file is counted as data ("identity"), the symbol dictionary as metadata; the
+   sentinel's partition directory is reported apart and not counted. For load 1 the key file was split out
+   arithmetically (4 bytes per row; load 2 measured it directly: equal to within 4 KiB page rounding per partition). MorletDB per-group bytes are the
+   encoded chunk payloads, measured on the batched attribution load (identical chunks).
+5. **Additional measurements, not in the frozen list:** reads and analytics on Q-parquet-zstd9 (after the
+   conversion on D2 load 2); two MorletDB attribution loads (batched RPC; no sample grid). They are labelled
+   as such and no comparison statement rests on them.
+6. **Reads, MorletDB.** One SQL statement per channel fetches the interval as pieces of at most 32,768
+   samples (`generate_series` with `LATERAL morlet_read_interval`, binary transfer), assembled in the client.
