@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+Object storage:
+- `tools/ingest/morlet_s3.py` imports supported recording files from an S3-compatible bucket prefix (each
+  recording records the object's bucket, key, ETag, version and SHA-256; reruns skip imported objects and a
+  changed object is refused) and exports exchange files to a bucket with file and content checksums in the
+  object metadata (identical exports are skipped; uploads are read back and compared). Optional dependency:
+  `tools/ingest/requirements-s3.txt` (boto3). Tested against a local SeaweedFS S3 server; `docs/object-storage.md`.
+
 Works with:
 - `docs/integrations.md` lists every documented integration with how to run it, its scope and how it was
   verified (CI, release trial or manual run), plus logo and trademark notes; the homepage shows it as a plain

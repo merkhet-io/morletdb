@@ -78,6 +78,8 @@ FROM (SELECT decode(value) AS m FROM parquet_kv_metadata('week.parquet') WHERE d
 On the IMS export, the daily peak of bearing 1 rises from about 0.5 to 1.2 over 17–18 February and reaches the
 sensor's limit of 5.0 on the last day.
 
+To keep exports in, or import recordings from, S3-compatible object storage, see [object storage](object-storage.md).
+
 ## Versioning
 
 A reader must check `format` and `version` and refuse what it does not know; both MorletDB readers do. A

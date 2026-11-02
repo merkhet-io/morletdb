@@ -111,6 +111,16 @@ Verification levels:
   contracts); Manual (2026-11-02), 984 IMS recordings (20.2 M samples) exported, re-imported into another
   database and verified identical.
 
+### S3-compatible object storage
+- **What:** `morlet_s3.py` imports supported recording files from a bucket prefix, with each object's bucket,
+  key, ETag, version and SHA-256 in the recordings' metadata, and exports exchange files to a bucket with their
+  checksums in the object metadata. Reruns skip what is already done.
+- **Run:** [object storage](object-storage.md).
+- **Scope:** any service that speaks the S3 API through boto3; no query serving from object storage.
+- **Verified:** CI (URL and file-type helpers); Manual (2026-11-02) against a local SeaweedFS 3.73 S3 server:
+  import, skip on rerun, refusal of a changed object, export, skip of an identical export, and a downloaded
+  export verified identical. Not tested against Amazon S3, Azure, Google Cloud Storage or MinIO themselves.
+
 ### DuckDB
 - **What:** query exported recordings, their metadata and the checksum manifest directly with DuckDB.
 - **Run:** [exchange format: explore with DuckDB](exchange-format.md#explore-an-export-with-duckdb).
@@ -132,6 +142,7 @@ Checked on 2026-11-02 against each owner's published policy. The website lists a
 | Apache Parquet, Apache Arrow | allowed, not used | the ASF allows unmodified project logos on websites, with attribution |
 | Jupyter | allowed, not used | LF Charities allows unaltered logos for non-commercial nominative use |
 | DuckDB | no | logos may not be combined with others; plain text needs no permission |
+| Amazon S3 | no | named only to describe the API ("S3-compatible"), as plain text |
 | NI, LabVIEW (TDMS) | no | NI grants no permission to display its logos; word marks only for reference, with a notice |
 | ObsPy | no | no logo policy published |
 
@@ -143,6 +154,7 @@ Trademark notices:
 - Apache, Apache Parquet, Parquet, Apache Arrow and Arrow are trademarks of The Apache Software Foundation.
 - Jupyter is a registered trademark of LF Charities. Grafana is a trademark of Grafana Labs. Model Context
   Protocol is a trademark of LF Projects, LLC. Claude is a trademark of Anthropic, PBC.
+- Amazon S3 is a trademark of Amazon.com, Inc. or its affiliates.
 - LabVIEW is a trademark of National Instruments. MorletDB is not affiliated with, endorsed by or sponsored by
   National Instruments. DuckDB is a trademark of the DuckDB Foundation.
 - All other names are the property of their respective owners. MorletDB is not affiliated with, endorsed or
