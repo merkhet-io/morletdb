@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.15, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.16, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,15 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.16 (screened exact search added; no new measurement for the report)
+
+- **Screened exact search (E7).** In the database, a float32 screen with a rigorous error bound re-scores only
+  windows that could be among the nearest; lists stayed bit-for-bit identical (100/100 per gallery) and p95
+  fell 3.2–3.7× against scoring every window (138 / 221 / 540 ms at 0.23 / 0.50 / 1.03 M windows, eight
+  workers). Probes stayed 1.6–2.3× faster at p95 (previously 5–8.5× against E6's path). In the abstract,
+  findings, Section 6, limitations ("Speed relative to exact search", "When to use it"), studies table and
+  ledger.
 
 ## What changed in 0.15 (merged evidence added; no new measurement for the report)
 

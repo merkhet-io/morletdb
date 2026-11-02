@@ -4,12 +4,12 @@
 |---|---|
 | Title | MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL |
 | Type | technical report / preprint (not peer reviewed); the title page shows only the version |
-| Version | 0.15, 2026-11-02 (from `REPORT_VERSION`) |
+| Version | 0.16, 2026-11-03 (from `REPORT_VERSION`) |
 | Author | Zin Nam (no affiliation stated) |
 | Report sources | the commit recorded as `report_source_commit` in [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json); the sources first entered `main` with merge commit cdf8b4b |
 | Measured software | E1 (main retrieval tables) and diagnostics D1–D2: pg_morlet at `main` 68594d7, library SHA-256 `3c786684…`; earlier studies used earlier implementation states, labelled in the report and in [STUDIES.md](STUDIES.md) (see [ARTIFACT.md](ARTIFACT.md)) |
 | Licence | report text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0 (repository `LICENSE`) |
-| Tag | `paper-v0.15`, on the commit that contains this manifest |
+| Tag | `paper-v0.16`, on the commit that contains this manifest |
 | Funding | none |
 | Conflicts of interest | no statement (author's decision) |
 
@@ -55,5 +55,5 @@ The same statement appears at the end of the report.
 - licence of text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code stays Apache-2.0;
 - funding: none; no conflict-of-interest statement;
 - AI statement: as printed at the end of the report;
-- publication: GitHub release under tag `paper-v<version>` (0.11–0.13 released; 0.14 frames speed as when exact, when probes; 0.15 adds merged evidence: E5/E5-H, G1, B3, MCP);
+- publication: GitHub release under tag `paper-v<version>` (0.11–0.13 released; 0.14 frames speed as when exact, when probes; 0.15 adds merged evidence: E5/E5-H, G1, B3, MCP; 0.16 adds E7, screened exact search);
   no preprint server, DOI or journal submission yet.
