@@ -62,6 +62,17 @@ Verification levels:
 - **Verified:** Manual (2026-11-02), the seismic agent demo imports four days of CX data this way; not in CI
   (ObsPy is not installed there).
 
+### TDMS files
+- **What:** the same importer reads TDMS files (the file format of NI's LabVIEW and DAQmx) through npTDMS: one
+  recording per numeric waveform channel, scaled (physical) values by default or raw values on request, with
+  rate, unit, start time and scaling provenance.
+- **Run:** [from files to a first search](import.md#tdms).
+- **Scope:** channels with waveform timing (`wf_increment`); irregular, string and empty channels are refused
+  with the reason.
+- **Verified:** CI (files written by npTDMS: scaled int16, float, untimed and string channels); Manual
+  (2026-11-02), an import compared bit for bit with npTDMS's reading. Not tested with files written by NI
+  software.
+
 ## Analysis and visualization
 
 ### Grafana dashboards
@@ -89,12 +100,21 @@ Verification levels:
 
 ## Archive exchange
 
-### Apache Parquet import
-- **What:** `tools/ingest/parquet_import.py` imports recordings from Parquet tables with a declared column
-  mapping; the file importer builds on it.
-- **Run:** [`tools/ingest`](../tools/ingest/README.md).
-- **Scope:** import only; a documented export format is planned.
-- **Verified:** CI (Parquet input contract tests).
+### Apache Parquet exchange
+- **What:** `morlet_export.py` writes recordings to a versioned Parquet format with per-recording SHA-256;
+  `morlet_import.py` and `parquet_import.py` read it back, and `--verify` checks a collection against a file.
+  `parquet_import.py` also imports other Parquet tables with a declared column mapping.
+- **Run:** [exchange format](exchange-format.md); [`tools/ingest`](../tools/ingest/README.md).
+- **Scope:** the stored samples, metadata and settings; not the original source files, the compressed chunks or
+  derived features (rebuilt on import).
+- **Verified:** CI (reading exchange files, checksum rejection, per-recording columns, Parquet input
+  contracts); Manual (2026-11-02), 984 IMS recordings (20.2 M samples) exported, re-imported into another
+  database and verified identical.
+
+### DuckDB
+- **What:** query exported recordings, their metadata and the checksum manifest directly with DuckDB.
+- **Run:** [exchange format: explore with DuckDB](exchange-format.md#explore-an-export-with-duckdb).
+- **Verified:** Manual (2026-11-02), every query in the recipe with DuckDB 1.1.3 on the IMS export.
 
 ## Logo and trademark notes
 
@@ -112,6 +132,7 @@ Checked on 2026-11-02 against each owner's published policy. The website lists a
 | Apache Parquet, Apache Arrow | allowed, not used | the ASF allows unmodified project logos on websites, with attribution |
 | Jupyter | allowed, not used | LF Charities allows unaltered logos for non-commercial nominative use |
 | DuckDB | no | logos may not be combined with others; plain text needs no permission |
+| NI, LabVIEW (TDMS) | no | NI grants no permission to display its logos; word marks only for reference, with a notice |
 | ObsPy | no | no logo policy published |
 
 Trademark notices:
@@ -122,5 +143,7 @@ Trademark notices:
 - Apache, Apache Parquet, Parquet, Apache Arrow and Arrow are trademarks of The Apache Software Foundation.
 - Jupyter is a registered trademark of LF Charities. Grafana is a trademark of Grafana Labs. Model Context
   Protocol is a trademark of LF Projects, LLC. Claude is a trademark of Anthropic, PBC.
+- LabVIEW is a trademark of National Instruments. MorletDB is not affiliated with, endorsed by or sponsored by
+  National Instruments. DuckDB is a trademark of the DuckDB Foundation.
 - All other names are the property of their respective owners. MorletDB is not affiliated with, endorsed or
   sponsored by any of them.
