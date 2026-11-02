@@ -1,0 +1,145 @@
+{
+ "system": "morletdb-032",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.4249556250288151,
+ "samples": 101586735,
+ "started": "2026-11-02T20:58:01",
+ "image": "morletdb:b32-dev",
+ "image_id": "sha256:479987326f5f6dc672f56dfcbec4a36f7c90eb5faea04cef5a4e87390dc97f43",
+ "ingest": {
+  "wall_s": 18.638,
+  "samples_per_s": 5450568,
+  "conversion_s": 0.025,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 147.099,
+   "p95_ms": 180.85,
+   "max_ms": 238.844
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "failures": [],
+  "excluded_preflight_s": 1.024,
+  "server": {
+   "cpu_percent_mean": 79.5,
+   "cpu_percent_p95": 80.6,
+   "memory_peak_mib": 168.7,
+   "samples": 9
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.4
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 4063232,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 2482176,
+    "toast": 161882112,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 22150135,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 5325,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 178621587,
+  "volume": {
+   "apparent": 386570825,
+   "allocated": 386641920,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.648,
+   "p95_ms": 1.036,
+   "max_ms": 2.27,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 7.983,
+   "p95_ms": 11.641,
+   "max_ms": 20.388,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 10.683,
+   "p95_ms": 14.619,
+   "max_ms": 28.814,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.676,
+   "p95_ms": 1.203,
+   "max_ms": 3.001,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.687,
+   "p95_ms": 1.208,
+   "max_ms": 2.366,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 1.377,
+   "p95_ms": 2.763,
+   "max_ms": 13.075,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 2481.2
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 2.702,
+  "p95_ms": 2.989,
+  "max_ms": 3.872,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ }
+}

@@ -22,13 +22,16 @@ NAME = "b3-morletdb"
 PORT = 54340
 COLLECTION = "b3"
 MAX_READ = 32768
-_PASSWORD = secrets.token_hex(16)   # generated per process, never written anywhere
+# generated per run and never written anywhere; shared with spawned writer processes through the environment
+_PASSWORD = os.environ.setdefault("B3_PG_PASSWORD", secrets.token_hex(16))
 DSN = f"host=127.0.0.1 port={PORT} user=morlet dbname=morlet password={_PASSWORD}"
 GROUP_OF = {c: g for g, s in wl.GROUPS.items() for c in s["channels"]}
 
 
 def start(volume, durability="D2"):
-    cmd = ["postgres"] + (["-c", "synchronous_commit=off"] if durability == "D2" else [])
+    cmd = ["postgres"] + (["-c", "synchronous_commit=off"] if durability == "D2" else []) + \
+        (["-c", f"min_wal_size={VARIANT['min_wal_size']}"] if VARIANT.get("min_wal_size") else []) + \
+        (["-c", f"max_wal_size={VARIANT['max_wal_size']}"] if VARIANT.get("max_wal_size") else [])
     common.fresh(NAME, IMAGE, volume, "/var/lib/postgresql/data", [f"{PORT}:5432"],
                  {"POSTGRES_USER": "morlet", "POSTGRES_PASSWORD": _PASSWORD, "POSTGRES_DB": "morlet"}, cmd)
     for _ in range(240):
@@ -99,7 +102,8 @@ def reader_for(acq, data, search, timer):
 
 VARIANT = {"rpc_chunks": 1, "quantum": True, "binary": True, "binary_read": True, "short_read": True,
            "raw_read": False, "native_stats": False, "chunk_size": 4096,
-           "raw_append": False}   # the last two need SQL 0.3.3   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+           "raw_append": False, "pipeline": False,
+           "one_statement": False}   # the last two need SQL 0.3.3   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
 
 
 def load_one(acq, data, search=False):
@@ -107,7 +111,8 @@ def load_one(acq, data, search=False):
     timer = [0.0]
     path = wl.ROOT / acq["path"]
     rep = import_files([path], COLLECTION, Config(rpc_chunks=VARIANT["rpc_chunks"], chunk_size=VARIANT["chunk_size"],
-                                                          raw_append=VARIANT["raw_append"]), dsn=DSN,
+                                                          raw_append=VARIANT["raw_append"],
+                                                          pipeline=VARIANT["pipeline"]), dsn=DSN,
                        reader=reader_for(acq, data, search, timer))
     # elapsed_s excludes the importer's source-file hashing (preflight); conversion is inside it
     return timer[0], rep["elapsed_s"], rep
@@ -126,6 +131,13 @@ def read(conn, acq, channels, offset, length):
     pieces of at most 32,768 samples (the documented per-call limit), assembled in order."""
     import numpy as np
     out = {}
+    if VARIANT["raw_read"] and VARIANT.get("one_statement") and len(channels) > 1:
+        # B3.2: all channels of the interval in one statement (one round trip), in the requested order
+        rows = conn.execute(
+            "SELECT morlet_read_interval_raw(%s::regclass, r.id, %s, %s) FROM unnest(%s::text[]) WITH ORDINALITY r(id, o) "
+            "ORDER BY r.o", (COLLECTION, offset, offset + length, [rid(acq, c) for c in channels]),
+            binary=True, prepare=True).fetchall()
+        return {c: np.frombuffer(r[0], dtype="<f8") for c, r in zip(channels, rows)}
     for c in channels:
         if VARIANT["raw_read"]:                               # SQL 0.3.3: one call, raw little-endian float64
             raw = conn.execute("SELECT morlet_read_interval_raw(%s::regclass, %s, %s, %s)",
