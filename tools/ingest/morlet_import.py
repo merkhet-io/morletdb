@@ -298,7 +298,7 @@ def chunk_reader(opts):
             extractor = opts.extractor or extractor_for(r.rate)
             spec = (r.rate, r.channel, r.unit, r.metadata, r.quantum, extractor)
             for start in range(0, r.samples.size, config.chunk_size):
-                yield r.recording_id, spec, start, r.samples[start:start + config.chunk_size].tolist()
+                yield r.recording_id, spec, start, np.asarray(r.samples[start:start + config.chunk_size], np.float64)
     return read
 
 

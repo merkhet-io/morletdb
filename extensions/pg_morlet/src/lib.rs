@@ -194,22 +194,21 @@ fn morlet_decode_chunk(encoded: &[u8]) -> Vec<f64> {
     morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
-/// Samples of [interval_start, interval_end) from encoded chunks given in ascending
-/// start order, concatenated. Parts of the interval not covered by a chunk are simply
-/// absent, so callers compare the length with the interval to detect gaps.
-#[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_decode_interval(
-    chunks: pgrx::Array<'_, &[u8]>,
-    starts: Vec<Option<i64>>,
+/// Calls `take` with the samples of [interval_start, interval_end) from each encoded chunk, given in
+/// ascending start order. Parts of the interval not covered by a chunk are simply absent, so callers
+/// compare the number of samples with the interval to detect gaps.
+fn for_interval_slices(
+    chunks: &pgrx::Array<'_, &[u8]>,
+    starts: &[Option<i64>],
     interval_start: i64,
     interval_end: i64,
-) -> Vec<f64> {
+    mut take: impl FnMut(&[f64]),
+) {
     if chunks.len() != starts.len() {
         pgrx::error!("chunks and starts differ in length");
     }
-    let mut out = Vec::with_capacity((interval_end - interval_start).clamp(0, 32768) as usize);
     let mut previous = i64::MIN;
-    for (chunk, start) in chunks.iter().zip(&starts) {
+    for (chunk, start) in chunks.iter().zip(starts) {
         let (Some(chunk), Some(start)) = (chunk, *start) else {
             pgrx::error!("chunks and starts must not contain NULL");
         };
@@ -222,10 +221,73 @@ fn morlet_decode_interval(
         let lo = interval_start.max(start) - start;
         let hi = interval_end.min(start + samples.len() as i64) - start;
         if lo < hi {
-            out.extend_from_slice(&samples[lo as usize..hi as usize]);
+            take(&samples[lo as usize..hi as usize]);
         }
     }
+}
+
+/// Samples of [interval_start, interval_end) from encoded chunks given in ascending
+/// start order, concatenated. Parts of the interval not covered by a chunk are simply
+/// absent, so callers compare the length with the interval to detect gaps.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_decode_interval(
+    chunks: pgrx::Array<'_, &[u8]>,
+    starts: Vec<Option<i64>>,
+    interval_start: i64,
+    interval_end: i64,
+) -> Vec<f64> {
+    let mut out = Vec::with_capacity((interval_end - interval_start).clamp(0, 32768) as usize);
+    for_interval_slices(&chunks, &starts, interval_start, interval_end, |s| {
+        out.extend_from_slice(s)
+    });
     out
+}
+
+/// As `morlet_decode_interval`, but the samples as raw IEEE 754 float64 values, little-endian,
+/// 8 bytes each (a client can map the bytes to an array without per-element parsing).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_decode_interval_raw(
+    chunks: pgrx::Array<'_, &[u8]>,
+    starts: Vec<Option<i64>>,
+    interval_start: i64,
+    interval_end: i64,
+) -> Vec<u8> {
+    let n = (interval_end - interval_start).clamp(0, 1 << 24) as usize;
+    let mut out = Vec::with_capacity(8 * n);
+    for_interval_slices(&chunks, &starts, interval_start, interval_end, |s| {
+        for v in s {
+            out.extend_from_slice(&v.to_le_bytes());
+        }
+    });
+    out
+}
+
+/// Little-endian float64 bytes (8 per sample) as a float8[], without per-element parsing. Used by
+/// `morlet_append_chunk_raw`; the appended samples are validated by `morlet_append_chunk` as usual.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_float8_from_le_bytes(raw: &[u8]) -> Vec<f64> {
+    if !raw.len().is_multiple_of(8) {
+        pgrx::error!("raw samples must be a multiple of 8 bytes (little-endian float64)");
+    }
+    raw.chunks_exact(8)
+        .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+        .collect()
+}
+
+/// {count, min, max, mean, rms} of the samples of [interval_start, interval_end), accumulated while
+/// decoding, chunk by chunk (numerical semantics: `morlet_core::intervalstats`).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_decode_interval_stats(
+    chunks: pgrx::Array<'_, &[u8]>,
+    starts: Vec<Option<i64>>,
+    interval_start: i64,
+    interval_end: i64,
+) -> Vec<f64> {
+    let mut stats = morlet_core::intervalstats::IntervalStats::default();
+    for_interval_slices(&chunks, &starts, interval_start, interval_end, |s| {
+        stats.add(s)
+    });
+    stats.finish().to_vec()
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]

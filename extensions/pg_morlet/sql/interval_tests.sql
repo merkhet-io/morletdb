@@ -45,9 +45,53 @@ END $$;
 SELECT morlet_start_recording('interval_streams','ramp',4096,'ramp','a.u.');
 SELECT morlet_append_chunk('interval_streams','ramp',0,ARRAY(SELECT i::float8 FROM generate_series(0,136) i));
 SELECT morlet_append_chunk('interval_streams','ramp',137,ARRAY(SELECT i::float8 FROM generate_series(137,999) i));
-DO $$ BEGIN
+DO $$ DECLARE st record; BEGIN
   ASSERT (SELECT samples FROM morlet_read_interval('interval_streams','ramp',120,777))=
     ARRAY(SELECT i::float8 FROM generate_series(120,776) i), 'slice ordering';
+  -- raw reads: the same samples as little-endian float64 bytes (float8send is big-endian)
+  ASSERT morlet_read_interval_raw('interval_streams','ramp',120,777)=
+    (SELECT string_agg(b,''::bytea ORDER BY i) FROM generate_series(120,776) i,
+       LATERAL (SELECT string_agg(substring(float8send(i::float8) FROM 9-j FOR 1),''::bytea ORDER BY j) b
+                FROM generate_series(1,8) j) x), 'raw read bytes';
+  SELECT * INTO st FROM morlet_interval_stats('interval_streams','ramp',120,777);
+  ASSERT st.sample_count=657 AND st.min=120 AND st.max=776 AND st.mean=448, 'interval statistics';
+  ASSERT abs(st.rms/(SELECT sqrt(avg((i*i)::float8)) FROM generate_series(120,776) i)-1)<1e-12, 'interval rms';
+  BEGIN
+    PERFORM morlet_read_interval_raw('interval_streams','ramp',0,1001);
+    RAISE EXCEPTION 'expected raw bounds rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'source interval exceeds recording length' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM morlet_interval_stats('interval_streams','ramp',-1,10);
+    RAISE EXCEPTION 'expected statistics coordinate rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'statistics interval must contain 1..16777216 samples at nonnegative coordinates' THEN RAISE; END IF;
+  END;
+END $$;
+
+-- Raw appends: little-endian float64 bytes go through morlet_append_chunk unchanged.
+SELECT morlet_start_recording('interval_streams','rawapp',4096,'raw','a.u.');
+CREATE TEMP TABLE raw_le AS SELECT (SELECT string_agg(b,''::bytea ORDER BY i) FROM generate_series(0,299) i,
+  LATERAL (SELECT string_agg(substring(float8send((i*0.25-7)::float8) FROM 9-j FOR 1),''::bytea ORDER BY j) b
+           FROM generate_series(1,8) j) x) AS bytes;
+DO $$ DECLARE raw bytea:=(SELECT bytes FROM raw_le); BEGIN
+  ASSERT morlet_append_chunk_raw('interval_streams','rawapp',0,raw)=300, 'raw append returns the new end';
+  ASSERT (SELECT samples FROM morlet_read_interval('interval_streams','rawapp',0,300))=
+    ARRAY(SELECT (i*0.25-7)::float8 FROM generate_series(0,299) i), 'raw append stores the samples';
+  ASSERT morlet_append_chunk_raw('interval_streams','rawapp',0,raw)=300, 'identical raw replay';
+  BEGIN
+    PERFORM morlet_append_chunk_raw('interval_streams','rawapp',0,overlay(raw PLACING '\x01'::bytea FROM 9));
+    RAISE EXCEPTION 'expected conflicting raw replay rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE 'conflicting replay%' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM morlet_append_chunk_raw('interval_streams','rawapp',300,'\x0102'::bytea);
+    RAISE EXCEPTION 'expected raw length rejection';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM<>'raw samples must be a multiple of 8 bytes (little-endian float64)' THEN RAISE; END IF;
+  END;
 END $$;
 
 -- A visible parent must not bypass chunk RLS; an invisible parent must not be
@@ -74,6 +118,26 @@ DO $$ BEGIN
   EXCEPTION WHEN raise_exception THEN
     IF SQLERRM<>'source interval is incomplete or not fully visible' THEN RAISE; END IF;
   END;
+  BEGIN
+    PERFORM morlet_read_interval_raw('interval_streams','A',0,512);
+    RAISE EXCEPTION 'expected hidden chunk rejection (raw)';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'source interval is incomplete or not fully visible' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM morlet_interval_stats('interval_streams','A',0,512);
+    RAISE EXCEPTION 'expected hidden chunk rejection (statistics)';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'source interval is incomplete or not fully visible' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM morlet_interval_stats('interval_streams','B',0,512);
+    RAISE EXCEPTION 'expected hidden parent rejection (statistics)';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'source recording does not exist or is not visible' THEN RAISE; END IF;
+  END;
+  ASSERT (SELECT sample_count FROM morlet_interval_stats('interval_streams','A',137,512))=375,
+    'statistics over visible chunks';
   ASSERT (SELECT count(*) FROM morlet_search_interval('interval_streams','A',512,1024,'{}',10,false,false))=5,
     'search cannot reveal hidden parents';
 END $$;

@@ -2,6 +2,7 @@
 pub mod chunks;
 pub mod compare;
 pub mod envelope;
+pub mod intervalstats;
 pub mod morlet;
 pub mod rawcodec;
 pub mod segments;

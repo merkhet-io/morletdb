@@ -130,6 +130,8 @@ Envelopes are opt-in and are not automatically built by append. Call the bounded
 | Declare a recording | `morlet_start_recording`, `morlet_ensure_recording` | Fixes rate, channel, units and extraction configuration |
 | Append samples | `morlet_append_chunk` | Global sample offsets; identical retries are checked; gaps and conflicting retries fail |
 | Read samples | `morlet_read_interval` | Reconstructs original samples, including across chunk boundaries |
+| Read samples as bytes | `morlet_read_interval_raw` | The same samples as little-endian float64 bytes, up to 16,777,216 per call (SQL 0.3.3); clients map them to arrays without per-element parsing, e.g. `numpy.frombuffer(raw, "<f8")` |
+| Interval statistics | `morlet_interval_stats` | Count, min, max, mean and RMS computed while decoding, without building a sample array (SQL 0.3.3); min and max exact, mean and RMS compensated in float64 |
 | Feature search | `morlet_search_streams`, `morlet_search_interval` | Exact search over compatible Morlet/statistical feature segments, not bounded-lag envelope scoring |
 | Build envelopes | `morlet_enable_envelopes`, `morlet_build_envelopes` | Opt-in materialized search representation |
 | Similar-interval search | `morlet_search_similar` | Probe search when enabled for the window size, otherwise exact |

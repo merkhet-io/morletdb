@@ -513,15 +513,17 @@ fn unzigzag(u: u64) -> i64 {
 
 /// Rice parameter (or ESCAPE) and its estimated bit cost for one partition.
 fn best_param(sum: u128, max: u64, count: usize) -> (u64, u128) {
+    // cost(k) = m(k+1) + (sum >> k) is discretely convex in k: cost(k+1) - cost(k) = m - ceil((sum >> k) / 2),
+    // and ceil((sum >> k) / 2) never grows with k. The first k at which the cost stops falling is
+    // therefore the first minimum over 0..ESCAPE, the same choice as a full scan keeping strict
+    // improvements.
     let m = count as u128;
-    let mut best = (0, u128::MAX);
-    for k in 0..ESCAPE {
-        // floor(v >> k) summed is within `count` of (sum >> k).
-        let cost = m * (k as u128 + 1) + (sum >> k);
-        if cost < best.1 {
-            best = (k, cost);
-        }
+    let cost = |k: u64| m * (k as u128 + 1) + (sum >> k);
+    let mut k = 0;
+    while k + 1 < ESCAPE && cost(k + 1) < cost(k) {
+        k += 1;
     }
+    let mut best = (k, cost(k));
     let width = 64 - max.leading_zeros() as u128;
     let escape = 7 + m * width;
     if escape < best.1 {
@@ -534,30 +536,59 @@ fn partition_bounds(n: usize, porder: u32, p: usize) -> (usize, usize) {
     ((p * n) >> porder, ((p + 1) * n) >> porder)
 }
 
+fn residuals(x: &[i64], order: usize, r: &mut [u64]) {
+    for (i, ri) in r.iter_mut().enumerate() {
+        *ri = zigzag(x[i].wrapping_sub(predict(x, i, order)));
+    }
+}
+
+/// Chooses the predictor order and partition order with the smallest coded size (first minimum in
+/// order-major, partition-order-minor sequence), then writes the partitioned Rice stream. Partition
+/// sums and maxima are computed once at the finest partition order and merged pairwise for coarser
+/// ones: partition p at order o is exactly partitions 2p and 2p+1 at order o+1, since
+/// ((2p * n) >> (o+1)) == ((p * n) >> o).
 fn encode_ints(x: &[i64], out: &mut Vec<u8>) {
     let n = x.len();
     let max_porder = MAX_PARTITION_ORDER.min(usize::BITS - 1 - n.leading_zeros());
-    let mut best: Option<(u128, usize, u32, Vec<u64>)> = None;
+    let mut r = vec![0u64; n];
+    let mut best: Option<(u128, usize, u32)> = None;
+    let mut sums: Vec<u128> = Vec::with_capacity(1 << max_porder);
+    let mut maxs: Vec<u64> = Vec::with_capacity(1 << max_porder);
+    let mut costs = vec![0u128; max_porder as usize + 1];
     for order in 0..=MAX_ORDER {
-        let r: Vec<u64> = (0..n)
-            .map(|i| zigzag(x[i].wrapping_sub(predict(x, i, order))))
-            .collect();
-        for porder in 0..=max_porder {
+        residuals(x, order, &mut r);
+        sums.clear();
+        maxs.clear();
+        for p in 0..(1usize << max_porder) {
+            let (a, b) = partition_bounds(n, max_porder, p);
+            let chunk = &r[a..b];
+            sums.push(chunk.iter().map(|&v| v as u128).sum());
+            maxs.push(chunk.iter().copied().max().unwrap_or(0));
+        }
+        for porder in (0..=max_porder).rev() {
             let parts = 1usize << porder;
             let mut cost = 0u128;
             for p in 0..parts {
                 let (a, b) = partition_bounds(n, porder, p);
-                let chunk = &r[a..b];
-                let sum = chunk.iter().map(|&v| v as u128).sum();
-                let max = chunk.iter().copied().max().unwrap_or(0);
-                cost += best_param(sum, max, chunk.len()).1;
+                cost += best_param(sums[p], maxs[p], b - a).1;
             }
-            if best.as_ref().is_none_or(|b| cost < b.0) {
-                best = Some((cost, order, porder, r.clone()));
+            costs[porder as usize] = cost;
+            if porder > 0 {
+                for p in 0..parts / 2 {
+                    sums[p] = sums[2 * p] + sums[2 * p + 1];
+                    maxs[p] = maxs[2 * p].max(maxs[2 * p + 1]);
+                }
+            }
+        }
+        for porder in 0..=max_porder {
+            let cost = costs[porder as usize];
+            if best.is_none_or(|b| cost < b.0) {
+                best = Some((cost, order, porder));
             }
         }
     }
-    let (_, order, porder, r) = best.expect("at least one candidate");
+    let (_, order, porder) = best.expect("at least one candidate");
+    residuals(x, order, &mut r);
     let mut w = BitWriter::default();
     w.put(order as u64, 3);
     w.put(porder as u64, 4);
@@ -686,6 +717,9 @@ impl BitWriter {
     }
 }
 
+/// MSB-first bit reader over a byte slice. Reads take a 64-bit big-endian window at the current
+/// byte, so `get` costs a few instructions and unary codes are counted with `leading_zeros`.
+/// Reading past the end is an error ("truncated bitstream"), as with a bit-by-bit reader.
 struct BitReader<'a> {
     bytes: &'a [u8],
     pos: usize,
@@ -694,28 +728,56 @@ impl<'a> BitReader<'a> {
     fn new(bytes: &'a [u8]) -> Self {
         Self { bytes, pos: 0 }
     }
-    fn bit(&mut self) -> Result<u64, CodecError> {
-        let byte = *self
-            .bytes
-            .get(self.pos / 8)
-            .ok_or(CodecError::Corrupt("truncated bitstream"))?;
-        let b = (byte >> (7 - self.pos % 8)) & 1;
-        self.pos += 1;
-        Ok(b as u64)
-    }
-    fn get(&mut self, n: u32) -> Result<u64, CodecError> {
-        let mut v = 0;
-        for _ in 0..n {
-            v = (v << 1) | self.bit()?;
+    /// The 64 bits starting at the current byte; bytes past the end read as zero.
+    #[inline]
+    fn window(&self) -> u64 {
+        let i = self.pos / 8;
+        match self.bytes.get(i..i + 8) {
+            Some(b) => u64::from_be_bytes(b.try_into().unwrap()),
+            None => {
+                let mut buf = [0u8; 8];
+                let tail = self.bytes.get(i..).unwrap_or(&[]);
+                buf[..tail.len()].copy_from_slice(tail);
+                u64::from_be_bytes(buf)
+            }
         }
+    }
+    #[inline]
+    fn remaining(&self) -> usize {
+        (self.bytes.len() * 8).saturating_sub(self.pos)
+    }
+    #[inline]
+    fn get(&mut self, n: u32) -> Result<u64, CodecError> {
+        if n == 0 {
+            return Ok(0);
+        }
+        if n as usize > self.remaining() {
+            return Err(CodecError::Corrupt("truncated bitstream"));
+        }
+        if n > 56 {
+            let hi = self.get(n - 32)?;
+            return Ok((hi << 32) | self.get(32)?);
+        }
+        let v = (self.window() << (self.pos % 8)) >> (64 - n);
+        self.pos += n as usize;
         Ok(v)
     }
+    #[inline]
     fn get_unary(&mut self) -> Result<u64, CodecError> {
-        let mut q = 0;
-        while self.bit()? == 0 {
-            q += 1;
+        let mut q = 0u64;
+        loop {
+            let avail = self.remaining().min(57);
+            if avail == 0 {
+                return Err(CodecError::Corrupt("truncated bitstream"));
+            }
+            let zeros = (self.window() << (self.pos % 8)).leading_zeros() as usize;
+            if zeros < avail {
+                self.pos += zeros + 1;
+                return Ok(q + zeros as u64);
+            }
+            q += avail as u64;
+            self.pos += avail;
         }
-        Ok(q)
     }
     fn rest_is_padding(&self) -> bool {
         let used = self.pos.div_ceil(8);
@@ -727,6 +789,184 @@ impl<'a> BitReader<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // The original exhaustive encoder search, kept as an oracle: the optimised one must write
+    // byte-identical streams.
+    fn best_param_scan(sum: u128, max: u64, count: usize) -> (u64, u128) {
+        let m = count as u128;
+        let mut best = (0, u128::MAX);
+        for k in 0..ESCAPE {
+            // floor(v >> k) summed is within `count` of (sum >> k).
+            let cost = m * (k as u128 + 1) + (sum >> k);
+            if cost < best.1 {
+                best = (k, cost);
+            }
+        }
+        let width = 64 - max.leading_zeros() as u128;
+        let escape = 7 + m * width;
+        if escape < best.1 {
+            best = (ESCAPE, escape);
+        }
+        (best.0, best.1 + 6)
+    }
+
+    fn _unused_partition_bounds(n: usize, porder: u32, p: usize) -> (usize, usize) {
+        ((p * n) >> porder, ((p + 1) * n) >> porder)
+    }
+
+    fn encode_ints_reference(x: &[i64], out: &mut Vec<u8>) {
+        let n = x.len();
+        let max_porder = MAX_PARTITION_ORDER.min(usize::BITS - 1 - n.leading_zeros());
+        let mut best: Option<(u128, usize, u32, Vec<u64>)> = None;
+        for order in 0..=MAX_ORDER {
+            let r: Vec<u64> = (0..n)
+                .map(|i| zigzag(x[i].wrapping_sub(predict(x, i, order))))
+                .collect();
+            for porder in 0..=max_porder {
+                let parts = 1usize << porder;
+                let mut cost = 0u128;
+                for p in 0..parts {
+                    let (a, b) = partition_bounds(n, porder, p);
+                    let chunk = &r[a..b];
+                    let sum = chunk.iter().map(|&v| v as u128).sum();
+                    let max = chunk.iter().copied().max().unwrap_or(0);
+                    cost += best_param_scan(sum, max, chunk.len()).1;
+                }
+                if best.as_ref().is_none_or(|b| cost < b.0) {
+                    best = Some((cost, order, porder, r.clone()));
+                }
+            }
+        }
+        let (_, order, porder, r) = best.expect("at least one candidate");
+        let mut w = BitWriter::default();
+        w.put(order as u64, 3);
+        w.put(porder as u64, 4);
+        for p in 0..(1usize << porder) {
+            let (a, b) = partition_bounds(n, porder, p);
+            let chunk = &r[a..b];
+            let sum = chunk.iter().map(|&v| v as u128).sum();
+            let max = chunk.iter().copied().max().unwrap_or(0);
+            let (k, _) = best_param_scan(sum, max, chunk.len());
+            w.put(k, 6);
+            if k == ESCAPE {
+                let width = 64 - max.leading_zeros();
+                w.put(width as u64, 7);
+                for &v in chunk {
+                    w.put(v, width);
+                }
+            } else {
+                for &v in chunk {
+                    w.put_unary(v >> k);
+                    w.put(v, k as u32);
+                }
+            }
+        }
+        out.extend(w.finish());
+    }
+
+    #[test]
+    fn encoder_search_writes_the_reference_bytes() {
+        let mut seed = 5u64;
+        for case in 0..400 {
+            let n = 1 + (lcg(&mut seed) % 5000) as usize;
+            let amp = 1i64 << (lcg(&mut seed) % 62);
+            let mut walk = 0i64;
+            let x: Vec<i64> = (0..n)
+                .map(|i| match case % 4 {
+                    0 => (lcg(&mut seed) as i64) % amp,
+                    1 => {
+                        walk = walk.wrapping_add((lcg(&mut seed) % 64) as i64 - 32);
+                        walk
+                    }
+                    2 => ((i as f64 * 0.01).sin() * 30000.0) as i64,
+                    _ => lcg(&mut seed) as i64,
+                })
+                .collect();
+            let (mut a, mut b) = (Vec::new(), Vec::new());
+            encode_ints(&x, &mut a);
+            encode_ints_reference(&x, &mut b);
+            assert_eq!(a, b, "case {case}, n {n}");
+            for (sum, max, count) in [
+                (0u128, 0u64, 1usize),
+                (u64::MAX as u128 * 4096, u64::MAX, 4096),
+                (12345, 900, 7),
+            ] {
+                assert_eq!(
+                    best_param(sum, max, count),
+                    best_param_scan(sum, max, count)
+                );
+            }
+        }
+    }
+
+    /// The original bit-by-bit reader, kept as an oracle for the word-based one.
+    struct SlowBitReader<'a> {
+        bytes: &'a [u8],
+        pos: usize,
+    }
+    impl SlowBitReader<'_> {
+        fn bit(&mut self) -> Result<u64, CodecError> {
+            let byte = *self
+                .bytes
+                .get(self.pos / 8)
+                .ok_or(CodecError::Corrupt("truncated bitstream"))?;
+            let b = (byte >> (7 - self.pos % 8)) & 1;
+            self.pos += 1;
+            Ok(b as u64)
+        }
+        fn get(&mut self, n: u32) -> Result<u64, CodecError> {
+            let mut v = 0;
+            for _ in 0..n {
+                v = (v << 1) | self.bit()?;
+            }
+            Ok(v)
+        }
+        fn get_unary(&mut self) -> Result<u64, CodecError> {
+            let mut q = 0;
+            while self.bit()? == 0 {
+                q += 1;
+            }
+            Ok(q)
+        }
+    }
+
+    #[test]
+    fn word_bit_reader_matches_bit_by_bit_reader() {
+        let mut seed = 99u64;
+        for case in 0..3000 {
+            let len = (lcg(&mut seed) % 40) as usize;
+            let mut bytes: Vec<u8> = (0..len).map(|_| lcg(&mut seed) as u8).collect();
+            if case % 3 == 0 {
+                for b in bytes.iter_mut().take(len / 2) {
+                    *b = 0; // long unary runs
+                }
+            }
+            let (mut fast, mut slow) = (
+                BitReader::new(&bytes),
+                SlowBitReader {
+                    bytes: &bytes,
+                    pos: 0,
+                },
+            );
+            for _ in 0..64 {
+                let op = lcg(&mut seed) % 3;
+                let n = (lcg(&mut seed) % 65) as u32;
+                let (a, b) = if op == 0 {
+                    (fast.get_unary(), slow.get_unary())
+                } else {
+                    (fast.get(n), slow.get(n))
+                };
+                match (a, b) {
+                    (Ok(x), Ok(y)) => {
+                        assert_eq!(x, y, "case {case}");
+                        assert_eq!(fast.pos, slow.pos, "case {case}");
+                    }
+                    (Err(_), Err(_)) => break,
+                    (x, y) => panic!("case {case}: {x:?} vs {y:?}"),
+                }
+            }
+        }
+    }
 
     fn lcg(seed: &mut u64) -> u64 {
         *seed = seed
