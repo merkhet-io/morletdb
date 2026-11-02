@@ -28,6 +28,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      publish: ${{ steps.publish.outputs.value }}
     env:
       MORLET_PLATFORM: linux/${{ matrix.arch }}
     steps:
@@ -39,17 +41,26 @@ jobs:
           version=$(cat VERSION)
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-alpha\.[0-9]+$ ]]
           echo "value=$version" >> "$GITHUB_OUTPUT"
-      - name: Reject an existing release version
-        if: github.event_name != 'pull_request'
+      - name: Decide whether this run publishes
+        id: publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.value }}
+          EVENT: ${{ github.event_name }}
         run: |
+          # Pull requests and pushes that change only the workflow (VERSION already released) are dry runs:
+          # build and trial, publish nothing. A manual run for an existing version is an error.
+          if [ "$EVENT" = pull_request ]; then echo "value=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           gh api "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/v$VERSION" --jq '.[].ref' > existing-tags.txt
           if grep -Fxq "refs/tags/v$VERSION" existing-tags.txt; then
+            if [ "$EVENT" = push ]; then
+              echo "::notice::v$VERSION already exists: building and trialling only (dry run); increment VERSION to release."
+              echo "value=false" >> "$GITHUB_OUTPUT"; exit 0
+            fi
             echo "Release already exists; increment VERSION instead of replacing it." >&2
             exit 1
           fi
+          echo "value=true" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - name: Build candidate image
         uses: docker/build-push-action@v6
@@ -82,14 +93,14 @@ jobs:
           COMPOSE_PROJECT_NAME: alpha-trial
         run: docker compose -f compose.release.yaml down -v
       - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
+        if: steps.publish.outputs.value == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push the tested image under its architecture tag
-        if: github.event_name != 'pull_request'
+        if: steps.publish.outputs.value == 'true'
         env:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
@@ -99,7 +110,7 @@ jobs:
 
   publish:
     needs: image
-    if: github.event_name != 'pull_request'
+    if: needs.image.outputs.publish == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
