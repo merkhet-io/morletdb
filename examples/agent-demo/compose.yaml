@@ -6,7 +6,7 @@ name: morletdb-agent-demo
 services:
   db:
     image: ${MORLET_IMAGE:-ghcr.io/merkhet-io/morletdb:0.3.2-alpha.1}
-    platform: linux/amd64
+    platform: ${MORLET_PLATFORM:-linux/amd64}
     environment:
       POSTGRES_USER: morlet
       POSTGRES_PASSWORD: morlet-demo-only

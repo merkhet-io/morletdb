@@ -18,8 +18,13 @@ a leading v; GHCR image tags do not.
   also tested. Adds `morlet_search_similar`, raises the exact-search default to
   1,000,000 eligible windows and makes exact scoring faster with identical results.
 
-Releases target PostgreSQL 17 on Linux amd64. Building from source also supports PostgreSQL 18
-([compatibility](compatibility.md)).
+Releases target PostgreSQL 17 on Linux. From the release after 0.3.2-alpha.1, the image is published for
+linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
+checkout, and the release tag is one multi-architecture index of the two (the per-architecture tags
+`<version>-amd64` and `<version>-arm64` remain). 0.3.2-alpha.1 and earlier are linux/amd64 only. The compose
+files use `MORLET_PLATFORM` (default `linux/amd64`); on ARM machines such as Apple Silicon, set
+`MORLET_PLATFORM=linux/arm64` with a multi-architecture release to run it without emulation. Building from
+source also supports PostgreSQL 18 ([compatibility](compatibility.md)).
 
 `0.1.0-alpha.1` was published before the repository's
 [history rewrite](history-rewrite.md). Its release record was transferred

@@ -112,10 +112,11 @@ The scripts in `extensions/pg_morlet/tests` find `pg_config` through `PG_CONFIG`
 
 ## Known limits
 
-- CI covers Linux x86_64 (ubuntu-24.04) only. macOS (development and the evaluation machine) and
-  arm64 are not tested in CI.
-- Release images (`deploy/Dockerfile`, `postgres:17.6-bookworm`) and `docs/releases.md` target
-  PostgreSQL 17 on Linux amd64 only.
+- The functional CI covers Linux x86_64 (ubuntu-24.04). The release workflow builds and trials the
+  release image natively on Linux x86_64 and arm64 (ubuntu-24.04-arm); macOS (development and the
+  evaluation machine) is not tested in CI.
+- Release images (`deploy/Dockerfile`, `postgres:17.6-bookworm`) target PostgreSQL 17 on Linux, for amd64
+  and, from the release after 0.3.2-alpha.1, arm64.
 - Some evaluation scripts (`evaluation/pilot/*.py`, `evaluation/compression/extension/read_bench.py`)
   default to `~/.pgrx/17.11` paths; they belong to frozen protocols and are not part of this matrix.
 - PostgreSQL 16 or older would need a Cargo feature and matrix entries; it is not offered without a

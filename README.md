@@ -100,7 +100,7 @@ Claude finds when the failing bearing first changed and whether the others show 
 Full setup and query examples: [installation and query guide](docs/installation-and-queries.md).
 Source builds use Rust 1.91.1 and pgrx 0.16.1.
 
-**Try it in a container** (Linux amd64; builds a PostgreSQL 17 preview, imports
+**Try it in a container** (builds a PostgreSQL 17 preview for your machine, amd64 or arm64; imports
 synthetic data, finds a known interval and reconstructs its matches):
 
 ```sh
