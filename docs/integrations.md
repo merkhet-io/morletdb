@@ -73,6 +73,15 @@ Verification levels:
   (2026-11-02), an import compared bit for bit with npTDMS's reading. Not tested with files written by NI
   software.
 
+### OPC UA reference collector
+- **What:** a minimal collector for a waveform delivered in numbered blocks plus scalar operating context (values,
+  status codes, source times) from OPC UA into MorletDB, with resume, duplicate and gap handling.
+- **Run:** [`examples/collectors/opcua`](../examples/collectors/opcua/README.md), with its local test server.
+- **Scope:** the documented information model of the test server; no security, events, alarms or historical
+  access. Not tested against a commercial server or device.
+- **Verified:** Manual (2026-11-02, `scenarios.sh`): normal run, restart, server restart, gap, duplicate and
+  altered delivery, context with status codes; every stored sample compared with the server's signal.
+
 ## Analysis and visualization
 
 ### Grafana dashboards
@@ -143,6 +152,7 @@ Checked on 2026-11-02 against each owner's published policy. The website lists a
 | Jupyter | allowed, not used | LF Charities allows unaltered logos for non-commercial nominative use |
 | DuckDB | no | logos may not be combined with others; plain text needs no permission |
 | Amazon S3 | no | named only to describe the API ("S3-compatible"), as plain text |
+| OPC UA | no | the OPC Foundation's logo rules were not checked; plain text |
 | NI, LabVIEW (TDMS) | no | NI grants no permission to display its logos; word marks only for reference, with a notice |
 | ObsPy | no | no logo policy published |
 
@@ -155,6 +165,7 @@ Trademark notices:
 - Jupyter is a registered trademark of LF Charities. Grafana is a trademark of Grafana Labs. Model Context
   Protocol is a trademark of LF Projects, LLC. Claude is a trademark of Anthropic, PBC.
 - Amazon S3 is a trademark of Amazon.com, Inc. or its affiliates.
+- OPC UA is a trademark of the OPC Foundation.
 - LabVIEW is a trademark of National Instruments. MorletDB is not affiliated with, endorsed by or sponsored by
   National Instruments. DuckDB is a trademark of the DuckDB Foundation.
 - All other names are the property of their respective owners. MorletDB is not affiliated with, endorsed or
