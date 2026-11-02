@@ -7,6 +7,7 @@ Other B3 scripts import load() and channels(); every adapter checks what it stor
 """
 import hashlib
 import json
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -16,7 +17,10 @@ import scipy.io as sio
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data/paderborn/zenodo-15845309/extracted"
-RESULTS = Path(__file__).resolve().parent / "results"
+# B3_SET=dev selects the development set (tuning only): every 20th file starting at the 11th, disjoint from the
+# benchmark set; its results go to results/dev/.
+SET = os.environ.get("B3_SET", "bench")
+RESULTS = Path(__file__).resolve().parent / "results" / ("dev" if SET == "dev" else "")
 T0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
 SLOT_S = 60
 GROUPS = {
@@ -34,7 +38,7 @@ def files():
     all_files = sorted(DATA.glob("*/*.mat"))
     if len(all_files) != 2480:
         raise SystemExit(f"expected 2,480 Paderborn files, found {len(all_files)}")
-    return all_files[::20]
+    return all_files[10::20] if SET == "dev" else all_files[::20]
 
 
 def start_ns(k):
@@ -75,10 +79,11 @@ def manifest():
                 chans[c] = {"group": g, "samples": int(len(data[c])), "sha256": sha(data[c])}
                 totals[g] += len(data[c])
         rows.append({"k": k, "acquisition": acq, "path": str(path.relative_to(ROOT)), "start_ns": t0, "channels": chans})
-    out = {"dataset": "Paderborn bearing data (Zenodo 15845309 copy), every 20th of 2,480 files", "slot_s": SLOT_S,
+    out = {"dataset": "Paderborn bearing data (Zenodo 15845309 copy), every 20th of 2,480 files"
+           + (", starting at the 11th (development set)" if SET == "dev" else ""), "set": SET, "slot_s": SLOT_S,
            "groups": GROUPS, "quantum": QUANTUM, "units": UNITS, "acquisitions": rows,
            "samples": totals, "canonical_bytes": {g: 8 * n for g, n in totals.items()}}
-    RESULTS.mkdir(exist_ok=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
     (RESULTS / "manifest.json").write_text(json.dumps(out, indent=1) + "\n")
     return out
 

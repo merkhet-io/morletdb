@@ -15,6 +15,9 @@ import psycopg
 from psycopg.types.json import Jsonb
 from psycopg.types.composite import CompositeInfo, register_composite
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pg_numpy  # noqa: E402  (binary float8[] for numpy chunks)
+
 
 @dataclass(frozen=True)
 class Config:
@@ -174,6 +177,7 @@ class ImportFailure(RuntimeError):
 
 def import_files(paths, collection, config=Config(), mapping=None, dsn="", validate_only=False, reader=None):
     """reader(path, config, mapping) yields (recording, spec, start, values); default: Parquet.
+    values is a list of numbers or a one-dimensional numpy float array (sent in binary, bit for bit).
     spec is (rate, channel, unit, metadata), optionally followed by the recording's
     sample_quantum and extractor, which then override the run-wide config."""
     reader = reader or chunks
@@ -214,7 +218,8 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
             conn.execute("SELECT morlet_append_chunk(%s::regclass,%s,%s,%s::float8[])",
                          (collection,pending_recording,offset,values))
         else:
-            payload=[chunk_factory(offset,values) for offset,values in pending]
+            payload=[chunk_factory(offset,values.tolist() if hasattr(values, "tolist") else values)
+                     for offset,values in pending]
             conn.execute("SELECT morlet_append_chunks(%s::regclass,%s,%s::public.morlet_input_chunk[])",
                          (collection,pending_recording,payload))
         report["rpc_calls"] += 1
@@ -232,6 +237,7 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
         if not validate_only:
             conn = psycopg.connect(dsn)
             conn.execute("SET statement_timeout='120s'")
+            pg_numpy.register(conn)   # readers may yield numpy float arrays: sent as binary float8[]
             if config.rpc_chunks > 1:
                 info=CompositeInfo.fetch(conn,"public.morlet_input_chunk")
                 if info is None:

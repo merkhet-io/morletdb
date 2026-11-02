@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Faster Python client path:
+- The importer core (`import_files`, used by `morlet_import.py` and the collectors) sends numpy chunks in
+  PostgreSQL's binary `float8[]` format (`tools/ingest/pg_numpy.py`) instead of formatting every sample in
+  Python; values travel as float64 bit patterns. On the B3 development set, bulk ingestion went from 0.51 to
+  1.84 M samples/s on one connection; reads can decode results straight into numpy with the same module.
+
 Object storage:
 - `tools/ingest/morlet_s3.py` imports supported recording files from an S3-compatible bucket prefix (each
   recording records the object's bucket, key, ETag, version and SHA-256; reruns skip imported objects and a

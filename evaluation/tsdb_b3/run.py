@@ -159,6 +159,9 @@ def load(system, durability, rep):
     search = system == "morletdb-search"
     if system in ("morletdb-batched16", "morletdb-noquantum"):     # attribution, outside the frozen arms
         mo.VARIANT.update({"rpc_chunks": 16} if system.endswith("batched16") else {"quantum": False})
+    if system in ("morletdb-b30", "morletdb-batched16", "morletdb-noquantum"):
+        # the B3 stage-1 client path: Python lists in text arrays, reads in 32,768-sample pieces as Python floats
+        mo.VARIANT.update({"binary": False, "binary_read": False, "short_read": False})
     if system == "questdb":
         handle = q.start(volume, durability)
         q.create(handle)
@@ -239,7 +242,7 @@ def load(system, durability, rep):
     elif system != "questdb" and measure:
         mo.settle(handle)
         res["storage"] = mo.storage(handle)
-        if rep == 1 and system == "morletdb":
+        if rep == 1 and system in ("morletdb", "morletdb-b30"):
             res["reads"] = reads("morletdb", handle, m, data)
             res["analytics"] = analytics("morletdb", handle, m, data)
             if system == "morletdb":

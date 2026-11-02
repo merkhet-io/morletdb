@@ -1,6 +1,7 @@
 """Shared B3 machinery: containers with fixed limits, resource sampling, volume sizes, manifest checks."""
 import hashlib
 import json
+import os
 import subprocess
 import threading
 import time
@@ -9,7 +10,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-RESULTS = HERE / "results"
+RESULTS = HERE / "results" / ("dev" if os.environ.get("B3_SET") == "dev" else "")
 LIMITS = ["--cpus", "8", "--memory", "16g"]
 
 

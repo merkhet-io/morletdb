@@ -13,6 +13,7 @@ import workload as wl
 sys.path.insert(0, str(wl.ROOT / "tools/ingest"))
 from parquet_import import Config, import_files  # noqa: E402
 from morlet_import import build  # noqa: E402
+import pg_numpy  # noqa: E402
 
 IMAGE = "ghcr.io/merkhet-io/morletdb:0.3.3-alpha.1"
 NAME = "b3-morletdb"
@@ -51,7 +52,10 @@ def start(volume, durability="D2"):
 def connect():
     for _ in range(60):
         try:
-            return psycopg.connect(DSN, autocommit=True)
+            conn = psycopg.connect(DSN, autocommit=True)
+            if VARIANT["binary_read"]:
+                pg_numpy.register(conn)
+            return conn
         except Exception:
             time.sleep(0.5)
     raise RuntimeError("cannot connect")
@@ -85,13 +89,13 @@ def reader_for(acq, data, search, timer):
             x = data[c]
             for s in range(0, x.size, config.chunk_size):
                 t = time.perf_counter()
-                vals = x[s:s + config.chunk_size].tolist()
+                vals = x[s:s + config.chunk_size] if VARIANT["binary"] else x[s:s + config.chunk_size].tolist()
                 timer[0] += time.perf_counter() - t
                 yield rid(acq, c), spec, s, vals
     return read
 
 
-VARIANT = {"rpc_chunks": 1, "quantum": True}   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+VARIANT = {"rpc_chunks": 1, "quantum": True, "binary": True, "binary_read": True, "short_read": True}   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
 
 
 def load_one(acq, data, search=False):
@@ -118,6 +122,12 @@ def read(conn, acq, channels, offset, length):
     import numpy as np
     out = {}
     for c in channels:
+        if VARIANT["short_read"] and length <= MAX_READ:     # one call, one prepared statement
+            out[c] = np.asarray(conn.execute(
+                "SELECT samples FROM morlet_read_interval(%s::regclass, %s, %s, %s)",
+                (COLLECTION, rid(acq, c), offset, offset + length), binary=True, prepare=True).fetchone()[0],
+                dtype=np.float64)
+            continue
         rows = conn.execute(
             "SELECT a, samples FROM generate_series(%s::bigint, %s::bigint - 1, %s) a, "
             "LATERAL morlet_read_interval(%s::regclass, %s, a, least(a + %s, %s::bigint)) ORDER BY a",
