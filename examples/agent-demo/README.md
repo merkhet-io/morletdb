@@ -21,24 +21,19 @@ docker compose build load
 docker compose run --rm load
 ```
 
-This starts PostgreSQL 17 with pg_morlet (the `0.3.2-alpha.1` release image, linux/amd64) and fetches
+This starts PostgreSQL 17 with pg_morlet (the `0.3.3-alpha.1` release image, native on amd64 and arm64) and fetches
 four days, 11–14 March 2025, of four broadband stations in northern Chile (CX.PB01, PB02, PB06 and PSGCX,
 vertical, 100 Hz, about 115 MB) from the GEOFON data service. It checks them against
 [`manifest.json`](manifest.json), imports them and builds the search envelopes: 77 recordings (a recording
 ends at every gap in the data), 135.6 million samples and 66,104 search windows. It finally creates the
 role `agent_reader` that the `morletdb` server connects as: it may read, nothing else.
 
-On an Apple M5 Max, `docker compose run --rm load` took 6 min 48 s, download included (the release image
-is amd64 and runs emulated there); building the tools image and pulling the release image add a few minutes
-the first time.
+On an Apple M5 Max, `docker compose run --rm load` took 6 min 48 s, download included, with the amd64 image
+emulated (0.3.2-alpha.1; 0.3.3-alpha.1 runs natively there); building the tools image and pulling the release
+image add a few minutes the first time.
 
 Data: GFZ & CNRS-INSU (2006), *IPOC Seismic Network*, [doi:10.14470/PK615318](https://doi.org/10.14470/PK615318),
 open access.
-
-**On Apple Silicon or another ARM machine:** with a release that includes linux/arm64 (after 0.3.2-alpha.1),
-set `MORLET_IMAGE` to it and `MORLET_PLATFORM=linux/arm64` before these commands, and the database runs
-natively instead of emulated (on an Apple M5 Max, the [machine demo](../machine-demo/README.md) imported
-1.4 times and searched twice as fast natively; measured with a locally built arm64 image).
 
 ## 2. Connect Claude
 
@@ -132,7 +127,7 @@ This starts the `morletdb` server over stdio, makes the calls of the first quest
 - **Your own data:** import WAV, EDF, miniSEED or CSV files with the [importer](../../docs/import.md) into
   the same database, `GRANT SELECT` to `agent_reader`, and ask about them.
 - **Search speed:** the release image has no pgvector, so search is exact: about 0.35 s over the 66,104
-  windows here on an Apple M5 Max, slower where Docker emulates amd64. With pgvector and probe search it takes
+  windows here on an Apple M5 Max natively, slower where Docker emulates another architecture. With pgvector and probe search it takes
   tens of milliseconds on much larger archives.
 - **Catalogue snapshot:** `reference/emsc_events.txt` is the EMSC catalogue for these four days within 3° of
   the stations, as downloaded for evaluation E5; `reference/stations.txt` holds the station coordinates.

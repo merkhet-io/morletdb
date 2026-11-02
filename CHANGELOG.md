@@ -1,13 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.3.3-alpha.1
+
+The extension is unchanged from 0.3.2-alpha.1 (SQL version 0.3.2; no update script is needed). This release
+adds a linux/arm64 image and the tools and demos for AI agents below.
 
 Release images for arm64:
 - The release workflow builds the image natively on Linux amd64 and arm64 runners, trials each from a clean
   checkout, and publishes one multi-architecture tag (plus `<version>-amd64` and `<version>-arm64`); the
   GitHub prerelease is created only after both architectures pass a trial of the registry digest.
-- The compose files take `MORLET_PLATFORM` (default `linux/amd64`); with a multi-architecture release,
-  `linux/arm64` runs natively on ARM machines such as Apple Silicon.
+- `compose.release.yaml` takes `MORLET_PLATFORM` (default `linux/amd64`, `linux/arm64` on ARM machines such
+  as Apple Silicon). The demos use this release without a fixed platform, so Docker picks the native image.
 
 MCP server:
 - `tools/mcp/morlet_mcp.py` is a read-only MCP server for AI agents. Its tools are

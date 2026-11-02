@@ -17,15 +17,16 @@ docker compose build load
 docker compose run --rm load
 ```
 
-This starts PostgreSQL 17 with pg_morlet (the `0.3.2-alpha.1` release image, linux/amd64), downloads the IMS
+This starts PostgreSQL 17 with pg_morlet (the `0.3.3-alpha.1` release image, native on amd64 and arm64), downloads the IMS
 bearing archive from NASA's prognostics data repository (about 1 GB; SHA-256 checked) and extracts tests 2 and
 3. It imports every test-2 snapshot and every sixth test-3 snapshot (one an hour) as four recordings each, one
 per bearing, and builds the search envelopes: 8,152 recordings, 167 million samples and 73,368 search
 windows. Finally it creates the role `machine_reader` that the MCP
 server connects as: it may read, nothing else. From already extracted files, add `--from-dir` (see `load.py`).
 
-On an Apple M5 Max, a fresh run with test 2 only (download, checks, extraction, import) took 10 minutes, with
-the release image emulated; adding test 3 to that database was not timed separately.
+On an Apple M5 Max, a fresh run with test 2 only (download, checks, extraction, import) took 10 minutes with
+the amd64 image emulated (0.3.2-alpha.1); with a native arm64 build of the image the import itself took 176 s
+instead of 246 s, and `search_from_time` 0.6 s instead of 1.2 s. Adding test 3 was not timed separately.
 
 **Data:** IMS Bearing Data, tests 2 and 3. J. Lee, H. Qiu, G. Yu, J. Lin and Rexnord Technical Services (2007), IMS,
 University of Cincinnati, NASA Prognostics Data Repository. The provider asks for this acknowledgement and
@@ -40,11 +41,6 @@ failure label is in the database.
 Times are the rig clock from the file names (time zone not stated), shown as UTC. Values are as distributed, on
 a 0.001 grid, unit not stated; some late values sit at ±5.0, which looks like the sensor's limit. The last two
 snapshots are almost flat: the rig had stopped.
-
-**On Apple Silicon or another ARM machine:** with a release that includes linux/arm64 (after 0.3.2-alpha.1),
-set `MORLET_IMAGE` to it and `MORLET_PLATFORM=linux/arm64` before these commands, and the database runs
-natively instead of emulated. On an Apple M5 Max that loaded this demo's test 2 in 176 s instead of 246 s and
-ran `search_from_time` in 0.6 s instead of 1.2 s (machine demo; measured with a locally built arm64 image).
 
 ## 2. Connect Claude
 

@@ -9,7 +9,7 @@ MorletDB is a developer-alpha PostgreSQL extension. The SQL extension is named `
 | PostgreSQL 17 | Reference version; functional CI with and without pgvector; upgrades and release images target 17 |
 | PostgreSQL 18 | Supported for fresh source installations; functional CI with and without pgvector; no release image or measured performance |
 | Rust / pgrx | Repository-pinned Rust 1.91.1; pgrx and cargo-pgrx 0.16.1 |
-| Container | Linux amd64; Linux arm64 from the release after 0.3.2-alpha.1 (built and trialled natively in the release workflow) |
+| Container | Linux amd64; Linux arm64 from 0.3.3-alpha.1 (built and trialled natively in the release workflow) |
 | pgvector | Optional. Version 0.8.0 is exercised by CI; probe search requires 0.8 or later |
 
 This describes the current source and CI configuration, not a promise that every CI run passes. The paper benchmarks use PostgreSQL 17; compatibility tests and performance measurements are separate.
