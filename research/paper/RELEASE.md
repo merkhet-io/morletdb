@@ -4,12 +4,12 @@
 |---|---|
 | Title | MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL |
 | Type | technical report / preprint (not peer reviewed); the title page shows only the version |
-| Version | 0.14, 2026-11-02 (from `REPORT_VERSION`) |
+| Version | 0.15, 2026-11-02 (from `REPORT_VERSION`) |
 | Author | Zin Nam (no affiliation stated) |
 | Report sources | the commit recorded as `report_source_commit` in [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json); the sources first entered `main` with merge commit cdf8b4b |
 | Measured software | E1 (main retrieval tables) and diagnostics D1–D2: pg_morlet at `main` 68594d7, library SHA-256 `3c786684…`; earlier studies used earlier implementation states, labelled in the report and in [STUDIES.md](STUDIES.md) (see [ARTIFACT.md](ARTIFACT.md)) |
 | Licence | report text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0 (repository `LICENSE`) |
-| Tag | `paper-v0.14`, on the commit that contains this manifest |
+| Tag | `paper-v0.15`, on the commit that contains this manifest |
 | Funding | none |
 | Conflicts of interest | no statement (author's decision) |
 
@@ -17,8 +17,8 @@
 
 | File | What |
 |---|---|
-| `morletdb.pdf` | main report (11 pages) |
-| `supplement.pdf` | supplement (5 pages): storage, building, access control, recovery and load, study overview, negative results |
+| `morletdb.pdf` | main report (12 pages) |
+| `supplement.pdf` | supplement (6 pages): storage (with grid detection and a comparison with QuestDB), building, access control, recovery and load, agent access (case studies), study overview, application evidence and negative results |
 | `RELEASE_MANIFEST.json` | version, date, commits, PDF SHA-256 sums, proposed tag; `release_manifest.py --check` verifies it |
 | `STUDIES.md` | every study: question, comparison fixed before measuring (with commits), result, limitation, decision, kind of evidence |
 | `ARTIFACT.md` | set-up from a fresh checkout, data with checksums, separate reproduction procedures |
@@ -55,5 +55,5 @@ The same statement appears at the end of the report.
 - licence of text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code stays Apache-2.0;
 - funding: none; no conflict-of-interest statement;
 - AI statement: as printed at the end of the report;
-- publication: GitHub release under tag `paper-v<version>` (0.11–0.13 released; 0.14 frames speed as when exact, when probes);
+- publication: GitHub release under tag `paper-v<version>` (0.11–0.13 released; 0.14 frames speed as when exact, when probes; 0.15 adds merged evidence: E5/E5-H, G1, B3, MCP);
   no preprint server, DOI or journal submission yet.

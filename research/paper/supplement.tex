@@ -17,7 +17,7 @@
 \author{Zin Nam}
 \maketitle
 \section*{About this supplement}
-This supplement holds studies that support the system described in the main paper but are not needed for its argument: lossless storage of raw samples, envelope precision, building representations outside or inside the database, access control, recovery and load tests, and application evidence and negative results. Text, tables and numbers are carried over from draft 0.6 of the paper; protocols and raw results are in the repository~\cite{repo}. Section and table references to ``the paper'' refer to the main manuscript.
+This supplement holds studies that support the system described in the main paper but are not needed for its argument: lossless storage of raw samples and a comparison with a time-series database, envelope precision, building representations outside or inside the database, access control, recovery and load tests, agent access, and application evidence and negative results. Text, tables and numbers are carried over from draft 0.6 of the paper; protocols and raw results are in the repository~\cite{repo}. Section and table references to ``the paper'' refer to the main manuscript.
 
 The machine, PostgreSQL and pgvector versions are those of the main paper. TimescaleDB 2.30.2 ran in Docker; we compare its sizes, not its speed.
 
@@ -29,6 +29,26 @@ Most sensor values are calibrated integers: a digitizer emits counts $d$, and ac
 x_i \;=\; o + k_i\,s \;\oplus\; \delta_i,
 \end{equation}
 with integer indices $k_i$, a step $s$ refined from $q$ to within one unit in the last place (ulp), an offset $o$ (format version 3; zero in version 2), and corrections $\delta_i$, stored as differences of order-preserving integer images of float64, so that decoding reproduces every bit pattern. A division mode $x=k/d$ covers decimal steps exactly. Indices are predicted and Rice-coded like integers; corrections form a second stream. If no grid fits within a thousandth of a step, the chunk is coded as order-preserving float bits, and if that is not smaller, as raw float64. The quantum is a storage hint, never a conversion: a wrong quantum costs space, not accuracy.
+
+\textbf{Detecting the grid (G1).} Floats sent without a declared quantum are now examined chunk by chunk for a value grid: the encoder estimates a candidate step from the values themselves, refines it as above, and keeps it only if the grid coding is smaller than float coding; otherwise the chunk is coded as before. On B1's six inputs with quantum 1, detection matched the declared-quantum size (Table~\ref{tab:g1}), was never more than 0.1\% larger than the previous encoder, and round-tripped every chunk bit for bit; on the four float inputs it was 4.1--7.8$\times$ smaller than the previous encoder and encoded faster than its float coding (ECG 11.1 against 3.3\,M samples/s)~\cite{g1}. Floats without any value grid still fall back to float coding.
+
+\begin{table}[t]
+\caption{G1: bits per sample with a declared quantum (D), with quantum 1 and detection (A), and with quantum 1 and the previous encoder (P).}
+\label{tab:g1}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Input & D & \textbf{A} & P & A/D \\
+\midrule
+CX counts & 4.61 & \textbf{4.61} & 4.61 & 1.00 \\
+IMS 3-decimal & 8.81 & \textbf{8.81} & 63.02 & 1.00 \\
+Paderborn counts & 7.88 & \textbf{7.88} & 7.88 & 1.00 \\
+Paderborn physical & 9.17 & \textbf{9.17} & 63.17 & 1.00 \\
+Sleep-EDF EEG & 14.97 & \textbf{14.66} & 60.02 & 0.98 \\
+PTB-XL ECG & 7.40 & \textbf{7.40} & 57.58 & 1.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Storage of raw samples}\label{sec:storage}
 \subsection{Database footprint (P2)}
@@ -91,6 +111,34 @@ Figure~\ref{fig:storage} and Table~\ref{tab:b1} show three regimes.
 
 For float compression, these inputs illustrate that real-valued sensor data can be neither decimal nor arbitrary but an affine image of integers under floating-point rounding. On the two such inputs we tested, the decimal-oriented ALP implementation fell back to near-raw size and the best byte-oriented arm was 1.5--1.6$\times$ larger than coding with a declared quantum.
 
+\subsection{Against a time-series database (B3)}
+B3 compared \M{} with QuestDB 10.1.0 (open source) on 124 Paderborn acquisitions~\cite{paderborn}: about 4\,s each of three 64\,kHz channels (vibration, two motor currents), three 4\,kHz channels and one 1\,Hz temperature, 101,586,735 samples or 775\,MiB as float64~\cite{b3}. Each database ran alone in a container limited to 8 CPUs and 16\,GB, loaded the samples through its recommended Python client path, and passed every correctness check after every load: each of 868 channels per load read back with the manifest's SHA-256, exact timestamps, and random intervals crossing ingestion batches. Statements need at least 10\% in all loads, or at both p50 and p95. Stage~1 was frozen before any measurement; two amendments (B3.1, B3.2) changed \M{}'s client path and server functions, were tuned on a disjoint development set, and were confirmed once on the benchmark set with QuestDB rerun in the same session. The server changes of B3.1 and B3.2 are SQL 0.3.3 functions that append and read samples as raw little-endian float64 bytes and compute interval statistics while decoding, plus pipelined appends, zero-copy array arguments and a faster decoder (chunks byte-identical).
+
+\begin{table}[t]
+\caption{B3.2 against QuestDB 10.1, one client connection unless stated; p50 / p95 where two numbers are given.}
+\label{tab:b3}
+\small\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}Xrr@{}}
+\toprule
+Measure & \M{} & QuestDB \\
+\midrule
+sample data on disk (MiB) & \textbf{156.8} & 232.7 / 1,162.7$^a$ \\
+ingestion, M samples/s & 5.56 & \textbf{8.29} \\
+ingestion, 8 writers, M samples/s & \textbf{16.47} & 10.10 \\
+server memory, peak (MiB) & \textbf{168} & 2,138--2,306 \\
+read 4,096 samples (ms) & \textbf{0.65 / 1.04} & 1.16 / 2.66 \\
+read 128,000 samples (ms) & 7.98 / 11.64 & 7.71 / 13.31 \\
+read 3 $\times$ 64,000 samples (ms) & \textbf{10.68 / 14.62} & 12.52 / 19.11 \\
+min, max, mean, RMS (ms) & \textbf{2.70 / 2.99} & 4.02 / 8.09 \\
+\bottomrule
+\end{tabularx}
+\par\smallskip\footnotesize $^a$Parquet zstd 9 / native columns.
+\end{table}
+
+Table~\ref{tab:b3} shows the confirmed state. \M{} stored the sample data in 33\% less space than QuestDB's smallest arm (Parquet zstd 9, an explicit conversion step that never covers the newest partition) and 87\% less than its native columns. From one client connection QuestDB ingested 1.3--1.6$\times$ faster (1.2--1.4$\times$ with durable commits); with four or eight parallel writers per system \M{} ingested 1.2--2.0$\times$ faster, below four of its eight cores, while QuestDB used most of them. Short and multi-channel reads and interval statistics were faster in \M{}, long reads tied, and four concurrent readers achieved 22\% more queries per second with no latency difference at p50. A retry with one altered sample was refused by \M{} and silently replaced the stored value in QuestDB (deduplicating upsert). Stage~1, before the amendments, had QuestDB ingesting 13--15$\times$ faster and reading long intervals 2--3$\times$ faster; the gap was \M{}'s client path.
+
+Three conditions bound these results. The storage advantage comes mostly from coding values on their grid: without it (an attribution run outside the frozen arms) \M{}'s sample data grew to 621.6\,MiB, larger than QuestDB's Parquet arm; with grid detection (G1) and no quantum declared it was 151.1\,MiB, 35\% smaller than that arm. On the whole volume, PostgreSQL's retained write-ahead log made QuestDB's Parquet arm 33\% smaller with default WAL settings; with a smaller WAL limit the two were within 3\% (240.6 against 247.3\,MiB). And this is one dataset on one machine, a map of trade-offs rather than a ranking. Similarity search was not part of the comparison.
+
 \section{Envelope precision and zero-lag storage (R1b, P1)}
 \subsection{Precision of materialized envelopes (R1b)}
 R1b selected an envelope precision on 2023 seismic windows and evaluated it once on 2022 event and noise windows that, according to its report, no earlier study had read: 1,826 windows at ten CX stations~\cite{ipoc}, 1,557 event windows from 284 catalogued events and 269 no-match distractors~\cite{r1b}. The reference decodes raw samples and computes envelopes in the client.
@@ -133,6 +181,13 @@ Before a bounded pilot with human review of results, we tested access control, r
 
 \textbf{Sustained load.} On an archive of 938,768 windows (4.8\,GB), sixteen channels at 25.6\,kHz (409,600 samples/s) were appended by four writers, each building envelopes and probe rows in the append transaction, while four analysts issued one query every two seconds, half filtered to about 2\% of windows and half unfiltered. With PostgreSQL's default configuration the run met its criteria (filtered p95 167\,ms; probe p95 337\,ms, spot-check recall 0.998; ingest lag at most 22\,s, recovered), but wrote 13.8\,GB of write-ahead log for 0.76\,GB of database growth in 15 minutes: HNSW insertions touch pages across a 1.2\,GB index, and each checkpoint forces full-page images of them. At twice the rate the writers fell behind without recovering; capacity was about 1.3--1.4$\times$ the target. With a pilot configuration (8\,GB shared buffers, 16\,GB \code{max\_wal\_size}, 15-minute checkpoints, WAL compression, changed together) the same run wrote 1.91\,GB of WAL for 0.65\,GB of growth, kept ingest lag at or below 2\,s, and gave filtered and probe p95 of 81 and 100\,ms (recall 0.994); background load was lower in this run (7.3 against 11.7), which confounds the latency comparison but not the WAL volume. Unfiltered exact search over the full archive stayed at 7.8--9.7\,s p95, which is why the router sends large galleries to probes. A run planned for two hours with the same configuration met the target for 111 minutes (409,585 samples/s; writer lag at most 24\,s in the first hour, with the unrelated job running, and 3.4\,s in the second; filtered and probe p95 118 and 138\,ms, recall 0.993; no errors; 12.0\,GB of WAL for 4.7\,GB of growth). Then all client processes paused for 90--106\,s; the server log shows no error, which does not rule out a system-side cause; and the harness's lag rule, stricter than the protocol's wording, stopped the run at 112.5 minutes; the stored result divides the ingest rate by the scheduled duration, and a re-analysis from the raw logs reports the rate over the elapsed time. The two-hour run therefore did not complete. A measured stability duration is not a production qualification.
 
+\section{Agent access over MCP (case studies)}\label{sec:mcp}
+\M{} ships a read-only Model Context Protocol server with twelve tools (\code{list_collections}, \code{coverage}, \code{list_recordings}, \code{trend}, \code{locate_time}, \code{describe_interval}, \code{envelope_spectrum}, \code{compare_intervals}, \code{find_onsets}, \code{search_from_time}, \code{search_similar}, \code{read_interval})~\cite{mcp}. Each call runs in a read-only transaction with a statement timeout, as the database role it is configured with, so ordinary privileges and the row-level security of Section~\ref{sec:ops} decide what an agent can see; database errors are returned to the agent as tool errors it can correct. Unit tests check tool registration, read-only annotations and error reporting without a database; a stdio smoke test runs the tools against one. The following are case studies, not evaluations.
+
+\textbf{Seismic investigation.} On the paper's development data, an agent asked to find the M2.6 earthquake offshore Tarapac\'a on 14 March 2025 at station PB01 and to search for similar signals located the time, described the window and searched across four stations and two weeks. Three of the five closest intervals contained other catalogued earthquakes (M2.7--3.0); two had no catalogue entry. The catalogue was joined afterwards for the write-up; the server does not know it. Transcripts of two recorded sessions with Claude on a public four-day subset, run from a Docker-only demo, are in the repository. E5 and E5-H measure the underlying question (Section~\ref{sec:negative}).
+
+\textbf{Machine demo.} A second Docker-only demo loads the IMS bearing run-to-failure tests 2 and 3~\cite{ims} (8,152 recordings, 167\,M samples, 73,368 search windows) for the same server; recorded sessions follow an agent dating the onset of change in the failing bearings from trends, and comparing fault signatures across the two tests with envelope spectra. The failure labels are not in the database, and the sessions are illustrations of the workflow, not detection results.
+
 \section{Study overview}\label{sec:studies}
 Confirmatory studies committed their protocol (questions, data, arms, metrics, decision rule) to the repository before their first result; exploratory diagnostics fixed a protocol without a confirmatory decision, or had none (pruning); the grid analysis and the choice of illustrative cases are post hoc. Protocols are internal plans with commit times set by the author's machine, not registrations with a third party. E1 re-measured data already used for BL1-C's confirmation and is not another independent confirmation. The full table with questions, results and limitations is \code{research/paper/STUDIES.md}.
 
@@ -156,11 +211,18 @@ C2, C3 & target ingest; $2\times$ overload & 5ad1f12 11-01 09:32 & 5fadadb 10:56
 C2p, C4 & tuned configuration; 2 hours & 2412a77 10:57 & 167feb6 (\#76) & both & C4 aborted \\
 E1 & all arms, one build & 34904f6 12:12 & 9c2b6b0 13:26 & dev, BL1-C's & re-measurement \\
 D1, D2 & time per stage; correlated filters & fa367ed 13:02 & e335217 13:32 & dev & exploratory \\
+E5 & catalogued earthquakes, bounded vs zero lag & 2daae97 11-02 10:45 & 9b8842b 10:47 & dev, new labels & reuse; confirmatory \\
+E5-H & E5 on held-out stations and year & 8c0c4ba 12:29 & fad1659 12:32 & BL1-C's, new labels & replication \\
+B3 & storage, ingest, reads vs QuestDB & 5de3636 18:14 & 0270be3 19:17 & Paderborn & stage 1 \\
+B3.1, B3.2 & client path, SQL 0.3.3; amendments & in protocol & 4f8c8e7, e0c4839 & dev set; benchmark set & confirmed once \\
+G1 & grid detection without a quantum & e7f6a5b 21:33 & ba69f6f, 27f6089 & B1 inputs, B3 set & confirmatory \\
 \bottomrule
 \end{tabularx}
 \end{table*}
 
 \section{Application evidence and negative results}\label{sec:negative}
+\textbf{Catalogued earthquakes (E5, E5-H).} For each catalogued EMSC event of magnitude at least 2.5 within 2\textdegree{} of a station, the window containing its predicted P arrival (iasp91) was the query, and a hit counted as relevant if it contained the predicted P arrival of any catalogued event. Both arms used the same exact search with the product's ordering, exclusion and overlap suppression, differing only in the lag range ($L=30$ against $L=0$). On development data (465 queries from 171 events) precision at ten was 0.297 against 0.213, a difference of $+0.084$ with 95\% interval $[0.070, 0.098]$ by resampling events; on held-out stations and year, whose waveforms earlier studies had searched but whose labels were new (116 queries from 92 events), 0.139 against 0.060, $+0.078$ $[0.054, 0.105]$. Bounded lag was higher at every station of both sets, chance was 0.004 and 0.003, and the two top tens shared about half their windows~\cite{e5}. The frozen rule read ``bounded lag better'' both times. Catalogue membership is a proxy that misses uncatalogued events and counts invisible small ones, which affects both arms alike; the comparison, not the level, is the result.
+
 \textbf{Sleep staging by example (S1).} On 153 Sleep-EDF nights with a subject-disjoint split, staging each 30-second epoch by the 40 most similar expert-scored epochs from other subjects gave a mean per-subject Cohen's $\kappa$ of 0.583, against 0.541 for logistic regression on the same features ($+0.042$, 95\% CI $[0.016, 0.068]$), with equal macro-F1~\cite{sleep}. Retrieval thus exposes source-linked neighbours at no measured accuracy cost against this simple comparator; part of the $\kappa$ difference comes from the regression's class-balanced weights. The result is far from state-of-the-art staging and makes no clinical claim.
 
 \textbf{Morlet versus FFT.} In the same study, FFT band powers with the same band layout gave $\kappa$ 0.589 against 0.583 for Morlet energies. We found no advantage for the wavelet representation and made the extractor replaceable.
@@ -200,6 +262,10 @@ D1, D2 & time per stage; correlated filters & fa367ed 13:02 & e335217 13:32 & de
 \bibitem{b2} \M{} contributors. B2: ClickHouse and TileDB storage baselines. \code{evaluation/storage_b2/RESULTS.md} in~\cite{repo}.
 \bibitem{pilot} \M{} contributors. Pilot stages 1--2: access control, recovery and load. \code{evaluation/pilot/RESULTS.md} in~\cite{repo}.
 \bibitem{cw1} \M{} contributors. CW1: external compute workers. \code{evaluation/external_worker/CW1_RESULTS.md} in~\cite{repo}.
+\bibitem{g1} \M{} contributors. G1: automatic calibration-grid detection. \code{evaluation/grid_detection/RESULTS.md} in~\cite{repo}.
+\bibitem{b3} \M{} contributors. B3, B3.1, B3.2: \M{} and QuestDB on dense waveforms. \code{evaluation/tsdb_b3/RESULTS.md} in~\cite{repo}.
+\bibitem{e5} \M{} contributors. E5 and E5-H: catalogued earthquakes, bounded-lag against zero-lag search. \code{evaluation/task_relevance/} in~\cite{repo}.
+\bibitem{mcp} \M{} contributors. Read-only MCP server for AI agents, agent and machine demos. \code{tools/mcp/}, \code{docs/mcp.md}, \code{examples/} in~\cite{repo}.
 \bibitem{x1} \M{} contributors. X1: reference coding across repeated operations. \code{evaluation/compression/reference/RESULTS.md} in~\cite{repo}.
 \end{thebibliography}
 

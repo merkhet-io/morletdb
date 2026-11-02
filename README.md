@@ -1,6 +1,11 @@
 <p align="center"><img src="assets/brand/readme-hero.svg" alt="MorletDB — Recordings, not rows. Signal retrieval for agents and engineers in PostgreSQL: store recordings losslessly, retrieve similar intervals, and bring the original samples and metadata into the analysis." width="100%"></p>
 
 <p align="center">
+<i>ἁρμονίη ἀφανὴς φανερῆς κρείττων.</i><br>
+<sub>— Heraclitus, fragment B54</sub>
+</p>
+
+<p align="center">
 <b>MorletDB is a PostgreSQL extension for waveform archives.</b><br>
 Select an interval and ask <i>“Have we seen a signal like this before?”</i> — every answer is a recording<br>
 and a sample interval you can read back, for an engineer or for an AI agent.
@@ -125,6 +130,9 @@ CREATE EXTENSION pg_morlet;
 CREATE EXTENSION vector;   -- optional: only for probe search (pgvector 0.8 or later)
 ```
 
+**Use it from Python**: ingest a NumPy waveform, read exact intervals and search similar ones with the
+[Python SDK](docs/python-sdk.md) (`sdk/python`, alpha), starting with a [runnable quickstart](examples/python/quickstart.py).
+
 **Let an AI agent investigate your recordings** through a read-only MCP server (Claude Code,
 Claude Desktop and other MCP clients): [MorletDB for AI agents](docs/mcp.md).
 
@@ -218,7 +226,7 @@ source exclusion, overlap suppression and snapshot semantics.
 <td width="62%">
 
 **[MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL](research/paper/morletdb.pdf)**<br>
-Version <span data-version="report">0.14</span>
+Version <span data-version="report">0.15</span>
 
 Bounded-lag cross-correlation is the right score when matches may be shifted in
 time, but standard vector indexes rank by an unshifted metric. Because each lag term
