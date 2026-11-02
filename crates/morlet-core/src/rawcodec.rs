@@ -366,7 +366,11 @@ fn kind_of(body: &[u8]) -> Result<Kind, CodecError> {
 
 /// Verifies the checksum, then decodes and validates the samples.
 pub fn decode(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
-    let encoded = verified(encoded)?;
+    decode_verified(verified(encoded)?)
+}
+
+/// Decodes a body that `verified` accepted: a known version byte and at least three bytes.
+fn decode_verified(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
     let kind = kind_of(encoded)?;
     let mut pos = 2;
     let n = get_varint(encoded, &mut pos)?;
@@ -1073,5 +1077,102 @@ mod tests {
         let mut body = grid[..grid.len() - CHECKSUM_BYTES].to_vec();
         body.push(0);
         assert!(decode(&seal(body)).is_err());
+    }
+}
+
+/// Bounded model checking (Kani). Statements, bounds and run times: docs/verification.md.
+#[cfg(kani)]
+mod proofs {
+    use super::*;
+
+    /// Every f64 bit pattern maps to an i64 and back unchanged, and every i64 back to itself.
+    #[kani::proof]
+    fn ordered_bits_is_a_bijection() {
+        let bits: u64 = kani::any();
+        assert_eq!(
+            float_from_ordered(ordered_bits(f64::from_bits(bits))).to_bits(),
+            bits
+        );
+        let o: i64 = kani::any();
+        assert_eq!(ordered_bits(float_from_ordered(o)), o);
+    }
+
+    /// Numeric order of non-NaN floats is kept; -0.0 sorts directly below +0.0.
+    #[kani::proof]
+    fn ordered_bits_keeps_order() {
+        let (a, b): (f64, f64) = (kani::any(), kani::any());
+        kani::assume(!a.is_nan() && !b.is_nan());
+        if a < b {
+            assert!(ordered_bits(a) < ordered_bits(b));
+        }
+        if a == b && a.to_bits() == b.to_bits() {
+            assert_eq!(ordered_bits(a), ordered_bits(b));
+        }
+        assert_eq!(ordered_bits(-0.0), -1);
+        assert_eq!(ordered_bits(0.0), 0);
+    }
+
+    #[kani::proof]
+    fn zigzag_is_a_bijection() {
+        let v: i64 = kani::any();
+        assert_eq!(unzigzag(zigzag(v)), v);
+        let u: u64 = kani::any();
+        assert_eq!(zigzag(unzigzag(u)), u);
+    }
+
+    #[kani::proof]
+    #[kani::unwind(11)]
+    fn varint_roundtrips() {
+        let v: u64 = kani::any();
+        let mut out = Vec::new();
+        put_varint(&mut out, v);
+        assert!(out.len() <= 10);
+        let mut pos = 0;
+        assert_eq!(get_varint(&out, &mut pos), Ok(v));
+        assert_eq!(pos, out.len());
+    }
+
+    /// Arbitrary bytes: an error or a value, never a panic or a read past the end.
+    #[kani::proof]
+    #[kani::unwind(12)]
+    fn varint_reader_is_total() {
+        let bytes: [u8; 11] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= 11);
+        let start: usize = kani::any();
+        kani::assume(start <= len);
+        let mut pos = start;
+        if get_varint(&bytes[..len], &mut pos).is_ok() {
+            assert!(pos > start && pos <= len && pos - start <= 10);
+        }
+    }
+
+    /// Decoding adds back exactly the prediction the encoder subtracted, for every
+    /// predictor order, position and i64 history (wrapping on both sides).
+    #[kani::proof]
+    fn prediction_residuals_invert() {
+        let x: [i64; 5] = kani::any();
+        let order: usize = kani::any();
+        kani::assume(order <= MAX_ORDER);
+        let i: usize = kani::any();
+        kani::assume(i < 5);
+        let residual = zigzag(x[i].wrapping_sub(predict(&x, i, order)));
+        assert_eq!(
+            unzigzag(residual).wrapping_add(predict(&x[..i], i, order)),
+            x[i]
+        );
+    }
+
+    /// A last-place correction restores the sample bit for bit from any grid value,
+    /// whatever float arithmetic produced it: encoder and decoder compute the grid value
+    /// with the same code from the same stored scale and offset, and the correction is
+    /// pure wrapping integer arithmetic on the order-preserving images.
+    #[kani::proof]
+    fn corrections_restore_any_sample() {
+        let (x, v): (u64, u64) = (kani::any(), kani::any());
+        let (x, v) = (f64::from_bits(x), f64::from_bits(v));
+        let fix = ordered_bits(x).wrapping_sub(ordered_bits(v));
+        let restored = float_from_ordered(ordered_bits(v).wrapping_add(fix));
+        assert_eq!(restored.to_bits(), x.to_bits());
     }
 }

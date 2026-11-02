@@ -1,0 +1,110 @@
+name: Verification
+# Machine checks of the chunk codec (docs/verification.md). Pull requests that touch morlet-core run the Kani
+# proofs and check that frozen golden chunks are unchanged; the nightly run also fuzzes every target.
+# A timeout fails the job: no harness is skipped silently.
+on:
+  pull_request:
+    paths:
+      - 'crates/morlet-core/**'
+      - 'testdata/rawcodec/**'
+      - '.github/workflows/verification.yml'
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  KANI_VERSION: '0.68.0'
+  CARGO_FUZZ_VERSION: '0.13.2'
+  FUZZ_TOOLCHAIN: 'nightly-2026-10-11'
+jobs:
+  golden-files:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Frozen chunks are only ever added, never changed, renamed or removed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed=$(git diff --name-only --diff-filter=MDRT "$BASE...$HEAD" -- testdata/rawcodec)
+          if [ -n "$changed" ]; then echo "::error::golden chunks changed: $changed"; exit 1; fi
+  kani:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/kani
+            ~/.cargo/bin/cargo-kani
+            ~/.kani
+          key: kani-${{ runner.os }}-${{ env.KANI_VERSION }}
+      - name: Install Kani ${{ env.KANI_VERSION }}
+        run: |
+          command -v cargo-kani || cargo install --locked kani-verifier --version "$KANI_VERSION"
+          cargo kani setup
+          cargo kani --version
+      - name: Proofs (every run; CBMC time about 12 s in total, plus compilation)
+        working-directory: crates/morlet-core
+        run: >-
+          cargo kani
+          --harness ordered_bits_is_a_bijection --harness ordered_bits_keeps_order
+          --harness zigzag_is_a_bijection --harness varint_roundtrips --harness varint_reader_is_total
+          --harness prediction_residuals_invert --harness corrections_restore_any_sample
+  fuzz:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [decode_raw, decode_sealed, roundtrip]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ${{ env.FUZZ_TOOLCHAIN }} and cargo-fuzz ${{ env.CARGO_FUZZ_VERSION }}
+        run: |
+          rustup toolchain install "$FUZZ_TOOLCHAIN" --profile minimal
+          cargo install --locked cargo-fuzz --version "$CARGO_FUZZ_VERSION"
+      - name: Restore the corpus
+        uses: actions/cache/restore@v4
+        with:
+          path: crates/morlet-core/fuzz/corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.target }}-
+      - name: Seed from the golden chunks
+        run: |
+          mkdir -p crates/morlet-core/fuzz/corpus/${{ matrix.target }}
+          for f in testdata/rawcodec/*.chunk; do
+            case "${{ matrix.target }}" in
+              decode_raw) cp "$f" "crates/morlet-core/fuzz/corpus/decode_raw/$(basename "$f")" ;;
+              decode_sealed) head -c -4 "$f" > "crates/morlet-core/fuzz/corpus/decode_sealed/$(basename "$f")" ;;
+            esac
+          done
+      - name: Fuzz for 40 minutes (debug assertions and overflow checks on)
+        working-directory: crates/morlet-core
+        run: >-
+          cargo "+$FUZZ_TOOLCHAIN" fuzz run -O -a ${{ matrix.target }} fuzz/corpus/${{ matrix.target }} --
+          -max_total_time=2400 -timeout=20 -rss_limit_mb=2048
+          -malloc_limit_mb=${{ matrix.target == 'roundtrip' && 256 || 64 }}
+          -max_len=${{ matrix.target == 'roundtrip' && 300000 || 65536 }}
+      - name: Save the corpus
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: crates/morlet-core/fuzz/corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+      - name: Keep crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: crates/morlet-core/fuzz/artifacts
