@@ -15,3 +15,8 @@ notebook-output/
 .venv-paper/
 
 .venv-research/
+
+# Python SDK build artefacts
+sdk/python/build/
+sdk/python/src/*.egg-info/
+sdk-dist/

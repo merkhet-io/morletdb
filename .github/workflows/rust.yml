@@ -276,3 +276,54 @@ jobs:
           test "${PIPESTATUS[0]}" -eq 0
           if grep -q -E "skipped|OK \(skipped" unittest.log; then echo "::error::seismic tests were skipped"; exit 1; fi
 
+  python-sdk:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    # Builds and installs the Python SDK wheel, runs its contract tests against this branch's extension
+    # (skips are failures) and runs the quickstart example. No downloads beyond pinned packages.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: PostgreSQL 17.11
+        uses: ./.github/actions/pgrx-postgres
+        with:
+          pg-minor: '17.11'
+      - name: Cache Rust build inputs and artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: python-sdk-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install this branch's extension and start PostgreSQL
+        working-directory: extensions/pg_morlet
+        run: |
+          cargo pgrx install --release --pg-config "$PG_CONFIG"
+          cargo pgrx start pg17
+      - name: Build and install the SDK wheel
+        run: |
+          python -m pip install build==1.2.2.post1 matplotlib==3.9.2
+          python -m build sdk/python --outdir sdk-dist
+          python -m pip install sdk-dist/*.whl
+      - name: SDK tests against the installed wheel (skips are failures)
+        working-directory: sdk/python/tests
+        env:
+          MORLET_SDK_TEST_DSN: postgresql://runner@localhost:28817/postgres
+          MORLET_SDK_REQUIRE_DB: '1'
+        run: |
+          python -c 'import morletdb, sys; assert "site-packages" in morletdb.__file__, morletdb.__file__'
+          python -m unittest -v test_offline test_integration 2>&1 | tee unittest.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q -E "skipped '(set MORLET|server without)" unittest.log; then echo "::error::SDK tests were skipped"; exit 1; fi
+      - name: Quickstart example
+        env:
+          DATABASE_URL: postgresql://runner@localhost:28817/postgres
+        run: |
+          python examples/python/quickstart.py quickstart.png | tee quickstart.log
+          test -s quickstart.png
+          test "$(grep -E '^ +[1-4] ' quickstart.log | grep -c 'impact at')" -eq 4
