@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.13, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.14, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -58,6 +58,22 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.14 (when exact, when probes; no new measurement in the report)
+
+- **Speed against a faster exact path (E6).** The in-database exact scorer was made 1.6–2.7× faster with
+  bitwise identical results. Probes stayed 5–8.5× faster at p95 up to 1.03 M windows, so the abstract,
+  findings, results, "when to use it" and conclusion now state the claim against that faster path,
+  framed as when to use exact search and when to use probes. The 13× against the measured build
+  remains in Table 2 as that build's result.
+- **Storage baselines (B2).** pg_morlet's codec was 0.62–0.76× the size of ClickHouse and TileDB with tuned
+  codec chains on calibrated floats. This is stated in Section 4 and in the supplement.
+- **Body edits from review.**
+  - The "Benefit" paragraph is shorter, without superseded numbers.
+  - Study codes left the running prose (they stay in tables, captions and the ledger).
+  - The maintenance section became a short paragraph, with the replay moved to the supplement.
+  - "Kinds of evidence" was removed because it repeated the ledger.
+  - The empty affiliation line is gone.
 
 ## What changed in 0.13 (tone and speed scope; no new measurement in the report)
 
