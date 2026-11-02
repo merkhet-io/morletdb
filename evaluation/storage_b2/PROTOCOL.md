@@ -72,4 +72,16 @@ reported, not fixed by changing other arms.
 
 ## Deviations
 
-(none yet)
+Recorded before the full measurement, after a smoke test on 10,000 synthetic values:
+
+1. **ClickHouse engine version.** `chdb-core` 26.9.0 and 26.7.3 do not load on this machine (macOS 27).
+   dyld rejects their library with "mis-aligned LINKEDIT string pool". `chdb-core` 26.5.0 (ClickHouse
+   26.5.1.1) loads and is used, with `chdb` 4.4.0. pip notes that `chdb` 4.4.0 declares `chdb-core>=26.7.0`;
+   the queries B2 uses work.
+2. **Wide parts.** ClickHouse stores small parts in its compact format, which reports no per-column sizes.
+   Tables use `min_bytes_for_wide_part = 0`, so the value column has its own data file. This changes the
+   file layout, not compression.
+3. **One chain rejected.** ClickHouse refuses `Gorilla, ZSTD(19)` on the Int64 column ("meaningless"
+   combination). As the protocol prescribes, it is reported as failed and not enabled with
+   `allow_suspicious_codecs`.
+4. **TileDB core** is 2.30.0, as embedded in `tiledb` 0.36.1.
