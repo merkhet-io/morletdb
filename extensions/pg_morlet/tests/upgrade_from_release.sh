@@ -88,16 +88,20 @@ echo "ok: $OLD_VERSION SQL with the new library returns identical results"
 
 # A failed update must roll back completely (pilot Stage 2, B7): block it with an object that
 # already has the signature of a function the update creates, check that nothing changed,
-# then remove the blocker and update for real.
-psql -d morlet_upgrade_rel_old -c "CREATE FUNCTION public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)
-  RETURNS double precision[] LANGUAGE sql AS 'SELECT NULL::double precision[]'"
+# then remove the blocker and update for real. The blocker is a function new in the first
+# update step after OLD_VERSION.
+case "$OLD_VERSION" in
+  0.3.1) BLOCKER="public.morlet_search_similar(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer)" ;;
+  *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
+esac
+psql -d morlet_upgrade_rel_old -c "CREATE FUNCTION $BLOCKER RETURNS void LANGUAGE sql AS ''"
 if psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE" 2>/dev/null; then
   echo "FAIL: the blocked update succeeded"; exit 1
 fi
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$OLD_VERSION"
 snapshot morlet_upgrade_rel_old > "$WORK/failed.txt"
 diff "$WORK/before.txt" "$WORK/failed.txt"
-psql -d morlet_upgrade_rel_old -c "DROP FUNCTION public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)"
+psql -d morlet_upgrade_rel_old -c "DROP FUNCTION $BLOCKER"
 echo "ok: a failed update rolls back; $OLD_VERSION stays installed and reads are identical"
 
 psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
