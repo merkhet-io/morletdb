@@ -1,6 +1,7 @@
 # MorletDB agent demo. See README.md.
 #   docker compose up load                  # fetch four days of public seismic data and import them
-#   docker compose run --rm -i -T mcp       # the MCP server on stdio (what Claude Code / Desktop start)
+#   docker compose run --rm -i -T mcp       # the MorletDB MCP server on stdio (what Claude Code / Desktop start)
+#   docker compose run --rm -i -T seismo    # seismology reference tools (offline) on stdio
 name: morletdb-agent-demo
 services:
   db:
@@ -41,6 +42,10 @@ services:
       db:
         condition: service_healthy
     command: ["python", "tools/mcp/morlet_mcp.py"]
+  seismo:
+    image: morletdb-agent-demo-tools:local
+    network_mode: none
+    command: ["python", "examples/agent-demo/seismo_mcp.py"]
 volumes:
   db:
   data:
