@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.2-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.3-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -17,13 +17,16 @@ a leading v; GHCR image tags do not.
   0.3.1-alpha.1's 0.3.1 objects; the chained updates from 0.3.0, 0.2.0 and 0.1.0 are
   also tested. Adds `morlet_search_similar`, raises the exact-search default to
   1,000,000 eligible windows and makes exact scoring faster with identical results.
+- **0.3.3-alpha.1:** the same SQL version 0.3.2 and extension as 0.3.2-alpha.1 (no update script needed);
+  the first image for both linux/amd64 and linux/arm64. Ships with the MCP server for AI agents and the
+  seismic and machine demos.
 
-Releases target PostgreSQL 17 on Linux. From the release after 0.3.2-alpha.1, the image is published for
+Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
 checkout, and the release tag is one multi-architecture index of the two (the per-architecture tags
 `<version>-amd64` and `<version>-arm64` remain). 0.3.2-alpha.1 and earlier are linux/amd64 only. The compose
-files use `MORLET_PLATFORM` (default `linux/amd64`); on ARM machines such as Apple Silicon, set
-`MORLET_PLATFORM=linux/arm64` with a multi-architecture release to run it without emulation. Building from
+file `compose.release.yaml` uses `MORLET_PLATFORM` (default `linux/amd64`); on ARM machines such as Apple
+Silicon, set `MORLET_PLATFORM=linux/arm64` with 0.3.3-alpha.1 or later to run it without emulation. Building from
 source also supports PostgreSQL 18 ([compatibility](compatibility.md)).
 
 `0.1.0-alpha.1` was published before the repository's
