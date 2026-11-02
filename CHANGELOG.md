@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Industrial collection:
+- `examples/collectors/opcua`: a reference collector and a local test server with a documented information
+  model. A waveform delivered in numbered blocks is appended at exact sample offsets (resume after restarts and
+  reconnects, identical duplicates accepted, altered duplicates refused, gaps reported with a new recording);
+  scalar tags become context events with value, status code and source time. `scenarios.sh` reruns the checks.
+
 Object storage:
 - `tools/ingest/morlet_s3.py` imports supported recording files from an S3-compatible bucket prefix (each
   recording records the object's bucket, key, ETag, version and SHA-256; reruns skip imported objects and a
