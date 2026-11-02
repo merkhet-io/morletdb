@@ -1,0 +1,1032 @@
+{
+ "inputs": {
+  "cx": {
+   "samples": 4194304,
+   "CH-f_chains": {
+    "ZSTD(19)": {
+     "bytes": 4305497,
+     "part_bytes_on_disk": 21317820,
+     "write_s": 21.62728925002739,
+     "read_s": 0.06490454101003706,
+     "bits": 8.21208381652832
+    },
+    "Gorilla, ZSTD(19)": {
+     "bytes": 4774439,
+     "part_bytes_on_disk": 21786771,
+     "write_s": 1.0659585829707794,
+     "read_s": 0.04608929203823209,
+     "bits": 9.10651969909668
+    },
+    "FPC, ZSTD(19)": {
+     "bytes": 5808929,
+     "part_bytes_on_disk": 22821288,
+     "write_s": 16.43964449997293,
+     "read_s": 0.04745570803061128,
+     "bits": 11.079652786254883
+    },
+    "Delta(8), ZSTD(19)": {
+     "bytes": 4028032,
+     "part_bytes_on_disk": 21040349,
+     "write_s": 30.084116165991873,
+     "read_s": 0.04450141597772017,
+     "bits": 7.682861328125
+    }
+   },
+   "CH-i_chains": {
+    "ZSTD(19)": {
+     "bytes": 4467601,
+     "part_bytes_on_disk": 21479917,
+     "write_s": 16.83305004198337,
+     "read_s": 0.03747908299556002,
+     "bits": 8.521272659301758
+    },
+    "Delta, ZSTD(19)": {
+     "bytes": 3585171,
+     "part_bytes_on_disk": 20597464,
+     "write_s": 27.73384616698604,
+     "read_s": 0.03628441697219387,
+     "bits": 6.838171005249023
+    },
+    "DoubleDelta, ZSTD(19)": {
+     "bytes": 3671836,
+     "part_bytes_on_disk": 20684132,
+     "write_s": 0.696346916956827,
+     "read_s": 0.03404133301228285,
+     "bits": 7.003471374511719
+    },
+    "T64, ZSTD(19)": {
+     "bytes": 4352306,
+     "part_bytes_on_disk": 21364619,
+     "write_s": 1.0776971250306815,
+     "read_s": 0.03547695802990347,
+     "bits": 8.30136489868164
+    },
+    "Gorilla, ZSTD(19)": "unavailable or failed: RuntimeError: Code: 36. DB::Exception: The combination of compression codecs Gorilla(8), ZSTD(19) is meaningless, because it does not make sense to apply a floating-point time series codec to non-floating-point columns (Note: you can enable setting 'allow_suspicious_codecs' to skip this check). (BAD_ARGUMENTS)"
+   },
+   "TDB-f_chains": {
+    "Zstd(19)": {
+     "bytes": 4406334,
+     "array_bytes_on_disk": 4420937,
+     "write_s": 1.1974272080115043,
+     "read_s": 0.04398608300834894,
+     "bits": 8.404415130615234
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 3954426,
+     "array_bytes_on_disk": 3969025,
+     "write_s": 0.2144027499598451,
+     "read_s": 0.04113170795608312,
+     "bits": 7.542469024658203
+    },
+    "BitShuffle, Zstd(19)": {
+     "bytes": 3686119,
+     "array_bytes_on_disk": 3700705,
+     "write_s": 0.18923762498889118,
+     "read_s": 0.03803041600622237,
+     "bits": 7.03071403503418
+    },
+    "XOR, Zstd(19)": {
+     "bytes": 4567217,
+     "array_bytes_on_disk": 4581823,
+     "write_s": 1.7063522079843096,
+     "read_s": 0.040151291992515326,
+     "bits": 8.711275100708008
+    }
+   },
+   "TDB-i_chains": {
+    "Zstd(19)": {
+     "bytes": 4571118,
+     "array_bytes_on_disk": 4585249,
+     "write_s": 0.9273413749760948,
+     "read_s": 0.03712058300152421,
+     "bits": 8.71871566772461
+    },
+    "Delta, Zstd(19)": {
+     "bytes": 3735669,
+     "array_bytes_on_disk": 3749793,
+     "write_s": 1.6389547499711625,
+     "read_s": 0.07304079103050753,
+     "bits": 7.125223159790039
+    },
+    "DoubleDelta, Zstd(19)": {
+     "bytes": 3097623,
+     "array_bytes_on_disk": 3111725,
+     "write_s": 0.09034812496975064,
+     "read_s": 0.06301204097690061,
+     "bits": 5.908246994018555
+    },
+    "BitWidthReduction, Zstd(19)": {
+     "bytes": 3612090,
+     "array_bytes_on_disk": 3626203,
+     "write_s": 0.10966470796847716,
+     "read_s": 0.03923162503633648,
+     "bits": 6.889514923095703
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 4348219,
+     "array_bytes_on_disk": 4362352,
+     "write_s": 0.18481700000120327,
+     "read_s": 0.037004292011260986,
+     "bits": 8.293569564819336
+    }
+   },
+   "CH-f_best": "Delta(8), ZSTD(19)",
+   "CH-f": 7.682861328125,
+   "CH-i_best": "Delta, ZSTD(19)",
+   "CH-i": 6.838171005249023,
+   "TDB-f_best": "BitShuffle, Zstd(19)",
+   "TDB-f": 7.03071403503418,
+   "TDB-i_best": "DoubleDelta, Zstd(19)",
+   "TDB-i": 5.908246994018555,
+   "M": 4.6106,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmp4p0d8zet/b2-morlet.bin",
+    "samples": 4194304,
+    "bytes": 2417280,
+    "bits_per_sample": 4.6106,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 12.8,
+    "decode_msamples_s": 77.6
+   },
+   "M_equals_B1": true,
+   "Z": 8.334102630615234,
+   "PQ-f": 6.838981628417969,
+   "ALP": 9.5,
+   "FLAC": 4.376819610595703,
+   "PQ-i": 5.241230010986328,
+   "DDB-i": 6.375,
+   "M-i": 4.6106
+  },
+  "ims": {
+   "samples": 4194304,
+   "CH-f_chains": {
+    "ZSTD(19)": {
+     "bytes": 6547536,
+     "part_bytes_on_disk": 23539932,
+     "write_s": 14.685467083996627,
+     "read_s": 0.0431316249887459,
+     "bits": 12.488433837890625
+    },
+    "Gorilla, ZSTD(19)": {
+     "bytes": 19821349,
+     "part_bytes_on_disk": 36813985,
+     "write_s": 6.826204875018448,
+     "read_s": 0.04334104200825095,
+     "bits": 37.806222915649414
+    },
+    "FPC, ZSTD(19)": {
+     "bytes": 16678049,
+     "part_bytes_on_disk": 33670636,
+     "write_s": 6.23864020901965,
+     "read_s": 0.04052662500180304,
+     "bits": 31.810853958129883
+    },
+    "Delta(8), ZSTD(19)": {
+     "bytes": 10240149,
+     "part_bytes_on_disk": 27232623,
+     "write_s": 11.868112624972127,
+     "read_s": 0.038626959023531526,
+     "bits": 19.53153419494629
+    }
+   },
+   "CH-i_chains": {
+    "ZSTD(19)": {
+     "bytes": 5582329,
+     "part_bytes_on_disk": 22574688,
+     "write_s": 20.84139391698409,
+     "read_s": 0.03002825001021847,
+     "bits": 10.64744758605957
+    },
+    "Delta, ZSTD(19)": {
+     "bytes": 5986019,
+     "part_bytes_on_disk": 22978388,
+     "write_s": 19.736449374991935,
+     "read_s": 0.0313965420355089,
+     "bits": 11.417425155639648
+    },
+    "DoubleDelta, ZSTD(19)": {
+     "bytes": 5968618,
+     "part_bytes_on_disk": 22960987,
+     "write_s": 0.6684047080343589,
+     "read_s": 0.0283141250256449,
+     "bits": 11.384235382080078
+    },
+    "T64, ZSTD(19)": {
+     "bytes": 4532184,
+     "part_bytes_on_disk": 21524519,
+     "write_s": 0.6285466250265017,
+     "read_s": 0.02929150004638359,
+     "bits": 8.644454956054688
+    },
+    "Gorilla, ZSTD(19)": "unavailable or failed: RuntimeError: Code: 36. DB::Exception: The combination of compression codecs Gorilla(8), ZSTD(19) is meaningless, because it does not make sense to apply a floating-point time series codec to non-floating-point columns (Note: you can enable setting 'allow_suspicious_codecs' to skip this check). (BAD_ARGUMENTS)"
+   },
+   "TDB-f_chains": {
+    "Zstd(19)": {
+     "bytes": 6978942,
+     "array_bytes_on_disk": 6996026,
+     "write_s": 0.8084961249842308,
+     "read_s": 0.042608499992638826,
+     "bits": 13.311275482177734
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 26688856,
+     "array_bytes_on_disk": 26706410,
+     "write_s": 0.4147511249757372,
+     "read_s": 0.04283308295998722,
+     "bits": 50.90495300292969
+    },
+    "BitShuffle, Zstd(19)": {
+     "bytes": 29953256,
+     "array_bytes_on_disk": 29970847,
+     "write_s": 0.27284812496509403,
+     "read_s": 0.04208325000945479,
+     "bits": 57.13130187988281
+    },
+    "XOR, Zstd(19)": {
+     "bytes": 16403985,
+     "array_bytes_on_disk": 16421304,
+     "write_s": 0.5309398749959655,
+     "read_s": 0.03508454200346023,
+     "bits": 31.288118362426758
+    }
+   },
+   "TDB-i_chains": {
+    "Zstd(19)": {
+     "bytes": 5682436,
+     "array_bytes_on_disk": 5695894,
+     "write_s": 1.1682257920037955,
+     "read_s": 0.04024783294880763,
+     "bits": 10.838386535644531
+    },
+    "Delta, Zstd(19)": {
+     "bytes": 6068090,
+     "array_bytes_on_disk": 6081570,
+     "write_s": 1.3281660830252804,
+     "read_s": 0.0734621660085395,
+     "bits": 11.573963165283203
+    },
+    "DoubleDelta, Zstd(19)": {
+     "bytes": 5707570,
+     "array_bytes_on_disk": 5721044,
+     "write_s": 0.10192616697167978,
+     "read_s": 0.06399220897583291,
+     "bits": 10.88632583618164
+    },
+    "BitWidthReduction, Zstd(19)": {
+     "bytes": 5718116,
+     "array_bytes_on_disk": 5731589,
+     "write_s": 0.16792970796814188,
+     "read_s": 0.04225545801455155,
+     "bits": 10.906440734863281
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 4650150,
+     "array_bytes_on_disk": 4663585,
+     "write_s": 0.5327424999559298,
+     "read_s": 0.037648041965439916,
+     "bits": 8.869457244873047
+    }
+   },
+   "CH-f_best": "ZSTD(19)",
+   "CH-f": 12.488433837890625,
+   "CH-i_best": "T64, ZSTD(19)",
+   "CH-i": 8.644454956054688,
+   "TDB-f_best": "Zstd(19)",
+   "TDB-f": 13.311275482177734,
+   "TDB-i_best": "ByteShuffle, Zstd(19)",
+   "TDB-i": 8.869457244873047,
+   "M": 8.8088,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmp4p0d8zet/b2-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4618374,
+    "bits_per_sample": 8.8088,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 12.2,
+    "decode_msamples_s": 64.1
+   },
+   "M_equals_B1": true,
+   "Z": 13.240962982177734,
+   "PQ-f": 42.93692207336426,
+   "ALP": 11.0,
+   "FLAC": 8.41170883178711,
+   "PQ-i": 9.864887237548828,
+   "DDB-i": 10.875,
+   "M-i": 8.8088
+  },
+  "pad-c": {
+   "samples": 4194304,
+   "CH-f_chains": {
+    "ZSTD(19)": {
+     "bytes": 6183533,
+     "part_bytes_on_disk": 23179521,
+     "write_s": 24.696543207974173,
+     "read_s": 0.04470108402892947,
+     "bits": 11.794153213500977
+    },
+    "Gorilla, ZSTD(19)": {
+     "bytes": 8500480,
+     "part_bytes_on_disk": 25496516,
+     "write_s": 1.8701793330255896,
+     "read_s": 0.04115395899862051,
+     "bits": 16.21337890625
+    },
+    "FPC, ZSTD(19)": {
+     "bytes": 9471915,
+     "part_bytes_on_disk": 26467974,
+     "write_s": 18.65907320799306,
+     "read_s": 0.039029458013828844,
+     "bits": 18.06624412536621
+    },
+    "Delta(8), ZSTD(19)": {
+     "bytes": 7856745,
+     "part_bytes_on_disk": 24852768,
+     "write_s": 22.686319666041527,
+     "read_s": 0.03939283301588148,
+     "bits": 14.985551834106445
+    }
+   },
+   "CH-i_chains": {
+    "ZSTD(19)": {
+     "bytes": 5909603,
+     "part_bytes_on_disk": 22905568,
+     "write_s": 20.44686258304864,
+     "read_s": 0.03143695800099522,
+     "bits": 11.271673202514648
+    },
+    "Delta, ZSTD(19)": {
+     "bytes": 6059509,
+     "part_bytes_on_disk": 23055480,
+     "write_s": 21.018033917003777,
+     "read_s": 0.030418917012866586,
+     "bits": 11.557596206665039
+    },
+    "DoubleDelta, ZSTD(19)": {
+     "bytes": 5442686,
+     "part_bytes_on_disk": 22438639,
+     "write_s": 0.6129180829739198,
+     "read_s": 0.02849683299427852,
+     "bits": 10.381099700927734
+    },
+    "T64, ZSTD(19)": {
+     "bytes": 4738145,
+     "part_bytes_on_disk": 21734084,
+     "write_s": 0.6813693330041133,
+     "read_s": 0.0310689170146361,
+     "bits": 9.037294387817383
+    },
+    "Gorilla, ZSTD(19)": "unavailable or failed: RuntimeError: Code: 36. DB::Exception: The combination of compression codecs Gorilla(8), ZSTD(19) is meaningless, because it does not make sense to apply a floating-point time series codec to non-floating-point columns (Note: you can enable setting 'allow_suspicious_codecs' to skip this check). (BAD_ARGUMENTS)"
+   },
+   "TDB-f_chains": {
+    "Zstd(19)": {
+     "bytes": 6348621,
+     "array_bytes_on_disk": 6362911,
+     "write_s": 1.4525234589818865,
+     "read_s": 0.04497279197676107,
+     "bits": 12.109033584594727
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 5262103,
+     "array_bytes_on_disk": 5276356,
+     "write_s": 0.3868600419955328,
+     "read_s": 0.03797862498322502,
+     "bits": 10.036664962768555
+    },
+    "BitShuffle, Zstd(19)": {
+     "bytes": 5587108,
+     "array_bytes_on_disk": 5601376,
+     "write_s": 0.1624148749979213,
+     "read_s": 0.04026074998546392,
+     "bits": 10.656562805175781
+    },
+    "XOR, Zstd(19)": {
+     "bytes": 7521427,
+     "array_bytes_on_disk": 7535748,
+     "write_s": 1.409226750023663,
+     "read_s": 0.038199333008378744,
+     "bits": 14.345983505249023
+    }
+   },
+   "TDB-i_chains": {
+    "Zstd(19)": {
+     "bytes": 5966340,
+     "array_bytes_on_disk": 5980328,
+     "write_s": 1.3284525420167483,
+     "read_s": 0.04000129195628688,
+     "bits": 11.379890441894531
+    },
+    "Delta, Zstd(19)": {
+     "bytes": 6158792,
+     "array_bytes_on_disk": 6172793,
+     "write_s": 1.29534725000849,
+     "read_s": 0.0740038329968229,
+     "bits": 11.746963500976562
+    },
+    "DoubleDelta, Zstd(19)": {
+     "bytes": 5541644,
+     "array_bytes_on_disk": 5555638,
+     "write_s": 0.08770616701804101,
+     "read_s": 0.06934399995952845,
+     "bits": 10.569847106933594
+    },
+    "BitWidthReduction, Zstd(19)": {
+     "bytes": 5656786,
+     "array_bytes_on_disk": 5670777,
+     "write_s": 0.16593624994857237,
+     "read_s": 0.04225054197013378,
+     "bits": 10.78946304321289
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 4941073,
+     "array_bytes_on_disk": 4955038,
+     "write_s": 0.5014382909866981,
+     "read_s": 0.0415107500157319,
+     "bits": 9.424348831176758
+    }
+   },
+   "CH-f_best": "ZSTD(19)",
+   "CH-f": 11.794153213500977,
+   "CH-i_best": "T64, ZSTD(19)",
+   "CH-i": 9.037294387817383,
+   "TDB-f_best": "ByteShuffle, Zstd(19)",
+   "TDB-f": 10.036664962768555,
+   "TDB-i_best": "ByteShuffle, Zstd(19)",
+   "TDB-i": 9.424348831176758,
+   "M": 7.8829,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmp4p0d8zet/b2-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4132933,
+    "bits_per_sample": 7.8829,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 12.2,
+    "decode_msamples_s": 63.9
+   },
+   "M_equals_B1": true,
+   "Z": 12.038721084594727,
+   "PQ-f": 9.481267929077148,
+   "ALP": 10.75,
+   "FLAC": 7.697347640991211,
+   "PQ-i": 9.60551643371582,
+   "DDB-i": 11.25,
+   "M-i": 7.8829
+  },
+  "pad-p": {
+   "samples": 4194304,
+   "CH-f_chains": {
+    "ZSTD(19)": {
+     "bytes": 7268738,
+     "part_bytes_on_disk": 24264749,
+     "write_s": 14.902500208001584,
+     "read_s": 0.04024825000669807,
+     "bits": 13.864017486572266
+    },
+    "Gorilla, ZSTD(19)": {
+     "bytes": 20426098,
+     "part_bytes_on_disk": 37422340,
+     "write_s": 7.2840914580156095,
+     "read_s": 0.042848374985624105,
+     "bits": 38.95969009399414
+    },
+    "FPC, ZSTD(19)": {
+     "bytes": 17036853,
+     "part_bytes_on_disk": 34033049,
+     "write_s": 7.1237540419679135,
+     "read_s": 0.040913374978117645,
+     "bits": 32.49521827697754
+    },
+    "Delta(8), ZSTD(19)": {
+     "bytes": 11317487,
+     "part_bytes_on_disk": 28313581,
+     "write_s": 11.301592124975286,
+     "read_s": 0.039592749963048846,
+     "bits": 21.586393356323242
+    }
+   },
+   "CH-i_chains": {
+    "ZSTD(19)": {
+     "bytes": 5909603,
+     "part_bytes_on_disk": 22905568,
+     "write_s": 21.009743665985297,
+     "read_s": 0.032173290965147316,
+     "bits": 11.271673202514648
+    },
+    "Delta, ZSTD(19)": {
+     "bytes": 6059509,
+     "part_bytes_on_disk": 23055480,
+     "write_s": 20.74369479197776,
+     "read_s": 0.03200733399717137,
+     "bits": 11.557596206665039
+    },
+    "DoubleDelta, ZSTD(19)": {
+     "bytes": 5442686,
+     "part_bytes_on_disk": 22438639,
+     "write_s": 0.606517625041306,
+     "read_s": 0.02836258296156302,
+     "bits": 10.381099700927734
+    },
+    "T64, ZSTD(19)": {
+     "bytes": 4738145,
+     "part_bytes_on_disk": 21734084,
+     "write_s": 0.6689510840224102,
+     "read_s": 0.030789374955929816,
+     "bits": 9.037294387817383
+    },
+    "Gorilla, ZSTD(19)": "unavailable or failed: RuntimeError: Code: 36. DB::Exception: The combination of compression codecs Gorilla(8), ZSTD(19) is meaningless, because it does not make sense to apply a floating-point time series codec to non-floating-point columns (Note: you can enable setting 'allow_suspicious_codecs' to skip this check). (BAD_ARGUMENTS)"
+   },
+   "TDB-f_chains": {
+    "Zstd(19)": {
+     "bytes": 7808111,
+     "array_bytes_on_disk": 7830568,
+     "write_s": 0.4791775420308113,
+     "read_s": 0.037857458053622395,
+     "bits": 14.892789840698242
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 18679209,
+     "array_bytes_on_disk": 18701934,
+     "write_s": 0.579601957986597,
+     "read_s": 0.03987104201223701,
+     "bits": 35.627763748168945
+    },
+    "BitShuffle, Zstd(19)": {
+     "bytes": 20160103,
+     "array_bytes_on_disk": 20182852,
+     "write_s": 0.3093529170146212,
+     "read_s": 0.040633541997522116,
+     "bits": 38.45234489440918
+    },
+    "XOR, Zstd(19)": {
+     "bytes": 15210591,
+     "array_bytes_on_disk": 15233232,
+     "write_s": 0.6459707919857465,
+     "read_s": 0.041816167009528726,
+     "bits": 29.011899948120117
+    }
+   },
+   "TDB-i_chains": {
+    "Zstd(19)": {
+     "bytes": 5966340,
+     "array_bytes_on_disk": 5980328,
+     "write_s": 1.2634547500056215,
+     "read_s": 0.039812207978684455,
+     "bits": 11.379890441894531
+    },
+    "Delta, Zstd(19)": {
+     "bytes": 6158792,
+     "array_bytes_on_disk": 6172793,
+     "write_s": 1.4400432499824092,
+     "read_s": 0.07564062502933666,
+     "bits": 11.746963500976562
+    },
+    "DoubleDelta, Zstd(19)": {
+     "bytes": 5541644,
+     "array_bytes_on_disk": 5555638,
+     "write_s": 0.11544320895336568,
+     "read_s": 0.06873995799105614,
+     "bits": 10.569847106933594
+    },
+    "BitWidthReduction, Zstd(19)": {
+     "bytes": 5656786,
+     "array_bytes_on_disk": 5670777,
+     "write_s": 0.1910772499977611,
+     "read_s": 0.04285116697428748,
+     "bits": 10.78946304321289
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 4941073,
+     "array_bytes_on_disk": 4955038,
+     "write_s": 0.4744667499908246,
+     "read_s": 0.03721491596661508,
+     "bits": 9.424348831176758
+    }
+   },
+   "CH-f_best": "ZSTD(19)",
+   "CH-f": 13.864017486572266,
+   "CH-i_best": "T64, ZSTD(19)",
+   "CH-i": 9.037294387817383,
+   "TDB-f_best": "Zstd(19)",
+   "TDB-f": 14.892789840698242,
+   "TDB-i_best": "ByteShuffle, Zstd(19)",
+   "TDB-i": 9.424348831176758,
+   "M": 9.167,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmp4p0d8zet/b2-morlet.bin",
+    "samples": 4194304,
+    "bytes": 4806153,
+    "bits_per_sample": 9.167,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 6.5,
+    "decode_msamples_s": 47.6
+   },
+   "M_equals_B1": true,
+   "Z": 14.822477340698242,
+   "PQ-f": 30.57044792175293,
+   "ALP": 62.125,
+   "FLAC": 7.697347640991211,
+   "PQ-i": 9.60551643371582,
+   "DDB-i": 11.25,
+   "M-i": 7.8829
+  },
+  "sleep": {
+   "samples": 4194304,
+   "CH-f_chains": {
+    "ZSTD(19)": {
+     "bytes": 10690230,
+     "part_bytes_on_disk": 27824972,
+     "write_s": 8.81391479098238,
+     "read_s": 0.05490579199977219,
+     "bits": 20.389995574951172
+    },
+    "Gorilla, ZSTD(19)": {
+     "bytes": 22782033,
+     "part_bytes_on_disk": 39916965,
+     "write_s": 5.270557833020575,
+     "read_s": 0.0537804170162417,
+     "bits": 43.45327949523926
+    },
+    "FPC, ZSTD(19)": {
+     "bytes": 21278048,
+     "part_bytes_on_disk": 38412961,
+     "write_s": 5.230651166988537,
+     "read_s": 0.0523344159591943,
+     "bits": 40.58465576171875
+    },
+    "Delta(8), ZSTD(19)": {
+     "bytes": 15407715,
+     "part_bytes_on_disk": 32542540,
+     "write_s": 8.543713791004848,
+     "read_s": 0.05668658297508955,
+     "bits": 29.38788414001465
+    }
+   },
+   "CH-i_chains": {
+    "ZSTD(19)": {
+     "bytes": 6457404,
+     "part_bytes_on_disk": 23460249,
+     "write_s": 18.856059374986216,
+     "read_s": 0.033747625013347715,
+     "bits": 12.316520690917969
+    },
+    "Delta, ZSTD(19)": {
+     "bytes": 6334514,
+     "part_bytes_on_disk": 23337354,
+     "write_s": 19.805811290978454,
+     "read_s": 0.032460334012284875,
+     "bits": 12.08212661743164
+    },
+    "DoubleDelta, ZSTD(19)": {
+     "bytes": 5979521,
+     "part_bytes_on_disk": 22982353,
+     "write_s": 0.6753734159865417,
+     "read_s": 0.030534167017322034,
+     "bits": 11.405031204223633
+    },
+    "T64, ZSTD(19)": {
+     "bytes": 5274812,
+     "part_bytes_on_disk": 22277629,
+     "write_s": 0.8539264589780942,
+     "read_s": 0.03109750000294298,
+     "bits": 10.060905456542969
+    },
+    "Gorilla, ZSTD(19)": "unavailable or failed: RuntimeError: Code: 36. DB::Exception: The combination of compression codecs Gorilla(8), ZSTD(19) is meaningless, because it does not make sense to apply a floating-point time series codec to non-floating-point columns (Note: you can enable setting 'allow_suspicious_codecs' to skip this check). (BAD_ARGUMENTS)"
+   },
+   "TDB-f_chains": {
+    "Zstd(19)": {
+     "bytes": 12380360,
+     "array_bytes_on_disk": 12407684,
+     "write_s": 0.5124488750007004,
+     "read_s": 0.04370599996764213,
+     "bits": 23.613662719726562
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 21648659,
+     "array_bytes_on_disk": 21676205,
+     "write_s": 0.46656229201471433,
+     "read_s": 0.039694499981123954,
+     "bits": 41.29154014587402
+    },
+    "BitShuffle, Zstd(19)": {
+     "bytes": 13700642,
+     "array_bytes_on_disk": 13728012,
+     "write_s": 0.2919347090064548,
+     "read_s": 0.03826870798366144,
+     "bits": 26.131900787353516
+    },
+    "XOR, Zstd(19)": {
+     "bytes": 22437471,
+     "array_bytes_on_disk": 22465045,
+     "write_s": 0.4363446249626577,
+     "read_s": 0.04067833302542567,
+     "bits": 42.79607963562012
+    }
+   },
+   "TDB-i_chains": {
+    "Zstd(19)": {
+     "bytes": 6389526,
+     "array_bytes_on_disk": 6404085,
+     "write_s": 1.0836988340015523,
+     "read_s": 0.039462000015191734,
+     "bits": 12.187053680419922
+    },
+    "Delta, Zstd(19)": {
+     "bytes": 6406700,
+     "array_bytes_on_disk": 6421267,
+     "write_s": 1.1668010000139475,
+     "read_s": 0.06912137503968552,
+     "bits": 12.219810485839844
+    },
+    "DoubleDelta, Zstd(19)": {
+     "bytes": 5872719,
+     "array_bytes_on_disk": 5887272,
+     "write_s": 0.09718320798128843,
+     "read_s": 0.06340270797954872,
+     "bits": 11.201322555541992
+    },
+    "BitWidthReduction, Zstd(19)": {
+     "bytes": 6338945,
+     "array_bytes_on_disk": 6353513,
+     "write_s": 0.1539552920148708,
+     "read_s": 0.041345124947838485,
+     "bits": 12.090578079223633
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 5430781,
+     "array_bytes_on_disk": 5445323,
+     "write_s": 0.42760024999734014,
+     "read_s": 0.037170082970988005,
+     "bits": 10.358392715454102
+    }
+   },
+   "CH-f_best": "ZSTD(19)",
+   "CH-f": 20.389995574951172,
+   "CH-i_best": "T64, ZSTD(19)",
+   "CH-i": 10.060905456542969,
+   "TDB-f_best": "Zstd(19)",
+   "TDB-f": 23.613662719726562,
+   "TDB-i_best": "ByteShuffle, Zstd(19)",
+   "TDB-i": 10.358392715454102,
+   "M": 15.5094,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmp4p0d8zet/b2-morlet.bin",
+    "samples": 4194304,
+    "bytes": 8131385,
+    "bits_per_sample": 15.5094,
+    "grid_chunks": 1024,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 6.0,
+    "decode_msamples_s": 32.4
+   },
+   "M_equals_B1": true,
+   "Z": 23.543350219726562,
+   "PQ-f": 38.14751625061035,
+   "ALP": 59.625,
+   "FLAC": 8.652141571044922,
+   "PQ-i": 10.22137451171875,
+   "DDB-i": 12.0,
+   "M-i": 8.7999
+  },
+  "ecg": {
+   "samples": 4194000,
+   "CH-f_chains": {
+    "ZSTD(19)": {
+     "bytes": 7453536,
+     "part_bytes_on_disk": 24453027,
+     "write_s": 13.768276082992088,
+     "read_s": 0.045328999985940754,
+     "bits": 14.21752217453505
+    },
+    "Gorilla, ZSTD(19)": {
+     "bytes": 18802287,
+     "part_bytes_on_disk": 35801989,
+     "write_s": 6.508504208992235,
+     "read_s": 0.04084691597381607,
+     "bits": 35.86511587982832
+    },
+    "FPC, ZSTD(19)": {
+     "bytes": 17037391,
+     "part_bytes_on_disk": 34037074,
+     "write_s": 5.440955041965935,
+     "read_s": 0.04301445797318593,
+     "bits": 32.49859990462566
+    },
+    "Delta(8), ZSTD(19)": {
+     "bytes": 8889313,
+     "part_bytes_on_disk": 25888838,
+     "write_s": 13.578051167016383,
+     "read_s": 0.04147104197181761,
+     "bits": 16.956247973295184
+    }
+   },
+   "CH-i_chains": {
+    "ZSTD(19)": {
+     "bytes": 5837804,
+     "part_bytes_on_disk": 22837250,
+     "write_s": 19.73804712499259,
+     "read_s": 0.034653125039767474,
+     "bits": 11.13553457319981
+    },
+    "Delta, ZSTD(19)": {
+     "bytes": 5709579,
+     "part_bytes_on_disk": 22709024,
+     "write_s": 22.88872220896883,
+     "read_s": 0.0349148329696618,
+     "bits": 10.890947067238912
+    },
+    "DoubleDelta, ZSTD(19)": {
+     "bytes": 4807832,
+     "part_bytes_on_disk": 21807255,
+     "write_s": 0.6143149999552406,
+     "read_s": 0.034587792004458606,
+     "bits": 9.17087649022413
+    },
+    "T64, ZSTD(19)": {
+     "bytes": 4912373,
+     "part_bytes_on_disk": 21911798,
+     "write_s": 0.9728053330327384,
+     "read_s": 0.03242720797425136,
+     "bits": 9.370287076776346
+    },
+    "Gorilla, ZSTD(19)": "unavailable or failed: RuntimeError: Code: 36. DB::Exception: The combination of compression codecs Gorilla(8), ZSTD(19) is meaningless, because it does not make sense to apply a floating-point time series codec to non-floating-point columns (Note: you can enable setting 'allow_suspicious_codecs' to skip this check). (BAD_ARGUMENTS)"
+   },
+   "TDB-f_chains": {
+    "Zstd(19)": {
+     "bytes": 8024267,
+     "array_bytes_on_disk": 8042937,
+     "write_s": 0.5131375410128385,
+     "read_s": 0.04129495797678828,
+     "bits": 15.306184072484502
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 26453129,
+     "array_bytes_on_disk": 26472224,
+     "write_s": 0.4131414590519853,
+     "read_s": 0.04113870800938457,
+     "bits": 50.45899666189795
+    },
+    "BitShuffle, Zstd(19)": {
+     "bytes": 29339360,
+     "array_bytes_on_disk": 29358490,
+     "write_s": 0.2878236250253394,
+     "read_s": 0.04100891697453335,
+     "bits": 55.964444444444446
+    },
+    "XOR, Zstd(19)": {
+     "bytes": 17049306,
+     "array_bytes_on_disk": 17068182,
+     "write_s": 0.5675158749800175,
+     "read_s": 0.04067741596372798,
+     "bits": 32.521327610872675
+    }
+   },
+   "TDB-i_chains": {
+    "Zstd(19)": {
+     "bytes": 5822253,
+     "array_bytes_on_disk": 5836906,
+     "write_s": 1.1966135410475545,
+     "read_s": 0.03857137501472607,
+     "bits": 11.105871244635193
+    },
+    "Delta, Zstd(19)": {
+     "bytes": 5812016,
+     "array_bytes_on_disk": 5826684,
+     "write_s": 1.530082749959547,
+     "read_s": 0.06961649999720976,
+     "bits": 11.086344301382928
+    },
+    "DoubleDelta, Zstd(19)": {
+     "bytes": 4904902,
+     "array_bytes_on_disk": 4919534,
+     "write_s": 0.11564108298625797,
+     "read_s": 0.06886333297006786,
+     "bits": 9.356036242250834
+    },
+    "BitWidthReduction, Zstd(19)": {
+     "bytes": 5411105,
+     "array_bytes_on_disk": 5425765,
+     "write_s": 0.23702129197772592,
+     "read_s": 0.04097770800581202,
+     "bits": 10.321611826418694
+    },
+    "ByteShuffle, Zstd(19)": {
+     "bytes": 4838032,
+     "array_bytes_on_disk": 4852662,
+     "write_s": 0.563044958980754,
+     "read_s": 0.04409995797323063,
+     "bits": 9.228482594182164
+    }
+   },
+   "CH-f_best": "ZSTD(19)",
+   "CH-f": 14.21752217453505,
+   "CH-i_best": "DoubleDelta, ZSTD(19)",
+   "CH-i": 9.17087649022413,
+   "TDB-f_best": "Zstd(19)",
+   "TDB-f": 15.306184072484502,
+   "TDB-i_best": "ByteShuffle, Zstd(19)",
+   "TDB-i": 9.228482594182164,
+   "M": 7.4022,
+   "M_detail": {
+    "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmp4p0d8zet/b2-morlet.bin",
+    "samples": 4194000,
+    "bytes": 3880583,
+    "bits_per_sample": 7.4022,
+    "grid_chunks": 4194,
+    "float_chunks": 0,
+    "raw_chunks": 0,
+    "encode_msamples_s": 4.9,
+    "decode_msamples_s": 59.2
+   },
+   "M_equals_B1": true,
+   "Z": 18.94386647591798,
+   "PQ-f": 44.64253695755842,
+   "ALP": 12.75092417739628,
+   "FLAC": 7.454668574153553,
+   "PQ-i": 10.266203147353362,
+   "DDB-i": 12.75092417739628,
+   "M-i": 7.4022
+  }
+ },
+ "comparisons": {
+  "cx": {
+   "best_float": "PQ-f",
+   "M_over_best_float": 0.6741647003176041,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.0534133023984689,
+   "M_over_CH-f": 0.6001149575772983,
+   "M_over_TDB-f": 0.6557797653304193,
+   "M_over_CH-i": 0.6742446184017443,
+   "M_over_TDB-i": 0.7803668337948162
+  },
+  "ims": {
+   "best_float": "ALP",
+   "M_over_best_float": 0.8008,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.0472069559412611,
+   "M_over_CH-f": 0.7053566615594019,
+   "M_over_TDB-f": 0.6617547666107556,
+   "M_over_CH-i": 1.0190116143563457,
+   "M_over_TDB-i": 0.9931611097276432
+  },
+  "pad-c": {
+   "best_float": "PQ-f",
+   "M_over_best_float": 0.8314183354975895,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.0241060125725197,
+   "M_over_CH-f": 0.6683735455442705,
+   "M_over_TDB-f": 0.7854102960736421,
+   "M_over_CH-i": 0.8722632750158554,
+   "M_over_TDB-i": 0.8364397520943325
+  },
+  "pad-p": {
+   "best_float": "CH-f",
+   "M_over_best_float": 0.6612080523469136,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.1909297107983468,
+   "M_over_CH-f": 0.6612080523469136,
+   "M_over_TDB-f": 0.6155327576669952,
+   "M_over_CH-i": 1.014352261486299,
+   "M_over_TDB-i": 0.9726931976111262
+  },
+  "sleep": {
+   "best_float": "CH-f",
+   "M_over_best_float": 0.7606377325090292,
+   "best_int": "FLAC",
+   "M_over_best_int": 1.7925504191821637,
+   "M_over_CH-f": 0.7606377325090292,
+   "M_over_TDB-f": 0.6567977269804754,
+   "M_over_CH-i": 1.5415511125704575,
+   "M_over_TDB-i": 1.4972786247871162
+  },
+  "ecg": {
+   "best_float": "ALP",
+   "M_over_best_float": 0.580522626989028,
+   "best_int": "FLAC",
+   "M_over_best_int": 0.992961648981221,
+   "M_over_CH-f": 0.5206392442459525,
+   "M_over_TDB-f": 0.48360845295900545,
+   "M_over_CH-i": 0.8071420444807555,
+   "M_over_TDB-i": 0.8021036962963453
+  }
+ },
+ "claims": {
+  "calibrated_smaller_than_every_metadata_free_float": true,
+  "within_15pct_of_best_integer_all_six": false
+ },
+ "versions": {
+  "chdb": "26.5.0",
+  "chdb_engine": "\"26.5.1.1\"",
+  "tiledb_py": "0.36.1",
+  "tiledb_core": "2.30.0",
+  "pyarrow": "26.0.0",
+  "numpy": "2.5.4"
+ }
+}
