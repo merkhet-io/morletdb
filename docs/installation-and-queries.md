@@ -128,10 +128,12 @@ Envelopes are opt-in and are not automatically built by append. Call the bounded
 | --- | --- | --- |
 | Create a collection | `morlet_create_stream_collection` | Creates managed recording, chunk and segment tables |
 | Declare a recording | `morlet_start_recording`, `morlet_ensure_recording` | Fixes rate, channel, units and extraction configuration |
-| Append samples | `morlet_append_chunk` | Global sample offsets; identical retries are checked; gaps and conflicting retries fail |
+| Append samples | `morlet_append_chunk`, `morlet_append_chunks` | Global sample offsets; identical retries are checked; gaps and conflicting retries fail. The plural form appends several chunks in one call |
+| Append samples as bytes | `morlet_append_chunk_raw` | The same append with samples as little-endian float64 bytes, without per-element parsing (SQL 0.3.3); used by the importer |
 | Read samples | `morlet_read_interval` | Reconstructs original samples, including across chunk boundaries |
-| Read samples as bytes | `morlet_read_interval_raw` | The same samples as little-endian float64 bytes, up to 16,777,216 per call (SQL 0.3.3); clients map them to arrays without per-element parsing, e.g. `numpy.frombuffer(raw, "<f8")` |
+| Read samples as bytes | `morlet_read_interval_raw` | The same samples as little-endian float64 bytes, up to 16,777,216 per call (SQL 0.3.3); map them with e.g. `numpy.frombuffer(raw, "<f8")` |
 | Interval statistics | `morlet_interval_stats` | Count, min, max, mean and RMS computed while decoding, without building a sample array (SQL 0.3.3); min and max exact, mean and RMS compensated in float64 |
+| Convert time and samples | `morlet_time_to_samples`, `morlet_sample_time_ns` | Nanosecond time ranges to sample intervals and back, for a rate and a channel offset |
 | Feature search | `morlet_search_streams`, `morlet_search_interval` | Exact search over compatible Morlet/statistical feature segments, not bounded-lag envelope scoring |
 | Build envelopes | `morlet_enable_envelopes`, `morlet_build_envelopes` | Opt-in materialized search representation |
 | Similar-interval search | `morlet_search_similar` | Probe search when enabled for the window size, otherwise exact |
@@ -139,8 +141,15 @@ Envelopes are opt-in and are not automatically built by append. Call the bounded
 | Indexed envelope search | `morlet_enable_envelope_probes`, `morlet_search_envelope_probes` | Optional pgvector path with exact fallback for small galleries |
 | Inspect progress | `morlet_stream_status`, `morlet_collection_status` | Recording progress, representation coverage and probe backlog |
 | Inspect storage | `morlet_recording_storage`, `morlet_collection_storage` | Logical payload and physical storage accounting are distinct |
-| Enable companion-table RLS | `morlet_enable_row_security` | Complements recording-table policies; ordinary grants still apply |
-| Array primitives | `morlet_rms`, `morlet_normalize`, `morlet_distance`, `morlet_features`, `morlet_envelope_distance` | RMS, normalization, aligned sample distance, features and envelope scoring are different operations |
+| Enable companion-table RLS | `morlet_enable_row_security`, `morlet_row_security_enabled` | Complements recording-table policies; ordinary grants still apply |
+| Operating context | `morlet_enable_context`, `morlet_add_context`, `morlet_revise_context` | Timed context events (program, block, tool, part, …); batches are idempotent; revisions and retractions keep the history |
+| Context segments and values | `morlet_build_context_segments`, `morlet_build_context_values` | Cut recordings into segments by context keys and compute versioned per-segment values (duration, level, spread, peak and shape) |
+| Compare with history | `morlet_compare_to_history`, `morlet_compare_summary`, `morlet_history_neighbors` | Deviation of a segment from earlier segments in the same context, a one-row summary score, and the closest past segments with their labels; `before_only` restricts history to earlier time |
+| Track a level | `morlet_level_track` | Kalman level track of a segment value under the same operating conditions: sustained change versus short-lived variation |
+| Labels | `morlet_add_label`, `morlet_retract_label` | Labels on sample intervals, used as data, for example to exclude known-bad history |
+| Acquisitions | `morlet_enable_acquisitions`, `morlet_create_acquisition`, `morlet_add_acquisition_channel`, `morlet_add_acquisition_context`, `morlet_build_acquisition_segments`, `morlet_compare_acquisition`, `morlet_read_acquisition` | Groups of channels with their own rates and clock offsets: read one time interval from every channel, and compare an occurrence across channels |
+| Array primitives | `morlet_rms`, `morlet_normalize`, `morlet_distance`, `morlet_features`, `morlet_envelope_distance`, `morlet_simple_values`, `morlet_simple_value_names` | RMS, normalization, aligned sample distance, features, envelope scoring and the per-segment values are different operations |
+| Versions | `morlet_version`, `morlet_extractor_version`, `morlet_envelope_version`, `morlet_simple_values_version` | Extension, feature extractor, envelope and segment-value versions, to record with derived results |
 
 Filters use JSONB containment, for example `'{"asset":"spindle-1"}'::jsonb`. Eligibility also requires compatible rate, channel, unit and representation/window settings. Exact searches have explicit candidate budgets and fail when exceeded rather than silently searching a prefix. Returned intervals are ordered by distance, recording ID and start sample, with source exclusion and greedy overlap suppression enabled by default on stored-interval searches.
 
