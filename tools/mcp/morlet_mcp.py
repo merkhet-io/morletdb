@@ -518,7 +518,9 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
     length to start 2 s before it and searches with the window also moved by 1/8 and 2/8 of its length
     either way (on seismic test data this found the most related events of the framings tried), over
     recordings matching search_filter. If there is no onset, the window starts a quarter window before the
-    time. Returns how the window was chosen and the hits, as search_similar does. Prefer this to
+    time. For short recordings such as snapshots, the query's own snapshot is left out and each other snapshot
+    appears once, with its best window. Returns how the window was chosen and the hits, as search_similar
+    does. Prefer this to
     search_similar when you know when something happened."""
     t = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
     flt = json.loads(metadata_filter or "{}")
@@ -559,12 +561,17 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
                                                        f"the time, searched with shifts={FRAME_SHIFTS}"}
     start = max(0, min(start, n - window))
     short = n / rate < 120                       # a snapshot: its other windows are not "elsewhere"
-    result = search_similar(collection, rid, start, start + window, search_filter, top_k + (20 if short else 0),
+    result = search_similar(collection, rid, start, start + window, search_filter, top_k * 4 + 20 if short else top_k,
                             FRAME_SHIFTS)
-    if short:
-        result["hits"] = [h for h in result["hits"] if h["recording_id"] != rid][:top_k]
+    if short:                                    # snapshots: the best window of each other snapshot
+        best, seen = [], set()
+        for h in result["hits"]:
+            if h["recording_id"] != rid and h["recording_id"] not in seen:
+                seen.add(h["recording_id"])
+                best.append(h)
+        result["hits"] = best[:top_k]
         result["recordings"] = {h["recording_id"]: result["recordings"][h["recording_id"]] for h in result["hits"]}
-        how["excluded"] = "the query's own recording (shorter than 2 min)"
+        how["excluded"] = "the query's own recording (shorter than 2 min); one hit per snapshot"
     result["framing"] = {"recording_id": rid, "utc_time": utc_time, **how}
     return result
 
@@ -695,6 +702,88 @@ def compare_intervals(collection: str, recording_id: str, start_sample: int, end
     if warnings:
         out["warnings"] = warnings
     return out
+
+
+def envelope(x, rate, lo, hi):
+    """Amplitude envelope of x after a band-pass to [lo, hi] Hz (analytic signal by FFT), mean removed."""
+    y = bandpass(x, rate, lo, hi)
+    spec = np.fft.fft(y)
+    h = np.zeros(y.size)
+    h[0] = 1.0
+    if y.size % 2 == 0:
+        h[1:y.size // 2] = 2.0
+        h[y.size // 2] = 1.0
+    else:
+        h[1:(y.size + 1) // 2] = 2.0
+    env = np.abs(np.fft.ifft(spec * h))
+    return env - env.mean()
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def envelope_spectrum(collection: str, recording_id: str, start_sample: int, end_sample: int, band: str = "",
+                      max_frequency_hz: float = 600.0, check_frequencies: str = "", harmonics: int = 3,
+                      tolerance_percent: float = 3.0, top_peaks: int = 8) -> dict:
+    """Envelope spectrum of an interval: band-pass around a resonance (band "lo-hi" in Hz; default the
+    strongest of the default bands above a tenth of Nyquist), take the amplitude envelope and its spectrum up
+    to max_frequency_hz. Repeating impacts, such as rolling elements passing a bearing defect, show up as a
+    line at their repetition frequency and its harmonics. Levels are dB above the median of the envelope
+    spectrum. noise_peak_db is the level random peaks reach here (90th percentile of all local maxima): a line
+    well above it (say 10 dB) with harmonics is clear. Returns the strongest peaks, and for each frequency in
+    check_frequencies (comma-separated, e.g. defect frequencies you computed) the strongest peak within
+    tolerance_percent of it and of its harmonics; real defect lines often sit a few percent off the computed
+    value (slip, contact angle). A line shows periodic impacts at that rate, not by itself a diagnosis."""
+    with connect() as conn:
+        c = checked(conn, collection)
+        rec = recording(conn, c, recording_id)
+        x = read(conn, c, recording_id, start_sample, end_sample)
+    rate = rec["rate"]
+    if x.size < 256:
+        raise ValueError("interval too short for an envelope spectrum (need at least 256 samples)")
+    if band.strip():
+        (lo, hi), = parse_bands(band, rate)
+    else:
+        st = stats(x, rate)
+        cands = [(k, v) for k, v in st.get("band_power", {}).items() if float(k.split("-")[0]) >= rate / 20]
+        if not cands:
+            raise ValueError("no band above a tenth of Nyquist; give band")
+        k = max(cands, key=lambda kv: kv[1])[0]
+        lo, hi = (float(v) for v in k.replace(" Hz", "").split("-"))
+        hi = min(hi, rate / 2 * 0.98)
+    env = envelope(x, rate, lo, hi)
+    spec = np.abs(np.fft.rfft(env * np.hanning(env.size))) / env.size
+    freqs = np.fft.rfftfreq(env.size, 1.0 / rate)
+    res = float(freqs[1])
+    keep = (freqs >= max(2 * res, 1.0)) & (freqs <= max_frequency_hz)
+    f, a = freqs[keep], spec[keep]
+    if f.size < 10:
+        raise ValueError("too few frequencies below max_frequency_hz; use a longer interval")
+    med = float(np.median(a)) or 1e-30
+    db = 20 * np.log10(np.maximum(a, 1e-30) / med)
+    loc = np.flatnonzero((a[1:-1] > a[:-2]) & (a[1:-1] >= a[2:])) + 1
+    noise = float(np.percentile(db[loc], 90)) if loc.size else 0.0
+    order = loc[np.argsort(-a[loc])][:max(1, min(top_peaks, 30))]
+    peaks = [{"frequency_hz": round(float(f[i]), 2), "db": round(float(db[i]), 1)} for i in order]
+    tol = max(0.0, tolerance_percent) / 100
+    checks = []
+    for item in [t for t in check_frequencies.split(",") if t.strip()]:
+        f0 = float(item)
+        if f0 <= 0:
+            raise ValueError("check_frequencies must be positive")
+        hs = []
+        for h in range(1, max(1, min(harmonics, 6)) + 1):
+            target = h * f0
+            if target > max_frequency_hz:
+                break
+            near = np.abs(f - target) <= max(2 * res, tol * target)
+            i = int(np.argmax(np.where(near, a, -1.0)))
+            hs.append({"harmonic": h, "expected_hz": round(target, 2), "found_hz": round(float(f[i]), 2),
+                       "db": round(float(db[i]), 1), "db_above_noise_peaks": round(float(db[i]) - noise, 1)})
+        checks.append({"frequency_hz": f0, "harmonics": hs})
+    return {"collection": collection, "recording_id": recording_id, "start_sample": start_sample,
+            "end_sample": end_sample, "start_utc": at(start_time(rec["metadata"]), rate, start_sample),
+            "demodulation_band_hz": [lo, hi], "resolution_hz": round(res, 3), "noise_peak_db": round(noise, 1),
+            "peaks": peaks, "checks": checks}
 
 
 @mcp.tool(annotations=READ_ONLY)

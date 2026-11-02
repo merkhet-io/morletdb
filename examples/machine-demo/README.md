@@ -1,9 +1,9 @@
-# Machine demo: Claude investigates a bearing run to failure
+# Machine demo: Claude investigates bearings run to failure
 
-A week of vibration snapshots from four bearings on one test shaft, recorded until one of them failed, in
-MorletDB with the read-only [MCP](../../docs/mcp.md) server. An agent such as Claude can follow the history
-the way a reliability engineer would: when did the failing bearing start to change, how did it change, and do
-the other bearings show anything similar?
+Two run-to-failure tests of four bearings on one test shaft, as vibration snapshots in MorletDB with the
+read-only [MCP](../../docs/mcp.md) server. An agent such as Claude can follow the history the way a reliability
+engineer would: when did the failing bearing start to change, how did it change, do the other bearings show
+anything similar, and has the same fault signature appeared anywhere else?
 
 You need Docker (Compose v2) and an MCP client such as Claude Code or Claude Desktop. Nothing is installed on
 your machine: the database, the importer and the MCP server run in containers. This is the machine twin of
@@ -18,20 +18,25 @@ docker compose run --rm load
 ```
 
 This starts PostgreSQL 17 with pg_morlet (the `0.3.2-alpha.1` release image, linux/amd64), downloads the IMS
-bearing archive from NASA's prognostics data repository (about 1 GB; SHA-256 checked) and extracts test 2. It
-imports every snapshot as four recordings, one per bearing, and builds the search envelopes: 3,936 recordings,
-80.6 million samples and 35,424 search windows. Finally it creates the role `machine_reader` that the MCP
+bearing archive from NASA's prognostics data repository (about 1 GB; SHA-256 checked) and extracts tests 2 and
+3. It imports every test-2 snapshot and every sixth test-3 snapshot (one an hour) as four recordings each, one
+per bearing, and builds the search envelopes: 8,152 recordings, 167 million samples and 73,368 search
+windows. Finally it creates the role `machine_reader` that the MCP
 server connects as: it may read, nothing else. From already extracted files, add `--from-dir` (see `load.py`).
 
-On an Apple M5 Max the import took under 5 minutes from local files, with the release image emulated.
+On an Apple M5 Max, a fresh run with test 2 only (download, checks, extraction, import) took 10 minutes, with
+the release image emulated; adding test 3 to that database was not timed separately.
 
-**Data:** IMS Bearing Data, test 2. J. Lee, H. Qiu, G. Yu, J. Lin and Rexnord Technical Services (2007), IMS,
+**Data:** IMS Bearing Data, tests 2 and 3. J. Lee, H. Qiu, G. Yu, J. Lin and Rexnord Technical Services (2007), IMS,
 University of Cincinnati, NASA Prognostics Data Repository. The provider asks for this acknowledgement and
 states no licence; the demo downloads from NASA and does not redistribute the data.
 
 **What test 2 is:** four Rexnord ZA-2115 double-row bearings on one shaft at 2,000 rpm under a 6,000 lb radial
 load, one housing accelerometer per bearing, a 1-second snapshot at 20 kHz every 10 minutes from 12 to 19
 February 2004 (984 snapshots). According to the provider, bearing 1 ended the test with an outer-race failure.
+**Test 3** is the same rig from 4 March to 18 April 2004 (6,324 snapshots as distributed; the provider's readme
+lists 4,448 ending 4 April); according to the provider, bearing 3 ended it with an outer-race failure. Neither
+failure label is in the database.
 Times are the rig clock from the file names (time zone not stated), shown as UTC. Values are as distributed, on
 a 0.001 grid, unit not stated; some late values sit at ±5.0, which looks like the sensor's limit. The last two
 snapshots are almost flat: the rig had stopped.
@@ -80,6 +85,33 @@ powers cannot confirm the outer-race frequency (about 236 Hz). Runs 1 and 2 reac
 snapshot; their first `trend` answers exceeded Claude Code's tool-output limit, which led to the compact
 CSV table `trend` returns now.
 
+## 4. Ask across tests
+
+> Bearing 1 in test 2 failed with an outer-race fault. Characterise its fault signature, then find out whether
+> the same signature appears on any bearing in test 3, when it first appears there, and whether you can
+> confirm that it is the same kind of fault. Cite the snapshots you base this on.
+
+This is where similarity search and the envelope spectrum come in:
+
+1. `envelope_spectrum` on a late bearing-1 snapshot of test 2 (band 3–5 kHz, the computed defect frequencies
+   of a ZA-2115 at 2,000 rpm: outer race 236.4 Hz, inner race 296.9 Hz, rolling element 139.9 Hz, cage 14.8 Hz):
+   a line at **230.5 Hz**, about 30 dB above the spectrum's median against noise peaks of about 8 dB, with its
+   second harmonic; nothing at the other defect frequencies. In the first snapshot of the test there is none.
+2. `search_from_time` from that snapshot, restricted to test 3: every one of the top hits is bearing 3, or its
+   neighbour bearing 4, on 16–18 April, the last days of test 3.
+3. `envelope_spectrum` on those hits: the same line at 231.45 Hz with its harmonic, on bearing 3 from 16 April
+   about 08:52 (+22 dB) to +35 dB on 17 April; bearing 4 carries it more weakly; bearings 1 and 2 do not.
+
+As controls, a healthy bearing-1 snapshot and test 2's bearing 4 (which only carries the fault weakly) return
+test-3 hits spread over March and April at clearly larger distances, and test 2's bearing 2 at its end (shaking
+without a fault) finds test 3's bearing 2 at its end. That is a handful of queries, not an evaluation.
+
+**A real session.** [One unattended Claude Code run](sessions/2026-11-02-fault-across-tests.md) (38 tool calls,
+113 s) characterised the 230.5 Hz signature, found it with `search_from_time` only on bearings 3 and 4 in the
+last two days of test 3, traced its first appearance to between 07:52 and 08:52 on 16 April, judged bearing 3
+the more likely source, and said that an outer-race fault is consistent with the data but would need a
+teardown to prove.
+
 ## Without a language model
 
 ```sh
@@ -89,8 +121,8 @@ docker compose run --rm -e DATABASE_URL=postgresql://machine_reader:machine-demo
 
 ## Limits
 
-- **One test on one rig.** Four bearings on a shared shaft under one operating condition; the faults developed
-  naturally. This shows how an agent can investigate a history, not how well anything predicts failure.
+- **Two tests on one rig.** Four bearings on a shared shaft under one operating condition; the faults developed
+  naturally. Test 3 is loaded one snapshot an hour, so its onset is known to the hour. This shows how an agent can investigate a history, not how well anything predicts failure.
 - **Change points are candidates.** `trend` flags the first sustained departure from an early baseline; on a
   machine with changing load or speed that would need operating context.
 - **Not a diagnosis.** Similar vibration is a lead for an engineer, not a fault classification or a remaining
