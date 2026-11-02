@@ -87,7 +87,7 @@ def metadata(value):
 def column_map(config, mapping):
     required = ["recording_id", "start_sample", "sample_rate_hz", "channel", "unit",
                 "samples" if config.layout == "chunks" else "value"]
-    allowed = set(required) | {"metadata"}
+    allowed = set(required) | {"metadata", "sample_quantum", "extractor"}
     if set(mapping) - allowed or any(not isinstance(v, str) or not v for v in mapping.values()):
         raise ValueError("column map has unknown fields or invalid column names")
     columns = {key: key for key in allowed}
@@ -126,10 +126,18 @@ def chunks(path, config, mapping=None):
             start = row["start_sample"]
             if isinstance(start, bool) or not isinstance(start, int) or not 0 <= start <= 2**63-1:
                 raise ValueError("sample offset must be a nonnegative bigint")
-            rate = sample_rate(row["sample_rate_hz"], config.extractor)
+            rate = sample_rate(row["sample_rate_hz"], row.get("extractor") or config.extractor)
             if any(not isinstance(row[key], str) or not row[key] for key in ("channel", "unit")):
                 raise ValueError("channel and unit must be nonempty strings")
             row_spec = (rate, row["channel"], row["unit"], metadata(row.get("metadata", {})))
+            if row.get("sample_quantum") is not None or row.get("extractor") is not None:
+                # Optional per-recording columns (e.g. from morlet_export.py) override the run-wide settings.
+                quantum = number(row.get("sample_quantum") or config.sample_quantum, "sample_quantum", 1e-12, 1e9)
+                extractor = row.get("extractor") or config.extractor
+                if extractor not in RATE_DOMAINS:
+                    raise ValueError("extractor must be one of " + ", ".join(RATE_DOMAINS))
+                sample_rate(row["sample_rate_hz"], extractor)
+                row_spec += (quantum, extractor)
             values = row["samples"] if config.layout == "chunks" else [row["value"]]
             if not isinstance(values, list) or not 1 <= len(values) <= 32768:
                 raise ValueError("sample arrays must contain 1..32768 values")

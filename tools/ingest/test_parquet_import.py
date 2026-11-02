@@ -57,6 +57,17 @@ class ParquetContractTests(unittest.TestCase):
             with self.assertRaises(ImportFailure):
                 import_files([self.path],"public.unused",validate_only=True)
 
+    def test_per_recording_quantum_and_extractor_columns(self):
+        path = Path(tempfile.mkdtemp()) / "x.parquet"
+        pq.write_table(pa.table({"recording_id": ["hi", "lo"], "sample_rate_hz": [1000.0, 100.0],
+                                 "channel": ["z", "z"], "unit": ["g", "counts"], "metadata": ["{}", "{}"],
+                                 "sample_quantum": [0.001, 1.0],
+                                 "extractor": ["morlet-energy-v1", "morlet-energy-lowrate-v1"],
+                                 "start_sample": [0, 0], "samples": [[0.001, 0.002], [1.0, 2.0]]}), path)
+        specs = {rid: spec for rid, spec, _, _ in chunks(path, Config())}
+        self.assertEqual(specs["lo"][4:], (1.0, "morlet-energy-lowrate-v1"))
+        self.assertEqual(specs["hi"][4:], (0.001, "morlet-energy-v1"))
+
     def test_low_rate_requires_explicit_lowrate_extractor(self):
         rows = [{**self.base(), "sample_rate_hz": 100., "start_sample": 0, "samples": self.values}]
         self.write(rows)

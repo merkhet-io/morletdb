@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from parquet_import import Config, ImportFailure, import_files  # noqa: E402
 
 SUFFIXES = {".wav": "wav", ".edf": "edf", ".bdf": None, ".mseed": "mseed", ".miniseed": "mseed",
-            ".msd": "mseed", ".csv": "csv"}
+            ".msd": "mseed", ".csv": "csv", ".parquet": "exchange", ".tdms": "tdms"}
 
 
 @dataclass
@@ -134,6 +134,111 @@ def read_mseed(path, opts):
     return out
 
 
+def read_tdms(path, opts):
+    """NI TDMS (npTDMS): one recording per waveform channel, i.e. a numeric channel with wf_increment.
+
+    Values are the scaled (physical) values npTDMS computes from the file's scaling information, stored exactly
+    as float64; with --tdms-values raw, the unscaled stored values instead (integer DAQ counts keep quantum 1).
+    The sample rate is 1 / wf_increment; the start time is wf_start_time + wf_start_offset when the file has
+    them. Channels without waveform timing (irregular, or timed by a separate time channel), non-numeric
+    channels and empty channels are refused with the reason, as is the whole file if none is importable."""
+    try:
+        from nptdms import TdmsFile
+    except ImportError as exc:
+        raise ValueError("TDMS needs npTDMS: python -m pip install nptdms") from exc
+    raw = getattr(opts, "tdms_values", "scaled") == "raw"
+    tdms = TdmsFile.read(str(path))
+    out, refused = [], []
+    for group in tdms.groups():
+        for ch in group.channels():
+            where = f"{group.name}/{ch.name}"
+            props = dict(ch.properties)
+            dtype = getattr(ch, "dtype", None)
+            if dtype is None or not (np.issubdtype(dtype, np.integer) or np.issubdtype(dtype, np.floating)):
+                refused.append(f"{where}: not numeric ({dtype})")
+                continue
+            dt = props.get("wf_increment")
+            if not dt or not float(dt) > 0:
+                refused.append(f"{where}: no waveform timing (wf_increment); irregular or separately timed data "
+                               "is not imported")
+                continue
+            data = ch.read_data(scaled=not raw) if hasattr(ch, "read_data") else ch[:]
+            data = np.asarray(data)
+            if data.size == 0:
+                refused.append(f"{where}: empty")
+                continue
+            scaled_props = {k: _plain(v) for k, v in props.items() if k.startswith("NI_Scal")}
+            integer = np.issubdtype(data.dtype, np.integer)
+            unit = opts.unit or props.get("unit_string") or ("counts" if integer else "unknown")
+            meta = {"source": path.name, "format": "tdms", "group": group.name, "channel": ch.name,
+                    "values": "raw" if raw else "scaled", "tdms_type": str(dtype), "wf_increment": float(dt)}
+            if scaled_props:
+                meta["scaling"] = scaled_props
+            start = props.get("wf_start_time")
+            if start is not None:
+                t0 = np.datetime64(start, "ns") + np.timedelta64(int(round(float(props.get("wf_start_offset", 0)) * 1e9)), "ns")
+                meta["start"] = np.datetime_as_string(t0, unit="us", timezone="UTC")
+            name = re.sub(r"[^A-Za-z0-9_.:-]+", "-", f"{path.stem}.{group.name}.{ch.name}")
+            out.append(Recording(name, 1.0 / float(dt), ch.name, unit, 1.0, data.astype(np.float64), meta))
+    if refused and not out:
+        raise ValueError(f"{path.name}: no importable waveform channel: " + "; ".join(refused))
+    if refused:
+        print(json.dumps({"tdms_channels_not_imported": refused}), file=sys.stderr)
+    return out
+
+
+def _plain(value):
+    """TDMS property values as JSON-friendly values."""
+    if isinstance(value, (np.integer,)):
+        return int(value)
+    if isinstance(value, (np.floating,)):
+        return float(value)
+    if isinstance(value, np.datetime64):
+        return np.datetime_as_string(value, unit="ns", timezone="UTC")
+    return value if isinstance(value, (int, float, str, bool)) or value is None else str(value)
+
+
+def read_exchange(path, opts):
+    """A MorletDB exchange file (morlet_export.py, docs/exchange-format.md): one recording per recording_id,
+    with its rate, channel, unit, metadata and sample quantum as exported; samples are checked against the
+    file's per-recording SHA-256 before anything is imported."""
+    import hashlib
+    import pyarrow.parquet as pq
+    pf = pq.ParquetFile(path)
+    meta = pf.metadata.metadata or {}
+    if b"morletdb.exchange" not in meta:
+        raise ValueError(f"{path.name}: not a MorletDB exchange file (no morletdb.exchange metadata); "
+                         "use parquet_import.py for other Parquet layouts")
+    manifest = json.loads(meta[b"morletdb.exchange"])
+    if manifest.get("format") != "morlet-exchange" or manifest.get("version") != 1:
+        raise ValueError(f"{path.name}: unsupported exchange format {manifest.get('format')} "
+                         f"version {manifest.get('version')}")
+    groups, order = {}, []
+    for batch in pf.iter_batches(batch_size=64):
+        for row in batch.to_pylist():
+            rid = row["recording_id"]
+            if rid not in groups:
+                order.append(rid)
+                groups[rid] = {"row": row, "parts": [], "next": 0}
+            g = groups[rid]
+            if row["start_sample"] != g["next"]:
+                raise ValueError(f"{path.name}: {rid} is not contiguous at sample {row['start_sample']}")
+            g["parts"].append(np.asarray(row["samples"], dtype="<f8"))
+            g["next"] += len(row["samples"])
+    out = []
+    for rid in order:
+        g, want = groups[rid], manifest["recordings"].get(rid)
+        x = np.concatenate(g["parts"]) if g["parts"] else np.zeros(0)
+        if want is None or x.size != want["samples"] or hashlib.sha256(x.tobytes()).hexdigest() != want["sha256"]:
+            raise ValueError(f"{path.name}: {rid} does not match the file's checksum manifest")
+        r = g["row"]
+        rec = Recording(rid, float(r["sample_rate_hz"]), r["channel"], r["unit"], float(r["sample_quantum"] or 1.0), x,
+                        json.loads(r["metadata"] or "{}"))
+        rec.metadata = rec.metadata if isinstance(rec.metadata, dict) else {}
+        out.append(rec)
+    return out
+
+
 def decimals(text):
     m = re.fullmatch(r"\s*[-+]?\d*\.(\d+)\s*", text)
     return len(m.group(1)) if m else 0
@@ -167,13 +272,14 @@ def read_csv(path, opts):
     return out
 
 
-READERS = {"wav": read_wav, "edf": read_edf, "mseed": read_mseed, "csv": read_csv}
+READERS = {"wav": read_wav, "edf": read_edf, "mseed": read_mseed, "csv": read_csv, "exchange": read_exchange,
+           "tdms": read_tdms}
 
 
 def recordings(path, opts):
     fmt = opts.format or SUFFIXES.get(path.suffix.lower())
     if fmt not in READERS:
-        raise ValueError(f"{path.name}: unknown format (use --format wav|edf|mseed|csv)")
+        raise ValueError(f"{path.name}: unknown format (use --format wav|edf|mseed|csv|tdms|exchange)")
     recs = READERS[fmt](path, opts)
     for r in recs:
         if not (math.isfinite(r.rate) and r.rate > 0):
@@ -259,6 +365,8 @@ def main(argv=None):
     p.add_argument("--rate", type=float, help="CSV: samples per second")
     p.add_argument("--time-column", help="CSV: column to ignore")
     p.add_argument("--unit", help="override the unit")
+    p.add_argument("--tdms-values", choices=["scaled", "raw"], default="scaled",
+                   help="TDMS: store scaled (physical) values or the raw stored values")
     p.add_argument("--prefix", default="", help="prefix for recording identifiers")
     p.add_argument("--extractor", choices=["morlet-energy-v1", "morlet-energy-lowrate-v1", "none"],
                    help="segment features (default: by sample rate)")

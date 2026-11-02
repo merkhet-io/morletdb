@@ -11,6 +11,17 @@ Works with:
 - **Viewer deep links:** the viewer opens at `?collection=…&recording=…&start=…&end=…`, which the Grafana
   recording list uses.
 
+Data exchange and TDMS:
+- **Exchange format:** `tools/ingest/morlet_export.py` writes recordings to a versioned Parquet format
+  (morlet-exchange 1: the importer's chunk layout plus per-recording quantum and representation, and a
+  per-recording SHA-256 in the file metadata); `--verify` checks a collection against a file.
+  `morlet_import.py` reads exchange files (checksums first), and `parquet_import.py` accepts optional
+  per-recording `sample_quantum` and `extractor` columns. `docs/exchange-format.md` has the schema, the
+  guarantees and a DuckDB recipe.
+- **TDMS import:** `morlet_import.py` reads TDMS files through npTDMS, one recording per waveform channel,
+  scaled values by default (`--tdms-values raw` for stored values), refusing untimed, non-numeric and empty
+  channels with the reason.
+
 ## 0.3.3-alpha.1
 
 The extension is unchanged from 0.3.2-alpha.1 (SQL version 0.3.2; no update script is needed). This release

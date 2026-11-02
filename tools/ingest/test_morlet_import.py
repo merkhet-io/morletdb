@@ -134,5 +134,110 @@ class Readers(unittest.TestCase):
         self.assertEqual(plan["recordings"][0]["extractor"], "morlet-energy-v1")
 
 
+
+class Exchange(unittest.TestCase):
+    """morlet-exchange files (written as morlet_export.py writes them) read back exactly."""
+
+    def write(self, path, recs, tamper=False):
+        import hashlib
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        import morlet_export as me
+        manifest = {"format": "morlet-exchange", "version": 1, "recordings": {}}
+        rows = []
+        for rid, x, quantum, meta in recs:
+            x = np.asarray(x, "<f8")
+            manifest["recordings"][rid] = {"samples": int(x.size), "sha256": hashlib.sha256(x.tobytes()).hexdigest()}
+            for a in range(0, x.size, 3):
+                part = x[a:a + 3].tolist()
+                if tamper and a == 0:
+                    part[0] += 0.001
+                rows.append({"recording_id": rid, "sample_rate_hz": 1000.0, "channel": "acc", "unit": "g",
+                             "metadata": json.dumps(meta), "sample_quantum": quantum, "extractor": "morlet-energy-v1",
+                             "start_sample": a, "samples": part})
+        w = pq.ParquetWriter(path, me.SCHEMA)
+        w.write_batch(pa.RecordBatch.from_pylist(rows, me.SCHEMA))
+        w.add_key_value_metadata({me.KEY: json.dumps(manifest).encode()})
+        w.close()
+
+    def test_exchange_round_trip_and_checksum(self):
+        tmp = Path(tempfile.mkdtemp())
+        f = tmp / "x.parquet"
+        self.write(f, [("a", [0.001, -0.002, 0.003, 0.004, 0.005], 0.001, {"asset": "p1"}),
+                       ("b", [1.0, 2.0, 3.0, 4.0], 1.0, {})])
+        recs = mi.recordings(f, opts())
+        self.assertEqual([r.recording_id for r in recs], ["a", "b"])
+        self.assertEqual(recs[0].samples.tolist(), [0.001, -0.002, 0.003, 0.004, 0.005])
+        self.assertEqual((recs[0].quantum, recs[0].metadata, recs[0].rate, recs[0].unit), (0.001, {"asset": "p1"}, 1000.0, "g"))
+        bad = tmp / "bad.parquet"
+        self.write(bad, [("a", [0.001, 0.002, 0.003], 0.001, {})], tamper=True)
+        with self.assertRaisesRegex(ValueError, "checksum"):
+            mi.recordings(bad, opts())
+
+    def test_plain_parquet_is_not_an_exchange_file(self):
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        f = Path(tempfile.mkdtemp()) / "plain.parquet"
+        pq.write_table(pa.table({"x": [1, 2]}), f)
+        with self.assertRaisesRegex(ValueError, "not a MorletDB exchange file"):
+            mi.recordings(f, opts())
+
+
+def write_tdms(path):
+    """A synthetic TDMS file written with npTDMS (not NI software): scaled int16, float, untimed, string."""
+    from nptdms import TdmsWriter, ChannelObject
+    t0 = np.datetime64("2024-05-06T07:08:09.000000", "us")
+    raw = np.array([-3, -1, 0, 2, 5, 32767, -32768], dtype=np.int16)
+    accel = ChannelObject("Bench", "accel", raw, properties={
+        "wf_increment": 1 / 20000, "wf_start_time": t0, "wf_start_offset": 0.5, "unit_string": "g",
+        "NI_Scaling_Status": "unscaled", "NI_Number_Of_Scales": 1, "NI_Scale[0]_Scale_Type": "Linear",
+        "NI_Scale[0]_Linear_Slope": 0.001, "NI_Scale[0]_Linear_Y_Intercept": 0.5,
+        "NI_Scale[0]_Linear_Input_Source": 0xFFFFFFFF})
+    pressure = ChannelObject("Bench", "pressure", np.array([1.25, 1.5, 1.75], dtype=np.float64),
+                             properties={"wf_increment": 0.01, "unit_string": "bar"})
+    untimed = ChannelObject("Bench", "untimed", np.array([1.0, 2.0]), properties={})
+    label = ChannelObject("Bench", "label", np.array(["a", "b"]), properties={"wf_increment": 1.0})
+    with TdmsWriter(str(path)) as w:
+        w.write_segment([accel, pressure, untimed, label])
+    return raw
+
+
+class Tdms(unittest.TestCase):
+    def test_scaled_values_timing_units_and_refusals(self):
+        f = Path(tempfile.mkdtemp()) / "bench.tdms"
+        raw = write_tdms(f)
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            recs = {r.channel: r for r in mi.recordings(f, opts())}
+        self.assertEqual(sorted(recs), ["accel", "pressure"])
+        a = recs["accel"]
+        self.assertEqual(a.samples.tolist(), (raw.astype(np.float64) * 0.001 + 0.5).tolist())
+        self.assertEqual((a.rate, a.unit, a.metadata["values"]), (20000.0, "g", "scaled"))
+        self.assertEqual(a.metadata["start"], "2024-05-06T07:08:09.500000Z")
+        self.assertEqual(a.metadata["scaling"]["NI_Scale[0]_Linear_Slope"], 0.001)
+        self.assertEqual(a.recording_id, "bench.Bench.accel")
+        p = recs["pressure"]
+        self.assertEqual((p.samples.tolist(), p.rate, p.unit), ([1.25, 1.5, 1.75], 100.0, "bar"))
+        self.assertNotIn("start", p.metadata)
+        refused = json.loads(err.getvalue())["tdms_channels_not_imported"]
+        self.assertTrue(any("untimed" in r and "wf_increment" in r for r in refused))
+        self.assertTrue(any("label" in r and "not numeric" in r for r in refused))
+
+    def test_raw_values_on_request(self):
+        f = Path(tempfile.mkdtemp()) / "bench.tdms"
+        raw = write_tdms(f)
+        with contextlib.redirect_stderr(io.StringIO()):
+            a = {r.channel: r for r in mi.recordings(f, opts(tdms_values="raw"))}["accel"]
+        self.assertEqual(a.samples.tolist(), raw.astype(np.float64).tolist())
+        self.assertEqual(a.metadata["values"], "raw")
+
+    def test_no_waveform_channel_is_an_error(self):
+        from nptdms import TdmsWriter, ChannelObject
+        f = Path(tempfile.mkdtemp()) / "none.tdms"
+        with TdmsWriter(str(f)) as w:
+            w.write_segment([ChannelObject("G", "t", np.array([1.0, 2.0]))])
+        with self.assertRaisesRegex(ValueError, "no importable waveform channel"):
+            mi.recordings(f, opts())
+
 if __name__ == "__main__":
     unittest.main()
