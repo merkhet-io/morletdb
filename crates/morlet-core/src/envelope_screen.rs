@@ -123,7 +123,10 @@ impl ScreenQuery {
             return f64::INFINITY;
         }
         let n = self.n as f64;
-        self.bound_scale * norm / (sd * n) + self.kappa_mean * mean.abs() / sd + self.kappa_scale + SLACK
+        self.bound_scale * norm / (sd * n)
+            + self.kappa_mean * mean.abs() / sd
+            + self.kappa_scale
+            + SLACK
     }
 
     pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
@@ -148,9 +151,17 @@ impl ScreenQuery {
         let gamma = n as f64 * u / (1.0 - n as f64 * u);
         let qnorm = q.iter().map(|x| x * x).sum::<f64>().sqrt();
         let sum_max = sums.iter().fold(0f64, |a, &b| a.max(b.abs()));
-        Some(Self { n, lags, stride, s, sums, bound_scale: (gamma + u) * qnorm,
-                    kappa_mean: KAPPA * sum_max / n as f64, kappa_scale: 2.0 * KAPPA * qnorm / (n as f64).sqrt(),
-                    exact: LagQuery::new(q, max_lag)? })
+        Some(Self {
+            n,
+            lags,
+            stride,
+            s,
+            sums,
+            bound_scale: (gamma + u) * qnorm,
+            kappa_mean: KAPPA * sum_max / n as f64,
+            kappa_scale: 2.0 * KAPPA * qnorm / (n as f64).sqrt(),
+            exact: LagQuery::new(q, max_lag)?,
+        })
     }
 
     /// (screened distance, bound) for one window's raw values with their moments.
@@ -196,7 +207,13 @@ impl ScreenQuery {
     /// row of shifted queries used for both windows.
     #[cfg(target_arch = "aarch64")]
     #[inline]
-    fn screen2_neon(&self, a: &[f32], b: &[f32], ma: (f64, f64, f64), mb: (f64, f64, f64)) -> [(f64, f64); 2] {
+    fn screen2_neon(
+        &self,
+        a: &[f32],
+        b: &[f32],
+        ma: (f64, f64, f64),
+        mb: (f64, f64, f64),
+    ) -> [(f64, f64); 2] {
         use std::arch::aarch64::*;
         let mut acc_a = [0f32; 2 * LANES];
         let mut acc_b = [0f32; 2 * LANES];
@@ -299,7 +316,11 @@ pub fn f16_to_f32(bytes: &[u8], out: &mut Vec<f32>) {
         16 * groups
     };
     let table = f16_table();
-    out.extend(bytes[done..].chunks_exact(2).map(|c| table[u16::from_le_bytes([c[0], c[1]]) as usize]));
+    out.extend(
+        bytes[done..]
+            .chunks_exact(2)
+            .map(|c| table[u16::from_le_bytes([c[0], c[1]]) as usize]),
+    );
 }
 
 /// Screens stored envelopes one at a time (as rows of the envelope table arrive) and keeps every window
@@ -341,12 +362,23 @@ impl<Id> Screener<Id> {
         if m == 0 {
             return None;
         }
-        Some(Self { query: ScreenQuery::new(query, max_lag)?, m, pending: None, pending_raw: Vec::new(),
-                    uppers: std::collections::BinaryHeap::new(), kept: Vec::new(), scratch: Vec::new() })
+        Some(Self {
+            query: ScreenQuery::new(query, max_lag)?,
+            m,
+            pending: None,
+            pending_raw: Vec::new(),
+            uppers: std::collections::BinaryHeap::new(),
+            kept: Vec::new(),
+            scratch: Vec::new(),
+        })
     }
 
     fn threshold(&self) -> f64 {
-        if self.uppers.len() < self.m { f64::INFINITY } else { self.uppers.peek().unwrap().0 }
+        if self.uppers.len() < self.m {
+            f64::INFINITY
+        } else {
+            self.uppers.peek().unwrap().0
+        }
     }
 
     fn admit(&mut self, id: Id, d: f64, e: f64) {
@@ -388,7 +420,9 @@ impl<Id> Screener<Id> {
                     self.pending = Some((id, mom));
                 }
                 Some((pid, pmom)) => {
-                    let r = self.query.screen2_neon(&self.pending_raw, &self.scratch, pmom, mom);
+                    let r = self
+                        .query
+                        .screen2_neon(&self.pending_raw, &self.scratch, pmom, mom);
                     self.admit(pid, r[0].0, r[0].1);
                     self.admit(id, r[1].0, r[1].1);
                 }
@@ -430,7 +464,13 @@ impl<Id> Screener<Id> {
     }
 
     /// Rebuild from [`Screener::into_parts`] (with the same query).
-    pub fn from_parts(query: &[f64], max_lag: usize, m: usize, kept: Vec<(Id, f64, f64)>, uppers: Vec<f64>) -> Option<Self> {
+    pub fn from_parts(
+        query: &[f64],
+        max_lag: usize,
+        m: usize,
+        kept: Vec<(Id, f64, f64)>,
+        uppers: Vec<f64>,
+    ) -> Option<Self> {
         let mut s = Self::new(query, max_lag, m)?;
         s.uppers = uppers.into_iter().map(OrdF64).collect();
         while s.uppers.len() > m {
@@ -454,7 +494,9 @@ mod tests {
     use crate::envelope::{decode, distance, encode};
 
     fn lcg(seed: &mut u64) -> f64 {
-        *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        *seed = seed
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         (*seed >> 11) as f64 / (1u64 << 53) as f64
     }
 
@@ -465,7 +507,11 @@ mod tests {
                 let at = (lcg(seed) * 3500.0) as usize;
                 let x: Vec<f64> = (0..4096)
                     .map(|t| {
-                        let burst = if t >= at && t < at + 400 { (-((t - at) as f64) / 80.0).exp() * ((t as f64) * 0.7).sin() } else { 0.0 };
+                        let burst = if t >= at && t < at + 400 {
+                            (-((t - at) as f64) / 80.0).exp() * ((t as f64) * 0.7).sin()
+                        } else {
+                            0.0
+                        };
                         0.05 * (lcg(seed) - 0.5) + burst
                     })
                     .collect();
@@ -479,11 +525,15 @@ mod tests {
         let mut seed = 21;
         let g = gallery(700, &mut seed);
         let q = decode(&g[42].1).unwrap();
-        let mut exact: Vec<(f64, i64)> = g.iter().map(|(s, e)| (distance(&q, &decode(e).unwrap(), 30).unwrap(), *s)).collect();
+        let mut exact: Vec<(f64, i64)> = g
+            .iter()
+            .map(|(s, e)| (distance(&q, &decode(e).unwrap(), 30).unwrap(), *s))
+            .collect();
         exact.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
         for m in [1usize, 7, 100, 200] {
             // three "workers" over interleaved parts, merged in an arbitrary order
-            let mut parts: Vec<Screener<i64>> = (0..3).map(|_| Screener::new(&q, 30, m).unwrap()).collect();
+            let mut parts: Vec<Screener<i64>> =
+                (0..3).map(|_| Screener::new(&q, 30, m).unwrap()).collect();
             for (k, (s, e)) in g.iter().enumerate() {
                 parts[k % 3].push(*s, e).unwrap();
             }
@@ -492,7 +542,8 @@ mod tests {
             for p in parts {
                 merged.merge(p);
             }
-            let have: std::collections::HashSet<i64> = merged.finish().iter().map(|k| k.0).collect();
+            let have: std::collections::HashSet<i64> =
+                merged.finish().iter().map(|k| k.0).collect();
             let cut = exact[m - 1].0;
             for &(d, s) in exact.iter().filter(|x| x.0 <= cut) {
                 assert!(have.contains(&s), "m {m}: window {s} at {d} missing");
@@ -504,14 +555,18 @@ mod tests {
     #[test]
     fn hardware_and_table_conversion_agree_on_every_finite_float16() {
         let bytes: Vec<u8> = (0..=u16::MAX)
-            .filter(|h| (h >> 10) & 0x1f != 0x1f)        // finite values only
+            .filter(|h| (h >> 10) & 0x1f != 0x1f) // finite values only
             .flat_map(|h| h.to_le_bytes())
             .collect();
         let mut out = Vec::new();
         f16_to_f32(&bytes, &mut out);
         for (k, c) in bytes.chunks_exact(2).enumerate() {
             let h = u16::from_le_bytes([c[0], c[1]]);
-            assert_eq!(out[k].to_bits(), (f16_to_f64(h) as f32).to_bits(), "{h:#06x}");
+            assert_eq!(
+                out[k].to_bits(),
+                (f16_to_f64(h) as f32).to_bits(),
+                "{h:#06x}"
+            );
         }
     }
 
@@ -532,9 +587,15 @@ mod tests {
             let sq = ScreenQuery::new(&q, lag).unwrap();
             for (_, enc) in &g {
                 let want = distance(&q, &decode(enc).unwrap(), lag).unwrap();
-                assert_eq!(sq.exact(&raw_values(enc).unwrap()).unwrap().to_bits(), want.to_bits());
+                assert_eq!(
+                    sq.exact(&raw_values(enc).unwrap()).unwrap().to_bits(),
+                    want.to_bits()
+                );
                 let (d, e) = screened(&sq, enc);
-                assert!(e.is_finite() && (d - want).abs() <= e, "bound violated: {d} vs {want} ± {e}");
+                assert!(
+                    e.is_finite() && (d - want).abs() <= e,
+                    "bound violated: {d} vs {want} ± {e}"
+                );
             }
         }
         #[cfg(target_arch = "aarch64")]
@@ -558,13 +619,18 @@ mod tests {
         // a constant window (sd 0), a nearly constant one, and one with a large offset and small spread
         let flat = encode(&vec![0.0; 4096]).unwrap();
         g.push((1_000_000, flat));
-        let offset: Vec<f64> = (0..4096).map(|t| 50.0 + 1e-3 * ((t as f64) * 0.01).sin() + 1e-4 * lcg(&mut seed)).collect();
+        let offset: Vec<f64> = (0..4096)
+            .map(|t| 50.0 + 1e-3 * ((t as f64) * 0.01).sin() + 1e-4 * lcg(&mut seed))
+            .collect();
         g.push((1_002_048, encode(&offset).unwrap()));
         let sq = ScreenQuery::new(&q, 30).unwrap();
         for (_, enc) in &g {
             let want = distance(&q, &decode(enc).unwrap(), 30).unwrap();
             let (d, e) = screened(&sq, enc);
-            assert!(!(e.is_finite()) || (d - want).abs() <= e, "bound violated: {d} vs {want} ± {e}");
+            assert!(
+                !(e.is_finite()) || (d - want).abs() <= e,
+                "bound violated: {d} vs {want} ± {e}"
+            );
         }
         let flat_raw = raw_values(&g[60].1).unwrap();
         assert_eq!(moments(&flat_raw).1, 0.0, "a constant window is degenerate");

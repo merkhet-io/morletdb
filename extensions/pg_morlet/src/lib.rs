@@ -648,9 +648,14 @@ impl ScreenAgg {
 
 fn query_from_le_bytes(bytes: &[u8]) -> Vec<f64> {
     if bytes.is_empty() || !bytes.len().is_multiple_of(8) {
-        pgrx::error!("the query envelope must be little-endian float64 values (morlet_float8_le_bytes)");
+        pgrx::error!(
+            "the query envelope must be little-endian float64 values (morlet_float8_le_bytes)"
+        );
     }
-    bytes.chunks_exact(8).map(|b| f64::from_le_bytes(b.try_into().unwrap())).collect()
+    bytes
+        .chunks_exact(8)
+        .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+        .collect()
 }
 
 /// A float8[] as little-endian float64 bytes (the screening aggregate's query argument).
@@ -665,16 +670,27 @@ fn morlet_float8_le_bytes(values: pgrx::Array<'_, f64>) -> Vec<u8> {
 unsafe fn aggregate_context(fcinfo: pg_sys::FunctionCallInfo) -> pg_sys::MemoryContext {
     let mut ctx = std::ptr::null_mut();
     if unsafe { pg_sys::AggCheckCallContext(fcinfo, &mut ctx) } == 0 || ctx.is_null() {
-        pgrx::error!("morlet_envelope_screen functions can only be called as part of the aggregate");
+        pgrx::error!(
+            "morlet_envelope_screen functions can only be called as part of the aggregate"
+        );
     }
     ctx
 }
 
 fn new_screen_agg(query: &[f64], lag: usize, m: usize) -> ScreenAgg {
-    let screener = morlet_core::envelope_screen::Screener::new(query, lag, m)
-        .unwrap_or_else(|| pgrx::error!("invalid query envelope, max_lag or candidate pool for screening"));
-    ScreenAgg { query: query.to_vec(), query_bytes: query.iter().flat_map(|x| x.to_le_bytes()).collect(),
-                last_query_ptr: 0, lag, m, rids: Vec::new(), screener: Some(screener) }
+    let screener =
+        morlet_core::envelope_screen::Screener::new(query, lag, m).unwrap_or_else(|| {
+            pgrx::error!("invalid query envelope, max_lag or candidate pool for screening")
+        });
+    ScreenAgg {
+        query: query.to_vec(),
+        query_bytes: query.iter().flat_map(|x| x.to_le_bytes()).collect(),
+        last_query_ptr: 0,
+        lag,
+        m,
+        rids: Vec::new(),
+        screener: Some(screener),
+    }
 }
 
 #[pg_extern(parallel_safe)]
@@ -740,9 +756,18 @@ fn morlet_envelope_screen_combine(a: pgrx::Internal, b: pgrx::Internal) -> pgrx:
             // re-key the other screener's candidates to this state's recording ids
             let map: Vec<u32> = other_rids.iter().map(|r| mine.rid_index(r)).collect();
             let (kept, uppers) = o.into_parts();
-            let kept = kept.into_iter().map(|((ri, st), lo, hi)| ((map[ri as usize], st), lo, hi)).collect();
-            let o = morlet_core::envelope_screen::Screener::from_parts(&mine.query, mine.lag, mine.m, kept, uppers)
-                .unwrap_or_else(|| pgrx::error!("invalid screen state"));
+            let kept = kept
+                .into_iter()
+                .map(|((ri, st), lo, hi)| ((map[ri as usize], st), lo, hi))
+                .collect();
+            let o = morlet_core::envelope_screen::Screener::from_parts(
+                &mine.query,
+                mine.lag,
+                mine.m,
+                kept,
+                uppers,
+            )
+            .unwrap_or_else(|| pgrx::error!("invalid screen state"));
             mine.screener.as_mut().unwrap().merge(o);
         }
         a
@@ -755,10 +780,17 @@ fn put_f64(out: &mut Vec<u8>, v: f64) {
 
 #[pg_extern(strict, parallel_safe)]
 fn morlet_envelope_screen_serial(mut state: pgrx::Internal) -> Vec<u8> {
-    let agg = unsafe { state.get_mut::<ScreenAgg>() }.unwrap_or_else(|| pgrx::error!("empty screen state"));
+    let agg = unsafe { state.get_mut::<ScreenAgg>() }
+        .unwrap_or_else(|| pgrx::error!("empty screen state"));
     let (kept, uppers) = agg.screener.take().unwrap().into_parts();
     let mut out = b"MS1".to_vec();
-    for v in [agg.lag as u32, agg.m as u32, agg.query.len() as u32, kept.len() as u32, uppers.len() as u32] {
+    for v in [
+        agg.lag as u32,
+        agg.m as u32,
+        agg.query.len() as u32,
+        kept.len() as u32,
+        uppers.len() as u32,
+    ] {
         out.extend_from_slice(&v.to_le_bytes());
     }
     agg.query.iter().for_each(|&v| put_f64(&mut out, v));
@@ -775,7 +807,11 @@ fn morlet_envelope_screen_serial(mut state: pgrx::Internal) -> Vec<u8> {
 }
 
 #[pg_extern(strict, parallel_safe)]
-fn morlet_envelope_screen_deserial(bytes: &[u8], _unused: pgrx::Internal, fcinfo: pg_sys::FunctionCallInfo) -> pgrx::Internal {
+fn morlet_envelope_screen_deserial(
+    bytes: &[u8],
+    _unused: pgrx::Internal,
+    fcinfo: pg_sys::FunctionCallInfo,
+) -> pgrx::Internal {
     let bad = || -> ! { pgrx::error!("corrupt screen state") };
     let mut pos = 3usize;
     if bytes.get(..3) != Some(b"MS1") {
@@ -786,8 +822,13 @@ fn morlet_envelope_screen_deserial(bytes: &[u8], _unused: pgrx::Internal, fcinfo
         *p += 4;
         u32::from_le_bytes(v.try_into().unwrap()) as usize
     };
-    let (lag, m, qlen, nkept, nuppers) =
-        (u32_at(&mut pos), u32_at(&mut pos), u32_at(&mut pos), u32_at(&mut pos), u32_at(&mut pos));
+    let (lag, m, qlen, nkept, nuppers) = (
+        u32_at(&mut pos),
+        u32_at(&mut pos),
+        u32_at(&mut pos),
+        u32_at(&mut pos),
+        u32_at(&mut pos),
+    );
     let f64_at = |p: &mut usize| -> f64 {
         let v = bytes.get(*p..*p + 8).unwrap_or_else(|| bad());
         *p += 8;
@@ -797,11 +838,25 @@ fn morlet_envelope_screen_deserial(bytes: &[u8], _unused: pgrx::Internal, fcinfo
     let mut kept = Vec::with_capacity(nkept);
     let mut rids: Vec<String> = Vec::new();
     for _ in 0..nkept {
-        let len = u32::from_le_bytes(bytes.get(pos..pos + 4).unwrap_or_else(|| bad()).try_into().unwrap()) as usize;
+        let len = u32::from_le_bytes(
+            bytes
+                .get(pos..pos + 4)
+                .unwrap_or_else(|| bad())
+                .try_into()
+                .unwrap(),
+        ) as usize;
         pos += 4;
-        let rid = std::str::from_utf8(bytes.get(pos..pos + len).unwrap_or_else(|| bad())).unwrap_or_else(|_| bad()).to_owned();
+        let rid = std::str::from_utf8(bytes.get(pos..pos + len).unwrap_or_else(|| bad()))
+            .unwrap_or_else(|_| bad())
+            .to_owned();
         pos += len;
-        let start = i64::from_le_bytes(bytes.get(pos..pos + 8).unwrap_or_else(|| bad()).try_into().unwrap());
+        let start = i64::from_le_bytes(
+            bytes
+                .get(pos..pos + 8)
+                .unwrap_or_else(|| bad())
+                .try_into()
+                .unwrap(),
+        );
         pos += 8;
         let lo = f64_at(&mut pos);
         let hi = f64_at(&mut pos);
@@ -821,10 +876,20 @@ fn morlet_envelope_screen_deserial(bytes: &[u8], _unused: pgrx::Internal, fcinfo
     let screener = morlet_core::envelope_screen::Screener::from_parts(&query, lag, m, kept, uppers)
         .unwrap_or_else(|| bad());
     let query_bytes = query.iter().flat_map(|x| x.to_le_bytes()).collect();
-    let agg = ScreenAgg { query, query_bytes, last_query_ptr: 0, lag, m, rids, screener: Some(screener) };
+    let agg = ScreenAgg {
+        query,
+        query_bytes,
+        last_query_ptr: 0,
+        lag,
+        m,
+        rids,
+        screener: Some(screener),
+    };
     unsafe {
         let ctx = aggregate_context(fcinfo);
-        pgrx::Internal::from(Some(pg_sys::Datum::from(pgrx::PgMemoryContexts::For(ctx).leak_and_drop_on_delete(agg))))
+        pgrx::Internal::from(Some(pg_sys::Datum::from(
+            pgrx::PgMemoryContexts::For(ctx).leak_and_drop_on_delete(agg),
+        )))
     }
 }
 
@@ -837,7 +902,9 @@ fn morlet_envelope_screen_final(mut state: pgrx::Internal) -> JsonB {
     let mut kept = agg.screener.take().map(|s| s.finish()).unwrap_or_default();
     kept.sort_by(|a, b| a.1.total_cmp(&b.1));
     JsonB(serde_json::Value::Array(
-        kept.into_iter().map(|((ri, start), _, _)| serde_json::json!([agg.rids[ri as usize], start])).collect(),
+        kept.into_iter()
+            .map(|((ri, start), _, _)| serde_json::json!([agg.rids[ri as usize], start]))
+            .collect(),
     ))
 }
 
