@@ -22,6 +22,11 @@ MCP server:
   schedule (continuous or snapshots) and the largest gaps; `trend` follows level, impulsiveness and band
   power over time and flags the first sustained departure from an early baseline as a candidate change;
   `list_recordings` is compact by default (shared fields once, metadata on request).
+- **Envelope spectrum:** `envelope_spectrum` band-passes an interval around a resonance, takes the amplitude
+  envelope and reports its spectrum: the strongest lines, a noise-peak level, and the level at named
+  frequencies (for example bearing defect frequencies, within a tolerance) and their harmonics.
+- **Machine demo, test 3:** the demo also loads IMS test 3 (every sixth snapshot, one an hour), so a fault
+  signature can be searched across tests; `search_from_time` returns one hit per snapshot for snapshot data.
 - **Machine demo:** `examples/machine-demo` loads NASA/IMS bearing test 2 (984 snapshots of four bearings
   until bearing 1 failed) into the release image and runs the MCP server in Docker; three recorded Claude
   sessions, and a second tab in the homepage replay.

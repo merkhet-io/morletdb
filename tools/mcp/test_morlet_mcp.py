@@ -12,7 +12,8 @@ import morlet_mcp as m
 class Server(unittest.TestCase):
     def test_tools_are_registered_read_only(self):
         tools = asyncio.run(m.mcp.list_tools())
-        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "describe_interval", "find_onsets",
+        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "describe_interval", "envelope_spectrum",
+                                                         "find_onsets",
                                                          "list_collections", "list_recordings", "locate_time",
                                                          "read_interval", "search_from_time", "search_similar",
                                                          "trend"])
@@ -121,6 +122,20 @@ class Helpers(unittest.TestCase):
         self.assertEqual(i, 70)
         self.assertAlmostEqual(med, 10, delta=0.1)
         self.assertIsNone(m.change_point(list(rng.normal(10, 0.1, 50)), 10)[0])
+
+    def test_envelope_finds_the_impact_rate(self):
+        rate, n = 20000.0, 20480
+        t = np.arange(n) / rate
+        rng = np.random.default_rng(5)
+        impacts = np.zeros(n)
+        impacts[(np.arange(0, 1.0, 1 / 236.4) * rate).astype(int)] = 1.0      # 236.4 impacts per second
+        ring = np.exp(-np.arange(200) / 30.0) * np.sin(2 * np.pi * 4000 * np.arange(200) / rate)
+        x = np.convolve(impacts, ring)[:n] + 0.05 * rng.normal(size=n)
+        env = m.envelope(x, rate, 3000, 5000)
+        spec = np.abs(np.fft.rfft(env * np.hanning(n)))
+        f = np.fft.rfftfreq(n, 1 / rate)
+        band = (f > 50) & (f < 500)
+        self.assertAlmostEqual(float(f[band][np.argmax(spec[band])]), 236.4, delta=2.0)
 
 
 if __name__ == "__main__":
