@@ -82,6 +82,16 @@ Verification levels:
 - **Verified:** Manual (2026-11-02, `scenarios.sh`): normal run, restart, server restart, gap, duplicate and
   altered delivery, context with status codes; every stored sample compared with the server's signal.
 
+### MQTT collector
+- **What:** a reference collector for sample batches and context over MQTT with a versioned JSON contract
+  (`morlet-mqtt/1`): acknowledgement after commit, idempotent appends, reordering, gap reporting.
+- **Run:** [`examples/collectors/mqtt`](../examples/collectors/mqtt/README.md), with a test publisher.
+- **Scope:** plain MQTT 3.1.1 with JSON payloads; **not Sparkplug**. Tested only with a local broker without
+  authentication or TLS.
+- **Verified:** CI (contract checks); Manual (2026-11-02, `scenarios.sh`, Mosquitto 2.0.20): duplicates, an
+  altered duplicate, reordering, a dropped batch, collector downtime and a collector killed mid-stream; every
+  stored sample compared with the publisher's signal.
+
 ## Analysis and visualization
 
 ### Grafana dashboards
@@ -153,6 +163,7 @@ Checked on 2026-11-02 against each owner's published policy. The website lists a
 | DuckDB | no | logos may not be combined with others; plain text needs no permission |
 | Amazon S3 | no | named only to describe the API ("S3-compatible"), as plain text |
 | OPC UA | no | the OPC Foundation's logo rules were not checked; plain text |
+| MQTT | no | an OASIS standard; named as plain text |
 | NI, LabVIEW (TDMS) | no | NI grants no permission to display its logos; word marks only for reference, with a notice |
 | ObsPy | no | no logo policy published |
 
