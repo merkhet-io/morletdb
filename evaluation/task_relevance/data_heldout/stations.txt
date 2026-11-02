@@ -1,0 +1,5 @@
+#Network|Station|Latitude|Longitude|Elevation|SiteName|StartTime|EndTime
+CX|PB05|-22.85283|-70.20235|1150.0|IPOC Station Michilla, Chile|2006-05-19T00:00:00|2022-03-25T00:00:00
+CX|PB11|-19.76096|-69.65582|1400.0|IPOC Station Quebrada Aricilda, Chile|2008-12-23T00:00:00|2022-01-03T00:00:00
+CX|PB14|-24.62597|-70.40379|2630.0|IPOC Station European Southern Observatory Cerro Paranal, Chile|2010-03-27T00:00:00|
+CX|PB18|-17.58954|-69.48|4155.0|IPOC Station Visviri, Chile|2015-12-04T00:00:00|
