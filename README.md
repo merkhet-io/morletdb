@@ -117,6 +117,9 @@ CREATE EXTENSION pg_morlet;
 CREATE EXTENSION vector;   -- optional: only for probe search (pgvector 0.8 or later)
 ```
 
+**Import your own files** (WAV, EDF, miniSEED, CSV) and get a first search query:
+[from files to a first search](docs/import.md).
+
 Supported versions, CI coverage and local test commands:
 [PostgreSQL compatibility](docs/compatibility.md). Upgrading an existing
 installation: [existing installations](extensions/pg_morlet/README.md#existing-installations).
