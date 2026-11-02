@@ -1,6 +1,6 @@
 # B2: ClickHouse and TileDB storage baselines — results
 
-Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at f82ce61, with deviations recorded before the full run:
+Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at a3efa67, with deviations recorded before the full run:
 - ClickHouse 26.5.1.1 through `chdb-core` 26.5.0, because 26.9.0 and 26.7.3 do not load on macOS 27;
 - wide parts;
 - one chain rejected by ClickHouse.
