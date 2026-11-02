@@ -41,6 +41,11 @@ Times are the rig clock from the file names (time zone not stated), shown as UTC
 a 0.001 grid, unit not stated; some late values sit at ±5.0, which looks like the sensor's limit. The last two
 snapshots are almost flat: the rig had stopped.
 
+**On Apple Silicon or another ARM machine:** with a release that includes linux/arm64 (after 0.3.2-alpha.1),
+set `MORLET_IMAGE` to it and `MORLET_PLATFORM=linux/arm64` before these commands, and the database runs
+natively instead of emulated. On an Apple M5 Max that loaded this demo's test 2 in 176 s instead of 246 s and
+ran `search_from_time` in 0.6 s instead of 1.2 s (machine demo; measured with a locally built arm64 image).
+
 ## 2. Connect Claude
 
 **Claude Code:** start it in this folder. [`.mcp.json`](.mcp.json) declares the server; approve it when

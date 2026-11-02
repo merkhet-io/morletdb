@@ -4,7 +4,7 @@ on:
     branches: [main]
     paths: ['VERSION', '.github/workflows/release.yml']
   pull_request:
-    paths: ['VERSION', '.github/workflows/release.yml', 'compose.release.yaml']
+    paths: ['VERSION', '.github/workflows/release.yml', 'compose.release.yaml', 'deploy/Dockerfile']
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,12 +12,24 @@ concurrency:
   group: alpha-release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  # Each architecture is built natively on its own runner (no emulation), trialled from a clean checkout,
+  # and pushed under an architecture tag. The release tag is then one multi-architecture index of the two.
   image:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
     permissions:
-      contents: write
+      contents: read
       packages: write
+    env:
+      MORLET_PLATFORM: linux/${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate prerelease identifier
@@ -44,7 +56,7 @@ jobs:
         with:
           context: .
           file: deploy/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/${{ matrix.arch }}
           load: true
           tags: morletdb:candidate
           labels: |
@@ -52,8 +64,8 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.version.outputs.value }}
             org.opencontainers.image.licenses=Apache-2.0
-          cache-from: type=gha,scope=alpha
-          cache-to: type=gha,mode=max,scope=alpha
+          cache-from: type=gha,scope=alpha-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=alpha-${{ matrix.arch }}
       - name: Clean-checkout quickstart and restart trial
         env:
           MORLET_IMAGE: morletdb:candidate
@@ -76,44 +88,89 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish tested image without rebuilding
+      - name: Push the tested image under its architecture tag
         if: github.event_name != 'pull_request'
         env:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY,,}"
-          docker tag morletdb:candidate "$image:$VERSION"
-          docker push "$image:$VERSION"
-          digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$image:$VERSION")
-          echo "MORLET_IMAGE=$digest" >> "$GITHUB_ENV"
-          printf '%s\n' "$digest" > image-digest.txt
-      - name: Pull and trial registry digest in a fresh project
-        if: github.event_name != 'pull_request'
-        env:
-          COMPOSE_PROJECT_NAME: registry-trial
+          docker tag morletdb:candidate "$image:$VERSION-${{ matrix.arch }}"
+          docker push "$image:$VERSION-${{ matrix.arch }}"
+
+  publish:
+    needs: image
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.index.outputs.digest }}
+      version: ${{ steps.index.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Combine the tested architecture images into the release tag
+        id: index
         run: |
-          docker pull "$MORLET_IMAGE"
+          version=$(cat VERSION)
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker buildx imagetools create -t "$image:$version" "$image:$version-amd64" "$image:$version-arm64"
+          digest=$(docker buildx imagetools inspect "$image:$version" --format '{{json .Manifest}}' | jq -r .digest)
+          docker buildx imagetools inspect "$image:$version"
+          echo "digest=$image@$digest" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  registry-trial:
+    needs: publish
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      MORLET_IMAGE: ${{ needs.publish.outputs.digest }}
+      MORLET_PLATFORM: linux/${{ matrix.arch }}
+      COMPOSE_PROJECT_NAME: registry-trial
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pull and trial the release digest in a fresh project
+        run: |
+          docker pull --platform "$MORLET_PLATFORM" "$MORLET_IMAGE"
           docker compose -f compose.release.yaml run --rm walkthrough
           docker compose -f compose.release.yaml restart db
           docker compose -f compose.release.yaml up --no-build -d --wait db
           docker compose -f compose.release.yaml run --rm walkthrough
-      - name: Publish GitHub prerelease only after registry trial succeeds
-        if: github.event_name != 'pull_request'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.value }}
-        run: |
-          { cat CHANGELOG.md; printf '\nImage: %s\nCommit: %s\n' "$MORLET_IMAGE" "$GITHUB_SHA"; } > release-notes.md
-          gh release create "v$VERSION" image-digest.txt --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
       - name: Registry trial diagnostics
         if: failure()
-        env:
-          MORLET_IMAGE: morletdb:candidate
-          COMPOSE_PROJECT_NAME: registry-trial
         run: docker compose -f compose.release.yaml logs db
       - name: Remove registry trial volume
         if: always()
-        env:
-          MORLET_IMAGE: morletdb:candidate
-          COMPOSE_PROJECT_NAME: registry-trial
         run: docker compose -f compose.release.yaml down -v
+
+  release:
+    needs: [publish, registry-trial]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish GitHub prerelease only after both registry trials succeed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.publish.outputs.version }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
+        run: |
+          printf '%s\n' "$DIGEST" > image-digest.txt
+          { cat CHANGELOG.md; printf '\nImage: %s (linux/amd64 and linux/arm64)\nCommit: %s\n' "$DIGEST" "$GITHUB_SHA"; } > release-notes.md
+          gh release create "v$VERSION" image-digest.txt --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md

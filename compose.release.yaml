@@ -1,7 +1,7 @@
 services:
   db:
     image: ${MORLET_IMAGE:?Set MORLET_IMAGE to a release tag or digest}
-    platform: linux/amd64
+    platform: ${MORLET_PLATFORM:-linux/amd64}
     environment:
       POSTGRES_USER: morlet
       POSTGRES_PASSWORD: morlet-demo-only

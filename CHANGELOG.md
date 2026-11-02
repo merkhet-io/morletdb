@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+Release images for arm64:
+- The release workflow builds the image natively on Linux amd64 and arm64 runners, trials each from a clean
+  checkout, and publishes one multi-architecture tag (plus `<version>-amd64` and `<version>-arm64`); the
+  GitHub prerelease is created only after both architectures pass a trial of the registry digest.
+- The compose files take `MORLET_PLATFORM` (default `linux/amd64`); with a multi-architecture release,
+  `linux/arm64` runs natively on ARM machines such as Apple Silicon.
+
 MCP server:
 - `tools/mcp/morlet_mcp.py` is a read-only MCP server for AI agents. Its tools are
   `list_collections`, `list_recordings`, `locate_time`, `describe_interval`, `search_similar` and

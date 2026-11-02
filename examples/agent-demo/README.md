@@ -35,6 +35,11 @@ the first time.
 Data: GFZ & CNRS-INSU (2006), *IPOC Seismic Network*, [doi:10.14470/PK615318](https://doi.org/10.14470/PK615318),
 open access.
 
+**On Apple Silicon or another ARM machine:** with a release that includes linux/arm64 (after 0.3.2-alpha.1),
+set `MORLET_IMAGE` to it and `MORLET_PLATFORM=linux/arm64` before these commands, and the database runs
+natively instead of emulated (on an Apple M5 Max, the [machine demo](../machine-demo/README.md) imported
+1.4 times and searched twice as fast natively; measured with a locally built arm64 image).
+
 ## 2. Connect Claude
 
 **Claude Code:** start it in this folder. [`.mcp.json`](.mcp.json) declares both servers; approve them
