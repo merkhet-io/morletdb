@@ -10,12 +10,14 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-RESULTS = HERE / "results" / ("dev" if os.environ.get("B3_SET") == "dev" else "")
+SET_DIR = HERE / "results" / ("dev" if os.environ.get("B3_SET") == "dev" else "")
+# B3_RUN=b31 writes this run's results to a subdirectory (the manifest stays with its set).
+RESULTS = SET_DIR / os.environ.get("B3_RUN", "")
 LIMITS = ["--cpus", "8", "--memory", "16g"]
 
 
 def manifest():
-    return json.loads((RESULTS / "manifest.json").read_text())
+    return json.loads((SET_DIR / "manifest.json").read_text())
 
 
 def sha(x):

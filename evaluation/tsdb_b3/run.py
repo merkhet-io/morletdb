@@ -21,7 +21,7 @@ SUBSET = [0, 61, 123]
 
 
 def save(name, obj):
-    common.RESULTS.mkdir(exist_ok=True)
+    common.RESULTS.mkdir(parents=True, exist_ok=True)
     (common.RESULTS / f"{name}.json").write_text(json.dumps(obj, indent=1, default=str) + "\n")
     print(json.dumps(obj, indent=1, default=str)[:4000])
 
@@ -156,6 +156,9 @@ def load(system, durability, rep):
     volume = f"b3-{system}-{durability.lower()}-r{rep}"
     res = {"system": system, "durability": durability, "rep": rep, "parse_s": parse_s,
            "samples": total_samples(m), "started": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    if system != "questdb":
+        res["image"] = mo.IMAGE
+        res["image_id"] = common.sh(["docker", "image", "inspect", mo.IMAGE, "--format", "{{.Id}}"]).strip()
     search = system == "morletdb-search"
     if system in ("morletdb-batched16", "morletdb-noquantum"):     # attribution, outside the frozen arms
         mo.VARIANT.update({"rpc_chunks": 16} if system.endswith("batched16") else {"quantum": False})

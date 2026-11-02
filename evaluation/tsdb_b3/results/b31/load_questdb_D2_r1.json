@@ -1,0 +1,349 @@
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.4900844580261037,
+ "samples": 101586735,
+ "started": "2026-11-02T20:04:52",
+ "ingest": {
+  "wall_s": 17.815,
+  "samples_per_s": 5702319,
+  "conversion_s": 3.695,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 123.061,
+   "p95_ms": 238.607,
+   "max_ms": 610.986
+  },
+  "queryable_after_last_ack_s": 0.018,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 302.7,
+   "cpu_percent_p95": 328.5,
+   "memory_peak_mib": 1847.3,
+   "samples": 8
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 12.381,
+   "p95_ms": 103.747,
+   "max_ms": 544.398
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.0
+  }
+ },
+ "correct": true,
+ "storage_native": {
+  "tables": {
+   "b3_mid": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16401,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 47652864,
+     "allocated": 47652864,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 7942144,
+     "allocated": 7942144,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 15884288,
+     "allocated": 15884288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 23283902,
+     "allocated": 23355392,
+     "files": 34
+    }
+   },
+   "b3_high": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16403,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 765087744,
+     "allocated": 765112320,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 127516672,
+     "allocated": 127524864,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 255029248,
+     "allocated": 255037440,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 319085340,
+     "allocated": 319840256,
+     "files": 234
+    }
+   },
+   "b3_process": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16409,
+     "allocated": 20480,
+     "files": 5
+    },
+    "identity": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "data": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 52901,
+     "allocated": 73728,
+     "files": 12
+    }
+   }
+  },
+  "volume": {
+   "apparent": 1576109973,
+   "allocated": 1577177088
+  }
+ },
+ "reads_native": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 1.926,
+   "p95_ms": 5.89,
+   "max_ms": 21.775,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 10.734,
+   "p95_ms": 20.113,
+   "max_ms": 40.943,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 15.424,
+   "p95_ms": 23.41,
+   "max_ms": 44.703,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 1.254,
+   "p95_ms": 3.175,
+   "max_ms": 15.258,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 1.141,
+   "p95_ms": 2.128,
+   "max_ms": 9.355,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 1.813,
+   "p95_ms": 9.218,
+   "max_ms": 54.427,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 1364.4
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 4.162,
+  "p95_ms": 8.019,
+  "max_ms": 16.707,
+  "max_relative_difference": 8.052762256150513e-14,
+  "within_1e-12": "True"
+ },
+ "parquet_LZ4_RAW": {
+  "convert_statement_s": 0.047,
+  "until_settled_s": 2.758,
+  "partitions": [
+   {
+    "name": "2026-01-01T00",
+    "isParquet": true,
+    "numRows": 15394401,
+    "diskSize": 225614489,
+    "parquetFileSize": 225556901
+   },
+   {
+    "name": "2026-01-01T01",
+    "isParquet": true,
+    "numRows": 15459292,
+    "diskSize": 226633434,
+    "parquetFileSize": 226575474
+   },
+   {
+    "name": "2026-01-01T02",
+    "isParquet": true,
+    "numRows": 1024099,
+    "diskSize": 15122188,
+    "parquetFileSize": 15117796
+   },
+   {
+    "name": "2026-01-01T03",
+    "isParquet": false,
+    "numRows": 1,
+    "diskSize": 83886080,
+    "parquetFileSize": -1
+   }
+  ],
+  "correctness": {
+   "reads": {
+    "acquisitions": 124,
+    "channels_checked": 868,
+    "mismatches": []
+   }
+  }
+ },
+ "storage_parquet_LZ4_RAW": {
+  "tables": {
+   "b3_mid": {
+    "wal": {
+     "apparent": 70680,
+     "allocated": 118784,
+     "files": 30
+    },
+    "metadata": {
+     "apparent": 25041,
+     "allocated": 32768,
+     "files": 8
+    },
+    "data": {
+     "apparent": 38197001,
+     "allocated": 38203392,
+     "files": 3
+    },
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "sentinel_partition_excluded": {
+     "apparent": 20480,
+     "allocated": 20480,
+     "files": 5
+    }
+   },
+   "b3_high": {
+    "wal": {
+     "apparent": 70832,
+     "allocated": 118784,
+     "files": 30
+    },
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 136343,
+     "allocated": 151552,
+     "files": 8
+    },
+    "data": {
+     "apparent": 467250171,
+     "allocated": 467259392,
+     "files": 3
+    },
+    "sentinel_partition_excluded": {
+     "apparent": 20480,
+     "allocated": 20480,
+     "files": 5
+    }
+   },
+   "b3_process": {
+    "wal": {
+     "apparent": 70598,
+     "allocated": 110592,
+     "files": 26
+    },
+    "metadata": {
+     "apparent": 17801,
+     "allocated": 32768,
+     "files": 8
+    },
+    "data": {
+     "apparent": 10130,
+     "allocated": 20480,
+     "files": 3
+    },
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "sentinel_partition_excluded": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    }
+   }
+  },
+  "volume": {
+   "apparent": 520390638,
+   "allocated": 520757248
+  }
+ }
+}
