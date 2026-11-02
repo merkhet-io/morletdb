@@ -1,0 +1,46 @@
+{
+ "system": "morletdb-032",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.24216020799940452,
+ "samples": 101586735,
+ "started": "2026-11-02T21:03:10",
+ "image": "morletdb:b32-dev",
+ "image_id": "sha256:479987326f5f6dc672f56dfcbec4a36f7c90eb5faea04cef5a4e87390dc97f43",
+ "ingest": {
+  "wall_s": 17.395,
+  "samples_per_s": 5840087,
+  "conversion_s": 0.02,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 138.884,
+   "p95_ms": 153.605,
+   "max_ms": 176.097
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "failures": [],
+  "excluded_preflight_s": 0.753,
+  "server": {
+   "cpu_percent_mean": 80.8,
+   "cpu_percent_p95": 81.9,
+   "memory_peak_mib": 168.6,
+   "samples": 8
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.7
+  }
+ },
+ "correct": true
+}

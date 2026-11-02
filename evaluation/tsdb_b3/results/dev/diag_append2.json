@@ -1,0 +1,36 @@
+{
+ "note": "exploratory development diagnosis; ms",
+ "chunk": 4096,
+ "checkpoint_bytes": 184,
+ "select_1": 0.286,
+ "from_bytes": 0.578,
+ "valid_chunk": 0.582,
+ "chunk_step": 0.685,
+ "encode_chunk": 0.92,
+ "stream_relations": 0.304,
+ "append_raw_autocommit": 1.271,
+ "per_call_ms": {
+  "morlet_encode_chunk": 0.3934,
+  "morlet_append_chunk": 0.1844,
+  "morlet_float8_from_le_bytes": 0.17,
+  "morlet_valid_encoded_chunk": 0.0806,
+  "morlet_stream_relations": 0.048,
+  "morlet_chunk_step": 0.0396,
+  "morlet_valid_chunk": 0.0256,
+  "morlet_append_chunk_raw": 0.0168,
+  "morlet_ensure_recording": 0.0024,
+  "morlet_chunk_checkpoint": 0.0003
+ },
+ "per_call_total_ms": {
+  "morlet_append_chunk_raw": 0.7405,
+  "morlet_append_chunk": 0.6489,
+  "morlet_encode_chunk": 0.3934,
+  "morlet_float8_from_le_bytes": 0.17,
+  "morlet_valid_encoded_chunk": 0.0806,
+  "morlet_stream_relations": 0.048,
+  "morlet_chunk_step": 0.0396,
+  "morlet_valid_chunk": 0.0256,
+  "morlet_ensure_recording": 0.0069,
+  "morlet_chunk_checkpoint": 0.0003
+ }
+}

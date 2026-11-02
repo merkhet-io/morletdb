@@ -1,0 +1,14 @@
+{
+ "note": "exploratory development diagnosis; medians, ms, round trip included",
+ "image": "morletdb:b32-dev",
+ "select_1": 0.319,
+ "fetch_detoast_concat": 0.373,
+ "fetch_and_array_agg": 0.365,
+ "decode_raw_preaggregated": 3.121,
+ "decode_stats_preaggregated": 3.358,
+ "decode_each_chunk": 3.557,
+ "valid_encoded_each_chunk": 3.638,
+ "read_interval_raw": 4.107,
+ "from_le_bytes_4096": 0.509,
+ "encode_4096": 0.746
+}

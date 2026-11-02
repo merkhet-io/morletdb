@@ -288,3 +288,83 @@ its data, timestamps and metadata were byte-identical across sessions.
 - **Bulk archives:** document 16,384-sample chunks as an option. It gives faster ingestion and 7.5% less
   storage. On development its reads were slower; in this session they were faster. That disagreement
   needs its own measurement before any claim.
+
+---
+
+# B3.2: pipelined appends, zero-copy array I/O, faster codec, parallel track
+
+Amendment frozen in [PROTOCOL.md](PROTOCOL.md) before this run; development on the disjoint development set
+([`results/dev/`](results/dev/)); confirmation once on the benchmark set ([`results/b32/`](results/b32/)),
+QuestDB rerun unchanged in the same session. Image `morletdb:b32-dev` (local build of the amendment's commit,
+image id `sha256:479987326f5f…`). 31 loads, every one passing full correctness.
+
+## Acceptance criteria (frozen; M-032, benchmark set)
+
+| # | Criterion | Result | Met |
+|---|---|---|---|
+| 1 | every correctness check passes; analytics within 1e-12 | all 31 loads pass; 3.5e-16 | yes |
+| 2 | sample-data storage equal to stage 1 within 0.1% | 156.75 MiB; chunks byte-identical | yes |
+| 3 | single-connection ingestion (D2 median) ≥ 3.4 M samples/s | **5.56 M** (2.4× B3.1, 10.5× stage 1) | yes |
+| 4 | R1–R5 and analytics p50 each ≤ 1.1× B3.1 | all faster: R1 0.65 (0.98), R2 7.98 (11.43), R3 10.68 (20.58), R4 0.68/0.69 (1.42/0.91), R5 1.38 (1.42), analytics 2.70 (3.93) ms | yes |
+
+**Verdict: adopt.**
+
+## Track A: recommended configuration, one client connection (same session)
+
+| Measure | MorletDB B3.2 | QuestDB 10.1 | Statement (≥ 10%) |
+|---|---:|---:|---|
+| Ingestion D2, median [range] | 5.56 M [5.45–5.84] samples/s | 8.29 M [7.85–8.78] | QuestDB 1.3–1.6× faster |
+| Ingestion D1 | 5.69 M [5.32–5.72] | 7.01 M [6.94–7.40] | QuestDB 1.2–1.4× faster |
+| Ack per acquisition, p50 (D2) | 144 ms | 95 ms | |
+| Server memory, peak | 168 MiB | 2,138–2,306 MiB | MorletDB 13× less |
+| R1 4,096 samples, p50 / p95 | **0.65 / 1.04 ms** | 1.16 / 2.66 | MorletDB faster (1.8× / 2.6×) |
+| R2 128,000 samples | 7.98 / 11.64 | 7.71 / 13.31 | none (p50 within 4%; MorletDB 13% faster at p95) |
+| R3 3 × 64,000 samples | **10.68 / 14.62** | 12.52 / 19.11 | MorletDB faster (15% / 24%) |
+| R4 recent | **0.68 / 1.20** | 0.87 / 1.44 | MorletDB faster |
+| R4 older | **0.69 / 1.21** | 0.88 / 1.71 | MorletDB faster |
+| R5 4 threads | 1.38 / 2.76 ms, 2,481 q/s | 1.32 / 5.61 ms, 2,036 q/s | none on latency (p50 within 5%); 22% more queries/s |
+| Analytics (R2 intervals) | **2.70 / 2.99** | 4.02 / 8.09 | MorletDB faster (1.5× / 2.7×) |
+| Sample data on disk | **156.75 MiB** | 232.7 (Parquet zstd 9) / 1,162.7 (native) | MorletDB 33% / 87% smaller |
+| Whole volume, with the WAL option | 240.6 MiB | 247.3 (Parquet zstd 9) | none (3% smaller) |
+
+QuestDB's storage is taken from stage 1 (its data files were byte-identical in every session); its Parquet
+arms were not rerun. The WAL option (`min_wal_size=32MB`, `max_wal_size=48MB`) did not change ingestion
+(5.85 M samples/s) and leaves 48 MiB of WAL instead of 176 MiB; it checkpoints more often, which costs extra
+writes under sustained load and shortens crash recovery.
+
+## Track B: maximum throughput, parallel writers (both systems treated alike)
+
+| Writers, class | MorletDB B3.2 | QuestDB 10.1 | Statement (all three loads) |
+|---|---:|---:|---|
+| 4, D2 | **13.46 M [13.28–14.48]** samples/s, 200–294% CPU | 10.69 M [10.11–11.10], 628–668% CPU | MorletDB 1.2–1.4× faster |
+| 8, D2 | **16.47 M [14.36–16.57]**, 274–391% CPU | 10.10 M [9.12–10.70], 604–711% CPU | MorletDB 1.3–1.8× faster |
+| 8, D1 | **15.46 M [14.90–16.79]**, 361–378% CPU | 8.42 M [8.37–8.42], 655–712% CPU | MorletDB 1.8–2.0× faster |
+
+Server memory with 8 writers: MorletDB 184–196 MiB, QuestDB 2,429–2,855 MiB. Data was queryable 6–7 ms
+(MorletDB) and 70–90 ms (QuestDB, WAL apply) after the last acknowledgement. QuestDB used most of its 8-CPU
+limit from 4 writers on; MorletDB stayed below 4 cores, so its ceiling on this machine was not reached.
+
+## What changed and why it is faster
+
+- **Pipelined appends** (client): the importer no longer waits for each statement's result; errors surface at
+  the next commit, which covers the same chunks. Single connection 2.4 → 5.8 M samples/s on development.
+- **Zero-copy array I/O** (server): append-path functions borrow the `float8[]` input instead of copying it
+  element by element, and results are built in one call (pgrx built them one element at a time).
+- **Codec** (server; output byte-identical): Rice codes read from one 64-bit window, prediction in a second
+  pass with the order fixed per chunk, slicing-by-8 CRC-32C; per-order residual loops in the encoder. Real
+  vibration chunks: decode 19.8 → 10.4 ns/sample, encode 72 → 54 ns/sample.
+- **Multi-channel reads in one statement** (client): one round trip for R3.
+
+## Updated trade-off map (MorletDB vs QuestDB, this machine and dataset)
+
+| Dimension | Stage 1 | B3.1 | **B3.2** |
+|---|---|---|---|
+| Sample data on disk | MorletDB 33% smaller | unchanged | unchanged |
+| Ingestion, one connection | QuestDB 13–15× | QuestDB 2.5–3.7× | **QuestDB 1.2–1.6×** |
+| Ingestion, parallel writers | not measured | not measured | **MorletDB 1.2–2.0×** |
+| Server memory | MorletDB 11–14× less | unchanged | unchanged (13×) |
+| Short exact reads | tie | MorletDB faster | **MorletDB 1.8× / 2.6×** |
+| Long exact reads (128k) | QuestDB 2–3× | tie | tie |
+| Multi-channel reads (3 × 64k) | QuestDB faster | QuestDB 25% at p50 | **MorletDB faster** |
+| Interval analytics | QuestDB 3–6× | tie | **MorletDB 1.5× / 2.7×** |
+| Altered retries | refused vs replaced | unchanged | unchanged |

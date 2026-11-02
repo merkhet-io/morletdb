@@ -209,3 +209,38 @@ word-based bit reader and encodes with a faster search that writes byte-identica
 5. Analytics p50 at most 2× QuestDB-native p50 of the same session.
 
 Comparative statements keep the stage-1 rule (≥ 10%, all loads, or both p50 and p95).
+
+## Amendment B3.2: pipelined appends, zero-copy array I/O, faster codec, parallel track (FROZEN before its confirmation run)
+
+Frozen 2026-11-02 in the commit that adds this section, after development on the development set only
+(`results/dev/`). B3.1 and stage-1 results stay as published.
+
+**What changed (all lossless; SQL signatures unchanged; chunks byte-identical):** the importer core sends its
+statements in psycopg pipeline mode; pg_morlet's append path borrows `float8[]` input and builds `float8[]`
+results in one call; the raw codec decodes with a one-window Rice path, a second prediction pass and a
+slicing-by-8 CRC, and encodes with per-order residual loops. Multi-channel reads fetch all channels of an
+interval in one statement.
+
+**Image:** `morletdb:b32-dev`, built with `deploy/Dockerfile` from the commit that adds this section; its
+image id is recorded in every MorletDB result.
+
+**Track A, recommended configuration (single client connection, as stage 1 and B3.1):**
+- **M-032:** three fresh loads per durability class; D2 load 1 measures storage, reads (R1–R5) and analytics.
+- **M-032w** (storage option): as M-032 with `min_wal_size=32MB`, `max_wal_size=48MB`; one D2 load,
+  storage and ingestion only. Reported as a documented option with its trade-off (more frequent checkpoints).
+- **QuestDB** rerun unchanged in the same session (three loads per class; reads and analytics on D2 load 1).
+
+**Track B, maximum throughput (`parallel.py`):** N writer processes per system, each with its own connection
+(MorletDB: the importer core per acquisition; QuestDB: its client's `dataframe()` per acquisition and
+table), acquisitions dealt round-robin, files parsed before a common start barrier, wall time from the
+barrier to the last acknowledgement. Both systems get the same treatment and the same container limits.
+Three loads per system for N = 4 and N = 8 in D2, and N = 8 in D1. Full correctness after every load.
+Track B results are reported separately and never compared with Track A results.
+
+**Acceptance criteria for adopting the change (benchmark set, M-032):**
+1. Every correctness check passes; analytics within 1e-12 relative of numpy.
+2. Sample-data storage equal to stage 1 within 0.1%.
+3. Single-connection ingestion (D2, median of three) at least 1.5× B3.1's 2.27 M samples/s (≥ 3.4 M).
+4. No read or analytics regression: p50 of R1–R5 and analytics each at most 1.1× B3.1's confirmed value.
+
+Comparative statements keep the stage-1 rule (≥ 10%, all loads, or both p50 and p95).
