@@ -123,4 +123,8 @@ These are not results. The full path is the same build with the switch off.
 
 ## Deviations
 
-None yet.
+1. **Operator pause between N3 default and N3 w8 (no measurement affected).** The operator asked to pause so
+   the machine could rest. The runner was stopped (SIGSTOP) at 23:24:01, after N3 default had finished and
+   while it waited for the load condition. It was resumed (SIGCONT) at 23:26:01. The machine did not sleep;
+   the power log shows no sleep or wake event. N3 w8 then started under the protocol's load condition as
+   usual.
