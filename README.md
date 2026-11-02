@@ -125,6 +125,9 @@ CREATE EXTENSION pg_morlet;
 CREATE EXTENSION vector;   -- optional: only for probe search (pgvector 0.8 or later)
 ```
 
+**Use it from Python**: ingest a NumPy waveform, read exact intervals and search similar ones with the
+[Python SDK](docs/python-sdk.md) (`sdk/python`, alpha), starting with a [runnable quickstart](examples/python/quickstart.py).
+
 **Let an AI agent investigate your recordings** through a read-only MCP server (Claude Code,
 Claude Desktop and other MCP clients): [MorletDB for AI agents](docs/mcp.md).
 
