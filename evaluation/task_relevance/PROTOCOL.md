@@ -79,4 +79,7 @@ windows excluded.
 
 ## Deviations
 
-(none yet)
+1. **Catalogue size changed between counting and downloading.** The count query before freezing returned
+   191 events; the download about an hour later, with the same region and period, returned 181
+   (`data/e5-catalog/emsc_events.txt`, SHA-256 `34105a8a…`). EMSC revises its catalogue continuously. The
+   downloaded file is the frozen catalogue for E5.

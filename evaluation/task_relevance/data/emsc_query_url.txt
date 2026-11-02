@@ -1,0 +1,1 @@
+https://www.seismicportal.eu/fdsnws/event/1/query?starttime=2025-03-01T00:00:00&endtime=2025-03-15T00:00:00&latitude=-21.2&longitude=-69.8&maxradius=3&format=text
