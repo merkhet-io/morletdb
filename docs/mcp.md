@@ -18,6 +18,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `describe_interval` | level, impulsiveness (crest factor, kurtosis) and spectrum (dominant frequency, centroid, energy share and power per band) of an interval; your own bands in Hz, and a minimum frequency so slow background motion does not dominate |
 | `compare_intervals` | an interval against the background around it (median over the surrounding minutes) or an explicit reference (a quiet stretch, normal operation, an earlier event): power ratio overall and per band in dB, and how the energy above the reference splits across bands; warns if an explicit reference contains an onset |
 | `find_onsets` | candidate onsets in an interval, where short-term energy rises above the preceding background (STA/LTA, optional band-pass); candidates to inspect, not evaluated detections |
+| `search_from_time` | the intervals most similar to what happens at a UTC time: finds the onset near that time, frames the window and searches (with `shifts`); the easiest way to search when you know when something happened |
 | `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times; optionally also searches with the window moved a little (`shifts`) and merges the results |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
@@ -124,11 +125,13 @@ This starts the server over stdio as an MCP client would, lists its tools and ru
 
 - **Speed:** with SQL 0.3.2 (`morlet_search_similar`), search uses probe search where it is enabled
   (tens of milliseconds); older servers use exact search (about 1 s on 235,000 windows).
-- **Where the window starts matters:** moving the query window by a few seconds changes which hits rank first.
-  For a transient, frame its strongest part and keep the background before it short. In a real Claude session
-  on the demo, a window starting 15 s before the first arrival of the M2.6 earthquake returned 1 catalogued
-  earthquake in 15 hits; the README's window, starting 6 s after it, returns 4 in 5. If hits look weak, try a
-  second placement or `shifts=2`.
+- **Where the window starts matters:** moving the query window by a few seconds changes which hits rank first,
+  and not in a way that is easy to reason about. On the demo data (203 queries from 52 catalogued earthquakes,
+  share of the top 10 overlapping a catalogued event), starting 15 s before the onset gave 0.278, 6 s after
+  0.280, 2 s before 0.217, and the 41 s with most energy 0.194. Merging searches with the window moved by up
+  to 10 s (`shifts=2`, 2 s before the onset) gave 0.318. `search_from_time` does exactly that, so agents need
+  not choose. These numbers come from the development data the choice was made on; they are not a held-out
+  result.
 - **Window length:** search intervals must have the stored window length, 4,096 samples unless built
   otherwise; `list_collections` shows it.
 - **Scope:** the server reads only. Importing, labelling and building search structures stay with the
