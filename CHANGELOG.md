@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+MCP server:
+- `tools/mcp/morlet_mcp.py` is a read-only MCP server for AI agents. Its tools are
+  `list_collections`, `list_recordings`, `locate_time`, `describe_interval`, `search_similar` and
+  `read_interval`.
+  - **Safety:** it runs in read-only transactions with statement timeouts, as the connecting role,
+    so row-level security applies.
+  - **Errors:** they reach the agent as tool errors with the database's message.
+  - **Guide:** `docs/mcp.md`, with Claude Code and Claude Desktop set-up and a worked investigation.
+
 ## 0.3.2-alpha.1
 
 The image contains PostgreSQL 17 and pg_morlet only, as in 0.3.1-alpha.1; probe search needs
