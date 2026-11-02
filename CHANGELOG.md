@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+Performance:
+- Exact envelope search scores rows about 2.3× faster, with **bitwise identical distances** and
+  results (E6). Only the library changes; SQL objects are unchanged.
+  - **What changed:** `morlet_envelope_distance` builds the query's shifted copies once per query
+    and backend and scores each stored envelope in one pass across lags. Each lag's products are
+    still added in ascending order from the same neutral element. float16 values are widened by
+    bit manipulation (identical for all 65,536 codes), and the query array is read without
+    copying.
+  - **Measured on 234,762 development windows:** scoring all rows took 692 → 298 ms with the
+    planner's three workers.
+  - **More workers:** the envelope table's `parallel_workers` storage parameter lets PostgreSQL use
+    more workers on larger galleries (see `evaluation/fast_exact/RESULTS.md`).
+
 Fixes:
 - Chunk encoding with a subnormal `sample_quantum` (for example 5e-324) no longer panics with
   an integer overflow in builds with overflow checks (debug builds and `cargo pgrx test`).
