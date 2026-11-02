@@ -1,7 +1,8 @@
 # G1 results: automatic calibration-grid detection recovers the declared-quantum size
 
-Protocol: [PROTOCOL.md](PROTOCOL.md), frozen with the encoder change (e7f6a5b) before any G1 run. Run once on
-2026-11-02. Raw results: [`results/g1.json`](results/g1.json) (`g1.py`, B1's six inputs). Apple M5 Max, single thread for
+Protocol: [PROTOCOL.md](PROTOCOL.md), frozen with the encoder change (e7f6a5b; on `main` as ba69f6f) before any G1 run. Run once on
+2026-11-02. Raw results: [`results/g1.json`](results/g1.json) (`g1.py`, B1's six inputs) and
+[`../tsdb_b3/results/g1/`](../tsdb_b3/results/g1/) (the B3 benchmark set). Apple M5 Max, single thread for
 the codec bench; the B3 load used the B3 harness and container limits (image `morletdb:g1-dev`, id
 `sha256:4f12e8e6ad98…`).
 
@@ -23,10 +24,18 @@ the codec bench; the B3 load used the B3 harness and container limits (image `mo
    coding (ECG 11.1 / 119 vs 3.3 / 63; IMS 25.2 / 165 vs 11.5 / 84), because grid coding is cheaper than
    float-bit coding; with a declared quantum it is faster still (ECG 13.9 / 119). Integer inputs: unchanged.
 
-## B3 benchmark set
+## B3 benchmark set, no quantum declared for any channel
 
-The B3 load without declared quanta (protocol item 5) is reported with the B3 harness option in a follow-up
-change, after the B3.2 harness is merged.
+| | Declared quanta (B3.2) | **No quantum (G1)** | Previous encoder, no quantum | QuestDB 10.1, Parquet zstd 9 |
+|---|---:|---:|---:|---:|
+| Sample data | 156.75 MiB | **151.1 MiB** | 621.6 MiB | 232.7 MiB |
+| 64 kHz group (vibration, currents) | 1.277 bytes/sample | 1.277 (byte-identical) | about 6 | 2.20 |
+| 4 kHz group (force, speed, torque) | 3.72 | **2.79** | 3.72 | 5.57 |
+
+The load passed full correctness; single-connection ingestion 5.47 M samples/s (B3.2 with declared quanta:
+5.56 M median). Without being told any calibration step, MorletDB stored the samples 4% smaller than with
+the declared quanta (it also found grids in the 4 kHz channels, which had none declared) and **35% smaller
+than QuestDB's Parquet zstd 9**.
 
 ## What this changes
 
