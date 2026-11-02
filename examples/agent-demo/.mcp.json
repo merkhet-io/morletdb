@@ -2,7 +2,29 @@
   "mcpServers": {
     "morletdb": {
       "command": "docker",
-      "args": ["compose", "--progress", "quiet", "run", "--rm", "-i", "-T", "mcp"]
+      "args": [
+        "compose",
+        "--progress",
+        "quiet",
+        "run",
+        "--rm",
+        "-i",
+        "-T",
+        "mcp"
+      ]
+    },
+    "seismo": {
+      "command": "docker",
+      "args": [
+        "compose",
+        "--progress",
+        "quiet",
+        "run",
+        "--rm",
+        "-i",
+        "-T",
+        "seismo"
+      ]
     }
   }
 }

@@ -10,9 +10,14 @@ MCP server:
     so row-level security applies.
   - **Errors:** they reach the agent as tool errors with the database's message.
   - **Guide:** `docs/mcp.md`, with Claude Code and Claude Desktop set-up and a worked investigation.
+- **Analysis tools:** `compare_intervals` (an interval against a quiet or normal reference: power ratio
+  per band in dB and how the energy above the reference splits across bands) and `find_onsets` (candidate
+  onsets by STA/LTA with an optional band-pass). `describe_interval` takes your own bands and a minimum
+  frequency, and reports power per band.
 - **Agent demo:** `examples/agent-demo` loads four days of public seismic data (CX, GEOFON) into the release
   image and runs the MCP server in Docker for Claude Code or Claude Desktop, with a scripted replay
-  (`replay.py`) that needs no language model.
+  (`replay.py`) that needs no language model. A second, offline MCP server (`seismo_mcp.py`) gives station
+  coordinates, an EMSC catalogue snapshot and predicted P and S arrivals.
 
 ## 0.3.2-alpha.1
 

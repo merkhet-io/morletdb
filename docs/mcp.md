@@ -15,7 +15,9 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
 | `list_recordings` | recordings with rate, channel, unit, metadata, length and UTC start and end where known; filter by metadata |
 | `locate_time` | the recordings containing a UTC time, and the sample offset of that time |
-| `describe_interval` | level, impulsiveness (crest factor, kurtosis) and spectrum (dominant frequency, centroid, band energies) of an interval |
+| `describe_interval` | level, impulsiveness (crest factor, kurtosis) and spectrum (dominant frequency, centroid, energy share and power per band) of an interval; your own bands in Hz, and a minimum frequency so slow background motion does not dominate |
+| `compare_intervals` | an interval against a reference (a quiet stretch, normal operation, an earlier event): power ratio overall and per band in dB, and how the energy above the reference splits across bands |
+| `find_onsets` | candidate onsets in an interval, where short-term energy rises above the preceding background (STA/LTA, optional band-pass); candidates to inspect, not evaluated detections |
 | `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
@@ -90,6 +92,20 @@ was added for this page from the public EMSC catalogue; the server does not know
 On the same development data and its held-out counterpart, this kind of search returns windows containing
 catalogued earthquakes about twice as often as zero-lag similarity
 ([E5](../evaluation/task_relevance/RESULTS.md), [E5-H](../evaluation/task_relevance/RESULTS_HELDOUT.md)).
+
+## Weak signals: compare with a reference
+
+A weak signal's spectrum is mostly background. In the demo data, a magnitude 3.0 earthquake in Potosí,
+Bolivia, 323 km from station PB02, is only about three times the background level there, and
+`describe_interval` reports a dominant frequency of 0.2 Hz: ocean microseism, present all the time.
+Two calls give the event's own frequency content:
+
+- `describe_interval(..., min_frequency_hz=1)` reports a dominant frequency of 11.3 Hz.
+- `compare_intervals` against a quiet window 13 minutes earlier gives +9.1 dB overall. It puts 16%, 14%, 30%,
+  37% and 3% of the energy above the background into the bands 0–3, 3–6, 6–12.5, 12.5–25 and 25–50 Hz,
+  close to the split of the local earthquakes 100 km away.
+
+`find_onsets` with a 2 Hz high-pass finds the strong arrival at 17:34:06 UTC, about 80 s after the origin time.
 
 ## Check an installation
 
