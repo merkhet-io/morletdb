@@ -1,4 +1,5 @@
 duckdb==1.4.1
+numpy==2.2.6
 pyarrow==21.0.0
 psycopg[binary]==3.2.10
 psutil==7.0.0
