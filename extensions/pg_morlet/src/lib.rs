@@ -302,15 +302,53 @@ fn morlet_envelopes_from_chunks(
     .collect()
 }
 
+thread_local! {
+    /// The last query prepared by this backend for `morlet_envelope_distance`: a scan calls
+    /// it once per stored envelope with the same query, so the shifted-query matrix is built
+    /// once per query and process (each parallel worker is its own process).
+    static LAG_QUERY: std::cell::RefCell<Option<(Vec<f64>, usize, morlet_core::envelope::LagQuery)>> =
+        const { std::cell::RefCell::new(None) };
+    /// Decoded stored envelope, reused across calls.
+    static STORED: std::cell::RefCell<Vec<f64>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn same_bits(a: &[f64], b: &[f64]) -> bool {
+    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
+}
+
 /// 1 - max over |lag| <= max_lag of the biased cross-correlation of a query envelope
 /// (morlet_envelope) and a stored envelope.
 #[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_envelope_distance(query_envelope: Vec<Option<f64>>, stored: &[u8], max_lag: i32) -> f64 {
-    let stored = morlet_core::envelope::decode(stored).unwrap_or_else(|e| pgrx::error!("{}", e));
+fn morlet_envelope_distance(
+    query_envelope: pgrx::Array<'_, f64>,
+    stored: &[u8],
+    max_lag: i32,
+) -> f64 {
     if max_lag < 0 {
         pgrx::error!("max_lag must be nonnegative");
     }
-    morlet_core::envelope::distance(&checked_samples(query_envelope), &stored, max_lag as usize)
+    let query = query_envelope
+        .as_slice()
+        .unwrap_or_else(|_| pgrx::error!("NULL waveform elements are unsupported"));
+    let lag = max_lag as usize;
+    STORED
+        .with(|buf| {
+            let mut g = buf.borrow_mut();
+            morlet_core::envelope::decode_into(stored, &mut g)
+                .unwrap_or_else(|e| pgrx::error!("{}", e));
+            LAG_QUERY.with(|cell| {
+                let mut cell = cell.borrow_mut();
+                if !matches!(&*cell, Some((q, l, _)) if *l == lag && same_bits(q, query)) {
+                    *cell = morlet_core::envelope::LagQuery::new(query, lag)
+                        .map(|p| (query.to_vec(), lag, p));
+                }
+                // Bitwise identical either way; the direct form covers queries too large to prepare.
+                match cell.as_ref() {
+                    Some((_, _, p)) => p.distance(&g),
+                    None => morlet_core::envelope::distance(query, &g, lag),
+                }
+            })
+        })
         .unwrap_or_else(|_| pgrx::error!("envelope lengths differ or max_lag is too large"))
 }
 
