@@ -1,0 +1,5 @@
+#Network|Station|Latitude|Longitude|Elevation|SiteName|StartTime|EndTime
+CX|PB01|-21.04323|-69.4874|900.0|IPOC Station Huatacondo, Chile|2006-02-21T00:00:00|
+CX|PB02|-21.31973|-69.89603|1015.0|IPOC Station Salar Grande, Chile|2006-05-06T00:00:00|
+CX|PB06|-22.7058|-69.57188|1440.0|IPOC Station Pedro de Valdivia, Chile|2007-03-04T00:00:00|
+CX|PSGCX|-19.59717|-70.12305|966.0|IPOC Station Pisagua, Chile|2006-11-28T00:00:00|
