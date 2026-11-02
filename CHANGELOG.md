@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.2-alpha.1
+
+The image contains PostgreSQL 17 and pg_morlet only, as in 0.3.1-alpha.1; probe search needs
+pgvector 0.8 or later installed separately.
 
 Search usability (SQL version 0.3.2, with an update script from 0.3.1 as released in 0.3.1-alpha.1):
 - **`morlet_search_similar(collection, recording, start, end, ...)`**, one entry point for interval

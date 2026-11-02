@@ -9,7 +9,7 @@ most of it is starting the database.
 The release image (PostgreSQL 17 with pg_morlet; linux/amd64):
 
 ```sh
-MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:0.3.1-alpha.1 docker compose -f compose.release.yaml up -d db
+MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:0.3.2-alpha.1 docker compose -f compose.release.yaml up -d db
 export DATABASE_URL=postgresql://morlet:morlet-demo-only@127.0.0.1:54329/morlet
 psql "$DATABASE_URL" -c 'CREATE EXTENSION IF NOT EXISTS pg_morlet'
 ```
@@ -62,7 +62,7 @@ SELECT * FROM morlet_search_similar('public.seismic', 'CX.PB01..HHZ.20250228T235
 
 Each row is a recording, an interval and its distance; `morlet_read_interval` returns the original samples
 of any of them. `morlet_search_similar` (SQL 0.3.2) uses probe search when it is enabled and exact search
-otherwise. On an older server (the 0.3.1 release image), the importer prints an explicit query instead,
+otherwise. On an older server (0.3.1-alpha.1 or earlier), the importer prints an explicit query instead,
 because exact search there refuses galleries of more than 4,096 windows by default.
 
 ## Measured on this machine (Apple M5 Max, PostgreSQL 17, local)
