@@ -1,0 +1,290 @@
+diff --git a/crates/morlet-core/src/envelope.rs b/crates/morlet-core/src/envelope.rs
+index 37c0ef7..73d79c5 100644
+--- a/crates/morlet-core/src/envelope.rs
++++ b/crates/morlet-core/src/envelope.rs
+@@ -66,12 +66,19 @@ pub fn envelope(samples: &[f64]) -> Result<Vec<f64>, SignalError> {
+     Ok(zscore(env))
+ }
+ 
+-fn zscore(v: Vec<f64>) -> Vec<f64> {
++fn zscore(mut v: Vec<f64>) -> Vec<f64> {
++    zscore_in_place(&mut v);
++    v
++}
++
++fn zscore_in_place(v: &mut [f64]) {
+     let n = v.len() as f64;
+     let mean = v.iter().sum::<f64>() / n;
+     let sd = (v.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / n).sqrt();
+     let s = if sd > 0.0 { sd } else { 1.0 };
+-    v.iter().map(|x| (x - mean) / s).collect()
++    for x in v.iter_mut() {
++        *x = (*x - mean) / s;
++    }
+ }
+ 
+ /// Stored form: one version byte, then binary16 little-endian values.
+@@ -86,17 +93,27 @@ pub fn encode(samples: &[f64]) -> Result<Vec<u8>, SignalError> {
+ }
+ 
+ pub fn decode(bytes: &[u8]) -> Result<Vec<f64>, SignalError> {
++    let mut out = Vec::new();
++    decode_into(bytes, &mut out)?;
++    Ok(out)
++}
++
++/// [`decode`] into a reused buffer, with the same arithmetic.
++pub fn decode_into(bytes: &[u8], out: &mut Vec<f64>) -> Result<(), SignalError> {
+     if bytes.len() < 3 || bytes[0] != HEADER[0] || bytes.len() % 2 != 1 {
+         return Err(SignalError::InvalidEnvelope);
+     }
+-    let v: Vec<f64> = bytes[1..]
+-        .chunks_exact(2)
+-        .map(|c| f16_to_f64(u16::from_le_bytes([c[0], c[1]])))
+-        .collect();
+-    if !valid_window_values(v.len()) || v.iter().any(|x| !x.is_finite()) {
++    out.clear();
++    out.extend(
++        bytes[1..]
++            .chunks_exact(2)
++            .map(|c| f16_to_f64(u16::from_le_bytes([c[0], c[1]]))),
++    );
++    if !valid_window_values(out.len()) || out.iter().any(|x| !x.is_finite()) {
+         return Err(SignalError::InvalidEnvelope);
+     }
+-    Ok(zscore(v))
++    zscore_in_place(out);
++    Ok(())
+ }
+ 
+ /// Stored envelopes of the windows `first, first + stride, ...` that end at or before `end`
+@@ -149,6 +166,75 @@ pub fn distance(q: &[f64], g: &[f64], max_lag: usize) -> Result<f64, SignalError
+     Ok(1.0 - best / n as f64)
+ }
+ 
++/// A query prepared for scoring many stored envelopes: the zero-padded shifted copies of
++/// the query for every lag, laid out row by row (`m[t * stride + j] = q[t + lag_j]`), so
++/// each stored envelope is scored by one pass over its values with independent
++/// accumulators across lags.
++///
++/// Distances are bitwise identical to [`distance`]: each lag's products are added in
++/// ascending `t` from the same neutral element. Padded positions contribute products with
++/// zero, which leave a nonzero sum unchanged and can only change the sign of a zero sum,
++/// which does not change the distance.
++pub struct LagQuery {
++    n: usize,
++    lags: usize,
++    stride: usize,
++    m: Vec<f64>,
++}
++
++/// Lags scored per pass in [`LagQuery`]; the accumulators of one block stay in registers.
++const QUERY_BLOCK: usize = 16;
++/// Largest shifted-query matrix [`LagQuery::new`] builds (values); larger queries use
++/// [`distance`] directly.
++const MAX_QUERY_MATRIX: usize = 1 << 21;
++
++impl LagQuery {
++    /// None when the inputs are invalid for [`distance`] or the matrix would be too large.
++    pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
++        let n = q.len();
++        if n == 0 || max_lag >= n {
++            return None;
++        }
++        let lags = 2 * max_lag + 1;
++        let stride = lags.div_ceil(QUERY_BLOCK) * QUERY_BLOCK;
++        if n.checked_mul(stride)? > MAX_QUERY_MATRIX {
++            return None;
++        }
++        let mut m = vec![0.0; n * stride];
++        for t in 0..n {
++            for j in 0..lags {
++                let i = t as isize + j as isize - max_lag as isize;
++                if (0..n as isize).contains(&i) {
++                    m[t * stride + j] = q[i as usize];
++                }
++            }
++        }
++        Some(Self { n, lags, stride, m })
++    }
++
++    /// `distance(q, g, max_lag)` for the query this was built from.
++    pub fn distance(&self, g: &[f64]) -> Result<f64, SignalError> {
++        if g.len() != self.n {
++            return Err(SignalError::LengthMismatch);
++        }
++        let zero: f64 = std::iter::empty::<f64>().sum();
++        let mut best = f64::NEG_INFINITY;
++        for b0 in (0..self.stride).step_by(QUERY_BLOCK) {
++            let mut acc = [zero; QUERY_BLOCK];
++            for (row, &gt) in self.m.chunks_exact(self.stride).zip(g) {
++                let r: &[f64; QUERY_BLOCK] = row[b0..b0 + QUERY_BLOCK].try_into().unwrap();
++                for j in 0..QUERY_BLOCK {
++                    acc[j] += r[j] * gt;
++                }
++            }
++            for &s in acc.iter().take(self.lags.saturating_sub(b0)) {
++                best = best.max(s);
++            }
++        }
++        Ok(1.0 - best / self.n as f64)
++    }
++}
++
+ /// Zero-padded shift of a query envelope for probe search: `p[t] = q[t + lag]` where
+ /// `0 <= t + lag < n`, else 0. The inner product of the probe with a stored envelope `g`
+ /// is exactly the lag term of `distance`, `sum_t q[t + lag] g[t]` over the overlap, so the
+@@ -301,14 +387,19 @@ pub fn f64_to_f16(v: f64) -> u16 {
+ }
+ 
+ pub fn f16_to_f64(h: u16) -> f64 {
+-    let sign = if h & 0x8000 != 0 { -1.0 } else { 1.0 };
+-    let exp = ((h >> 10) & 0x1f) as i32;
+-    let mant = (h & 0x3ff) as f64;
+-    sign * match exp {
+-        0 => mant * 2f64.powi(-24),
+-        31 if mant == 0.0 => f64::INFINITY,
++    // Bit-level widening, exact for every finite binary16 value: normals map exponent and
++    // mantissa directly, subnormals are mant * 2^-24 (exact), and the sign is applied last.
++    let mant = (h & 0x3ff) as u64;
++    let v = match (h >> 10) & 0x1f {
++        0 => mant as f64 * (1.0 / 16_777_216.0),
++        31 if mant == 0 => f64::INFINITY,
+         31 => f64::NAN,
+-        _ => (1.0 + mant / 1024.0) * 2f64.powi(exp - 15),
++        e => f64::from_bits(((e as u64 + 1008) << 52) | (mant << 42)),
++    };
++    if h & 0x8000 != 0 {
++        -v
++    } else {
++        v
+     }
+ }
+ 
+@@ -316,6 +407,65 @@ pub fn f16_to_f64(h: u16) -> f64 {
+ mod tests {
+     use super::*;
+ 
++    /// The previous arithmetic form, kept as the reference for the bit-level one.
++    fn f16_to_f64_reference(h: u16) -> f64 {
++        let sign = if h & 0x8000 != 0 { -1.0 } else { 1.0 };
++        let exp = ((h >> 10) & 0x1f) as i32;
++        let mant = (h & 0x3ff) as f64;
++        sign * match exp {
++            0 => mant * 2f64.powi(-24),
++            31 if mant == 0.0 => f64::INFINITY,
++            31 => f64::NAN,
++            _ => (1.0 + mant / 1024.0) * 2f64.powi(exp - 15),
++        }
++    }
++
++    #[test]
++    fn lag_query_distances_are_bitwise_identical() {
++        let mut seed = 99u64;
++        let mut rnd = || {
++            seed = seed
++                .wrapping_mul(6364136223846793005)
++                .wrapping_add(1442695040888963407);
++            (seed >> 11) as f64 / (1u64 << 53) as f64
++        };
++        for &w in &[512usize, 1024, 4096, 8192] {
++            for _ in 0..60 {
++                let (f1, f2, ph) = (5.0 + 80.0 * rnd(), 5.0 + 80.0 * rnd(), 100.0 * rnd());
++                let x: Vec<f64> = (0..w)
++                    .map(|i| ((i as f64 + ph) / f1).sin() * 1e3 + 300.0 * rnd())
++                    .collect();
++                let y: Vec<f64> = (0..w)
++                    .map(|i| (i as f64 / f2).cos() * 900.0 + 300.0 * rnd())
++                    .collect();
++                let q = decode(&encode(&x).unwrap()).unwrap();
++                let g = decode(&encode(&y).unwrap()).unwrap();
++                let n = q.len();
++                for max_lag in [0, 1, 7, 15, 16, (0.075 * n as f64) as usize, n / 2, n - 1] {
++                    let a = distance(&q, &g, max_lag).unwrap();
++                    let b = LagQuery::new(&q, max_lag).unwrap().distance(&g).unwrap();
++                    assert_eq!(a.to_bits(), b.to_bits(), "w {w} lag {max_lag}");
++                }
++            }
++        }
++        // Constant envelopes decode to zeros: every sum is zero, distance 1 either way.
++        let z = vec![0.0; 410];
++        assert_eq!(LagQuery::new(&z, 30).unwrap().distance(&z).unwrap(), 1.0);
++        assert!(LagQuery::new(&z, 410).is_none());
++        assert!(LagQuery::new(&z, 30).unwrap().distance(&z[1..]).is_err());
++    }
++
++    #[test]
++    fn f16_widening_is_bitwise_identical_to_the_reference() {
++        for h in 0..=u16::MAX {
++            let (a, b) = (f16_to_f64(h), f16_to_f64_reference(h));
++            assert!(
++                a.to_bits() == b.to_bits() || (a.is_nan() && b.is_nan()),
++                "{h:#06x}"
++            );
++        }
++    }
++
+     #[test]
+     fn f16_matches_ieee_examples() {
+         for (v, h) in [
+diff --git a/extensions/pg_morlet/src/lib.rs b/extensions/pg_morlet/src/lib.rs
+index 1c26eb4..59328c9 100644
+--- a/extensions/pg_morlet/src/lib.rs
++++ b/extensions/pg_morlet/src/lib.rs
+@@ -302,15 +302,53 @@ fn morlet_envelopes_from_chunks(
+     .collect()
+ }
+ 
++thread_local! {
++    /// The last query prepared by this backend for `morlet_envelope_distance`: a scan calls
++    /// it once per stored envelope with the same query, so the shifted-query matrix is built
++    /// once per query and process (each parallel worker is its own process).
++    static LAG_QUERY: std::cell::RefCell<Option<(Vec<f64>, usize, morlet_core::envelope::LagQuery)>> =
++        const { std::cell::RefCell::new(None) };
++    /// Decoded stored envelope, reused across calls.
++    static STORED: std::cell::RefCell<Vec<f64>> = const { std::cell::RefCell::new(Vec::new()) };
++}
++
++fn same_bits(a: &[f64], b: &[f64]) -> bool {
++    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
++}
++
+ /// 1 - max over |lag| <= max_lag of the biased cross-correlation of a query envelope
+ /// (morlet_envelope) and a stored envelope.
+ #[pg_extern(immutable, parallel_safe, strict)]
+-fn morlet_envelope_distance(query_envelope: Vec<Option<f64>>, stored: &[u8], max_lag: i32) -> f64 {
+-    let stored = morlet_core::envelope::decode(stored).unwrap_or_else(|e| pgrx::error!("{}", e));
++fn morlet_envelope_distance(
++    query_envelope: pgrx::Array<'_, f64>,
++    stored: &[u8],
++    max_lag: i32,
++) -> f64 {
+     if max_lag < 0 {
+         pgrx::error!("max_lag must be nonnegative");
+     }
+-    morlet_core::envelope::distance(&checked_samples(query_envelope), &stored, max_lag as usize)
++    let query = query_envelope
++        .as_slice()
++        .unwrap_or_else(|_| pgrx::error!("NULL waveform elements are unsupported"));
++    let lag = max_lag as usize;
++    STORED
++        .with(|buf| {
++            let mut g = buf.borrow_mut();
++            morlet_core::envelope::decode_into(stored, &mut g)
++                .unwrap_or_else(|e| pgrx::error!("{}", e));
++            LAG_QUERY.with(|cell| {
++                let mut cell = cell.borrow_mut();
++                if !matches!(&*cell, Some((q, l, _)) if *l == lag && same_bits(q, query)) {
++                    *cell = morlet_core::envelope::LagQuery::new(query, lag)
++                        .map(|p| (query.to_vec(), lag, p));
++                }
++                // Bitwise identical either way; the direct form covers queries too large to prepare.
++                match cell.as_ref() {
++                    Some((_, _, p)) => p.distance(&g),
++                    None => morlet_core::envelope::distance(query, &g, lag),
++                }
++            })
++        })
+         .unwrap_or_else(|_| pgrx::error!("envelope lengths differ or max_lag is too large"))
+ }
+ 
