@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+SQL 0.3.3 (update script from 0.3.2; existing functions unchanged):
+- `morlet_read_interval_raw(collection, recording, start, end)` returns the samples as little-endian float64
+  bytes (up to 16,777,216 per call), with the same visibility, coverage and errors as `morlet_read_interval`.
+- `morlet_interval_stats(collection, recording, start, end)` returns count, min, max, mean and RMS computed
+  while decoding, in one pass (`morlet_core::intervalstats`: exact min and max, compensated sums, RMS scaled
+  against overflow, NaN propagates).
+
 Faster Python client path:
 - The importer core (`import_files`, used by `morlet_import.py` and the collectors) sends numpy chunks in
   PostgreSQL's binary `float8[]` format (`tools/ingest/pg_numpy.py`) instead of formatting every sample in

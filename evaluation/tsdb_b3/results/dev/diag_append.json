@@ -1,0 +1,57 @@
+{
+ "note": "exploratory development diagnosis; medians of 40 statements, ms, round trip included",
+ "select_1": 0.314,
+ "encode_chunk": 1.786,
+ "parse_array_only": 0.986,
+ "append_chunk_autocommit": 2.649,
+ "function_times_ms": [
+  [
+   "morlet_valid_chunk",
+   0,
+   0.0,
+   0.0
+  ],
+  [
+   "morlet_valid_encoded_chunk",
+   0,
+   0.0,
+   0.0
+  ],
+  [
+   "morlet_chunk_checkpoint",
+   0,
+   0.0,
+   0.0
+  ],
+  [
+   "morlet_chunk_step",
+   0,
+   0.0,
+   0.0
+  ],
+  [
+   "morlet_encode_chunk",
+   0,
+   0.0,
+   0.0
+  ],
+  [
+   "morlet_stream_relations",
+   0,
+   0.0,
+   0.0
+  ],
+  [
+   "morlet_append_chunk",
+   0,
+   0.0,
+   0.0
+  ],
+  [
+   "morlet_ensure_recording",
+   0,
+   0.0,
+   0.0
+  ]
+ ]
+}

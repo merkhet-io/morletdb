@@ -159,6 +159,10 @@ def load(system, durability, rep):
     search = system == "morletdb-search"
     if system in ("morletdb-batched16", "morletdb-noquantum"):     # attribution, outside the frozen arms
         mo.VARIANT.update({"rpc_chunks": 16} if system.endswith("batched16") else {"quantum": False})
+    if system == "morletdb-031":   # B3.1: SQL 0.3.3 raw reads and native interval statistics on top of the client path
+        mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True})
+    if system == "morletdb-031c16":   # the same with 16,384-sample chunks (a documented importer option)
+        mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "chunk_size": 16384})
     if system in ("morletdb-b30", "morletdb-batched16", "morletdb-noquantum"):
         # the B3 stage-1 client path: Python lists in text arrays, reads in 32,768-sample pieces as Python floats
         mo.VARIANT.update({"binary": False, "binary_read": False, "short_read": False})
@@ -242,7 +246,7 @@ def load(system, durability, rep):
     elif system != "questdb" and measure:
         mo.settle(handle)
         res["storage"] = mo.storage(handle)
-        if rep == 1 and system in ("morletdb", "morletdb-b30"):
+        if rep == 1 and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16"):
             res["reads"] = reads("morletdb", handle, m, data)
             res["analytics"] = analytics("morletdb", handle, m, data)
             if system == "morletdb":
