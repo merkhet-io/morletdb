@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+SQL 0.3.3 (update script from 0.3.2; existing functions unchanged):
+- `morlet_append_chunk_raw(collection, recording, start, bytes)` appends samples given as little-endian
+  float64 bytes; it calls `morlet_append_chunk`, so checks, gaps and retry semantics are the same.
+- `morlet_read_interval_raw(collection, recording, start, end)` returns the samples as little-endian float64
+  bytes (up to 16,777,216 per call), with the same visibility, coverage and errors as `morlet_read_interval`.
+- `morlet_interval_stats(collection, recording, start, end)` returns count, min, max, mean and RMS computed
+  while decoding, in one pass (`morlet_core::intervalstats`: exact min and max, compensated sums, RMS scaled
+  against overflow, NaN propagates).
+
+Faster raw codec (chunks unchanged, byte for byte):
+- Word-based bit reader for decoding (tested against the bit-by-bit reader); encoder search with bottom-up
+  partition costs and an early-stopping Rice parameter search (tested to write identical bytes):
+  154 -> 61 ns per sample to encode a 4,096-sample grid chunk on the development machine.
+
+Faster Python client path:
+- The importer core (`import_files`, used by `morlet_import.py` and the collectors) sends numpy chunks in
+  PostgreSQL's binary `float8[]` format (`tools/ingest/pg_numpy.py`) instead of formatting every sample in
+  Python, and as raw float64 bytes on SQL 0.3.3 servers. On the B3 development set, one connection went from
+  0.51 to 2.42 M samples/s.
+
 Industrial collection:
 - `examples/collectors/opcua`: a reference collector and a local test server with a documented information
   model. A waveform delivered in numbered blocks is appended at exact sample offsets (resume after restarts and

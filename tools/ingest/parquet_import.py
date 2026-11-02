@@ -10,10 +10,14 @@ from pathlib import Path
 import sys
 import time
 
+import numpy as np
 import pyarrow.parquet as pq
 import psycopg
 from psycopg.types.json import Jsonb
 from psycopg.types.composite import CompositeInfo, register_composite
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pg_numpy  # noqa: E402  (binary float8[] for numpy chunks)
 
 
 @dataclass(frozen=True)
@@ -28,6 +32,7 @@ class Config:
     rpc_chunks: int = 1
     extractor: str = "morlet-energy-v1"
     sample_quantum: float = 1.0
+    raw_append: bool = True   # use morlet_append_chunk_raw for numpy chunks when the server has it (SQL 0.3.3)
 
     def validate(self):
         if self.layout not in ("chunks", "samples"):
@@ -174,6 +179,7 @@ class ImportFailure(RuntimeError):
 
 def import_files(paths, collection, config=Config(), mapping=None, dsn="", validate_only=False, reader=None):
     """reader(path, config, mapping) yields (recording, spec, start, values); default: Parquet.
+    values is a list of numbers or a one-dimensional numpy float array (sent in binary, bit for bit).
     spec is (rate, channel, unit, metadata), optionally followed by the recording's
     sample_quantum and extractor, which then override the run-wide config."""
     reader = reader or chunks
@@ -202,7 +208,7 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
               "validate_only": validate_only, "rpc_calls":0}
     started = time.perf_counter()
     report["preflight_s"] = started-wall_started
-    conn, staged_chunks, staged_samples = None, 0, 0
+    conn, staged_chunks, staged_samples, raw_append = None, 0, 0, False
     pending, pending_recording, ensured, chunk_factory = [], None, None, None
 
     def flush():
@@ -211,10 +217,16 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
             return
         if config.rpc_chunks == 1:
             offset, values = pending[0]
-            conn.execute("SELECT morlet_append_chunk(%s::regclass,%s,%s,%s::float8[])",
-                         (collection,pending_recording,offset,values))
+            if raw_append and isinstance(values, np.ndarray) and values.dtype.kind == "f":
+                # SQL 0.3.3: little-endian float64 bytes; the server skips per-element array parsing
+                conn.execute("SELECT morlet_append_chunk_raw(%s::regclass,%s,%s,%b)",
+                             (collection,pending_recording,offset,np.asarray(values,"<f8").tobytes()))
+            else:
+                conn.execute("SELECT morlet_append_chunk(%s::regclass,%s,%s,%s::float8[])",
+                             (collection,pending_recording,offset,values))
         else:
-            payload=[chunk_factory(offset,values) for offset,values in pending]
+            payload=[chunk_factory(offset,values.tolist() if hasattr(values, "tolist") else values)
+                     for offset,values in pending]
             conn.execute("SELECT morlet_append_chunks(%s::regclass,%s,%s::public.morlet_input_chunk[])",
                          (collection,pending_recording,payload))
         report["rpc_calls"] += 1
@@ -232,6 +244,11 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
         if not validate_only:
             conn = psycopg.connect(dsn)
             conn.execute("SET statement_timeout='120s'")
+            pg_numpy.register(conn)   # readers may yield numpy float arrays: sent as binary float8[]
+            raw_append = config.raw_append and conn.execute(
+                "SELECT to_regprocedure('public.morlet_append_chunk_raw(regclass,text,bigint,bytea)') IS NOT NULL"
+            ).fetchone()[0]
+            report["raw_append"] = raw_append
             if config.rpc_chunks > 1:
                 info=CompositeInfo.fetch(conn,"public.morlet_input_chunk")
                 if info is None:
