@@ -1,0 +1,28 @@
+{
+ "note": "exploratory attribution; not a frozen B3 measure",
+ "acquisitions_loaded": 18,
+ "end_to_end": {
+  "n": 400,
+  "p50_ms": 20.104,
+  "p95_ms": 23.507,
+  "max_ms": 27.106
+ },
+ "server_reconstruct_count_only": {
+  "n": 400,
+  "p50_ms": 6.933,
+  "p95_ms": 7.688,
+  "max_ms": 14.023
+ },
+ "fetch_including_psycopg_array_decode": {
+  "n": 400,
+  "p50_ms": 16.184,
+  "p95_ms": 18.929,
+  "max_ms": 22.448
+ },
+ "numpy_from_lists": {
+  "n": 400,
+  "p50_ms": 4.022,
+  "p95_ms": 5.719,
+  "max_ms": 6.656
+ }
+}

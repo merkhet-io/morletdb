@@ -1,0 +1,7 @@
+# B3 client environment (Python 3.13), as measured on 2026-11-02
+numpy==2.2.6
+scipy==1.16.3
+pandas==2.2.3
+pyarrow==21.0.0
+psycopg[binary]==3.2.10
+questdb[dataframe]==6.0.1
