@@ -124,9 +124,11 @@ This starts the server over stdio as an MCP client would, lists its tools and ru
 
 - **Speed:** with SQL 0.3.2 (`morlet_search_similar`), search uses probe search where it is enabled
   (tens of milliseconds); older servers use exact search (about 1 s on 235,000 windows).
-- **Where the window starts matters:** for a transient, start the query window 10–20 s (a quarter to half of the
-  window) before its onset; `find_onsets` finds it. Moving the window by a few seconds changes which similar
-  events rank first, though most of them remain events.
+- **Where the window starts matters:** moving the query window by a few seconds changes which hits rank first.
+  For a transient, frame its strongest part and keep the background before it short. In a real Claude session
+  on the demo, a window starting 15 s before the first arrival of the M2.6 earthquake returned 1 catalogued
+  earthquake in 15 hits; the README's window, starting 6 s after it, returns 4 in 5. If hits look weak, try a
+  second placement or `shifts=2`.
 - **Window length:** search intervals must have the stored window length, 4,096 samples unless built
   otherwise; `list_collections` shows it.
 - **Scope:** the server reads only. Importing, labelling and building search structures stay with the

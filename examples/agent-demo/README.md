@@ -88,6 +88,13 @@ windows with catalogued earthquakes about twice as often as zero-lag similarity
 ([E5](../../evaluation/task_relevance/RESULTS.md), [E5-H](../../evaluation/task_relevance/RESULTS_HELDOUT.md)).
 It finds leads for review. It is not an earthquake detector.
 
+**A real session.** [`sessions/2026-11-02-earthquake-lead.md`](sessions/2026-11-02-earthquake-lead.md) is one
+unattended Claude Code run (Opus 5.5, 28 tool calls, 2 min) with a prompt close to the one above that also
+asks it to chase uncatalogued matches. Its query window started 15 s before the first arrival and only 1 of
+its 15 matches was catalogued. It then showed that the strongest uncatalogued match is one wavefront crossing
+all four stations from a shallow source near 23.0°S 69.5°W, found a larger event from the same place 90 s
+earlier, and left open whether they are earthquakes or mine blasts.
+
 A follow-up that needs both servers and the comparison tools:
 
 > Compare the M3.0 earthquake in Potosí, Bolivia (14 March, 17:32 UTC) with the local Tarapacá events at

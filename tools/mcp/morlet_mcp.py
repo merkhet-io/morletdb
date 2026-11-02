@@ -290,11 +290,12 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     shifts (bounded-lag cross-correlation of signal envelopes). The interval must have the stored window
     length (usually 4096 samples; see list_collections). Searches recordings with the same sample rate,
     channel and unit whose metadata contains metadata_filter; never returns the query interval itself.
-    For a transient (an event, a fault impact), start the window about 10-20 s, or a quarter to half of the
-    window, before its onset (find_onsets finds it): results depend on where the window starts. If unsure,
-    shifts=2 also searches with the window moved by 1/8 and 2/8 of its length either way and merges the
-    results, keeping each hit's best distance. In a small check on seismic data this rescued badly placed
-    windows but, for well-placed ones, let in weaker transients; shifts=0 (default) is the setting the
+    Results depend on where the window starts. For a transient (an event, a fault impact), frame its
+    strongest part and keep the background before it short: a window that is mostly background finds
+    mostly background. If the hits look weak, try a second placement, or shifts=2, which also searches with
+    the window moved by 1/8 and 2/8 of its length either way and merges the
+    results, keeping each hit's best distance; in a small check on seismic data this rescued badly placed
+    windows but let in weaker transients for well-placed ones. shifts=0 (default) is the setting the
     published evaluations used. Each hit has a distance (0 identical, < 0.3 strong), UTC times where known,
     and the query shift that found it; metadata is given once per recording."""
     top_k = max(1, min(top_k, 100))
