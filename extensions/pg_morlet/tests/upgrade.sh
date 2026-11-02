@@ -43,7 +43,12 @@ SQL
 catalog() {
   psql -d "$1" <<'SQL'
 SELECT pg_describe_object(d.classid, d.objid, 0),
-  CASE WHEN d.classid = 'pg_proc'::regclass THEN md5(pg_get_functiondef(d.objid)) END
+  CASE WHEN d.classid = 'pg_proc'::regclass THEN CASE
+    WHEN (SELECT prokind FROM pg_proc WHERE oid = d.objid) = 'a'
+      THEN md5((SELECT row(a.aggtransfn, a.aggfinalfn, a.aggcombinefn, a.aggserialfn, a.aggdeserialfn,
+                           a.aggfinalmodify, a.aggtranstype, p.proparallel, pg_get_function_arguments(p.oid))::text
+                FROM pg_aggregate a JOIN pg_proc p ON p.oid = a.aggfnoid WHERE a.aggfnoid = d.objid))
+    ELSE md5(pg_get_functiondef(d.objid)) END END
 FROM pg_depend d JOIN pg_extension e ON e.oid = d.refobjid
 WHERE e.extname = 'pg_morlet' AND d.deptype = 'e' ORDER BY 1;
 SQL

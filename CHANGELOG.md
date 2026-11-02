@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Screened exact envelope search (SQL 0.3.3; results unchanged, bit for bit):
+- `morlet_search_envelopes`, `morlet_search_envelope_interval` and the exact path of
+  `morlet_search_similar` bound every eligible window's distance with a float32 screen and a rigorous error
+  bound (`morlet_core::envelope_screen`), run as a parallel aggregate (`morlet_envelope_screen`) over the
+  envelope table, and score exactly only the windows that could be among the nearest. The eligibility count
+  for `max_candidates` shares the scan. `SET morlet.exact_screen = off` restores the previous path
+  (evaluation E7: identical lists on 100/100 queries at 0.23, 0.50 and 1.03 M windows; p95
+  3.2–3.7× faster than scoring every window, e.g. 138 vs 516 ms at 0.23 M windows with eight workers).
+
 Automatic calibration-grid detection (chunks remain readable by every 0.2+ server; format unchanged):
 - The encoder detects a value grid in floats sent without a declared `sample_quantum` (calibrated ADC
   counts, fixed decimals) and codes them as integers with last-place corrections, bitwise exact. On B1's six

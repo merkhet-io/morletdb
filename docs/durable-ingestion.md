@@ -265,6 +265,13 @@ SELECT * FROM morlet_search_envelope_interval('signals', 'pump-7', 81920, 86016)
   - The query envelope is computed at full precision; stored ones are decoded and
     z-scored again.
   - Scoring runs in Rust inside the database.
+- **Screening (SQL 0.3.3):** a parallel aggregate first bounds every eligible
+  window's distance in float32 with a rigorous error bound, and only windows whose
+  lower bound could still place them among the nearest are scored exactly. The
+  results are identical to scoring every window, bit for bit (evaluation E7).
+  `SET morlet.exact_screen = off` scores every window instead. Exact search uses
+  `max_parallel_workers_per_gather` workers, capped by the table's
+  `parallel_workers` storage parameter when that is set.
 - **Eligibility:** the same rate, channel, unit and window size, plus metadata
   containment. Above `max_candidates` (default 4096) the search fails rather than
   sampling. Overlapping windows of one recording are suppressed in rank order.
