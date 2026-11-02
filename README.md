@@ -1,6 +1,11 @@
 <p align="center"><img src="assets/brand/readme-hero.svg" alt="MorletDB — Recordings, not rows. Signal retrieval for agents and engineers in PostgreSQL: store recordings losslessly, retrieve similar intervals, and bring the original samples and metadata into the analysis." width="100%"></p>
 
 <p align="center">
+<i>ἁρμονίη ἀφανὴς φανερῆς κρείττων.</i><br>
+<sub>— Heraclitus, fragment B54</sub>
+</p>
+
+<p align="center">
 <b>MorletDB is a PostgreSQL extension for waveform archives.</b><br>
 Select an interval and ask <i>“Have we seen a signal like this before?”</i> — every answer is a recording<br>
 and a sample interval you can read back, for an engineer or for an AI agent.
