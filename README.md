@@ -128,6 +128,9 @@ CREATE EXTENSION vector;   -- optional: only for probe search (pgvector 0.8 or l
 **Let an AI agent investigate your recordings** through a read-only MCP server (Claude Code,
 Claude Desktop and other MCP clients): [MorletDB for AI agents](docs/mcp.md).
 
+**What MorletDB works with** (PostgreSQL, pgvector, Docker, MCP, Grafana, Python and Jupyter, file formats),
+with how each is verified: [integrations](docs/integrations.md).
+
 **Import your own files** (WAV, EDF, miniSEED, CSV) and get a first search query:
 [from files to a first search](docs/import.md).
 

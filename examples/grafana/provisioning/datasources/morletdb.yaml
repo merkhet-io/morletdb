@@ -1,0 +1,17 @@
+# MorletDB through Grafana's built-in PostgreSQL data source. Connect as a read-only role.
+apiVersion: 1
+datasources:
+  - name: MorletDB
+    uid: morletdb
+    type: grafana-postgresql-datasource
+    url: ${MORLET_PG_HOST}
+    user: ${MORLET_PG_USER}
+    jsonData:
+      database: ${MORLET_PG_DB}
+      sslmode: disable
+      postgresVersion: 1700
+      maxOpenConns: 4
+      connMaxLifetime: 14400
+    secureJsonData:
+      password: ${MORLET_PG_PASSWORD}
+    editable: false

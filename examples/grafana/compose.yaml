@@ -1,0 +1,25 @@
+# Grafana with a provisioned MorletDB dashboard. See README.md.
+#   docker compose up -d            # http://127.0.0.1:3000 (admin / grafana-demo-only)
+# By default it reads the machine demo's database (examples/machine-demo) as its read-only role.
+name: morletdb-grafana
+services:
+  grafana:
+    image: grafana/grafana-oss:11.2.2
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-grafana-demo-only}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      MORLET_PG_HOST: ${MORLET_PG_HOST:-host.docker.internal:54332}
+      MORLET_PG_DB: ${MORLET_PG_DB:-morlet}
+      MORLET_PG_USER: ${MORLET_PG_USER:-machine_reader}
+      MORLET_PG_PASSWORD: ${MORLET_PG_PASSWORD:-machine-demo-only}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro

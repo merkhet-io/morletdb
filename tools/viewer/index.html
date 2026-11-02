@@ -129,16 +129,22 @@ const valText = (v) => typeof v === "string" ? v : JSON.stringify(v);
 async function loadCollections() {
   st.colls = (await get("/api/collections", {})).collections;
   $("coll").innerHTML = st.colls.map((c) => `<option>${esc(c.name)}</option>`).join("") || "<option>(no collections)</option>";
-  if (st.colls.length) selectCollection(st.colls[0].name);
+  // Deep link: ?collection=…&recording=…&start=…&end=… (sample offsets), e.g. from a Grafana table.
+  const q = new URLSearchParams(location.search), want = q.get("collection");
+  const start = Number(q.get("start")), end = Number(q.get("end"));
+  const range = q.has("start") && q.has("end") && end > start ? [start, end] : null;
+  const name = st.colls.some((c) => c.name === want) ? want : st.colls.length ? st.colls[0].name : null;
+  if (name) { $("coll").value = name; selectCollection(name, q.get("recording"), range); }
 }
-async function selectCollection(name) {
+async function selectCollection(name, wantRec, range) {
   const pick = ++st.pick;  // a later collection or recording selection supersedes this one
   st.coll = st.colls.find((c) => c.name === name); st.rec = null;
   const recs = (await get("/api/recordings", { collection: name })).recordings;
   if (pick !== st.pick) return;
   st.recs = recs;
   renderRecs();
-  if (st.recs.length) selectRecording(st.recs[0].recording_id);
+  if (wantRec && st.recs.some((r) => r.recording_id === wantRec)) selectRecording(wantRec, range);
+  else if (st.recs.length) selectRecording(st.recs[0].recording_id);
 }
 function renderRecs() {
   const f = $("filter").value.toLowerCase();

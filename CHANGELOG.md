@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Works with:
+- `docs/integrations.md` lists every documented integration with how to run it, its scope and how it was
+  verified (CI, release trial or manual run), plus logo and trademark notes; the homepage shows it as a plain
+  text "Works with" section grouped by role.
+- **Grafana:** `examples/grafana` provisions Grafana's PostgreSQL data source (read-only role) and one
+  dashboard: recordings, samples, search readiness, samples over time and a bounded recording list.
+- **Viewer deep links:** the viewer opens at `?collection=…&recording=…&start=…&end=…`, which the Grafana
+  recording list uses.
+
 ## 0.3.3-alpha.1
 
 The extension is unchanged from 0.3.2-alpha.1 (SQL version 0.3.2; no update script is needed). This release

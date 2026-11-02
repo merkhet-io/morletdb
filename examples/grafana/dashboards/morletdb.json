@@ -1,0 +1,357 @@
+{
+ "uid": "morletdb-overview",
+ "title": "MorletDB recordings",
+ "tags": [
+  "morletdb"
+ ],
+ "editable": false,
+ "schemaVersion": 39,
+ "version": 1,
+ "refresh": "",
+ "timezone": "utc",
+ "time": {
+  "from": "now-30y",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "collection",
+    "label": "Collection",
+    "type": "query",
+    "datasource": {
+     "type": "grafana-postgresql-datasource",
+     "uid": "morletdb"
+    },
+    "refresh": 1,
+    "query": "SELECT format('%I.%I', c.table_schema, c.table_name) FROM information_schema.columns c WHERE c.column_name = 'checkpoint' AND to_regclass(format('%I.%I', c.table_schema, c.table_name || '_envelopes')) IS NOT NULL AND has_table_privilege(format('%I.%I', c.table_schema, c.table_name), 'SELECT') ORDER BY 1",
+    "includeAll": false,
+    "multi": false
+   },
+   {
+    "name": "viewer",
+    "label": "Viewer URL",
+    "type": "textbox",
+    "query": "http://127.0.0.1:8765",
+    "current": {
+     "text": "http://127.0.0.1:8765",
+     "value": "http://127.0.0.1:8765"
+    }
+   }
+  ]
+ },
+ "annotations": {
+  "list": []
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "stat",
+   "title": "Recordings",
+   "description": "Recordings in the collection.",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "morletdb"
+   },
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 0,
+    "y": 0
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "morletdb"
+     },
+     "editorMode": "code",
+     "format": "table",
+     "rawQuery": true,
+     "rawSql": "SELECT count(*) AS recordings FROM ${collection:raw}"
+    }
+   ],
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "none",
+    "graphMode": "none",
+    "textMode": "value"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 2,
+   "type": "stat",
+   "title": "Samples",
+   "description": "Samples stored, all recordings.",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "morletdb"
+   },
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 6,
+    "y": 0
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "morletdb"
+     },
+     "editorMode": "code",
+     "format": "table",
+     "rawQuery": true,
+     "rawSql": "SELECT coalesce(sum((checkpoint->>'end')::bigint), 0) AS samples FROM ${collection:raw}"
+    }
+   ],
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "none",
+    "graphMode": "none",
+    "textMode": "value"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 3,
+   "type": "stat",
+   "title": "Search windows",
+   "description": "Stored envelope windows available to similarity search.",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "morletdb"
+   },
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 12,
+    "y": 0
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "morletdb"
+     },
+     "editorMode": "code",
+     "format": "table",
+     "rawQuery": true,
+     "rawSql": "SELECT count(*) AS windows FROM ${collection:raw}_envelopes"
+    }
+   ],
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "none",
+    "graphMode": "none",
+    "textMode": "value"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 4,
+   "type": "stat",
+   "title": "Recordings not yet searchable",
+   "description": "Recordings without any envelope window yet (search readiness).",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "morletdb"
+   },
+   "gridPos": {
+    "h": 4,
+    "w": 6,
+    "x": 18,
+    "y": 0
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "morletdb"
+     },
+     "editorMode": "code",
+     "format": "table",
+     "rawQuery": true,
+     "rawSql": "SELECT count(*) AS waiting FROM ${collection:raw} r WHERE NOT EXISTS (SELECT 1 FROM ${collection:raw}_envelopes e WHERE e.recording_id = r.recording_id)"
+    }
+   ],
+   "options": {
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    },
+    "colorMode": "none",
+    "graphMode": "none",
+    "textMode": "value"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0
+    },
+    "overrides": []
+   }
+  },
+  {
+   "id": 5,
+   "type": "timeseries",
+   "title": "Samples recorded over time",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "morletdb"
+   },
+   "description": "Samples per time bucket (Grafana's interval for the range), by recording start time in metadata (start, starttime or start_time); empty buckets are gaps.",
+   "maxDataPoints": 500,
+   "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 4
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "morletdb"
+     },
+     "editorMode": "code",
+     "format": "time_series",
+     "rawQuery": true,
+     "rawSql": "SELECT $__timeGroupAlias(t0, $__interval), sum(n) AS samples FROM (SELECT COALESCE(metadata->>'start', metadata->>'starttime', metadata->>'start_time')::timestamptz AS t0, (checkpoint->>'end')::bigint AS n FROM ${collection:raw}) r WHERE $__timeFilter(t0) GROUP BY 1 ORDER BY 1"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short",
+     "custom": {
+      "drawStyle": "bars",
+      "fillOpacity": 60,
+      "lineWidth": 1
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": false
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   }
+  },
+  {
+   "id": 6,
+   "type": "table",
+   "title": "Recordings in the time range (up to 500; click one to open the viewer)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "morletdb"
+   },
+   "gridPos": {
+    "h": 14,
+    "w": 24,
+    "x": 0,
+    "y": 12
+   },
+   "description": "Bounded to 500 rows. Search windows counted per recording.",
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "morletdb"
+     },
+     "editorMode": "code",
+     "format": "table",
+     "rawQuery": true,
+     "rawSql": "SELECT recording_id, start, duration_s, rate_hz, channel, unit, samples, (SELECT count(*) FROM ${collection:raw}_envelopes e WHERE e.recording_id = r.recording_id) AS search_windows, metadata FROM (SELECT recording_id, COALESCE(metadata->>'start', metadata->>'starttime', metadata->>'start_time')::timestamptz AS start, round(((checkpoint->>'end')::bigint / sample_rate_hz)::numeric, 3) AS duration_s, sample_rate_hz AS rate_hz, channel, unit, (checkpoint->>'end')::bigint AS samples, metadata::text AS metadata FROM ${collection:raw}) r WHERE $__timeFilter(start) ORDER BY start LIMIT 500"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {},
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "recording_id"
+      },
+      "properties": [
+       {
+        "id": "links",
+        "value": [
+         {
+          "title": "Open in the MorletDB viewer",
+          "url": "${viewer}/?collection=${collection}&recording=${__value.raw}",
+          "targetBlank": true
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "start"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "dateTimeAsIso"
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   }
+  }
+ ]
+}
