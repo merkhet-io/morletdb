@@ -56,14 +56,14 @@ The importer ends with a query you can run as printed: the ten intervals most si
 middle of the longest recording, for example
 
 ```sql
-SELECT * FROM morlet_search_envelope_probes('public.seismic', 'CX.PB01..HHZ.20250228T235958',
+SELECT * FROM morlet_search_similar('public.seismic', 'CX.PB01..HHZ.20250228T235958',
   4317184, 4321280, '{}'::jsonb, 10);
 ```
 
 Each row is a recording, an interval and its distance; `morlet_read_interval` returns the original samples
-of any of them. Probe search sends galleries of up to 5,000 eligible windows to exact search by itself.
-Without `--probes`, the suggested exact query passes `max_candidates` explicitly, because exact search
-refuses galleries larger than its default of 4,096 windows.
+of any of them. `morlet_search_similar` (SQL 0.3.2) uses probe search when it is enabled and exact search
+otherwise. On an older server (the 0.3.1 release image), the importer prints an explicit query instead,
+because exact search there refuses galleries of more than 4,096 windows by default.
 
 ## Measured on this machine (Apple M5 Max, PostgreSQL 17, local)
 

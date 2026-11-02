@@ -12,7 +12,7 @@
 #  with-pgvector     requires that pgvector IS installed, so the probe tests cannot skip, runs every
 #                    #[pg_test], then the two-session probe-enable race test (probe_enable_race.sh).
 #  upgrade           PostgreSQL 17 only: upgrades populated databases from v0.1.0-alpha.3,
-#                    v0.2.0-alpha.1 and v0.3.0-alpha.1 (tags must be fetched); those releases were
+#                    v0.2.0-alpha.1, v0.3.0-alpha.1 and v0.3.1-alpha.1 (tags must be fetched); those releases were
 #                    built for PostgreSQL 17 only.
 #
 # #[pg_test]s run in pgrx's own throwaway cluster (target/pgrx-test-data-NN). The race and upgrade
@@ -74,6 +74,7 @@ case "$MODE" in
     own_server  # the upgrade scripts restart it after each install
     "$TESTS/upgrade.sh" v0.1.0-alpha.3
     "$TESTS/upgrade_from_release.sh" v0.2.0-alpha.1 0.2.0
-    "$TESTS/upgrade_from_release.sh" v0.3.0-alpha.1 0.3.0 ;;
+    "$TESTS/upgrade_from_release.sh" v0.3.0-alpha.1 0.3.0
+    "$TESTS/upgrade_from_release.sh" v0.3.1-alpha.1 0.3.1 ;;
 esac
 echo "== pg$MAJOR $MODE: PASS"
