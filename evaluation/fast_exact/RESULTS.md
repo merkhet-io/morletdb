@@ -1,6 +1,6 @@
 # E6: a fast in-database exact scorer against probe search — results
 
-Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at 5e8342f (2026-11-02), with one deviation recorded there: a
+Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at 9b67f89 (2026-11-02), with one deviation recorded there: a
 system sleep and an operator error, both handled by rerunning N3. Timed runs on 2026-11-02, 07:40–07:49 (N1,
 N2) and 09:48–09:59 (N3).
 
