@@ -878,6 +878,7 @@ dependencies = [
 name = "morlet-core"
 version = "0.3.1"
 dependencies = [
+ "proptest",
  "serde",
  "serde_json",
 ]
