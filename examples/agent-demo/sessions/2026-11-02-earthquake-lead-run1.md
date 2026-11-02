@@ -5,6 +5,8 @@ Recorded on 2026-11-02 with Claude Code in headless mode (`claude -p`), model `c
 tools). One unattended run, not edited: 30 turns, 129 s, USD 0.98. Tool results are
 shortened here; Claude's text is verbatim.
 
+Run 1, before `search_from_time` existed: Claude framed the search window itself, starting 15 s before the first arrival, and 1 of its 15 hits was a catalogued earthquake. [Run 2](2026-11-02-earthquake-lead-run2.md) repeats the prompt with `search_from_time`.
+
 ## Prompt
 
 > There was a magnitude 2.6 earthquake offshore Tarapacá on 14 March 2025 at about 21:03 UTC. Find it at station PB01, describe the signal, and find where similar signals occur in the archive. Check the matches against the earthquake catalogue. If a strong match is not in the catalogue, find out whether it is a real earthquake.

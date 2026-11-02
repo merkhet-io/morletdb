@@ -14,7 +14,7 @@ class Server(unittest.TestCase):
         tools = asyncio.run(m.mcp.list_tools())
         self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "describe_interval", "find_onsets",
                                                          "list_collections", "list_recordings", "locate_time",
-                                                         "read_interval", "search_similar"])
+                                                         "read_interval", "search_from_time", "search_similar"])
         for t in tools:
             self.assertTrue(t.annotations.read_only_hint, t.name)
             self.assertFalse(t.annotations.destructive_hint, t.name)
@@ -106,6 +106,10 @@ class Helpers(unittest.TestCase):
         self.assertAlmostEqual(bg["std"], 1.0, delta=0.15)
         with self.assertRaises(ValueError):
             m.background(before[:500], np.zeros(0), 400, 100.0, None)
+
+    def test_frame_window(self):
+        self.assertEqual(m.frame_window(10_000, 100.0, 4096), 10_000 - round(m.FRAME_LEAD_S * 100))
+        self.assertEqual(m.frame_window(50, 100.0, 4096), 0)
 
 
 if __name__ == "__main__":

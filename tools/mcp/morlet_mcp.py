@@ -29,8 +29,9 @@ exclusive), not times; if a recording's metadata has a start time, tools also re
 Typical investigation:
 1. list_collections, then list_recordings to see what exists (metadata_filter narrows by metadata).
 2. Pick an interval of interest (locate_time converts a UTC time to a sample offset).
-3. describe_interval to characterise it (compare_intervals against a quiet or normal reference for weak
-   signals; find_onsets to locate where something starts); search_similar to find where similar behaviour occurred, tolerant
+3. describe_interval to characterise it (compare_intervals against the background for weak signals;
+   find_onsets to locate where something starts); search_from_time (when you know when it happened) or
+   search_similar to find where similar behaviour occurred, tolerant
    to time shifts of up to about 7.5% of the window. Distances: 0 is identical, below about 0.3 is strong,
    above about 0.6 is weak. Intervals for search must have the stored window length (usually 4096 samples).
 4. read_interval or describe_interval on each hit to check it, and cite hits as collection, recording,
@@ -290,13 +291,12 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     shifts (bounded-lag cross-correlation of signal envelopes). The interval must have the stored window
     length (usually 4096 samples; see list_collections). Searches recordings with the same sample rate,
     channel and unit whose metadata contains metadata_filter; never returns the query interval itself.
-    Results depend on where the window starts. For a transient (an event, a fault impact), frame its
-    strongest part and keep the background before it short: a window that is mostly background finds
-    mostly background. If the hits look weak, try a second placement, or shifts=2, which also searches with
-    the window moved by 1/8 and 2/8 of its length either way and merges the
-    results, keeping each hit's best distance; in a small check on seismic data this rescued badly placed
-    windows but let in weaker transients for well-placed ones. shifts=0 (default) is the setting the
-    published evaluations used. Each hit has a distance (0 identical, < 0.3 strong), UTC times where known,
+    Results depend on where the window starts, in ways that are hard to predict. When you know when
+    something happened, use search_from_time, which frames the window itself. Here, shifts=2 also
+    searches with the window moved by 1/8 and 2/8 of its length either way and merges the results,
+    keeping each hit's best distance; on seismic test data this found more related events than any single
+    placement. shifts=0 (default) is the setting the published evaluations used. Each hit has a distance
+    (0 identical, < 0.3 strong), UTC times where known,
     and the query shift that found it; metadata is given once per recording."""
     top_k = max(1, min(top_k, 100))
     shifts = max(0, min(shifts, 4))
@@ -333,6 +333,72 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
                       "shifts_samples": used},
             "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)", "hits": hits,
             "recordings": {h["recording_id"]: metas[h["recording_id"]] for h in hits}}
+
+
+# Framing for search_from_time, chosen on the agent demo's development data (4 seismic stations, 4 days; 203
+# queries from 52 catalogued earthquakes): share of the top 10 overlapping a catalogued event was 0.318 for
+# "2 s before the onset, shifts=2", against 0.278 for 15 s before, 0.280 for 6 s after, 0.217 for 2 s before
+# without shifts and 0.194 for the 41 s with most energy. Results vary with placement in steps of about the
+# stored window stride, so merging shifted searches beats any single placement.
+FRAME_LEAD_S = 2.0
+FRAME_SHIFTS = 2
+
+
+def frame_window(onset, rate, window):
+    """Query window start for an onset at sample `onset`."""
+    return max(0, onset - int(round(FRAME_LEAD_S * rate)))
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}", search_filter: str = "{}",
+                     top_k: int = 10, min_frequency_hz: float = 0.0, look_seconds: float = 30.0) -> dict:
+    """Search for intervals similar to what happens at a UTC time, without choosing the window yourself.
+    metadata_filter must select the one recording that contains the time (e.g. '{"station": "PB01"}').
+    The tool looks for onsets within look_seconds of the time (STA/LTA after an optional high-pass at
+    min_frequency_hz; for seismic data use about 2 Hz), takes the strongest, frames the stored window
+    length to start 2 s before it and searches with the window also moved by 1/8 and 2/8 of its length
+    either way (on seismic test data this found the most related events of the framings tried), over
+    recordings matching search_filter. If there is no onset, the window starts a quarter window before the
+    time. Returns how the window was chosen and the hits, as search_similar does. Prefer this to
+    search_similar when you know when something happened."""
+    t = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
+    flt = json.loads(metadata_filter or "{}")
+    with connect() as conn:
+        c = checked(conn, collection)
+        rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint FROM {c} "
+                            f"WHERE metadata @> %s::jsonb", (json.dumps(flt),)).fetchall()
+        hits = []
+        for rid, rate, meta, n in rows:
+            t0 = start_time(meta)
+            if t0 is not None and 0 <= (k := math.floor((t - t0).total_seconds() * rate)) < n:
+                hits.append((rid, rate, meta, n, k))
+        if len(hits) != 1:
+            names = ", ".join(h[0] for h in hits) or "none"
+            raise ValueError(f"metadata_filter must select exactly one recording containing {utc_time}; found: {names}")
+        rid, rate, meta, n, k = hits[0]
+        windows = [w for w, _ in conn.execute(f"SELECT window_size, 1 FROM {c}_envelopes GROUP BY 1").fetchall()]
+    if not windows:
+        raise ValueError(f"{collection} has no search windows")
+    window = max(windows)
+    lta, sta = 30.0, 1.0
+    a = max(0, k - int((look_seconds + lta + sta) * rate))
+    b = min(n, k + int(look_seconds * rate))
+    onsets = find_onsets(collection, rid, a, b, min_frequency_hz, 0.0, sta, lta, 4.0, 50)["onsets"]
+    near = [o for o in onsets if abs(o["trigger_sample"] - k) <= look_seconds * rate]
+    if near:
+        best = max(near, key=lambda o: o["peak_ratio"])
+        start, how = frame_window(best["trigger_sample"], rate, window), {
+            "onset_sample": best["trigger_sample"], "onset_utc": best["trigger_utc"], "onset_ratio": best["peak_ratio"],
+            "rule": f"window starts {FRAME_LEAD_S:g} s before the strongest onset within {look_seconds:g} s, "
+                    f"searched with shifts={FRAME_SHIFTS}"}
+    else:
+        start, how = max(0, k - window // 4), {"rule": f"no onset found: window starts a quarter window before "
+                                                       f"the time, searched with shifts={FRAME_SHIFTS}"}
+    start = min(start, n - window)
+    result = search_similar(collection, rid, start, start + window, search_filter, top_k, FRAME_SHIFTS)
+    result["framing"] = {"recording_id": rid, "utc_time": utc_time, **how}
+    return result
 
 
 @mcp.tool(annotations=READ_ONLY)
