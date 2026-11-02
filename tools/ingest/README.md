@@ -32,6 +32,9 @@ submission counts. There is no automatic schema/extension creation or grant.
 Both layouts require `recording_id` (nonempty string), `sample_rate_hz` (numeric),
 `channel` and `unit` (nonempty strings). Optional `metadata` is a JSON-object string
 or Arrow struct converted to a Python dictionary; absent metadata is `{}`.
+Optional `sample_quantum` and `extractor` columns set a recording's sample grid and
+representation version, overriding `--sample-quantum` and `--extractor` for it; MorletDB
+[exchange files](../../docs/exchange-format.md) carry both.
 
 | Layout | Position column | Values column |
 |---|---|---|
