@@ -13,8 +13,11 @@ import workload as wl
 sys.path.insert(0, str(wl.ROOT / "tools/ingest"))
 from parquet_import import Config, import_files  # noqa: E402
 from morlet_import import build  # noqa: E402
+import pg_numpy  # noqa: E402
 
-IMAGE = "ghcr.io/merkhet-io/morletdb:0.3.3-alpha.1"
+import os  # noqa: E402
+# B3.1: B3_MORLET_IMAGE selects a locally built image (SQL 0.3.3) for the raw-read and statistics arms.
+IMAGE = os.environ.get("B3_MORLET_IMAGE", "ghcr.io/merkhet-io/morletdb:0.3.3-alpha.1")
 NAME = "b3-morletdb"
 PORT = 54340
 COLLECTION = "b3"
@@ -51,7 +54,10 @@ def start(volume, durability="D2"):
 def connect():
     for _ in range(60):
         try:
-            return psycopg.connect(DSN, autocommit=True)
+            conn = psycopg.connect(DSN, autocommit=True)
+            if VARIANT["binary_read"]:
+                pg_numpy.register(conn)
+            return conn
         except Exception:
             time.sleep(0.5)
     raise RuntimeError("cannot connect")
@@ -85,20 +91,23 @@ def reader_for(acq, data, search, timer):
             x = data[c]
             for s in range(0, x.size, config.chunk_size):
                 t = time.perf_counter()
-                vals = x[s:s + config.chunk_size].tolist()
+                vals = x[s:s + config.chunk_size] if VARIANT["binary"] else x[s:s + config.chunk_size].tolist()
                 timer[0] += time.perf_counter() - t
                 yield rid(acq, c), spec, s, vals
     return read
 
 
-VARIANT = {"rpc_chunks": 1, "quantum": True}   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+VARIANT = {"rpc_chunks": 1, "quantum": True, "binary": True, "binary_read": True, "short_read": True,
+           "raw_read": False, "native_stats": False, "chunk_size": 4096,
+           "raw_append": False}   # the last two need SQL 0.3.3   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
 
 
 def load_one(acq, data, search=False):
     """Ingest one acquisition with the importer core; returns (conversion s, acknowledgement s, report)."""
     timer = [0.0]
     path = wl.ROOT / acq["path"]
-    rep = import_files([path], COLLECTION, Config(rpc_chunks=VARIANT["rpc_chunks"]), dsn=DSN,
+    rep = import_files([path], COLLECTION, Config(rpc_chunks=VARIANT["rpc_chunks"], chunk_size=VARIANT["chunk_size"],
+                                                          raw_append=VARIANT["raw_append"]), dsn=DSN,
                        reader=reader_for(acq, data, search, timer))
     # elapsed_s excludes the importer's source-file hashing (preflight); conversion is inside it
     return timer[0], rep["elapsed_s"], rep
@@ -118,6 +127,17 @@ def read(conn, acq, channels, offset, length):
     import numpy as np
     out = {}
     for c in channels:
+        if VARIANT["raw_read"]:                               # SQL 0.3.3: one call, raw little-endian float64
+            raw = conn.execute("SELECT morlet_read_interval_raw(%s::regclass, %s, %s, %s)",
+                               (COLLECTION, rid(acq, c), offset, offset + length), binary=True, prepare=True).fetchone()[0]
+            out[c] = np.frombuffer(raw, dtype="<f8")
+            continue
+        if VARIANT["short_read"] and length <= MAX_READ:     # one call, one prepared statement
+            out[c] = np.asarray(conn.execute(
+                "SELECT samples FROM morlet_read_interval(%s::regclass, %s, %s, %s)",
+                (COLLECTION, rid(acq, c), offset, offset + length), binary=True, prepare=True).fetchone()[0],
+                dtype=np.float64)
+            continue
         rows = conn.execute(
             "SELECT a, samples FROM generate_series(%s::bigint, %s::bigint - 1, %s) a, "
             "LATERAL morlet_read_interval(%s::regclass, %s, a, least(a + %s, %s::bigint)) ORDER BY a",
@@ -128,6 +148,10 @@ def read(conn, acq, channels, offset, length):
 
 
 def analytics(conn, acq, offset, length):
+    if VARIANT["native_stats"]:                               # SQL 0.3.3: computed while decoding
+        row = conn.execute("SELECT min, max, mean, rms, sample_count FROM morlet_interval_stats(%s::regclass, %s, %s, %s)",
+                           (COLLECTION, rid(acq, "vibration_1"), offset, offset + length), prepare=True).fetchone()
+        return [float(v) for v in row]
     q = ("SELECT min(x), max(x), avg(x), sqrt(avg(x*x)), count(*) FROM generate_series(%s::bigint, %s::bigint - 1, %s) a, "
          "LATERAL morlet_read_interval(%s::regclass, %s, a, least(a + %s, %s::bigint)) r, unnest(r.samples) x")
     row = conn.execute(q, (offset, offset + length, MAX_READ, COLLECTION, rid(acq, "vibration_1"), MAX_READ,
