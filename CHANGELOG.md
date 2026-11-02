@@ -11,6 +11,17 @@ SQL 0.3.3 (update script from 0.3.2; existing functions unchanged):
   while decoding, in one pass (`morlet_core::intervalstats`: exact min and max, compensated sums, RMS scaled
   against overflow, NaN propagates).
 
+Faster ingestion and decoding (chunks unchanged, byte for byte; SQL signatures unchanged):
+- The importer core sends its statements in psycopg pipeline mode (errors surface at the next commit, which
+  covers the same chunks): one connection went from 2.4 to 5.8 M samples/s on the B3 development set.
+- pg_morlet's append path reads `float8[]` arguments without copying them, and float8[] results
+  (`morlet_decode_interval`, `morlet_decode_chunk`, `morlet_float8_from_le_bytes`) are built in one call
+  instead of element by element.
+- Raw codec: Rice codes read from one 64-bit window, prediction in a second pass with the order fixed, a
+  slicing-by-8 CRC-32C, and per-order residual loops in the encoder (decoder checked against the previous one
+  on valid, corrupted, truncated and random streams). Real vibration chunks: decode 19.8 -> 10.4 ns/sample,
+  encode 72 -> 54 ns/sample.
+
 Faster raw codec (chunks unchanged, byte for byte):
 - Word-based bit reader for decoding (tested against the bit-by-bit reader); encoder search with bottom-up
   partition costs and an early-stopping Rice parameter search (tested to write identical bytes):

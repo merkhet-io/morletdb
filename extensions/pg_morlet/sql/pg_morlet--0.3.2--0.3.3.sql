@@ -3,7 +3,7 @@
 
 CREATE FUNCTION "morlet_float8_from_le_bytes"(
 	"raw" bytea /* &[u8] */
-) RETURNS double precision[] /* alloc::vec::Vec<f64> */
+) RETURNS double precision[] /* pg_morlet::F64Array */
 IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_float8_from_le_bytes_wrapper';
