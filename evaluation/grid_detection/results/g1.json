@@ -1,0 +1,236 @@
+{
+ "cx": {
+  "D": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 2417280,
+   "bits_per_sample": 4.6106,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 38.6,
+   "decode_msamples_s": 129.7
+  },
+  "A": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 2417280,
+   "bits_per_sample": 4.6106,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 37.2,
+   "decode_msamples_s": 129.8
+  },
+  "P": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 2417280,
+   "bits_per_sample": 4.6106,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 38.0,
+   "decode_msamples_s": 130.0
+  },
+  "A_over_D": 1.0,
+  "A_over_P": 1.0,
+  "criterion_recovery": true,
+  "criterion_no_loss": true
+ },
+ "ims": {
+  "D": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 4618374,
+   "bits_per_sample": 8.8088,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 34.6,
+   "decode_msamples_s": 165.2
+  },
+  "A": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 4618374,
+   "bits_per_sample": 8.8088,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 25.2,
+   "decode_msamples_s": 165.4
+  },
+  "P": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 33042894,
+   "bits_per_sample": 63.0243,
+   "grid_chunks": 0,
+   "float_chunks": 1024,
+   "raw_chunks": 0,
+   "encode_msamples_s": 11.5,
+   "decode_msamples_s": 84.1
+  },
+  "A_over_D": 1.0,
+  "A_over_P": 0.1398,
+  "criterion_recovery": true,
+  "criterion_no_loss": true
+ },
+ "pad-c": {
+  "D": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 4132933,
+   "bits_per_sample": 7.8829,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 32.4,
+   "decode_msamples_s": 149.7
+  },
+  "A": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 4132933,
+   "bits_per_sample": 7.8829,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 32.4,
+   "decode_msamples_s": 150.0
+  },
+  "P": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 4132933,
+   "bits_per_sample": 7.8829,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 32.8,
+   "decode_msamples_s": 147.1
+  },
+  "A_over_D": 1.0,
+  "A_over_P": 1.0,
+  "criterion_recovery": true,
+  "criterion_no_loss": true
+ },
+ "pad-p": {
+  "D": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 4806153,
+   "bits_per_sample": 9.167,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 20.0,
+   "decode_msamples_s": 88.1
+  },
+  "A": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 4806153,
+   "bits_per_sample": 9.167,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 16.1,
+   "decode_msamples_s": 87.8
+  },
+  "P": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 33118501,
+   "bits_per_sample": 63.1685,
+   "grid_chunks": 0,
+   "float_chunks": 1024,
+   "raw_chunks": 0,
+   "encode_msamples_s": 11.3,
+   "decode_msamples_s": 85.7
+  },
+  "A_over_D": 1.0,
+  "A_over_P": 0.1451,
+  "criterion_recovery": true,
+  "criterion_no_loss": true
+ },
+ "sleep": {
+  "D": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 7847741,
+   "bits_per_sample": 14.9684,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 12.9,
+   "decode_msamples_s": 74.9
+  },
+  "A": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 7685182,
+   "bits_per_sample": 14.6583,
+   "grid_chunks": 1024,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 11.0,
+   "decode_msamples_s": 73.6
+  },
+  "P": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194304,
+   "bytes": 31470298,
+   "bits_per_sample": 60.0248,
+   "grid_chunks": 0,
+   "float_chunks": 1022,
+   "raw_chunks": 2,
+   "encode_msamples_s": 10.5,
+   "decode_msamples_s": 59.9
+  },
+  "A_over_D": 0.9793,
+  "A_over_P": 0.2442,
+  "criterion_recovery": true,
+  "criterion_no_loss": true
+ },
+ "ecg": {
+  "D": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194000,
+   "bytes": 3880583,
+   "bits_per_sample": 7.4022,
+   "grid_chunks": 4194,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 13.9,
+   "decode_msamples_s": 119.3
+  },
+  "A": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194000,
+   "bytes": 3880583,
+   "bits_per_sample": 7.4022,
+   "grid_chunks": 4194,
+   "float_chunks": 0,
+   "raw_chunks": 0,
+   "encode_msamples_s": 11.1,
+   "decode_msamples_s": 119.1
+  },
+  "P": {
+   "file": "/var/folders/_5/k77hg8g15bxgmsd__v_td_700000gp/T/tmpzz57hlek/g1.bin",
+   "samples": 4194000,
+   "bytes": 30184589,
+   "bits_per_sample": 57.5767,
+   "grid_chunks": 0,
+   "float_chunks": 4194,
+   "raw_chunks": 0,
+   "encode_msamples_s": 3.3,
+   "decode_msamples_s": 63.3
+  },
+  "A_over_D": 1.0,
+  "A_over_P": 0.1286,
+  "criterion_recovery": true,
+  "criterion_no_loss": true
+ }
+}

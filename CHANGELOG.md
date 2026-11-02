@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Automatic calibration-grid detection (chunks remain readable by every 0.2+ server; format unchanged):
+- The encoder detects a value grid in floats sent without a declared `sample_quantum` (calibrated ADC
+  counts, fixed decimals) and codes them as integers with last-place corrections, bitwise exact. On B1's six
+  inputs with quantum 1 it matches the declared-quantum size (4.1–7.8× smaller than before on float inputs)
+  and encodes them faster; integer inputs are unchanged (evaluation G1).
+
 SQL 0.3.3 (update script from 0.3.2; existing functions unchanged):
 - `morlet_append_chunk_raw(collection, recording, start, bytes)` appends samples given as little-endian
   float64 bytes; it calls `morlet_append_chunk`, so checks, gaps and retry semantics are the same.
