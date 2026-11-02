@@ -23,6 +23,21 @@ WORK=$(mktemp -d)
 trap 'git -C "$ROOT" worktree remove --force "$WORK/old" >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
 psql() { "$BIN/psql" -h localhost -p "$PORT" -v ON_ERROR_STOP=1 -qAtX "$@"; }
 install() { (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" cargo pgrx install --release --pg-config "$PG_CONFIG" >/dev/null); }
+# A released ref never changes: with MORLET_UPGRADE_CACHE set, its packaged files (library, control and SQL,
+# at their absolute install paths) are built once, kept there and copied into place on later runs.
+install_release() {
+  local cache=${MORLET_UPGRADE_CACHE:-} key
+  if [ -z "$cache" ]; then install "$1"; return; fi
+  key="$cache/$OLD_REF-pg$PG_MAJOR"
+  if [ ! -d "$key" ]; then
+    rm -rf "$key.tmp"
+    (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" cargo pgrx package --pg-config "$PG_CONFIG" --out-dir "$key.tmp" >/dev/null)
+    mv "$key.tmp" "$key"
+  else
+    echo "$OLD_REF: packaged build from $cache"
+  fi
+  cp -R "$key/." /
+}
 restart() { (cd "$EXT" && cargo pgrx stop "pg$PG_MAJOR" >/dev/null 2>&1 || true; cargo pgrx start "pg$PG_MAJOR" >/dev/null); }
 
 # Deterministic fingerprints of everything a user can read back.
@@ -56,7 +71,7 @@ SQL
 
 echo "== installing $OLD_REF"
 git -C "$ROOT" worktree add -q --detach "$WORK/old" "$OLD_REF"
-install "$WORK/old"
+install_release "$WORK/old"
 restart
 for db in morlet_upgrade_old morlet_upgrade_fresh morlet_upgrade_guard; do
   psql -d postgres -c "DROP DATABASE IF EXISTS $db" -c "CREATE DATABASE $db"
