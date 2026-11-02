@@ -268,38 +268,70 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
     return {"utc_time": utc_time, "matches": sorted(hits, key=lambda h: h["recording_id"])}
 
 
+def merge_hits(runs, query_recording, query_lo, query_hi):
+    """Merge the hit lists of shifted queries: best distance first; a hit is dropped if it overlaps the query
+    span (any shift) in the query's recording, or overlaps a better hit already kept in the same recording."""
+    kept = []
+    for h in sorted((h for run in runs for h in run), key=lambda h: (h["distance"], h["recording_id"], h["start_sample"])):
+        if h["recording_id"] == query_recording and h["start_sample"] < query_hi and h["end_sample"] > query_lo:
+            continue
+        if any(k["recording_id"] == h["recording_id"] and h["start_sample"] < k["end_sample"]
+               and h["end_sample"] > k["start_sample"] for k in kept):
+            continue
+        kept.append(h)
+    return kept
+
+
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def search_similar(collection: str, recording_id: str, start_sample: int, end_sample: int,
-                   metadata_filter: str = "{}", top_k: int = 10) -> dict:
+                   metadata_filter: str = "{}", top_k: int = 10, shifts: int = 0) -> dict:
     """Find the intervals most similar to [start_sample, end_sample) of a recording, tolerant to small time
     shifts (bounded-lag cross-correlation of signal envelopes). The interval must have the stored window
     length (usually 4096 samples; see list_collections). Searches recordings with the same sample rate,
     channel and unit whose metadata contains metadata_filter; never returns the query interval itself.
-    Each hit has a distance (0 identical, < 0.3 strong) and, where known, UTC times."""
+    For a transient (an event, a fault impact), start the window about 10-20 s, or a quarter to half of the
+    window, before its onset (find_onsets finds it): results depend on where the window starts. If unsure,
+    shifts=2 also searches with the window moved by 1/8 and 2/8 of its length either way and merges the
+    results, keeping each hit's best distance. In a small check on seismic data this rescued badly placed
+    windows but, for well-placed ones, let in weaker transients; shifts=0 (default) is the setting the
+    published evaluations used. Each hit has a distance (0 identical, < 0.3 strong), UTC times where known,
+    and the query shift that found it; metadata is given once per recording."""
     top_k = max(1, min(top_k, 100))
+    shifts = max(0, min(shifts, 4))
     flt = json.dumps(json.loads(metadata_filter or "{}"))
+    window = end_sample - start_sample
+    step = max(1, window // 8)
     with connect() as conn:
         c = checked(conn, collection)
         src = recording(conn, c, recording_id)
         similar = conn.execute("SELECT to_regproc('public.morlet_search_similar') IS NOT NULL").fetchone()[0]
-        if similar:
-            sql, args = ("SELECT * FROM morlet_search_similar(%s::regclass, %s, %s, %s, %s::jsonb, %s)",
-                         (c, recording_id, start_sample, end_sample, flt, top_k))
-        else:                                    # SQL 0.3.1: exact search with an explicit candidate cap
-            sql, args = ("SELECT * FROM morlet_search_envelope_interval(%s::regclass, %s, %s, %s, %s::jsonb, %s, "
-                         "0.075, true, true, 1000000)", (c, recording_id, start_sample, end_sample, flt, top_k))
-        rows = conn.execute(sql, args).fetchall()
-        hits = []
-        for rid, s, e, d, meta in rows:
-            rate = src["rate"]
-            t0 = start_time(meta)
-            hits.append({"recording_id": rid, "start_sample": s, "end_sample": e, "distance": round(d, 4),
-                         "start_utc": at(t0, rate, s), "metadata": meta})
+        runs, metas, used = [], {}, []
+        for k in range(-shifts, shifts + 1):
+            a, b = start_sample + k * step, end_sample + k * step
+            if a < 0 or b > src["samples"]:
+                continue
+            used.append(k * step)
+            if similar:
+                sql, args = ("SELECT * FROM morlet_search_similar(%s::regclass, %s, %s, %s, %s::jsonb, %s)",
+                             (c, recording_id, a, b, flt, top_k))
+            else:                                # SQL 0.3.1: exact search with an explicit candidate cap
+                sql, args = ("SELECT * FROM morlet_search_envelope_interval(%s::regclass, %s, %s, %s, %s::jsonb, "
+                             "%s, 0.075, true, true, 1000000)", (c, recording_id, a, b, flt, top_k))
+            run = []
+            for rid, s, e, d, meta in conn.execute(sql, args).fetchall():
+                metas[rid] = meta
+                run.append({"recording_id": rid, "start_sample": s, "end_sample": e, "distance": round(d, 4),
+                            "start_utc": at(start_time(meta), src["rate"], s), "query_shift_samples": k * step})
+            runs.append(run)
+    lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
+    hits = merge_hits(runs, recording_id, lo, hi)[:top_k]
     t0 = start_time(src["metadata"])
     return {"query": {"collection": collection, "recording_id": recording_id, "start_sample": start_sample,
-                      "end_sample": end_sample, "start_utc": at(t0, src["rate"], start_sample)},
-            "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)", "hits": hits}
+                      "end_sample": end_sample, "start_utc": at(t0, src["rate"], start_sample),
+                      "shifts_samples": used},
+            "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)", "hits": hits,
+            "recordings": {h["recording_id"]: metas[h["recording_id"]] for h in hits}}
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -346,29 +378,67 @@ def describe_interval(collection: str, recording_id: str, start_sample: int, end
             **stats(x, rec["rate"], parse_bands(bands, rec["rate"]), max(0.0, min_frequency_hz))}
 
 
+def background(x_before, x_after, n, rate, edges):
+    """Median band power and variance over non-overlapping windows of n samples cut from the stretches before
+    and after an interval: a background level that a single event in the stretch does not move much."""
+    rows = []
+    for seg in (x_before, x_after):
+        for i in range(0, seg.size - n + 1, n):
+            st = stats(seg[i:i + n], rate, edges)
+            if "band_power" in st:
+                rows.append(st)
+    if len(rows) < 3:
+        raise ValueError("too little data around the interval for a background estimate; give a reference")
+    keys = rows[0]["band_power"].keys()
+    return {"std": float(np.sqrt(np.median([r["std"] ** 2 for r in rows]))),
+            "band_power": {k: float(np.median([r["band_power"][k] for r in rows])) for k in keys},
+            "windows": len(rows)}
+
+
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def compare_intervals(collection: str, recording_id: str, start_sample: int, end_sample: int,
-                      reference_start_sample: int, reference_end_sample: int, reference_recording_id: str = "",
-                      bands: str = "") -> dict:
-    """Compare an interval with a reference interval: a quiet stretch, normal operation, or an earlier event.
-    The reference is in the same recording unless reference_recording_id is given (same sample rate needed);
-    the two may differ in length. Returns the signal-to-reference ratio overall and per band (in dB; power is
-    variance, so the mean level is ignored), the power each band has above the reference, and the share of
-    that excess per band: the frequency content of what is new, not of the background. bands as in
-    describe_interval."""
+                      reference_start_sample: int = -1, reference_end_sample: int = -1,
+                      reference_recording_id: str = "", bands: str = "", background_minutes: float = 10.0) -> dict:
+    """Compare an interval with a reference: by default the background around it (the median over windows
+    of the same length in the background_minutes before and after, so a passing event barely moves it), or
+    an explicit reference interval (a quiet stretch, normal operation, an earlier event), in the same
+    recording unless reference_recording_id is given (same sample rate needed; lengths may differ).
+    Returns the signal-to-reference ratio overall and per band (in dB; power is variance, so the mean level
+    is ignored), the power each band has above the reference, and the share of that excess per band: the
+    frequency content of what is new, not of the background. An explicit reference that itself contains an
+    onset is flagged in warnings. bands as in describe_interval."""
+    explicit = reference_start_sample >= 0 and reference_end_sample > reference_start_sample
     ref_id = reference_recording_id or recording_id
+    warnings = []
     with connect() as conn:
         c = checked(conn, collection)
         rec = recording(conn, c, recording_id)
-        ref = rec if ref_id == recording_id else recording(conn, c, ref_id)
-        if ref["rate"] != rec["rate"]:
-            raise ValueError(f"sample rates differ ({rec['rate']:g} and {ref['rate']:g} Hz)")
+        rate = rec["rate"]
+        edges = parse_bands(bands, rate)
         x = read(conn, c, recording_id, start_sample, end_sample)
-        y = read(conn, c, ref_id, reference_start_sample, reference_end_sample)
-    rate = rec["rate"]
-    edges = parse_bands(bands, rate)
-    sx, sy = stats(x, rate, edges), stats(y, rate, edges)
+        sx = stats(x, rate, edges)
+        if explicit:
+            ref = rec if ref_id == recording_id else recording(conn, c, ref_id)
+            if ref["rate"] != rate:
+                raise ValueError(f"sample rates differ ({rate:g} and {ref['rate']:g} Hz)")
+            y = read(conn, c, ref_id, reference_start_sample, reference_end_sample)
+            sy = stats(y, rate, edges)
+            if y.size >= 15 * rate and float(sta_lta(y - y.mean(), rate, 0.5, 10.0).max()) >= 4.0:
+                warnings.append("the reference contains an onset (short-term energy over 4x the preceding 10 s); "
+                                "it may not be background")
+            ref_desc = {"recording_id": ref_id, "start_sample": reference_start_sample,
+                        "end_sample": reference_end_sample,
+                        "start_utc": at(start_time(ref["metadata"]), rate, reference_start_sample)}
+        else:
+            n, span = end_sample - start_sample, int(max(0.0, background_minutes) * 60 * rate)
+            lo, hi = max(0, start_sample - span), min(rec["samples"], end_sample + span)
+            before = read(conn, c, recording_id, lo, start_sample) if start_sample - lo >= n else np.zeros(0)
+            after = read(conn, c, recording_id, end_sample, hi) if hi - end_sample >= n else np.zeros(0)
+            sy = background(before, after, n, rate, edges)
+            ref_desc = {"recording_id": recording_id, "background": f"median of {sy['windows']} windows",
+                        "from_sample": lo, "to_sample": hi, "from_utc": at(start_time(rec["metadata"]), rate, lo),
+                        "to_utc": at(start_time(rec["metadata"]), rate, hi)}
     if "band_power" not in sx or "band_power" not in sy:
         raise ValueError("both intervals need at least 16 samples and some variation")
 
@@ -381,14 +451,15 @@ def compare_intervals(collection: str, recording_id: str, start_sample: int, end
                     "ratio_db": db(sx["band_power"][k], sy["band_power"][k]), "excess_power": excess[k],
                     "excess_fraction": excess[k] / total if total > 0 else 0.0} for k in sx["band_power"]}
     keep = ("std", "rms", "peak_abs", "crest_factor", "kurtosis", "spectral_centroid_hz")
-    t0, tr = start_time(rec["metadata"]), start_time(ref["metadata"])
-    return {"collection": collection, "unit": rec["unit"], "sample_rate_hz": rate,
-            "interval": {"recording_id": recording_id, "start_sample": start_sample, "end_sample": end_sample,
-                         "start_utc": at(t0, rate, start_sample), **{k: sx.get(k) for k in keep}},
-            "reference": {"recording_id": ref_id, "start_sample": reference_start_sample,
-                          "end_sample": reference_end_sample, "start_utc": at(tr, rate, reference_start_sample),
-                          **{k: sy.get(k) for k in keep}},
-            "power_ratio_db": db(sx["std"] ** 2, sy["std"] ** 2), "bands": per_band}
+    out = {"collection": collection, "unit": rec["unit"], "sample_rate_hz": rate,
+           "interval": {"recording_id": recording_id, "start_sample": start_sample, "end_sample": end_sample,
+                        "start_utc": at(start_time(rec["metadata"]), rate, start_sample),
+                        **{k: sx.get(k) for k in keep}},
+           "reference": {**ref_desc, **{k: sy.get(k) for k in keep if k in sy}},
+           "power_ratio_db": db(sx["std"] ** 2, sy["std"] ** 2), "bands": per_band}
+    if warnings:
+        out["warnings"] = warnings
+    return out
 
 
 @mcp.tool(annotations=READ_ONLY)

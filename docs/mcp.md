@@ -16,9 +16,9 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `list_recordings` | recordings with rate, channel, unit, metadata, length and UTC start and end where known; filter by metadata |
 | `locate_time` | the recordings containing a UTC time, and the sample offset of that time |
 | `describe_interval` | level, impulsiveness (crest factor, kurtosis) and spectrum (dominant frequency, centroid, energy share and power per band) of an interval; your own bands in Hz, and a minimum frequency so slow background motion does not dominate |
-| `compare_intervals` | an interval against a reference (a quiet stretch, normal operation, an earlier event): power ratio overall and per band in dB, and how the energy above the reference splits across bands |
+| `compare_intervals` | an interval against the background around it (median over the surrounding minutes) or an explicit reference (a quiet stretch, normal operation, an earlier event): power ratio overall and per band in dB, and how the energy above the reference splits across bands; warns if an explicit reference contains an onset |
 | `find_onsets` | candidate onsets in an interval, where short-term energy rises above the preceding background (STA/LTA, optional band-pass); candidates to inspect, not evaluated detections |
-| `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times |
+| `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times; optionally also searches with the window moved a little (`shifts`) and merges the results |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
 **Safety:** every call runs in a read-only transaction with a statement timeout, as the database role in
@@ -101,9 +101,14 @@ Bolivia, 323 km from station PB02, is only about three times the background leve
 Two calls give the event's own frequency content:
 
 - `describe_interval(..., min_frequency_hz=1)` reports a dominant frequency of 11.3 Hz.
-- `compare_intervals` against a quiet window 13 minutes earlier gives +9.1 dB overall. It puts 16%, 14%, 30%,
-  37% and 3% of the energy above the background into the bands 0–3, 3–6, 6–12.5, 12.5–25 and 25–50 Hz,
-  close to the split of the local earthquakes 100 km away.
+- `compare_intervals` against the background (by default the median over windows in the 10 minutes before and
+  after) gives +8.1 dB overall. It puts 13%, 14%, 31%, 38% and 3% of the energy above the background into the
+  bands 0–3, 3–6, 6–12.5, 12.5–25 and 25–50 Hz, close to the split of the local earthquakes 100 km away.
+  Against a single quiet window 13 minutes earlier the result is similar (+9.1 dB).
+
+A single reference window can mislead: on 14 March, a night window at PSGCX came out 47 dB louder than the
+afternoon because it held an uncatalogued regional earthquake. `compare_intervals` now warns when an explicit
+reference contains an onset, and its default background is a median, which one event barely moves.
 
 `find_onsets` with a 2 Hz high-pass finds the strong arrival at 17:34:06 UTC, about 80 s after the origin time.
 
@@ -119,6 +124,9 @@ This starts the server over stdio as an MCP client would, lists its tools and ru
 
 - **Speed:** with SQL 0.3.2 (`morlet_search_similar`), search uses probe search where it is enabled
   (tens of milliseconds); older servers use exact search (about 1 s on 235,000 windows).
+- **Where the window starts matters:** for a transient, start the query window 10–20 s (a quarter to half of the
+  window) before its onset; `find_onsets` finds it. Moving the window by a few seconds changes which similar
+  events rank first, though most of them remain events.
 - **Window length:** search intervals must have the stored window length, 4,096 samples unless built
   otherwise; `list_collections` shows it.
 - **Scope:** the server reads only. Importing, labelling and building search structures stay with the

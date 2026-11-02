@@ -90,6 +90,23 @@ class Helpers(unittest.TestCase):
         first = int(np.flatnonzero(r >= 4)[0])
         self.assertTrue(4000 <= first < 4100, first)
 
+    def test_merge_hits_keeps_best_and_drops_overlaps(self):
+        h = lambda r, s, d: {"recording_id": r, "start_sample": s, "end_sample": s + 100, "distance": d}
+        runs = [[h("a", 0, 0.3), h("b", 500, 0.2)],
+                [h("a", 50, 0.1), h("b", 1000, 0.25), h("q", 120, 0.05)]]
+        kept = m.merge_hits(runs, "q", 100, 300)                 # q 120 overlaps the query span
+        self.assertEqual([(k["recording_id"], k["start_sample"]) for k in kept], [("a", 50), ("b", 500), ("b", 1000)])
+
+    def test_background_is_robust_to_one_event(self):
+        rng = np.random.default_rng(3)
+        before, after = rng.normal(0, 1, 4000), rng.normal(0, 1, 4000)
+        after[1000:1100] *= 50                                    # one loud event in one window
+        bg = m.background(before, after, 400, 100.0, None)
+        self.assertEqual(bg["windows"], 20)
+        self.assertAlmostEqual(bg["std"], 1.0, delta=0.15)
+        with self.assertRaises(ValueError):
+            m.background(before[:500], np.zeros(0), 400, 100.0, None)
+
 
 if __name__ == "__main__":
     unittest.main()

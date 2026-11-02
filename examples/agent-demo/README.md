@@ -96,8 +96,8 @@ A follow-up that needs both servers and the comparison tools:
 The Potosí event is 323 km from PB02 and arrives only about three times above the background, so a plain
 `describe_interval` reports the ocean microseism (0.2 Hz) as its dominant frequency. `predict_arrivals`
 places the S wave at 17:34:12.7 UTC, and `find_onsets` with a 2 Hz high-pass finds the arrival at 17:34:06.
-`compare_intervals` against a quiet window 13 minutes earlier gives +9.1 dB, with 67% of the energy above
-the background between 6 and 25 Hz, much like the local events. The distant event is weaker and its S wave
+`compare_intervals` against the background around it gives +8.1 dB, with about 70% of the energy above the
+background between 6 and 25 Hz, much like the local events. The distant event is weaker and its S wave
 comes 38 s after the P wave instead of 16 s, but it has not lost its high frequencies. All the events are
 100–200 km deep in the subducting plate, and that is a plausible reason, which these data cannot test.
 
