@@ -163,12 +163,91 @@ fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
         .collect::<Option<Vec<i64>>>()
     {
         Some(ints) => Ok(encode_version2(samples, grid, ints)),
-        None => Ok(encode_offset_grid(samples, grid).unwrap_or_else(|| {
-            let mut out = vec![BASE_VERSION];
-            encode_off_grid(samples, &mut out);
-            out
-        })),
+        None => {
+            // Values off the declared grid may still sit on a grid of their own (calibrated ADC counts
+            // or fixed decimals delivered as floats with no quantum). Try the step detected from the
+            // chunk. A detected grid that needs no last-place corrections, or codes in at most half of
+            // plain float64, is kept as it is; otherwise the previous encoding is computed too and the
+            // smaller one kept. Both are bitwise exact.
+            let detected = detect_step(samples).and_then(|q| {
+                let g = Grid::new(q).ok()?;
+                match samples
+                    .iter()
+                    .map(|&x| g.index(x))
+                    .collect::<Option<Vec<i64>>>()
+                {
+                    Some(ints) => Some(encode_version2(samples, g, ints)),
+                    None => encode_offset_grid(samples, g),
+                }
+            });
+            if let Some(d) = detected
+                .as_ref()
+                .filter(|d| grid_chunk_without_corrections(d) || d.len() <= 4 * samples.len())
+            {
+                return Ok(d.clone());
+            }
+            let fallback = encode_offset_grid(samples, grid).unwrap_or_else(|| {
+                let mut out = vec![BASE_VERSION];
+                encode_off_grid(samples, &mut out);
+                out
+            });
+            Ok(match detected {
+                Some(d) if d.len() < fallback.len() => d,
+                _ => fallback,
+            })
+        }
     }
+}
+
+/// Whether an unchecksummed chunk body is a grid chunk whose samples need no last-place corrections.
+fn grid_chunk_without_corrections(body: &[u8]) -> bool {
+    if body.len() < 3 || body[1] != KIND_GRID {
+        return false;
+    }
+    let mut pos = 2;
+    if get_varint(body, &mut pos).is_err() {
+        return false;
+    }
+    let header = if body[0] == FORMAT_VERSION { 17 } else { 9 };
+    body.get(pos + header) == Some(&0)
+}
+
+/// The step of a grid the samples lie on, estimated from the chunk itself: the smallest gap between
+/// distinct values, or that gap divided by 2..=8 when the values skip levels. Accepted only if every
+/// distinct value is within NEAR_GRID steps of a multiple of it (or of it plus the smallest value, for
+/// shifted grids); the encoder then refines the step and stores last-place corrections, so a rough
+/// estimate costs size, never exactness. None for constant or too-short chunks and noisy floats.
+fn detect_step(samples: &[f64]) -> Option<f64> {
+    let mut v: Vec<f64> = samples.to_vec();
+    v.sort_by(|a, b| a.total_cmp(b));
+    v.dedup_by(|a, b| a.to_bits() == b.to_bits() || *a == *b);
+    if v.len() < 3 {
+        return None;
+    }
+    let span = v[v.len() - 1] - v[0];
+    let magnitude = v[0].abs().max(v[v.len() - 1].abs());
+    if span.is_nan() || span <= 0.0 || !span.is_finite() {
+        return None;
+    }
+    // Gaps at the level of float rounding are not grid steps.
+    let floor = magnitude * 1e-12;
+    let gap = v
+        .windows(2)
+        .map(|w| w[1] - w[0])
+        .filter(|&d| d > floor)
+        .fold(f64::INFINITY, f64::min);
+    if !gap.is_finite() || span / gap > MAX_GRID_INDEX / 2.0 {
+        return None;
+    }
+    let origin = v[0];
+    (1..=8u32).map(|m| gap / m as f64).find(|&q| {
+        q > 0.0
+            && q.is_normal()
+            && v.iter().all(|&x| {
+                let k = ((x - origin) / q).round();
+                ((x - origin) - k * q).abs() <= NEAR_GRID * q
+            })
+    })
 }
 
 /// Least-cost corrections (fewest nonzero, then smallest) over candidate grids.
@@ -1030,6 +1109,117 @@ mod tests {
         }
     }
 
+    #[test]
+    fn detected_grids_compress_calibrated_floats_and_roundtrip() {
+        let mut seed = 41u64;
+        let steps = [
+            100.0 / 32768.0,
+            0.000_688_781_737_8,
+            0.001,
+            0.25,
+            1.0 / 3.0,
+            9.81 / 65536.0,
+        ];
+        for (i, &q) in steps.iter().enumerate() {
+            let offset = if i % 2 == 0 { 0.0 } else { -3.7 };
+            let mut k = 0i64;
+            let x: Vec<f64> = (0..4096)
+                .map(|_| {
+                    k += (lcg(&mut seed) % 41) as i64 - 20;
+                    offset + k as f64 * q
+                })
+                .collect();
+            // declared quantum 1, as a client without calibration knowledge would send
+            let enc = encode(&x, 1.0).unwrap();
+            let back = decode(&enc).unwrap();
+            assert!(
+                back.iter().zip(&x).all(|(a, b)| a.to_bits() == b.to_bits()),
+                "step {q}"
+            );
+            assert_eq!(kind(&enc).unwrap(), Kind::Grid, "step {q}");
+            let mut float = vec![BASE_VERSION];
+            encode_off_grid(&x, &mut float);
+            assert!(
+                enc.len() * 2 < float.len(),
+                "step {q}: {} vs {} bytes",
+                enc.len(),
+                float.len()
+            );
+        }
+    }
+
+    #[test]
+    fn detected_grids_with_last_place_noise_roundtrip_exactly() {
+        let mut seed = 47u64;
+        for case in 0..300 {
+            let q = 10f64.powi(-((lcg(&mut seed) % 7) as i32))
+                * (1.0 + (lcg(&mut seed) % 997) as f64 / 1000.0);
+            let n = 3 + (lcg(&mut seed) % 4096) as usize;
+            let mut k = (lcg(&mut seed) % 1000) as i64 - 500;
+            let x: Vec<f64> = (0..n)
+                .map(|_| {
+                    k += (lcg(&mut seed) % 21) as i64 - 10;
+                    let v = k as f64 * q;
+                    match lcg(&mut seed) % 50 {
+                        0 => f64::from_bits(v.to_bits().wrapping_add(1)),
+                        1 => f64::from_bits(v.to_bits().wrapping_sub(1)),
+                        _ => v,
+                    }
+                })
+                .filter(|v| v.is_finite())
+                .collect();
+            let enc = encode(&x, 1.0).unwrap();
+            let back = decode(&enc).unwrap();
+            assert!(
+                back.iter().zip(&x).all(|(a, b)| a.to_bits() == b.to_bits()),
+                "case {case}, q {q}"
+            );
+        }
+    }
+
+    #[test]
+    fn detection_never_loses_to_the_previous_encoding() {
+        let mut seed = 43u64;
+        for case in 0..200 {
+            let n = 3 + (lcg(&mut seed) % 4096) as usize;
+            let x: Vec<f64> = (0..n)
+                .map(|i| match case % 4 {
+                    0 => ((lcg(&mut seed) >> 11) as f64 / (1u64 << 53) as f64 - 0.5) * 1e3,
+                    1 => (i as f64 * 0.01).sin(),
+                    2 => {
+                        ((lcg(&mut seed) % 1000) as f64) * 0.1 + 1e-9 * (lcg(&mut seed) % 3) as f64
+                    }
+                    _ => ((lcg(&mut seed) % 50) as f64 - 25.0) * 0.003 + 1e6,
+                })
+                .collect();
+            let enc = encode(&x, 1.0).unwrap();
+            let back = decode(&enc).unwrap();
+            assert!(
+                back.iter().zip(&x).all(|(a, b)| a.to_bits() == b.to_bits()),
+                "case {case}"
+            );
+            let grid = Grid::new(1.0).unwrap();
+            let previous = match x
+                .iter()
+                .map(|&v| grid.index(v))
+                .collect::<Option<Vec<i64>>>()
+            {
+                Some(ints) => encode_version2(&x, grid, ints),
+                None => encode_offset_grid(&x, grid).unwrap_or_else(|| {
+                    let mut out = vec![BASE_VERSION];
+                    encode_off_grid(&x, &mut out);
+                    out
+                }),
+            };
+            assert!(
+                enc.len() <= previous.len() + 4,
+                "case {case}: {} vs {}",
+                enc.len(),
+                previous.len()
+            );
+        }
+    }
+
     // The previous decoder (bit-by-bit reader, per-sample prediction) as an oracle.
     fn decode_ints_reference(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
         let mut rd = SlowBitReader { bytes, pos: 0 };
@@ -1389,6 +1579,9 @@ mod tests {
     fn off_grid_chunks_code_float_bits_or_fall_back_to_raw() {
         let mut samples: Vec<f64> = (0..1000).map(|i| i as f64).collect();
         samples[500] = 0.5;
+        // Every value is on the 0.5 grid, which the encoder detects without a declared quantum.
+        assert_eq!(roundtrip(&samples, 1.0).0, Kind::Grid);
+        samples[500] = 0.123_456_789;
         assert_eq!(roundtrip(&samples, 1.0).0, Kind::Float);
         for x in [
             0.0,
