@@ -27,7 +27,8 @@ sample rate, channel, unit and JSON metadata, losslessly. Positions are sample o
 exclusive), not times; if a recording's metadata has a start time, tools also report UTC times.
 
 Typical investigation:
-1. list_collections, then list_recordings to see what exists (metadata_filter narrows by metadata).
+1. list_collections, then coverage (an overview per station, sensor or asset) or list_recordings to see what
+   exists (metadata_filter narrows by metadata); trend shows how a signal changed over days or weeks.
 2. Pick an interval of interest (locate_time converts a UTC time to a sample offset).
 3. describe_interval to characterise it (compare_intervals against the background for weak signals;
    find_onsets to locate where something starts); search_from_time (when you know when it happened) or
@@ -223,12 +224,159 @@ def list_collections() -> dict:
         return {"collections": out}
 
 
+def recordings_in(conn, c, flt):
+    rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint FROM {c} "
+                        f"WHERE metadata @> %s::jsonb", (json.dumps(flt),)).fetchall()
+    out = []
+    for rid, rate, meta, n in rows:
+        t0 = start_time(meta)
+        if t0 is not None and n:
+            out.append({"recording_id": rid, "rate": rate, "metadata": meta, "samples": n, "t0": t0,
+                        "t1": t0 + timedelta(seconds=n / rate)})
+    return sorted(out, key=lambda r: r["t0"])
+
+
+def iso(t):
+    return t.isoformat().replace("+00:00", "Z")
+
+
 @mcp.tool(annotations=READ_ONLY)
 @safe
-def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 50, offset: int = 0) -> dict:
-    """List recordings in a collection: id, sample rate, channel, unit, metadata, length and (when the
-    metadata has a start time) UTC start and end. metadata_filter is a JSON object matched by containment,
-    e.g. '{"station": "PB01"}'."""
+def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", max_gaps: int = 10) -> dict:
+    """Overview of what is recorded, per group of recordings (group_by: a metadata key such as "station" or
+    "bearing"; empty for one group): number of recordings, samples, first and last UTC time, the recording
+    schedule (typical recording length and time between recording starts), time covered, and the largest
+    gaps. For continuous recording every pause between recordings is a gap; for snapshots (recordings
+    shorter than the usual pause, for example 1 s every 10 min) only pauses longer than 1.5 times the usual
+    one are. Needs recordings with a start time."""
+    flt = json.loads(metadata_filter or "{}")
+    with connect() as conn:
+        c = checked(conn, collection)
+        recs = recordings_in(conn, c, flt)
+    groups = {}
+    for r in recs:
+        groups.setdefault(str(r["metadata"].get(group_by, "")) if group_by else "all", []).append(r)
+    out = []
+    for name, rs in sorted(groups.items()):
+        dur = sorted((r["t1"] - r["t0"]).total_seconds() for r in rs)
+        starts = [(b["t0"] - a["t0"]).total_seconds() for a, b in zip(rs, rs[1:])]
+        pauses = [((b["t0"] - a["t1"]).total_seconds(), a, b) for a, b in zip(rs, rs[1:])]
+        usual = float(np.median([p for p, _, _ in pauses])) if pauses else 0.0
+        snapshots = bool(pauses) and float(np.median(dur)) < usual     # short recordings on a schedule
+        limit = max(1.5 * usual, usual + 1.0) if snapshots else 1.0     # continuous: every pause is a gap
+        gaps = sorted((p for p in pauses if p[0] > limit), key=lambda p: -p[0])
+        span = (rs[-1]["t1"] - rs[0]["t0"]).total_seconds()
+        covered = sum(dur)
+        out.append({"group": name, "recordings": len(rs), "samples": int(sum(r["samples"] for r in rs)),
+                    "first_utc": iso(rs[0]["t0"]), "last_utc": iso(rs[-1]["t1"]),
+                    "schedule": "snapshots" if snapshots else "continuous",
+                    "typical_recording_s": float(np.median(dur)),
+                    "typical_start_interval_s": float(np.median(starts)) if starts else None,
+                    "covered_s": covered, "span_s": span, "covered_fraction": covered / span if span else 1.0,
+                    "gaps": len(gaps), "gap_s": float(sum(g[0] for g in gaps)),
+                    "largest_gaps": [{"from_utc": iso(a["t1"]), "to_utc": iso(b["t0"]), "seconds": round(p, 1)}
+                                     for p, a, b in gaps[:max(0, min(max_gaps, 50))]]})
+    return {"collection": collection, "group_by": group_by or None, "groups": out}
+
+
+def change_point(values, baseline_n, k=3, z=5.0):
+    """First index after the baseline from which k consecutive values lie more than z robust standard
+    deviations (1.4826 MAD) above the baseline median; None if never."""
+    v = np.asarray(values, dtype=float)
+    base = v[:baseline_n]
+    med = float(np.median(base))
+    mad = float(np.median(np.abs(base - med))) * 1.4826 or 1e-12
+    high = (v - med) / mad > z
+    for i in range(baseline_n, len(v) - k + 1):
+        if high[i:i + k].all():
+            return i, med, mad
+    return None, med, mad
+
+
+def sig(v, digits=4):
+    return None if v is None else float(f"{v:.{digits}g}")
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: str = "", max_points: int = 200,
+          samples_per_point: int = 4096, step_seconds: float = 0.0, bands: str = "",
+          min_frequency_hz: float = 0.0, baseline_fraction: float = 0.1) -> dict:
+    """How a signal's level and spectrum change over time, for the recordings matching metadata_filter (for
+    example one sensor or bearing). Takes up to max_points (at most 300) measurement points in time order: one per
+    recording for short snapshots, or one every step_seconds within longer recordings, each over
+    samples_per_point samples. Each point gives rms, std, peak, crest factor, kurtosis and power per band
+    (bands as in describe_interval; min_frequency_hz high-passes before measuring), returned as one CSV
+    table; the number of points is lowered automatically to keep the answer short. change_points gives, per measure, the first point from which three
+    in a row lie more than 5 robust standard deviations above the first baseline_fraction of points: a
+    candidate for when something changed, to inspect, not a diagnosis."""
+    flt = json.loads(metadata_filter or "{}")
+    t_lo = datetime.fromisoformat(start_utc.replace("Z", "+00:00")) if start_utc else None
+    t_hi = datetime.fromisoformat(end_utc.replace("Z", "+00:00")) if end_utc else None
+    max_points = max(10, min(max_points, 300))     # keeps the answer within MCP clients' output limits
+    with connect() as conn:
+        c = checked(conn, collection)
+        recs = recordings_in(conn, c, flt)
+        if not recs:
+            raise ValueError("no recordings with a start time match metadata_filter")
+        rates = {r["rate"] for r in recs}
+        if len(rates) > 1:
+            raise ValueError(f"matching recordings have several sample rates ({sorted(rates)}); narrow the filter")
+        rate = rates.pop()
+        n = max(16, samples_per_point)
+        points = []
+        for r in recs:
+            step = int(step_seconds * rate) if step_seconds > 0 else r["samples"]
+            for s0 in range(0, max(1, r["samples"] - n + 1), max(n, step)):
+                t = r["t0"] + timedelta(seconds=s0 / rate)
+                if (t_lo and t < t_lo) or (t_hi and t >= t_hi):
+                    continue
+                points.append((t, r["recording_id"], s0))
+        edges = parse_bands(bands, rate)
+        n_bands = len(edges) if edges else 5
+        budget = max(10, 30000 // (60 + 9 * (5 + n_bands)))     # keep the table within about 30,000 characters
+        max_points = min(max_points, budget)
+        if len(points) > max_points:
+            idx = np.linspace(0, len(points) - 1, max_points).round().astype(int)
+            points = [points[i] for i in sorted(set(idx))]
+        cols = {"utc": [], "recording_id": [], "start_sample": [], "rms": [], "std": [], "peak_abs": [],
+                "crest_factor": [], "kurtosis": []}
+        band_cols = {}
+        for t, rid, s0 in points:
+            x = read(conn, c, rid, s0, s0 + n)
+            if min_frequency_hz > 0:
+                x = bandpass(x, rate, min_frequency_hz, 0.0)
+            st = stats(x, rate, edges)
+            cols["utc"].append(iso(t)); cols["recording_id"].append(rid); cols["start_sample"].append(s0)
+            for k in ("rms", "std", "peak_abs", "crest_factor", "kurtosis"):
+                cols[k].append(sig(st.get(k)))
+            for k, v in st.get("band_power", {}).items():
+                band_cols.setdefault(k, []).append(sig(v))
+    base_n = max(3, int(len(points) * baseline_fraction))
+    changes = {}
+    for name, vals in [(k, cols[k]) for k in ("rms", "kurtosis", "crest_factor")] + list(band_cols.items()):
+        if len(vals) < base_n + 3 or any(v is None for v in vals):
+            continue
+        i, med, mad = change_point(vals, base_n)
+        changes[name] = {"baseline_median": sig(med), "first_change_utc": cols["utc"][i] if i is not None else None,
+                         "point": i, "value_then": vals[i] if i is not None else None}
+    names = ["utc", "recording_id", "start_sample", "rms", "std", "peak_abs", "crest_factor", "kurtosis"]
+    header = names + [f"power {k}" for k in band_cols]
+    rows = [",".join("" if v is None else str(v) for v in
+                     [cols[k][i] for k in names] + [band_cols[k][i] for k in band_cols]) for i in range(len(points))]
+    return {"collection": collection, "metadata_filter": flt, "points": len(points), "samples_per_point": n,
+            "sample_rate_hz": rate, "baseline_points": base_n, "change_points": changes,
+            "table_csv": "\n".join([",".join(header)] + rows)}
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 50, offset: int = 0,
+                    include_metadata: bool = False) -> dict:
+    """List recordings in a collection: id, length and (when the metadata has a start time) UTC start and
+    end; rate, channel, unit and metadata are given once when all listed recordings share them, otherwise
+    per recording (metadata only with include_metadata). metadata_filter is a JSON object matched by
+    containment, e.g. '{"station": "PB01"}'. For an overview of many recordings, coverage is shorter."""
     limit = max(1, min(limit, 500))
     flt = json.loads(metadata_filter or "{}")
     if not isinstance(flt, dict):
@@ -239,12 +387,22 @@ def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 5
         rows = conn.execute(f"SELECT recording_id, sample_rate_hz, channel, unit, metadata, (checkpoint->>'end')::bigint "
                             f"FROM {c} WHERE metadata @> %s::jsonb ORDER BY recording_id LIMIT %s OFFSET %s",
                             (json.dumps(flt), limit, max(0, offset))).fetchall()
-    recs = []
+    recs, shared = [], {}
+    for key, idx in (("sample_rate_hz", 1), ("channel", 2), ("unit", 3)):
+        values = {r[idx] for r in rows}
+        if len(values) == 1:
+            shared[key] = values.pop()
     for rid, rate, ch, unit, meta, n in rows:
         t0 = start_time(meta)
-        recs.append({"recording_id": rid, "sample_rate_hz": rate, "channel": ch, "unit": unit, "metadata": meta,
-                     "samples": n, "duration_s": n / rate, "start_utc": at(t0, rate, 0), "end_utc": at(t0, rate, n)})
-    return {"collection": collection, "total": total, "offset": offset, "recordings": recs}
+        rec = {"recording_id": rid, "samples": n, "duration_s": n / rate, "start_utc": at(t0, rate, 0),
+               "end_utc": at(t0, rate, n)}
+        for key, value in (("sample_rate_hz", rate), ("channel", ch), ("unit", unit)):
+            if key not in shared:
+                rec[key] = value
+        if include_metadata:
+            rec["metadata"] = meta
+        recs.append(rec)
+    return {"collection": collection, "total": total, "offset": offset, **shared, "recordings": recs}
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -384,7 +542,11 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
     lta, sta = 30.0, 1.0
     a = max(0, k - int((look_seconds + lta + sta) * rate))
     b = min(n, k + int(look_seconds * rate))
-    onsets = find_onsets(collection, rid, a, b, min_frequency_hz, 0.0, sta, lta, 4.0, 50)["onsets"]
+    try:
+        onsets = find_onsets(collection, rid, a, b, min_frequency_hz, 0.0, sta, lta, 4.0, 50)["onsets"]
+        why = "no onset found"
+    except ToolError:                            # recording too short for onset detection (e.g. snapshots)
+        onsets, why = [], f"recording too short to detect onsets ({n / rate:g} s)"
     near = [o for o in onsets if abs(o["trigger_sample"] - k) <= look_seconds * rate]
     if near:
         best = max(near, key=lambda o: o["peak_ratio"])
@@ -393,10 +555,16 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
             "rule": f"window starts {FRAME_LEAD_S:g} s before the strongest onset within {look_seconds:g} s, "
                     f"searched with shifts={FRAME_SHIFTS}"}
     else:
-        start, how = max(0, k - window // 4), {"rule": f"no onset found: window starts a quarter window before "
+        start, how = max(0, k - window // 4), {"rule": f"{why}: window starts a quarter window before "
                                                        f"the time, searched with shifts={FRAME_SHIFTS}"}
-    start = min(start, n - window)
-    result = search_similar(collection, rid, start, start + window, search_filter, top_k, FRAME_SHIFTS)
+    start = max(0, min(start, n - window))
+    short = n / rate < 120                       # a snapshot: its other windows are not "elsewhere"
+    result = search_similar(collection, rid, start, start + window, search_filter, top_k + (20 if short else 0),
+                            FRAME_SHIFTS)
+    if short:
+        result["hits"] = [h for h in result["hits"] if h["recording_id"] != rid][:top_k]
+        result["recordings"] = {h["recording_id"]: result["recordings"][h["recording_id"]] for h in result["hits"]}
+        how["excluded"] = "the query's own recording (shorter than 2 min)"
     result["framing"] = {"recording_id": rid, "utc_time": utc_time, **how}
     return result
 

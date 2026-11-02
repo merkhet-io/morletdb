@@ -13,7 +13,9 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | Tool | What it does |
 |---|---|
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
-| `list_recordings` | recordings with rate, channel, unit, metadata, length and UTC start and end where known; filter by metadata |
+| `coverage` | an overview per station, sensor or asset: recordings, samples, first and last time, the recording schedule (continuous or snapshots) and the largest gaps |
+| `list_recordings` | recordings with length and UTC start and end where known; rate, channel and unit once when shared; metadata on request; filter by metadata |
+| `trend` | how level, impulsiveness and band power change over days or weeks, one point per snapshot or per time step, with candidate change points against an early baseline |
 | `locate_time` | the recordings containing a UTC time, and the sample offset of that time |
 | `describe_interval` | level, impulsiveness (crest factor, kurtosis) and spectrum (dominant frequency, centroid, energy share and power per band) of an interval; your own bands in Hz, and a minimum frequency so slow background motion does not dominate |
 | `compare_intervals` | an interval against the background around it (median over the surrounding minutes) or an explicit reference (a quiet stretch, normal operation, an earlier event): power ratio overall and per band in dB, and how the energy above the reference splits across bands; warns if an explicit reference contains an onset |
@@ -58,7 +60,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO signals_reader;   -- or only the 
 ```
 
 No data yet? The [agent demo](../examples/agent-demo/README.md) sets up a database with four days of public
-seismic recordings and this server in Docker, or [import WAV, EDF, miniSEED or CSV files](import.md).
+seismic recordings and this server in Docker, the [machine demo](../examples/machine-demo/README.md) a bearing
+run to failure, or [import WAV, EDF, miniSEED or CSV files](import.md).
 
 ## An investigation, end to end
 
