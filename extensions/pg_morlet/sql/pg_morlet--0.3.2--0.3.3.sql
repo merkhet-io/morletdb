@@ -28,6 +28,56 @@ IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_decode_interval_stats_wrapper';
 
+CREATE FUNCTION "morlet_envelope_screen_step"(
+	"state" internal, /* pgrx::datum::internal::Internal */
+	"envelope" bytea, /* &[u8] */
+	"recording_id" TEXT, /* &str */
+	"start_sample" bigint, /* i64 */
+	"query_le" bytea, /* &[u8] */
+	"max_lag" INT, /* i32 */
+	"m" INT /* i32 */
+) RETURNS internal /* pgrx::datum::internal::Internal */
+PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_screen_step_wrapper';
+
+CREATE FUNCTION "morlet_envelope_screen_combine"(
+	"a" internal, /* pgrx::datum::internal::Internal */
+	"b" internal /* pgrx::datum::internal::Internal */
+) RETURNS internal /* pgrx::datum::internal::Internal */
+PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_screen_combine_wrapper';
+
+CREATE FUNCTION "morlet_envelope_screen_serial"(
+	"state" internal /* pgrx::datum::internal::Internal */
+) RETURNS bytea /* alloc::vec::Vec<u8> */
+STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_screen_serial_wrapper';
+
+CREATE FUNCTION "morlet_envelope_screen_deserial"(
+	"bytes" bytea, /* &[u8] */
+	"_unused" internal /* pgrx::datum::internal::Internal */
+) RETURNS internal /* pgrx::datum::internal::Internal */
+STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_screen_deserial_wrapper';
+
+CREATE FUNCTION "morlet_envelope_screen_final"(
+	"state" internal /* pgrx::datum::internal::Internal */
+) RETURNS jsonb /* pgrx::datum::json::JsonB */
+PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_screen_final_wrapper';
+
+CREATE FUNCTION "morlet_float8_le_bytes"(
+	"values" double precision[] /* pgrx::datum::array::Array<'_, f64> */
+) RETURNS bytea /* alloc::vec::Vec<u8> */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_float8_le_bytes_wrapper';
+
 -- As morlet_append_chunk, with the samples as raw IEEE 754 float64 values, little-endian, 8 bytes each,
 -- instead of a float8[]: a client sends the bytes of an array and the server skips per-element parsing.
 -- The samples go through morlet_append_chunk unchanged: same checks, gaps, retries and conflicts.
@@ -103,3 +153,121 @@ BEGIN
   END IF;
   RETURN QUERY SELECT stats[1]::bigint,stats[2],stats[3],stats[4],stats[5];
 END $$;
+
+-- Exact scan of every eligible stored envelope (same rate, channel, unit and
+-- window; metadata containment), scored in Rust against the query's
+-- full-precision envelope. Lag tolerance is a fraction of the envelope length
+-- (0.075 reproduces the evaluated +/-30 envelope samples at 4096-sample windows). Above max_candidates the
+-- call fails rather than sampling. Source exclusion uses the optional
+-- exclude_* arguments (NULL disables it). Overlapping windows of one recording
+-- are suppressed greedily in rank order before top_k.
+-- The scan is one statement fetching the best m rows into arrays (not a cursor
+-- loop), so PostgreSQL can run it with parallel workers. Suppression then walks
+-- those rows; if it uses them up before top_k survive while more candidates
+-- remain, the statement is repeated with 4x m. Results equal a full ordered scan.
+-- Raises when more windows are eligible than max_candidates; returns the count otherwise.
+CREATE FUNCTION public.morlet_check_candidates(candidates bigint,max_candidates integer) RETURNS bigint
+LANGUAGE plpgsql STABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+BEGIN
+  IF candidates>max_candidates THEN
+    RAISE EXCEPTION '% windows are eligible, more than max_candidates (%)',candidates,max_candidates
+      USING HINT=format('Pass max_candidates => %s, narrow the metadata filter, or enable probe search '
+        '(morlet_enable_envelope_probes) and use morlet_search_similar.',candidates);
+  END IF;
+  RETURN candidates;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_envelope_ranked(collection regclass,query_samples float8[],query_rate_hz float8,
+  query_channel text,query_unit text,metadata_filter jsonb,top_k integer,max_lag_fraction float8,
+  suppress_overlaps boolean,max_candidates integer,
+  exclude_recording_id text,exclude_start bigint,exclude_end bigint)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; m bigint;
+  ids text[]; starts bigint[]; ends bigint[]; dists float8[]; metas jsonb[]; n integer; i integer;
+  picked integer[]; idx integer; blocked boolean; screened boolean;
+BEGIN
+  IF top_k IS NULL OR top_k NOT BETWEEN 1 AND 100 OR metadata_filter IS NULL OR jsonb_typeof(metadata_filter)<>'object'
+    OR max_lag_fraction IS NULL OR NOT (max_lag_fraction BETWEEN 0 AND 0.5) OR max_candidates IS NULL OR max_candidates<1
+    OR query_rate_hz IS NULL OR suppress_overlaps IS NULL THEN
+    RAISE EXCEPTION 'invalid top_k, metadata filter, max_lag_fraction (0..0.5) or max_candidates';
+  END IF;
+  rel:=public.morlet_envelope_relation(collection);
+  width:=cardinality(query_samples);
+  query_envelope:=public.morlet_envelope(query_samples);
+  lag:=floor(max_lag_fraction*cardinality(query_envelope));
+  -- Screened path (default): a parallel aggregate bounds every eligible window's distance in float32 and
+  -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
+  -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
+  -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
+  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path).
+  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off';
+  IF NOT screened THEN
+    EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id
+      WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection)
+      INTO candidates USING width,query_rate_hz,query_channel,query_unit,metadata_filter;
+    PERFORM public.morlet_check_candidates(candidates,max_candidates);
+  END IF;
+  m:=CASE WHEN suppress_overlaps THEN greatest(200,20*top_k) ELSE top_k END;
+  LOOP
+    IF screened THEN
+      EXECUTE format('WITH c AS (SELECT count(*) AS eligible,public.morlet_envelope_screen(e.envelope,e.recording_id,
+            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer)
+            FILTER (WHERE $8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10) AS j
+          FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id
+          WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5),
+        k AS (SELECT x->>0 AS recording_id,(x->>1)::bigint AS start_sample FROM c,jsonb_array_elements(c.j) x)
+        SELECT (SELECT public.morlet_check_candidates(c.eligible,$12) FROM c),array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
+          array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
+        FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
+          SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+            public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
+          FROM k JOIN %1$s e ON e.recording_id=k.recording_id AND e.window_size=$1 AND e.start_sample=k.start_sample
+          JOIN %2$s r ON r.recording_id=e.recording_id
+          ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection)
+        INTO candidates,ids,starts,ends,dists,metas
+        USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
+          exclude_recording_id,exclude_start,exclude_end,m,max_candidates;
+    ELSE
+    EXECUTE format('SELECT array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
+        array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
+      FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
+        SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+          public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
+        FROM %s e JOIN %s r ON r.recording_id=e.recording_id
+        WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5
+          AND ($8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10)
+        ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection)
+      INTO ids,starts,ends,dists,metas
+      USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
+        exclude_recording_id,exclude_start,exclude_end,m;
+    END IF;
+    n:=coalesce(cardinality(ids),0);
+    picked:=ARRAY[]::integer[];
+    FOR i IN 1..n LOOP
+      blocked:=false;
+      IF suppress_overlaps THEN
+        FOREACH idx IN ARRAY picked LOOP
+          IF ids[idx]=ids[i] AND starts[idx]<ends[i] AND ends[idx]>starts[i] THEN
+            blocked:=true; EXIT;
+          END IF;
+        END LOOP;
+      END IF;
+      CONTINUE WHEN blocked;
+      picked:=picked||i;
+      EXIT WHEN cardinality(picked)=top_k;
+    END LOOP;
+    EXIT WHEN cardinality(picked)=top_k OR n<m;
+    m:=m*4;
+  END LOOP;
+  RETURN QUERY SELECT ids[p],starts[p],ends[p],dists[p],metas[p] FROM unnest(picked) WITH ORDINALITY u(p,k) ORDER BY k;
+END $$;
+
+-- Exact envelope search screening (morlet_core::envelope_screen): a parallel aggregate that bounds each
+-- stored window's distance to a query envelope in float32 and keeps every window that could be among the
+-- m nearest, as a JSON array of [recording_id, start_sample]. Used by morlet_envelope_ranked.
+CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,integer) (
+  SFUNC = public.morlet_envelope_screen_step, STYPE = internal,
+  COMBINEFUNC = public.morlet_envelope_screen_combine,
+  SERIALFUNC = public.morlet_envelope_screen_serial, DESERIALFUNC = public.morlet_envelope_screen_deserial,
+  FINALFUNC = public.morlet_envelope_screen_final, FINALFUNC_MODIFY = READ_WRITE, PARALLEL = SAFE);
