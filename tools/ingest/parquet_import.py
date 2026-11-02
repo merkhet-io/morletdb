@@ -164,12 +164,16 @@ class ImportFailure(RuntimeError):
         self.report = report
 
 
-def import_files(paths, collection, config=Config(), mapping=None, dsn="", validate_only=False):
+def import_files(paths, collection, config=Config(), mapping=None, dsn="", validate_only=False, reader=None):
+    """reader(path, config, mapping) yields (recording, spec, start, values); default: Parquet.
+    spec is (rate, channel, unit, metadata), optionally followed by the recording's
+    sample_quantum and extractor, which then override the run-wide config."""
+    reader = reader or chunks
     wall_started = time.perf_counter()
     config.validate()
     paths = [Path(path) for path in paths]
     if not paths or any(not path.is_file() for path in paths):
-        raise ValueError("provide existing local Parquet files")
+        raise ValueError("provide existing local input files")
     files, signatures = [], []
     for path in paths:
         before = path.stat()
@@ -230,18 +234,19 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
             conn.commit()
         for path, signature in zip(paths, signatures):
             ensured = None
-            for recording, spec, start, values in chunks(path, config, mapping):
+            for recording, spec, start, values in reader(path, config, mapping):
                 report["validated_chunk_submissions"] += 1
                 report["validated_sample_submissions"] += len(values)
                 if conn is None:
                     continue
                 if ensured != (recording, spec):
                     flush()
-                    rate, channel, unit, meta = spec
+                    rate, channel, unit, meta = spec[:4]
+                    quantum = spec[4] if len(spec) > 4 else config.sample_quantum
+                    extractor = spec[5] if len(spec) > 5 else config.extractor
                     # Omit defaults so older installed servers keep working.
-                    extra = () if config.extractor == "morlet-energy-v1" and config.sample_quantum == 1 \
-                        else (config.extractor,)
-                    extra += () if config.sample_quantum == 1 else (config.sample_quantum,)
+                    extra = () if extractor == "morlet-energy-v1" and quantum == 1 else (extractor,)
+                    extra += () if quantum == 1 else (quantum,)
                     conn.execute("SELECT morlet_ensure_recording(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s"
                                  + ",%s"*len(extra) + ")",
                                  (collection, recording, rate, channel, unit, Jsonb(meta),

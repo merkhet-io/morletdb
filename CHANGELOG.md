@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+Importer:
+- `tools/ingest/morlet_import.py` imports WAV, EDF/EDF+, miniSEED or CSV files, builds search
+  envelopes (and, with `--probes`, enables probe search) and prints a first query.
+  - **Recordings:** one per channel, per EDF signal or per contiguous miniSEED segment.
+  - **Quantum from the file:** counts for WAV and miniSEED, the calibration step for EDF, the
+    decimal places for CSV. Every sample reads back bit for bit.
+  - **Guide:** `docs/import.md`.
+  - **Measured:** a day of seismic data (8.6 M samples) took 38 s, and a Sleep-EDF night
+    (24.2 M samples) 75 s.
+  - `parquet_import.import_files` accepts a reader and per-recording quantum and extractor; existing
+    callers are unchanged.
+
 Performance:
 - Exact envelope search scores rows about 2.3× faster, with **bitwise identical distances** and
   results (E6). Only the library changes; SQL objects are unchanged.
