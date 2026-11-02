@@ -233,18 +233,20 @@ def build(conn, collection, ids, window, probes):
     return built
 
 
-def first_search(opts, plan, built):
+def first_search(opts, plan, built, has_similar=True):
     """A query to run right after the import: the ten intervals most similar to one window of the
-    longest recording. Probe search routes small galleries to exact search itself; exact search alone
-    refuses more eligible windows than max_candidates (default 4096), so the cap is given explicitly."""
+    longest recording. morlet_search_similar (SQL 0.3.2) uses probe search when it is enabled, else exact
+    search. On older servers exact search refuses more eligible windows than its default max_candidates
+    (4096), so the cap is given explicitly there."""
     first = max(plan, key=lambda r: r["samples"])
     start = max(0, (first["samples"] // 2 // opts.window) * opts.window)
     args = f"'{opts.collection}', '{first['recording_id']}', {start}, {start + opts.window}, '{{}}'::jsonb, 10"
+    if has_similar:
+        return f"SELECT * FROM morlet_search_similar({args});"
     if opts.probes:
         return f"SELECT * FROM morlet_search_envelope_probes({args});"
-    total = max(1, sum(built.values()) if built else 0)
-    return (f"SELECT * FROM morlet_search_envelope_interval({args}, 0.075, true, true, "
-            f"{max(4096, 2 * total)});")
+    total = sum(built.values()) if built else 0
+    return f"SELECT * FROM morlet_search_envelope_interval({args}, 0.075, true, true, {max(4096, 2 * total)});"
 
 
 def main(argv=None):
@@ -278,11 +280,12 @@ def main(argv=None):
             prepare(conn, opts.collection, opts.create)
         report = import_files(opts.files, opts.collection, Config(), dsn=opts.dsn, reader=chunk_reader(opts))
         report["recordings"] = plan
-        if not opts.no_build:
-            with psycopg.connect(opts.dsn) as conn:
+        with psycopg.connect(opts.dsn) as conn:
+            if not opts.no_build:
                 report["envelopes_built"] = build(conn, opts.collection, [r["recording_id"] for r in plan],
                                                   opts.window, opts.probes)
-        report["try"] = first_search(opts, plan, report.get("envelopes_built", {}))
+            has_similar = conn.execute("SELECT to_regproc('public.morlet_search_similar') IS NOT NULL").fetchone()[0]
+        report["try"] = first_search(opts, plan, report.get("envelopes_built", {}), has_similar)
     except ImportFailure as exc:
         print(json.dumps(exc.report, indent=2), file=sys.stderr)
         return 1

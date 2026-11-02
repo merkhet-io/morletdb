@@ -91,7 +91,7 @@ SELECT morlet_enable_envelopes('public.getting_started');
 SELECT morlet_build_envelopes('public.getting_started', 'run-a', 4096, 2048);
 SELECT morlet_build_envelopes('public.getting_started', 'run-b', 4096, 2048);
 
-SELECT * FROM morlet_search_envelope_interval(
+SELECT * FROM morlet_search_similar(
   'public.getting_started', 'run-a', 0, 4096,
   '{"asset":"spindle-1"}'::jsonb, 10
 );
@@ -132,6 +132,7 @@ Envelopes are opt-in and are not automatically built by append. Call the bounded
 | Read samples | `morlet_read_interval` | Reconstructs original samples, including across chunk boundaries |
 | Feature search | `morlet_search_streams`, `morlet_search_interval` | Exact search over compatible Morlet/statistical feature segments, not bounded-lag envelope scoring |
 | Build envelopes | `morlet_enable_envelopes`, `morlet_build_envelopes` | Opt-in materialized search representation |
+| Similar-interval search | `morlet_search_similar` | Probe search when enabled for the window size, otherwise exact |
 | Exact envelope search | `morlet_search_envelopes`, `morlet_search_envelope_interval` | Input samples or stored interval; bounded-lag correlation |
 | Indexed envelope search | `morlet_enable_envelope_probes`, `morlet_search_envelope_probes` | Optional pgvector path with exact fallback for small galleries |
 | Inspect progress | `morlet_stream_status`, `morlet_collection_status` | Recording progress, representation coverage and probe backlog |

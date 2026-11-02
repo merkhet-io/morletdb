@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+Search usability (SQL version 0.3.2, with an update script from 0.3.1 as released in 0.3.1-alpha.1):
+- **`morlet_search_similar(collection, recording, start, end, ...)`**, one entry point for interval
+  search.
+  - **Routing:** it uses probe search when probe search is enabled for the window size; probe search
+    itself sends small or selective galleries to exact search. Otherwise it uses exact search.
+  - **Contract:** results are unchanged; the existing functions remain for choosing a path
+    explicitly.
+- **Exact envelope search accepts up to 1,000,000 eligible windows by default** (was 4,096) in
+  `morlet_search_envelope_interval` and `morlet_search_envelopes`. One day of 100 Hz data from one
+  station already has more than 4,096 windows, so a first exact query failed. With the faster scorer
+  (E6), a million windows take about 1.5 s on the development machine.
+- **The error states what to do:** "N windows are eligible, more than max_candidates (M)", with a hint
+  to pass `max_candidates => N`, narrow the filter, or enable probe search.
+- **Upgrade test:** CI now also upgrades populated databases from v0.3.1-alpha.1.
+
 Importer:
 - `tools/ingest/morlet_import.py` imports WAV, EDF/EDF+, miniSEED or CSV files, builds search
   envelopes (and, with `--probes`, enables probe search) and prints a first query.

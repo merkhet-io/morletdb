@@ -628,7 +628,9 @@ BEGIN
     WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection)
     INTO candidates USING width,query_rate_hz,query_channel,query_unit,metadata_filter;
   IF candidates>max_candidates THEN
-    RAISE EXCEPTION 'envelope search exceeds % candidates; narrow the metadata filter',max_candidates;
+    RAISE EXCEPTION '% windows are eligible, more than max_candidates (%)',candidates,max_candidates
+      USING HINT=format('Pass max_candidates => %s, narrow the metadata filter, or enable probe search '
+        '(morlet_enable_envelope_probes) and use morlet_search_similar.',candidates);
   END IF;
   m:=CASE WHEN suppress_overlaps THEN greatest(200,20*top_k) ELSE top_k END;
   LOOP
@@ -667,7 +669,7 @@ END $$;
 
 CREATE FUNCTION public.morlet_search_envelopes(collection regclass,query_samples float8[],query_rate_hz float8,
   query_channel text,query_unit text,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
-  max_lag_fraction float8 DEFAULT 0.075,suppress_overlaps boolean DEFAULT true,max_candidates integer DEFAULT 4096)
+  max_lag_fraction float8 DEFAULT 0.075,suppress_overlaps boolean DEFAULT true,max_candidates integer DEFAULT 1000000)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
 LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
   SELECT * FROM public.morlet_envelope_ranked(collection,query_samples,query_rate_hz,query_channel,query_unit,
@@ -679,7 +681,7 @@ $$;
 CREATE FUNCTION public.morlet_search_envelope_interval(collection regclass,source_recording_id text,
   interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
   max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
-  max_candidates integer DEFAULT 4096)
+  max_candidates integer DEFAULT 1000000)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE source record;
@@ -830,6 +832,26 @@ BEGIN
     picked_ends:=array_append(picked_ends,hit.end_sample);
     EXIT WHEN picked=top_k;
   END LOOP;
+END $$;
+
+-- One entry point for interval search: probe search when it is enabled for the window size (it routes
+-- small or selective galleries to exact search itself), otherwise exact search. Same result contract as
+-- both; the existing functions remain for callers who choose the path explicitly.
+CREATE FUNCTION public.morlet_search_similar(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  max_candidates integer DEFAULT 1000000)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  IF interval_end-interval_start BETWEEN 1 AND 32768
+    AND public.morlet_envelope_probe_relation(collection,(interval_end-interval_start)::integer) IS NOT NULL THEN
+    RETURN QUERY SELECT * FROM public.morlet_search_envelope_probes(collection,source_recording_id,interval_start,
+      interval_end,metadata_filter,top_k,max_lag_fraction,exclude_source,suppress_overlaps);
+  ELSE
+    RETURN QUERY SELECT * FROM public.morlet_search_envelope_interval(collection,source_recording_id,interval_start,
+      interval_end,metadata_filter,top_k,max_lag_fraction,exclude_source,suppress_overlaps,max_candidates);
+  END IF;
 END $$;
 
 -- Context model, phase 1 (docs/context-model.md): a context timeline, context

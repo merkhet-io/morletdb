@@ -8,6 +8,7 @@ follow from the implementation, or have been measured in an evaluation but have 
 
 | Function | Candidates | Returned distances |
 |---|---|---|
+| `morlet_search_similar(collection, recording, start, end, ...)` | the probe path below when probe search is enabled for the window size, otherwise the exhaustive path | exact |
 | `morlet_search_envelope_interval(collection, recording, start, end, ...)` | every eligible stored window (exhaustive) | exact |
 | `morlet_search_envelopes(collection, samples, rate, channel, unit, ...)` | every eligible stored window (exhaustive) | exact |
 | `morlet_search_envelope_probes(collection, recording, start, end, ...)` | routed: exhaustive when at most `exact_threshold` windows are eligible, otherwise the union of shifted inner-product probes (lags −L…L at step `probe_step`: 13 at 4096-sample windows, 7 at 2048) × `per_probe` from the HNSW index | exact for every returned row |
@@ -34,8 +35,9 @@ unit, its window size equals the query's, and the recording's metadata contains
 see are never candidates (tested), and with `morlet_enable_row_security` their companion
 rows are hidden as well; see [access control](access-control.md).
 
-`max_candidates` (exhaustive path): if more windows are eligible, the search **fails**
-instead of sampling.
+`max_candidates` (exhaustive path, default 1,000,000 since SQL 0.3.2; 4,096 before): if more
+windows are eligible, the search **fails** instead of sampling. The error states the number of
+eligible windows and how to proceed (a larger `max_candidates`, a narrower filter, or probe search).
 
 ## Exclusion, ordering, suppression
 

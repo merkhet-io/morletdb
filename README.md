@@ -142,9 +142,9 @@ SELECT morlet_append_chunk('signals', 'pump-7', 0,
 -- transaction to make new windows searchable at commit
 SELECT morlet_build_envelopes('signals', 'pump-7');
 
--- where else does samples 8192..12288 occur? exact, shift-tolerant search
+-- where else does samples 8192..12288 occur? shift-tolerant search
 SELECT recording_id, start_sample, end_sample, distance
-FROM morlet_search_envelope_interval('signals', 'pump-7', 8192, 12288, '{}', 5);
+FROM morlet_search_similar('signals', 'pump-7', 8192, 12288, '{}', 5);
 
 -- read any match back as original samples
 SELECT samples FROM morlet_read_interval('signals', 'pump-7', 26624, 30720);
@@ -159,8 +159,12 @@ approximate in which windows it considers, never in the distances it returns.
 
 ```sql
 SELECT morlet_enable_envelope_probes('signals', 4096);
-SELECT * FROM morlet_search_envelope_probes('signals', 'pump-7', 8192, 12288);
+SELECT * FROM morlet_search_similar('signals', 'pump-7', 8192, 12288);   -- now uses probes
 ```
+
+`morlet_search_similar` uses probe search when it is enabled for the window size and exact search
+otherwise; `morlet_search_envelope_interval` and `morlet_search_envelope_probes` choose a path
+explicitly.
 
 The fifth argument of the interval searches is a metadata filter (`'{"asset": "P7"}'`).
 Small filtered galleries are routed to exact search automatically. Searches run with
@@ -179,6 +183,7 @@ More: [SQL reference](extensions/pg_morlet/README.md) · [search contract](docs/
 | Read original samples | `morlet_read_interval` |
 | Search Morlet/statistical features | `morlet_search_streams`, `morlet_search_interval` |
 | Materialize envelopes | `morlet_enable_envelopes`, `morlet_build_envelopes` |
+| Search similar intervals (probes if enabled, else exact) | `morlet_search_similar` |
 | Search bounded-lag envelopes exactly | `morlet_search_envelopes`, `morlet_search_envelope_interval` |
 | Enable and query optional indexed probes | `morlet_enable_envelope_probes`, `morlet_search_envelope_probes` |
 | Inspect storage | `morlet_recording_storage`, `morlet_collection_storage` |

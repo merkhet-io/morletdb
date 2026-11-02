@@ -1040,6 +1040,58 @@ mod tests {
     }
 
     #[pg_test]
+    fn search_similar_is_exact_search_without_probes() {
+        serialize_shared_ddl();
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        let list = |f: &str| {
+            format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM {f}('env','A',2048,4096,'{{}}',10)")
+        };
+        assert_eq!(
+            Spi::get_one::<String>(&list("morlet_search_similar")).unwrap(),
+            Spi::get_one::<String>(&list("morlet_search_envelope_interval")).unwrap()
+        );
+        // the exhaustive default allows a million eligible windows (was 4096)
+        for f in [
+            "morlet_search_envelope_interval",
+            "morlet_search_envelopes",
+            "morlet_search_similar",
+        ] {
+            assert!(Spi::get_one::<String>(&format!(
+                "SELECT pg_get_function_arguments('{f}'::regproc)"
+            ))
+            .unwrap()
+            .unwrap()
+            .contains("max_candidates integer DEFAULT 1000000"));
+        }
+    }
+
+    #[pg_test]
+    fn search_similar_uses_probes_when_enabled() {
+        serialize_shared_ddl();
+        if !pgvector_available() {
+            return; // pgvector is optional; CI's pgvector job runs this
+        }
+        Spi::run("CREATE EXTENSION IF NOT EXISTS vector").unwrap();
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        Spi::run("SELECT morlet_enable_envelope_probes('env',2048)").unwrap();
+        let list = |f: &str| {
+            format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM {f}('env','A',2048,4096,'{{}}',10)")
+        };
+        assert_eq!(
+            Spi::get_one::<String>(&list("morlet_search_similar")).unwrap(),
+            Spi::get_one::<String>(&list("morlet_search_envelope_probes")).unwrap()
+        );
+    }
+
+    #[pg_test]
     fn probe_search_is_maintained_and_exact_on_small_galleries() {
         serialize_shared_ddl();
         if !pgvector_available() {
@@ -1177,7 +1229,7 @@ END $$"#).unwrap();
         assert_eq!(Spi::get_one::<bool>("SELECT envelope_table_bytes>0 AND total_bytes=recordings_table_bytes+chunk_table_bytes+segment_table_bytes+envelope_table_bytes FROM morlet_collection_storage('env')").unwrap(), Some(true));
     }
 
-    #[pg_test(error = "envelope search exceeds 5 candidates; narrow the metadata filter")]
+    #[pg_test(error = "45 windows are eligible, more than max_candidates (5)")]
     fn envelope_search_enforces_its_budget() {
         serialize_shared_ddl();
         envelope_fixture();
