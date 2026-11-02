@@ -12,9 +12,10 @@ import morlet_mcp as m
 class Server(unittest.TestCase):
     def test_tools_are_registered_read_only(self):
         tools = asyncio.run(m.mcp.list_tools())
-        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "describe_interval", "find_onsets",
+        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "describe_interval", "find_onsets",
                                                          "list_collections", "list_recordings", "locate_time",
-                                                         "read_interval", "search_from_time", "search_similar"])
+                                                         "read_interval", "search_from_time", "search_similar",
+                                                         "trend"])
         for t in tools:
             self.assertTrue(t.annotations.read_only_hint, t.name)
             self.assertFalse(t.annotations.destructive_hint, t.name)
@@ -110,6 +111,16 @@ class Helpers(unittest.TestCase):
     def test_frame_window(self):
         self.assertEqual(m.frame_window(10_000, 100.0, 4096), 10_000 - round(m.FRAME_LEAD_S * 100))
         self.assertEqual(m.frame_window(50, 100.0, 4096), 0)
+
+    def test_change_point_needs_a_sustained_rise(self):
+        rng = np.random.default_rng(4)
+        v = list(rng.normal(10, 0.1, 100))
+        v[40] = 50                                                  # a single spike is not a change
+        v[70:] = [12 + 0.1 * i for i in range(30)]                   # sustained rise from point 70
+        i, med, _ = m.change_point(v, 20)
+        self.assertEqual(i, 70)
+        self.assertAlmostEqual(med, 10, delta=0.1)
+        self.assertIsNone(m.change_point(list(rng.normal(10, 0.1, 50)), 10)[0])
 
 
 if __name__ == "__main__":

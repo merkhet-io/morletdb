@@ -18,6 +18,13 @@ MCP server:
   (`shifts`) and merge the results, and gives metadata once per recording instead of per hit. `search_from_time` finds
   the onset near a UTC time, frames the window (2 s before the onset, `shifts=2`, chosen on the demo's
   development data) and searches.
+- **Overview and trend tools:** `coverage` summarises recordings per station, sensor or asset, with the
+  schedule (continuous or snapshots) and the largest gaps; `trend` follows level, impulsiveness and band
+  power over time and flags the first sustained departure from an early baseline as a candidate change;
+  `list_recordings` is compact by default (shared fields once, metadata on request).
+- **Machine demo:** `examples/machine-demo` loads NASA/IMS bearing test 2 (984 snapshots of four bearings
+  until bearing 1 failed) into the release image and runs the MCP server in Docker; three recorded Claude
+  sessions, and a second tab in the homepage replay.
 - **Agent demo:** `examples/agent-demo` loads four days of public seismic data (CX, GEOFON) into the release
   image and runs the MCP server in Docker for Claude Code or Claude Desktop, with a scripted replay
   (`replay.py`) that needs no language model. A second, offline MCP server (`seismo_mcp.py`) gives station

@@ -73,6 +73,8 @@ $$;
 **Try it with Claude:** the [agent demo](examples/agent-demo/README.md) loads four days of public seismic
 recordings with Docker and lets Claude Code or Claude Desktop investigate an earthquake through the
 read-only [MCP server](docs/mcp.md). Four of the five closest matches it finds are other catalogued earthquakes.
+The [machine demo](examples/machine-demo/README.md) does the same for a bearing run to failure (NASA/IMS):
+Claude finds when the failing bearing first changed and whether the others show it.
 
 > [!IMPORTANT]
 > The SQL function above is an integration pattern; the bundled MCP server only reads. Detection models,
