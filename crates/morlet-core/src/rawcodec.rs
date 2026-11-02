@@ -463,10 +463,44 @@ const fn crc32c_table() -> [u32; 256] {
     table
 }
 const CRC32C_TABLE: [u32; 256] = crc32c_table();
+/// Slicing-by-8 tables: CRC32C_SLICES[k][b] is the CRC contribution of byte b followed by k zero bytes.
+const fn crc32c_slices() -> [[u32; 256]; 8] {
+    let mut t = [[0u32; 256]; 8];
+    t[0] = CRC32C_TABLE;
+    let mut k = 1;
+    while k < 8 {
+        let mut i = 0;
+        while i < 256 {
+            let prev = t[k - 1][i];
+            t[k][i] = (prev >> 8) ^ CRC32C_TABLE[(prev & 0xff) as usize];
+            i += 1;
+        }
+        k += 1;
+    }
+    t
+}
+const CRC32C_SLICES: [[u32; 256]; 8] = crc32c_slices();
+/// CRC-32C, eight bytes per step (slicing-by-8); equal to the byte-at-a-time definition.
 fn crc32c(bytes: &[u8]) -> u32 {
-    !bytes.iter().fold(!0u32, |c, &b| {
-        CRC32C_TABLE[((c ^ b as u32) & 0xff) as usize] ^ (c >> 8)
-    })
+    let t = &CRC32C_SLICES;
+    let mut c = !0u32;
+    let mut words = bytes.chunks_exact(8);
+    for w in &mut words {
+        let lo = u32::from_le_bytes([w[0], w[1], w[2], w[3]]) ^ c;
+        let hi = u32::from_le_bytes([w[4], w[5], w[6], w[7]]);
+        c = t[7][(lo & 0xff) as usize]
+            ^ t[6][((lo >> 8) & 0xff) as usize]
+            ^ t[5][((lo >> 16) & 0xff) as usize]
+            ^ t[4][(lo >> 24) as usize]
+            ^ t[3][(hi & 0xff) as usize]
+            ^ t[2][((hi >> 8) & 0xff) as usize]
+            ^ t[1][((hi >> 16) & 0xff) as usize]
+            ^ t[0][(hi >> 24) as usize];
+    }
+    for &b in words.remainder() {
+        c = CRC32C_TABLE[((c ^ b as u32) & 0xff) as usize] ^ (c >> 8);
+    }
+    !c
 }
 
 /// Monotonic float64 -> i64 map: +0 is 0, -0 is -1, and numeric order is kept,
@@ -537,8 +571,47 @@ fn partition_bounds(n: usize, porder: u32, p: usize) -> (usize, usize) {
 }
 
 fn residuals(x: &[i64], order: usize, r: &mut [u64]) {
-    for (i, ri) in r.iter_mut().enumerate() {
-        *ri = zigzag(x[i].wrapping_sub(predict(x, i, order)));
+    let n = x.len();
+    let warm = order.min(n);
+    for i in 0..warm {
+        r[i] = zigzag(x[i].wrapping_sub(predict(x, i, order)));
+    }
+    // The same predictors as `predict`, with the order fixed for the whole loop.
+    match order {
+        0 => {
+            for i in warm..n {
+                r[i] = zigzag(x[i]);
+            }
+        }
+        1 => {
+            for i in warm..n {
+                r[i] = zigzag(x[i].wrapping_sub(x[i - 1]));
+            }
+        }
+        2 => {
+            for i in warm..n {
+                r[i] = zigzag(x[i].wrapping_sub(x[i - 1].wrapping_mul(2).wrapping_sub(x[i - 2])));
+            }
+        }
+        3 => {
+            for i in warm..n {
+                let p = x[i - 1]
+                    .wrapping_sub(x[i - 2])
+                    .wrapping_mul(3)
+                    .wrapping_add(x[i - 3]);
+                r[i] = zigzag(x[i].wrapping_sub(p));
+            }
+        }
+        _ => {
+            for i in warm..n {
+                let p = x[i - 1]
+                    .wrapping_add(x[i - 3])
+                    .wrapping_mul(4)
+                    .wrapping_sub(x[i - 2].wrapping_mul(6))
+                    .wrapping_sub(x[i - 4]);
+                r[i] = zigzag(x[i].wrapping_sub(p));
+            }
+        }
     }
 }
 
@@ -622,35 +695,65 @@ fn decode_ints(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
     if order > MAX_ORDER || porder > MAX_PARTITION_ORDER || (n >> porder) == 0 {
         return Err(CodecError::Corrupt("predictor header"));
     }
+    // Residuals first, then the prediction in a second pass with the order fixed for the chunk.
     let mut x = Vec::with_capacity(n);
     for p in 0..(1usize << porder) {
         let (a, b) = partition_bounds(n, porder, p);
         let k = rd.get(6)?;
-        let width = if k == ESCAPE {
+        if k == ESCAPE {
             let width = rd.get(7)? as u32;
             if width > 64 {
                 return Err(CodecError::Corrupt("escape width"));
             }
-            width
+            for _ in a..b {
+                x.push(unzigzag(rd.get(width)?));
+            }
         } else {
-            0
-        };
-        for i in a..b {
-            let v = if k == ESCAPE {
-                rd.get(width)?
-            } else {
-                let q = rd.get_unary()?;
-                if q > (u64::MAX >> k) {
-                    return Err(CodecError::Corrupt("rice quotient"));
-                }
-                (q << k) | rd.get(k as u32)?
-            };
-            let value = unzigzag(v).wrapping_add(predict(&x, i, order));
-            x.push(value);
+            for _ in a..b {
+                x.push(unzigzag(rd.get_rice(k as u32)?));
+            }
         }
     }
     if !rd.rest_is_padding() {
         return Err(CodecError::Corrupt("trailing data"));
+    }
+    let warm = order.min(n);
+    for i in 0..warm {
+        x[i] = x[i].wrapping_add(predict(&x, i, order));
+    }
+    match order {
+        0 => {}
+        1 => {
+            for i in warm..n {
+                x[i] = x[i].wrapping_add(x[i - 1]);
+            }
+        }
+        2 => {
+            for i in warm..n {
+                x[i] = x[i].wrapping_add(x[i - 1].wrapping_mul(2).wrapping_sub(x[i - 2]));
+            }
+        }
+        3 => {
+            for i in warm..n {
+                x[i] = x[i].wrapping_add(
+                    x[i - 1]
+                        .wrapping_sub(x[i - 2])
+                        .wrapping_mul(3)
+                        .wrapping_add(x[i - 3]),
+                );
+            }
+        }
+        _ => {
+            for i in warm..n {
+                x[i] = x[i].wrapping_add(
+                    x[i - 1]
+                        .wrapping_add(x[i - 3])
+                        .wrapping_mul(4)
+                        .wrapping_sub(x[i - 2].wrapping_mul(6))
+                        .wrapping_sub(x[i - 4]),
+                );
+            }
+        }
     }
     Ok(x)
 }
@@ -683,6 +786,7 @@ struct BitWriter {
 }
 impl BitWriter {
     /// Appends the low `n` bits of `v`, most significant first.
+    #[inline(always)]
     fn put(&mut self, v: u64, n: u32) {
         if n > 32 {
             self.put(v >> 32, n - 32);
@@ -702,6 +806,7 @@ impl BitWriter {
         }
         self.acc &= (1u64 << self.bits) - 1;
     }
+    #[inline(always)]
     fn put_unary(&mut self, mut q: u64) {
         while q >= 32 {
             self.put(0, 32);
@@ -729,7 +834,7 @@ impl<'a> BitReader<'a> {
         Self { bytes, pos: 0 }
     }
     /// The 64 bits starting at the current byte; bytes past the end read as zero.
-    #[inline]
+    #[inline(always)]
     fn window(&self) -> u64 {
         let i = self.pos / 8;
         match self.bytes.get(i..i + 8) {
@@ -746,7 +851,7 @@ impl<'a> BitReader<'a> {
     fn remaining(&self) -> usize {
         (self.bytes.len() * 8).saturating_sub(self.pos)
     }
-    #[inline]
+    #[inline(always)]
     fn get(&mut self, n: u32) -> Result<u64, CodecError> {
         if n == 0 {
             return Ok(0);
@@ -761,6 +866,32 @@ impl<'a> BitReader<'a> {
         let v = (self.window() << (self.pos % 8)) >> (64 - n);
         self.pos += n as usize;
         Ok(v)
+    }
+    /// A Rice code with parameter k: unary quotient, then k remainder bits. Within one 64-bit window
+    /// it is read with one load; otherwise, and for every error, as `get_unary` then `get(k)`.
+    #[inline(always)]
+    fn get_rice(&mut self, k: u32) -> Result<u64, CodecError> {
+        let avail = self.remaining().min(57);
+        let w = self.window() << (self.pos % 8);
+        let zeros = w.leading_zeros() as usize;
+        if zeros < avail && zeros + 1 + k as usize <= avail {
+            let q = zeros as u64;
+            if q > (u64::MAX >> k) {
+                return Err(CodecError::Corrupt("rice quotient"));
+            }
+            let r = if k == 0 {
+                0
+            } else {
+                (w << (zeros + 1)) >> (64 - k)
+            };
+            self.pos += zeros + 1 + k as usize;
+            return Ok((q << k) | r);
+        }
+        let q = self.get_unary()?;
+        if q > (u64::MAX >> k) {
+            return Err(CodecError::Corrupt("rice quotient"));
+        }
+        Ok((q << k) | self.get(k)?)
     }
     #[inline]
     fn get_unary(&mut self) -> Result<u64, CodecError> {
@@ -896,6 +1027,122 @@ mod tests {
                     best_param_scan(sum, max, count)
                 );
             }
+        }
+    }
+
+    // The previous decoder (bit-by-bit reader, per-sample prediction) as an oracle.
+    fn decode_ints_reference(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
+        let mut rd = SlowBitReader { bytes, pos: 0 };
+        let order = rd.get(3)? as usize;
+        let porder = rd.get(4)? as u32;
+        if order > MAX_ORDER || porder > MAX_PARTITION_ORDER || (n >> porder) == 0 {
+            return Err(CodecError::Corrupt("predictor header"));
+        }
+        let mut x = Vec::with_capacity(n);
+        for p in 0..(1usize << porder) {
+            let (a, b) = partition_bounds(n, porder, p);
+            let k = rd.get(6)?;
+            let width = if k == ESCAPE {
+                let width = rd.get(7)? as u32;
+                if width > 64 {
+                    return Err(CodecError::Corrupt("escape width"));
+                }
+                width
+            } else {
+                0
+            };
+            for i in a..b {
+                let v = if k == ESCAPE {
+                    rd.get(width)?
+                } else {
+                    let q = rd.get_unary()?;
+                    if q > (u64::MAX >> k) {
+                        return Err(CodecError::Corrupt("rice quotient"));
+                    }
+                    (q << k) | rd.get(k as u32)?
+                };
+                let value = unzigzag(v).wrapping_add(predict(&x, i, order));
+                x.push(value);
+            }
+        }
+        if !rd.rest_is_padding() {
+            return Err(CodecError::Corrupt("trailing data"));
+        }
+        Ok(x)
+    }
+    impl SlowBitReader<'_> {
+        fn rest_is_padding(&self) -> bool {
+            let used = self.pos.div_ceil(8);
+            used == self.bytes.len()
+                && (self.pos.is_multiple_of(8)
+                    || self.bytes[used - 1] & (0xff >> (self.pos % 8)) == 0)
+        }
+    }
+
+    #[test]
+    fn fast_decoder_matches_reference_on_valid_and_corrupt_streams() {
+        let mut seed = 17u64;
+        for case in 0..600 {
+            let n = 1 + (lcg(&mut seed) % 5000) as usize;
+            let amp = 1i64 << (lcg(&mut seed) % 62);
+            let mut walk = 0i64;
+            let x: Vec<i64> = (0..n)
+                .map(|i| match case % 4 {
+                    0 => (lcg(&mut seed) as i64) % amp,
+                    1 => {
+                        walk = walk.wrapping_add((lcg(&mut seed) % 64) as i64 - 32);
+                        walk
+                    }
+                    2 => ((i as f64 * 0.01).sin() * 30000.0) as i64,
+                    _ => lcg(&mut seed) as i64,
+                })
+                .collect();
+            let mut enc = Vec::new();
+            encode_ints(&x, &mut enc);
+            assert_eq!(decode_ints(&enc, n), Ok(x.clone()), "case {case}");
+            assert_eq!(decode_ints(&enc, n), decode_ints_reference(&enc, n));
+            // corrupt: flip a byte, truncate, or ask for another length
+            let mut bad = enc.clone();
+            let at = (lcg(&mut seed) as usize) % bad.len();
+            bad[at] ^= 1 << (lcg(&mut seed) % 8);
+            assert_eq!(
+                decode_ints(&bad, n),
+                decode_ints_reference(&bad, n),
+                "flip {case}"
+            );
+            let cut = &enc[..(lcg(&mut seed) as usize) % enc.len()];
+            assert_eq!(
+                decode_ints(cut, n),
+                decode_ints_reference(cut, n),
+                "cut {case}"
+            );
+            let m = 1 + (lcg(&mut seed) % 5000) as usize;
+            assert_eq!(
+                decode_ints(&enc, m),
+                decode_ints_reference(&enc, m),
+                "len {case}"
+            );
+        }
+        for _ in 0..3000 {
+            let len = (lcg(&mut seed) % 64) as usize;
+            let junk: Vec<u8> = (0..len).map(|_| lcg(&mut seed) as u8).collect();
+            let m = 1 + (lcg(&mut seed) % 300) as usize;
+            assert_eq!(decode_ints(&junk, m), decode_ints_reference(&junk, m));
+        }
+    }
+
+    #[test]
+    fn sliced_crc32c_matches_bytewise_definition() {
+        let bytewise = |b: &[u8]| {
+            !b.iter().fold(!0u32, |c, &x| {
+                CRC32C_TABLE[((c ^ x as u32) & 0xff) as usize] ^ (c >> 8)
+            })
+        };
+        assert_eq!(crc32c(b"123456789"), 0xE306_9283);
+        let mut seed = 3u64;
+        for len in 0..300 {
+            let b: Vec<u8> = (0..len).map(|_| lcg(&mut seed) as u8).collect();
+            assert_eq!(crc32c(&b), bytewise(&b), "len {len}");
         }
     }
 

@@ -17,7 +17,6 @@ import math
 import os
 from pathlib import Path
 import re
-import struct
 import sys
 import wave
 

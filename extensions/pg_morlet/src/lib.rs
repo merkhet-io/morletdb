@@ -10,6 +10,89 @@ fn checked_samples(input: Vec<Option<f64>>) -> Vec<f64> {
         .collect()
 }
 
+/// The samples of a float8[] argument without copying them when it has no NULLs (the usual case);
+/// otherwise the same error as `checked_samples`.
+fn sample_slice<'a>(input: &'a pgrx::Array<'_, f64>) -> std::borrow::Cow<'a, [f64]> {
+    match input.as_slice() {
+        Ok(s) => std::borrow::Cow::Borrowed(s),
+        Err(_) => std::borrow::Cow::Owned(
+            input
+                .iter()
+                .map(|v| {
+                    v.unwrap_or_else(|| pgrx::error!("NULL waveform elements are unsupported"))
+                })
+                .collect(),
+        ),
+    }
+}
+
+/// A float8[] result built by PostgreSQL in one call (`construct_array`) instead of element by
+/// element; the SQL type is `double precision[]`, as for `Vec<f64>`.
+struct F64Array(Vec<f64>);
+
+impl pgrx::datum::IntoDatum for F64Array {
+    fn into_datum(self) -> Option<pg_sys::Datum> {
+        unsafe {
+            if self.0.is_empty() {
+                return Some(pg_sys::Datum::from(pg_sys::construct_empty_array(
+                    pg_sys::FLOAT8OID,
+                )));
+            }
+            // float8 is passed by value on 64-bit builds: the Datum holds the bit pattern.
+            let mut datums: Vec<pg_sys::Datum> = self
+                .0
+                .iter()
+                .map(|v| pg_sys::Datum::from(v.to_bits() as usize))
+                .collect();
+            // float8: 8 bytes, passed by value, double alignment ('d').
+            let array = pg_sys::construct_array(
+                datums.as_mut_ptr(),
+                datums.len() as i32,
+                pg_sys::FLOAT8OID,
+                8,
+                true,
+                b'd' as std::ffi::c_char,
+            );
+            Some(pg_sys::Datum::from(array))
+        }
+    }
+    fn type_oid() -> pg_sys::Oid {
+        pg_sys::FLOAT8ARRAYOID
+    }
+}
+
+unsafe impl pgrx::callconv::BoxRet for F64Array {
+    unsafe fn box_into<'fcx>(
+        self,
+        fcinfo: &mut pgrx::callconv::FcInfo<'fcx>,
+    ) -> pgrx::datum::Datum<'fcx> {
+        use pgrx::datum::IntoDatum;
+        match self.into_datum() {
+            Some(datum) => unsafe { fcinfo.return_raw_datum(datum) },
+            None => fcinfo.return_null(),
+        }
+    }
+}
+
+unsafe impl pgrx::pgrx_sql_entity_graph::metadata::SqlTranslatable for F64Array {
+    fn argument_sql() -> Result<
+        pgrx::pgrx_sql_entity_graph::metadata::SqlMapping,
+        pgrx::pgrx_sql_entity_graph::metadata::ArgumentError,
+    > {
+        Ok(pgrx::pgrx_sql_entity_graph::metadata::SqlMapping::As(
+            "double precision[]".into(),
+        ))
+    }
+    fn return_sql() -> Result<
+        pgrx::pgrx_sql_entity_graph::metadata::Returns,
+        pgrx::pgrx_sql_entity_graph::metadata::ReturnsError,
+    > {
+        Ok(pgrx::pgrx_sql_entity_graph::metadata::Returns::One(
+            pgrx::pgrx_sql_entity_graph::metadata::SqlMapping::As("double precision[]".into()),
+        ))
+    }
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -177,21 +260,21 @@ fn morlet_chunk_checkpoint_versioned(
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_valid_chunk(samples: Vec<Option<f64>>) -> bool {
-    morlet_core::validate(&checked_samples(samples)).unwrap_or_else(|e| pgrx::error!("{}", e));
+fn morlet_valid_chunk(samples: pgrx::Array<'_, f64>) -> bool {
+    morlet_core::validate(&sample_slice(&samples)).unwrap_or_else(|e| pgrx::error!("{}", e));
     true
 }
 
 /// Lossless chunk encoding: integer grid + Rice coding, or raw float64 off the grid.
 #[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_encode_chunk(samples: Vec<Option<f64>>, sample_quantum: f64) -> Vec<u8> {
-    morlet_core::rawcodec::encode(&checked_samples(samples), sample_quantum)
+fn morlet_encode_chunk(samples: pgrx::Array<'_, f64>, sample_quantum: f64) -> Vec<u8> {
+    morlet_core::rawcodec::encode(&sample_slice(&samples), sample_quantum)
         .unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_decode_chunk(encoded: &[u8]) -> Vec<f64> {
-    morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e))
+fn morlet_decode_chunk(encoded: &[u8]) -> F64Array {
+    F64Array(morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e)))
 }
 
 /// Calls `take` with the samples of [interval_start, interval_end) from each encoded chunk, given in
@@ -235,12 +318,12 @@ fn morlet_decode_interval(
     starts: Vec<Option<i64>>,
     interval_start: i64,
     interval_end: i64,
-) -> Vec<f64> {
+) -> F64Array {
     let mut out = Vec::with_capacity((interval_end - interval_start).clamp(0, 32768) as usize);
     for_interval_slices(&chunks, &starts, interval_start, interval_end, |s| {
         out.extend_from_slice(s)
     });
-    out
+    F64Array(out)
 }
 
 /// As `morlet_decode_interval`, but the samples as raw IEEE 754 float64 values, little-endian,
@@ -265,13 +348,15 @@ fn morlet_decode_interval_raw(
 /// Little-endian float64 bytes (8 per sample) as a float8[], without per-element parsing. Used by
 /// `morlet_append_chunk_raw`; the appended samples are validated by `morlet_append_chunk` as usual.
 #[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_float8_from_le_bytes(raw: &[u8]) -> Vec<f64> {
+fn morlet_float8_from_le_bytes(raw: &[u8]) -> F64Array {
     if !raw.len().is_multiple_of(8) {
         pgrx::error!("raw samples must be a multiple of 8 bytes (little-endian float64)");
     }
-    raw.chunks_exact(8)
-        .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
-        .collect()
+    F64Array(
+        raw.chunks_exact(8)
+            .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+            .collect(),
+    )
 }
 
 /// {count, min, max, mean, rms} of the samples of [interval_start, interval_end), accumulated while
@@ -508,7 +593,7 @@ fn morlet_valid_encoded_chunk(encoded: &[u8], sample_count: i32) -> bool {
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: Vec<Option<f64>>) -> JsonB {
+fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: pgrx::Array<'_, f64>) -> JsonB {
     if start_sample < 0 {
         pgrx::error!("chunk start must be nonnegative");
     }
@@ -517,7 +602,7 @@ fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: Vec<Option<f
     let mut state = morlet_core::chunks::ChunkExtractor::from_checkpoint(checkpoint)
         .unwrap_or_else(|e| pgrx::error!("{}", e));
     let segments = state
-        .push(start_sample as u64, &checked_samples(samples))
+        .push(start_sample as u64, &sample_slice(&samples))
         .unwrap_or_else(|e| pgrx::error!("{}", e));
     if state.next_sample_offset() > i64::MAX as u64 {
         pgrx::error!("Postgres sample offset overflow");

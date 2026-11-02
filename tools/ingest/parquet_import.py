@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Stream local Parquet into caller-owned pg_morlet continuous recordings."""
 import argparse
+import contextlib
 from dataclasses import dataclass
 import hashlib
 import json
@@ -33,6 +34,7 @@ class Config:
     extractor: str = "morlet-energy-v1"
     sample_quantum: float = 1.0
     raw_append: bool = True   # use morlet_append_chunk_raw for numpy chunks when the server has it (SQL 0.3.3)
+    pipeline: bool = True     # send statements without waiting for each result (errors surface at commit)
 
     def validate(self):
         if self.layout not in ("chunks", "samples"):
@@ -240,23 +242,8 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
             staged_chunks,staged_samples=0,0
             ensured=None
 
-    try:
-        if not validate_only:
-            conn = psycopg.connect(dsn)
-            conn.execute("SET statement_timeout='120s'")
-            pg_numpy.register(conn)   # readers may yield numpy float arrays: sent as binary float8[]
-            raw_append = config.raw_append and conn.execute(
-                "SELECT to_regprocedure('public.morlet_append_chunk_raw(regclass,text,bigint,bytea)') IS NOT NULL"
-            ).fetchone()[0]
-            report["raw_append"] = raw_append
-            if config.rpc_chunks > 1:
-                info=CompositeInfo.fetch(conn,"public.morlet_input_chunk")
-                if info is None:
-                    raise ValueError("server is missing the batched ingestion type")
-                register_composite(info,conn)
-                chunk_factory=info.python_type
-            report["extractor_version"]=config.extractor
-            conn.commit()
+    def import_paths(paths, signatures):
+        nonlocal ensured, pending_recording
         for path, signature in zip(paths, signatures):
             ensured = None
             for recording, spec, start, values in reader(path, config, mapping):
@@ -285,6 +272,28 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
             if (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns) != signature:
                 raise ValueError("source file changed during import")
             flush()
+
+    try:
+        if not validate_only:
+            conn = psycopg.connect(dsn)
+            conn.execute("SET statement_timeout='120s'")
+            pg_numpy.register(conn)   # readers may yield numpy float arrays: sent as binary float8[]
+            raw_append = config.raw_append and conn.execute(
+                "SELECT to_regprocedure('public.morlet_append_chunk_raw(regclass,text,bigint,bytea)') IS NOT NULL"
+            ).fetchone()[0]
+            report["raw_append"] = raw_append
+            if config.rpc_chunks > 1:
+                info=CompositeInfo.fetch(conn,"public.morlet_input_chunk")
+                if info is None:
+                    raise ValueError("server is missing the batched ingestion type")
+                register_composite(info,conn)
+                chunk_factory=info.python_type
+            report["extractor_version"]=config.extractor
+            conn.commit()
+        # Pipeline mode: statements are sent without waiting for each result; errors surface at the next
+        # commit, which still covers the same chunks, so what is committed is unchanged.
+        with (conn.pipeline() if conn is not None and config.pipeline else contextlib.nullcontext()):
+            import_paths(paths, signatures)
         if conn is not None:
             conn.commit()
             report["committed_chunk_submissions"] += staged_chunks
