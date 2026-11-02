@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.14, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.15, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -15,7 +15,10 @@ technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md
    raw data, each query makes 13 index passes, filters that exclude a query's neighbours slow it down, and
    maintaining the index at commit wrote much more write-ahead log than the data grew (paper Sections 8–10;
    [`sizes_heldout.csv`](../../evaluation/consolidated/results/sizes_heldout.csv), D2, C2).
-4. **Not shown:** other signal domains, diagnostic relevance for machines, cold caches, and stable
+4. **A first relevance check.** With a catalogued earthquake in the query, the bounded-lag top ten held
+   catalogued earthquakes in 0.297 of positions against 0.213 for zero lag on development data, and 0.139
+   against 0.060 on held-out stations and year (E5, E5-H; exact search, catalogue proxy).
+5. **Not shown:** other signal domains, diagnostic relevance for machines, cold caches, and stable
    operation beyond 111 minutes (the planned two-hour run stopped early; paper Section 12).
 
 ## Main numbers
@@ -58,6 +61,22 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.15 (merged evidence added; no new measurement for the report)
+
+- **Relevance proxy (E5, E5-H).** Bounded-lag search found catalogued earthquakes more often than zero lag on
+  development and held-out data (P@10 0.297 vs 0.213, 0.139 vs 0.060; both "bounded lag better"). In the
+  abstract, findings, limitations ("What recall means"), conclusion, supplement and ledger.
+- **Grid detection (G1).** The codec finds the value grid without a declared quantum, at 0.98–1.00× the
+  declared-quantum size on B1's six inputs. Section 4, supplement Section 1 (Table G1), ledger.
+- **Against QuestDB (B3, B3.1, B3.2).** Sample data 33% / 87% smaller than QuestDB's Parquet zstd 9 / native
+  columns; QuestDB 1.2–1.6× faster ingest from one connection, MorletDB 1.2–2.0× with parallel writers; faster
+  short and multi-channel reads and interval statistics, long reads tied; the conditions (value grid, whole
+  volume, one dataset) stated. Section 4, a new supplement subsection, studies table, ledger. Includes the
+  SQL 0.3.3 byte I/O and interval-statistics functions.
+- **Agent access (MCP).** The read-only MCP server, its safety model and two demos, as case studies, not
+  evaluations. Section 4 and a new supplement section.
+- **Not included:** E7 (screened exact search in the database), which is not merged yet.
 
 ## What changed in 0.14 (when exact, when probes; no new measurement in the report)
 
