@@ -1,0 +1,46 @@
+# MorletDB agent demo. See README.md.
+#   docker compose up load                  # fetch four days of public seismic data and import them
+#   docker compose run --rm -i -T mcp       # the MCP server on stdio (what Claude Code / Desktop start)
+name: morletdb-agent-demo
+services:
+  db:
+    image: ${MORLET_IMAGE:-ghcr.io/merkhet-io/morletdb:0.3.2-alpha.1}
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: morlet-demo-only
+      POSTGRES_DB: morlet
+    ports:
+      - "127.0.0.1:54331:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+  load:
+    build:
+      context: ../..
+      dockerfile: examples/agent-demo/Dockerfile
+    image: morletdb-agent-demo-tools:local
+    environment:
+      DATABASE_URL: postgresql://morlet:morlet-demo-only@db:5432/morlet
+    volumes:
+      - data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "examples/agent-demo/load.py", "/data"]
+  mcp:
+    image: morletdb-agent-demo-tools:local
+    environment:
+      DATABASE_URL: postgresql://agent_reader:agent-demo-only@db:5432/morlet
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "tools/mcp/morlet_mcp.py"]
+volumes:
+  db:
+  data:

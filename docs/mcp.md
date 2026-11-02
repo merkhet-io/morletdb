@@ -54,7 +54,8 @@ GRANT USAGE ON SCHEMA public TO signals_reader;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO signals_reader;   -- or only the collection's tables
 ```
 
-No data yet? [Import WAV, EDF, miniSEED or CSV files](import.md) first.
+No data yet? The [agent demo](../examples/agent-demo/README.md) sets up a database with four days of public
+seismic recordings and this server in Docker, or [import WAV, EDF, miniSEED or CSV files](import.md).
 
 ## An investigation, end to end
 
