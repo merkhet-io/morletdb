@@ -9,8 +9,9 @@ the stored samples. It wraps pg_morlet's SQL functions and adds no database feat
 - Not published yet: `pip install "./sdk/python[plot]"` from a checkout.
 - Example: [`examples/python/quickstart.py`](../examples/python/quickstart.py), synthetic data, no download.
 - Servers: pg_morlet SQL 0.3.2 (release image `0.3.3-alpha.1`) and later. On SQL 0.3.3 the SDK sends and
-  reads samples as raw float64 bytes and offers `stats`; on 0.3.2 it uses binary `float8[]` arrays instead
-  (same results, more server-side parsing) and `stats` raises `UnsupportedError`.
+  reads samples as raw float64 bytes, offers `stats` and `overview`, and `create_collection` enables per-chunk
+  summaries; on 0.3.2 it uses binary `float8[]` arrays instead
+  (same results, more server-side parsing) and `stats` and `overview` raise `UnsupportedError`.
 
 ## First run
 

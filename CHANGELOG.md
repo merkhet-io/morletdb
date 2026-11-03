@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+Per-chunk summaries (SQL 0.3.3, opt-in; chunks unchanged):
+- `morlet_enable_chunk_summaries(collection)` adds a `summary` column to the chunk table (no table
+  rewrite): count, min, max and compensated sums of each chunk in 66 bytes (`morlet_core::intervalstats`).
+  Appends then store each chunk's summary; `morlet_build_chunk_summaries(collection, recording, max_chunks)`
+  covers chunks stored before. Summaries follow the chunk table's privileges and row-level security.
+- `morlet_interval_stats` decodes only the chunks cut by the interval edges when summaries are enabled, and
+  then accepts intervals of any length (16,777,216 samples otherwise). Results are bitwise the same with and
+  without summaries: every chunk's part is accumulated on its own and merged in order.
+- `morlet_interval_overview(collection, recording, start, end, buckets)`: count, min, max, mean and RMS in up
+  to `buckets` consecutive parts of an interval, for example a waveform overview of an hour of data
+  (evaluation S1: bitwise identical results on 3,000 comparisons; statistics of 60 s at 64 kHz in 1.7
+  instead of 100 ms at p95, one hour of 64 kHz data in 36 ms; ingest 4.5% slower, chunk table 1.3% larger).
+- Python SDK: `create_collection` enables chunk summaries on SQL 0.3.3 servers; new `Client.overview()`.
+
 Screened exact envelope search (SQL 0.3.3; results unchanged, bit for bit):
 - `morlet_search_envelopes`, `morlet_search_envelope_interval` and the exact path of
   `morlet_search_similar` bound every eligible window's distance with a float32 screen and a rigorous error

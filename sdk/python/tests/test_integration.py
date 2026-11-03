@@ -205,6 +205,24 @@ class Contract(unittest.TestCase):
         self.assertEqual((s.min, s.max), (x[10:8000].min(), x[10:8000].max()))
         self.assertAlmostEqual(s.mean, x[10:8000].mean(), delta=1e-12 * max(1, abs(x).max()))
 
+    def test_overview_and_summaries_when_supported(self):
+        x = events(20000, [100, 9000], 8000)
+        self.db.ingest(self.coll, "ov", x, sample_rate_hz=8000, channel="c", unit="u")
+        try:
+            parts = self.db.overview(self.coll, "ov", 0, 20000, buckets=4)
+        except morletdb.UnsupportedError:
+            self.skipTest("server without morlet_interval_overview")
+        has_summaries = self.db._one("SELECT count(summary) FROM " + self.coll + "_chunks")
+        self.assertGreater(has_summaries, 0, "create_collection enables summaries on SQL 0.3.3 servers")
+        self.assertEqual(sum(p.sample_count for p in parts), 20000)
+        self.assertEqual((parts[0].start_sample, parts[-1].end_sample), (0, 20000))
+        self.assertEqual(min(p.min for p in parts), x.min())
+        self.assertEqual(max(p.max for p in parts), x.max())
+        whole = self.db.stats(self.coll, "ov", 0, 20000)
+        one = self.db.overview(self.coll, "ov", 0, 20000, buckets=1)[0]
+        self.assertEqual((one.sample_count, one.min, one.max, one.mean, one.rms),
+                         (whole.sample_count, whole.min, whole.max, whole.mean, whole.rms))
+
 
 if __name__ == "__main__":
     unittest.main()

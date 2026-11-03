@@ -175,3 +175,86 @@ DO $$ BEGIN
     IF SQLERRM<>'candidate budget must be 1..1000000' THEN RAISE; END IF;
   END;
 END $$;
+
+-- Chunk summaries: interval statistics and overviews are bitwise the same with and without them.
+SELECT morlet_create_stream_collection('public','summary_streams');
+CREATE TABLE summary_legacy(recording_id text PRIMARY KEY);
+CREATE TABLE summary_legacy_chunks(recording_id text,start_sample bigint,samples float8[]);
+CREATE TABLE summary_legacy_segments(recording_id text,start_sample bigint,features float8[]);
+SELECT morlet_start_recording('summary_streams','s',4096,'x','g','{}',512,256,'none','morlet-energy-v1',0.001);
+SELECT morlet_append_chunk('summary_streams','s',k*3000,
+  ARRAY(SELECT round(1000*(sin(i/37.)*(1+i/20000.)+0.3*cos(i/3.)+((i*7919)%101)/500.))/1000.
+        FROM generate_series(k*3000,k*3000+2999) i))
+  FROM generate_series(0,19) k ORDER BY k;
+CREATE TEMP TABLE summary_cases(a bigint,b bigint,buckets integer);
+INSERT INTO summary_cases VALUES (0,60000,1),(1,59999,1),(2999,3001,1),(3000,6000,1),(100,57000,1),(0,60000,7),(450,58000,40),(0,60000,1000);
+CREATE TEMP TABLE summary_before AS
+  SELECT c.*,o.* FROM summary_cases c,LATERAL morlet_interval_overview('summary_streams','s',c.a,c.b,c.buckets) o;
+CREATE TEMP TABLE stats_before AS
+  SELECT c.a,c.b,st.* FROM summary_cases c,LATERAL morlet_interval_stats('summary_streams','s',c.a,c.b) st WHERE c.buckets=1;
+DO $$
+DECLARE n bigint;
+BEGIN
+  BEGIN
+    PERFORM morlet_build_chunk_summaries('summary_streams','s');
+    RAISE EXCEPTION 'expected summaries-not-enabled rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE 'chunk summaries are not enabled%' THEN RAISE; END IF;
+  END;
+  BEGIN
+    PERFORM morlet_interval_stats('summary_streams','s',0,16777217);
+    RAISE EXCEPTION 'expected length rejection without summaries';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'statistics interval must contain 1..16777216 samples at nonnegative coordinates' THEN RAISE; END IF;
+  END;
+  PERFORM morlet_enable_chunk_summaries('summary_streams');
+  -- appends after enabling write summaries; chunks stored before are covered by the builder
+  PERFORM morlet_append_chunk('summary_streams','s',60000,
+    ARRAY(SELECT round(1000*sin(i/37.))/1000. FROM generate_series(60000,62999) i));
+  ASSERT (SELECT count(summary) FROM summary_streams_chunks)=1, 'append writes the summary';
+  n:=morlet_build_chunk_summaries('summary_streams','s',5);
+  ASSERT n=5, 'builder respects max_chunks';
+  n:=morlet_build_chunk_summaries('summary_streams','s');
+  ASSERT n=15 AND morlet_build_chunk_summaries('summary_streams','s')=0, 'builder covers the rest, then is idempotent';
+  ASSERT NOT EXISTS(SELECT 1 FROM summary_streams_chunks c WHERE c.summary IS DISTINCT FROM morlet_encoded_chunk_summary(c.encoded)),
+    'appended and built summaries agree';
+  ASSERT (SELECT bool_and((morlet_chunk_summary_values(summary))[1]=3000) FROM summary_streams_chunks), 'summary counts';
+  ASSERT morlet_enable_chunk_summaries('summary_streams')='summary_streams_chunks'::regclass, 'enabling again is a no-op';
+  BEGIN
+    PERFORM morlet_interval_stats('summary_streams','s',0,16777217);
+    RAISE EXCEPTION 'expected recording-length rejection with summaries';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'source interval exceeds recording length' THEN RAISE; END IF;
+  END;
+END $$;
+DO $$
+BEGIN
+  ASSERT NOT EXISTS(
+    (SELECT a,b,buckets,bucket_start,bucket_end,sample_count,float8send(min),float8send(max),float8send(mean),float8send(rms) FROM summary_before)
+    EXCEPT ALL
+    (SELECT c.a,c.b,c.buckets,o.bucket_start,o.bucket_end,o.sample_count,float8send(o.min),float8send(o.max),float8send(o.mean),float8send(o.rms)
+     FROM summary_cases c,LATERAL morlet_interval_overview('summary_streams','s',c.a,c.b,c.buckets) o)), 'overviews bitwise unchanged by summaries';
+  ASSERT NOT EXISTS(
+    (SELECT a,b,sample_count,float8send(min),float8send(max),float8send(mean),float8send(rms) FROM stats_before)
+    EXCEPT ALL
+    (SELECT c.a,c.b,st.sample_count,float8send(st.min),float8send(st.max),float8send(st.mean),float8send(st.rms)
+     FROM summary_cases c,LATERAL morlet_interval_stats('summary_streams','s',c.a,c.b) st WHERE c.buckets=1)), 'statistics bitwise unchanged by summaries';
+  -- overviews partition the interval; one bucket equals the statistics
+  ASSERT (SELECT bool_and(t.total=c.b-c.a) FROM summary_cases c,LATERAL (SELECT sum(o.sample_count) total
+    FROM morlet_interval_overview('summary_streams','s',c.a,c.b,c.buckets) o) t), 'buckets cover the interval';
+  ASSERT (SELECT count(*) FROM morlet_interval_overview('summary_streams','s',0,60000,7))=7, 'seven buckets';
+  ASSERT (SELECT count(*) FROM morlet_interval_overview('summary_streams','s',0,60000,1000))=20, 'at most one bucket per chunk';
+  ASSERT (SELECT abs(st.mean-x.m)<1e-12 AND st.min=x.lo AND st.max=x.hi
+    FROM morlet_interval_stats('summary_streams','s',100,57000) st,
+      (SELECT avg(v) m,min(v) lo,max(v) hi FROM summary_streams_chunks c,
+         LATERAL unnest(morlet_decode_chunk(c.encoded)) WITH ORDINALITY u(v,j)
+       WHERE c.start_sample+j-1>=100 AND c.start_sample+j-1<57000) x), 'statistics against the samples';
+  ASSERT (SELECT bucket_start=0 AND bucket_end=63000 FROM morlet_interval_overview('summary_streams','s',0,63000,1)), 'bucket bounds';
+  -- legacy float8[] collections cannot have summaries
+  BEGIN
+    PERFORM morlet_enable_chunk_summaries('summary_legacy');
+    RAISE EXCEPTION 'expected legacy rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM<>'chunk summaries need a collection with encoded chunks' THEN RAISE; END IF;
+  END;
+END $$;

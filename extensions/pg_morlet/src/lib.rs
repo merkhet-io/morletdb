@@ -359,22 +359,6 @@ fn morlet_float8_from_le_bytes(raw: &[u8]) -> F64Array {
     )
 }
 
-/// {count, min, max, mean, rms} of the samples of [interval_start, interval_end), accumulated while
-/// decoding, chunk by chunk (numerical semantics: `morlet_core::intervalstats`).
-#[pg_extern(immutable, parallel_safe, strict)]
-fn morlet_decode_interval_stats(
-    chunks: pgrx::Array<'_, &[u8]>,
-    starts: Vec<Option<i64>>,
-    interval_start: i64,
-    interval_end: i64,
-) -> Vec<f64> {
-    let mut stats = morlet_core::intervalstats::IntervalStats::default();
-    for_interval_slices(&chunks, &starts, interval_start, interval_end, |s| {
-        stats.add(s)
-    });
-    stats.finish().to_vec()
-}
-
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_encoded_chunk_kind(encoded: &[u8]) -> &'static str {
     morlet_core::rawcodec::kind(encoded)
@@ -670,9 +654,7 @@ fn morlet_float8_le_bytes(values: pgrx::Array<'_, f64>) -> Vec<u8> {
 unsafe fn aggregate_context(fcinfo: pg_sys::FunctionCallInfo) -> pg_sys::MemoryContext {
     let mut ctx = std::ptr::null_mut();
     if unsafe { pg_sys::AggCheckCallContext(fcinfo, &mut ctx) } == 0 || ctx.is_null() {
-        pgrx::error!(
-            "morlet_envelope_screen functions can only be called as part of the aggregate"
-        );
+        pgrx::error!("this function can only be called as part of its aggregate");
     }
     ctx
 }
@@ -906,6 +888,147 @@ fn morlet_envelope_screen_final(mut state: pgrx::Internal) -> JsonB {
             .map(|((ri, start), _, _)| serde_json::json!([agg.rids[ri as usize], start]))
             .collect(),
     ))
+}
+
+/// Per-chunk summary of samples (`morlet_core::intervalstats`, 66 bytes), stored when the chunk is
+/// appended to a collection with summaries enabled.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_chunk_summary(samples: pgrx::Array<'_, f64>) -> Vec<u8> {
+    let mut s = morlet_core::intervalstats::IntervalStats::default();
+    s.add(&sample_slice(&samples));
+    s.to_summary().to_vec()
+}
+
+/// The same summary computed from a stored encoded chunk (for building summaries of existing chunks).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_encoded_chunk_summary(encoded: &[u8]) -> Vec<u8> {
+    let samples = morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e));
+    let mut s = morlet_core::intervalstats::IntervalStats::default();
+    s.add(&samples);
+    s.to_summary().to_vec()
+}
+
+/// `[count, min, max, mean, rms]` of a stored summary.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_chunk_summary_values(summary: &[u8]) -> Vec<f64> {
+    morlet_core::intervalstats::IntervalStats::from_summary(summary)
+        .unwrap_or_else(|| pgrx::error!("invalid chunk summary"))
+        .finish()
+        .to_vec()
+}
+
+/// State of `morlet_interval_stats_agg`: one accumulator per bucket of [lo, hi); each chunk's samples
+/// in the interval are accumulated on their own (or taken from its stored summary when the chunk lies
+/// entirely inside) and merged into the bucket that holds the middle of its part, in start order, so
+/// the result is bitwise the same with or without stored summaries.
+struct StatsAgg {
+    lo: i64,
+    hi: i64,
+    buckets: Vec<(i64, i64, morlet_core::intervalstats::IntervalStats)>,
+    previous: i64,
+}
+
+#[pg_extern(parallel_safe)]
+#[allow(clippy::too_many_arguments)]
+fn morlet_interval_stats_step(
+    state: pgrx::Internal,
+    encoded: Option<&[u8]>,
+    summary: Option<&[u8]>,
+    start_sample: Option<i64>,
+    sample_count: Option<i32>,
+    interval_start: Option<i64>,
+    interval_end: Option<i64>,
+    buckets: Option<i32>,
+    fcinfo: pg_sys::FunctionCallInfo,
+) -> pgrx::Internal {
+    use morlet_core::intervalstats::IntervalStats;
+    let (Some(start), Some(count), Some(lo), Some(hi), Some(nb)) = (
+        start_sample,
+        sample_count,
+        interval_start,
+        interval_end,
+        buckets,
+    ) else {
+        pgrx::error!("chunk start, sample count, interval and bucket count must not be NULL");
+    };
+    if hi <= lo || !(1..=100_000).contains(&nb) || count < 1 {
+        pgrx::error!("the interval must be nonempty, buckets 1..100000 and sample counts positive");
+    }
+    let mut state = state;
+    unsafe {
+        if !state.initialized() {
+            let ctx = aggregate_context(fcinfo);
+            let agg = StatsAgg {
+                lo,
+                hi,
+                buckets: (0..nb)
+                    .map(|_| (i64::MAX, i64::MIN, IntervalStats::default()))
+                    .collect(),
+                previous: i64::MIN,
+            };
+            state = pgrx::Internal::from(Some(pg_sys::Datum::from(
+                pgrx::PgMemoryContexts::For(ctx).leak_and_drop_on_delete(agg),
+            )));
+        }
+        let agg = state.get_mut::<StatsAgg>().unwrap();
+        if agg.lo != lo || agg.hi != hi || agg.buckets.len() != nb as usize {
+            pgrx::error!("the interval and bucket count must be the same for every row");
+        }
+        if start <= agg.previous {
+            pgrx::error!("chunks must be aggregated in strictly ascending start order");
+        }
+        agg.previous = start;
+        let end = start + count as i64;
+        let (a, b) = (lo.max(start), hi.min(end));
+        if a >= b {
+            return state;
+        }
+        let part = match (summary, encoded) {
+            (Some(sm), _) if start >= lo && end <= hi => {
+                let s = IntervalStats::from_summary(sm)
+                    .unwrap_or_else(|| pgrx::error!("invalid chunk summary"));
+                if s.count() != count as u64 {
+                    pgrx::error!("chunk summary does not match the chunk's sample count");
+                }
+                s
+            }
+            (_, Some(enc)) => {
+                let samples =
+                    morlet_core::rawcodec::decode(enc).unwrap_or_else(|e| pgrx::error!("{}", e));
+                if samples.len() != count as usize {
+                    pgrx::error!("encoded chunk does not match its sample count");
+                }
+                let mut s = IntervalStats::default();
+                s.add(&samples[(a - start) as usize..(b - start) as usize]);
+                s
+            }
+            _ => pgrx::error!("a chunk needs its encoded samples unless its summary covers it"),
+        };
+        let mid = a as i128 + (b - a) as i128 / 2;
+        let k = (((mid - lo as i128) * nb as i128) / (hi - lo) as i128).clamp(0, nb as i128 - 1)
+            as usize;
+        let bucket = &mut agg.buckets[k];
+        bucket.0 = bucket.0.min(a);
+        bucket.1 = bucket.1.max(b);
+        bucket.2.merge(&part);
+    }
+    state
+}
+
+/// Non-empty buckets as `[bucket_start, bucket_end, count, min, max, mean, rms]`, concatenated.
+#[pg_extern(parallel_safe)]
+fn morlet_interval_stats_final(mut state: pgrx::Internal) -> Vec<f64> {
+    let Some(agg) = (unsafe { state.get_mut::<StatsAgg>() }) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for (a, b, s) in &agg.buckets {
+        if s.count() > 0 {
+            out.extend_from_slice(&[*a as f64, *b as f64]);
+            out.extend_from_slice(&s.finish());
+        }
+    }
+    out
 }
 
 pgrx::extension_sql_file!("../sql/collections.sql", name = "collections");
@@ -1220,6 +1343,7 @@ mod tests {
             Some(3)
         ); // chunks, segments, envelopes
         Spi::run("SELECT morlet_enable_context('ten')").unwrap(); // created later: covered automatically
+        Spi::run("SELECT morlet_enable_chunk_summaries('ten'); SELECT morlet_build_chunk_summaries('ten',r) FROM unnest(ARRAY['a1','b1']) r").unwrap();
         Spi::run("GRANT SELECT ON ten, ten_chunks, ten_segments, ten_envelopes, ten_ctx, ten_ctx_segments, ten_ctx_values, ten_labels TO morlet_tenant_a").unwrap();
         Spi::run("SET LOCAL ROLE morlet_tenant_a").unwrap();
         for t in [
@@ -1238,6 +1362,11 @@ mod tests {
                 "{t} leaks the hidden recording"
             );
         }
+        // summaries live in the chunk table and follow its policy
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(summary) FROM ten_chunks").unwrap(),
+            Some(1)
+        );
         assert!(
             Spi::get_one::<i64>("SELECT count(*) FROM ten_envelopes WHERE recording_id='a1'")
                 .unwrap()

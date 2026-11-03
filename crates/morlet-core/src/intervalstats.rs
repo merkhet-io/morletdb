@@ -12,6 +12,17 @@
 //!
 //! Results are not bitwise equal to other summation orders (numpy's pairwise sum, for example); for
 //! ordinary signals they agree to a few units in the last place.
+//!
+//! Per-chunk summaries: [`IntervalStats::merge`] combines accumulators of consecutive pieces, and
+//! [`IntervalStats::to_summary`] / [`IntervalStats::from_summary`] store one in 66 bytes. Callers that
+//! accumulate each stored chunk separately and merge the chunks in order get bitwise the same result
+//! whether a chunk's accumulator was computed now from its decoded samples or earlier from the same
+//! samples and stored as a summary.
+
+/// Bytes of a stored summary ([`IntervalStats::to_summary`]).
+pub const SUMMARY_BYTES: usize = 66;
+/// Version byte of a stored summary.
+pub const SUMMARY_VERSION: u8 = 1;
 
 /// Accumulator; feed slices with [`IntervalStats::add`], read with [`IntervalStats::finish`].
 #[derive(Clone, Debug)]
@@ -83,6 +94,78 @@ impl IntervalStats {
         }
     }
 
+    /// Adds the samples summarized by `other` (which follow this accumulator's samples). Sums are
+    /// combined with the same compensated step; squares are rescaled to the larger of the two scales.
+    pub fn merge(&mut self, other: &IntervalStats) {
+        if other.n == 0 {
+            return;
+        }
+        self.n += other.n;
+        self.nan |= other.nan;
+        self.lo = self.lo.min(other.lo);
+        self.hi = self.hi.max(other.hi);
+        neumaier(&mut self.sum, &mut self.sum_c, other.sum);
+        neumaier(&mut self.sum, &mut self.sum_c, other.sum_c);
+        if !other.scale.is_finite() || !self.scale.is_finite() {
+            self.scale = self.scale.max(other.scale);
+            return;
+        }
+        if other.scale > self.scale {
+            let r = self.scale / other.scale;
+            let mine = (self.ssq + self.ssq_c) * r * r;
+            self.ssq = other.ssq;
+            self.ssq_c = other.ssq_c;
+            self.scale = other.scale;
+            neumaier(&mut self.ssq, &mut self.ssq_c, mine);
+        } else if other.scale > 0.0 {
+            let r = other.scale / self.scale;
+            neumaier(&mut self.ssq, &mut self.ssq_c, other.ssq * r * r);
+            neumaier(&mut self.ssq, &mut self.ssq_c, other.ssq_c * r * r);
+        }
+    }
+
+    /// Stored form of the accumulator (version 1, little-endian): `u8 1`, `u64 count`, `u8 nan`, then
+    /// `f64` min, max, sum, sum compensation, scale, scaled sum of squares, its compensation.
+    pub fn to_summary(&self) -> [u8; SUMMARY_BYTES] {
+        let mut out = [0u8; SUMMARY_BYTES];
+        out[0] = SUMMARY_VERSION;
+        out[1..9].copy_from_slice(&self.n.to_le_bytes());
+        out[9] = self.nan as u8;
+        for (k, v) in [
+            self.lo, self.hi, self.sum, self.sum_c, self.scale, self.ssq, self.ssq_c,
+        ]
+        .iter()
+        .enumerate()
+        {
+            out[10 + 8 * k..18 + 8 * k].copy_from_slice(&v.to_le_bytes());
+        }
+        out
+    }
+
+    /// Parses [`IntervalStats::to_summary`]; `None` for another length, version or flag value.
+    pub fn from_summary(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != SUMMARY_BYTES || bytes[0] != SUMMARY_VERSION || bytes[9] > 1 {
+            return None;
+        }
+        let f = |k: usize| f64::from_le_bytes(bytes[10 + 8 * k..18 + 8 * k].try_into().unwrap());
+        Some(IntervalStats {
+            n: u64::from_le_bytes(bytes[1..9].try_into().unwrap()),
+            nan: bytes[9] == 1,
+            lo: f(0),
+            hi: f(1),
+            sum: f(2),
+            sum_c: f(3),
+            scale: f(4),
+            ssq: f(5),
+            ssq_c: f(6),
+        })
+    }
+
+    /// Number of samples accumulated.
+    pub fn count(&self) -> u64 {
+        self.n
+    }
+
     /// `[count, min, max, mean, rms]`.
     pub fn finish(&self) -> [f64; 5] {
         let n = self.n as f64;
@@ -104,7 +187,7 @@ impl IntervalStats {
 
 #[cfg(test)]
 mod tests {
-    use super::IntervalStats;
+    use super::{IntervalStats, SUMMARY_BYTES};
 
     fn stats(x: &[f64]) -> [f64; 5] {
         let mut s = IntervalStats::default();
@@ -208,5 +291,79 @@ mod tests {
         let r = stats(&[]);
         assert_eq!(r[0], 0.0);
         assert!(r[1..].iter().all(|v| v.is_nan()));
+    }
+
+    fn chunked(x: &[f64], size: usize, via_summary: bool) -> [f64; 5] {
+        let mut total = IntervalStats::default();
+        for c in x.chunks(size) {
+            let mut s = IntervalStats::default();
+            s.add(c);
+            let s = if via_summary {
+                IntervalStats::from_summary(&s.to_summary()).unwrap()
+            } else {
+                s
+            };
+            total.merge(&s);
+        }
+        total.finish()
+    }
+
+    #[test]
+    fn merged_chunks_agree_with_one_pass_and_summaries_are_bitwise_neutral() {
+        let mut seed = 7u64;
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        let x: Vec<f64> = (0..100_000)
+            .map(|i| {
+                ((i as f64) * 0.013).sin() * 40.0
+                    + 3.0
+                    + (next() - 0.5) * (1.0 + (i / 9000) as f64 * 50.0)
+            })
+            .collect();
+        let one = stats(&x);
+        for size in [1usize, 7, 4096, 32768] {
+            let a = chunked(&x, size, false);
+            let b = chunked(&x, size, true);
+            assert_eq!(a.map(f64::to_bits), b.map(f64::to_bits), "size {size}");
+            assert_eq!(a[0], one[0]);
+            assert_eq!((a[1], a[2]), (one[1], one[2]));
+            for k in [3, 4] {
+                assert!(
+                    (a[k] - one[k]).abs() <= 4.0 * f64::EPSILON * one[k].abs(),
+                    "size {size} k {k}: {} vs {}",
+                    a[k],
+                    one[k]
+                );
+            }
+        }
+        // a growing scale across chunks, huge and tiny values, zeros, NaN and infinity
+        for x in [
+            vec![1e-300, 0.0, 1e300, -1e300, 2.0],
+            vec![0.0; 10],
+            vec![1.0, f64::NAN, 2.0],
+            vec![1.0, f64::INFINITY, 2.0, -3.0],
+        ] {
+            let a = chunked(&x, 2, true);
+            let one = stats(&x);
+            for k in 0..5 {
+                assert!(
+                    a[k].to_bits() == one[k].to_bits()
+                        || (a[k] - one[k]).abs() <= 4.0 * f64::EPSILON * one[k].abs(),
+                    "{x:?} k {k}: {} vs {}",
+                    a[k],
+                    one[k]
+                );
+            }
+        }
+        let empty = IntervalStats::default();
+        let mut m = IntervalStats::default();
+        m.merge(&empty);
+        assert_eq!(m.finish()[0], 0.0);
+        assert!(IntervalStats::from_summary(&[0u8; SUMMARY_BYTES]).is_none());
+        assert!(IntervalStats::from_summary(&empty.to_summary()[..65]).is_none());
     }
 }

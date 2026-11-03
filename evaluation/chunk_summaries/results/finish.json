@@ -1,0 +1,16 @@
+{
+ "chunk_table_bytes": {
+  "h_plain": 317120512,
+  "h_sum": 321224704
+ },
+ "chunk_table_growth": 0.012942057813024821,
+ "builder_h": {
+  "chunks": 56250,
+  "seconds": 11.217216375051066,
+  "chunks_per_s": 5014.6130839652205,
+  "samples_per_s": 20539855.191921543
+ },
+ "extension": "0.3.3",
+ "library_sha256": "656578ffb606463f473212315c414536344300e3a2bf0d21cbde7cee0a30ad2c",
+ "commit": "d698be0b5809dc4fc6be7e0fcbfb7a876777fde1"
+}

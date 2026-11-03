@@ -43,12 +43,13 @@ with morletdb.Client.connect("postgresql://...") as db:  # commits on a clean ex
 | Call | Does |
 |---|---|
 | `Client.connect(conninfo)` / `Client(connection)` | owned connection (commit on exit) / your connection (you commit) |
-| `create_collection(name, searchable=True)` | create a collection if missing; enable search envelopes |
+| `create_collection(name, searchable=True, summaries=True)` | create a collection if missing; enable search envelopes and, on SQL 0.3.3 servers, per-chunk summaries |
 | `ingest(collection, recording_id, samples, sample_rate_hz=, channel=, unit=, start_time=, metadata=, search_window=4096, search_stride=None)` | store a complete waveform (samples 0..n-1) and build its search windows |
 | `append(collection, recording_id, start_sample, samples)` | continue a recording at the next sample |
 | `read(collection, recording_id, start, end)` / `read_ref(ref)` | original samples of `[start, end)` as float64 |
 | `search(collection, recording_id, start, end=None, metadata_filter=, top_k=10)` | similar stored intervals with their distances |
 | `stats(collection, recording_id, start, end)` | count, min, max, mean, RMS (server SQL 0.3.3) |
+| `overview(collection, recording_id, start, end, buckets=100)` | the same statistics in up to `buckets` consecutive parts, e.g. to draw an hour of data (SQL 0.3.3) |
 | `recording(...)`, `recordings(collection, metadata_filter)`, `samples_for_time(recording, t0_ns, t1_ns)` | recording information and time-to-sample conversion |
 
 The contract (intervals, timing, what the distance means, transactions, limits) is in the

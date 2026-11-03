@@ -1,0 +1,12 @@
+{
+ "h_samples": 230400000,
+ "h_sha256": "4cf3dd3634781223fe2e9b594791aad3126ae5f4f6462d9ce8892dab39185672",
+ "load_h_plain_samples_per_s": 578394.8816029325,
+ "load_h_sum_samples_per_s": 555976.6788093069,
+ "l_dump_sha256": "881debf59ba54a4f0b373a2f6427993060010b6860701682de9f8115abf7e2f9",
+ "builder_l": {
+  "chunks": 117554,
+  "seconds": 19.117641457996797,
+  "chunks_per_s": 6148.98026298259
+ }
+}

@@ -99,3 +99,16 @@ class IntervalStats:
     max: float
     mean: float
     rms: float
+
+
+@dataclass(frozen=True)
+class OverviewBucket:
+    """One part of an interval overview: the half-open sample range it covers and its statistics, computed
+    by the server like IntervalStats."""
+    start_sample: int
+    end_sample: int
+    sample_count: int
+    min: float
+    max: float
+    mean: float
+    rms: float
