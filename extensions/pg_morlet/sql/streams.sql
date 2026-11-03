@@ -7,6 +7,14 @@ CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,i
   SERIALFUNC = public.morlet_envelope_screen_serial, DESERIALFUNC = public.morlet_envelope_screen_deserial,
   FINALFUNC = public.morlet_envelope_screen_final, FINALFUNC_MODIFY = READ_WRITE, PARALLEL = SAFE);
 
+-- Interval statistics over encoded chunks, per bucket of the interval (morlet_core::intervalstats): each
+-- chunk's part is accumulated alone, or taken from its stored summary when the chunk lies inside the
+-- interval, and merged in start order (call with ORDER BY start_sample). Used by morlet_interval_stats
+-- and morlet_interval_overview.
+CREATE AGGREGATE public.morlet_interval_stats_agg(bytea,bytea,bigint,integer,bigint,bigint,integer) (
+  SFUNC = public.morlet_interval_stats_step, STYPE = internal,
+  FINALFUNC = public.morlet_interval_stats_final, FINALFUNC_MODIFY = READ_WRITE);
+
 -- These tables are caller-owned. All functions use invoker privileges.
 CREATE FUNCTION public.morlet_create_stream_collection(schema_name text,collection_name text)
 RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -36,19 +44,21 @@ END $$;
 -- Collections created before encoded storage keep float8[] chunks; the
 -- expressions let every reader handle both layouts with one query text.
 CREATE FUNCTION public.morlet_stream_relations(collection regclass)
-RETURNS TABLE(chunks regclass,segments regclass,encoded boolean,samples_expr text,count_expr text)
+RETURNS TABLE(chunks regclass,segments regclass,encoded boolean,samples_expr text,count_expr text,
+  summarized boolean)
 -- PL/pgSQL so the catalog query plan is cached per session; a SQL function with a
 -- SET clause cannot be inlined and was re-planned on every call (~0.8 ms).
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
   RETURN QUERY SELECT r.chunks,r.segments,e.encoded,
     CASE WHEN e.encoded THEN 'public.morlet_decode_chunk(c.encoded)' ELSE 'c.samples' END,
-    CASE WHEN e.encoded THEN 'c.sample_count' ELSE 'cardinality(c.samples)' END
+    CASE WHEN e.encoded THEN 'c.sample_count' ELSE 'cardinality(c.samples)' END,e.summarized
   FROM (SELECT format('%I.%I',n.nspname,c.relname||'_chunks')::regclass AS chunks,
       format('%I.%I',n.nspname,c.relname||'_segments')::regclass AS segments
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection) r
-  CROSS JOIN LATERAL (SELECT EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=r.chunks
-    AND a.attname='encoded' AND NOT a.attisdropped) AS encoded) e;
+  CROSS JOIN LATERAL (SELECT coalesce(bool_or(a.attname='encoded'),false) AS encoded,
+      coalesce(bool_or(a.attname='summary'),false) AS summarized
+    FROM pg_attribute a WHERE a.attrelid=r.chunks AND a.attname IN ('encoded','summary') AND NOT a.attisdropped) e;
 END $$;
 
 CREATE FUNCTION public.morlet_start_recording(collection regclass,recording_id text,
@@ -96,7 +106,12 @@ BEGIN
     RETURN (state->>'end')::bigint;
   END IF;
   result:=public.morlet_chunk_step(state,start_sample,samples);
-  IF relations.encoded THEN
+  IF relations.summarized THEN
+    -- With chunk summaries enabled, each chunk is stored with its summary.
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded,summary)
+      VALUES ($1,$2,$3,public.morlet_encode_chunk($4,$5),public.morlet_chunk_summary($4))',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),samples,quantum;
+  ELSIF relations.encoded THEN
     EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded) VALUES ($1,$2,$3,public.morlet_encode_chunk($4,$5))',relations.chunks)
       USING recording_id,start_sample,cardinality(samples),samples,quantum;
   ELSE
@@ -349,30 +364,68 @@ CREATE FUNCTION public.morlet_interval_stats(collection regclass,source_recordin
   interval_start bigint,interval_end bigint)
 RETURNS TABLE(sample_count bigint,min float8,max float8,mean float8,rms float8)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE source record; relations record; stats float8[];
+DECLARE stats float8[];
 BEGIN
-  IF interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start>16777216 THEN
-    RAISE EXCEPTION 'statistics interval must contain 1..16777216 samples at nonnegative coordinates';
+  stats:=public.morlet_interval_buckets(collection,source_recording_id,interval_start,interval_end,1,'statistics');
+  RETURN QUERY SELECT stats[3]::bigint,stats[4],stats[5],stats[6],stats[7];
+END $$;
+
+-- Shared body of morlet_interval_stats and morlet_interval_overview: per-bucket statistics as
+-- [bucket_start, bucket_end, count, min, max, mean, rms] per non-empty bucket. With chunk summaries
+-- enabled, chunks inside the interval are not decoded (morlet_enable_chunk_summaries), and the
+-- interval may be of any length; otherwise it is limited to 16,777,216 samples.
+CREATE FUNCTION public.morlet_interval_buckets(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,buckets integer,what text)
+RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; relations record; stats float8[]; covered float8:=0; i integer;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.summarized AND (interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start>16777216) THEN
+    RAISE EXCEPTION '% interval must contain 1..16777216 samples at nonnegative coordinates',what
+      USING HINT='With chunk summaries enabled (morlet_enable_chunk_summaries) the interval may be of any length.';
+  ELSIF interval_start<0 OR interval_end<=interval_start THEN
+    RAISE EXCEPTION '% interval must contain at least one sample at nonnegative coordinates',what;
   END IF;
+  IF buckets NOT BETWEEN 1 AND 100000 THEN RAISE EXCEPTION 'buckets must be 1..100000'; END IF;
   EXECUTE format('SELECT r.checkpoint FROM %s r WHERE r.recording_id=$1',collection)
     INTO source USING source_recording_id;
   IF source.checkpoint IS NULL THEN RAISE EXCEPTION 'source recording does not exist or is not visible'; END IF;
   IF interval_end>(source.checkpoint->>'end')::bigint THEN
     RAISE EXCEPTION 'source interval exceeds recording length';
   END IF;
-  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
   IF NOT relations.encoded THEN
-    RAISE EXCEPTION 'interval statistics need a collection with encoded chunks';
+    RAISE EXCEPTION 'interval % need a collection with encoded chunks',what;
   END IF;
-  EXECUTE format('SELECT public.morlet_decode_interval_stats(coalesce(array_agg(c.encoded ORDER BY c.start_sample),''{}''),
-      coalesce(array_agg(c.start_sample ORDER BY c.start_sample),''{}''),$2,$3)
+  -- A chunk's encoded bytes are read only when it is cut by the interval or has no summary.
+  EXECUTE format('SELECT public.morlet_interval_stats_agg(
+      CASE WHEN %2$s IS NULL OR c.start_sample<$2 OR c.start_sample+c.sample_count>$3 THEN c.encoded END,
+      %2$s,c.start_sample,c.sample_count,$2,$3,$4 ORDER BY c.start_sample)
     FROM %1$s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
-      AND c.start_sample+c.sample_count>$2',relations.chunks)
-    INTO stats USING source_recording_id,interval_start,interval_end;
-  IF stats[1]<>interval_end-interval_start THEN
+      AND c.start_sample+c.sample_count>$2',relations.chunks,
+    CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END)
+    INTO stats USING source_recording_id,interval_start,interval_end,buckets;
+  FOR i IN 0..coalesce(cardinality(stats),0)/7-1 LOOP covered:=covered+stats[7*i+3]; END LOOP;
+  IF covered<>interval_end-interval_start THEN
     RAISE EXCEPTION 'source interval is incomplete or not fully visible';
   END IF;
-  RETURN QUERY SELECT stats[1]::bigint,stats[2],stats[3],stats[4],stats[5];
+  RETURN stats;
+END $$;
+
+-- An overview of an interval of any length: count, min, max, mean and RMS in up to `buckets` consecutive
+-- parts, for example a waveform thumbnail of an hour of data. Each chunk's part falls into one bucket
+-- (the one holding its middle), so bucket edges follow chunk edges. Fast with chunk summaries enabled.
+CREATE FUNCTION public.morlet_interval_overview(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,buckets integer DEFAULT 100)
+RETURNS TABLE(bucket_start bigint,bucket_end bigint,sample_count bigint,min float8,max float8,mean float8,rms float8)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE stats float8[]; i integer;
+BEGIN
+  stats:=public.morlet_interval_buckets(collection,source_recording_id,interval_start,interval_end,buckets,'overview');
+  FOR i IN 0..cardinality(stats)/7-1 LOOP
+    bucket_start:=stats[7*i+1]::bigint; bucket_end:=stats[7*i+2]::bigint; sample_count:=stats[7*i+3]::bigint;
+    min:=stats[7*i+4]; max:=stats[7*i+5]; mean:=stats[7*i+6]; rms:=stats[7*i+7];
+    RETURN NEXT;
+  END LOOP;
 END $$;
 
 -- Stored-interval search uses the shared exact candidate scorer, then
@@ -595,6 +648,43 @@ BEGIN
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
   IF rel IS NULL THEN RAISE EXCEPTION 'envelopes are not enabled for this collection (morlet_enable_envelopes)'; END IF;
   RETURN rel;
+END $$;
+
+-- Per-chunk summaries (opt-in, encoded collections): count, min, max and compensated sums of every
+-- stored chunk, 66 bytes in a `summary` column of the chunk table (morlet_core::intervalstats), so
+-- interval statistics and overviews read summaries instead of decoding chunks inside the interval.
+-- Results are bitwise the same with and without them. Adding the column does not rewrite the table;
+-- appends then store each new chunk's summary, and morlet_build_chunk_summaries covers chunks stored
+-- before. Summaries follow their chunks' privileges and row-level security.
+CREATE FUNCTION public.morlet_enable_chunk_summaries(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk summaries need a collection with encoded chunks'; END IF;
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS summary bytea
+    CHECK(summary IS NULL OR (octet_length(summary)=66 AND get_byte(summary,0)=1))',relations.chunks);
+  RETURN relations.chunks;
+END $$;
+
+-- Writes summaries of up to max_chunks stored chunks of a recording that have none, in start order.
+-- Returns the number written; 0 means the recording is covered.
+CREATE FUNCTION public.morlet_build_chunk_summaries(collection regclass,recording_id text,
+  max_chunks integer DEFAULT 100000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record; written bigint;
+BEGIN
+  IF max_chunks NOT BETWEEN 1 AND 10000000 THEN RAISE EXCEPTION 'max_chunks must be 1..10000000'; END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.summarized THEN
+    RAISE EXCEPTION 'chunk summaries are not enabled for this collection (morlet_enable_chunk_summaries)';
+  END IF;
+  EXECUTE format('UPDATE %1$s c SET summary=public.morlet_encoded_chunk_summary(c.encoded)
+    FROM (SELECT x.start_sample FROM %1$s x WHERE x.recording_id=$1 AND x.summary IS NULL
+          ORDER BY x.start_sample LIMIT $2) t
+    WHERE c.recording_id=$1 AND c.start_sample=t.start_sample',relations.chunks) USING recording_id,max_chunks;
+  GET DIAGNOSTICS written = ROW_COUNT;
+  RETURN written;
 END $$;
 
 -- Builds envelopes for complete windows on the grid start_sample = k*stride,
