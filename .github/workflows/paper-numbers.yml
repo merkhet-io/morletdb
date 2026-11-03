@@ -4,7 +4,7 @@ name: paper-numbers
 # Standard library only; runs no benchmark and needs no database.
 on:
   pull_request:
-    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "README.md", "VERSION", "tools/site_versions.py", ".github/workflows/paper-numbers.yml"]
+    paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "README.md", "VERSION", "tools/site_versions.py", "tools/highlight_site.py", ".github/workflows/paper-numbers.yml"]
   push:
     branches: [main]
     paths: ["research/paper/**", "evaluation/consolidated/**", "docs/morletdb*.pdf", "docs/*.html", "README.md", "VERSION", "tools/site_versions.py"]
@@ -25,6 +25,8 @@ jobs:
         run: |
           python3 evaluation/consolidated/e1_distribution.py evaluation/consolidated/results >/dev/null
           git diff --exit-code -- evaluation/consolidated/results/e1_distribution.json
+      - name: Website code blocks are syntax-highlighted
+        run: python3 tools/highlight_site.py --check
       - name: Website PDFs are byte-identical to the report PDFs
         run: research/paper/sync_site.sh --check
       - name: Release manifest matches the report files
