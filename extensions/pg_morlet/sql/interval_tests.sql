@@ -258,3 +258,68 @@ BEGIN
     IF SQLERRM<>'chunk summaries need a collection with encoded chunks' THEN RAISE; END IF;
   END;
 END $$;
+
+-- Search time filters and inline evidence (SQL 0.3.3).
+SELECT morlet_create_stream_collection('public','timed_streams');
+SELECT morlet_enable_envelopes('timed_streams');
+SELECT morlet_start_recording('timed_streams',r,100,'z','counts',m,512,256,'none','none')
+  FROM (VALUES ('day1','{"start":"2026-03-01T00:00:00Z"}'::jsonb),
+               ('day2','{"start_ns":1772409600000000000}'::jsonb),        -- 2026-03-02T00:00:00Z
+               ('untimed','{}'::jsonb)) v(r,m);
+SELECT morlet_append_chunk('timed_streams',r,k*4096,
+  ARRAY(SELECT round(100*sin(i/9.+o)*exp(-power((i%2048)-700,2)/40000.))::float8 FROM generate_series(k*4096,k*4096+4095) i))
+  FROM (VALUES ('day1',0),('day2',1),('untimed',2)) v(r,o), generate_series(0,4) k ORDER BY r,k;
+SELECT morlet_build_envelopes('timed_streams',r,512,256) FROM unnest(ARRAY['day1','day2','untimed']) r;
+DO $$
+DECLARE n bigint; t0 timestamptz;
+BEGIN
+  ASSERT morlet_recording_start_ns('{"start_ns":5}')=5 AND morlet_recording_start_ns('{"start":"bad"}') IS NULL
+    AND morlet_recording_start_ns('{"start":"1970-01-01T00:00:01Z"}')=1000000000
+    AND morlet_recording_start_ns('{"starttime":"1970-01-01T00:00:02Z"}')=2000000000
+    AND morlet_recording_start_ns('{"start_ns":"x","start":"1970-01-01T00:00:01.5Z"}')=1500000000, 'start times from metadata';
+  -- no filter: all three recordings; a time filter excludes the untimed one
+  ASSERT (SELECT count(DISTINCT recording_id) FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,
+    '{}',100,0.075,true,false))=3, 'unfiltered search sees every recording';
+  ASSERT (SELECT bool_and(recording_id<>'untimed') FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,
+    '{}',100,0.075,true,false,1000000,'2026-01-01','2027-01-01')), 'time filters exclude recordings without a start';
+  -- [day1 00:00:50, day1 00:01:30): windows of 512 samples at 100 Hz whose span lies inside
+  SELECT count(*) INTO n FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,'{}',100,0.075,true,false,
+    1000000,'2026-03-01T00:00:50Z','2026-03-01T00:01:30Z');
+  ASSERT n>0 AND NOT EXISTS(SELECT 1 FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,'{}',100,0.075,true,false,
+    1000000,'2026-03-01T00:00:50Z','2026-03-01T00:01:30Z') s
+    WHERE s.recording_id<>'day1' OR s.start_sample<5000 OR s.end_sample>9000), 'windows inside the time range only';
+  ASSERT n=(SELECT count(*) FROM timed_streams_envelopes WHERE recording_id='day1' AND window_size=512
+    AND start_sample>=5000 AND start_sample+512<=9000), 'every window inside the range is eligible';
+  -- before_only: from day2's interval, only windows that end before it starts (day1, and day2 before 2048)
+  ASSERT NOT EXISTS(SELECT 1 FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,'{}',100,0.075,true,false,
+      before_only=>true) s WHERE s.recording_id='untimed' OR (s.recording_id='day2' AND s.end_sample>2048)), 'before_only';
+  ASSERT EXISTS(SELECT 1 FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,'{}',100,0.075,true,false,
+      before_only=>true) s WHERE s.recording_id='day2'), 'before_only keeps earlier windows of the same recording';
+  BEGIN
+    PERFORM morlet_search_similar('timed_streams','untimed',0,512,before_only=>true);
+    RAISE EXCEPTION 'expected before_only rejection';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM NOT LIKE 'before_only needs the query recording%' THEN RAISE; END IF;
+  END;
+  -- the same filters through morlet_search_similar (exact path here) and the full path
+  ASSERT (SELECT array_agg(s.recording_id||s.start_sample ORDER BY s.distance,s.recording_id,s.start_sample)
+      FROM morlet_search_similar('timed_streams','day2',2048,2560,'{}',10,before_only=>true) s)
+    =(SELECT array_agg(s.recording_id||s.start_sample ORDER BY s.distance,s.recording_id,s.start_sample)
+      FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,'{}',10,before_only=>true) s), 'search_similar passes filters';
+  SET LOCAL morlet.exact_screen = off;
+  ASSERT (SELECT count(*) FROM morlet_search_envelope_interval('timed_streams','day2',2048,2560,'{}',100,0.075,true,false,
+    1000000,'2026-03-01T00:00:50Z','2026-03-01T00:01:30Z'))=n, 'full path applies the same filter';
+  RESET morlet.exact_screen;
+  -- evidence: the same matches with UTC times and statistics of each matched interval
+  ASSERT (SELECT array_agg(e.recording_id||e.start_sample ORDER BY e.rank)
+      FROM morlet_search_similar_evidence('timed_streams','day2',2048,2560,'{}',5) e)
+    =(SELECT array_agg(s.recording_id||s.start_sample) FROM morlet_search_similar('timed_streams','day2',2048,2560,'{}',5) s),
+    'evidence keeps the ranking';
+  ASSERT (SELECT bool_and(e.sample_count=512 AND e.min<=e.max AND jsonb_array_length(e.overview)=4
+      AND (e.recording_id='untimed')=(e.start_utc IS NULL)
+      AND (e.recording_id<>'day1' OR e.start_utc='2026-03-01T00:00:00Z'::timestamptz+e.start_sample*interval '10 ms'))
+    FROM morlet_search_similar_evidence('timed_streams','day2',2048,2560,'{}',5,overview_buckets=>4) e), 'evidence values';
+  ASSERT (SELECT (e.min,e.max,e.rms)=(st.min,st.max,st.rms)
+    FROM morlet_search_similar_evidence('timed_streams','day2',2048,2560,'{}',1) e,
+      LATERAL morlet_interval_stats('timed_streams',e.recording_id,e.start_sample,e.end_sample) st), 'evidence statistics';
+END $$;

@@ -110,6 +110,14 @@ PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_interval_stats_final_wrapper';
 
+CREATE FUNCTION "morlet_samples_overview"(
+	"samples" double precision[], /* pgrx::datum::array::Array<'_, f64> */
+	"buckets" INT /* i32 */
+) RETURNS double precision[] /* alloc::vec::Vec<f64> */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_samples_overview_wrapper';
+
 -- As morlet_append_chunk, with the samples as raw IEEE 754 float64 values, little-endian, 8 bytes each,
 -- instead of a float8[]: a client sends the bytes of an array and the server skips per-element parsing.
 -- The samples go through morlet_append_chunk unchanged: same checks, gaps, retries and conflicts.
@@ -166,17 +174,6 @@ BEGIN
   RETURN QUERY SELECT stats[3]::bigint,stats[4],stats[5],stats[6],stats[7];
 END $$;
 
--- Exact scan of every eligible stored envelope (same rate, channel, unit and
--- window; metadata containment), scored in Rust against the query's
--- full-precision envelope. Lag tolerance is a fraction of the envelope length
--- (0.075 reproduces the evaluated +/-30 envelope samples at 4096-sample windows). Above max_candidates the
--- call fails rather than sampling. Source exclusion uses the optional
--- exclude_* arguments (NULL disables it). Overlapping windows of one recording
--- are suppressed greedily in rank order before top_k.
--- The scan is one statement fetching the best m rows into arrays (not a cursor
--- loop), so PostgreSQL can run it with parallel workers. Suppression then walks
--- those rows; if it uses them up before top_k survive while more candidates
--- remain, the statement is repeated with 4x m. Results equal a full ordered scan.
 -- Raises when more windows are eligible than max_candidates; returns the count otherwise.
 CREATE FUNCTION public.morlet_check_candidates(candidates bigint,max_candidates integer) RETURNS bigint
 LANGUAGE plpgsql STABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
@@ -284,90 +281,111 @@ BEGIN
   RETURN written;
 END $$;
 
-CREATE OR REPLACE FUNCTION public.morlet_envelope_ranked(collection regclass,query_samples float8[],query_rate_hz float8,
-  query_channel text,query_unit text,metadata_filter jsonb,top_k integer,max_lag_fraction float8,
-  suppress_overlaps boolean,max_candidates integer,
-  exclude_recording_id text,exclude_start bigint,exclude_end bigint)
-RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
-LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; m bigint;
-  ids text[]; starts bigint[]; ends bigint[]; dists float8[]; metas jsonb[]; n integer; i integer;
-  picked integer[]; idx integer; blocked boolean; screened boolean;
+-- Exact scan of every eligible stored envelope (same rate, channel, unit and
+-- window; metadata containment), scored in Rust against the query's
+-- full-precision envelope. Lag tolerance is a fraction of the envelope length
+-- (0.075 reproduces the evaluated +/-30 envelope samples at 4096-sample windows). Above max_candidates the
+-- call fails rather than sampling. Source exclusion uses the optional
+-- exclude_* arguments (NULL disables it). Overlapping windows of one recording
+-- are suppressed greedily in rank order before top_k.
+-- The scan is one statement fetching the best m rows into arrays (not a cursor
+-- loop), so PostgreSQL can run it with parallel workers. Suppression then walks
+-- those rows; if it uses them up before top_k survive while more candidates
+-- remain, the statement is repeated with 4x m. Results equal a full ordered scan.
+-- Recording start time in nanoseconds since 1970 from its metadata: `start_ns` (exact, as the Python SDK
+-- writes it), else the first of `start`, `starttime`, `start_time` (ISO 8601, as the importers write it),
+-- as the SDK and the MCP server read it; NULL when none is present and valid.
+CREATE FUNCTION public.morlet_recording_start_ns(metadata jsonb) RETURNS numeric
+-- PL/pgSQL, not SQL: an inlined SQL CASE can have its casts folded at plan time (PostgreSQL 18) before the
+-- validity test runs.
+LANGUAGE plpgsql STABLE PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE v text;
 BEGIN
-  IF top_k IS NULL OR top_k NOT BETWEEN 1 AND 100 OR metadata_filter IS NULL OR jsonb_typeof(metadata_filter)<>'object'
-    OR max_lag_fraction IS NULL OR NOT (max_lag_fraction BETWEEN 0 AND 0.5) OR max_candidates IS NULL OR max_candidates<1
-    OR query_rate_hz IS NULL OR suppress_overlaps IS NULL THEN
-    RAISE EXCEPTION 'invalid top_k, metadata filter, max_lag_fraction (0..0.5) or max_candidates';
+  IF pg_input_is_valid(metadata->>'start_ns','numeric') THEN RETURN (metadata->>'start_ns')::numeric; END IF;
+  v:=coalesce(nullif(metadata->>'start',''),nullif(metadata->>'starttime',''),nullif(metadata->>'start_time',''));
+  IF pg_input_is_valid(v,'timestamptz') THEN RETURN extract(epoch FROM v::timestamptz)*1000000000; END IF;
+  RETURN NULL;
+END $$;
+
+-- Time filters of the search functions as per-recording window-start bounds: windows of `window_size`
+-- samples of an eligible recording whose whole span lies in [from_ns, to_ns) start in [lo, hi]. Recordings
+-- without a start time (morlet_recording_start_ns) have no row, so time filters exclude them.
+CREATE FUNCTION public.morlet_time_bounds(collection regclass,sample_rate_hz float8,channel text,unit text,
+  metadata_filter jsonb,window_size integer,from_ns numeric,to_ns numeric)
+RETURNS TABLE(recording_id text,lo bigint,hi bigint)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  RETURN QUERY EXECUTE format('SELECT x.recording_id,x.lo,x.hi FROM (
+      SELECT r.recording_id,
+        CASE WHEN $5 IS NULL THEN 0 ELSE greatest(0,ceil(($5-r.t)*r.sample_rate_hz::numeric/1000000000)) END::bigint AS lo,
+        CASE WHEN $6 IS NULL THEN 9223372036854775807 ELSE least(9223372036854775807,
+          floor(($6-r.t)*r.sample_rate_hz::numeric/1000000000)-$7) END::bigint AS hi
+      FROM (SELECT c.recording_id,c.sample_rate_hz,public.morlet_recording_start_ns(c.metadata) AS t FROM %s c
+            WHERE c.sample_rate_hz=$1 AND c.channel=$2 AND c.unit=$3 AND c.metadata @> $4) r
+      WHERE r.t IS NOT NULL) x WHERE x.hi>=x.lo',collection)
+    USING sample_rate_hz,channel,unit,metadata_filter,from_ns,to_ns,window_size;
+END $$;
+
+-- Nanoseconds since 1970 of a timestamp (microsecond precision), for the search time filters.
+CREATE FUNCTION public.morlet_time_ns(t timestamptz) RETURNS numeric
+LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+  SELECT extract(epoch FROM t)*1000000000
+$$;
+
+-- Upper time bound for before_only: the start of the query interval in its recording's time.
+CREATE FUNCTION public.morlet_before_ns(metadata jsonb,sample_rate_hz float8,interval_start bigint) RETURNS numeric
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE t numeric:=public.morlet_recording_start_ns(metadata);
+BEGIN
+  IF t IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the query recording''s start time (metadata start_ns or start)';
   END IF;
-  rel:=public.morlet_envelope_relation(collection);
-  width:=cardinality(query_samples);
-  query_envelope:=public.morlet_envelope(query_samples);
-  lag:=floor(max_lag_fraction*cardinality(query_envelope));
-  -- Screened path (default): a parallel aggregate bounds every eligible window's distance in float32 and
-  -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
-  -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
-  -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
-  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path).
-  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off';
-  IF NOT screened THEN
-    EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id
-      WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection)
-      INTO candidates USING width,query_rate_hz,query_channel,query_unit,metadata_filter;
-    PERFORM public.morlet_check_candidates(candidates,max_candidates);
+  RETURN t+interval_start::numeric*1000000000/sample_rate_hz::numeric;
+END $$;
+
+-- Similar intervals with their evidence inline (SQL 0.3.3), so a reader or an agent can judge each match
+-- without further calls: UTC start and end (when the recording has a start time), count, min, max, mean and
+-- RMS of the matched interval, and an overview of `overview_buckets` equal parts as [[start, end, min, max,
+-- rms], ...]. Same arguments and order as morlet_search_similar. The statistics need encoded chunks (NULL
+-- otherwise); they equal morlet_interval_stats of the match.
+CREATE FUNCTION public.morlet_search_similar_evidence(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  max_candidates integer DEFAULT 1000000,time_from timestamptz DEFAULT NULL,time_to timestamptz DEFAULT NULL,
+  before_only boolean DEFAULT false,overview_buckets integer DEFAULT 16)
+RETURNS TABLE(rank integer,recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb,
+  start_utc timestamptz,end_utc timestamptz,sample_count bigint,min float8,max float8,mean float8,rms float8,
+  overview jsonb)
+LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE hit record; k integer:=0; encoded boolean; rate float8; t0 numeric; b float8[]; i integer;
+BEGIN
+  IF overview_buckets IS NULL OR overview_buckets NOT BETWEEN 1 AND 1024 THEN
+    RAISE EXCEPTION 'overview_buckets must be 1..1024';
   END IF;
-  m:=CASE WHEN suppress_overlaps THEN greatest(200,20*top_k) ELSE top_k END;
+  SELECT r.encoded INTO encoded FROM public.morlet_stream_relations(collection) r;
+  FOR hit IN SELECT * FROM public.morlet_search_similar(collection,source_recording_id,interval_start,interval_end,
+      metadata_filter,top_k,max_lag_fraction,exclude_source,suppress_overlaps,max_candidates,time_from,time_to,before_only)
   LOOP
-    IF screened THEN
-      EXECUTE format('WITH c AS (SELECT count(*) AS eligible,public.morlet_envelope_screen(e.envelope,e.recording_id,
-            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer)
-            FILTER (WHERE $8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10) AS j
-          FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id
-          WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5),
-        k AS (SELECT x->>0 AS recording_id,(x->>1)::bigint AS start_sample FROM c,jsonb_array_elements(c.j) x)
-        SELECT (SELECT public.morlet_check_candidates(c.eligible,$12) FROM c),array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
-          array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
-        FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
-          SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
-            public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
-          FROM k JOIN %1$s e ON e.recording_id=k.recording_id AND e.window_size=$1 AND e.start_sample=k.start_sample
-          JOIN %2$s r ON r.recording_id=e.recording_id
-          ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection)
-        INTO candidates,ids,starts,ends,dists,metas
-        USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
-          exclude_recording_id,exclude_start,exclude_end,m,max_candidates;
-    ELSE
-    EXECUTE format('SELECT array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
-        array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
-      FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
-        SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
-          public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
-        FROM %s e JOIN %s r ON r.recording_id=e.recording_id
-        WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5
-          AND ($8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10)
-        ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection)
-      INTO ids,starts,ends,dists,metas
-      USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
-        exclude_recording_id,exclude_start,exclude_end,m;
+    k:=k+1;
+    rank:=k; recording_id:=hit.recording_id; start_sample:=hit.start_sample; end_sample:=hit.end_sample;
+    distance:=hit.distance; metadata:=hit.metadata;
+    EXECUTE format('SELECT sample_rate_hz FROM %s WHERE recording_id=$1',collection) INTO rate USING hit.recording_id;
+    t0:=public.morlet_recording_start_ns(hit.metadata);
+    start_utc:=to_timestamp((t0+hit.start_sample::numeric*1000000000/rate::numeric)/1000000000);
+    end_utc:=to_timestamp((t0+hit.end_sample::numeric*1000000000/rate::numeric)/1000000000);
+    sample_count:=NULL; min:=NULL; max:=NULL; mean:=NULL; rms:=NULL; overview:=NULL;
+    IF encoded THEN
+      b:=public.morlet_interval_buckets(collection,hit.recording_id,hit.start_sample,hit.end_sample,1,'evidence');
+      sample_count:=b[3]::bigint; min:=b[4]; max:=b[5]; mean:=b[6]; rms:=b[7];
     END IF;
-    n:=coalesce(cardinality(ids),0);
-    picked:=ARRAY[]::integer[];
-    FOR i IN 1..n LOOP
-      blocked:=false;
-      IF suppress_overlaps THEN
-        FOREACH idx IN ARRAY picked LOOP
-          IF ids[idx]=ids[i] AND starts[idx]<ends[i] AND ends[idx]>starts[i] THEN
-            blocked:=true; EXIT;
-          END IF;
-        END LOOP;
-      END IF;
-      CONTINUE WHEN blocked;
-      picked:=picked||i;
-      EXIT WHEN cardinality(picked)=top_k;
-    END LOOP;
-    EXIT WHEN cardinality(picked)=top_k OR n<m;
-    m:=m*4;
+    -- The overview splits the matched samples into equal parts (at most 32,768 samples are read).
+    SELECT public.morlet_samples_overview(x.samples,overview_buckets) INTO b
+      FROM public.morlet_read_interval(collection,hit.recording_id,hit.start_sample,hit.end_sample) x;
+    SELECT jsonb_agg(jsonb_build_array(hit.start_sample+b[5*j+1]::bigint,hit.start_sample+b[5*j+2]::bigint,
+        b[5*j+3],b[5*j+4],b[5*j+5]) ORDER BY j)
+      INTO overview FROM generate_series(0,cardinality(b)/5-1) j;
+    RETURN NEXT;
   END LOOP;
-  RETURN QUERY SELECT ids[p],starts[p],ends[p],dists[p],metas[p] FROM unnest(picked) WITH ORDINALITY u(p,k) ORDER BY k;
 END $$;
 
 CREATE OR REPLACE FUNCTION public.morlet_append_chunk(collection regclass,recording_id text,start_sample bigint,samples float8[])
@@ -435,6 +453,293 @@ BEGIN
   CROSS JOIN LATERAL (SELECT coalesce(bool_or(a.attname='encoded'),false) AS encoded,
       coalesce(bool_or(a.attname='summary'),false) AS summarized
     FROM pg_attribute a WHERE a.attrelid=r.chunks AND a.attname IN ('encoded','summary') AND NOT a.attisdropped) e;
+END $$;
+
+DROP FUNCTION public.morlet_envelope_ranked(regclass,float8[],float8,text,text,jsonb,integer,float8,boolean,integer,text,bigint,bigint);
+CREATE FUNCTION public.morlet_envelope_ranked(collection regclass,query_samples float8[],query_rate_hz float8,
+  query_channel text,query_unit text,metadata_filter jsonb,top_k integer,max_lag_fraction float8,
+  suppress_overlaps boolean,max_candidates integer,
+  exclude_recording_id text,exclude_start bigint,exclude_end bigint,time_from_ns numeric,time_to_ns numeric)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; m bigint;
+  ids text[]; starts bigint[]; ends bigint[]; dists float8[]; metas jsonb[]; n integer; i integer;
+  picked integer[]; idx integer; blocked boolean; screened boolean;
+  b_ids text[]; b_lo bigint[]; b_hi bigint[]; tjoin text:='';
+BEGIN
+  IF collection IS NULL OR query_samples IS NULL OR query_channel IS NULL OR query_unit IS NULL THEN
+    RAISE EXCEPTION 'collection, query samples, channel and unit must not be NULL';
+  END IF;
+  IF top_k IS NULL OR top_k NOT BETWEEN 1 AND 100 OR metadata_filter IS NULL OR jsonb_typeof(metadata_filter)<>'object'
+    OR max_lag_fraction IS NULL OR NOT (max_lag_fraction BETWEEN 0 AND 0.5) OR max_candidates IS NULL OR max_candidates<1
+    OR query_rate_hz IS NULL OR suppress_overlaps IS NULL THEN
+    RAISE EXCEPTION 'invalid top_k, metadata filter, max_lag_fraction (0..0.5) or max_candidates';
+  END IF;
+  rel:=public.morlet_envelope_relation(collection);
+  width:=cardinality(query_samples);
+  query_envelope:=public.morlet_envelope(query_samples);
+  lag:=floor(max_lag_fraction*cardinality(query_envelope));
+  -- Time filters become per-recording window-start bounds, joined as a relation (keeps the scan parallel).
+  IF time_from_ns IS NOT NULL OR time_to_ns IS NOT NULL THEN
+    SELECT coalesce(array_agg(b.recording_id),'{}'),coalesce(array_agg(b.lo),'{}'),coalesce(array_agg(b.hi),'{}')
+      INTO b_ids,b_lo,b_hi
+      FROM public.morlet_time_bounds(collection,query_rate_hz,query_channel,query_unit,metadata_filter,width,
+        time_from_ns,time_to_ns) b;
+    tjoin:=' JOIN unnest($%1$s::text[],$%2$s::bigint[],$%3$s::bigint[]) b(rid,lo,hi) ON b.rid=e.recording_id AND e.start_sample BETWEEN b.lo AND b.hi';
+  END IF;
+  -- Screened path (default): a parallel aggregate bounds every eligible window's distance in float32 and
+  -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
+  -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
+  -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
+  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path).
+  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off';
+  IF NOT screened THEN
+    EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id%s
+      WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection,
+      format(tjoin,6,7,8))
+      INTO candidates USING width,query_rate_hz,query_channel,query_unit,metadata_filter,b_ids,b_lo,b_hi;
+    PERFORM public.morlet_check_candidates(candidates,max_candidates);
+  END IF;
+  m:=CASE WHEN suppress_overlaps THEN greatest(200,20*top_k) ELSE top_k END;
+  LOOP
+    IF screened THEN
+      EXECUTE format('WITH c AS (SELECT count(*) AS eligible,public.morlet_envelope_screen(e.envelope,e.recording_id,
+            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer)
+            FILTER (WHERE $8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10) AS j
+          FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id%3$s
+          WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5),
+        k AS (SELECT x->>0 AS recording_id,(x->>1)::bigint AS start_sample FROM c,jsonb_array_elements(c.j) x)
+        SELECT (SELECT public.morlet_check_candidates(c.eligible,$12) FROM c),array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
+          array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
+        FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
+          SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+            public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
+          FROM k JOIN %1$s e ON e.recording_id=k.recording_id AND e.window_size=$1 AND e.start_sample=k.start_sample
+          JOIN %2$s r ON r.recording_id=e.recording_id
+          ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection,format(tjoin,13,14,15))
+        INTO candidates,ids,starts,ends,dists,metas
+        USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
+          exclude_recording_id,exclude_start,exclude_end,m,max_candidates,b_ids,b_lo,b_hi;
+    ELSE
+    EXECUTE format('SELECT array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
+        array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
+      FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
+        SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+          public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
+        FROM %s e JOIN %s r ON r.recording_id=e.recording_id%s
+        WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5
+          AND ($8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10)
+        ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection,format(tjoin,12,13,14))
+      INTO ids,starts,ends,dists,metas
+      USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
+        exclude_recording_id,exclude_start,exclude_end,m,b_ids,b_lo,b_hi;
+    END IF;
+    n:=coalesce(cardinality(ids),0);
+    picked:=ARRAY[]::integer[];
+    FOR i IN 1..n LOOP
+      blocked:=false;
+      IF suppress_overlaps THEN
+        FOREACH idx IN ARRAY picked LOOP
+          IF ids[idx]=ids[i] AND starts[idx]<ends[i] AND ends[idx]>starts[i] THEN
+            blocked:=true; EXIT;
+          END IF;
+        END LOOP;
+      END IF;
+      CONTINUE WHEN blocked;
+      picked:=picked||i;
+      EXIT WHEN cardinality(picked)=top_k;
+    END LOOP;
+    EXIT WHEN cardinality(picked)=top_k OR n<m;
+    m:=m*4;
+  END LOOP;
+  RETURN QUERY SELECT ids[p],starts[p],ends[p],dists[p],metas[p] FROM unnest(picked) WITH ORDINALITY u(p,k) ORDER BY k;
+END $$;
+
+DROP FUNCTION public.morlet_search_envelopes(regclass,float8[],float8,text,text,jsonb,integer,float8,boolean,integer);
+CREATE FUNCTION public.morlet_search_envelopes(collection regclass,query_samples float8[],query_rate_hz float8,
+  query_channel text,query_unit text,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,suppress_overlaps boolean DEFAULT true,max_candidates integer DEFAULT 1000000,
+  time_from timestamptz DEFAULT NULL,time_to timestamptz DEFAULT NULL)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT * FROM public.morlet_envelope_ranked(collection,query_samples,query_rate_hz,query_channel,query_unit,
+    metadata_filter,top_k,max_lag_fraction,suppress_overlaps,max_candidates,NULL,NULL,NULL,
+    public.morlet_time_ns(time_from),public.morlet_time_ns(time_to))
+$$;
+
+DROP FUNCTION public.morlet_search_envelope_interval(regclass,text,bigint,bigint,jsonb,integer,float8,boolean,boolean,integer);
+-- Query by a stored interval. With exclude_source, windows overlapping the
+-- source interval in its own recording are not returned. Time filters (SQL 0.3.3) keep windows whose span
+-- lies in [time_from, time_to); before_only keeps windows that end before the query interval starts. Both
+-- use recording start times from the metadata (morlet_recording_start_ns) and exclude recordings without.
+CREATE FUNCTION public.morlet_search_envelope_interval(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  max_candidates integer DEFAULT 1000000,time_from timestamptz DEFAULT NULL,time_to timestamptz DEFAULT NULL,
+  before_only boolean DEFAULT false)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; to_ns numeric;
+BEGIN
+  IF collection IS NULL OR source_recording_id IS NULL OR interval_start IS NULL OR interval_end IS NULL
+    OR exclude_source IS NULL OR before_only IS NULL THEN
+    RAISE EXCEPTION 'only time_from and time_to may be NULL';
+  END IF;
+  SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
+  to_ns:=public.morlet_time_ns(time_to);
+  IF before_only THEN
+    to_ns:=least(to_ns,public.morlet_before_ns(source.metadata,source.sample_rate_hz,interval_start));
+  END IF;
+  RETURN QUERY SELECT * FROM public.morlet_envelope_ranked(collection,source.samples,source.sample_rate_hz,
+    source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,max_candidates,
+    CASE WHEN exclude_source THEN source_recording_id END,interval_start,interval_end,
+    public.morlet_time_ns(time_from),to_ns);
+END $$;
+
+DROP FUNCTION public.morlet_search_envelope_probes(regclass,text,bigint,bigint,jsonb,integer,float8,boolean,boolean,integer,integer,integer);
+-- Query by a stored interval, like morlet_search_envelope_interval. Routing (evaluation
+-- SS3): when at most exact_threshold windows are eligible, the exact search runs instead.
+-- Otherwise candidates come from shifted probes at lags -L, -L+probe_step, ..., L
+-- (L = floor(max_lag_fraction*n)), per_probe each from the index, each probe scan restricted
+-- to eligible recordings (iterative scan); their union is re-ranked by the exact scorer with
+-- the same eligibility, exclusion, ordering and overlap suppression.
+CREATE FUNCTION public.morlet_search_envelope_probes(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  per_probe integer DEFAULT 50,probe_step integer DEFAULT 5,exact_threshold integer DEFAULT 5000,
+  time_from timestamptz DEFAULT NULL,time_to timestamptz DEFAULT NULL,before_only boolean DEFAULT false)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; env regclass; probes regclass; vschema text; q float8[]; width integer; lag integer;
+  l integer; lags integer[]; ids text[]:=ARRAY[]::text[]; starts bigint[]:=ARRAY[]::bigint[]; got_ids text[];
+  got_starts bigint[]; ef text; its text; eligible text[]; eligible_windows bigint; hit record; picked_ids text[]:=ARRAY[]::text[]; picked_starts bigint[]:=ARRAY[]::bigint[];
+  picked_ends bigint[]:=ARRAY[]::bigint[]; picked integer:=0; idx integer; blocked boolean;
+  from_ns numeric; to_ns numeric; b_lo bigint[]; b_hi bigint[]; bounded boolean;
+BEGIN
+  IF collection IS NULL OR source_recording_id IS NULL OR interval_start IS NULL OR interval_end IS NULL
+    OR metadata_filter IS NULL OR top_k IS NULL OR max_lag_fraction IS NULL OR exclude_source IS NULL
+    OR suppress_overlaps IS NULL OR per_probe IS NULL OR probe_step IS NULL OR exact_threshold IS NULL
+    OR before_only IS NULL THEN
+    RAISE EXCEPTION 'only time_from and time_to may be NULL';
+  END IF;
+  IF top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' OR NOT (max_lag_fraction BETWEEN 0 AND 0.5)
+    OR per_probe NOT BETWEEN 1 AND 1000 OR probe_step<1 OR exact_threshold NOT BETWEEN 0 AND 1000000 THEN
+    RAISE EXCEPTION 'invalid top_k (1..100), metadata filter, max_lag_fraction (0..0.5), per_probe (1..1000), probe_step (>= 1) or exact_threshold (0..1000000)';
+  END IF;
+  SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
+  env:=public.morlet_envelope_relation(collection);
+  width:=cardinality(source.samples);
+  probes:=public.morlet_envelope_probe_relation(collection,width);
+  IF probes IS NULL THEN
+    RAISE EXCEPTION 'probe search is not enabled for window_size % (morlet_enable_envelope_probes)',width;
+  END IF;
+  SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+  from_ns:=public.morlet_time_ns(time_from);
+  to_ns:=public.morlet_time_ns(time_to);
+  IF before_only THEN
+    to_ns:=least(to_ns,public.morlet_before_ns(source.metadata,source.sample_rate_hz,interval_start));
+  END IF;
+  bounded:=from_ns IS NOT NULL OR to_ns IS NOT NULL;
+  IF bounded THEN
+    -- Time filters: eligible recordings with their window-start bounds, applied in the index scans below.
+    SELECT coalesce(array_agg(b.recording_id),'{}'),coalesce(array_agg(b.lo),'{}'),coalesce(array_agg(b.hi),'{}')
+      INTO eligible,b_lo,b_hi
+      FROM public.morlet_time_bounds(collection,source.sample_rate_hz,source.channel,source.unit,metadata_filter,
+        width,from_ns,to_ns) b;
+    EXECUTE format('SELECT count(*) FROM (SELECT 1 FROM %s e JOIN unnest($1::text[],$4::bigint[],$5::bigint[]) b(rid,lo,hi)
+        ON b.rid=e.recording_id AND e.start_sample BETWEEN b.lo AND b.hi WHERE e.window_size=$2 LIMIT $3) x',env)
+      INTO eligible_windows USING eligible,width,exact_threshold::bigint+1,b_lo,b_hi;
+  ELSE
+    EXECUTE format('SELECT array_agg(r.recording_id) FROM %s r WHERE r.sample_rate_hz=$1 AND r.channel=$2 AND r.unit=$3
+      AND r.metadata @> $4',collection) INTO eligible USING source.sample_rate_hz,source.channel,source.unit,metadata_filter;
+    eligible:=coalesce(eligible,ARRAY[]::text[]);
+    -- Counting stops after exact_threshold+1 windows, so routing costs at most that many index entries.
+    EXECUTE format('SELECT count(*) FROM (SELECT 1 FROM %s e WHERE e.recording_id=ANY($1) AND e.window_size=$2 LIMIT $3) x',env)
+      INTO eligible_windows USING eligible,width,exact_threshold::bigint+1;
+  END IF;
+  IF eligible_windows<=exact_threshold THEN
+    -- The count above already bounds the scan. Windows committed concurrently between that count and the
+    -- exact path's own count must not turn into an "exceeds max_candidates" error, so no lower cap here.
+    RETURN QUERY SELECT * FROM public.morlet_envelope_ranked(collection,source.samples,source.sample_rate_hz,
+      source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,2147483647,
+      CASE WHEN exclude_source THEN source_recording_id END,interval_start,interval_end,from_ns,to_ns);
+    RETURN;
+  END IF;
+  q:=public.morlet_envelope(source.samples);
+  lag:=floor(max_lag_fraction*cardinality(q));
+  lags:=ARRAY(SELECT generate_series(-lag,lag,probe_step));
+  IF lags[cardinality(lags)]<>lag THEN lags:=lags||lag; END IF;
+  -- The index returns at most hnsw.ef_search rows per scan. Use max(per_probe, 100), as in
+  -- the evaluated configuration, for this call only.
+  ef:=current_setting('hnsw.ef_search',true);
+  its:=current_setting('hnsw.iterative_scan',true);
+  PERFORM set_config('hnsw.ef_search',greatest(per_probe,100)::text,true);
+  PERFORM set_config('hnsw.iterative_scan','relaxed_order',true);
+  FOREACH l IN ARRAY lags LOOP
+    -- With time filters the bounds are part of the scan's filter, so the iterative scan keeps going
+    -- until it has per_probe windows inside them.
+    EXECUTE format('SELECT array_agg(p.recording_id),array_agg(p.start_sample) FROM (SELECT recording_id,start_sample
+      FROM %s WHERE recording_id=ANY($3)%s ORDER BY v OPERATOR(%I.<#>) $1::%I.halfvec LIMIT $2) p',probes,
+      CASE WHEN bounded THEN ' AND start_sample BETWEEN $4[array_position($3,recording_id)] AND $5[array_position($3,recording_id)]' ELSE '' END,
+      vschema,vschema)
+      INTO got_ids,got_starts USING public.morlet_envelope_probe(q,l),per_probe,eligible,b_lo,b_hi;
+    ids:=ids||coalesce(got_ids,ARRAY[]::text[]);
+    starts:=starts||coalesce(got_starts,ARRAY[]::bigint[]);
+  END LOOP;
+  PERFORM set_config('hnsw.ef_search',coalesce(nullif(ef,''),'40'),true);
+  PERFORM set_config('hnsw.iterative_scan',coalesce(nullif(its,''),'off'),true);
+  FOR hit IN EXECUTE format('SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
+      public.morlet_envelope_distance($1,e.envelope,$2) AS distance,r.metadata
+    FROM (SELECT DISTINCT * FROM unnest($3::text[],$4::bigint[]) c(recording_id,start_sample)) c
+    JOIN %s e ON e.recording_id=c.recording_id AND e.start_sample=c.start_sample AND e.window_size=$5
+    JOIN %s r ON r.recording_id=e.recording_id
+    WHERE r.sample_rate_hz=$6 AND r.channel=$7 AND r.unit=$8 AND r.metadata @> $9
+      AND (NOT $10 OR e.recording_id<>$11 OR e.start_sample+e.window_size<=$12 OR e.start_sample>=$13)
+    ORDER BY distance,e.recording_id,e.start_sample',env,collection)
+    USING q,lag,ids,starts,width,source.sample_rate_hz,source.channel,source.unit,metadata_filter,exclude_source,
+      source_recording_id,interval_start,interval_end
+  LOOP
+    blocked:=false;
+    IF suppress_overlaps AND picked>0 THEN
+      FOR idx IN 1..picked LOOP
+        IF picked_ids[idx]=hit.recording_id AND picked_starts[idx]<hit.end_sample AND picked_ends[idx]>hit.start_sample THEN
+          blocked:=true; EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+    IF blocked THEN CONTINUE; END IF;
+    RETURN QUERY SELECT hit.recording_id,hit.start_sample,hit.end_sample,hit.distance,hit.metadata;
+    picked:=picked+1;
+    picked_ids:=array_append(picked_ids,hit.recording_id);
+    picked_starts:=array_append(picked_starts,hit.start_sample);
+    picked_ends:=array_append(picked_ends,hit.end_sample);
+    EXIT WHEN picked=top_k;
+  END LOOP;
+END $$;
+
+DROP FUNCTION public.morlet_search_similar(regclass,text,bigint,bigint,jsonb,integer,float8,boolean,boolean,integer);
+-- One entry point for interval search: probe search when it is enabled for the window size (it routes
+-- small or selective galleries to exact search itself), otherwise exact search. Same result contract as
+-- both; the existing functions remain for callers who choose the path explicitly.
+CREATE FUNCTION public.morlet_search_similar(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
+  max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
+  max_candidates integer DEFAULT 1000000,time_from timestamptz DEFAULT NULL,time_to timestamptz DEFAULT NULL,
+  before_only boolean DEFAULT false)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
+LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  IF interval_start IS NULL OR interval_end IS NULL THEN RAISE EXCEPTION 'only time_from and time_to may be NULL'; END IF;
+  IF interval_end-interval_start BETWEEN 1 AND 32768
+    AND public.morlet_envelope_probe_relation(collection,(interval_end-interval_start)::integer) IS NOT NULL THEN
+    RETURN QUERY SELECT * FROM public.morlet_search_envelope_probes(collection,source_recording_id,interval_start,
+      interval_end,metadata_filter,top_k,max_lag_fraction,exclude_source,suppress_overlaps,
+      time_from=>time_from,time_to=>time_to,before_only=>before_only);
+  ELSE
+    RETURN QUERY SELECT * FROM public.morlet_search_envelope_interval(collection,source_recording_id,interval_start,
+      interval_end,metadata_filter,top_k,max_lag_fraction,exclude_source,suppress_overlaps,max_candidates,
+      time_from,time_to,before_only);
+  END IF;
 END $$;
 
 -- Exact envelope search screening (morlet_core::envelope_screen): a parallel aggregate that bounds each
