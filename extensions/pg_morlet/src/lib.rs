@@ -1031,6 +1031,29 @@ fn morlet_interval_stats_final(mut state: pgrx::Internal) -> Vec<f64> {
     out
 }
 
+/// `[start, end, min, max, rms]` (offsets into `samples`) for `buckets` consecutive parts of equal size
+/// (edges at floor(k * n / buckets)), each with `morlet_core::intervalstats` semantics; empty parts are
+/// skipped. Used for the overview of a search match.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_samples_overview(samples: pgrx::Array<'_, f64>, buckets: i32) -> Vec<f64> {
+    let x = sample_slice(&samples);
+    if buckets < 1 {
+        pgrx::error!("buckets must be positive");
+    }
+    let (n, nb) = (x.len(), buckets as usize);
+    let mut out = Vec::with_capacity(5 * nb);
+    for k in 0..nb {
+        let (a, b) = (k * n / nb, (k + 1) * n / nb);
+        if a < b {
+            let mut s = morlet_core::intervalstats::IntervalStats::default();
+            s.add(&x[a..b]);
+            let f = s.finish();
+            out.extend_from_slice(&[a as f64, b as f64, f[1], f[2], f[4]]);
+        }
+    }
+    out
+}
+
 pgrx::extension_sql_file!("../sql/collections.sql", name = "collections");
 pgrx::extension_sql_file!("../sql/streams.sql", name = "streams", finalize);
 
@@ -1381,6 +1404,34 @@ mod tests {
         tenant_fixture();
         Spi::run("SELECT morlet_enable_row_security('ten'); GRANT SELECT, INSERT ON ten, ten_envelopes TO morlet_tenant_a; SET LOCAL ROLE morlet_tenant_a").unwrap();
         Spi::run("INSERT INTO ten_envelopes SELECT 'b1',2048,99999,envelope FROM ten_envelopes WHERE recording_id='a1' LIMIT 1").unwrap();
+    }
+
+    #[pg_test]
+    fn probe_search_applies_time_filters_in_the_index_scan() {
+        serialize_shared_ddl();
+        if !pgvector_available() {
+            return; // pgvector is optional; CI's pgvector job runs this
+        }
+        Spi::run(r#"
+            CREATE EXTENSION IF NOT EXISTS vector;
+            SELECT morlet_create_stream_collection('public','tprobe');
+            SELECT morlet_enable_envelopes('tprobe');
+            SELECT morlet_start_recording('tprobe',r,100,'z','counts',jsonb_build_object('start',t),512,256,'none','none')
+              FROM (VALUES ('d1','2026-03-01T00:00:00Z'),('d2','2026-03-02T00:00:00Z')) v(r,t);
+            SELECT morlet_append_chunk('tprobe',r,k*4096,ARRAY(SELECT round(100*sin(i/9.0+o))::float8
+              FROM generate_series(k*4096,k*4096+4095) i)) FROM (VALUES ('d1',0),('d2',1)) v(r,o), generate_series(0,3) k
+              ORDER BY r,k;
+            SELECT morlet_build_envelopes('tprobe',r,512,256) FROM unnest(ARRAY['d1','d2']) r;
+            SELECT morlet_enable_envelope_probes('tprobe',512);
+        "#).unwrap();
+        // exact_threshold 0 forces the index path
+        assert_eq!(Spi::get_one::<bool>("SELECT bool_and(recording_id='d1' OR end_sample<=2048) FROM
+            morlet_search_envelope_probes('tprobe','d2',2048,2560,'{}',10,0.075,true,false,50,5,0,before_only=>true)").unwrap(), Some(true));
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_envelope_probes('tprobe','d2',2048,2560,'{}',10,
+            0.075,true,false,50,5,0,before_only=>true)").unwrap(), Some(10));
+        assert_eq!(Spi::get_one::<bool>("SELECT bool_and(recording_id='d1' AND start_sample>=5000 AND end_sample<=9000) FROM
+            morlet_search_envelope_probes('tprobe','d2',2048,2560,'{}',10,0.075,true,false,50,5,0,
+            '2026-03-01T00:00:50Z','2026-03-01T00:01:30Z')").unwrap(), Some(true));
     }
 
     #[pg_test]

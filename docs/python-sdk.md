@@ -55,6 +55,13 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
 `search(collection, recording_id, start, end=None, ...)` calls `morlet_search_similar` with the stored
 interval `[start, end)` as the query.
 
+- **Time filters (SQL 0.3.3).** `time_from` and `time_to` (timezone-aware datetimes or integer UTC
+  nanoseconds) keep matches whose whole window lies in the range; `before_only=True` keeps matches that end
+  before the query interval starts, i.e. only history. They use the recordings' start times (`ingest`'s
+  `start_time`) and leave out recordings without one.
+- **Evidence (SQL 0.3.3).** `evidence=True` fills `match.evidence`: UTC start and end, the statistics of the
+  matched interval (as `stats`) and an overview in `evidence_parts` equal parts (min, max, RMS each).
+
 - **Windows.** Search compares fixed-length windows of stored *envelopes*, a compact derived representation
   built per recording (`ingest` builds them when the collection is searchable; `build_search_index` builds
   them later). The query must have the window length (default 4,096 samples; `end` defaults to

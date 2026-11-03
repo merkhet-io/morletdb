@@ -74,6 +74,7 @@ class Match:
     ref: IntervalRef
     distance: float
     metadata: dict[str, Any] = field(repr=False)
+    evidence: "Evidence | None" = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -112,3 +113,24 @@ class OverviewBucket:
     max: float
     mean: float
     rms: float
+
+
+@dataclass(frozen=True)
+class EvidencePart:
+    """One of the equal parts of a matched interval: sample range, min, max and RMS."""
+    start_sample: int
+    end_sample: int
+    min: float
+    max: float
+    rms: float
+
+
+@dataclass(frozen=True)
+class Evidence:
+    """What the server reports about a match with `search(..., evidence=True)` (SQL 0.3.3): UTC start and end
+    when the recording has a start time, statistics of the matched interval (as `Client.stats`) and an
+    overview in equal parts, so a match can be judged without reading its samples."""
+    start_utc: datetime | None
+    end_utc: datetime | None
+    stats: IntervalStats | None
+    overview: list[EvidencePart]

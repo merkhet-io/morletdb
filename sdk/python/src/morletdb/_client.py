@@ -1,7 +1,7 @@
 """Synchronous client for pg_morlet's recording API (SQL 0.3.2 and later)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping
 
 import numpy as np
@@ -11,7 +11,7 @@ from psycopg.types.json import Jsonb
 
 from . import _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import Interval, IntervalRef, IntervalStats, Match, OverviewBucket, Recording, SearchResult
+from ._types import Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Match, OverviewBucket, Recording, SearchResult
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
 READ_PIECE = 32768           # morlet_read_interval's per-call limit (servers without the raw read)
@@ -290,32 +290,63 @@ class Client:
     def search(self, collection: str, recording_id: str, start_sample: int, end_sample: int | None = None, *,
                metadata_filter: Mapping[str, Any] | None = None, top_k: int = 10,
                max_lag_fraction: float = 0.075, exclude_source: bool = True, suppress_overlaps: bool = True,
-               max_candidates: int = 1_000_000) -> SearchResult:
+               max_candidates: int = 1_000_000, time_from: datetime | int | None = None,
+               time_to: datetime | int | None = None, before_only: bool = False,
+               evidence: bool = False, evidence_parts: int = 16) -> SearchResult:
         """Stored intervals most similar to [start_sample, end_sample) of a recording (`morlet_search_similar`).
 
         The interval must have the length of a built search window (default 4096 samples). Candidates are
         stored windows whose recording has the same sample rate, channel and unit and whose metadata
         contains `metadata_filter`; time shifts up to `max_lag_fraction` of the window are tolerated.
         Results are references into stored recordings: read them with `read_ref(match.ref)`.
+
+        Time filters (SQL 0.3.3) keep windows whose whole span lies in [time_from, time_to) (timezone-aware
+        datetimes or integer UTC nanoseconds; microsecond precision); `before_only` keeps windows that end
+        before the query interval starts ("have we seen this before?"). They use recording start times and
+        exclude recordings without one. `evidence=True` adds each match's UTC times, statistics and an
+        overview in `evidence_parts` equal parts (`Match.evidence`).
         """
         end = start_sample + SEARCH_WINDOW if end_sample is None else end_sample
         query = IntervalRef(collection, recording_id, int(start_sample), int(end))
         if not 0 <= query.start_sample < query.end_sample:
             raise InvalidInputError("an interval needs 0 <= start_sample < end_sample (end is exclusive)")
+        filtered = time_from is not None or time_to is not None or before_only
+        if filtered and not self._has("public.morlet_recording_start_ns(jsonb)"):
+            raise UnsupportedError("time filters and before_only need pg_morlet SQL 0.3.3 or later")
+        if evidence and not self._has("public.morlet_search_similar_evidence(regclass,text,bigint,bigint,jsonb,"
+                                      "integer,double precision,boolean,boolean,integer,timestamp with time zone,"
+                                      "timestamp with time zone,boolean,integer)"):
+            raise UnsupportedError("search evidence needs pg_morlet SQL 0.3.3 or later")
+        if evidence and not 1 <= int(evidence_parts) <= 1024:
+            raise InvalidInputError("evidence_parts must be 1..1024")
         probes = bool(query.length <= 32768
                       and self._has("public.morlet_envelope_probe_relation(regclass,integer)")
                       and self._one("SELECT public.morlet_envelope_probe_relation(%s::regclass,%s) IS NOT NULL",
                                     (collection, query.length)))
-        rows = self._execute(
-            "SELECT recording_id, start_sample, end_sample, distance, metadata FROM morlet_search_similar("
-            "%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-            (collection, recording_id, query.start_sample, query.end_sample, Jsonb(dict(metadata_filter or {})),
-             int(top_k), float(max_lag_fraction), bool(exclude_source), bool(suppress_overlaps),
-             int(max_candidates))).fetchall()
-        matches = [Match(i + 1, IntervalRef(collection, r[0], int(r[1]), int(r[2])), float(r[3]), r[4])
-                   for i, r in enumerate(rows)]
+        args = (collection, recording_id, query.start_sample, query.end_sample, Jsonb(dict(metadata_filter or {})),
+                int(top_k), float(max_lag_fraction), bool(exclude_source), bool(suppress_overlaps), int(max_candidates))
+        extra = ""
+        if filtered or evidence:
+            extra = ",%s,%s,%s"
+            args += (_timestamp(time_from), _timestamp(time_to), bool(before_only))
+        if evidence:
+            rows = self._execute(
+                "SELECT recording_id, start_sample, end_sample, distance, metadata, start_utc, end_utc, sample_count,"
+                " min, max, mean, rms, overview FROM morlet_search_similar_evidence("
+                "%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s,%s" + extra + ",%s)", args + (int(evidence_parts),)).fetchall()
+        else:
+            rows = self._execute(
+                "SELECT recording_id, start_sample, end_sample, distance, metadata FROM morlet_search_similar("
+                "%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s,%s" + extra + ")", args).fetchall()
+        matches = []
+        for i, r in enumerate(rows):
+            ev = None
+            if evidence:
+                st = None if r[7] is None else IntervalStats(int(r[7]), *map(float, r[8:12]))
+                ev = Evidence(r[5], r[6], st, [EvidencePart(int(a), int(b), float(lo), float(hi), float(q))
+                                               for a, b, lo, hi, q in (r[12] or [])])
+            matches.append(Match(i + 1, IntervalRef(collection, r[0], int(r[1]), int(r[2])), float(r[3]), r[4], ev))
         return SearchResult(query, matches, "probes" if probes else "exact", float(max_lag_fraction))
-
 
 def _identifier(collection: str) -> sql.Identifier:
     schema, table = collection.split(".", 1) if "." in collection else ("public", collection)
@@ -325,6 +356,19 @@ def _identifier(collection: str) -> sql.Identifier:
 def _envelopes(collection: str) -> str:
     schema, table = collection.split(".", 1) if "." in collection else ("public", collection)
     return f"{schema}.{table}_envelopes"
+
+
+def _timestamp(t: datetime | int | None) -> datetime | None:
+    """A search time bound as an aware datetime (integer nanoseconds are truncated to microseconds)."""
+    if t is None:
+        return None
+    if isinstance(t, datetime):
+        if t.tzinfo is None:
+            raise InvalidInputError("time bounds must be timezone-aware datetimes or integer UTC nanoseconds")
+        return t
+    if isinstance(t, int) and not isinstance(t, bool):
+        return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=t // 1000)
+    raise InvalidInputError("time bounds must be timezone-aware datetimes or integer UTC nanoseconds")
 
 
 def _meta_start_ns(meta: Mapping[str, Any] | None) -> int | None:

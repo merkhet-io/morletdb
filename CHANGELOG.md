@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+Search time filters and evidence (SQL 0.3.3):
+- `morlet_search_similar`, `morlet_search_envelope_interval` and `morlet_search_envelope_probes` take
+  `time_from`, `time_to` (windows whose span lies in the range) and `before_only` (windows that end before the
+  query interval starts: "has this happened before?"); `morlet_search_envelopes` takes the time range. They
+  use recording start times from the metadata (`start_ns`, else `start`, `starttime`, `start_time`;
+  `morlet_recording_start_ns`) and leave out recordings without one. Exact search joins per-recording
+  sample bounds, so the screened parallel scan is kept; probe search applies them inside the index scan,
+  so it still returns full results.
+- `morlet_search_similar_evidence(...)`: the same matches with their evidence inline: UTC start and end,
+  count, min, max, mean and RMS of the matched interval, and an overview in equal parts.
+- Python SDK: `search(..., time_from=, time_to=, before_only=, evidence=)` with `Match.evidence`. MCP:
+  `search_similar` and `search_from_time` take `before_only` (and time ranges) and return each hit's rms,
+  min, max and an 8-part sketch; the server reads `start_ns` as the SDK writes it.
+
 Per-chunk summaries (SQL 0.3.3, opt-in; chunks unchanged):
 - `morlet_enable_chunk_summaries(collection)` adds a `summary` column to the chunk table (no table
   rewrite): count, min, max and compensated sums of each chunk in 66 bytes (`morlet_core::intervalstats`).

@@ -47,7 +47,7 @@ with morletdb.Client.connect("postgresql://...") as db:  # commits on a clean ex
 | `ingest(collection, recording_id, samples, sample_rate_hz=, channel=, unit=, start_time=, metadata=, search_window=4096, search_stride=None)` | store a complete waveform (samples 0..n-1) and build its search windows |
 | `append(collection, recording_id, start_sample, samples)` | continue a recording at the next sample |
 | `read(collection, recording_id, start, end)` / `read_ref(ref)` | original samples of `[start, end)` as float64 |
-| `search(collection, recording_id, start, end=None, metadata_filter=, top_k=10)` | similar stored intervals with their distances |
+| `search(collection, recording_id, start, end=None, metadata_filter=, top_k=10, time_from=, time_to=, before_only=, evidence=)` | similar stored intervals with their distances; time filters and inline evidence on SQL 0.3.3 |
 | `stats(collection, recording_id, start, end)` | count, min, max, mean, RMS (server SQL 0.3.3) |
 | `overview(collection, recording_id, start, end, buckets=100)` | the same statistics in up to `buckets` consecutive parts, e.g. to draw an hour of data (SQL 0.3.3) |
 | `recording(...)`, `recordings(collection, metadata_filter)`, `samples_for_time(recording, t0_ns, t1_ns)` | recording information and time-to-sample conversion |
