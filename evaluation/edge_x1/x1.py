@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import secrets
+import shutil
 import subprocess
 import sys
 import threading
@@ -46,6 +47,12 @@ CONFIGS = {
              "settings": {"shared_buffers": "64MB", "max_connections": "20", "maintenance_work_mem": "32MB"}},
 }
 SEARCHES, READ_REPS = 20, 20
+# X2 (evaluation/edge_x2): X1_ARM=raw stores samples only (no features, summaries, envelopes or search);
+# X1_STUDY names the result files and directory; vcgencmd, when present, adds the device's temperature,
+# ARM clock and throttle flags to every phase.
+ARM = os.environ.get("X1_ARM", "searchable")
+STUDY = os.environ.get("X1_STUDY", "x1")
+VCGENCMD = shutil.which("vcgencmd")
 
 
 def sh(args, check=True):
@@ -102,7 +109,7 @@ class Memory:
     """docker stats every second while a phase runs: memory (MiB) and CPU percent."""
 
     def __init__(self):
-        self.samples, self._stop = [], threading.Event()
+        self.samples, self.device, self._stop = [], [], threading.Event()
         self.t = threading.Thread(target=self._run, daemon=True)
 
     def _run(self):
@@ -114,6 +121,8 @@ class Memory:
                 used = mem.split("/")[0].strip()
                 scale = {"KiB": 1 / 1024, "MiB": 1, "GiB": 1024}.get(used[-3:], 1)
                 self.samples.append((float(cpu.rstrip("%")), float(used[:-3]) * scale))
+            if VCGENCMD:
+                self.device.append(device_state())
             self._stop.wait(1.0)
 
     def __enter__(self):
@@ -127,12 +136,40 @@ class Memory:
     def summary(self):
         if not self.samples:
             return {}
-        return {"memory_peak_mib": round(max(m for _, m in self.samples), 1),
+        dev = {}
+        if self.device:
+            dev = {"device": {"temp_c_max": max(d["temp_c"] for d in self.device),
+                              "arm_mhz_min": min(d["arm_mhz"] for d in self.device),
+                              "arm_mhz_median": float(np.median([d["arm_mhz"] for d in self.device])),
+                              "throttled_or": hex(int(np.bitwise_or.reduce([d["throttled"] for d in self.device]))),
+                              "samples": len(self.device)}}
+        return {**dev, "memory_peak_mib": round(max(m for _, m in self.samples), 1),
                 "memory_median_mib": round(float(np.median([m for _, m in self.samples])), 1),
                 "cpu_percent_mean": round(float(np.mean([c for c, _ in self.samples])), 1)}
 
 
+def device_state():
+    """Raspberry Pi firmware readings: SoC temperature, ARM clock, throttle flags (bits per vcgencmd docs)."""
+    t = sh([VCGENCMD, "measure_temp"]).split("=")[1].rstrip("'C")
+    f = sh([VCGENCMD, "measure_clock", "arm"]).split("=")[1]
+    th = sh([VCGENCMD, "get_throttled"]).split("=")[1]
+    return {"temp_c": float(t), "arm_mhz": round(int(f) / 1e6), "throttled": int(th, 16)}
+
+
+def host_info():
+    """Machine, OS, Docker and client library versions (recorded with every result)."""
+    import platform
+    import pyarrow
+    model = Path("/proc/device-tree/model")
+    return {"machine": platform.machine(), "system": platform.platform(), "python": platform.python_version(),
+            "model": model.read_text().strip("\x00") if model.exists() else None,
+            "docker": sh(["docker", "version", "--format", "{{.Server.Version}}"], check=False),
+            "numpy": np.__version__, "psycopg": psycopg.__version__, "pyarrow": pyarrow.__version__}
+
+
 def extractor(rate):
+    if ARM == "raw":
+        return "none"
     return "morlet-energy-v1" if rate >= 128 else ("morlet-energy-lowrate-v1" if rate >= 1 else "none")
 
 
@@ -212,6 +249,8 @@ def queries(conn, m):
                                           (COLLECTION, rid(acq[k], "vibration_1"), n), prepare=True).fetchone(),
                      READ_REPS)
     out["overview_whole_channel"] = common.pcts(lat)
+    if ARM == "raw":
+        return out
     rng, lists, lat = np.random.default_rng(20261103), [], []
     for _ in range(SEARCHES):
         a = m["acquisitions"][int(rng.integers(0, len(m["acquisitions"])))]
@@ -236,27 +275,30 @@ def main(cfg, image, rep):
            "image_size_mib": round(int(sh(["docker", "image", "inspect", image, "--format", "{{.Size}}"])) / 2**20, 1),
            "architecture": sh(["docker", "image", "inspect", image, "--format", "{{.Architecture}}"]),
            "samples": sum(c["samples"] for a in m["acquisitions"] for c in a["channels"].values()),
-           "started": time.strftime("%Y-%m-%dT%H:%M:%S"), "phases": {}, "errors": []}
+           "started": time.strftime("%Y-%m-%dT%H:%M:%S"), "phases": {}, "errors": [], "study": STUDY, "arm": ARM,
+           "host": host_info()}
     conn = start(cfg, image, volume)
     res["server"] = {k: conn.execute(f"SHOW {k}").fetchone()[0]
                      for k in ("server_version", "shared_buffers", "max_connections", "synchronous_commit")}
     try:
         conn.execute("CREATE EXTENSION pg_morlet")
         conn.execute("SELECT morlet_create_stream_collection('public', %s)", (COLLECTION,))
-        conn.execute("SELECT morlet_enable_chunk_summaries(%s::regclass)", (COLLECTION,))
-        conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (COLLECTION,))
+        if ARM != "raw":
+            conn.execute("SELECT morlet_enable_chunk_summaries(%s::regclass)", (COLLECTION,))
+            conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (COLLECTION,))
         res["phases"]["idle"] = container_state()
         with Memory() as mem:
             wall, acks = ingest(m)
         res["phases"]["ingest"] = {"wall_s": round(wall, 2), "samples_per_s": round(res["samples"] / wall),
                                    "ack_per_acquisition": common.pcts(acks), **mem.summary(), **container_state()}
-        with Memory() as mem:
-            t = time.perf_counter()
-            bconn = psycopg.connect(DSN)
-            built = build(bconn, COLLECTION, [rid(a, c) for a in m["acquisitions"] for c in wl.UNITS], 4096, False)
-            bconn.close()
-        res["phases"]["envelopes"] = {"wall_s": round(time.perf_counter() - t, 2), "windows": sum(built.values()),
-                                      **mem.summary(), **container_state()}
+        if ARM != "raw":
+            with Memory() as mem:
+                t = time.perf_counter()
+                bconn = psycopg.connect(DSN)
+                built = build(bconn, COLLECTION, [rid(a, c) for a in m["acquisitions"] for c in wl.UNITS], 4096, False)
+                bconn.close()
+            res["phases"]["envelopes"] = {"wall_s": round(time.perf_counter() - t, 2), "windows": sum(built.values()),
+                                          **mem.summary(), **container_state()}
         with Memory() as mem:
             bad = check_all(conn, m)
         res["phases"]["read_back"] = {"channels": sum(len(a["channels"]) for a in m["acquisitions"]),
@@ -274,7 +316,9 @@ def main(cfg, image, rep):
     sh(["docker", "rm", "-f", NAME], check=False)
     sh(["docker", "volume", "rm", volume], check=False)
     res["set"] = os.environ.get("B3_SET", "benchmark")
-    out = HERE / "results" / ("dev" if res["set"] == "dev" else "") / f"x1_{cfg}_r{rep}.json"
+    base = HERE if STUDY == "x1" else HERE.parent / f"edge_{STUDY}"
+    name = f"{STUDY}_{cfg}_r{rep}.json" if ARM == "searchable" else f"{STUDY}_{ARM}_{cfg}_r{rep}.json"
+    out = base / "results" / ("dev" if res["set"] == "dev" else "") / name
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({k: res[k] for k in ("config", "passed", "errors")}, indent=None), flush=True)
