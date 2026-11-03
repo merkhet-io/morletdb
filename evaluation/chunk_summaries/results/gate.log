@@ -1,0 +1,5 @@
+H identity 1500 differ 0
+L identity 1500 differ 0
+beyond limit fails 0 {'mean': 6.374155590707898e-15, 'rms': 3.0084931491262816e-15}
+consistency {'h_sum': (56250, 0), 'ls': (117554, 0)}
+passed True

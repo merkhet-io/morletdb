@@ -121,4 +121,10 @@ replaced by the column before freezing.
 
 ## Deviations
 
-None yet.
+1. **The load condition was applied to the timed steps only.** `run_all.sh` waited for the 5-minute load to
+   fall below 5 before `time` and `ingest`, as the decision rules need. It did not wait before `load`,
+   `gate` and `finish`.
+   - `gate` is not timed.
+   - `load` and `finish` record the builder's speed and the loading speed of the full archives. These are
+     reported as descriptive and enter no decision rule.
+   - The 5-minute load was 4.0–5.0 during `time` and between 4.5 and 5.3 around the run.

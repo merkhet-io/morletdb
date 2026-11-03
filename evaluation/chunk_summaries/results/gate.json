@@ -1,0 +1,31 @@
+{
+ "identity_H": {
+  "comparisons": 1500,
+  "differ": 0,
+  "examples": []
+ },
+ "identity_L": {
+  "comparisons": 1500,
+  "differ": 0,
+  "examples": []
+ },
+ "beyond_limit_H": {
+  "intervals": 20,
+  "fails": [],
+  "max_rel_diff": {
+   "mean": 6.374155590707898e-15,
+   "rms": 3.0084931491262816e-15
+  }
+ },
+ "summaries_consistent": {
+  "h_sum": [
+   56250,
+   0
+  ],
+  "ls": [
+   117554,
+   0
+  ]
+ },
+ "passed": true
+}

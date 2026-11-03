@@ -1,0 +1,11 @@
+0 ing_plain 2.201 M samples/s
+0 ing_sum 2.101 M samples/s
+1 ing_plain 2.157 M samples/s
+1 ing_sum 2.101 M samples/s
+2 ing_plain 2.205 M samples/s
+2 ing_sum 2.168 M samples/s
+3 ing_plain 2.26 M samples/s
+3 ing_sum 2.086 M samples/s
+4 ing_plain 2.166 M samples/s
+4 ing_sum 2.103 M samples/s
+median change -4.5 %

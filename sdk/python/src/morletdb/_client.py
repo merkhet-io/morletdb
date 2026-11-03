@@ -11,7 +11,7 @@ from psycopg.types.json import Jsonb
 
 from . import _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import Interval, IntervalRef, IntervalStats, Match, Recording, SearchResult
+from ._types import Interval, IntervalRef, IntervalStats, Match, OverviewBucket, Recording, SearchResult
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
 READ_PIECE = 32768           # morlet_read_interval's per-call limit (servers without the raw read)
@@ -114,14 +114,19 @@ class Client:
             raise translate(exc) from exc
 
     # --- collections ---------------------------------------------------------------------------------
-    def create_collection(self, name: str, *, searchable: bool = True) -> None:
-        """Create a stream collection `schema.name` (or `name` in public) if it does not exist, and enable
-        search envelopes on it when `searchable`. Idempotent."""
+    def create_collection(self, name: str, *, searchable: bool = True, summaries: bool = True) -> None:
+        """Create a stream collection `schema.name` (or `name` in public) if it does not exist, enable
+        search envelopes on it when `searchable`, and per-chunk summaries when `summaries` and the server
+        supports them (SQL 0.3.3): statistics and overviews of long intervals then read summaries instead
+        of decoding, with identical results, for about 5% slower ingestion and 1% more chunk storage.
+        Idempotent."""
         schema, table = name.split(".", 1) if "." in name else ("public", name)
         if self._one("SELECT to_regclass(%s)", (f"{schema}.{table}",)) is None:
             self._execute("SELECT morlet_create_stream_collection(%s, %s)", (schema, table))
         if searchable and self._one("SELECT to_regclass(%s)", (f"{schema}.{table}_envelopes",)) is None:
             self._execute("SELECT morlet_enable_envelopes(%s::regclass)", (f"{schema}.{table}",))
+        if summaries and self._has("public.morlet_enable_chunk_summaries(regclass)"):
+            self._execute("SELECT morlet_enable_chunk_summaries(%s::regclass)", (f"{schema}.{table}",))
 
     # --- ingestion -----------------------------------------------------------------------------------
     def ingest(self, collection: str, recording_id: str, samples: Any, *, sample_rate_hz: float,
@@ -259,6 +264,18 @@ class Client:
         row = self._execute("SELECT sample_count, min, max, mean, rms FROM morlet_interval_stats(%s::regclass,%s,%s,%s)",
                             (collection, recording_id, int(start_sample), int(end_sample))).fetchone()
         return IntervalStats(int(row[0]), *map(float, row[1:]))
+
+    def overview(self, collection: str, recording_id: str, start_sample: int, end_sample: int,
+                 buckets: int = 100) -> list[OverviewBucket]:
+        """Statistics of [start_sample, end_sample) in up to `buckets` consecutive parts (whole chunks each,
+        except at the edges), for example to draw an hour of data. Fast on collections with summaries;
+        intervals beyond 16,777,216 samples need them (SQL 0.3.3)."""
+        if not self._has("public.morlet_interval_overview(regclass,text,bigint,bigint,integer)"):
+            raise UnsupportedError("morlet_interval_overview needs pg_morlet SQL 0.3.3 with chunk summaries support")
+        rows = self._execute("SELECT bucket_start, bucket_end, sample_count, min, max, mean, rms FROM "
+                             "morlet_interval_overview(%s::regclass,%s,%s,%s,%s)",
+                             (collection, recording_id, int(start_sample), int(end_sample), int(buckets))).fetchall()
+        return [OverviewBucket(int(a), int(b), int(n), *map(float, r)) for a, b, n, *r in rows]
 
     def samples_for_time(self, recording: Recording, t_start_ns: int, t_end_ns: int) -> tuple[int, int]:
         """The half-open sample range covering UTC times [t_start_ns, t_end_ns) (integer nanoseconds), by
