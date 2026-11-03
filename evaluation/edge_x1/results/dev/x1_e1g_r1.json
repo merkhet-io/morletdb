@@ -1,0 +1,120 @@
+{
+ "config": "e1g",
+ "limits": {
+  "cpus": "2",
+  "memory": "1g",
+  "settings": {}
+ },
+ "image": "morletdb:x1",
+ "rep": 1,
+ "image_id": "sha256:7600b0463b4060935efdf46e81a49a648ca1bebdc2b3ef60aa702aa95bd6cad0",
+ "image_size_mib": 147.6,
+ "architecture": "arm64",
+ "samples": 101453304,
+ "started": "2026-11-03T14:25:57",
+ "phases": {
+  "idle": {
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 81.4
+  },
+  "ingest": {
+   "wall_s": 92.16,
+   "samples_per_s": 1100878,
+   "ack_per_acquisition": {
+    "n": 124,
+    "p50_ms": 730.847,
+    "p95_ms": 887.732,
+    "max_ms": 1115.904
+   },
+   "memory_peak_mib": 180.7,
+   "memory_median_mib": 169.4,
+   "cpu_percent_mean": 93.1,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 936.0
+  },
+  "envelopes": {
+   "wall_s": 16.07,
+   "windows": 48459,
+   "memory_peak_mib": 185.8,
+   "memory_median_mib": 184.2,
+   "cpu_percent_mean": 85.0,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 1024.0
+  },
+  "read_back": {
+   "channels": 868,
+   "mismatches": 0,
+   "memory_peak_mib": 191.5,
+   "memory_median_mib": 187.0,
+   "cpu_percent_mean": 31.2,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 1024.0
+  },
+  "queries": {
+   "R1": {
+    "n": 400,
+    "p50_ms": 1.407,
+    "p95_ms": 1.966,
+    "max_ms": 6.121
+   },
+   "R2": {
+    "n": 400,
+    "p50_ms": 10.427,
+    "p95_ms": 16.088,
+    "max_ms": 25.496
+   },
+   "stats_128k": {
+    "n": 400,
+    "p50_ms": 0.847,
+    "p95_ms": 1.58,
+    "max_ms": 3.51
+   },
+   "overview_whole_channel": {
+    "n": 400,
+    "p50_ms": 0.546,
+    "p95_ms": 0.852,
+    "max_ms": 1.492
+   },
+   "search_top10": {
+    "n": 40,
+    "p50_ms": 48.668,
+    "p95_ms": 63.498,
+    "max_ms": 69.768,
+    "queries": 20,
+    "lists_sha256": "12b592da0e000c652dffc18ef879b471ed26fd9adc1a23377fbfb455b51b8021",
+    "hits": 200
+   },
+   "memory_peak_mib": 192.0,
+   "memory_median_mib": 191.6,
+   "cpu_percent_mean": 53.0,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 1024.0
+  }
+ },
+ "errors": [],
+ "server": {
+  "server_version": "17.6 (Debian 17.6-2.pgdg12+1)",
+  "shared_buffers": "128MB",
+  "max_connections": "100",
+  "synchronous_commit": "on"
+ },
+ "database_mib": 383.2,
+ "final": {
+  "oom_killed": false,
+  "running": true,
+  "restarts": 0,
+  "cgroup_memory_peak_mib": 1024.0
+ },
+ "passed": true,
+ "set": "dev"
+}
