@@ -1,5 +1,6 @@
 """Generate sql/pg_morlet--0.3.2--0.3.3.sql from streams.sql and the generated 0.3.3 schema
-(cargo pgrx schema pg17 -o NEW.sql). Usage: gen_upgrade.py NEW.sql
+(cargo pgrx schema pg17 -o NEW.sql). Usage: gen_upgrade.py NEW.sql [--check]
+(--check compares instead of writing and fails when the committed script is stale)
 
 0.3.2 is released (0.3.2-alpha.1 and 0.3.3-alpha.1); its objects are known. The script adds new Rust
 and SQL functions and the morlet_envelope_screen aggregate, and replaces the body of
@@ -12,6 +13,7 @@ from pathlib import Path
 EXT = Path(__file__).resolve().parent.parent
 streams = (EXT / "sql/streams.sql").read_text()
 schema = Path(sys.argv[1]).read_text()
+CHECK = "--check" in sys.argv[2:]
 
 
 def fn(name):
@@ -42,4 +44,10 @@ out += [fn(r).replace("CREATE FUNCTION public.", "CREATE OR REPLACE FUNCTION pub
 agg = re.search(r"(?:--[^\n]*\n)*CREATE AGGREGATE public\.morlet_envelope_screen\(.*?\);\n", streams, re.S)
 assert agg
 out.append(agg.group(0))
-(EXT / "sql/pg_morlet--0.3.2--0.3.3.sql").write_text("\n".join(out))
+target = EXT / "sql/pg_morlet--0.3.2--0.3.3.sql"
+if CHECK:
+    if target.read_text() != "\n".join(out):
+        sys.exit(f"{target.name} is stale: regenerate it with tests/gen_upgrade.py")
+    print(f"{target.name} is up to date")
+else:
+    target.write_text("\n".join(out))

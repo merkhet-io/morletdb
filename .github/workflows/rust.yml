@@ -15,11 +15,15 @@ jobs:
     # Docs-only changes skip the build and test jobs below. A job skipped by its `if` reports success, so
     # the required checks (core, postgres, seismic-example) still pass; the `postgres` gate fails if this
     # classification itself fails. Docs-only = every changed path is Markdown, docs/, research/, assets/ or
-    # LICENSE. Anything else, or a diff that cannot be computed, runs everything.
+    # LICENSE, or evaluation results (evaluation/*/results/*, *.json, *.log under evaluation/). Anything else,
+    # or a diff that cannot be computed, runs everything. python-sdk and seismic-example additionally run only
+    # when their own inputs (or the extension, the core crate, the lock file or this workflow) change.
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       code: ${{ steps.classify.outputs.code }}
+      sdk: ${{ steps.classify.outputs.sdk }}
+      seismic: ${{ steps.classify.outputs.seismic }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,7 +36,7 @@ jobs:
           PUSH_BEFORE: ${{ github.event.before }}
           PUSH_AFTER: ${{ github.sha }}
         run: |
-          code=true
+          code=true; sdk=true; seismic=true
           files=""
           if [ "$EVENT" = pull_request ]; then
             files=$(git diff --name-only "$PR_BASE...$PR_HEAD") || files=""
@@ -40,16 +44,35 @@ jobs:
             files=$(git diff --name-only "$PUSH_BEFORE" "$PUSH_AFTER") || files=""
           fi
           if [ -n "$files" ]; then
-            code=false
+            code=false; sdk=false; seismic=false
             while IFS= read -r f; do
               case "$f" in
-                *.md|docs/*|research/*|assets/*|LICENSE) ;;
-                *) code=true; echo "code change: $f"; break ;;
+                *.md|docs/*|research/*|assets/*|LICENSE) continue ;;
+                evaluation/*/results/*|evaluation/*.json|evaluation/*.log) continue ;;
+              esac
+              [ "$code" = true ] || echo "code change: $f"
+              code=true
+              case "$f" in
+                extensions/*|crates/*|Cargo.lock|Cargo.toml|rust-toolchain.toml|.github/*) sdk=true; seismic=true ;;
+                sdk/*) sdk=true ;;
+                examples/seismic/*|tools/*) seismic=true ;;
               esac
             done <<< "$files"
           fi
-          echo "code=$code" >> "$GITHUB_OUTPUT"
-          echo "changed files: $(printf '%s\n' "$files" | grep -c . || true); run build and tests: $code"
+          { echo "code=$code"; echo "sdk=$sdk"; echo "seismic=$seismic"; } >> "$GITHUB_OUTPUT"
+          echo "changed files: $(printf '%s\n' "$files" | grep -c . || true); build and tests: $code; python-sdk: $sdk; seismic-example: $seismic"
+  lint:
+    # Formatting only, without a build: reports in seconds. core repeats the check, so this job need not
+    # be a required check.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - run: cargo fmt --all -- --check
   core:
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -227,14 +250,38 @@ jobs:
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.1-alpha.1:refs/tags/v0.3.1-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.3-alpha.1:refs/tags/v0.3.3-alpha.1
       - name: PostgreSQL 17.11
+        id: pg
         uses: ./.github/actions/pgrx-postgres
         with:
           pg-minor: '17.11'
+      - name: Cache Rust build of this branch
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: upgrade-${{ runner.os }}-rust-${{ steps.pg.outputs.rust }}-${{ hashFiles('Cargo.lock') }}
+      - name: Cache packaged builds of the released refs (they never change)
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/upgrade-releases
+          key: upgrade-releases-${{ runner.os }}-${{ runner.arch }}-pg17.11-pgrx-${{ steps.pg.outputs.pgrx }}-${{ hashFiles('extensions/pg_morlet/tests/ci_local.sh') }}
+      - name: The 0.3.2 -> 0.3.3 update script is generated from the current sources
+        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.2--0.3.3.sql') != ''
+        working-directory: extensions/pg_morlet
+        run: |
+          if grep -q "^default_version = '0.3.3'" pg_morlet.control; then
+            cargo pgrx schema pg17 --pg-config "$PG_CONFIG" -o "$RUNNER_TEMP/new.sql"
+            python3 tests/gen_upgrade.py "$RUNNER_TEMP/new.sql" --check
+          fi
       - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1 and v0.3.3-alpha.1
+        env:
+          MORLET_UPGRADE_CACHE: ${{ runner.temp }}/upgrade-releases
         run: extensions/pg_morlet/tests/ci_local.sh 17 upgrade
   seismic-example:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.seismic == 'true'
     # Synthetic contract tests for examples/seismic against a fresh extension
     # install. No public services or downloads beyond pinned packages.
     runs-on: ubuntu-24.04
@@ -278,7 +325,7 @@ jobs:
 
   python-sdk:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.code == 'true' && needs.changes.outputs.sdk == 'true'
     # Builds and installs the Python SDK wheel, runs its contract tests against this branch's extension
     # (skips are failures) and runs the quickstart example. No downloads beyond pinned packages.
     runs-on: ubuntu-24.04
