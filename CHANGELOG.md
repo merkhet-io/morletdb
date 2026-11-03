@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Faster search features at ingest (features unchanged, bit for bit; extractor versions unchanged):
+- `morlet-energy-v1` and `morlet-energy-lowrate-v1` build their twelve wavelet kernels once per sample rate
+  instead of once per window, and compute eight coefficients side by side, each accumulated in the same
+  order as before (a unit test compares every feature's bits with the previous code).
+
 Per-chunk summaries (SQL 0.3.3, opt-in; chunks unchanged):
 - `morlet_enable_chunk_summaries(collection)` adds a `summary` column to the chunk table (no table
   rewrite): count, min, max and compensated sums of each chunk in 66 bytes (`morlet_core::intervalstats`).
@@ -36,6 +41,9 @@ SQL 0.3.3 (update script from 0.3.2; existing functions unchanged):
   float64 bytes; it calls `morlet_append_chunk`, so checks, gaps and retry semantics are the same.
 - `morlet_read_interval_raw(collection, recording, start, end)` returns the samples as little-endian float64
   bytes (up to 16,777,216 per call), with the same visibility, coverage and errors as `morlet_read_interval`.
+- `morlet_read_acquisition_raw(collection, acquisition, t_start_ns, t_end_ns)` returns the rows of
+  `morlet_read_acquisition` with each channel's samples as little-endian float64 bytes, read in one statement
+  (up to 16,777,216 samples per channel).
 - `morlet_interval_stats(collection, recording, start, end)` returns count, min, max, mean and RMS computed
   while decoding, in one pass (`morlet_core::intervalstats`: exact min and max, compensated sums, RMS scaled
   against overflow, NaN propagates).

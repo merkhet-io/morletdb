@@ -1,0 +1,152 @@
+{
+ "system": "morletdb-033-search",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.35518333298387006,
+ "samples": 101453304,
+ "started": "2026-11-03T10:35:11",
+ "image": "morletdb:b33-dev",
+ "image_id": "sha256:2eb9102ebcc8a3c19d324fbe4769d0442a15a3d954972862faa51d1f549776d8",
+ "ingest": {
+  "wall_s": 160.844,
+  "samples_per_s": 630754,
+  "conversion_s": 0.033,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1119.773,
+   "p95_ms": 2531.517,
+   "max_ms": 3653.961
+  },
+  "queryable_after_last_ack_s": 0.011,
+  "failures": [],
+  "excluded_preflight_s": 0.746,
+  "server": {
+   "cpu_percent_mean": 95.6,
+   "cpu_percent_p95": 99.7,
+   "memory_peak_mib": 185.9,
+   "samples": 77
+  },
+  "functions": [
+   {
+    "function": "morlet_chunk_step",
+    "calls": 25102,
+    "total_ms": 119164.4,
+    "self_ms": 119164.4
+   },
+   {
+    "function": "morlet_append_chunk",
+    "calls": 25102,
+    "total_ms": 148038.1,
+    "self_ms": 19286.9
+   },
+   {
+    "function": "morlet_envelopes_from_chunks",
+    "calls": 744,
+    "total_ms": 10329.2,
+    "self_ms": 10329.2
+   },
+   {
+    "function": "morlet_encode_chunk",
+    "calls": 25102,
+    "total_ms": 6675.0,
+    "self_ms": 6675.0
+   },
+   {
+    "function": "morlet_stream_relations",
+    "calls": 29063,
+    "total_ms": 1651.9,
+    "self_ms": 1651.9
+   },
+   {
+    "function": "morlet_valid_encoded_chunk",
+    "calls": 25102,
+    "total_ms": 1457.8,
+    "self_ms": 1457.8
+   },
+   {
+    "function": "morlet_build_envelopes",
+    "calls": 1612,
+    "total_ms": 11567.7,
+    "self_ms": 1117.2
+   },
+   {
+    "function": "morlet_float8_from_le_bytes",
+    "calls": 25102,
+    "total_ms": 599.7,
+    "self_ms": 599.7
+   },
+   {
+    "function": "morlet_append_chunk_raw",
+    "calls": 25102,
+    "total_ms": 149209.5,
+    "self_ms": 571.4
+   },
+   {
+    "function": "morlet_ensure_recording",
+    "calls": 2349,
+    "total_ms": 798.1,
+    "self_ms": 482.1
+   },
+   {
+    "function": "morlet_valid_chunk",
+    "calls": 25102,
+    "total_ms": 128.4,
+    "self_ms": 128.4
+   },
+   {
+    "function": "morlet_chunk_checkpoint",
+    "calls": 2349,
+    "total_ms": 37.7,
+    "self_ms": 37.7
+   },
+   {
+    "function": "morlet_envelope_relation",
+    "calls": 1612,
+    "total_ms": 37.6,
+    "self_ms": 37.6
+   },
+   {
+    "function": "morlet_envelope_probe_relation",
+    "calls": 2356,
+    "total_ms": 34.8,
+    "self_ms": 34.8
+   },
+   {
+    "function": "morlet_create_stream_collection",
+    "calls": 1,
+    "total_ms": 2.6,
+    "self_ms": 2.6
+   },
+   {
+    "function": "morlet_enable_envelopes",
+    "calls": 1,
+    "total_ms": 1.5,
+    "self_ms": 1.3
+   },
+   {
+    "function": "morlet_row_security_enabled",
+    "calls": 1,
+    "total_ms": 0.2,
+    "self_ms": 0.2
+   }
+  ],
+  "envelope_build_s": 13.444299124996178,
+  "envelopes_built": 48459
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.8
+  }
+ },
+ "correct": true
+}

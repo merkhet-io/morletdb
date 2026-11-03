@@ -165,47 +165,14 @@ fn extract_internal(
         result.crest_factor = result.peak / result.rms;
         result.kurtosis = (sum4 / n as f64) / result.rms.powi(4);
     }
-    for band in 0..BANDS {
-        let frequency = sample_rate_hz / 64.0
-            * ((sample_rate_hz * 0.4) / (sample_rate_hz / 64.0)).powf(band as f64 / 11.0);
+    let kernels = kernels(sample_rate_hz);
+    for (band, kernel) in kernels.iter().enumerate() {
+        let (frequency, radius) = (kernel.frequency, kernel.radius);
         result.frequencies_hz[band] = frequency;
-        let scale = 6.0 * sample_rate_hz / (2.0 * PI * frequency);
-        let radius = (3.0 * scale).ceil() as usize;
-        let size = 2 * radius + 1;
-        let mut re = vec![0.0; size];
-        let mut im = vec![0.0; size];
-        let (mut mean_re, mut mean_im) = (0.0, 0.0);
-        for k in 0..size {
-            let t = (k as f64 - radius as f64) / scale;
-            let gaussian = (-t * t / 2.0).exp();
-            re[k] = gaussian * (6.0 * t).cos();
-            im[k] = gaussian * (6.0 * t).sin();
-            mean_re += re[k];
-            mean_im += im[k];
-        }
-        let mut norm = 0.0;
-        for k in 0..size {
-            re[k] -= mean_re / size as f64;
-            im[k] -= mean_im / size as f64;
-            norm += re[k] * re[k] + im[k] * im[k];
-        }
-        norm = norm.sqrt();
-        for k in 0..size {
-            re[k] /= norm;
-            im[k] /= norm;
-        }
         let (mut total, mut count) = (0.0, 0usize);
         for start in (radius..n - radius).step_by(128) {
             let end = (start + 128).min(n - radius);
-            let mut energy = 0.0;
-            for i in start..end {
-                let (mut real, mut imaginary) = (0.0, 0.0);
-                for k in 0..size {
-                    real += x[i + k - radius] * re[k];
-                    imaginary += x[i + k - radius] * im[k];
-                }
-                energy += real * real + imaginary * imaginary;
-            }
+            let energy = block_energy(&x, kernel, start, end);
             total += energy;
             count += end - start;
             emit(band, start, end, radius, energy / (end - start) as f64);
@@ -224,9 +191,237 @@ fn extract_internal(
     Ok(result)
 }
 
+/// One band's DC-corrected, complex L2-normalized kernel.
+struct Kernel {
+    frequency: f64,
+    radius: usize,
+    re: Vec<f64>,
+    im: Vec<f64>,
+}
+
+fn build_kernels(sample_rate_hz: f64) -> Vec<Kernel> {
+    (0..BANDS)
+        .map(|band| {
+            let frequency = sample_rate_hz / 64.0
+                * ((sample_rate_hz * 0.4) / (sample_rate_hz / 64.0)).powf(band as f64 / 11.0);
+            let scale = 6.0 * sample_rate_hz / (2.0 * PI * frequency);
+            let radius = (3.0 * scale).ceil() as usize;
+            let size = 2 * radius + 1;
+            let mut re = vec![0.0; size];
+            let mut im = vec![0.0; size];
+            let (mut mean_re, mut mean_im) = (0.0, 0.0);
+            for k in 0..size {
+                let t = (k as f64 - radius as f64) / scale;
+                let gaussian = (-t * t / 2.0).exp();
+                re[k] = gaussian * (6.0 * t).cos();
+                im[k] = gaussian * (6.0 * t).sin();
+                mean_re += re[k];
+                mean_im += im[k];
+            }
+            let mut norm = 0.0;
+            for k in 0..size {
+                re[k] -= mean_re / size as f64;
+                im[k] -= mean_im / size as f64;
+                norm += re[k] * re[k] + im[k] * im[k];
+            }
+            norm = norm.sqrt();
+            for k in 0..size {
+                re[k] /= norm;
+                im[k] /= norm;
+            }
+            Kernel {
+                frequency,
+                radius,
+                re,
+                im,
+            }
+        })
+        .collect()
+}
+
+thread_local! {
+    /// Kernels depend only on the sample rate; a stream extracts many windows at one rate.
+    static KERNELS: std::cell::RefCell<Vec<(u64, std::rc::Rc<Vec<Kernel>>)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn kernels(sample_rate_hz: f64) -> std::rc::Rc<Vec<Kernel>> {
+    KERNELS.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        let key = sample_rate_hz.to_bits();
+        if let Some((_, k)) = cache.iter().find(|(r, _)| *r == key) {
+            return k.clone();
+        }
+        let k = std::rc::Rc::new(build_kernels(sample_rate_hz));
+        if cache.len() >= 16 {
+            cache.remove(0);
+        }
+        cache.push((key, k.clone()));
+        k
+    })
+}
+
+/// Sum over i in [start, end) of |sum_k x[i+k-radius] * kernel[k]|^2. Every coefficient is accumulated
+/// over k in the same order as a one-at-a-time loop, and the energies are added in i order, so the
+/// result is bitwise the same; LANES coefficients are computed side by side for instruction-level
+/// parallelism (Rust never contracts a*b+c into a fused multiply-add).
+fn block_energy(x: &[f64], kernel: &Kernel, start: usize, end: usize) -> f64 {
+    const LANES: usize = 8;
+    let (re, im, radius) = (&kernel.re[..], &kernel.im[..], kernel.radius);
+    let size = re.len();
+    let mut energy = 0.0;
+    let mut i = start;
+    while i + LANES <= end {
+        let (mut real, mut imaginary) = ([0.0f64; LANES], [0.0f64; LANES]);
+        let base = &x[i - radius..i - radius + size + LANES - 1];
+        for k in 0..size {
+            let (a, b) = (re[k], im[k]);
+            let v = &base[k..k + LANES];
+            for j in 0..LANES {
+                real[j] += v[j] * a;
+                imaginary[j] += v[j] * b;
+            }
+        }
+        for j in 0..LANES {
+            energy += real[j] * real[j] + imaginary[j] * imaginary[j];
+        }
+        i += LANES;
+    }
+    for i in i..end {
+        let (mut real, mut imaginary) = (0.0, 0.0);
+        for k in 0..size {
+            real += x[i + k - radius] * re[k];
+            imaginary += x[i + k - radius] * im[k];
+        }
+        energy += real * real + imaginary * imaginary;
+    }
+    energy
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The extractor as it was before kernels were cached and coefficients blocked: features must
+    /// stay bitwise identical (the version's numerical contract).
+    fn reference_features(samples: &[f64], sample_rate_hz: f64) -> Vec<f64> {
+        let n = samples.len();
+        let mean = samples.iter().map(|v| v / n as f64).sum::<f64>();
+        let x: Vec<f64> = samples.iter().map(|v| v - mean).collect();
+        let mut result = Signature {
+            version: EXTRACTOR_VERSION,
+            frequencies_hz: [0.; BANDS],
+            energy: [0.; BANDS],
+            rms: 0.,
+            peak: 0.,
+            crest_factor: 0.,
+            kurtosis: 0.,
+            tokens: vec![],
+        };
+        let mut sum2 = 0.0;
+        let mut sum4 = 0.0;
+        for &value in &x {
+            result.peak = result.peak.max(value.abs());
+            sum2 += value * value;
+            sum4 += value.powi(4);
+        }
+        result.rms = (sum2 / n as f64).sqrt();
+        if result.rms > 0.0 {
+            result.crest_factor = result.peak / result.rms;
+            result.kurtosis = (sum4 / n as f64) / result.rms.powi(4);
+        }
+        for band in 0..BANDS {
+            let frequency = sample_rate_hz / 64.0
+                * ((sample_rate_hz * 0.4) / (sample_rate_hz / 64.0)).powf(band as f64 / 11.0);
+            result.frequencies_hz[band] = frequency;
+            let scale = 6.0 * sample_rate_hz / (2.0 * PI * frequency);
+            let radius = (3.0 * scale).ceil() as usize;
+            let size = 2 * radius + 1;
+            let mut re = vec![0.0; size];
+            let mut im = vec![0.0; size];
+            let (mut mean_re, mut mean_im) = (0.0, 0.0);
+            for k in 0..size {
+                let t = (k as f64 - radius as f64) / scale;
+                let gaussian = (-t * t / 2.0).exp();
+                re[k] = gaussian * (6.0 * t).cos();
+                im[k] = gaussian * (6.0 * t).sin();
+                mean_re += re[k];
+                mean_im += im[k];
+            }
+            let mut norm = 0.0;
+            for k in 0..size {
+                re[k] -= mean_re / size as f64;
+                im[k] -= mean_im / size as f64;
+                norm += re[k] * re[k] + im[k] * im[k];
+            }
+            norm = norm.sqrt();
+            for k in 0..size {
+                re[k] /= norm;
+                im[k] /= norm;
+            }
+            let (mut total, mut count) = (0.0, 0usize);
+            for start in (radius..n - radius).step_by(128) {
+                let end = (start + 128).min(n - radius);
+                let mut energy = 0.0;
+                for i in start..end {
+                    let (mut real, mut imaginary) = (0.0, 0.0);
+                    for k in 0..size {
+                        real += x[i + k - radius] * re[k];
+                        imaginary += x[i + k - radius] * im[k];
+                    }
+                    energy += real * real + imaginary * imaginary;
+                }
+                total += energy;
+                count += end - start;
+                result.tokens.push(Token {
+                    offset_seconds: start as f64 / sample_rate_hz,
+                    duration_seconds: (end - start) as f64 / sample_rate_hz,
+                    frequency_hz: frequency,
+                    energy: energy / (end - start) as f64,
+                });
+            }
+            result.energy[band] = total / count as f64;
+        }
+        result.features()
+    }
+
+    #[test]
+    fn blocked_extractor_is_bitwise_the_reference() {
+        let mut state = 0x9e3779b97f4a7c15u64;
+        let mut next = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            (state >> 11) as f64 / (1u64 << 53) as f64 - 0.5
+        };
+        for (rate, n) in [
+            (64000.0, 512),
+            (64000.0, 4096),
+            (25600.0, 777),
+            (4000.0, 600),
+            (128.0, 512),
+            (100.0, 512),
+            (1.0, 513),
+        ] {
+            let version = if rate >= 128.0 {
+                EXTRACTOR_VERSION
+            } else {
+                LOWRATE_EXTRACTOR_VERSION
+            };
+            for _ in 0..3 {
+                let x: Vec<f64> = (0..n)
+                    .map(|i| next() + (i as f64 * 0.37).sin() * 3.0)
+                    .collect();
+                let got = extract_versioned(&x, rate, version).unwrap().features();
+                let want = reference_features(&x, rate);
+                assert_eq!(
+                    got.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+                    want.iter().map(|v| v.to_bits()).collect::<Vec<_>>(),
+                    "rate {rate} n {n}"
+                );
+            }
+        }
+    }
     fn tone(amplitude: f64, dc: f64) -> Vec<f64> {
         (0..2048)
             .map(|i| dc + amplitude * (2. * PI * 400. * i as f64 / 4096.).sin())

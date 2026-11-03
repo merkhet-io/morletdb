@@ -1,0 +1,192 @@
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.3111627080361359,
+ "samples": 101453304,
+ "started": "2026-11-03T10:24:49",
+ "image": "morletdb:b33-dev",
+ "image_id": "sha256:2eb9102ebcc8a3c19d324fbe4769d0442a15a3d954972862faa51d1f549776d8",
+ "ingest": {
+  "wall_s": 20.666,
+  "samples_per_s": 4909086,
+  "conversion_s": 0.02,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 161.21,
+   "p95_ms": 201.726,
+   "max_ms": 264.509
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.933,
+  "server": {
+   "cpu_percent_mean": 80.7,
+   "cpu_percent_p95": 82.2,
+   "memory_peak_mib": 168.8,
+   "samples": 10
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 7.2
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 4063232,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 2473984,
+    "toast": 155877376,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 121972550,
+    "samples": 95499936
+   },
+   "mid": {
+    "encoded_bytes": 16586659,
+    "samples": 5952756
+   },
+   "process": {
+    "encoded_bytes": 4059,
+    "samples": 612
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 172633235,
+  "volume": {
+   "apparent": 381019013,
+   "allocated": 381083648,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.772,
+   "p95_ms": 1.452,
+   "max_ms": 2.843,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 10.198,
+   "p95_ms": 13.93,
+   "max_ms": 19.922,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 12.133,
+   "p95_ms": 16.72,
+   "max_ms": 76.844,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.709,
+   "p95_ms": 1.314,
+   "max_ms": 2.46,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.694,
+   "p95_ms": 1.275,
+   "max_ms": 2.787,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 1.34,
+   "p95_ms": 2.721,
+   "max_ms": 12.98,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 2541.6
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 2.794,
+  "p95_ms": 3.575,
+  "max_ms": 4.667,
+  "max_relative_difference": 4.444427605980414e-16,
+  "within_1e-12": "True"
+ },
+ "acquisition_register_s": 0.436,
+ "acquisition_reads": {
+  "morlet_read_acquisition": {
+   "AQ1": {
+    "n": 1000,
+    "p50_ms": 3.036,
+    "p95_ms": 4.688,
+    "max_ms": 8.4,
+    "window_ns": 64000000,
+    "queries": 1000,
+    "samples_per_query_mean": 13056.15,
+    "mismatches": 0
+   },
+   "AQ2": {
+    "n": 1000,
+    "p50_ms": 12.676,
+    "p95_ms": 16.75,
+    "max_ms": 29.787,
+    "window_ns": 500000000,
+    "queries": 1000,
+    "samples_per_query_mean": 102000.5,
+    "mismatches": 0
+   }
+  },
+  "client_raw": {
+   "AQ1": {
+    "n": 1000,
+    "p50_ms": 1.944,
+    "p95_ms": 3.162,
+    "max_ms": 26.609,
+    "window_ns": 64000000,
+    "queries": 1000,
+    "samples_per_query_mean": 13056.15,
+    "mismatches": 0
+   },
+   "AQ2": {
+    "n": 1000,
+    "p50_ms": 6.245,
+    "p95_ms": 9.684,
+    "max_ms": 14.12,
+    "window_ns": 500000000,
+    "queries": 1000,
+    "samples_per_query_mean": 102000.5,
+    "mismatches": 0
+   }
+  }
+ }
+}

@@ -7,12 +7,14 @@
                               and for QuestDB the Parquet arms (LZ4 after rep 1, ZSTD 9 after rep 2)
 """
 import json
+import os
 import sys
 import threading
 import time
 
 import numpy as np
 
+import acquisitions as acq_reads
 import common
 import correctness as cr
 import workload as wl
@@ -159,7 +161,12 @@ def load(system, durability, rep):
     if system != "questdb":
         res["image"] = mo.IMAGE
         res["image_id"] = common.sh(["docker", "image", "inspect", mo.IMAGE, "--format", "{{.Id}}"]).strip()
-    search = system == "morletdb-search"
+    search = system in ("morletdb-search", "morletdb-033-feat", "morletdb-033-search")   # search features at ingest
+    envelopes = system in ("morletdb-search", "morletdb-033-search")                     # + envelopes, built after
+    if system.startswith("morletdb-033"):   # B3.3: the B3.2 client path on the current image
+        mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
+                           "one_statement": True})
+    mo.VARIANT["profile"] = os.environ.get("B3_PROFILE") == "1"   # B3.3 attribution loads: track_functions=all
     if system in ("morletdb-batched16", "morletdb-noquantum"):     # attribution, outside the frozen arms
         mo.VARIANT.update({"rpc_chunks": 16} if system.endswith("batched16") else {"quantum": False})
     if system == "morletdb-031":   # B3.1: SQL 0.3.3 raw reads and native interval statistics on top of the client path
@@ -184,7 +191,7 @@ def load(system, durability, rep):
         container = q.NAME
     else:
         handle = mo.start(volume, durability)
-        mo.create(handle, search=search)
+        mo.create(handle, envelopes=envelopes)
         container = mo.NAME
     with common.Stats(container) as st:
         r, t_last = ingest(system, handle, m, data, search)
@@ -195,7 +202,7 @@ def load(system, durability, rep):
             while mo.count(handle)[1] != want:
                 time.sleep(0.05)
         r["queryable_after_last_ack_s"] = time.perf_counter() - t_last
-        if search:
+        if envelopes:
             ids = [mo.rid(a, c) for a in m["acquisitions"] for c in wl.UNITS]
             t = time.perf_counter()
             bconn = __import__("psycopg").connect(mo.DSN)
@@ -210,6 +217,12 @@ def load(system, durability, rep):
                      "server": st.summary()}
     if r["calls"]:
         res["ingest"]["ack_per_call"] = common.pcts(r["calls"])
+    if search:   # B3.3: digest of every stored feature vector (float8 text output is exact), to compare images
+        res["ingest"]["segments"] = dict(zip(("count", "md5"), handle.execute(
+            f"SELECT count(*), md5(string_agg(recording_id || ':' || start_sample || ':' || features::text, ';' "
+            f"ORDER BY recording_id, start_sample)) FROM {mo.COLLECTION}_segments").fetchone()))
+    if mo.VARIANT.get("profile") and system != "questdb":
+        res["ingest"]["functions"] = mo.function_profile(handle)
     for key in ("envelope_build_s", "envelopes_built"):
         if key in r:
             res["ingest"][key] = r[key]
@@ -228,6 +241,8 @@ def load(system, durability, rep):
         if rep == 1:
             res["reads_native"] = reads("questdb", db, m, data)
             res["analytics"] = analytics("questdb", db, m, data)
+            if os.environ.get("B3_ACQ") == "1":    # B3.3 part A
+                res["acquisition_reads"] = {"questdb": acq_reads.measure(acq_reads.reader_questdb(q.connect()), m, data)}
         codec = "LZ4_RAW" if rep == 1 else "ZSTD"
         db = q.restart(volume, durability, None if codec == "LZ4_RAW" else codec)
         q.sentinel(db, len(m["acquisitions"]))
@@ -258,11 +273,21 @@ def load(system, durability, rep):
     elif system != "questdb" and measure:
         mo.settle(handle)
         res["storage"] = mo.storage(handle)
-        if rep == 1 and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16", "morletdb-032"):
+        if rep == 1 and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16", "morletdb-032",
+                                   "morletdb-033"):
             res["reads"] = reads("morletdb", handle, m, data)
             res["analytics"] = analytics("morletdb", handle, m, data)
             if system == "morletdb":
                 res["exchange_file"] = packed_exchange()
+        if rep == 1 and system == "morletdb-033":    # B3.3 part A: acquisition reads
+            h = mo.connect()
+            res["acquisition_register_s"] = round(acq_reads.register(h, m, mo.COLLECTION), 3)
+            mo.settle(h)
+            res["acquisition_reads"] = {
+                "morlet_read_acquisition": acq_reads.measure(acq_reads.reader_acq(h, mo.COLLECTION), m, data),
+                "morlet_read_acquisition_raw": acq_reads.measure(acq_reads.reader_acq_raw(h, mo.COLLECTION), m, data),
+                "client_raw": acq_reads.measure(acq_reads.reader_client(h, mo.COLLECTION), m, data)}
+            h.close()
         handle.close()
         common.stop(mo.NAME)
         files = common.volume_files(volume, mo.IMAGE)

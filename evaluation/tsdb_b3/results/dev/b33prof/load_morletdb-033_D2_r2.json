@@ -1,0 +1,114 @@
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.3273943749954924,
+ "samples": 101453304,
+ "started": "2026-11-03T10:31:58",
+ "image": "morletdb:b33-dev",
+ "image_id": "sha256:2eb9102ebcc8a3c19d324fbe4769d0442a15a3d954972862faa51d1f549776d8",
+ "ingest": {
+  "wall_s": 20.86,
+  "samples_per_s": 4863598,
+  "conversion_s": 0.02,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 163.658,
+   "p95_ms": 191.582,
+   "max_ms": 266.148
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "failures": [],
+  "excluded_preflight_s": 0.922,
+  "server": {
+   "cpu_percent_mean": 77.3,
+   "cpu_percent_p95": 84.5,
+   "memory_peak_mib": 167.7,
+   "samples": 10
+  },
+  "functions": [
+   {
+    "function": "morlet_encode_chunk",
+    "calls": 25102,
+    "total_ms": 6314.2,
+    "self_ms": 6314.2
+   },
+   {
+    "function": "morlet_append_chunk",
+    "calls": 25102,
+    "total_ms": 14275.9,
+    "self_ms": 5317.9
+   },
+   {
+    "function": "morlet_valid_encoded_chunk",
+    "calls": 25102,
+    "total_ms": 1393.6,
+    "self_ms": 1393.6
+   },
+   {
+    "function": "morlet_stream_relations",
+    "calls": 27451,
+    "total_ms": 1006.3,
+    "self_ms": 1006.3
+   },
+   {
+    "function": "morlet_float8_from_le_bytes",
+    "calls": 25102,
+    "total_ms": 503.1,
+    "self_ms": 503.1
+   },
+   {
+    "function": "morlet_chunk_step",
+    "calls": 25102,
+    "total_ms": 377.2,
+    "self_ms": 377.2
+   },
+   {
+    "function": "morlet_ensure_recording",
+    "calls": 2349,
+    "total_ms": 630.6,
+    "self_ms": 366.1
+   },
+   {
+    "function": "morlet_append_chunk_raw",
+    "calls": 25102,
+    "total_ms": 15093.4,
+    "self_ms": 314.2
+   },
+   {
+    "function": "morlet_valid_chunk",
+    "calls": 25102,
+    "total_ms": 101.4,
+    "self_ms": 101.4
+   },
+   {
+    "function": "morlet_chunk_checkpoint",
+    "calls": 2349,
+    "total_ms": 29.4,
+    "self_ms": 29.4
+   },
+   {
+    "function": "morlet_create_stream_collection",
+    "calls": 1,
+    "total_ms": 2.7,
+    "self_ms": 2.7
+   }
+  ]
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 6.7
+  }
+ },
+ "correct": true
+}

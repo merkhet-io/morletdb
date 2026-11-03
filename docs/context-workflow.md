@@ -180,6 +180,8 @@ SELECT * FROM morlet_compare_acquisition('spindle', 'shift-0412',
 
 -- One time interval from every channel.
 SELECT role, start_sample, cardinality(samples) FROM morlet_read_acquisition('spindle', 'shift-0412', t0, t1);
+-- The same rows with samples as little-endian float64 bytes (SQL 0.3.3), e.g. numpy.frombuffer(samples, "<f8").
+SELECT role, start_sample, samples FROM morlet_read_acquisition_raw('spindle', 'shift-0412', t0, t1);
 ```
 
 - **Time:** acquisition time is integer nanoseconds from the origin.

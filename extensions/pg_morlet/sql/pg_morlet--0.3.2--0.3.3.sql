@@ -284,6 +284,27 @@ BEGIN
   RETURN written;
 END $$;
 
+-- As morlet_read_acquisition, with each channel's samples as raw IEEE 754 float64 values, little-endian,
+-- 8 bytes each (as morlet_read_interval_raw), read in one statement; up to 16,777,216 samples per
+-- channel; encoded collections only.
+CREATE FUNCTION public.morlet_read_acquisition_raw(collection regclass,acquisition_id text,t_start_ns bigint,t_end_ns bigint)
+RETURNS TABLE(role text,recording_id text,sample_rate_hz float8,start_sample bigint,end_sample bigint,
+  start_time_ns numeric,samples bytea)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  RETURN QUERY EXECUTE format('SELECT w.role,w.recording_id,w.sample_rate_hz,w.s,w.e,
+      public.morlet_sample_time_ns(w.sample_rate_hz,w.offset_ns,w.s),public.morlet_read_interval_raw($1,w.recording_id,w.s,w.e)
+    FROM (SELECT c.role,c.recording_id,c.offset_ns,r.sample_rate_hz,m.start_sample AS s,
+        least(m.end_sample,(r.checkpoint->>''end'')::bigint) AS e
+      FROM %s c JOIN %s r ON r.recording_id=c.recording_id
+        CROSS JOIN LATERAL public.morlet_time_to_samples(r.sample_rate_hz,c.offset_ns,$3,$4) m
+      WHERE c.acquisition_id=$2) w
+    WHERE w.e>w.s ORDER BY w.role',rel.channels,collection)
+    USING collection,acquisition_id,t_start_ns,t_end_ns;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.morlet_envelope_ranked(collection regclass,query_samples float8[],query_rate_hz float8,
   query_channel text,query_unit text,metadata_filter jsonb,top_k integer,max_lag_fraction float8,
   suppress_overlaps boolean,max_candidates integer,
