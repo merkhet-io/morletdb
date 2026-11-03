@@ -1,0 +1,118 @@
+{
+ "system": "morletdb-033-feat",
+ "durability": "D2",
+ "rep": 4,
+ "parse_s": 0.6239154589711688,
+ "samples": 101586735,
+ "started": "2026-11-03T14:04:32",
+ "image": "morletdb:b33",
+ "image_id": "sha256:b36cf02aa055da7eb80132a42c8167201b8c531887a09adc5ac4a69dfe63506d",
+ "ingest": {
+  "wall_s": 86.515,
+  "samples_per_s": 1174208,
+  "conversion_s": 0.027,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 680.41,
+   "p95_ms": 847.304,
+   "max_ms": 1040.326
+  },
+  "queryable_after_last_ack_s": 0.017,
+  "failures": [],
+  "excluded_preflight_s": 1.136,
+  "server": {
+   "cpu_percent_mean": 94.6,
+   "cpu_percent_p95": 99.7,
+   "memory_peak_mib": 184.2,
+   "samples": 39
+  },
+  "segments": {
+   "count": 395835,
+   "md5": "514a372e3c4bf1944baeeaf51e88aa49"
+  },
+  "functions": [
+   {
+    "function": "morlet_chunk_step",
+    "calls": 25138,
+    "total_ms": 48902.1,
+    "self_ms": 48902.1
+   },
+   {
+    "function": "morlet_append_chunk",
+    "calls": 25138,
+    "total_ms": 78209.4,
+    "self_ms": 19129.1
+   },
+   {
+    "function": "morlet_encode_chunk",
+    "calls": 25138,
+    "total_ms": 7196.2,
+    "self_ms": 7196.2
+   },
+   {
+    "function": "morlet_stream_relations",
+    "calls": 27482,
+    "total_ms": 1570.3,
+    "self_ms": 1570.3
+   },
+   {
+    "function": "morlet_valid_encoded_chunk",
+    "calls": 25138,
+    "total_ms": 1555.5,
+    "self_ms": 1555.5
+   },
+   {
+    "function": "morlet_float8_from_le_bytes",
+    "calls": 25138,
+    "total_ms": 637.8,
+    "self_ms": 637.8
+   },
+   {
+    "function": "morlet_append_chunk_raw",
+    "calls": 25138,
+    "total_ms": 79407.8,
+    "self_ms": 560.5
+   },
+   {
+    "function": "morlet_ensure_recording",
+    "calls": 2344,
+    "total_ms": 820.1,
+    "self_ms": 495.7
+   },
+   {
+    "function": "morlet_valid_chunk",
+    "calls": 25138,
+    "total_ms": 140.2,
+    "self_ms": 140.2
+   },
+   {
+    "function": "morlet_chunk_checkpoint",
+    "calls": 2344,
+    "total_ms": 40.1,
+    "self_ms": 40.1
+   },
+   {
+    "function": "morlet_create_stream_collection",
+    "calls": 1,
+    "total_ms": 3.1,
+    "self_ms": 3.1
+   }
+  ]
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 7.9
+  }
+ },
+ "correct": true
+}

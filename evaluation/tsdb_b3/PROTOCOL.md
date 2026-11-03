@@ -330,3 +330,9 @@ statement rule above.
    about 10:55) was stopped at 11:17, in round 2, because the laptop had to be moved; sleep would have frozen
    the containers during timed loads. Its partial results were moved unread to `results/b33-aborted-1/` and
    enter no statement. The run was restarted unchanged (same commit, image, script and order) from round 1.
+2. **Profile result of the feat arm overwritten, recovered from the log.** `run_b33.sh` wrote the profile load
+   of M-033-feat on the reference image to the same file as the one on `morletdb:b33`
+   (`results/b33/profile/load_morletdb-033-feat_D2_r4.json`). The overwritten result was recovered unchanged
+   from the run log (`results/b33/run.log`, which holds every result as printed) and saved under the original
+   name; the reference profile moved to `results/b33/profile/reference/`. Profile loads are outside every
+   statement; no measurement was repeated.
