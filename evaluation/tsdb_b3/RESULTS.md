@@ -368,3 +368,83 @@ limit from 4 writers on; MorletDB stayed below 4 cores, so its ceiling on this m
 | Multi-channel reads (3 × 64k) | QuestDB faster | QuestDB 25% at p50 | **MorletDB faster** |
 | Interval analytics | QuestDB 3–6× | tie | **MorletDB 1.5× / 2.7×** |
 | Altered retries | refused vs replaced | unchanged | unchanged |
+
+# Amendment B3.3: acquisition reads, and the cost of search at ingest
+
+Amendment frozen in [PROTOCOL.md](PROTOCOL.md) (commit `bf8d3fe`) before this run; development on the
+development set only ([`results/dev/b33*`](results/dev/)); confirmation once on the benchmark set
+([`results/b33/`](results/b33/), run log [`results/b33/run.log`](results/b33/run.log)), restarted unchanged
+after an aborted first attempt (deviation 1). Image `morletdb:b33` (`sha256:b36cf02aa055…`), reference image
+`morletdb:b33-dev` (`sha256:2eb9102ebcc8…`). 17 loads, every one passing full correctness (868 recordings,
+101,586,735 samples, every channel read back bit for bit).
+
+## Acceptance criteria (frozen; change 1, benchmark set)
+
+| # | Criterion | Result | Met |
+|---|---|---|---|
+| 1 | every load passes full correctness | 17 of 17 | yes |
+| 2 | every feat and search load on `morletdb:b33` has the features digest of every feat-reference load | all 12 feature loads (incl. the 3 profile loads): 395,835 segments, md5 `514a372e…aa49` | yes |
+| 3 | M-033-feat median ingestion ≥ 1.5× the feat-reference median | **1.635 M vs 0.658 M samples/s: 2.49×** | yes |
+
+**Verdict: adopt change 1** (the faster extractor). **Change 2** (`morlet_read_acquisition_raw`) had no
+mismatch in 2,000 checked reads: **adopted.**
+
+## Part A: acquisition reads (all 7 channels of one acquisition, 20 intervals × 50, benchmark set)
+
+Registering all 124 acquisitions with their 868 channels took 0.38 s. Every arm returned every sample, first
+index and time exactly (0 mismatches in 2,000 reads per arm).
+
+| Arm | AQ1, 64 ms (13,026 samples), p50 / p95 | AQ2, 0.5 s (102,001 samples) |
+|---|---:|---:|
+| `morlet_read_acquisition` (SQL 0.3.0) | 2.13 / 3.12 ms | 8.32 / 9.51 ms |
+| **`morlet_read_acquisition_raw`** (new) | **1.76 / 2.37** | **5.76 / 6.88** |
+| `client_raw` (client maps time itself, one statement) | 1.32 / 1.88 | 4.36 / 6.45 |
+| QuestDB 10.1 (one query per group table) | 2.86 / 7.39 | 8.41 / 15.61 |
+
+Statements (stage-1 rule, ≥ 10% at both p50 and p95):
+- `_raw` is faster than `morlet_read_acquisition`: 17% / 24% (AQ1), 31% / 28% (AQ2).
+- `_raw` is faster than QuestDB: 39% / 68% (AQ1), 32% / 56% (AQ2).
+- `client_raw` is faster than `_raw` at AQ1 (25% / 21%); at AQ2 no statement (24% at p50, 6% at p95). The
+  difference is the server-side time-to-sample mapping and channel lookup of the acquisition API.
+- `morlet_read_acquisition` vs QuestDB: faster at AQ1 (26% / 58%); at AQ2 no statement (1% at p50).
+
+## Part B: the cost of search at ingest (D2, one connection, three loads per arm)
+
+| Arm | Ingestion, median [range] | Ack per acquisition, p50 | Server CPU, mean | Server memory, peak | Database |
+|---|---:|---:|---:|---:|---:|
+| M-033, no features | 6.33 M [6.27–6.33] samples/s | 128 ms | 74% | 168 MiB | 164.8 MiB |
+| **M-033-feat**, new extractor | **1.64 M [1.62–1.64]** | 497 ms | 93% | 184 MiB | 358.2 MiB |
+| M-033-search, features + envelopes | 1.64 M [1.42–1.64]; envelope build 12.2 s [12.2–14.5] | 497 ms | 91% | 190 MiB | 409.0 MiB |
+| M-033-feat, reference extractor | 0.66 M [0.64–0.80] | 1,217 ms | 96% | 180 MiB | 320.2 MiB |
+
+- **Searchable at ingest now costs 3.9× the ingest time of raw storage, down from 9.6×.** Base ingestion
+  (6.33 M samples/s) is 14% above B3.2's 5.56 M on the same path; QuestDB's one load in this session reached
+  6.42 M, so the base rate is not a statement here.
+- Search load 2 was slower (71 s vs 62 s) while its features digest was identical; the median is unaffected.
+- **Storage.** Features add 130 MB (segments heap 86.8 MB, indexes 43.2 MB) and envelopes 53 MB; sample data
+  is unchanged. The feat database is 39.9 MB larger on `morletdb:b33` than on the reference image, almost all of it
+  in the recordings table's TOAST (74.9 vs 35.7 MB; development showed the same, 66 vs 36 MB). The stored
+  checkpoints are rewritten on every append; the likeliest cause is that the faster load leaves autovacuum
+  less time, so more dead checkpoint versions pile up and plain `VACUUM` frees but does not return the space.
+  **Not verified**; it is checked before the next release.
+
+**Attribution** (one extra load per arm with `track_functions=all`; server time, outside every statement;
+`results/b33/profile/`):
+
+| Function (self time) | Base | Feat, new | Feat, reference |
+|---|---:|---:|---:|
+| `morlet_chunk_step` (features) | 0.5 s | **48.9 s** | 117.9 s |
+| `morlet_append_chunk` (incl. writing segments) | 6.6 s | 19.1 s | 18.4 s |
+| `morlet_encode_chunk` (codec) | 7.1 s | 7.2 s | 6.5 s |
+| Load wall time (profiling on) | 24.2 s | 86.5 s | 153.7 s |
+
+The extractor's server time fell 2.4× (development: 2.6×). It remains the largest single cost of searchable
+ingestion; writing the segment rows adds about 12.5 s per load. With envelopes, `morlet_envelopes_from_chunks`
+took 14.0 s of the 15.7 s build.
+
+## Updated trade-off map (additions)
+
+| Dimension | B3.2 | **B3.3** |
+|---|---|---|
+| Aligned read of all channels of an acquisition | not measured | **MorletDB `_raw` 32–39% faster at p50, 2.3–3.1× at p95** |
+| Searchable at ingest (features), one connection | 0.30 M (stage 1, old path) | **1.64 M samples/s** (2.5× the old extractor on the B3.2 path) |
