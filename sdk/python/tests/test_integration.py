@@ -8,7 +8,7 @@ Every test works in its own schema, dropped afterwards.
 import os
 import unittest
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import psycopg
@@ -222,6 +222,33 @@ class Contract(unittest.TestCase):
         one = self.db.overview(self.coll, "ov", 0, 20000, buckets=1)[0]
         self.assertEqual((one.sample_count, one.min, one.max, one.mean, one.rms),
                          (whole.sample_count, whole.min, whole.max, whole.mean, whole.rms))
+
+    def test_time_filters_and_evidence_when_supported(self):
+        t0 = datetime(2026, 3, 1, tzinfo=timezone.utc)
+        x = events(40000, [3000, 15000, 30000], 8000)
+        self.db.ingest(self.coll, "early", x, sample_rate_hz=8000, channel="c", unit="u", start_time=t0)
+        self.db.ingest(self.coll, "late", x, sample_rate_hz=8000, channel="c", unit="u",
+                       start_time=datetime(2026, 3, 2, tzinfo=timezone.utc))
+        self.db.ingest(self.coll, "untimed", x, sample_rate_hz=8000, channel="c", unit="u")
+        try:
+            r = self.db.search(self.coll, "late", 14000, before_only=True, evidence=True, top_k=5)
+        except morletdb.UnsupportedError:
+            self.skipTest("server without search time filters")
+        self.assertTrue(r.matches)
+        for m in r.matches:
+            self.assertNotEqual(m.ref.recording_id, "untimed")
+            if m.ref.recording_id == "late":
+                self.assertLessEqual(m.ref.end_sample, 14000)
+            self.assertIsNotNone(m.evidence.start_utc)
+            self.assertEqual(m.evidence.stats.sample_count, m.ref.length)
+            self.assertEqual(len(m.evidence.overview), 16)
+            seg = self.db.read_ref(m.ref).samples
+            self.assertEqual((m.evidence.stats.min, m.evidence.stats.max), (seg.min(), seg.max()))
+        early = self.db.search(self.coll, "late", 14000, time_from=t0, time_to=t0 + timedelta(seconds=3), top_k=5)
+        self.assertTrue(early.matches)
+        self.assertTrue(all(m.ref.recording_id == "early" and m.ref.end_sample <= 24000 for m in early.matches))
+        with self.assertRaises(InvalidInputError):
+            self.db.search(self.coll, "late", 14000, time_from=datetime(2026, 1, 1))
 
 
 if __name__ == "__main__":

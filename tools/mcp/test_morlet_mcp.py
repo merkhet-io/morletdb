@@ -10,6 +10,11 @@ import morlet_mcp as m
 
 
 class Server(unittest.TestCase):
+    def test_start_time_reads_start_ns_like_the_server(self):
+        self.assertEqual(m.start_time({"start_ns": 1772409600000000000}), datetime(2026, 3, 2, tzinfo=timezone.utc))
+        self.assertEqual(m.start_time({"start": "2026-03-01T00:00:00Z"}), datetime(2026, 3, 1, tzinfo=timezone.utc))
+        self.assertIsNone(m.start_time({}))
+
     def test_tools_are_registered_read_only(self):
         tools = asyncio.run(m.mcp.list_tools())
         self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "describe_interval", "envelope_spectrum",

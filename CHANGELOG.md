@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+Search time filters and evidence (SQL 0.3.3):
+- `morlet_search_similar`, `morlet_search_envelope_interval` and `morlet_search_envelope_probes` take
+  `time_from`, `time_to` (windows whose span lies in the range) and `before_only` (windows that end before the
+  query interval starts: "has this happened before?"); `morlet_search_envelopes` takes the time range. They
+  use recording start times from the metadata (`start_ns`, else `start`, `starttime`, `start_time`;
+  `morlet_recording_start_ns`) and leave out recordings without one. Exact search joins per-recording
+  sample bounds, so the screened parallel scan is kept; probe search applies them inside the index scan,
+  so it still returns full results.
+- `morlet_search_similar_evidence(...)`: the same matches with their evidence inline: UTC start and end,
+  count, min, max, mean and RMS of the matched interval, and an overview in equal parts.
+- Python SDK: `search(..., time_from=, time_to=, before_only=, evidence=)` with `Match.evidence`. MCP:
+  `search_similar` and `search_from_time` take `before_only` (and time ranges) and return each hit's rms,
+  min, max and an 8-part sketch; the server reads `start_ns` as the SDK writes it.
+
 Faster search features at ingest (features unchanged, bit for bit; extractor versions unchanged):
 - `morlet-energy-v1` and `morlet-energy-lowrate-v1` build their twelve wavelet kernels once per sample rate
   instead of once per window, and compute eight coefficients side by side, each accumulated in the same

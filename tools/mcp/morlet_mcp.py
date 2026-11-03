@@ -85,6 +85,11 @@ def checked(conn, collection):
 
 
 def start_time(meta):
+    """Recording start from metadata, as the server reads it: start_ns (integer UTC nanoseconds, written by the
+    Python SDK), else the first of start, starttime, start_time (ISO 8601)."""
+    ns = meta.get("start_ns") if isinstance(meta, dict) else None
+    if isinstance(ns, int) and not isinstance(ns, bool):
+        return datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=ns // 1000)
     for key in ("start", "starttime", "start_time"):
         if isinstance(meta, dict) and meta.get(key):
             try:
@@ -444,7 +449,8 @@ def merge_hits(runs, query_recording, query_lo, query_hi):
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def search_similar(collection: str, recording_id: str, start_sample: int, end_sample: int,
-                   metadata_filter: str = "{}", top_k: int = 10, shifts: int = 0) -> dict:
+                   metadata_filter: str = "{}", top_k: int = 10, shifts: int = 0, before_only: bool = False,
+                   time_from: str = "", time_to: str = "", evidence: bool = True) -> dict:
     """Find the intervals most similar to [start_sample, end_sample) of a recording, tolerant to small time
     shifts (bounded-lag cross-correlation of signal envelopes). The interval must have the stored window
     length (usually 4096 samples; see list_collections). Searches recordings with the same sample rate,
@@ -455,7 +461,12 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     keeping each hit's best distance; on seismic test data this found more related events than any single
     placement. shifts=0 (default) is the setting the published evaluations used. Each hit has a distance
     (0 identical, < 0.3 strong), UTC times where known,
-    and the query shift that found it; metadata is given once per recording."""
+    and the query shift that found it; metadata is given once per recording.
+    before_only=True keeps only intervals that end before the query starts ("has this happened before?");
+    time_from / time_to (UTC, ISO 8601) keep intervals inside that range. Both need recordings with start
+    times and leave out recordings without one. With evidence (default), each hit also carries the
+    matched interval's rms, min, max and an 8-part min/max sketch, so you can judge it without reading it
+    (servers with SQL 0.3.3)."""
     top_k = max(1, min(top_k, 100))
     shifts = max(0, min(shifts, 4))
     flt = json.dumps(json.loads(metadata_filter or "{}"))
@@ -465,30 +476,46 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
         c = checked(conn, collection)
         src = recording(conn, c, recording_id)
         similar = conn.execute("SELECT to_regproc('public.morlet_search_similar') IS NOT NULL").fetchone()[0]
+        v033 = conn.execute("SELECT to_regproc('public.morlet_search_similar_evidence') IS NOT NULL").fetchone()[0]
+        if (before_only or time_from or time_to) and not v033:
+            raise ValueError("before_only and time ranges need a server with pg_morlet SQL 0.3.3")
+        bounds = [datetime.fromisoformat(t.replace("Z", "+00:00")) if t else None for t in (time_from, time_to)]
+        if any(b is not None and b.tzinfo is None for b in bounds):
+            raise ValueError("time_from and time_to need a time zone, e.g. 2026-03-01T00:00:00Z")
         runs, metas, used = [], {}, []
         for k in range(-shifts, shifts + 1):
             a, b = start_sample + k * step, end_sample + k * step
             if a < 0 or b > src["samples"]:
                 continue
             used.append(k * step)
-            if similar:
-                sql, args = ("SELECT * FROM morlet_search_similar(%s::regclass, %s, %s, %s, %s::jsonb, %s)",
-                             (c, recording_id, a, b, flt, top_k))
+            if v033:
+                sql, args = ("SELECT recording_id, start_sample, end_sample, distance, metadata, rms, min, max, overview "
+                             "FROM morlet_search_similar_evidence(%s::regclass, %s, %s, %s, %s::jsonb, %s, "
+                             "time_from => %s, time_to => %s, before_only => %s, overview_buckets => 8)",
+                             (c, recording_id, a, b, flt, top_k, bounds[0], bounds[1], before_only))
+            elif similar:
+                sql, args = ("SELECT *, NULL, NULL, NULL, NULL FROM morlet_search_similar(%s::regclass, %s, %s, %s, "
+                             "%s::jsonb, %s)", (c, recording_id, a, b, flt, top_k))
             else:                                # SQL 0.3.1: exact search with an explicit candidate cap
-                sql, args = ("SELECT * FROM morlet_search_envelope_interval(%s::regclass, %s, %s, %s, %s::jsonb, "
-                             "%s, 0.075, true, true, 1000000)", (c, recording_id, a, b, flt, top_k))
+                sql, args = ("SELECT *, NULL, NULL, NULL, NULL FROM morlet_search_envelope_interval(%s::regclass, "
+                             "%s, %s, %s, %s::jsonb, %s, 0.075, true, true, 1000000)", (c, recording_id, a, b, flt, top_k))
             run = []
-            for rid, s, e, d, meta in conn.execute(sql, args).fetchall():
+            for rid, s, e, d, meta, rms, lo, hi, overview in conn.execute(sql, args).fetchall():
                 metas[rid] = meta
-                run.append({"recording_id": rid, "start_sample": s, "end_sample": e, "distance": round(d, 4),
-                            "start_utc": at(start_time(meta), src["rate"], s), "query_shift_samples": k * step})
+                hit = {"recording_id": rid, "start_sample": s, "end_sample": e, "distance": round(d, 4),
+                       "start_utc": at(start_time(meta), src["rate"], s), "query_shift_samples": k * step}
+                if evidence and rms is not None:
+                    hit["evidence"] = {"rms": rms, "min": lo, "max": hi,
+                                       "sketch_min_max": [[p[2], p[3]] for p in overview or []]}
+                run.append(hit)
             runs.append(run)
     lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
     hits = merge_hits(runs, recording_id, lo, hi)[:top_k]
     t0 = start_time(src["metadata"])
     return {"query": {"collection": collection, "recording_id": recording_id, "start_sample": start_sample,
                       "end_sample": end_sample, "start_utc": at(t0, src["rate"], start_sample),
-                      "shifts_samples": used},
+                      "shifts_samples": used, "before_only": before_only,
+                      "time_range": [time_from or None, time_to or None]},
             "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)", "hits": hits,
             "recordings": {h["recording_id"]: metas[h["recording_id"]] for h in hits}}
 
@@ -510,7 +537,8 @@ def frame_window(onset, rate, window):
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}", search_filter: str = "{}",
-                     top_k: int = 10, min_frequency_hz: float = 0.0, look_seconds: float = 30.0) -> dict:
+                     top_k: int = 10, min_frequency_hz: float = 0.0, look_seconds: float = 30.0,
+                     before_only: bool = False) -> dict:
     """Search for intervals similar to what happens at a UTC time, without choosing the window yourself.
     metadata_filter must select the one recording that contains the time (e.g. '{"station": "PB01"}').
     The tool looks for onsets within look_seconds of the time (STA/LTA after an optional high-pass at
@@ -520,7 +548,7 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
     recordings matching search_filter. If there is no onset, the window starts a quarter window before the
     time. For short recordings such as snapshots, the query's own snapshot is left out and each other snapshot
     appears once, with its best window. Returns how the window was chosen and the hits, as search_similar
-    does. Prefer this to
+    does (with evidence). before_only=True searches only what happened before the time. Prefer this to
     search_similar when you know when something happened."""
     t = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
     flt = json.loads(metadata_filter or "{}")
@@ -562,7 +590,7 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
     start = max(0, min(start, n - window))
     short = n / rate < 120                       # a snapshot: its other windows are not "elsewhere"
     result = search_similar(collection, rid, start, start + window, search_filter, top_k * 4 + 20 if short else top_k,
-                            FRAME_SHIFTS)
+                            FRAME_SHIFTS, before_only=before_only)
     if short:                                    # snapshots: the best window of each other snapshot
         best, seen = [], set()
         for h in result["hits"]:
