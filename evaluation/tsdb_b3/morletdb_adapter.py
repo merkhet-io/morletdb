@@ -31,7 +31,8 @@ GROUP_OF = {c: g for g, s in wl.GROUPS.items() for c in s["channels"]}
 def start(volume, durability="D2"):
     cmd = ["postgres"] + (["-c", "synchronous_commit=off"] if durability == "D2" else []) + \
         (["-c", f"min_wal_size={VARIANT['min_wal_size']}"] if VARIANT.get("min_wal_size") else []) + \
-        (["-c", f"max_wal_size={VARIANT['max_wal_size']}"] if VARIANT.get("max_wal_size") else [])
+        (["-c", f"max_wal_size={VARIANT['max_wal_size']}"] if VARIANT.get("max_wal_size") else []) + \
+        (["-c", "track_functions=all"] if VARIANT.get("profile") else [])
     common.fresh(NAME, IMAGE, volume, "/var/lib/postgresql/data", [f"{PORT}:5432"],
                  {"POSTGRES_USER": "morlet", "POSTGRES_PASSWORD": _PASSWORD, "POSTGRES_DB": "morlet"}, cmd)
     for _ in range(240):
@@ -66,9 +67,9 @@ def connect():
     raise RuntimeError("cannot connect")
 
 
-def create(conn, search=False):
+def create(conn, envelopes=False):
     conn.execute("SELECT morlet_create_stream_collection('public', %s)", (COLLECTION,))
-    if search:
+    if envelopes:
         conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (COLLECTION,))
 
 
@@ -169,6 +170,16 @@ def analytics(conn, acq, offset, length):
     row = conn.execute(q, (offset, offset + length, MAX_READ, COLLECTION, rid(acq, "vibration_1"), MAX_READ,
                            offset + length)).fetchone()
     return [float(v) for v in row]
+
+
+def function_profile(conn, top=25):
+    """B3.3 attribution: server time per function (pg_stat_user_functions, track_functions=all), largest self
+    time first. Nested calls count in total_ms of every caller and in self_ms of the callee only."""
+    time.sleep(1.5)    # importer connections flush their statistics when they exit
+    rows = conn.execute("SELECT funcname, calls, total_time, self_time FROM pg_stat_user_functions "
+                        "ORDER BY self_time DESC LIMIT %s", (top,)).fetchall()
+    return [{"function": r[0], "calls": int(r[1]), "total_ms": round(float(r[2]), 1), "self_ms": round(float(r[3]), 1)}
+            for r in rows]
 
 
 def settle(conn):

@@ -244,3 +244,95 @@ Track B results are reported separately and never compared with Track A results.
 4. No read or analytics regression: p50 of R1–R5 and analytics each at most 1.1× B3.1's confirmed value.
 
 Comparative statements keep the stage-1 rule (≥ 10%, all loads, or both p50 and p95).
+
+## Amendment B3.3: acquisition reads, and the cost of search at ingest (FROZEN before its confirmation run)
+
+Frozen 2026-11-03 in the commit that adds this section, after development on the development set only
+(`results/dev/b33*`). Earlier stages stay as published.
+
+**Questions.**
+- **A: acquisition reads.** B3 read each channel as its own recording. How fast is reading one time interval
+  of an acquisition from all 7 channels (64 kHz, 4 kHz and 1 Hz)? Measured through MorletDB's acquisition
+  API, through the client's own one-statement read, and with QuestDB.
+- **B: search at ingest.** Stage 1 measured search structures once, on the old client path (0.30 M
+  samples/s). What do search features and envelopes cost on the B3.2 path, and where does the time go?
+
+**What changed (development findings, included in the image under test):**
+1. **Feature extractor** (`morlet-energy-v1`, `-lowrate-v1`; `morlet_core::morlet`):
+   - The twelve kernels are built once per sample rate instead of once per 512-sample window.
+   - Eight coefficients are computed side by side, each accumulated in the same order.
+   - Features are bitwise unchanged:
+     - a unit test compares every bit with the previous code;
+     - on the development set, all 395,316 stored feature vectors had the same digest under both images.
+2. **`morlet_read_acquisition_raw`** (new, SQL 0.3.3): the rows of `morlet_read_acquisition`, with samples
+   as little-endian float64 bytes, read in one statement.
+
+**Image:** `morletdb:b33`, built with `deploy/Dockerfile` from the commit that adds this section. The
+reference image for the extractor is `morletdb:b33-dev`, built from main at `ed855cb`: the same code without
+change 1 or 2. Image ids are recorded in every result.
+
+**Part A, acquisition reads** (on M-033's D2 load 1, after storage, R1–R5 and analytics):
+- **Setup:** every acquisition is registered with its 7 channels: offset 0, clock `daq`, origin = the
+  acquisition's start. The registration time is reported.
+- **Windows:**
+  - AQ1: 64 ms, about 4,096 + 3 × 256 samples, plus the 1 Hz channel when a sample falls inside.
+  - AQ2: 0.5 s, 3 × 32,000 + 3 × 2,000 samples.
+  - For each, 20 intervals are fixed by seed 20261103: a random acquisition, and a random start inside it.
+- **Timing:** each interval is timed 50 times after one checked warm-up, end to end into numpy arrays.
+- **Arms:**
+  - `morlet_read_acquisition` (as shipped since SQL 0.3.0);
+  - `morlet_read_acquisition_raw`;
+  - `client_raw`: the client maps time to samples itself and reads every non-empty channel with
+    `morlet_read_interval_raw` in one statement;
+  - QuestDB: one time-range query per group table. It runs on QuestDB's D2 load 1 in the same session,
+    after its R1–R5 and analytics.
+- **Correctness:** every result is compared bit for bit with the manifest arrays. This includes each
+  channel's first sample index and the exact time of that sample (QuestDB: every timestamp). Any mismatch
+  voids the arm.
+- **Statements:** stage-1 rule, ≥ 10% at both p50 and p95.
+
+**Part B, search at ingest** (single connection, B3.2 client path, D2):
+- **Arms, three fresh loads each:**
+  - **M-033:** base, no features.
+  - **M-033-feat:** search features at ingest, `morlet-energy-v1` for 64 and 4 kHz, `-lowrate-v1` for 1 Hz.
+  - **M-033-search:** features plus envelopes enabled, built after the load with `morlet_build_envelopes`
+    (window 4,096). The build time is reported separately.
+  - **M-033-feat on the reference image:** the extractor before change 1.
+- **Order:** loads alternate by round: base, feat, search, feat-reference; then repeat.
+- **Recorded:**
+  - full correctness after every load;
+  - the stored-features digest for every feat and search load;
+  - storage on each arm's load 1.
+- **Attribution:** one more load per arm with `track_functions=all`, reporting server time per function.
+  These loads are outside every statement.
+
+**Acceptance criteria for change 1 (benchmark set):**
+1. Every load passes full correctness.
+2. Every feat and search load on `morletdb:b33` has the same features digest as every feat-reference load.
+3. M-033-feat median ingestion is at least 1.5× the feat-reference median.
+
+Change 2 is adopted if its arm has no mismatch. Its speed is reported against the other arms by the
+statement rule above.
+
+**Development pilots (development set; not results):**
+
+| Measure | Value |
+|---|---|
+| Ingestion: base / features (old extractor) / features (new) | 4.91 / 0.72 / 1.46 M samples/s |
+| Features: server time in `morlet_chunk_step` (old → new) | 108 s → 41 s of 140 s → 69 s |
+| AQ1 p50: `morlet_read_acquisition` / `client_raw` / QuestDB | 3.0 / 1.9 / 2.6 ms |
+| AQ2 p50: the same arms | 12.7 / 6.2 / 8.1 ms |
+| Attribution, AQ2 (`morlet_read_acquisition` vs `client_raw`) | server 5.7 vs 4.0 ms; the rest is returning `float8[]` |
+
+### B3.3 deviations
+
+1. **First attempt aborted and restarted from scratch.** The first confirmation run (started 2026-11-03,
+   about 10:55) was stopped at 11:17, in round 2, because the laptop had to be moved; sleep would have frozen
+   the containers during timed loads. Its partial results were moved unread to `results/b33-aborted-1/` and
+   enter no statement. The run was restarted unchanged (same commit, image, script and order) from round 1.
+2. **Profile result of the feat arm overwritten, recovered from the log.** `run_b33.sh` wrote the profile load
+   of M-033-feat on the reference image to the same file as the one on `morletdb:b33`
+   (`results/b33/profile/load_morletdb-033-feat_D2_r4.json`). The overwritten result was recovered unchanged
+   from the run log (`results/b33/run.log`, which holds every result as printed) and saved under the original
+   name; the reference profile moved to `results/b33/profile/reference/`. Profile loads are outside every
+   statement; no measurement was repeated.

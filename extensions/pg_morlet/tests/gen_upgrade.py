@@ -46,6 +46,7 @@ RECREATED = {
 }
 NEW_SQL = ["morlet_append_chunk_raw", "morlet_read_interval_raw", "morlet_interval_stats", "morlet_check_candidates",
            "morlet_interval_buckets", "morlet_interval_overview", "morlet_enable_chunk_summaries", "morlet_build_chunk_summaries",
+           "morlet_read_acquisition_raw",
            "morlet_recording_start_ns", "morlet_time_bounds", "morlet_time_ns", "morlet_before_ns",
            "morlet_search_similar_evidence"]
 

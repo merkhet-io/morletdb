@@ -1,0 +1,68 @@
+{
+ "note": "exploratory attribution on the development set; not a frozen B3 measure",
+ "image": "morletdb:b33-dev",
+ "AQ1": {
+  "acq_end_to_end": {
+   "n": 400,
+   "p50_ms": 2.579,
+   "p95_ms": 3.809,
+   "max_ms": 5.468
+  },
+  "client_end_to_end": {
+   "n": 400,
+   "p50_ms": 1.644,
+   "p95_ms": 2.553,
+   "max_ms": 4.243
+  },
+  "acq_server": {
+   "n": 400,
+   "p50_ms": 1.907,
+   "p95_ms": 3.017,
+   "max_ms": 4.286
+  },
+  "client_server": {
+   "n": 400,
+   "p50_ms": 1.476,
+   "p95_ms": 2.266,
+   "max_ms": 4.377
+  },
+  "mapping_7": {
+   "n": 400,
+   "p50_ms": 0.419,
+   "p95_ms": 0.708,
+   "max_ms": 1.411
+  }
+ },
+ "AQ2": {
+  "acq_end_to_end": {
+   "n": 400,
+   "p50_ms": 12.178,
+   "p95_ms": 118.53,
+   "max_ms": 282.216
+  },
+  "client_end_to_end": {
+   "n": 400,
+   "p50_ms": 6.543,
+   "p95_ms": 41.839,
+   "max_ms": 249.032
+  },
+  "acq_server": {
+   "n": 400,
+   "p50_ms": 5.71,
+   "p95_ms": 12.234,
+   "max_ms": 49.955
+  },
+  "client_server": {
+   "n": 400,
+   "p50_ms": 4.023,
+   "p95_ms": 11.19,
+   "max_ms": 41.139
+  },
+  "mapping_7": {
+   "n": 400,
+   "p50_ms": 0.624,
+   "p95_ms": 4.09,
+   "max_ms": 33.549
+  }
+ }
+}
