@@ -323,3 +323,10 @@ statement rule above.
 | AQ1 p50: `morlet_read_acquisition` / `client_raw` / QuestDB | 3.0 / 1.9 / 2.6 ms |
 | AQ2 p50: the same arms | 12.7 / 6.2 / 8.1 ms |
 | Attribution, AQ2 (`morlet_read_acquisition` vs `client_raw`) | server 5.7 vs 4.0 ms; the rest is returning `float8[]` |
+
+### B3.3 deviations
+
+1. **First attempt aborted and restarted from scratch.** The first confirmation run (started 2026-11-03,
+   about 10:55) was stopped at 11:17, in round 2, because the laptop had to be moved; sleep would have frozen
+   the containers during timed loads. Its partial results were moved unread to `results/b33-aborted-1/` and
+   enter no statement. The run was restarted unchanged (same commit, image, script and order) from round 1.
