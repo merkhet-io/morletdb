@@ -784,11 +784,16 @@ END $$;
 -- writes it), else the first of `start`, `starttime`, `start_time` (ISO 8601, as the importers write it),
 -- as the SDK and the MCP server read it; NULL when none is present and valid.
 CREATE FUNCTION public.morlet_recording_start_ns(metadata jsonb) RETURNS numeric
-LANGUAGE sql STABLE PARALLEL SAFE SET search_path=pg_catalog AS $$
-  SELECT CASE WHEN pg_input_is_valid(metadata->>'start_ns','numeric') THEN (metadata->>'start_ns')::numeric
-    WHEN pg_input_is_valid(t.v,'timestamptz') THEN extract(epoch FROM t.v::timestamptz)*1000000000 END
-  FROM (SELECT coalesce(nullif(metadata->>'start',''),nullif(metadata->>'starttime',''),nullif(metadata->>'start_time','')) AS v) t
-$$;
+-- PL/pgSQL, not SQL: an inlined SQL CASE can have its casts folded at plan time (PostgreSQL 18) before the
+-- validity test runs.
+LANGUAGE plpgsql STABLE PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE v text;
+BEGIN
+  IF pg_input_is_valid(metadata->>'start_ns','numeric') THEN RETURN (metadata->>'start_ns')::numeric; END IF;
+  v:=coalesce(nullif(metadata->>'start',''),nullif(metadata->>'starttime',''),nullif(metadata->>'start_time',''));
+  IF pg_input_is_valid(v,'timestamptz') THEN RETURN extract(epoch FROM v::timestamptz)*1000000000; END IF;
+  RETURN NULL;
+END $$;
 
 -- Time filters of the search functions as per-recording window-start bounds: windows of `window_size`
 -- samples of an eligible recording whose whole span lies in [from_ns, to_ns) start in [lo, hi]. Recordings
