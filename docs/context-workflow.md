@@ -218,7 +218,10 @@ SELECT role, start_sample, samples FROM morlet_read_acquisition_raw('spindle', '
     `p75` and 0.57 with it.
   - C1 found the p75 of DC spindle current informative.
 - **Retries:** `morlet_create_acquisition` and `morlet_add_acquisition_channel`
-  are idempotent; a conflicting retry is an error. Context batches per channel
+  are idempotent; a conflicting retry is an error.
+- **Row security:** with `morlet_enable_row_security`, a non-owner role adds an
+  acquisition's first channel in the transaction that creates it, and can add
+  channels only to acquisitions it can see ([access control](access-control.md)). Context batches per channel
   are `<batch>@<acquisition>/<role>`.
 
 ## Nearest occurrences

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+Security: acquisitions under row-level security (SQL 0.3.3):
+- With `morlet_enable_row_security`, a role that could add acquisition channels could attach a recording it
+  sees to an acquisition it does not see, by naming the acquisition's ID, and then read that acquisition's
+  metadata (GHSA-pg6f-hcvw-vw34; affects SQL 0.3.1 and 0.3.2, releases 0.3.1-alpha.1 to 0.3.3-alpha.1). The
+  foreign key was the only check. Now a channel row can be inserted or moved only into an acquisition the
+  caller can see, in `morlet_add_acquisition_channel` and in the channel table's policy (direct `INSERT` and
+  `UPDATE`). An acquisition is visible through a visible channel, and to the transaction that created it until
+  its first channel is added: under row security, add the first channel in the creating transaction.
+  `ALTER EXTENSION pg_morlet UPDATE` re-applies the policies to collections that use row security.
+  Regression test: `tests/acquisition_rls.sh` (two tenants, function and direct writes, separate transactions).
+
 Refusing oversized requests earlier (#160; results within budget unchanged):
 - `morlet_compare_summary` checked `max_candidates` after flattening the whole history into one array; it now
   counts at most `max_candidates + 1` segments first. `morlet_compare_to_history`, `morlet_history_neighbors`,
