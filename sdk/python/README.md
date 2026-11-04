@@ -14,7 +14,7 @@ pip install "./sdk/python[plot]"        # from a checkout; [plot] adds matplotli
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.3-alpha.1
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.4-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 export DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet
 python examples/python/quickstart.py     # ingest, read, search, plot (no download)
