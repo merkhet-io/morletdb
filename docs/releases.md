@@ -79,8 +79,9 @@ sudo apt install ./postgresql-17-pg-morlet_<version>_amd64.deb
 
 then `CREATE EXTENSION pg_morlet;` in a database. The file names use `.` where the
 package version has `~` (`0.3.5.alpha.1` for version `0.3.5~alpha.1-1`), because
-GitHub release assets cannot contain `~`; in 0.3.5-alpha.1 only, `SHA256SUMS` lists
-the names with `~`, so compare the hashes by hand (`sha256sum *.deb`). The packages are trialled
+GitHub release assets cannot contain `~`. (0.3.5-alpha.1 was first published with a
+`SHA256SUMS` that listed the names with `~`; it was replaced with the same hashes under
+the served names.) The packages are trialled
 only on Debian bookworm images; other distributions are not tested. pgvector
 (for probe search) is a separate package, for example `postgresql-17-pgvector`.
 An existing database is upgraded with `ALTER EXTENSION pg_morlet UPDATE`.
