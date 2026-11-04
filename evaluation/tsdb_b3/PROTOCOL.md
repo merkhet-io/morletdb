@@ -538,3 +538,17 @@ anomaly detection), taosX, the native (non-WebSocket) connector.
 
 **Downloads (to be approved before development):** `tdengine/tsdb:3.4.3.3` (linux/arm64, 256 MB compressed)
 and `taos-ws-py` 0.7.0 (PyPI, macOS arm64 wheel) into a separate venv.
+
+### B3.6 deviations
+
+1. **The tsz arm is lossy; stopped after its first load.** T-tsz D2 r1 (23:10) failed the correctness check: two of
+   868 channels (vibration of `N09_M07_F10_KA05_1` and `N09_M07_F10_KA06_1`) differed from the source in 7 and 47
+   samples, all near the end of the recording, by at most 8 ULP (largest absolute difference 5.6e-17); counts
+   and times were exact. Diagnosis (`diag_tdengine_tsz.py`, read from the failed load's volume): TDengine's
+   reference documentation for taosd, at the tested version, states that `dPrecision` (default and minimum
+   1e-16) truncates the mantissa of doubles under TSZ, i.e. tsz is error-bounded lossy compression; the
+   compression page that this protocol used does not say so. The development set happened to show no
+   difference. Decided at 23:30, before any further result was read: the tsz arm is reported as lossy with
+   this diagnosis and makes no performance statement (a lossy arm cannot meet B3's correctness criterion);
+   its remaining loads (D2 r2–r3, D1 r1–r3) are not run. Its development figures stay development figures.
+   The default and zstd arms are complete (12 loads, all correct).
