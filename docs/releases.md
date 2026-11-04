@@ -49,6 +49,11 @@ Compose project, and pushes that same image to
 `ghcr.io/merkhet-io/morletdb:<VERSION>`. It then pulls the registry digest,
 repeats the trial with a fresh volume and creates a GitHub prerelease containing
 the image digest and source commit. Failed trials prevent the GitHub release.
+In parallel it builds a Debian package of the extension for PostgreSQL 17
+and 18 on amd64 and arm64 (`deploy/Dockerfile.deb`, against the PostgreSQL
+project's packages on Debian bookworm), installs each one with apt into a clean
+official `postgres` image and runs the same quickstart and restart; the release
+attaches the four packages with `SHA256SUMS` and a build provenance attestation.
 PRs run the candidate trial without publishing. The standalone release Compose
 file contains no build directive, so the quickstart cannot compile a local image.
 
@@ -56,6 +61,23 @@ Use a new prerelease version for every publication; never intentionally replace
 an existing release image/tag. Before retrying a failed publishing run, inspect
 whether the package or Git tag already exists. A pushed image with a failed
 subsequent trial is not an approved release. Do not use it.
+
+## Install a package on an existing server
+
+From the first release after 0.3.4-alpha.1, each release has Debian packages
+for servers that run the PostgreSQL project's packages (apt.postgresql.org) on
+Debian 12 or later, for example:
+
+```sh
+sha256sum -c SHA256SUMS --ignore-missing
+gh attestation verify postgresql-17-pg-morlet_<version>_amd64.deb --owner merkhet-io
+sudo apt install ./postgresql-17-pg-morlet_<version>_amd64.deb
+```
+
+then `CREATE EXTENSION pg_morlet;` in a database. The packages are trialled
+only on Debian bookworm images; other distributions are not tested. pgvector
+(for probe search) is a separate package, for example `postgresql-17-pgvector`.
+An existing database is upgraded with `ALTER EXTENSION pg_morlet UPDATE`.
 
 ## Try a published release
 
