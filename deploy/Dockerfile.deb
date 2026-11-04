@@ -1,0 +1,68 @@
+# Debian package of pg_morlet for one PostgreSQL major version and the build machine's architecture.
+# Built against the PostgreSQL project's (PGDG) packages on Debian bookworm, the base of the official
+# postgres images; the release workflow installs every package into a clean postgres image and runs the
+# quickstart before publishing it.
+#   docker buildx build -f deploy/Dockerfile.deb --build-arg PG_MAJOR=17 --build-arg VERSION=$(cat VERSION) \
+#     --output type=local,dest=dist .
+ARG PG_MAJOR=17
+FROM postgres:${PG_MAJOR}-bookworm AS postgres
+ARG PG_MAJOR
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-server-dev-${PG_MAJOR} && rm -rf /var/lib/apt/lists/*
+
+FROM rust:1.91.1-bookworm AS builder
+ARG PG_MAJOR
+RUN apt-get update && apt-get install -y --no-install-recommends clang libclang-dev libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+COPY --from=postgres /usr/lib/postgresql/${PG_MAJOR} /usr/lib/postgresql/${PG_MAJOR}
+COPY --from=postgres /usr/include/postgresql /usr/include/postgresql
+COPY --from=postgres /usr/share/postgresql/${PG_MAJOR} /usr/share/postgresql/${PG_MAJOR}
+RUN cargo install cargo-pgrx --version 0.16.1 --locked --debug
+RUN cargo pgrx init --pg${PG_MAJOR} /usr/lib/postgresql/${PG_MAJOR}/bin/pg_config
+WORKDIR /src
+COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
+COPY .cargo .cargo
+COPY crates crates
+COPY extensions extensions
+COPY testdata testdata
+COPY LICENSE LICENSE
+WORKDIR /src/extensions/pg_morlet
+RUN cargo pgrx package --pg-config /usr/lib/postgresql/${PG_MAJOR}/bin/pg_config \
+      --no-default-features --features pg${PG_MAJOR}
+ARG VERSION
+RUN set -eu; \
+    test -n "$VERSION"; \
+    arch=$(dpkg --print-architecture); \
+    name=postgresql-${PG_MAJOR}-pg-morlet; \
+    deb_version="$(echo "$VERSION" | sed 's/-/~/')-1"; \
+    root=/pkg/$name; \
+    mkdir -p "$root/DEBIAN" "$root/usr/share/doc/$name" /out; \
+    cp -a /src/target/release/pg_morlet-pg${PG_MAJOR}/usr "$root/"; \
+    cp /src/LICENSE "$root/usr/share/doc/$name/copyright"; \
+    printf '%s\n' \
+      "Package: $name" \
+      "Version: $deb_version" \
+      "Architecture: $arch" \
+      "Maintainer: MorletDB contributors <https://github.com/merkhet-io/morletdb/issues>" \
+      "Depends: postgresql-${PG_MAJOR}, libc6 (>= 2.36)" \
+      "Section: database" \
+      "Priority: optional" \
+      "Homepage: https://github.com/merkhet-io/morletdb" \
+      "Description: MorletDB waveform recordings and similarity search for PostgreSQL ${PG_MAJOR}" \
+      " The pg_morlet extension (developer alpha): lossless storage of uniformly sampled" \
+      " recordings, exact interval reads, interval statistics and bounded-lag similarity search." \
+      " Probe search additionally needs pgvector 0.8 or later." \
+      > "$root/DEBIAN/control"; \
+    dpkg-deb --root-owner-group --build "$root" "/out/${name}_${deb_version}_${arch}.deb"; \
+    dpkg-deb --info "/out/${name}_${deb_version}_${arch}.deb"; \
+    dpkg-deb --contents "/out/${name}_${deb_version}_${arch}.deb"
+
+# Trial image: a clean official postgres image with the package installed through apt.
+#   docker buildx build -f deploy/Dockerfile.deb --target trial --build-context dist=dist --build-arg PG_MAJOR=17 --load -t morletdb:deb-trial .
+FROM postgres:${PG_MAJOR}-bookworm AS trial
+ARG PG_MAJOR
+COPY --from=dist / /tmp/dist/
+RUN apt-get update && apt-get install -y --no-install-recommends /tmp/dist/postgresql-${PG_MAJOR}-pg-morlet_*.deb \
+    && rm -rf /var/lib/apt/lists/* /tmp/dist
+
+# Default target: only the .deb file.
+FROM scratch AS package
+COPY --from=builder /out/ /

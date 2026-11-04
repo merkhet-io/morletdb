@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.16, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.17, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,24 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.17 (merged evidence added; no new retrieval measurement)
+
+- **Codec against the 2026 float codecs (B4).** The storage claim is narrowed: MorletDB is the smallest on four of
+  six waveforms; Pcodec is 5–8% smaller on IMS decimals and Paderborn physical values, ClickHouse 26.10 PCO
+  3% on the latter; every ALP arm is 2.6–7.9× larger on calibrated values. Section 4, supplement (new Table
+  B4), ledger.
+- **Chunk summaries (CS1, S1 in the repository).** Interval statistics and overviews bitwise identical and 58×
+  faster at p95 for 60 s at 64 kHz, for 4.5% slower ingestion. Section 4, new supplement section, ledger.
+- **B3.3.** Seven-channel acquisition reads 32–39% faster than QuestDB at p50; search features at ingest cost
+  3.9× the raw ingest time (was 9.6×). Section 4, supplement, ledger.
+- **Small machines (EX1, EX2; X1, X2 in the repository).** Full workflow within 2 CPUs and 512 MB without
+  slowdown; on a Raspberry Pi 3B+ (no fan) 78k samples/s with features, 258k without, search lists identical
+  to the desktop. Section 4, limitations, new supplement section, ledger.
+- **Security fix.** Acquisitions under row-level security (SQL 0.3.1–0.3.2) let a role attach a recording to
+  an acquisition it cannot see; fixed in SQL 0.3.3 / release 0.3.4-alpha.1 (GHSA-pg6f-hcvw-vw34). Section 4
+  ("Access control"), supplement.
+- Studies renamed in the report to avoid clashes with earlier labels: S1 → CS1, X1 → EX1, X2 → EX2.
 
 ## What changed in 0.16 (screened exact search added; no new measurement for the report)
 

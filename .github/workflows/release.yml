@@ -4,7 +4,7 @@ on:
     branches: [main]
     paths: ['VERSION', '.github/workflows/release.yml']
   pull_request:
-    paths: ['VERSION', '.github/workflows/release.yml', 'compose.release.yaml', 'deploy/Dockerfile']
+    paths: ['VERSION', '.github/workflows/release.yml', 'compose.release.yaml', 'deploy/Dockerfile', 'deploy/Dockerfile.deb']
   workflow_dispatch:
 permissions:
   contents: read
@@ -122,6 +122,71 @@ jobs:
           docker tag morletdb:candidate "$image:$VERSION-${{ matrix.arch }}"
           docker push "$image:$VERSION-${{ matrix.arch }}"
 
+  # Debian packages for existing servers: one per PostgreSQL major and architecture, built natively,
+  # installed with apt into a clean official postgres image (Debian bookworm, PostgreSQL project packages)
+  # and trialled with the image's quickstart and restart before the release may attach them.
+  packages:
+    strategy:
+      fail-fast: true
+      matrix:
+        pg: ['17', '18']
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          - pg: '17'
+            data: /var/lib/postgresql/data
+          - pg: '18'
+            data: /var/lib/postgresql
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      PG_MAJOR: ${{ matrix.pg }}
+      MORLET_IMAGE: morletdb:deb-trial
+      MORLET_PLATFORM: linux/${{ matrix.arch }}
+      MORLET_DATA_PATH: ${{ matrix.data }}
+      COMPOSE_PROJECT_NAME: deb-trial
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the package
+        run: |
+          docker buildx build -f deploy/Dockerfile.deb --target package --platform "$MORLET_PLATFORM" \
+            --build-arg PG_MAJOR="$PG_MAJOR" --build-arg VERSION="$(cat VERSION)" \
+            --cache-from "type=gha,scope=deb-$PG_MAJOR-${{ matrix.arch }}" \
+            --cache-to "type=gha,mode=max,scope=deb-$PG_MAJOR-${{ matrix.arch }}" \
+            --output type=local,dest=dist .
+          ls -l dist
+          test "$(ls dist/*.deb | wc -l)" -eq 1
+      - name: Install it with apt into a clean postgres image
+        run: |
+          docker buildx build -f deploy/Dockerfile.deb --target trial --platform "$MORLET_PLATFORM" \
+            --build-arg PG_MAJOR="$PG_MAJOR" --build-context dist=dist --load -t "$MORLET_IMAGE" .
+      - name: Clean-checkout quickstart and restart trial
+        run: |
+          docker compose -f compose.release.yaml run --rm walkthrough
+          docker compose -f compose.release.yaml restart db
+          docker compose -f compose.release.yaml up --no-build -d --wait db
+          docker compose -f compose.release.yaml run --rm walkthrough
+          docker compose -f compose.release.yaml exec -T db psql -U morlet -d morlet -Atc \
+            "SELECT current_setting('server_version_num')::int / 10000, extversion FROM pg_extension WHERE extname = 'pg_morlet'"
+      - name: Trial diagnostics
+        if: failure()
+        run: docker compose -f compose.release.yaml logs db
+      - name: Remove trial volume
+        if: always()
+        run: docker compose -f compose.release.yaml down -v
+      - name: Keep the package for the release
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.pg }}-${{ matrix.arch }}
+          path: dist/*.deb
+          if-no-files-found: error
+
   publish:
     needs: image
     if: needs.image.outputs.publish == 'true'
@@ -194,10 +259,12 @@ jobs:
         run: docker compose -f compose.release.yaml down -v
 
   release:
-    needs: [publish, registry-trial]
+    needs: [publish, registry-trial, packages]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
       - name: Collect the SBOMs of both architectures
@@ -205,6 +272,24 @@ jobs:
         with:
           pattern: sbom-*
           merge-multiple: true
+      - name: Collect the trialled Debian packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: deb-*
+          merge-multiple: true
+      - name: Checksums of the packages
+        run: |
+          # GitHub release assets cannot contain "~" (it becomes "."), so name the files as GitHub will serve
+          # them before the checksums are written; the package version inside stays 0.3.5~alpha.1-1.
+          for f in *~*.deb; do [ -e "$f" ] && mv -- "$f" "${f//\~/.}"; done
+          ls -l *.deb
+          test "$(ls *.deb | wc -l)" -eq 4
+          sha256sum *.deb > SHA256SUMS
+          cat SHA256SUMS
+      - name: Build provenance attestation for the packages
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: '*.deb'
       - name: Publish GitHub prerelease only after both registry trials succeed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -213,5 +298,6 @@ jobs:
         run: |
           printf '%s\n' "$DIGEST" > image-digest.txt
           { cat CHANGELOG.md; printf '\nImage: %s (linux/amd64 and linux/arm64)\nCommit: %s\n' "$DIGEST" "$GITHUB_SHA"
-            printf 'SBOMs (SPDX): attached. Verify the build provenance with: gh attestation verify oci://%s --owner %s\n' "$DIGEST" "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
-          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
+            printf 'SBOMs (SPDX): attached. Verify the build provenance with: gh attestation verify oci://%s --owner %s\n' "$DIGEST" "$GITHUB_REPOSITORY_OWNER"
+            printf '\nDebian packages for existing PostgreSQL 17 and 18 servers (PostgreSQL project packages on Debian bookworm; amd64, arm64), each installed with apt and trialled before release: `sudo apt install ./postgresql-17-pg-morlet_<version>_<arch>.deb`, then `CREATE EXTENSION pg_morlet`. Checksums: SHA256SUMS. Verify with: gh attestation verify <file>.deb --owner %s\n' "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
+          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json *.deb SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md

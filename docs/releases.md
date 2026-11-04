@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.4-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.5-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -25,6 +25,9 @@ a leading v; GHCR image tags do not.
   GHSA-pg6f-hcvw-vw34 (acquisitions under row-level security) and the findings of the 0.3.3 review; adds raw
   float64 reads and writes, chunk summaries, interval statistics and overviews, search time filters and
   evidence, and screened exact search. The first release with an SBOM per architecture and build provenance.
+- **0.3.5-alpha.1:** the same SQL version 0.3.3 and extension code as 0.3.4-alpha.1 (no update script needed).
+  The first release with Debian packages for existing PostgreSQL 17 and 18 servers (amd64 and arm64), each
+  installed with apt and trialled before release, with checksums and build provenance.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
@@ -49,6 +52,11 @@ Compose project, and pushes that same image to
 `ghcr.io/merkhet-io/morletdb:<VERSION>`. It then pulls the registry digest,
 repeats the trial with a fresh volume and creates a GitHub prerelease containing
 the image digest and source commit. Failed trials prevent the GitHub release.
+In parallel it builds a Debian package of the extension for PostgreSQL 17
+and 18 on amd64 and arm64 (`deploy/Dockerfile.deb`, against the PostgreSQL
+project's packages on Debian bookworm), installs each one with apt into a clean
+official `postgres` image and runs the same quickstart and restart; the release
+attaches the four packages with `SHA256SUMS` and a build provenance attestation.
 PRs run the candidate trial without publishing. The standalone release Compose
 file contains no build directive, so the quickstart cannot compile a local image.
 
@@ -56,6 +64,26 @@ Use a new prerelease version for every publication; never intentionally replace
 an existing release image/tag. Before retrying a failed publishing run, inspect
 whether the package or Git tag already exists. A pushed image with a failed
 subsequent trial is not an approved release. Do not use it.
+
+## Install a package on an existing server
+
+From 0.3.5-alpha.1, each release has Debian packages
+for servers that run the PostgreSQL project's packages (apt.postgresql.org) on
+Debian 12 or later, for example:
+
+```sh
+sha256sum -c SHA256SUMS --ignore-missing
+gh attestation verify postgresql-17-pg-morlet_<version>_amd64.deb --owner merkhet-io
+sudo apt install ./postgresql-17-pg-morlet_<version>_amd64.deb
+```
+
+then `CREATE EXTENSION pg_morlet;` in a database. The file names use `.` where the
+package version has `~` (`0.3.5.alpha.1` for version `0.3.5~alpha.1-1`), because
+GitHub release assets cannot contain `~`; in 0.3.5-alpha.1 only, `SHA256SUMS` lists
+the names with `~`, so compare the hashes by hand (`sha256sum *.deb`). The packages are trialled
+only on Debian bookworm images; other distributions are not tested. pgvector
+(for probe search) is a separate package, for example `postgresql-17-pgvector`.
+An existing database is upgraded with `ALTER EXTENSION pg_morlet UPDATE`.
 
 ## Try a published release
 

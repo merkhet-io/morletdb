@@ -1,0 +1,224 @@
+{
+ "config": "e512",
+ "limits": {
+  "cpus": "2",
+  "memory": "512m",
+  "settings": {
+   "shared_buffers": "64MB",
+   "max_connections": "20",
+   "maintenance_work_mem": "32MB"
+  }
+ },
+ "image": "morletdb:x1",
+ "rep": 5,
+ "image_id": "sha256:03c92c8c226aafe8304a48ab4075ed8e6dcc875cd6e19af9c25eb863537ea634",
+ "image_size_mib": 439.5,
+ "architecture": "arm64",
+ "samples": 101586735,
+ "started": "2026-11-04T08:33:13",
+ "phases": {
+  "idle": {
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 102.7,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 7.6,
+   "file_cache_mib": 79.5
+  },
+  "ingest": {
+   "wall_s": 1296.69,
+   "samples_per_s": 78343,
+   "ack_per_acquisition": {
+    "n": 124,
+    "p50_ms": 9607.667,
+    "p95_ms": 14682.424,
+    "max_ms": 22223.408
+   },
+   "device": {
+    "temp_c_max": 70.4,
+    "arm_mhz_min": 900,
+    "arm_mhz_median": 1200.0,
+    "throttled_or": "0x80008",
+    "samples": 446
+   },
+   "memory_peak_mib": 125.9,
+   "memory_median_mib": 115.3,
+   "cpu_percent_mean": 83.6,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 262.8,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 7.8,
+   "file_cache_mib": 196.3
+  },
+  "envelopes": {
+   "wall_s": 314.56,
+   "windows": 48525,
+   "device": {
+    "temp_c_max": 68.8,
+    "arm_mhz_min": 1200,
+    "arm_mhz_median": 1200.0,
+    "throttled_or": "0x80008",
+    "samples": 105
+   },
+   "memory_peak_mib": 153.0,
+   "memory_median_mib": 119.5,
+   "cpu_percent_mean": 85.2,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 288.1,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 7.8,
+   "file_cache_mib": 235.2
+  },
+  "read_back": {
+   "channels": 868,
+   "mismatches": 0,
+   "device": {
+    "temp_c_max": 69.3,
+    "arm_mhz_min": 1200,
+    "arm_mhz_median": 1200.0,
+    "throttled_or": "0x80008",
+    "samples": 18
+   },
+   "memory_peak_mib": 119.5,
+   "memory_median_mib": 119.0,
+   "cpu_percent_mean": 59.2,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 300.2,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 15.2,
+   "file_cache_mib": 236.5
+  },
+  "queries": {
+   "R1": {
+    "n": 400,
+    "p50_ms": 6.449,
+    "p95_ms": 8.149,
+    "max_ms": 28.239
+   },
+   "R2": {
+    "n": 400,
+    "p50_ms": 36.041,
+    "p95_ms": 45.775,
+    "max_ms": 67.622
+   },
+   "stats_128k": {
+    "n": 400,
+    "p50_ms": 6.388,
+    "p95_ms": 8.2,
+    "max_ms": 28.962
+   },
+   "overview_whole_channel": {
+    "n": 400,
+    "p50_ms": 5.8,
+    "p95_ms": 6.735,
+    "max_ms": 25.22
+   },
+   "search_top10": {
+    "n": 40,
+    "p50_ms": 612.653,
+    "p95_ms": 636.722,
+    "max_ms": 662.228,
+    "queries": 20,
+    "lists_sha256": "83bcd505362b3bb627eada14baf262e1d112e902763ebaece7f4328d51247c21",
+    "hits": 200
+   },
+   "device": {
+    "temp_c_max": 69.8,
+    "arm_mhz_min": 1200,
+    "arm_mhz_median": 1200.0,
+    "throttled_or": "0x80008",
+    "samples": 25
+   },
+   "memory_peak_mib": 119.2,
+   "memory_median_mib": 118.8,
+   "cpu_percent_mean": 92.8,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 300.2,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 15.4,
+   "file_cache_mib": 247.5
+  }
+ },
+ "errors": [],
+ "study": "x2",
+ "arm": "searchable",
+ "host": {
+  "machine": "aarch64",
+  "system": "Linux-6.1.21-v8+-aarch64-with-glibc2.31",
+  "python": "3.9.2",
+  "model": "Raspberry Pi 3 Model B Plus Rev 1.3",
+  "docker": "20.10.5+dfsg1",
+  "numpy": "2.0.2",
+  "psycopg": "3.2.13",
+  "pyarrow": "17.0.0"
+ },
+ "server": {
+  "server_version": "17.6 (Debian 17.6-2.pgdg12+1)",
+  "shared_buffers": "64MB",
+  "max_connections": "20",
+  "synchronous_commit": "on"
+ },
+ "database_mib": 344.9,
+ "final": {
+  "oom_killed": false,
+  "running": true,
+  "restarts": 0,
+  "cgroup_memory_peak_mib": 300.2,
+  "memory_events": {
+   "low": 0,
+   "high": 0,
+   "max": 0,
+   "oom": 0,
+   "oom_kill": 0,
+   "oom_group_kill": 0
+  },
+  "anon_mib": 15.4,
+  "file_cache_mib": 247.6
+ },
+ "passed": true,
+ "set": "benchmark"
+}

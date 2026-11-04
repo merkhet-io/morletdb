@@ -1,0 +1,184 @@
+{
+ "config": "e512",
+ "limits": {
+  "cpus": "2",
+  "memory": "512m",
+  "settings": {
+   "shared_buffers": "64MB",
+   "max_connections": "20",
+   "maintenance_work_mem": "32MB"
+  }
+ },
+ "image": "morletdb:x1",
+ "rep": 1,
+ "image_id": "sha256:03c92c8c226aafe8304a48ab4075ed8e6dcc875cd6e19af9c25eb863537ea634",
+ "image_size_mib": 439.5,
+ "architecture": "arm64",
+ "samples": 101453304,
+ "started": "2026-11-03T22:35:17",
+ "phases": {
+  "idle": {
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 121.1,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 7.6,
+   "file_cache_mib": 100.3
+  },
+  "ingest": {
+   "wall_s": 1253.21,
+   "samples_per_s": 80955,
+   "ack_per_acquisition": {
+    "n": 124,
+    "p50_ms": 9388.992,
+    "p95_ms": 13392.268,
+    "max_ms": 14742.91
+   },
+   "memory_peak_mib": 149.0,
+   "memory_median_mib": 134.8,
+   "cpu_percent_mean": 86.1,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 294.4,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 7.8,
+   "file_cache_mib": 252.6
+  },
+  "envelopes": {
+   "wall_s": 315.12,
+   "windows": 48459,
+   "memory_peak_mib": 158.3,
+   "memory_median_mib": 138.4,
+   "cpu_percent_mean": 90.2,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 475.2,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 7.8,
+   "file_cache_mib": 413.0
+  },
+  "read_back": {
+   "channels": 868,
+   "mismatches": 0,
+   "memory_peak_mib": 140.0,
+   "memory_median_mib": 139.8,
+   "cpu_percent_mean": 69.3,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 475.2,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 15.3,
+   "file_cache_mib": 422.5
+  },
+  "queries": {
+   "R1": {
+    "n": 400,
+    "p50_ms": 6.31,
+    "p95_ms": 7.878,
+    "max_ms": 13.113
+   },
+   "R2": {
+    "n": 400,
+    "p50_ms": 35.634,
+    "p95_ms": 42.943,
+    "max_ms": 77.925
+   },
+   "stats_128k": {
+    "n": 400,
+    "p50_ms": 6.338,
+    "p95_ms": 7.883,
+    "max_ms": 25.848
+   },
+   "overview_whole_channel": {
+    "n": 400,
+    "p50_ms": 5.854,
+    "p95_ms": 7.239,
+    "max_ms": 25.073
+   },
+   "search_top10": {
+    "n": 40,
+    "p50_ms": 616.165,
+    "p95_ms": 647.101,
+    "max_ms": 658.416,
+    "queries": 20,
+    "lists_sha256": "12b592da0e000c652dffc18ef879b471ed26fd9adc1a23377fbfb455b51b8021",
+    "hits": 200
+   },
+   "memory_peak_mib": 140.3,
+   "memory_median_mib": 140.1,
+   "cpu_percent_mean": 95.7,
+   "oom_killed": false,
+   "running": true,
+   "restarts": 0,
+   "cgroup_memory_peak_mib": 475.2,
+   "memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 0,
+    "oom": 0,
+    "oom_kill": 0,
+    "oom_group_kill": 0
+   },
+   "anon_mib": 15.5,
+   "file_cache_mib": 424.2
+  }
+ },
+ "errors": [],
+ "server": {
+  "server_version": "17.6 (Debian 17.6-2.pgdg12+1)",
+  "shared_buffers": "64MB",
+  "max_connections": "20",
+  "synchronous_commit": "on"
+ },
+ "database_mib": 345.2,
+ "final": {
+  "oom_killed": false,
+  "running": true,
+  "restarts": 0,
+  "cgroup_memory_peak_mib": 475.2,
+  "memory_events": {
+   "low": 0,
+   "high": 0,
+   "max": 0,
+   "oom": 0,
+   "oom_kill": 0,
+   "oom_group_kill": 0
+  },
+  "anon_mib": 15.5,
+  "file_cache_mib": 424.3
+ },
+ "passed": true,
+ "set": "dev"
+}

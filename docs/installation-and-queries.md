@@ -14,7 +14,26 @@ MorletDB is a developer-alpha PostgreSQL extension. The SQL extension is named `
 
 This describes the current source and CI configuration, not a promise that every CI run passes. The paper benchmarks use PostgreSQL 17; compatibility tests and performance measurements are separate.
 
-## Fastest start: Docker walkthrough
+## Fastest start: the release image
+
+Each release publishes a prebuilt image, `ghcr.io/merkhet-io/morletdb:<version>`: PostgreSQL 17.6 (Debian
+bookworm) with pg_morlet installed, for Linux amd64 and arm64, with an SBOM per architecture and build
+provenance ([releases](releases.md)). Nothing is compiled. Choose your own password; the port is bound to
+localhost and the data is kept in the named volume `morletdb-data`.
+
+```sh
+docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
+  ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1
+docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
+```
+
+The image does not include pgvector, so [probe search](#optional-indexed-probe-search) needs a source
+installation or an image you build on top of it; exact and screened search work as they are. A newer image
+does not upgrade the SQL objects of an existing database: run `ALTER EXTENSION pg_morlet UPDATE` after
+switching images.
+
+## Docker walkthrough with synthetic data
 
 Install Git and Docker with Compose v2, then run:
 
