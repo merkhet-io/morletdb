@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.5-alpha.1
+
+The same SQL version 0.3.3 and extension code as 0.3.4-alpha.1; no `ALTER EXTENSION` update is needed.
+
+Packages for existing servers:
+- Debian packages `postgresql-17-pg-morlet` and `postgresql-18-pg-morlet` for amd64 and arm64, built against
+  the PostgreSQL project's packages (apt.postgresql.org) on Debian bookworm. Before release, each one is
+  installed with apt into a clean official `postgres` image and runs the quickstart, a restart and the
+  quickstart again. Attached with `SHA256SUMS` and a build provenance attestation per package
+  (`gh attestation verify <file>.deb --owner merkhet-io`). Tested on Debian bookworm images only.
+- `compose.release.yaml` takes the data directory from `MORLET_DATA_PATH` (postgres 18 images keep data under
+  `/var/lib/postgresql`); the default is unchanged.
+
+Documentation:
+- Installation starts with the prebuilt release image; the docs state that it does not include pgvector.
+- X2: MorletDB on a Raspberry Pi 3B+ (all nine runs pass; 78k samples/s with search features, 258k without;
+  search results identical to the desktop); report 0.17.
+
 ## 0.3.4-alpha.1
 
 SQL version 0.3.3, with an update script from 0.3.2 (`ALTER EXTENSION pg_morlet UPDATE`; the chained updates

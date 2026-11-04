@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.4-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.5-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -25,6 +25,9 @@ a leading v; GHCR image tags do not.
   GHSA-pg6f-hcvw-vw34 (acquisitions under row-level security) and the findings of the 0.3.3 review; adds raw
   float64 reads and writes, chunk summaries, interval statistics and overviews, search time filters and
   evidence, and screened exact search. The first release with an SBOM per architecture and build provenance.
+- **0.3.5-alpha.1:** the same SQL version 0.3.3 and extension code as 0.3.4-alpha.1 (no update script needed).
+  The first release with Debian packages for existing PostgreSQL 17 and 18 servers (amd64 and arm64), each
+  installed with apt and trialled before release, with checksums and build provenance.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
@@ -64,7 +67,7 @@ subsequent trial is not an approved release. Do not use it.
 
 ## Install a package on an existing server
 
-From the first release after 0.3.4-alpha.1, each release has Debian packages
+From 0.3.5-alpha.1, each release has Debian packages
 for servers that run the PostgreSQL project's packages (apt.postgresql.org) on
 Debian 12 or later, for example:
 
