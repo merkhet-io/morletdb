@@ -615,3 +615,88 @@ tested; similarity search was not part of B3.
 | Interval statistics | MorletDB 35–66% faster | **MorletDB 3.0–4.2× faster** |
 | Exact time at 64 kHz | via a stored sample index | **native (nanosecond precision)** |
 | Altered resend | silently ignored | **silently replaces** |
+
+# Amendment B3.6: TDengine
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `6a90427`) before any load of the benchmark set; development on
+the development set only ([`results/dev/b36/`](results/dev/b36/)); run once on the benchmark set
+([`results/b36/`](results/b36/)), 2026-11-04 22:37–23:13, no system sleep in the window. TDengine TSDB-OSS 3.4.3.3
+(`tdengine/tsdb:3.4.3.3`, linux/arm64), single node, supertables, nanosecond precision, Python WebSocket client
+`taos-ws-py` 0.7.0. MorletDB is not re-run: its numbers are B3.3's (SQL 0.3.3, same machine and limits). One
+deviation: the tsz arm is lossy (below).
+
+**Correctness.** The default (bss + lz4) and zstd (bss + zstd high) arms passed all 12 loads (868 channels read
+back with the manifest's SHA-256, every time exact to the nanosecond; 0 mismatches in every read benchmark;
+analytics within 1e-12). **The tsz arm failed**: in its first load two vibration channels differed in 7 and 47
+samples near the end of the recording, by at most 8 ULP (5.6e-17). TDengine's taosd reference documents
+`dPrecision` (default and minimum 1e-16) as the mantissa truncation of TSZ, so tsz is error-bounded lossy
+compression that cannot be made lossless; the development set happened to show no difference. The tsz arm makes
+no statement and its remaining loads were not run (deviation 1).
+
+## Ingestion (one client connection, stmt2 binding; median [range] of three loads)
+
+| Arm | D1 (WAL fsync per write) | D2 (default WAL) | Ack per acquisition, p50 (D2) | Count complete after the last ack |
+|---|---:|---:|---:|---:|
+| MorletDB (B3.3, base) | — | **6.33 M** [6.27–6.33] samples/s | 128 ms | at commit |
+| T-default (bss + lz4) | 3.94 M [3.93–4.00 M] | 4.08 M [3.90–4.13 M] | 195 ms | 0.26–0.29 s |
+| T-zstd (bss + zstd high) | 0.89 M [0.79–0.90 M] | 0.84 M [0.80–0.87 M] | 219 ms | 0.59–0.69 s |
+
+**Statement (≥ 10% in all loads): MorletDB ingested about 1.5× faster** than TDengine's faster arm (every MorletDB
+load ≥ 1.52× every TDengine load). TDengine is the fastest-ingesting of the three IIoT databases in B3, and its
+fsync-per-write class was within 4% of its default. The zstd-high arm used about 3.5 cores and ingested 4.8×
+slower than its default arm.
+
+## Storage (D2 r1, settled: `FLUSH DATABASE`, files outside the WAL unchanged for 60 s, clean stop)
+
+| | MiB | × MorletDB |
+|---|---:|---:|
+| MorletDB (B3.3): sample data / database / volume with retained WAL | **148.8** / **164.8** / 363.6 | 1 |
+| T-zstd: data files (`tsdb`) / whole volume with retained WAL (1,034.5) | 566.7 / 1,602.3 | 3.4 (database) / 4.4 (volume) |
+| T-default: data files / whole volume | 626.6 / 1,662.1 | 3.8 / 4.6 |
+| raw float64 (for scale) | 775 | 4.7 |
+
+**Statement: MorletDB stored the data in less than a third of TDengine's smaller arm** (3.4× on data files
+against MorletDB's database; 4.4× whole volume against whole volume, both with their retained WAL). TDengine
+retains about 1 GiB of WAL by default; `COMPACT` is not available in the open-source edition.
+
+## Reads and analytics (D2 r1 of each arm; p50 / p95 ms)
+
+| Query | MorletDB (B3.3) | T-default | T-zstd |
+|---|---:|---:|---:|
+| R1, 4,096 samples | **0.62 / 0.92** | 5.4 / 8.6 | 5.4 / 9.4 |
+| R2, 128,000 samples | **6.6 / 8.9** | 70.5 / 86.3 | 72.7 / 91.1 |
+| R3, 3 channels × 64,000 | **8.1 / 10.1** | 57.0 / 75.5 | 62.0 / 101.5 |
+| R4, 4,096 samples, recent / older (p50) | **0.60 / 0.59** | 5.5 / 5.0 | 5.4 / 6.0 |
+| R5, 4 threads: queries/s | **4,119** | 175 | 165 |
+| min, max, mean, RMS of 128,000 samples (SQL) | **2.5 / 2.7** | 5.0 / 11.8 | 6.9 / 14.2 |
+
+**Statements:** every read was **7–11× faster** in MorletDB than in TDengine's faster arm for that query, at p50
+and p95 (R1 9×, R2 about 10×, R3 7×, R4 7–9×), and concurrent reads reached 23× the throughput; interval analytics
+were **2.0× faster at p50 and 4.4× at p95**. As with IoTDB, part of TDengine's read time is the Python client:
+the WebSocket connector returns rows as Python tuples, and time is read as an integer because TIMESTAMP values come
+back as text without fractions of a second.
+
+## Semantics
+
+- An altered resend **silently replaces** the stored value (subset check in development), like IoTDB and
+  QuestDB; CrateDB ignores it; MorletDB refuses it.
+- Times are exact at nanosecond precision (database option).
+- Server memory peaked at about 1.0–1.1 GiB, the lowest of the IIoT databases in B3 (MorletDB: 167 MiB).
+- Similarity search is not part of TDengine (its TDgpt agent targets forecasting and anomaly detection).
+
+## Scope
+
+One dataset, one machine, single node at image defaults apart from the frozen settings, one client connection,
+the official Python WebSocket client. Clusters, the enterprise edition, TDgpt and the native connector were not
+tested.
+
+## Updated trade-off map (additions)
+
+| Dimension | Apache IoTDB 2.0 (B3.5) | **TDengine 3.4 (B3.6)** |
+|---|---|---|
+| Data on disk vs MorletDB | 4.0× | **3.4× (data files), 4.4× (whole volume)** |
+| Ingestion, one connection | MorletDB about 2.5× faster | **MorletDB about 1.5× faster** |
+| Exact reads | MorletDB 4.4–13× faster | **MorletDB 7–11× faster** |
+| Interval statistics | MorletDB 3.0–4.2× faster | **MorletDB 2.0–4.4× faster** |
+| Lossless float compression | GORILLA, LZ4, ZSTD all lossless | **tsz is lossy (1e-16 bound)**; bss + lz4 / zstd lossless |
+| Altered resend | silently replaces | **silently replaces** |

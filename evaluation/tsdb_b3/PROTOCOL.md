@@ -475,3 +475,80 @@ altered retry is accepted and silently replaces the stored value) and one full l
 
 **Downloads (to be approved before development):** `apache/iotdb:2.0.11-standalone` (linux/arm64, 357 MB
 compressed) and `apache-iotdb` 2.0.11 with its dependencies (PyPI) into a separate venv.
+
+## Amendment B3.6: TDengine stage (FROZEN before any load of the benchmark set)
+
+Added 2026-11-04. The last stage named at the top of this protocol. Everything common to B3 applies (machine,
+container limits of 8 CPUs and 16 GB, budget, dataset, manifest, correctness checks, measurements A–D, decision
+rules, "Not in B3"). MorletDB is not re-run: its numbers are B3.3's (`results/b33/`, SQL 0.3.3).
+
+**TDengine TSDB-OSS** (`tdengine/tsdb:3.4.3.3`, released 2026-10-19; linux/arm64 digest
+`sha256:a35f623203ffcbafea6817812080b54cbfa3e42aba3c4878d7713d67d814e877`, 256 MB compressed; index
+`sha256:ac50defd1b68b551e8f15d927dc37f9718f79fa22d54e07292bc9a6bcf53ad76`). Client: the official Python WebSocket
+connector `taos-ws-py` 0.7.0 (2026-07-08; 0.7.1 is one day old and not used), through the image's taosAdapter
+(port 6041), with the image's default credentials (container bound to localhost only). The newer 3.4.3.9 is two
+days old and not used.
+- Single node, image defaults apart from the settings below.
+- **Time:** database `PRECISION 'ns'`, so every period of the dataset is exact and the read check covers times
+  as well as values; no sample index is stored.
+- **Model:** TDengine's documented model: one supertable per group with the group's channels as `DOUBLE`
+  columns and `acquisition VARCHAR(64)` as tag, and one subtable per acquisition and group.
+- **Arms** (per-column compression, documented in "Data Compression"):
+  - **T-default**: DOUBLE defaults, encoding `bss` (byte-stream split), compression `lz4`, level `medium`.
+  - **T-zstd**: encoding `bss`, compression `zstd`, level `high` (the documented highest-ratio level).
+  - **T-tsz**: encoding `disabled`, compression `tsz` (TDengine's float-specific compressor).
+- Write path: `stmt2` parameter binding (`INSERT INTO ? USING <stable> TAGS(?) VALUES (?, ...)`), column-wise
+  binding, one prepared statement per acquisition and group, at most 32,767 rows per bind (the largest bind
+  the server accepts, found in development). Column names are quoted (`force` is a reserved word). Building the bound columns is timed and reported apart, as for the other systems.
+- **Durability:** D1 `WAL_LEVEL 2` with `WAL_FSYNC_PERIOD 0` (fsync on every write); D2 `WAL_LEVEL 1` (the
+  default: WAL written, not fsynced).
+- **Retry semantics:** a row with an existing timestamp in a subtable is expected to overwrite the stored row;
+  checked in development (identical and altered retries) and reported as for the other systems.
+- **Settled state for storage (A):** `FLUSH DATABASE`, then wait until no file outside the write-ahead logs has
+  changed for 60 s, then the server stopped cleanly; sizes from the volume by file class: vnode time-series
+  files (`tsdb`), WAL, other vnode files, mnode and other. `COMPACT DATABASE` is not available in the
+  open-source edition, so there is no compacted figure. The WAL is retained by TDengine's defaults and is
+  reported separately (as MorletDB's retained WAL is); statements use the data files and the whole volume.
+- **Reads (C):** `SELECT CAST(ts AS BIGINT), <channels> FROM <subtable> WHERE ts >= ? AND ts < ? ORDER BY ts`
+  (the WebSocket client returns TIMESTAMP values as text without the sub-second part, so time is read as an
+  integer); the returned times must equal start + n × period exactly. **Analytics (D):** `MIN`, `MAX`, `AVG`
+  and `SQRT(AVG(x * x))` in SQL (supported).
+
+**Runs (fixed at the freeze):** each arm three fresh loads per durability class (D1 r1–r3, D2 r1–r3); storage,
+reads (R1–R5) and analytics on D2 r1. Order: T-default, T-zstd, T-tsz (`run_b36.sh`; a completed load is not
+repeated, an interrupted one, including one that overlaps a system sleep, is rerun from a fresh volume).
+Client: `.venv-b3t` (Python 3.13, the B3 requirements and `taos-ws-py` 0.7.0). The Mac stays awake with the lid
+open for the whole run.
+
+**Development (not results).** On B3's development set (`B3_SET=dev`, `results/dev/b36/`): all three arms passed
+the 3-acquisition subset (values bit-exact, times exact to the nanosecond; an identical retry leaves one copy;
+an altered retry is accepted and silently replaces the stored value) and one full load each (correct; 3.8 M,
+0.82 M and 3.9 M samples/s for default, zstd and tsz; data files 626, 566 and 360 MiB). What development found or fixed (harness only; no server
+setting was tuned):
+- one bind accepts at most 32,767 rows (larger binds fail with "Bind number out of range");
+- `force` is a reserved word: column names are quoted;
+- TIMESTAMP values come back as text without fractions of a second: time is read as `BIGINT`;
+- an internal database's WAL grows continuously on an idle server, so the settle test ignores WAL files (the
+  first development run never settled);
+- `COMPACT DATABASE` is enterprise-only; the compacted storage figure was dropped;
+- the server settings are read after the database is created.
+
+**Not in this stage:** TDengine's enterprise features, clusters, TDgpt (its AI agent for forecasting and
+anomaly detection), taosX, the native (non-WebSocket) connector.
+
+**Downloads (to be approved before development):** `tdengine/tsdb:3.4.3.3` (linux/arm64, 256 MB compressed)
+and `taos-ws-py` 0.7.0 (PyPI, macOS arm64 wheel) into a separate venv.
+
+### B3.6 deviations
+
+1. **The tsz arm is lossy; stopped after its first load.** T-tsz D2 r1 (23:10) failed the correctness check: two of
+   868 channels (vibration of `N09_M07_F10_KA05_1` and `N09_M07_F10_KA06_1`) differed from the source in 7 and 47
+   samples, all near the end of the recording, by at most 8 ULP (largest absolute difference 5.6e-17); counts
+   and times were exact. Diagnosis (`diag_tdengine_tsz.py`, read from the failed load's volume): TDengine's
+   reference documentation for taosd, at the tested version, states that `dPrecision` (default and minimum
+   1e-16) truncates the mantissa of doubles under TSZ, i.e. tsz is error-bounded lossy compression; the
+   compression page that this protocol used does not say so. The development set happened to show no
+   difference. Decided at 23:30, before any further result was read: the tsz arm is reported as lossy with
+   this diagnosis and makes no performance statement (a lossy arm cannot meet B3's correctness criterion);
+   its remaining loads (D2 r2–r3, D1 r1–r3) are not run. Its development figures stay development figures.
+   The default and zstd arms are complete (12 loads, all correct).
