@@ -553,7 +553,7 @@ and `taos-ws-py` 0.7.0 (PyPI, macOS arm64 wheel) into a separate venv.
    its remaining loads (D2 r2–r3, D1 r1–r3) are not run. Its development figures stay development figures.
    The default and zstd arms are complete (12 loads, all correct).
 
-## Amendment B3.7: TimescaleDB stage (DRAFT, not frozen; freezes before any load of the benchmark set)
+## Amendment B3.7: TimescaleDB stage (FROZEN before any load of the benchmark set)
 
 Added 2026-11-04. TimescaleDB is the other PostgreSQL extension for time series, so "why not TimescaleDB?" is
 the first question of every PostgreSQL user. Earlier evidence (P2) measured its storage only, on four signals,
@@ -593,9 +593,14 @@ reads and analytics on TS-row, then compression, then storage, reads and analyti
 completed load is not repeated, an interrupted one, including one that overlaps a system sleep, is rerun). The
 Mac stays awake with the lid open.
 
-**Development (to do, not results):** on B3's development set (`B3_SET=dev`, `results/dev/b37/`): the
-3-acquisition subset (exact values and times, identical and altered retries), one full load with both states,
-the COPY batching, and whether `compress_chunk` needs settings beyond the documented defaults to complete.
+**Development (not results).** On B3's development set (`B3_SET=dev`, `results/dev/b37/`): the 3-acquisition
+subset passed in both states (values bit-exact, times exact; identical and altered retries both refused with a
+unique violation, stored values unchanged), and one full load passed in both states (0.68 M samples/s; rowstore
+6.6 GB, columnstore 805 MiB of hypertables; compression of 3 chunks in 32 s with the documented defaults). The
+server ran PostgreSQL 17.11 with default settings (`NO_TS_TUNE`, 128 MB shared buffers), as MorletDB in B3.3.
+Harness check (`diag_timescale_copy.py`): a fully vectorised binary COPY stream built with numpy reached the same
+rate as psycopg's per-row `write_row` (788 k vs 795 k samples/s), so ingestion is bound by the server, not the
+client; the documented per-row path is kept. Nothing was tuned.
 
 **Not in this stage:** TimescaleDB Cloud (Tiger Data), the `-ha` image and its toolkit, continuous aggregates,
 tiered storage, columnstore writes on ingest.
