@@ -97,6 +97,16 @@ class Helpers(unittest.TestCase):
         first = int(np.flatnonzero(r >= 4)[0])
         self.assertTrue(4000 <= first < 4100, first)
 
+    def test_constant_query_is_flagged(self):
+        self.assertIn("constant", m.query_note(np.full(4096, 3.5)))
+        self.assertIsNone(m.query_note(np.sin(np.arange(4096) / 7.0)))
+        self.assertIsNone(m.query_note(np.r_[np.zeros(4095), 1e-9]))   # tiny variation still has an envelope
+
+    def test_instructions_make_no_universal_threshold_claims(self):
+        self.assertNotIn("is strong", m.INSTRUCTIONS)
+        self.assertIn("not a probability", m.INSTRUCTIONS)
+        self.assertIn("constant window", m.INSTRUCTIONS)
+
     def test_merge_hits_keeps_best_and_drops_overlaps(self):
         h = lambda r, s, d: {"recording_id": r, "start_sample": s, "end_sample": s + 100, "distance": d}
         runs = [[h("a", 0, 0.3), h("b", 500, 0.2)],

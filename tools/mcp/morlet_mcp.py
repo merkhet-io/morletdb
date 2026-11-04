@@ -33,8 +33,15 @@ Typical investigation:
 3. describe_interval to characterise it (compare_intervals against the background for weak signals;
    find_onsets to locate where something starts); search_from_time (when you know when it happened) or
    search_similar to find where similar behaviour occurred, tolerant
-   to time shifts of up to about 7.5% of the window. Distances: 0 is identical, below about 0.3 is strong,
-   above about 0.6 is weak. Intervals for search must have the stored window length (usually 4096 samples).
+   to time shifts of up to about 7.5% of the window. Intervals for search must have the stored window length
+   (usually 4096 samples).
+   Distance = 1 - the best correlation of the two amplitude envelopes over the allowed shifts. Each window is
+   normalised first, so it compares the shape of the amplitude modulation (when energy rises and falls), not
+   the level and not the frequency content: different signals can share an envelope shape, and 0 means the
+   same envelope shape, not the same samples. Lower is closer; it is not a probability or a confidence, and
+   what counts as close differs between signal types, so rank hits against each other and inspect them rather
+   than applying a fixed cut-off. A constant window has no envelope: its distance to everything, itself
+   included, is 1, and search_similar says so (query_note).
 4. read_interval or describe_interval on each hit to check it, and cite hits as collection, recording,
    start_sample..end_sample: they refer to the original stored samples, which read back bit for bit.
 Search results are candidates for inspection, not diagnoses."""
@@ -432,6 +439,15 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
     return {"utc_time": utc_time, "matches": sorted(hits, key=lambda h: h["recording_id"])}
 
 
+def query_note(x):
+    """A note for a query window whose distances carry no information, or None. A constant window has an
+    all-zero envelope, so its distance to every window, itself included, is 1 (no correlation)."""
+    if x.size and np.ptp(x) == 0:
+        return ("the query interval is constant, so it has no envelope: every distance is 1 and the ranking "
+                "is arbitrary. Choose an interval where the signal varies.")
+    return None
+
+
 def merge_hits(runs, query_recording, query_lo, query_hi):
     """Merge the hit lists of shifted queries: best distance first; a hit is dropped if it overlaps the query
     span (any shift) in the query's recording, or overlaps a better hit already kept in the same recording."""
@@ -460,7 +476,7 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     searches with the window moved by 1/8 and 2/8 of its length either way and merges the results,
     keeping each hit's best distance; on seismic test data this found more related events than any single
     placement. shifts=0 (default) is the setting the published evaluations used. Each hit has a distance
-    (0 identical, < 0.3 strong), UTC times where known,
+    (lower is closer; 0 = same envelope shape; not a probability, see the server instructions), UTC times where known,
     and the query shift that found it; metadata is given once per recording.
     before_only=True keeps only intervals that end before the query starts ("has this happened before?");
     time_from / time_to (UTC, ISO 8601) keep intervals inside that range. Both need recordings with start
@@ -475,6 +491,7 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     with connect() as conn:
         c = checked(conn, collection)
         src = recording(conn, c, recording_id)
+        note = query_note(read(conn, c, recording_id, start_sample, end_sample)) if 0 < window <= MAX_READ else None
         similar = conn.execute("SELECT to_regproc('public.morlet_search_similar') IS NOT NULL").fetchone()[0]
         v033 = conn.execute("SELECT to_regproc('public.morlet_search_similar_evidence') IS NOT NULL").fetchone()[0]
         if (before_only or time_from or time_to) and not v033:
@@ -515,7 +532,8 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     return {"query": {"collection": collection, "recording_id": recording_id, "start_sample": start_sample,
                       "end_sample": end_sample, "start_utc": at(t0, src["rate"], start_sample),
                       "shifts_samples": used, "before_only": before_only,
-                      "time_range": [time_from or None, time_to or None]},
+                      "time_range": [time_from or None, time_to or None],
+                      **({"query_note": note} if note else {})},
             "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)", "hits": hits,
             "recordings": {h["recording_id"]: metas[h["recording_id"]] for h in hits}}
 

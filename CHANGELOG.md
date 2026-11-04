@@ -13,6 +13,22 @@ Security: acquisitions under row-level security (SQL 0.3.3):
   `ALTER EXTENSION pg_morlet UPDATE` re-applies the policies to collections that use row security.
   Regression test: `tests/acquisition_rls.sh` (two tenants, function and direct writes, separate transactions).
 
+Refusing oversized requests earlier (#160; results within budget unchanged):
+- `morlet_compare_summary` checked `max_candidates` after flattening the whole history into one array; it now
+  counts at most `max_candidates + 1` segments first. `morlet_compare_to_history`, `morlet_history_neighbors`,
+  `morlet_value_spreads` and `morlet_level_track` stop counting at the budget too.
+- Screened exact search: a scan that has seen more than `max_candidates` windows stops screening and only
+  counts (the `morlet_envelope_screen` aggregate takes the budget). The error still states the exact number of
+  eligible windows. The budget remains a candidate limit, not a time or memory limit.
+
+MCP distance guidance (#157):
+- The MCP server no longer tells agents that distances below 0.3 are strong and above 0.6 weak, which was not
+  evaluated across signal types. It explains what the distance is (1 - envelope correlation: envelope shape,
+  not level, frequency content or sample identity; not a probability) and to rank and inspect hits instead.
+- `search_similar` adds a `query_note` when the query interval is constant (distance 1 to everything).
+- docs/mcp.md: "Reading distances"; core test `distance_semantics_for_agents` (constant, scaled, other
+  carrier, other modulation).
+
 Context writes (SQL 0.3.3):
 - Concurrent context writes are serialized per recording and per batch ID (transaction advisory locks,
   `morlet_lock_context`; no extra privileges). Two transactions could both commit overlapping intervals of one
