@@ -748,6 +748,10 @@ BEGIN
   EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
     INTO recording_end USING recording_id;
   IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  -- One builder per recording and window size at a time (#225): the stride check and the inserts below run
+  -- after any concurrent builder committed, so two incompatible grids cannot both commit, and an identical
+  -- concurrent build resumes after the other's windows. (READ COMMITTED: later statements see its rows.)
+  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-env/'||collection::oid||'/'||recording_id||'/'||window_size,0));
   EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
     INTO last USING recording_id,window_size;
   -- The grid starts at 0 and its stride is fixed by the first build: the smallest positive stored start
@@ -1091,7 +1095,8 @@ CREATE FUNCTION public.morlet_search_envelope_probes(collection regclass,source_
   interval_start bigint,interval_end bigint,metadata_filter jsonb DEFAULT '{}'::jsonb,top_k integer DEFAULT 10,
   max_lag_fraction float8 DEFAULT 0.075,exclude_source boolean DEFAULT true,suppress_overlaps boolean DEFAULT true,
   per_probe integer DEFAULT 50,probe_step integer DEFAULT 5,exact_threshold integer DEFAULT 5000,
-  time_from timestamptz DEFAULT NULL,time_to timestamptz DEFAULT NULL,before_only boolean DEFAULT false)
+  time_from timestamptz DEFAULT NULL,time_to timestamptz DEFAULT NULL,before_only boolean DEFAULT false,
+  max_candidates integer DEFAULT 1000000)
 RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance float8,metadata jsonb)
 LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE source record; env regclass; probes regclass; vschema text; q float8[]; width integer; lag integer;
@@ -1103,12 +1108,12 @@ BEGIN
   IF collection IS NULL OR source_recording_id IS NULL OR interval_start IS NULL OR interval_end IS NULL
     OR metadata_filter IS NULL OR top_k IS NULL OR max_lag_fraction IS NULL OR exclude_source IS NULL
     OR suppress_overlaps IS NULL OR per_probe IS NULL OR probe_step IS NULL OR exact_threshold IS NULL
-    OR before_only IS NULL THEN
+    OR before_only IS NULL OR max_candidates IS NULL THEN
     RAISE EXCEPTION 'only time_from and time_to may be NULL';
   END IF;
   IF top_k NOT BETWEEN 1 AND 100 OR jsonb_typeof(metadata_filter)<>'object' OR NOT (max_lag_fraction BETWEEN 0 AND 0.5)
-    OR per_probe NOT BETWEEN 1 AND 1000 OR probe_step<1 OR exact_threshold NOT BETWEEN 0 AND 1000000 THEN
-    RAISE EXCEPTION 'invalid top_k (1..100), metadata filter, max_lag_fraction (0..0.5), per_probe (1..1000), probe_step (>= 1) or exact_threshold (0..1000000)';
+    OR per_probe NOT BETWEEN 1 AND 1000 OR probe_step<1 OR exact_threshold NOT BETWEEN 0 AND 1000000 OR max_candidates<1 THEN
+    RAISE EXCEPTION 'invalid top_k (1..100), metadata filter, max_lag_fraction (0..0.5), per_probe (1..1000), probe_step (>= 1), exact_threshold (0..1000000) or max_candidates (>= 1)';
   END IF;
   SELECT * INTO source FROM public.morlet_read_interval(collection,source_recording_id,interval_start,interval_end);
   env:=public.morlet_envelope_relation(collection);
@@ -1142,10 +1147,10 @@ BEGIN
       INTO eligible_windows USING eligible,width,exact_threshold::bigint+1;
   END IF;
   IF eligible_windows<=exact_threshold THEN
-    -- The count above already bounds the scan. Windows committed concurrently between that count and the
-    -- exact path's own count must not turn into an "exceeds max_candidates" error, so no lower cap here.
+    -- Small gallery: exact search under the caller's budget (#226), the same contract as the exact path:
+    -- more eligible windows than max_candidates is an error, never a silent prefix.
     RETURN QUERY SELECT * FROM public.morlet_envelope_ranked(collection,source.samples,source.sample_rate_hz,
-      source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,2147483647,
+      source.channel,source.unit,metadata_filter,top_k,max_lag_fraction,suppress_overlaps,max_candidates,
       CASE WHEN exclude_source THEN source_recording_id END,interval_start,interval_end,from_ns,to_ns);
     RETURN;
   END IF;
@@ -1153,6 +1158,12 @@ BEGIN
   lag:=floor(max_lag_fraction*cardinality(q));
   lags:=ARRAY(SELECT generate_series(-lag,lag,probe_step));
   IF lags[cardinality(lags)]<>lag THEN lags:=lags||lag; END IF;
+  -- Probe search scores at most per_probe candidates per probe exactly; that is its share of the budget (#226).
+  IF cardinality(lags)::bigint*per_probe>max_candidates THEN
+    RAISE EXCEPTION 'probe search scores up to % candidate windows (% probes x per_probe %), more than max_candidates (%)',
+      cardinality(lags)::bigint*per_probe,cardinality(lags),per_probe,max_candidates
+      USING HINT='Pass a larger max_candidates, or a smaller per_probe or max_lag_fraction.';
+  END IF;
   -- The index returns at most hnsw.ef_search rows per scan. Use max(per_probe, 100), as in
   -- the evaluated configuration, for this call only.
   ef:=current_setting('hnsw.ef_search',true);
@@ -1213,11 +1224,13 @@ RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance f
 LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
   IF interval_start IS NULL OR interval_end IS NULL THEN RAISE EXCEPTION 'only time_from and time_to may be NULL'; END IF;
+  -- One budget contract on both routes (#226): max_candidates bounds the windows scored exactly.
+  IF max_candidates IS NULL OR max_candidates<1 THEN RAISE EXCEPTION 'max_candidates must be at least 1'; END IF;
   IF interval_end-interval_start BETWEEN 1 AND 32768
     AND public.morlet_envelope_probe_relation(collection,(interval_end-interval_start)::integer) IS NOT NULL THEN
     RETURN QUERY SELECT * FROM public.morlet_search_envelope_probes(collection,source_recording_id,interval_start,
       interval_end,metadata_filter,top_k,max_lag_fraction,exclude_source,suppress_overlaps,
-      time_from=>time_from,time_to=>time_to,before_only=>before_only);
+      time_from=>time_from,time_to=>time_to,before_only=>before_only,max_candidates=>max_candidates);
   ELSE
     RETURN QUERY SELECT * FROM public.morlet_search_envelope_interval(collection,source_recording_id,interval_start,
       interval_end,metadata_filter,top_k,max_lag_fraction,exclude_source,suppress_overlaps,max_candidates,
@@ -1862,6 +1875,11 @@ BEGIN
     RAISE EXCEPTION 'only origin_utc may be NULL';
   END IF;
   SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  -- One creator per acquisition at a time (#227): a concurrent identical call waits here, then (READ COMMITTED)
+  -- the check below sees the committed row and returns false instead of failing with a unique violation.
+  -- (ON CONFLICT is not used: under row security it applies the read policy to the new row, which an
+  -- acquisition without a channel does not pass yet.)
+  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-acq/'||collection::oid||'/'||acquisition_id,0));
   EXECUTE format('SELECT machine,origin_utc,metadata FROM %s WHERE acquisition_id=$1',rel.acq) INTO existing USING acquisition_id;
   IF existing.machine IS NOT NULL THEN
     IF existing.machine=machine AND existing.origin_utc IS NOT DISTINCT FROM origin_utc AND existing.metadata=metadata THEN
@@ -1885,6 +1903,11 @@ BEGIN
     RAISE EXCEPTION 'only offset_uncertainty_ns may be NULL';
   END IF;
   SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  -- One writer per acquisition and per recording at a time (#227), in a fixed order: a concurrent identical
+  -- membership waits, then sees the committed row and returns false; a taken role is refused with a message.
+  PERFORM pg_advisory_xact_lock(k) FROM unnest(ARRAY[
+      hashtextextended('morlet-acq/'||collection::oid||'/'||acquisition_id,0),
+      hashtextextended('morlet-acq-rec/'||collection::oid||'/'||recording_id,0)]) k ORDER BY k;
   EXECUTE format('SELECT * FROM %s WHERE recording_id=$1',rel.channels) INTO existing USING recording_id;
   IF existing.recording_id IS NOT NULL THEN
     IF existing.acquisition_id=acquisition_id AND existing.role=role AND existing.offset_ns=offset_ns
@@ -1899,6 +1922,10 @@ BEGIN
       RAISE EXCEPTION 'acquisition % does not exist or is not visible to this role',acquisition_id
         USING HINT='Under row security, a channel joins an acquisition the caller can see: one with a visible channel, or one created in the same transaction.';
     END IF;
+  END IF;
+  EXECUTE format('SELECT count(*) FROM %s WHERE acquisition_id=$1 AND role=$2',rel.channels) INTO n USING acquisition_id,role;
+  IF n>0 THEN
+    RAISE EXCEPTION 'role % of acquisition % is already taken by another recording',role,acquisition_id;
   END IF;
   EXECUTE format('INSERT INTO %s(acquisition_id,recording_id,role,offset_ns,clock_source,offset_uncertainty_ns)
     VALUES ($1,$2,$3,$4,$5,$6)',rel.channels)
