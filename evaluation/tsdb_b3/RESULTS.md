@@ -700,3 +700,87 @@ tested.
 | Interval statistics | MorletDB 3.0–4.2× faster | **MorletDB 2.0–4.4× faster** |
 | Lossless float compression | GORILLA, LZ4, ZSTD all lossless | **tsz is lossy (1e-16 bound)**; bss + lz4 / zstd lossless |
 | Altered resend | silently replaces | **silently replaces** |
+
+# Amendment B3.7: TimescaleDB
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `9953afd`) before any load of the benchmark set; development on
+the development set only ([`results/dev/b37/`](results/dev/b37/)); run once on the benchmark set
+([`results/b37/`](results/b37/)), 2026-11-04 23:52 to 2026-11-05 00:16, no system sleep in the window, no
+deviation. TimescaleDB 2.31.0 on PostgreSQL 17.11 (`timescale/timescaledb:2.31.0-pg17`, linux/arm64), PostgreSQL
+defaults as for MorletDB, integer time in nanoseconds, binary COPY through psycopg. MorletDB is not re-run: its
+numbers are B3.3's (SQL 0.3.3, PostgreSQL 17, same machine and limits).
+
+**Correctness: all 6 loads passed, in both states** (rowstore after ingestion and columnstore after compression:
+868 channels read back with the manifest's SHA-256, every time exact to the nanosecond; 0 mismatches in every
+read benchmark; analytics within 1e-12).
+
+## Ingestion (one client connection, binary COPY; median [range] of three loads)
+
+| | D1 (synchronous commit) | D2 (asynchronous commit) | Ack per acquisition, p50 (D2) | Count complete after the last ack |
+|---|---:|---:|---:|---:|
+| MorletDB (B3.3, base) | — | **6.33 M** [6.27–6.33] samples/s | 128 ms | at commit |
+| TimescaleDB (rowstore) | 0.75 M [0.74–0.77 M] | 0.75 M [0.72–0.77 M] | 1,145 ms | 0.8–0.9 s |
+
+**Statement (≥ 10% in all loads): MorletDB ingested about 8.5× faster** (every MorletDB load ≥ 8.2× every
+TimescaleDB load). The server used about one core, and a vectorised COPY stream gave the same rate in
+development, so the limit is the server's row ingestion with its unique index, not the client. Compressing the
+3 chunks into the columnstore afterwards took 33 s.
+
+## Storage (D2 r1, after VACUUM ANALYZE)
+
+| | MiB | × MorletDB database |
+|---|---:|---:|
+| MorletDB (B3.3): sample data / database / volume with retained WAL | **148.8** / **164.8** / 363.6 | 1 |
+| TimescaleDB columnstore: hypertables / database / volume with WAL (1,024) | 806.1 / 815.4 / 1,865.2 | 4.9 (database) |
+| TimescaleDB rowstore: hypertables / database | 6,582.9 / 6,592.1 | 40 |
+| raw float64 (for scale) | 775 | 4.7 |
+
+**Statement: MorletDB stored the data in about a fifth of TimescaleDB's compressed size** (4.9×, database
+against database, both PostgreSQL 17 with default settings). TimescaleDB's columnstore came out at about the raw
+float64 size: its float compression (Gorilla) gains nothing on these noisy calibrated values, as P2 had found on
+four signals. Fresh data in the rowstore needs 40× MorletDB's space until it is compressed.
+
+## Reads and analytics (D2 r1, both states; p50 / p95 ms)
+
+| Query | MorletDB (B3.3) | TS rowstore | TS columnstore |
+|---|---:|---:|---:|
+| R1, 4,096 samples | **0.62 / 0.92** | 2.9 / 4.0 | 2.8 / 4.5 |
+| R2, 128,000 samples | **6.6 / 8.9** | 67.1 / 78.0 | 59.3 / 73.5 |
+| R3, 3 channels × 64,000 | **8.1 / 10.1** | 51.5 / 68.1 | 49.2 / 66.5 |
+| R4, 4,096 samples, recent / older (p50) | **0.60 / 0.59** | 2.9 / 3.1 | 3.0 / 2.8 |
+| R5, 4 threads: queries/s | **4,119** | 563 | 687 |
+| min, max, mean, RMS of 128,000 samples (SQL) | **2.5 / 2.7** | 18.8 / 24.0 | 12.8 / 15.5 |
+
+**Statements:** every read was **4.3–9× faster** in MorletDB than in TimescaleDB's faster state for that query, at
+p50 and p95 (R1 4.3–4.6×, R2 8–9×, R3 6–7×, R4 4.6–4.9×), with 6× the concurrent throughput; interval analytics
+were **5.1× faster at p50 and 5.8× at p95**. Both are PostgreSQL extensions on the same server version, but they
+return data differently: MorletDB returns an interval as one value of raw float64 bytes, TimescaleDB returns one
+row per sample instant, which psycopg converts to Python objects; part of TimescaleDB's read time is that
+client-side conversion.
+
+## Semantics
+
+- Retries: with the unique index, **both** an identical and an altered resend are refused with a unique
+  violation and leave stored values unchanged. MorletDB accepts an identical resend as a no-op and refuses an
+  altered one.
+- Times exact at nanosecond resolution through an integer time dimension (PostgreSQL timestamps resolve
+  microseconds only, too coarse for 64 kHz).
+- Server memory peaked at about 394 MiB (MorletDB 167 MiB), with PostgreSQL's default 128 MB shared buffers in
+  both.
+- Similarity search is not part of TimescaleDB; vector search needs embeddings computed elsewhere (pgvector).
+
+## Scope
+
+One dataset, one machine, PostgreSQL defaults, one client connection, binary COPY through psycopg. Continuous
+aggregates, columnstore writes on ingest, tiered storage and TimescaleDB Cloud were not tested.
+
+## Updated trade-off map (additions)
+
+| Dimension | TDengine 3.4 (B3.6) | **TimescaleDB 2.31 (B3.7)** |
+|---|---|---|
+| Data on disk vs MorletDB | 3.4× (data files) | **4.9× (columnstore), 40× (rowstore)** |
+| Ingestion, one connection | MorletDB about 1.5× faster | **MorletDB about 8.5× faster** |
+| Exact reads | MorletDB 7–11× faster | **MorletDB 4.3–9× faster** |
+| Interval statistics | MorletDB 2.0–4.4× faster | **MorletDB 5.1–5.8× faster** |
+| Server memory | about 1 GiB | **about 394 MiB** |
+| Retries | altered resend replaces | **every resend refused (unique index)** |
