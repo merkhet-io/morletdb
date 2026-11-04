@@ -475,3 +475,55 @@ altered retry is accepted and silently replaces the stored value) and one full l
 
 **Downloads (to be approved before development):** `apache/iotdb:2.0.11-standalone` (linux/arm64, 357 MB
 compressed) and `apache-iotdb` 2.0.11 with its dependencies (PyPI) into a separate venv.
+
+## Amendment B3.6: TDengine stage (DRAFT, not frozen; freezes before any load of the benchmark set)
+
+Added 2026-11-04. The last stage named at the top of this protocol. Everything common to B3 applies (machine,
+container limits of 8 CPUs and 16 GB, budget, dataset, manifest, correctness checks, measurements A–D, decision
+rules, "Not in B3"). MorletDB is not re-run: its numbers are B3.3's (`results/b33/`, SQL 0.3.3).
+
+**TDengine TSDB-OSS** (`tdengine/tsdb:3.4.3.3`, released 2026-10-19; linux/arm64 digest
+`sha256:a35f623203ffcbafea6817812080b54cbfa3e42aba3c4878d7713d67d814e877`, 256 MB compressed; index
+`sha256:ac50defd1b68b551e8f15d927dc37f9718f79fa22d54e07292bc9a6bcf53ad76`). Client: the official Python WebSocket
+connector `taos-ws-py` 0.7.0 (2026-07-08; 0.7.1 is one day old and not used), through the image's taosAdapter
+(port 6041), with the image's default credentials (container bound to localhost only). The newer 3.4.3.9 is two
+days old and not used.
+- Single node, image defaults apart from the settings below.
+- **Time:** database `PRECISION 'ns'`, so every period of the dataset is exact and the read check covers times
+  as well as values; no sample index is stored.
+- **Model:** TDengine's documented model: one supertable per group with the group's channels as `DOUBLE`
+  columns and `acquisition VARCHAR(64)` as tag, and one subtable per acquisition and group.
+- **Arms** (per-column compression, documented in "Data Compression"):
+  - **T-default**: DOUBLE defaults, encoding `bss` (byte-stream split), compression `lz4`, level `medium`.
+  - **T-zstd**: encoding `bss`, compression `zstd`, level `high` (the documented highest-ratio level).
+  - **T-tsz**: encoding `disabled`, compression `tsz` (TDengine's float-specific compressor).
+- Write path: `stmt2` parameter binding (`INSERT INTO ? USING <stable> TAGS(?) VALUES (?, ...)`), column-wise
+  binding, one bind per acquisition and group, at most 100,000 rows per bind (fixed in development, before
+  the freeze). Building the bound columns is timed and reported apart, as for the other systems.
+- **Durability:** D1 `WAL_LEVEL 2` with `WAL_FSYNC_PERIOD 0` (fsync on every write); D2 `WAL_LEVEL 1` (the
+  default: WAL written, not fsynced).
+- **Retry semantics:** a row with an existing timestamp in a subtable is expected to overwrite the stored row;
+  checked in development (identical and altered retries) and reported as for the other systems.
+- **Settled state for storage (A):** `FLUSH DATABASE`, then `COMPACT DATABASE` if development shows that
+  flushed data is not yet in its final files, then wait until the data directory has not changed for 60 s, then
+  the server stopped cleanly; sizes from the volume by file (time-series data files, WAL, metadata).
+- **Reads (C):** `SELECT ts, <channels> FROM <subtable> WHERE ts >= ? AND ts < ? ORDER BY ts`; the returned times
+  must equal start + n × period exactly (time selected as an integer if the client's timestamp conversion is
+  slow, as for IoTDB; decided in development). **Analytics (D):** `MIN`, `MAX`, `AVG` and `SQRT(AVG(x * x))` in
+  SQL if supported, otherwise RMS in the client, reported as such.
+
+**Runs (fixed at the freeze):** each arm three fresh loads per durability class (D1 r1–r3, D2 r1–r3); storage,
+reads (R1–R5) and analytics on D2 r1. Order: T-default, T-zstd, T-tsz (`run_b36.sh`; a completed load is not
+repeated, an interrupted one, including one that overlaps a system sleep, is rerun from a fresh volume).
+Client: `.venv-b3t` (Python 3.13, the B3 requirements and `taos-ws-py` 0.7.0). The Mac stays awake with the lid
+open for the whole run.
+
+**Development (to do, not results):** on B3's development set (`B3_SET=dev`, `results/dev/b36/`): the
+3-acquisition subset per arm, one full load per arm, the bind size, the read form, the settled-state procedure
+and the analytics expression.
+
+**Not in this stage:** TDengine's enterprise features, clusters, TDgpt (its AI agent for forecasting and
+anomaly detection), taosX, the native (non-WebSocket) connector.
+
+**Downloads (to be approved before development):** `tdengine/tsdb:3.4.3.3` (linux/arm64, 256 MB compressed)
+and `taos-ws-py` 0.7.0 (PyPI, macOS arm64 wheel) into a separate venv.
