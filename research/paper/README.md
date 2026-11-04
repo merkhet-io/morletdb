@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.18, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.19, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,16 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.19 (TDengine; no new retrieval measurement)
+
+- **TDengine 3.4 (B3.6)** on the B3 data and machine:
+  - Storage: 3.4× MorletDB's space (data files).
+  - Ingestion from one connection: about 1.5× slower, the fastest of the three IIoT databases.
+  - Interval reads: 7–11× slower.
+  - An altered resend silently replaces the stored value.
+  - Its float compressor tsz is lossy: it truncates mantissas below 1e-16, so it failed the exactness check (deviation 1).
+  - Where it appears: Section 4, supplement Table 6 (now four systems), the study overview and the ledger.
 
 ## What changed in 0.18 (two more databases; no new retrieval measurement)
 
