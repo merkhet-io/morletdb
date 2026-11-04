@@ -406,7 +406,7 @@ one node, CrateDB Cloud.
    `results/b34/interrupted/` and used for nothing. No other load overlapped a sleep (all others started after
    17:58:55 or ended before 16:12).
 
-## Amendment B3.5: Apache IoTDB stage (DRAFT, not frozen; freezes before any load of the benchmark set)
+## Amendment B3.5: Apache IoTDB stage (FROZEN before any load of the benchmark set)
 
 Added 2026-11-04. The stage named in this protocol after QuestDB (CrateDB, B3.4, was inserted before it).
 Everything common to B3 applies (machine, container limits of 8 CPUs and 16 GB, budget of 6 h and 50 GB,
@@ -433,11 +433,12 @@ port 6667, user `root` with the image's default password (container bound to loc
     and compressed with LZ4 (`compressor`).
   - **I-table-zstd**: the same with `compressor=ZSTD`, IoTDB's documented higher-ratio compressor (as
     CrateDB's `best_compression` arm).
-  - Whether the table model honours a per-column encoding (for example CHIMP) is checked in development; an
-    arm is added only if it does, and only before the freeze.
+  - A per-column encoding (for example CHIMP) is not accepted by the table model's `CREATE TABLE` (checked in
+    development), so there is no third arm.
 - Write path: `TableSession.insert(NumpyTablet)` with big-endian `int64` timestamps and `float64` columns, one
-  tablet per acquisition and table, at most 100,000 rows per tablet (size fixed in development, before the
-  freeze). Conversion to tablets is timed and reported apart, as for QuestDB and CrateDB.
+  tablet per acquisition and table, at most 100,000 rows per tablet. The server listens on all interfaces
+  inside the container (`dn_rpc_address=0.0.0.0`; the image default 127.0.0.1 is unreachable through the
+  port mapping), published on localhost only. Client `fetch_size` 65,536 rows. Conversion to tablets is timed and reported apart, as for QuestDB and CrateDB.
 - **Durability:** D1 `wal_mode=SYNC` (fsync before acknowledgement); D2 `wal_mode=ASYNC`, the image default
   (fsync within `wal_async_mode_fsync_delay_in_ms`, 1,000 ms). "Time until queryable" is measured after the
   last acknowledgement, as for the other systems.
@@ -447,10 +448,10 @@ port 6667, user `root` with the image's default password (container bound to loc
 - **Settled state for storage (A):** `FLUSH`, then wait until the data directory has not changed for 60 s
   (background compaction idle), then the server stopped cleanly; sizes from the volume by file: TsFiles
   (sequence and unsequence) per database, WAL, ConfigNode and system files.
-- **Reads (C):** `SELECT time, <channels> FROM b3_<group> WHERE acquisition = ? AND time >= ? AND time < ?
-  ORDER BY time`, times from the manifest; the returned times must equal start + n × period exactly.
-  **Analytics (D):** `min`, `max`, `avg` and `sqrt(avg(x * x))` in SQL if the table model supports the
-  expression (checked in development), otherwise RMS computed in the client and reported as such.
+- **Reads (C):** `SELECT CAST(time AS INT64) AS t, <channels> FROM b3_<group> WHERE acquisition = ? AND time >= ?
+  AND time < ? ORDER BY time`, times from the manifest; the returned times must equal start + n × period
+  exactly. **Analytics (D):** `min`, `max`, `avg` and `sqrt(avg(x * x))` in SQL (supported, checked in
+  development).
 
 **Runs (fixed at the freeze):** each arm three fresh loads per durability class (D1 r1–r3, D2 r1–r3); storage,
 reads (R1–R5) and analytics on D2 r1. Order: I-table, I-table-zstd (`run_b35.sh`; a completed load is not
@@ -458,9 +459,17 @@ repeated, an interrupted one, including one that overlaps a system sleep, is rer
 Client: `.venv-b3i` (Python 3.13, the B3 requirements and `apache-iotdb` 2.0.11). The Mac stays awake with the
 lid open for the whole run (`caffeinate -i` does not prevent clamshell sleep; B3.4 deviation 1).
 
-**Development (to do, not results):** on B3's development set (`B3_SET=dev`, `results/dev/b35/`): the
-3-acquisition subset per arm (bit-exact values and times, identical and altered retries), one full load per
-arm, the tablet size, the analytics expression, and the per-column encoding question above.
+**Development (not results).** On B3's development set (`B3_SET=dev`, `results/dev/b35/`): both arms passed the
+3-acquisition subset (values bit-exact, times exact to the nanosecond; an identical retry leaves one copy; an
+altered retry is accepted and silently replaces the stored value) and one full load each (correct; 2.4 M and
+2.2 M samples/s; storage about the raw float64 size). What development changed or fixed:
+- `dn_rpc_address=0.0.0.0` (the client could not connect otherwise).
+- Reads select the time as `INT64`: with `time` as a TIMESTAMP column, 128,000 samples took 552 ms against
+  55 ms, almost all of it in the Python client's per-element conversion to time-zone-aware datetimes; the
+  server answered in about 20 ms either way. Values and times are exact in both forms.
+- `fetch_size` 65,536 instead of the client default 5,000 (128,000 samples: 70 ms vs 63 ms; 200,000 rows gave
+  67 ms); chosen so that a 4,096-sample read is one fetch.
+- No per-column encoding in the table model (above). The tablet size of 100,000 rows was not varied.
 
 **Not in this stage:** IoTDB's tree model, clusters, the AINode, IoTDB's own client tools.
 
