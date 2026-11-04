@@ -57,10 +57,17 @@ read-only [viewer](../tools/viewer/README.md).
     nest freely;
   - `batch_id` makes ingest idempotent: an identical retry returns 0, and a
     different batch under the same id is an error.
+  - concurrent writers are serialized per recording and per batch (transaction
+    advisory locks, under READ COMMITTED): overlapping intervals cannot both
+    commit, and an identical batch retried concurrently is stored once.
+  - context added later marks segments it can change as `stale` (a segment
+    whose spec uses the key and whose piece the interval overlaps), for
+    example a part annotated after the segments were built.
 - **Corrections** are appended:
   - `morlet_revise_context(collection, ctx_id, '{"end_sample": ...}')`, or
     `retract => true`;
-  - segments built from the old row become `stale`;
+  - segments built from the old row, and segments the revised interval
+    overlaps, become `stale`;
   - `morlet_build_context_segments` replaces stale segments of that recording
     and spec.
 - **Segments** come from an explicit, versioned spec (`ctx-seg-v1`: keys,

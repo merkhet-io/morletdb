@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+Context writes (SQL 0.3.3):
+- Concurrent context writes are serialized per recording and per batch ID (transaction advisory locks,
+  `morlet_lock_context`; no extra privileges). Two transactions could both commit overlapping intervals of one
+  key, and an identical batch retried concurrently was stored twice; now the second waits, then sees the first
+  (overlap error, or 0 for an identical retry). `morlet_build_context_segments` takes the same recording lock.
+  Use READ COMMITTED for concurrent context writers (#149).
+- Context added or revised after segments were built marks the segments it can change as stale
+  (`morlet_invalidate_context_segments`: the spec uses the key, and the untrimmed piece overlaps the interval).
+  A part annotated after the build left the segment fresh with an empty occurrence; the next build now replaces
+  it, and its values are deleted with it (#150).
+- Regression tests: `tests/context_concurrency.sh` (two sessions; run by `ci_local.sh` with pgvector) and
+  `late_context_invalidates_the_segments_it_changes`.
+
 Fixes from the 0.3.3 review (SQL 0.3.3):
 - Replays compare bits: `morlet_append_chunk` (and `morlet_append_chunk_raw`) acknowledged a replay whose
   samples differed only in the sign of a zero, because array equality treats -0 and +0 as equal. It now
