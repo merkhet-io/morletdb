@@ -17,16 +17,16 @@ from pathlib import Path
 
 PAGE = Path(__file__).resolve().parents[1] / "docs" / "index.html"
 START, END = "<!-- benchmark-chart:start -->", "<!-- benchmark-chart:end -->"
-SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0", "#199e70"), ("TDengine 3.4", "#c98500")]
+SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0", "#199e70"), ("TDengine 3.4", "#c98500"), ("TimescaleDB 2.31", "#d55181")]
 # measure: [(numerator, denominator) per system, in SYSTEMS order] - the measured values, not rounded ratios
 MEASURES = [
-    ("Data on disk", "storage", [(232.7, 156.8), (1785.6, 164.8), (660.0, 164.8), (566.7, 164.8)], "MiB"),
-    ("Ingestion, one connection", "ingest", [(5.56, 8.29), (6.33, 0.4247), (6.33, 2.549), (6.33, 4.084)], "M samples/s"),
-    ("Read 4,096 samples", "short", [(1.16, 0.65), (7.21, 0.615), (7.79, 0.615), (5.352, 0.615)], "ms p50"),
-    ("Read 128,000 samples", "long", [(7.71, 7.98), (86.57, 6.629), (46.01, 6.629), (70.49, 6.629)], "ms p50"),
-    ("Interval statistics", "stats", [(4.02, 2.70), (3.871, 2.514), (7.449, 2.514), (4.963, 2.514)], "ms p50"),
+    ("Data on disk", "storage", [(232.7, 156.8), (1785.6, 164.8), (660.0, 164.8), (566.7, 164.8), (815.4, 164.8)], "MiB"),
+    ("Ingestion, one connection", "ingest", [(5.56, 8.29), (6.33, 0.4247), (6.33, 2.549), (6.33, 4.084), (6.33, 0.7458)], "M samples/s"),
+    ("Read 4,096 samples", "short", [(1.16, 0.65), (7.21, 0.615), (7.79, 0.615), (5.352, 0.615), (2.843, 0.615)], "ms p50"),
+    ("Read 128,000 samples", "long", [(7.71, 7.98), (86.57, 6.629), (46.01, 6.629), (70.49, 6.629), (59.321, 6.629)], "ms p50"),
+    ("Interval statistics", "stats", [(4.02, 2.70), (3.871, 2.514), (7.449, 2.514), (4.963, 2.514), (12.822, 2.514)], "ms p50"),
     # median peak server memory over a layout's loads, lowest-memory layout; JVM heaps follow their documented config
-    ("Server memory", "memory", [(2290.7, 168.2), (6208.5, 167.5), (5916.6, 167.5), (1027.5, 167.5)], "MiB"),
+    ("Server memory", "memory", [(2290.7, 168.2), (6208.5, 167.5), (5916.6, 167.5), (1027.5, 167.5), (394.0, 167.5)], "MiB"),
 ]
 LO, HI = 0.4, 50.0
 X0, X1 = 230, 728
@@ -59,10 +59,10 @@ def svg():
            '<desc id="bm-chart-desc">Log scale. 1× is MorletDB; to the right MorletDB is better, to the left the other '
            'database. The tables in the tabs below list every value.</desc>']
     # legend
-    x = 230
+    x = 0
     for name, col in SYSTEMS:
         out.append(f'<circle cx="{x + 5}" cy="18" r="5" fill="{col}"/><text x="{x + 15}" y="22" fill="{ink}">{name}</text>')
-        x += 15 + 8 * len(name) + 22
+        x += 15 + 7 * len(name) + 16
     # axis and grid
     y_axis = h - 34
     for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×"), (50, "50×")]:

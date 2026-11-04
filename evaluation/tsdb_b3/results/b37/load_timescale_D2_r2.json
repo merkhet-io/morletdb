@@ -1,0 +1,63 @@
+{
+ "system": "timescale",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.5574309999938123,
+ "samples": 101586735,
+ "image": "timescale/timescaledb:2.31.0-pg17",
+ "image_id": "sha256:d971568f9af05e218866181151117f517282f05f299a0e4010dc6a97704f6f2c",
+ "started": "2026-11-05T00:01:43",
+ "settings": {
+  "server_version": "17.11",
+  "timescaledb": "2.31.0",
+  "synchronous_commit": "off",
+  "shared_buffers": "128MB",
+  "max_wal_size": "1GB"
+ },
+ "ingest": {
+  "wall_s": 136.211,
+  "samples_per_s": 745802,
+  "conversion_s": 4.019,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1144.747,
+   "p95_ms": 1337.88,
+   "max_ms": 1428.791
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 56.522,
+   "p95_ms": 1134.004,
+   "max_ms": 1323.668
+  },
+  "queryable_after_last_ack_s": 0.811,
+  "server": {
+   "cpu_percent_mean": 95.7,
+   "cpu_percent_p95": 104.8,
+   "memory_peak_mib": 393.8,
+   "samples": 61
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 26.7
+  }
+ },
+ "correct": true
+}

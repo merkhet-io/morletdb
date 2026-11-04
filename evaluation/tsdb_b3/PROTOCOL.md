@@ -552,3 +552,58 @@ and `taos-ws-py` 0.7.0 (PyPI, macOS arm64 wheel) into a separate venv.
    this diagnosis and makes no performance statement (a lossy arm cannot meet B3's correctness criterion);
    its remaining loads (D2 r2–r3, D1 r1–r3) are not run. Its development figures stay development figures.
    The default and zstd arms are complete (12 loads, all correct).
+
+## Amendment B3.7: TimescaleDB stage (FROZEN before any load of the benchmark set)
+
+Added 2026-11-04. TimescaleDB is the other PostgreSQL extension for time series, so "why not TimescaleDB?" is
+the first question of every PostgreSQL user. Earlier evidence (P2) measured its storage only, on four signals,
+outside B3. Everything common to B3 applies (machine, container limits of 8 CPUs and 16 GB, budget, dataset,
+manifest, correctness checks, measurements A–D, decision rules, durability classes D1/D2 as for MorletDB). MorletDB
+is not re-run: its numbers are B3.3's (`results/b33/`, SQL 0.3.3, PostgreSQL 17).
+
+**TimescaleDB 2.31.0 on PostgreSQL 17** (`timescale/timescaledb:2.31.0-pg17`, released 2026-10-20; linux/arm64
+digest `sha256:d971568f9af05e218866181151117f517282f05f299a0e4010dc6a97704f6f2c`, 550 MB compressed; index
+`sha256:b56a3f51991df1f79d0c1a0841cad5c5fa8058fdd6a3ee6886394a6d4c174538`). The full image (not `-oss`), because
+compression (the columnstore) is under the Timescale License, free to use, and is what users run. Client: psycopg
+3.2.10 from B3's existing environment (no new client download). PostgreSQL settings as MorletDB's in B3.3 (image
+defaults; `synchronous_commit` per durability class).
+- **Time:** PostgreSQL timestamps have microsecond resolution and the 64 kHz period (15.625 µs) is not
+  representable, so the hypertables use an **integer time dimension in nanoseconds** (`t BIGINT`, the sample's
+  exact time), with `chunk_time_interval` of one day in nanoseconds. Times are exact and part of the read check.
+- **Model:** one hypertable per group, `(acquisition TEXT, t BIGINT, <channels> DOUBLE PRECISION)`, a unique index
+  on `(acquisition, t)` (TimescaleDB requires the time column in unique indexes).
+- **Two states of one arm, measured on the same load:**
+  - **TS-row:** the rowstore right after ingestion (how TimescaleDB holds recent data).
+  - **TS-col:** the columnstore after `ALTER TABLE … SET (timescaledb.compress, timescaledb.compress_segmentby =
+    'acquisition', timescaledb.compress_orderby = 't')` and `compress_chunk` on every chunk, with TimescaleDB's
+    default per-type algorithms (DOUBLE: Gorilla). The compression time is reported separately from ingestion.
+- Write path: `COPY … FROM STDIN (FORMAT BINARY)` through psycopg, one COPY per acquisition and table, the
+  documented bulk path. Conversion to COPY rows is timed and reported apart, as for the other systems.
+- **Retry semantics:** with the unique index, a second COPY of the same rows fails with a unique violation
+  (identical and altered alike); reported as "refused, identical retries included" (MorletDB accepts an
+  identical retry as a no-op and refuses an altered one).
+- **Settled state for storage (A):** `VACUUM ANALYZE`, then sizes from the database (`hypertable_detailed_size`,
+  per state) and from the volume (data directory, WAL separately), as for MorletDB in B3.
+- **Reads (C):** `SELECT t, <channels> FROM <group> WHERE acquisition = %s AND t >= %s AND t < %s ORDER BY t` through
+  psycopg with binary results; on TS-row and on TS-col. **Analytics (D):** `min`, `max`, `avg`, `sqrt(avg(x*x))`
+  in SQL, on both states.
+
+**Runs (fixed at the freeze):** three fresh loads per durability class (D1 r1–r3, D2 r1–r3); on D2 r1: storage,
+reads and analytics on TS-row, then compression, then storage, reads and analytics on TS-col (`run_b37.sh`; a
+completed load is not repeated, an interrupted one, including one that overlaps a system sleep, is rerun). The
+Mac stays awake with the lid open.
+
+**Development (not results).** On B3's development set (`B3_SET=dev`, `results/dev/b37/`): the 3-acquisition
+subset passed in both states (values bit-exact, times exact; identical and altered retries both refused with a
+unique violation, stored values unchanged), and one full load passed in both states (0.68 M samples/s; rowstore
+6.6 GB, columnstore 805 MiB of hypertables; compression of 3 chunks in 32 s with the documented defaults). The
+server ran PostgreSQL 17.11 with default settings (`NO_TS_TUNE`, 128 MB shared buffers), as MorletDB in B3.3.
+Harness check (`diag_timescale_copy.py`): a fully vectorised binary COPY stream built with numpy reached the same
+rate as psycopg's per-row `write_row` (788 k vs 795 k samples/s), so ingestion is bound by the server, not the
+client; the documented per-row path is kept. Nothing was tuned.
+
+**Not in this stage:** TimescaleDB Cloud (Tiger Data), the `-ha` image and its toolkit, continuous aggregates,
+tiered storage, columnstore writes on ingest.
+
+**Download (to be approved before development):** `timescale/timescaledb:2.31.0-pg17` (linux/arm64, 550 MB
+compressed).
