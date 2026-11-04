@@ -13,6 +13,37 @@ Security: acquisitions under row-level security (SQL 0.3.3):
   `ALTER EXTENSION pg_morlet UPDATE` re-applies the policies to collections that use row security.
   Regression test: `tests/acquisition_rls.sh` (two tenants, function and direct writes, separate transactions).
 
+Context writes (SQL 0.3.3):
+- Concurrent context writes are serialized per recording and per batch ID (transaction advisory locks,
+  `morlet_lock_context`; no extra privileges). Two transactions could both commit overlapping intervals of one
+  key, and an identical batch retried concurrently was stored twice; now the second waits, then sees the first
+  (overlap error, or 0 for an identical retry). `morlet_build_context_segments` takes the same recording lock.
+  Use READ COMMITTED for concurrent context writers (#149).
+- Context added or revised after segments were built marks the segments it can change as stale
+  (`morlet_invalidate_context_segments`: the spec uses the key, and the untrimmed piece overlaps the interval).
+  A part annotated after the build left the segment fresh with an empty occurrence; the next build now replaces
+  it, and its values are deleted with it (#150).
+- Regression tests: `tests/context_concurrency.sh` (two sessions; run by `ci_local.sh` with pgvector) and
+  `late_context_invalidates_the_segments_it_changes`.
+
+Fixes from the 0.3.3 review (SQL 0.3.3):
+- Replays compare bits: `morlet_append_chunk` (and `morlet_append_chunk_raw`) acknowledged a replay whose
+  samples differed only in the sign of a zero, because array equality treats -0 and +0 as equal. It now
+  compares the float64 bytes and raises `conflicting replay at chunk offset`. Stored samples were never
+  changed (#152).
+- `morlet_value_spreads` returned the 1% floor where no context qualified, because `greatest()` ignores NULL;
+  the spread now stays NULL there, so comparisons report `no_pooled_spread` and the calibrated score leaves
+  the value out instead of dividing by the floor (#154).
+- `morlet_build_envelopes` with a stride other than the one the recording's windows were built with returned 0
+  ("complete") without building the requested grid, or mixed two grids. It is now an error naming the stride
+  in use (#153).
+- Screened exact search raised "invalid query envelope, max_lag or candidate pool for screening" for queries
+  too large to prepare (window 16384 at lag fraction 0.5; 32768 from 0.1). Those queries now score every
+  eligible window directly, with the same results; `morlet_envelope_screen_supported` reports which path a
+  query takes (#151).
+- Python SDK: `read()` chooses raw float64 reads per collection, so collections that kept float8[] chunks after
+  an extension upgrade are read with `morlet_read_interval` instead of failing (#155).
+
 Search time filters and evidence (SQL 0.3.3):
 - `morlet_search_similar`, `morlet_search_envelope_interval` and `morlet_search_envelope_probes` take
   `time_from`, `time_to` (windows whose span lies in the range) and `before_only` (windows that end before the

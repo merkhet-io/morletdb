@@ -119,6 +119,14 @@ IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_samples_overview_wrapper';
 
+CREATE FUNCTION "morlet_envelope_screen_supported"(
+	"envelope_len" INT, /* i32 */
+	"max_lag" INT /* i32 */
+) RETURNS bool /* bool */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_screen_supported_wrapper';
+
 -- As morlet_append_chunk, with the samples as raw IEEE 754 float64 values, little-endian, 8 bytes each,
 -- instead of a float8[]: a client sends the bytes of an array and the server skips per-element parsing.
 -- The samples go through morlet_append_chunk unchanged: same checks, gaps, retries and conflicts.
@@ -410,6 +418,42 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Serializes context writes (additions, revisions, segment builds) per recording, and additions per batch
+-- ID, with transaction-scoped advisory locks: batch first, then recordings in sorted order. Under READ
+-- COMMITTED each later statement sees what a writer that held the lock committed, so overlap and retry
+-- checks cannot both pass for concurrent transactions. No table privileges are needed. (Under REPEATABLE
+-- READ the transaction snapshot predates the lock; use READ COMMITTED for concurrent context writers.)
+CREATE FUNCTION public.morlet_lock_context(collection regclass,batch_id text,recording_ids text[])
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE r text;
+BEGIN
+  IF batch_id IS NOT NULL THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-batch/'||collection::oid||'/'||batch_id,0));
+  END IF;
+  FOR r IN SELECT DISTINCT x FROM unnest(recording_ids) x WHERE x IS NOT NULL ORDER BY x LOOP
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-rec/'||collection::oid||'/'||r,0));
+  END LOOP;
+END $$;
+
+-- Marks stale the segments of a recording that context on `key` in [start_sample, end_sample) can change:
+-- segments whose spec uses the key (as a segment or occurrence key) and whose piece, before trimming,
+-- overlaps the interval. A new or revised interval can split a segment, change its context, or change its
+-- occurrence; morlet_build_context_segments then replaces it (its values are deleted with it).
+CREATE FUNCTION public.morlet_invalidate_context_segments(collection regclass,recording_id text,key text,
+  start_sample bigint,end_sample bigint)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('UPDATE %s s SET stale=true WHERE s.recording_id=$1 AND NOT s.stale
+      AND (s.spec->''keys'' ? $2 OR s.spec->''occurrence_keys'' ? $2)
+      AND s.start_sample-coalesce((s.spec->>''trim_samples'')::bigint,0)<$4
+      AND $3<s.end_sample+coalesce((s.spec->>''trim_samples'')::bigint,0)',rel.segments)
+    USING recording_id,key,start_sample,end_sample;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
 -- Whether a row was inserted by the current transaction or one of its subtransactions (row_xmin is the
 -- row's xmin): a row we can see whose inserting transaction is still in progress is ours. Used by the
 -- acquisition row-security policy so that a new acquisition is visible to its creator until its first
@@ -456,7 +500,10 @@ BEGIN
   EXECUTE format('SELECT %s FROM %s c WHERE c.recording_id=$1 AND c.start_sample=$2',relations.samples_expr,relations.chunks)
     INTO previous USING recording_id,start_sample;
   IF previous IS NOT NULL THEN
-    IF previous IS DISTINCT FROM samples THEN RAISE EXCEPTION 'conflicting replay at chunk offset'; END IF;
+    -- Bit for bit: array equality treats +0 and -0 as equal.
+    IF public.morlet_float8_le_bytes(previous) IS DISTINCT FROM public.morlet_float8_le_bytes(samples) THEN
+      RAISE EXCEPTION 'conflicting replay at chunk offset';
+    END IF;
     RETURN (state->>'end')::bigint;
   END IF;
   result:=public.morlet_chunk_step(state,start_sample,samples);
@@ -480,6 +527,259 @@ BEGIN
   GET DIAGNOSTICS updated_rows = ROW_COUNT;
   IF updated_rows<>1 THEN RAISE EXCEPTION 'checkpoint update was not permitted'; END IF;
   RETURN (result->'checkpoint'->>'end')::bigint;
+END $$;
+
+-- Builds envelopes for complete windows on the grid start_sample = k*stride,
+-- resuming after the last stored window of this size. At most max_windows per
+-- call, so long recordings can be built in bounded transactions. Returns the
+-- number of rows written; 0 means the recording is up to date.
+CREATE OR REPLACE FUNCTION public.morlet_build_envelopes(collection regclass,recording_id text,
+  window_size integer DEFAULT 4096,stride integer DEFAULT 2048,max_windows integer DEFAULT 10000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass; recording_end bigint; s bigint; last bigint; written bigint:=0; probes regclass; vschema text;
+  rels record; n integer; hi bigint;
+BEGIN
+  IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) OR stride NOT BETWEEN 1 AND 32768
+    OR max_windows NOT BETWEEN 1 AND 1000000 THEN
+    RAISE EXCEPTION 'window_size must be a power of two in 512..32768, stride 1..32768, max_windows 1..1000000';
+  END IF;
+  rel:=public.morlet_envelope_relation(collection);
+  -- With probe search enabled for this window size, each new envelope's vector row is
+  -- written in the same transaction (morlet_enable_envelope_probes).
+  probes:=public.morlet_envelope_probe_relation(collection,window_size);
+  IF probes IS NOT NULL THEN
+    SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+  END IF;
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
+    INTO last USING recording_id,window_size;
+  -- The grid starts at 0 and its stride is fixed by the first build: the smallest positive stored start
+  -- is the stride in use. Building on with another stride would report completion without the requested
+  -- windows, or mix two grids, so it is an error.
+  EXECUTE format('SELECT start_sample FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample>0
+    ORDER BY start_sample LIMIT 1',rel) INTO hi USING recording_id,window_size;
+  IF hi IS NOT NULL AND hi<>stride THEN
+    RAISE EXCEPTION 'envelopes of window % for recording % were built with stride %, not %',window_size,recording_id,hi,stride
+      USING HINT='Keep the stride, or delete this recording''s envelopes of this window size and build again.';
+  END IF;
+  s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
+  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  -- Encoded collections: batches of up to 256 windows from chunks decoded once
+  -- (morlet_envelopes_from_chunks); the bytes equal the per-window path below.
+  WHILE rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
+    n:=least(max_windows-written,256,(recording_end-window_size-s)/stride+1);
+    hi:=s+(n-1)::bigint*stride+window_size;
+    EXECUTE format('WITH c AS (SELECT array_agg(c.encoded ORDER BY c.start_sample) enc,
+        array_agg(c.start_sample ORDER BY c.start_sample) st
+        FROM %s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample+c.sample_count>$2)
+      INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$4,$2+(w.k-1)*$5,w.envelope
+      FROM c, unnest(public.morlet_envelopes_from_chunks(c.enc,c.st,$2,$3,$4,$5,$6)) WITH ORDINALITY w(envelope,k)
+      ON CONFLICT DO NOTHING',rels.chunks,rel)
+      USING recording_id,s,hi,window_size,stride,n;
+    -- Probe search may have been enabled by a transaction that committed while this insert waited
+    -- for its lock; re-check so that these windows get their vector rows (no lasting probe_backlog).
+    IF probes IS NULL THEN
+      probes:=public.morlet_envelope_probe_relation(collection,window_size);
+      IF probes IS NOT NULL THEN
+        SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+      END IF;
+    END IF;
+    IF probes IS NOT NULL THEN
+      EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+        FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample BETWEEN $3 AND $4 ON CONFLICT DO NOTHING',probes,vschema,rel)
+        USING recording_id,window_size,s,s+(n-1)::bigint*stride;
+    END IF;
+    written:=written+n;
+    s:=s+n::bigint*stride;
+  END LOOP;
+  -- Legacy float8[] collections: one window at a time.
+  WHILE NOT rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
+    EXECUTE format('INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
+      FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
+      USING recording_id,window_size,s,collection;
+    -- Probe search may have been enabled by a transaction that committed while this insert waited
+    -- for its lock; re-check so that these windows get their vector rows (no lasting probe_backlog).
+    IF probes IS NULL THEN
+      probes:=public.morlet_envelope_probe_relation(collection,window_size);
+      IF probes IS NOT NULL THEN
+        SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+      END IF;
+    END IF;
+    IF probes IS NOT NULL THEN
+      EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+        FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample=$3 ON CONFLICT DO NOTHING',probes,vschema,rel)
+        USING recording_id,window_size,s;
+    END IF;
+    written:=written+1;
+    s:=s+stride;
+  END LOOP;
+  RETURN written;
+END $$;
+
+-- Pooled relative spread per simple-v1 value: for every context with at least 3
+-- comparable segments, median(|x - median|)/|median|; then the median over contexts,
+-- floored at spread_floor (default 1%) so near-constant values cannot turn negligible
+-- shifts into large calibrated deviations. NULL where no context qualifies (greatest() ignores
+-- NULL, so the floor applies only to an existing estimate). Population
+-- size is limited by max_candidates.
+CREATE OR REPLACE FUNCTION public.morlet_value_spreads(collection regclass,segment_id bigint,
+  metadata_filter jsonb DEFAULT '{}'::jsonb,exclude_labels text[] DEFAULT '{}'::text[],max_candidates integer DEFAULT 100000,
+  spread_floor float8 DEFAULT 0.01,cutoff_ns numeric DEFAULT NULL)
+RETURNS float8[] LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; pop text; n bigint; spreads float8[];
+BEGIN
+  IF collection IS NULL OR segment_id IS NULL OR metadata_filter IS NULL OR exclude_labels IS NULL
+    OR max_candidates IS NULL OR spread_floor IS NULL THEN
+    RAISE EXCEPTION 'only cutoff_ns may be NULL';
+  END IF;
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  pop:=public.morlet_history_sql(collection,true,cutoff_ns);
+  EXECUTE 'SELECT count(*) FROM ('||pop||') h' INTO n
+    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'spread population exceeds % segments; narrow the metadata filter',max_candidates;
+  END IF;
+  IF NOT (spread_floor>0) THEN RAISE EXCEPTION 'spread_floor must be positive'; END IF;
+  EXECUTE 'WITH pop AS MATERIALIZED ('||pop||'),
+      k AS (SELECT generate_series(1,cardinality(public.morlet_simple_value_names())) AS ord),
+      g AS (SELECT p.context,k.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[k.ord]) AS med,count(*) AS n
+        FROM pop p CROSS JOIN k GROUP BY p.context,k.ord HAVING count(*)>=3),
+      lv AS (SELECT p.context,public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM pop p GROUP BY p.context),
+      r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
+        FROM g JOIN lv ON lv.context=g.context JOIN pop p ON p.context=g.context WHERE abs(g.med)>lv.fl[g.ord]
+        GROUP BY g.context,g.ord,g.med)
+    SELECT array_agg(CASE WHEN m.rel IS NOT NULL THEN greatest(m.rel,$9) END ORDER BY k.ord)
+      FROM k CROSS JOIN LATERAL (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) AS rel FROM r WHERE r.ord=k.ord) m'
+    INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      spread_floor;
+  RETURN spreads;
+END $$;
+
+-- rows: JSON array of {"recording_id","key","value","start_sample"[,"end_sample"]};
+-- rows without end_sample are events. An identical retry of batch_id returns 0;
+-- a different batch under the same id is an error.
+CREATE OR REPLACE FUNCTION public.morlet_add_context(collection regclass,batch_id text,rows jsonb)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; existing jsonb; incoming jsonb; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF jsonb_typeof(rows)<>'array' OR jsonb_array_length(rows)=0 OR batch_id='' THEN
+    RAISE EXCEPTION 'context rows must be a non-empty JSON array and batch_id non-empty';
+  END IF;
+  SELECT jsonb_agg(o ORDER BY o::text) INTO incoming FROM (SELECT jsonb_build_object('recording_id',r->>'recording_id',
+      'key',r->>'key','value',r->'value','start_sample',(r->>'start_sample')::bigint,
+      'end_sample',(r->>'end_sample')::bigint) AS o FROM jsonb_array_elements(rows) r) x;
+  -- Concurrent additions of the same batch, or to the same recordings, run one after another.
+  PERFORM public.morlet_lock_context(collection,batch_id,
+    ARRAY(SELECT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
+  EXECUTE format('SELECT jsonb_agg(o ORDER BY o::text) FROM (SELECT jsonb_build_object(''recording_id'',recording_id,
+      ''key'',key,''value'',value,''start_sample'',start_sample,''end_sample'',end_sample) AS o
+    FROM %s WHERE batch_id=$1) x',rel.ctx) INTO existing USING batch_id;
+  IF existing IS NOT NULL THEN
+    IF existing=incoming THEN RETURN 0; END IF;
+    RAISE EXCEPTION 'context batch % already exists with different rows',batch_id;
+  END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(incoming) r WHERE r->>'recording_id' IS NULL OR r->>'key' IS NULL
+      OR r->'value' IS NULL OR r->>'start_sample' IS NULL) THEN
+    RAISE EXCEPTION 'every context row needs recording_id, key, value and start_sample';
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,kind,key,value,start_sample,end_sample,batch_id)
+    SELECT r->>''recording_id'',CASE WHEN r->>''end_sample'' IS NULL THEN ''event'' ELSE ''interval'' END,
+      r->>''key'',r->''value'',(r->>''start_sample'')::bigint,(r->>''end_sample'')::bigint,$2
+    FROM jsonb_array_elements($1) r',rel.ctx) USING incoming,batch_id;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  PERFORM public.morlet_check_context_overlaps(collection,
+    ARRAY(SELECT DISTINCT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
+  -- Late context changes segments built before it (a new occurrence, a split): mark them stale.
+  PERFORM public.morlet_invalidate_context_segments(collection,r->>'recording_id',r->>'key',
+      (r->>'start_sample')::bigint,(r->>'end_sample')::bigint)
+    FROM jsonb_array_elements(incoming) r WHERE r->>'end_sample' IS NOT NULL;
+  RETURN n;
+END $$;
+
+-- Appends a revision of an active row (changes may set value, start_sample,
+-- end_sample) or a retraction. Segments built from the old row become stale, and so do segments the
+-- revised interval overlaps (morlet_invalidate_context_segments).
+CREATE OR REPLACE FUNCTION public.morlet_revise_context(collection regclass,ctx_id bigint,changes jsonb DEFAULT '{}'::jsonb,
+  retract boolean DEFAULT false)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; old record; new_id bigint; rid text; changed record;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('SELECT recording_id FROM %s WHERE ctx_id=$1',rel.ctx) INTO rid USING ctx_id;
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[rid]);
+  EXECUTE format('SELECT * FROM %1$s x WHERE x.ctx_id=$1 AND NOT x.retracted
+    AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id) FOR UPDATE',rel.ctx) INTO old USING ctx_id;
+  IF old.ctx_id IS NULL THEN RAISE EXCEPTION 'context row % is not active or not visible',ctx_id; END IF;
+  IF jsonb_typeof(changes)<>'object' OR EXISTS(SELECT 1 FROM jsonb_object_keys(changes) k
+      WHERE k NOT IN ('value','start_sample','end_sample')) THEN
+    RAISE EXCEPTION 'changes may only set value, start_sample and end_sample';
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,kind,key,value,start_sample,end_sample,batch_id,supersedes,retracted)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING ctx_id',rel.ctx) INTO new_id
+    USING old.recording_id,old.kind,old.key,coalesce(changes->'value',old.value),
+      coalesce((changes->>'start_sample')::bigint,old.start_sample),
+      CASE WHEN changes ? 'end_sample' THEN (changes->>'end_sample')::bigint ELSE old.end_sample END,
+      'revision:'||old.ctx_id,old.ctx_id,retract;
+  PERFORM public.morlet_check_context_overlaps(collection,ARRAY[old.recording_id]);
+  EXECUTE format('UPDATE %s SET stale=true WHERE $1=ANY(ctx_ids)',rel.segments) USING old.ctx_id;
+  -- The revised interval can also reach segments the old row did not cover.
+  IF old.kind='interval' THEN
+    EXECUTE format('SELECT start_sample,end_sample FROM %s WHERE ctx_id=$1',rel.ctx) INTO changed USING new_id;
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,old.start_sample,old.end_sample);
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,changed.start_sample,changed.end_sample);
+  END IF;
+  RETURN new_id;
+END $$;
+
+-- One segment per maximal intersection of the active intervals of all `keys`,
+-- within committed samples. occurrence holds the values of `occurrence_keys`
+-- intervals that cover the whole segment (for example the part). Stale segments
+-- of this recording and spec are replaced (context added or revised later marks the segments it can
+-- change as stale). Returns the number of new segments.
+CREATE OR REPLACE FUNCTION public.morlet_build_context_segments(collection regclass,recording_id text,keys text[],
+  occurrence_keys text[] DEFAULT '{}'::text[],min_samples integer DEFAULT 1,trim_samples integer DEFAULT 0)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; recording_end bigint; spec jsonb; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF cardinality(keys)=0 OR min_samples<1 OR trim_samples<0 OR keys && occurrence_keys THEN
+    RAISE EXCEPTION 'keys must be non-empty, disjoint from occurrence_keys, min_samples >= 1 and trim_samples >= 0';
+  END IF;
+  keys:=ARRAY(SELECT DISTINCT k FROM unnest(keys) k ORDER BY k);
+  occurrence_keys:=ARRAY(SELECT DISTINCT k FROM unnest(occurrence_keys) k ORDER BY k);
+  -- Builds wait for context writes to this recording (and the reverse), so a build sees either all or
+  -- none of a concurrent addition and its invalidations.
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[recording_id]);
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  spec:=jsonb_build_object('version','ctx-seg-v1','keys',to_jsonb(keys),'occurrence_keys',to_jsonb(occurrence_keys),
+    'min_samples',min_samples);
+  -- Trimmed segments drop trim_samples at each end (uncertain edges); the spec records it.
+  IF trim_samples>0 THEN spec:=spec||jsonb_build_object('trim_samples',trim_samples); END IF;
+  EXECUTE format('DELETE FROM %s WHERE recording_id=$1 AND spec=$2 AND stale',rel.segments) USING recording_id,spec;
+  EXECUTE format('WITH act AS (SELECT * FROM %1$s x WHERE x.recording_id=$1 AND x.kind=''interval'' AND NOT x.retracted
+        AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id)),
+      pts AS (SELECT DISTINCT p FROM act, LATERAL (VALUES (act.start_sample),(act.end_sample)) v(p) WHERE act.key=ANY($2)),
+      pieces AS (SELECT p AS a,lead(p) OVER (ORDER BY p) AS b FROM pts),
+      cov AS (SELECT pc.a,pc.b,array_agg(act.ctx_id ORDER BY act.key) AS ids,jsonb_object_agg(act.key,act.value) AS ctx,
+          count(*) AS n FROM pieces pc JOIN act ON act.key=ANY($2) AND act.start_sample<=pc.a AND act.end_sample>=pc.b
+        WHERE pc.b IS NOT NULL GROUP BY pc.a,pc.b)
+    INSERT INTO %2$s(recording_id,start_sample,end_sample,context,occurrence,ctx_ids,spec)
+    SELECT $1,cov.a+$7,cov.b-$7,cov.ctx,coalesce(o.occ,''{}''::jsonb),cov.ids||coalesce(o.ids,''{}''::bigint[]),$3
+    FROM cov LEFT JOIN LATERAL (SELECT jsonb_object_agg(act.key,act.value) AS occ,array_agg(act.ctx_id ORDER BY act.key) AS ids
+        FROM act WHERE act.key=ANY($4) AND act.start_sample<=cov.a AND act.end_sample>=cov.b) o ON true
+    WHERE cov.n=cardinality($2) AND cov.b<=$5 AND cov.b-cov.a-2*$7>=$6
+    ON CONFLICT DO NOTHING',rel.ctx,rel.segments)
+    USING recording_id,keys,spec,occurrence_keys,recording_end,min_samples,trim_samples;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
 END $$;
 
 -- Row-level security for companion tables (opt-in). Search and read functions are
@@ -619,8 +919,10 @@ BEGIN
   -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
   -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
   -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
-  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path).
-  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off';
+  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
+  -- query too large to prepare for screening (window 32768 from lag fraction 0.1, 16384 at 0.5).
+  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off'
+    AND public.morlet_envelope_screen_supported(cardinality(query_envelope),lag);
   IF NOT screened THEN
     EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id%s
       WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection,
