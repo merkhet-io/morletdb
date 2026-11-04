@@ -25,7 +25,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times; optionally also searches with the window moved a little (`shifts`) and merges the results. With SQL 0.3.3: `before_only` (only what happened before the query) and a time range, and each hit's rms, min, max and an 8-part sketch inline |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
-**Safety:** every call runs in a read-only transaction with a statement timeout, as the database role in
+**Safety:** the tools are typed signal operations; there is no tool that runs arbitrary SQL. Every call runs in a read-only transaction with a statement timeout, as the database role in
 `DATABASE_URL`, so privileges and [row-level security](access-control.md) decide what the agent sees.
 Errors (an unknown collection, an interval of the wrong length) come back to the agent as tool errors with
 the database's message, so it can correct itself.
