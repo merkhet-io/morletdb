@@ -57,7 +57,7 @@ measurement): the HNSW index leaves 16 GB of memory near 1.4 × 10⁷ windows an
 search passes 1 s near 2 × 10⁶ unfiltered windows; 10⁹ windows need about 3 TB of search structures.
 
 Beyond the tipping points, the study names what would have to change, as hypotheses for later studies, not
-claims: partitioned indexes per collection or time with filter-first routing; disk-based or quantised vector
+claims: time-partitioned companion tables (chunks, envelopes, probe rows and their indexes partitioned by collection and time, as TDengine partitions by vgroup and duration), so each search, retention step and index rebuild touches only the partitions it needs, with filter-first routing; disk-based or quantised vector
 indexes (DiskANN-style, binary or product quantisation) with exact re-ranking; coarse-to-fine screening from
 chunk summaries; sharding across nodes with a merged top-k (Citus or application-level).
 
