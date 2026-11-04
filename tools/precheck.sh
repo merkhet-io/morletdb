@@ -36,6 +36,7 @@ if touches '^(research/paper|docs)/|^README\.md$|^VERSION$'; then
   python3 research/paper/release_manifest.py --check
   python3 tools/site_versions.py --check
   python3 tools/highlight_site.py --check
+  python3 tools/benchmark_chart.py --check
 fi
 if touches '^\.github/workflows/' && command -v actionlint >/dev/null; then
   step "actionlint"; actionlint

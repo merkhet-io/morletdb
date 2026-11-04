@@ -162,23 +162,23 @@ Three conditions bound these results. The storage advantage comes mostly from co
 
 A third amendment (B3.3) measured two things QuestDB does not offer in the same form. Reading all seven channels of one acquisition over a time interval with one server call took 1.76 / 2.37\,ms (64\,ms of data) and 5.76 / 6.88\,ms (0.5\,s) at p50 / p95, 32--39\% faster than QuestDB at p50 with one query per group table; every sample, first index and time was exact. Computing search features during ingestion, with a faster feature extractor adopted under a frozen rule (features bitwise identical to the previous one), reduced ingestion from 6.33 to 1.64\,M samples/s from one connection, 3.9$\times$ the ingest time instead of 9.6$\times$; features added 130\,MB and envelopes 53\,MB to a 165\,MiB database. The extractor remained the largest single cost (49\,s of server time in an 87\,s profiled load).
 
-Two further amendments added databases aimed at industrial IoT, each frozen before its first benchmark load and compared with \M{}'s B3.3 numbers on the same machine and limits (Table~\ref{tab:b3iiot}). CrateDB 6.4 (B3.4) ran as a single node through its Python client over HTTP in three layouts: a row per sample instant, the same with its best compression, and arrays of 4,096 samples per row, its documented pattern for dense series. Its timestamps have millisecond resolution, so every layout stored the sample index. One load overlapped a sleep of the machine and was rerun from a fresh volume under the stage's rule. Apache IoTDB 2.0.11 (B3.5) ran standalone in its table model with nanosecond timestamps, so times were exact without an index, in two layouts: its defaults (GORILLA, LZ4) and ZSTD. Its Python client converts a timestamp column element by element, ten times slower than reading the time as an integer, which the protocol therefore did; part of its remaining read time is client-side decoding (the server answered a 128,000-sample query in about 20\,ms in development). All 25 loads returned every sample exactly. IoTDB's default layout stored the data at about the raw float64 size; XOR-style coding gains little on noisy waveforms. Neither system offers similarity search over an archive; IoTDB's optional function library computes DTW or cross-correlation between two given series.
+Three further amendments added databases aimed at industrial IoT, each frozen before its first benchmark load and compared with \M{}'s B3.3 numbers on the same machine and limits (Table~\ref{tab:b3iiot}). CrateDB 6.4 (B3.4) ran as a single node through its Python client over HTTP in three layouts: a row per sample instant, the same with its best compression, and arrays of 4,096 samples per row, its documented pattern for dense series. Its timestamps have millisecond resolution, so every layout stored the sample index. One load overlapped a sleep of the machine and was rerun from a fresh volume under the stage's rule. Apache IoTDB 2.0.11 (B3.5) ran standalone in its table model with nanosecond timestamps, so times were exact without an index, in two layouts: its defaults (GORILLA, LZ4) and ZSTD. Its Python client converts a timestamp column element by element, ten times slower than reading the time as an integer, which the protocol therefore did; part of its remaining read time is client-side decoding (the server answered a 128,000-sample query in about 20\,ms in development). TDengine 3.4.3.3 (B3.6) ran as a single node with nanosecond timestamps through its Python WebSocket client, a subtable per acquisition under supertables, in three layouts: its default (byte-stream split, LZ4), ZSTD at the highest level, and its float compressor tsz. The first two returned every sample exactly in all 12 loads; tsz did not: two channels differed in 54 samples by at most 8 ULP, and TDengine's server reference documents a mantissa truncation of doubles below $10^{-16}$ (default and minimum) for it, so it is lossy and was stopped after its first load. All 37 lossless loads returned every sample exactly. IoTDB's default layout stored the data at about the raw float64 size; XOR-style coding gains little on noisy waveforms. Neither system offers similarity search over an archive; IoTDB's optional function library computes DTW or cross-correlation between two given series.
 
 \begin{table}[t]
-\caption{B3.4 and B3.5: each system's best layout per measure; p50 / p95 where two numbers are given. \M{} from B3.3, same machine and limits.}
+\caption{B3.4--B3.6: each system's best lossless layout per measure; p50 / p95 where two numbers are given. \M{} from B3.3, same machine and limits. TDengine's data size is its data files; its whole volume, with 1\,GiB of retained WAL, was 1,602\,MiB.}
 \label{tab:b3iiot}
 \small\setlength{\tabcolsep}{3pt}
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}Xrrr@{}}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}Xrrrr@{}}
 \toprule
-Measure & \M{} & CrateDB & IoTDB \\
+Measure & \M{} & CrateDB & IoTDB & TDengine \\
 \midrule
-data on disk (MiB) & \textbf{165} & 1,786 & 660 \\
-ingestion, M samples/s & \textbf{6.33} & 0.43 & 2.55 \\
-read 4,096 samples (ms) & \textbf{0.62 / 0.92} & 7.2 / 11.5 & 7.8 / 10.5 \\
-read 128,000 samples (ms) & \textbf{6.6 / 8.9} & 86.6 / 109.9 & 46.0 / 55.4 \\
-min, max, mean, RMS (ms) & \textbf{2.5 / 2.7} & 3.9 / 7.9 & 7.4 / 11.1 \\
-4 readers, queries/s & \textbf{4,119} & 385 & 435 \\
-altered resend & refused & ignored & replaces \\
+data on disk (MiB) & \textbf{165} & 1,786 & 660 & 567 \\
+ingestion, M samples/s & \textbf{6.33} & 0.43 & 2.55 & 4.08 \\
+read 4,096 samples (ms) & \textbf{0.62 / 0.92} & 7.2 / 11.5 & 7.8 / 10.5 & 5.4 / 8.6 \\
+read 128,000 samples (ms) & \textbf{6.6 / 8.9} & 86.6 / 109.9 & 46.0 / 55.4 & 70.5 / 86.3 \\
+min, max, mean, RMS (ms) & \textbf{2.5 / 2.7} & 3.9 / 7.9 & 7.4 / 11.1 & 5.0 / 11.8 \\
+4 readers, queries/s & \textbf{4,119} & 385 & 435 & 175 \\
+altered resend & refused & ignored & replaces & replaces \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -274,6 +274,7 @@ CS1 (S1) & chunk summaries: faster, identical statistics? & 5c6d053 11-03 01:48 
 B3.3 & acquisition reads; cost of features at ingest & bf8d3fe 10:51 & 23b7e9d 14:13 & dev set; benchmark set & confirmed once \\
 B3.4 & CrateDB 6.4, three layouts & 6996513 11-04 & 9f8c668 19:25 & dev set; benchmark set & 1 deviation (rerun) \\
 B3.5 & Apache IoTDB 2.0, two layouts & fa2c0a0 20:40 & 50cd12d 21:18 & dev set; benchmark set & confirmatory \\
+B3.6 & TDengine 3.4, three layouts & 6a90427 22:37 & de3c790 23:29 & dev set; benchmark set & 1 deviation (tsz lossy) \\
 EX1 (X1) & full workflow at 2 CPUs, 512\,MB & 5a04fe9 14:33 & e354488 22:42 & B3 benchmark set & confirmatory \\
 EX2 (X2) & full workflow on a Raspberry Pi 3B+ & b927fa0 11-04 00:24 & d072dff 18:01 & B3 benchmark set & 2 deviations \\
 B4 & codec vs 2026 float codecs & ce3084e 09:25 & 15edc67 09:31 & B1 inputs; Elf series & confirmatory; reuse \\
@@ -328,7 +329,7 @@ B4 & codec vs 2026 float codecs & ce3084e 09:25 & 15edc67 09:31 & B1 inputs; Elf
 \bibitem{ex1} \M{} contributors. EX1 (X1 in the repository): the full workflow inside edge-sized container limits. \code{evaluation/edge_x1/RESULTS.md} in~\cite{repo}.
 \bibitem{ex2} \M{} contributors. EX2 (X2 in the repository): \M{} on a Raspberry Pi 3B+. \code{evaluation/edge_x2/RESULTS.md} in~\cite{repo}.
 \bibitem{g1} \M{} contributors. G1: automatic calibration-grid detection. \code{evaluation/grid_detection/RESULTS.md} in~\cite{repo}.
-\bibitem{b3} \M{} contributors. B3, B3.1--B3.5: \M{}, QuestDB, CrateDB and Apache IoTDB on dense waveforms. \code{evaluation/tsdb_b3/RESULTS.md} in~\cite{repo}.
+\bibitem{b3} \M{} contributors. B3, B3.1--B3.6: \M{}, QuestDB, CrateDB, Apache IoTDB and TDengine on dense waveforms. \code{evaluation/tsdb_b3/RESULTS.md} in~\cite{repo}.
 \bibitem{e5} \M{} contributors. E5 and E5-H: catalogued earthquakes, bounded-lag against zero-lag search. \code{evaluation/task_relevance/} in~\cite{repo}.
 \bibitem{mcp} \M{} contributors. Read-only MCP server for AI agents, agent and machine demos. \code{tools/mcp/}, \code{docs/mcp.md}, \code{examples/} in~\cite{repo}.
 \bibitem{x1} \M{} contributors. X1: reference coding across repeated operations. \code{evaluation/compression/reference/RESULTS.md} in~\cite{repo}.
