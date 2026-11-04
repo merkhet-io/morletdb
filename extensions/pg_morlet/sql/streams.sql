@@ -1,7 +1,7 @@
 -- Exact envelope search screening (morlet_core::envelope_screen): a parallel aggregate that bounds each
 -- stored window's distance to a query envelope in float32 and keeps every window that could be among the
 -- m nearest, as a JSON array of [recording_id, start_sample]. Used by morlet_envelope_ranked.
-CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,integer) (
+CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,integer,bigint) (
   SFUNC = public.morlet_envelope_screen_step, STYPE = internal,
   COMBINEFUNC = public.morlet_envelope_screen_combine,
   SERIALFUNC = public.morlet_envelope_screen_serial, DESERIALFUNC = public.morlet_envelope_screen_deserial,
@@ -890,7 +890,8 @@ BEGIN
   -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
   -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
   -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
-  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
+  -- returned; once a scan has seen more than max_candidates windows it stops screening and only counts.
+  -- SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
   -- query too large to prepare for screening (window 32768 from lag fraction 0.1, 16384 at 0.5).
   screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off'
     AND public.morlet_envelope_screen_supported(cardinality(query_envelope),lag);
@@ -905,7 +906,7 @@ BEGIN
   LOOP
     IF screened THEN
       EXECUTE format('WITH c AS (SELECT count(*) AS eligible,public.morlet_envelope_screen(e.envelope,e.recording_id,
-            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer)
+            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer,$12::bigint)
             FILTER (WHERE $8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10) AS j
           FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id%3$s
           WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5),
@@ -1578,8 +1579,9 @@ BEGIN
   SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
   pop:=public.morlet_history_sql(collection,true,cutoff_ns);
-  EXECUTE 'SELECT count(*) FROM ('||pop||') h' INTO n
-    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  EXECUTE 'SELECT count(*) FROM ('||pop||' LIMIT $9) h' INTO n
+    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
   IF n>max_candidates THEN
     RAISE EXCEPTION 'spread population exceeds % segments; narrow the metadata filter',max_candidates;
   END IF;
@@ -1659,8 +1661,9 @@ BEGIN
     RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
   END IF;
   history:=public.morlet_history_sql(collection,false,cutoff);
-  EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO candidates
-    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO candidates
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
   IF candidates>max_candidates THEN
     RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
   END IF;
@@ -1724,13 +1727,18 @@ BEGIN
     RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
   END IF;
   history:=public.morlet_history_sql(collection,false,cutoff);
+  -- Refuse an oversized history before flattening it: count at most max_candidates+1 rows (the function is
+  -- STABLE, so this count and the read below see the same snapshot).
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
   EXECUTE 'SELECT coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
     ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO flat
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
   n:=cardinality(flat)/width;
-  IF n>max_candidates THEN
-    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
-  END IF;
   query_occurrence:=q.occurrence; hist_n:=n;
   SELECT c.relative_deviation INTO duration_relative_deviation
     FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
@@ -2037,8 +2045,9 @@ BEGIN
     RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
   END IF;
   history:=public.morlet_history_sql(collection,false,cutoff);
-  EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO n
-    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
   IF n>max_candidates THEN
     RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
   END IF;
@@ -2114,8 +2123,9 @@ BEGIN
       JOIN %s a ON a.acquisition_id=ch.acquisition_id WHERE a.machine=$10',
     public.morlet_history_sql(collection,false,cutoff),collection,acq.channels,acq.acq);
   history:='SELECT * FROM ('||history||') e WHERE $11::numeric IS NULL OR e.t>=$11';
-  EXECUTE 'SELECT count(*) FROM ('||history||') c' INTO n
-    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since;
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $12) c' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since,
+      max_candidates::bigint;
   IF n+1>max_candidates THEN
     RAISE EXCEPTION 'track exceeds % episodes; narrow match_keys, the metadata filter or since_utc',max_candidates;
   END IF;

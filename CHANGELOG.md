@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Refusing oversized requests earlier (#160; results within budget unchanged):
+- `morlet_compare_summary` checked `max_candidates` after flattening the whole history into one array; it now
+  counts at most `max_candidates + 1` segments first. `morlet_compare_to_history`, `morlet_history_neighbors`,
+  `morlet_value_spreads` and `morlet_level_track` stop counting at the budget too.
+- Screened exact search: a scan that has seen more than `max_candidates` windows stops screening and only
+  counts (the `morlet_envelope_screen` aggregate takes the budget). The error still states the exact number of
+  eligible windows. The budget remains a candidate limit, not a time or memory limit.
+
 MCP distance guidance (#157):
 - The MCP server no longer tells agents that distances below 0.3 are strong and above 0.6 weak, which was not
   evaluated across signal types. It explains what the distance is (1 - envelope correlation: envelope shape,

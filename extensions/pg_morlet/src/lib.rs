@@ -596,8 +596,9 @@ fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: pgrx::Array<
 
 // ---- Exact envelope search: a parallel aggregate that screens stored envelopes in float32 with a
 // rigorous error bound and keeps every window that could be among the m nearest (morlet_core::envelope_screen).
-// SQL: morlet_envelope_screen(envelope, recording_id, start_sample, query_envelope, max_lag, m) -> jsonb of
-// [recording_id, start_sample] candidates, re-scored exactly by morlet_envelope_distance afterwards.
+// SQL: morlet_envelope_screen(envelope, recording_id, start_sample, query_envelope, max_lag, m, budget) -> jsonb
+// of [recording_id, start_sample] candidates, re-scored exactly by morlet_envelope_distance afterwards. A state
+// that sees more than `budget` (max_candidates) rows stops screening: the search then fails its count check.
 
 struct ScreenAgg {
     query: Vec<f64>,
@@ -611,6 +612,11 @@ struct ScreenAgg {
     /// the last id is checked first.
     rids: Vec<String>,
     screener: Option<morlet_core::envelope_screen::Screener<(u32, i64)>>,
+    /// Rows this state has screened, and the search's max_candidates. Once a state has seen more rows than
+    /// the budget, the search will fail its budget check whatever the screening finds, so later rows are
+    /// only counted (by the caller's count(*)), not screened. Not serialized: each worker counts its own.
+    seen: i64,
+    budget: i64,
 }
 
 impl ScreenAgg {
@@ -668,7 +674,7 @@ unsafe fn aggregate_context(fcinfo: pg_sys::FunctionCallInfo) -> pg_sys::MemoryC
     ctx
 }
 
-fn new_screen_agg(query: &[f64], lag: usize, m: usize) -> ScreenAgg {
+fn new_screen_agg(query: &[f64], lag: usize, m: usize, budget: i64) -> ScreenAgg {
     let screener =
         morlet_core::envelope_screen::Screener::new(query, lag, m).unwrap_or_else(|| {
             pgrx::error!("invalid query envelope, max_lag or candidate pool for screening")
@@ -681,6 +687,8 @@ fn new_screen_agg(query: &[f64], lag: usize, m: usize) -> ScreenAgg {
         m,
         rids: Vec::new(),
         screener: Some(screener),
+        seen: 0,
+        budget,
     }
 }
 
@@ -694,21 +702,31 @@ fn morlet_envelope_screen_step(
     query_le: &[u8],
     max_lag: i32,
     m: i32,
+    budget: i64,
     fcinfo: pg_sys::FunctionCallInfo,
 ) -> pgrx::Internal {
-    if max_lag < 0 || m < 1 {
-        pgrx::error!("max_lag must be nonnegative and the candidate pool positive");
+    if max_lag < 0 || m < 1 || budget < 1 {
+        pgrx::error!("max_lag must be nonnegative, and the candidate pool and budget positive");
     }
     let mut state = state;
     unsafe {
         if !state.initialized() {
             let ctx = aggregate_context(fcinfo);
-            let agg = new_screen_agg(&query_from_le_bytes(query_le), max_lag as usize, m as usize);
+            let agg = new_screen_agg(
+                &query_from_le_bytes(query_le),
+                max_lag as usize,
+                m as usize,
+                budget,
+            );
             state = pgrx::Internal::from(Some(pg_sys::Datum::from(
                 pgrx::PgMemoryContexts::For(ctx).leak_and_drop_on_delete(agg),
             )));
         }
         let agg = state.get_mut::<ScreenAgg>().unwrap();
+        agg.seen += 1;
+        if agg.seen > agg.budget {
+            return state; // over budget: the search fails its count check; skip the costly screening
+        }
         if agg.lag != max_lag as usize || agg.m != m as usize {
             pgrx::error!("the query envelope, max_lag and pool must be the same for every row");
         }
@@ -875,6 +893,9 @@ fn morlet_envelope_screen_deserial(
         m,
         rids,
         screener: Some(screener),
+        // A deserialized state is only combined and finished, never stepped.
+        seen: 0,
+        budget: i64::MAX,
     };
     unsafe {
         let ctx = aggregate_context(fcinfo);
@@ -1861,6 +1882,31 @@ END $$"#).unwrap();
         // Results never overlap within one recording.
         assert_eq!(Spi::get_one::<i64>("WITH h AS (SELECT * FROM morlet_search_envelopes('env',(SELECT samples FROM morlet_read_interval('env','A',2048,4096)),100,'HHZ','counts','{}',20)) SELECT count(*) FROM h a JOIN h b ON a.recording_id=b.recording_id AND a.start_sample<b.start_sample AND b.start_sample<a.end_sample").unwrap(), Some(0));
         assert_eq!(Spi::get_one::<bool>("SELECT envelope_table_bytes>0 AND total_bytes=recordings_table_bytes+chunk_table_bytes+segment_table_bytes+envelope_table_bytes FROM morlet_collection_storage('env')").unwrap(), Some(true));
+    }
+
+    #[pg_test]
+    fn envelope_search_at_its_budget_is_unchanged() {
+        // #160: screening stops once a scan has seen more than max_candidates windows; at exactly the
+        // budget nothing is skipped, so results equal the unbounded search.
+        serialize_shared_ddl();
+        envelope_fixture();
+        Spi::run(
+            "SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r",
+        )
+        .unwrap();
+        let q = |b: &str| {
+            format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelope_interval('env','A',0,2048,'{{}}',10,0.075,true,true,{b})")
+        };
+        assert_eq!(
+            Spi::get_one::<String>(&q("45")).unwrap(),
+            Spi::get_one::<String>(&q("1000000")).unwrap()
+        );
+    }
+
+    #[pg_test(error = "history exceeds 2 segments; narrow match_keys or the metadata filter")]
+    fn compare_summary_refuses_oversized_history_first() {
+        cal_fixture();
+        Spi::run("SELECT * FROM morlet_compare_summary('cal',(SELECT segment_id FROM cal_ctx_segments WHERE recording_id='A3'),max_candidates=>2)").unwrap();
     }
 
     #[pg_test(error = "45 windows are eligible, more than max_candidates (5)")]
