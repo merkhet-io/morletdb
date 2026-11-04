@@ -1,0 +1,58 @@
+{
+ "system": "crate-row",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.8171112079871818,
+ "samples": 101453304,
+ "image": "crate:6.4.6",
+ "image_id": "sha256:865ed64fd4e7ffc31dccd79ec96d374f7da458e23e65520699e31ad4f21775ef",
+ "started": "2026-11-04T14:50:06",
+ "server_version": "6.4.6",
+ "ingest": {
+  "wall_s": 565.065,
+  "samples_per_s": 179543,
+  "conversion_s": 7.024,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 4466.964,
+   "p95_ms": 5206.389,
+   "max_ms": 7302.381
+  },
+  "ack_per_call": {
+   "n": 3605,
+   "p50_ms": 149.404,
+   "p95_ms": 234.16,
+   "max_ms": 1242.518
+  },
+  "queryable_after_last_ack_s": 2.131,
+  "failures": [],
+  "server": {
+   "cpu_percent_mean": 193.3,
+   "cpu_percent_p95": 330.5,
+   "memory_peak_mib": 8775.7,
+   "samples": 248
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31833312,
+    "mid": 1984252,
+    "process": 612
+   },
+   "want": {
+    "high": 31833312,
+    "mid": 1984252,
+    "process": 612
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 101.1
+  }
+ },
+ "correct": true
+}

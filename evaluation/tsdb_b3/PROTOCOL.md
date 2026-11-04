@@ -337,7 +337,7 @@ statement rule above.
    name; the reference profile moved to `results/b33/profile/reference/`. Profile loads are outside every
    statement; no measurement was repeated.
 
-## Amendment B3.4: CrateDB stage (DRAFT, not frozen; frozen in its own commit before any CrateDB load)
+## Amendment B3.4: CrateDB stage (FROZEN before any load of the benchmark set)
 
 Added 2026-11-04. CrateDB is sold to the same industrial users as MorletDB, so the question "why not store the
 waveforms in CrateDB?" needs measured answers. The stage runs before IoTDB; the order of the remaining stages is
@@ -375,6 +375,19 @@ Python client `crate` 2.3.0, HTTP endpoint; image defaults otherwise):
   `sqrt(avg(x * x))` in SQL on C-row; C-array computed in the client after the read, reported as such.
 - **Retry semantics:** loading an acquisition twice leaves one copy (primary key); an altered retry is silently
   ignored (`DO NOTHING`), reported as a semantic difference (MorletDB refuses it).
+
+**Runs (fixed now):** C-array and C-row: three fresh loads per durability class (D1 r1–r3, D2 r1–r3); storage
+(after `OPTIMIZE`, and after `OPTIMIZE` to one segment), reads (R1–R5) and analytics on D2 r1. C-row-best: one D2
+load (r1), with storage, reads and analytics; its ingestion is reported but makes no statement (one load). Order:
+C-array, C-row, C-row-best (`run_b34.sh`; a completed load is not repeated, an interrupted one is rerun from a
+fresh volume). Client: `.venv-b3c` (Python 3.13, the B3 requirements and `crate` 2.3.0). Ingestion time includes
+building the client's parameter rows, reported separately as conversion (as QuestDB's `dataframe` conversion).
+
+**Development (not results).** On B3's development set (`B3_SET=dev`, `results/dev/b34/`): every arm passed the
+3-acquisition subset (bit-exact reads through the HTTP JSON interface; identical retry leaves one copy; an altered
+retry is accepted and silently ignored); full loads of C-row (ingest 565 s, 180 k samples/s, correct) and C-array
+(223 s, 455 k samples/s, correct). What development changed: `restart` waits until every shard has recovered
+(the first C-row run failed reading during shard recovery after the restart).
 
 **Not in this stage:** CrateDB's vector search (similarity search is not part of B3), clusters of more than
 one node, CrateDB Cloud.
