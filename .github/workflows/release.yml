@@ -77,6 +77,20 @@ jobs:
             org.opencontainers.image.licenses=Apache-2.0
           cache-from: type=gha,scope=alpha-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=alpha-${{ matrix.arch }}
+      - name: Software bill of materials of the candidate (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: morletdb:candidate
+          format: spdx-json
+          output-file: morletdb-${{ steps.version.outputs.value }}-${{ matrix.arch }}.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Keep the SBOM for the release
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.arch }}
+          path: morletdb-${{ steps.version.outputs.value }}-${{ matrix.arch }}.spdx.json
+          if-no-files-found: error
       - name: Clean-checkout quickstart and restart trial
         env:
           MORLET_IMAGE: morletdb:candidate
@@ -115,6 +129,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     outputs:
       digest: ${{ steps.index.outputs.digest }}
       version: ${{ steps.index.outputs.version }}
@@ -135,7 +151,15 @@ jobs:
           digest=$(docker buildx imagetools inspect "$image:$version" --format '{{json .Manifest}}' | jq -r .digest)
           docker buildx imagetools inspect "$image:$version"
           echo "digest=$image@$digest" >> "$GITHUB_OUTPUT"
+          echo "name=$image" >> "$GITHUB_OUTPUT"
+          echo "sha=$digest" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Build provenance attestation for the release index
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ steps.index.outputs.name }}
+          subject-digest: ${{ steps.index.outputs.sha }}
+          push-to-registry: true
 
   registry-trial:
     needs: publish
@@ -176,6 +200,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Collect the SBOMs of both architectures
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sbom-*
+          merge-multiple: true
       - name: Publish GitHub prerelease only after both registry trials succeed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -183,5 +212,6 @@ jobs:
           DIGEST: ${{ needs.publish.outputs.digest }}
         run: |
           printf '%s\n' "$DIGEST" > image-digest.txt
-          { cat CHANGELOG.md; printf '\nImage: %s (linux/amd64 and linux/arm64)\nCommit: %s\n' "$DIGEST" "$GITHUB_SHA"; } > release-notes.md
-          gh release create "v$VERSION" image-digest.txt --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
+          { cat CHANGELOG.md; printf '\nImage: %s (linux/amd64 and linux/arm64)\nCommit: %s\n' "$DIGEST" "$GITHUB_SHA"
+            printf 'SBOMs (SPDX): attached. Verify the build provenance with: gh attestation verify oci://%s --owner %s\n' "$DIGEST" "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
+          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
