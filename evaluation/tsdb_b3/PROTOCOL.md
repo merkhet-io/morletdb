@@ -336,3 +336,48 @@ statement rule above.
    from the run log (`results/b33/run.log`, which holds every result as printed) and saved under the original
    name; the reference profile moved to `results/b33/profile/reference/`. Profile loads are outside every
    statement; no measurement was repeated.
+
+## Amendment B3.4: CrateDB stage (DRAFT, not frozen; frozen in its own commit before any CrateDB load)
+
+Added 2026-11-04. CrateDB is sold to the same industrial users as MorletDB, so the question "why not store the
+waveforms in CrateDB?" needs measured answers. The stage runs before IoTDB; the order of the remaining stages is
+unchanged. Everything common to B3 applies (machine, container limits, budget of 6 h and 50 GB, dataset,
+manifest, correctness checks, measurements A–D, decision rules, "Not in B3"). MorletDB is not re-run: its arms
+are B3.3's (`results/b33/`, SQL 0.3.3 = release 0.3.4-alpha.1), compared with CrateDB on the same machine.
+
+**CrateDB** (`crate:6.4.6`, linux/arm64, digest `sha256:865ed64fd4e7ffc31dccd79ec96d374f7da458e23e65520699e31ad4f21775ef`;
+Python client `crate` 2.3.0, HTTP endpoint; image defaults otherwise):
+- Single node: `discovery.type=single-node`, `CRATE_HEAP_SIZE=8g` (half the container's memory, as documented),
+  tables with `number_of_replicas = 0`.
+- **Time:** CrateDB timestamps have millisecond resolution; the 64 kHz period (15,625 ns) is not representable.
+  Every arm therefore stores the sample index `n` (BIGINT) and derives time as start + n × period, as MorletDB
+  does; `ts` (TIMESTAMP, milliseconds, start + floor(n × period)) is stored in the row arms for time-range use
+  and is not part of the exactness check.
+- **C-row** (idiomatic): one table per group, one row per sample instant, synchronous channels as columns, e.g.
+  `b3_high(acquisition TEXT, n BIGINT, ts TIMESTAMP, part TIMESTAMP GENERATED ALWAYS AS date_trunc('day', ts),
+  vibration_1 DOUBLE, phase_current_1 DOUBLE, phase_current_2 DOUBLE, PRIMARY KEY (acquisition, n, part))
+  PARTITIONED BY (part)`; default codec (LZ4). Retries: `INSERT … ON CONFLICT DO NOTHING`.
+- **C-row-best:** the same with `WITH (codec = 'best_compression')`.
+- **C-array** (CrateDB's documented pattern for dense series): one row per (acquisition, channel, block) with
+  `samples DOUBLE ARRAY INDEX OFF`, blocks of 4,096 samples (MorletDB's chunk size; the community example uses
+  2,880), `codec = 'best_compression'`, primary key (acquisition, channel, block).
+- Bulk path: the client's bulk inserts (`cursor.executemany` → HTTP `bulk_args`), one call per acquisition and
+  table, batches of at most 10,000 rows (C-row) or all blocks of the acquisition (C-array).
+- **Durability:** D1 `translog.durability = 'REQUEST'` (default: fsync before acknowledgement); D2
+  `translog.durability = 'ASYNC'`. Rows become queryable after a refresh: "time until queryable" is measured
+  with the default `refresh_interval`.
+- **Settled state for storage (A):** `REFRESH TABLE`, then `OPTIMIZE TABLE` (default arguments), then the server
+  stopped cleanly; sizes from the volume by file (Lucene segments per table, translog separately, cluster
+  state and metadata). A second figure after `OPTIMIZE TABLE … WITH (max_num_segments = 1)` is reported
+  separately and not used for statements.
+- **Reads (C):** C-row by `WHERE acquisition = ? AND n >= ? AND n < ? ORDER BY n`; C-array by fetching the
+  overlapping blocks and slicing in the client (time counted). **Analytics (D):** `min`, `max`, `avg` and
+  `sqrt(avg(x * x))` in SQL on C-row; C-array computed in the client after the read, reported as such.
+- **Retry semantics:** loading an acquisition twice leaves one copy (primary key); an altered retry is silently
+  ignored (`DO NOTHING`), reported as a semantic difference (MorletDB refuses it).
+
+**Not in this stage:** CrateDB's vector search (similarity search is not part of B3), clusters of more than
+one node, CrateDB Cloud.
+
+**Downloads (to be approved before the stage):** `crate:6.4.6` (arm64 image, about 300 MB) and `crate` 2.3.0
+(PyPI, pure Python) into a separate venv.
