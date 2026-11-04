@@ -117,6 +117,24 @@ reference contains an onset, and its default background is a median, which one e
 
 `find_onsets` with a 2 Hz high-pass finds the strong arrival at 17:34:06 UTC, about 80 s after the origin time.
 
+## Reading distances
+
+`search_similar` returns `1 - ` the best correlation of two amplitude envelopes over the allowed time shifts.
+The server tells agents what that does and does not mean:
+
+- **It compares envelope shape.** Every window is normalised, so level and offset do not count, and the
+  frequency content under the envelope does not count either: the same burst on a 120 Hz and on a 40 Hz
+  carrier is close. Use `describe_interval` or `envelope_spectrum` to check frequency content.
+- **0 means the same envelope shape, not the same samples.** Raw samples are compared by reading them.
+- **It is not a probability or a confidence**, and there is no universal cut-off: what is close for one kind
+  of signal is not for another. Rank hits against each other and inspect them.
+- **A constant window has no envelope.** Its distance to everything, itself included, is 1; `search_similar`
+  adds a `query_note` instead of a meaningless ranking.
+
+Earlier versions of the server told agents that distances below about 0.3 are strong and above about 0.6 weak;
+those numbers were never evaluated across signal types and were removed. The core test
+`distance_semantics_for_agents` checks the four cases above.
+
 ## Check an installation
 
 ```sh
