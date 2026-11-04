@@ -56,3 +56,14 @@ Stocks-USA, electric_vehicle_charging). Every arm round-tripped exactly. Smalles
 (4.56 bits) and electric_vehicle_charging (10.03); PCO on Blockchain-tr (12.37) and POI-lat (53.30). What
 development changed: Elf parsing (empty lines and `""` skipped), duplicate removal (`init.csv`). Statement E covers
 all 22 series, the four development series included: development checked the harness only, nothing was tuned.
+
+## Deviations
+
+1. **ClickHouse row order.** The confirmation run (`results/b4.json`) recorded mismatches for CH-ALP on
+   Paderborn physical and CH-zstd9 on Sleep-EDF. Both reruns were exact, and the mismatching outputs held
+   the same multiset of values: `rowNumberInAllBlocks()` at insert numbered rows out of file order when
+   ClickHouse parsed a large input in parallel, so the mismatch was the harness's row order, not a lossy
+   codec. Because row order also changes compressed size, decided before reading any rerun result: the row
+   index is now written into the input with each value, and all four ClickHouse arms are rerun on every input
+   (`measure_b4.py ch-rerun`, `results/b4_final.json`); the other arms are copied unchanged from `b4.json`.
+   Both files are kept; statements use `b4_final.json`.

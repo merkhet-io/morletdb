@@ -112,10 +112,14 @@ def arm_parquet(x, enc, comp, tmp):
 def arm_clickhouse(x, codec, tmp):
     w = Path(tmp) / "ch"
     w.mkdir(exist_ok=True)
-    x.tofile(w / "in.f64")
+    # The row index travels with each value: numbering rows at insert (rowNumberInAllBlocks) depended on
+    # ClickHouse's parallel parsing and reordered rows on large inputs (deviation 1).
+    rec = np.empty(x.size, dtype=[("i", "<u4"), ("v", "<f8")])
+    rec["i"], rec["v"] = np.arange(x.size, dtype=np.uint32), x
+    rec.tofile(w / "in.bin")
     sql = (f"CREATE TABLE t (i UInt32, v Float64 CODEC({codec})) ENGINE=MergeTree ORDER BY i "
            "SETTINGS min_bytes_for_wide_part=0;"
-           "INSERT INTO t SELECT rowNumberInAllBlocks(), v FROM file('/w/in.f64', RowBinary, 'v Float64');"
+           "INSERT INTO t SELECT i, v FROM file('/w/in.bin', RowBinary, 'i UInt32, v Float64');"
            "OPTIMIZE TABLE t FINAL;"
            "SELECT sum(column_data_compressed_bytes) FROM system.parts_columns "
            "WHERE table='t' AND column='v' AND active FORMAT TSV;"
@@ -144,6 +148,21 @@ def measure(name, x, lengths, quanta, tmp):
     return {"samples": n, "sha256": hashlib.sha256(x.tobytes()).hexdigest(), "arms": arms}
 
 
+def main_ch_only(which, out, base):
+    """Deviation 1: the ClickHouse arms again, with the row index in the input; other arms copied from base."""
+    res = json.loads(Path(base).read_text())
+    res["ch_rerun"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    with tempfile.TemporaryDirectory() as tmp:
+        for name, v in res["inputs"].items():
+            x = (load_wave(name) if v["kind"] == "waveform" else load_elf(name))[0]
+            for k, c in CH.items():
+                a = arm_clickhouse(x, c, tmp)
+                a["bits"] = round(8 * a["bytes"] / x.size, 4)
+                v["arms"][k] = a
+            print(name, {k: (v["arms"][k]["bits"], v["arms"][k]["exact"]) for k in CH}, flush=True)
+    Path(out).write_text(json.dumps(res, indent=1) + "\n")
+
+
 def main(which, out):
     names = dev_names() if which == "dev" else None
     res = {"set": which, "started": time.strftime("%Y-%m-%dT%H:%M:%S"), "pcodec": pcodec.__version__ if hasattr(
@@ -163,4 +182,7 @@ def main(which, out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    if sys.argv[1] == "ch-rerun":
+        main_ch_only("confirm", sys.argv[2], sys.argv[3])
+    else:
+        main(sys.argv[1], sys.argv[2])
