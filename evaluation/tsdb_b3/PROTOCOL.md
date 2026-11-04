@@ -523,7 +523,7 @@ open for the whole run.
 **Development (not results).** On B3's development set (`B3_SET=dev`, `results/dev/b36/`): all three arms passed
 the 3-acquisition subset (values bit-exact, times exact to the nanosecond; an identical retry leaves one copy;
 an altered retry is accepted and silently replaces the stored value) and one full load each (correct; 3.8 M,
-0.82 M and 3.9 M samples/s for default, zstd and tsz; data files 626, 566 and see results/dev MiB). What development found or fixed (harness only; no server
+0.82 M and 3.9 M samples/s for default, zstd and tsz; data files 626, 566 and 360 MiB). What development found or fixed (harness only; no server
 setting was tuned):
 - one bind accepts at most 32,767 rows (larger binds fail with "Bind number out of range");
 - `force` is a reserved word: column names are quoted;
