@@ -189,17 +189,24 @@ const QUERY_BLOCK: usize = 16;
 const MAX_QUERY_MATRIX: usize = 1 << 21;
 
 impl LagQuery {
+    /// Whether [`LagQuery::new`] can prepare a query of `n` values with this `max_lag`, without
+    /// allocating: false when the inputs are invalid or the matrix would be too large.
+    pub fn supported(n: usize, max_lag: usize) -> bool {
+        if n == 0 || max_lag >= n {
+            return false;
+        }
+        let stride = (2 * max_lag + 1).div_ceil(QUERY_BLOCK) * QUERY_BLOCK;
+        n.checked_mul(stride).is_some_and(|v| v <= MAX_QUERY_MATRIX)
+    }
+
     /// None when the inputs are invalid for [`distance`] or the matrix would be too large.
     pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
         let n = q.len();
-        if n == 0 || max_lag >= n {
+        if !Self::supported(n, max_lag) {
             return None;
         }
         let lags = 2 * max_lag + 1;
         let stride = lags.div_ceil(QUERY_BLOCK) * QUERY_BLOCK;
-        if n.checked_mul(stride)? > MAX_QUERY_MATRIX {
-            return None;
-        }
         let mut m = vec![0.0; n * stride];
         for t in 0..n {
             for j in 0..lags {
@@ -707,5 +714,33 @@ mod tests {
             distance(&zeros, &zeros, 30).unwrap(),
             distance_one_lag_at_a_time(&zeros, &zeros, 30)
         );
+    }
+
+    #[test]
+    fn distance_semantics_for_agents() {
+        // What the distance does and does not mean (docs/mcp.md, issue #157).
+        let n = 4096;
+        let lag = 30;
+        let burst = |t: usize| 1.0 + 4.0 * (-(((t as f64) - 2000.0) / 300.0).powi(2)).exp();
+        let a: Vec<f64> = (0..n).map(|t| burst(t) * (t as f64 * 0.9).sin()).collect();
+        let ea = envelope(&a).unwrap();
+        // A constant window has an all-zero envelope: distance 1 to everything, itself included.
+        let flat = envelope(&vec![2.5; n]).unwrap();
+        assert!(flat.iter().all(|v| *v == 0.0));
+        assert_eq!(distance(&flat, &flat, lag).unwrap(), 1.0);
+        assert_eq!(distance(&flat, &ea, lag).unwrap(), 1.0);
+        // Level is normalised away: a scaled and offset copy has distance ~0 (same samples are not needed).
+        let scaled: Vec<f64> = a.iter().map(|v| 1000.0 * v + 7.0).collect();
+        assert!(distance(&ea, &envelope(&scaled).unwrap(), lag).unwrap() < 1e-9);
+        // The same modulation on another carrier is close too: the distance compares envelopes,
+        // not frequency content.
+        let other: Vec<f64> = (0..n).map(|t| burst(t) * (t as f64 * 0.37).sin()).collect();
+        let d_other = distance(&ea, &envelope(&other).unwrap(), lag).unwrap();
+        assert!(d_other < 0.1, "{d_other}");
+        // A different modulation is far.
+        let late: Vec<f64> = (0..n)
+            .map(|t| burst((t + 1500) % n) * (t as f64 * 0.9).sin())
+            .collect();
+        assert!(distance(&ea, &envelope(&late).unwrap(), lag).unwrap() > 0.5);
     }
 }

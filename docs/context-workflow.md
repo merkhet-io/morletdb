@@ -57,10 +57,17 @@ read-only [viewer](../tools/viewer/README.md).
     nest freely;
   - `batch_id` makes ingest idempotent: an identical retry returns 0, and a
     different batch under the same id is an error.
+  - concurrent writers are serialized per recording and per batch (transaction
+    advisory locks, under READ COMMITTED): overlapping intervals cannot both
+    commit, and an identical batch retried concurrently is stored once.
+  - context added later marks segments it can change as `stale` (a segment
+    whose spec uses the key and whose piece the interval overlaps), for
+    example a part annotated after the segments were built.
 - **Corrections** are appended:
   - `morlet_revise_context(collection, ctx_id, '{"end_sample": ...}')`, or
     `retract => true`;
-  - segments built from the old row become `stale`;
+  - segments built from the old row, and segments the revised interval
+    overlaps, become `stale`;
   - `morlet_build_context_segments` replaces stale segments of that recording
     and spec.
 - **Segments** come from an explicit, versioned spec (`ctx-seg-v1`: keys,
@@ -211,7 +218,10 @@ SELECT role, start_sample, samples FROM morlet_read_acquisition_raw('spindle', '
     `p75` and 0.57 with it.
   - C1 found the p75 of DC spindle current informative.
 - **Retries:** `morlet_create_acquisition` and `morlet_add_acquisition_channel`
-  are idempotent; a conflicting retry is an error. Context batches per channel
+  are idempotent; a conflicting retry is an error.
+- **Row security:** with `morlet_enable_row_security`, a non-owner role adds an
+  acquisition's first channel in the transaction that creates it, and can add
+  channels only to acquisitions it can see ([access control](access-control.md)). Context batches per channel
   are `<batch>@<acquisition>/<role>`.
 
 ## Nearest occurrences

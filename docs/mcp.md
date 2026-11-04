@@ -25,7 +25,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times; optionally also searches with the window moved a little (`shifts`) and merges the results. With SQL 0.3.3: `before_only` (only what happened before the query) and a time range, and each hit's rms, min, max and an 8-part sketch inline |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
-**Safety:** every call runs in a read-only transaction with a statement timeout, as the database role in
+**Safety:** the tools are typed signal operations; there is no tool that runs arbitrary SQL. Every call runs in a read-only transaction with a statement timeout, as the database role in
 `DATABASE_URL`, so privileges and [row-level security](access-control.md) decide what the agent sees.
 Errors (an unknown collection, an interval of the wrong length) come back to the agent as tool errors with
 the database's message, so it can correct itself.
@@ -116,6 +116,26 @@ afternoon because it held an uncatalogued regional earthquake. `compare_interval
 reference contains an onset, and its default background is a median, which one event barely moves.
 
 `find_onsets` with a 2 Hz high-pass finds the strong arrival at 17:34:06 UTC, about 80 s after the origin time.
+
+## Reading distances
+
+`search_similar` returns `1 - ` the best correlation of two amplitude envelopes over the allowed time shifts.
+The server tells agents what that does and does not mean:
+
+- **It compares envelope shape.** Every window is normalised, so level and offset do not count, and the
+  frequency content under the envelope does not count either: the same burst on a 120 Hz and on a 40 Hz
+  carrier is close. Use `describe_interval` or `envelope_spectrum` to check frequency content.
+- **0 means the same envelope shape, not the same samples.** Raw samples are compared by reading them.
+- **It is not a probability or a confidence**, and there is no universal cut-off: what is close for one kind
+  of signal is not for another. Rank hits against each other and inspect them.
+- **A constant window has no envelope.** Its distance to everything, itself included, is 1; `search_similar`
+  adds a `query_note` instead of a meaningless ranking. A nearly constant window still has an envelope,
+  because normalisation rescales any variation, but it may be mostly noise: check the query's and the hits'
+  `rms` in the evidence.
+
+Earlier versions of the server told agents that distances below about 0.3 are strong and above about 0.6 weak;
+those numbers were never evaluated across signal types and were removed. The core test
+`distance_semantics_for_agents` checks the four cases above.
 
 ## Check an installation
 

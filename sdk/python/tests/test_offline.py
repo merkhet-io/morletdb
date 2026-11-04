@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 
 from morletdb import InvalidInputError
-from morletdb._client import _iso, _meta_start_ns, _samples, _start_ns
+from morletdb._client import Client, _iso, _meta_start_ns, _samples, _start_ns
 from morletdb._errors import ConflictError, NotFoundError, translate
 
 
@@ -65,3 +65,31 @@ class ErrorTranslation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReaderChoice(unittest.TestCase):
+    """Raw reads are chosen per collection: an upgraded server can hold legacy float8[] collections."""
+
+    class Fake(Client):
+        def __init__(self, has_raw, encoded):
+            self._functions = {"public.morlet_read_interval_raw(regclass,text,bigint,bigint)": has_raw}
+            self._encoded = {}
+            self.layout = encoded
+            self.queries = []
+
+        def _one(self, sql, args=(), **kw):
+            self.queries.append(sql)
+            return self.layout[args[0]]
+
+    def test_per_collection(self):
+        c = self.Fake(True, {"legacy": False, "encoded": True})
+        self.assertFalse(c._raw_reads("legacy"))
+        self.assertTrue(c._raw_reads("encoded"))
+        self.assertFalse(c._raw_reads("legacy"))
+        self.assertEqual(len(c.queries), 2)  # looked up once per collection
+        self.assertTrue(all("morlet_stream_relations" in q for q in c.queries))
+
+    def test_old_server(self):
+        c = self.Fake(False, {"encoded": True})
+        self.assertFalse(c._raw_reads("encoded"))
+        self.assertEqual(c.queries, [])

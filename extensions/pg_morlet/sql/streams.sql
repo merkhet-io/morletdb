@@ -1,7 +1,7 @@
 -- Exact envelope search screening (morlet_core::envelope_screen): a parallel aggregate that bounds each
 -- stored window's distance to a query envelope in float32 and keeps every window that could be among the
 -- m nearest, as a JSON array of [recording_id, start_sample]. Used by morlet_envelope_ranked.
-CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,integer) (
+CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,integer,bigint) (
   SFUNC = public.morlet_envelope_screen_step, STYPE = internal,
   COMBINEFUNC = public.morlet_envelope_screen_combine,
   SERIALFUNC = public.morlet_envelope_screen_serial, DESERIALFUNC = public.morlet_envelope_screen_deserial,
@@ -102,7 +102,10 @@ BEGIN
   EXECUTE format('SELECT %s FROM %s c WHERE c.recording_id=$1 AND c.start_sample=$2',relations.samples_expr,relations.chunks)
     INTO previous USING recording_id,start_sample;
   IF previous IS NOT NULL THEN
-    IF previous IS DISTINCT FROM samples THEN RAISE EXCEPTION 'conflicting replay at chunk offset'; END IF;
+    -- Bit for bit: array equality treats +0 and -0 as equal.
+    IF public.morlet_float8_le_bytes(previous) IS DISTINCT FROM public.morlet_float8_le_bytes(samples) THEN
+      RAISE EXCEPTION 'conflicting replay at chunk offset';
+    END IF;
     RETURN (state->>'end')::bigint;
   END IF;
   result:=public.morlet_chunk_step(state,start_sample,samples);
@@ -576,9 +579,32 @@ BEGIN
   RETURN QUERY SELECT recordings,n,8*n,r,c,g,e,total,(8.0*c/nullif(n,0))::float8,(8.0*total/nullif(n,0))::float8;
 END $$;
 
+-- Whether a row was inserted by the current transaction or one of its subtransactions (row_xmin is the
+-- row's xmin): a row we can see whose inserting transaction is still in progress is ours. Used by the
+-- acquisition row-security policy so that a new acquisition is visible to its creator until its first
+-- channel is added. Fails closed (false) when no transaction ID is assigned yet and across an xid epoch boundary.
+CREATE FUNCTION public.morlet_inserted_by_current_transaction(row_xmin xid)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE top bigint; x bigint;
+BEGIN
+  top:=pg_current_xact_id_if_assigned()::text::bigint;
+  x:=row_xmin::text::bigint;
+  IF top IS NULL OR x IS NULL OR x<(top&4294967295) THEN RETURN false; END IF;
+  RETURN pg_xact_status(((top>>32<<32)|x)::text::xid8)='in progress';
+END $$;
+
 -- Materialized envelopes (xc-envelope-f16-v1): an opt-in, rebuildable
 -- representation stored next to raw chunks; not an index. Rows hold binary16
 -- envelopes of fixed windows; the payload's first byte is its encoding version.
+-- Whether an acquisition has a channel visible to the caller (under the caller's row security).
+CREATE FUNCTION public.morlet_acquisition_has_visible_channel(channels regclass,acquisition_id text)
+RETURNS boolean LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE found boolean;
+BEGIN
+  EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE acquisition_id=$1)',channels) INTO found USING acquisition_id;
+  RETURN found;
+END $$;
+
 -- Row-level security for companion tables (opt-in). Search and read functions are
 -- SECURITY INVOKER and need SELECT on the companion tables, which would otherwise let a
 -- role read every recording's chunks, envelopes, probe vectors and context directly. This
@@ -599,9 +625,20 @@ BEGIN
       cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.segment_id=%I.segment_id)',s,c||'_ctx_segments',t.relname);
       chk:=cond;
     ELSIF t.relname=c||'_acq' THEN
-      -- visible through any visible channel; inserting an acquisition precedes its channels
-      cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.acquisition_id=%I.acquisition_id)',s,c||'_acq_channels',t.relname);
+      -- visible through a visible channel, and to its creator until it has one (inserting an acquisition
+      -- precedes its channels)
+      -- (the channel lookup runs in a function: the channel policy refers to this table, and a subquery here
+      -- would make the policies recursive)
+      cond:=format('public.morlet_acquisition_has_visible_channel(%L::regclass,%I.acquisition_id)
+        OR public.morlet_inserted_by_current_transaction(%I.xmin)',format('%I.%I',s,c||'_acq_channels'),t.relname,t.relname);
       chk:='true';
+    ELSIF t.relname=c||'_acq_channels' THEN
+      -- a channel row follows its recording; adding or moving one also needs its acquisition to be visible,
+      -- so a recording cannot join another tenant's acquisition by naming its ID (a foreign key is not
+      -- an authorization check)
+      cond:=format('%I.recording_id = ANY (ARRAY(SELECT x.recording_id FROM %s x))',t.relname,collection);
+      chk:=format('%s AND EXISTS(SELECT 1 FROM %I.%I a WHERE a.acquisition_id=%I.acquisition_id)',
+        cond,s,c||'_acq',t.relname);
     ELSE
       -- An uncorrelated ARRAY(...) becomes an InitPlan, which keeps scans parallel; a correlated
       -- EXISTS compiled to a parallel-restricted SubPlan and made exact search 3x slower.
@@ -713,6 +750,15 @@ BEGIN
   IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
   EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
     INTO last USING recording_id,window_size;
+  -- The grid starts at 0 and its stride is fixed by the first build: the smallest positive stored start
+  -- is the stride in use. Building on with another stride would report completion without the requested
+  -- windows, or mix two grids, so it is an error.
+  EXECUTE format('SELECT start_sample FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample>0
+    ORDER BY start_sample LIMIT 1',rel) INTO hi USING recording_id,window_size;
+  IF hi IS NOT NULL AND hi<>stride THEN
+    RAISE EXCEPTION 'envelopes of window % for recording % were built with stride %, not %',window_size,recording_id,hi,stride
+      USING HINT='Keep the stride, or delete this recording''s envelopes of this window size and build again.';
+  END IF;
   s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
   SELECT * INTO rels FROM public.morlet_stream_relations(collection);
   -- Encoded collections: batches of up to 256 windows from chunks decoded once
@@ -878,8 +924,11 @@ BEGIN
   -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
   -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
   -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
-  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path).
-  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off';
+  -- returned; once a scan has seen more than max_candidates windows it stops screening and only counts.
+  -- SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
+  -- query too large to prepare for screening (window 32768 from lag fraction 0.1, 16384 at 0.5).
+  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off'
+    AND public.morlet_envelope_screen_supported(cardinality(query_envelope),lag);
   IF NOT screened THEN
     EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id%s
       WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection,
@@ -891,7 +940,7 @@ BEGIN
   LOOP
     IF screened THEN
       EXECUTE format('WITH c AS (SELECT count(*) AS eligible,public.morlet_envelope_screen(e.envelope,e.recording_id,
-            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer)
+            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer,$12::bigint)
             FILTER (WHERE $8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10) AS j
           FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id%3$s
           WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5),
@@ -1282,6 +1331,42 @@ BEGIN
   RETURN NEXT;
 END $$;
 
+-- Serializes context writes (additions, revisions, segment builds) per recording, and additions per batch
+-- ID, with transaction-scoped advisory locks: batch first, then recordings in sorted order. Under READ
+-- COMMITTED each later statement sees what a writer that held the lock committed, so overlap and retry
+-- checks cannot both pass for concurrent transactions. No table privileges are needed. (Under REPEATABLE
+-- READ the transaction snapshot predates the lock; use READ COMMITTED for concurrent context writers.)
+CREATE FUNCTION public.morlet_lock_context(collection regclass,batch_id text,recording_ids text[])
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE r text;
+BEGIN
+  IF batch_id IS NOT NULL THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-batch/'||collection::oid||'/'||batch_id,0));
+  END IF;
+  FOR r IN SELECT DISTINCT x FROM unnest(recording_ids) x WHERE x IS NOT NULL ORDER BY x LOOP
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-rec/'||collection::oid||'/'||r,0));
+  END LOOP;
+END $$;
+
+-- Marks stale the segments of a recording that context on `key` in [start_sample, end_sample) can change:
+-- segments whose spec uses the key (as a segment or occurrence key) and whose piece, before trimming,
+-- overlaps the interval. A new or revised interval can split a segment, change its context, or change its
+-- occurrence; morlet_build_context_segments then replaces it (its values are deleted with it).
+CREATE FUNCTION public.morlet_invalidate_context_segments(collection regclass,recording_id text,key text,
+  start_sample bigint,end_sample bigint)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('UPDATE %s s SET stale=true WHERE s.recording_id=$1 AND NOT s.stale
+      AND (s.spec->''keys'' ? $2 OR s.spec->''occurrence_keys'' ? $2)
+      AND s.start_sample-coalesce((s.spec->>''trim_samples'')::bigint,0)<$4
+      AND $3<s.end_sample+coalesce((s.spec->>''trim_samples'')::bigint,0)',rel.segments)
+    USING recording_id,key,start_sample,end_sample;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
 -- Rejects overlapping active intervals of one key in one recording. Active rows
 -- are neither retracted nor superseded by a later revision.
 CREATE FUNCTION public.morlet_check_context_overlaps(collection regclass,recording_ids text[])
@@ -1315,6 +1400,9 @@ BEGIN
   SELECT jsonb_agg(o ORDER BY o::text) INTO incoming FROM (SELECT jsonb_build_object('recording_id',r->>'recording_id',
       'key',r->>'key','value',r->'value','start_sample',(r->>'start_sample')::bigint,
       'end_sample',(r->>'end_sample')::bigint) AS o FROM jsonb_array_elements(rows) r) x;
+  -- Concurrent additions of the same batch, or to the same recordings, run one after another.
+  PERFORM public.morlet_lock_context(collection,batch_id,
+    ARRAY(SELECT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
   EXECUTE format('SELECT jsonb_agg(o ORDER BY o::text) FROM (SELECT jsonb_build_object(''recording_id'',recording_id,
       ''key'',key,''value'',value,''start_sample'',start_sample,''end_sample'',end_sample) AS o
     FROM %s WHERE batch_id=$1) x',rel.ctx) INTO existing USING batch_id;
@@ -1333,17 +1421,24 @@ BEGIN
   GET DIAGNOSTICS n = ROW_COUNT;
   PERFORM public.morlet_check_context_overlaps(collection,
     ARRAY(SELECT DISTINCT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
+  -- Late context changes segments built before it (a new occurrence, a split): mark them stale.
+  PERFORM public.morlet_invalidate_context_segments(collection,r->>'recording_id',r->>'key',
+      (r->>'start_sample')::bigint,(r->>'end_sample')::bigint)
+    FROM jsonb_array_elements(incoming) r WHERE r->>'end_sample' IS NOT NULL;
   RETURN n;
 END $$;
 
 -- Appends a revision of an active row (changes may set value, start_sample,
--- end_sample) or a retraction. Segments built from the old row become stale.
+-- end_sample) or a retraction. Segments built from the old row become stale, and so do segments the
+-- revised interval overlaps (morlet_invalidate_context_segments).
 CREATE FUNCTION public.morlet_revise_context(collection regclass,ctx_id bigint,changes jsonb DEFAULT '{}'::jsonb,
   retract boolean DEFAULT false)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record; old record; new_id bigint;
+DECLARE rel record; old record; new_id bigint; rid text; changed record;
 BEGIN
   SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('SELECT recording_id FROM %s WHERE ctx_id=$1',rel.ctx) INTO rid USING ctx_id;
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[rid]);
   EXECUTE format('SELECT * FROM %1$s x WHERE x.ctx_id=$1 AND NOT x.retracted
     AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id) FOR UPDATE',rel.ctx) INTO old USING ctx_id;
   IF old.ctx_id IS NULL THEN RAISE EXCEPTION 'context row % is not active or not visible',ctx_id; END IF;
@@ -1359,13 +1454,20 @@ BEGIN
       'revision:'||old.ctx_id,old.ctx_id,retract;
   PERFORM public.morlet_check_context_overlaps(collection,ARRAY[old.recording_id]);
   EXECUTE format('UPDATE %s SET stale=true WHERE $1=ANY(ctx_ids)',rel.segments) USING old.ctx_id;
+  -- The revised interval can also reach segments the old row did not cover.
+  IF old.kind='interval' THEN
+    EXECUTE format('SELECT start_sample,end_sample FROM %s WHERE ctx_id=$1',rel.ctx) INTO changed USING new_id;
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,old.start_sample,old.end_sample);
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,changed.start_sample,changed.end_sample);
+  END IF;
   RETURN new_id;
 END $$;
 
 -- One segment per maximal intersection of the active intervals of all `keys`,
 -- within committed samples. occurrence holds the values of `occurrence_keys`
 -- intervals that cover the whole segment (for example the part). Stale segments
--- of this recording and spec are replaced. Returns the number of new segments.
+-- of this recording and spec are replaced (context added or revised later marks the segments it can
+-- change as stale). Returns the number of new segments.
 CREATE FUNCTION public.morlet_build_context_segments(collection regclass,recording_id text,keys text[],
   occurrence_keys text[] DEFAULT '{}'::text[],min_samples integer DEFAULT 1,trim_samples integer DEFAULT 0)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -1377,6 +1479,9 @@ BEGIN
   END IF;
   keys:=ARRAY(SELECT DISTINCT k FROM unnest(keys) k ORDER BY k);
   occurrence_keys:=ARRAY(SELECT DISTINCT k FROM unnest(occurrence_keys) k ORDER BY k);
+  -- Builds wait for context writes to this recording (and the reverse), so a build sees either all or
+  -- none of a concurrent addition and its invalidations.
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[recording_id]);
   EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
     INTO recording_end USING recording_id;
   IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
@@ -1492,7 +1597,8 @@ END $$;
 -- Pooled relative spread per simple-v1 value: for every context with at least 3
 -- comparable segments, median(|x - median|)/|median|; then the median over contexts,
 -- floored at spread_floor (default 1%) so near-constant values cannot turn negligible
--- shifts into large calibrated deviations. NULL where no context qualifies. Population
+-- shifts into large calibrated deviations. NULL where no context qualifies (greatest() ignores
+-- NULL, so the floor applies only to an existing estimate). Population
 -- size is limited by max_candidates.
 CREATE FUNCTION public.morlet_value_spreads(collection regclass,segment_id bigint,
   metadata_filter jsonb DEFAULT '{}'::jsonb,exclude_labels text[] DEFAULT '{}'::text[],max_candidates integer DEFAULT 100000,
@@ -1507,8 +1613,9 @@ BEGIN
   SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
   pop:=public.morlet_history_sql(collection,true,cutoff_ns);
-  EXECUTE 'SELECT count(*) FROM ('||pop||') h' INTO n
-    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  EXECUTE 'SELECT count(*) FROM ('||pop||' LIMIT $9) h' INTO n
+    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
   IF n>max_candidates THEN
     RAISE EXCEPTION 'spread population exceeds % segments; narrow the metadata filter',max_candidates;
   END IF;
@@ -1521,8 +1628,8 @@ BEGIN
       r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
         FROM g JOIN lv ON lv.context=g.context JOIN pop p ON p.context=g.context WHERE abs(g.med)>lv.fl[g.ord]
         GROUP BY g.context,g.ord,g.med)
-    SELECT array_agg(greatest((SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) FROM r WHERE r.ord=k.ord),$9)
-      ORDER BY k.ord) FROM k'
+    SELECT array_agg(CASE WHEN m.rel IS NOT NULL THEN greatest(m.rel,$9) END ORDER BY k.ord)
+      FROM k CROSS JOIN LATERAL (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) AS rel FROM r WHERE r.ord=k.ord) m'
     INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
       spread_floor;
   RETURN spreads;
@@ -1588,8 +1695,9 @@ BEGIN
     RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
   END IF;
   history:=public.morlet_history_sql(collection,false,cutoff);
-  EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO candidates
-    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO candidates
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
   IF candidates>max_candidates THEN
     RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
   END IF;
@@ -1653,13 +1761,18 @@ BEGIN
     RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
   END IF;
   history:=public.morlet_history_sql(collection,false,cutoff);
+  -- Refuse an oversized history before flattening it: count at most max_candidates+1 rows (the function is
+  -- STABLE, so this count and the read below see the same snapshot).
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
   EXECUTE 'SELECT coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
     ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO flat
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
   n:=cardinality(flat)/width;
-  IF n>max_candidates THEN
-    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
-  END IF;
   query_occurrence:=q.occurrence; hist_n:=n;
   SELECT c.relative_deviation INTO duration_relative_deviation
     FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
@@ -1765,7 +1878,7 @@ END $$;
 CREATE FUNCTION public.morlet_add_acquisition_channel(collection regclass,acquisition_id text,recording_id text,
   role text,offset_ns bigint DEFAULT 0,clock_source text DEFAULT 'daq',offset_uncertainty_ns bigint DEFAULT NULL)
 RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record; existing record;
+DECLARE rel record; existing record; n bigint;
 BEGIN
   IF collection IS NULL OR acquisition_id IS NULL OR recording_id IS NULL OR role IS NULL OR offset_ns IS NULL
     OR clock_source IS NULL THEN
@@ -1779,6 +1892,13 @@ BEGIN
       RETURN false;
     END IF;
     RAISE EXCEPTION 'recording % already belongs to an acquisition with different attributes',recording_id;
+  END IF;
+  IF row_security_active(rel.acq) THEN
+    EXECUTE format('SELECT count(*) FROM %s WHERE acquisition_id=$1',rel.acq) INTO n USING acquisition_id;
+    IF n=0 THEN
+      RAISE EXCEPTION 'acquisition % does not exist or is not visible to this role',acquisition_id
+        USING HINT='Under row security, a channel joins an acquisition the caller can see: one with a visible channel, or one created in the same transaction.';
+    END IF;
   END IF;
   EXECUTE format('INSERT INTO %s(acquisition_id,recording_id,role,offset_ns,clock_source,offset_uncertainty_ns)
     VALUES ($1,$2,$3,$4,$5,$6)',rel.channels)
@@ -1966,8 +2086,9 @@ BEGIN
     RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
   END IF;
   history:=public.morlet_history_sql(collection,false,cutoff);
-  EXECUTE 'SELECT count(*) FROM ('||history||') h' INTO n
-    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
   IF n>max_candidates THEN
     RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
   END IF;
@@ -2043,8 +2164,9 @@ BEGIN
       JOIN %s a ON a.acquisition_id=ch.acquisition_id WHERE a.machine=$10',
     public.morlet_history_sql(collection,false,cutoff),collection,acq.channels,acq.acq);
   history:='SELECT * FROM ('||history||') e WHERE $11::numeric IS NULL OR e.t>=$11';
-  EXECUTE 'SELECT count(*) FROM ('||history||') c' INTO n
-    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since;
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $12) c' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since,
+      max_candidates::bigint;
   IF n+1>max_candidates THEN
     RAISE EXCEPTION 'track exceeds % episodes; narrow match_keys, the metadata filter or since_utc',max_candidates;
   END IF;

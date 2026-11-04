@@ -1,0 +1,10 @@
+[package]
+name = "pqalp"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+parquet = { version = "=60.0.0", default-features = false, features = ["zstd"] }
+
+[workspace]

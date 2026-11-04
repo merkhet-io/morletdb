@@ -10,7 +10,9 @@
 #  without-pgvector  requires that pgvector is NOT installed, then runs every #[pg_test]. The probe
 #                    tests return early; probe_search_requires_the_vector_extension checks the error.
 #  with-pgvector     requires that pgvector IS installed, so the probe tests cannot skip, runs every
-#                    #[pg_test], then the two-session probe-enable race test (probe_enable_race.sh).
+#                    #[pg_test], then the two-session probe-enable race test (probe_enable_race.sh),
+#                    the concurrent context-write test (context_concurrency.sh)
+#                    and the acquisition row-security test (acquisition_rls.sh).
 #  upgrade           PostgreSQL 17 only: upgrades populated databases from v0.1.0-alpha.3,
 #                    v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1 and v0.3.3-alpha.1 (tags must be fetched); those releases were
 #                    built for PostgreSQL 17 only.
@@ -69,6 +71,8 @@ case "$MODE" in
       own_server
       cargo pgrx start "pg$MAJOR"
       "$TESTS/probe_enable_race.sh"
+      "$TESTS/context_concurrency.sh"
+      "$TESTS/acquisition_rls.sh"
     fi ;;
   upgrade)
     own_server  # the upgrade scripts restart it after each install

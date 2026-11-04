@@ -1,6 +1,69 @@
 # Changelog
 
-## Unreleased
+## 0.3.4-alpha.1
+
+SQL version 0.3.3, with an update script from 0.3.2 (`ALTER EXTENSION pg_morlet UPDATE`; the chained updates
+from earlier releases are tested). Includes a security fix for collections that use
+`morlet_enable_row_security` (GHSA-pg6f-hcvw-vw34): update if you use row-level security with acquisitions.
+The first release with an SPDX SBOM per image architecture and build provenance attestations.
+
+Security: acquisitions under row-level security (SQL 0.3.3):
+- With `morlet_enable_row_security`, a role that could add acquisition channels could attach a recording it
+  sees to an acquisition it does not see, by naming the acquisition's ID, and then read that acquisition's
+  metadata (GHSA-pg6f-hcvw-vw34; affects SQL 0.3.1 and 0.3.2, releases 0.3.1-alpha.1 to 0.3.3-alpha.1). The
+  foreign key was the only check. Now a channel row can be inserted or moved only into an acquisition the
+  caller can see, in `morlet_add_acquisition_channel` and in the channel table's policy (direct `INSERT` and
+  `UPDATE`). An acquisition is visible through a visible channel, and to the transaction that created it until
+  its first channel is added: under row security, add the first channel in the creating transaction.
+  `ALTER EXTENSION pg_morlet UPDATE` re-applies the policies to collections that use row security.
+  Regression test: `tests/acquisition_rls.sh` (two tenants, function and direct writes, separate transactions).
+
+Refusing oversized requests earlier (#160; results within budget unchanged):
+- `morlet_compare_summary` checked `max_candidates` after flattening the whole history into one array; it now
+  counts at most `max_candidates + 1` segments first. `morlet_compare_to_history`, `morlet_history_neighbors`,
+  `morlet_value_spreads` and `morlet_level_track` stop counting at the budget too.
+- Screened exact search: a scan that has seen more than `max_candidates` windows stops screening and only
+  counts (the `morlet_envelope_screen` aggregate takes the budget). The error still states the exact number of
+  eligible windows. The budget remains a candidate limit, not a time or memory limit.
+
+MCP distance guidance (#157):
+- The MCP server no longer tells agents that distances below 0.3 are strong and above 0.6 weak, which was not
+  evaluated across signal types. It explains what the distance is (1 - envelope correlation: envelope shape,
+  not level, frequency content or sample identity; not a probability) and to rank and inspect hits instead.
+- `search_similar` adds a `query_note` when the query interval is constant (distance 1 to everything).
+- docs/mcp.md: "Reading distances"; core test `distance_semantics_for_agents` (constant, scaled, other
+  carrier, other modulation).
+
+Context writes (SQL 0.3.3):
+- Concurrent context writes are serialized per recording and per batch ID (transaction advisory locks,
+  `morlet_lock_context`; no extra privileges). Two transactions could both commit overlapping intervals of one
+  key, and an identical batch retried concurrently was stored twice; now the second waits, then sees the first
+  (overlap error, or 0 for an identical retry). `morlet_build_context_segments` takes the same recording lock.
+  Use READ COMMITTED for concurrent context writers (#149).
+- Context added or revised after segments were built marks the segments it can change as stale
+  (`morlet_invalidate_context_segments`: the spec uses the key, and the untrimmed piece overlaps the interval).
+  A part annotated after the build left the segment fresh with an empty occurrence; the next build now replaces
+  it, and its values are deleted with it (#150).
+- Regression tests: `tests/context_concurrency.sh` (two sessions; run by `ci_local.sh` with pgvector) and
+  `late_context_invalidates_the_segments_it_changes`.
+
+Fixes from the 0.3.3 review (SQL 0.3.3):
+- Replays compare bits: `morlet_append_chunk` (and `morlet_append_chunk_raw`) acknowledged a replay whose
+  samples differed only in the sign of a zero, because array equality treats -0 and +0 as equal. It now
+  compares the float64 bytes and raises `conflicting replay at chunk offset`. Stored samples were never
+  changed (#152).
+- `morlet_value_spreads` returned the 1% floor where no context qualified, because `greatest()` ignores NULL;
+  the spread now stays NULL there, so comparisons report `no_pooled_spread` and the calibrated score leaves
+  the value out instead of dividing by the floor (#154).
+- `morlet_build_envelopes` with a stride other than the one the recording's windows were built with returned 0
+  ("complete") without building the requested grid, or mixed two grids. It is now an error naming the stride
+  in use (#153).
+- Screened exact search raised "invalid query envelope, max_lag or candidate pool for screening" for queries
+  too large to prepare (window 16384 at lag fraction 0.5; 32768 from 0.1). Those queries now score every
+  eligible window directly, with the same results; `morlet_envelope_screen_supported` reports which path a
+  query takes (#151).
+- Python SDK: `read()` chooses raw float64 reads per collection, so collections that kept float8[] chunks after
+  an extension upgrade are read with `morlet_read_interval` instead of failing (#155).
 
 Search time filters and evidence (SQL 0.3.3):
 - `morlet_search_similar`, `morlet_search_envelope_interval` and `morlet_search_envelope_probes` take

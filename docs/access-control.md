@@ -30,8 +30,13 @@ SELECT morlet_enable_row_security('signals');                 -- every companion
   everything.
 - **Exceptions to the recording rule:**
   - context values follow their context segment;
-  - an acquisition is visible through any of its visible channels. Inserting an acquisition
-    is allowed, because its channels can only be added after it exists.
+  - an acquisition is visible through any of its visible channels, and to the transaction that
+    created it until its first channel is added. Inserting an acquisition is allowed, because its
+    channels can only be added after it exists;
+  - a channel can join an acquisition only if the caller can see both the channel's recording and
+    the acquisition. A recording cannot be attached to another tenant's acquisition by naming its
+    ID (the foreign key alone is not an authorization check). Add an acquisition's first channel in
+    the transaction that creates it; afterwards only roles that see one of its channels can add more.
 - **Later tables:** the helper is idempotent. Once used, enabling envelopes, probe search,
   context or acquisitions later applies it to the new table automatically.
 - **Status:** `morlet_row_security_enabled(collection)` reports whether it has been applied.
@@ -45,8 +50,9 @@ SELECT morlet_enable_row_security('signals');                 -- every companion
 | Representation worker (in-database or external) | `SELECT` on recordings and chunks; `INSERT` on envelopes and probe tables | `WITH CHECK` rejects rows for recordings it cannot see |
 | Owner / administrator | owns the tables | Owners bypass RLS unless `FORCE ROW LEVEL SECURITY` is set |
 
-Tested: analyst reads and searches, worker inserts for hidden recordings (rejected), and roles
-without grants (`permission denied`). The ingester's grants are derived from the statements the
+Tested: analyst reads and searches, worker inserts for hidden recordings (rejected), attaching a
+recording to another tenant's acquisition (rejected, through the function and by direct `INSERT`
+or `UPDATE`), and roles without grants (`permission denied`). The ingester's grants are derived from the statements the
 append functions run and are not yet covered by a test.
 
 ## The worker write path
