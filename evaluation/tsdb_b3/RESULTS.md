@@ -448,3 +448,87 @@ took 14.0 s of the 15.7 s build.
 |---|---|---|
 | Aligned read of all channels of an acquisition | not measured | **MorletDB `_raw` 32–39% faster at p50, 2.3–3.1× at p95** |
 | Searchable at ingest (features), one connection | 0.30 M (stage 1, old path) | **1.64 M samples/s** (2.5× the old extractor on the B3.2 path) |
+
+# Amendment B3.4: CrateDB
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `6996513`) before any load of the benchmark set;
+development on the development set only ([`results/dev/b34/`](results/dev/b34/)); run once on the benchmark set
+([`results/b34/`](results/b34/)), 2026-11-04 15:14–19:23. CrateDB 6.4.6 (`crate:6.4.6`, linux/arm64,
+single node, 8 GB heap, no replicas), Python client `crate` 2.3.0 over HTTP. MorletDB is not re-run: its
+numbers are B3.3's (SQL 0.3.3, `results/b33/`, same machine and container limits). One deviation: C-row D2 r1
+spanned a clamshell sleep of the Mac and was rerun from a fresh volume under the stage's own rule; the
+interrupted result is kept in `results/b34/interrupted/` and used for nothing.
+
+**Correctness: every one of the 13 CrateDB loads passed** (868 channels read back with the manifest's
+SHA-256, sample indexes exact; 0 mismatches in every read benchmark; analytics within 1e-12).
+
+## Ingestion (one client connection, bulk inserts; median [range] of three loads)
+
+| Arm | D1 (fsync per request) | D2 (async) | Ack per acquisition, p50 (D2) | Queryable after the last ack |
+|---|---:|---:|---:|---:|
+| MorletDB (B3.3, base) | — | **6.33 M** [6.27–6.33] samples/s | 128 ms | immediately (at commit) |
+| C-array (blocks of 4,096 as `DOUBLE` arrays) | 404 k [370–404 k] | 425 k [385–450 k] | 1,908 ms | 7.4–13.5 s |
+| C-row (row per sample instant) | 237 k [231–344 k] | 245 k [242–264 k] | 3,254 ms | 0.9–1.6 s |
+| C-row-best (one load, no statement) | — | 335 k | 2,386 ms | 0.8 s |
+
+**Statement (≥ 10% in all loads): MorletDB ingested about 15× faster** than CrateDB's fastest arm (median
+6.33 M vs 425 k; every MorletDB load ≥ 13.9× every CrateDB load). CrateDB used 1.1–2.2 cores for one client (MorletDB 0.74); parallel clients
+were not part of the stage. Ingestion time includes building the client's parameter rows (1–8 s per load).
+
+## Storage (D2 r1, settled: `REFRESH`, `OPTIMIZE`, clean stop)
+
+| | MiB | × MorletDB database |
+|---|---:|---:|
+| MorletDB (B3.3): sample data / database / volume with retained WAL | **148.8** / **164.8** / 363.6 | 1 |
+| C-array: data files after `OPTIMIZE` / after `OPTIMIZE` to one segment | 1,785.6 / 1,110.8 | 10.8 / 6.7 |
+| C-row-best | 4,507.2 / 3,663.3 | 27 / 22 |
+| C-row | 5,243.6 / 3,761.5 | 32 / 23 |
+| raw float64 (for scale) | 775 | 4.7 |
+
+CrateDB's most compact layout took 2.3× the raw float64 size after `OPTIMIZE` (1.4× after merging to one
+segment). **Statement: MorletDB stored the data in a tenth of CrateDB's smallest arm** (10.8× on the
+database; 4.9× against MorletDB's whole volume including PostgreSQL's retained WAL). Translog and cluster
+state were below 1 MiB in every arm. Storage options beyond the frozen arms (for example disabling the column
+store of the array) were not tried.
+
+## Reads and analytics (D2 r1 of each arm, one connection unless stated; p50 / p95 ms)
+
+| Query | MorletDB (B3.3) | C-array | C-row | C-row-best |
+|---|---:|---:|---:|---:|
+| R1, 4,096 samples | **0.62 / 0.92** | 10.9 / 19.3 | 8.1 / 14.3 | 7.2 / 11.5 |
+| R2, 128,000 samples | **6.6 / 8.9** | 86.6 / 109.9 | 145.6 / 202.6 | 127.3 / 135.2 |
+| R3, 3 channels × 64,000 | **8.1 / 10.1** | 167.0 / 190.7 | 122.7 / 159.7 | 98.9 / 105.4 |
+| R4, 4,096 samples, recent / older (p50) | **0.60 / 0.59** | 6.9 / 7.1 | 7.8 / 7.3 | 6.2 / 5.8 |
+| R5, 4 threads: queries/s | **4,119** | 385 | 177 | 243 |
+| min, max, mean, RMS of 128,000 samples | **2.5 / 2.7** | 82.5 / 94.2 (client) | 6.6 / 13.8 | 3.9 / 7.9 |
+
+**Statements:** every read was **8–13× faster** in MorletDB than in CrateDB's fastest arm for that query, at
+p50 and p95 (R1–R3 10–13×, R4 8–10×, R5 throughput 10.7×); interval analytics were **35% faster at p50 and 66% at p95** than CrateDB's fastest arm
+(C-row-best, one load). The array layout cannot compute statistics over a slice in SQL; it was computed in the
+client after the read, as the protocol states.
+
+## Semantics
+
+- An altered resend of an acquisition is **silently ignored** by CrateDB (`ON CONFLICT DO NOTHING`, development
+  subset); MorletDB refuses it. An identical resend leaves one copy in both.
+- Rows become queryable after a refresh (default interval), not at acknowledgement: up to 13.5 s in C-array.
+- CrateDB timestamps have millisecond resolution; at 64 kHz every arm stored the sample index to stay exact,
+  as MorletDB does.
+- Server memory peaked at 6.2 GB (C-array) and 9.0–9.2 GB (C-row), with the documented 8 GB heap; MorletDB 167 MiB.
+  This reflects the configuration, not a minimum.
+
+## Scope
+
+One dataset (Paderborn, 101.6 M samples), one machine, single-node CrateDB at image defaults apart from the
+frozen settings, one client connection, the official Python client over HTTP. CrateDB's vector search and
+clusters were not tested; similarity search was not part of B3.
+
+## Updated trade-off map (additions)
+
+| Dimension | QuestDB (B3.2/B3.3) | **CrateDB 6.4 (B3.4)** |
+|---|---|---|
+| Sample data on disk vs MorletDB | 1.5× (Parquet zstd 9) | **10.8× (array), 32× (rows)** |
+| Ingestion, one connection | about equal (B3.3 session) | **MorletDB about 15× faster** |
+| Short and long exact reads | MorletDB faster or tied | **MorletDB 8–13× faster** |
+| Interval statistics | MorletDB faster | **MorletDB 35–66% faster** |
+| Altered resend | silently replaces | **silently ignored** |

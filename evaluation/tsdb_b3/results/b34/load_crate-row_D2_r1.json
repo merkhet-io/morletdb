@@ -1,0 +1,332 @@
+{
+ "system": "crate-row",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.6147294170223176,
+ "samples": 101586735,
+ "image": "crate:6.4.6",
+ "image_id": "sha256:865ed64fd4e7ffc31dccd79ec96d374f7da458e23e65520699e31ad4f21775ef",
+ "started": "2026-11-04T19:08:30",
+ "server_version": "6.4.6",
+ "ingest": {
+  "wall_s": 384.094,
+  "samples_per_s": 264484,
+  "conversion_s": 4.81,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 3068.686,
+   "p95_ms": 3868.562,
+   "max_ms": 5631.861
+  },
+  "ack_per_call": {
+   "n": 3609,
+   "p50_ms": 100.467,
+   "p95_ms": 157.336,
+   "max_ms": 994.438
+  },
+  "queryable_after_last_ack_s": 0.944,
+  "failures": [],
+  "server": {
+   "cpu_percent_mean": 184.4,
+   "cpu_percent_p95": 309.9,
+   "memory_peak_mib": 9047.0,
+   "samples": 170
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 60.1
+  }
+ },
+ "correct": true,
+ "optimize_s": 0.236,
+ "shards": [
+  {
+   "table": "b3_high",
+   "shard": 0,
+   "path": "/data/data/nodes/0/indices/-jrppSknSzKF7zzo0TLf-Q/0",
+   "size": 1282834832,
+   "docs": 7969128
+  },
+  {
+   "table": "b3_high",
+   "shard": 1,
+   "path": "/data/data/nodes/0/indices/-jrppSknSzKF7zzo0TLf-Q/1",
+   "size": 1210189725,
+   "docs": 7970642
+  },
+  {
+   "table": "b3_high",
+   "shard": 2,
+   "path": "/data/data/nodes/0/indices/-jrppSknSzKF7zzo0TLf-Q/2",
+   "size": 1330849591,
+   "docs": 7970009
+  },
+  {
+   "table": "b3_high",
+   "shard": 3,
+   "path": "/data/data/nodes/0/indices/-jrppSknSzKF7zzo0TLf-Q/3",
+   "size": 1327295598,
+   "docs": 7968013
+  },
+  {
+   "table": "b3_process",
+   "shard": 0,
+   "path": "/data/data/nodes/0/indices/R6F3S4SDQ4alKYH713-NLA/0",
+   "size": 73988,
+   "docs": 146
+  },
+  {
+   "table": "b3_process",
+   "shard": 1,
+   "path": "/data/data/nodes/0/indices/R6F3S4SDQ4alKYH713-NLA/1",
+   "size": 80946,
+   "docs": 140
+  },
+  {
+   "table": "b3_process",
+   "shard": 2,
+   "path": "/data/data/nodes/0/indices/R6F3S4SDQ4alKYH713-NLA/2",
+   "size": 74600,
+   "docs": 154
+  },
+  {
+   "table": "b3_process",
+   "shard": 3,
+   "path": "/data/data/nodes/0/indices/R6F3S4SDQ4alKYH713-NLA/3",
+   "size": 70024,
+   "docs": 175
+  },
+  {
+   "table": "b3_mid",
+   "shard": 0,
+   "path": "/data/data/nodes/0/indices/dNLkH0HFRZS-b6VeIogQyw/0",
+   "size": 85956107,
+   "docs": 495855
+  },
+  {
+   "table": "b3_mid",
+   "shard": 1,
+   "path": "/data/data/nodes/0/indices/dNLkH0HFRZS-b6VeIogQyw/1",
+   "size": 85806139,
+   "docs": 495741
+  },
+  {
+   "table": "b3_mid",
+   "shard": 2,
+   "path": "/data/data/nodes/0/indices/dNLkH0HFRZS-b6VeIogQyw/2",
+   "size": 85758529,
+   "docs": 495630
+  },
+  {
+   "table": "b3_mid",
+   "shard": 3,
+   "path": "/data/data/nodes/0/indices/dNLkH0HFRZS-b6VeIogQyw/3",
+   "size": 86161975,
+   "docs": 497022
+  }
+ ],
+ "storage": {
+  "tables": {
+   "b3_high": {
+    "data": {
+     "apparent": 5151169746,
+     "allocated": 5153095680,
+     "files": 635
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 724,
+     "allocated": 32768,
+     "files": 8
+    }
+   },
+   "b3_process": {
+    "data": {
+     "apparent": 299558,
+     "allocated": 552960,
+     "files": 92
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 716,
+     "allocated": 32768,
+     "files": 8
+    }
+   },
+   "b3_mid": {
+    "data": {
+     "apparent": 343682750,
+     "allocated": 344092672,
+     "files": 152
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 720,
+     "allocated": 32768,
+     "files": 8
+    }
+   }
+  },
+  "other": {
+   "apparent": 338780,
+   "allocated": 425984
+  },
+  "volume": {
+   "apparent": 5495494710,
+   "allocated": 5498363904
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 8.145,
+   "p95_ms": 14.332,
+   "max_ms": 59.32,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 145.566,
+   "p95_ms": 202.559,
+   "max_ms": 475.198,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 122.68,
+   "p95_ms": 159.698,
+   "max_ms": 308.181,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 7.786,
+   "p95_ms": 9.977,
+   "max_ms": 20.741,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 7.331,
+   "p95_ms": 10.169,
+   "max_ms": 23.956,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 20.565,
+   "p95_ms": 36.356,
+   "max_ms": 95.377,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 176.8
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 6.59,
+  "p95_ms": 13.762,
+  "max_ms": 71.533,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True",
+  "computed": "database"
+ },
+ "optimize_one_segment_s": 59.314,
+ "storage_one_segment": {
+  "tables": {
+   "b3_high": {
+    "data": {
+     "apparent": 3716149045,
+     "allocated": 3716608000,
+     "files": 148
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 1056,
+     "allocated": 49152,
+     "files": 12
+    }
+   },
+   "b3_process": {
+    "data": {
+     "apparent": 90123,
+     "allocated": 540672,
+     "files": 132
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 1048,
+     "allocated": 49152,
+     "files": 12
+    }
+   },
+   "b3_mid": {
+    "data": {
+     "apparent": 225771996,
+     "allocated": 226222080,
+     "files": 148
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 1052,
+     "allocated": 49152,
+     "files": 12
+    }
+   }
+  },
+  "other": {
+   "apparent": 537868,
+   "allocated": 630784
+  },
+  "volume": {
+   "apparent": 3942553904,
+   "allocated": 3944247296
+  }
+ }
+}
