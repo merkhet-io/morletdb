@@ -113,6 +113,7 @@ echo "ok: $OLD_VERSION SQL with the new library returns identical results"
 case "$OLD_VERSION" in
   0.3.1) BLOCKER="public.morlet_search_similar(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer)" ;;
   0.3.2) BLOCKER="public.morlet_decode_interval_raw(bytea[], bigint[], bigint, bigint)" ;;
+  0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
 esac
 psql -d morlet_upgrade_rel_old -c "CREATE FUNCTION $BLOCKER RETURNS void LANGUAGE sql AS ''"

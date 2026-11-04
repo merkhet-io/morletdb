@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased (SQL 0.3.4)
+
+SQL version 0.3.4, with an update script from 0.3.3 (`ALTER EXTENSION pg_morlet UPDATE`; data and policies are not
+modified). Fixes from the 2026-11-04 review:
+
+- **Search budget on the probe route (#226).** `morlet_search_similar` now passes `max_candidates` to probe search
+  and rejects values below 1. When probe search falls back to exact search for a small gallery, more eligible
+  windows than `max_candidates` is an error, as on the exact path; on the approximate route, more candidates
+  (probes × `per_probe`) than `max_candidates` is an error. `morlet_search_envelope_probes` gains a trailing
+  `max_candidates` argument (default 1,000,000).
+- **Concurrent identical acquisitions (#227).** `morlet_create_acquisition` and `morlet_add_acquisition_channel`
+  serialize per acquisition (and per recording) with transaction-scoped advisory locks: a concurrent identical
+  call returns false instead of failing with a unique violation; conflicting attributes and a role already
+  taken are still refused, with a message. Row-security behaviour is unchanged.
+- **Concurrent envelope builders (#225).** `morlet_build_envelopes` serializes per recording and window size, so
+  two builders with different strides cannot both commit a mixed grid; an identical concurrent build resumes
+  after the other's windows.
+- Regression test `tests/sql034_fixes.sh` (two sessions; run by `ci_local.sh` with pgvector).
+
 ## 0.3.5-alpha.1
 
 The same SQL version 0.3.3 and extension code as 0.3.4-alpha.1; no `ALTER EXTENSION` update is needed.
