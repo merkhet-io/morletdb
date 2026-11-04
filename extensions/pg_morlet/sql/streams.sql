@@ -576,9 +576,32 @@ BEGIN
   RETURN QUERY SELECT recordings,n,8*n,r,c,g,e,total,(8.0*c/nullif(n,0))::float8,(8.0*total/nullif(n,0))::float8;
 END $$;
 
+-- Whether a row was inserted by the current transaction or one of its subtransactions (row_xmin is the
+-- row's xmin): a row we can see whose inserting transaction is still in progress is ours. Used by the
+-- acquisition row-security policy so that a new acquisition is visible to its creator until its first
+-- channel is added. Fails closed (false) when no transaction ID is assigned yet and across an xid epoch boundary.
+CREATE FUNCTION public.morlet_inserted_by_current_transaction(row_xmin xid)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE top bigint; x bigint;
+BEGIN
+  top:=pg_current_xact_id_if_assigned()::text::bigint;
+  x:=row_xmin::text::bigint;
+  IF top IS NULL OR x IS NULL OR x<(top&4294967295) THEN RETURN false; END IF;
+  RETURN pg_xact_status(((top>>32<<32)|x)::text::xid8)='in progress';
+END $$;
+
 -- Materialized envelopes (xc-envelope-f16-v1): an opt-in, rebuildable
 -- representation stored next to raw chunks; not an index. Rows hold binary16
 -- envelopes of fixed windows; the payload's first byte is its encoding version.
+-- Whether an acquisition has a channel visible to the caller (under the caller's row security).
+CREATE FUNCTION public.morlet_acquisition_has_visible_channel(channels regclass,acquisition_id text)
+RETURNS boolean LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE found boolean;
+BEGIN
+  EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE acquisition_id=$1)',channels) INTO found USING acquisition_id;
+  RETURN found;
+END $$;
+
 -- Row-level security for companion tables (opt-in). Search and read functions are
 -- SECURITY INVOKER and need SELECT on the companion tables, which would otherwise let a
 -- role read every recording's chunks, envelopes, probe vectors and context directly. This
@@ -599,9 +622,20 @@ BEGIN
       cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.segment_id=%I.segment_id)',s,c||'_ctx_segments',t.relname);
       chk:=cond;
     ELSIF t.relname=c||'_acq' THEN
-      -- visible through any visible channel; inserting an acquisition precedes its channels
-      cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.acquisition_id=%I.acquisition_id)',s,c||'_acq_channels',t.relname);
+      -- visible through a visible channel, and to its creator until it has one (inserting an acquisition
+      -- precedes its channels)
+      -- (the channel lookup runs in a function: the channel policy refers to this table, and a subquery here
+      -- would make the policies recursive)
+      cond:=format('public.morlet_acquisition_has_visible_channel(%L::regclass,%I.acquisition_id)
+        OR public.morlet_inserted_by_current_transaction(%I.xmin)',format('%I.%I',s,c||'_acq_channels'),t.relname,t.relname);
       chk:='true';
+    ELSIF t.relname=c||'_acq_channels' THEN
+      -- a channel row follows its recording; adding or moving one also needs its acquisition to be visible,
+      -- so a recording cannot join another tenant's acquisition by naming its ID (a foreign key is not
+      -- an authorization check)
+      cond:=format('%I.recording_id = ANY (ARRAY(SELECT x.recording_id FROM %s x))',t.relname,collection);
+      chk:=format('%s AND EXISTS(SELECT 1 FROM %I.%I a WHERE a.acquisition_id=%I.acquisition_id)',
+        cond,s,c||'_acq',t.relname);
     ELSE
       -- An uncorrelated ARRAY(...) becomes an InitPlan, which keeps scans parallel; a correlated
       -- EXISTS compiled to a parallel-restricted SubPlan and made exact search 3x slower.
@@ -1765,7 +1799,7 @@ END $$;
 CREATE FUNCTION public.morlet_add_acquisition_channel(collection regclass,acquisition_id text,recording_id text,
   role text,offset_ns bigint DEFAULT 0,clock_source text DEFAULT 'daq',offset_uncertainty_ns bigint DEFAULT NULL)
 RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record; existing record;
+DECLARE rel record; existing record; n bigint;
 BEGIN
   IF collection IS NULL OR acquisition_id IS NULL OR recording_id IS NULL OR role IS NULL OR offset_ns IS NULL
     OR clock_source IS NULL THEN
@@ -1779,6 +1813,13 @@ BEGIN
       RETURN false;
     END IF;
     RAISE EXCEPTION 'recording % already belongs to an acquisition with different attributes',recording_id;
+  END IF;
+  IF row_security_active(rel.acq) THEN
+    EXECUTE format('SELECT count(*) FROM %s WHERE acquisition_id=$1',rel.acq) INTO n USING acquisition_id;
+    IF n=0 THEN
+      RAISE EXCEPTION 'acquisition % does not exist or is not visible to this role',acquisition_id
+        USING HINT='Under row security, a channel joins an acquisition the caller can see: one with a visible channel, or one created in the same transaction.';
+    END IF;
   END IF;
   EXECUTE format('INSERT INTO %s(acquisition_id,recording_id,role,offset_ns,clock_source,offset_uncertainty_ns)
     VALUES ($1,$2,$3,$4,$5,$6)',rel.channels)
