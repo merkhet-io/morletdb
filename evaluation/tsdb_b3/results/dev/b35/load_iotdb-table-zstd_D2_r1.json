@@ -1,0 +1,163 @@
+{
+ "system": "iotdb-table-zstd",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.458300500002224,
+ "samples": 101453304,
+ "image": "apache/iotdb:2.0.11-standalone",
+ "image_id": "sha256:a04c66a9f5bb72ed93fe9cc1a35160da2e398f75539afb1bd7b99cc0da891e1c",
+ "started": "2026-11-04T20:10:42",
+ "settings": {
+  "properties": [
+   "timestamp_precision=ns",
+   "compressor=ZSTD",
+   "wal_mode=ASYNC"
+  ],
+  "xmx": [
+   "-Xmx3928M",
+   "-Xmx6552M"
+  ]
+ },
+ "server_version": [
+  [
+   "2.0.11",
+   "7c0de06"
+  ]
+ ],
+ "ingest": {
+  "wall_s": 45.196,
+  "samples_per_s": 2244765,
+  "conversion_s": 7.078,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 352.83,
+   "p95_ms": 424.171,
+   "max_ms": 1105.233
+  },
+  "ack_per_call": {
+   "n": 620,
+   "p50_ms": 57.218,
+   "p95_ms": 119.21,
+   "max_ms": 714.702
+  },
+  "queryable_after_last_ack_s": 1.308,
+  "server": {
+   "cpu_percent_mean": 127.0,
+   "cpu_percent_p95": 246.6,
+   "memory_peak_mib": 6240.3,
+   "samples": 21
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31833312,
+    "mid": 1984252,
+    "process": 612
+   },
+   "want": {
+    "high": 31833312,
+    "mid": 1984252,
+    "process": 612
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 166.6
+  }
+ },
+ "correct": true,
+ "flush_s": 16.984,
+ "settle_files_s": 112.1,
+ "storage": {
+  "classes": {
+   "confignode": {
+    "apparent": 139880,
+    "allocated": 323584,
+    "files": 49
+   },
+   "datanode_other": {
+    "apparent": 57572,
+    "allocated": 118784,
+    "files": 22
+   },
+   "tsfile_sequence_b3": {
+    "apparent": 686702010,
+    "allocated": 686718976,
+    "files": 4
+   },
+   "wal": {
+    "apparent": 878,
+    "allocated": 16384,
+    "files": 4
+   }
+  },
+  "volume": {
+   "apparent": 686900340,
+   "allocated": 687177728
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 23.109,
+   "p95_ms": 33.479,
+   "max_ms": 68.859,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 550.426,
+   "p95_ms": 881.952,
+   "max_ms": 4517.379,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 293.453,
+   "p95_ms": 392.24,
+   "max_ms": 563.085,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 22.397,
+   "p95_ms": 31.316,
+   "max_ms": 58.219,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 21.638,
+   "p95_ms": 29.467,
+   "max_ms": 71.786,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 72.384,
+   "p95_ms": 108.199,
+   "max_ms": 306.581,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 51.4
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 8.858,
+  "p95_ms": 11.008,
+  "max_ms": 22.825,
+  "max_relative_difference": 9.083739567903501e-14,
+  "within_1e-12": "True",
+  "computed": "database"
+ }
+}

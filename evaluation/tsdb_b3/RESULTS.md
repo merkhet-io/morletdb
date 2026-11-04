@@ -532,3 +532,86 @@ clusters were not tested; similarity search was not part of B3.
 | Short and long exact reads | MorletDB faster or tied | **MorletDB 8–13× faster** |
 | Interval statistics | MorletDB faster | **MorletDB 35–66% faster** |
 | Altered resend | silently replaces | **silently ignored** |
+
+# Amendment B3.5: Apache IoTDB
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `fa2c0a0`) before any load of the benchmark set; development on
+the development set only ([`results/dev/b35/`](results/dev/b35/)); run once on the benchmark set
+([`results/b35/`](results/b35/)), 2026-11-04 20:40–21:04, no deviation (no system sleep in the window, `pmset`
+log). Apache IoTDB 2.0.11 standalone (`apache/iotdb:2.0.11-standalone`, linux/arm64), table model, timestamps at
+nanosecond precision, Python client `apache-iotdb` 2.0.11. MorletDB is not re-run: its numbers are B3.3's
+(SQL 0.3.3, same machine and container limits).
+
+**Correctness: every one of the 12 IoTDB loads passed** (868 channels read back with the manifest's SHA-256,
+and every sample's time equal to start + n × period to the nanosecond; 0 mismatches in every read benchmark;
+analytics within 1e-12).
+
+## Ingestion (one client connection, `NumpyTablet` inserts; median [range] of three loads)
+
+| Arm | D1 (WAL SYNC) | D2 (WAL ASYNC, default) | Ack per acquisition, p50 (D2) | Count complete after the last ack |
+|---|---:|---:|---:|---:|
+| MorletDB (B3.3, base) | — | **6.33 M** [6.27–6.33] samples/s | 128 ms | at commit |
+| I-table (GORILLA + LZ4, defaults) | 2.09 M [1.95–2.15 M] | 2.55 M [2.35–2.56 M] | 311 ms | 0.6–0.7 s |
+| I-table-zstd | 1.99 M [1.97–2.12 M] | 2.37 M [2.07–2.38 M] | 332 ms | 1.2–1.5 s |
+
+**Statement (≥ 10% in all loads): MorletDB ingested about 2.5× faster** than IoTDB's faster arm (every MorletDB
+load ≥ 2.45× every IoTDB load).
+"Count complete" includes the time of the counting query itself; rows were readable without an explicit flush.
+
+## Storage (D2 r1, settled: `FLUSH`, data directory unchanged for 60 s, clean stop)
+
+| | MiB | × MorletDB database |
+|---|---:|---:|
+| MorletDB (B3.3): sample data / database / volume with retained WAL | **148.8** / **164.8** / 363.6 | 1 |
+| I-table-zstd: volume (TsFiles 655.9) | 660.0 | 4.0 |
+| I-table: volume (TsFiles 765.9) | 770.0 | 4.7 |
+| raw float64 (for scale) | 775 | 4.7 |
+
+IoTDB's default arm stored the data at about the raw float64 size, its ZSTD arm at 85% of it: GORILLA (XOR
+coding) gains almost nothing on these noisy waveforms. **Statement: MorletDB stored the data in a quarter of
+IoTDB's smaller arm** (4.0× on the database; 1.8× against MorletDB's whole volume including retained WAL).
+
+## Reads and analytics (D2 r1 of each arm; p50 / p95 ms)
+
+| Query | MorletDB (B3.3) | I-table | I-table-zstd |
+|---|---:|---:|---:|
+| R1, 4,096 samples | **0.62 / 0.92** | 7.8 / 10.5 | 8.3 / 11.3 |
+| R2, 128,000 samples | **6.6 / 8.9** | 46.0 / 58.9 | 46.1 / 55.4 |
+| R3, 3 channels × 64,000 | **8.1 / 10.1** | 36.0 / 52.0 | 35.6 / 45.2 |
+| R4, 4,096 samples, recent / older (p50) | **0.60 / 0.59** | 4.8 / 5.0 | 5.3 / 4.9 |
+| R5, 4 threads: queries/s | **4,119** | 422 | 435 |
+| min, max, mean, RMS of 128,000 samples (SQL) | **2.5 / 2.7** | 7.4 / 11.1 | 8.8 / 12.2 |
+
+**Statements:** every read was **4.4–12.7× faster** in MorletDB than in IoTDB's faster arm for that query, at p50
+and p95 (R1 11–13×, R2 6–7×, R3 4.4–4.5×, R4 7–8×, R5 throughput 9.5×); interval analytics were **3.0× faster at
+p50 and 4.2× at p95**. IoTDB's reads select the time as `INT64`, because its Python client converts a TIMESTAMP
+column element by element (10× slower in development; protocol). Part of IoTDB's read time is the Python
+client's decoding; the server answered a 128,000-sample query in about 20 ms in development.
+
+## Semantics
+
+- An altered resend **silently replaces** the stored value (a write of the same time and tag overwrites; subset
+  check in development), like QuestDB; CrateDB ignores it; MorletDB refuses it.
+- Times are stored exactly at nanosecond precision (configured at first start; the image default is
+  milliseconds).
+- Two JVMs (ConfigNode and DataNode) sized from the container limit (3.9 and 6.4 GiB heap); server memory peaked
+  at 4.5–6.3 GiB. This reflects the configuration, not a minimum. MorletDB: 167 MiB.
+- The table model accepts no per-column encoding; similarity search is not part of IoTDB (its optional UDF
+  library computes DTW or cross-correlation between two given series, without an index over an archive).
+
+## Scope
+
+One dataset (Paderborn, 101.6 M samples), one machine, standalone IoTDB at image defaults apart from the frozen
+settings, one client connection, the official Python client. IoTDB's tree model, clusters and AINode were not
+tested; similarity search was not part of B3.
+
+## Updated trade-off map (additions)
+
+| Dimension | CrateDB 6.4 (B3.4) | **Apache IoTDB 2.0 (B3.5)** |
+|---|---|---|
+| Data on disk vs MorletDB | 10.8× | **4.0× (ZSTD), 4.7× (default)** |
+| Ingestion, one connection | MorletDB about 15× faster | **MorletDB about 2.5× faster** |
+| Exact reads | MorletDB 8–13× faster | **MorletDB 4.4–12.7× faster** |
+| Interval statistics | MorletDB 35–66% faster | **MorletDB 3.0–4.2× faster** |
+| Exact time at 64 kHz | via a stored sample index | **native (nanosecond precision)** |
+| Altered resend | silently ignored | **silently replaces** |
