@@ -129,7 +129,9 @@ The server tells agents what that does and does not mean:
 - **It is not a probability or a confidence**, and there is no universal cut-off: what is close for one kind
   of signal is not for another. Rank hits against each other and inspect them.
 - **A constant window has no envelope.** Its distance to everything, itself included, is 1; `search_similar`
-  adds a `query_note` instead of a meaningless ranking.
+  adds a `query_note` instead of a meaningless ranking. A nearly constant window still has an envelope,
+  because normalisation rescales any variation, but it may be mostly noise: check the query's and the hits'
+  `rms` in the evidence.
 
 Earlier versions of the server told agents that distances below about 0.3 are strong and above about 0.6 weak;
 those numbers were never evaluated across signal types and were removed. The core test
