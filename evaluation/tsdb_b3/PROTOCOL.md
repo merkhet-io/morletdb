@@ -379,5 +379,5 @@ Python client `crate` 2.3.0, HTTP endpoint; image defaults otherwise):
 **Not in this stage:** CrateDB's vector search (similarity search is not part of B3), clusters of more than
 one node, CrateDB Cloud.
 
-**Downloads (to be approved before the stage):** `crate:6.4.6` (arm64 image, about 300 MB) and `crate` 2.3.0
+**Downloads (to be approved before the stage):** `crate:6.4.6` (arm64 image, 244 MB compressed) and `crate` 2.3.0
 (PyPI, pure Python) into a separate venv.
