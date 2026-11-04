@@ -25,7 +25,8 @@ CREATE FUNCTION "morlet_envelope_screen_step"(
 	"start_sample" bigint, /* i64 */
 	"query_le" bytea, /* &[u8] */
 	"max_lag" INT, /* i32 */
-	"m" INT /* i32 */
+	"m" INT, /* i32 */
+	"budget" bigint /* i64 */
 ) RETURNS internal /* pgrx::datum::internal::Internal */
 PARALLEL SAFE
 LANGUAGE c /* Rust */
@@ -612,8 +613,9 @@ BEGIN
   SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
   EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
   pop:=public.morlet_history_sql(collection,true,cutoff_ns);
-  EXECUTE 'SELECT count(*) FROM ('||pop||') h' INTO n
-    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  EXECUTE 'SELECT count(*) FROM ('||pop||' LIMIT $9) h' INTO n
+    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
   IF n>max_candidates THEN
     RAISE EXCEPTION 'spread population exceeds % segments; narrow the metadata filter',max_candidates;
   END IF;
@@ -755,6 +757,276 @@ BEGIN
   RETURN n;
 END $$;
 
+-- One row per segment comparison. score is the maximum relative deviation over
+-- score_values. The default, duration_s, std, crest and kurtosis, is the evaluated summary of
+-- C2 and C3 on vibration (C2: AUROC 0.81 on Bosch CNC; C3: 0.88 on MillingVibes). For
+-- level signals such as motor current add the level (p75 or mean): their level is the
+-- signal (C1 found the p75 of DC spindle current informative), while for vibration the mean
+-- is near zero and noisy. score_quantile ranks it among leave-one-out
+-- scores of the same history (a per-context calibration; NULL above 2000 history
+-- segments), top_value names the value behind it, and the duration deviation is
+-- reported separately. calibrated_score (calibrated-v1: deviations divided by pooled
+-- spreads over all values) is experimental: it ranked worse than score in C3.
+CREATE OR REPLACE FUNCTION public.morlet_compare_summary(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false,
+  score_values text[] DEFAULT ARRAY['duration_s','std','crest','kurtosis'])
+RETURNS TABLE(score float8,score_quantile float8,top_value text,top_relative_deviation float8,
+  duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text,query_occurrence jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; match jsonb; history text; flat float8[]; n integer; spreads float8[]; res float8[]; cutoff numeric;
+  names text[]:=public.morlet_simple_value_names(); width integer; unit_spreads float8[];
+BEGIN
+  IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
+  END IF;
+  IF cardinality(score_values)=0 OR NOT score_values <@ names THEN
+    RAISE EXCEPTION 'score_values must be a non-empty subset of %',names;
+  END IF;
+  width:=cardinality(names);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
+  -- Refuse an oversized history before flattening it: count at most max_candidates+1 rows (the function is
+  -- STABLE, so this count and the read below see the same snapshot).
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  EXECUTE 'SELECT coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
+    ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO flat
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  n:=cardinality(flat)/width;
+  query_occurrence:=q.occurrence; hist_n:=n;
+  SELECT c.relative_deviation INTO duration_relative_deviation
+    FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
+      max_candidates,before_only) c WHERE c.value_name='duration_s';
+  IF n<min_history THEN status:='insufficient_history'; RETURN NEXT; RETURN; END IF;
+  -- Spread 1 on the evaluated value set and NULL elsewhere turns the calibrated score
+  -- into the plain maximum relative deviation over that set.
+  unit_spreads:=ARRAY(SELECT CASE WHEN nm=ANY(score_values) THEN 1.0::float8 END
+    FROM unnest(names) WITH ORDINALITY AS t(nm,o) ORDER BY o);
+  res:=public.morlet_calibrated_score(q.vals,flat,width,unit_spreads);
+  score:=res[1]; score_quantile:=res[2];
+  IF res[3]>0 THEN top_value:=names[res[3]::integer]; top_relative_deviation:=score; END IF;
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
+  calibrated_score:=(public.morlet_calibrated_score(q.vals,flat,width,spreads))[1];
+  status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
+  RETURN NEXT;
+END $$;
+
+-- Compares one segment's simple-v1 values with history: other non-stale
+-- segments whose context contains the query's values for match_keys (all of the
+-- query's context keys when empty), on recordings with the same rate, channel
+-- and unit and matching metadata, excluding the query's own occurrence and any
+-- segment overlapping an active label in exclude_labels. status says whether the
+-- calibrated deviation could be computed; robust_z is NULL when the history's MAD is 0.
+-- zero_median: the history median is 0 or, for values in channel units, at or below
+-- morlet_simple_value_floors of the history's median rms (rounding residue).
+-- calibrated_deviation divides relative_deviation by the
+-- value's pooled spread (morlet_value_spreads), so noisy values weigh less (C2's M03
+-- note); relative_deviation is the uncalibrated score of evaluations C1 and C2.
+CREATE OR REPLACE FUNCTION public.morlet_compare_to_history(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false)
+RETURNS TABLE(value_name text,value float8,hist_n integer,hist_median float8,relative_deviation float8,
+  robust_z float8,quantile float8,spread float8,calibrated_deviation float8,status text,query_occurrence jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; match jsonb; candidates bigint; history text; spreads float8[]; cutoff numeric;
+BEGIN
+  IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
+  END IF;
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO candidates
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF candidates>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
+  RETURN QUERY EXECUTE 'WITH hist AS MATERIALIZED ('||history||'),
+    budget AS (SELECT count(*)::integer AS n FROM hist),
+    q AS (SELECT name,ord,$9[ord] AS x FROM unnest(public.morlet_simple_value_names()) WITH ORDINALITY AS t(name,ord)),
+    st AS (SELECT q.name,q.ord,q.x,b.n,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[q.ord]) AS med,
+        count(*) FILTER (WHERE h.vals[q.ord]<q.x) AS below,count(*) FILTER (WHERE h.vals[q.ord]=q.x) AS equal
+      FROM q CROSS JOIN budget b LEFT JOIN hist h ON true GROUP BY q.name,q.ord,q.x,b.n),
+    lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
+    sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad,
+        $11[st.ord] AS spread,(SELECT lv.fl[st.ord] FROM lv) AS fl FROM st)
+    SELECT name,x,n,CASE WHEN n>=$10 THEN med END,
+      CASE WHEN n>=$10 AND abs(med)>fl THEN (x-med)/abs(med) END,
+      CASE WHEN n>=$10 AND mad>0 THEN (x-med)/(1.4826*mad) END,
+      CASE WHEN n>=$10 THEN (below+0.5*equal)::float8/n END,
+      spread,
+      CASE WHEN n>=$10 AND abs(med)>fl AND spread>0 THEN abs(x-med)/abs(med)/spread END,
+      CASE WHEN n<$10 THEN ''insufficient_history'' WHEN abs(med)<=fl THEN ''zero_median''
+        WHEN spread IS NULL THEN ''no_pooled_spread'' ELSE ''ok'' END,$7
+    FROM sp ORDER BY ord'
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      q.vals,min_history,spreads;
+END $$;
+
+-- Nearest past segments of the same context: the history of morlet_compare_summary
+-- (same filters, budget and before_only), ranked by the root mean square over
+-- score_values of (x_query - x_history) / |history median|, ties by recording and
+-- start, skipping values whose median is zero or negligible (morlet_compare_to_history's
+-- zero_median). vals are the history segment's simple-v1 values, labels its overlapping active
+-- labels. top_k up to 1000, so a caller can also draw the whole history distribution.
+CREATE OR REPLACE FUNCTION public.morlet_history_neighbors(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],top_k integer DEFAULT 10,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false,score_values text[] DEFAULT ARRAY['duration_s','std','crest','kurtosis'])
+RETURNS TABLE(neighbor_segment_id bigint,recording_id text,start_sample bigint,end_sample bigint,occurrence jsonb,
+  distance float8,vals float8[],labels jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; q record; qr record; match jsonb; history text; n bigint; cutoff numeric;
+  names text[]:=public.morlet_simple_value_names(); ords integer[];
+BEGIN
+  IF top_k NOT BETWEEN 1 AND 1000 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid top_k (1..1000), max_candidates or metadata filter';
+  END IF;
+  IF cardinality(score_values)=0 OR NOT score_values <@ names THEN
+    RAISE EXCEPTION 'score_values must be a non-empty subset of %',names;
+  END IF;
+  ords:=ARRAY(SELECT o::integer FROM unnest(names) WITH ORDINALITY AS t(nm,o) WHERE nm=ANY(score_values) ORDER BY o);
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  RETURN QUERY EXECUTE format('WITH hist AS MATERIALIZED ('||history||'),
+      med AS (SELECT o,percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[o]) AS m FROM hist h, unnest($10) o GROUP BY o),
+      lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
+      d AS (SELECT h.segment_id,sqrt(avg(((($9)[med.o]-h.vals[med.o])/abs(med.m))^2)) AS dist
+        FROM hist h CROSS JOIN med CROSS JOIN lv WHERE abs(med.m)>lv.fl[med.o] GROUP BY h.segment_id)
+    SELECT h.segment_id,h.recording_id,h.start_sample,h.end_sample,h.occurrence,d.dist,h.vals,
+      coalesce((SELECT jsonb_agg(jsonb_build_object(''label_id'',l.label_id,''label'',l.label,''note'',l.note) ORDER BY l.label_id)
+        FROM %s l WHERE l.recording_id=h.recording_id AND NOT l.retracted
+          AND l.start_sample<h.end_sample AND h.start_sample<l.end_sample),''[]''::jsonb)
+    FROM hist h JOIN d ON d.segment_id=h.segment_id
+    ORDER BY d.dist,h.recording_id,h.start_sample LIMIT $11',rel.labels)
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      q.vals,ords,top_k;
+END $$;
+
+-- Level track (local-level Kalman filter, model local-level-v1) of one simple-v1 value
+-- over the episodes of a segment's history: the segments morlet_compare_summary would
+-- compare with (same context for match_keys, rate, channel, unit, metadata_filter and
+-- exclude_labels; other occurrences), restricted to the query's machine and to segments
+-- starting before the query and at or after since_utc, followed by the query segment.
+-- Computed at query time from the stored values; nothing is persisted.
+--   y = ln(value) with transform 'log' (a value <= 0 is reported as invalid_value and
+--   skipped; there is no epsilon), or the value itself with transform 'none'.
+--   Level x: x_k = x_{k-1} + w, Var(w) = process_variance_per_hour * hours since the
+--   last valid episode; y_k = x_k + v, Var(v) = observation_variance (units of y squared).
+--   The first valid episode sets x = y, Var(x) = observation_variance (the diffuse-prior limit).
+-- Episodes are ordered by start time, then segment id; equal start times add no process
+-- variance. level_var is the uncertainty of the level; innovation_var
+-- (= predicted_level_var + observation_variance) is the model-based variance of the
+-- observation predicted before it was seen. Gaussian, independent errors are assumed:
+-- correlated or overlapping episodes make both variances too small.
+CREATE OR REPLACE FUNCTION public.morlet_level_track(collection regclass,segment_id bigint,
+  process_variance_per_hour float8,observation_variance float8,value_name text DEFAULT 'std',
+  transform text DEFAULT 'log',match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],since_utc timestamptz DEFAULT '-infinity',max_candidates integer DEFAULT 10000)
+RETURNS TABLE(episode integer,episode_segment_id bigint,occurrence jsonb,start_ns numeric,hours_since_previous float8,
+  observed float8,y float8,predicted_level float8,predicted_level_var float8,innovation float8,innovation_var float8,
+  standardized_innovation float8,level float8,level_var float8,status text,model text)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE acq record; q record; qr record; match jsonb; history text; n bigint; cutoff numeric; machine text;
+  ord integer:=array_position(public.morlet_simple_value_names(),value_name); since numeric; r record;
+  m float8; p float8; last_t numeric; k float8;
+BEGIN
+  IF ord IS NULL THEN
+    RAISE EXCEPTION 'value_name must be one of %',public.morlet_simple_value_names();
+  END IF;
+  IF transform NOT IN ('log','none') THEN RAISE EXCEPTION 'transform must be log or none'; END IF;
+  IF NOT (process_variance_per_hour>=0 AND process_variance_per_hour<'Infinity')
+    OR NOT (observation_variance>0 AND observation_variance<'Infinity') THEN
+    RAISE EXCEPTION 'process_variance_per_hour must be finite and >= 0, observation_variance finite and > 0';
+  END IF;
+  IF max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid max_candidates or metadata filter';
+  END IF;
+  SELECT * INTO acq FROM public.morlet_acquisition_relations(collection);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=public.morlet_segment_start_ns(collection,q.segment_id);
+  IF cutoff IS NULL THEN
+    RAISE EXCEPTION 'a level track needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  EXECUTE format('SELECT a.machine FROM %s ch JOIN %s a ON a.acquisition_id=ch.acquisition_id WHERE ch.recording_id=$1',
+    acq.channels,acq.acq) INTO machine USING q.recording_id;
+  since:=CASE WHEN isfinite(since_utc) THEN extract(epoch FROM since_utc)*1000000000 END;
+  IF since IS NOT NULL AND cutoff<since THEN RAISE EXCEPTION 'the segment starts before since_utc'; END IF;
+  history:=format('SELECT h.segment_id,h.occurrence,h.vals[$9] AS x,
+      extract(epoch FROM a.origin_utc)*1000000000+public.morlet_sample_time_ns(r.sample_rate_hz,ch.offset_ns,h.start_sample) AS t
+    FROM (%s) h JOIN %s r ON r.recording_id=h.recording_id JOIN %s ch ON ch.recording_id=h.recording_id
+      JOIN %s a ON a.acquisition_id=ch.acquisition_id WHERE a.machine=$10',
+    public.morlet_history_sql(collection,false,cutoff),collection,acq.channels,acq.acq);
+  history:='SELECT * FROM ('||history||') e WHERE $11::numeric IS NULL OR e.t>=$11';
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $12) c' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since,
+      max_candidates::bigint;
+  IF n+1>max_candidates THEN
+    RAISE EXCEPTION 'track exceeds % episodes; narrow match_keys, the metadata filter or since_utc',max_candidates;
+  END IF;
+  episode:=0; model:='local-level-v1';
+  FOR r IN EXECUTE history||' UNION ALL SELECT $1,$7,$12,$13 ORDER BY t,segment_id'
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,ord,machine,since,
+      q.vals[ord],cutoff
+  LOOP
+    episode:=episode+1; episode_segment_id:=r.segment_id; occurrence:=r.occurrence; start_ns:=r.t; observed:=r.x;
+    y:=CASE WHEN transform='none' THEN r.x WHEN r.x>0 THEN ln(r.x) END;
+    hours_since_previous:=CASE WHEN last_t IS NOT NULL THEN ((r.t-last_t)/3600000000000)::float8 END;
+    predicted_level:=m;
+    predicted_level_var:=p+process_variance_per_hour*hours_since_previous;
+    innovation_var:=predicted_level_var+observation_variance;
+    innovation:=y-predicted_level;
+    standardized_innovation:=innovation/sqrt(innovation_var);
+    IF y IS NULL THEN
+      status:='invalid_value';
+    ELSIF m IS NULL THEN
+      m:=y; p:=observation_variance; last_t:=r.t; status:='initialized';
+    ELSE
+      k:=predicted_level_var/innovation_var;
+      m:=m+k*innovation; p:=predicted_level_var*observation_variance/innovation_var; last_t:=r.t; status:='ok';
+    END IF;
+    level:=CASE WHEN status='invalid_value' THEN NULL ELSE m END;
+    level_var:=CASE WHEN status='invalid_value' THEN NULL ELSE p END;
+    RETURN NEXT;
+  END LOOP;
+END $$;
+
 DROP FUNCTION public.morlet_stream_relations(regclass);
 -- Collections created before encoded storage keep float8[] chunks; the
 -- expressions let every reader handle both layouts with one query text.
@@ -812,7 +1084,8 @@ BEGIN
   -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
   -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
   -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
-  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
+  -- returned; once a scan has seen more than max_candidates windows it stops screening and only counts.
+  -- SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
   -- query too large to prepare for screening (window 32768 from lag fraction 0.1, 16384 at 0.5).
   screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off'
     AND public.morlet_envelope_screen_supported(cardinality(query_envelope),lag);
@@ -827,7 +1100,7 @@ BEGIN
   LOOP
     IF screened THEN
       EXECUTE format('WITH c AS (SELECT count(*) AS eligible,public.morlet_envelope_screen(e.envelope,e.recording_id,
-            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer)
+            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer,$12::bigint)
             FILTER (WHERE $8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10) AS j
           FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id%3$s
           WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5),
@@ -1068,7 +1341,7 @@ END $$;
 -- Exact envelope search screening (morlet_core::envelope_screen): a parallel aggregate that bounds each
 -- stored window's distance to a query envelope in float32 and keeps every window that could be among the
 -- m nearest, as a JSON array of [recording_id, start_sample]. Used by morlet_envelope_ranked.
-CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,integer) (
+CREATE AGGREGATE public.morlet_envelope_screen(bytea,text,bigint,bytea,integer,integer,bigint) (
   SFUNC = public.morlet_envelope_screen_step, STYPE = internal,
   COMBINEFUNC = public.morlet_envelope_screen_combine,
   SERIALFUNC = public.morlet_envelope_screen_serial, DESERIALFUNC = public.morlet_envelope_screen_deserial,

@@ -38,6 +38,10 @@ rows are hidden as well; see [access control](access-control.md).
 `max_candidates` (exhaustive path, default 1,000,000 since SQL 0.3.2; 4,096 before): if more
 windows are eligible, the search **fails** instead of sampling. The error states the number of
 eligible windows and how to proceed (a larger `max_candidates`, a narrower filter, or probe search).
+Screened exact search counts and screens in one scan; once a scan has seen more than `max_candidates`
+windows it stops screening and only counts, so an oversized request costs a scan, not the screening of
+every window. `max_candidates` is a candidate limit, not a time or memory limit: set
+`statement_timeout` for that.
 
 ## Exclusion, ordering, suppression
 
