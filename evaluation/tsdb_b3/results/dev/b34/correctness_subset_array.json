@@ -1,0 +1,43 @@
+{
+ "arm": "array",
+ "counts": {
+  "got": {
+   "phase_current_2": 768099,
+   "temp_2_bearing_module": 14,
+   "vibration_1": 768099,
+   "torque": 48009,
+   "force": 48009,
+   "speed": 48009,
+   "phase_current_1": 768099
+  },
+  "want": {
+   "vibration_1": 768099,
+   "phase_current_1": 768099,
+   "phase_current_2": 768099,
+   "force": 48009,
+   "speed": 48009,
+   "torque": 48009,
+   "temp_2_bearing_module": 14
+  },
+  "ok": true
+ },
+ "reads": {
+  "acquisitions": 3,
+  "channels_checked": 21,
+  "mismatches": []
+ },
+ "intervals": {
+  "intervals": 20,
+  "mismatches": []
+ },
+ "identical_retry": {
+  "counts_unchanged": true,
+  "reads": []
+ },
+ "altered_retry": {
+  "accepted": true,
+  "counts_unchanged": true,
+  "stored_value_is_altered": false
+ },
+ "ok": true
+}

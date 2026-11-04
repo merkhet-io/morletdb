@@ -1,0 +1,216 @@
+{
+ "system": "crate-array",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.6939802500419319,
+ "samples": 101453304,
+ "image": "crate:6.4.6",
+ "image_id": "sha256:865ed64fd4e7ffc31dccd79ec96d374f7da458e23e65520699e31ad4f21775ef",
+ "started": "2026-11-04T15:01:56",
+ "server_version": "6.4.6",
+ "ingest": {
+  "wall_s": 223.088,
+  "samples_per_s": 454767,
+  "conversion_s": 1.269,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1886.497,
+   "p95_ms": 2093.733,
+   "max_ms": 2600.524
+  },
+  "ack_per_call": {
+   "n": 124,
+   "p50_ms": 1866.614,
+   "p95_ms": 2073.314,
+   "max_ms": 2534.172
+  },
+  "queryable_after_last_ack_s": 5.814,
+  "failures": [],
+  "server": {
+   "cpu_percent_mean": 115.3,
+   "cpu_percent_p95": 225.1,
+   "memory_peak_mib": 6239.2,
+   "samples": 100
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "phase_current_2": 31833312,
+    "temp_2_bearing_module": 612,
+    "vibration_1": 31833312,
+    "torque": 1984252,
+    "force": 1984252,
+    "speed": 1984252,
+    "phase_current_1": 31833312
+   },
+   "want": {
+    "vibration_1": 31833312,
+    "phase_current_1": 31833312,
+    "phase_current_2": 31833312,
+    "force": 1984252,
+    "speed": 1984252,
+    "torque": 1984252,
+    "temp_2_bearing_module": 612
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 85.3
+  }
+ },
+ "correct": true,
+ "optimize_s": 0.427,
+ "shards": [
+  {
+   "table": "b3_blocks",
+   "shard": 0,
+   "path": "/data/data/nodes/0/indices/29HP8WJxQ0ig3UA3NokqQg/0",
+   "size": 462206462,
+   "docs": 6226
+  },
+  {
+   "table": "b3_blocks",
+   "shard": 1,
+   "path": "/data/data/nodes/0/indices/29HP8WJxQ0ig3UA3NokqQg/1",
+   "size": 473503855,
+   "docs": 6351
+  },
+  {
+   "table": "b3_blocks",
+   "shard": 2,
+   "path": "/data/data/nodes/0/indices/29HP8WJxQ0ig3UA3NokqQg/2",
+   "size": 470654212,
+   "docs": 6307
+  },
+  {
+   "table": "b3_blocks",
+   "shard": 3,
+   "path": "/data/data/nodes/0/indices/29HP8WJxQ0ig3UA3NokqQg/3",
+   "size": 461285188,
+   "docs": 6218
+  }
+ ],
+ "storage": {
+  "tables": {
+   "b3_blocks": {
+    "data": {
+     "apparent": 1867649717,
+     "allocated": 1868324864,
+     "files": 206
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 716,
+     "allocated": 32768,
+     "files": 8
+    }
+   }
+  },
+  "other": {
+   "apparent": 88162,
+   "allocated": 155648
+  },
+  "volume": {
+   "apparent": 1867739167,
+   "allocated": 1868546048
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 10.265,
+   "p95_ms": 16.525,
+   "max_ms": 28.608,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 79.634,
+   "p95_ms": 97.502,
+   "max_ms": 174.12,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 157.918,
+   "p95_ms": 184.736,
+   "max_ms": 380.503,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 7.325,
+   "p95_ms": 10.936,
+   "max_ms": 24.162,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 7.095,
+   "p95_ms": 9.744,
+   "max_ms": 28.13,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 7.796,
+   "p95_ms": 20.055,
+   "max_ms": 142.114,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 404.4
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 84.714,
+  "p95_ms": 115.521,
+  "max_ms": 178.201,
+  "max_relative_difference": 0.0,
+  "within_1e-12": true,
+  "computed": "client, after the read"
+ },
+ "optimize_one_segment_s": 52.027,
+ "storage_one_segment": {
+  "tables": {
+   "b3_blocks": {
+    "data": {
+     "apparent": 1162918293,
+     "allocated": 1163374592,
+     "files": 140
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 1048,
+     "allocated": 49152,
+     "files": 12
+    }
+   }
+  },
+  "other": {
+   "apparent": 214738,
+   "allocated": 286720
+  },
+  "volume": {
+   "apparent": 1163134651,
+   "allocated": 1163743232
+  }
+ }
+}

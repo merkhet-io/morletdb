@@ -1,0 +1,35 @@
+{
+ "arm": "row",
+ "counts": {
+  "got": {
+   "high": 768099,
+   "mid": 48009,
+   "process": 14
+  },
+  "want": {
+   "high": 768099,
+   "mid": 48009,
+   "process": 14
+  },
+  "ok": true
+ },
+ "reads": {
+  "acquisitions": 3,
+  "channels_checked": 21,
+  "mismatches": []
+ },
+ "intervals": {
+  "intervals": 20,
+  "mismatches": []
+ },
+ "identical_retry": {
+  "counts_unchanged": true,
+  "reads": []
+ },
+ "altered_retry": {
+  "accepted": true,
+  "counts_unchanged": true,
+  "stored_value_is_altered": false
+ },
+ "ok": true
+}
