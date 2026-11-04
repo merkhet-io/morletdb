@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.3-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.4-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -20,6 +20,11 @@ a leading v; GHCR image tags do not.
 - **0.3.3-alpha.1:** the same SQL version 0.3.2 and extension as 0.3.2-alpha.1 (no update script needed);
   the first image for both linux/amd64 and linux/arm64. Ships with the MCP server for AI agents and the
   seismic and machine demos.
+- **0.3.4-alpha.1:** reports SQL version 0.3.3, with an update script from 0.3.2-alpha.1's and 0.3.3-alpha.1's
+  0.3.2 objects; the chained updates from 0.3.1, 0.3.0, 0.2.0 and 0.1.0 are also tested. Fixes
+  GHSA-pg6f-hcvw-vw34 (acquisitions under row-level security) and the findings of the 0.3.3 review; adds raw
+  float64 reads and writes, chunk summaries, interval statistics and overviews, search time filters and
+  evidence, and screened exact search. The first release with an SBOM per architecture and build provenance.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean

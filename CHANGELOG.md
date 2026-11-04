@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.3.4-alpha.1
+
+SQL version 0.3.3, with an update script from 0.3.2 (`ALTER EXTENSION pg_morlet UPDATE`; the chained updates
+from earlier releases are tested). Includes a security fix for collections that use
+`morlet_enable_row_security` (GHSA-pg6f-hcvw-vw34): update if you use row-level security with acquisitions.
+The first release with an SPDX SBOM per image architecture and build provenance attestations.
 
 Security: acquisitions under row-level security (SQL 0.3.3):
 - With `morlet_enable_row_security`, a role that could add acquisition channels could attach a recording it

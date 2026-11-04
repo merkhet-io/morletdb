@@ -8,7 +8,8 @@ the stored samples. It wraps pg_morlet's SQL functions and adds no database feat
   (`[plot]` extra, matplotlib) is optional and used only by the example.
 - Not published yet: `pip install "./sdk/python[plot]"` from a checkout.
 - Example: [`examples/python/quickstart.py`](../examples/python/quickstart.py), synthetic data, no download.
-- Servers: pg_morlet SQL 0.3.2 (release image `0.3.3-alpha.1`) and later. On SQL 0.3.3 the SDK sends and
+- Servers: pg_morlet SQL 0.3.2 (release image `0.3.3-alpha.1`) and later. On SQL 0.3.3 (release image
+  `0.3.4-alpha.1`) the SDK sends and
   reads samples as raw float64 bytes, offers `stats` and `overview`, and `create_collection` enables per-chunk
   summaries; on 0.3.2 it uses binary `float8[]` arrays instead
   (same results, more server-side parsing) and `stats` and `overview` raise `UnsupportedError`.
@@ -17,7 +18,7 @@ the stored samples. It wraps pg_morlet's SQL functions and adds no database feat
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.3-alpha.1
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.4-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 python -m venv .venv && . .venv/bin/activate && pip install "./sdk/python[plot]"
 DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet python examples/python/quickstart.py
