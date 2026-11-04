@@ -37,6 +37,33 @@ generators and harness are developed on the small development sizes only.
 | D6 | Query extremes | intervals up to 2³⁰ samples; overviews of a year; search galleries of 10⁵ … 10⁸ windows with filters selecting 100% … 0.01% | latency, memory, refusals at the documented budgets | none |
 | D7 | Resources | 2 GB, 512 MB, 256 MB memory; 2 / 1 CPUs; a slow card; a full disk | out-of-memory events, behaviour at disk full (must fail visibly, data intact) | none |
 | D8 | Irregular data | event series with random timestamps | documented as out of scope; L1 shows the cost of forcing them into recordings | **yes**: storage and range queries |
+| D9 | Archive scale on one node | windows 10⁶, 10⁷, 10⁸ (10⁹ by extrapolation from the measured curve, labelled as such); recordings 10⁶, 10⁷, 10⁸ (short and long recordings); archive volume 10 GB, 100 GB, 1 TB (10 TB if hardware allows) | probe p95 and recall as the HNSW index outgrows memory (at a fixed 16 GB and a fixed 64 GB limit); screened-exact p95 unfiltered and at 10% / 1% / 0.1% filter selectivity; catalogue, listing and filter latency; storage per window and per recording; VACUUM, index build, backup and restore time | none; output = the tipping points below |
+
+
+## D9: scaling questions and tipping points
+
+D9 answers how far one node scales and where the current search design stops working. A **tipping point** is the
+smallest scale at which a fixed criterion fails in all three repeats:
+
+1. **Memory:** probe search p95 more than 2× its in-memory value, or recall@10 below 0.95, as the HNSW index
+   exceeds the container's memory (measured at 16 GB and 64 GB, so the curve can be scaled to other machines).
+2. **Interactive exact search:** screened exact search p95 above 1 s, unfiltered and per filter selectivity.
+3. **Catalogue:** listing or filtering recordings by metadata above 100 ms p95, or ingest of a new recording
+   slowed more than 2× by the catalogue's size.
+4. **Operations:** VACUUM of the companion tables, index rebuild or a full restore longer than 8 h.
+
+Expected from E1's sizes (about 3.1 KB of search structures per window; a model, to be replaced by the
+measurement): the HNSW index leaves 16 GB of memory near 1.4 × 10⁷ windows and 128 GB near 10⁸; screened exact
+search passes 1 s near 2 × 10⁶ unfiltered windows; 10⁹ windows need about 3 TB of search structures.
+
+Beyond the tipping points, the study names what would have to change, as hypotheses for later studies, not
+claims: partitioned indexes per collection or time with filter-first routing; disk-based or quantised vector
+indexes (DiskANN-style, binary or product quantisation) with exact re-ranking; coarse-to-fine screening from
+chunk summaries; sharding across nodes with a merged top-k (Citus or application-level).
+
+Hardware: D9 at 1 TB and above needs a machine with enough fast storage; the run is planned once that machine
+is chosen (named before the freeze). Scale points that cannot be run are reported as not measured, never
+extrapolated silently.
 
 ## Data
 
