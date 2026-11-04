@@ -131,7 +131,8 @@ impl ScreenQuery {
 
     pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
         let n = q.len();
-        if n == 0 || max_lag >= n {
+        // Screening scores its survivors with a prepared LagQuery; check before allocating either matrix.
+        if !LagQuery::supported(n, max_lag) {
             return None;
         }
         let lags = 2 * max_lag + 1;
@@ -644,5 +645,38 @@ mod tests {
         let mut sc = Screener::new(&q, 30, 1).unwrap();
         assert!(sc.push(0, &g[0].1[..10]).is_err());
         assert!(Screener::<i64>::new(&q, 30, 0).is_none());
+    }
+
+    #[test]
+    fn screening_feasibility_matches_preparation_for_every_window() {
+        // Every supported window size and lag fraction: ScreenQuery::new succeeds exactly when
+        // LagQuery::supported says so; otherwise the direct distance still scores (the SQL fallback).
+        let mut unsupported = Vec::new();
+        for w in [512usize, 1024, 2048, 4096, 8192, 16384, 32768] {
+            let samples: Vec<f64> = (0..w)
+                .map(|t| ((t as f64) * 0.013).sin() * (1.0 + (t % 97) as f64 / 97.0))
+                .collect();
+            let q = crate::envelope::envelope(&samples).unwrap();
+            for f in [0.0, 0.075, 0.1, 0.25, 0.5] {
+                let lag = (f * q.len() as f64).floor() as usize;
+                let ok = LagQuery::supported(q.len(), lag);
+                assert_eq!(
+                    ScreenQuery::new(&q, lag).is_some(),
+                    ok,
+                    "window {w}, fraction {f}"
+                );
+                if !ok {
+                    unsupported.push((w, f));
+                    assert!(
+                        distance(&q, &q, lag).is_ok(),
+                        "direct distance, window {w}, fraction {f}"
+                    );
+                }
+            }
+        }
+        assert_eq!(
+            unsupported,
+            vec![(16384, 0.5), (32768, 0.1), (32768, 0.25), (32768, 0.5)]
+        );
     }
 }

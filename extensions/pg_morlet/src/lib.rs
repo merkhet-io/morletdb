@@ -642,6 +642,15 @@ fn query_from_le_bytes(bytes: &[u8]) -> Vec<f64> {
         .collect()
 }
 
+/// Whether screened exact search can prepare a query envelope of `envelope_len` values with `max_lag`
+/// (morlet_core::envelope::LagQuery::supported); otherwise exact search scores every eligible window directly.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_envelope_screen_supported(envelope_len: i32, max_lag: i32) -> bool {
+    envelope_len > 0
+        && max_lag >= 0
+        && morlet_core::envelope::LagQuery::supported(envelope_len as usize, max_lag as usize)
+}
+
 /// A float8[] as little-endian float64 bytes (the screening aggregate's query argument).
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_float8_le_bytes(values: pgrx::Array<'_, f64>) -> Vec<u8> {
@@ -1986,6 +1995,9 @@ END $$"#).unwrap();
         let f6 = "(SELECT segment_id FROM frz_ctx_segments WHERE recording_id='F6')";
         assert_eq!(Spi::get_one::<bool>("SELECT bool_and(v.vals[3]>0 AND v.vals[3]<1e-12) FROM frz_ctx_values v JOIN frz_ctx_segments s USING (segment_id) WHERE s.recording_id<>'F6' AND v.representation='simple-v1'").unwrap(), Some(true));
         assert_eq!(Spi::get_one::<String>(&format!("SELECT status||':'||coalesce(relative_deviation::text,'-') FROM morlet_compare_to_history('frz',{f6},min_history=>1) WHERE value_name='std'")).unwrap().unwrap(), "zero_median:-");
+        // No context qualifies for std (every median is negligible): its pooled spread stays unknown
+        // (NULL) instead of becoming the floor; duration has an estimate (0) and is floored to 0.01.
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT coalesce(sp[3]::text,'null')||':'||sp[1] FROM morlet_value_spreads('frz',{f6}) sp")).unwrap().unwrap(), "null:0.01");
         assert_eq!(Spi::get_one::<String>(&format!("SELECT status FROM morlet_compare_to_history('frz',{f6},min_history=>1) WHERE value_name='kurtosis'")).unwrap().unwrap(), "ok");
         // Without the floor, std's relative deviation would be about 1e11 and decide all three.
         assert_eq!(Spi::get_one::<bool>(&format!("SELECT score<10 AND top_value<>'std' AND calibrated_score<1000 FROM morlet_compare_summary('frz',{f6},min_history=>1)")).unwrap(), Some(true));
@@ -2334,6 +2346,63 @@ END $$"#).unwrap();
                 .unwrap(),
             0
         );
+    }
+    #[pg_test(error = "conflicting replay at chunk offset")]
+    fn replay_compares_signed_zero_bits() {
+        // Array equality treats -0 and +0 as equal; a replay must match bit for bit.
+        Spi::run("SELECT morlet_create_stream_collection('public','zero_replay'); SELECT morlet_start_recording('zero_replay','A',4096,'x','g'); SELECT morlet_append_chunk('zero_replay','A',0,ARRAY[-0.0::float8,1]); SELECT morlet_append_chunk('zero_replay','A',0,ARRAY[0.0::float8,1])").unwrap();
+    }
+    #[pg_test(error = "conflicting replay at chunk offset")]
+    fn raw_replay_compares_signed_zero_bits() {
+        Spi::run("SELECT morlet_create_stream_collection('public','zero_raw'); SELECT morlet_start_recording('zero_raw','A',4096,'x','g'); SELECT morlet_append_chunk_raw('zero_raw','A',0,morlet_float8_le_bytes(ARRAY[0.0::float8,1])); SELECT morlet_append_chunk_raw('zero_raw','A',0,morlet_float8_le_bytes(ARRAY[-0.0::float8,1]))").unwrap();
+    }
+    #[pg_test]
+    fn identical_signed_zero_replay_is_acknowledged() {
+        Spi::run("SELECT morlet_create_stream_collection('public','zero_same'); SELECT morlet_start_recording('zero_same','A',4096,'x','g'); SELECT morlet_append_chunk('zero_same','A',0,ARRAY[-0.0::float8,1])").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT morlet_append_chunk('zero_same','A',0,ARRAY[-0.0::float8,1])"
+            )
+            .unwrap(),
+            Some(2)
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT encode(float8send(samples[1]),'hex') FROM morlet_read_interval('zero_same','A',0,1)").unwrap().unwrap(), "8000000000000000");
+    }
+    #[pg_test(
+        error = "envelopes of window 4096 for recording A were built with stride 2048, not 512"
+    )]
+    fn envelope_stride_change_is_an_error() {
+        Spi::run("SELECT morlet_create_stream_collection('public','stride_env'); SELECT morlet_enable_envelopes('stride_env'); SELECT morlet_start_recording('stride_env','A',4096,'x','g'); SELECT morlet_append_chunk('stride_env','A',0,ARRAY(SELECT sin(i/7.0) FROM generate_series(0,8191) i))").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('stride_env','A',4096,2048)")
+                .unwrap(),
+            Some(3)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('stride_env','A',4096,2048)")
+                .unwrap(),
+            Some(0)
+        );
+        Spi::run("SELECT morlet_build_envelopes('stride_env','A',4096,512)").unwrap();
+    }
+    #[pg_test]
+    fn exact_search_falls_back_when_screening_cannot_prepare_the_query() {
+        // Window 32768 at lag fraction 0.5 is too large to prepare for screening; exact search then scores
+        // every eligible window directly, with the same results as morlet.exact_screen = off.
+        Spi::run("SELECT morlet_create_stream_collection('public','big_win'); SELECT morlet_enable_envelopes('big_win'); SELECT morlet_start_recording('big_win',r,1000,'x','g') FROM unnest(ARRAY['A','B']) r; SELECT morlet_append_chunk('big_win',r,k*16384,ARRAY(SELECT sin(i/(5.0+o))*(1+(i%97)/97.0) FROM generate_series(k*16384,k*16384+16383) i)) FROM (VALUES ('A',0),('B',2)) v(r,o), generate_series(0,5) k ORDER BY r,k; SELECT morlet_build_envelopes('big_win',r,32768,16384) FROM unnest(ARRAY['A','B']) r").unwrap();
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT morlet_envelope_screen_supported(3277,1638)").unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT morlet_envelope_screen_supported(410,30)").unwrap(),
+            Some(true)
+        );
+        let q = "SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelopes('big_win',ARRAY(SELECT sin(i/6.0)*(1+(i%89)/89.0) FROM generate_series(0,32767) i),1000,'x','g','{}',5,0.5)";
+        let screened = Spi::get_one::<String>(q).unwrap().unwrap();
+        Spi::run("SET LOCAL morlet.exact_screen = off").unwrap();
+        assert_eq!(Spi::get_one::<String>(q).unwrap().unwrap(), screened);
+        assert!(screened.split(',').count() >= 2);
     }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn rejects_conflicting_chunk_replay() {

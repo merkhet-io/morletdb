@@ -33,8 +33,10 @@ NEW_RUST = ["morlet_float8_from_le_bytes", "morlet_decode_interval_raw",
             "morlet_envelope_screen_step", "morlet_envelope_screen_combine", "morlet_envelope_screen_serial",
             "morlet_envelope_screen_deserial", "morlet_envelope_screen_final", "morlet_float8_le_bytes",
             "morlet_chunk_summary", "morlet_encoded_chunk_summary", "morlet_chunk_summary_values",
-            "morlet_interval_stats_step", "morlet_interval_stats_final", "morlet_samples_overview"]
-CHANGED = ["morlet_append_chunk", "morlet_add_context", "morlet_revise_context", "morlet_build_context_segments"]
+            "morlet_interval_stats_step", "morlet_interval_stats_final", "morlet_samples_overview",
+            "morlet_envelope_screen_supported"]
+CHANGED = ["morlet_append_chunk", "morlet_build_envelopes", "morlet_value_spreads", "morlet_add_context",
+           "morlet_revise_context", "morlet_build_context_segments"]
 # Signature or return type changed: the 0.3.2 function (these argument types) is dropped and created again.
 RECREATED = {
     "morlet_stream_relations": "regclass",
