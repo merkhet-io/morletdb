@@ -161,7 +161,7 @@ jobs:
             --cache-to "type=gha,mode=max,scope=deb-$PG_MAJOR-${{ matrix.arch }}" \
             --output type=local,dest=dist .
           ls -l dist
-          test "$(ls dist/*.deb | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.deb' | wc -l)" -eq 1
       - name: Install it with apt into a clean postgres image
         run: |
           docker buildx build -f deploy/Dockerfile.deb --target trial --platform "$MORLET_PLATFORM" \
@@ -215,10 +215,7 @@ jobs:
           docker buildx imagetools create -t "$image:$version" "$image:$version-amd64" "$image:$version-arm64"
           digest=$(docker buildx imagetools inspect "$image:$version" --format '{{json .Manifest}}' | jq -r .digest)
           docker buildx imagetools inspect "$image:$version"
-          echo "digest=$image@$digest" >> "$GITHUB_OUTPUT"
-          echo "name=$image" >> "$GITHUB_OUTPUT"
-          echo "sha=$digest" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          { echo "digest=$image@$digest"; echo "name=$image"; echo "sha=$digest"; echo "version=$version"; } >> "$GITHUB_OUTPUT"
       - name: Build provenance attestation for the release index
         uses: actions/attest-build-provenance@v2
         with:
@@ -281,10 +278,10 @@ jobs:
         run: |
           # GitHub release assets cannot contain "~" (it becomes "."), so name the files as GitHub will serve
           # them before the checksums are written; the package version inside stays 0.3.5~alpha.1-1.
-          for f in *~*.deb; do [ -e "$f" ] && mv -- "$f" "${f//\~/.}"; done
-          ls -l *.deb
-          test "$(ls *.deb | wc -l)" -eq 4
-          sha256sum *.deb > SHA256SUMS
+          for f in ./*~*.deb; do [ -e "$f" ] && mv -- "$f" "${f//\~/.}"; done
+          ls -l -- *.deb
+          test "$(find . -maxdepth 1 -name '*.deb' | wc -l)" -eq 4
+          sha256sum -- *.deb > SHA256SUMS
           cat SHA256SUMS
       - name: Build provenance attestation for the packages
         uses: actions/attest-build-provenance@v2
@@ -297,7 +294,8 @@ jobs:
           DIGEST: ${{ needs.publish.outputs.digest }}
         run: |
           printf '%s\n' "$DIGEST" > image-digest.txt
+          # shellcheck disable=SC2016  # the backticks are Markdown in the release notes, not command substitution
           { cat CHANGELOG.md; printf '\nImage: %s (linux/amd64 and linux/arm64)\nCommit: %s\n' "$DIGEST" "$GITHUB_SHA"
             printf 'SBOMs (SPDX): attached. Verify the build provenance with: gh attestation verify oci://%s --owner %s\n' "$DIGEST" "$GITHUB_REPOSITORY_OWNER"
             printf '\nDebian packages for existing PostgreSQL 17 and 18 servers (PostgreSQL project packages on Debian bookworm; amd64, arm64), each installed with apt and trialled before release: `sudo apt install ./postgresql-17-pg-morlet_<version>_<arch>.deb`, then `CREATE EXTENSION pg_morlet`. Checksums: SHA256SUMS. Verify with: gh attestation verify <file>.deb --owner %s\n' "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
-          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json *.deb SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
+          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json ./*.deb SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
