@@ -514,7 +514,7 @@ client after the read, as the protocol states.
 - Rows become queryable after a refresh (default interval), not at acknowledgement: up to 13.5 s in C-array.
 - CrateDB timestamps have millisecond resolution; at 64 kHz every arm stored the sample index to stay exact,
   as MorletDB does.
-- Server memory peaked at 6.2 GB (C-array) and 9.0–9.2 GB (C-row), with the documented 8 GB heap; MorletDB 167 MiB.
+- Server memory peaked at 6.0–6.1 GiB (C-array) and 8.7–9.0 GiB (C-row), with the documented 8 GB heap; MorletDB 167 MiB.
   This reflects the configuration, not a minimum.
 
 ## Scope
