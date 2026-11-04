@@ -394,3 +394,14 @@ one node, CrateDB Cloud.
 
 **Downloads (to be approved before the stage):** `crate:6.4.6` (arm64 image, 244 MB compressed) and `crate` 2.3.0
 (PyPI, pure Python) into a separate venv.
+
+### B3.4 deviations
+
+1. **C-row D2 r1 interrupted by system sleep; rerun under the stage's own rule.** The Mac entered clamshell
+   sleep at 16:12:16 (`pmset` log) while this load was in its storage, restart and read phases (load started
+   15:57:55; ingestion 738.8 s, against 415–440 s for the other C-row loads, cause unknown); it woke at
+   17:58:55 and the script continued (R1 and R2 maxima 1.9 s and 4.0 s). `caffeinate -i` does not prevent
+   clamshell sleep. Decided at 19:15, before the rerun: the load counts as interrupted and is rerun from a
+   fresh volume ("an interrupted one is rerun from a fresh volume"); the interrupted result is kept in
+   `results/b34/interrupted/` and used for nothing. No other load overlapped a sleep (all others started after
+   17:58:55 or ended before 16:12).
