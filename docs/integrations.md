@@ -10,6 +10,7 @@ Verification levels:
 - **CI:** tested on every pull request.
 - **Release:** tested by the release workflow before an image is published.
 - **Manual:** run by hand on the date given; not repeated automatically.
+- **CI (Akhet):** tested on every pull request of that project, against a published MorletDB release image.
 
 ## Database and search
 
@@ -92,6 +93,20 @@ Verification levels:
   altered duplicate, reordering, a dropped batch, collector downtime and a collector killed mid-stream; every
   stored sample compared with the publisher's signal.
 
+### Akhet edge collector (MQTT, Modbus TCP)
+- **What:** [Akhet](https://github.com/merkhet-io/akhet), a separate project by the same maintainers (Rust, MIT),
+  collects MQTT messages and Modbus TCP holding registers at the machine, commits each one to a local SQLite
+  spool before acknowledging it, and replays the spool into MorletDB later: per-channel recordings on a fixed
+  rate (values read back bit for bit), bounded acquisitions with stable channel roles, context timelines and
+  chunk summaries, over TLS.
+- **Run:** a release binary or container image (`ghcr.io/merkhet-io/akhet`), or from source; its README's
+  "MorletDB sink" section and `docs/deployment.md`.
+- **Scope:** MQTT 3.1.1 (not Sparkplug) and Modbus TCP holding registers; JSON payloads decoded by rules. Process
+  crashes are tested; **power loss and long-duration soak are not yet**. Not a high-rate DAQ.
+- **Verified:** CI (Akhet): its MorletDB integration tests run against the 0.3.5-alpha.1 release image, with TLS.
+  The reference collectors above remain the minimal examples of each protocol; Akhet is the one built for
+  deployment.
+
 ## Analysis and visualization
 
 ### Grafana dashboards
@@ -164,6 +179,7 @@ Checked on 2026-11-02 against each owner's published policy. The website lists a
 | Amazon S3 | no | named only to describe the API ("S3-compatible"), as plain text |
 | OPC UA | no | the OPC Foundation's logo rules were not checked; plain text |
 | MQTT | no | an OASIS standard; named as plain text |
+| Modbus | no | named as plain text |
 | NI, LabVIEW (TDMS) | no | NI grants no permission to display its logos; word marks only for reference, with a notice |
 | ObsPy | no | no logo policy published |
 
@@ -177,6 +193,7 @@ Trademark notices:
   Protocol is a trademark of LF Projects, LLC. Claude is a trademark of Anthropic, PBC.
 - Amazon S3 is a trademark of Amazon.com, Inc. or its affiliates.
 - OPC UA is a trademark of the OPC Foundation.
+- Modbus is a registered trademark of Schneider Electric USA, Inc., licensed to the Modbus Organization, Inc.
 - LabVIEW is a trademark of National Instruments. MorletDB is not affiliated with, endorsed by or sponsored by
   National Instruments. DuckDB is a trademark of the DuckDB Foundation.
 - All other names are the property of their respective owners. MorletDB is not affiliated with, endorsed or
