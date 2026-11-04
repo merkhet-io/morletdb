@@ -189,17 +189,24 @@ const QUERY_BLOCK: usize = 16;
 const MAX_QUERY_MATRIX: usize = 1 << 21;
 
 impl LagQuery {
+    /// Whether [`LagQuery::new`] can prepare a query of `n` values with this `max_lag`, without
+    /// allocating: false when the inputs are invalid or the matrix would be too large.
+    pub fn supported(n: usize, max_lag: usize) -> bool {
+        if n == 0 || max_lag >= n {
+            return false;
+        }
+        let stride = (2 * max_lag + 1).div_ceil(QUERY_BLOCK) * QUERY_BLOCK;
+        n.checked_mul(stride).is_some_and(|v| v <= MAX_QUERY_MATRIX)
+    }
+
     /// None when the inputs are invalid for [`distance`] or the matrix would be too large.
     pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
         let n = q.len();
-        if n == 0 || max_lag >= n {
+        if !Self::supported(n, max_lag) {
             return None;
         }
         let lags = 2 * max_lag + 1;
         let stride = lags.div_ceil(QUERY_BLOCK) * QUERY_BLOCK;
-        if n.checked_mul(stride)? > MAX_QUERY_MATRIX {
-            return None;
-        }
         let mut m = vec![0.0; n * stride];
         for t in 0..n {
             for j in 0..lags {

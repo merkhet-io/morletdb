@@ -118,6 +118,14 @@ IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_samples_overview_wrapper';
 
+CREATE FUNCTION "morlet_envelope_screen_supported"(
+	"envelope_len" INT, /* i32 */
+	"max_lag" INT /* i32 */
+) RETURNS bool /* bool */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_envelope_screen_supported_wrapper';
+
 -- As morlet_append_chunk, with the samples as raw IEEE 754 float64 values, little-endian, 8 bytes each,
 -- instead of a float8[]: a client sends the bytes of an array and the server skips per-element parsing.
 -- The samples go through morlet_append_chunk unchanged: same checks, gaps, retries and conflicts.
@@ -429,7 +437,10 @@ BEGIN
   EXECUTE format('SELECT %s FROM %s c WHERE c.recording_id=$1 AND c.start_sample=$2',relations.samples_expr,relations.chunks)
     INTO previous USING recording_id,start_sample;
   IF previous IS NOT NULL THEN
-    IF previous IS DISTINCT FROM samples THEN RAISE EXCEPTION 'conflicting replay at chunk offset'; END IF;
+    -- Bit for bit: array equality treats +0 and -0 as equal.
+    IF public.morlet_float8_le_bytes(previous) IS DISTINCT FROM public.morlet_float8_le_bytes(samples) THEN
+      RAISE EXCEPTION 'conflicting replay at chunk offset';
+    END IF;
     RETURN (state->>'end')::bigint;
   END IF;
   result:=public.morlet_chunk_step(state,start_sample,samples);
@@ -453,6 +464,137 @@ BEGIN
   GET DIAGNOSTICS updated_rows = ROW_COUNT;
   IF updated_rows<>1 THEN RAISE EXCEPTION 'checkpoint update was not permitted'; END IF;
   RETURN (result->'checkpoint'->>'end')::bigint;
+END $$;
+
+-- Builds envelopes for complete windows on the grid start_sample = k*stride,
+-- resuming after the last stored window of this size. At most max_windows per
+-- call, so long recordings can be built in bounded transactions. Returns the
+-- number of rows written; 0 means the recording is up to date.
+CREATE OR REPLACE FUNCTION public.morlet_build_envelopes(collection regclass,recording_id text,
+  window_size integer DEFAULT 4096,stride integer DEFAULT 2048,max_windows integer DEFAULT 10000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel regclass; recording_end bigint; s bigint; last bigint; written bigint:=0; probes regclass; vschema text;
+  rels record; n integer; hi bigint;
+BEGIN
+  IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) OR stride NOT BETWEEN 1 AND 32768
+    OR max_windows NOT BETWEEN 1 AND 1000000 THEN
+    RAISE EXCEPTION 'window_size must be a power of two in 512..32768, stride 1..32768, max_windows 1..1000000';
+  END IF;
+  rel:=public.morlet_envelope_relation(collection);
+  -- With probe search enabled for this window size, each new envelope's vector row is
+  -- written in the same transaction (morlet_enable_envelope_probes).
+  probes:=public.morlet_envelope_probe_relation(collection,window_size);
+  IF probes IS NOT NULL THEN
+    SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+  END IF;
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  EXECUTE format('SELECT max(start_sample) FROM %s WHERE recording_id=$1 AND window_size=$2',rel)
+    INTO last USING recording_id,window_size;
+  -- The grid starts at 0 and its stride is fixed by the first build: the smallest positive stored start
+  -- is the stride in use. Building on with another stride would report completion without the requested
+  -- windows, or mix two grids, so it is an error.
+  EXECUTE format('SELECT start_sample FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample>0
+    ORDER BY start_sample LIMIT 1',rel) INTO hi USING recording_id,window_size;
+  IF hi IS NOT NULL AND hi<>stride THEN
+    RAISE EXCEPTION 'envelopes of window % for recording % were built with stride %, not %',window_size,recording_id,hi,stride
+      USING HINT='Keep the stride, or delete this recording''s envelopes of this window size and build again.';
+  END IF;
+  s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
+  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  -- Encoded collections: batches of up to 256 windows from chunks decoded once
+  -- (morlet_envelopes_from_chunks); the bytes equal the per-window path below.
+  WHILE rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
+    n:=least(max_windows-written,256,(recording_end-window_size-s)/stride+1);
+    hi:=s+(n-1)::bigint*stride+window_size;
+    EXECUTE format('WITH c AS (SELECT array_agg(c.encoded ORDER BY c.start_sample) enc,
+        array_agg(c.start_sample ORDER BY c.start_sample) st
+        FROM %s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample+c.sample_count>$2)
+      INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$4,$2+(w.k-1)*$5,w.envelope
+      FROM c, unnest(public.morlet_envelopes_from_chunks(c.enc,c.st,$2,$3,$4,$5,$6)) WITH ORDINALITY w(envelope,k)
+      ON CONFLICT DO NOTHING',rels.chunks,rel)
+      USING recording_id,s,hi,window_size,stride,n;
+    -- Probe search may have been enabled by a transaction that committed while this insert waited
+    -- for its lock; re-check so that these windows get their vector rows (no lasting probe_backlog).
+    IF probes IS NULL THEN
+      probes:=public.morlet_envelope_probe_relation(collection,window_size);
+      IF probes IS NOT NULL THEN
+        SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+      END IF;
+    END IF;
+    IF probes IS NOT NULL THEN
+      EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+        FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample BETWEEN $3 AND $4 ON CONFLICT DO NOTHING',probes,vschema,rel)
+        USING recording_id,window_size,s,s+(n-1)::bigint*stride;
+    END IF;
+    written:=written+n;
+    s:=s+n::bigint*stride;
+  END LOOP;
+  -- Legacy float8[] collections: one window at a time.
+  WHILE NOT rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
+    EXECUTE format('INSERT INTO %s(recording_id,window_size,start_sample,envelope)
+      SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
+      FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
+      USING recording_id,window_size,s,collection;
+    -- Probe search may have been enabled by a transaction that committed while this insert waited
+    -- for its lock; re-check so that these windows get their vector rows (no lasting probe_backlog).
+    IF probes IS NULL THEN
+      probes:=public.morlet_envelope_probe_relation(collection,window_size);
+      IF probes IS NOT NULL THEN
+        SELECT e.extnamespace::regnamespace::text INTO vschema FROM pg_extension e WHERE e.extname='vector';
+      END IF;
+    END IF;
+    IF probes IS NOT NULL THEN
+      EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
+        FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample=$3 ON CONFLICT DO NOTHING',probes,vschema,rel)
+        USING recording_id,window_size,s;
+    END IF;
+    written:=written+1;
+    s:=s+stride;
+  END LOOP;
+  RETURN written;
+END $$;
+
+-- Pooled relative spread per simple-v1 value: for every context with at least 3
+-- comparable segments, median(|x - median|)/|median|; then the median over contexts,
+-- floored at spread_floor (default 1%) so near-constant values cannot turn negligible
+-- shifts into large calibrated deviations. NULL where no context qualifies (greatest() ignores
+-- NULL, so the floor applies only to an existing estimate). Population
+-- size is limited by max_candidates.
+CREATE OR REPLACE FUNCTION public.morlet_value_spreads(collection regclass,segment_id bigint,
+  metadata_filter jsonb DEFAULT '{}'::jsonb,exclude_labels text[] DEFAULT '{}'::text[],max_candidates integer DEFAULT 100000,
+  spread_floor float8 DEFAULT 0.01,cutoff_ns numeric DEFAULT NULL)
+RETURNS float8[] LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; pop text; n bigint; spreads float8[];
+BEGIN
+  IF collection IS NULL OR segment_id IS NULL OR metadata_filter IS NULL OR exclude_labels IS NULL
+    OR max_candidates IS NULL OR spread_floor IS NULL THEN
+    RAISE EXCEPTION 'only cutoff_ns may be NULL';
+  END IF;
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  pop:=public.morlet_history_sql(collection,true,cutoff_ns);
+  EXECUTE 'SELECT count(*) FROM ('||pop||') h' INTO n
+    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'spread population exceeds % segments; narrow the metadata filter',max_candidates;
+  END IF;
+  IF NOT (spread_floor>0) THEN RAISE EXCEPTION 'spread_floor must be positive'; END IF;
+  EXECUTE 'WITH pop AS MATERIALIZED ('||pop||'),
+      k AS (SELECT generate_series(1,cardinality(public.morlet_simple_value_names())) AS ord),
+      g AS (SELECT p.context,k.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[k.ord]) AS med,count(*) AS n
+        FROM pop p CROSS JOIN k GROUP BY p.context,k.ord HAVING count(*)>=3),
+      lv AS (SELECT p.context,public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM pop p GROUP BY p.context),
+      r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
+        FROM g JOIN lv ON lv.context=g.context JOIN pop p ON p.context=g.context WHERE abs(g.med)>lv.fl[g.ord]
+        GROUP BY g.context,g.ord,g.med)
+    SELECT array_agg(CASE WHEN m.rel IS NOT NULL THEN greatest(m.rel,$9) END ORDER BY k.ord)
+      FROM k CROSS JOIN LATERAL (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) AS rel FROM r WHERE r.ord=k.ord) m'
+    INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      spread_floor;
+  RETURN spreads;
 END $$;
 
 DROP FUNCTION public.morlet_stream_relations(regclass);
@@ -512,8 +654,10 @@ BEGIN
   -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
   -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
   -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
-  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path).
-  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off';
+  -- returned. SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
+  -- query too large to prepare for screening (window 32768 from lag fraction 0.1, 16384 at 0.5).
+  screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off'
+    AND public.morlet_envelope_screen_supported(cardinality(query_envelope),lag);
   IF NOT screened THEN
     EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id%s
       WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection,

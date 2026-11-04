@@ -75,6 +75,7 @@ class Client:
         self._owns = owns_connection
         _pgnumpy.register(connection)
         self._functions: dict[str, bool] = {}
+        self._encoded: dict[str, bool] = {}
 
     @classmethod
     def connect(cls, conninfo: str = "", **kwargs: Any) -> "Client":
@@ -100,6 +101,18 @@ class Client:
         if signature not in self._functions:
             self._functions[signature] = self._one("SELECT to_regprocedure(%s) IS NOT NULL", (signature,))
         return self._functions[signature]
+
+    def _raw_reads(self, collection: str) -> bool:
+        """Whether raw float64 reads work for this collection: the server has morlet_read_interval_raw
+        (SQL 0.3.3) and the collection stores encoded chunks. Collections created before encoded chunks keep
+        float8[] chunks after an extension upgrade and are read with morlet_read_interval. The storage layout
+        is looked up, not probed, so no failed statement is left in the transaction."""
+        if not self._has("public.morlet_read_interval_raw(regclass,text,bigint,bigint)"):
+            return False
+        if collection not in self._encoded:
+            self._encoded[collection] = bool(self._one(
+                "SELECT encoded FROM morlet_stream_relations(%s::regclass)", (collection,)))
+        return self._encoded[collection]
 
     def _one(self, sql: str, args: tuple = (), **kw: Any) -> Any:
         row = self._execute(sql, args, **kw).fetchone()
@@ -241,7 +254,7 @@ class Client:
         if ref.end_sample > rec.samples:
             raise NotFoundError(f"interval ends at {ref.end_sample}, but {ref.recording_id} has {rec.samples} samples")
         parts = []
-        if self._has("public.morlet_read_interval_raw(regclass,text,bigint,bigint)"):
+        if self._raw_reads(ref.collection):
             for a in range(ref.start_sample, ref.end_sample, RAW_READ_MAX):
                 b = min(a + RAW_READ_MAX, ref.end_sample)
                 raw = self._one("SELECT morlet_read_interval_raw(%s::regclass,%s,%s,%s)",

@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+Fixes from the 0.3.3 review (SQL 0.3.3):
+- Replays compare bits: `morlet_append_chunk` (and `morlet_append_chunk_raw`) acknowledged a replay whose
+  samples differed only in the sign of a zero, because array equality treats -0 and +0 as equal. It now
+  compares the float64 bytes and raises `conflicting replay at chunk offset`. Stored samples were never
+  changed (#152).
+- `morlet_value_spreads` returned the 1% floor where no context qualified, because `greatest()` ignores NULL;
+  the spread now stays NULL there, so comparisons report `no_pooled_spread` and the calibrated score leaves
+  the value out instead of dividing by the floor (#154).
+- `morlet_build_envelopes` with a stride other than the one the recording's windows were built with returned 0
+  ("complete") without building the requested grid, or mixed two grids. It is now an error naming the stride
+  in use (#153).
+- Screened exact search raised "invalid query envelope, max_lag or candidate pool for screening" for queries
+  too large to prepare (window 16384 at lag fraction 0.5; 32768 from 0.1). Those queries now score every
+  eligible window directly, with the same results; `morlet_envelope_screen_supported` reports which path a
+  query takes (#151).
+- Python SDK: `read()` chooses raw float64 reads per collection, so collections that kept float8[] chunks after
+  an extension upgrade are read with `morlet_read_interval` instead of failing (#155).
+
 Search time filters and evidence (SQL 0.3.3):
 - `morlet_search_similar`, `morlet_search_envelope_interval` and `morlet_search_envelope_probes` take
   `time_from`, `time_to` (windows whose span lies in the range) and `before_only` (windows that end before the
