@@ -607,3 +607,26 @@ tiered storage, columnstore writes on ingest.
 
 **Download (to be approved before development):** `timescale/timescaledb:2.31.0-pg17` (linux/arm64, 550 MB
 compressed).
+
+## Amendment B3.8: QuestDB re-measured beside the current MorletDB (FROZEN before any load of the benchmark set)
+
+Added 2026-11-05. The website's QuestDB comparison comes from B3.2, against MorletDB's state at that time, while
+CrateDB, IoTDB, TDengine and TimescaleDB are compared with B3.3. B3.3 ran QuestDB once (D2 r1), not enough for a
+statement. B3.8 measures both systems again in one session so that every comparison uses the same MorletDB.
+Everything common to B3 applies; the harness (`run.py`, `questdb_adapter.py`, `morletdb_adapter.py`) is used
+unchanged.
+
+- **QuestDB 10.1.0** (`questdb/questdb:10.1.0`, still the current release; image already local, no download),
+  its B3.2 configuration unchanged: WAL tables, deduplication, `TIMESTAMP_NS`, `dataframe()` ingestion with
+  `questdb[dataframe]` 6.0.1; Parquet arms (LZ4_RAW after D2 r1, ZSTD after D2 r2) as in B3.2.
+- **MorletDB:** the released image `ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1` (SQL 0.3.3, the code users run),
+  arm `morletdb-033` (B3.3's base configuration: raw float64 appends and reads, pipelining, native statistics,
+  no search features).
+- **Runs:** for each repetition r = 1, 2, 3 and durability D2 then D1: MorletDB, then QuestDB (alternating, so
+  that drift in the machine affects both); storage, reads and analytics on D2 r1 of each system, Parquet arms on
+  QuestDB D2 r1 and r2. `run_b38.sh`; the Mac stays awake with the lid open; an interrupted load is rerun.
+- **Reported:** every B3 measure for both systems, QuestDB's storage both native and as Parquet; statements by
+  B3's rule. The website chart then takes QuestDB's ratios from B3.8 and shows QuestDB's native storage beside
+  the Parquet figure.
+- **Smoke check (not a result):** `run.py subset` on the development set, to confirm the environment, before the
+  first benchmark load.
