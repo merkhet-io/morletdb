@@ -405,3 +405,64 @@ one node, CrateDB Cloud.
    fresh volume ("an interrupted one is rerun from a fresh volume"); the interrupted result is kept in
    `results/b34/interrupted/` and used for nothing. No other load overlapped a sleep (all others started after
    17:58:55 or ended before 16:12).
+
+## Amendment B3.5: Apache IoTDB stage (DRAFT, not frozen; freezes before any load of the benchmark set)
+
+Added 2026-11-04. The stage named in this protocol after QuestDB (CrateDB, B3.4, was inserted before it).
+Everything common to B3 applies (machine, container limits of 8 CPUs and 16 GB, budget of 6 h and 50 GB,
+dataset, manifest, correctness checks, measurements A–D, decision rules, "Not in B3"). MorletDB is not re-run:
+its numbers are B3.3's (`results/b33/`, SQL 0.3.3), compared with IoTDB on the same machine.
+
+**IoTDB** (`apache/iotdb:2.0.11-standalone`, released 2026-09-14; linux/arm64 digest
+`sha256:a04c66a9f5bb72ed93fe9cc1a35160da2e398f75539afb1bd7b99cc0da891e1c`, 357 MB compressed; index
+`sha256:5ace0f3eceff892dd349d02288224c966f3fdeb11d08c4f575b642a110b82338`). Python client `apache-iotdb` 2.0.11
+(PyPI, wheel sha256 `199a329e5b093805…`; requires thrift, numpy, pandas, SQLAlchemy, tzlocal), native RPC
+port 6667, user `root` with the image's default password (container bound to localhost only).
+- Standalone node (ConfigNode and DataNode in one container), image defaults apart from the settings below,
+  passed as lowercase environment variables, which the image writes into `iotdb-system.properties`.
+  Memory: the image's start script sizes the JVM from the container limit; the value used is recorded.
+- **Time:** `timestamp_precision=ns` (set at first start, cannot change later). Every period of the dataset
+  (15,625 ns at 64 kHz, 250,000 ns at 4 kHz, 1 s) is then exact, so IoTDB stores the true time of every sample
+  and the read check covers times as well as values; no sample index is stored.
+- **Model:** IoTDB 2.0's table model (recommended for new applications), one database `b3`, one table per
+  group with `acquisition STRING TAG` and the group's channels as `DOUBLE FIELD` columns, e.g.
+  `b3_high(acquisition STRING TAG, vibration_1 DOUBLE FIELD, phase_current_1 DOUBLE FIELD,
+  phase_current_2 DOUBLE FIELD)`; the time column is implicit.
+- **Arms:**
+  - **I-table** (idiomatic): image defaults, i.e. DOUBLE encoded with GORILLA (`default_double_encoding`)
+    and compressed with LZ4 (`compressor`).
+  - **I-table-zstd**: the same with `compressor=ZSTD`, IoTDB's documented higher-ratio compressor (as
+    CrateDB's `best_compression` arm).
+  - Whether the table model honours a per-column encoding (for example CHIMP) is checked in development; an
+    arm is added only if it does, and only before the freeze.
+- Write path: `TableSession.insert(NumpyTablet)` with big-endian `int64` timestamps and `float64` columns, one
+  tablet per acquisition and table, at most 100,000 rows per tablet (size fixed in development, before the
+  freeze). Conversion to tablets is timed and reported apart, as for QuestDB and CrateDB.
+- **Durability:** D1 `wal_mode=SYNC` (fsync before acknowledgement); D2 `wal_mode=ASYNC`, the image default
+  (fsync within `wal_async_mode_fsync_delay_in_ms`, 1,000 ms). "Time until queryable" is measured after the
+  last acknowledgement, as for the other systems.
+- **Retry semantics:** IoTDB has no primary-key conflict check; a second write of the same time and tag
+  overwrites the value. Loading an acquisition twice is checked for one copy; an altered retry is expected
+  to replace the stored value silently, reported as a semantic difference (MorletDB refuses it).
+- **Settled state for storage (A):** `FLUSH`, then wait until the data directory has not changed for 60 s
+  (background compaction idle), then the server stopped cleanly; sizes from the volume by file: TsFiles
+  (sequence and unsequence) per database, WAL, ConfigNode and system files.
+- **Reads (C):** `SELECT time, <channels> FROM b3_<group> WHERE acquisition = ? AND time >= ? AND time < ?
+  ORDER BY time`, times from the manifest; the returned times must equal start + n × period exactly.
+  **Analytics (D):** `min`, `max`, `avg` and `sqrt(avg(x * x))` in SQL if the table model supports the
+  expression (checked in development), otherwise RMS computed in the client and reported as such.
+
+**Runs (fixed at the freeze):** each arm three fresh loads per durability class (D1 r1–r3, D2 r1–r3); storage,
+reads (R1–R5) and analytics on D2 r1. Order: I-table, I-table-zstd (`run_b35.sh`; a completed load is not
+repeated, an interrupted one, including one that overlaps a system sleep, is rerun from a fresh volume).
+Client: `.venv-b3i` (Python 3.13, the B3 requirements and `apache-iotdb` 2.0.11). The Mac stays awake with the
+lid open for the whole run (`caffeinate -i` does not prevent clamshell sleep; B3.4 deviation 1).
+
+**Development (to do, not results):** on B3's development set (`B3_SET=dev`, `results/dev/b35/`): the
+3-acquisition subset per arm (bit-exact values and times, identical and altered retries), one full load per
+arm, the tablet size, the analytics expression, and the per-column encoding question above.
+
+**Not in this stage:** IoTDB's tree model, clusters, the AINode, IoTDB's own client tools.
+
+**Downloads (to be approved before development):** `apache/iotdb:2.0.11-standalone` (linux/arm64, 357 MB
+compressed) and `apache-iotdb` 2.0.11 with its dependencies (PyPI) into a separate venv.
