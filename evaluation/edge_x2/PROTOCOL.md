@@ -104,3 +104,8 @@ What the smoke runs changed:
    separately ("fan" and "mixed"); the medians use the three fanless runs of each arm: searchable rounds 3–5,
    raw rounds 2–4. `run_x2_extra.sh` adds searchable 4, raw 4 and searchable 5 after `run_x2.sh`, with the
    same gate. Pass criteria apply to every run, including the excluded ones.
+2. **Cool-down gate unreachable without a fan; threshold raised from 55 to 60 °C.** The gate was set with the
+   fan running. Fanless and idle, the board stays at about 58 °C, so after round 2's searchable run (ended
+   00:42) the gate never opened; nothing ran until 06:30. Both scripts were stopped and the remaining runs
+   (raw 2, searchable 3, raw 3, searchable 4, raw 4, searchable 5) started in that order with the gate at
+   60 °C, just under the soft temperature limit, so every run still starts unthrottled (`run_x2_rest.sh`).
