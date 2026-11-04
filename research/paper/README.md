@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.17, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.18, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,15 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.18 (two more databases; no new retrieval measurement)
+
+- **CrateDB 6.4 (B3.4) and Apache IoTDB 2.0 (B3.5)** on the B3 data and machine:
+  - Storage: 10.8× and 4.0× MorletDB's space.
+  - Ingestion from one connection: about 15× and 2.5× slower.
+  - Interval reads: 8–13× and 4.4–13× slower.
+  - An altered resend is silently ignored (CrateDB) or silently replaces the stored value (IoTDB).
+  - Where it appears: Section 4, a new supplement table, the study overview and the ledger.
 
 ## What changed in 0.17 (merged evidence added; no new retrieval measurement)
 
