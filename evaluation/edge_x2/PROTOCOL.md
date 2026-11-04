@@ -94,3 +94,13 @@ What the smoke runs changed:
 - The first smoke run wrote `x1_e512_r1.json` (X1 naming); it is stored here as `x2_e512_r1.json`.
 - The cooling decision: the fan available is battery powered and would not last three hours, so the
   benchmark runs without active cooling, the same condition for every run.
+
+## Deviations
+
+1. **Round 1 ran with the desk fan on; the fan was switched off during round 2.** The fan from the second smoke
+   run was still running for round 1 (both arms at ≤ 41 °C and 1.4 GHz), and was switched off around the start
+   of round 2's searchable run (started 00:11; the board reached 60 °C at 00:18). Decided at 00:20, before any
+   round-2 result was read: round 1 and round 2's searchable run are excluded from the medians and reported
+   separately ("fan" and "mixed"); the medians use the three fanless runs of each arm: searchable rounds 3–5,
+   raw rounds 2–4. `run_x2_extra.sh` adds searchable 4, raw 4 and searchable 5 after `run_x2.sh`, with the
+   same gate. Pass criteria apply to every run, including the excluded ones.
