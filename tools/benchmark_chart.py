@@ -4,7 +4,8 @@
 Ratios come from each stage's own like-for-like comparison in evaluation/tsdb_b3/RESULTS.md (B3.2 for QuestDB, whose
 MorletDB arm was B3.2's; B3.4-B3.6 against MorletDB's B3.3 numbers), so no two sessions are mixed inside one ratio.
 Storage: the other system's compact form over MorletDB's (QuestDB Parquet zstd 9 over sample data; CrateDB, IoTDB,
-TDengine data on disk over MorletDB's database). Speed: the other system's time over MorletDB's (p50), or MorletDB's
+TDengine data on disk over MorletDB's database). Memory: median peak server memory while ingesting, over the loads
+of the system's lowest-memory layout, over MorletDB's median in the same stage. Speed: the other system's time over MorletDB's (p50), or MorletDB's
 throughput over the other's. > 1 = MorletDB better.
 
   python3 tools/benchmark_chart.py           # rewrite the chart between its markers in docs/index.html
@@ -24,8 +25,10 @@ MEASURES = [
     ("Read 4,096 samples", "short", [(1.16, 0.65), (7.21, 0.615), (7.79, 0.615), (5.352, 0.615)], "ms p50"),
     ("Read 128,000 samples", "long", [(7.71, 7.98), (86.57, 6.629), (46.01, 6.629), (70.49, 6.629)], "ms p50"),
     ("Interval statistics", "stats", [(4.02, 2.70), (3.871, 2.514), (7.449, 2.514), (4.963, 2.514)], "ms p50"),
+    # median peak server memory over a layout's loads, lowest-memory layout; JVM heaps follow their documented config
+    ("Server memory", "memory", [(2290.7, 168.2), (6208.5, 167.5), (5916.6, 167.5), (1027.5, 167.5)], "MiB"),
 ]
-LO, HI = 0.4, 20.0
+LO, HI = 0.4, 50.0
 X0, X1 = 230, 728
 LANE, GAP = 12, 22
 
@@ -62,7 +65,7 @@ def svg():
         x += 15 + 8 * len(name) + 22
     # axis and grid
     y_axis = h - 34
-    for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×")]:
+    for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×"), (50, "50×")]:
         xx = xpos(t)
         w = "1.5" if t == 1 else "1"
         col = ink if t == 1 else line
