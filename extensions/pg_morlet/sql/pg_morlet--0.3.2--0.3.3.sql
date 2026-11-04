@@ -409,6 +409,42 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Serializes context writes (additions, revisions, segment builds) per recording, and additions per batch
+-- ID, with transaction-scoped advisory locks: batch first, then recordings in sorted order. Under READ
+-- COMMITTED each later statement sees what a writer that held the lock committed, so overlap and retry
+-- checks cannot both pass for concurrent transactions. No table privileges are needed. (Under REPEATABLE
+-- READ the transaction snapshot predates the lock; use READ COMMITTED for concurrent context writers.)
+CREATE FUNCTION public.morlet_lock_context(collection regclass,batch_id text,recording_ids text[])
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE r text;
+BEGIN
+  IF batch_id IS NOT NULL THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-batch/'||collection::oid||'/'||batch_id,0));
+  END IF;
+  FOR r IN SELECT DISTINCT x FROM unnest(recording_ids) x WHERE x IS NOT NULL ORDER BY x LOOP
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-rec/'||collection::oid||'/'||r,0));
+  END LOOP;
+END $$;
+
+-- Marks stale the segments of a recording that context on `key` in [start_sample, end_sample) can change:
+-- segments whose spec uses the key (as a segment or occurrence key) and whose piece, before trimming,
+-- overlaps the interval. A new or revised interval can split a segment, change its context, or change its
+-- occurrence; morlet_build_context_segments then replaces it (its values are deleted with it).
+CREATE FUNCTION public.morlet_invalidate_context_segments(collection regclass,recording_id text,key text,
+  start_sample bigint,end_sample bigint)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('UPDATE %s s SET stale=true WHERE s.recording_id=$1 AND NOT s.stale
+      AND (s.spec->''keys'' ? $2 OR s.spec->''occurrence_keys'' ? $2)
+      AND s.start_sample-coalesce((s.spec->>''trim_samples'')::bigint,0)<$4
+      AND $3<s.end_sample+coalesce((s.spec->>''trim_samples'')::bigint,0)',rel.segments)
+    USING recording_id,key,start_sample,end_sample;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.morlet_append_chunk(collection regclass,recording_id text,start_sample bigint,samples float8[])
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE state jsonb; quantum float8:=1; previous float8[]; result jsonb; relations record; updated_rows bigint;
@@ -453,6 +489,128 @@ BEGIN
   GET DIAGNOSTICS updated_rows = ROW_COUNT;
   IF updated_rows<>1 THEN RAISE EXCEPTION 'checkpoint update was not permitted'; END IF;
   RETURN (result->'checkpoint'->>'end')::bigint;
+END $$;
+
+-- rows: JSON array of {"recording_id","key","value","start_sample"[,"end_sample"]};
+-- rows without end_sample are events. An identical retry of batch_id returns 0;
+-- a different batch under the same id is an error.
+CREATE OR REPLACE FUNCTION public.morlet_add_context(collection regclass,batch_id text,rows jsonb)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; existing jsonb; incoming jsonb; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF jsonb_typeof(rows)<>'array' OR jsonb_array_length(rows)=0 OR batch_id='' THEN
+    RAISE EXCEPTION 'context rows must be a non-empty JSON array and batch_id non-empty';
+  END IF;
+  SELECT jsonb_agg(o ORDER BY o::text) INTO incoming FROM (SELECT jsonb_build_object('recording_id',r->>'recording_id',
+      'key',r->>'key','value',r->'value','start_sample',(r->>'start_sample')::bigint,
+      'end_sample',(r->>'end_sample')::bigint) AS o FROM jsonb_array_elements(rows) r) x;
+  -- Concurrent additions of the same batch, or to the same recordings, run one after another.
+  PERFORM public.morlet_lock_context(collection,batch_id,
+    ARRAY(SELECT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
+  EXECUTE format('SELECT jsonb_agg(o ORDER BY o::text) FROM (SELECT jsonb_build_object(''recording_id'',recording_id,
+      ''key'',key,''value'',value,''start_sample'',start_sample,''end_sample'',end_sample) AS o
+    FROM %s WHERE batch_id=$1) x',rel.ctx) INTO existing USING batch_id;
+  IF existing IS NOT NULL THEN
+    IF existing=incoming THEN RETURN 0; END IF;
+    RAISE EXCEPTION 'context batch % already exists with different rows',batch_id;
+  END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(incoming) r WHERE r->>'recording_id' IS NULL OR r->>'key' IS NULL
+      OR r->'value' IS NULL OR r->>'start_sample' IS NULL) THEN
+    RAISE EXCEPTION 'every context row needs recording_id, key, value and start_sample';
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,kind,key,value,start_sample,end_sample,batch_id)
+    SELECT r->>''recording_id'',CASE WHEN r->>''end_sample'' IS NULL THEN ''event'' ELSE ''interval'' END,
+      r->>''key'',r->''value'',(r->>''start_sample'')::bigint,(r->>''end_sample'')::bigint,$2
+    FROM jsonb_array_elements($1) r',rel.ctx) USING incoming,batch_id;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  PERFORM public.morlet_check_context_overlaps(collection,
+    ARRAY(SELECT DISTINCT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
+  -- Late context changes segments built before it (a new occurrence, a split): mark them stale.
+  PERFORM public.morlet_invalidate_context_segments(collection,r->>'recording_id',r->>'key',
+      (r->>'start_sample')::bigint,(r->>'end_sample')::bigint)
+    FROM jsonb_array_elements(incoming) r WHERE r->>'end_sample' IS NOT NULL;
+  RETURN n;
+END $$;
+
+-- Appends a revision of an active row (changes may set value, start_sample,
+-- end_sample) or a retraction. Segments built from the old row become stale, and so do segments the
+-- revised interval overlaps (morlet_invalidate_context_segments).
+CREATE OR REPLACE FUNCTION public.morlet_revise_context(collection regclass,ctx_id bigint,changes jsonb DEFAULT '{}'::jsonb,
+  retract boolean DEFAULT false)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; old record; new_id bigint; rid text; changed record;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('SELECT recording_id FROM %s WHERE ctx_id=$1',rel.ctx) INTO rid USING ctx_id;
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[rid]);
+  EXECUTE format('SELECT * FROM %1$s x WHERE x.ctx_id=$1 AND NOT x.retracted
+    AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id) FOR UPDATE',rel.ctx) INTO old USING ctx_id;
+  IF old.ctx_id IS NULL THEN RAISE EXCEPTION 'context row % is not active or not visible',ctx_id; END IF;
+  IF jsonb_typeof(changes)<>'object' OR EXISTS(SELECT 1 FROM jsonb_object_keys(changes) k
+      WHERE k NOT IN ('value','start_sample','end_sample')) THEN
+    RAISE EXCEPTION 'changes may only set value, start_sample and end_sample';
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,kind,key,value,start_sample,end_sample,batch_id,supersedes,retracted)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING ctx_id',rel.ctx) INTO new_id
+    USING old.recording_id,old.kind,old.key,coalesce(changes->'value',old.value),
+      coalesce((changes->>'start_sample')::bigint,old.start_sample),
+      CASE WHEN changes ? 'end_sample' THEN (changes->>'end_sample')::bigint ELSE old.end_sample END,
+      'revision:'||old.ctx_id,old.ctx_id,retract;
+  PERFORM public.morlet_check_context_overlaps(collection,ARRAY[old.recording_id]);
+  EXECUTE format('UPDATE %s SET stale=true WHERE $1=ANY(ctx_ids)',rel.segments) USING old.ctx_id;
+  -- The revised interval can also reach segments the old row did not cover.
+  IF old.kind='interval' THEN
+    EXECUTE format('SELECT start_sample,end_sample FROM %s WHERE ctx_id=$1',rel.ctx) INTO changed USING new_id;
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,old.start_sample,old.end_sample);
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,changed.start_sample,changed.end_sample);
+  END IF;
+  RETURN new_id;
+END $$;
+
+-- One segment per maximal intersection of the active intervals of all `keys`,
+-- within committed samples. occurrence holds the values of `occurrence_keys`
+-- intervals that cover the whole segment (for example the part). Stale segments
+-- of this recording and spec are replaced (context added or revised later marks the segments it can
+-- change as stale). Returns the number of new segments.
+CREATE OR REPLACE FUNCTION public.morlet_build_context_segments(collection regclass,recording_id text,keys text[],
+  occurrence_keys text[] DEFAULT '{}'::text[],min_samples integer DEFAULT 1,trim_samples integer DEFAULT 0)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; recording_end bigint; spec jsonb; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF cardinality(keys)=0 OR min_samples<1 OR trim_samples<0 OR keys && occurrence_keys THEN
+    RAISE EXCEPTION 'keys must be non-empty, disjoint from occurrence_keys, min_samples >= 1 and trim_samples >= 0';
+  END IF;
+  keys:=ARRAY(SELECT DISTINCT k FROM unnest(keys) k ORDER BY k);
+  occurrence_keys:=ARRAY(SELECT DISTINCT k FROM unnest(occurrence_keys) k ORDER BY k);
+  -- Builds wait for context writes to this recording (and the reverse), so a build sees either all or
+  -- none of a concurrent addition and its invalidations.
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[recording_id]);
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO recording_end USING recording_id;
+  IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  spec:=jsonb_build_object('version','ctx-seg-v1','keys',to_jsonb(keys),'occurrence_keys',to_jsonb(occurrence_keys),
+    'min_samples',min_samples);
+  -- Trimmed segments drop trim_samples at each end (uncertain edges); the spec records it.
+  IF trim_samples>0 THEN spec:=spec||jsonb_build_object('trim_samples',trim_samples); END IF;
+  EXECUTE format('DELETE FROM %s WHERE recording_id=$1 AND spec=$2 AND stale',rel.segments) USING recording_id,spec;
+  EXECUTE format('WITH act AS (SELECT * FROM %1$s x WHERE x.recording_id=$1 AND x.kind=''interval'' AND NOT x.retracted
+        AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id)),
+      pts AS (SELECT DISTINCT p FROM act, LATERAL (VALUES (act.start_sample),(act.end_sample)) v(p) WHERE act.key=ANY($2)),
+      pieces AS (SELECT p AS a,lead(p) OVER (ORDER BY p) AS b FROM pts),
+      cov AS (SELECT pc.a,pc.b,array_agg(act.ctx_id ORDER BY act.key) AS ids,jsonb_object_agg(act.key,act.value) AS ctx,
+          count(*) AS n FROM pieces pc JOIN act ON act.key=ANY($2) AND act.start_sample<=pc.a AND act.end_sample>=pc.b
+        WHERE pc.b IS NOT NULL GROUP BY pc.a,pc.b)
+    INSERT INTO %2$s(recording_id,start_sample,end_sample,context,occurrence,ctx_ids,spec)
+    SELECT $1,cov.a+$7,cov.b-$7,cov.ctx,coalesce(o.occ,''{}''::jsonb),cov.ids||coalesce(o.ids,''{}''::bigint[]),$3
+    FROM cov LEFT JOIN LATERAL (SELECT jsonb_object_agg(act.key,act.value) AS occ,array_agg(act.ctx_id ORDER BY act.key) AS ids
+        FROM act WHERE act.key=ANY($4) AND act.start_sample<=cov.a AND act.end_sample>=cov.b) o ON true
+    WHERE cov.n=cardinality($2) AND cov.b<=$5 AND cov.b-cov.a-2*$7>=$6
+    ON CONFLICT DO NOTHING',rel.ctx,rel.segments)
+    USING recording_id,keys,spec,occurrence_keys,recording_end,min_samples,trim_samples;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
 END $$;
 
 DROP FUNCTION public.morlet_stream_relations(regclass);

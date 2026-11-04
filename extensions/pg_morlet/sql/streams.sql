@@ -1282,6 +1282,42 @@ BEGIN
   RETURN NEXT;
 END $$;
 
+-- Serializes context writes (additions, revisions, segment builds) per recording, and additions per batch
+-- ID, with transaction-scoped advisory locks: batch first, then recordings in sorted order. Under READ
+-- COMMITTED each later statement sees what a writer that held the lock committed, so overlap and retry
+-- checks cannot both pass for concurrent transactions. No table privileges are needed. (Under REPEATABLE
+-- READ the transaction snapshot predates the lock; use READ COMMITTED for concurrent context writers.)
+CREATE FUNCTION public.morlet_lock_context(collection regclass,batch_id text,recording_ids text[])
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE r text;
+BEGIN
+  IF batch_id IS NOT NULL THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-batch/'||collection::oid||'/'||batch_id,0));
+  END IF;
+  FOR r IN SELECT DISTINCT x FROM unnest(recording_ids) x WHERE x IS NOT NULL ORDER BY x LOOP
+    PERFORM pg_advisory_xact_lock(hashtextextended('morlet-ctx-rec/'||collection::oid||'/'||r,0));
+  END LOOP;
+END $$;
+
+-- Marks stale the segments of a recording that context on `key` in [start_sample, end_sample) can change:
+-- segments whose spec uses the key (as a segment or occurrence key) and whose piece, before trimming,
+-- overlaps the interval. A new or revised interval can split a segment, change its context, or change its
+-- occurrence; morlet_build_context_segments then replaces it (its values are deleted with it).
+CREATE FUNCTION public.morlet_invalidate_context_segments(collection regclass,recording_id text,key text,
+  start_sample bigint,end_sample bigint)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; n bigint;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('UPDATE %s s SET stale=true WHERE s.recording_id=$1 AND NOT s.stale
+      AND (s.spec->''keys'' ? $2 OR s.spec->''occurrence_keys'' ? $2)
+      AND s.start_sample-coalesce((s.spec->>''trim_samples'')::bigint,0)<$4
+      AND $3<s.end_sample+coalesce((s.spec->>''trim_samples'')::bigint,0)',rel.segments)
+    USING recording_id,key,start_sample,end_sample;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $$;
+
 -- Rejects overlapping active intervals of one key in one recording. Active rows
 -- are neither retracted nor superseded by a later revision.
 CREATE FUNCTION public.morlet_check_context_overlaps(collection regclass,recording_ids text[])
@@ -1315,6 +1351,9 @@ BEGIN
   SELECT jsonb_agg(o ORDER BY o::text) INTO incoming FROM (SELECT jsonb_build_object('recording_id',r->>'recording_id',
       'key',r->>'key','value',r->'value','start_sample',(r->>'start_sample')::bigint,
       'end_sample',(r->>'end_sample')::bigint) AS o FROM jsonb_array_elements(rows) r) x;
+  -- Concurrent additions of the same batch, or to the same recordings, run one after another.
+  PERFORM public.morlet_lock_context(collection,batch_id,
+    ARRAY(SELECT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
   EXECUTE format('SELECT jsonb_agg(o ORDER BY o::text) FROM (SELECT jsonb_build_object(''recording_id'',recording_id,
       ''key'',key,''value'',value,''start_sample'',start_sample,''end_sample'',end_sample) AS o
     FROM %s WHERE batch_id=$1) x',rel.ctx) INTO existing USING batch_id;
@@ -1333,17 +1372,24 @@ BEGIN
   GET DIAGNOSTICS n = ROW_COUNT;
   PERFORM public.morlet_check_context_overlaps(collection,
     ARRAY(SELECT DISTINCT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
+  -- Late context changes segments built before it (a new occurrence, a split): mark them stale.
+  PERFORM public.morlet_invalidate_context_segments(collection,r->>'recording_id',r->>'key',
+      (r->>'start_sample')::bigint,(r->>'end_sample')::bigint)
+    FROM jsonb_array_elements(incoming) r WHERE r->>'end_sample' IS NOT NULL;
   RETURN n;
 END $$;
 
 -- Appends a revision of an active row (changes may set value, start_sample,
--- end_sample) or a retraction. Segments built from the old row become stale.
+-- end_sample) or a retraction. Segments built from the old row become stale, and so do segments the
+-- revised interval overlaps (morlet_invalidate_context_segments).
 CREATE FUNCTION public.morlet_revise_context(collection regclass,ctx_id bigint,changes jsonb DEFAULT '{}'::jsonb,
   retract boolean DEFAULT false)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record; old record; new_id bigint;
+DECLARE rel record; old record; new_id bigint; rid text; changed record;
 BEGIN
   SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  EXECUTE format('SELECT recording_id FROM %s WHERE ctx_id=$1',rel.ctx) INTO rid USING ctx_id;
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[rid]);
   EXECUTE format('SELECT * FROM %1$s x WHERE x.ctx_id=$1 AND NOT x.retracted
     AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.ctx_id) FOR UPDATE',rel.ctx) INTO old USING ctx_id;
   IF old.ctx_id IS NULL THEN RAISE EXCEPTION 'context row % is not active or not visible',ctx_id; END IF;
@@ -1359,13 +1405,20 @@ BEGIN
       'revision:'||old.ctx_id,old.ctx_id,retract;
   PERFORM public.morlet_check_context_overlaps(collection,ARRAY[old.recording_id]);
   EXECUTE format('UPDATE %s SET stale=true WHERE $1=ANY(ctx_ids)',rel.segments) USING old.ctx_id;
+  -- The revised interval can also reach segments the old row did not cover.
+  IF old.kind='interval' THEN
+    EXECUTE format('SELECT start_sample,end_sample FROM %s WHERE ctx_id=$1',rel.ctx) INTO changed USING new_id;
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,old.start_sample,old.end_sample);
+    PERFORM public.morlet_invalidate_context_segments(collection,old.recording_id,old.key,changed.start_sample,changed.end_sample);
+  END IF;
   RETURN new_id;
 END $$;
 
 -- One segment per maximal intersection of the active intervals of all `keys`,
 -- within committed samples. occurrence holds the values of `occurrence_keys`
 -- intervals that cover the whole segment (for example the part). Stale segments
--- of this recording and spec are replaced. Returns the number of new segments.
+-- of this recording and spec are replaced (context added or revised later marks the segments it can
+-- change as stale). Returns the number of new segments.
 CREATE FUNCTION public.morlet_build_context_segments(collection regclass,recording_id text,keys text[],
   occurrence_keys text[] DEFAULT '{}'::text[],min_samples integer DEFAULT 1,trim_samples integer DEFAULT 0)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -1377,6 +1430,9 @@ BEGIN
   END IF;
   keys:=ARRAY(SELECT DISTINCT k FROM unnest(keys) k ORDER BY k);
   occurrence_keys:=ARRAY(SELECT DISTINCT k FROM unnest(occurrence_keys) k ORDER BY k);
+  -- Builds wait for context writes to this recording (and the reverse), so a build sees either all or
+  -- none of a concurrent addition and its invalidations.
+  PERFORM public.morlet_lock_context(collection,NULL,ARRAY[recording_id]);
   EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
     INTO recording_end USING recording_id;
   IF recording_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;

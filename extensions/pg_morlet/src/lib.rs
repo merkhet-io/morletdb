@@ -1915,6 +1915,63 @@ END $$"#).unwrap();
         assert_eq!(Spi::get_one::<String>("SELECT string_agg(start_sample||'-'||end_sample,',' ORDER BY start_sample) FROM mill_ctx_segments").unwrap().unwrap(), "0-10000,10000-19000,20000-30000");
     }
 
+    #[pg_test]
+    fn late_context_invalidates_the_segments_it_changes() {
+        // #150: context added or revised after a build marks the segments it can change as stale; the next
+        // build replaces them. Context on keys the spec does not use leaves segments alone.
+        Spi::run(r#"
+            SELECT morlet_create_stream_collection('public','late');
+            SELECT morlet_enable_context('late');
+            SELECT morlet_start_recording('late',r,1000,'x','g') FROM unnest(ARRAY['r','s']) r;
+            SELECT morlet_append_chunk('late',r,0,ARRAY(SELECT sin(i/5.0) FROM generate_series(0,8191) i)) FROM unnest(ARRAY['r','s']) r;
+            SELECT morlet_add_context('late','b1','[{"recording_id":"r","key":"state","value":"cut","start_sample":0,"end_sample":8192}]');
+            SELECT morlet_build_context_segments('late','r',ARRAY['state'],ARRAY['part']);
+            SELECT morlet_build_context_values('late','r');
+            SELECT morlet_add_context('late','b2','[{"recording_id":"r","key":"part","value":"P1","start_sample":0,"end_sample":8192}]');
+        "#).unwrap();
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT stale FROM late_ctx_segments WHERE recording_id='r'")
+                .unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT morlet_build_context_segments('late','r',ARRAY['state'],ARRAY['part'])"
+            )
+            .unwrap(),
+            Some(1)
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT occurrence::text||':'||stale||':'||cardinality(ctx_ids) FROM late_ctx_segments WHERE recording_id='r'").unwrap().unwrap(), r#"{"part": "P1"}:false:2"#);
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM late_ctx_values").unwrap(),
+            Some(0)
+        ); // deleted with the old segment
+           // A revision that extends an occurrence reaches a segment the old row did not cover.
+        Spi::run(r#"
+            SELECT morlet_add_context('late','b3','[{"recording_id":"s","key":"state","value":"cut","start_sample":0,"end_sample":4096},
+              {"recording_id":"s","key":"state","value":"air","start_sample":4096,"end_sample":8192},
+              {"recording_id":"s","key":"part","value":"P1","start_sample":0,"end_sample":4096}]');
+            SELECT morlet_build_context_segments('late','s',ARRAY['state'],ARRAY['part']);
+            SELECT morlet_revise_context('late',(SELECT ctx_id FROM late_ctx WHERE batch_id='b3' AND key='part'),'{"end_sample":8192}');
+        "#).unwrap();
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FILTER (WHERE stale) FROM late_ctx_segments WHERE recording_id='s'").unwrap(), Some(2));
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT morlet_build_context_segments('late','s',ARRAY['state'],ARRAY['part'])"
+            )
+            .unwrap(),
+            Some(2)
+        );
+        assert_eq!(Spi::get_one::<String>("SELECT string_agg(occurrence::text,',' ORDER BY start_sample) FROM late_ctx_segments WHERE recording_id='s'").unwrap().unwrap(), r#"{"part": "P1"},{"part": "P1"}"#);
+        // A key outside the spec changes nothing.
+        Spi::run(r#"SELECT morlet_add_context('late','b4','[{"recording_id":"s","key":"tool","value":7,"start_sample":0,"end_sample":8192}]')"#).unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FILTER (WHERE stale) FROM late_ctx_segments")
+                .unwrap(),
+            Some(0)
+        );
+    }
+
     fn cal_fixture() {
         // Blocks A (amplitude ~100) and B (~10), parts 1..6 each with small variation; part 6
         // of block A has amplitude 160.
