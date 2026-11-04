@@ -105,7 +105,17 @@ Claude finds when the failing bearing first changed and whether the others show 
 Full setup and query examples: [installation and query guide](docs/installation-and-queries.md).
 Source builds use Rust 1.91.1 and pgrx 0.16.1.
 
-**Try it in a container** (builds a PostgreSQL 17 preview for your machine, amd64 or arm64; imports
+**Run the release image** (prebuilt: PostgreSQL 17 with pg_morlet, Linux amd64 and arm64, with SBOM and
+build provenance; no pgvector, so no probe search; choose your own password):
+
+```sh
+docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
+  ghcr.io/merkhet-io/morletdb:0.3.4-alpha.1
+docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
+```
+
+**Try the walkthrough** (builds a PostgreSQL 17 preview for your machine, amd64 or arm64; imports
 synthetic data, finds a known interval and reconstructs its matches):
 
 ```sh
