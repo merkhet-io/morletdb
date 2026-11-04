@@ -1,0 +1,2226 @@
+{
+ "set": "confirm",
+ "started": "2026-11-04T09:25:55",
+ "pcodec": "1.0.4",
+ "clickhouse_image": "clickhouse/clickhouse-server:26.10",
+ "clickhouse_image_id": "sha256:739e099abd1157390960a59e4532d21781d8fde57e6e4151cb920ea02c30b1ce",
+ "inputs": {
+  "cx": {
+   "kind": "waveform",
+   "samples": 4194304,
+   "sha256": "6a5b66761bdf6580f98a0ddcd792c2efcb2d7d0fee434a98ddb58cddf6a9be98",
+   "arms": {
+    "M-auto": {
+     "bytes": 2417280,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 38.0,
+     "decode_msamples_s": 131.7,
+     "bits": 4.6106
+    },
+    "M-decl": {
+     "bytes": 2417280,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 38.4,
+     "decode_msamples_s": 131.3,
+     "bits": 4.6106
+    },
+    "PCO": {
+     "bytes": 2742599,
+     "exact": true,
+     "encode_msamples_s": 52.76938218007845,
+     "decode_msamples_s": 267.8404985862651,
+     "bits": 5.2311
+    },
+    "PQ-ALP": {
+     "bytes": 4871648,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 142.0979096791679,
+     "decode_msamples_s": 504.123076923077,
+     "bits": 9.2919
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 4868037,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 66.30576853154592,
+     "decode_msamples_s": 632.3389115030906,
+     "bits": 9.285
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 3827931,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 21.832711297114688,
+     "decode_msamples_s": 144.79594020782272,
+     "bits": 7.3012
+    },
+    "CH-ALP": {
+     "bytes": 4855040,
+     "exact": true,
+     "bits": 9.2603
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 4870912,
+     "exact": true,
+     "bits": 9.2905
+    },
+    "CH-PCO": {
+     "bytes": 2794087,
+     "exact": true,
+     "bits": 5.3293
+    },
+    "CH-zstd9": {
+     "bytes": 5440367,
+     "exact": true,
+     "bits": 10.3767
+    }
+   }
+  },
+  "ims": {
+   "kind": "waveform",
+   "samples": 4194304,
+   "sha256": "212d3e1d9d53573a282f72b1c04f429023f80376e267a81993693a5aa3ea6cd2",
+   "arms": {
+    "M-auto": {
+     "bytes": 4618374,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 17.9,
+     "decode_msamples_s": 122.0,
+     "bits": 8.8088
+    },
+    "M-decl": {
+     "bytes": 4618374,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 26.7,
+     "decode_msamples_s": 130.9,
+     "bits": 8.8088
+    },
+    "PCO": {
+     "bytes": 4257516,
+     "exact": true,
+     "encode_msamples_s": 31.670999952763072,
+     "decode_msamples_s": 207.15468509841818,
+     "bits": 8.1206
+    },
+    "PQ-ALP": {
+     "bytes": 5473811,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 133.44057011962332,
+     "decode_msamples_s": 538.2833675564681,
+     "bits": 10.4405
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 5310000,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 63.90541343531456,
+     "decode_msamples_s": 343.76723219408245,
+     "bits": 10.128
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 26113546,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 12.45594851676858,
+     "decode_msamples_s": 94.6475008462146,
+     "bits": 49.8076
+    },
+    "CH-ALP": {
+     "bytes": 5462240,
+     "exact": true,
+     "bits": 10.4184
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 5358770,
+     "exact": true,
+     "bits": 10.221
+    },
+    "CH-PCO": {
+     "bytes": 4819322,
+     "exact": true,
+     "bits": 9.1921
+    },
+    "CH-zstd9": {
+     "bytes": 7294239,
+     "exact": true,
+     "bits": 13.9127
+    }
+   }
+  },
+  "pad-c": {
+   "kind": "waveform",
+   "samples": 4194304,
+   "sha256": "e7e1bad4d60ddac3259c1b2ccf7d7c1edfb093360b7749a04815c81553bee438",
+   "arms": {
+    "M-auto": {
+     "bytes": 4132933,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 24.0,
+     "decode_msamples_s": 113.9,
+     "bits": 7.8829
+    },
+    "M-decl": {
+     "bytes": 4132933,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 25.9,
+     "decode_msamples_s": 119.2,
+     "bits": 7.8829
+    },
+    "PCO": {
+     "bytes": 4357366,
+     "exact": true,
+     "encode_msamples_s": 41.9818555853808,
+     "decode_msamples_s": 255.80224656728507,
+     "bits": 8.311
+    },
+    "PQ-ALP": {
+     "bytes": 5447016,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 123.22778153186239,
+     "decode_msamples_s": 335.03506669861804,
+     "bits": 10.3894
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 5440909,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 67.99883272267435,
+     "decode_msamples_s": 505.21609250782944,
+     "bits": 10.3777
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 5241431,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 13.994121160153343,
+     "decode_msamples_s": 147.49978899985933,
+     "bits": 9.9972
+    },
+    "CH-ALP": {
+     "bytes": 5430400,
+     "exact": true,
+     "bits": 10.3577
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 5432497,
+     "exact": true,
+     "bits": 10.3617
+    },
+    "CH-PCO": {
+     "bytes": 4440324,
+     "exact": true,
+     "bits": 8.4692
+    },
+    "CH-zstd9": {
+     "bytes": 7235507,
+     "exact": true,
+     "bits": 13.8006
+    }
+   }
+  },
+  "pad-p": {
+   "kind": "waveform",
+   "samples": 4194304,
+   "sha256": "77fb932c15e5295918f37e177858890d58160784b26491beb4ee8f7805547025",
+   "arms": {
+    "M-auto": {
+     "bytes": 4806153,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 11.0,
+     "decode_msamples_s": 69.8,
+     "bits": 9.167
+    },
+    "M-decl": {
+     "bytes": 4806153,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 14.6,
+     "decode_msamples_s": 70.3,
+     "bits": 9.167
+    },
+    "PCO": {
+     "bytes": 4552861,
+     "exact": true,
+     "encode_msamples_s": 34.989016671715504,
+     "decode_msamples_s": 206.39523922781146,
+     "bits": 8.6839
+    },
+    "PQ-ALP": {
+     "bytes": 37757611,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 70.7947203186713,
+     "decode_msamples_s": 271.00239064418173,
+     "bits": 72.0169
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 12591605,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 6.026844383902565,
+     "decode_msamples_s": 97.0072854268335,
+     "bits": 24.0166
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 18399828,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 10.777313267159842,
+     "decode_msamples_s": 112.71980650362806,
+     "bits": 35.0949
+    },
+    "CH-ALP": {
+     "bytes": 31252592,
+     "exact": true,
+     "bits": 59.6096
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 16475136,
+     "exact": true,
+     "bits": 31.4238
+    },
+    "CH-PCO": {
+     "bytes": 4676548,
+     "exact": true,
+     "bits": 8.9198
+    },
+    "CH-zstd9": {
+     "bytes": 8049009,
+     "exact": true,
+     "bits": 15.3523
+    }
+   }
+  },
+  "sleep": {
+   "kind": "waveform",
+   "samples": 4194304,
+   "sha256": "7ba6cdd38ec0e905b7f01d040215f92a0e6e6252d23db37b867a6a9d6f8ad550",
+   "arms": {
+    "M-auto": {
+     "bytes": 7685182,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 9.3,
+     "decode_msamples_s": 64.7,
+     "bits": 14.6583
+    },
+    "M-decl": {
+     "bytes": 7847741,
+     "exact": true,
+     "grid_chunks": 1024,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 12.9,
+     "decode_msamples_s": 74.4,
+     "bits": 14.9684
+    },
+    "PCO": {
+     "bytes": 10629813,
+     "exact": true,
+     "encode_msamples_s": 22.79352522266651,
+     "decode_msamples_s": 156.32888564595814,
+     "bits": 20.2748
+    },
+    "PQ-ALP": {
+     "bytes": 39411615,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 86.38075624021748,
+     "decode_msamples_s": 299.4861835058907,
+     "bits": 75.1717
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 21751955,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 7.091045878818515,
+     "decode_msamples_s": 102.14314589776684,
+     "bits": 41.4886
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 21401778,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 14.684036031746588,
+     "decode_msamples_s": 134.6313154009116,
+     "bits": 40.8207
+    },
+    "CH-ALP": {
+     "bytes": 31259702,
+     "exact": true,
+     "bits": 59.6231
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 21396369,
+     "exact": true,
+     "bits": 40.8103
+    },
+    "CH-PCO": {
+     "bytes": 9608498,
+     "exact": true,
+     "bits": 18.3268
+    },
+    "CH-zstd9": {
+     "bytes": 11259738,
+     "exact": true,
+     "bits": 21.4762
+    }
+   }
+  },
+  "ecg": {
+   "kind": "waveform",
+   "samples": 4194000,
+   "sha256": "2b202eceaf44c66c69f4c25d817dd9ce0d988087f58feefcd3f7323587ee35ae",
+   "arms": {
+    "M-auto": {
+     "bytes": 3880583,
+     "exact": true,
+     "grid_chunks": 4194,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 9.6,
+     "decode_msamples_s": 97.3,
+     "bits": 7.4022
+    },
+    "M-decl": {
+     "bytes": 3880583,
+     "exact": true,
+     "grid_chunks": 4194,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 13.4,
+     "decode_msamples_s": 115.4,
+     "bits": 7.4022
+    },
+    "PCO": {
+     "bytes": 4112445,
+     "exact": true,
+     "encode_msamples_s": 43.55777225361852,
+     "decode_msamples_s": 215.13024278121162,
+     "bits": 7.8444
+    },
+    "PQ-ALP": {
+     "bytes": 5785659,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 144.63565196399628,
+     "decode_msamples_s": 553.8827258320126,
+     "bits": 11.0361
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 5699476,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 68.96324919838857,
+     "decode_msamples_s": 403.19169390501827,
+     "bits": 10.8717
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 26172988,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 10.733754766718706,
+     "decode_msamples_s": 96.69164265129685,
+     "bits": 49.9246
+    },
+    "CH-ALP": {
+     "bytes": 5769424,
+     "exact": true,
+     "bits": 11.0051
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 5714903,
+     "exact": true,
+     "bits": 10.9011
+    },
+    "CH-PCO": {
+     "bytes": 4235654,
+     "exact": true,
+     "bits": 8.0795
+    },
+    "CH-zstd9": {
+     "bytes": 8079579,
+     "exact": true,
+     "bits": 15.4117
+    }
+   }
+  },
+  "Air-pressure": {
+   "kind": "elf",
+   "samples": 95928,
+   "sha256": "4111f88a81272afa0bcd113cc9b33452b443cd0f4645a9898e2e0d5ee1c2288a",
+   "arms": {
+    "M-auto": {
+     "bytes": 137260,
+     "exact": true,
+     "grid_chunks": 24,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 9.7,
+     "decode_msamples_s": 71.3,
+     "bits": 11.4469
+    },
+    "PCO": {
+     "bytes": 104716,
+     "exact": true,
+     "encode_msamples_s": 31.610717136899073,
+     "decode_msamples_s": 240.87381954394016,
+     "bits": 8.7329
+    },
+    "PQ-ALP": {
+     "bytes": 201130,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 40.288954220915585,
+     "decode_msamples_s": 274.08,
+     "bits": 16.7734
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 196267,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 25.800968262506725,
+     "decode_msamples_s": 341.38078291814946,
+     "bits": 16.3679
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 500228,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 21.876396807297606,
+     "decode_msamples_s": 155.98048780487807,
+     "bits": 41.717
+    },
+    "CH-ALP": {
+     "bytes": 201180,
+     "exact": true,
+     "bits": 16.7776
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 200796,
+     "exact": true,
+     "bits": 16.7456
+    },
+    "CH-PCO": {
+     "bytes": 129144,
+     "exact": true,
+     "bits": 10.7701
+    },
+    "CH-zstd9": {
+     "bytes": 321029,
+     "exact": true,
+     "bits": 26.7725
+    }
+   }
+  },
+  "Air-sensor": {
+   "kind": "elf",
+   "samples": 8664,
+   "sha256": "ad3e0c59af84cd4b10f8c2c5469daa4c037692d8291c00d21b98c43fab07b3d4",
+   "arms": {
+    "M-auto": {
+     "bytes": 49926,
+     "exact": true,
+     "grid_chunks": 0,
+     "float_chunks": 3,
+     "raw_chunks": 0,
+     "encode_msamples_s": 5.0,
+     "decode_msamples_s": 72.6,
+     "bits": 46.0997
+    },
+    "PCO": {
+     "bytes": 50440,
+     "exact": true,
+     "encode_msamples_s": 8.881981504513272,
+     "decode_msamples_s": 188.17590305156537,
+     "bits": 46.5743
+    },
+    "PQ-ALP": {
+     "bytes": 79408,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 9.417391304347825,
+     "decode_msamples_s": 86.64,
+     "bits": 73.3223
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 67595,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 4.393509127789048,
+     "decode_msamples_s": 31.505454545454544,
+     "bits": 62.4146
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 54665,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 13.884615384615383,
+     "decode_msamples_s": 64.65671641791045,
+     "bits": 50.4755
+    },
+    "CH-ALP": {
+     "bytes": 61458,
+     "exact": true,
+     "bits": 56.7479
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 58763,
+     "exact": true,
+     "bits": 54.2595
+    },
+    "CH-PCO": {
+     "bytes": 50503,
+     "exact": true,
+     "bits": 46.6325
+    },
+    "CH-zstd9": {
+     "bytes": 64816,
+     "exact": true,
+     "bits": 59.8486
+    }
+   }
+  },
+  "Basel-temp": {
+   "kind": "elf",
+   "samples": 100001,
+   "sha256": "26e83c4cca557d5748c751022cbb38689f6e724701fdb513b24ab806d33521a2",
+   "arms": {
+    "M-auto": {
+     "bytes": 654705,
+     "exact": true,
+     "grid_chunks": 0,
+     "float_chunks": 25,
+     "raw_chunks": 0,
+     "encode_msamples_s": 6.5,
+     "decode_msamples_s": 56.0,
+     "bits": 52.3759
+    },
+    "PCO": {
+     "bytes": 190831,
+     "exact": true,
+     "encode_msamples_s": 10.820521652761233,
+     "decode_msamples_s": 128.18586236192886,
+     "bits": 15.2663
+    },
+    "PQ-ALP": {
+     "bytes": 368519,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 36.711086637298095,
+     "decode_msamples_s": 223.21651785714286,
+     "bits": 29.4812
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 343730,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 11.53813314872505,
+     "decode_msamples_s": 116.96023391812865,
+     "bits": 27.4981
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 663231,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 16.06183745583039,
+     "decode_msamples_s": 68.44695414099932,
+     "bits": 53.0579
+    },
+    "CH-ALP": {
+     "bytes": 376673,
+     "exact": true,
+     "bits": 30.1335
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 360612,
+     "exact": true,
+     "bits": 28.8487
+    },
+    "CH-PCO": {
+     "bytes": 348160,
+     "exact": true,
+     "bits": 27.8525
+    },
+    "CH-zstd9": {
+     "bytes": 263393,
+     "exact": true,
+     "bits": 21.0712
+    }
+   }
+  },
+  "Basel-wind": {
+   "kind": "elf",
+   "samples": 100000,
+   "sha256": "e310bba4a5e63bac6b71964a67d9533957d24f6c4c13fd17988ca25818ad1d01",
+   "arms": {
+    "M-auto": {
+     "bytes": 668101,
+     "exact": true,
+     "grid_chunks": 0,
+     "float_chunks": 25,
+     "raw_chunks": 0,
+     "encode_msamples_s": 5.0,
+     "decode_msamples_s": 66.5,
+     "bits": 53.4481
+    },
+    "PCO": {
+     "bytes": 178605,
+     "exact": true,
+     "encode_msamples_s": 10.838933455211485,
+     "decode_msamples_s": 122.12487515693131,
+     "bits": 14.2884
+    },
+    "PQ-ALP": {
+     "bytes": 388267,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 43.66812227074236,
+     "decode_msamples_s": 249.37655860349128,
+     "bits": 31.0614
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 329172,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 10.887316276537833,
+     "decode_msamples_s": 27.9876854184159,
+     "bits": 26.3338
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 696007,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 19.087612139721323,
+     "decode_msamples_s": 121.21212121212122,
+     "bits": 55.6806
+    },
+    "CH-ALP": {
+     "bytes": 389913,
+     "exact": true,
+     "bits": 31.193
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 363450,
+     "exact": true,
+     "bits": 29.076
+    },
+    "CH-PCO": {
+     "bytes": 272333,
+     "exact": true,
+     "bits": 21.7866
+    },
+    "CH-zstd9": {
+     "bytes": 292483,
+     "exact": true,
+     "bits": 23.3986
+    }
+   }
+  },
+  "Bird-migration": {
+   "kind": "elf",
+   "samples": 89867,
+   "sha256": "644020d97d77e685c088cd275133b85f6ec06e56b4a1fbbdef26254d1d31e440",
+   "arms": {
+    "M-auto": {
+     "bytes": 515656,
+     "exact": true,
+     "grid_chunks": 0,
+     "float_chunks": 22,
+     "raw_chunks": 0,
+     "encode_msamples_s": 7.3,
+     "decode_msamples_s": 71.5,
+     "bits": 45.9039
+    },
+    "PCO": {
+     "bytes": 169078,
+     "exact": true,
+     "encode_msamples_s": 25.365557647974097,
+     "decode_msamples_s": 184.20088602817114,
+     "bits": 15.0514
+    },
+    "PQ-ALP": {
+     "bytes": 240205,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 44.955977988994505,
+     "decode_msamples_s": 183.0285132382892,
+     "bits": 21.3832
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 214748,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 17.09147965005706,
+     "decode_msamples_s": 219.7237163814181,
+     "bits": 19.117
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 517429,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 13.538264537511298,
+     "decode_msamples_s": 127.11032531824613,
+     "bits": 46.0618
+    },
+    "CH-ALP": {
+     "bytes": 240741,
+     "exact": true,
+     "bits": 21.4309
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 221142,
+     "exact": true,
+     "bits": 19.6862
+    },
+    "CH-PCO": {
+     "bytes": 190908,
+     "exact": true,
+     "bits": 16.9947
+    },
+    "CH-zstd9": {
+     "bytes": 267604,
+     "exact": true,
+     "bits": 23.8222
+    }
+   }
+  },
+  "Bitcoin-price": {
+   "kind": "elf",
+   "samples": 7116,
+   "sha256": "cf7a8173d042b348ca21ca91d28d9c314ae8049b7226ca77f19cf130c5189e32",
+   "arms": {
+    "M-auto": {
+     "bytes": 41013,
+     "exact": true,
+     "grid_chunks": 0,
+     "float_chunks": 2,
+     "raw_chunks": 0,
+     "encode_msamples_s": 6.7,
+     "decode_msamples_s": 73.0,
+     "bits": 46.1079
+    },
+    "PCO": {
+     "bytes": 41093,
+     "exact": true,
+     "encode_msamples_s": 11.374989519669905,
+     "decode_msamples_s": 174.98636504127896,
+     "bits": 46.1979
+    },
+    "PQ-ALP": {
+     "bytes": 26251,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 5.444529456771233,
+     "decode_msamples_s": 74.90526315789474,
+     "bits": 29.5121
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 25830,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 4.785474108944183,
+     "decode_msamples_s": 43.127272727272725,
+     "bits": 29.0388
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 43578,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 9.170103092783505,
+     "decode_msamples_s": 63.535714285714285,
+     "bits": 48.9916
+    },
+    "CH-ALP": {
+     "bytes": 26220,
+     "exact": true,
+     "bits": 29.4772
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 25617,
+     "exact": true,
+     "bits": 28.7993
+    },
+    "CH-PCO": {
+     "bytes": 41120,
+     "exact": true,
+     "bits": 46.2282
+    },
+    "CH-zstd9": {
+     "bytes": 33949,
+     "exact": true,
+     "bits": 38.1664
+    }
+   }
+  },
+  "Blockchain-tr": {
+   "kind": "elf",
+   "samples": 99999,
+   "sha256": "aff61b95f53c3f8102b136a54a033163df963058810ccdde9e74874ad0b3f728",
+   "arms": {
+    "M-auto": {
+     "bytes": 174505,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 10.2,
+     "decode_msamples_s": 96.3,
+     "bits": 13.9605
+    },
+    "PCO": {
+     "bytes": 154588,
+     "exact": true,
+     "encode_msamples_s": 20.231789955778225,
+     "decode_msamples_s": 170.12651857979844,
+     "bits": 12.3672
+    },
+    "PQ-ALP": {
+     "bytes": 254427,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 48.947136563876654,
+     "decode_msamples_s": 209.64150943396226,
+     "bits": 20.3544
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 198262,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 13.638707037643208,
+     "decode_msamples_s": 95.968330134357,
+     "bits": 15.8611
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 583035,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 3.5342828868311305,
+     "decode_msamples_s": 90.7431941923775,
+     "bits": 46.6433
+    },
+    "CH-ALP": {
+     "bytes": 254757,
+     "exact": true,
+     "bits": 20.3808
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 195131,
+     "exact": true,
+     "bits": 15.6106
+    },
+    "CH-PCO": {
+     "bytes": 164547,
+     "exact": true,
+     "bits": 13.1639
+    },
+    "CH-zstd9": {
+     "bytes": 232896,
+     "exact": true,
+     "bits": 18.6319
+    }
+   }
+  },
+  "City-lat": {
+   "kind": "elf",
+   "samples": 41001,
+   "sha256": "85399be3c5f5b3df583d6ad8cbb3a7b0314d56c0cb285f57b74eed71660426fe",
+   "arms": {
+    "M-auto": {
+     "bytes": 104870,
+     "exact": true,
+     "grid_chunks": 10,
+     "float_chunks": 1,
+     "raw_chunks": 0,
+     "encode_msamples_s": 12.4,
+     "decode_msamples_s": 91.7,
+     "bits": 20.4619
+    },
+    "PCO": {
+     "bytes": 105269,
+     "exact": true,
+     "encode_msamples_s": 19.56582084747388,
+     "decode_msamples_s": 202.76645759750735,
+     "bits": 20.5398
+    },
+    "PQ-ALP": {
+     "bytes": 110777,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 26.435203094777563,
+     "decode_msamples_s": 134.87171052631578,
+     "bits": 21.6145
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 110777,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 18.10998233215548,
+     "decode_msamples_s": 254.66459627329192,
+     "bits": 21.6145
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 283616,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 13.726481419484433,
+     "decode_msamples_s": 79.6135922330097,
+     "bits": 55.3384
+    },
+    "CH-ALP": {
+     "bytes": 110613,
+     "exact": true,
+     "bits": 21.5825
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 110799,
+     "exact": true,
+     "bits": 21.6188
+    },
+    "CH-PCO": {
+     "bytes": 105756,
+     "exact": true,
+     "bits": 20.6348
+    },
+    "CH-zstd9": {
+     "bytes": 161828,
+     "exact": true,
+     "bits": 31.5754
+    }
+   }
+  },
+  "City-lon": {
+   "kind": "elf",
+   "samples": 41001,
+   "sha256": "568701b94e989fe29c8708550ea02f6979e93963d9b79fe9a66f0fb60d3533af",
+   "arms": {
+    "M-auto": {
+     "bytes": 110959,
+     "exact": true,
+     "grid_chunks": 10,
+     "float_chunks": 1,
+     "raw_chunks": 0,
+     "encode_msamples_s": 11.8,
+     "decode_msamples_s": 137.6,
+     "bits": 21.65
+    },
+    "PCO": {
+     "bytes": 113447,
+     "exact": true,
+     "encode_msamples_s": 20.02368577153869,
+     "decode_msamples_s": 199.39693796265257,
+     "bits": 22.1355
+    },
+    "PQ-ALP": {
+     "bytes": 116057,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 25.49813432835821,
+     "decode_msamples_s": 185.52488687782807,
+     "bits": 22.6447
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 116057,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 17.44723404255319,
+     "decode_msamples_s": 190.70232558139537,
+     "bits": 22.6447
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 290812,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 13.676117411607738,
+     "decode_msamples_s": 82.99797570850203,
+     "bits": 56.7424
+    },
+    "CH-ALP": {
+     "bytes": 115873,
+     "exact": true,
+     "bits": 22.6088
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 116032,
+     "exact": true,
+     "bits": 22.6398
+    },
+    "CH-PCO": {
+     "bytes": 114109,
+     "exact": true,
+     "bits": 22.2646
+    },
+    "CH-zstd9": {
+     "bytes": 170390,
+     "exact": true,
+     "bits": 33.246
+    }
+   }
+  },
+  "City-temp": {
+   "kind": "elf",
+   "samples": 100001,
+   "sha256": "d06dafc1475bc3da35cc12b80769638f59f2911573f6b8872676a65e5bba701d",
+   "arms": {
+    "M-auto": {
+     "bytes": 93724,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 13.8,
+     "decode_msamples_s": 103.6,
+     "bits": 7.4978
+    },
+    "PCO": {
+     "bytes": 96485,
+     "exact": true,
+     "encode_msamples_s": 23.39296052581019,
+     "decode_msamples_s": 175.55584785753237,
+     "bits": 7.7187
+    },
+    "PQ-ALP": {
+     "bytes": 134457,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 43.87933304080737,
+     "decode_msamples_s": 257.7345360824742,
+     "bits": 10.7565
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 118541,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 27.987965295270083,
+     "decode_msamples_s": 225.73589164785554,
+     "bits": 9.4832
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 164417,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 6.033606854108846,
+     "decode_msamples_s": 86.0593803786575,
+     "bits": 13.1532
+    },
+    "CH-ALP": {
+     "bytes": 135549,
+     "exact": true,
+     "bits": 10.8438
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 121359,
+     "exact": true,
+     "bits": 9.7086
+    },
+    "CH-PCO": {
+     "bytes": 96611,
+     "exact": true,
+     "bits": 7.7288
+    },
+    "CH-zstd9": {
+     "bytes": 152323,
+     "exact": true,
+     "bits": 12.1857
+    }
+   }
+  },
+  "Dew-point-temp": {
+   "kind": "elf",
+   "samples": 100001,
+   "sha256": "3b0a819a45a93f3cd8b60d8c2cec11aa8d5b3fcbe0baf0a710a11ef92d6565da",
+   "arms": {
+    "M-auto": {
+     "bytes": 102411,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 14.5,
+     "decode_msamples_s": 98.5,
+     "bits": 8.1928
+    },
+    "PCO": {
+     "bytes": 112288,
+     "exact": true,
+     "encode_msamples_s": 25.437456177966535,
+     "decode_msamples_s": 187.86903637730575,
+     "bits": 8.983
+    },
+    "PQ-ALP": {
+     "bytes": 157325,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 50.65906788247214,
+     "decode_msamples_s": 296.73887240356083,
+     "bits": 12.5859
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 157325,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 32.4257457846952,
+     "decode_msamples_s": 373.1380597014925,
+     "bits": 12.5859
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 475019,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 10.185475656956609,
+     "decode_msamples_s": 63.29177215189873,
+     "bits": 38.0011
+    },
+    "CH-ALP": {
+     "bytes": 157299,
+     "exact": true,
+     "bits": 12.5838
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 157193,
+     "exact": true,
+     "bits": 12.5753
+    },
+    "CH-PCO": {
+     "bytes": 113603,
+     "exact": true,
+     "bits": 9.0881
+    },
+    "CH-zstd9": {
+     "bytes": 247604,
+     "exact": true,
+     "bits": 19.8081
+    }
+   }
+  },
+  "Food-price": {
+   "kind": "elf",
+   "samples": 100001,
+   "sha256": "146a89401d548c16980bdb6ee7c35fae096b1459a756abcd2d24b920151d59e2",
+   "arms": {
+    "M-auto": {
+     "bytes": 401801,
+     "exact": true,
+     "grid_chunks": 12,
+     "float_chunks": 13,
+     "raw_chunks": 0,
+     "encode_msamples_s": 6.7,
+     "decode_msamples_s": 75.6,
+     "bits": 32.1438
+    },
+    "PCO": {
+     "bytes": 147997,
+     "exact": true,
+     "encode_msamples_s": 19.195586382862096,
+     "decode_msamples_s": 149.88924086333765,
+     "bits": 11.8396
+    },
+    "PQ-ALP": {
+     "bytes": 242891,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 33.289280958721704,
+     "decode_msamples_s": 213.67735042735043,
+     "bits": 19.4311
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 188513,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 16.09285484390087,
+     "decode_msamples_s": 157.7302839116719,
+     "bits": 15.0809
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 289072,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 5.913020340586566,
+     "decode_msamples_s": 71.42928571428571,
+     "bits": 23.1255
+    },
+    "CH-ALP": {
+     "bytes": 249463,
+     "exact": true,
+     "bits": 19.9568
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 184409,
+     "exact": true,
+     "bits": 14.7526
+    },
+    "CH-PCO": {
+     "bytes": 239254,
+     "exact": true,
+     "bits": 19.1401
+    },
+    "CH-zstd9": {
+     "bytes": 194354,
+     "exact": true,
+     "bits": 15.5482
+    }
+   }
+  },
+  "IR-bio-temp": {
+   "kind": "elf",
+   "samples": 99602,
+   "sha256": "1203b45cfcfade7e7b03ac68842595c9af011f8204598fd9984b255f24da13b1",
+   "arms": {
+    "M-auto": {
+     "bytes": 44844,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 12.8,
+     "decode_msamples_s": 86.3,
+     "bits": 3.6019
+    },
+    "PCO": {
+     "bytes": 53351,
+     "exact": true,
+     "encode_msamples_s": 24.83556770023639,
+     "decode_msamples_s": 157.91043120687192,
+     "bits": 4.2851
+    },
+    "PQ-ALP": {
+     "bytes": 117786,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 30.182424242424243,
+     "decode_msamples_s": 21.026388009288578,
+     "bits": 9.4605
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 111055,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 26.660064239828692,
+     "decode_msamples_s": 187.92830188679244,
+     "bits": 8.9199
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 372038,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 5.4492832913885545,
+     "decode_msamples_s": 56.78563283922463,
+     "bits": 29.882
+    },
+    "CH-ALP": {
+     "bytes": 118077,
+     "exact": true,
+     "bits": 9.4839
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 113358,
+     "exact": true,
+     "bits": 9.1049
+    },
+    "CH-PCO": {
+     "bytes": 54854,
+     "exact": true,
+     "bits": 4.4059
+    },
+    "CH-zstd9": {
+     "bytes": 144459,
+     "exact": true,
+     "bits": 11.6029
+    }
+   }
+  },
+  "PM10-dust": {
+   "kind": "elf",
+   "samples": 93662,
+   "sha256": "eef64f5eaac4e4ad913737e175d10cd5441ff4343d5f56e4c8dd361e3c235efe",
+   "arms": {
+    "M-auto": {
+     "bytes": 46666,
+     "exact": true,
+     "grid_chunks": 23,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 20.5,
+     "decode_msamples_s": 101.9,
+     "bits": 3.9859
+    },
+    "PCO": {
+     "bytes": 52056,
+     "exact": true,
+     "encode_msamples_s": 31.23021307260946,
+     "decode_msamples_s": 191.50493894800854,
+     "bits": 4.4463
+    },
+    "PQ-ALP": {
+     "bytes": 109474,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 45.51117589893101,
+     "decode_msamples_s": 197.59915611814347,
+     "bits": 9.3506
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 68267,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 20.855488755288356,
+     "decode_msamples_s": 182.22178988326849,
+     "bits": 5.8309
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 237368,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 5.358237986270024,
+     "decode_msamples_s": 76.02435064935064,
+     "bits": 20.2744
+    },
+    "CH-ALP": {
+     "bytes": 115500,
+     "exact": true,
+     "bits": 9.8653
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 72773,
+     "exact": true,
+     "bits": 6.2158
+    },
+    "CH-PCO": {
+     "bytes": 50156,
+     "exact": true,
+     "bits": 4.284
+    },
+    "CH-zstd9": {
+     "bytes": 83246,
+     "exact": true,
+     "bits": 7.1103
+    }
+   }
+  },
+  "POI-lat": {
+   "kind": "elf",
+   "samples": 100001,
+   "sha256": "0b046bf3c574c049c0917cf90ca3c604db4b1b3d50d1d16bdfb943b0d68156bc",
+   "arms": {
+    "M-auto": {
+     "bytes": 760516,
+     "exact": true,
+     "grid_chunks": 0,
+     "float_chunks": 25,
+     "raw_chunks": 0,
+     "encode_msamples_s": 6.0,
+     "decode_msamples_s": 27.1,
+     "bits": 60.8407
+    },
+    "PCO": {
+     "bytes": 666287,
+     "exact": true,
+     "encode_msamples_s": 31.07551276000712,
+     "decode_msamples_s": 311.2474558605209,
+     "bits": 53.3024
+    },
+    "PQ-ALP": {
+     "bytes": 1193265,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 31.4172164624568,
+     "decode_msamples_s": 147.49410029498526,
+     "bits": 95.4602
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 823532,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 4.3053773625522025,
+     "decode_msamples_s": 53.90889487870619,
+     "bits": 65.8819
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 693465,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 17.822313313134917,
+     "decode_msamples_s": 135.1364864864865,
+     "bits": 55.4766
+    },
+    "CH-ALP": {
+     "bytes": 779977,
+     "exact": true,
+     "bits": 62.3975
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 740969,
+     "exact": true,
+     "bits": 59.2769
+    },
+    "CH-PCO": {
+     "bytes": 668880,
+     "exact": true,
+     "bits": 53.5099
+    },
+    "CH-zstd9": {
+     "bytes": 700567,
+     "exact": true,
+     "bits": 56.0448
+    }
+   }
+  },
+  "POI-lon": {
+   "kind": "elf",
+   "samples": 100001,
+   "sha256": "ec47eea315598c6b22bc2cd3d917665eb7b99f18012a0112acf53616b2eab7bf",
+   "arms": {
+    "M-auto": {
+     "bytes": 800208,
+     "exact": true,
+     "grid_chunks": 0,
+     "float_chunks": 0,
+     "raw_chunks": 25,
+     "encode_msamples_s": 6.2,
+     "decode_msamples_s": 132.3,
+     "bits": 64.016
+    },
+    "PCO": {
+     "bytes": 681823,
+     "exact": true,
+     "encode_msamples_s": 26.278598741410836,
+     "decode_msamples_s": 254.42892590362914,
+     "bits": 54.5453
+    },
+    "PQ-ALP": {
+     "bytes": 1104226,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 41.56317539484622,
+     "decode_msamples_s": 140.45084269662922,
+     "bits": 88.3372
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 794930,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 4.394875626263514,
+     "decode_msamples_s": 65.40287769784173,
+     "bits": 63.5938
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 716198,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 13.229395422674958,
+     "decode_msamples_s": 137.1755829903978,
+     "bits": 57.2953
+    },
+    "CH-ALP": {
+     "bytes": 760477,
+     "exact": true,
+     "bits": 60.8376
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 740253,
+     "exact": true,
+     "bits": 59.2196
+    },
+    "CH-PCO": {
+     "bytes": 685084,
+     "exact": true,
+     "bits": 54.8062
+    },
+    "CH-zstd9": {
+     "bytes": 724555,
+     "exact": true,
+     "bits": 57.9638
+    }
+   }
+  },
+  "SSD-bench": {
+   "kind": "elf",
+   "samples": 8927,
+   "sha256": "e40d2d293fe67674fad16e8c31516334acb2ee9e17ae3cc305c3020387fa5162",
+   "arms": {
+    "M-auto": {
+     "bytes": 35037,
+     "exact": true,
+     "grid_chunks": 2,
+     "float_chunks": 1,
+     "raw_chunks": 0,
+     "encode_msamples_s": 9.0,
+     "decode_msamples_s": 74.0,
+     "bits": 31.3987
+    },
+    "PCO": {
+     "bytes": 8467,
+     "exact": true,
+     "encode_msamples_s": 14.63644186974328,
+     "decode_msamples_s": 87.02219247996469,
+     "bits": 7.5878
+    },
+    "PQ-ALP": {
+     "bytes": 18872,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 8.927,
+     "decode_msamples_s": 76.2991452991453,
+     "bits": 16.9123
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 9932,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 5.896301188903568,
+     "decode_msamples_s": 38.9825327510917,
+     "bits": 8.9006
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 15124,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 5.740836012861736,
+     "decode_msamples_s": 42.10849056603774,
+     "bits": 13.5535
+    },
+    "CH-ALP": {
+     "bytes": 19257,
+     "exact": true,
+     "bits": 17.2573
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 10874,
+     "exact": true,
+     "bits": 9.7448
+    },
+    "CH-PCO": {
+     "bytes": 8792,
+     "exact": true,
+     "bits": 7.879
+    },
+    "CH-zstd9": {
+     "bytes": 9597,
+     "exact": true,
+     "bits": 8.6004
+    }
+   }
+  },
+  "Stocks-DE": {
+   "kind": "elf",
+   "samples": 100002,
+   "sha256": "fadc6513edc72673b79f619b1127df2e8a939f740cfa05f4f906555caa7c05fc",
+   "arms": {
+    "M-auto": {
+     "bytes": 69000,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 14.6,
+     "decode_msamples_s": 81.9,
+     "bits": 5.5199
+    },
+    "PCO": {
+     "bytes": 82221,
+     "exact": true,
+     "encode_msamples_s": 24.534600293231513,
+     "decode_msamples_s": 155.99913467301772,
+     "bits": 6.5775
+    },
+    "PQ-ALP": {
+     "bytes": 141725,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 40.503037667071695,
+     "decode_msamples_s": 183.15384615384613,
+     "bits": 11.3378
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 136352,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 20.7172156619018,
+     "decode_msamples_s": 224.72359550561796,
+     "bits": 10.9079
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 439024,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 10.646438837432129,
+     "decode_msamples_s": 61.99752014879107,
+     "bits": 35.1212
+    },
+    "CH-ALP": {
+     "bytes": 141523,
+     "exact": true,
+     "bits": 11.3216
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 137849,
+     "exact": true,
+     "bits": 11.0277
+    },
+    "CH-PCO": {
+     "bytes": 76699,
+     "exact": true,
+     "bits": 6.1358
+    },
+    "CH-zstd9": {
+     "bytes": 162810,
+     "exact": true,
+     "bits": 13.0245
+    }
+   }
+  },
+  "Stocks-UK": {
+   "kind": "elf",
+   "samples": 100002,
+   "sha256": "78cbb1981d9e2bfcdd3a17d464a8a00f015b68be085cbcdba4b545548f44a67f",
+   "arms": {
+    "M-auto": {
+     "bytes": 66227,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 13.8,
+     "decode_msamples_s": 95.9,
+     "bits": 5.2981
+    },
+    "PCO": {
+     "bytes": 107302,
+     "exact": true,
+     "encode_msamples_s": 21.151386690000635,
+     "decode_msamples_s": 143.6639127359047,
+     "bits": 8.584
+    },
+    "PQ-ALP": {
+     "bytes": 138652,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 41.40869565217391,
+     "decode_msamples_s": 233.1048951048951,
+     "bits": 11.0919
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 135961,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 24.114299493609842,
+     "decode_msamples_s": 250.6315789473684,
+     "bits": 10.8767
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 191942,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 9.367868852459015,
+     "decode_msamples_s": 96.62028985507247,
+     "bits": 15.3551
+    },
+    "CH-ALP": {
+     "bytes": 139831,
+     "exact": true,
+     "bits": 11.1863
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 136315,
+     "exact": true,
+     "bits": 10.905
+    },
+    "CH-PCO": {
+     "bytes": 74548,
+     "exact": true,
+     "bits": 5.9637
+    },
+    "CH-zstd9": {
+     "bytes": 153353,
+     "exact": true,
+     "bits": 12.268
+    }
+   }
+  },
+  "Stocks-USA": {
+   "kind": "elf",
+   "samples": 100002,
+   "sha256": "4c90325d1eac6242fbc45baf6b4b42ce4aa32b1e9e9c68194c9f286534bba579",
+   "arms": {
+    "M-auto": {
+     "bytes": 57027,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 11.8,
+     "decode_msamples_s": 98.3,
+     "bits": 4.5621
+    },
+    "PCO": {
+     "bytes": 65402,
+     "exact": true,
+     "encode_msamples_s": 24.211115012439723,
+     "decode_msamples_s": 160.33438714137574,
+     "bits": 5.2321
+    },
+    "PQ-ALP": {
+     "bytes": 114109,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 44.26826029216467,
+     "decode_msamples_s": 215.058064516129,
+     "bits": 9.1285
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 110179,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 25.426392067124333,
+     "decode_msamples_s": 202.02424242424243,
+     "bits": 8.8141
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 419460,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 7.5042773525439,
+     "decode_msamples_s": 50.30281690140845,
+     "bits": 33.5561
+    },
+    "CH-ALP": {
+     "bytes": 113907,
+     "exact": true,
+     "bits": 9.1124
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 111263,
+     "exact": true,
+     "bits": 8.9009
+    },
+    "CH-PCO": {
+     "bytes": 64987,
+     "exact": true,
+     "bits": 5.1989
+    },
+    "CH-zstd9": {
+     "bytes": 146656,
+     "exact": true,
+     "bits": 11.7322
+    }
+   }
+  },
+  "Wind-Speed": {
+   "kind": "elf",
+   "samples": 99132,
+   "sha256": "2676aed36f8f02aacffb79def89d22621c9b33eee2a761d3797aef46a7b0cffc",
+   "arms": {
+    "M-auto": {
+     "bytes": 62954,
+     "exact": true,
+     "grid_chunks": 25,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 18.1,
+     "decode_msamples_s": 102.4,
+     "bits": 5.0804
+    },
+    "PCO": {
+     "bytes": 66855,
+     "exact": true,
+     "encode_msamples_s": 23.994429140444556,
+     "decode_msamples_s": 156.93712653721485,
+     "bits": 5.3952
+    },
+    "PQ-ALP": {
+     "bytes": 84963,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 36.499263622974965,
+     "decode_msamples_s": 263.6489361702128,
+     "bits": 6.8566
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 78927,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 31.39075364154528,
+     "decode_msamples_s": 247.21197007481297,
+     "bits": 6.3694
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 432049,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 6.21556210420716,
+     "decode_msamples_s": 56.26106696935301,
+     "bits": 34.8666
+    },
+    "CH-ALP": {
+     "bytes": 89538,
+     "exact": true,
+     "bits": 7.2258
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 81103,
+     "exact": true,
+     "bits": 6.5451
+    },
+    "CH-PCO": {
+     "bytes": 72498,
+     "exact": true,
+     "bits": 5.8506
+    },
+    "CH-zstd9": {
+     "bytes": 125731,
+     "exact": true,
+     "bits": 10.1466
+    }
+   }
+  },
+  "electric_vehicle_charging": {
+   "kind": "elf",
+   "samples": 3395,
+   "sha256": "eb02a65a9c5ccd71d8c14a23289f5f3de4865e0abaf9dd6fa9e596f346cfebc5",
+   "arms": {
+    "M-auto": {
+     "bytes": 4257,
+     "exact": true,
+     "grid_chunks": 1,
+     "float_chunks": 0,
+     "raw_chunks": 0,
+     "encode_msamples_s": 10.2,
+     "decode_msamples_s": 96.4,
+     "bits": 10.0312
+    },
+    "PCO": {
+     "bytes": 4410,
+     "exact": true,
+     "encode_msamples_s": 1.9260138282334636,
+     "decode_msamples_s": 72.74947629657255,
+     "bits": 10.3918
+    },
+    "PQ-ALP": {
+     "bytes": 4974,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 4.1656441717791415,
+     "decode_msamples_s": 31.728971962616825,
+     "bits": 11.7208
+    },
+    "PQ-ALP-zstd9": {
+     "bytes": 4974,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "ALP"
+     ],
+     "encode_msamples_s": 3.9385150812064964,
+     "decode_msamples_s": 35.0,
+     "bits": 11.7208
+    },
+    "PQ-BSS-zstd9": {
+     "bytes": 17018,
+     "exact": true,
+     "encodings": [
+      "RLE",
+      "BYTE_STREAM_SPLIT"
+     ],
+     "encode_msamples_s": 3.9385150812064964,
+     "decode_msamples_s": 15.864485981308412,
+     "bits": 40.1013
+    },
+    "CH-ALP": {
+     "bytes": 5713,
+     "exact": true,
+     "bits": 13.4622
+    },
+    "CH-ALP-zstd9": {
+     "bytes": 4805,
+     "exact": true,
+     "bits": 11.3225
+    },
+    "CH-PCO": {
+     "bytes": 4437,
+     "exact": true,
+     "bits": 10.4554
+    },
+    "CH-zstd9": {
+     "bytes": 7378,
+     "exact": true,
+     "bits": 17.3856
+    }
+   }
+  }
+ },
+ "ch_rerun": "2026-11-04T09:28:56"
+}
