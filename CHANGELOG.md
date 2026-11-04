@@ -10,6 +10,14 @@ Refusing oversized requests earlier (#160; results within budget unchanged):
   counts (the `morlet_envelope_screen` aggregate takes the budget). The error still states the exact number of
   eligible windows. The budget remains a candidate limit, not a time or memory limit.
 
+MCP distance guidance (#157):
+- The MCP server no longer tells agents that distances below 0.3 are strong and above 0.6 weak, which was not
+  evaluated across signal types. It explains what the distance is (1 - envelope correlation: envelope shape,
+  not level, frequency content or sample identity; not a probability) and to rank and inspect hits instead.
+- `search_similar` adds a `query_note` when the query interval is constant (distance 1 to everything).
+- docs/mcp.md: "Reading distances"; core test `distance_semantics_for_agents` (constant, scaled, other
+  carrier, other modulation).
+
 Context writes (SQL 0.3.3):
 - Concurrent context writes are serialized per recording and per batch ID (transaction advisory locks,
   `morlet_lock_context`; no extra privileges). Two transactions could both commit overlapping intervals of one
