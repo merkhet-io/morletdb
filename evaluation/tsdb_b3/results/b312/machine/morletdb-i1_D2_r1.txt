@@ -1,0 +1,20 @@
+2026-11-05T12:17:55
+12:17  up 8 days, 21:14, 12 users, load averages: 2.75 4.35 4.93
+ %CPU COMM
+ 42.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 32.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 10.4 caffeinate
+  8.8 /usr/libexec/trustd
+  4.2 /usr/libexec/syspolicyd
+  4.0 /usr/sbin/coreaudiod
+  3.0 /Library/SystemExtensions/62F82548-2D70-47AF-AB86-8995E38E3943/io.tailscale.ipn.macsys.network-extension.systemextension/Contents/MacOS/io.tailscale.ipn.macsys.network-extension
+2026-11-05T12:19:15
+12:19  up 8 days, 21:15, 12 users, load averages: 3.07 4.13 4.80
+ %CPU COMM
+484.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 75.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 57.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 43.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  4.2 /Applications/Warp.app/Contents/MacOS/stable
+  3.1 /usr/sbin/coreaudiod

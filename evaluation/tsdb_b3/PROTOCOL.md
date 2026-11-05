@@ -712,3 +712,29 @@ common to B3 and B3.10 applies; B3.10's ingestion statements are not re-tested h
   is adopted as the recommended configuration and the website's ingestion figures take B3.10's numbers, labelled
   with the unreleased SQL 0.3.4 until it is released. If criterion 3 fails again, I1 is not adopted, and the read
   difference is investigated as a defect before any further stage.
+
+## Amendment B3.12: B3.11 with reads from a fresh client process (FROZEN before any load of the benchmark set)
+
+Added 2026-11-05. B3.10 and B3.11 timed reads from the Python process that had just ingested, and missed the read
+criterion on different queries (R2; then R3 and R5). The investigation after B3.11 (RESULTS.md) found no read
+defect in the database: inside the server, reading I1-written data costs 0.97–1.00× reading data written by the
+old path, while more than half of a client-measured read is client, Docker Desktop's network path and
+conversion. B3.12 repeats B3.11 with the reads taken in a new client process after each load, and also records
+the server-side read cost. Everything common to B3, B3.10 and B3.11 applies.
+
+- **Arms:** `morletdb-i1` (`morletdb:b310`, `sha256:4a617625773a…`) and `morletdb-033` (released `0.3.5-alpha.1`).
+- **Runs:** for r = 1, 2, 3: a fresh D2 load of `morletdb-i1`, then of `morletdb-033`. After B3's correctness check,
+  settle and storage, B3's read benchmark (R1–R5) and interval statistics run in a **new Python process** (the
+  same code and read settings, `run.py reads-child`), and then B3's planned intervals are read inside the server
+  (one statement per query type, 50 passes, five rounds; `i1_reads_server.py`). `run_b312.sh`, `results/b312/`,
+  machine snapshots before and after every load. Smoke check done on the development set
+  (`results/dev/b312-smoke/`).
+- **Machine:** as B3.11 (load average below 3 at the start, no foreign process above half a core; foreign processes
+  in snapshots reported).
+- **Acceptance criteria for `morletdb-i1`:** (1) all six loads pass B3's correctness checks; (2) stored chunks
+  byte-identical across the six loads; (3) for each of R1, R2, R3, R4 recent, R4 older, R5 and interval
+  statistics, the median over the three loads of `morletdb-i1`'s fresh-process p50 is at most 1.1× the median of
+  `morletdb-033`'s. Server-side read cost (median of three loads, I1 / old) and p95 values are reported, not tested.
+- **Decision:** if all three hold, `morletdb-i1` is adopted as the recommended configuration: the website's
+  ingestion figures take B3.10's numbers and its read figures stay as they are, labelled with the unreleased SQL
+  0.3.4 until it is released. If criterion 3 fails, I1 is not adopted and the next step is decided by the owner.
