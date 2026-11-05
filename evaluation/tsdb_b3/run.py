@@ -289,6 +289,10 @@ def load(system, durability, rep):
                                                   "morletdb-032", "morletdb-033", "morletdb-i1"):
             res["reads"] = reads("morletdb", handle, m, data)
             res["analytics"] = analytics("morletdb", handle, m, data)
+            # I1 read investigation (attribution only): the same read benchmark again on the same load
+            for _ in range(int(os.environ.get("B3_READ_REPEATS", "1")) - 1):
+                res.setdefault("reads_repeats", []).append(reads("morletdb", handle, m, data))
+                res.setdefault("analytics_repeats", []).append(analytics("morletdb", handle, m, data))
             if system == "morletdb":
                 res["exchange_file"] = packed_exchange()
         if rep == 1 and system == "morletdb-033":    # B3.3 part A: acquisition reads
