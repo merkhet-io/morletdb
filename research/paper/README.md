@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.19, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.20, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,26 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.20 (same-session speed ratios, next-release ingestion; no new retrieval measurement)
+
+- **Speed ratios corrected to same-session pairs.** B3.2 and B3.4–B3.7 compared systems with MorletDB numbers
+  from other sessions, and B3.4–B3.7 most likely ran on a busy machine. B3.8 (QuestDB) and B3.9 (CrateDB, IoTDB,
+  TDengine, TimescaleDB) loaded each system alternately with the released MorletDB (0.3.5-alpha.1) in one session;
+  their ratios replace the earlier speed statements. Storage, correctness and semantics stand.
+  - QuestDB ingests from one connection about 1.5× (asynchronous) / 1.4× (durable) faster (was 1.2–1.6×);
+    MorletDB reads 4,096 samples 1.6× / 2.3× and three channels 1.2× / 1.3× faster; long reads and interval
+    statistics: no statement (statistics were 1.5× / 2.7× faster in B3.2).
+  - MorletDB ingests about 8.5× faster than CrateDB arrays (was 15×), 2.3–2.6× than IoTDB (was 2.5×), 1.2× than
+    TDengine (was 1.5×); reads 6.4–12×, 3.1–10.7× and 3.6–6.8× faster (were 8–13×, 4.4–13×, 7–11×).
+  - TimescaleDB 2.31 (B3.7) added: 4.9× MorletDB's space (columnstore), ingestion about 6.5× slower, reads
+    2.1–5.4× slower, every resend refused by its unique index.
+- **Next release, I1 (B3.10–B3.12; SQL 0.3.4, not yet released).** From one connection 13.65 / 12.99 M samples/s
+  against QuestDB's 9.58 / 8.26 M (1.4× / 1.6× faster), 2.2× / 2.1× the released build, chunks byte-identical;
+  reads unchanged from a fresh client process and inside the server (B3.12, after B3.10 and B3.11 failed the
+  read criterion for a client-side reason). Paired with QuestDB only; one dataset, one machine.
+- Where it appears: Section 4, supplement Tables 5 and 6 (now with TimescaleDB), the study overview and the
+  ledger (now split so that it fits the last page).
 
 ## What changed in 0.19 (TDengine; no new retrieval measurement)
 
