@@ -163,7 +163,8 @@ def run_paderborn():
     files = [f for f, _ in out]
     rows = [r for _, rs in out for r in rs]
     au = {}
-    for key in files[0]["kurtosis"]:
+    keys = set.intersection(*(set(f["kurtosis"]) for f in files))   # the Bayesian arm exists for a subset only
+    for key in sorted(keys):
         if any(f["kurtosis"][key] is None for f in files):
             au[key] = None
             continue

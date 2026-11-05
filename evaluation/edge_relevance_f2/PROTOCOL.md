@@ -68,4 +68,11 @@ dataset; budgets 0.05, 0.1, 0.2, 0.3 bytes per sample.
 
 ## Deviations
 
-(none yet)
+1. **Paderborn run crashed in aggregation (harness bug), rerun.** The first Paderborn run (23:36) failed after
+   coding every file, when computing the AUROCs: the Bayesian arm exists only for the first window of 13 files, and
+   the aggregation expected its keys in every file (`KeyError: 'wavelet-bayes@0.2'`). Nothing was written and no
+   Paderborn result was seen. Fix: AUROCs over the keys present in every file (the Bayesian arm's error is still
+   reported per window for H4). Paderborn rerun once with the fix; the other datasets were unaffected.
+2. **Seismic recording labels are not unique** (found while writing the results): `prep_seismic.py` labels
+   recordings by station and segment index without the day, so 16 station-days appear under 4 labels. Each was
+   coded and scored separately and totals are sums over all 16; no measure is affected.
