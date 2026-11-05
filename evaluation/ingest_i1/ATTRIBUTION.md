@@ -84,3 +84,36 @@ load. With the new pacing the load (12.4 s) is within 0.7 s of the server-only a
 **ingestion is now bound by the server**, and the server path is what steps 2–3 shrink. The importer's
 `commit_wait_s` only counts waiting at commits; with large transactions the client waits inside sends
 instead (backpressure), so it is not a measure of client cost there.
+
+## Step 2: batched raw appends (implemented, SQL 0.3.4)
+
+`morlet_append_chunks_raw(collection, recording_id, start_sample, samples bytea, chunk_size)` takes a run of
+consecutive chunks as little-endian float64 bytes (up to 262,144 samples). When the run starts at the
+recording's next sample offset, one Rust call (`morlet_chunk_batch`) decodes the bytes, cuts the chunks,
+advances the checkpoint, encodes and summarizes, and one statement per table stores the result; any other run
+(a retry, an overlap, a gap, a float8[] collection, a recording that is not visible) goes through
+`morlet_append_chunk_raw` chunk by chunk, so retries, conflicts and errors behave as before. The importer
+batches automatically (`rpc_chunks=0`: up to 64 chunks per call when the server has the function). The table's
+CHECK constraint is unchanged and still decodes every chunk.
+
+Script [`batch.py`](batch.py), results [`results/batch_20261105T084529.json`](results/batch_20261105T084529.json);
+image `morletdb:i1-dev` (this branch), development set, both arms with step 1's pacing, alternating, B3's full
+correctness check after every load (all passed). **Machine:** a browser renderer used about 1.3 cores during
+this run (1-minute load average 4.2–5.4, against about 2 in the earlier runs); the arms alternated, so their
+comparison holds, but absolute rates are likely somewhat low. The first `step1` load (16.5 s) is an outlier
+against its repetition (12.3 s) and step 1's own runs (12.2–12.6 s).
+
+| Arm | Calls | D2 wall s (two loads) | D2 samples/s | D1 wall s (two loads) | D1 samples/s |
+|---|---:|---|---:|---|---:|
+| step1: one call per chunk | 25,102 | 16.51, 12.28 | 7.20 M | 12.99, 12.34 | 8.02 M |
+| **batch: up to 64 chunks per call** | 877 | 10.18, 10.24 | **9.94 M** | 10.31, 10.48 | **9.76 M** |
+| searchable (features), one load each | | 59.5 / 52.5 | 1.70 / 1.93 M (+13%) | | |
+
+Against step 1's quiet-machine rate (8.17 M D2, 8.21 M D1) batching adds about 22% (D2) and 19% (D1); against
+the original B3 path (6.22 M) the development-set load is now about 1.6× faster. **Stored data is identical**:
+chunk, segment and checkpoint digests are equal across both arms, in base and searchable loads, and the base
+chunks equal step 1's loads on the released image.
+
+The server backend now runs at 61–77% of one core during a load, so the remaining time is no longer only the
+server's. Next: where the 10.2 s go now (client and server), then parallel encoding. No comparison with QuestDB
+is stated from development-set runs; that needs a frozen same-session stage on the benchmark set.

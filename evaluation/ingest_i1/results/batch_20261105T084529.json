@@ -1,0 +1,298 @@
+{
+ "set": "dev",
+ "image": "morletdb:i1-dev",
+ "image_id": "sha256:8747abd3aaaa2ee364fffab629d9eed3191ebdbdda22bf7e2cfca1d2c5b9ec8b",
+ "samples": 101453304,
+ "started": "2026-11-05T08:40:10",
+ "arms": {
+  "step1": {
+   "commit_chunks": 256,
+   "reuse_connection": true,
+   "rpc_chunks": 1
+  },
+  "batch": {
+   "commit_chunks": 256,
+   "reuse_connection": true,
+   "rpc_chunks": 0
+  }
+ },
+ "loads": [
+  {
+   "wall_s": 16.513,
+   "rpc_calls": 25102,
+   "server": {
+    "cpu_percent_mean": 86.9,
+    "cpu_percent_p95": 95.7,
+    "memory_peak_mib": 170.3,
+    "samples": 8
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "step1",
+   "durability": "D2",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 6143844
+  },
+  {
+   "wall_s": 10.179,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 76.5,
+    "cpu_percent_p95": 78.2,
+    "memory_peak_mib": 175.1,
+    "samples": 5
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "batch",
+   "durability": "D2",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 9966922
+  },
+  {
+   "wall_s": 12.281,
+   "rpc_calls": 25102,
+   "server": {
+    "cpu_percent_mean": 90.5,
+    "cpu_percent_p95": 94.3,
+    "memory_peak_mib": 169.1,
+    "samples": 6
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "step1",
+   "durability": "D2",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 8260997
+  },
+  {
+   "wall_s": 10.236,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 75.9,
+    "cpu_percent_p95": 77.5,
+    "memory_peak_mib": 177.2,
+    "samples": 5
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "batch",
+   "durability": "D2",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 9911421
+  },
+  {
+   "wall_s": 12.987,
+   "rpc_calls": 25102,
+   "server": {
+    "cpu_percent_mean": 85.2,
+    "cpu_percent_p95": 91.6,
+    "memory_peak_mib": 167.9,
+    "samples": 7
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "step1",
+   "durability": "D1",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 7811912
+  },
+  {
+   "wall_s": 10.308,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 61.3,
+    "cpu_percent_p95": 74.6,
+    "memory_peak_mib": 177.4,
+    "samples": 6
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "batch",
+   "durability": "D1",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 9842191
+  },
+  {
+   "wall_s": 12.34,
+   "rpc_calls": 25102,
+   "server": {
+    "cpu_percent_mean": 91.9,
+    "cpu_percent_p95": 94.4,
+    "memory_peak_mib": 168.7,
+    "samples": 6
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "step1",
+   "durability": "D1",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 8221500
+  },
+  {
+   "wall_s": 10.478,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 75.1,
+    "cpu_percent_p95": 76.1,
+    "memory_peak_mib": 176.7,
+    "samples": 5
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "batch",
+   "durability": "D1",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 9682507
+  },
+  {
+   "wall_s": 59.525,
+   "rpc_calls": 25102,
+   "server": {
+    "cpu_percent_mean": 98.9,
+    "cpu_percent_p95": 102.2,
+    "memory_peak_mib": 186.7,
+    "samples": 27
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    395316,
+    "69c914e93baaa02be9b1a7c688f8c6f8"
+   ],
+   "checkpoint_digest": "eaaa6c017fe3f23a401a339d9685c416",
+   "correct": true,
+   "arm": "step1",
+   "durability": "D2",
+   "search": true,
+   "rep": 1,
+   "samples_per_s": 1704381
+  },
+  {
+   "wall_s": 52.451,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 91.6,
+    "cpu_percent_p95": 96.3,
+    "memory_peak_mib": 191.0,
+    "samples": 24
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    395316,
+    "69c914e93baaa02be9b1a7c688f8c6f8"
+   ],
+   "checkpoint_digest": "eaaa6c017fe3f23a401a339d9685c416",
+   "correct": true,
+   "arm": "batch",
+   "durability": "D2",
+   "search": true,
+   "rep": 1,
+   "samples_per_s": 1934249
+  }
+ ],
+ "identical_base": {
+  "chunks": true,
+  "segments": true,
+  "checkpoints": true
+ },
+ "identical_search": {
+  "chunks": true,
+  "segments": true,
+  "checkpoints": true
+ },
+ "chunks_equal_step1_release_image": true,
+ "median": {
+  "step1 D2": {
+   "wall_s": 14.397,
+   "samples_per_s": 7202420.5
+  },
+  "batch D2": {
+   "wall_s": 10.207,
+   "samples_per_s": 9939171.5
+  },
+  "step1 D1": {
+   "wall_s": 12.663,
+   "samples_per_s": 8016706.0
+  },
+  "batch D1": {
+   "wall_s": 10.393,
+   "samples_per_s": 9762349.0
+  },
+  "step1 D2 search": {
+   "wall_s": 59.525,
+   "samples_per_s": 1704381
+  },
+  "batch D2 search": {
+   "wall_s": 52.451,
+   "samples_per_s": 1934249
+  }
+ }
+}

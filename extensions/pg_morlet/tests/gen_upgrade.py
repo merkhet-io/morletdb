@@ -4,7 +4,8 @@
 
 0.3.3 is released (0.3.4-alpha.1 and 0.3.5-alpha.1); its objects are known. 0.3.4 fixes concurrency and budget
 bugs (#225, #226, #227): function bodies change, and morlet_search_envelope_probes gains a trailing
-max_candidates argument (dropped and created again). No new functions, no data or policy changes.
+max_candidates argument (dropped and created again). I1 (#233) adds morlet_chunk_batch and
+morlet_append_chunks_raw (batched append). No data or policy changes.
 tests/upgrade.sh and tests/upgrade_from_release.sh check that an upgraded catalog equals a fresh 0.3.4
 installation. The scripts of earlier steps (0.3.2 -> 0.3.3 and before) are frozen."""
 import re
@@ -29,8 +30,8 @@ def rust(name):
     return m.group(0).replace("CREATE  FUNCTION", "CREATE FUNCTION")
 
 
-NEW_RUST = []
-NEW_SQL = []
+NEW_RUST = ["morlet_chunk_batch"]          # I1 (#233): batched append
+NEW_SQL = ["morlet_append_chunks_raw"]
 CHANGED = ["morlet_build_envelopes", "morlet_search_similar", "morlet_create_acquisition",
            "morlet_add_acquisition_channel"]
 # Signature changed: the 0.3.3 function (these argument types) is dropped and created again.

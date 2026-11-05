@@ -131,13 +131,18 @@ scales and an asynchronous extraction contract.
 
 ## Database call batching
 
-`--rpc-chunks` defaults to 1 (1..64), preserving the single-chunk baseline.
-Enable batching explicitly, for example `--rpc-chunks 16`. In batched mode the importer registers the server's
-`morlet_input_chunk` composite type and sends a typed array per append call. Calls
-are flushed at recording/file boundaries, the RPC limit, or the transaction limit.
-`--commit-chunks` still controls transaction size independently. The default uses the original single-chunk API. The initial local sweep reduced
-RPC counts through batching but did not improve throughput, so a new default is
-not justified without representative network/workload measurements.
+`--rpc-chunks` sets the chunks per append call (0..64). The default, 0, is
+automatic: when the server has `morlet_append_chunks_raw` (SQL 0.3.4), consecutive
+chunks of a recording go to the server as one run of little-endian float64 bytes,
+up to 64 chunks and 262,144 samples per call, and the server cuts them into the same
+chunks; the stored chunks, summaries, segments and checkpoints are identical to one
+call per chunk ([I1](../../evaluation/ingest_i1/ATTRIBUTION.md)). Against older
+servers automatic means one chunk per call. `--rpc-chunks 1` keeps one call per
+chunk. Any other value batches that many chunks, as one raw run when possible and
+otherwise as a typed `morlet_input_chunk` array. Calls are flushed at
+recording/file boundaries, the RPC limit, or the transaction limit;
+`--commit-chunks` still controls transaction size independently. Reports add
+`raw_batch` and the resolved `rpc_chunks`.
 
 The configured RPC size times chunk size may not exceed 262144 samples; the server
 also validates actual payload size. Default chunks are 4096 samples. A batch error

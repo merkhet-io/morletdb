@@ -19,6 +19,16 @@ modified). Fixes from the 2026-11-04 review:
   after the other's windows.
 - Regression test `tests/sql034_fixes.sh` (two sessions; run by `ci_local.sh` with pgvector).
 
+Faster single-connection ingestion (I1, #233):
+- **`morlet_append_chunks_raw(collection, recording_id, start_sample, samples bytea, chunk_size)`** appends a
+  run of consecutive chunks (raw little-endian float64, up to 262,144 samples) in one call; the server cuts it
+  into chunks of `chunk_size`. It stores exactly what one `morlet_append_chunk_raw` call per chunk stores
+  (chunks, summaries, segments, checkpoint), with the same privileges, row security and errors; retries and
+  overlaps go through the per-chunk path. Helper `morlet_chunk_batch` does the per-chunk work in one call.
+- **Importer:** 256 chunks per transaction by default (was 16); `--rpc-chunks` defaults to automatic (batched
+  raw appends when the server has them, otherwise one chunk per call); `import_files(..., conn=...)` reuses a
+  caller-owned connection; reports add `commit_wait_s`, `raw_batch` and the resolved `rpc_chunks`.
+
 ## 0.3.5-alpha.1
 
 The same SQL version 0.3.3 and extension code as 0.3.4-alpha.1; no `ALTER EXTENSION` update is needed.

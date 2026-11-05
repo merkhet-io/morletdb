@@ -325,6 +325,60 @@ RETURNS bigint LANGUAGE sql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_
   SELECT public.morlet_append_chunk(collection,recording_id,start_sample,public.morlet_float8_from_le_bytes(samples))
 $$;
 
+-- A run of consecutive chunks of one recording in one call (SQL 0.3.4, issue #233): raw little-endian
+-- float64 samples cut into chunks of chunk_size samples, the last possibly shorter. Equivalent to calling
+-- morlet_append_chunk_raw for each chunk in order: the same chunks, summaries, segments and checkpoint,
+-- privileges and row security. A batch that starts at the recording's next sample offset is stored with
+-- one statement per table; any other batch (a retry, an overlap, a gap, a float8[] collection or a
+-- recording that is not visible) goes through morlet_append_chunk_raw chunk by chunk, which verifies
+-- replays bit for bit and raises the same errors.
+CREATE FUNCTION public.morlet_append_chunks_raw(collection regclass,recording_id text,start_sample bigint,
+  samples bytea,chunk_size integer)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE state jsonb; quantum float8; relations record; b record; updated_rows bigint; total bigint; s integer:=0;
+  received bigint;
+BEGIN
+  IF chunk_size NOT BETWEEN 1 AND 32768 THEN RAISE EXCEPTION 'chunk_size must be 1..32768'; END IF;
+  total:=octet_length(samples);
+  IF total=0 OR total%8<>0 THEN
+    RAISE EXCEPTION 'raw samples must be a nonempty multiple of 8 bytes (little-endian float64)';
+  END IF;
+  total:=total/8;
+  IF total>262144 THEN RAISE EXCEPTION 'batch exceeds 262144 samples'; END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF relations.encoded THEN
+    -- Serializes concurrent appenders of the same recording, under READ COMMITTED.
+    EXECUTE format('SELECT checkpoint,sample_quantum FROM %s WHERE recording_id=$1 FOR UPDATE',collection)
+      INTO state,quantum USING recording_id;
+  END IF;
+  IF state IS NULL OR start_sample IS DISTINCT FROM (state->>'end')::bigint THEN
+    WHILE s<total LOOP
+      received:=public.morlet_append_chunk_raw(collection,recording_id,start_sample+s,
+        substring(samples FROM 8*s+1 FOR 8*chunk_size));
+      s:=s+chunk_size;
+    END LOOP;
+    RETURN received;
+  END IF;
+  SELECT * INTO b FROM public.morlet_chunk_batch(state,start_sample,samples,chunk_size,quantum,relations.summarized);
+  IF relations.summarized THEN
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded,summary)
+      SELECT $1,u.s,u.c,u.e,u.m FROM unnest($2::bigint[],$3::integer[],$4::bytea[],$5::bytea[]) u(s,c,e,m)',
+      relations.chunks) USING recording_id,b.starts,b.counts,b.encoded,b.summaries;
+  ELSE
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded)
+      SELECT $1,u.s,u.c,u.e FROM unnest($2::bigint[],$3::integer[],$4::bytea[]) u(s,c,e)',
+      relations.chunks) USING recording_id,b.starts,b.counts,b.encoded;
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,start_sample,features)
+    SELECT $1,(s->>''start_sample'')::bigint,ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8)
+    FROM jsonb_array_elements($2->''segments'') s',relations.segments) USING recording_id,b.result;
+  EXECUTE format('UPDATE %s SET checkpoint=$2 WHERE recording_id=$1',collection)
+    USING recording_id,b.result->'checkpoint';
+  GET DIAGNOSTICS updated_rows = ROW_COUNT;
+  IF updated_rows<>1 THEN RAISE EXCEPTION 'checkpoint update was not permitted'; END IF;
+  RETURN (b.result->'checkpoint'->>'end')::bigint;
+END $$;
+
 -- The samples of [interval_start, interval_end) as raw IEEE 754 float64 values, little-endian, 8 bytes
 -- each, for clients that map bytes to arrays without parsing every element. Same visibility, coverage
 -- and errors as morlet_read_interval; up to 16,777,216 samples per call; encoded collections only.
