@@ -986,3 +986,42 @@ while Spotlight and media analysis were running (1-minute load average up to 10.
 larger than the 11.8% difference, in both directions. This suggests, but does not establish, that the failed
 criterion reflects variation between single read measurements rather than a slower read path. A criterion over
 several read repetitions would decide it; that needs a new frozen amendment.
+
+# Amendment B3.11: B3.10's read criterion over three loads per arm
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `82b8b6d`, 2026-11-05 10:40) before any load; run 10:47–10:53
+(`results/b311/`, `run_b311.sh`, log `results/b311.log`): for r = 1, 2, 3 a fresh D2 load of `morletdb-i1`
+(`morletdb:b310`) then of `morletdb-033` (released `0.3.5-alpha.1`), each followed by the full read benchmark.
+
+**Machine.** 1-minute load average 2.8 before the first load (start condition met; Spotlight and media analysis
+idle). Between loads 6.7–12.0 from the session itself. Foreign processes above half a core: `clang` at 98% in the
+snapshot after `morletdb-033` D2 r2, that is, just before `morletdb-i1` D2 r3 (not started by this work; that
+load also ingested slower, 11.0 M against 12.9–13.6 M); WindowServer 68% once. Docker Desktop's backend
+(`com.docker.backend`, which carries the client connections into the container) was seen at about 400% during
+the run.
+
+**Correctness: all six loads passed; stored chunks byte-identical in all six** (25,138 chunks, one digest).
+
+## Reads and analytics (p50 ms of each load; criterion: median over three loads, `morletdb-i1` ≤ 1.1×)
+
+| Query | `morletdb-i1` (three loads) | median | `morletdb-033` (three loads) | median | ratio | met |
+|---|---|---:|---|---:|---:|---|
+| R1 | 0.737, 0.638, 0.625 | 0.638 | 0.655, 0.629, 0.641 | 0.641 | 0.995 | yes |
+| R2 | 7.150, 7.413, 7.016 | 7.150 | 7.129, 7.047, 6.561 | 7.047 | 1.015 | yes |
+| R3 | 9.743, 10.239, 8.412 | 9.743 | 7.695, 9.997, 7.479 | 7.695 | **1.266** | **no** |
+| R4 recent | 0.678, 0.690, 0.626 | 0.678 | 0.634, 0.877, 0.631 | 0.634 | 1.069 | yes |
+| R4 older | 0.622, 0.634, 0.612 | 0.622 | 0.614, 0.776, 0.610 | 0.614 | 1.013 | yes |
+| R5 (4 threads) | 1.010, 1.143, 0.807 | 1.010 | 0.823, 1.367, 0.794 | 0.823 | **1.227** | **no** |
+| Interval statistics | 2.641, 2.610, 2.559 | 2.610 | 2.575, 2.784, 2.573 | 2.575 | 1.014 | yes |
+
+p95 medians (reported, not tested): R3 14.96 against 10.71 ms, R5 1.86 against 1.55 ms; all others within 12%.
+Ingestion (reported, not tested): `morletdb-i1` 12.94, 13.62, 11.04 M samples/s; `morletdb-033` 5.99, 5.89,
+6.37 M. Server peak memory 175–179 against 167–169 MiB.
+
+**Verdict: criterion 3 is not met** (R3 1.266, R5 1.227; R2, which failed in B3.10, now 1.015). By the frozen
+decision rule, I1 is not adopted, the website is not changed, and the read difference is investigated as a
+defect before any further stage. Two candidate causes are not separated by either stage: the arms differ in the
+write path **and** in the build (`morletdb:b310` is a local `deploy/Dockerfile` build; `0.3.5-alpha.1` was built
+by the release workflow), and single-load read latencies vary widely here (R3 7.5–10.0 ms and R5 0.79–1.37 ms
+within the released arm alone). The investigation will compare the same write path on both builds and repeated
+reads on one load.
