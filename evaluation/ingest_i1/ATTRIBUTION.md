@@ -171,3 +171,30 @@ client (2.2 s). Searchable loads gain little because feature extraction, not enc
 **Development-set summary of I1 so far (D2, single connection):** 6.22 M (before) → 8.17 M (step 1, importer
 pacing) → 9.94 M (step 2, batched appends) → 13.2 M samples/s (step 3, 4 encoding threads), about 2.1×, with
 stored data byte-identical throughout.
+
+## Step 4: `morlet.verify_appends` and the CHECK constraint (implemented, SQL 0.3.4)
+
+The chunk tables' CHECK constraint decoded every inserted chunk in full (1.4 s of a load, serial). Now the batched
+append path remembers the exact bytes it just encoded (with their sample counts), and the constraint skips its
+decode for an insert of exactly those bytes; every other insert or update (a direct `INSERT`, a corrupted or
+re-labelled copy, the per-chunk path) is still decoded in full. `morlet.verify_appends` (on/off, default on)
+decides what the append path guarantees in exchange: **on** decodes each chunk again on the encoding threads and
+compares it bit for bit with its input samples, so every stored chunk is proven lossless, which the constraint
+never checked (it proved only that a chunk decodes to the right number of samples); **off** relies on the codec's
+tests. Chunks are identical either way (`#[pg_test]`s: identical chunks on/off; corrupted copy rejected; copy
+under another sample count rejected; invalid setting rejected; smoke test of an identical copy, decoded and
+accepted).
+
+Script [`verify.py`](verify.py), results [`results/verify_20261105T124730.json`](results/verify_20261105T124730.json);
+development set, step 2's client settings, default encoding threads, arms alternating, B3's full correctness check
+after every load (all passed), chunk digests identical across all 15 loads. 1-minute load average 2.6 at the
+start; a LaTeX build ran during part of the session.
+
+| Arm | D2 wall s (three loads) | D2 samples/s | D1 wall s (two loads) | D1 samples/s |
+|---|---|---:|---|---:|
+| CHECK decodes every chunk (`morletdb:b310`) | 7.52, 7.42, 7.43 | 13.66 M | 7.63, 7.64 | 13.28 M |
+| **`verify_appends = on`** (default) | 7.13, 7.09, 7.17 | **14.22 M (+4%)** | 7.29, 7.28 | **13.93 M (+5%)** |
+| `verify_appends = off` | 6.98, 6.95, 6.98 | 14.54 M (+6%) | 7.18, 7.10 | 14.21 M (+7%) |
+
+The default therefore gives a stronger guarantee than before (lossless, not only decodable) and is still faster,
+because the round trip runs on the encoding threads while the constraint's decode ran in the backend's thread.
