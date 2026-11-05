@@ -21,12 +21,12 @@ if touches '\.rs$|Cargo\.(toml|lock)$|rust-toolchain'; then
 fi
 if touches '^extensions/pg_morlet/(src|sql)/|gen_upgrade\.py$'; then
   pgc=${PG_CONFIG:-$HOME/.pgrx/17.11/pgrx-install/bin/pg_config}
-  if command -v cargo-pgrx >/dev/null && [ -x "$pgc" ] && grep -q "^default_version = '0.3.3'" extensions/pg_morlet/pg_morlet.control; then
-    step "update script 0.3.2 -> 0.3.3 is current"
+  if command -v cargo-pgrx >/dev/null && [ -x "$pgc" ] && grep -q "^default_version = '0.3.4'" extensions/pg_morlet/pg_morlet.control; then
+    step "update script 0.3.3 -> 0.3.4 is current"
     tmp=$(mktemp); trap 'rm -f "$tmp"' EXIT
     (cd extensions/pg_morlet && cargo pgrx schema pg17 --pg-config "$pgc" -o "$tmp" >/dev/null 2>&1 && python3 tests/gen_upgrade.py "$tmp" --check)
   else
-    step "update script check skipped (needs cargo-pgrx, $pgc, and the 0.3.3 generator)"
+    step "update script check skipped (needs cargo-pgrx, $pgc, and the 0.3.4 generator)"
   fi
 fi
 if touches '^(research/paper|docs)/|^README\.md$|^VERSION$'; then
