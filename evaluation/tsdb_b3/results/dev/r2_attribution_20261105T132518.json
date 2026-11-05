@@ -1,0 +1,15 @@
+{
+ "ping": 0.335,
+ "server": 2.48,
+ "full": 5.606,
+ "bytes_only": 4.005,
+ "inside": 1.985,
+ "p95": {
+  "ping": 0.673,
+  "server": 2.879,
+  "full": 7.747,
+  "bytes_only": 6.557
+ },
+ "image": "morletdb:i1-verify",
+ "load_average": "13:25  up 8 days, 22:21, 13 users, load averages: 4.53 2.81 2.80"
+}

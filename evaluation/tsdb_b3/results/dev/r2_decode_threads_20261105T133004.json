@@ -1,0 +1,28 @@
+{
+ "R1": {
+  "threads_1": {
+   "client_p50_ms": 0.705,
+   "client_p95_ms": 1.205,
+   "server_ms": 0.206
+  },
+  "threads_4": {
+   "client_p50_ms": 0.704,
+   "client_p95_ms": 1.165,
+   "server_ms": 0.203
+  }
+ },
+ "R2": {
+  "threads_1": {
+   "client_p50_ms": 7.449,
+   "client_p95_ms": 10.134,
+   "server_ms": 2.648
+  },
+  "threads_4": {
+   "client_p50_ms": 6.311,
+   "client_p95_ms": 9.548,
+   "server_ms": 1.574
+  }
+ },
+ "image": "morletdb:pdec",
+ "load_average": "13:30  up 8 days, 22:26, 13 users, load averages: 5.01 4.24 3.46"
+}
