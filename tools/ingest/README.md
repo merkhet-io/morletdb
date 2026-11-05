@@ -76,10 +76,25 @@ input array may contain at most 32768 values. Memory is bounded by decoded batch
 and one recording buffer at the Python layer; Parquet row-group decoding can have
 additional format-dependent memory overhead. This is not a hard RSS limit.
 
-`--commit-chunks` defaults to 16 (1..256). Each transaction commits all raw chunks,
+`--commit-chunks` defaults to 256 (1..256; it was 16 before I1). Each transaction commits all raw chunks,
 features and checkpoints together. Earlier batches remain committed when later
 input fails. Failures report acknowledged committed submissions; the pending batch
-is rolled back. A connection loss during commit can leave the outcome uncertain;
+(up to about one million samples at the default chunk size) is rolled back. The
+importer pipelines its statements and waits for the server only at each commit, so
+small transactions leave the server idle while the client prepares the next one:
+on B3's development set, 256 chunks per transaction with one connection loaded
+31% faster than 16 (6.22 M to 8.17 M samples/s)
+([I1 step 0](../../evaluation/ingest_i1/ATTRIBUTION.md)). A transaction holds its
+recordings' checkpoint rows locked, so another writer appending to the same
+recording waits longer; writers on different recordings are unaffected.
+Reports add `commit_wait_s`, the time spent waiting at commits (with large
+transactions the client mostly waits while sending instead, so it is small there).
+
+From Python, `import_files(..., conn=conn)` reuses a caller-owned connection instead
+of opening one per call (about 6 ms each on a local server). The connection must be
+idle and not in autocommit mode; the importer commits on it as usual, rolls back
+its pending transaction on failure and leaves it open. Its session settings are not
+changed (the importer's own connections set `statement_timeout` to 120 s). A connection loss during commit can leave the outcome uncertain;
 rerun unchanged input to resolve it safely.
 
 Recording creation is idempotent through `morlet_ensure_recording`: existing rate,

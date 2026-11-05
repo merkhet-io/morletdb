@@ -1,0 +1,295 @@
+{
+ "set": "dev",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "samples": 101453304,
+ "started": "2026-11-05T07:38:14",
+ "arms": {
+  "old": {
+   "commit_chunks": 16,
+   "reuse_connection": false
+  },
+  "commit256": {
+   "commit_chunks": 256,
+   "reuse_connection": false
+  },
+  "new": {
+   "commit_chunks": 256,
+   "reuse_connection": true
+  }
+ },
+ "loads": [
+  {
+   "wall_s": 16.289,
+   "commit_wait_s": 12.089,
+   "client_busy_s": 4.199,
+   "server": {
+    "cpu_percent_mean": 78.6,
+    "cpu_percent_p95": 81.2,
+    "memory_peak_mib": 167.7,
+    "samples": 8
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "old",
+   "durability": "D2",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 6228332
+  },
+  {
+   "wall_s": 13.804,
+   "commit_wait_s": 0.057,
+   "client_busy_s": 13.748,
+   "server": {
+    "cpu_percent_mean": 82.6,
+    "cpu_percent_p95": 90.7,
+    "memory_peak_mib": 164.0,
+    "samples": 7
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "commit256",
+   "durability": "D2",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 7349558
+  },
+  {
+   "wall_s": 12.221,
+   "commit_wait_s": 0.05,
+   "client_busy_s": 12.171,
+   "server": {
+    "cpu_percent_mean": 78.2,
+    "cpu_percent_p95": 92.1,
+    "memory_peak_mib": 171.8,
+    "samples": 7
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "new",
+   "durability": "D2",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 8301555
+  },
+  {
+   "wall_s": 16.313,
+   "commit_wait_s": 11.882,
+   "client_busy_s": 4.431,
+   "server": {
+    "cpu_percent_mean": 77.3,
+    "cpu_percent_p95": 78.4,
+    "memory_peak_mib": 168.0,
+    "samples": 8
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "old",
+   "durability": "D2",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 6219169
+  },
+  {
+   "wall_s": 13.76,
+   "commit_wait_s": 0.056,
+   "client_busy_s": 13.703,
+   "server": {
+    "cpu_percent_mean": 84.0,
+    "cpu_percent_p95": 89.8,
+    "memory_peak_mib": 168.4,
+    "samples": 7
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "commit256",
+   "durability": "D2",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 7373060
+  },
+  {
+   "wall_s": 12.612,
+   "commit_wait_s": 0.054,
+   "client_busy_s": 12.558,
+   "server": {
+    "cpu_percent_mean": 91.4,
+    "cpu_percent_p95": 93.3,
+    "memory_peak_mib": 169.0,
+    "samples": 6
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "new",
+   "durability": "D2",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 8044188
+  },
+  {
+   "wall_s": 16.284,
+   "commit_wait_s": 12.288,
+   "client_busy_s": 3.996,
+   "server": {
+    "cpu_percent_mean": 76.1,
+    "cpu_percent_p95": 78.1,
+    "memory_peak_mib": 167.3,
+    "samples": 8
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "old",
+   "durability": "D1",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 6230245
+  },
+  {
+   "wall_s": 12.345,
+   "commit_wait_s": 0.241,
+   "client_busy_s": 12.103,
+   "server": {
+    "cpu_percent_mean": 91.8,
+    "cpu_percent_p95": 93.4,
+    "memory_peak_mib": 169.1,
+    "samples": 6
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "new",
+   "durability": "D1",
+   "search": false,
+   "rep": 1,
+   "samples_per_s": 8218170
+  },
+  {
+   "wall_s": 16.3,
+   "commit_wait_s": 12.341,
+   "client_busy_s": 3.959,
+   "server": {
+    "cpu_percent_mean": 76.4,
+    "cpu_percent_p95": 77.9,
+    "memory_peak_mib": 167.2,
+    "samples": 8
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "old",
+   "durability": "D1",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 6224129
+  },
+  {
+   "wall_s": 12.356,
+   "commit_wait_s": 0.237,
+   "client_busy_s": 12.119,
+   "server": {
+    "cpu_percent_mean": 91.6,
+    "cpu_percent_p95": 92.3,
+    "memory_peak_mib": 171.6,
+    "samples": 6
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "new",
+   "durability": "D1",
+   "search": false,
+   "rep": 2,
+   "samples_per_s": 8210853
+  },
+  {
+   "wall_s": 61.914,
+   "commit_wait_s": 55.678,
+   "client_busy_s": 6.236,
+   "server": {
+    "cpu_percent_mean": 94.9,
+    "cpu_percent_p95": 97.7,
+    "memory_peak_mib": 183.8,
+    "samples": 28
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "old",
+   "durability": "D2",
+   "search": true,
+   "rep": 1,
+   "samples_per_s": 1638617
+  },
+  {
+   "wall_s": 58.182,
+   "commit_wait_s": 0.059,
+   "client_busy_s": 58.123,
+   "server": {
+    "cpu_percent_mean": 95.6,
+    "cpu_percent_p95": 99.4,
+    "memory_peak_mib": 190.5,
+    "samples": 27
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "arm": "new",
+   "durability": "D2",
+   "search": true,
+   "rep": 1,
+   "samples_per_s": 1743723
+  }
+ ],
+ "chunks_identical_across_arms": true,
+ "median": {
+  "old D2": {
+   "wall_s": 16.301,
+   "samples_per_s": 6223750.5,
+   "commit_wait_s": 11.986,
+   "client_busy_s": 4.315
+  },
+  "commit256 D2": {
+   "wall_s": 13.782,
+   "samples_per_s": 7361309.0,
+   "commit_wait_s": 0.057,
+   "client_busy_s": 13.726
+  },
+  "new D2": {
+   "wall_s": 12.416,
+   "samples_per_s": 8172871.5,
+   "commit_wait_s": 0.052,
+   "client_busy_s": 12.364
+  },
+  "old D1": {
+   "wall_s": 16.292,
+   "samples_per_s": 6227187.0,
+   "commit_wait_s": 12.314,
+   "client_busy_s": 3.978
+  },
+  "new D1": {
+   "wall_s": 12.351,
+   "samples_per_s": 8214511.5,
+   "commit_wait_s": 0.239,
+   "client_busy_s": 12.111
+  },
+  "old D2 search": {
+   "wall_s": 61.914,
+   "samples_per_s": 1638617,
+   "commit_wait_s": 55.678,
+   "client_busy_s": 6.236
+  },
+  "new D2 search": {
+   "wall_s": 58.182,
+   "samples_per_s": 1743723,
+   "commit_wait_s": 0.059,
+   "client_busy_s": 58.123
+  }
+ }
+}
