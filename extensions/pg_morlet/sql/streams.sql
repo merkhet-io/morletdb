@@ -850,10 +850,10 @@ BEGIN
     IF sup THEN
       FOR k IN 0..n-1 LOOP
         w:=s+k::bigint*stride;
-        -- Same rule as morlet_set_level: a window is not searchable when it lies entirely inside an episode at
-        -- level 1 or more and overlaps no episode at level 0; and it cannot be built when samples are missing.
-        EXECUTE format('SELECT (EXISTS (SELECT 1 FROM %1$s o WHERE o.recording_id=$1 AND o.level>=1
-              AND o.start_sample<=$2 AND o.end_sample>=$2+$3)
+        -- Same rule as morlet_set_level: a window is not searchable when episodes at level 1 or more cover it
+        -- completely and no episode at level 0 overlaps it; and it cannot be built when samples are missing.
+        EXECUTE format('SELECT (coalesce(int8range($2,$2+$3) <@ (SELECT range_agg(int8range(o.start_sample,o.end_sample))
+              FROM %1$s o WHERE o.recording_id=$1 AND o.level>=1 AND o.start_sample<$2+$3 AND o.end_sample>$2),false)
             AND NOT EXISTS (SELECT 1 FROM %1$s o WHERE o.recording_id=$1 AND o.level=0
               AND o.start_sample<$2+$3 AND o.end_sample>$2))
           OR coalesce((SELECT sum(least(c.start_sample+c.sample_count,$2+$3)-greatest(c.start_sample,$2)) FROM %2$s c
@@ -2565,12 +2565,12 @@ BEGIN
     n_env:=0; n_seg:=0; n_chunks:=0; n_sum:=0; bytes:=0; md5sum:=NULL;
     IF target>=1 AND ep.level<1 THEN
       IF env IS NOT NULL THEN
-        -- Windows of this episode, and windows it was protecting inside another episode already out of search,
-        -- unless another episode at level 0 still overlaps them (the builder applies the same rule).
+        -- A window leaves search when episodes out of search (this one included) cover it completely, possibly
+        -- several adjacent ones, and no episode at level 0 overlaps it (the builder applies the same rule).
         env_filter:=format('e.recording_id=$1 AND e.start_sample<$3 AND e.start_sample+e.window_size>$2
-          AND ((e.start_sample>=$2 AND e.start_sample+e.window_size<=$3)
-            OR EXISTS (SELECT 1 FROM %1$s o2 WHERE o2.recording_id=$1 AND o2.episode_id<>$4 AND o2.level>=1
-              AND o2.start_sample<=e.start_sample AND o2.end_sample>=e.start_sample+e.window_size))
+          AND int8range(e.start_sample,e.start_sample+e.window_size) <@ (SELECT range_agg(int8range(o2.start_sample,o2.end_sample))
+            FROM %1$s o2 WHERE o2.recording_id=$1 AND (o2.level>=1 OR o2.episode_id=$4)
+              AND o2.start_sample<e.start_sample+e.window_size AND o2.end_sample>e.start_sample)
           AND NOT EXISTS (SELECT 1 FROM %1$s o WHERE o.recording_id=$1 AND o.episode_id<>$4 AND o.level=0
             AND o.start_sample<e.start_sample+e.window_size AND o.end_sample>e.start_sample)',mem.episodes);
         EXECUTE format('SELECT count(*),coalesce(sum(pg_column_size(e.*)),0) FROM %s e WHERE %s',env,env_filter)
@@ -2584,9 +2584,9 @@ BEGIN
       EXECUTE format('SELECT (checkpoint->>''window'')::integer FROM %s WHERE recording_id=$1',collection)
         INTO win USING ep.recording_id;
       seg_filter:=format('s.recording_id=$1 AND s.start_sample<$3 AND s.start_sample+$5>$2
-        AND ((s.start_sample>=$2 AND s.start_sample+$5<=$3)
-          OR EXISTS (SELECT 1 FROM %1$s o2 WHERE o2.recording_id=$1 AND o2.episode_id<>$4 AND o2.level>=1
-            AND o2.start_sample<=s.start_sample AND o2.end_sample>=s.start_sample+$5))
+        AND int8range(s.start_sample,s.start_sample+$5) <@ (SELECT range_agg(int8range(o2.start_sample,o2.end_sample))
+          FROM %1$s o2 WHERE o2.recording_id=$1 AND (o2.level>=1 OR o2.episode_id=$4)
+            AND o2.start_sample<s.start_sample+$5 AND o2.end_sample>s.start_sample)
         AND NOT EXISTS (SELECT 1 FROM %1$s o WHERE o.recording_id=$1 AND o.episode_id<>$4 AND o.level=0
           AND o.start_sample<s.start_sample+$5 AND o.end_sample>s.start_sample)',mem.episodes);
       EXECUTE format('SELECT count(*) FROM %s s WHERE %s',rel.segments,seg_filter)
