@@ -655,3 +655,35 @@ quit (load average about 2), and B3.8 is repeated on the quiet machine (`results
 - **After B3.9:** B3.8 a third time (`results/b38z/`), to measure drift over the night.
 - **Reported:** every ratio from one session's pair only; the earlier cross-session ratios stay in RESULTS.md,
   marked as cross-session. Statements by B3's rule. The website takes its ratios from B3.8/B3.9.
+
+## Amendment B3.10: single-connection ingestion after I1 (FROZEN before any load of the benchmark set)
+
+Added 2026-11-05. I1 (issue #233; development-set work in [`../ingest_i1/ATTRIBUTION.md`](../ingest_i1/ATTRIBUTION.md))
+changed how MorletDB ingests from one connection: the importer commits 256 chunks per transaction and keeps one
+connection, sends runs of up to 64 consecutive chunks in one `morlet_append_chunks_raw` call (SQL 0.3.4), and
+the server encodes a run's chunks on up to 4 threads. On the development set this raised single-connection D2
+ingestion from 6.22 M to 13.2 M samples/s with byte-identical stored data. B3.10 measures it on the benchmark
+set, beside QuestDB and the released MorletDB, in one session. Everything common to B3 applies.
+
+- **MorletDB, new (arm `morletdb-i1`):** image `morletdb:b310`, built locally with `deploy/Dockerfile` from main at
+  the merge of PR #237, commit `dc77ed1` (SQL 0.3.4, unreleased; the image id is recorded in every result). B3.3's base path
+  (raw float64 appends and reads, pipelining, native statistics, no search features) plus `commit_chunks=256`, one
+  importer connection for all acquisitions, `rpc_chunks=0` (automatic: 64 chunks per call) and the server's
+  default `morlet.encode_threads` (4 on this machine's 8-CPU containers).
+- **MorletDB, released (arm `morletdb-033`):** `ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1`, exactly as in B3.8, as
+  the same-session baseline.
+- **QuestDB 10.1.0:** exactly as in B3.8 (B3.2 configuration, Parquet arms on D2 r1 and r2).
+- **Runs:** for r = 1, 2, 3 and durability D2 then D1: `morletdb-i1`, `questdb`, `morletdb-033`. Storage,
+  reads and analytics on D2 r1 of each system, as in B3.8. `run_b310.sh`; machine snapshots before and after every
+  load (`results/b310/machine/`); an interrupted load is rerun. Container limits as in B3 (8 CPU, 16 GB).
+- **Machine:** the run starts only when the 1-minute load average is below 3 and no process other than the
+  Docker VM uses more than half a core; a load that starts above 4 is reported with that note.
+- **Acceptance criteria for `morletdb-i1`** (adopting it as the recommended configuration): (1) every load of
+  every arm passes B3's correctness checks; (2) in every load, the stored chunks of `morletdb-i1` are
+  byte-identical to `morletdb-033`'s (same count and digest), so storage is unchanged; (3) R1–R5 and analytics p50
+  of `morletdb-i1` each at most 1.1× those of `morletdb-033` in this session (reads use the same code).
+- **Reported:** every B3 measure for all three arms, statements by B3's rule for `morletdb-i1` against QuestDB
+  and against `morletdb-033`, and server peak memory. If the criteria hold, the website's ingestion figures take
+  `morletdb-i1`'s numbers, labelled with the unreleased SQL 0.3.4 until it is released.
+- **Smoke check (not a result):** one development-set load of `morletdb-i1` (`B3_SET=dev`) before the first
+  benchmark load, to confirm the image and the harness.

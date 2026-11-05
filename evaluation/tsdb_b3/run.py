@@ -166,6 +166,10 @@ def load(system, durability, rep):
     if system.startswith("morletdb-033"):   # B3.3: the B3.2 client path on the current image
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
                            "one_statement": True})
+    if system == "morletdb-i1":   # B3.10 (I1, #233): B3.3's path + 256 chunks per transaction, one connection,
+        # automatic batched raw appends (SQL 0.3.4); encoding threads at the server default
+        mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
+                           "one_statement": True, "commit_chunks": 256, "reuse_connection": True, "rpc_chunks": 0})
     mo.VARIANT["profile"] = os.environ.get("B3_PROFILE") == "1"   # B3.3 attribution loads: track_functions=all
     if system in ("morletdb-batched16", "morletdb-noquantum"):     # attribution, outside the frozen arms
         mo.VARIANT.update({"rpc_chunks": 16} if system.endswith("batched16") else {"quantum": False})
@@ -202,6 +206,8 @@ def load(system, durability, rep):
             while mo.count(handle)[1] != want:
                 time.sleep(0.05)
         r["queryable_after_last_ack_s"] = time.perf_counter() - t_last
+        if mo._WRITER:   # B3.10: the importer's reused connection
+            mo._WRITER[0].close()
         if envelopes:
             ids = [mo.rid(a, c) for a in m["acquisitions"] for c in wl.UNITS]
             t = time.perf_counter()
@@ -217,6 +223,10 @@ def load(system, durability, rep):
                      "server": st.summary()}
     if r["calls"]:
         res["ingest"]["ack_per_call"] = common.pcts(r["calls"])
+    if system in ("morletdb-033", "morletdb-i1"):   # B3.10: stored chunks must be byte-identical across arms
+        res["ingest"]["chunks"] = dict(zip(("count", "md5"), handle.execute(
+            f"SELECT count(*), md5(string_agg(md5(encoded), '' ORDER BY recording_id, start_sample)) "
+            f"FROM {mo.COLLECTION}_chunks").fetchone()))
     if search:   # B3.3: digest of every stored feature vector (float8 text output is exact), to compare images
         res["ingest"]["segments"] = dict(zip(("count", "md5"), handle.execute(
             f"SELECT count(*), md5(string_agg(recording_id || ':' || start_sample || ':' || features::text, ';' "
@@ -274,7 +284,7 @@ def load(system, durability, rep):
         mo.settle(handle)
         res["storage"] = mo.storage(handle)
         if rep == 1 and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16", "morletdb-032",
-                                   "morletdb-033"):
+                                   "morletdb-033", "morletdb-i1"):
             res["reads"] = reads("morletdb", handle, m, data)
             res["analytics"] = analytics("morletdb", handle, m, data)
             if system == "morletdb":

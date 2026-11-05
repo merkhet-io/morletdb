@@ -911,3 +911,78 @@ pair: `python3 evaluation/tsdb_b3/summarize_b39.py`.
 
 As each stage. Secondary layouts (TDengine zstd and tsz, IoTDB table-zstd, CrateDB row-best) were not re-run;
 their time-based figures in B3.4–B3.6 are cross-session and are no longer quoted. One dataset, one machine.
+
+# Amendment B3.10: single-connection ingestion after I1
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `a388f87`, 2026-11-05 10:07) before any benchmark-set load;
+development work in [`../ingest_i1/ATTRIBUTION.md`](../ingest_i1/ATTRIBUTION.md) (issue #233). One session,
+2026-11-05 10:08–10:18 (`results/b310/`, `run_b310.sh`, log `results/b310.log`): for r = 1, 2, 3 and D2 then D1,
+`morletdb-i1` (image `morletdb:b310`, `sha256:4a617625773a…`, built from `dc77ed1`, SQL 0.3.4 unreleased), QuestDB
+10.1.0, `morletdb-033` (released `0.3.5-alpha.1`). The smoke check (one development-set load of `morletdb-i1`,
+`results/dev/b310-smoke/`) passed before the run. Summary: `summarize_b310.py`.
+
+**Machine.** 1-minute load average 2.8 before the session, with no foreign process above half a core (the start
+condition). Before the loads it was 4.8–9.9 (median 7.9); as in B3.8 (median 7.0, maximum 11.3) this comes from
+the session's own previous load, so every load started above 4 by the frozen note rule. Foreign processes above
+half a core appeared in six of the 18 pre-load snapshots: a WebKit page (72% before `morletdb-033` D2 r1, 111%
+before its D2 r2), Spotlight indexing and media analysis (70–110% before the three D1 r3 loads) and `duetexpertd`
+(79% before `morletdb-i1` D1 r3). Snapshots are taken only before and after each load.
+
+**Correctness: all 18 loads passed** (every channel read back against the manifest's SHA-256, counts, reads and
+analytics within 1e-12). **Stored chunks of `morletdb-i1` were byte-identical to `morletdb-033`'s in every load**
+(25,138 chunks, one digest).
+
+## Ingestion (one client connection; median [range] of three loads)
+
+| | D2 (asynchronous) | D1 (durable) | Server memory, median peak |
+|---|---:|---:|---:|
+| **MorletDB, I1 (SQL 0.3.4, unreleased)** | **13.65 M** [13.51–13.73] | **12.99 M** [12.71–13.10] | 177 MiB |
+| QuestDB 10.1.0 | 9.58 M [9.03–9.67] | 8.26 M [7.14–8.46] | 2,307 MiB |
+| MorletDB 0.3.5-alpha.1 | 6.07 M [5.93–6.16] | 6.05 M [5.96–6.14] | 168 MiB |
+
+**Statements (≥ 10% in all loads):**
+- **MorletDB with I1 ingested from one connection about 1.4× faster than QuestDB (D2) and 1.6× faster (D1)**
+  (every `morletdb-i1` load ≥ 1.40× and ≥ 1.50× every QuestDB load). B3.8 had QuestDB 1.5× / 1.4× faster than the
+  released MorletDB, and this session reproduces that (QuestDB ≥ 1.47× / 1.16× `morletdb-033`).
+- I1 against the released MorletDB: 2.2× (D2) and 2.1× (D1) (all-loads bounds 2.19 and 2.07).
+- MorletDB with I1 used 13× less peak server memory than QuestDB (177 against 2,307 MiB); the encoding threads add
+  about 9 MiB over the released build.
+
+## Storage (D2 r1)
+
+Chunk data identical (155.98 MB TOAST, 2.48 MB heap, 2.09 MB indexes for both MorletDB arms). The recordings table
+is smaller with I1 (0.63 against 4.06 MB) because the checkpoint row is rewritten once per call instead of once per
+chunk, leaving fewer dead versions: database 169.3 against 172.8 MB (−2%), WAL 160 against 176 MiB.
+
+## Reads and analytics (D2 r1 of each arm; p50 / p95 ms)
+
+| Query | MorletDB, I1 | QuestDB (native) | MorletDB 0.3.5-alpha.1 | I1 against QuestDB |
+|---|---:|---:|---:|---|
+| R1 4,096 samples | 0.66 / 1.14 | 1.12 / 2.60 | 0.64 / 1.05 | MorletDB 1.7× / 2.3× faster |
+| R2 128,000 samples | 7.46 / 10.58 | 7.15 / 13.78 | 6.67 / 8.89 | no statement (0.96 / 1.30) |
+| R3 3 × 64,000 samples | 7.84 / 10.81 | 9.29 / 14.63 | 7.82 / 11.03 | MorletDB 1.2× / 1.4× faster |
+| R4 recent | 0.63 / 0.99 | 0.79 / 1.39 | 0.63 / 0.97 | MorletDB 1.3× / 1.4× faster |
+| R4 older | 0.61 / 0.98 | 0.79 / 1.51 | 0.61 / 1.01 | MorletDB 1.3× / 1.5× faster |
+| R5 4 threads, queries/s | 4,070 | 2,316 | 4,196 | |
+| Interval statistics | 2.54 / 2.66 | 2.49 / 4.70 | 2.55 / 2.66 | no statement (0.98 / 1.77) |
+
+## Acceptance criteria (frozen)
+
+| # | Criterion | Result | Met |
+|---|---|---|---|
+| 1 | every load of every arm passes B3's correctness checks | 18 of 18 | yes |
+| 2 | stored chunks of `morletdb-i1` byte-identical to `morletdb-033`'s in every load | 6 of 6 pairs | yes |
+| 3 | R1–R5 and analytics p50 of `morletdb-i1` each ≤ 1.1× `morletdb-033`'s | R2 **1.118**; R1 1.04, R3 1.00, R4 1.00 / 1.00, R5 1.03, analytics 1.00 | **no** |
+
+**Verdict: criterion 3 is not met** (R2 p50 7.46 against 6.67 ms, +11.8%), so by the frozen rule `morletdb-i1` is
+not adopted as the recommended configuration from this stage, and the website is not changed. The ingestion
+statements above stand as measured.
+
+**Attribution (exploratory, after the stage, not part of it).** The read path is the same code in both arms. On the
+development set the same image read R2 faster after an I1 load than after a `morletdb-033` load (6.99 against
+8.27 ms p50, `results/dev/b310-diag/`). Two more benchmark-set loads of `morletdb-i1` and one of `morletdb-033` on
+`morletdb:b310` (`results/b310-attr-a/`, `-b/`) gave R2 p50 8.42 and 6.94 ms for I1 and 7.34 ms for `morletdb-033`,
+while Spotlight and media analysis were running (1-minute load average up to 10.5): load-to-load spread of R2 is
+larger than the 11.8% difference, in both directions. This suggests, but does not establish, that the failed
+criterion reflects variation between single read measurements rather than a slower read path. A criterion over
+several read repetitions would decide it; that needs a new frozen amendment.
