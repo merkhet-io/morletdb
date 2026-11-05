@@ -291,6 +291,7 @@ fn for_interval_slices(
         pgrx::error!("chunks and starts differ in length");
     }
     let mut previous = i64::MIN;
+    let mut items: Vec<(&[u8], i64)> = Vec::with_capacity(starts.len());
     for (chunk, start) in chunks.iter().zip(starts) {
         let (Some(chunk), Some(start)) = (chunk, *start) else {
             pgrx::error!("chunks and starts must not contain NULL");
@@ -299,8 +300,20 @@ fn for_interval_slices(
             pgrx::error!("chunk starts must be strictly ascending");
         }
         previous = start;
-        let samples =
-            morlet_core::rawcodec::decode(chunk).unwrap_or_else(|e| pgrx::error!("{}", e));
+        items.push((chunk, start));
+    }
+    // Long reads decode their chunks on worker threads; errors are raised in chunk order as before.
+    let threads = if items.len() >= DECODE_PARALLEL_MIN {
+        decode_threads()
+    } else {
+        1
+    };
+    let decoded = on_threads(&items, threads, "morlet-decode", |(chunk, _)| {
+        morlet_core::rawcodec::decode(chunk).map_err(|e| e.to_string())
+    });
+    for ((_, start), samples) in items.iter().zip(decoded) {
+        let start = *start;
+        let samples = samples.unwrap_or_else(|e| pgrx::error!("{}", e));
         let lo = interval_start.max(start) - start;
         let hi = interval_end.min(start + samples.len() as i64) - start;
         if lo < hi {
@@ -679,12 +692,26 @@ fn encode_chunks(chunks: &[&[f64]], quantum: f64, verify: bool) -> Vec<ChunkCode
                 }),
         )
     };
-    let threads = encode_threads().min(chunks.len());
+    on_threads(chunks, encode_threads(), "morlet-encode", |c| one(c))
+}
+
+/// Runs `f` on every item, in order of results, on up to `threads` scoped threads (one contiguous part each).
+/// `f` must not call PostgreSQL or use PostgreSQL memory other than reading data borrowed for the call; the
+/// threads are started with every signal blocked, so PostgreSQL's signal handlers keep running in the
+/// backend's own thread. With one thread (or one item) everything runs in the backend's thread.
+fn on_threads<T: Sync, R: Send>(
+    items: &[T],
+    threads: usize,
+    name: &str,
+    f: impl Fn(&T) -> R + Sync,
+) -> Vec<R> {
+    let threads = threads.min(items.len());
     if threads <= 1 {
-        return chunks.iter().map(|c| one(c)).collect();
+        return items.iter().map(&f).collect();
     }
-    let per = chunks.len().div_ceil(threads);
-    let parts: Vec<Vec<ChunkCode>> = std::thread::scope(|scope| {
+    let per = items.len().div_ceil(threads);
+    let f = &f;
+    let parts: Vec<Vec<R>> = std::thread::scope(|scope| {
         // SAFETY: plain POSIX signal-mask calls on locally owned sets; the backend's mask is restored below
         // and the workers keep the fully blocked mask they inherit.
         let mut all: libc::sigset_t = unsafe { std::mem::zeroed() };
@@ -693,14 +720,12 @@ fn encode_chunks(chunks: &[&[f64]], quantum: f64, verify: bool) -> Vec<ChunkCode
             libc::sigfillset(&mut all);
             libc::pthread_sigmask(libc::SIG_BLOCK, &all, &mut old);
         }
-        let handles: Vec<_> = chunks
+        let handles: Vec<_> = items
             .chunks(per)
             .map(|part| {
                 std::thread::Builder::new()
-                    .name("morlet-encode".into())
-                    .spawn_scoped(scope, move || {
-                        part.iter().map(|c| one(c)).collect::<Vec<_>>()
-                    })
+                    .name(name.into())
+                    .spawn_scoped(scope, move || part.iter().map(f).collect::<Vec<_>>())
             })
             .collect();
         unsafe {
@@ -713,10 +738,32 @@ fn encode_chunks(chunks: &[&[f64]], quantum: f64, verify: bool) -> Vec<ChunkCode
                 Err(_) => None,
             })
             .collect::<Option<Vec<_>>>()
-            .unwrap_or_else(|| pgrx::error!("chunk encoder threads failed"))
+            .unwrap_or_else(|| pgrx::error!("worker threads failed"))
     });
     parts.into_iter().flatten().collect()
 }
+
+/// Worker threads for decoding the chunks of one long interval read: `morlet.decode_threads` (1..64; 1 decodes
+/// in the backend's own thread), by default up to 4 and at most the CPUs available. Reads of fewer than
+/// `DECODE_PARALLEL_MIN` chunks always decode in the backend's thread (starting threads would cost more).
+fn decode_threads() -> usize {
+    let default = std::thread::available_parallelism().map_or(1, |n| n.get().min(4));
+    // SAFETY: GetConfigOption returns NULL or a NUL-terminated string valid until the setting changes.
+    let raw = unsafe { pg_sys::GetConfigOption(c"morlet.decode_threads".as_ptr(), true, false) };
+    if raw.is_null() {
+        return default;
+    }
+    let text = unsafe { std::ffi::CStr::from_ptr(raw) }.to_string_lossy();
+    if text.is_empty() {
+        return default;
+    }
+    match text.trim().parse::<usize>() {
+        Ok(n) if (1..=64).contains(&n) => n,
+        _ => pgrx::error!("morlet.decode_threads must be an integer 1..64"),
+    }
+}
+
+const DECODE_PARALLEL_MIN: usize = 8;
 
 /// The per-chunk work of appending a run of consecutive chunks, in one call (I1, issue #233).
 ///
@@ -2742,6 +2789,39 @@ END $$"#).unwrap();
     #[pg_test(error = "morlet.verify_appends must be on or off")]
     fn verify_appends_is_validated() {
         Spi::run("SELECT morlet_create_stream_collection('public','ver_guc'); SELECT morlet_start_recording('ver_guc','A',4096,'x','g'); SET morlet.verify_appends = 'maybe'; SELECT morlet_append_chunks_raw('ver_guc','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),2)").unwrap();
+    }
+    /// Long reads decode on worker threads; the samples are identical to decoding in the backend's thread.
+    #[pg_test]
+    fn long_reads_do_not_depend_on_decode_threads() {
+        Spi::run(
+            "CREATE TEMP TABLE dec_src AS SELECT i,CASE WHEN i<60000 THEN round(1000*sin(i/7.))::float8 ELSE sin(i/7.)::float8 END AS v FROM generate_series(0,99999) i;
+             SELECT morlet_create_stream_collection('public','dec_threads'); SELECT morlet_start_recording('dec_threads','A',4096,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('dec_threads','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM dec_src ORDER BY i)),2048);",
+        )
+        .unwrap();
+        let read = |threads: &str| {
+            Spi::run(&format!("SET morlet.decode_threads = {threads}")).unwrap();
+            Spi::get_one::<Vec<u8>>("SELECT morlet_read_interval_raw('dec_threads','A',1234,98765)")
+                .unwrap()
+                .unwrap()
+        };
+        let one = read("1");
+        assert_eq!(one, read("4"));
+        assert_eq!(one, read("64"));
+        let expected = Spi::get_one::<Vec<u8>>(
+            "SELECT morlet_float8_le_bytes(ARRAY(SELECT v FROM dec_src WHERE i>=1234 AND i<98765 ORDER BY i))",
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(one, expected);
+    }
+    #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
+    fn long_reads_on_threads_still_verify_chunks() {
+        Spi::run("SELECT morlet_create_stream_collection('public','dec_rot'); SELECT morlet_start_recording('dec_rot','A',4096,'x','g'); SELECT morlet_append_chunks_raw('dec_rot','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,19999) i)),1000); ALTER TABLE dec_rot_chunks DROP CONSTRAINT dec_rot_chunks_check; UPDATE dec_rot_chunks SET encoded=set_byte(encoded,20,get_byte(encoded,20) # 1) WHERE start_sample=13000; SET morlet.decode_threads = 4; SELECT morlet_read_interval_raw('dec_rot','A',0,20000)").unwrap();
+    }
+    #[pg_test(error = "morlet.decode_threads must be an integer 1..64")]
+    fn decode_threads_is_validated() {
+        Spi::run("SELECT morlet_create_stream_collection('public','dec_guc'); SELECT morlet_start_recording('dec_guc','A',4096,'x','g'); SELECT morlet_append_chunks_raw('dec_guc','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,19999) i)),1000); SET morlet.decode_threads = 0; SELECT morlet_read_interval_raw('dec_guc','A',0,20000)").unwrap();
     }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn replay_compares_signed_zero_bits() {

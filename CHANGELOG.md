@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Long reads decode on worker threads:** interval reads of at least 8 chunks (`morlet_read_interval`,
+  `morlet_read_interval_raw`) decode their chunks on up to `morlet.decode_threads` threads (1..64, default up to 4;
+  1 = the backend's own thread). Results are identical. Development set: 128,000-sample reads 41% faster inside
+  the server, 15% from the client ([reads_r2](evaluation/reads_r2/ATTRIBUTION.md)).
+
 ## 0.3.6-alpha.1
 
 SQL version 0.3.4, with an update script from 0.3.3 (`ALTER EXTENSION pg_morlet UPDATE`; data and policies are not
