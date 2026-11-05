@@ -3048,6 +3048,33 @@ END $$"#).unwrap();
             6
         );
     }
+    /// A window that spans two adjacent episodes leaves search only when both are out of search.
+    #[pg_test]
+    fn memory_windows_spanning_adjacent_episodes() {
+        Spi::run("SELECT morlet_create_stream_collection('public','mem_span'); SELECT morlet_start_recording('mem_span','A',4096,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunks_raw('mem_span','A',0,morlet_float8_le_bytes(ARRAY(SELECT round(100*sin(i/9.))::float8 FROM generate_series(0,3999) i)),1000);
+          SELECT morlet_enable_envelopes('mem_span'); SELECT morlet_build_envelopes('mem_span','A',512,256,1000);
+          SELECT morlet_enable_memory('mem_span');
+          SELECT count(*) FROM morlet_add_episodes('mem_span','[{\"recording_id\":\"A\",\"start_sample\":0,\"end_sample\":1000},{\"recording_id\":\"A\",\"start_sample\":1000,\"end_sample\":2000}]')").unwrap();
+        let spanning = "SELECT count(*) FROM mem_span_envelopes WHERE start_sample<1000 AND start_sample+window_size>1000";
+        let one = |sql: &str| Spi::get_one::<i64>(sql).unwrap().unwrap();
+        let before = one(spanning);
+        assert!(before > 0);
+        let run = one("SELECT morlet_start_memory_run('mem_span','test','1')");
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('mem_span',{run},'[{{\"episode_id\":1,\"level\":1}}]')"
+        ))
+        .unwrap();
+        assert_eq!(one(spanning), before);
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('mem_span',{run},'[{{\"episode_id\":2,\"level\":1}}]')"
+        ))
+        .unwrap();
+        assert_eq!(one(spanning), 0);
+        Spi::run("DELETE FROM mem_span_envelopes; SELECT morlet_build_envelopes('mem_span','A',512,256,1000)").unwrap();
+        assert_eq!(one(spanning), 0);
+        assert!(one("SELECT count(*) FROM mem_span_envelopes WHERE start_sample>=2000") > 0);
+    }
     #[pg_test(
         error = "samples of recording A in 0..2000 were compacted to level 3 (episode 1, ledger 1)"
     )]
