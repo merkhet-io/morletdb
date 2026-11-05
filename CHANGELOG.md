@@ -25,6 +25,8 @@ Faster single-connection ingestion (I1, #233):
   into chunks of `chunk_size`. It stores exactly what one `morlet_append_chunk_raw` call per chunk stores
   (chunks, summaries, segments, checkpoint), with the same privileges, row security and errors; retries and
   overlaps go through the per-chunk path. Helper `morlet_chunk_batch` does the per-chunk work in one call.
+- **Encoding on worker threads:** `morlet_chunk_batch` encodes a batch's chunks on up to `morlet.encode_threads`
+  threads (1..64, default up to 4; 1 = the backend's own thread). Output and errors do not depend on the setting.
 - **Importer:** 256 chunks per transaction by default (was 16); `--rpc-chunks` defaults to automatic (batched
   raw appends when the server has them, otherwise one chunk per call); `import_files(..., conn=...)` reuses a
   caller-owned connection; reports add `commit_wait_s`, `raw_batch` and the resolved `rpc_chunks`.

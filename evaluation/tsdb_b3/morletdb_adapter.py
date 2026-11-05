@@ -33,7 +33,8 @@ def start(volume, durability="D2"):
     cmd = ["postgres"] + (["-c", "synchronous_commit=off"] if durability == "D2" else []) + \
         (["-c", f"min_wal_size={VARIANT['min_wal_size']}"] if VARIANT.get("min_wal_size") else []) + \
         (["-c", f"max_wal_size={VARIANT['max_wal_size']}"] if VARIANT.get("max_wal_size") else []) + \
-        (["-c", "track_functions=all"] if VARIANT.get("profile") else [])
+        (["-c", "track_functions=all"] if VARIANT.get("profile") else []) + \
+        (["-c", f"morlet.encode_threads={VARIANT['encode_threads']}"] if VARIANT.get("encode_threads") else [])
     common.fresh(NAME, IMAGE, volume, "/var/lib/postgresql/data", [f"{PORT}:5432"],
                  {"POSTGRES_USER": "morlet", "POSTGRES_PASSWORD": _PASSWORD, "POSTGRES_DB": "morlet"}, cmd)
     for _ in range(240):

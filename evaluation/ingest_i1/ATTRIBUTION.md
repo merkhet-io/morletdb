@@ -117,3 +117,57 @@ chunks equal step 1's loads on the released image.
 The server backend now runs at 61–77% of one core during a load, so the remaining time is no longer only the
 server's. Next: where the 10.2 s go now (client and server), then parallel encoding. No comparison with QuestDB
 is stated from development-set runs; that needs a frozen same-session stage on the benchmark set.
+
+## After step 2: where a batched load spends its time
+
+Script [`attribute_batch.py`](attribute_batch.py), results
+[`results/attribution_batch_20261105T094904.json`](results/attribution_batch_20261105T094904.json); image
+`morletdb:i1-dev` (step 2), development set, D2, machine quiet (the browser tab of step 2's run was closed;
+1-minute load average 2.0 before the session, my own previous run winding down at the start). The load took
+**10.25 s (9.90 M samples/s, 877 calls)**, as in step 2; every run of 64 chunks was then appended again inside
+the server, and the pieces timed alone (medians of three; the replay's chunks were byte-identical).
+
+| Piece | Seconds | Share of the load |
+|---|---:|---:|
+| Server-only batched append path | 8.04 | 78% |
+| of which encoding (`morlet_core::rawcodec::encode`, inside `morlet_chunk_batch`) | 5.50 | **54%** |
+| of which the rest of `morlet_chunk_batch` (bytes to values, cutting, checkpoint) | 0.51 | 5% |
+| of which the CHECK constraint (full decode of each chunk) | 1.38 | 13% |
+| of which the row inserts (heap, keys, foreign key, WAL) | 0.69 | 7% |
+| of which PL/pgSQL and statement overhead (remainder) | ≈ 0 | |
+| Client and network (load minus server-only path) | 2.21 | 22% |
+
+Step 2 removed the per-statement overhead entirely. **Encoding is now more than half the load and runs on one
+core**: parallel encoding within a batch (step 3) is the next lever, then the CHECK constraint's decode (an
+owner decision, #233), then the client.
+
+## Step 3: encoding on worker threads (implemented, SQL 0.3.4)
+
+`morlet_chunk_batch` encodes the chunks of a batch on up to `morlet.encode_threads` threads (1..64; default up
+to 4, at most the CPUs available; 1 encodes in the backend's own thread). The workers run only `morlet_core`
+code, with every signal blocked; validation, checkpoint and errors stay in the backend's thread, in chunk order,
+so output and error messages do not depend on the thread count (`#[pg_test]`s with 1, 4 and the default, grid
+and off-grid chunks; first invalid chunk; invalid setting). A local stress run of 200 full batches on 8 threads
+showed no problem in the server log.
+
+Script [`threads.py`](threads.py), results [`results/threads_20261105T095950.json`](results/threads_20261105T095950.json);
+image `morletdb:i1-dev3`, development set, step 2's client settings, arms alternating, B3's full correctness
+check after every load (all passed); chunk, segment and checkpoint digests equal step 2's in base and searchable
+loads. 1-minute load average 4.2–4.6 during the session, from the loads themselves (the top processes before
+the run were WindowServer 31% and the Docker VM 16%).
+
+| `morlet.encode_threads` | D2 wall s (two loads) | D2 samples/s | D1 wall s (two loads) | D1 samples/s | server CPU (D2) |
+|---:|---|---:|---|---:|---:|
+| 1 (as step 2) | 10.61, 10.56 | 9.58 M | 10.64, 10.69 | 9.51 M | 70% |
+| 2 | 8.38, 8.22 | 12.22 M | | | 81% |
+| **4 (default)** | 7.55, 7.79 | **13.23 M (+38%)** | 7.83, 8.88 | **12.19 M (+28%)** | 99% |
+| 8 | 7.36, 7.42 | 13.72 M | | | 104% |
+| searchable, 1 / 4 (one load each) | 50.9 / 48.1 | 1.99 / 2.11 M (+6%) | | | |
+
+More than 4 threads adds little: encoding then takes about a quarter of its former 5.5 s, and the load is bound
+by the serial rest (the CHECK constraint's decode 1.4 s, inserts 0.7 s, the rest of the batch 0.5 s) and the
+client (2.2 s). Searchable loads gain little because feature extraction, not encoding, dominates them.
+
+**Development-set summary of I1 so far (D2, single connection):** 6.22 M (before) → 8.17 M (step 1, importer
+pacing) → 9.94 M (step 2, batched appends) → 13.2 M samples/s (step 3, 4 encoding threads), about 2.1×, with
+stored data byte-identical throughout.
