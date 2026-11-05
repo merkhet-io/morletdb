@@ -74,6 +74,8 @@ def create(conn, envelopes=False):
     conn.execute("SELECT morlet_create_stream_collection('public', %s)", (COLLECTION,))
     if envelopes:
         conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (COLLECTION,))
+    if VARIANT.get("summaries"):   # B3.13: chunk summaries (count, min, max, sums per chunk), stored at append
+        conn.execute("SELECT morlet_enable_chunk_summaries(%s::regclass)", (COLLECTION,))
 
 
 def rid(acq, channel):

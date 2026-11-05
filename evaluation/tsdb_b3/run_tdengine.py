@@ -193,6 +193,13 @@ def analytics(m, data, reps=20):
             "computed": "database"}
 
 
+def reads_child():
+    """B3.13: the read benchmark against the running server from a new process (common.reads_maybe_fresh)."""
+    m = common.manifest()
+    data, _ = preload(m, list(range(len(m["acquisitions"]))))
+    common.print_reads_child(reads(m, data), analytics(m, data))
+
+
 def load(arm, durability, rep):
     rep = int(rep)
     m = common.manifest()
@@ -241,8 +248,8 @@ def load(arm, durability, rep):
         common.stop(c.NAME)
         res["storage"] = c.storage(vol)
         c.restart(vol, arm, durability)
-        res["reads"] = reads(m, data)
-        res["analytics"] = analytics(m, data)
+        res["reads"], res["analytics"] = common.reads_maybe_fresh(__file__, [], lambda: (reads(m, data),
+                                                                                         analytics(m, data)))
         common.stop(c.NAME)   # COMPACT DATABASE is not available in the open-source edition (development)
     else:
         s.close()
@@ -251,4 +258,4 @@ def load(arm, durability, rep):
 
 
 if __name__ == "__main__":
-    {"subset": subset, "load": load}[sys.argv[1]](*sys.argv[2:])
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
