@@ -10,7 +10,7 @@ done_ok() { local f="results/$B3_RUN/$1.json" ; [ -f "$f" ] && grep -q '"correct
 # step <result name> <D> <r> <command...>
 step() { local name=$1 d=$2 r=$3; shift 3
   if done_ok "$name" "$d$r"; then echo "skip $B3_RUN $name"; return; fi
-  echo "== $B3_RUN $name $(date +%H:%M:%S)"; snap "$name"; "$@"; snap "$name"; }
+  echo "== $B3_RUN $name $(date +%H:%M:%S)"; snap "$name"; "$@" || echo "FAILED $B3_RUN $name $(date +%H:%M:%S)"; snap "$name"; }
 pair() { # pair <run> <system name prefix> <arm or ""> <python> <runner>
   export B3_RUN=$1
   for r in 1 2 3; do for d in D2 D1; do
