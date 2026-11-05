@@ -1,0 +1,151 @@
+\documentclass[sigconf,nonacm]{acmart}
+\usepackage{booktabs,tabularx,xurl}
+\settopmatter{printacmref=false,printccs=false,printfolios=true}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\setcopyright{none}
+\DeclareUrlCommand\code{\urlstyle{tt}}
+\emergencystretch=1.5em
+\newcommand{\M}{MorletDB}
+\newcommand{\ReportVersion}{\input{REPORT_VERSION}\unskip}
+\newcommand{\meas}{\textsc{m}}
+\newcommand{\impl}{\textsc{i}}
+\newcommand{\prop}{\textsc{p}}
+
+\begin{document}
+\title{Machines with a Memory: Episodic Recall and Graded Compaction for Industrial Waveforms}
+\subtitle{Version \ReportVersion{} --- position and design report}
+\author{Zin Nam}
+
+\begin{abstract}
+Engineers at a machine ask a question that time-series databases do not answer: \emph{have we seen this before, and what was it?} The question is about an episode, an exact stretch of waveform together with the operating context in which it occurred and the outcome it later turned out to have, and it has to be answered years after the episode was recorded. We argue that an archive of machine waveforms should be designed as an episodic memory, and that such a memory has to forget: a single vibration channel sampled at 64\,kHz still grows by about 9\,GB a day after the best lossless compression we measured. We make three contributions. First, a model of the episode for industrial waveforms and the requirements it places on storage and recall: exact evidence, recall under small time shifts, conditioning on operating context, and the outcome as part of the record. Second, a graded compaction ladder (full, not searchable, represented, summarized, gone) in which every level states which questions it still answers exactly, together with an explicit, versioned keep-value that decides when an episode moves down, and a ledger that makes every step auditable. Third, an evaluation design that measures forgetting by the recall it costs (retrieval regret), by the survival of known events and by the visibility of slow drift. The building blocks are measured in \M{}, an open PostgreSQL extension: lossless storage at 1.5--1.7 bytes per sample on calibrated vibration data, bitwise exact mergeable chunk summaries at about 1\% of that size, and lag-tolerant similarity search whose hits read back the stored samples bit for bit. The compaction policies themselves are proposals; this report states what is measured, what is implemented and what is proposed, and fixes how the proposals will be tested.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+A condition-monitoring engineer who hears an unfamiliar knock in a spindle does not want the mean vibration of the last hour. They want to know whether the machine, or one like it, has produced this signal before, under which conditions, and what was found when someone opened it up. Maintenance practice has long reasoned this way: case-based reasoning retrieves past cases and reuses their solutions~\cite{aamodt1994}. Agents built on large language models are now being given the same kind of memory, with retrieval weighted by relevance, recency and importance~\cite{park2023generative} and memory managed in tiers~\cite{packer2023memgpt}. Industrial waveforms are a hard place to build it.
+
+\emph{Waveforms are large.} A vibration channel sampled at 64\,kHz produces 5.5 billion samples a day, 44\,GB as float64. Our lossless codec stores calibrated vibration and motor-current data at 1.5--1.7 bytes per sample~\cite{g1,b3}, which still leaves about 9\,GB a day, about 3.3\,TB a year, per channel. A plant has hundreds of channels.
+
+\emph{Waveforms are evidence.} A spectrum, an envelope or a learned embedding is a view of the signal under assumptions that will change; the samples are what a later analysis, a new feature extractor or a dispute needs. Lossy compression with error bounds~\cite{di2016sz,lindstrom2014zfp} trades exactly this away.
+
+\emph{Similar is not identical.} The same fault produces the same pattern at slightly different times, phases and operating points. Recall must tolerate small shifts and must be conditioned on context, or it finds the wrong neighbours~\cite{morletdb}.
+
+\emph{Forgetting is unavoidable, and silent forgetting is the norm.} Time-series databases expire data by age (retention policies, time-to-live) and keep downsampled roll-ups~\cite{rrdtool_rrdcreate,thanos_compactor,timescale_caggs}. Age alone is the wrong criterion for a memory: the rare incident from three years ago is worth more than yesterday's thousandth identical cycle.
+
+This report proposes to treat the waveform archive as an episodic memory with deliberate, graded and auditable forgetting. It is a position and design report. Section~\ref{sec:episode} defines the episode and its requirements; Section~\ref{sec:ladder} the compaction ladder; Section~\ref{sec:keep} the keep-value and the ledger; Section~\ref{sec:evidence} what is already measured in \M{}; Section~\ref{sec:eval} how the proposals will be tested. Throughout, statements are marked \meas{} (measured, with the study), \impl{} (implemented and tested for correctness, not measured for benefit) or \prop{} (proposed).
+
+\section{The episode}\label{sec:episode}
+Episodic memory, in the sense introduced by Tulving~\cite{tulving1972}, stores events located in time and context and lets them be re-experienced; it is distinct from semantic memory, the generalized knowledge extracted from many events. Memory research has since argued that forgetting is part of what makes memory useful, not a failure of it~\cite{richards2017}. We take both ideas literally.
+
+\textbf{Definition.} An \emph{episode} is a triple of (i) an exact sample interval of one or more recordings, (ii) the operating context valid during it (program, tool, part, load, speed, temperatures), and (iii) zero or more outcomes attached later (a label, a confirmed finding, a work order). The interval is the evidence, the context makes it comparable, and the outcome is what makes it worth recalling.
+
+\textbf{Requirements.} R1 \emph{Exact evidence}: every recalled episode reads back the stored samples bit for bit, so that a conclusion can be checked and re-analysed. R2 \emph{Recall under shift}: similarity tolerates small time shifts between query and stored intervals. R3 \emph{Context conditioning}: recall and comparison are restricted to, or weighted by, comparable operating context. R4 \emph{Outcome linkage}: outcomes attach to intervals, are versioned, and are returned with the hits. R5 \emph{Consolidation}: frequent, similar episodes are represented by fewer stored examples without losing the ability to say how often and when they occurred. R6 \emph{Accountable forgetting}: whatever is removed is removed by a declared policy, in a recorded step, with what remains stated.
+
+Generalized knowledge, R7, the ``semantic'' layer of fault libraries and models trained on the episodes, is out of scope here; this report is about keeping the episodes that such knowledge is built from.
+
+\section{The compaction ladder}\label{sec:ladder}
+Instead of a binary keep-or-delete, we propose that every episode, and every stretch of continuous recording, sits on one of five levels. Each level is defined by the questions it still answers \emph{exactly}; Table~\ref{tab:ladder} summarises them.
+
+\begin{table*}[t]
+\caption{The compaction ladder. Storage is per sample of a 64\,kHz channel, from measured sizes (L0: \cite{g1,b3}; L3: 66-byte summary per 4,096-sample chunk~\cite{cs1}); L2 depends on cluster sizes and is a proposal.}
+\label{tab:ladder}
+\small
+\begin{tabularx}{\textwidth}{@{}lXXll@{}}
+\toprule
+Level & What is kept & What it still answers exactly & Bytes / sample & Status \\
+\midrule
+L0 full & encoded samples, search representations, context, outcomes & everything: samples, similarity, statistics & 1.5--1.7 & \meas{} \\
+L1 not searchable & encoded samples, context, outcomes; search representations dropped & samples and statistics of any interval; not found by similarity & 1.5--1.7 (minus index) & \prop{} \\
+L2 represented & per cluster of similar episodes: the medoid and outliers raw; for every member its time, context, distance to the medoid and summaries & how often and when; a real typical and the unusual examples; statistics of every member & cluster-dependent & \prop{} \\
+L3 summarized & per-chunk summaries (count, min, max, compensated sums) and calendar roll-ups & count, min, max, mean and RMS of any chunk-aligned interval, bitwise identical to decoding & $\approx 0.016$ & \meas{} (chunks), \prop{} (roll-ups) \\
+L4 gone & a ledger entry; optionally a checksummed cold copy outside the database & that it existed, under which policy it was removed, and where a copy is & 0 & \prop{} \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\textbf{L0 to L1.} Search representations (envelopes, vectors, index rows) are derived and can be rebuilt from the samples~\cite{morletdb}; they also cost about as much again as the samples~\cite{morletdb}. Dropping them first removes an episode from similarity recall while keeping every sample, which is the cheapest reversible step.
+
+\textbf{L2: representatives, not averages.} Repetitive operation produces thousands of near-identical episodes. Keeping one \emph{real} episode per cluster, the medoid under the same lag-tolerant distance used for recall~\cite{kaufman1990}, and the outliers beyond a threshold, preserves both ``what does this usually look like'' and ``what was unusual'' with real evidence. An average waveform is not evidence of anything and would violate R1. Each member keeps its time, context, distance to the medoid and chunk summaries, so frequency, timing and slow drift remain visible. Clusters can be clustered again over longer periods.
+
+\textbf{L3: exact summaries.} Count, minimum, maximum and compensated sums merge exactly over adjacent chunks, so statistics of any chunk-aligned interval computed from summaries equal those computed from the samples, bit for bit~\cite{cs1}. This is the mergeability property of summaries~\cite{agarwal2013mergeable} applied to the simplest statistics. Roll-ups to hours, days and months inherit it. Visual summaries such as M4~\cite{jugel2014m4} preserve the extremes per pixel column and are a natural addition at this level.
+
+\textbf{L4: gone, but accounted for.} Removal writes a ledger entry: what, when, under which policy version, with which checksums, and where a cold copy is if one is kept (for example as Parquet files on object storage with the existing exporter).
+
+\textbf{Moves are one-directional except by restore.} An episode moves down by policy; it moves up only by restoring from a cold copy or by recomputing derived data, both of which are recorded too.
+
+\section{Keep-value and the ledger}\label{sec:keep}
+Which episodes move down, and when, is the policy. We propose to make it explicit and versioned rather than implicit in a retention interval.
+
+\textbf{Keep-value.} For an episode $e$ we propose
+\begin{align*}
+v(e) ={}& w_n\,\mathrm{novelty}(e) + w_i\,\mathrm{importance}(e) + w_u\,\mathrm{use}(e)\\
+&+ w_c\,\mathrm{rarity}(\mathrm{ctx}(e)) - w_a\,\mathrm{age}(e),
+\end{align*}
+compared against the episode's storage cost. \emph{Novelty} is the distance to the nearest kept episode under the recall distance, which the search already computes. \emph{Importance} comes from outcomes: labels, confirmed findings and membership in an event library. \emph{Use} counts retrievals and citations in investigations. \emph{Context rarity} protects episodes from rare operating conditions, which are underrepresented by construction. \emph{Age} is one term among several, not the policy: the need for a memory falls with time but also follows how often and how recently it was used~\cite{anderson1991}. The weights are part of the policy version and are returned with every decision. The form follows agent memory, which ranks recall by relevance, recency and importance~\cite{park2023generative}, and prioritised experience replay, which keeps the transitions with the largest learning signal~\cite{schaul2016per}; uniform alternatives such as reservoir sampling~\cite{vitter1985} are the baseline it has to beat.
+
+\textbf{Exemptions.} Episodes in the event library, the catalogue of confirmed incidents and operations, never move below L1 by policy.
+
+\textbf{Dry run and ledger.} Every policy run is first a dry run that reports what would move and how much it would save; the executed run writes the ledger and is resumable. Coverage reports state, for every period, the level it is at, so a search can say which periods it could not see.
+
+\section{What is already measured}\label{sec:evidence}
+The ladder rests on properties of \M{}~\cite{morletdb}, a PostgreSQL extension that stores recordings as losslessly encoded chunks and searches them by lag-tolerant similarity. Table~\ref{tab:evidence} lists the measured building blocks; each comes from a study whose protocol was committed to the public repository before its results~\cite{repo}.
+
+\begin{table}[t]
+\caption{Measured building blocks (\meas{}), with their limits.}
+\label{tab:evidence}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xl@{}}
+\toprule
+Result & Study \\
+\midrule
+Lossless storage of calibrated vibration and current at 1.5--1.7 bytes per sample, smallest of the tested codecs on four of six waveform inputs; one dataset per input & G1, B3, B4~\cite{g1,b3,b4} \\
+Chunk summaries: statistics bitwise identical to decoding (3,000/3,000), 58$\times$ faster for 60\,s of 64\,kHz at p95, one hour in 36\,ms; 4.5\% slower ingestion, 1.3\% more chunk storage; one machine & CS1~\cite{cs1} \\
+Lag-tolerant recall beats zero-lag recall on a proxy task (catalogued earthquakes): precision at ten 0.297 vs 0.213, and 0.139 vs 0.060 on held-out stations and year; seismic data only & E5, E5-H~\cite{morletdb} \\
+Indexed recall at 97.7\% of the exact top ten, p95 57\,ms; exact screened search with identical results up to one million windows & E1, E7~\cite{morletdb} \\
+Every hit reads back the stored samples bit for bit; filters and row-level security apply to exact and indexed search & E1~\cite{morletdb} \\
+Ingestion from one connection at 13.7\,M samples/s with byte-identical storage; one dataset, one machine & B3.10, B3.12~\cite{b3} \\
+Full workflow within 2 CPUs and 512\,MB, and on a Raspberry Pi 3B+ with identical search results & EX1, EX2~\cite{morletdb} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Context conditioning (R3) and outcomes (R4) are implemented as timed, versioned context events, segments cut by context keys, comparison of a segment with earlier segments under the same context, and labels on sample intervals (\impl{}); they are tested for correctness but their benefit for recall has not been measured. Consolidation (L2), roll-ups beyond chunks (L3), the ledger, keep-value and event library are proposals (\prop{}).
+
+\section{Evaluation design}\label{sec:eval}
+We will measure forgetting by what it costs recall, not by bytes saved alone. The protocol (study F1) is drafted in the repository and will be frozen before any result~\cite{repo}.
+
+\textbf{Retrieval regret.} For a query set drawn from the archive's own episodes, regret at budget $B$ under policy $\pi$ is one minus the recall at ten, against the full archive (L0 everywhere), of search over the archive after $\pi$ has compacted it to $B$ bytes. A hit on a cluster counts if the true neighbour is a member and the cluster's representative is returned.
+
+\textbf{Known-event survival.} Every labelled incident must remain recallable at L0 or L1 at every budget; a policy that loses one fails, whatever its regret.
+
+\textbf{Drift visibility.} A slow trend injected into a fraction of episodes must remain detectable from what is kept (summaries and member statistics at L2 and L3).
+
+\textbf{Policies and budgets.} Recency only (the retention baseline), random (reservoir), novelty, and novelty with importance, each at four storage budgets from 50\% down to 2\% of L0.
+
+\textbf{Data.} Seismic windows with catalogued events (labels from a public catalogue) and cycles of an industrial process with fault labels; both public, both used under protocols fixed before results.
+
+\textbf{What would change our mind.} If recency-only matches the novelty-based policies within the confidence interval of regret at every budget, the keep-value adds complexity without benefit and should not be built.
+
+\section{Related work}\label{sec:related}
+\textbf{Episodic memory and forgetting.} The distinction between episodic and semantic memory~\cite{tulving1972} and the view of forgetting as a feature of useful memory~\cite{richards2017} motivate the ladder. Agent memories rank recall by relevance, recency and importance~\cite{park2023generative} and move content between tiers~\cite{packer2023memgpt}; they store text, not signals, and do not require exact evidence.
+
+\textbf{Case-based reasoning in maintenance.} Retrieve, reuse, revise and retain~\cite{aamodt1994} is the cycle we support for waveforms: the episode is the case, the outcome its solution.
+
+\textbf{Compression.} Lossless float codecs exploit structure in floating-point series~\cite{pelkonen2015gorilla,liakos2022chimp,afroozeh2023alp}; error-bounded lossy compressors trade exactness for size~\cite{di2016sz,lindstrom2014zfp}. Our ladder keeps L0--L2 lossless and makes the move to summaries an explicit, accounted step.
+
+\textbf{Downsampling and retention.} Round-robin archives~\cite{rrdtool_rrdcreate}, downsampling in metrics systems~\cite{thanos_compactor} and continuous aggregates~\cite{timescale_caggs} keep coarse statistics by age. Visualization-oriented aggregation preserves extremes~\cite{jugel2014m4}. Our L3 keeps exactly mergeable statistics; what differs is that the move is decided per episode by value, not per table by age.
+
+\textbf{Representatives and similarity.} Medoids~\cite{kaufman1990} keep real examples; reservoir sampling~\cite{vitter1985} is the uniform baseline; similarity under shift has a long history from dynamic time warping~\cite{sakoe1978} to exact search at scale~\cite{rakthanmanon2012} and motif discovery~\cite{yeh2016matrixprofile}.
+
+\textbf{Condition monitoring.} Vibration-based diagnosis~\cite{randall2011} and machine-learning fault diagnosis~\cite{lei2020} produce the labels and outcomes that importance draws on; this report is about keeping the evidence those methods are trained and checked on.
+
+\section{Limitations}
+This is a position and design report. The compaction ladder, keep-value, ledger and evaluation are proposals; the measured building blocks come from one machine, from seismic data for retrieval quality and from one bearing dataset for storage and speed. Lossless storage depends on a value grid; data without one compresses less. Retrieval regret measures recall against the archive's own episodes, a proxy for usefulness to an engineer, which only pilots can establish.
+
+\section*{Use of AI assistance and responsibility}
+Code, experiment harnesses, analyses and text were developed with Claude (Anthropic), an AI assistant, working under the author's direction. The author reviewed the content and is responsible for it.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{related,own}
+\end{document}
