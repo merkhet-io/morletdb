@@ -773,3 +773,35 @@ statistics, chunk summaries, against QuestDB. Everything common to B3 applies.
   statistics, ingestion and storage, so the feature's cost is shown with its gain. The website's chart and tabs
   then take every ratio from B3.13 (against 0.3.6-alpha.1); interval statistics are shown for the base arm, with
   the summaries arm as a labelled second mark, and QuestDB's ring for ingestion is removed.
+
+## Amendment B3.14: long reads and interval statistics against QuestDB with parallel decode (FROZEN before any load of the benchmark set)
+
+Added 2026-11-05, late evening; frozen by the assistant while the owner was away, at the owner's request to finish
+the open benchmark work overnight. B3.13 made no statement against QuestDB for long reads (R2: 0.95 / 1.29 at p50
+/ p95) and for interval statistics on the base arm (1.02 / 1.94). The main branch since then decodes the chunks
+of one long read on worker threads (#247, `morlet.decode_threads`, by default up to 4 and at most the CPUs
+available; reads of fewer than 8 chunks stay on one thread). It is not yet released. B3.14 repeats B3.13's
+QuestDB pair with a build of main, and adds the released image in the same session so that the effect of the new
+code is measured against the release, not against another day. Everything common to B3 applies.
+
+- **MorletDB, development build:** image `morletdb:b314`, built locally with `deploy/Dockerfile` from main at
+  `5274e88` (SQL 0.3.5; `sha256:7dff89832ff3…`, recorded in every result). Arms `morletdb-i1` and
+  `morletdb-i1-sum` exactly as in B3.13, server defaults (so `morlet.decode_threads` at its default).
+- **MorletDB, released:** `ghcr.io/merkhet-io/morletdb:0.3.6-alpha.1`, arm `morletdb-i1` as in B3.13, results in a
+  separate folder.
+- **QuestDB:** 10.1.0, unchanged from B3.8–B3.13.
+- **Runs:** `run_b314.sh`; for r = 1, 2, 3 and D2 then D1: `morletdb-i1` (build), QuestDB, `morletdb-i1-sum`
+  (build), `morletdb-i1` (released). Reads and statistics from a fresh client process for every system, and
+  MorletDB's server-side read cost, as in B3.13. Storage, reads and analytics on D2 r1 of each arm. Results in
+  `results/b314-questdb/` (build and QuestDB) and `results/b314-released/`; machine snapshots before and after every
+  load; a failed load is logged and rerun.
+- **Machine:** the run starts only when the 1-minute load average is below 3 and no process other than the Docker
+  VM uses more than half a core; the Mac is kept awake with `caffeinate`, lid open, on AC power.
+- **Smoke check (not a result):** one development-set D2 load of `morletdb-i1` on `morletdb:b314` with
+  fresh-process reads (`results/dev/b314-smoke/`).
+- **Reported:** every measure of the QuestDB pair, statements by B3's rule (≥ 10% in all loads for ingestion, at
+  both p50 and p95 for latencies; otherwise no statement), with R2 and interval statistics as the questions this
+  stage was added for; build against release (same session) for every read measure, ingestion and storage.
+- **Scope:** a development build answers whether the code on main closes the gap; it is not a release. The
+  website takes B3.14's figures only after a release that contains this code is measured in the same way, or
+  labels them as a development build, as it did for B3.10's ingestion lane.
