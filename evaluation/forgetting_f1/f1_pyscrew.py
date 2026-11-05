@@ -38,7 +38,7 @@ import psycopg
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/memory"))
-from policy import (BudgetSelector, ExemptFilter, KeepValue, LadderPicker, novelty_importance,  # noqa: E402
+from policy import (BudgetSelector, DepthPicker, ExemptFilter, KeepValue, novelty_importance,  # noqa: E402
                     novelty_policy, recency, run_task)
 from store_pg import PgStore  # noqa: E402
 from dataclasses import replace  # noqa: E402
@@ -62,6 +62,11 @@ CHUNK = 4096  # each cycle is appended on its own (366-769 samples), so it is ex
 BUDGETS = (0.50, 0.25, 0.10, 0.05)
 NAME, PORT, PW = "f1-db", 55440, "f1-dev-only"
 DSN = f"host=127.0.0.1 port={PORT} user=postgres password={PW}"
+
+
+def image_id(image):
+    r = subprocess.run(["docker", "image", "inspect", "-f", "{{.Id}}", image], capture_output=True, text=True)
+    return r.stdout.strip() or None
 
 
 def load(scenario):
@@ -126,9 +131,12 @@ def build_template(recs):
         c.execute("VACUUM ANALYZE")
 
 
+SEARCH = {"rate": RATE, "channel": "torque", "unit": "Nm"}   # the seismic harness overrides these
+
+
 def search(conn, q):
-    return conn.execute("SELECT recording_id,start_sample,distance FROM morlet_search_envelopes('f1',%s,%s,'torque','Nm',"
-                        "'{}',%s)", (q.tolist(), RATE, TOPK + 6)).fetchall()
+    return conn.execute("SELECT recording_id,start_sample,distance FROM morlet_search_envelopes('f1',%s,%s,%s,%s,"
+                        "'{}',%s)", (q.tolist(), SEARCH["rate"], SEARCH["channel"], SEARCH["unit"], TOPK + 6)).fetchall()
 
 
 def top10(hits, rid, a, b):
@@ -189,7 +197,7 @@ def main():
     policies = {"recency": (recency(), None, False), "random": (KeepValue(name="random"), a.seed, False),
                 "novelty": (novelty_policy(novelty), None, False),
                 "novelty+importance": (novelty_importance(novelty), None, True)}
-    out = {"scenario": a.scenario, "image": a.image, "episodes": len(eps), "nok": sum(e[4] for e in eps),
+    out = {"scenario": a.scenario, "image": a.image, "image_id": image_id(a.image), "episodes": len(eps), "nok": sum(e[4] for e in eps),
            "queries": {"nok": sum(q[4] for q in queries), "ok": a.queries_ok}, "window": WIN, "stride": STRIDE,
            "started": time.strftime("%Y-%m-%dT%H:%M:%S"), "runs": []}
     for pname, (scorer, seed, exempt_nok) in policies.items():
@@ -204,7 +212,7 @@ def main():
                     c.commit()
                 store = CycleStore(c, "f1")
                 full = store.bytes_at()
-                picker = LadderPicker(scorer, [ExemptFilter()], seed=seed)
+                picker = DepthPicker(scorer, [ExemptFilter()], seed=seed)
                 t = time.time()
                 runs = 0
                 while runs < 10 and run_task(store, BudgetSelector(int(full * budget)), picker, dry_run=False):
@@ -213,7 +221,9 @@ def main():
                 after = store.bytes_at()
                 rec = {"nok": [], "ok": []}
                 dist = {"nok": [], "ok": []}
+                best = {"nok": [], "ok": []}
                 prec = {"full": [], "forgotten": []}
+                per_query = []
                 for q in queries:
                     hits = top10_full(search(c, qsamples(q)), q[0], q[1], q[2])
                     got = {(r, s) for r, s, _ in hits}
@@ -223,9 +233,15 @@ def main():
                     # answer quality: mean top-10 distance, forgotten over full archive (1 = as good)
                     full_d = statistics.mean(d for _, _, d in ref_full[(q[0], q[1])]) or 1e-12
                     dist[key].append((statistics.mean(d for _, _, d in hits) if hits else float("inf")) / full_d)
+                    # primary (PROTOCOL): nearest hit, forgotten over full archive (is something as similar still found?)
+                    full_b = max(ref_full[(q[0], q[1])][0][2], 1e-12)
+                    best[key].append(hits[0][2] / full_b if hits else float("inf"))
                     if q[4]:   # relevance: share of NOK cycles among a NOK query's hits (as E5's precision at ten)
                         prec["full"].append(sum(is_nok(r, s) for r, s, _ in ref_full[(q[0], q[1])]) / TOPK)
                         prec["forgotten"].append(sum(is_nok(r, s) for r, s, _ in hits) / TOPK)
+                    per_query.append({"query": f"{q[0]}:{q[1]}", "group": q[0].rsplit("-", 1)[0], "rare": q[4],
+                                      "best_ratio": round(best[key][-1], 6),
+                                      "distance_ratio": round(dist[key][-1], 6), "recall10": rec[key][-1]})
                 levels = dict(c.execute("SELECT level, count(*) FROM f1_episodes GROUP BY 1").fetchall())
                 nok_searchable = c.execute("SELECT avg((level=0)::int) FROM f1_episodes WHERE importance=1").fetchone()[0]
             with psycopg.connect(DSN + " dbname=postgres", autocommit=True) as c:
@@ -233,16 +249,20 @@ def main():
             r = {"policy": pname, "budget": budget, "bytes_full": full, "bytes_after": after,
                  "fraction_kept": round(after / full, 4), "policy_runs": runs, "policy_s": round(policy_s, 1),
                  "recall10_nok": round(statistics.mean(rec["nok"]), 4), "recall10_ok": round(statistics.mean(rec["ok"]), 4),
+                 "best_ratio_nok": round(statistics.median(best["nok"]), 4),
+                 "best_ratio_ok": round(statistics.median(best["ok"]), 4),
                  "distance_ratio_nok": round(statistics.median(dist["nok"]), 4),
                  "distance_ratio_ok": round(statistics.median(dist["ok"]), 4),
                  "nok_precision10_full": round(statistics.mean(prec["full"]), 4),
                  "nok_precision10": round(statistics.mean(prec["forgotten"]), 4),
-                 "nok_searchable": round(float(nok_searchable), 4), "levels": {str(k): v for k, v in levels.items()}}
+                 "nok_searchable": round(float(nok_searchable), 4), "levels": {str(k): v for k, v in levels.items()},
+                 "per_query": per_query}
             out["runs"].append(r)
-            print(json.dumps(r), flush=True)
+            print(json.dumps({k: v for k, v in r.items() if k != "per_query"}), flush=True)
     subprocess.run(["docker", "rm", "-f", NAME], capture_output=True)
-    OUT.mkdir(parents=True, exist_ok=True)
-    p = OUT / f"f1_{a.scenario}_{time.strftime('%Y%m%dT%H%M%S')}.json"
+    outdir = OUT if a.scenario == "s01" else OUT.parent      # s01 is development data; others are confirmations
+    outdir.mkdir(parents=True, exist_ok=True)
+    p = outdir / f"f1_{a.scenario}_{time.strftime('%Y%m%dT%H%M%S')}.json"
     p.write_text(json.dumps(out, indent=1))
     print(p, f"total {time.time() - t0:.0f} s")
 

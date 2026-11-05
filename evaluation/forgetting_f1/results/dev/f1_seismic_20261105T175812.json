@@ -1,0 +1,2591 @@
+{
+ "dataset": "seismic held-out (E5-H)",
+ "image": "morletdb:mem",
+ "episodes": 282,
+ "known": 0,
+ "queries": {
+  "rare": 0,
+  "typical": 20
+ },
+ "episode_samples": 61440,
+ "window": 4096,
+ "stride": 2048,
+ "started": "2026-11-05T17:56:59",
+ "runs": [
+  {
+   "policy": "recency",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8823371,
+   "fraction_kept": 0.5,
+   "policy_runs": 3,
+   "policy_s": 6.7,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 242,
+    "3": 8,
+    "4": 32
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "recency",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411523,
+   "fraction_kept": 0.25,
+   "policy_runs": 3,
+   "policy_s": 5.8,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 123,
+    "3": 5,
+    "4": 154
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "recency",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1764254,
+   "fraction_kept": 0.1,
+   "policy_runs": 3,
+   "policy_s": 4.9,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 48,
+    "3": 24,
+    "4": 210
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "recency",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 881833,
+   "fraction_kept": 0.05,
+   "policy_runs": 3,
+   "policy_s": 4.6,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 25,
+    "3": 1,
+    "4": 256
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8823089,
+   "fraction_kept": 0.5,
+   "policy_runs": 3,
+   "policy_s": 3.5,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 241,
+    "3": 4,
+    "4": 37
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411791,
+   "fraction_kept": 0.25,
+   "policy_runs": 3,
+   "policy_s": 3.9,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 121,
+    "4": 161
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1763898,
+   "fraction_kept": 0.1,
+   "policy_runs": 3,
+   "policy_s": 4.3,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 49,
+    "3": 3,
+    "4": 230
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 882232,
+   "fraction_kept": 0.05,
+   "policy_runs": 3,
+   "policy_s": 4.3,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 23,
+    "3": 36,
+    "4": 223
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8822979,
+   "fraction_kept": 0.5,
+   "policy_runs": 3,
+   "policy_s": 3.6,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 241,
+    "3": 13,
+    "4": 28
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411237,
+   "fraction_kept": 0.25,
+   "policy_runs": 3,
+   "policy_s": 4.2,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 120,
+    "3": 6,
+    "4": 156
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1764652,
+   "fraction_kept": 0.1,
+   "policy_runs": 3,
+   "policy_s": 4.3,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 48,
+    "3": 28,
+    "4": 206
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 882165,
+   "fraction_kept": 0.05,
+   "policy_runs": 3,
+   "policy_s": 4.4,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 24,
+    "3": 7,
+    "4": 251
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8822979,
+   "fraction_kept": 0.5,
+   "policy_runs": 3,
+   "policy_s": 3.6,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 241,
+    "3": 13,
+    "4": 28
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411237,
+   "fraction_kept": 0.25,
+   "policy_runs": 3,
+   "policy_s": 3.9,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 120,
+    "3": 6,
+    "4": 156
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1764652,
+   "fraction_kept": 0.1,
+   "policy_runs": 3,
+   "policy_s": 4.2,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 48,
+    "3": 28,
+    "4": 206
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 882165,
+   "fraction_kept": 0.05,
+   "policy_runs": 3,
+   "policy_s": 4.3,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": Infinity,
+   "recall10_rare": null,
+   "recall10_typical": 0.0,
+   "levels": {
+    "1": 24,
+    "3": 7,
+    "4": 251
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": Infinity,
+     "recall10": 0.0
+    }
+   ]
+  }
+ ]
+}

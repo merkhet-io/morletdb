@@ -125,6 +125,19 @@ class PolicyTests(unittest.TestCase):
         self.assertLessEqual(store.bytes_at(), before - 5000)
         self.assertIsNone(run_task(store, BudgetSelector(10 ** 12), LadderPicker(recency()), dry_run=False))
 
+    def test_depth_picker_keeps_the_most_valuable_fully_searchable(self):
+        from policy import DepthPicker
+        store = MemoryStore(gallery())
+        res = run_task(store, ManualSelector(int(store.bytes_at() * 0.5)), DepthPicker(recency(), [ExemptFilter()]),
+                       dry_run=False)
+        levels = {i: e.level for i, e in store.eps.items()}
+        self.assertTrue(all(m.level == 3 for m in res.moves))            # straight to summaries
+        self.assertTrue(all(levels[i] == 0 for i in (8, 9, 10)))          # the youngest stay searchable
+        self.assertEqual(levels[3], 0)                                     # exempt
+        for _ in range(5):                                                 # then on to level 4
+            run_task(store, ManualSelector(10 ** 9), DepthPicker(recency(), [ExemptFilter()]), dry_run=False)
+        self.assertEqual({e.level for i, e in store.eps.items() if i != 3}, {4})
+
     def test_kmedoids_keeps_real_members_and_outliers(self):
         ids = list(range(1, 11))
         dist = lambda a, b: abs(FEATURE[a] - FEATURE[b])
