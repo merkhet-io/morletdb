@@ -17,7 +17,7 @@
 \author{Zin Nam}
 
 \begin{abstract}
-Engineers at a machine ask a question that time-series databases do not answer: \emph{have we seen this before, and what was it?} The question is about an episode, an exact stretch of waveform together with the operating context in which it occurred and the outcome it later turned out to have, and it has to be answered years after the episode was recorded. We argue that an archive of machine waveforms should be designed as an episodic memory, and that such a memory has to forget: a single vibration channel sampled at 64\,kHz still grows by about 9\,GB a day after the best lossless compression we measured. We make three contributions. First, a model of the episode for industrial waveforms and the requirements it places on storage and recall: exact evidence, recall under small time shifts, conditioning on operating context, and the outcome as part of the record. Second, a graded compaction ladder (full, not searchable, represented, summarized, gone) in which every level states which questions it still answers exactly, together with an explicit, versioned keep-value that decides when an episode moves down, and a ledger that makes every step auditable. Third, an evaluation design that measures forgetting by the recall it costs (retrieval regret), by the survival of known events and by the visibility of slow drift. The building blocks are measured in \M{}, an open PostgreSQL extension: lossless storage at 1.5--1.7 bytes per sample on calibrated vibration data, bitwise exact mergeable chunk summaries at about 1\% of that size, and lag-tolerant similarity search whose hits read back the stored samples bit for bit. The compaction policies themselves are proposals; this report states what is measured, what is implemented and what is proposed, and fixes how the proposals will be tested.
+Engineers at a machine ask a question that time-series databases do not answer: \emph{have we seen this before, and what was it?} The question is about an episode, an exact stretch of waveform together with the operating context in which it occurred and the outcome it later turned out to have, and it has to be answered years after the episode was recorded. We argue that an archive of machine waveforms should be designed as an episodic memory, and that such a memory has to forget: a single vibration channel sampled at 64\,kHz still grows by about 9\,GB a day after the best lossless compression we measured. We make three contributions. First, a model of the episode for industrial waveforms and the requirements it places on storage and recall: exact evidence, recall under small time shifts, conditioning on operating context, and the outcome as part of the record. Second, a graded compaction ladder (full, not searchable, represented, summarized, gone) in which every level states which questions it still answers exactly, together with an explicit, versioned keep-value that decides when an episode moves down, and a ledger that makes every step auditable. Third, an evaluation that measures forgetting by what it costs search and by whether known events stay findable. The building blocks are measured in \M{}, an open PostgreSQL extension: lossless storage at 1.5--1.7 bytes per sample on calibrated vibration data, bitwise exact mergeable chunk summaries at about 1\% of that size, and lag-tolerant similarity search whose hits read back the stored samples bit for bit. The ladder, ledger and a policy engine are now implemented in \M{}, and a first study (F1), frozen before its two confirmation runs, compares four policies on screwdriving cycles and on seismic data. Exempting known events keeps all of them searchable at every reachable budget, where age-based retention keeps roughly the budget's share, and on seismic data the keep-value also answers rare queries better than retention by age at 25\% and 10\% of the archive. It does not do so on the cycle data, where failed cycles are a quarter of the archive, and novelty alone never beats retention by age; under the rule fixed in advance, retention by age stays the default.
 \end{abstract}
 
 \maketitle
@@ -33,7 +33,7 @@ A condition-monitoring engineer who hears an unfamiliar knock in a spindle does 
 
 \emph{Forgetting is unavoidable, and silent forgetting is the norm.} Time-series databases expire data by age (retention policies, time-to-live) and keep downsampled roll-ups~\cite{rrdtool_rrdcreate,thanos_compactor,timescale_caggs}. Age alone is the wrong criterion for a memory: the rare incident from three years ago is worth more than yesterday's thousandth identical cycle.
 
-This report proposes to treat the waveform archive as an episodic memory with deliberate, graded and auditable forgetting. It is a position and design report. Section~\ref{sec:episode} defines the episode and its requirements; Section~\ref{sec:ladder} the compaction ladder; Section~\ref{sec:keep} the keep-value and the ledger; Section~\ref{sec:evidence} what is already measured in \M{}; Section~\ref{sec:eval} how the proposals will be tested. Throughout, statements are marked \meas{} (measured, with the study), \impl{} (implemented and tested for correctness, not measured for benefit) or \prop{} (proposed).
+This report proposes to treat the waveform archive as an episodic memory with deliberate, graded and auditable forgetting. It is a position and design report. Section~\ref{sec:episode} defines the episode and its requirements; Section~\ref{sec:ladder} the compaction ladder; Section~\ref{sec:keep} the keep-value and the ledger; Section~\ref{sec:evidence} what is already measured in \M{}; Section~\ref{sec:eval} the first evaluation of forgetting policies. Throughout, statements are marked \meas{} (measured, with the study), \impl{} (implemented and tested for correctness, not measured for benefit) or \prop{} (proposed).
 
 \section{The episode}\label{sec:episode}
 Episodic memory, in the sense introduced by Tulving~\cite{tulving1972}, stores events located in time and context and lets them be re-experienced; it is distinct from semantic memory, the generalized knowledge extracted from many events. Memory research has since argued that forgetting is part of what makes memory useful, not a failure of it~\cite{richards2017}. We take both ideas literally.
@@ -48,7 +48,7 @@ Generalized knowledge, R7, the ``semantic'' layer of fault libraries and models 
 Instead of a binary keep-or-delete, we propose that every episode, and every stretch of continuous recording, sits on one of five levels. Each level is defined by the questions it still answers \emph{exactly}; Table~\ref{tab:ladder} summarises them.
 
 \begin{table*}[t]
-\caption{The compaction ladder. Storage is per sample of a 64\,kHz channel, from measured sizes (L0: \cite{g1,b3}; L3: 66-byte summary per 4,096-sample chunk~\cite{cs1}); L2 depends on cluster sizes and is a proposal.}
+\caption{The compaction ladder. Storage is per sample of a 64\,kHz channel, from measured sizes (L0: \cite{g1,b3}; L3: 66-byte summary per 4,096-sample chunk~\cite{cs1}); L2 depends on cluster sizes; it is implemented but not yet evaluated.}
 \label{tab:ladder}
 \small
 \begin{tabularx}{\textwidth}{@{}lXXll@{}}
@@ -56,10 +56,10 @@ Instead of a binary keep-or-delete, we propose that every episode, and every str
 Level & What is kept & What it still answers exactly & Bytes / sample & Status \\
 \midrule
 L0 full & encoded samples, search representations, context, outcomes & everything: samples, similarity, statistics & 1.5--1.7 & \meas{} \\
-L1 not searchable & encoded samples, context, outcomes; search representations dropped & samples and statistics of any interval; not found by similarity & 1.5--1.7 (minus index) & \prop{} \\
-L2 represented & per cluster of similar episodes: the medoid and outliers raw; for every member its time, context, distance to the medoid and summaries & how often and when; a real typical and the unusual examples; statistics of every member & cluster-dependent & \prop{} \\
-L3 summarized & per-chunk summaries (count, min, max, compensated sums) and calendar roll-ups & count, min, max, mean and RMS of any chunk-aligned interval, bitwise identical to decoding & $\approx 0.016$ & \meas{} (chunks), \prop{} (roll-ups) \\
-L4 gone & a ledger entry; optionally a checksummed cold copy outside the database & that it existed, under which policy it was removed, and where a copy is & 0 & \prop{} \\
+L1 not searchable & encoded samples, context, outcomes; search representations dropped & samples and statistics of any interval; not found by similarity & 1.5--1.7 (minus index) & \meas{}~\cite{f1} \\
+L2 represented & per cluster of similar episodes: the medoid and outliers raw; for every member its time, context, distance to the medoid and summaries & how often and when; a real typical and the unusual examples; statistics of every member & cluster-dependent & \impl{} \\
+L3 summarized & per-chunk summaries (count, min, max, compensated sums) and calendar roll-ups & count, min, max, mean and RMS of any chunk-aligned interval, bitwise identical to decoding & $\approx 0.016$ & \meas{} (chunks, \cite{f1}), \prop{} (roll-ups) \\
+L4 gone & a ledger entry; optionally a checksummed cold copy outside the database & that it existed, under which policy it was removed, and where a copy is & 0 & \meas{}~\cite{f1} (ledger), \prop{} (cold copy) \\
 \bottomrule
 \end{tabularx}
 \end{table*}
@@ -84,7 +84,7 @@ v(e) ={}& w_n\,\mathrm{novelty}(e) + w_i\,\mathrm{importance}(e) + w_u\,\mathrm{
 \end{align*}
 compared against the episode's storage cost. \emph{Novelty} is the distance to the nearest kept episode under the recall distance, which the search already computes. \emph{Importance} comes from outcomes: labels, confirmed findings and membership in an event library. \emph{Use} counts retrievals and citations in investigations. \emph{Context rarity} protects episodes from rare operating conditions, which are underrepresented by construction. \emph{Age} is one term among several, not the policy: the need for a memory falls with time but also follows how often and how recently it was used~\cite{anderson1991}. The weights are part of the policy version and are returned with every decision. The form follows agent memory, which ranks recall by relevance, recency and importance~\cite{park2023generative}, and prioritised experience replay, which keeps the transitions with the largest learning signal~\cite{schaul2016per}; uniform alternatives such as reservoir sampling~\cite{vitter1985} are the baseline it has to beat.
 
-\textbf{Exemptions.} Episodes in the event library, the catalogue of confirmed incidents and operations, never move below L1 by policy.
+\textbf{Exemptions.} Episodes in the event library, the catalogue of confirmed incidents and operations, are not moved by policy at all. An earlier version of this report allowed L1; the first F1 development runs showed that this takes the library out of search exactly when the budget is tight.
 
 \textbf{Dry run and ledger.} Every policy run is first a dry run that reports what would move and how much it would save; the executed run writes the ledger and is resumable. Coverage reports state, for every period, the level it is at, so a search can say which periods it could not see.
 
@@ -106,26 +106,44 @@ Indexed recall at 97.7\% of the exact top ten, p95 57\,ms; exact screened search
 Every hit reads back the stored samples bit for bit; filters and row-level security apply to exact and indexed search & E1~\cite{morletdb} \\
 Ingestion from one connection at 13.7\,M samples/s with byte-identical storage; one dataset, one machine & B3.10, B3.12~\cite{b3} \\
 Full workflow within 2 CPUs and 512\,MB, and on a Raspberry Pi 3B+ with identical search results & EX1, EX2~\cite{morletdb} \\
+Exempt known events stay 100\% searchable at every reachable budget; the keep-value beats age-based retention on rare seismic queries at 25\% and 10\%, not on screwdriving cycles; two datasets & F1~\cite{f1} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Context conditioning (R3) and outcomes (R4) are implemented as timed, versioned context events, segments cut by context keys, comparison of a segment with earlier segments under the same context, and labels on sample intervals (\impl{}); they are tested for correctness but their benefit for recall has not been measured. Consolidation (L2), roll-ups beyond chunks (L3), the ledger, keep-value and event library are proposals (\prop{}).
+Context conditioning (R3) and outcomes (R4) are implemented as timed, versioned context events, segments cut by context keys, comparison of a segment with earlier segments under the same context, and labels on sample intervals (\impl{}); they are tested for correctness but their benefit for recall has not been measured. The episode table, the levels, moves with dry run and ledger, exemptions, and a policy engine with the keep-value are implemented in the main branch (SQL 0.3.5, not yet released; \impl{}), and measured in F1 (Section~\ref{sec:eval}) except consolidation into representatives (L2). Roll-ups beyond chunks and cold copies are proposals (\prop{}).
 
-\section{Evaluation design}\label{sec:eval}
-We will measure forgetting by what it costs recall, not by bytes saved alone. The protocol (study F1) is drafted in the repository and will be frozen before any result~\cite{repo}.
+\section{First evaluation: forgetting policies (F1)}\label{sec:eval}
+The protocol of study F1 was frozen in the repository before either confirmation run, after development on separate data~\cite{f1}; Table~\ref{tab:f1} summarises the outcome.
 
-\textbf{Retrieval regret.} For a query set drawn from the archive's own episodes, regret at budget $B$ under policy $\pi$ is one minus the recall at ten, against the full archive (L0 everywhere), of search over the archive after $\pi$ has compacted it to $B$ bytes. A hit on a cluster counts if the true neighbour is a member and the cluster's representative is returned.
+\textbf{Implementation.} Episodes are rows with a sample interval, context, importance and a level; a policy run moves them down in transactions through one SQL function that enforces the rules (levels only go down, exempt episodes stay, an L2 move names a representative) and writes the ledger. A similarity window leaves search when episodes out of search cover it and no full episode overlaps it. The policy engine scores episodes with the keep-value, moves the lowest-valued ones straight to L3 so that the most valuable stay fully searchable, applies the moves in batches of at most 50 and measures the size after each, stopping at the budget.
 
-\textbf{Known-event survival.} Every labelled incident must remain recallable at L0 or L1 at every budget; a policy that loses one fails, whatever its regret.
+\textbf{Policies and budgets.} Recency (oldest first, the retention baseline), random (seeded), novelty (distance of an episode's first window to its nearest neighbour in the full archive, a static approximation), and novelty plus importance, in which known events are exempt. Budgets are 50, 25, 10 and 5\% of the bytes of chunks, summaries and search representations; a budget the exempt events alone exceed is reported as unreachable, not forced.
 
-\textbf{Drift visibility.} A slow trend injected into a fraction of episodes must remain detectable from what is kept (summaries and member statistics at L2 and L3).
+\textbf{Data.} Screwdriving cycles of PyScrew scenario s02~\cite{pyscrew}: 12,500 cycles, one episode each, 2,988 failed (NOK) cycles as known events; rare queries are the failed cycles, typical queries 300 good ones. Seismic data of four stations over two weeks held out from all earlier work: 7,849 episodes of about ten minutes, 563 containing the predicted arrival of a catalogued event~\cite{morletdb}; rare queries are the windows at those arrivals, typical queries 300 windows without events. Development used scenario s01 and one other recording.
 
-\textbf{Policies and budgets.} Recency only (the retention baseline), random (reservoir), novelty, and novelty with importance, each at four storage budgets from 50\% down to 2\% of L0.
+\textbf{Measures and rule.} Known events searchable: the share of known-event episodes still at L0. Answer quality: the distance of a query's nearest hit after forgetting over its nearest hit in the full archive (1 means something as similar is still found). The evaluation design in version 0.1 of this report proposed recall at ten against the full archive; the development runs showed that it, and the mean distance of ten hits, penalise removing near-duplicates, which is what novelty does by design, so the nearest hit became primary before the freeze, a change made after seeing development data. Each policy is compared with recency on rare queries by the mean over groups (workpieces, events) of the per-query difference, with a 95\% bootstrap interval; ``better'' requires the interval above zero and at least as many known events searchable. The default is the policy better at 50\% and 25\% on both datasets, otherwise recency.
 
-\textbf{Data.} Seismic windows with catalogued events (labels from a public catalogue) and cycles of an industrial process with fault labels; both public, both used under protocols fixed before results.
+\begin{table}[t]
+\caption{F1 confirmation. N+I: novelty plus importance. Rare queries: mean difference in nearest-hit ratio against recency with 95\% interval; positive favours N+I. n/r: budget not reachable.}
+\label{tab:f1}
+\small
+\begin{tabularx}{\columnwidth}{@{}llrrX@{}}
+\toprule
+& & \multicolumn{2}{c}{Events searchable} & Rare queries, \\
+Data & Budget & Recency & N+I & N+I vs recency \\
+\midrule
+Cycles & 50\% & 46\% & 100\% & $-0.05$ [$-0.09$, $-0.01$] \\
+Cycles & 25\% & 13\% & 100\% & n/r (29.8\% kept) \\
+Seismic & 50\% & 45\% & 100\% & $+0.01$ [$-0.02$, $+0.05$] \\
+Seismic & 25\% & 23\% & 100\% & $+0.07$ [$+0.02$, $+0.12$] \\
+Seismic & 10\% & 9\% & 100\% & $+0.19$ [$+0.12$, $+0.27$] \\
+\end{tabularx}
+\end{table}
 
-\textbf{What would change our mind.} If recency-only matches the novelty-based policies within the confidence interval of regret at every budget, the keep-value adds complexity without benefit and should not be built.
+\textbf{Results.} Exempting the event library is what keeps it: novelty plus importance keeps every known event searchable at every budget it reaches, recency roughly the budget's share (\meas{}~\cite{f1}). On seismic data, where events are 7\% of the episodes, the keep-value also answers rare queries better than recency at 25\% and 10\%, at no demonstrated cost on typical queries at those budgets. On the cycles, where failed cycles are a quarter of the archive, the event library takes most of the budget: at 50\% the rare-query answers are slightly worse on average (the medians are equal), typical answers degrade (median nearest-hit ratio 1.27 against 1.04), and budgets below 30\% cannot be met without forgetting events. Novelty alone is never better than recency and often worse, on both datasets and for both kinds of query: the near-duplicates it removes are also the nearest neighbours of rare queries. Random and recency do not differ consistently.
+
+\textbf{Verdict.} By the rule fixed in advance, recency stays the default and the keep-value is not built further as a default. What the study does support is narrower: an exempt event library is cheap insurance when events are rare, and pays for itself in rare-query quality there. Not tested: dynamic novelty against the kept rather than the full archive, consolidation into representatives (L2), the use and context-rarity terms, and the visibility of slow drift; each needs its own frozen study.
 
 \section{Related work}\label{sec:related}
 \textbf{Episodic memory and forgetting.} The distinction between episodic and semantic memory~\cite{tulving1972} and the view of forgetting as a feature of useful memory~\cite{richards2017} motivate the ladder. Agent memories rank recall by relevance, recency and importance~\cite{park2023generative} and move content between tiers~\cite{packer2023memgpt}; they store text, not signals, and do not require exact evidence.
@@ -141,7 +159,7 @@ We will measure forgetting by what it costs recall, not by bytes saved alone. Th
 \textbf{Condition monitoring.} Vibration-based diagnosis~\cite{randall2011} and machine-learning fault diagnosis~\cite{lei2020} produce the labels and outcomes that importance draws on; this report is about keeping the evidence those methods are trained and checked on.
 
 \section{Limitations}
-This is a position and design report. The compaction ladder, keep-value, ledger and evaluation are proposals; the measured building blocks come from one machine, from seismic data for retrieval quality and from one bearing dataset for storage and speed. Lossless storage depends on a value grid; data without one compresses less. Retrieval regret measures recall against the archive's own episodes, a proxy for usefulness to an engineer, which only pilots can establish.
+This is a position and design report with a first evaluation. F1 used two datasets, one budget definition and a static novelty; its verdict is for those, and its primary measure was chosen after development runs. Consolidation, roll-ups and cold copies are proposals; the measured building blocks come from one machine, from seismic data for retrieval quality and from one bearing dataset for storage and speed. Lossless storage depends on a value grid; data without one compresses less. Answer quality measures similarity against the archive's own episodes, a proxy for usefulness to an engineer, which only pilots can establish.
 
 \section*{Use of AI assistance and responsibility}
 Code, experiment harnesses, analyses and text were developed with Claude (Anthropic), an AI assistant, working under the author's direction. The author reviewed the content and is responsible for it.

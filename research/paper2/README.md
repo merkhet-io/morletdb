@@ -8,9 +8,9 @@ and an evaluation by retrieval regret, survival of known events and drift visibi
 
 It is separate from the first report ([`../paper`](../paper)), which covers lag-tolerant retrieval and storage.
 Statements carry an evidence level: **m** measured (with the study), **i** implemented and tested for
-correctness but not measured for benefit, **p** proposed. The compaction policies are proposals; their
-evaluation (study F1) will be frozen in [`evaluation/forgetting_f1`](../../evaluation) before any result, and its
-results will make version 0.2.
+correctness but not measured for benefit, **p** proposed. Version 0.2 adds the first evaluation of forgetting
+policies, study F1 ([`evaluation/forgetting_f1`](../../evaluation/forgetting_f1)): protocol frozen before its two
+confirmation runs, results in its `RESULTS.md`.
 
 Build: `tectonic -X compile memory.tex` in this directory (Tectonic 0.17.0, as for the first report).
 Not peer reviewed; not yet released.
