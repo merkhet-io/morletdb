@@ -24,6 +24,7 @@ pgrx = "=0.16.1"
 morlet-core = { path = "../../crates/morlet-core" }
 
 serde_json = { version = "1", features = ["float_roundtrip"] }
+libc = "0.2"   # signal mask of the chunk encoder threads (I1 step 3)
 
 [dev-dependencies]
 pgrx-tests = "=0.16.1"

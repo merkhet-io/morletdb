@@ -1011,6 +1011,7 @@ dependencies = [
 name = "pg_morlet"
 version = "0.3.4"
 dependencies = [
+ "libc",
  "morlet-core",
  "pgrx",
  "pgrx-tests",

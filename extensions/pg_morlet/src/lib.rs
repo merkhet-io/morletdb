@@ -594,6 +594,76 @@ fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: pgrx::Array<
     JsonB(serde_json::json!({"checkpoint":state.checkpoint(),"segments":segments}))
 }
 
+/// Worker threads for encoding the chunks of one batch: `morlet.encode_threads` (1..64; 1 encodes in the
+/// backend's own thread), by default up to 4 and at most the CPUs available (I1 step 3, issue #233).
+fn encode_threads() -> usize {
+    let default = std::thread::available_parallelism().map_or(1, |n| n.get().min(4));
+    // SAFETY: GetConfigOption returns NULL or a NUL-terminated string valid until the setting changes.
+    let raw = unsafe { pg_sys::GetConfigOption(c"morlet.encode_threads".as_ptr(), true, false) };
+    if raw.is_null() {
+        return default;
+    }
+    let text = unsafe { std::ffi::CStr::from_ptr(raw) }.to_string_lossy();
+    if text.is_empty() {
+        return default;
+    }
+    match text.trim().parse::<usize>() {
+        Ok(n) if (1..=64).contains(&n) => n,
+        _ => pgrx::error!("morlet.encode_threads must be an integer 1..64"),
+    }
+}
+
+type ChunkCode = Option<Result<Vec<u8>, morlet_core::rawcodec::CodecError>>;
+
+/// Encodes each chunk as `morlet_encode_chunk` does, on up to `encode_threads()` threads. A chunk that fails
+/// validation is not encoded (`None`); the caller validates it again in order and raises the error. The
+/// workers run only `morlet_core` code (no PostgreSQL calls, no PostgreSQL memory) and are started with every
+/// signal blocked, so PostgreSQL's signal handlers keep running in the backend's own thread.
+fn encode_chunks(chunks: &[&[f64]], quantum: f64) -> Vec<ChunkCode> {
+    let one = move |c: &[f64]| {
+        morlet_core::validate(c)
+            .ok()
+            .map(|_| morlet_core::rawcodec::encode(c, quantum))
+    };
+    let threads = encode_threads().min(chunks.len());
+    if threads <= 1 {
+        return chunks.iter().map(|c| one(c)).collect();
+    }
+    let per = chunks.len().div_ceil(threads);
+    let parts: Vec<Vec<ChunkCode>> = std::thread::scope(|scope| {
+        // SAFETY: plain POSIX signal-mask calls on locally owned sets; the backend's mask is restored below
+        // and the workers keep the fully blocked mask they inherit.
+        let mut all: libc::sigset_t = unsafe { std::mem::zeroed() };
+        let mut old: libc::sigset_t = unsafe { std::mem::zeroed() };
+        unsafe {
+            libc::sigfillset(&mut all);
+            libc::pthread_sigmask(libc::SIG_BLOCK, &all, &mut old);
+        }
+        let handles: Vec<_> = chunks
+            .chunks(per)
+            .map(|part| {
+                std::thread::Builder::new()
+                    .name("morlet-encode".into())
+                    .spawn_scoped(scope, move || {
+                        part.iter().map(|c| one(c)).collect::<Vec<_>>()
+                    })
+            })
+            .collect();
+        unsafe {
+            libc::pthread_sigmask(libc::SIG_SETMASK, &old, std::ptr::null_mut());
+        }
+        handles
+            .into_iter()
+            .map(|h| match h {
+                Ok(h) => h.join().ok(),
+                Err(_) => None,
+            })
+            .collect::<Option<Vec<_>>>()
+            .unwrap_or_else(|| pgrx::error!("chunk encoder threads failed"))
+    });
+    parts.into_iter().flatten().collect()
+}
+
 /// The per-chunk work of appending a run of consecutive chunks, in one call (I1, issue #233).
 ///
 /// `samples` holds little-endian float64 values starting at `start_sample`; they are cut into chunks of
@@ -603,6 +673,8 @@ fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: pgrx::Array<
 /// chunk as `morlet_encode_chunk` does and, if `summarized`, computes `morlet_chunk_summary`. Returns the
 /// chunk starts, counts, encoded chunks, summaries (NULL unless `summarized`), and the final checkpoint with
 /// all emitted segments in `morlet_chunk_step`'s format. Writes nothing: `morlet_append_chunks_raw` stores it.
+/// The chunks are encoded on up to `morlet.encode_threads` threads (`encode_chunks`); output and errors do
+/// not depend on the thread count.
 #[allow(clippy::type_complexity)]
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_chunk_batch(
@@ -651,7 +723,10 @@ fn morlet_chunk_batch(
     let mut summaries = summarized.then(|| Vec::with_capacity(n));
     let mut segments = Vec::new();
     let mut offset = start_sample;
-    for chunk in values.chunks(chunk_size as usize) {
+    let chunks: Vec<&[f64]> = values.chunks(chunk_size as usize).collect();
+    let mut codes = encode_chunks(&chunks, sample_quantum).into_iter();
+    for chunk in chunks {
+        // Errors are raised in chunk order, validation before encoding, exactly as one call per chunk would.
         segments.extend(
             state
                 .push(offset as u64, chunk)
@@ -660,10 +735,10 @@ fn morlet_chunk_batch(
         if state.next_sample_offset() > i64::MAX as u64 {
             pgrx::error!("Postgres sample offset overflow");
         }
-        encoded.push(
-            morlet_core::rawcodec::encode(chunk, sample_quantum)
-                .unwrap_or_else(|e| pgrx::error!("{}", e)),
-        );
+        encoded.push(match codes.next().flatten() {
+            Some(code) => code.unwrap_or_else(|e| pgrx::error!("{}", e)),
+            None => pgrx::error!("chunk was not encoded"),
+        });
         if let Some(s) = summaries.as_mut() {
             let mut stats = morlet_core::intervalstats::IntervalStats::default();
             stats.add(chunk);
@@ -2533,6 +2608,41 @@ END $$"#).unwrap();
     )]
     fn batched_raw_append_rejects_gaps() {
         Spi::run("SELECT morlet_create_stream_collection('public','batch_gap'); SELECT morlet_start_recording('batch_gap','A',4096,'x','g'); SELECT morlet_append_chunks_raw('batch_gap','A',0,morlet_float8_le_bytes(ARRAY[1,2]::float8[]),2); SELECT morlet_append_chunks_raw('batch_gap','A',5,morlet_float8_le_bytes(ARRAY[1,2]::float8[]),2)").unwrap();
+    }
+    /// I1 step 3: chunks encoded on worker threads are identical to chunks encoded in the backend's thread,
+    /// on and off the integer grid, and errors still come in chunk order.
+    #[pg_test]
+    fn batched_encoding_does_not_depend_on_threads() {
+        Spi::run(
+            "CREATE TEMP TABLE enc_src AS SELECT i,CASE WHEN i<40000 THEN round(1000*sin(i/7.))::float8 ELSE sin(i/7.)::float8 END AS v FROM generate_series(0,99999) i;
+             SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['enc_one','enc_four','enc_auto']) c;
+             SELECT morlet_start_recording(c::regclass,'A',4096,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['enc_one','enc_four','enc_auto']) c;
+             SET morlet.encode_threads = 1;
+             SELECT morlet_append_chunks_raw('enc_one','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM enc_src ORDER BY i)),4096);
+             SET morlet.encode_threads = 4;
+             SELECT morlet_append_chunks_raw('enc_four','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM enc_src ORDER BY i)),4096);
+             RESET morlet.encode_threads;
+             SELECT morlet_append_chunks_raw('enc_auto','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM enc_src ORDER BY i)),4096);",
+        )
+        .unwrap();
+        for other in ["enc_four", "enc_auto"] {
+            assert!(Spi::get_one::<bool>(&format!(
+                "SELECT (SELECT array_agg(row(start_sample,sample_count,encoded)::text ORDER BY start_sample) FROM enc_one_chunks)
+                      = (SELECT array_agg(row(start_sample,sample_count,encoded)::text ORDER BY start_sample) FROM {other}_chunks)
+                    AND (SELECT count(*) FROM {other}_chunks) = 25
+                    AND (SELECT checkpoint FROM enc_one) = (SELECT checkpoint FROM {other})"
+            ))
+            .unwrap()
+            .unwrap());
+        }
+    }
+    #[pg_test(error = "samples must be finite and within +/-1e9")]
+    fn batched_encoding_reports_the_first_invalid_chunk() {
+        Spi::run("SELECT morlet_create_stream_collection('public','enc_bad'); SELECT morlet_start_recording('enc_bad','A',4096,'x','g','{}',512,256,'zscore','none'); SET morlet.encode_threads = 4; SELECT morlet_append_chunks_raw('enc_bad','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,'NaN',5,6,7,8]::float8[]),2)").unwrap();
+    }
+    #[pg_test(error = "morlet.encode_threads must be an integer 1..64")]
+    fn encode_threads_is_validated() {
+        Spi::run("SELECT morlet_create_stream_collection('public','enc_guc'); SELECT morlet_start_recording('enc_guc','A',4096,'x','g'); SET morlet.encode_threads = 0; SELECT morlet_append_chunks_raw('enc_guc','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),2)").unwrap();
     }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn replay_compares_signed_zero_bits() {
