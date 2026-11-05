@@ -1,0 +1,66 @@
+{
+ "system": "crate-array",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.2790172920213081,
+ "samples": 101586735,
+ "image": "crate:6.4.6",
+ "image_id": "sha256:865ed64fd4e7ffc31dccd79ec96d374f7da458e23e65520699e31ad4f21775ef",
+ "started": "2026-11-05T15:30:26",
+ "server_version": "6.4.6",
+ "ingest": {
+  "wall_s": 149.618,
+  "samples_per_s": 678975,
+  "conversion_s": 1.46,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1155.983,
+   "p95_ms": 1473.002,
+   "max_ms": 1685.326
+  },
+  "ack_per_call": {
+   "n": 124,
+   "p50_ms": 1135.867,
+   "p95_ms": 1447.019,
+   "max_ms": 1655.282
+  },
+  "queryable_after_last_ack_s": 5.594,
+  "failures": [],
+  "server": {
+   "cpu_percent_mean": 120.0,
+   "cpu_percent_p95": 188.2,
+   "memory_peak_mib": 6159.4,
+   "samples": 68
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "phase_current_2": 31877792,
+    "temp_2_bearing_module": 615,
+    "vibration_1": 31877792,
+    "torque": 1984248,
+    "force": 1984248,
+    "speed": 1984248,
+    "phase_current_1": 31877792
+   },
+   "want": {
+    "vibration_1": 31877792,
+    "phase_current_1": 31877792,
+    "phase_current_2": 31877792,
+    "force": 1984248,
+    "speed": 1984248,
+    "torque": 1984248,
+    "temp_2_bearing_module": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 65.8
+  }
+ },
+ "correct": true
+}

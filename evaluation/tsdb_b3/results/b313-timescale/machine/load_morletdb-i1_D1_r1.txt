@@ -1,0 +1,22 @@
+2026-11-05T14:36:15
+14:36  up 8 days, 23:32, 13 users, load averages: 7.47 7.38 6.85
+ %CPU COMM
+284.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 97.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 33.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 18.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 17.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  9.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-05T14:36:34
+14:36  up 8 days, 23:32, 13 users, load averages: 7.93 7.52 6.91
+ %CPU COMM
+361.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 76.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 20.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 16.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  6.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari

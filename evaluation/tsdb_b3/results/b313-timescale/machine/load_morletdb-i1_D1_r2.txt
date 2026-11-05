@@ -1,0 +1,22 @@
+2026-11-05T14:41:32
+14:41  up 8 days, 23:37, 13 users, load averages: 5.65 6.46 6.61
+ %CPU COMM
+298.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 64.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 48.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 25.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 15.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 13.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 11.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-05T14:41:53
+14:41  up 8 days, 23:38, 13 users, load averages: 6.52 6.60 6.65
+ %CPU COMM
+266.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 65.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 63.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 57.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 41.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 17.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 12.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  7.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
