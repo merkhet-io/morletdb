@@ -3,7 +3,7 @@
 
 Every ratio comes from one session in which MorletDB 0.3.5-alpha.1 and that database ran alternately on the same
 machine (evaluation/tsdb_b3/RESULTS.md: B3.8 for QuestDB, B3.9 for the others; summarize_b39.py prints the values),
-never from two sessions. One exception, labelled on the page: QuestDB's ingestion lane shows the next release's
+never from two sessions. One exception, labelled on the page: QuestDB's ingestion lane shows 0.3.6-alpha.1's
 development build against QuestDB (B3.10, also one session) as the dot, and B3.8's released-build pair as the ring.
 Speed: the other system's time over MorletDB's (p50), or MorletDB's throughput over the
 other's, for the system's faster re-measured layout per measure. Storage: the other system's data on disk over
@@ -38,7 +38,7 @@ MEASURES = [
      "MiB"),
 ]
 # a dot that is not the released build, and a ring with its own pair: (measure key, system index) -> label / pair
-DOT_NOTE = {("ingest", 0): "next release (SQL 0.3.4, development build, B3.10)"}
+DOT_NOTE = {("ingest", 0): "0.3.6-alpha.1 (SQL 0.3.4, development build, B3.10)"}
 RING = {("ingest", 0): (6.302, 9.658, "released 0.3.5-alpha.1, B3.8")}
 LO, HI = 0.4, 50.0
 X0, X1 = 230, 728
