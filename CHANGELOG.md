@@ -10,6 +10,15 @@ SQL version 0.3.5, with an update script from 0.3.4.
   chunks, and chunks that do not end at the checkpoint. Helper `morlet_check_chunk`. Command-line wrapper
   `tools/verify/morlet_verify.py` (batches in read-only transactions, optional pause, exit status 1 on problems).
   Operations docs explain how it complements PostgreSQL's data checksums.
+- **Episodic memory, phase 1 (#221, [design](docs/memory-design.md)):** `morlet_enable_memory` adds episodes, runs, a
+  ledger and kept summaries to a collection; `morlet_add_episodes` registers sample intervals with context,
+  importance and an exemption flag; `morlet_set_level` moves episodes down the compaction ladder (1 not searchable,
+  2 represented by another episode, 3 summarized, 4 gone) in one transaction, with a dry run, removing only rows
+  entirely inside the episode that no overlapping episode at a lower level needs, and writing one ledger row per
+  move (what was removed, md5 of the removed chunks). Reads of compacted samples fail with the level and ledger
+  entry; interval statistics use kept summaries and stay bitwise exact on chunk boundaries; the envelope builder
+  skips episodes taken out of search; `morlet_verify` accepts compacted data. `morlet_memory_status` reports
+  episodes per level. Policies that decide the moves come in phase 2.
 - **Long reads decode on worker threads:** interval reads of at least 8 chunks (`morlet_read_interval`,
   `morlet_read_interval_raw`) decode their chunks on up to `morlet.decode_threads` threads (1..64, default up to 4;
   1 = the backend's own thread). Results are identical. Development set: 128,000-sample reads 41% faster inside

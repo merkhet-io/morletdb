@@ -2933,6 +2933,155 @@ END $$"#).unwrap();
     fn verify_rejects_bad_batch_size() {
         Spi::run("SELECT morlet_create_stream_collection('public','scrub_bad'); SELECT * FROM morlet_verify('scrub_bad',NULL,0)").unwrap();
     }
+    /// Episodic memory (docs/memory-design.md): every level removes what it should and nothing else, reads fail
+    /// closed with the level, statistics stay exact on chunk boundaries, the ledger records every move, and the
+    /// scrub accepts compacted data.
+    #[pg_test]
+    fn memory_ladder_removes_exactly_what_each_level_says() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','mem'); SELECT morlet_enable_chunk_summaries('mem');
+             SELECT morlet_start_recording('mem','A',4096,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('mem','A',s,morlet_float8_le_bytes(ARRAY(SELECT round(100*sin(i/9.))::float8 FROM generate_series(s,s+9999) i)),1000)
+               FROM generate_series(0,30000,10000) s ORDER BY s;
+             SELECT morlet_enable_envelopes('mem'); SELECT morlet_build_envelopes('mem','A',512,256,100000);
+             SELECT morlet_enable_memory('mem');
+             CREATE TEMP TABLE ep AS SELECT e AS id, o FROM morlet_add_episodes('mem','[
+               {\"recording_id\":\"A\",\"start_sample\":5000,\"end_sample\":15000},
+               {\"recording_id\":\"A\",\"start_sample\":20000,\"end_sample\":30000},
+               {\"recording_id\":\"A\",\"start_sample\":0,\"end_sample\":5000,\"exempt\":true},
+               {\"recording_id\":\"A\",\"start_sample\":30000,\"end_sample\":35000},
+               {\"recording_id\":\"A\",\"start_sample\":35000,\"end_sample\":40000},
+               {\"recording_id\":\"A\",\"start_sample\":12000,\"end_sample\":14000}]') WITH ORDINALITY x(e,o);
+             CREATE TEMP TABLE before AS SELECT * FROM morlet_interval_stats('mem','A',0,40000);",
+        )
+        .unwrap();
+        let id = |o: i64| {
+            Spi::get_one::<i64>(&format!("SELECT id FROM ep WHERE o={o}"))
+                .unwrap()
+                .unwrap()
+        };
+        let one = |sql: &str| Spi::get_one::<i64>(sql).unwrap().unwrap();
+        let run = one("SELECT morlet_start_memory_run('mem','test','1')");
+        // Level 1: envelopes entirely inside 5000..15000 go, except those overlapping episode 6 (12000..14000), which
+        // is still at level 0 and stays searchable; samples stay; a rebuild follows the same rule.
+        let inside = "SELECT count(*) FROM mem_envelopes WHERE start_sample>=5000 AND start_sample+window_size<=15000 AND NOT (start_sample<14000 AND start_sample+window_size>12000)";
+        let kept6 = "SELECT count(*) FROM mem_envelopes WHERE start_sample>=5000 AND start_sample+window_size<=15000 AND start_sample<14000 AND start_sample+window_size>12000";
+        assert!(one(inside) > 0);
+        let before6 = one(kept6);
+        assert!(before6 > 0);
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('mem',{run},'[{{\"episode_id\":{},\"level\":1}}]')",
+            id(1)
+        ))
+        .unwrap();
+        assert_eq!(one(inside), 0);
+        assert_eq!(one(kept6), before6);
+        Spi::run(
+            "DELETE FROM mem_envelopes; SELECT morlet_build_envelopes('mem','A',512,256,100000)",
+        )
+        .unwrap();
+        assert_eq!(one(inside), 0);
+        assert_eq!(one(kept6), before6);
+        assert_eq!(
+            one("SELECT cardinality(samples) FROM morlet_read_interval('mem','A',6000,7000)"),
+            1000
+        );
+        // Overlap protection: episode 6 (12000..14000) lies inside episode 1, which is at level 1 and keeps its
+        // samples, so moving episode 6 to level 3 removes no chunk; the windows it was keeping searchable inside
+        // episode 1 go with it.
+        let moved = one(&format!("SELECT chunks_removed FROM morlet_set_level('mem',{run},'[{{\"episode_id\":{},\"level\":3}}]')", id(6)));
+        assert_eq!(moved, 0);
+        assert_eq!(one(kept6), 0);
+        assert_eq!(
+            one("SELECT cardinality(samples) FROM morlet_read_interval('mem','A',12000,14000)"),
+            2000
+        );
+        // Level 3: chunks 20000..30000 go, their summaries stay; statistics over whole chunks are unchanged.
+        let moved = one(&format!("SELECT chunks_removed FROM morlet_set_level('mem',{run},'[{{\"episode_id\":{},\"level\":3,\"reason\":{{\"why\":\"test\"}}}}]')", id(2)));
+        assert_eq!(moved, 10);
+        assert_eq!(one("SELECT count(*) FROM mem_kept_summaries"), 10);
+        assert!(Spi::get_one::<bool>("SELECT (SELECT row(s.*)::text FROM morlet_interval_stats('mem','A',0,40000) s)=(SELECT row(b.*)::text FROM before b)").unwrap().unwrap());
+        // Level 2: episode 4 represented by episode 5.
+        Spi::run(&format!("SELECT * FROM morlet_set_level('mem',{run},'[{{\"episode_id\":{},\"level\":2,\"representative\":{},\"distance\":0.25}}]')", id(4), id(5))).unwrap();
+        assert_eq!(
+            one(&format!(
+                "SELECT representative FROM mem_episodes WHERE episode_id={}",
+                id(4)
+            )),
+            id(5)
+        );
+        assert_eq!(one("SELECT count(*) FROM mem_kept_summaries"), 15);
+        // The scrub accepts compacted chunks; the ledger has one row per move with the removed chunks' md5.
+        assert_eq!(
+            one("SELECT count(*) FROM morlet_verify('mem') WHERE cardinality(problems)>0"),
+            0
+        );
+        assert_eq!(one("SELECT count(*) FROM mem_ledger"), 4);
+        assert_eq!(one("SELECT count(*) FROM mem_ledger WHERE chunks_removed>0 AND removed_md5 IS NOT NULL"), 2);
+        // Dry run: reports, changes nothing.
+        Spi::run(&format!(
+            "SELECT morlet_finish_memory_run('mem',{run},'finished')"
+        ))
+        .unwrap();
+        let dry = one("SELECT morlet_start_memory_run('mem','test','1','{}',true)");
+        assert_eq!(one(&format!("SELECT summaries_removed FROM morlet_set_level('mem',{dry},'[{{\"episode_id\":{},\"level\":4}}]',true)", id(2))), 10);
+        assert_eq!(one("SELECT count(*) FROM mem_kept_summaries"), 15);
+        assert_eq!(one("SELECT count(*) FROM mem_ledger"), 4);
+        // Level 4: the kept summaries go too; the scrub accepts the gap the ledger explains.
+        Spi::run(&format!(
+            "SELECT morlet_finish_memory_run('mem',{dry},'finished')"
+        ))
+        .unwrap();
+        let run2 = one("SELECT morlet_start_memory_run('mem','test','1')");
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('mem',{run2},'[{{\"episode_id\":{},\"level\":4}}]')",
+            id(2)
+        ))
+        .unwrap();
+        assert_eq!(one("SELECT count(*) FROM mem_kept_summaries"), 5);
+        assert_eq!(
+            one("SELECT count(*) FROM morlet_verify('mem') WHERE cardinality(problems)>0"),
+            0
+        );
+        assert_eq!(
+            one("SELECT sum(episodes)::bigint FROM morlet_memory_status('mem')"),
+            6
+        );
+    }
+    #[pg_test(
+        error = "samples of recording A in 0..2000 were compacted to level 3 (episode 1, ledger 1)"
+    )]
+    fn memory_reads_of_compacted_samples_name_the_level() {
+        Spi::run("SELECT morlet_create_stream_collection('public','mem_read'); SELECT morlet_start_recording('mem_read','A',4096,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunks_raw('mem_read','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,3999) i)),1000);
+          SELECT morlet_enable_memory('mem_read'); SELECT morlet_add_episodes('mem_read','[{\"recording_id\":\"A\",\"start_sample\":0,\"end_sample\":2000}]');
+          SELECT * FROM morlet_set_level('mem_read',morlet_start_memory_run('mem_read','test','1'),'[{\"episode_id\":1,\"level\":3}]');
+          SELECT * FROM morlet_read_interval('mem_read','A',500,1500)").unwrap();
+    }
+    #[pg_test(
+        error = "the statistics interval cuts the compacted chunk at sample 1000 of recording A"
+    )]
+    fn memory_statistics_refuse_cut_compacted_chunks() {
+        Spi::run("SELECT morlet_create_stream_collection('public','mem_cut'); SELECT morlet_start_recording('mem_cut','A',4096,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunks_raw('mem_cut','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,3999) i)),1000);
+          SELECT morlet_enable_memory('mem_cut'); SELECT morlet_add_episodes('mem_cut','[{\"recording_id\":\"A\",\"start_sample\":1000,\"end_sample\":2000}]');
+          SELECT * FROM morlet_set_level('mem_cut',morlet_start_memory_run('mem_cut','test','1'),'[{\"episode_id\":1,\"level\":3}]');
+          SELECT * FROM morlet_interval_stats('mem_cut','A',1500,3000)").unwrap();
+    }
+    #[pg_test(error = "episode 1 is at level 3; levels only move down")]
+    fn memory_levels_only_move_down() {
+        Spi::run("SELECT morlet_create_stream_collection('public','mem_up'); SELECT morlet_start_recording('mem_up','A',4096,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunks_raw('mem_up','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,3999) i)),1000);
+          SELECT morlet_enable_memory('mem_up'); SELECT morlet_add_episodes('mem_up','[{\"recording_id\":\"A\",\"start_sample\":0,\"end_sample\":2000}]');
+          SELECT * FROM morlet_set_level('mem_up',morlet_start_memory_run('mem_up','test','1'),'[{\"episode_id\":1,\"level\":3},{\"episode_id\":1,\"level\":2,\"representative\":1}]')").unwrap();
+    }
+    #[pg_test(error = "episode 1 is exempt (event library) and stays at level 0 or 1")]
+    fn memory_exempt_episodes_stay_searchable_or_full() {
+        Spi::run("SELECT morlet_create_stream_collection('public','mem_ex'); SELECT morlet_start_recording('mem_ex','A',4096,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunks_raw('mem_ex','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,3999) i)),1000);
+          SELECT morlet_enable_memory('mem_ex'); SELECT morlet_add_episodes('mem_ex','[{\"recording_id\":\"A\",\"start_sample\":0,\"end_sample\":2000,\"exempt\":true}]');
+          SELECT * FROM morlet_set_level('mem_ex',morlet_start_memory_run('mem_ex','test','1'),'[{\"episode_id\":1,\"level\":3}]')").unwrap();
+    }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn replay_compares_signed_zero_bits() {
         // Array equality treats -0 and +0 as equal; a replay must match bit for bit.
