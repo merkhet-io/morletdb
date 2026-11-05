@@ -242,7 +242,9 @@ def load(system, durability, rep):
     save(name, res)
     if not ok:
         raise SystemExit("correctness failed")
-    measure = durability == "D2" and (rep == 1 or rep == 2 and system in ("morletdb", "questdb", "morletdb-batched16"))
+    every_rep = os.environ.get("B3_READS_EVERY_REP") == "1" and system != "questdb"   # B3.11: reads after every D2 load
+    measure = durability == "D2" and (rep == 1 or every_rep
+                                      or rep == 2 and system in ("morletdb", "questdb", "morletdb-batched16"))
     if system == "questdb" and measure:
         db = handle
         common.stop(q.NAME)
@@ -283,8 +285,8 @@ def load(system, durability, rep):
     elif system != "questdb" and measure:
         mo.settle(handle)
         res["storage"] = mo.storage(handle)
-        if rep == 1 and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16", "morletdb-032",
-                                   "morletdb-033", "morletdb-i1"):
+        if (rep == 1 or every_rep) and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16",
+                                                  "morletdb-032", "morletdb-033", "morletdb-i1"):
             res["reads"] = reads("morletdb", handle, m, data)
             res["analytics"] = analytics("morletdb", handle, m, data)
             if system == "morletdb":

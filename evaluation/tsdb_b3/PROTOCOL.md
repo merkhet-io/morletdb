@@ -687,3 +687,28 @@ set, beside QuestDB and the released MorletDB, in one session. Everything common
   `morletdb-i1`'s numbers, labelled with the unreleased SQL 0.3.4 until it is released.
 - **Smoke check (not a result):** one development-set load of `morletdb-i1` (`B3_SET=dev`) before the first
   benchmark load, to confirm the image and the harness.
+
+## Amendment B3.11: B3.10's read criterion over three loads per arm (FROZEN before any load of the benchmark set)
+
+Added 2026-11-05. B3.10 compared reads from one D2 load per arm and missed its read criterion on R2 alone (p50
+1.118× the released build; every other measure within 1.04×). Exploratory repeats after the stage
+(`results/b310-attr-*`) showed R2 varying between loads by more than that difference, in both directions, while
+Spotlight and media analysis were running. B3.11 decides the criterion with three loads per arm. Everything
+common to B3 and B3.10 applies; B3.10's ingestion statements are not re-tested here.
+
+- **Arms:** `morletdb-i1` (image `morletdb:b310`, `sha256:4a617625773a…`, as in B3.10) and `morletdb-033` (released
+  `0.3.5-alpha.1`). QuestDB is not run.
+- **Runs:** for r = 1, 2, 3: a fresh D2 load of `morletdb-i1`, then of `morletdb-033`, each followed by the full
+  B3 read benchmark (R1–R5) and interval statistics on that load (`B3_READS_EVERY_REP=1`; otherwise B3 measures
+  reads on D2 r1 only). `run_b311.sh`, `results/b311/`, machine snapshots before and after every load.
+- **Machine:** the run starts only when the 1-minute load average is below 3 and no process other than the Docker
+  VM uses more than half a core, and in particular when Spotlight indexing (`corespotlightd`, `mds_stores`) and
+  media analysis (`mediaanalysisd`) are idle; foreign processes above half a core in any snapshot are reported.
+- **Acceptance criteria for `morletdb-i1`:** (1) all six loads pass B3's correctness checks; (2) stored chunks
+  byte-identical across the six loads; (3) for each of R1, R2, R3, R4 recent, R4 older, R5 and interval
+  statistics, the median over the three loads of `morletdb-i1`'s p50 is at most 1.1× the median over the three
+  loads of `morletdb-033`'s p50. p95 values are reported, not tested.
+- **Decision:** if all three hold, B3.10's criterion 3 is taken as met by this repeated measurement; `morletdb-i1`
+  is adopted as the recommended configuration and the website's ingestion figures take B3.10's numbers, labelled
+  with the unreleased SQL 0.3.4 until it is released. If criterion 3 fails again, I1 is not adopted, and the read
+  difference is investigated as a defect before any further stage.
