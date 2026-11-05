@@ -30,7 +30,7 @@ class Config:
     window: int = 512
     stride: int = 256
     normalization: str = "zscore"
-    rpc_chunks: int = 1
+    rpc_chunks: int = 0   # chunks per append call; 0 = automatic (I1, #233): batched raw appends when the server has them
     extractor: str = "morlet-energy-v1"
     sample_quantum: float = 1.0
     raw_append: bool = True   # use morlet_append_chunk_raw for numpy chunks when the server has it (SQL 0.3.3)
@@ -45,8 +45,8 @@ class Config:
             raise ValueError("chunk_size must be 1..min(32768,256*stride)")
         if not (1 <= self.batch_rows <= 1024 and 1 <= self.commit_chunks <= 256):
             raise ValueError("batch_rows must be 1..1024 and commit_chunks 1..256")
-        if not 1 <= self.rpc_chunks <= 64:
-            raise ValueError("rpc_chunks must be 1..64")
+        if not 0 <= self.rpc_chunks <= 64:
+            raise ValueError("rpc_chunks must be 0..64 (0 = automatic)")
         if self.rpc_chunks * self.chunk_size > 262144:
             raise ValueError("rpc_chunks * chunk_size must not exceed 262144 samples")
         if self.normalization not in ("none", "demean", "zscore"):
@@ -215,15 +215,33 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
     owned = conn is None
     if not owned and (validate_only or conn.autocommit or conn.info.transaction_status != psycopg.pq.TransactionStatus.IDLE):
         raise ValueError("a caller-owned connection must be idle and not in autocommit mode")
-    staged_chunks, staged_samples, raw_append = 0, 0, False
+    staged_chunks, staged_samples, raw_append, raw_batch = 0, 0, False, False
+    rpc_chunks = config.rpc_chunks or 1   # resolved once the server is known
     report["commit_wait_s"] = 0.0
     pending, pending_recording, ensured, chunk_factory = [], None, None, None
+
+    def raw_run(pending):
+        """The pending chunks as one run of little-endian float64 bytes, if they are consecutive and all but the
+        last exactly chunk_size long (what morlet_append_chunks_raw cuts them into). Numpy float arrays and the
+        reader's validated lists of numbers (|x| <= 1e9, exact in float64) qualify."""
+        if not (raw_batch and all(isinstance(v, list) or isinstance(v, np.ndarray) and v.dtype.kind == "f"
+                                  for _, v in pending)):
+            return None
+        for (o, v), (o2, _) in zip(pending, pending[1:]):
+            if len(v) != config.chunk_size or o + len(v) != o2:
+                return None
+        return b"".join(np.asarray(v, "<f8").tobytes() for _, v in pending)
 
     def flush():
         nonlocal staged_chunks, staged_samples, pending, ensured
         if not pending:
             return
-        if config.rpc_chunks == 1:
+        run = raw_run(pending) if len(pending) > 1 else None
+        if run is not None:
+            # SQL 0.3.4: consecutive chunks in one call, cut by the server; same result as one call per chunk
+            conn.execute("SELECT morlet_append_chunks_raw(%s::regclass,%s,%s,%b,%s)",
+                         (collection,pending_recording,pending[0][0],run,config.chunk_size))
+        elif len(pending) == 1:
             offset, values = pending[0]
             if raw_append and isinstance(values, np.ndarray) and values.dtype.kind == "f":
                 # SQL 0.3.3: little-endian float64 bytes; the server skips per-element array parsing
@@ -278,7 +296,7 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
                     ensured = (recording, spec)
                 pending_recording=recording
                 pending.append((start,values))
-                if len(pending)>=config.rpc_chunks or staged_chunks+len(pending)>=config.commit_chunks:
+                if len(pending)>=rpc_chunks or staged_chunks+len(pending)>=config.commit_chunks:
                     flush()
             after = path.stat()
             if (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns) != signature:
@@ -295,7 +313,14 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
                 "SELECT to_regprocedure('public.morlet_append_chunk_raw(regclass,text,bigint,bytea)') IS NOT NULL"
             ).fetchone()[0]
             report["raw_append"] = raw_append
-            if config.rpc_chunks > 1:
+            raw_batch = raw_append and conn.execute(
+                "SELECT to_regprocedure('public.morlet_append_chunks_raw(regclass,text,bigint,bytea,integer)') IS NOT NULL"
+            ).fetchone()[0]
+            report["raw_batch"] = raw_batch
+            if config.rpc_chunks == 0:
+                rpc_chunks = min(64, 262144 // config.chunk_size, config.commit_chunks) if raw_batch else 1
+            report["rpc_chunks"] = rpc_chunks
+            if rpc_chunks > 1:   # the composite batch path, for chunks that are not one raw run
                 info=CompositeInfo.fetch(conn,"public.morlet_input_chunk")
                 if info is None:
                     raise ValueError("server is missing the batched ingestion type")
@@ -341,7 +366,7 @@ def main():
     parser.add_argument("--chunk-size", type=int, default=4096)
     parser.add_argument("--batch-rows", type=int, default=64)
     parser.add_argument("--commit-chunks", type=int, default=256)
-    parser.add_argument("--rpc-chunks", type=int, default=1)
+    parser.add_argument("--rpc-chunks", type=int, default=0, help="chunks per append call, 0 = automatic")
     parser.add_argument("--window", type=int, default=512)
     parser.add_argument("--stride", type=int, default=256)
     parser.add_argument("--normalization", choices=["none", "demean", "zscore"], default="zscore")

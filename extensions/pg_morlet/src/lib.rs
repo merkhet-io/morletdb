@@ -594,6 +594,89 @@ fn morlet_chunk_step(checkpoint: JsonB, start_sample: i64, samples: pgrx::Array<
     JsonB(serde_json::json!({"checkpoint":state.checkpoint(),"segments":segments}))
 }
 
+/// The per-chunk work of appending a run of consecutive chunks, in one call (I1, issue #233).
+///
+/// `samples` holds little-endian float64 values starting at `start_sample`; they are cut into chunks of
+/// `chunk_size` samples (the last may be shorter). For each chunk, in order, this does what
+/// `morlet_append_chunk` does per call: validates the samples, advances the checkpoint as
+/// `morlet_chunk_step` does (so the result is identical to appending the chunks one by one), encodes the
+/// chunk as `morlet_encode_chunk` does and, if `summarized`, computes `morlet_chunk_summary`. Returns the
+/// chunk starts, counts, encoded chunks, summaries (NULL unless `summarized`), and the final checkpoint with
+/// all emitted segments in `morlet_chunk_step`'s format. Writes nothing: `morlet_append_chunks_raw` stores it.
+#[allow(clippy::type_complexity)]
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_chunk_batch(
+    checkpoint: JsonB,
+    start_sample: i64,
+    samples: &[u8],
+    chunk_size: i32,
+    sample_quantum: f64,
+    summarized: bool,
+) -> TableIterator<
+    'static,
+    (
+        name!(starts, Vec<i64>),
+        name!(counts, Vec<i32>),
+        name!(encoded, Vec<Vec<u8>>),
+        name!(summaries, Option<Vec<Vec<u8>>>),
+        name!(result, JsonB),
+    ),
+> {
+    if start_sample < 0 {
+        pgrx::error!("chunk start must be nonnegative");
+    }
+    if !(1..=32768).contains(&chunk_size) {
+        pgrx::error!("chunk_size must be 1..32768");
+    }
+    if samples.is_empty() || !samples.len().is_multiple_of(8) {
+        pgrx::error!("raw samples must be a nonempty multiple of 8 bytes (little-endian float64)");
+    }
+    if samples.len() / 8 > 262144 {
+        pgrx::error!("batch exceeds 262144 samples");
+    }
+    let values: Vec<f64> = samples
+        .chunks_exact(8)
+        .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+        .collect();
+    let checkpoint = serde_json::from_value(checkpoint.0)
+        .unwrap_or_else(|e| pgrx::error!("invalid checkpoint: {}", e));
+    let mut state = morlet_core::chunks::ChunkExtractor::from_checkpoint(checkpoint)
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    let n = values.len().div_ceil(chunk_size as usize);
+    let (mut starts, mut counts, mut encoded) = (
+        Vec::with_capacity(n),
+        Vec::with_capacity(n),
+        Vec::with_capacity(n),
+    );
+    let mut summaries = summarized.then(|| Vec::with_capacity(n));
+    let mut segments = Vec::new();
+    let mut offset = start_sample;
+    for chunk in values.chunks(chunk_size as usize) {
+        segments.extend(
+            state
+                .push(offset as u64, chunk)
+                .unwrap_or_else(|e| pgrx::error!("{}", e)),
+        );
+        if state.next_sample_offset() > i64::MAX as u64 {
+            pgrx::error!("Postgres sample offset overflow");
+        }
+        encoded.push(
+            morlet_core::rawcodec::encode(chunk, sample_quantum)
+                .unwrap_or_else(|e| pgrx::error!("{}", e)),
+        );
+        if let Some(s) = summaries.as_mut() {
+            let mut stats = morlet_core::intervalstats::IntervalStats::default();
+            stats.add(chunk);
+            s.push(stats.to_summary().to_vec());
+        }
+        starts.push(offset);
+        counts.push(chunk.len() as i32);
+        offset += chunk.len() as i64;
+    }
+    let result = JsonB(serde_json::json!({"checkpoint": state.checkpoint(), "segments": segments}));
+    TableIterator::once((starts, counts, encoded, summaries, result))
+}
+
 // ---- Exact envelope search: a parallel aggregate that screens stored envelopes in float32 with a
 // rigorous error bound and keeps every window that could be among the m nearest (morlet_core::envelope_screen).
 // SQL: morlet_envelope_screen(envelope, recording_id, start_sample, query_envelope, max_lag, m, budget) -> jsonb
@@ -2392,6 +2475,64 @@ END $$"#).unwrap();
                 .unwrap(),
             0
         );
+    }
+    /// I1 (#233): a batch stores exactly what chunk-by-chunk appends store (chunks, summaries, segments,
+    /// checkpoint), from one call or several, and replays and overlaps go through the per-chunk path.
+    #[pg_test]
+    fn batched_raw_append_equals_chunk_by_chunk() {
+        Spi::run(
+            "CREATE TEMP TABLE batch_src AS SELECT i,round(1000*sin(i/7.)+((i*7919)%61))::float8 AS v FROM generate_series(0,10499) i;
+             CREATE FUNCTION pg_temp.raw(a int,b int) RETURNS bytea LANGUAGE sql AS
+               $$ SELECT morlet_float8_le_bytes(ARRAY(SELECT v FROM batch_src WHERE i BETWEEN a AND b ORDER BY i)) $$;
+             SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['batch_one','batch_many','batch_mixed']) c;
+             SELECT morlet_enable_chunk_summaries(c::regclass) FROM unnest(ARRAY['batch_one','batch_many','batch_mixed']) c;
+             SELECT morlet_start_recording(c::regclass,'A',4096,'x','g') FROM unnest(ARRAY['batch_one','batch_many','batch_mixed']) c;
+             SELECT morlet_append_chunk_raw('batch_one','A',s,pg_temp.raw(s,least(s+999,10499))) FROM generate_series(0,10499,1000) s ORDER BY s;
+             SELECT morlet_append_chunks_raw('batch_many','A',0,pg_temp.raw(0,4999),1000);
+             SELECT morlet_append_chunks_raw('batch_many','A',5000,pg_temp.raw(5000,10499),1000);
+             SELECT morlet_append_chunks_raw('batch_mixed','A',0,pg_temp.raw(0,5999),1000);
+             SELECT morlet_append_chunks_raw('batch_mixed','A',5000,pg_temp.raw(5000,10499),1000);",
+        )
+        .unwrap();
+        let same = |other: &str| {
+            Spi::get_one::<bool>(&format!(
+                "SELECT (SELECT array_agg(row(start_sample,sample_count,encoded,summary)::text ORDER BY start_sample) FROM batch_one_chunks)
+                      = (SELECT array_agg(row(start_sample,sample_count,encoded,summary)::text ORDER BY start_sample) FROM {other}_chunks)
+                    AND (SELECT array_agg(row(start_sample,features)::text ORDER BY start_sample) FROM batch_one_segments)
+                      = (SELECT array_agg(row(start_sample,features)::text ORDER BY start_sample) FROM {other}_segments)
+                    AND (SELECT checkpoint FROM batch_one) = (SELECT checkpoint FROM {other})"
+            ))
+            .unwrap()
+            .unwrap()
+        };
+        assert!(same("batch_many"));
+        assert!(same("batch_mixed"));
+        assert!(
+            Spi::get_one::<i64>("SELECT count(*) FROM batch_one_segments")
+                .unwrap()
+                .unwrap()
+                > 0
+        );
+        // An identical retry of everything is acknowledged and stores nothing new.
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT morlet_append_chunks_raw('batch_many','A',0,pg_temp.raw(0,10499),1000)"
+            )
+            .unwrap()
+            .unwrap(),
+            10500
+        );
+        assert!(same("batch_many"));
+    }
+    #[pg_test(error = "conflicting replay at chunk offset")]
+    fn batched_raw_append_rejects_conflicting_replay() {
+        Spi::run("SELECT morlet_create_stream_collection('public','batch_conflict'); SELECT morlet_start_recording('batch_conflict','A',4096,'x','g'); SELECT morlet_append_chunks_raw('batch_conflict','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),2); SELECT morlet_append_chunks_raw('batch_conflict','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,5]::float8[]),2)").unwrap();
+    }
+    #[pg_test(
+        error = "chunk offset must equal the next sample offset (no gaps, overlaps or replays)"
+    )]
+    fn batched_raw_append_rejects_gaps() {
+        Spi::run("SELECT morlet_create_stream_collection('public','batch_gap'); SELECT morlet_start_recording('batch_gap','A',4096,'x','g'); SELECT morlet_append_chunks_raw('batch_gap','A',0,morlet_float8_le_bytes(ARRAY[1,2]::float8[]),2); SELECT morlet_append_chunks_raw('batch_gap','A',5,morlet_float8_le_bytes(ARRAY[1,2]::float8[]),2)").unwrap();
     }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn replay_compares_signed_zero_bits() {
