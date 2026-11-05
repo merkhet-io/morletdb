@@ -117,3 +117,26 @@ chunks equal step 1's loads on the released image.
 The server backend now runs at 61–77% of one core during a load, so the remaining time is no longer only the
 server's. Next: where the 10.2 s go now (client and server), then parallel encoding. No comparison with QuestDB
 is stated from development-set runs; that needs a frozen same-session stage on the benchmark set.
+
+## After step 2: where a batched load spends its time
+
+Script [`attribute_batch.py`](attribute_batch.py), results
+[`results/attribution_batch_20261105T094904.json`](results/attribution_batch_20261105T094904.json); image
+`morletdb:i1-dev` (step 2), development set, D2, machine quiet (the browser tab of step 2's run was closed;
+1-minute load average 2.0 before the session, my own previous run winding down at the start). The load took
+**10.25 s (9.90 M samples/s, 877 calls)**, as in step 2; every run of 64 chunks was then appended again inside
+the server, and the pieces timed alone (medians of three; the replay's chunks were byte-identical).
+
+| Piece | Seconds | Share of the load |
+|---|---:|---:|
+| Server-only batched append path | 8.04 | 78% |
+| of which encoding (`morlet_core::rawcodec::encode`, inside `morlet_chunk_batch`) | 5.50 | **54%** |
+| of which the rest of `morlet_chunk_batch` (bytes to values, cutting, checkpoint) | 0.51 | 5% |
+| of which the CHECK constraint (full decode of each chunk) | 1.38 | 13% |
+| of which the row inserts (heap, keys, foreign key, WAL) | 0.69 | 7% |
+| of which PL/pgSQL and statement overhead (remainder) | ≈ 0 | |
+| Client and network (load minus server-only path) | 2.21 | 22% |
+
+Step 2 removed the per-statement overhead entirely. **Encoding is now more than half the load and runs on one
+core**: parallel encoding within a batch (step 3) is the next lever, then the CHECK constraint's decode (an
+owner decision, #233), then the client.
