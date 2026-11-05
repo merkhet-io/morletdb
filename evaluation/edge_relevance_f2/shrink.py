@@ -286,3 +286,60 @@ def encode_abs(x: np.ndarray, c: float, q: float = 0.5, wavelet: str = "sym8", l
         rec.append(r)
     comp = zlib.compress(b"".join(parts), 9)
     return comp, (pywt.waverec(rec, wavelet)[: len(x)] if reconstruct else None)
+
+
+def encode_nf(x: np.ndarray, c: float, q: float = 0.5, wavelet: str = "sym8", levels: int = 6, coeffs=None,
+              reconstruct: bool = True, seed: int = 0):
+    """encode_abs plus, per detail level, the RMS of the dropped coefficients (float16) in the stream. Returns
+    (bytes, plain reconstruction, noise-filled reconstruction): the decoder may fill dropped positions with seeded
+    Gaussian noise of that RMS (as noise substitution in audio coding), which keeps the background level per band.
+    Both decodes come from the same bytes."""
+    if coeffs is None:
+        coeffs = pywt.wavedec(x, wavelet, level=levels)
+    T = c * (float(np.std(x)) or 1e-12)
+    step = q * T
+    parts = [_varint(np.array([len(x), levels], np.int64)), np.float32(step).tobytes()]
+    qa = np.round(coeffs[0] / step).astype(np.int64)
+    parts.append(_varint(_zigzag(qa)))
+    rec, rec_nf = [qa * step], [qa * step]
+    rng = np.random.default_rng(seed)
+    rms_list = []
+    for d in coeffs[1:]:
+        keep = np.abs(d) > T
+        idx = np.flatnonzero(keep)
+        drop = ~keep
+        rms = float(np.sqrt(np.mean(d[drop] ** 2))) if drop.any() else 0.0
+        rms16 = np.float16(rms)
+        rms_list.append(rms16)
+        qv = np.round(d[idx] / step).astype(np.int64)
+        gaps = np.diff(np.concatenate([[-1], idx])) - 1
+        parts.append(_varint(np.array([len(idx)], np.int64)) + _varint(gaps.astype(np.int64)) + _varint(_zigzag(qv)))
+        r = np.zeros_like(d)
+        r[idx] = qv * step
+        rec.append(r)
+        if reconstruct:
+            rn = r.copy()
+            rn[drop] = rng.normal(0.0, float(rms16), int(drop.sum()))
+            rec_nf.append(rn)
+    parts.append(np.array(rms_list, np.float16).tobytes())
+    comp = zlib.compress(b"".join(parts), 9)
+    if not reconstruct:
+        return comp, None, None
+    return comp, pywt.waverec(rec, wavelet)[: len(x)], pywt.waverec(rec_nf, wavelet)[: len(x)]
+
+
+def bisect_c(x: np.ndarray, budget: float, q: float = 0.5, levels: int = 6, steps: int = 8, wavelet: str = "sym8",
+             lo: float = 1e-3, hi: float = 10.0):
+    """Device rate control: the smallest threshold factor c (log bisection, `steps` tries) whose code fits the
+    budget in bytes per sample; None if even c = hi does not fit."""
+    coeffs = pywt.wavedec(x, wavelet, level=levels)
+    if len(encode_nf(x, hi, q, wavelet, levels, coeffs, reconstruct=False)[0]) / len(x) > budget:
+        return None, coeffs
+    a, b, best = np.log(lo), np.log(hi), hi
+    for _ in range(steps):
+        cm = float(np.exp((a + b) / 2))
+        if len(encode_nf(x, cm, q, wavelet, levels, coeffs, reconstruct=False)[0]) / len(x) <= budget:
+            best, b = cm, np.log(cm)
+        else:
+            a = np.log(cm)
+    return best, coeffs

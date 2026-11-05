@@ -168,3 +168,27 @@ the device's; the protocol will use bisection.
 Open before freezing (updated): isolated false alarms on the IMS run (single files above threshold in the healthy
 part, comparable to the seismic false triggers); the seismic false-trigger artefact; the H2 thresholds; confirmation
 data definitions (XJTU-SY, Paderborn, PyScrew s02, CX 2021, Bosch M02 and M03).
+
+### Edge round 4 (`f2_edge_20261105T232429.json`): noise filling and device rate control
+
+Two changes, both before any freeze: (1) the wavelet coder's rate control is now the device's bisection on c
+(`shrink.bisect_c`, 8 tries, q = 0.5; baselines keep the generous grid search); (2) the stream also carries, per
+detail level, the RMS of the dropped coefficients (float16, a few bytes per window), so the receiver can decode
+either plainly (dropped coefficients zero) or with noise filling (dropped positions filled with seeded noise of
+that RMS, as noise substitution in audio coding). Both decodes come from the same bytes (`shrink.encode_nf`).
+
+| At 0.1 bytes/sample | Plain decode | Noise-filled decode | Original |
+|---|---:|---:|---:|
+| Seismic: arrivals triggered (of 30) | 29 | 28 | 28 |
+| Seismic: triggers elsewhere | 927 | **380** | 400 |
+| CNC milling: RMS deviation (median) | 9.1% | **0.05%** | – |
+| CNC milling: error | **0.42** | 0.60 | – |
+| CNC milling: bad-run AUROC | 0.770 | 0.772 | 0.765 |
+| IMS: fault detected at file / isolated alarms | 532 / 0 | 532 / 0 | 532 / 0 |
+
+Noise filling removes the false-trigger artefact and the RMS bias at the cost of relative error (the filled noise
+is not the original noise). The two decodes serve different analyses, so the protocol names the decode per measure:
+plain for waveform error and spectral diagnosis, noise-filled for energy-based detectors and trends. Isolated alarms
+in the healthy part of the IMS run: 0 for the wavelet coder at every budget (SZ3: 9 at 0.05). Bisection reached
+lower error than the grid on CWRU (0.54 vs 0.56 at 0.1) but cannot reach 0.05 bytes/sample on short screwdriving
+cycles (980 of 1,000 missed; the grid's coarser steps reached it).

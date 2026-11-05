@@ -60,11 +60,8 @@ def candidates(x, levels, bayes_prior=None):
     """{method: [(bytes, reconstruction, setting)]}."""
     n = len(x)
     sig = robust_sigma(x)
+    LEVELS_NOW[0] = levels
     out = {"wavelet": [], "sz3": [], "zfp": [], "decimate": []}
-    for c in CS:
-        for q in QA:
-            b, r = S.encode_abs(x, c, q, levels=levels)
-            out["wavelet"].append((len(b), r, f"c={c},q={q}"))
     if bayes_prior is not None:
         out["wavelet-bayes"] = []
         for tau in (0.5, 0.9, 0.99):
@@ -92,13 +89,28 @@ def candidates(x, levels, bayes_prior=None):
     return out
 
 
+LEVELS_NOW = [6]
+
+
 def rate_control(x, cands, budget):
-    """Per method, the candidate with the smallest relative error within budget bytes/sample (None if none)."""
+    """Baselines: per method, the candidate with the smallest relative error within budget bytes/sample (a grid
+    search, generous to them). The wavelet coder: the device's bisection on c (shrink.bisect_c); its plain and
+    noise-filled decodes come from the same bytes."""
     n = len(x)
     pick = {}
     for m, lst in cands.items():
+        if m in ("wavelet", "wavelet-nf"):
+            continue
         ok = [(rel_err(x, r), b, r, s) for b, r, s in lst if b / n <= budget]
         pick[m] = min(ok, key=lambda t: t[0]) if ok else None
+    if "wavelet" in cands:
+        c, coeffs = S.bisect_c(x, budget, levels=LEVELS_NOW[0])
+        if c is None:
+            pick["wavelet"] = pick["wavelet-nf"] = None
+        else:
+            b, r, rn = S.encode_nf(x, c, 0.5, levels=LEVELS_NOW[0], coeffs=coeffs)
+            pick["wavelet"] = (rel_err(x, r), len(b), r, f"c={c:.4g}")
+            pick["wavelet-nf"] = (rel_err(x, rn), len(b), rn, f"c={c:.4g}")
     return pick
 
 
@@ -136,6 +148,14 @@ def envelope_snr(x, fs, f0, band=(2000, 8000)):
     return float(spec[i - 2:i + 3].max() / np.median(spec[sel]))
 
 
+def false_alarms(snr, until, healthy=100, k=4.0):
+    """Single files above the series' own threshold between the healthy baseline and `until` (the original's
+    detection): isolated alarms in the healthy part of the run."""
+    base = np.asarray(snr[:healthy])
+    thr = base.mean() + k * base.std()
+    return int((np.asarray(snr[healthy:until]) > thr).sum())
+
+
 def detection_index(snr, healthy=100, k=4.0, run=5):
     base = np.asarray(snr[:healthy])
     thr = base.mean() + k * base.std()
@@ -164,10 +184,11 @@ def run_ims(step_files=1):
         if fi % 100 == 0:
             print(f"  ims {fi}/{len(xs)}", flush=True)
     det0 = detection_index(orig)
-    detect = {"original": det0}
+    detect = {"original": det0, "false_alarms": {"original": false_alarms(orig, det0)}}
     for (m, budget), snr in rec.items():
-        di = detection_index(np.nan_to_num(snr, nan=0.0))
-        detect[f"{m}@{budget}"] = di
+        snr = np.nan_to_num(snr, nan=0.0)
+        detect[f"{m}@{budget}"] = detection_index(snr)
+        detect["false_alarms"][f"{m}@{budget}"] = false_alarms(snr, det0)
     return rows, detect, orig
 
 
@@ -281,7 +302,7 @@ def _bosch_file(args):
                                  "rel_err": None if p is None else p[0], "bps": None if p is None else p[1] / win})
         feats = {"orig": (float(np.sqrt(np.mean((x - x.mean()) ** 2))), float(kurtosis(x)))}
         for b in budgets:
-            for m in ("wavelet", "sz3", "decimate"):
+            for m in ("wavelet", "wavelet-nf", "sz3", "decimate"):
                 parts = [r[m] for r in rec[b]]
                 if any(p is None for p in parts):
                     feats[f"{m}@{b}"] = None
