@@ -1,0 +1,22 @@
+2026-11-05T02:28:41
+ 2:28  up 8 days, 11:24, 12 users, load averages: 4.22 3.73 3.90
+ %CPU COMM
+268.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 43.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 18.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 15.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  5.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  4.2 /usr/sbin/coreaudiod
+  1.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-05T02:29:57
+ 2:29  up 8 days, 11:26, 12 users, load averages: 5.07 4.11 4.03
+ %CPU COMM
+462.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 81.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 59.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 33.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 18.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  5.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  3.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

@@ -1,0 +1,22 @@
+2026-11-05T01:25:13
+ 1:25  up 8 days, 10:21, 12 users, load averages: 4.52 4.64 5.15
+ %CPU COMM
+276.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 80.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 14.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+  8.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  7.7 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  6.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+2026-11-05T01:25:58
+ 1:25  up 8 days, 10:22, 12 users, load averages: 4.21 4.53 5.08
+ %CPU COMM
+271.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 36.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.1 /sbin/launchd
+ 17.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 15.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+  8.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  3.3 /usr/sbin/coreaudiod

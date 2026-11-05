@@ -1,0 +1,22 @@
+2026-11-05T01:21:03
+ 1:21  up 8 days, 10:17, 12 users, load averages: 3.45 4.67 5.35
+ %CPU COMM
+209.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+112.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 33.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  8.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  8.6 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  4.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+2026-11-05T01:21:30
+ 1:21  up 8 days, 10:17, 12 users, load averages: 2.87 4.41 5.24
+ %CPU COMM
+261.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 96.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 10.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  8.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  7.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+  3.3 /usr/sbin/coreaudiod
+  1.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop

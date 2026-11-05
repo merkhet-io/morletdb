@@ -1,0 +1,216 @@
+{
+ "system": "crate-array",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21180520800407976,
+ "samples": 101586735,
+ "image": "crate:6.4.6",
+ "image_id": "sha256:865ed64fd4e7ffc31dccd79ec96d374f7da458e23e65520699e31ad4f21775ef",
+ "started": "2026-11-05T02:02:59",
+ "server_version": "6.4.6",
+ "ingest": {
+  "wall_s": 138.346,
+  "samples_per_s": 734297,
+  "conversion_s": 0.933,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1112.102,
+   "p95_ms": 1204.082,
+   "max_ms": 1422.719
+  },
+  "ack_per_call": {
+   "n": 124,
+   "p50_ms": 1097.426,
+   "p95_ms": 1186.582,
+   "max_ms": 1399.843
+  },
+  "queryable_after_last_ack_s": 3.813,
+  "failures": [],
+  "server": {
+   "cpu_percent_mean": 113.7,
+   "cpu_percent_p95": 206.7,
+   "memory_peak_mib": 6110.2,
+   "samples": 63
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "phase_current_2": 31877792,
+    "temp_2_bearing_module": 615,
+    "vibration_1": 31877792,
+    "torque": 1984248,
+    "force": 1984248,
+    "speed": 1984248,
+    "phase_current_1": 31877792
+   },
+   "want": {
+    "vibration_1": 31877792,
+    "phase_current_1": 31877792,
+    "phase_current_2": 31877792,
+    "force": 1984248,
+    "speed": 1984248,
+    "torque": 1984248,
+    "temp_2_bearing_module": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 49.2
+  }
+ },
+ "correct": true,
+ "optimize_s": 0.163,
+ "shards": [
+  {
+   "table": "b3_blocks",
+   "shard": 0,
+   "path": "/data/data/nodes/0/indices/attT-phFS9Ok2kADzIzdeQ/0",
+   "size": 468934779,
+   "docs": 6307
+  },
+  {
+   "table": "b3_blocks",
+   "shard": 1,
+   "path": "/data/data/nodes/0/indices/attT-phFS9Ok2kADzIzdeQ/1",
+   "size": 467222565,
+   "docs": 6265
+  },
+  {
+   "table": "b3_blocks",
+   "shard": 2,
+   "path": "/data/data/nodes/0/indices/attT-phFS9Ok2kADzIzdeQ/2",
+   "size": 469017550,
+   "docs": 6307
+  },
+  {
+   "table": "b3_blocks",
+   "shard": 3,
+   "path": "/data/data/nodes/0/indices/attT-phFS9Ok2kADzIzdeQ/3",
+   "size": 465783576,
+   "docs": 6259
+  }
+ ],
+ "storage": {
+  "tables": {
+   "b3_blocks": {
+    "data": {
+     "apparent": 1870958470,
+     "allocated": 1872158720,
+     "files": 362
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 716,
+     "allocated": 32768,
+     "files": 8
+    }
+   }
+  },
+  "other": {
+   "apparent": 89542,
+   "allocated": 151552
+  },
+  "volume": {
+   "apparent": 1871049300,
+   "allocated": 1872375808
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 4.983,
+   "p95_ms": 7.486,
+   "max_ms": 14.853,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 47.721,
+   "p95_ms": 57.182,
+   "max_ms": 76.767,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 97.468,
+   "p95_ms": 104.516,
+   "max_ms": 114.028,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 3.406,
+   "p95_ms": 4.299,
+   "max_ms": 7.511,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 3.531,
+   "p95_ms": 4.408,
+   "max_ms": 6.152,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 4.543,
+   "p95_ms": 6.826,
+   "max_ms": 12.627,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 808.1
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 47.798,
+  "p95_ms": 55.285,
+  "max_ms": 61.378,
+  "max_relative_difference": 0.0,
+  "within_1e-12": true,
+  "computed": "client, after the read"
+ },
+ "optimize_one_segment_s": 33.38,
+ "storage_one_segment": {
+  "tables": {
+   "b3_blocks": {
+    "data": {
+     "apparent": 1163939006,
+     "allocated": 1164378112,
+     "files": 140
+    },
+    "translog": {
+     "apparent": 572,
+     "allocated": 32768,
+     "files": 8
+    },
+    "shard_state": {
+     "apparent": 1048,
+     "allocated": 49152,
+     "files": 12
+    }
+   }
+  },
+  "other": {
+   "apparent": 216349,
+   "allocated": 282624
+  },
+  "volume": {
+   "apparent": 1164156975,
+   "allocated": 1164742656
+  }
+ }
+}

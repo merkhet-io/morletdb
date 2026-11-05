@@ -1,0 +1,22 @@
+2026-11-05T01:16:51
+ 1:16  up 8 days, 10:12, 12 users, load averages: 6.22 6.33 6.03
+ %CPU COMM
+547.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 64.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 63.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  7.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  3.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  3.0 /usr/sbin/coreaudiod
+  1.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-05T01:21:03
+ 1:21  up 8 days, 10:17, 12 users, load averages: 3.45 4.67 5.35
+ %CPU COMM
+240.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 84.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 12.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  8.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  7.7 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  4.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
