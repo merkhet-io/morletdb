@@ -62,7 +62,7 @@ def tip(name, measure, a, b, unit):
 
 
 def svg():
-    top = 76
+    top = 96
     h = top + len(MEASURES) * (len(SYSTEMS) * LANE + GAP) + 44
     ink, muted, line = "var(--ink)", "var(--muted)", "var(--line)"
     out = [f'<svg class="bm-chart" viewBox="0 0 760 {h}" role="img" aria-labelledby="bm-chart-title bm-chart-desc" '
@@ -75,6 +75,10 @@ def svg():
     for name, col in SYSTEMS:
         out.append(f'<circle cx="{x + 5}" cy="18" r="5" fill="{col}"/><text x="{x + 15}" y="22" fill="{ink}">{name}</text>')
         x += 15 + 7 * len(name) + 16
+    # the hollow ring: the same database in a second form, on its own line
+    out.append(f'<circle cx="5" cy="42" r="4" fill="var(--paper)" stroke="{SYSTEMS[0][1]}" stroke-width="2"/>'
+               f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk); QuestDB against '
+               f'the released MorletDB 0.3.5 (ingestion)</text>')
     # axis and grid
     y_axis = h - 34
     for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×"), (50, "50×")]:
