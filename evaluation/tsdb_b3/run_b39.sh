@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 V=/Users/zin/sophia/morletdb
 export B3_MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1
-snap() { mkdir -p "results/$B3_RUN/machine"; { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -9; } >> "results/$B3_RUN/machine/$1.txt"; }
+snap() { mkdir -p "results/$B3_RUN/machine"; { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -9 || true; } >> "results/$B3_RUN/machine/$1.txt"; }
 done_ok() { local f="results/$B3_RUN/$1.json" ; [ -f "$f" ] && grep -q '"correct": true' "$f" && { [ "$2" != D2r1 ] || grep -q '"analytics' "$f"; }; }
 # step <result name> <D> <r> <command...>
 step() { local name=$1 d=$2 r=$3; shift 3

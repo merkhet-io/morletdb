@@ -8,7 +8,7 @@ export B3_RUN=${B3_RUN:-b38} B3_MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:0.3.5-a
 R=results/$B3_RUN
 mkdir -p "$R/machine"
 # machine state before and after each load (added after the first session ran on a busy machine)
-snap() { { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -8; } >> "$R/machine/$1_$2_r$3.txt"; }
+snap() { { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -8 || true; } >> "$R/machine/$1_$2_r$3.txt"; }
 done_ok() { [ -f "$R/load_$1_$2_r$3.json" ] && grep -q '"correct": true' "$R/load_$1_$2_r$3.json"; }
 run() { if done_ok "$@"; then echo "skip $*"; else echo "== $* $(date +%H:%M:%S)"; snap "$@"; "$PY" run.py load "$@"; snap "$@"; fi; }
 for r in 1 2 3; do
