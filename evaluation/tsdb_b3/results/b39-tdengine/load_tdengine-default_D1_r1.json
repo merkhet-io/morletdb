@@ -1,0 +1,116 @@
+{
+ "system": "tdengine-default",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.21194624999770895,
+ "samples": 101586735,
+ "image": "tdengine/tsdb:3.4.3.3",
+ "image_id": "sha256:a35f623203ffcbafea6817812080b54cbfa3e42aba3c4878d7713d67d814e877",
+ "started": "2026-11-05T01:21:31",
+ "settings": {
+  "database": [
+   [
+    "b3",
+    "CREATE DATABASE `b3` BUFFER 256 CACHESIZE 1 CACHEMODEL 'none' CACHESHARDBITS -1 COMP 2 DURATION 10d WAL_FSYNC_PERIOD 0 MAXROWS 4096 MINROWS 100 STT_TRIGGER 2 KEEP 3650d,3650d,3650d PAGES 256 PAGESIZE 4 PRECISION 'ns' REPLICA 1 WAL_LEVEL 2 VGROUPS 2 SINGLE_STABLE 0 TABLE_PREFIX 0 TABLE_SUFFIX 0 TSDB_PAGESIZE 4 WAL_RETENTION_PERIOD 3600 WAL_RETENTION_SIZE 0 KEEP_TIME_OFFSET 0 ENCRYPT_ALGORITHM 'none' SS_CHUNKPAGES 131072 SS_KEEPLOCAL 525600m SS_COMPACT 1 COMPACT_INTERVAL 0d COMPACT_TIME_RANGE 0d,0d COMPACT_TIME_OFFSET 0h IS_AUDIT 0 SECURE_DELETE 0 ALLOW_DROP 1 SECURITY_LEVEL 0"
+   ]
+  ],
+  "high_columns": [
+   [
+    "ts",
+    "TIMESTAMP",
+    8,
+    "",
+    "delta-i",
+    "lz4",
+    "medium"
+   ],
+   [
+    "vibration_1",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "phase_current_1",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "phase_current_2",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "acquisition",
+    "VARCHAR",
+    64,
+    "TAG",
+    "disabled",
+    "disabled",
+    "disabled"
+   ]
+  ]
+ },
+ "server_version": [
+  [
+   "3.4.3.3.community"
+  ]
+ ],
+ "ingest": {
+  "wall_s": 20.075,
+  "samples_per_s": 5060306,
+  "conversion_s": 3.523,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 161.024,
+   "p95_ms": 178.58,
+   "max_ms": 185.678
+  },
+  "ack_per_call": {
+   "n": 1246,
+   "p50_ms": 13.847,
+   "p95_ms": 19.297,
+   "max_ms": 33.943
+  },
+  "queryable_after_last_ack_s": 0.189,
+  "server": {
+   "cpu_percent_mean": 88.0,
+   "cpu_percent_p95": 126.3,
+   "memory_peak_mib": 1017.0,
+   "samples": 9
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 18.6
+  }
+ },
+ "correct": true
+}

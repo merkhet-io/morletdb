@@ -1,0 +1,22 @@
+2026-11-05T01:23:30
+ 1:23  up 8 days, 10:19, 12 users, load averages: 4.44 4.51 5.16
+ %CPU COMM
+264.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 36.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  3.9 /usr/sbin/coreaudiod
+  1.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-05T01:23:58
+ 1:23  up 8 days, 10:20, 12 users, load averages: 5.30 4.67 5.20
+ %CPU COMM
+254.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 87.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 24.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 17.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 13.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  6.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  5.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  4.9 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha

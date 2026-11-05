@@ -607,3 +607,51 @@ tiered storage, columnstore writes on ingest.
 
 **Download (to be approved before development):** `timescale/timescaledb:2.31.0-pg17` (linux/arm64, 550 MB
 compressed).
+
+## Amendment B3.8: QuestDB re-measured beside the current MorletDB (FROZEN before any load of the benchmark set)
+
+Added 2026-11-05. The website's QuestDB comparison comes from B3.2, against MorletDB's state at that time, while
+CrateDB, IoTDB, TDengine and TimescaleDB are compared with B3.3. B3.3 ran QuestDB once (D2 r1), not enough for a
+statement. B3.8 measures both systems again in one session so that every comparison uses the same MorletDB.
+Everything common to B3 applies; the harness (`run.py`, `questdb_adapter.py`, `morletdb_adapter.py`) is used
+unchanged.
+
+- **QuestDB 10.1.0** (`questdb/questdb:10.1.0`, still the current release; image already local, no download),
+  its B3.2 configuration unchanged: WAL tables, deduplication, `TIMESTAMP_NS`, `dataframe()` ingestion with
+  `questdb[dataframe]` 6.0.1; Parquet arms (LZ4_RAW after D2 r1, ZSTD after D2 r2) as in B3.2.
+- **MorletDB:** the released image `ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1` (SQL 0.3.3, the code users run),
+  arm `morletdb-033` (B3.3's base configuration: raw float64 appends and reads, pipelining, native statistics,
+  no search features).
+- **Runs:** for each repetition r = 1, 2, 3 and durability D2 then D1: MorletDB, then QuestDB (alternating, so
+  that drift in the machine affects both); storage, reads and analytics on D2 r1 of each system, Parquet arms on
+  QuestDB D2 r1 and r2. `run_b38.sh`; the Mac stays awake with the lid open; an interrupted load is rerun.
+- **Reported:** every B3 measure for both systems, QuestDB's storage both native and as Parquet; statements by
+  B3's rule. The website chart then takes QuestDB's ratios from B3.8 and shows QuestDB's native storage beside
+  the Parquet figure.
+- **Smoke check (not a result):** `run.py subset` on the development set, to confirm the environment, before the
+  first benchmark load.
+
+## Amendment B3.9: same-session re-pairing of CrateDB, IoTDB, TDengine and TimescaleDB (FROZEN before any load)
+
+Added 2026-11-05, 01:20. B3.4–B3.7 compared each system with MorletDB's B3.3 numbers, measured in an earlier
+session on the same machine. The first B3.8 session (00:39–00:51, `results/b38/`) then ingested MorletDB at
+4.38 M samples/s against 6.33 M in B3.3; an attribution check with both images (B3.3's and 0.3.5-alpha.1) gave the
+same 4.2–4.4 M, so the image was not the cause. The machine was busy (load average 9–10; Messages.app spinning at
+one full core since 2026-11-03 01:40, GUI processes), and results did not record machine load. Time-based
+ratios across sessions are therefore uncertain by an unknown factor; storage, memory and correctness are not
+affected in the same way. B3.9 re-measures each system beside MorletDB in one session, after Messages.app was
+quit (load average about 2), and B3.8 is repeated on the quiet machine (`results/b38q/`, same script).
+
+- **Systems and configurations:** unchanged from their amendments, the stage's first arm each: TDengine
+  `default` (B3.6), TimescaleDB (B3.7, both states), IoTDB `table` (B3.5), CrateDB `array` then `row` (B3.4).
+  Secondary arms (TDengine zstd and tsz, IoTDB table-zstd, CrateDB row-best) are not re-run.
+- **MorletDB:** `ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1`, arm `morletdb-033`, as in B3.8.
+- **Runs:** per system, in the order above, for r = 1, 2, 3 and durability D2 then D1: MorletDB, then the
+  system (alternating); storage, reads and analytics on D2 r1 of each, as in each stage. Results in
+  `results/b39-<system>/`. `run_b39.sh`; an interrupted load is rerun.
+- **Machine state:** before and after every load, the time, `uptime` and the eight busiest processes are
+  appended to `results/<run>/machine/` (also for `results/b38q/`). A load that starts with a load average above
+  4 is reported with that note.
+- **After B3.9:** B3.8 a third time (`results/b38z/`), to measure drift over the night.
+- **Reported:** every ratio from one session's pair only; the earlier cross-session ratios stay in RESULTS.md,
+  marked as cross-session. Statements by B3's rule. The website takes its ratios from B3.8/B3.9.

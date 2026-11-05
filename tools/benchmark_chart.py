@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Website benchmark chart: how many times MorletDB's figure each time-series database needs, per measure.
 
-Ratios come from each stage's own like-for-like comparison in evaluation/tsdb_b3/RESULTS.md (B3.2 for QuestDB, whose
-MorletDB arm was B3.2's; B3.4-B3.6 against MorletDB's B3.3 numbers), so no two sessions are mixed inside one ratio.
-Storage: the other system's compact form over MorletDB's (QuestDB Parquet zstd 9 over sample data; CrateDB, IoTDB,
-TDengine data on disk over MorletDB's database). Memory: median peak server memory while ingesting, over the loads
-of the system's lowest-memory layout, over MorletDB's median in the same stage. Speed: the other system's time over MorletDB's (p50), or MorletDB's
-throughput over the other's. > 1 = MorletDB better.
+Every ratio comes from one session in which MorletDB 0.3.5-alpha.1 and that database ran alternately on the same
+machine (evaluation/tsdb_b3/RESULTS.md: B3.8 for QuestDB, B3.9 for the others; summarize_b39.py prints the values),
+never from two sessions. Speed: the other system's time over MorletDB's (p50), or MorletDB's throughput over the
+other's, for the system's faster re-measured layout per measure. Storage: the other system's data on disk over
+MorletDB's whole database (164.8 MiB); for QuestDB its native columns (dot) and its Parquet zstd 9 partitions (ring).
+Memory: median peak server memory over the six loads of the system's lowest-memory layout, over MorletDB's in the
+same pair. > 1 = MorletDB better.
 
   python3 tools/benchmark_chart.py           # rewrite the chart between its markers in docs/index.html
   python3 tools/benchmark_chart.py --check   # fail if the chart in the page differs
@@ -20,13 +21,19 @@ START, END = "<!-- benchmark-chart:start -->", "<!-- benchmark-chart:end -->"
 SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0", "#199e70"), ("TDengine 3.4", "#c98500"), ("TimescaleDB 2.31", "#d55181")]
 # measure: [(numerator, denominator) per system, in SYSTEMS order] - the measured values, not rounded ratios
 MEASURES = [
-    ("Data on disk", "storage", [(232.7, 156.8), (1785.6, 164.8), (660.0, 164.8), (566.7, 164.8), (815.4, 164.8)], "MiB"),
-    ("Ingestion, one connection", "ingest", [(5.56, 8.29), (6.33, 0.4247), (6.33, 2.549), (6.33, 4.084), (6.33, 0.7458)], "M samples/s"),
-    ("Read 4,096 samples", "short", [(1.16, 0.65), (7.21, 0.615), (7.79, 0.615), (5.352, 0.615), (2.843, 0.615)], "ms p50"),
-    ("Read 128,000 samples", "long", [(7.71, 7.98), (86.57, 6.629), (46.01, 6.629), (70.49, 6.629), (59.321, 6.629)], "ms p50"),
-    ("Interval statistics", "stats", [(4.02, 2.70), (3.871, 2.514), (7.449, 2.514), (4.963, 2.514), (12.822, 2.514)], "ms p50"),
+    ("Data on disk", "storage", [(1162.7, 164.8, 232.7, "as Parquet zstd 9"), (1785.6, 164.8), (660.0, 164.8),
+                                 (566.7, 164.8), (815.4, 164.8)], "MiB"),
+    ("Ingestion, one connection", "ingest", [(6.302, 9.658), (6.328, 0.734), (6.257, 2.758), (6.243, 5.307),
+                                             (6.303, 0.971)], "M samples/s"),
+    ("Read 4,096 samples", "short", [(1.023, 0.630), (4.983, 0.625), (6.735, 0.631), (3.853, 0.641), (1.526, 0.643)],
+     "ms p50"),
+    ("Read 128,000 samples", "long", [(6.014, 6.886), (47.721, 6.721), (40.011, 6.721), (46.483, 6.789),
+                                      (36.271, 6.712)], "ms p50"),
+    ("Interval statistics", "stats", [(2.461, 2.545), (3.705, 2.566), (6.592, 2.540), (3.690, 2.530), (10.504, 2.551)],
+     "ms p50"),
     # median peak server memory over a layout's loads, lowest-memory layout; JVM heaps follow their documented config
-    ("Server memory", "memory", [(2290.7, 168.2), (6208.5, 167.5), (5916.6, 167.5), (1027.5, 167.5), (394.0, 167.5)], "MiB"),
+    ("Server memory", "memory", [(2301.4, 167.8), (6128.6, 167.9), (6021.1, 167.6), (1025.0, 167.7), (405.1, 167.7)],
+     "MiB"),
 ]
 LO, HI = 0.4, 50.0
 X0, X1 = 230, 728
@@ -80,12 +87,17 @@ def svg():
         rows = len(SYSTEMS) * LANE
         out.append(f'<text x="0" y="{y + rows / 2 + 4:.1f}" fill="{ink}">{label}</text>')
         out.append(f'<line x1="{X0}" x2="{X1}" y1="{y + rows + GAP / 2:.1f}" y2="{y + rows + GAP / 2:.1f}" stroke="{line}"/>')
-        for i, ((name, col), (a, b)) in enumerate(zip(SYSTEMS, pairs)):
+        for i, ((name, col), pr) in enumerate(zip(SYSTEMS, pairs)):
+            a, b = pr[:2]
             r = a / b
             cy = y + i * LANE + LANE / 2
             cx = xpos(r)
             out.append(f'<line x1="{xpos(1):.1f}" x2="{cx:.1f}" y1="{cy:.1f}" y2="{cy:.1f}" stroke="{col}" '
                        f'stroke-width="2" stroke-opacity="0.45"/>')
+            if len(pr) == 4:   # a second form of the same system (QuestDB as Parquet): a ring on the same lane
+                rx = xpos(pr[2] / b)
+                out.append(f'<circle cx="{rx:.1f}" cy="{cy:.1f}" r="4" fill="var(--paper)" stroke="{col}" stroke-width="2">'
+                           f'<title>{tip(name + " " + pr[3], label.lower(), pr[2], b, unit)}</title></circle>')
             out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="{col}" stroke="var(--paper)" stroke-width="2">'
                        f'<title>{tip(name, label.lower(), a, b, unit)}</title></circle>')
         y += rows + GAP
