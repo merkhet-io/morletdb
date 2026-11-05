@@ -124,3 +124,47 @@ Reading against the draft hypotheses:
 Open before freezing: the false-trigger artefact (a candidate fix to test on development data: dithered or
 noise-shaped quantisation, or keeping the coarsest levels exactly); whether H2's seismic false-trigger threshold is
 the right criterion; Pi access; the confirmation datasets' definitions.
+
+### Bosch CNC milling, machine M01 (`f2_edge_20261105T225127.json`)
+
+Added at the owner's request (CNC use cases). Bosch CNC machining data (Tnani et al. 2022, CC BY 4.0): 2 kHz,
+three axes, process runs labelled good or bad. Development: machine M01 only (all 34 bad runs and 100 random good
+runs); machines M02 and M03 (36 bad runs) stay untouched for confirmation. Windows of 8,192 samples per axis.
+
+| At budget | 0.05 | 0.1 | 0.2 | 0.3 |
+|---|---:|---:|---:|---:|
+| Error, wavelet | **0.58** | **0.42** | **0.25** | **0.19** |
+| Error, SZ3 | 1.01 | 0.79 | 0.47 | 0.28 |
+| Error, decimation | 0.64 | 0.47 | 0.39 | 0.38 |
+| Bad-run AUROC, wavelet (original 0.765) | 0.731 | 0.745 | 0.745 | 0.752 |
+| Bad-run AUROC, SZ3 | 0.631 | 0.717 | 0.774 | 0.773 |
+| Bad-run AUROC, decimation | 0.745 | 0.737 | 0.767 | 0.767 |
+| RMS deviation from original (median), wavelet | 8.3% | 4.2% | 1.7% | 1.1% |
+| RMS deviation, SZ3 | 24% | 5.4% | 4.6% | 3.3% |
+| RMS deviation, decimation | 16% | 9.3% | 13% | 13% |
+
+The bad-run score is label-free: the largest robust z-score of RMS or kurtosis over the three axes against all runs of
+the same operation. Reading: the wavelet coder again has the lowest error at every budget; separability of bad runs
+drops by 0.02 at 0.1 (borderline for H2's 0.02); RMS, the usual wear proxy, deviates by 4% at 0.1. For CNC the
+approximation should travel with exact per-window statistics (MorletDB's chunk summaries), which cost about 1% of
+the lossless size and keep RMS exact.
+
+### Raspberry Pi 3B+ (H3; `f2_pi_20261105.json`)
+
+Same Pi as EX2 (192.168.2.113, idle; separate venv with numpy 2.0.2 and PyWavelets 1.6.0). 60 IMS files
+(1.18 M samples), windows of 65,536, budget 0.1 bytes/sample, one core, Python prototype:
+
+| Rate control | Real time at 64 kHz | Bytes/sample | Median error |
+|---|---:|---:|---:|
+| none (one fixed setting) | 13.0× | 0.238 | 0.43 |
+| **bisection on the threshold, 8 tries** | **2.1×** | 0.095 | **0.67** |
+| full grid, 56 tries | 0.12× | 0.093 | 0.71 |
+
+Peak memory 56 MB. Two changes made this real time: the transform is computed once per window and the waveform is
+not reconstructed during the search (identical bytes), and bisection replaces the grid; bisection is also better,
+since the threshold is continuous. The harness's grid rate control is therefore a slightly pessimistic stand-in for
+the device's; the protocol will use bisection.
+
+Open before freezing (updated): isolated false alarms on the IMS run (single files above threshold in the healthy
+part, comparable to the seismic false triggers); the seismic false-trigger artefact; the H2 thresholds; confirmation
+data definitions (XJTU-SY, Paderborn, PyScrew s02, CX 2021, Bosch M02 and M03).

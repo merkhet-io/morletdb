@@ -257,6 +257,91 @@ def run_pyscrew(max_groups=40):
     return rows
 
 
+# ---------------------------------------------------------------- Bosch CNC (development: machine M01 only)
+def _bosch_file(args):
+    path, label, budgets = args
+    with h5py.File(path, "r") as h:
+        v = h["vibration_data"][:].astype(float)
+    win = 8192
+    n = (len(v) // win) * win
+    res = {"file": Path(path).name, "op": Path(path).parts[-3], "bad": label == "bad", "samples": n, "axes": []}
+    rows = []
+    for ax in range(3):
+        x = v[:n, ax]
+        rec = {b: [] for b in budgets}
+        for w in range(0, n, win):
+            e = x[w:w + win]
+            c = candidates(e, 6)
+            c.pop("zfp", None)
+            for b in budgets:
+                pick = rate_control(e, c, b)
+                rec[b].append({m: (None if p is None else p[2]) for m, p in pick.items()})
+                for m, p in pick.items():
+                    rows.append({"file": res["file"], "axis": ax, "budget": b, "method": m,
+                                 "rel_err": None if p is None else p[0], "bps": None if p is None else p[1] / win})
+        feats = {"orig": (float(np.sqrt(np.mean((x - x.mean()) ** 2))), float(kurtosis(x)))}
+        for b in budgets:
+            for m in ("wavelet", "sz3", "decimate"):
+                parts = [r[m] for r in rec[b]]
+                if any(p is None for p in parts):
+                    feats[f"{m}@{b}"] = None
+                    continue
+                y = np.concatenate(parts)
+                feats[f"{m}@{b}"] = (float(np.sqrt(np.mean((y - y.mean()) ** 2))), float(kurtosis(y)))
+        res["axes"].append(feats)
+    return res, rows
+
+
+def run_bosch(good_sample=100, workers=6):
+    from multiprocessing import Pool
+    base = ROOT / "data/bosch/repo/data/M01"
+    bad = sorted(base.glob("*/bad/*.h5"))
+    good = sorted(base.glob("*/good/*.h5"))
+    rng = np.random.default_rng(20261105)
+    good = [good[i] for i in sorted(rng.choice(len(good), min(good_sample, len(good)), replace=False))]
+    jobs = [(str(p), "bad", BUDGETS) for p in bad] + [(str(p), "good", BUDGETS) for p in good]
+    with Pool(workers) as pool:
+        out = pool.map(_bosch_file, jobs)
+    files = [r for r, _ in out]
+    rows = [x for _, rs in out for x in rs]
+    return files, rows
+
+
+def bosch_auroc(files):
+    """Label-free anomaly score per file: the largest robust z-score of RMS or kurtosis over the three axes, against
+    all files of the same operation (median and MAD, no labels). AUROC of bad vs good, per representation."""
+    import collections
+    keys = [k for k in files[0]["axes"][0]]
+    out = {}
+    for k in keys:
+        if any(f["axes"][a][k] is None for f in files for a in range(3)):
+            out[k] = None
+            continue
+        by_op = collections.defaultdict(list)
+        for f in files:
+            by_op[f["op"]].append(f)
+        score = {}
+        for op, fs in by_op.items():
+            for a in range(3):
+                for j in range(2):
+                    vals = np.array([f["axes"][a][k][j] for f in fs])
+                    med, mad = np.median(vals), np.median(np.abs(vals - np.median(vals))) or 1e-12
+                    for f, v in zip(fs, vals):
+                        score[f["file"]] = max(score.get(f["file"], 0.0), abs(v - med) / mad)
+        pos = [score[f["file"]] for f in files if f["bad"]]
+        neg = [score[f["file"]] for f in files if not f["bad"]]
+        allv = np.r_[pos, neg]
+        r = np.argsort(np.argsort(allv)) + 1.0
+        out[k] = round(float((r[:len(pos)].sum() - len(pos) * (len(pos) + 1) / 2) / (len(pos) * len(neg))), 4)
+    rms_dev = {}
+    for k in keys:
+        if k == "orig" or out.get(k) is None:
+            continue
+        rms_dev[k] = round(float(np.median([abs(f["axes"][a][k][0] / f["axes"][a]["orig"][0] - 1)
+                                            for f in files for a in range(3)])), 4)
+    return out, rms_dev
+
+
 def run_cost():
     rng = np.random.default_rng(1)
     x = np.cumsum(rng.normal(size=64000 * 10)) * 0.01 + rng.normal(size=64000 * 10)   # 10 s at 64 kHz
@@ -309,6 +394,12 @@ def main():
         out["pyscrew"] = rows
         out["pyscrew_summary"] = summarise(rows)
         print(json.dumps(out["pyscrew_summary"]), flush=True)
+    if "bosch" in args:
+        files, rows = run_bosch()
+        out["bosch_files"], out["bosch"] = files, rows
+        out["bosch_summary"] = summarise(rows)
+        out["bosch_auroc"], out["bosch_rms_dev"] = bosch_auroc(files)
+        print(json.dumps(out["bosch_summary"]), json.dumps(out["bosch_auroc"]), json.dumps(out["bosch_rms_dev"]), flush=True)
     if "cost" in args:
         out["cost"] = run_cost()
         print(out["cost"])

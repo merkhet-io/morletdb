@@ -189,9 +189,30 @@ import zlib  # noqa: E402
 
 
 def _varint(vals: np.ndarray) -> bytes:
-    """LEB128 of non-negative int64 values."""
+    """LEB128 of non-negative int64 values (vectorised; byte-identical to the scalar definition)."""
+    v = np.asarray(vals, dtype=np.uint64).ravel()
+    if v.size == 0:
+        return b""
+    nbytes = np.ones(v.size, np.int64)
+    t = v >> np.uint64(7)
+    while t.any():
+        nbytes += (t > 0)
+        t = t >> np.uint64(7)
+    total = int(nbytes.sum())
+    out = np.empty(total, np.uint8)
+    start = np.concatenate([[0], np.cumsum(nbytes)[:-1]])
+    for k in range(int(nbytes.max())):
+        sel = nbytes > k
+        byte = ((v[sel] >> np.uint64(7 * k)) & np.uint64(0x7F)).astype(np.uint8)
+        more = (nbytes[sel] > k + 1).astype(np.uint8) << 7
+        out[start[sel] + k] = byte | more
+    return out.tobytes()
+
+
+def _varint_scalar(vals) -> bytes:
     out = bytearray()
-    for v in vals.tolist():
+    for v in list(vals):
+        v = int(v)
         while True:
             b = v & 0x7F
             v >>= 7
@@ -241,12 +262,13 @@ def encode(x: np.ndarray, wavelet: str = "sym8", levels: int = 6, lam: float = 3
 
 
 def encode_abs(x: np.ndarray, c: float, q: float = 0.5, wavelet: str = "sym8", levels: int = 6,
-               select=None) -> tuple[bytes, np.ndarray]:
+               select=None, reconstruct: bool = True, coeffs=None) -> tuple[bytes, np.ndarray]:
     """Transform coder: one absolute threshold T = c * std(x) for all detail coefficients (the largest coefficients
     are kept wherever they are, which minimises L2 error for their number in an orthogonal basis), quantisation
     step q * T for every band including the coarsest. Header: length, levels as varints and the step as float32;
     then per band the count, gaps and zigzag values as varints; zlib level 9."""
-    coeffs = pywt.wavedec(x, wavelet, level=levels)
+    if coeffs is None:
+        coeffs = pywt.wavedec(x, wavelet, level=levels)
     T = c * (float(np.std(x)) or 1e-12)
     step = q * T
     parts = [_varint(np.array([len(x), levels], np.int64)), np.float32(step).tobytes()]
@@ -263,4 +285,4 @@ def encode_abs(x: np.ndarray, c: float, q: float = 0.5, wavelet: str = "sym8", l
         r[idx] = qv * step
         rec.append(r)
     comp = zlib.compress(b"".join(parts), 9)
-    return comp, pywt.waverec(rec, wavelet)[: len(x)]
+    return comp, (pywt.waverec(rec, wavelet)[: len(x)] if reconstruct else None)
