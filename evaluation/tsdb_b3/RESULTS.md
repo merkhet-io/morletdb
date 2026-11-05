@@ -1025,3 +1025,31 @@ write path **and** in the build (`morletdb:b310` is a local `deploy/Dockerfile` 
 by the release workflow), and single-load read latencies vary widely here (R3 7.5–10.0 ms and R5 0.79–1.37 ms
 within the released arm alone). The investigation will compare the same write path on both builds and repeated
 reads on one load.
+
+## Investigation of B3.11's read difference (exploratory, after the stage, not part of it)
+
+Done as B3.11's decision rule requires, on the benchmark set, `results/i1r-*` (scripts `run_i1_reads.sh`,
+`summarize_i1_reads.py`, `i1_reads_process.py`, `i1_reads_server.py`; every load correct).
+
+1. **Build versus write path** (11:40–11:55, machine quiet; Safari at about 70% in two snapshots). Three arms in
+   rotation, three fresh D2 loads each, B3's read benchmark three times per load (`results/i1r-summary.json`):
+   the old write path on the released image, the old path on `morletdb:b310`, and I1 on `morletdb:b310`. Medians of
+   nine p50s: **build** (b310 / released, old path) 0.99–1.01 for every query; **write path** (I1 / old, same
+   image) R3 1.11, R5 1.11, R2 1.02, others 0.997–1.016. On the old path reads varied 1–4% within and between
+   loads; after I1 loads up to 17% within a load and 20% between loads. The build is not the cause.
+2. **Same process versus fresh process** (12:00, 1-minute load average 4.8–7 from the test itself). Two loads per
+   arm, reads in the ingesting process, in a fresh Python process, and again after `gc.collect()`
+   (`results/i1r-process_*.json`). Noise in this run was as large as the effect in both arms (old path R3 7.5–8.9
+   ms across the three readings of one load); fresh-process R3 7.53 against 7.59 ms (1.01), R5 1.07.
+   Inconclusive.
+3. **Inside the server** (12:03–12:06). Two loads per arm; all of B3's planned intervals read in one statement
+   per query type (50 passes, `morlet_read_interval_raw`), five rounds (`results/i1r-server_*.json`): microseconds
+   per read, I1 / old: R1 1.003, R2 0.988, R3 0.977, R4 0.981 / 0.998, R5 0.965; rounds within 1–3% (old path R5
+   up to 7%). **Reading data written by I1 costs the server the same as reading data written by the old path.**
+
+**Finding.** No read defect in the database: stored chunks are byte-identical, and the server reads them equally
+fast. The server spends about 3.2 ms of an R3 read that B3 measures at 7.5–8 ms from the macOS client, so more
+than half of a measured read is client, Docker Desktop's network path and conversion. The difference in B3.10 and
+B3.11 sits in that part; its exact cause (most likely the state of the client process that has just run the I1
+ingestion) is not established. A stage that decides adoption should therefore measure reads in a fresh client
+process and also report server-side read cost.
