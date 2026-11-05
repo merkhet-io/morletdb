@@ -59,3 +59,68 @@ Reading:
 
 Open: a coarser quantisation grid for seismic windows; Paderborn; an implemented coder; whether R adds anything to
 kurtosis in combination (a question the protocol would have to state before confirmation, not a rescue after it).
+
+## Scope change (owner, 2026-11-05): edge approximation only
+
+The relevance score is dropped (it was not better than kurtosis). The harness is now [`f2_edge.py`](f2_edge.py):
+every method writes actual bytes, and rate control picks, per window, the setting with the smallest relative error
+within the budget, as a device can. Windows: 1 s (CWRU), one 1 s file (IMS), 2^15 samples (seismic), one cycle
+(PyScrew, 1,000 cycles).
+
+### Edge rounds 1–2 (`f2_edge_20261105T221820.json`, `…T222852.json`): what they changed
+
+1. **A denoiser's threshold is wrong for a coder.** Thresholds from a noise scale per level (λσ_j) treated the
+   seismic microseism as noise and removed most of the signal (error 0.66 at 0.05 bytes/sample, SZ3 0.11). The coder
+   is now a transform coder: one absolute threshold T = c·std(x) for all levels, step q·T (`shrink.encode_abs`).
+2. **STA/LTA needs a band-pass.** On the raw trace the original itself gave over 6,000 false triggers in 8
+   station-days. Now 2–20 Hz, 1 s / 30 s, on 8 (chosen on development data: the original then triggers on 28 of 30
+   catalogued arrivals, with 400 triggers elsewhere, many of them presumably uncatalogued small events).
+3. **The grid must reach the budget for broadband vibration** (c up to 5, q up to 2).
+
+### Edge round 3 (`f2_edge_20261105T224107.json`)
+
+Median relative error at each budget (bytes per sample, actual sizes):
+
+| Data | Method | 0.05 | 0.1 | 0.2 | 0.3 |
+|---|---|---:|---:|---:|---:|
+| CWRU | **wavelet** | **0.67** | **0.56** | **0.40** | **0.23** |
+| | SZ3 | 1.00 | 0.93 | 0.59 | 0.33 |
+| | decimation | 0.92 | 0.86 | 0.83 | 0.82 |
+| | wavelet, Bayesian selection | 0.81 | 0.57 | 0.45 | 0.36 |
+| IMS set 2 | **wavelet** | 0.88 | **0.70** | **0.53** | **0.43** |
+| | SZ3 | 1.00 | 0.95 | 0.55 | 0.54 |
+| | decimation | **0.87** | 0.74 | 0.56 | 0.50 |
+| Seismic | **wavelet** | **0.071** | **0.038** | **0.023** | **0.017** |
+| | SZ3 | 0.113 | 0.063 | 0.035 | 0.018 |
+| | decimation | 0.136 | 0.079 | 0.073 | 0.073 |
+| PyScrew | wavelet | 0.32* | 0.090 | **0.047** | **0.034** |
+| | decimation | 0.23* | **0.086** | **0.047** | 0.040 |
+| | SZ3 | – | – | 1.35* | 0.55 |
+
+\* budget not reachable for some windows. ZFP's 1-D error-bound mode never came close (relative error ≈ 1).
+
+Diagnosis on the approximation:
+
+| | Original | Wavelet 0.05 / 0.1 / 0.3 | SZ3 0.05 / 0.1 / 0.3 | Decimation 0.05 / 0.1 / 0.3 |
+|---|---|---|---|---|
+| IMS: file at which the outer-race fault is detected | 532 | **532 / 532 / 532** | 704 / 549 / 532 | 700 / 539 / 532 |
+| Seismic: arrivals triggered (of 30) | 28 | 30 / 29 / 29 | 24 / 26 / 28 | 24 / 26 / 28 |
+| Seismic: triggers elsewhere | 400 | 2,408 / 955 / 447 | 911 / 393 / 365 | 615 / 556 / 606 |
+| PyScrew: AUROC of kurtosis for NOK | 0.961 | 0.859* / 0.957 / 0.961 | – / – / 0.916* | 0.483* / 0.954 / 0.961 |
+
+Reading against the draft hypotheses:
+- **H1 (error per byte):** the wavelet coder has the lowest error at every budget on CWRU and seismic data, at
+  0.1–0.3 on IMS, and ties decimation on short screwdriving cycles (where a 400–700-sample episode leaves little to
+  code). SZ3 is never better below 0.3; ZFP is not competitive in 1-D.
+- **H2 (diagnosis at 0.1):** bearing detection is unchanged (SZ3 is 17 files late, decimation 7); kurtosis on
+  cycles stays within 0.004; seismic arrivals are all still found, but **false triggers rise 2.4×** (955 vs 400):
+  thresholding leaves quantisation artefacts that STA/LTA reads as onsets. As specified, H2 fails on the seismic
+  false-trigger criterion at 0.1 and passes at 0.3 (+12%).
+- **H4 (no Bayesian machinery):** posterior selection is worse than the plain threshold (0.57 vs 0.56 at 0.1, 0.45 vs
+  0.40 at 0.2 on CWRU) and slower. It is not needed.
+- **H3 (Pi):** the encoder runs at about 22 M samples/s on one laptop core (350× real time at 64 kHz); the Pi is
+  still to be measured.
+
+Open before freezing: the false-trigger artefact (a candidate fix to test on development data: dithered or
+noise-shaped quantisation, or keeping the coarsest levels exactly); whether H2's seismic false-trigger threshold is
+the right criterion; Pi access; the confirmation datasets' definitions.

@@ -182,3 +182,85 @@ def surprise(x: np.ndarray, prior: Prior) -> float:
         excess += float((pi * np.maximum(z * z - 1, 0)).sum())
         n += len(z)
     return excess / max(n, 1)
+
+
+# ---------------------------------------------------------------- edge approximation with a real coder (F2 focus)
+import zlib  # noqa: E402
+
+
+def _varint(vals: np.ndarray) -> bytes:
+    """LEB128 of non-negative int64 values."""
+    out = bytearray()
+    for v in vals.tolist():
+        while True:
+            b = v & 0x7F
+            v >>= 7
+            if v:
+                out.append(b | 0x80)
+            else:
+                out.append(b)
+                break
+    return bytes(out)
+
+
+def _zigzag(v: np.ndarray) -> np.ndarray:
+    return (v << 1) ^ (v >> 63)
+
+
+def encode(x: np.ndarray, wavelet: str = "sym8", levels: int = 6, lam: float = 3.0, q: float = 1.0,
+           per_level_sigma: bool = True, select=None) -> tuple[bytes, np.ndarray]:
+    """Wavelet approximation as actual bytes: per detail level, coefficients with |d| > lam * sigma_j are kept,
+    quantised with step q * sigma_j (sigma_j: robust MAD of that level if per_level_sigma, else of the finest);
+    the coarsest band is quantised with step q * sigma_1. Stream: header, then per band the gaps between kept
+    positions and the zigzag values as varints, compressed with zlib level 9. `select(level_index, d, sigma)` may
+    replace the threshold rule (posterior selection). Returns (bytes, reconstruction)."""
+    coeffs = pywt.wavedec(x, wavelet, level=levels)
+    s1 = float(np.median(np.abs(coeffs[-1])) / 0.6745) or 1e-12
+    header = [len(x), levels]
+    parts, rec = [], []
+    a = coeffs[0]
+    qa = np.round(a / (q * s1)).astype(np.int64)
+    parts.append(_varint(_zigzag(qa)))
+    rec.append(qa * q * s1)
+    steps = [q * s1]
+    for j, d in enumerate(coeffs[1:]):
+        sj = (float(np.median(np.abs(d)) / 0.6745) or s1) if per_level_sigma else s1
+        keep = select(j, d, sj) if select is not None else np.abs(d) > lam * sj
+        idx = np.flatnonzero(keep)
+        qv = np.round(d[idx] / (q * sj)).astype(np.int64)
+        gaps = np.diff(np.concatenate([[-1], idx])) - 1
+        parts.append(_varint(np.array([len(idx)], np.int64)) + _varint(gaps.astype(np.int64)) + _varint(_zigzag(qv)))
+        r = np.zeros_like(d)
+        r[idx] = qv * q * sj
+        rec.append(r)
+        steps.append(q * sj)
+    blob = np.array(header, np.int64).tobytes() + np.array(steps, np.float32).tobytes() + b"".join(parts)
+    comp = zlib.compress(blob, 9)
+    out = pywt.waverec(rec, wavelet)[: len(x)]
+    return comp, out
+
+
+def encode_abs(x: np.ndarray, c: float, q: float = 0.5, wavelet: str = "sym8", levels: int = 6,
+               select=None) -> tuple[bytes, np.ndarray]:
+    """Transform coder: one absolute threshold T = c * std(x) for all detail coefficients (the largest coefficients
+    are kept wherever they are, which minimises L2 error for their number in an orthogonal basis), quantisation
+    step q * T for every band including the coarsest. Header: length, levels as varints and the step as float32;
+    then per band the count, gaps and zigzag values as varints; zlib level 9."""
+    coeffs = pywt.wavedec(x, wavelet, level=levels)
+    T = c * (float(np.std(x)) or 1e-12)
+    step = q * T
+    parts = [_varint(np.array([len(x), levels], np.int64)), np.float32(step).tobytes()]
+    qa = np.round(coeffs[0] / step).astype(np.int64)
+    parts.append(_varint(_zigzag(qa)))
+    rec = [qa * step]
+    for j, d in enumerate(coeffs[1:]):
+        keep = select(j, d) if select is not None else np.abs(d) > T
+        idx = np.flatnonzero(keep)
+        qv = np.round(d[idx] / step).astype(np.int64)
+        gaps = np.diff(np.concatenate([[-1], idx])) - 1
+        parts.append(_varint(np.array([len(idx)], np.int64)) + _varint(gaps.astype(np.int64)) + _varint(_zigzag(qv)))
+        r = np.zeros_like(d)
+        r[idx] = qv * step
+        rec.append(r)
+    comp = zlib.compress(b"".join(parts), 9)
+    return comp, pywt.waverec(rec, wavelet)[: len(x)]
