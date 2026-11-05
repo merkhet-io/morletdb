@@ -1,0 +1,22 @@
+2026-11-05T23:56:54
+23:56  up 9 days,  8:53, 17 users, load averages: 7.88 6.71 6.45
+ %CPU COMM
+221.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+  4.5 /usr/libexec/signpost_reporter
+  3.9 /usr/sbin/coreaudiod
+  3.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.7 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  0.6 bash
+2026-11-05T23:57:12
+23:57  up 9 days,  8:53, 17 users, load averages: 6.59 6.48 6.37
+ %CPU COMM
+228.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 36.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 24.6 /usr/libexec/signpost_reporter
+  4.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  4.0 /usr/sbin/coreaudiod
+  2.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  0.9 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder

@@ -1,0 +1,211 @@
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21737433300586417,
+ "samples": 101586735,
+ "started": "2026-11-05T23:50:59",
+ "image": "morletdb:b314",
+ "image_id": "sha256:7dff89832ff38a0889c54f3c51004e94fcd67ca73c82b894590fae72f39ba7e5",
+ "ingest": {
+  "wall_s": 7.116,
+  "samples_per_s": 14276423,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.058,
+   "p95_ms": 62.022,
+   "max_ms": 77.647
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.737,
+  "server": {
+   "cpu_percent_mean": 109.6,
+   "cpu_percent_p95": 117.4,
+   "memory_peak_mib": 170.4,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.3
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4325376,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 171199635,
+  "volume": {
+   "apparent": 379140681,
+   "allocated": 379219968,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.623,
+   "p95_ms": 0.926,
+   "max_ms": 2.135,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 5.635,
+   "p95_ms": 8.483,
+   "max_ms": 11.7,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 6.964,
+   "p95_ms": 10.213,
+   "max_ms": 14.335,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.631,
+   "p95_ms": 0.931,
+   "max_ms": 2.715,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.607,
+   "p95_ms": 0.848,
+   "max_ms": 2.084,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.812,
+   "p95_ms": 1.611,
+   "max_ms": 6.304,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4180.1
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 0.544,
+  "p95_ms": 0.584,
+  "max_ms": 1.658,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 170.4,
+   "rounds_us": [
+    173.6,
+    171.7,
+    169.2,
+    169.8,
+    170.4
+   ]
+  },
+  "R2": {
+   "us_per_read": 878.9,
+   "rounds_us": [
+    873.7,
+    878.9,
+    885.0,
+    876.9,
+    880.3
+   ]
+  },
+  "R3": {
+   "us_per_read": 1722.8,
+   "rounds_us": [
+    1718.9,
+    1722.8,
+    1733.4,
+    1713.5,
+    1725.6
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 175.3,
+   "rounds_us": [
+    177.0,
+    175.3,
+    175.4,
+    175.2,
+    174.6
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 153.3,
+   "rounds_us": [
+    153.3,
+    153.1,
+    153.0,
+    153.4,
+    156.6
+   ]
+  },
+  "R5": {
+   "us_per_read": 173.2,
+   "rounds_us": [
+    171.6,
+    173.2,
+    174.4,
+    172.5,
+    174.0
+   ]
+  }
+ }
+}
