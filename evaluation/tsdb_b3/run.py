@@ -287,8 +287,13 @@ def load(system, durability, rep):
         res["storage"] = mo.storage(handle)
         if (rep == 1 or every_rep) and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16",
                                                   "morletdb-032", "morletdb-033", "morletdb-i1"):
-            res["reads"] = reads("morletdb", handle, m, data)
-            res["analytics"] = analytics("morletdb", handle, m, data)
+            if os.environ.get("B3_READS_FRESH_PROCESS") == "1":   # B3.12: reads in a new client process
+                res["reads"], res["analytics"] = reads_in_fresh_process()
+                import i1_reads_server
+                res["server_reads"] = i1_reads_server.server_reads(handle, m)
+            else:
+                res["reads"] = reads("morletdb", handle, m, data)
+                res["analytics"] = analytics("morletdb", handle, m, data)
             # I1 read investigation (attribution only): the same read benchmark again on the same load
             for _ in range(int(os.environ.get("B3_READ_REPEATS", "1")) - 1):
                 res.setdefault("reads_repeats", []).append(reads("morletdb", handle, m, data))
@@ -417,5 +422,25 @@ def analytics(system, _handle, m, data, reps=20):
     return {**common.pcts(lat), "max_relative_difference": worst, "within_1e-12": worst <= 1e-12}
 
 
+def reads_in_fresh_process():
+    """B3.12: B3's read benchmark and interval statistics against the running MorletDB server, from a new Python
+    process (the same read settings as the arms), so the state of the ingesting process cannot affect them."""
+    import subprocess
+    out = subprocess.run([sys.executable, __file__, "reads-child"], capture_output=True, text=True, check=True,
+                         env=os.environ).stdout.strip().splitlines()[-1]
+    d = json.loads(out)
+    return d["reads"], d["analytics"]
+
+
+def reads_child():
+    import morletdb_adapter as mo
+    mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
+                       "one_statement": True})
+    m = common.manifest()
+    data, _ = preload(m, range(len(m["acquisitions"])))
+    print(json.dumps({"reads": reads("morletdb", None, m, data), "analytics": analytics("morletdb", None, m, data)},
+                     default=str))
+
+
 if __name__ == "__main__":
-    {"subset": subset, "load": load}[sys.argv[1]](*sys.argv[2:])
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
