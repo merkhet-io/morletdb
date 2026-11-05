@@ -1,0 +1,91 @@
+\documentclass[sigconf,nonacm]{acmart}
+\usepackage{booktabs,tabularx,xurl}
+\settopmatter{printacmref=false,printccs=false,printfolios=true}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\setcopyright{none}
+\DeclareUrlCommand\code{\urlstyle{tt}}
+\emergencystretch=1.5em
+\newcommand{\M}{MorletDB}
+\newcommand{\ReportVersion}{\input{REPORT_VERSION}\unskip}
+
+\begin{document}
+\title{Keeping the Spikes: Heavy-Tailed Wavelet Posteriors for Edge Approximation and Label-Free Relevance in Machine Waveforms}
+\subtitle{Version \ReportVersion{} --- hypotheses, method and development findings}
+\author{Zin Nam}
+
+\begin{abstract}
+A sensor at a machine produces far more waveform than it can send or keep, and almost none of it is labelled. Two decisions therefore have to be made on the device, without labels: what to keep of every episode, and which episodes deserve to be kept exactly. Machine waveforms are mostly stationary background with rare, short, large transients, which in a wavelet basis means a heavy-tailed distribution of coefficients. We model the coefficients with an empirical-Bayes spike-and-slab prior whose slab is heavy-tailed and use its posterior twice: as a compact approximation that keeps the coefficients likely to be signal, and as a relevance score, the posterior-weighted excess energy of an episode, that ranks episodes by how much real signal they hold. Heavy-tailed priors for wavelet thresholding are established; the contribution we test is the use of the posterior as a label-free relevance score for what an edge device sends or keeps, and as the importance term of a forgetting policy in a waveform database. We state four falsifiable hypotheses (fidelity at small size against SZ3, ZFP and simpler rules; whether the heavy tail matters; relevance without labels; real-time operation and event delivery on a Raspberry Pi) and report development findings on bearing, screwdriving and seismic data. This version fixes the hypotheses and the method; the confirmation study (F2) will be frozen before its data are used.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+Condition monitoring at the edge faces a budget at every step. A 64\,kHz vibration channel produces 5.5 billion samples a day; lossless storage in \M{} needs 1.5--1.7 bytes per sample~\cite{morletdb}, still about 9\,GB a day, and a cellular or LoRa uplink carries a small fraction of that. Downsampling and statistics fit the budget but remove exactly the short transients (an impact, a slip, a first arrival) that diagnosis looks for~\cite{randall2011}. Sending everything losslessly does not fit. And deciding which episodes matter usually needs labels, which a newly installed sensor does not have.
+
+Our earlier study of forgetting policies in a waveform archive (F1) found that keeping known events is easy once they are labelled, but that the label-free stand-in we tried, novelty as distance to the nearest neighbour, did not beat retention by age: it removes the near-duplicates that rare queries still need~\cite{f1,paper2}. A label-free notion of relevance has to come from inside an episode, not from its neighbours.
+
+We take it from the signal model. In a wavelet basis, stationary background spreads over many small coefficients and transients concentrate in few large ones~\cite{mallat2009,daubechies1992}. A spike-and-slab prior with a heavy-tailed slab~\cite{abramovich1998,johnstone2004,rivoirard2004} gives every coefficient a posterior probability of being signal~\cite{chipman1997}. Kept coefficients form an approximation; the posterior-weighted excess energy of an episode is a relevance score. Both are computed in one pass, in time linear in the episode, on the device.
+
+\textbf{Contributions.} (1) A method that derives, from one empirical-Bayes wavelet posterior, an approximation at a target size and a label-free relevance score per episode. (2) Four falsifiable hypotheses with refutation criteria, fixed before the confirmation data are used. (3) Development findings on three kinds of machine data, reported with what they changed. (4) A path into a waveform database: the approximation as a level between exact samples and summaries in a graded-forgetting ladder~\cite{paper2}, and the score as the importance term of its keep-value.
+
+\section{Method}\label{sec:method}
+An episode $x$ is decomposed with an orthogonal discrete wavelet transform (sym8). The noise scale $\sigma$ is the median absolute deviation of the finest detail level over 0.6745~\cite{donoho1994}, from a quiet reference or from the recording itself. In units of $\sigma$, a detail coefficient is $z = \theta + \varepsilon$ with $\varepsilon \sim N(0,1)$ and, per level $j$,
+\[ \theta \sim (1-p_j)\,\delta_0 + p_j\, g(\theta; s_j), \qquad g(\theta) = \tfrac{\alpha}{2s}\,(1+|\theta|/s)^{-(\alpha+1)}, \]
+a symmetric Pareto (Lomax) slab; Gaussian and Laplace slabs and $\alpha=1$, a Cauchy-like tail close to the quasi-Cauchy slab of~\cite{johnstone2004}, are compared. $p_j$ and $s_j$ are fitted by marginal maximum likelihood on the recording (on a device, a rolling window). The posterior probability of signal is $\pi = p\,m_1(z) / (p\,m_1(z) + (1-p)\,\phi(z))$ with $m_1 = g * \phi$, tabulated once per level.
+
+\textbf{Approximation.} Coefficients with $\pi > \tau$ are kept, either at their posterior mean or at their observed value, quantised with step $q\sigma$; the coarsest band is always kept. Size is the cost of the significance map and the quantised values.
+
+\textbf{Relevance.} For an episode with $n$ detail coefficients, $R(x) = \frac{1}{n}\sum_k \pi_k\,(z_k^2-1)_+$, the posterior-weighted energy above the noise floor per coefficient. It is not Bayesian surprise in the sense of a divergence between prior and posterior~\cite{itti2009}; we call it relevance to avoid the confusion.
+
+\section{Hypotheses}\label{sec:hyp}
+\textbf{H1, fidelity at small size.} At 0.05--0.3 bytes per sample, the approximation keeps more of what diagnosis needs than hard thresholding~\cite{donoho1994}, the error-bounded compressors SZ3~\cite{liang2023} and ZFP~\cite{lindstrom2014}, and decimation, at the same size: the fault-order peak of the envelope spectrum for bearings~\cite{randall2011}, the STA/LTA response at catalogued arrivals for seismic data~\cite{allen1978,withers1998}, and the relative error. \emph{Refuted} if SZ3 or ZFP is as good or better on two of the three.
+
+\textbf{H2, the heavy tail matters.} At the same size, the Pareto slab beats the Gaussian and Laplace slabs on the H1 measures. \emph{Refuted} if the difference is within the interval; a simpler prior would then do.
+
+\textbf{H3, relevance without labels.} $R$ ranks known-event episodes above others with an AUROC of at least 0.70 on every dataset and is not worse than simple label-free scores (RMS, kurtosis, crest factor, STA/LTA)~\cite{antoni2006,pimentel2014}; as the importance term of F1's forgetting setup, without labels, it keeps more known events searchable than retention by age at 50\% and 25\% and is not worse on rare queries. \emph{Refuted} if either part fails on any dataset.
+
+\textbf{H4, edge.} On a Raspberry Pi 3B+, approximation and scoring keep up with 64\,kHz on one core, and sending the approximation continuously plus exact samples for the highest-relevance episodes delivers at least 80\% of known events exactly at 10\% of the lossless bandwidth. \emph{Refuted} if either fails.
+
+\section{Development findings}\label{sec:dev}
+Development used CWRU bearing data, PyScrew scenario s01 and two weeks of four seismic stations, all separate from the confirmation data~\cite{f2}. Two rounds changed the method and the harness: the prior cannot be fitted on quiet background (every slab collapses), so the slab is fitted on the recording; fidelity of a diagnostic measure must be two-sided (a reconstruction can inflate a fault peak); and for an archive the posterior mean is a source of error, so the posterior selects coefficients and their observed values are stored.
+
+\begin{table}[t]
+\caption{Development, round 2. Relative error at 0.2 bytes per sample (lower is better) and AUROC of label-free scores against known events.}
+\label{tab:dev}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xrrr@{}}
+\toprule
+& CWRU & PyScrew & Seismic \\
+\midrule
+Error, posterior selection (Pareto) & 0.21 & -- & 0.006 \\
+Error, hard threshold & 0.21 & -- & 0.007 \\
+Error, SZ3 & 0.41 & -- & 0.015 \\
+Error, ZFP & 0.83 & -- & -- \\
+\midrule
+AUROC, relevance $R$ & 0.99 & 0.88 & 0.86 \\
+AUROC, kurtosis & 0.91 & 0.94 & 0.88 \\
+AUROC, RMS & 1.00 & 0.05 & 0.81 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Table~\ref{tab:dev} gives the picture so far. Wavelet thresholding beats SZ3, ZFP and decimation at 0.1--0.3 bytes per sample on both bearing and seismic data, but posterior selection is no better than a hard threshold (H1 in part). The slab makes no difference to relevance and at most a few hundredths to error, so H2 is likely to be refuted. Relevance clears 0.70 everywhere but is not better than kurtosis, and on CWRU faulty recordings are simply louder (RMS 1.00), so H3 as stated fails on development data. Approximation and scoring run at about 6.7 million samples per second on one core of a laptop, a hundred times real time at 64\,kHz; the Raspberry Pi is still to be measured (H4). We report these before freezing so that the confirmation cannot be tuned to them.
+
+\section{Related work}\label{sec:related}
+\textbf{Bayesian wavelet shrinkage.} Spike-and-slab priors on wavelet coefficients go back to~\cite{chipman1997,abramovich1998,clyde2000,vidakovic1998,vidakovic1999}; empirical Bayes with level-wise weights and a quasi-Cauchy slab is the practical standard~\cite{johnstone2004,johnstone2005,johnstone2005ebayes}, against thresholding rules~\cite{donoho1994,donoho1995,johnstone1997} and BayesShrink~\cite{chang2000}. Heavy-tailed priors are established: alpha-stable~\cite{achim2003,boubchir2006}, Jeffreys~\cite{figueiredo2001}, and Pareto-based priors on wavelet coefficients~\cite{rivoirard2004,rivoirard2005}; outside wavelets, generalised double Pareto~\cite{armagan2013}, the horseshoe~\cite{carvalho2010} and spike-and-slab LASSO~\cite{rockova2018}, with heavy tails argued to be the compressible case~\cite{cevher2009}. We use these priors; we do not propose a new one.
+
+\textbf{Compression.} Error-bounded lossy compressors~\cite{di2016,liang2023,lindstrom2014} and wavelet compression of vibration data, offline~\cite{staszewski1998} and on wireless nodes~\cite{xu2004}, target fidelity per byte, not relevance; compressive sensing~\cite{ji2008,bao2011} moves the decision to the decoder.
+
+\textbf{Edge data reduction.} Send-on-delta and event-triggered sampling~\cite{miskowicz2006}, edge reduction for condition monitoring~\cite{michala2022,pandey2025} and tiny anomaly detectors~\cite{banbury2021,koizumi2020} decide what to send by thresholds or learned models; on-node novelty detection is named as the next step in~\cite{pandey2025}.
+
+\textbf{Label-free relevance.} Spectral kurtosis~\cite{antoni2006}, novelty detection~\cite{pimentel2014}, STA/LTA~\cite{allen1978,withers1998} and Bayesian surprise~\cite{itti2009} score segments without labels. To our knowledge no earlier work uses the posterior of a spike-and-slab wavelet model as the score that decides which episodes a device sends or keeps exactly, or as the importance of a forgetting policy.
+
+\section{Limitations}
+This version states hypotheses and development findings, not confirmed results. Development used one bearing test rig, one screwdriving scenario and two weeks of four seismic stations. Sizes are entropy estimates until a coder is implemented. Relevance measured against labels is a proxy for usefulness to an engineer.
+
+\section*{Use of AI assistance and responsibility}
+Code, experiment harnesses, analyses and text were developed with Claude (Anthropic), an AI assistant, working under the author's direction. The author reviewed the content and is responsible for it.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{related,own}
+\end{document}
