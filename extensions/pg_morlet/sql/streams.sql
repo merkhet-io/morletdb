@@ -2277,3 +2277,54 @@ BEGIN
     RETURN NEXT;
   END LOOP;
 END $$;
+
+-- Integrity scrub (SQL 0.3.5, #193). Re-reads every chunk of up to max_recordings recordings after
+-- after_recording (in recording_id order; call again with the last returned id to continue) and reports, per
+-- recording, the chunks and samples it read and every problem found, without changing anything: a chunk that
+-- does not decode (structure, CRC-32C) to its sample_count, a missing or wrong chunk summary (collections with
+-- summaries), a gap or overlap between chunks, and chunks that do not end where the checkpoint says. At most 100
+-- problems are listed per recording, then their number. Reads follow privileges and row security: run it as a
+-- role that sees every row, or hidden chunks are reported as gaps.
+CREATE FUNCTION public.morlet_verify(collection regclass,after_recording text DEFAULT NULL,
+  max_recordings integer DEFAULT 100)
+RETURNS TABLE(recording_id text,chunks bigint,samples bigint,problems text[])
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record; r record; c record; expected bigint; found bigint; checks text;
+BEGIN
+  IF max_recordings IS NULL OR max_recordings NOT BETWEEN 1 AND 100000 THEN
+    RAISE EXCEPTION 'max_recordings must be 1..100000';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  checks:=CASE WHEN relations.encoded THEN format('public.morlet_check_chunk(c.encoded,c.sample_count,%s,%L)',
+    CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END,relations.summarized)
+    ELSE 'NULL::text' END;
+  FOR r IN EXECUTE format('SELECT r.recording_id,(r.checkpoint->>''end'')::bigint AS stored_end FROM %s r
+      WHERE $1 IS NULL OR r.recording_id>$1 ORDER BY r.recording_id LIMIT $2',collection)
+      USING after_recording,max_recordings LOOP
+    recording_id:=r.recording_id; chunks:=0; samples:=0; problems:='{}'; expected:=0; found:=0;
+    FOR c IN EXECUTE format('SELECT c.start_sample AS s,%s AS n,%s AS bad FROM %s c WHERE c.recording_id=$1
+        ORDER BY c.start_sample',relations.count_expr,checks,relations.chunks) USING r.recording_id LOOP
+      chunks:=chunks+1; samples:=samples+c.n;
+      IF c.s>expected THEN
+        found:=found+1;
+        IF found<=100 THEN problems:=problems||format('gap: samples %s..%s have no chunk',expected,c.s); END IF;
+      ELSIF c.s<expected THEN
+        found:=found+1;
+        IF found<=100 THEN problems:=problems||format('overlap: chunk at %s starts before %s',c.s,expected); END IF;
+      END IF;
+      IF c.bad IS NOT NULL THEN
+        found:=found+1;
+        IF found<=100 THEN problems:=problems||format('chunk at %s: %s',c.s,c.bad); END IF;
+      END IF;
+      expected:=greatest(expected,c.s+c.n);
+    END LOOP;
+    IF expected IS DISTINCT FROM r.stored_end THEN
+      found:=found+1;
+      IF found<=100 THEN
+        problems:=problems||format('chunks end at %s, the checkpoint at %s',expected,coalesce(r.stored_end::text,'NULL'));
+      END IF;
+    END IF;
+    IF found>100 THEN problems:=problems||format('%s more problems not listed',found-100); END IF;
+    RETURN NEXT;
+  END LOOP;
+END $$;
