@@ -71,9 +71,10 @@ class Filter(Protocol):
 
 
 class ExemptFilter:
-    """Event-library episodes stay at level 0 or 1."""
+    """Event-library episodes stay searchable: a policy never moves them (the library exists for recall). The
+    database still allows an operator to move one to level 1 by hand; never below."""
     def veto(self, ep: Episode, target: int) -> Optional[str]:
-        return "exempt" if ep.exempt and target > 1 else None
+        return "exempt" if ep.exempt else None
 
 
 class MinAgeFilter:
