@@ -630,3 +630,28 @@ unchanged.
   the Parquet figure.
 - **Smoke check (not a result):** `run.py subset` on the development set, to confirm the environment, before the
   first benchmark load.
+
+## Amendment B3.9: same-session re-pairing of CrateDB, IoTDB, TDengine and TimescaleDB (FROZEN before any load)
+
+Added 2026-11-05, 01:20. B3.4–B3.7 compared each system with MorletDB's B3.3 numbers, measured in an earlier
+session on the same machine. The first B3.8 session (00:39–00:51, `results/b38/`) then ingested MorletDB at
+4.38 M samples/s against 6.33 M in B3.3; an attribution check with both images (B3.3's and 0.3.5-alpha.1) gave the
+same 4.2–4.4 M, so the image was not the cause. The machine was busy (load average 9–10; Messages.app spinning at
+one full core since 2026-11-03 01:40, GUI processes), and results did not record machine load. Time-based
+ratios across sessions are therefore uncertain by an unknown factor; storage, memory and correctness are not
+affected in the same way. B3.9 re-measures each system beside MorletDB in one session, after Messages.app was
+quit (load average about 2), and B3.8 is repeated on the quiet machine (`results/b38q/`, same script).
+
+- **Systems and configurations:** unchanged from their amendments, the stage's first arm each: TDengine
+  `default` (B3.6), TimescaleDB (B3.7, both states), IoTDB `table` (B3.5), CrateDB `array` then `row` (B3.4).
+  Secondary arms (TDengine zstd and tsz, IoTDB table-zstd, CrateDB row-best) are not re-run.
+- **MorletDB:** `ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1`, arm `morletdb-033`, as in B3.8.
+- **Runs:** per system, in the order above, for r = 1, 2, 3 and durability D2 then D1: MorletDB, then the
+  system (alternating); storage, reads and analytics on D2 r1 of each, as in each stage. Results in
+  `results/b39-<system>/`. `run_b39.sh`; an interrupted load is rerun.
+- **Machine state:** before and after every load, the time, `uptime` and the eight busiest processes are
+  appended to `results/<run>/machine/` (also for `results/b38q/`). A load that starts with a load average above
+  4 is reported with that note.
+- **After B3.9:** B3.8 a third time (`results/b38z/`), to measure drift over the night.
+- **Reported:** every ratio from one session's pair only; the earlier cross-session ratios stay in RESULTS.md,
+  marked as cross-session. Statements by B3's rule. The website takes its ratios from B3.8/B3.9.
