@@ -185,8 +185,15 @@ def state(res, key, vol, durability, m, data, ks):
     conn = c.restart(vol, durability)
     res[f"correct_{key}"] = not check_reads(conn, m, ks)["mismatches"]
     conn.close()
-    res[f"reads_{key}"] = reads(m, data)
-    res[f"analytics_{key}"] = analytics(m, data)
+    res[f"reads_{key}"], res[f"analytics_{key}"] = common.reads_maybe_fresh(
+        __file__, [], lambda: (reads(m, data), analytics(m, data)))
+
+
+def reads_child():
+    """B3.13: the read benchmark against the running server from a new process (common.reads_maybe_fresh)."""
+    m = common.manifest()
+    data, _ = preload(m, list(range(len(m["acquisitions"]))))
+    common.print_reads_child(reads(m, data), analytics(m, data))
 
 
 def load(durability, rep):
@@ -240,4 +247,4 @@ def load(durability, rep):
 
 
 if __name__ == "__main__":
-    {"subset": subset, "load": load}[sys.argv[1]](*sys.argv[2:])
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
