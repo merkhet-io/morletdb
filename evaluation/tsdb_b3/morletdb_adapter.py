@@ -104,7 +104,8 @@ def reader_for(acq, data, search, timer):
 VARIANT = {"rpc_chunks": 1, "quantum": True, "binary": True, "binary_read": True, "short_read": True,
            "raw_read": False, "native_stats": False, "chunk_size": 4096,
            "raw_append": False, "pipeline": False,
-           "one_statement": False}   # the last two need SQL 0.3.3   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+           "one_statement": False,   # the last two need SQL 0.3.3
+           "commit_chunks": 16}      # I1 step 0 sweep (issue #233); attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
 
 
 def load_one(acq, data, search=False):
@@ -113,7 +114,8 @@ def load_one(acq, data, search=False):
     path = wl.ROOT / acq["path"]
     rep = import_files([path], COLLECTION, Config(rpc_chunks=VARIANT["rpc_chunks"], chunk_size=VARIANT["chunk_size"],
                                                           raw_append=VARIANT["raw_append"],
-                                                          pipeline=VARIANT["pipeline"]), dsn=DSN,
+                                                          pipeline=VARIANT["pipeline"],
+                                                          commit_chunks=VARIANT["commit_chunks"]), dsn=DSN,
                        reader=reader_for(acq, data, search, timer))
     # elapsed_s excludes the importer's source-file hashing (preflight); conversion is inside it
     return timer[0], rep["elapsed_s"], rep
