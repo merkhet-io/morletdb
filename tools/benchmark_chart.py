@@ -3,7 +3,9 @@
 
 Every ratio comes from one session in which MorletDB 0.3.5-alpha.1 and that database ran alternately on the same
 machine (evaluation/tsdb_b3/RESULTS.md: B3.8 for QuestDB, B3.9 for the others; summarize_b39.py prints the values),
-never from two sessions. Speed: the other system's time over MorletDB's (p50), or MorletDB's throughput over the
+never from two sessions. One exception, labelled on the page: QuestDB's ingestion lane shows the next release's
+development build against QuestDB (B3.10, also one session) as the dot, and B3.8's released-build pair as the ring.
+Speed: the other system's time over MorletDB's (p50), or MorletDB's throughput over the
 other's, for the system's faster re-measured layout per measure. Storage: the other system's data on disk over
 MorletDB's whole database (164.8 MiB); for QuestDB its native columns (dot) and its Parquet zstd 9 partitions (ring).
 Memory: median peak server memory over the six loads of the system's lowest-memory layout, over MorletDB's in the
@@ -23,7 +25,7 @@ SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0"
 MEASURES = [
     ("Data on disk", "storage", [(1162.7, 164.8, 232.7, "as Parquet zstd 9"), (1785.6, 164.8), (660.0, 164.8),
                                  (566.7, 164.8), (815.4, 164.8)], "MiB"),
-    ("Ingestion, one connection", "ingest", [(6.302, 9.658), (6.328, 0.734), (6.257, 2.758), (6.243, 5.307),
+    ("Ingestion, one connection", "ingest", [(13.65, 9.58), (6.328, 0.734), (6.257, 2.758), (6.243, 5.307),
                                              (6.303, 0.971)], "M samples/s"),
     ("Read 4,096 samples", "short", [(1.023, 0.630), (4.983, 0.625), (6.735, 0.631), (3.853, 0.641), (1.526, 0.643)],
      "ms p50"),
@@ -35,6 +37,9 @@ MEASURES = [
     ("Server memory", "memory", [(2301.4, 167.8), (6128.6, 167.9), (6021.1, 167.6), (1025.0, 167.7), (405.1, 167.7)],
      "MiB"),
 ]
+# a dot that is not the released build, and a ring with its own pair: (measure key, system index) -> label / pair
+DOT_NOTE = {("ingest", 0): "next release (SQL 0.3.4, development build, B3.10)"}
+RING = {("ingest", 0): (6.302, 9.658, "released 0.3.5-alpha.1, B3.8")}
 LO, HI = 0.4, 50.0
 X0, X1 = 230, 728
 LANE, GAP = 12, 22
@@ -94,12 +99,19 @@ def svg():
             cx = xpos(r)
             out.append(f'<line x1="{xpos(1):.1f}" x2="{cx:.1f}" y1="{cy:.1f}" y2="{cy:.1f}" stroke="{col}" '
                        f'stroke-width="2" stroke-opacity="0.45"/>')
+            ring = None
             if len(pr) == 4:   # a second form of the same system (QuestDB as Parquet): a ring on the same lane
-                rx = xpos(pr[2] / b)
+                ring = (pr[2], b, name + " " + pr[3])
+            elif (key, i) in RING:   # the same system against another MorletDB build (its own session)
+                ra, rb, note = RING[(key, i)]
+                ring = (ra, rb, f"{name} vs MorletDB {note}")
+            if ring:
+                rx = xpos(ring[0] / ring[1])
                 out.append(f'<circle cx="{rx:.1f}" cy="{cy:.1f}" r="4" fill="var(--paper)" stroke="{col}" stroke-width="2">'
-                           f'<title>{tip(name + " " + pr[3], label.lower(), pr[2], b, unit)}</title></circle>')
+                           f'<title>{tip(ring[2], label.lower(), ring[0], ring[1], unit)}</title></circle>')
+            who = f"{name} vs MorletDB {DOT_NOTE[(key, i)]}" if (key, i) in DOT_NOTE else name
             out.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="{col}" stroke="var(--paper)" stroke-width="2">'
-                       f'<title>{tip(name, label.lower(), a, b, unit)}</title></circle>')
+                       f'<title>{tip(who, label.lower(), a, b, unit)}</title></circle>')
         y += rows + GAP
     out.append("</svg>")
     return "".join(out)
