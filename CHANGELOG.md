@@ -27,6 +27,11 @@ Faster single-connection ingestion (I1, #233):
   overlaps go through the per-chunk path. Helper `morlet_chunk_batch` does the per-chunk work in one call.
 - **Encoding on worker threads:** `morlet_chunk_batch` encodes a batch's chunks on up to `morlet.encode_threads`
   threads (1..64, default up to 4; 1 = the backend's own thread). Output and errors do not depend on the setting.
+- **Verified appends:** with `morlet.verify_appends` on (the default), each chunk of a batch is decoded again on
+  the encoding threads and compared bit for bit with its input samples, so every chunk stored through
+  `morlet_append_chunks_raw` is proven lossless; off relies on the codec's tests. The chunk tables' CHECK
+  constraint no longer decodes chunks the append path has just encoded itself (it still decodes every other insert
+  or update in full). Development set: 4–5% faster than before with verification, 6–7% without.
 - **Importer:** 256 chunks per transaction by default (was 16); `--rpc-chunks` defaults to automatic (batched
   raw appends when the server has them, otherwise one chunk per call); `import_files(..., conn=...)` reuses a
   caller-owned connection; reports add `commit_wait_s`, `raw_batch` and the resolved `rpc_chunks`.

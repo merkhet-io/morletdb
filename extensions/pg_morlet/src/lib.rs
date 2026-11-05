@@ -567,8 +567,27 @@ fn morlet_simple_values_version() -> &'static str {
     morlet_core::values::VALUES_VERSION
 }
 
+thread_local! {
+    /// Chunks this backend encoded in its latest `morlet_chunk_batch` call, with their sample counts (I1, #233).
+    /// `morlet_valid_encoded_chunk` (the chunk tables' CHECK constraint) skips its decode for bytes identical to
+    /// one of them: they are this backend's own encoder output, decodable to that many samples, and, with
+    /// `morlet.verify_appends` on, already decoded and compared bit for bit with their input. Every other
+    /// insert or update is decoded in full. Each entry is used once; the list is replaced by the next batch.
+    static ENCODED_HERE: std::cell::RefCell<Vec<(Vec<u8>, i32)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_valid_encoded_chunk(encoded: &[u8], sample_count: i32) -> bool {
+    let known = ENCODED_HERE.with(|list| {
+        let mut list = list.borrow_mut();
+        let found = list
+            .iter()
+            .position(|(bytes, n)| *n == sample_count && bytes.as_slice() == encoded);
+        found.map(|i| list.swap_remove(i)).is_some()
+    });
+    if known {
+        return true;
+    }
     let samples = morlet_core::rawcodec::decode(encoded).unwrap_or_else(|e| pgrx::error!("{}", e));
     if samples.len() != sample_count as usize {
         pgrx::error!("encoded chunk length does not match sample_count");
@@ -613,17 +632,52 @@ fn encode_threads() -> usize {
     }
 }
 
-type ChunkCode = Option<Result<Vec<u8>, morlet_core::rawcodec::CodecError>>;
+/// `morlet.verify_appends` (on/off, default on): after encoding, decode each chunk of a batch again and
+/// compare it bit for bit with its input samples (I1, #233). Off relies on the codec's tests instead.
+fn verify_appends() -> bool {
+    // SAFETY: GetConfigOption returns NULL or a NUL-terminated string valid until the setting changes.
+    let raw = unsafe { pg_sys::GetConfigOption(c"morlet.verify_appends".as_ptr(), true, false) };
+    if raw.is_null() {
+        return true;
+    }
+    match unsafe { std::ffi::CStr::from_ptr(raw) }
+        .to_string_lossy()
+        .trim()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "" | "on" | "true" | "yes" | "1" => true,
+        "off" | "false" | "no" | "0" => false,
+        _ => pgrx::error!("morlet.verify_appends must be on or off"),
+    }
+}
 
-/// Encodes each chunk as `morlet_encode_chunk` does, on up to `encode_threads()` threads. A chunk that fails
+type ChunkCode = Option<Result<Vec<u8>, String>>;
+
+/// Encodes each chunk as `morlet_encode_chunk` does, on up to `encode_threads()` threads, and with `verify`
+/// decodes it again and compares it bit for bit with the input (a mismatch is an error). A chunk that fails
 /// validation is not encoded (`None`); the caller validates it again in order and raises the error. The
 /// workers run only `morlet_core` code (no PostgreSQL calls, no PostgreSQL memory) and are started with every
 /// signal blocked, so PostgreSQL's signal handlers keep running in the backend's own thread.
-fn encode_chunks(chunks: &[&[f64]], quantum: f64) -> Vec<ChunkCode> {
-    let one = move |c: &[f64]| {
-        morlet_core::validate(c)
-            .ok()
-            .map(|_| morlet_core::rawcodec::encode(c, quantum))
+fn encode_chunks(chunks: &[&[f64]], quantum: f64, verify: bool) -> Vec<ChunkCode> {
+    let one = move |c: &[f64]| -> ChunkCode {
+        morlet_core::validate(c).ok()?;
+        Some(
+            morlet_core::rawcodec::encode(c, quantum)
+                .map_err(|e| e.to_string())
+                .and_then(|bytes| {
+                    if verify {
+                        let back =
+                            morlet_core::rawcodec::decode(&bytes).map_err(|e| e.to_string())?;
+                        if back.len() != c.len()
+                            || back.iter().zip(c).any(|(a, b)| a.to_bits() != b.to_bits())
+                        {
+                            return Err("encoded chunk does not decode to its input samples".into());
+                        }
+                    }
+                    Ok(bytes)
+                }),
+        )
     };
     let threads = encode_threads().min(chunks.len());
     if threads <= 1 {
@@ -674,7 +728,9 @@ fn encode_chunks(chunks: &[&[f64]], quantum: f64) -> Vec<ChunkCode> {
 /// chunk starts, counts, encoded chunks, summaries (NULL unless `summarized`), and the final checkpoint with
 /// all emitted segments in `morlet_chunk_step`'s format. Writes nothing: `morlet_append_chunks_raw` stores it.
 /// The chunks are encoded on up to `morlet.encode_threads` threads (`encode_chunks`); output and errors do
-/// not depend on the thread count.
+/// not depend on the thread count. With `morlet.verify_appends` on (the default) each chunk is decoded again
+/// and compared bit for bit with its input. The encoded chunks are remembered for the chunk table's CHECK
+/// constraint, which then skips its own decode for exactly these bytes (`ENCODED_HERE`).
 #[allow(clippy::type_complexity)]
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_chunk_batch(
@@ -724,7 +780,7 @@ fn morlet_chunk_batch(
     let mut segments = Vec::new();
     let mut offset = start_sample;
     let chunks: Vec<&[f64]> = values.chunks(chunk_size as usize).collect();
-    let mut codes = encode_chunks(&chunks, sample_quantum).into_iter();
+    let mut codes = encode_chunks(&chunks, sample_quantum, verify_appends()).into_iter();
     for chunk in chunks {
         // Errors are raised in chunk order, validation before encoding, exactly as one call per chunk would.
         segments.extend(
@@ -749,6 +805,11 @@ fn morlet_chunk_batch(
         offset += chunk.len() as i64;
     }
     let result = JsonB(serde_json::json!({"checkpoint": state.checkpoint(), "segments": segments}));
+    ENCODED_HERE.with(|list| {
+        let mut list = list.borrow_mut();
+        list.clear();
+        list.extend(encoded.iter().cloned().zip(counts.iter().copied()));
+    });
     TableIterator::once((starts, counts, encoded, summaries, result))
 }
 
@@ -2643,6 +2704,44 @@ END $$"#).unwrap();
     #[pg_test(error = "morlet.encode_threads must be an integer 1..64")]
     fn encode_threads_is_validated() {
         Spi::run("SELECT morlet_create_stream_collection('public','enc_guc'); SELECT morlet_start_recording('enc_guc','A',4096,'x','g'); SET morlet.encode_threads = 0; SELECT morlet_append_chunks_raw('enc_guc','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),2)").unwrap();
+    }
+    /// I1: chunks are identical with and without the round trip, and the CHECK constraint still decodes every
+    /// chunk written any other way: a corrupted copy of a just-encoded chunk is rejected.
+    #[pg_test]
+    fn verify_appends_does_not_change_chunks() {
+        Spi::run(
+            "CREATE TEMP TABLE ver_src AS SELECT i,CASE WHEN i<20000 THEN round(1000*sin(i/7.))::float8 ELSE sin(i/7.)::float8 END AS v FROM generate_series(0,49999) i;
+             SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['ver_on','ver_off']) c;
+             SELECT morlet_start_recording(c::regclass,'A',4096,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['ver_on','ver_off']) c;
+             SET morlet.verify_appends = on;
+             SELECT morlet_append_chunks_raw('ver_on','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM ver_src ORDER BY i)),4096);
+             SET morlet.verify_appends = off;
+             SELECT morlet_append_chunks_raw('ver_off','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM ver_src ORDER BY i)),4096);
+             RESET morlet.verify_appends;",
+        )
+        .unwrap();
+        assert!(Spi::get_one::<bool>(
+            "SELECT (SELECT array_agg(encoded ORDER BY start_sample) FROM ver_on_chunks)
+                  = (SELECT array_agg(encoded ORDER BY start_sample) FROM ver_off_chunks)
+                AND (SELECT count(*) FROM ver_on_chunks) = 13
+                AND (SELECT bool_and(morlet_decode_chunk(encoded) IS NOT NULL) FROM ver_on_chunks)"
+        )
+        .unwrap()
+        .unwrap());
+    }
+    #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
+    fn check_still_decodes_direct_copies_of_appended_chunks() {
+        // The last batch's chunks are remembered; a corrupted copy of one is not identical and is decoded.
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_copy'); SELECT morlet_start_recording('ver_copy','A',4096,'x','g'); SELECT morlet_start_recording('ver_copy','B',4096,'x','g'); SELECT morlet_append_chunks_raw('ver_copy','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,999) i)),500); INSERT INTO ver_copy_chunks SELECT 'B',start_sample,sample_count,set_byte(encoded,20,get_byte(encoded,20) # 1) FROM ver_copy_chunks WHERE recording_id='A' AND start_sample=0").unwrap();
+    }
+    #[pg_test(error = "encoded chunk length does not match sample_count")]
+    fn check_matches_remembered_chunks_by_sample_count() {
+        // An identical copy under a different sample_count is not trusted and fails the full check.
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_count'); SELECT morlet_start_recording('ver_count','A',4096,'x','g'); SELECT morlet_start_recording('ver_count','B',4096,'x','g'); SET morlet.verify_appends = off; SELECT morlet_append_chunks_raw('ver_count','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,999) i)),500); INSERT INTO ver_count_chunks SELECT 'B',start_sample,sample_count+1,encoded FROM ver_count_chunks WHERE recording_id='A' AND start_sample=0").unwrap();
+    }
+    #[pg_test(error = "morlet.verify_appends must be on or off")]
+    fn verify_appends_is_validated() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_guc'); SELECT morlet_start_recording('ver_guc','A',4096,'x','g'); SET morlet.verify_appends = 'maybe'; SELECT morlet_append_chunks_raw('ver_guc','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),2)").unwrap();
     }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn replay_compares_signed_zero_bits() {
