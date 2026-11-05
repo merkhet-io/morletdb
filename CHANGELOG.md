@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (SQL 0.3.4)
+## 0.3.6-alpha.1
 
 SQL version 0.3.4, with an update script from 0.3.3 (`ALTER EXTENSION pg_morlet UPDATE`; data and policies are not
 modified). Fixes from the 2026-11-04 review:

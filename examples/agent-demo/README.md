@@ -21,7 +21,7 @@ docker compose build load
 docker compose run --rm load
 ```
 
-This starts PostgreSQL 17 with pg_morlet (the `0.3.5-alpha.1` release image, native on amd64 and arm64) and fetches
+This starts PostgreSQL 17 with pg_morlet (the `0.3.6-alpha.1` release image, native on amd64 and arm64) and fetches
 four days, 11–14 March 2025, of four broadband stations in northern Chile (CX.PB01, PB02, PB06 and PSGCX,
 vertical, 100 Hz, about 115 MB) from the GEOFON data service. It checks them against
 [`manifest.json`](manifest.json), imports them and builds the search envelopes: 77 recordings (a recording

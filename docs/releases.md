@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.5-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.6-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -28,6 +28,11 @@ a leading v; GHCR image tags do not.
 - **0.3.5-alpha.1:** the same SQL version 0.3.3 and extension code as 0.3.4-alpha.1 (no update script needed).
   The first release with Debian packages for existing PostgreSQL 17 and 18 servers (amd64 and arm64), each
   installed with apt and trialled before release, with checksums and build provenance.
+- **0.3.6-alpha.1:** SQL version 0.3.4, with an update script from 0.3.3 (`ALTER EXTENSION pg_morlet UPDATE`). Fixes
+  #225–#227 (search budget on the probe route, concurrent acquisitions, concurrent envelope builders) and adds
+  faster single-connection ingestion (I1): batched raw appends (`morlet_append_chunks_raw`), encoding on worker
+  threads (`morlet.encode_threads`) and verified appends (`morlet.verify_appends`, on by default); the importer
+  commits 256 chunks per transaction and batches automatically. Stored data is byte-identical to 0.3.5-alpha.1.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
