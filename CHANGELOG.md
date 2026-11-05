@@ -1,7 +1,15 @@
 # Changelog
 
-## Unreleased
+## Unreleased (SQL 0.3.5)
 
+SQL version 0.3.5, with an update script from 0.3.4.
+
+- **Integrity scrub (#193):** `morlet_verify(collection, after_recording, max_recordings)` re-reads every chunk of a
+  batch of recordings and reports, per recording, every problem it finds without changing data: a chunk that does
+  not decode (structure, CRC-32C) to its `sample_count`, a missing or wrong chunk summary, gaps or overlaps between
+  chunks, and chunks that do not end at the checkpoint. Helper `morlet_check_chunk`. Command-line wrapper
+  `tools/verify/morlet_verify.py` (batches in read-only transactions, optional pause, exit status 1 on problems).
+  Operations docs explain how it complements PostgreSQL's data checksums.
 - **Long reads decode on worker threads:** interval reads of at least 8 chunks (`morlet_read_interval`,
   `morlet_read_interval_raw`) decode their chunks on up to `morlet.decode_threads` threads (1..64, default up to 4;
   1 = the backend's own thread). Results are identical. Development set: 128,000-sample reads 41% faster inside

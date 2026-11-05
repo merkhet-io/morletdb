@@ -163,6 +163,7 @@ Envelopes are opt-in and are not automatically built by append. Call the bounded
 | Indexed envelope search | `morlet_enable_envelope_probes`, `morlet_search_envelope_probes` | Optional pgvector path with exact fallback for small galleries |
 | Inspect progress | `morlet_stream_status`, `morlet_collection_status` | Recording progress, representation coverage and probe backlog |
 | Inspect storage | `morlet_recording_storage`, `morlet_collection_storage` | Logical payload and physical storage accounting are distinct |
+| Verify stored data | `morlet_verify` | Integrity scrub: every chunk decoded and checked, summaries compared, coverage up to the checkpoint; reports problems without changing data, in resumable batches (SQL 0.3.5; [operations](operations.md#integrity-scrub-sql-035)) |
 | Enable companion-table RLS | `morlet_enable_row_security`, `morlet_row_security_enabled` | Complements recording-table policies; ordinary grants still apply |
 | Operating context | `morlet_enable_context`, `morlet_add_context`, `morlet_revise_context` | Timed context events (program, block, tool, part, …); batches are idempotent; revisions and retractions keep the history |
 | Context segments and values | `morlet_build_context_segments`, `morlet_build_context_values` | Cut recordings into segments by context keys and compute versioned per-segment values (duration, level, spread, peak and shape) |

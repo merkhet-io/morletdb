@@ -69,6 +69,33 @@ stride per recording plus the current ingest delay.
 Audit envelopes written by an external process against the raw data with the query in
 [access control](access-control.md#the-worker-write-path).
 
+### Integrity scrub (SQL 0.3.5)
+
+```sql
+SELECT * FROM morlet_verify('signals');                    -- first 100 recordings
+SELECT * FROM morlet_verify('signals', 'last-id-seen', 100); -- the next batch
+```
+
+One row per recording: chunks and samples read, and every problem found, without changing anything.
+It decodes every chunk (structure and CRC-32C) and checks it against its `sample_count`, compares
+chunk summaries (where enabled) with the decoded samples, and checks that chunks cover the recording
+from sample 0 to its checkpoint without gaps or overlaps. A bad chunk is reported, not raised, so one
+scrub lists every problem (at most 100 per recording, then their number). Run it as a role that sees
+every row: rows hidden by row security show up as gaps. The command-line wrapper runs it in batches,
+one read-only transaction each, with an optional pause, and exits with status 1 if anything was found:
+
+```sh
+python3 tools/verify/morlet_verify.py --dsn "$DATABASE_URL" public.signals --batch 50 --sleep 0.2
+```
+
+Two layers protect the data. PostgreSQL's data checksums (`initdb --data-checksums`, or
+`pg_checksums --enable` on a stopped cluster) detect corruption of any page when it is read, for
+every table and index. MorletDB's own checks know what a chunk means: every chunk carries a CRC-32C
+over its encoded samples, every read verifies it, and the scrub reads everything on purpose, including
+data nobody has read for months, and also finds logical problems such as a missing chunk or a summary
+that no longer matches. Enable both. Envelopes, probe rows and context segments are derived data and
+are not checked by the scrub yet; they can always be rebuilt from the chunks.
+
 ## Backup and restore
 
 | Option | What is dumped | Measured (50,604 windows, 104 M samples) |

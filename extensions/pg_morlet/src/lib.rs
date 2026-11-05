@@ -1195,6 +1195,47 @@ fn morlet_chunk_summary(samples: pgrx::Array<'_, f64>) -> Vec<u8> {
     s.to_summary().to_vec()
 }
 
+/// Integrity check of one stored chunk for `morlet_verify` (#193): NULL when the chunk is sound, otherwise a
+/// description of the problem. Never raises for a bad chunk, so a scrub reports every problem in a collection
+/// instead of stopping at the first. Checks that the encoded chunk decodes (structure and CRC-32C) to
+/// `sample_count` samples and, when `summarized`, that its stored summary is byte-identical to the summary of
+/// the decoded samples.
+#[pg_extern(immutable, parallel_safe)]
+fn morlet_check_chunk(
+    encoded: Option<&[u8]>,
+    sample_count: Option<i32>,
+    summary: Option<&[u8]>,
+    summarized: bool,
+) -> Option<String> {
+    let encoded = match encoded {
+        Some(e) => e,
+        None => return Some("chunk has no encoded bytes".into()),
+    };
+    let samples = match morlet_core::rawcodec::decode(encoded) {
+        Ok(s) => s,
+        Err(e) => return Some(format!("chunk does not decode: {e}")),
+    };
+    if Some(samples.len() as i32) != sample_count {
+        return Some(format!(
+            "chunk holds {} samples, sample_count says {}",
+            samples.len(),
+            sample_count.map_or("NULL".into(), |n| n.to_string())
+        ));
+    }
+    if summarized {
+        let mut stats = morlet_core::intervalstats::IntervalStats::default();
+        stats.add(&samples);
+        match summary {
+            None => return Some("summary missing".into()),
+            Some(s) if s != stats.to_summary().as_slice() => {
+                return Some("summary differs from the chunk's samples".into())
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 /// The same summary computed from a stored encoded chunk (for building summaries of existing chunks).
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_encoded_chunk_summary(encoded: &[u8]) -> Vec<u8> {
@@ -2822,6 +2863,75 @@ END $$"#).unwrap();
     #[pg_test(error = "morlet.decode_threads must be an integer 1..64")]
     fn decode_threads_is_validated() {
         Spi::run("SELECT morlet_create_stream_collection('public','dec_guc'); SELECT morlet_start_recording('dec_guc','A',4096,'x','g'); SELECT morlet_append_chunks_raw('dec_guc','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,19999) i)),1000); SET morlet.decode_threads = 0; SELECT morlet_read_interval_raw('dec_guc','A',0,20000)").unwrap();
+    }
+    /// #193: the integrity scrub finds every injected corruption, reports nothing on sound data, never
+    /// changes data, and continues in batches.
+    #[pg_test]
+    fn verify_reports_every_injected_corruption() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','scrub'); SELECT morlet_enable_chunk_summaries('scrub');
+             SELECT morlet_start_recording('scrub',r,4096,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B','C','D','E','F']) r;
+             SELECT morlet_append_chunks_raw('scrub',r,0,morlet_float8_le_bytes(ARRAY(SELECT round(100*sin(i/9.))::float8 FROM generate_series(0,9999) i)),1000)
+               FROM unnest(ARRAY['A','B','C','D','E','F']) r;",
+        )
+        .unwrap();
+        let problems = |id: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT array_to_string(problems,' | ') FROM morlet_verify('scrub') WHERE recording_id='{id}'"
+            ))
+            .unwrap()
+            .unwrap_or_default()
+        };
+        let clean = Spi::get_one::<bool>(
+            "SELECT bool_and(cardinality(problems)=0 AND chunks=10 AND samples=10000) AND count(*)=6 FROM morlet_verify('scrub')",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(clean);
+        // Inject: B a flipped byte, C a deleted summary, D another chunk's summary, E a deleted chunk,
+        // F a wrong sample_count (constraints dropped, as storage corruption or a manual edit would bypass them).
+        Spi::run(
+            "ALTER TABLE scrub_chunks DROP CONSTRAINT scrub_chunks_check;
+             ALTER TABLE scrub_chunks DROP CONSTRAINT IF EXISTS scrub_chunks_sample_count_check;
+             UPDATE scrub_chunks SET encoded=set_byte(encoded,20,get_byte(encoded,20) # 1) WHERE recording_id='B' AND start_sample=3000;
+             UPDATE scrub_chunks SET summary=NULL WHERE recording_id='C' AND start_sample=5000;
+             UPDATE scrub_chunks SET summary=(SELECT summary FROM scrub_chunks WHERE recording_id='D' AND start_sample=0) WHERE recording_id='D' AND start_sample=7000;
+             DELETE FROM scrub_chunks WHERE recording_id='E' AND start_sample IN (4000,9000);
+             UPDATE scrub_chunks SET sample_count=999 WHERE recording_id='F' AND start_sample=2000;",
+        )
+        .unwrap();
+        let before = Spi::get_one::<String>("SELECT md5(string_agg(recording_id||start_sample||encoded::text||coalesce(summary::text,''),',' ORDER BY recording_id,start_sample)) FROM scrub_chunks").unwrap();
+        assert_eq!(problems("A"), "");
+        assert_eq!(
+            problems("B"),
+            "chunk at 3000: chunk does not decode: corrupt encoded chunk: checksum mismatch"
+        );
+        assert_eq!(problems("C"), "chunk at 5000: summary missing");
+        assert_eq!(
+            problems("D"),
+            "chunk at 7000: summary differs from the chunk's samples"
+        );
+        assert_eq!(
+            problems("E"),
+            "gap: samples 4000..5000 have no chunk | chunks end at 9000, the checkpoint at 10000"
+        );
+        assert_eq!(
+            problems("F"),
+            "chunk at 2000: chunk holds 1000 samples, sample_count says 999 | gap: samples 2999..3000 have no chunk"
+        );
+        // Read-only, and resumable in batches.
+        let after = Spi::get_one::<String>("SELECT md5(string_agg(recording_id||start_sample||encoded::text||coalesce(summary::text,''),',' ORDER BY recording_id,start_sample)) FROM scrub_chunks").unwrap();
+        assert_eq!(before, after);
+        let batched = Spi::get_one::<String>(
+            "SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM (SELECT * FROM morlet_verify('scrub',NULL,2) UNION ALL SELECT * FROM morlet_verify('scrub','B',2) UNION ALL SELECT * FROM morlet_verify('scrub','D',2)) v",
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(batched, "A,B,C,D,E,F");
+    }
+    #[pg_test(error = "max_recordings must be 1..100000")]
+    fn verify_rejects_bad_batch_size() {
+        Spi::run("SELECT morlet_create_stream_collection('public','scrub_bad'); SELECT * FROM morlet_verify('scrub_bad',NULL,0)").unwrap();
     }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn replay_compares_signed_zero_bits() {
