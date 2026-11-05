@@ -26,7 +26,7 @@ class Config:
     layout: str = "chunks"
     chunk_size: int = 4096
     batch_rows: int = 64
-    commit_chunks: int = 16
+    commit_chunks: int = 256   # I1 (#233): 16 left the server idle while the client prepared each transaction
     window: int = 512
     stride: int = 256
     normalization: str = "zscore"
@@ -179,7 +179,8 @@ class ImportFailure(RuntimeError):
         self.report = report
 
 
-def import_files(paths, collection, config=Config(), mapping=None, dsn="", validate_only=False, reader=None):
+def import_files(paths, collection, config=Config(), mapping=None, dsn="", validate_only=False, reader=None,
+                 conn=None):
     """reader(path, config, mapping) yields (recording, spec, start, values); default: Parquet.
     values is a list of numbers or a one-dimensional numpy float array (sent in binary, bit for bit).
     spec is (rate, channel, unit, metadata), optionally followed by the recording's
@@ -210,7 +211,12 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
               "validate_only": validate_only, "rpc_calls":0}
     started = time.perf_counter()
     report["preflight_s"] = started-wall_started
-    conn, staged_chunks, staged_samples, raw_append = None, 0, 0, False
+    # A caller-owned connection (conn=...) is reused, committed per transaction as usual, and left open.
+    owned = conn is None
+    if not owned and (validate_only or conn.autocommit or conn.info.transaction_status != psycopg.pq.TransactionStatus.IDLE):
+        raise ValueError("a caller-owned connection must be idle and not in autocommit mode")
+    staged_chunks, staged_samples, raw_append = 0, 0, False
+    report["commit_wait_s"] = 0.0
     pending, pending_recording, ensured, chunk_factory = [], None, None, None
 
     def flush():
@@ -236,11 +242,17 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
         staged_samples += sum(len(values) for _,values in pending)
         pending=[]
         if staged_chunks >= config.commit_chunks:
-            conn.commit()
+            commit()
             report["committed_chunk_submissions"] += staged_chunks
             report["committed_sample_submissions"] += staged_samples
             staged_chunks,staged_samples=0,0
             ensured=None
+
+    def commit():
+        # In pipeline mode the client waits here until the server has run every queued statement.
+        t = time.perf_counter()
+        conn.commit()
+        report["commit_wait_s"] += time.perf_counter() - t
 
     def import_paths(paths, signatures):
         nonlocal ensured, pending_recording
@@ -275,8 +287,9 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
 
     try:
         if not validate_only:
-            conn = psycopg.connect(dsn)
-            conn.execute("SET statement_timeout='120s'")
+            if owned:
+                conn = psycopg.connect(dsn)
+                conn.execute("SET statement_timeout='120s'")
             pg_numpy.register(conn)   # readers may yield numpy float arrays: sent as binary float8[]
             raw_append = config.raw_append and conn.execute(
                 "SELECT to_regprocedure('public.morlet_append_chunk_raw(regclass,text,bigint,bytea)') IS NOT NULL"
@@ -295,7 +308,7 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
         with (conn.pipeline() if conn is not None and config.pipeline else contextlib.nullcontext()):
             import_paths(paths, signatures)
         if conn is not None:
-            conn.commit()
+            commit()
             report["committed_chunk_submissions"] += staged_chunks
             report["committed_sample_submissions"] += staged_samples
         report["status"] = "validated" if validate_only else "complete"
@@ -311,7 +324,7 @@ def import_files(paths, collection, config=Config(), mapping=None, dsn="", valid
         report["wall_elapsed_s"] = time.perf_counter() - wall_started
         raise ImportFailure(report) from exc
     finally:
-        if conn is not None:
+        if conn is not None and owned:
             conn.close()
     report["elapsed_s"] = time.perf_counter() - started
     report["wall_elapsed_s"] = time.perf_counter() - wall_started
@@ -327,7 +340,7 @@ def main():
     parser.add_argument("--columns", type=Path, help="JSON canonical-to-source column mapping")
     parser.add_argument("--chunk-size", type=int, default=4096)
     parser.add_argument("--batch-rows", type=int, default=64)
-    parser.add_argument("--commit-chunks", type=int, default=16)
+    parser.add_argument("--commit-chunks", type=int, default=256)
     parser.add_argument("--rpc-chunks", type=int, default=1)
     parser.add_argument("--window", type=int, default=512)
     parser.add_argument("--stride", type=int, default=256)

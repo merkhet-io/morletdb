@@ -29,6 +29,7 @@ GROUP_OF = {c: g for g, s in wl.GROUPS.items() for c in s["channels"]}
 
 
 def start(volume, durability="D2"):
+    _WRITER.clear()   # a fresh server: never reuse a connection to the previous one
     cmd = ["postgres"] + (["-c", "synchronous_commit=off"] if durability == "D2" else []) + \
         (["-c", f"min_wal_size={VARIANT['min_wal_size']}"] if VARIANT.get("min_wal_size") else []) + \
         (["-c", f"max_wal_size={VARIANT['max_wal_size']}"] if VARIANT.get("max_wal_size") else []) + \
@@ -105,7 +106,17 @@ VARIANT = {"rpc_chunks": 1, "quantum": True, "binary": True, "binary_read": True
            "raw_read": False, "native_stats": False, "chunk_size": 4096,
            "raw_append": False, "pipeline": False,
            "one_statement": False,   # the last two need SQL 0.3.3
-           "commit_chunks": 16}      # I1 step 0 sweep (issue #233); attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+           "commit_chunks": 16,      # I1 (issue #233): the importer default became 256; B3's arms keep 16
+           "reuse_connection": False}   # I1: one importer connection for all acquisitions; attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+
+
+_WRITER = []   # I1 reuse_connection: the importer's connection, kept across acquisitions
+
+
+def writer():
+    if not _WRITER or _WRITER[0].closed:
+        _WRITER[:] = [psycopg.connect(DSN)]
+    return _WRITER[0]
 
 
 def load_one(acq, data, search=False):
@@ -116,7 +127,8 @@ def load_one(acq, data, search=False):
                                                           raw_append=VARIANT["raw_append"],
                                                           pipeline=VARIANT["pipeline"],
                                                           commit_chunks=VARIANT["commit_chunks"]), dsn=DSN,
-                       reader=reader_for(acq, data, search, timer))
+                       reader=reader_for(acq, data, search, timer),
+                       conn=writer() if VARIANT["reuse_connection"] else None)
     # elapsed_s excludes the importer's source-file hashing (preflight); conversion is inside it
     return timer[0], rep["elapsed_s"], rep
 

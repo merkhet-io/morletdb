@@ -63,3 +63,24 @@ load is 1.7 s above the server-only path; the connections explain about half of 
 From these pieces (an estimate, not a measurement): steps 1–2 bring the server path to about 7 s, and the load
 would then be bounded by whichever of client and server is slower. The client's own per-chunk cost is the next
 thing to measure. QuestDB needed 10.5 s for the benchmark set (B3.8).
+
+## Step 1: the importer's pacing (implemented)
+
+The importer's default became 256 chunks per transaction (was 16), and `import_files(..., conn=...)` accepts a
+caller-owned connection, which B3's adapter can reuse for all acquisitions (variant `reuse_connection`, off in
+every frozen arm). Script [`pacing.py`](pacing.py), results
+[`results/pacing_20261105T074353.json`](results/pacing_20261105T074353.json); development set, fresh server per
+load, full sample count checked after each load, and the chunk digest was identical across all arms.
+
+| Arm | D2 wall s (two loads) | D2 samples/s | D1 wall s (two loads) | D1 samples/s |
+|---|---|---:|---|---:|
+| old: 16 per transaction, connection per acquisition | 16.29, 16.31 | 6.22 M | 16.28, 16.30 | 6.23 M |
+| 256 per transaction | 13.80, 13.76 | 7.36 M | | |
+| **new: 256 per transaction, one connection** | 12.22, 12.61 | **8.17 M (+31%)** | 12.35, 12.36 | **8.21 M (+32%)** |
+| searchable (features), old / new, one load each | 61.9 / 58.2 | 1.64 / 1.74 M (+6%) | | |
+
+With the old pacing the client waited 12.0 s at commits, so its own work was at most 4.3 s of the 16.3 s
+load. With the new pacing the load (12.4 s) is within 0.7 s of the server-only append path (11.7 s, above):
+**ingestion is now bound by the server**, and the server path is what steps 2–3 shrink. The importer's
+`commit_wait_s` only counts waiting at commits; with large transactions the client waits inside sends
+instead (backpressure), so it is not a measure of client cost there.
