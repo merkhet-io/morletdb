@@ -1,0 +1,22 @@
+2026-11-05T14:21:49
+14:21  up 8 days, 23:17, 13 users, load averages: 5.76 6.13 6.14
+ %CPU COMM
+293.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 65.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 57.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 29.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 16.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 10.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (GPU).app/Contents/MacOS/Docker Desktop Helper (GPU)
+  2.8 /Applications/Docker.app/Contents/Resources/bin/docker
+2026-11-05T14:22:40
+14:22  up 8 days, 23:18, 13 users, load averages: 6.59 6.19 6.15
+ %CPU COMM
+331.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+180.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 57.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 55.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 31.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 24.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 16.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking

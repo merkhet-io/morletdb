@@ -1,0 +1,211 @@
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.37581108399899676,
+ "samples": 101586735,
+ "started": "2026-11-05T14:49:39",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.6-alpha.1",
+ "image_id": "sha256:439b1f01484ece92d413d7e997317f89d54745a2632980d226b7e24b34ceb363",
+ "ingest": {
+  "wall_s": 7.694,
+  "samples_per_s": 13203043,
+  "conversion_s": 0.011,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.99,
+   "p95_ms": 78.945,
+   "max_ms": 97.635
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.903,
+  "server": {
+   "cpu_percent_mean": 93.9,
+   "cpu_percent_p95": 119.9,
+   "memory_peak_mib": 177.2,
+   "samples": 5
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 6.3
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 2482176,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 167772160,
+  "database": 169323667,
+  "volume": {
+   "apparent": 360487497,
+   "allocated": 360566784,
+   "pg_wal_allocated": 167772160
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.727,
+   "p95_ms": 1.334,
+   "max_ms": 3.643,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 8.914,
+   "p95_ms": 12.842,
+   "max_ms": 27.718,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 11.252,
+   "p95_ms": 17.468,
+   "max_ms": 41.081,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.696,
+   "p95_ms": 1.231,
+   "max_ms": 2.697,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.664,
+   "p95_ms": 1.142,
+   "max_ms": 5.463,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 1.06,
+   "p95_ms": 1.956,
+   "max_ms": 7.337,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 3307.5
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 2.63,
+  "p95_ms": 3.166,
+  "max_ms": 4.585,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 186.1,
+   "rounds_us": [
+    187.4,
+    188.6,
+    186.1,
+    181.1,
+    175.8
+   ]
+  },
+  "R2": {
+   "us_per_read": 2048.7,
+   "rounds_us": [
+    2048.7,
+    2063.2,
+    2054.1,
+    2045.1,
+    2045.7
+   ]
+  },
+  "R3": {
+   "us_per_read": 3344.7,
+   "rounds_us": [
+    3375.3,
+    3424.1,
+    3344.7,
+    3318.5,
+    3269.3
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 179.9,
+   "rounds_us": [
+    180.1,
+    181.4,
+    179.0,
+    179.9,
+    179.1
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 162.2,
+   "rounds_us": [
+    162.2,
+    164.7,
+    160.7,
+    159.5,
+    166.7
+   ]
+  },
+  "R5": {
+   "us_per_read": 184.1,
+   "rounds_us": [
+    183.5,
+    184.5,
+    184.1,
+    183.1,
+    186.2
+   ]
+  }
+ }
+}

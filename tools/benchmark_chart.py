@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Website benchmark chart: how many times MorletDB's figure each time-series database needs, per measure.
 
-Every ratio comes from one session in which MorletDB 0.3.5-alpha.1 and that database ran alternately on the same
-machine (evaluation/tsdb_b3/RESULTS.md: B3.8 for QuestDB, B3.9 for the others; summarize_b39.py prints the values),
-never from two sessions. One exception, labelled on the page: QuestDB's ingestion lane shows 0.3.6-alpha.1's
-development build against QuestDB (B3.10, also one session) as the dot, and B3.8's released-build pair as the ring.
-Speed: the other system's time over MorletDB's (p50), or MorletDB's throughput over the
-other's, for the system's faster re-measured layout per measure. Storage: the other system's data on disk over
-MorletDB's whole database (164.8 MiB); for QuestDB its native columns (dot) and its Parquet zstd 9 partitions (ring).
-Memory: median peak server memory over the six loads of the system's lowest-memory layout, over MorletDB's in the
-same pair. > 1 = MorletDB better.
+Every speed and memory ratio comes from one session (B3.13, evaluation/tsdb_b3/RESULTS.md) in which the released
+MorletDB 0.3.6-alpha.1 and that database ran alternately on the same machine, reads from a fresh client process
+(summarize_b313.py prints the values), never from two sessions. Speed: the other system's time over MorletDB's (p50),
+or MorletDB's throughput over the other's, for the system's faster layout per measure. Storage (deterministic, from
+each system's stage) is the other system's data on disk over MorletDB 0.3.6's whole database (161.5 MiB, B3.13); for
+QuestDB its native columns (dot) and its Parquet zstd 9 partitions (ring). Interval statistics on QuestDB's lane:
+the ring is MorletDB with chunk summaries (B3.13's second MorletDB arm). Memory: median peak server memory over a
+system's loads, lowest-memory layout, over MorletDB's in the same pair. > 1 = MorletDB better.
 
   python3 tools/benchmark_chart.py           # rewrite the chart between its markers in docs/index.html
   python3 tools/benchmark_chart.py --check   # fail if the chart in the page differs
@@ -23,23 +22,22 @@ START, END = "<!-- benchmark-chart:start -->", "<!-- benchmark-chart:end -->"
 SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0", "#199e70"), ("TDengine 3.4", "#c98500"), ("TimescaleDB 2.31", "#d55181")]
 # measure: [(numerator, denominator) per system, in SYSTEMS order] - the measured values, not rounded ratios
 MEASURES = [
-    ("Data on disk", "storage", [(1162.7, 164.8, 232.7, "as Parquet zstd 9"), (1785.6, 164.8), (660.0, 164.8),
-                                 (566.7, 164.8), (815.4, 164.8)], "MiB"),
-    ("Ingestion, one connection", "ingest", [(13.65, 9.58), (6.328, 0.734), (6.257, 2.758), (6.243, 5.307),
-                                             (6.303, 0.971)], "M samples/s"),
-    ("Read 4,096 samples", "short", [(1.023, 0.630), (4.983, 0.625), (6.735, 0.631), (3.853, 0.641), (1.526, 0.643)],
+    ("Data on disk", "storage", [(1162.7, 161.5, 232.7, "as Parquet zstd 9"), (1785.6, 161.5), (660.0, 161.5),
+                                 (566.7, 161.5), (815.4, 161.5)], "MiB"),
+    ("Ingestion, one connection", "ingest", [(14.13, 9.49), (11.60, 0.68), (13.92, 2.69), (14.28, 4.79),
+                                             (13.84, 0.90)], "M samples/s"),
+    ("Read 4,096 samples", "short", [(1.10, 0.65), (7.16, 0.65), (8.51, 0.73), (3.65, 0.62), (1.55, 0.65)],
      "ms p50"),
-    ("Read 128,000 samples", "long", [(6.014, 6.886), (47.721, 6.721), (40.011, 6.721), (46.483, 6.789),
-                                      (36.271, 6.712)], "ms p50"),
-    ("Interval statistics", "stats", [(2.461, 2.545), (3.705, 2.566), (6.592, 2.540), (3.690, 2.530), (10.504, 2.551)],
+    ("Read 128,000 samples", "long", [(7.17, 7.58), (54.33, 7.97), (42.44, 8.91), (48.75, 6.72),
+                                      (40.54, 8.16)], "ms p50"),
+    ("Interval statistics", "stats", [(2.59, 2.54), (5.06, 3.04), (7.49, 2.63), (3.74, 2.52), (10.16, 2.62)],
      "ms p50"),
     # median peak server memory over a layout's loads, lowest-memory layout; JVM heaps follow their documented config
-    ("Server memory", "memory", [(2301.4, 167.8), (6128.6, 167.9), (6021.1, 167.6), (1025.0, 167.7), (405.1, 167.7)],
-     "MiB"),
+    ("Server memory", "memory", [(2304, 171), (6166, 176), (5925, 173), (1024, 168), (400, 177)], "MiB"),
 ]
-# a dot that is not the released build, and a ring with its own pair: (measure key, system index) -> label / pair
-DOT_NOTE = {("ingest", 0): "0.3.6-alpha.1 (SQL 0.3.4, development build, B3.10)"}
-RING = {("ingest", 0): (6.302, 9.658, "released 0.3.5-alpha.1, B3.8")}
+# a dot that is not the released build's base configuration, and a ring with its own pair: (measure, system) -> ...
+DOT_NOTE = {}
+RING = {("stats", 0): (2.59, 0.56, "with chunk summaries, B3.13")}
 LO, HI = 0.4, 50.0
 X0, X1 = 230, 728
 LANE, GAP = 12, 22
@@ -77,8 +75,8 @@ def svg():
         x += 15 + 7 * len(name) + 16
     # the hollow ring: the same database in a second form, on its own line
     out.append(f'<circle cx="5" cy="42" r="4" fill="var(--paper)" stroke="{SYSTEMS[0][1]}" stroke-width="2"/>'
-               f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk); QuestDB against '
-               f'the released MorletDB 0.3.5 (ingestion)</text>')
+               f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk); MorletDB with '
+               f'chunk summaries (interval statistics)</text>')
     # axis and grid
     y_axis = h - 34
     for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×"), (50, "50×")]:

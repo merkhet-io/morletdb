@@ -1086,3 +1086,58 @@ B3.10: from one client connection, the next release (SQL 0.3.4, unreleased) inge
 faster than QuestDB 10.1.0** and 2.2× / 2.1× faster than 0.3.5-alpha.1, with byte-identical stored data and reads
 unchanged. The website's QuestDB tab adds the B3.10 row, labelled as not yet released; the chart and the other
 systems' tabs keep the released build's same-session pairs (B3.8, B3.9), because B3.10 paired I1 with QuestDB only.
+
+# Amendment B3.13: every system beside the released MorletDB 0.3.6-alpha.1
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `0024d59`, 2026-11-05 14:02) before any benchmark-set load
+(development smoke check passed for every system, `results/dev/b313-smoke/`). Started automatically when the start
+condition held (14:05:53, 1-minute load average 2.39, no foreign process above half a core; `results/b313.start`);
+run 14:05–16:25 (`run_b313.sh`, log `results/b313.log`), MorletDB `ghcr.io/merkhet-io/morletdb:0.3.6-alpha.1`
+(`sha256:439b1f01484e…`), arm `morletdb-i1`, reads from a fresh client process for every system. Summary:
+`summarize_b313.py` (full tables printed by it).
+
+**Machine (reported, as the amendment requires).** From 14:07 on, a Safari/WebKit page used 60–130% of a core in
+most pre-load snapshots, Spotlight 70% once (before TimescaleDB D2 r3), and **a LaTeX build started by this work
+(`tectonic`, the second report) ran 14:23–14:27, during four loads of the TDengine pair** (MorletDB D1 r2 and r3,
+TDengine D1 r2, D2 r3). Systems alternated, so ratios within a pair are comparable; ratios close to the 10%
+threshold should be read with that in mind. Per-load snapshots are in `results/b313-*/machine/`.
+
+**Correctness: all 78 loads passed; MorletDB's stored chunks were byte-identical in every load** (25,138 chunks,
+one digest, equal to B3.10–B3.12's).
+
+## Same-session results (× MorletDB's figure; > 1 = MorletDB better; ingestion: ratio of medians, all-loads bound)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|
+| QuestDB 10.1.0 | **1.49 (1.42)** | **1.65 (1.63)** | 1.7 / 1.8 | no statement (0.95 / 1.29) | 1.1 / 1.2 | 1.7 | no statement (1.02 / 1.94) | 13× |
+| TDengine 3.4.3.3 | 2.98 (2.64) | 2.85 (2.48) | 5.9 / 4.6 | 7.3 / 6.3 | 4.9 / 4.0 | 13.8 | 1.5 / 3.9 | 6× |
+| TimescaleDB 2.31.0 (columnstore) | 15.3 (13.8) | 14.5 (14.1) | 2.4 / 2.1 | 5.0 / 4.6 | 3.3 / 2.9 | 3.5 | 3.9 / 3.3 | 2.3× |
+| IoTDB 2.0.11 (table) | 5.2 (4.9) | 5.7 (5.5) | 11.7 / 8.8 | 4.8 / 3.7 | 2.9 / 2.6 | 7.1 | 2.8 / 3.0 | 34× |
+| CrateDB 6.4.6 (array) | 17.2 (15.6) | 15.1 (13.5) | 11.0 / 10.3 | 6.8 / 6.1 | 11.5 / 8.6 | 7.3 | 24.5 / 35.3 | 35× |
+| CrateDB 6.4.6 (row) | 35.7 (34.6) | 42.0 (39.7) | 16.2 / 15.1 | 14.5 / 13.1 | 10.4 / 8.6 | 11.1 | 1.7 / 2.6 | 53× |
+
+TimescaleDB's rowstore state reads 2.8–6.2× slower than MorletDB (statistics 5.9×). MorletDB ingested 10.8–14.3 M
+samples/s from one connection across the pairs (CrateDB pairs lowest, 11.6–11.8 M D2, with the WebKit load highest
+in those snapshots); every competitor's ingestion statement holds in all loads.
+
+**Statements against QuestDB (≥ 10% in all loads, or at both p50 and p95):** MorletDB 0.3.6-alpha.1 ingests from one
+connection **1.5× (D2) and 1.65× (D1) faster** (all-loads bounds 1.42 and 1.63); reads 4,096 samples 1.7× / 1.8×
+faster, three channels 1.1× / 1.2× faster, recent and older short reads 1.3× faster, 1.7× more concurrent queries;
+long reads (R2) and interval statistics: no statement; 13× less server memory.
+
+## Chunk summaries (arm `morletdb-i1-sum`, QuestDB's pair)
+
+| | Statistics p50 / p95 | Ingestion D2 / D1 (median) | Database |
+|---|---|---|---|
+| MorletDB 0.3.6 | 2.54 / 2.69 ms | 14.13 M / 13.95 M | 169.3 MB |
+| **MorletDB 0.3.6 with chunk summaries** | **0.56 / 0.70 ms** | 13.90 M / 13.63 M (−1.7% / −2.3%) | 171.2 MB (+1.1%) |
+| QuestDB 10.1.0 | 2.59 / 5.22 ms | 9.49 M / 8.43 M | |
+
+With chunk summaries, MorletDB computes interval statistics **4.6× (p50) and 7.5× (p95) faster than QuestDB**, at
+1.7–2.3% of its ingestion speed and 1.1% more database; it still ingests 1.46× / 1.62× faster than QuestDB.
+
+## Scope
+
+One dataset, one machine, one client connection; the competitors' configurations are their stages' (B3.2,
+B3.4–B3.7). Long reads are not faster than QuestDB's on 0.3.6; parallel decoding (main, after 0.3.6) addresses them
+(`../reads_r2/ATTRIBUTION.md`) and needs its own stage once released.

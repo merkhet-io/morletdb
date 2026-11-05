@@ -1,0 +1,22 @@
+2026-11-05T14:51:10
+14:51  up 8 days, 23:47, 13 users, load averages: 7.17 6.72 6.58
+ %CPU COMM
+622.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 92.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 54.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 51.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 44.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 29.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 17.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  7.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+2026-11-05T14:56:08
+14:56  up 8 days, 23:52, 13 users, load averages: 6.63 6.31 6.38
+ %CPU COMM
+268.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 80.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 71.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 53.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 25.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 21.8 claude
+ 17.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 12.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

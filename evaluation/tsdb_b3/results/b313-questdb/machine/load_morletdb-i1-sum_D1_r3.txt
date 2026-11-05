@@ -1,0 +1,22 @@
+2026-11-05T14:15:33
+14:15  up 8 days, 23:11, 13 users, load averages: 8.10 7.30 6.44
+ %CPU COMM
+289.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 46.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 37.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 11.7 claude
+ 10.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  3.1 /usr/libexec/xprotectd
+  3.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+2026-11-05T14:15:52
+14:15  up 8 days, 23:11, 13 users, load averages: 7.30 7.17 6.42
+ %CPU COMM
+260.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 90.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 10.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.8 claude
+  5.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+  3.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  2.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

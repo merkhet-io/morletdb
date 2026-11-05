@@ -1,0 +1,22 @@
+2026-11-05T14:23:52
+14:23  up 8 days, 23:19, 13 users, load averages: 6.10 6.14 6.13
+ %CPU COMM
+279.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 99.3 /opt/homebrew/bin/tectonic
+ 65.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 32.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 17.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 14.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.2 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+2026-11-05T14:24:13
+14:24  up 8 days, 23:20, 13 users, load averages: 6.84 6.29 6.19
+ %CPU COMM
+286.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 91.2 /opt/homebrew/bin/tectonic
+ 76.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 60.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 42.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 33.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 28.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 27.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
