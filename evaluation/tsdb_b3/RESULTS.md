@@ -1053,3 +1053,36 @@ than half of a measured read is client, Docker Desktop's network path and conver
 B3.11 sits in that part; its exact cause (most likely the state of the client process that has just run the I1
 ingestion) is not established. A stage that decides adoption should therefore measure reads in a fresh client
 process and also report server-side read cost.
+
+# Amendment B3.12: B3.11 with reads from a fresh client process
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `d819edb`, 2026-11-05 12:16) before any benchmark-set load
+(smoke check on the development set, `results/dev/b312-smoke/`). Started automatically when the start condition
+held (12:17:55, 1-minute load average 2.75, no foreign process above half a core; `results/b312.start`); run
+12:17–12:27 (`results/b312/`, `run_b312.sh`, log `results/b312.log`). No foreign process above half a core in any
+snapshot; load averages between loads 3.1–5.5 from the session itself.
+
+**Correctness: all six loads passed; stored chunks byte-identical in all six** (25,138 chunks, one digest).
+Ingestion (reported): `morletdb-i1` 13.66, 13.61, 13.52 M samples/s; `morletdb-033` 6.39, 6.31, 6.19 M.
+
+## Reads from a fresh client process (p50 ms of each load) and inside the server (µs per read)
+
+| Query | `morletdb-i1` | median | `morletdb-033` | median | ratio | met | server-side ratio (medians) |
+|---|---|---:|---|---:|---:|---|---:|
+| R1 | 0.629, 0.622, 0.625 | 0.625 | 0.619, 0.624, 0.623 | 0.623 | 1.003 | yes | 1.027 |
+| R2 | 6.683, 6.785, 6.639 | 6.683 | 6.554, 6.681, 6.520 | 6.554 | 1.020 | yes | 1.002 |
+| R3 | 7.442, 7.707, 11.333 | 7.707 | 7.162, 7.694, 7.345 | 7.345 | 1.049 | yes | 1.002 |
+| R4 recent | 0.621, 0.635, 0.629 | 0.629 | 0.724, 0.632, 0.635 | 0.635 | 0.991 | yes | 0.999 |
+| R4 older | 0.619, 0.610, 0.614 | 0.614 | 0.609, 0.616, 0.606 | 0.609 | 1.008 | yes | 1.036 |
+| R5 (4 threads) | 0.810, 0.817, 0.804 | 0.810 | 0.869, 0.796, 0.780 | 0.796 | 1.018 | yes | 1.009 |
+| Interval statistics | 2.545, 2.540, 2.572 | 2.545 | 2.551, 2.536, 2.520 | 2.536 | 1.004 | yes | |
+
+p95 medians (reported): within 0.96–1.13× for every query. `morletdb-i1` D2 r3 was slower in both its client and
+its server-side reads (R3 11.3 ms and 4,275 µs, against 7.4–7.7 ms and 3,155–3,169 µs in its other loads), with
+no foreign process in its snapshots; the median over three loads absorbs it.
+
+**Verdict: all three criteria are met. `morletdb-i1` is adopted as the recommended configuration.** Together with
+B3.10: from one client connection, the next release (SQL 0.3.4, unreleased) ingests **1.4× (D2) and 1.6× (D1)
+faster than QuestDB 10.1.0** and 2.2× / 2.1× faster than 0.3.5-alpha.1, with byte-identical stored data and reads
+unchanged. The website's QuestDB tab adds the B3.10 row, labelled as not yet released; the chart and the other
+systems' tabs keep the released build's same-session pairs (B3.8, B3.9), because B3.10 paired I1 with QuestDB only.

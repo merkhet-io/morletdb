@@ -1,0 +1,20 @@
+2026-11-05T12:21:07
+12:21  up 8 days, 21:17, 12 users, load averages: 5.53 4.76 4.96
+ %CPU COMM
+502.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+100.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 46.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 16.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  7.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  3.7 /usr/sbin/coreaudiod
+2026-11-05T12:22:26
+12:22  up 8 days, 21:18, 12 users, load averages: 4.51 4.73 4.94
+ %CPU COMM
+489.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 64.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 39.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.1 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  7.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  3.7 /usr/sbin/coreaudiod
