@@ -3226,6 +3226,88 @@ END $$"#).unwrap();
             6
         );
     }
+    /// morlet_coverage (#215): every sample of a recording is in exactly one state, and only stored windows count as
+    /// searchable, so a search without a match can be reported with what it did not search.
+    #[pg_test]
+    fn coverage_reports_what_search_can_find() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','cov'); SELECT morlet_enable_chunk_summaries('cov');
+             SELECT morlet_start_recording('cov','A',4096,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('cov','A',s,morlet_float8_le_bytes(ARRAY(SELECT round(100*sin(i/9.))::float8 FROM generate_series(s,s+9999) i)),1000)
+               FROM generate_series(0,30000,10000) s ORDER BY s;
+             SELECT morlet_start_recording('cov','B',4096,'x','g','{}',512,256,'zscore','none');",
+        )
+        .unwrap();
+        let states = |sql: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT string_agg(recording_id||':'||start_sample||'..'||end_sample||' '||state,', ' ORDER BY recording_id,start_sample) FROM ({sql}) c"
+            ))
+            .unwrap()
+            .unwrap_or_default()
+        };
+        // Without envelopes and memory: stored but not indexed. B has no samples, so no rows.
+        assert_eq!(
+            states("SELECT * FROM morlet_coverage('cov')"),
+            "A:0..40000 not_indexed"
+        );
+        Spi::run(
+            "SELECT morlet_enable_envelopes('cov'); SELECT morlet_build_envelopes('cov','A',512,256,100000);
+             DELETE FROM cov_envelopes WHERE start_sample>=30000;
+             SELECT morlet_enable_memory('cov');
+             CREATE TEMP TABLE cov_ep AS SELECT e AS id, o FROM morlet_add_episodes('cov','[
+               {\"recording_id\":\"A\",\"start_sample\":5000,\"end_sample\":15000},
+               {\"recording_id\":\"A\",\"start_sample\":20000,\"end_sample\":25000},
+               {\"recording_id\":\"A\",\"start_sample\":12000,\"end_sample\":13000}]') WITH ORDINALITY x(e,o);",
+        )
+        .unwrap();
+        let one = |sql: &str| Spi::get_one::<i64>(sql).unwrap().unwrap();
+        let run = one("SELECT morlet_start_memory_run('cov','test','1')");
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('cov',{run},'[{{\"episode_id\":{},\"level\":1}},{{\"episode_id\":{},\"level\":3}}]')",
+            one("SELECT id FROM cov_ep WHERE o=1"),
+            one("SELECT id FROM cov_ep WHERE o=2")
+        ))
+        .unwrap();
+        // A chunk that was never stored (deleted here) is missing, not compacted.
+        Spi::run("DELETE FROM cov_chunks WHERE recording_id='A' AND start_sample=38000").unwrap();
+        // Level 1 removes the windows inside 5000..15000 except those overlapping the level-0 episode 12000..13000;
+        // level 3 removes the chunks 20000..25000 and their inner windows; windows end at 30464.
+        assert_eq!(
+            states("SELECT * FROM morlet_coverage('cov')"),
+            "A:0..5376 searchable, A:5376..11520 not_searchable, A:11520..13312 searchable, \
+             A:13312..14592 not_searchable, A:14592..20480 searchable, A:20480..24576 summarized, \
+             A:24576..30464 searchable, A:30464..38000 not_indexed, A:38000..39000 missing, A:39000..40000 not_indexed"
+        );
+        assert_eq!(
+            one("SELECT windows FROM morlet_coverage('cov','{A}',512) WHERE start_sample=0"),
+            one("SELECT count(*) FROM cov_envelopes WHERE start_sample+window_size<=5376")
+        );
+        assert_eq!(
+            one("SELECT count(*) FROM morlet_coverage('cov') WHERE (state='searchable')<>(windows IS NOT NULL)"),
+            0
+        );
+        // No windows of another size: nothing is searchable with that window.
+        assert_eq!(
+            one("SELECT count(*) FROM morlet_coverage('cov',NULL,1024) WHERE state='searchable'"),
+            0
+        );
+        assert_eq!(
+            states("SELECT * FROM morlet_coverage('cov','{A}',1024) WHERE start_sample<15000"),
+            "A:0..5000 not_indexed, A:5000..12000 not_searchable, A:12000..13000 not_indexed, A:13000..15000 not_searchable"
+        );
+        // Level 4: the kept summaries go too.
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('cov',{run},'[{{\"episode_id\":{},\"level\":4}}]')",
+            one("SELECT id FROM cov_ep WHERE o=2")
+        ))
+        .unwrap();
+        assert_eq!(
+            states(
+                "SELECT * FROM morlet_coverage('cov') WHERE start_sample BETWEEN 14592 AND 24576"
+            ),
+            "A:14592..20480 searchable, A:20480..24576 gone, A:24576..30464 searchable"
+        );
+    }
     /// A window that spans two adjacent episodes leaves search only when both are out of search.
     #[pg_test]
     fn memory_windows_spanning_adjacent_episodes() {

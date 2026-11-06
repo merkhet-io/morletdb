@@ -2701,6 +2701,79 @@ BEGIN
     GROUP BY e.level ORDER BY e.level',mem.episodes);
 END $$;
 
+-- What a search can find (SQL 0.3.6, #215). Splits each recording's samples 0..end into ranges, each in one state:
+--   searchable      inside a stored envelope window (of window_size; of any size when it is NULL)
+--   not_indexed     stored and at level 0, but no window covers it: the builder has not run there yet, or a tail
+--                   shorter than a window
+--   not_searchable  stored, but out of search at memory level 1 or above (episodes cover it, none at level 0)
+--   represented     level 2: samples removed, the episode searchable only through its representative
+--   summarized      level 3: chunk summaries only
+--   gone            level 4: nothing kept in the database (the ledger names any cold copy)
+--   missing         never stored (a gap between chunks)
+-- Search returns only windows in "searchable" ranges, so a search without a match says nothing about the other
+-- states: "not found" differs from "not searched". windows counts the stored windows inside a searchable range.
+-- recording_ids NULL means every recording; recordings without samples have no rows. Row security and privileges
+-- apply as for every reader.
+CREATE FUNCTION public.morlet_coverage(collection regclass,recording_ids text[] DEFAULT NULL,
+  window_size integer DEFAULT NULL)
+RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,state text,windows bigint)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; mem record; env regclass; w_sql text; e_sql text; n_sql text;
+BEGIN
+  IF collection IS NULL THEN RAISE EXCEPTION 'collection must not be NULL'; END IF;
+  IF window_size IS NOT NULL AND window_size<=0 THEN RAISE EXCEPTION 'window_size must be positive'; END IF;
+  SELECT * INTO rel FROM public.morlet_stream_relations(collection);
+  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
+  env:=to_regclass(format('%s_envelopes',collection::text));
+  IF env IS NULL THEN
+    w_sql:='SELECT NULL::text AS recording_id,NULL::int8multirange AS m WHERE false';
+    n_sql:='0::bigint';
+  ELSE
+    w_sql:=format('SELECT v.recording_id,range_agg(int8range(v.start_sample,v.start_sample+v.window_size)) AS m
+      FROM %s v WHERE v.recording_id IN (SELECT r.recording_id FROM r) AND ($2::integer IS NULL OR v.window_size=$2)
+      GROUP BY 1',env);
+    n_sql:=format('(SELECT count(*) FROM %s v WHERE v.recording_id=s.recording_id AND ($2::integer IS NULL OR v.window_size=$2)
+      AND v.start_sample>=lower(x) AND v.start_sample+v.window_size<=upper(x))',env);
+  END IF;
+  IF mem.episodes IS NULL THEN
+    e_sql:='SELECT NULL::text AS recording_id,NULL::int8multirange AS u0,NULL::int8multirange AS u1,
+      NULL::int8multirange AS u2,NULL::int8multirange AS u3,NULL::int8multirange AS u4 WHERE false';
+  ELSE
+    e_sql:=format('SELECT o.recording_id,
+        range_agg(int8range(o.start_sample,o.end_sample)) FILTER (WHERE o.level=0) AS u0,
+        range_agg(int8range(o.start_sample,o.end_sample)) FILTER (WHERE o.level=1) AS u1,
+        range_agg(int8range(o.start_sample,o.end_sample)) FILTER (WHERE o.level=2) AS u2,
+        range_agg(int8range(o.start_sample,o.end_sample)) FILTER (WHERE o.level=3) AS u3,
+        range_agg(int8range(o.start_sample,o.end_sample)) FILTER (WHERE o.level=4) AS u4
+      FROM %s o WHERE o.recording_id IN (SELECT r.recording_id FROM r) GROUP BY 1',mem.episodes);
+  END IF;
+  -- A sample's level is the lowest level of the episodes that contain it (0 without an episode): rows are removed
+  -- only where no overlapping episode at a lower level still needs them.
+  RETURN QUERY EXECUTE format('WITH r AS (SELECT t.recording_id,int8multirange(int8range(0,(t.checkpoint->>''end'')::bigint)) AS f
+      FROM %1$s t WHERE ($1::text[] IS NULL OR t.recording_id=ANY($1)) AND coalesce((t.checkpoint->>''end'')::bigint,0)>0),
+    st AS (SELECT c.recording_id,range_agg(int8range(c.start_sample,c.start_sample+%3$s)) AS m FROM %2$s c
+      WHERE c.recording_id IN (SELECT r.recording_id FROM r) GROUP BY 1),
+    w AS (%4$s), e AS (%5$s),
+    q AS (SELECT r.recording_id,r.f,coalesce(st.m,''{}'')*r.f AS stored,coalesce(w.m,''{}'')*r.f AS win,
+        coalesce(e.u0,''{}'') AS u0,coalesce(e.u1,''{}'') AS u1,coalesce(e.u2,''{}'') AS u2,
+        coalesce(e.u3,''{}'') AS u3,coalesce(e.u4,''{}'') AS u4
+      FROM r LEFT JOIN st ON st.recording_id=r.recording_id LEFT JOIN w ON w.recording_id=r.recording_id
+        LEFT JOIN e ON e.recording_id=r.recording_id),
+    p AS (SELECT q.recording_id,q.win,q.f-q.win AS rest,q.stored,
+        q.f-((q.u1+q.u2+q.u3+q.u4)-q.u0) AS l0,q.u1-q.u0 AS l1,q.u2-(q.u0+q.u1) AS l2,
+        q.u3-(q.u0+q.u1+q.u2) AS l3,q.u4-(q.u0+q.u1+q.u2+q.u3) AS l4 FROM q),
+    s AS (SELECT p.recording_id,''searchable''::text AS state,p.win AS m FROM p
+      UNION ALL SELECT p.recording_id,''not_indexed'',p.rest*p.stored*p.l0 FROM p
+      UNION ALL SELECT p.recording_id,''not_searchable'',p.rest*p.stored*(p.l1+p.l2+p.l3+p.l4) FROM p
+      UNION ALL SELECT p.recording_id,''represented'',p.rest*p.l2-p.stored FROM p
+      UNION ALL SELECT p.recording_id,''summarized'',p.rest*p.l3-p.stored FROM p
+      UNION ALL SELECT p.recording_id,''gone'',p.rest*p.l4-p.stored FROM p
+      UNION ALL SELECT p.recording_id,''missing'',p.rest*(p.l0+p.l1)-p.stored FROM p)
+    SELECT s.recording_id,lower(x),upper(x),s.state,CASE WHEN s.state=''searchable'' THEN %6$s END
+    FROM s CROSS JOIN LATERAL unnest(s.m) x ORDER BY 1,2',collection,rel.chunks,rel.count_expr,w_sql,e_sql,n_sql)
+    USING recording_ids,window_size;
+END $$;
+
 -- Raises the error for an interval whose samples are not all stored: names the level and ledger entry when the
 -- missing samples were compacted, otherwise the general message.
 CREATE FUNCTION public.morlet_raise_incomplete(collection regclass,recording_id text,interval_start bigint,interval_end bigint)

@@ -11,6 +11,11 @@ SQL version 0.3.6, with an update script from 0.3.5.
   settings made the interval count as its own history, so a comparison could report `status = ok` without any
   independent observation. History built with other settings now gives `insufficient_history` until it is rebuilt
   with the query's settings.
+- **Not found versus not searched (#215):** `morlet_coverage(collection, recording_ids, window_size)` splits
+  every recording into ranges that are searchable, not indexed, out of search by a memory level, represented,
+  summarized, gone or missing. The MCP server adds a `scope` to every search result (recordings and windows
+  searched, the periods not searched and why, event-library entries in range), `coverage` reports the same per
+  group, and the server instructions tell agents to state the scope with every negative result.
 - **Tiny signals (#228):** normalization, distances, RMS and envelopes keep their shape for amplitudes down to
   1e-300; ordinary inputs give bit-identical results.
 
