@@ -19,6 +19,16 @@ SQL version 0.3.5, with an update script from 0.3.4.
   entry; interval statistics use kept summaries and stay bitwise exact on chunk boundaries; the envelope builder
   skips episodes taken out of search; `morlet_verify` accepts compacted data. `morlet_memory_status` reports
   episodes per level. Policies that decide the moves come in phase 2.
+- **Compressed transfer ([design](docs/compressed-transfer.md)):** `morlet_read_interval_encoded` returns an
+  interval's stored chunks unchanged in one frame, under the same visibility, checkpoint and coverage checks as
+  `morlet_read_interval_raw`, without decoding them (helper `morlet_frame_chunks`); chunks of a format version the
+  client does not decode are sent as samples instead. New crate `crates/morlet-ffi`: the chunk decoder behind a C
+  interface. The Python SDK uses it through `ctypes` for reads of at least 32,768 samples, verifies every chunk's
+  checksum, and falls back to raw reads without the library or on older servers (`MORLETDB_TRANSFER`).
+- **Chunk summaries by default:** `morlet_create_stream_collection` creates the chunk table with its `summary`
+  column, so every new collection stores chunk summaries and interval statistics read them instead of decoding
+  (about 2% of ingestion speed and 1% of storage). Existing collections are unchanged;
+  `morlet_enable_chunk_summaries` still adds them.
 - **Long reads decode on worker threads:** interval reads of at least 8 chunks (`morlet_read_interval`,
   `morlet_read_interval_raw`) decode their chunks on up to `morlet.decode_threads` threads (1..64, default up to 4;
   1 = the backend's own thread). Results are identical. Development set: 128,000-sample reads 41% faster inside

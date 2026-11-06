@@ -1,6 +1,6 @@
 # Compressed transfer: exact reads decoded in the client
 
-Status: proposed design, not implemented.
+Status: implemented on main (SQL 0.3.5, unreleased); measurement pending.
 Date: 2026-11-06.
 
 ## Why
@@ -83,15 +83,19 @@ one function:
 ```c
 int32_t morlet_decode_frame(const uint8_t *frame, size_t frame_len,
                             int64_t interval_start, int64_t interval_end,
-                            double *out, size_t out_len, uint32_t threads);
+                            double *out, size_t out_len, uint32_t threads,
+                            int64_t *error_sample);
+uint32_t morlet_ffi_abi_version(void);        /* 1 */
+uint32_t morlet_ffi_max_chunk_version(void);  /* 3 */
 ```
 
 It accepts both frame kinds. It checks the frame (magic, CRC, ascending and non-overlapping chunks, lengths within the frame), verifies and
 decodes every chunk with `rawcodec::decode`, trims the edge chunks, checks that the trimmed samples cover the
 interval exactly, and writes them straight into the caller's buffer (a NumPy array, so there is no extra copy).
 With `threads > 1` and at least 8 chunks, it decodes on scoped threads, with the rules the server already uses
-(`on_threads`). It returns 0 on success or a negative error code (corrupt chunk, bad frame, coverage mismatch,
-version too new). It never panics across the boundary (`catch_unwind`), and it allocates nothing beyond one
+(`on_threads`). It returns 0 on success or a negative error code (-1 arguments, -2 corrupt frame, -3 corrupt chunk with its start
+sample in `*error_sample`, -4 coverage mismatch, -5 internal error). The frame format and its checks live in
+`morlet_core::transfer`, shared by the server (which builds frames) and the library. It never panics across the boundary (`catch_unwind`), and it allocates nothing beyond one
 chunk's samples per thread.
 
 The Python SDK loads it with `ctypes` from the standard library, so the SDK gains no new Python dependency.
@@ -160,7 +164,7 @@ Measurement plan:
 ## Build order
 
 1. `morlet-ffi` crate with `morlet_decode_frame`, Rust tests, golden test, fuzz target.
-2. `morlet_frame_chunks` and `morlet_read_interval_encoded` (SQL 0.3.6 upgrade script), pg tests for coverage,
+2. `morlet_frame_chunks` and `morlet_read_interval_encoded` (in SQL 0.3.5's update script), pg tests for coverage,
    visibility, version check and failure parity.
 3. SDK integration with fallback and the environment switch; Python tests (golden, differential against raw).
 4. Development measurement (step 1 of the plan); tune the chunk threshold.
@@ -174,4 +178,8 @@ Measurement plan:
    would need its own fuzzing as a second implementation.
 2. **Edge chunks sent whole.** This is acceptable under per-recording visibility, as argued above. It would need
    revisiting if visibility ever became finer than a recording.
-3. **SQL version.** The new functions go into SQL 0.3.6 with an upgrade script; the chunk format does not change.
+3. **SQL version.** The new functions go into SQL 0.3.5, which is not released yet, through its generated update
+   script from 0.3.4; the chunk format does not change.
+
+The owner agreed to all three on 2026-11-06, and to storing chunk summaries in every new collection from the same
+SQL version, so that interval statistics are no longer merely on par with QuestDB by default.

@@ -358,6 +358,55 @@ fn morlet_decode_interval_raw(
     out
 }
 
+/// The transfer frame of an interval's encoded chunks (docs/compressed-transfer.md), for
+/// `morlet_read_interval_encoded`. `counts` are the chunks' stored sample counts; returns NULL unless the chunks,
+/// clipped to the interval, cover it exactly, so the caller can raise the same error as a raw read. The chunks
+/// are sent unchanged (the client verifies their checksums when it decodes them), unless one has a format
+/// version above `max_chunk_version`: then the interval is decoded here and its samples are sent in a raw frame.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_frame_chunks(
+    chunks: pgrx::Array<'_, &[u8]>,
+    starts: Vec<Option<i64>>,
+    counts: Vec<Option<i32>>,
+    interval_start: i64,
+    interval_end: i64,
+    max_chunk_version: i32,
+) -> Option<Vec<u8>> {
+    if chunks.len() != starts.len() || chunks.len() != counts.len() {
+        pgrx::error!("chunks, starts and counts differ in length");
+    }
+    let mut cursor = interval_start;
+    let mut items: Vec<(i64, &[u8])> = Vec::with_capacity(starts.len());
+    let mut newer = false;
+    for ((chunk, start), count) in chunks.iter().zip(&starts).zip(&counts) {
+        let (Some(chunk), Some(start), Some(count)) = (chunk, *start, *count) else {
+            pgrx::error!("chunks, starts and counts must not contain NULL");
+        };
+        let lo = interval_start.max(start);
+        let hi = interval_end.min(start + count as i64);
+        if lo >= hi || lo != cursor {
+            return None;
+        }
+        cursor = hi;
+        newer |= chunk.first().is_none_or(|&v| v as i32 > max_chunk_version);
+        items.push((start, chunk));
+    }
+    if cursor != interval_end {
+        return None;
+    }
+    let frame = if newer {
+        let mut samples =
+            Vec::with_capacity((interval_end - interval_start).clamp(0, 1 << 24) as usize);
+        for_interval_slices(&chunks, &starts, interval_start, interval_end, |s| {
+            samples.extend_from_slice(s)
+        });
+        morlet_core::transfer::raw_frame(&samples, interval_start, interval_end)
+    } else {
+        morlet_core::transfer::chunk_frame(&items, interval_start, interval_end)
+    };
+    Some(frame.unwrap_or_else(|e| pgrx::error!("{}", e)))
+}
+
 /// Little-endian float64 bytes (8 per sample) as a float8[], without per-element parsing. Used by
 /// `morlet_append_chunk_raw`; the appended samples are validated by `morlet_append_chunk` as usual.
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -2863,6 +2912,99 @@ END $$"#).unwrap();
     #[pg_test(error = "morlet.decode_threads must be an integer 1..64")]
     fn decode_threads_is_validated() {
         Spi::run("SELECT morlet_create_stream_collection('public','dec_guc'); SELECT morlet_start_recording('dec_guc','A',4096,'x','g'); SELECT morlet_append_chunks_raw('dec_guc','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,19999) i)),1000); SET morlet.decode_threads = 0; SELECT morlet_read_interval_raw('dec_guc','A',0,20000)").unwrap();
+    }
+    /// Compressed transfer: the encoded read's frame decodes to exactly the raw read's bytes, for intervals inside
+    /// one chunk, across chunk edges and over the whole recording; chunks of a newer version than the client
+    /// decodes come as samples in a raw frame; a corrupt chunk is sent unchanged and fails in the client's decoder.
+    #[pg_test]
+    fn encoded_reads_decode_to_raw_reads() {
+        Spi::run(
+            "CREATE TEMP TABLE enc_src AS SELECT i,CASE WHEN i<60000 THEN round(1000*sin(i/7.))::float8 ELSE sin(i/7.)::float8 END AS v FROM generate_series(0,99999) i;
+             SELECT morlet_create_stream_collection('public','enc_rd'); SELECT morlet_start_recording('enc_rd','A',4096,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('enc_rd','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM enc_src ORDER BY i)),2048);",
+        )
+        .unwrap();
+        let decode = |frame: &[u8], a: i64, b: i64| {
+            let mut out = vec![0.0; (b - a) as usize];
+            morlet_core::transfer::decode_frame(frame, a, b, &mut out, 4).map(|_| {
+                out.iter()
+                    .flat_map(|v| v.to_le_bytes())
+                    .collect::<Vec<u8>>()
+            })
+        };
+        for (a, b) in [
+            (0i64, 100000i64),
+            (1, 2),
+            (2047, 2049),
+            (1234, 98765),
+            (59000, 61000),
+            (99999, 100000),
+        ] {
+            let raw = Spi::get_one::<Vec<u8>>(&format!(
+                "SELECT morlet_read_interval_raw('enc_rd','A',{a},{b})"
+            ))
+            .unwrap()
+            .unwrap();
+            for version in [3, 2, 1] {
+                let frame = Spi::get_one::<Vec<u8>>(&format!(
+                    "SELECT morlet_read_interval_encoded('enc_rd','A',{a},{b},{version})"
+                ))
+                .unwrap()
+                .unwrap();
+                assert_eq!(decode(&frame, a, b).unwrap(), raw, "{a}..{b} v{version}");
+                // A client that cannot decode one of the chunks' format versions gets samples instead.
+                let newer = Spi::get_one::<bool>(&format!("SELECT bool_or(get_byte(encoded,0)>{version}) FROM enc_rd_chunks WHERE start_sample<{b} AND start_sample+sample_count>{a}"))
+                    .unwrap()
+                    .unwrap();
+                assert_eq!(&frame[..4] == b"MTR1", newer, "{a}..{b} v{version}");
+                assert_eq!(
+                    newer,
+                    version < 2 || (version == 2 && frame[..4] == *b"MTR1")
+                );
+            }
+        }
+        let compressed = Spi::get_one::<i32>(
+            "SELECT length(morlet_read_interval_encoded('enc_rd','A',0,60000))",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(compressed < 8 * 60000 / 4, "{compressed} bytes");
+        Spi::run("ALTER TABLE enc_rd_chunks DROP CONSTRAINT enc_rd_chunks_check; UPDATE enc_rd_chunks SET encoded=set_byte(encoded,20,get_byte(encoded,20) # 1) WHERE start_sample=4096").unwrap();
+        let frame =
+            Spi::get_one::<Vec<u8>>("SELECT morlet_read_interval_encoded('enc_rd','A',0,10000)")
+                .unwrap()
+                .unwrap();
+        assert!(matches!(
+            decode(&frame, 0, 10000),
+            Err(morlet_core::transfer::FrameError::Chunk {
+                start_sample: 4096,
+                ..
+            })
+        ));
+    }
+    #[pg_test(error = "source interval is incomplete or not fully visible")]
+    fn encoded_reads_fail_on_missing_chunks() {
+        Spi::run("SELECT morlet_create_stream_collection('public','enc_gap'); SELECT morlet_start_recording('enc_gap','A',4096,'x','g'); SELECT morlet_append_chunks_raw('enc_gap','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,19999) i)),1000); DELETE FROM enc_gap_chunks WHERE start_sample=5000; SELECT morlet_read_interval_encoded('enc_gap','A',4500,6500)").unwrap();
+    }
+    #[pg_test(error = "source interval exceeds recording length")]
+    fn encoded_reads_stop_at_the_checkpoint() {
+        Spi::run("SELECT morlet_create_stream_collection('public','enc_end'); SELECT morlet_start_recording('enc_end','A',4096,'x','g'); SELECT morlet_append_chunks_raw('enc_end','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,999) i)),1000); SELECT morlet_read_interval_encoded('enc_end','A',0,1001)").unwrap();
+    }
+    /// SQL 0.3.5: new collections store chunk summaries; statistics are the same as decoding.
+    #[pg_test]
+    fn new_collections_store_chunk_summaries() {
+        Spi::run("SELECT morlet_create_stream_collection('public','sum_dflt'); SELECT morlet_start_recording('sum_dflt','A',4096,'x','g'); SELECT morlet_append_chunks_raw('sum_dflt','A',0,morlet_float8_le_bytes(ARRAY(SELECT sin(i/3.)::float8 FROM generate_series(0,19999) i)),1000)").unwrap();
+        let ok = Spi::get_one::<bool>("SELECT summarized FROM morlet_stream_relations('sum_dflt')")
+            .unwrap()
+            .unwrap();
+        assert!(ok);
+        let all =
+            Spi::get_one::<bool>("SELECT count(*)=20 AND count(summary)=20 FROM sum_dflt_chunks")
+                .unwrap()
+                .unwrap();
+        assert!(all);
+        // Enabling them again is a no-op.
+        Spi::run("SELECT morlet_enable_chunk_summaries('sum_dflt')").unwrap();
     }
     /// #193: the integrity scrub finds every injected corruption, reports nothing on sound data, never
     /// changes data, and continues in batches.

@@ -9,7 +9,7 @@ import psycopg
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
-from . import _pgnumpy
+from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
 from ._types import Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Match, OverviewBucket, Recording, SearchResult
 
@@ -114,6 +114,27 @@ class Client:
                 "SELECT encoded FROM morlet_stream_relations(%s::regclass)", (collection,)))
         return self._encoded[collection]
 
+    def _encoded_read(self, collection: str, samples: int):
+        """The native decoder when this read should use compressed transfer (docs/compressed-transfer.md):
+        MORLETDB_TRANSFER is not `raw`, the library is available, the server has morlet_read_interval_encoded
+        (SQL 0.3.5), the collection stores encoded chunks, and the read is long enough (or the mode is
+        `encoded`). Decided by lookups, never by a failing statement."""
+        mode = _native.mode()
+        if mode == "raw":
+            return None
+        native = _native.require() if mode == "encoded" else _native.native()
+        if native is None:
+            return None
+        if mode == "auto" and samples < _native.ENCODED_MIN_SAMPLES:
+            return None
+        if not (self._has("public.morlet_read_interval_encoded(regclass,text,bigint,bigint,integer)")
+                and self._raw_reads(collection)):
+            if mode == "encoded":
+                raise UnsupportedError("compressed transfer needs pg_morlet SQL 0.3.5 and a collection with "
+                                       "encoded chunks")
+            return None
+        return native
+
     def _one(self, sql: str, args: tuple = (), **kw: Any) -> Any:
         row = self._execute(sql, args, **kw).fetchone()
         return None if row is None else row[0]
@@ -131,8 +152,9 @@ class Client:
         """Create a stream collection `schema.name` (or `name` in public) if it does not exist, enable
         search envelopes on it when `searchable`, and per-chunk summaries when `summaries` and the server
         supports them (SQL 0.3.3): statistics and overviews of long intervals then read summaries instead
-        of decoding, with identical results, for about 5% slower ingestion and 1% more chunk storage.
-        Idempotent."""
+        of decoding, with identical results, for about 2% slower ingestion and 1% more chunk storage. From
+        SQL 0.3.5 the server creates every new collection with summaries, so `summaries=False` only matters
+        for older servers. Idempotent."""
         schema, table = name.split(".", 1) if "." in name else ("public", name)
         if self._one("SELECT to_regclass(%s)", (f"{schema}.{table}",)) is None:
             self._execute("SELECT morlet_create_stream_collection(%s, %s)", (schema, table))
@@ -254,7 +276,15 @@ class Client:
         if ref.end_sample > rec.samples:
             raise NotFoundError(f"interval ends at {ref.end_sample}, but {ref.recording_id} has {rec.samples} samples")
         parts = []
-        if self._raw_reads(ref.collection):
+        encoded = self._encoded_read(ref.collection, ref.end_sample - ref.start_sample)
+        if encoded is not None:
+            # Compressed transfer: the stored chunks, decoded and checked in the client (bit for bit the same).
+            for a in range(ref.start_sample, ref.end_sample, RAW_READ_MAX):
+                b = min(a + RAW_READ_MAX, ref.end_sample)
+                frame = self._one("SELECT morlet_read_interval_encoded(%s::regclass,%s,%s,%s,%s)",
+                                  (ref.collection, ref.recording_id, a, b, encoded.max_chunk_version), binary=True)
+                parts.append(encoded.decode(frame, a, b))
+        elif self._raw_reads(ref.collection):
             for a in range(ref.start_sample, ref.end_sample, RAW_READ_MAX):
                 b = min(a + RAW_READ_MAX, ref.end_sample)
                 raw = self._one("SELECT morlet_read_interval_raw(%s::regclass,%s,%s,%s)",

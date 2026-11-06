@@ -39,7 +39,34 @@ during the session):
 | R2 from the client, p50 / p95 | 7.45 / 10.13 ms | **6.31 / 9.55 ms (−15% / −6%)** |
 | R1 (one or two chunks, below the threshold), from the client | 0.705 ms | 0.704 ms |
 
-## Next: compressed transfer (option 2)
+## Option 2: compressed transfer (implemented)
+
+[Design](../../docs/compressed-transfer.md). `morlet_read_interval_encoded` sends the interval's stored chunks
+unchanged, and the client decodes them with the same Rust codec (`crates/morlet-ffi`, loaded by the Python SDK with
+`ctypes`), verifying every chunk's checksum.
+
+Script [`../tsdb_b3/r2_transfer.py`](../tsdb_b3/r2_transfer.py), results
+[`r2_transfer_20261106T090112.json`](../tsdb_b3/results/dev/r2_transfer_20261106T090112.json); image `morletdb:ct`
+(branch `feat/compressed-transfer`), development set, one D2 load, B3's read intervals, 50 passes each with the
+transfers alternating within every pass, reads from the same client process, every read checked bit for bit against
+the source. Started at a 1-minute load average of 2.9, after builds (5- and 15-minute averages 6.6 and 8.0).
+
+| Read | Raw, p50 / p95 | Encoded, 1 client thread | Encoded, 4 client threads | Bytes per read, raw / encoded |
+|---|---:|---:|---:|---:|
+| R1, 4,096 samples | **0.72 / 1.08 ms** | 0.77 / 1.03 ms | 0.77 / 1.00 ms | 32,768 / 9,770 |
+| R2, 128,000 samples | 5.99 / 8.77 ms | 4.43 / 6.13 ms | **2.51 / 3.15 ms** | 1,024,000 / 153,640 |
+| R3, 3 channels × 64,000 | 7.55 / 12.11 ms | 6.24 / 8.72 ms | **3.79 / 4.96 ms** | |
+
+Server work without transfer for R2 falls from 2.25 to 0.66 ms (no decoding, only lookup and framing). A long read
+is 2.4× faster at p50 and 2.8× at p95; the tail shrinks most, because 6.7× fewer bytes cross Docker's network path.
+Short reads of one or two chunks gain nothing and lose about 0.05 ms at p50, so the SDK reads raw below 32,768
+samples.
+
+**Not a benchmark result.** One development load, same-process reads, a machine still settling after builds, and
+no other database in the session. Whether this gives a statement against QuestDB is for a frozen B3 amendment after
+a release, with the benchmark's MorletDB arm reading through this path.
+
+## Earlier note: compressed transfer (option 2)
 
 With decoding parallel, the transfer of raw float64 dominates. Sending the encoded chunks (about 1.3 bytes per
 sample here instead of 8) and decoding them in the client with the same Rust codec would cut the bytes about

@@ -205,6 +205,38 @@ class Contract(unittest.TestCase):
         self.assertEqual((s.min, s.max), (x[10:8000].min(), x[10:8000].max()))
         self.assertAlmostEqual(s.mean, x[10:8000].mean(), delta=1e-12 * max(1, abs(x).max()))
 
+    def test_compressed_transfer_when_supported(self):
+        """Encoded reads (decoded in the client) return the raw reads' samples bit for bit, on intervals inside
+        one chunk, across chunk edges and over the whole recording, and fail the same way on missing data."""
+        from morletdb import _native
+        if _native.native() is None:
+            self.skipTest("native decoder library not available")
+        if not self.db._has("public.morlet_read_interval_encoded(regclass,text,bigint,bigint,integer)"):
+            self.skipTest("server without morlet_read_interval_encoded")
+        rng = np.random.default_rng(3)
+        x = np.concatenate([events(70000, [500, 40000], 25600), rng.standard_normal(30000)])
+        self.db.ingest(self.coll, "ct", x, sample_rate_hz=25600, channel="c", unit="u")
+        old = os.environ.get("MORLETDB_TRANSFER")
+        try:
+            for a, b in [(0, 100000), (1, 2), (4095, 4097), (1234, 98765), (69000, 71000), (99999, 100000)]:
+                got = {}
+                for mode in ("raw", "encoded"):
+                    os.environ["MORLETDB_TRANSFER"] = mode
+                    got[mode] = self.db.read(self.coll, "ct", a, b).samples
+                np.testing.assert_array_equal(got["encoded"].view("<u8"), got["raw"].view("<u8"))
+                np.testing.assert_array_equal(got["encoded"].view("<u8"), x[a:b].view("<u8"))
+                self.assertTrue(got["encoded"].flags.writeable)
+            self.conn.execute(f"DELETE FROM {self.coll}_chunks WHERE start_sample=8192")
+            os.environ["MORLETDB_TRANSFER"] = "encoded"
+            with self.assertRaises(NotFoundError):
+                self.db.read(self.coll, "ct", 0, 20000)
+        finally:
+            self.conn.rollback()
+            if old is None:
+                os.environ.pop("MORLETDB_TRANSFER", None)
+            else:
+                os.environ["MORLETDB_TRANSFER"] = old
+
     def test_overview_and_summaries_when_supported(self):
         x = events(20000, [100, 9000], 8000)
         self.db.ingest(self.coll, "ov", x, sample_rate_hz=8000, channel="c", unit="u")

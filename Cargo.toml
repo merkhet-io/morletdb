@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/morlet-core", "extensions/pg_morlet"]
+members = ["crates/morlet-core", "crates/morlet-ffi", "extensions/pg_morlet"]
 default-members = ["crates/morlet-core"]
 resolver = "2"
 

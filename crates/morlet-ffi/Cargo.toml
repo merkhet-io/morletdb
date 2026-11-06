@@ -1,0 +1,13 @@
+[package]
+name = "morlet-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "C interface to MorletDB's chunk decoder, for clients that decode compressed transfers (docs/compressed-transfer.md)"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+morlet-core = { path = "../morlet-core" }

@@ -5,7 +5,9 @@
 0.3.4 is released (0.3.6-alpha.1); its objects are known. 0.3.5 adds the integrity scrub (#193):
 morlet_check_chunk (Rust) and morlet_verify (SQL), and episodic memory (docs/memory-design.md): memory tables per
 collection on request, episodes, runs, the ledger and morlet_set_level; reads, interval statistics and the envelope
-builder become level-aware (bodies change, signatures do not). No data or policy changes.
+builder become level-aware (bodies change, signatures do not); compressed transfer (docs/compressed-transfer.md):
+morlet_frame_chunks (Rust) and morlet_read_interval_encoded (SQL); new collections store chunk summaries
+(morlet_create_stream_collection; existing collections are unchanged). No data or policy changes.
 tests/upgrade.sh and tests/upgrade_from_release.sh check that an upgraded catalog equals a fresh 0.3.5
 installation. The scripts of earlier steps (0.3.3 -> 0.3.4 and before) are frozen."""
 import re
@@ -30,11 +32,12 @@ def rust(name):
     return m.group(0).replace("CREATE  FUNCTION", "CREATE FUNCTION")
 
 
-NEW_RUST = ["morlet_check_chunk"]
+NEW_RUST = ["morlet_check_chunk", "morlet_frame_chunks"]
 NEW_SQL = ["morlet_verify", "morlet_enable_memory", "morlet_memory_relations", "morlet_add_episodes",
            "morlet_start_memory_run", "morlet_finish_memory_run", "morlet_set_level", "morlet_memory_status",
-           "morlet_raise_incomplete"]
-CHANGED = ["morlet_read_interval", "morlet_read_interval_raw", "morlet_interval_buckets", "morlet_build_envelopes"]
+           "morlet_raise_incomplete", "morlet_read_interval_encoded"]
+CHANGED = ["morlet_read_interval", "morlet_read_interval_raw", "morlet_interval_buckets", "morlet_build_envelopes",
+           "morlet_create_stream_collection"]
 # Signature changed: the 0.3.4 function (these argument types) is dropped and created again.
 RECREATED = {}
 
