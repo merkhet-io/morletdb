@@ -161,11 +161,19 @@ def load(system, durability, rep):
     if system != "questdb":
         res["image"] = mo.IMAGE
         res["image_id"] = common.sh(["docker", "image", "inspect", mo.IMAGE, "--format", "{{.Id}}"]).strip()
+    if system == "morletdb-i2":   # B3.15: the client decoder used, by content
+        import hashlib
+        lib = os.environ.get("MORLETDB_NATIVE_LIB", "")
+        res["native_lib"] = {"path": lib, "sha256": hashlib.sha256(open(lib, "rb").read()).hexdigest() if lib else None}
     search = system in ("morletdb-search", "morletdb-033-feat", "morletdb-033-search")   # search features at ingest
     envelopes = system in ("morletdb-search", "morletdb-033-search")                     # + envelopes, built after
     if system.startswith("morletdb-033"):   # B3.3: the B3.2 client path on the current image
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
                            "one_statement": True})
+    if system == "morletdb-i2":   # B3.15: B3.10's I1 path + compressed transfer for reads of >= 32,768 samples
+        mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
+                           "one_statement": True, "commit_chunks": 256, "reuse_connection": True, "rpc_chunks": 0,
+                           "encoded_read": True})
     if system in ("morletdb-i1", "morletdb-i1-sum"):   # B3.10 (I1, #233): B3.3's path + 256 chunks per
         # transaction, one connection, automatic batched raw appends (SQL 0.3.4); encoding threads at the default
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
@@ -224,7 +232,7 @@ def load(system, durability, rep):
                      "server": st.summary()}
     if r["calls"]:
         res["ingest"]["ack_per_call"] = common.pcts(r["calls"])
-    if system in ("morletdb-033", "morletdb-i1", "morletdb-i1-sum"):   # B3.10: chunks byte-identical across arms
+    if system in ("morletdb-033", "morletdb-i1", "morletdb-i1-sum", "morletdb-i2"):   # B3.10: chunks byte-identical
         res["ingest"]["chunks"] = dict(zip(("count", "md5"), handle.execute(
             f"SELECT count(*), md5(string_agg(md5(encoded), '' ORDER BY recording_id, start_sample)) "
             f"FROM {mo.COLLECTION}_chunks").fetchone()))
@@ -288,9 +296,9 @@ def load(system, durability, rep):
         res["storage"] = mo.storage(handle)
         if (rep == 1 or every_rep) and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16",
                                                   "morletdb-032", "morletdb-033", "morletdb-i1",
-                                                  "morletdb-i1-sum"):
+                                                  "morletdb-i1-sum", "morletdb-i2"):
             res["reads"], res["analytics"] = common.reads_maybe_fresh(   # B3.12/B3.13: optionally a new process
-                __file__, ["morletdb"], lambda: (reads("morletdb", handle, m, data), analytics("morletdb", handle, m, data)))
+                __file__, ["morletdb", system], lambda: (reads("morletdb", handle, m, data), analytics("morletdb", handle, m, data)))
             if os.environ.get("B3_READS_FRESH_PROCESS") == "1":
                 import i1_reads_server
                 res["server_reads"] = i1_reads_server.server_reads(handle, m)
@@ -422,15 +430,19 @@ def analytics(system, _handle, m, data, reps=20):
     return {**common.pcts(lat), "max_relative_difference": worst, "within_1e-12": worst <= 1e-12}
 
 
-def reads_child(system="morletdb"):
-    """B3.12/B3.13: the read benchmark against the running server from a new process (common.reads_maybe_fresh)."""
+def reads_child(system="morletdb", arm=""):
+    """B3.12/B3.13: the read benchmark against the running server from a new process (common.reads_maybe_fresh).
+    B3.15: `arm` morletdb-i2 reads with compressed transfer, as in the parent."""
     if system != "questdb":
         import morletdb_adapter as mo
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
-                           "one_statement": True})
+                           "one_statement": True, "encoded_read": arm == "morletdb-i2"})
     m = common.manifest()
     data, _ = preload(m, range(len(m["acquisitions"])))
-    common.print_reads_child(reads(system, None, m, data), analytics(system, None, m, data))
+    r = reads(system, None, m, data)
+    if system != "questdb":
+        r["encoded_read"] = bool(mo.VARIANT.get("encoded_read"))   # B3.15: which transfer the child used
+    common.print_reads_child(r, analytics(system, None, m, data))
 
 
 if __name__ == "__main__":

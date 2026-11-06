@@ -145,11 +145,39 @@ def count(conn):
     return conn.execute(f"SELECT count(*), coalesce(sum((checkpoint->>'end')::bigint), 0) FROM {COLLECTION}").fetchone()
 
 
+def _encoded_reader(length):
+    """The SDK's native decoder when this arm reads `length` samples by compressed transfer (B3.15), else None.
+    The decoder and its policy are the SDK's own (sdk/python/src/morletdb/_native.py, library from
+    MORLETDB_NATIVE_LIB); a missing library is an error, never a silent fallback to raw reads."""
+    if not VARIANT.get("encoded_read"):
+        return None
+    import sys
+    from pathlib import Path
+    sdk = str(Path(__file__).resolve().parents[2] / "sdk" / "python" / "src")
+    if sdk not in sys.path:
+        sys.path.insert(0, sdk)
+    from morletdb import _native
+    if length < _native.ENCODED_MIN_SAMPLES:
+        return None
+    return _native.require()
+
+
 def read(conn, acq, channels, offset, length):
     """Exact samples [offset, offset+length) per channel as float64 arrays; one round trip per channel,
     pieces of at most 32,768 samples (the documented per-call limit), assembled in order."""
     import numpy as np
     out = {}
+    native = _encoded_reader(length)
+    if native is not None:
+        # B3.15: compressed transfer as the SDK does it (docs/compressed-transfer.md): the stored chunks, decoded
+        # and checked in the client by the native decoder, for reads of at least ENCODED_MIN_SAMPLES samples; all
+        # channels in one statement, in the requested order.
+        rows = conn.execute(
+            "SELECT morlet_read_interval_encoded(%s::regclass, r.id, %s, %s, %s) FROM unnest(%s::text[]) WITH "
+            "ORDINALITY r(id, o) ORDER BY r.o",
+            (COLLECTION, offset, offset + length, native.max_chunk_version, [rid(acq, c) for c in channels]),
+            binary=True, prepare=True).fetchall()
+        return {c: native.decode(r[0], offset, offset + length) for c, r in zip(channels, rows)}
     if VARIANT["raw_read"] and VARIANT.get("one_statement") and len(channels) > 1:
         # B3.2: all channels of the interval in one statement (one round trip), in the requested order
         rows = conn.execute(

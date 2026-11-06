@@ -1,0 +1,22 @@
+2026-11-06T15:54:54
+15:54  up 10 days, 51 mins, 17 users, load averages: 4.99 4.97 4.87
+ %CPU COMM
+175.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 45.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 16.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 13.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  7.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  2.1 claude
+  2.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  1.4 /usr/libexec/opendirectoryd
+2026-11-06T15:55:15
+15:55  up 10 days, 51 mins, 17 users, load averages: 5.76 5.15 4.94
+ %CPU COMM
+235.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 11.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  3.6 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  2.9 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.6 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow

@@ -1,0 +1,47 @@
+2026-11-06 12:04:26 Notification Display is turned off      
+2026-11-06 12:04:31 Sleep Entering Sleep state due to 'Clamshell Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 12:04:34 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 12:04:42 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 12:04:49 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 12:04:54 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 12:09:51 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 12:09:56 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 12:10:44 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 12:10:52 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 12:28:04 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 12:28:06 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 12:28:55 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 12:29:03 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 12:32:11 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 12:32:19 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 12:47:58 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 12:48:00 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 13:04:35 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 13:04:37 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 13:18:38 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 13:18:43 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 13:22:09 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 13:22:14 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 13:39:52 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 13:39:54 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 13:56:22 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 13:56:24 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 14:05:26 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 14:05:31 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 14:23:14 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 14:23:16 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 14:39:13 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 14:39:15 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 14:56:45 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 14:56:47 Sleep Entering Sleep state due to 'Sleep Service Back to Sleep':TCPKeepAlive=active
+2026-11-06 15:06:26 DarkWake DarkWake from Deep Idle [CDNP] : due to NUB.SPMI0Sw3IRQ nub-spmi0.0x02
+2026-11-06 15:06:35 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 15:16:41 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 15:16:50 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 15:18:53 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) wifibt
+2026-11-06 15:19:02 Sleep Entering Sleep state due to 'Maintenance Sleep':TCPKeepAlive=active Using Batt (Charge:100%)
+2026-11-06 15:21:58 DarkWake DarkWake from Deep Idle [CDNP] : due to smc.sysState.Wake(0x70070000) USB-C_plug
+2026-11-06 15:21:58 Wake DarkWake to FullWake from Deep Idle [CDNVA] : due to
+2026-11-06 15:21:58 Notification Display is turned on      
+2026-11-06 15:22:21 Notification Display is turned off      
+2026-11-06 15:22:24 Notification Display is turned on      

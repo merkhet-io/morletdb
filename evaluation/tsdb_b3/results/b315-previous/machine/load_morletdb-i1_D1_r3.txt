@@ -1,0 +1,22 @@
+2026-11-06T15:58:09
+15:58  up 10 days, 54 mins, 17 users, load averages: 7.23 5.97 5.31
+ %CPU COMM
+129.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 49.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 39.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 13.4 /System/Library/CoreServices/WindowManager.app/Contents/MacOS/WindowManager
+  8.2 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  3.5 /usr/sbin/coreaudiod
+  3.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.7 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+2026-11-06T15:58:29
+15:58  up 10 days, 54 mins, 17 users, load averages: 6.60 5.90 5.30
+ %CPU COMM
+177.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 57.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 48.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 17.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  3.2 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  2.9 /usr/sbin/coreaudiod
+  2.0 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter

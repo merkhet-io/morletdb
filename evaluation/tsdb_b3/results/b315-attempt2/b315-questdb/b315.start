@@ -1,0 +1,11 @@
+2026-11-06T11:58:15
+11:58  up 9 days, 20:54, 17 users, load averages: 2.54 2.89 3.22
+ %CPU COMM
+ 31.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 24.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.9 claude
+  9.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.9 /usr/libexec/trustd
+  4.2 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+  3.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  3.2 bash

@@ -1,0 +1,22 @@
+2026-11-06T15:22:15
+15:22  up 10 days, 18 mins, 17 users, load averages: 30.73 14.15 8.31
+ %CPU COMM
+256.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 97.0 /usr/libexec/coreduetd
+ 72.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 63.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 34.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 24.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 11.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+2026-11-06T15:22:52
+15:22  up 10 days, 18 mins, 17 users, load averages: 27.97 15.26 8.94
+ %CPU COMM
+216.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 98.5 /usr/libexec/coreduetd
+ 97.3 /System/Applications/Siri AI.app/Contents/MacOS/Siri AI
+ 87.2 /System/Library/ExtensionKit/Extensions/MouseIntentsExtension.appex/Contents/MacOS/MouseIntentsExtension
+ 82.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 75.8 /System/Library/PrivateFrameworks/PowerlogCore.framework/Versions/A/XPCServices/PerfPowerServicesSignpostReader.xpc/Contents/MacOS/PerfPowerServicesSignpostReader
+ 56.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 53.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
