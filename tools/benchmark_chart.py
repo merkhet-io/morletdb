@@ -63,9 +63,9 @@ def svg():
     top = 96
     h = top + len(MEASURES) * (len(SYSTEMS) * LANE + GAP) + 44
     ink, muted, line = "var(--ink)", "var(--muted)", "var(--line)"
-    out = [f'<svg class="bm-chart" viewBox="0 0 760 {h}" role="img" aria-labelledby="bm-chart-title bm-chart-desc" '
-           f'font-family="inherit" font-size="12">',
-           '<title id="bm-chart-title">How many times MorletDB\'s figure each database needs, per measure</title>',
+    out = [f'<svg class="bm-chart" viewBox="0 0 760 {h}" role="img" aria-label="How many times MorletDB&#39;s figure each database needs, per measure" '
+           f'aria-describedby="bm-chart-desc" font-family="inherit" font-size="12">',
+           # no <title> on the svg: browsers show it as a native tooltip over the per-dot hover tooltips
            '<desc id="bm-chart-desc">Log scale. 1× is MorletDB; to the right MorletDB is better, to the left the other '
            'database. The tables in the tabs below list every value.</desc>']
     # legend
