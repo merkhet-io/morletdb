@@ -13,10 +13,11 @@ export B3_READS_FRESH_PROCESS=1 MORLETDB_NATIVE_LIB
 # (default 60) for a 1-minute load average below 3 and no process except Docker's VM above half a core, else refuse.
 quiet() { awk -v l="$(sysctl -n vm.loadavg | awk '{print $2}')" 'BEGIN{exit !(l<3)}' &&
   [ -z "$(ps -Ao pcpu,comm -r | awk 'NR>1 && $1>50 && $0 !~ /Virtualization|com\.docker/')" ]; }
-# Machine condition (attempt 2 slept on a closed lid on battery): AC power and lid open, checked at the start and
-# before every load; a violation stops the whole session.
+# Machine condition (attempt 2 slept on a closed lid on battery): AC power, and the lid open or closed with an external
+# display so that closing it does not sleep (deviation before attempt 3), checked at the start and before every load;
+# a violation stops the whole session.
 powered() { local b c; b=$(pmset -g batt 2>/dev/null || true); c=$(ioreg -r -k AppleClamshellState -d 1 2>/dev/null || true)
-  [[ $b == *"AC Power"* && $c == *'"AppleClamshellState" = No'* ]]; }
+  [[ $b == *"AC Power"* ]] && [[ $c == *'"AppleClamshellState" = No'* || $c == *'"AppleClamshellCausesSleep" = No'* ]]; }
 for _ in $(seq 1 $(( ${B315_WAIT_MIN:-60} * 4 ))); do powered && quiet && break; sleep 15; done
 powered || { echo "REFUSED: not on AC power with the lid open"; exit 1; }
 quiet || { echo "REFUSED: machine not quiet ($(uptime))"; ps -Ao pcpu,comm -r | head -6 || true; exit 1; }

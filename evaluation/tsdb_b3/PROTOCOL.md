@@ -836,6 +836,16 @@ Everything common to B3 applies.
   is logged and rerun. Every read is checked bit for bit against the source, as always.
 - **Machine:** the run starts only when the 1-minute load average is below 3 and no process other than the Docker VM
   uses more than half a core; the Mac is kept awake with `caffeinate`, lid open, on AC power.
+- **Deviations before the result run (recorded before it started; no measurement changed):**
+  1. Attempt 1 (10:23) started on a busy machine; not admissible (`results/b315-attempt1/README.md`). The runner
+     now waits for the start condition and refuses instead of starting.
+  2. Attempt 2 (11:58) slept on a closed lid on battery from 12:04; not admissible
+     (`results/b315-attempt2/README.md`). The runner now checks the machine condition before every load and stops
+     the session if it fails.
+  3. For attempt 3 the owner keeps the lid closed with an external display connected. On AC power macOS then does
+     not sleep on the closed lid (`AppleClamshellCausesSleep = No`), which serves this condition's purpose (no sleep
+     during the run). The condition becomes: on AC power, with the lid open or closed without causing sleep. All arms
+     alternate in the one session, so they run under the same condition.
 - **Smoke check (not a result):** one development-set D2 load of `morletdb-i2` on a build of main equal in code to
   the release, with fresh-process reads (`results/dev/b315-smoke/`), done before this freeze to check the harness.
 - **Questions and statements**, by B3's rule (≥ 10% in all loads for ingestion; at both p50 and p95 for latencies;
