@@ -1269,7 +1269,7 @@ Finding the cause needs its own exploratory measurement, so these figures stand 
 - Ingestion: no statement (0.96 / 0.97). Memory is equal.
 - Short reads: 1.1×–1.5× slower, as above.
 
-Storage: chunk bytes are unchanged, and the summaries add 1.8 MB of heap on this dataset (2.48 MB against 4.33 MB
+Storage: chunk bytes are unchanged, and the summaries add 1.8 MB of heap on this dataset (4.33 MB on 0.3.7 against 2.48 MB on 0.3.6
 for `b3_chunks`).
 
 ## Statements against QuestDB (B3.15, released 0.3.7-alpha.1)
