@@ -2624,9 +2624,15 @@ END $$"#).unwrap();
              SELECT morlet_build_context_values('s','r');",
         )
         .unwrap();
-        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM s_ctx_segments").unwrap(), Some(6));
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM s_ctx_segments").unwrap(),
+            Some(6)
+        );
         let q = "SELECT hist_n||':'||status FROM morlet_compare_to_history('s',(SELECT min(segment_id) FROM s_ctx_segments)) WHERE value_name='mean'";
-        assert_eq!(Spi::get_one::<String>(q).unwrap().unwrap(), "0:insufficient_history");
+        assert_eq!(
+            Spi::get_one::<String>(q).unwrap().unwrap(),
+            "0:insufficient_history"
+        );
         // Genuinely independent, compatible occurrences still count: five more cuts on other samples.
         Spi::run(
             "SELECT morlet_append_chunk('s','r',2048,ARRAY(SELECT sin(i/7.0)*(1+i/100000.0) FROM generate_series(2048,12287) i));
