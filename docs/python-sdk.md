@@ -57,6 +57,10 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
   `start_ns` is exact). `samples_for_time(rec, t0_ns, t1_ns)` maps a time range to the samples at or after
   each time (the server's `morlet_time_to_samples`). `Interval.time_offsets_s()` gives float64 seconds since
   sample 0, rounded in the last digits.
+- **Newest data.** `latest(c, n=1, metadata_filter)` returns, for every matching recording, its last `n`
+  samples (up to 32,768) with their statistics, or with `n = 0` the statistics of its newest stored chunk, and
+  the end time (SQL 0.3.6). It costs a fixed number of index lookups per recording, however long the recording
+  is. Newest samples that are not readable (compacted, or a gap) come back as `samples = None` with a `note`.
 - **Value grid.** `sample_quantum` optionally declares a value grid such as an ADC step; it changes only how
   compactly samples are stored. Servers with automatic grid detection find it themselves.
 

@@ -237,6 +237,25 @@ class Contract(unittest.TestCase):
             else:
                 os.environ["MORLETDB_TRANSFER"] = old
 
+    def test_latest_when_supported(self):
+        x = events(20000, [100, 9000], 8000)
+        self.db.ingest(self.coll, "lt", x, sample_rate_hz=8000, channel="c", unit="u",
+                       metadata={"latest_test": 1}, start_time=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        try:
+            rows = self.db.latest(self.coll, 5, {"latest_test": 1})
+        except morletdb.UnsupportedError:
+            self.skipTest("server without morlet_latest")
+        self.assertEqual(len(rows), 1)
+        r = rows[0]
+        self.assertEqual((r.start_sample, r.end_sample), (19995, 20000))
+        self.assertTrue(np.array_equal(r.samples, self.db.read(self.coll, "lt", 19995, 20000).samples))
+        self.assertEqual(r.stats, self.db.stats(self.coll, "lt", 19995, 20000))
+        self.assertEqual(r.end_time, datetime(2026, 1, 1, 0, 0, 2, 500000, tzinfo=timezone.utc))
+        chunk = self.db.latest(self.coll, 0, {"latest_test": 1})[0]
+        self.assertIsNone(chunk.samples)
+        self.assertEqual(chunk.end_sample, 20000)
+        self.assertEqual(chunk.stats, self.db.stats(self.coll, "lt", chunk.start_sample, 20000))
+
     def test_overview_and_summaries_when_supported(self):
         x = events(20000, [100, 9000], 8000)
         self.db.ingest(self.coll, "ov", x, sample_rate_hz=8000, channel="c", unit="u")

@@ -3308,6 +3308,62 @@ END $$"#).unwrap();
             "A:14592..20480 searchable, A:20480..24576 gone, A:24576..30464 searchable"
         );
     }
+    /// morlet_latest (#206): the newest samples and statistics of every recording equal what morlet_read_interval
+    /// and morlet_interval_stats return at the recording's end; unreadable newest samples are a note, not an error.
+    #[pg_test]
+    fn latest_matches_reads_at_each_recordings_end() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','lat'); SELECT morlet_enable_chunk_summaries('lat');
+             SELECT morlet_start_recording('lat','A',4096,'x','g','{\"site\":\"s1\",\"start\":\"2026-01-01T00:00:00Z\"}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('lat','A',0,morlet_float8_le_bytes(ARRAY(SELECT round(100*sin(i/9.))::float8 FROM generate_series(0,9999) i)),1000);
+             SELECT morlet_start_recording('lat','B',250,'x','g','{\"site\":\"s2\"}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('lat','B',0,morlet_float8_le_bytes(ARRAY(SELECT (i%17)::float8 FROM generate_series(0,2999) i)),1000);
+             SELECT morlet_start_recording('lat','C',250,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_start_recording('lat','D',250,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('lat','D',0,morlet_float8_le_bytes(ARRAY(SELECT (i%5)::float8 FROM generate_series(0,3999) i)),1000);",
+        )
+        .unwrap();
+        let yes = |sql: &str| Spi::get_one::<bool>(sql).unwrap().unwrap();
+        let text = |sql: &str| Spi::get_one::<String>(sql).unwrap().unwrap_or_default();
+        // Last n samples equal the read at the end; statistics equal morlet_interval_stats; C has no samples, no row.
+        assert_eq!(
+            text("SELECT string_agg(recording_id||':'||start_sample||'..'||end_sample,',' ORDER BY recording_id) FROM morlet_latest('lat',5)"),
+            "A:9995..10000,B:2995..3000,D:3995..4000"
+        );
+        assert!(yes("SELECT l.samples=(SELECT samples FROM morlet_read_interval('lat','A',9995,10000)) FROM morlet_latest('lat',5) l WHERE recording_id='A'"));
+        assert!(yes("SELECT row(l.sample_count,l.min,l.max,l.mean,l.rms)::text=(SELECT row(s.*)::text FROM morlet_interval_stats('lat','A',9995,10000) s) FROM morlet_latest('lat',5) l WHERE recording_id='A'"));
+        // More than the recording holds: all of it.
+        assert!(yes("SELECT start_sample=0 AND cardinality(samples)=3000 AND samples=(SELECT samples FROM morlet_read_interval('lat','B',0,3000)) FROM morlet_latest('lat',32768,'{\"site\":\"s2\"}')"));
+        // n = 0: statistics of the newest chunk, no samples.
+        assert!(yes("SELECT l.start_sample=9000 AND l.samples IS NULL AND row(l.sample_count,l.min,l.max,l.mean,l.rms)::text=(SELECT row(s.*)::text FROM morlet_interval_stats('lat','A',9000,10000) s) FROM morlet_latest('lat',0) l WHERE recording_id='A'"));
+        // End time from the start time; NULL without one.
+        assert!(yes("SELECT end_time='2026-01-01T00:00:00Z'::timestamptz+interval '2.441406 s' FROM morlet_latest('lat',1) WHERE recording_id='A'"));
+        assert!(yes(
+            "SELECT end_time IS NULL FROM morlet_latest('lat',1) WHERE recording_id='B'"
+        ));
+        // Newest samples compacted to level 3: a note, NULL values, other recordings unaffected.
+        Spi::run("SELECT morlet_enable_memory('lat'); SELECT morlet_add_episodes('lat','[{\"recording_id\":\"D\",\"start_sample\":2000,\"end_sample\":4000}]')").unwrap();
+        let run = Spi::get_one::<i64>("SELECT morlet_start_memory_run('lat','test','1')")
+            .unwrap()
+            .unwrap();
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('lat',{run},'[{{\"episode_id\":1,\"level\":3}}]')"
+        ))
+        .unwrap();
+        assert!(yes("SELECT samples IS NULL AND sample_count IS NULL AND note LIKE '%compacted to level 3%' FROM morlet_latest('lat',5) WHERE recording_id='D'"));
+        assert!(yes("SELECT samples IS NULL AND note LIKE 'the newest samples are not stored%' FROM morlet_latest('lat',0) WHERE recording_id='D'"));
+        assert!(yes("SELECT count(*)=2 FROM morlet_latest('lat',5) WHERE note IS NULL AND samples IS NOT NULL"));
+    }
+    #[pg_test(error = "3 recordings match, more than max_recordings (2)")]
+    fn latest_refuses_more_recordings_than_its_budget() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','lat_b');
+             SELECT morlet_start_recording('lat_b',r,250,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B','C']) r;
+             SELECT morlet_append_chunks_raw('lat_b',r,0,morlet_float8_le_bytes(ARRAY[1,2,3]::float8[]),1000) FROM unnest(ARRAY['A','B','C']) r;
+             SELECT * FROM morlet_latest('lat_b',1,'{}',2)",
+        )
+        .unwrap();
+    }
     /// A window that spans two adjacent episodes leaves search only when both are out of search.
     #[pg_test]
     fn memory_windows_spanning_adjacent_episodes() {
