@@ -114,7 +114,7 @@ case "$OLD_VERSION" in
   0.3.1) BLOCKER="public.morlet_search_similar(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer)" ;;
   0.3.2) BLOCKER="public.morlet_decode_interval_raw(bytea[], bigint[], bigint, bigint)" ;;
   0.3.4) BLOCKER="public.morlet_verify(regclass, text, integer)" ;;
-  0.3.5) BLOCKER="" ;;   # 0.3.5 -> 0.3.6 only replaces function bodies: nothing new to block
+  0.3.5) BLOCKER="public.morlet_coverage(regclass, text[], integer)" ;;
   0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
 esac
