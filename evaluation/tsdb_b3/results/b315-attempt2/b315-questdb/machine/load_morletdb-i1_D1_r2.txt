@@ -1,0 +1,22 @@
+2026-11-06T15:22:52
+15:22  up 10 days, 18 mins, 17 users, load averages: 27.97 15.26 8.94
+ %CPU COMM
+216.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 99.5 /usr/libexec/coreduetd
+ 98.9 /System/Applications/Siri AI.app/Contents/MacOS/Siri AI
+ 87.4 /System/Library/ExtensionKit/Extensions/MouseIntentsExtension.appex/Contents/MacOS/MouseIntentsExtension
+ 78.2 /System/Library/PrivateFrameworks/PowerlogCore.framework/Versions/A/XPCServices/PerfPowerServicesSignpostReader.xpc/Contents/MacOS/PerfPowerServicesSignpostReader
+ 76.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 69.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 53.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+2026-11-06T15:23:15
+15:23  up 10 days, 19 mins, 17 users, load averages: 21.51 14.77 8.95
+ %CPU COMM
+198.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 72.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 67.9 /usr/libexec/PerfPowerServices
+ 64.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 39.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 30.3 /usr/libexec/secinitd
+ 29.3 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 28.9 /System/Library/CoreServices/iconservicesagent

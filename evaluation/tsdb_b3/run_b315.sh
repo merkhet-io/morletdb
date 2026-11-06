@@ -14,12 +14,18 @@ export B3_READS_FRESH_PROCESS=1 MORLETDB_NATIVE_LIB
 quiet() { awk -v l="$(sysctl -n vm.loadavg | awk '{print $2}')" 'BEGIN{exit !(l<3)}' &&
   [ -z "$(ps -Ao pcpu,comm -r | awk 'NR>1 && $1>50 && $0 !~ /Virtualization|com\.docker/')" ]; }
 for _ in $(seq 1 $(( ${B315_WAIT_MIN:-60} * 4 ))); do quiet && break; sleep 15; done
+# Machine condition (attempt 2 slept on a closed lid on battery): AC power and lid open, checked at the start and
+# before every load; a violation stops the whole session.
+powered() { pmset -g batt | head -1 | grep -q "AC Power" &&
+  ioreg -r -k AppleClamshellState -d 1 | grep -q '"AppleClamshellState" = No'; }
+powered || { echo "REFUSED: not on AC power with the lid open"; exit 1; }
 quiet || { echo "REFUSED: machine not quiet ($(uptime))"; ps -Ao pcpu,comm -r | head -6 || true; exit 1; }
 mkdir -p results/b315-questdb; { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -9 || true; } > results/b315-questdb/b315.start
 snap() { mkdir -p "results/$B3_RUN/machine"; { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -9 || true; } >> "results/$B3_RUN/machine/$1.txt"; }
 done_ok() { local f="results/$B3_RUN/$1.json" ; [ -f "$f" ] && grep -q '"correct": true' "$f" && { [ "$2" != D2r1 ] || grep -q '"analytics' "$f"; }; }
 step() { local name=$1 d=$2 r=$3; shift 3
   if done_ok "$name" "$d$r"; then echo "skip $B3_RUN $name"; return; fi
+  powered || { echo "STOPPED: not on AC power with the lid open before $B3_RUN $name $(date +%H:%M:%S)"; exit 1; }
   echo "== $B3_RUN $name $(date +%H:%M:%S)"; snap "$name"; "$@" || echo "FAILED $B3_RUN $name $(date +%H:%M:%S)"; snap "$name"; }
 clean() { docker rm -f b3-questdb b3-morletdb >/dev/null 2>&1 || true; }
 morlet() { # morlet <run dir> <image> <arm> <D> <r>

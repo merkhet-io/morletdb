@@ -1,0 +1,22 @@
+2026-11-06T15:06:26
+15:06  up 10 days, 2 mins, 17 users, load averages: 8.40 8.68 6.18
+ %CPU COMM
+466.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 63.1 /usr/libexec/dasd
+ 22.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 14.6 /usr/libexec/airportd
+ 13.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.7 /usr/sbin/notifyd
+ 12.1 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+ 11.4 /usr/libexec/runningboardd
+2026-11-06T15:18:55
+15:18  up 10 days, 15 mins, 17 users, load averages: 10.03 9.02 6.36
+ %CPU COMM
+409.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 27.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 16.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  9.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  7.3 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+  4.1 claude
