@@ -136,3 +136,23 @@ def read_plan(m, seed=20261102):
     plan["R4_older"] = {"length": 4096, "channels": ["vibration_1"], "pairs": pairs(4096, 20, allk[:5])}
     plan["R5"] = {"length": 4096, "channels": ["vibration_1"], "pairs": pairs(4096, 200, allk), "threads": 4}
     return plan
+
+
+def reads_maybe_fresh(script, args, in_process):
+    """B3.13: with B3_READS_FRESH_PROCESS=1 the read benchmark and interval statistics run in a new Python process
+    (`<script> reads-child <args>`, same code and settings), so the state of the process that ingested cannot
+    affect them (B3.11 investigation, B3.12). Otherwise `in_process()` runs them here, as before. Returns
+    (reads, analytics)."""
+    import os
+    import subprocess
+    import sys
+    if os.environ.get("B3_READS_FRESH_PROCESS") != "1":
+        return in_process()
+    out = subprocess.run([sys.executable, str(script), "reads-child", *args], capture_output=True, text=True,
+                         check=True, env=os.environ).stdout.strip().splitlines()[-1]
+    d = json.loads(out)
+    return d["reads"], d["analytics"]
+
+
+def print_reads_child(reads, analytics):
+    print(json.dumps({"reads": reads, "analytics": analytics}, default=str))

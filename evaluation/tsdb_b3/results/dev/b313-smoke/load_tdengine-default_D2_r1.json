@@ -1,0 +1,211 @@
+{
+ "system": "tdengine-default",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.2126894589746371,
+ "samples": 101453304,
+ "image": "tdengine/tsdb:3.4.3.3",
+ "image_id": "sha256:a35f623203ffcbafea6817812080b54cbfa3e42aba3c4878d7713d67d814e877",
+ "started": "2026-11-05T13:38:12",
+ "settings": {
+  "database": [
+   [
+    "b3",
+    "CREATE DATABASE `b3` BUFFER 256 CACHESIZE 1 CACHEMODEL 'none' CACHESHARDBITS -1 COMP 2 DURATION 10d WAL_FSYNC_PERIOD 3000 MAXROWS 4096 MINROWS 100 STT_TRIGGER 2 KEEP 3650d,3650d,3650d PAGES 256 PAGESIZE 4 PRECISION 'ns' REPLICA 1 WAL_LEVEL 1 VGROUPS 2 SINGLE_STABLE 0 TABLE_PREFIX 0 TABLE_SUFFIX 0 TSDB_PAGESIZE 4 WAL_RETENTION_PERIOD 3600 WAL_RETENTION_SIZE 0 KEEP_TIME_OFFSET 0 ENCRYPT_ALGORITHM 'none' SS_CHUNKPAGES 131072 SS_KEEPLOCAL 525600m SS_COMPACT 1 COMPACT_INTERVAL 0d COMPACT_TIME_RANGE 0d,0d COMPACT_TIME_OFFSET 0h IS_AUDIT 0 SECURE_DELETE 0 ALLOW_DROP 1 SECURITY_LEVEL 0"
+   ]
+  ],
+  "high_columns": [
+   [
+    "ts",
+    "TIMESTAMP",
+    8,
+    "",
+    "delta-i",
+    "lz4",
+    "medium"
+   ],
+   [
+    "vibration_1",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "phase_current_1",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "phase_current_2",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "acquisition",
+    "VARCHAR",
+    64,
+    "TAG",
+    "disabled",
+    "disabled",
+    "disabled"
+   ]
+  ]
+ },
+ "server_version": [
+  [
+   "3.4.3.3.community"
+  ]
+ ],
+ "ingest": {
+  "wall_s": 21.204,
+  "samples_per_s": 4784586,
+  "conversion_s": 4.56,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 168.513,
+   "p95_ms": 197.761,
+   "max_ms": 206.73
+  },
+  "ack_per_call": {
+   "n": 1243,
+   "p50_ms": 13.614,
+   "p95_ms": 19.477,
+   "max_ms": 44.639
+  },
+  "queryable_after_last_ack_s": 0.192,
+  "server": {
+   "cpu_percent_mean": 89.5,
+   "cpu_percent_p95": 119.5,
+   "memory_peak_mib": 1025.0,
+   "samples": 10
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31833312,
+    "mid": 1984252,
+    "process": 612
+   },
+   "want": {
+    "high": 31833312,
+    "mid": 1984252,
+    "process": 612
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 20.0
+  }
+ },
+ "correct": true,
+ "flush_s": 0.012,
+ "settle_files_s": 66.3,
+ "storage": {
+  "classes": {
+   "mnode": {
+    "apparent": 81989,
+    "allocated": 94208,
+    "files": 4
+   },
+   "other": {
+    "apparent": 265757,
+    "allocated": 290816,
+    "files": 11
+   },
+   "vnode_other": {
+    "apparent": 593079,
+    "allocated": 638976,
+    "files": 16
+   },
+   "vnode_tsdb": {
+    "apparent": 655919145,
+    "allocated": 655978496,
+    "files": 36
+   },
+   "wal": {
+    "apparent": 1083038223,
+    "allocated": 1083310080,
+    "files": 142
+   }
+  },
+  "volume": {
+   "apparent": 1739898193,
+   "allocated": 1740312576
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 3.558,
+   "p95_ms": 5.243,
+   "max_ms": 26.261,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 46.548,
+   "p95_ms": 50.487,
+   "max_ms": 61.07,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 35.05,
+   "p95_ms": 41.848,
+   "max_ms": 55.411,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 3.606,
+   "p95_ms": 4.599,
+   "max_ms": 7.262,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 3.708,
+   "p95_ms": 4.608,
+   "max_ms": 8.678,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 15.063,
+   "p95_ms": 33.825,
+   "max_ms": 82.158,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 259.9
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 3.763,
+  "p95_ms": 10.176,
+  "max_ms": 11.55,
+  "max_relative_difference": 9.083739567903501e-14,
+  "within_1e-12": "True",
+  "computed": "database"
+ }
+}

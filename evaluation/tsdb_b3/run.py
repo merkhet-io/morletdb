@@ -166,10 +166,11 @@ def load(system, durability, rep):
     if system.startswith("morletdb-033"):   # B3.3: the B3.2 client path on the current image
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
                            "one_statement": True})
-    if system == "morletdb-i1":   # B3.10 (I1, #233): B3.3's path + 256 chunks per transaction, one connection,
-        # automatic batched raw appends (SQL 0.3.4); encoding threads at the server default
+    if system in ("morletdb-i1", "morletdb-i1-sum"):   # B3.10 (I1, #233): B3.3's path + 256 chunks per
+        # transaction, one connection, automatic batched raw appends (SQL 0.3.4); encoding threads at the default
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
-                           "one_statement": True, "commit_chunks": 256, "reuse_connection": True, "rpc_chunks": 0})
+                           "one_statement": True, "commit_chunks": 256, "reuse_connection": True, "rpc_chunks": 0,
+                           "summaries": system == "morletdb-i1-sum"})   # B3.13: + chunk summaries
     mo.VARIANT["profile"] = os.environ.get("B3_PROFILE") == "1"   # B3.3 attribution loads: track_functions=all
     if system in ("morletdb-batched16", "morletdb-noquantum"):     # attribution, outside the frozen arms
         mo.VARIANT.update({"rpc_chunks": 16} if system.endswith("batched16") else {"quantum": False})
@@ -223,7 +224,7 @@ def load(system, durability, rep):
                      "server": st.summary()}
     if r["calls"]:
         res["ingest"]["ack_per_call"] = common.pcts(r["calls"])
-    if system in ("morletdb-033", "morletdb-i1"):   # B3.10: stored chunks must be byte-identical across arms
+    if system in ("morletdb-033", "morletdb-i1", "morletdb-i1-sum"):   # B3.10: chunks byte-identical across arms
         res["ingest"]["chunks"] = dict(zip(("count", "md5"), handle.execute(
             f"SELECT count(*), md5(string_agg(md5(encoded), '' ORDER BY recording_id, start_sample)) "
             f"FROM {mo.COLLECTION}_chunks").fetchone()))
@@ -251,8 +252,8 @@ def load(system, durability, rep):
         res["storage_native"] = q.storage(volume)
         db = q.restart(volume, durability)
         if rep == 1:
-            res["reads_native"] = reads("questdb", db, m, data)
-            res["analytics"] = analytics("questdb", db, m, data)
+            res["reads_native"], res["analytics"] = common.reads_maybe_fresh(
+                __file__, ["questdb"], lambda: (reads("questdb", db, m, data), analytics("questdb", db, m, data)))
             if os.environ.get("B3_ACQ") == "1":    # B3.3 part A
                 res["acquisition_reads"] = {"questdb": acq_reads.measure(acq_reads.reader_questdb(q.connect()), m, data)}
         codec = "LZ4_RAW" if rep == 1 else "ZSTD"
@@ -279,21 +280,20 @@ def load(system, durability, rep):
         res[f"storage_parquet_{codec}"] = q.storage(volume, exclude_partition=time.strftime("%Y-%m-%dT%H", time.gmtime(sentinel_hour // 10**9)))
         if rep == 2:
             db = q.restart(volume, durability, codec)
-            res["reads_parquet_ZSTD"] = reads("questdb", db, m, data)
-            res["analytics_parquet_ZSTD"] = analytics("questdb", db, m, data)
+            res["reads_parquet_ZSTD"], res["analytics_parquet_ZSTD"] = common.reads_maybe_fresh(
+                __file__, ["questdb"], lambda: (reads("questdb", db, m, data), analytics("questdb", db, m, data)))
         common.remove(q.NAME)
     elif system != "questdb" and measure:
         mo.settle(handle)
         res["storage"] = mo.storage(handle)
         if (rep == 1 or every_rep) and system in ("morletdb", "morletdb-b30", "morletdb-031", "morletdb-031c16",
-                                                  "morletdb-032", "morletdb-033", "morletdb-i1"):
-            if os.environ.get("B3_READS_FRESH_PROCESS") == "1":   # B3.12: reads in a new client process
-                res["reads"], res["analytics"] = reads_in_fresh_process()
+                                                  "morletdb-032", "morletdb-033", "morletdb-i1",
+                                                  "morletdb-i1-sum"):
+            res["reads"], res["analytics"] = common.reads_maybe_fresh(   # B3.12/B3.13: optionally a new process
+                __file__, ["morletdb"], lambda: (reads("morletdb", handle, m, data), analytics("morletdb", handle, m, data)))
+            if os.environ.get("B3_READS_FRESH_PROCESS") == "1":
                 import i1_reads_server
                 res["server_reads"] = i1_reads_server.server_reads(handle, m)
-            else:
-                res["reads"] = reads("morletdb", handle, m, data)
-                res["analytics"] = analytics("morletdb", handle, m, data)
             # I1 read investigation (attribution only): the same read benchmark again on the same load
             for _ in range(int(os.environ.get("B3_READ_REPEATS", "1")) - 1):
                 res.setdefault("reads_repeats", []).append(reads("morletdb", handle, m, data))
@@ -422,24 +422,15 @@ def analytics(system, _handle, m, data, reps=20):
     return {**common.pcts(lat), "max_relative_difference": worst, "within_1e-12": worst <= 1e-12}
 
 
-def reads_in_fresh_process():
-    """B3.12: B3's read benchmark and interval statistics against the running MorletDB server, from a new Python
-    process (the same read settings as the arms), so the state of the ingesting process cannot affect them."""
-    import subprocess
-    out = subprocess.run([sys.executable, __file__, "reads-child"], capture_output=True, text=True, check=True,
-                         env=os.environ).stdout.strip().splitlines()[-1]
-    d = json.loads(out)
-    return d["reads"], d["analytics"]
-
-
-def reads_child():
-    import morletdb_adapter as mo
-    mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
-                       "one_statement": True})
+def reads_child(system="morletdb"):
+    """B3.12/B3.13: the read benchmark against the running server from a new process (common.reads_maybe_fresh)."""
+    if system != "questdb":
+        import morletdb_adapter as mo
+        mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
+                           "one_statement": True})
     m = common.manifest()
     data, _ = preload(m, range(len(m["acquisitions"])))
-    print(json.dumps({"reads": reads("morletdb", None, m, data), "analytics": analytics("morletdb", None, m, data)},
-                     default=str))
+    common.print_reads_child(reads(system, None, m, data), analytics(system, None, m, data))
 
 
 if __name__ == "__main__":

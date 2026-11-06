@@ -1141,3 +1141,46 @@ With chunk summaries, MorletDB computes interval statistics **4.6× (p50) and 7.
 One dataset, one machine, one client connection; the competitors' configurations are their stages' (B3.2,
 B3.4–B3.7). Long reads are not faster than QuestDB's on 0.3.6; parallel decoding (main, after 0.3.6) addresses them
 (`../reads_r2/ATTRIBUTION.md`) and needs its own stage once released.
+
+# Amendment B3.14: long reads and interval statistics against QuestDB with parallel decode
+
+Protocol: Amendment B3.14 in [PROTOCOL.md](PROTOCOL.md), frozen in `e0b926c` before any benchmark load; run by the
+assistant overnight at the owner's request. Runner `run_b314.sh`, summary [`summarize_b314.py`](summarize_b314.py);
+results in `results/b314-questdb/` and `results/b314-released/`. Development build `morletdb:b314` (main at
+`5274e88`, SQL 0.3.5, parallel decode; `sha256:7dff89832ff3…`) and the released `0.3.6-alpha.1`, QuestDB 10.1.0.
+
+**Machine.** The start condition was met at 23:48:57 (1-minute load average 2.71, no foreign process above half a
+core; `results/b314-questdb/b314.start`); the run took 23:48–00:00 on 2026-11-06. Load averages before loads
+(median 7.2, max 9.7) came from the session itself: Docker's VM and backend are the only processes above half a
+core in the snapshots, except `signpost_reporter` (macOS diagnostics) in two. The Mac was kept awake with
+`caffeinate` on AC power. One earlier start attempt waited for the condition (a browser process held 70% of a core)
+and was stopped before any load; the F2 study ran in between.
+
+**Correctness: all 24 loads passed; MorletDB's stored chunks were byte-identical in every load and on both images**
+(one digest, equal to B3.10–B3.13's).
+
+## QuestDB pair (× MorletDB build's figure; > 1 = MorletDB better)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R4 recent / older | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|---|
+| MorletDB build | **1.48 (1.45)** | **1.64 (1.63)** | 1.2 / 2.1 | no statement (1.03 / 1.17) | 1.2 / 1.3 | no statement (1.03 / 1.34; 0.89 / 1.26) | 1.64 | no statement (0.98 / 1.76) | 13× |
+| MorletDB build, chunk summaries | **1.47 (1.46)** | **1.62 (1.60)** | 1.2 / 2.2 | no statement (1.05 / 1.19) | 1.2 / 1.3 | no statement | 1.59 | **4.6 / 8.2** | 14× |
+
+## Build against the release (same session)
+
+Ingestion, R1, R3–R5 and statistics are equal within noise (ratios 0.97–1.07). **R2 (long reads): 1.17× faster at
+p50 (5.70 against 6.67 ms) and 1.05× at p95 (8.63 against 9.04 ms): no statement** under B3's rule. Parallel decode
+shortens the median long read but not its tail on this machine, where a long read of 64 chunks spends most of its
+time outside decoding (B3.12 found more than half of a measured read in the client and Docker's network path).
+
+## Statements against QuestDB (B3.14, development build)
+
+MorletDB ingests from one connection **1.5× (D2) and 1.6× (D1) faster** (all-loads bounds 1.45 and 1.63), reads
+4,096 samples 1.2× / 2.1× faster and three channels 1.2× / 1.3× faster, serves 1.6× more concurrent queries, with
+13× less server memory. With chunk summaries it computes interval statistics **4.6× (p50) and 8.2× (p95) faster**.
+**Long reads (R2) and base-arm statistics remain without a statement**: parallel decode does not close the R2 gap
+at p50; the remaining cost is in transfer and the client, which the planned compressed transfer (chunks sent still
+encoded and decoded in the client) targets. Short reads of older data (R4) lost B3.13's statement (0.89 / 1.26).
+
+**Scope.** A development build of main, one machine, one dataset. As the amendment says, the website keeps B3.13's
+figures until a release containing this code is measured.
