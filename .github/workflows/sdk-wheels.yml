@@ -24,7 +24,7 @@ jobs:
           - runner: ubuntu-24.04-arm
             arch: aarch64
             lib: libmorlet_ffi.so
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
             lib: libmorlet_ffi.dylib
     runs-on: ${{ matrix.runner }}
