@@ -805,3 +805,49 @@ code is measured against the release, not against another day. Everything common
 - **Scope:** a development build answers whether the code on main closes the gap; it is not a release. The
   website takes B3.14's figures only after a release that contains this code is measured in the same way, or
   labels them as a development build, as it did for B3.10's ingestion lane.
+
+## Amendment B3.15: the release with compressed transfer against QuestDB (FROZEN before any load of the benchmark set)
+
+Added 2026-11-06 at the owner's request, after B3.14 left long reads (R2) and base-arm interval statistics without a
+statement against QuestDB. Release 0.3.7-alpha.1 (SQL 0.3.5) adds compressed transfer
+([design](../../docs/compressed-transfer.md)): `morlet_read_interval_encoded` sends the stored chunks unchanged and
+the client decodes them with MorletDB's own decoder (`crates/morlet-ffi`, shipped in the Python SDK's platform
+wheels), and it stores chunk summaries in every new collection. B3.14's development build had parallel decode
+only; a development measurement of compressed transfer (`r2_transfer.py`, not a result) motivates this stage.
+Everything common to B3 applies.
+
+- **MorletDB, release with compressed transfer:** `ghcr.io/merkhet-io/morletdb:0.3.7-alpha.1`, arm `morletdb-i2`:
+  B3.10's I1 write path (as `morletdb-i1`) and reads as the SDK does them: reads of at least 32,768 samples
+  (`morletdb._native.ENCODED_MIN_SAMPLES`; R2 and R3) by `morlet_read_interval_encoded`, all channels of a read in
+  one statement, decoded by the SDK's native decoder with its default threads (up to 4); shorter reads (R1, R4,
+  R5) raw, as the SDK does. The decoder is `libmorlet_ffi.dylib` from the release's macOS wheel
+  (`morletdb-<version>-py3-none-macosx_11_0_arm64.whl`), checked against the release's `SHA256SUMS`; its sha256 is
+  recorded in every result. Without the library the arm fails; it never falls back to raw reads. Unlike the SDK,
+  the harness does not look up the recording before a read, as B3's other MorletDB arms do not.
+- **MorletDB, the same release with raw transfer:** arm `morletdb-i1` on `0.3.7-alpha.1` (B3.13's arm unchanged; new
+  collections now have chunk summaries), so the effect of the transfer is measured within one release.
+- **MorletDB, previous release:** arm `morletdb-i1` on `0.3.6-alpha.1`, results in a separate folder, so the effect
+  of the release is measured in the same session.
+- **QuestDB:** 10.1.0, unchanged from B3.8–B3.14.
+- **Runs:** `run_b315.sh`; for r = 1, 2, 3 and D2 then D1: `morletdb-i2`, QuestDB, `morletdb-i1` (0.3.7),
+  `morletdb-i1` (0.3.6). Reads and statistics from a fresh client process for every system, MorletDB's server-side
+  read cost, storage, reads and analytics on D2 r1 of each arm, as in B3.14. Results in `results/b315-questdb/`
+  (0.3.7 arms and QuestDB) and `results/b315-previous/`; machine snapshots before and after every load; a failed load
+  is logged and rerun. Every read is checked bit for bit against the source, as always.
+- **Machine:** the run starts only when the 1-minute load average is below 3 and no process other than the Docker VM
+  uses more than half a core; the Mac is kept awake with `caffeinate`, lid open, on AC power.
+- **Smoke check (not a result):** one development-set D2 load of `morletdb-i2` on a build of main equal in code to
+  the release, with fresh-process reads (`results/dev/b315-smoke/`), done before this freeze to check the harness.
+- **Questions and statements**, by B3's rule (≥ 10% in all loads for ingestion; at both p50 and p95 for latencies;
+  otherwise no statement), `morletdb-i2` against QuestDB:
+  1. **R2** (128,000 samples): a statement that MorletDB is faster, or not.
+  2. **Interval statistics** (now with chunk summaries by default): the same.
+  3. Every other measure reported, including any loss; R3 and R1 should keep B3.13's statements.
+  Also reported: compressed against raw transfer within 0.3.7, and 0.3.7 against 0.3.6, for every read measure,
+  ingestion, memory and storage.
+- **Website, decided now whatever the outcome:** the QuestDB tab and lane take B3.15's `morletdb-i2` figures, labelled
+  as release 0.3.7-alpha.1 with compressed transfer from the SDK (losses and "no statement" shown as measured). The
+  other databases keep B3.13's figures with 0.3.6-alpha.1, labelled as such, until they are measured against this
+  release. Storage stays as measured: chunk bytes are unchanged, plus the summaries.
+- **Scope:** one machine, one dataset, a client on the same host as the server's Docker VM (where transfer is costly);
+  the gain of compressed transfer depends on the network path and will differ elsewhere.
