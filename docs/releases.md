@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.6-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.7-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -33,6 +33,11 @@ a leading v; GHCR image tags do not.
   faster single-connection ingestion (I1): batched raw appends (`morlet_append_chunks_raw`), encoding on worker
   threads (`morlet.encode_threads`) and verified appends (`morlet.verify_appends`, on by default); the importer
   commits 256 chunks per transaction and batches automatically. Stored data is byte-identical to 0.3.5-alpha.1.
+- **0.3.7-alpha.1:** SQL version 0.3.5, with an update script from 0.3.4. Adds compressed transfer
+  (`morlet_read_interval_encoded`; the Python SDK decodes stored chunks in the client with the native decoder in its
+  platform wheels), long reads decoded on worker threads (`morlet.decode_threads`), chunk summaries in every new
+  collection, the integrity scrub `morlet_verify` and episodic memory, phase 1. The first release with Python SDK
+  wheels. The chunk format is unchanged; existing collections keep their layout.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean

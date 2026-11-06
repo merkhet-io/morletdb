@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (SQL 0.3.5)
+## 0.3.7-alpha.1
 
 SQL version 0.3.5, with an update script from 0.3.4.
 
