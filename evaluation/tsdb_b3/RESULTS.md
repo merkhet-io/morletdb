@@ -1403,3 +1403,30 @@ smaller ones (R2 2.6×, statistics 4.4× / 7.3×).
 **Website.** Under the rule fixed in the amendment, the QuestDB tab and lane take these `morletdb-i2` figures in
 place of B3.15's, with the browser load and B3.15's smaller margins stated beside them. Storage stays as B3.15
 measured it.
+# Memory measurement check (exploratory, after B3.16, not a stage)
+
+Question (from the owner): is MorletDB's server memory underestimated? B3 samples `docker stats` once per second
+and reports the highest sample. A MorletDB load takes about 7 seconds, so it gets only about 4 samples, where
+TimescaleDB gets about 50.
+
+The harness now also records, for every system:
+- **`working_set_peak_mib_50ms`**: the working set as `docker stats` and Kubernetes define it (`memory.current`
+  minus inactive file pages), sampled every 50 ms inside the container.
+- **`peak_mib`**: the kernel's exact high-water mark (`memory.peak`), which includes all page cache the container
+  held.
+- anon, file and shmem memory at the end of ingestion.
+
+All six database images provide these counters. One development-set D2 load each, on 0.3.7-alpha.1 and QuestDB
+10.1.0 (`results/dev/mem-check/`):
+
+| | 1 s `docker stats` peak (as published) | 50 ms working-set peak | kernel peak, with page cache | file pages at end |
+|---|---:|---:|---:|---:|
+| MorletDB | 178.6 MiB (4 samples) | 179.6 MiB | 535.3 MiB | 501.3 MiB |
+| QuestDB | 2,265.1 MiB (6 samples) | 2,301.3 MiB | 3,254.2 MiB | 2,633.1 MiB |
+| QuestDB ÷ MorletDB | 12.7× | 12.8× | 6.1× | |
+
+**The 1-second sampling did not miss MorletDB's peak**, so the published memory ratios stand as working-set
+ratios. Counting page cache, which the kernel reclaims under pressure, the ratio against QuestDB would be about 6×.
+MorletDB's cache is mostly the data and write-ahead log it just wrote, and shmem is PostgreSQL's 128 MB of shared
+buffers. Future stages report all three figures. The website now says that its memory figure is the working set,
+without reclaimable page cache.
