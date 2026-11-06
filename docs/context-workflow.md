@@ -86,6 +86,12 @@ read-only [viewer](../tools/viewer/README.md).
     `metadata_filter`;
   - not the same occurrence, and not overlapping an active label in
     `exclude_labels`;
+  - built with the query segment's segmentation spec (keys, occurrence keys,
+    `min_samples`, `trim_samples`), and not overlapping the query segment's own
+    samples, so that every history segment is an independent observation (SQL
+    0.3.6, #224). Segments of the same samples built with other settings are not
+    history; after changing settings, rebuild the history's segments with the new
+    ones.
   - more than `max_candidates` (default 10,000) is an error.
 - **Per value** the function returns:
   - `hist_n`, the history median and a quantile;

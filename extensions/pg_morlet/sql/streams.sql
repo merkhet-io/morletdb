@@ -1724,6 +1724,10 @@ END $$;
 -- exclusion are dropped (all comparable segments, for pooled spreads) and the context is
 -- returned with the values. cutoff_ns (absolute ns since 1970) keeps only segments that
 -- started earlier, for history "before this point"; it needs acquisitions.
+-- History counts independent observations (#224): only segments built with the query segment's segmentation spec
+-- (keys, occurrence keys, min_samples, trim_samples; segments of another spec describe other boundaries or repeat
+-- the same samples), and never a segment that overlaps the query segment's own samples on its recording (another
+-- representation of the same occurrence). $1 is always the query segment.
 CREATE FUNCTION public.morlet_history_sql(collection regclass,population boolean,cutoff_ns numeric DEFAULT NULL)
 RETURNS text LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel record; acq record; before text:='';
@@ -1740,8 +1744,10 @@ BEGIN
             +s.start_sample::numeric*1000000000/r.sample_rate_hz::numeric<%s)',acq.channels,acq.acq,cutoff_ns);
   END IF;
   RETURN format('SELECT v.vals,s.segment_id,s.recording_id,s.start_sample,s.end_sample,s.occurrence%5$s FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
-        JOIN %3$s r ON r.recording_id=s.recording_id
-      WHERE s.segment_id<>$1 AND NOT s.stale%6$s AND r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5
+        JOIN %3$s r ON r.recording_id=s.recording_id JOIN %1$s qs ON qs.segment_id=$1
+      WHERE s.segment_id<>$1 AND NOT s.stale AND s.spec=qs.spec
+        AND NOT (s.recording_id=qs.recording_id AND s.start_sample<qs.end_sample AND qs.start_sample<s.end_sample)%6$s
+        AND r.sample_rate_hz=$3 AND r.channel=$4 AND r.unit=$5
         AND r.metadata @> $6
         AND NOT EXISTS(SELECT 1 FROM %4$s l WHERE l.recording_id=s.recording_id AND NOT l.retracted AND l.label=ANY($8)
           AND l.start_sample<s.end_sample AND s.start_sample<l.end_sample)%7$s',

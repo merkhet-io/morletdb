@@ -2611,6 +2611,36 @@ END $$"#).unwrap();
         Spi::run("SELECT morlet_add_context('mill','b2','[{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N3\",\"start_sample\":15000,\"end_sample\":16000}]')").unwrap();
     }
 
+    #[pg_test]
+    fn history_counts_independent_observations_only() {
+        // #224: segments of one interval built with several specs must not count as their own history.
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','s'); SELECT morlet_enable_context('s');
+             SELECT morlet_start_recording('s','r',1000,'x','g');
+             SELECT morlet_append_chunk('s','r',0,ARRAY(SELECT sin(i/7.0) FROM generate_series(0,2047) i));
+             SELECT morlet_add_context('s','b1',jsonb_build_array(jsonb_build_object('recording_id','r','key','state',
+               'value','cut','start_sample',0,'end_sample',2048)));
+             SELECT morlet_build_context_segments('s','r',ARRAY['state'],min_samples=>k) FROM generate_series(1,6) k;
+             SELECT morlet_build_context_values('s','r');",
+        )
+        .unwrap();
+        assert_eq!(Spi::get_one::<i64>("SELECT count(*) FROM s_ctx_segments").unwrap(), Some(6));
+        let q = "SELECT hist_n||':'||status FROM morlet_compare_to_history('s',(SELECT min(segment_id) FROM s_ctx_segments)) WHERE value_name='mean'";
+        assert_eq!(Spi::get_one::<String>(q).unwrap().unwrap(), "0:insufficient_history");
+        // Genuinely independent, compatible occurrences still count: five more cuts on other samples.
+        Spi::run(
+            "SELECT morlet_append_chunk('s','r',2048,ARRAY(SELECT sin(i/7.0)*(1+i/100000.0) FROM generate_series(2048,12287) i));
+             SELECT morlet_add_context('s','b2',(SELECT jsonb_agg(jsonb_build_object('recording_id','r','key','state',
+               'value',CASE WHEN k%2=0 THEN 'cut' ELSE 'air' END,'start_sample',k*1024+1024,'end_sample',k*1024+2048))
+               FROM generate_series(1,10) k));
+             SELECT morlet_build_context_segments('s','r',ARRAY['state'],min_samples=>1);
+             SELECT morlet_build_context_values('s','r');",
+        )
+        .unwrap();
+        let q1 = "SELECT hist_n FROM morlet_compare_to_history('s',(SELECT segment_id FROM s_ctx_segments WHERE start_sample=0 AND spec->>'min_samples'='1'),min_history=>1) WHERE value_name='mean'";
+        assert_eq!(Spi::get_one::<i32>(q1).unwrap(), Some(5));
+    }
+
     #[pg_test(error = "segment 2 is stale; rebuild context segments")]
     fn compare_rejects_stale_segments() {
         context_fixture();

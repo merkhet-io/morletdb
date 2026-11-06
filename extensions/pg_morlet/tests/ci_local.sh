@@ -14,7 +14,7 @@
 #                    the concurrent context-write test (context_concurrency.sh)
 #                    the acquisition row-security test (acquisition_rls.sh) and the SQL 0.3.4 fixes (sql034_fixes.sh).
 #  upgrade           PostgreSQL 17 only: upgrades populated databases from v0.1.0-alpha.3,
-#                    v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1 and v0.3.6-alpha.1 (tags must be fetched); those releases were
+#                    v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1 and v0.3.7-alpha.1 (tags must be fetched); those releases were
 #                    built for PostgreSQL 17 only.
 #
 # #[pg_test]s run in pgrx's own throwaway cluster (target/pgrx-test-data-NN). The race and upgrade
@@ -83,6 +83,7 @@ case "$MODE" in
     "$TESTS/upgrade_from_release.sh" v0.3.1-alpha.1 0.3.1
     "$TESTS/upgrade_from_release.sh" v0.3.3-alpha.1 0.3.2
     "$TESTS/upgrade_from_release.sh" v0.3.5-alpha.1 0.3.3
-    "$TESTS/upgrade_from_release.sh" v0.3.6-alpha.1 0.3.4 ;;
+    "$TESTS/upgrade_from_release.sh" v0.3.6-alpha.1 0.3.4
+    "$TESTS/upgrade_from_release.sh" v0.3.7-alpha.1 0.3.5 ;;
 esac
 echo "== pg$MAJOR $MODE: PASS"

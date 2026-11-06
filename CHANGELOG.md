@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+SQL version 0.3.6, with an update script from 0.3.5.
+
+- **History counts independent observations (#224):** `morlet_compare_to_history`, `morlet_compare_summary`,
+  `morlet_history_neighbors`, `morlet_level_track` and the pooled spreads take history only from segments built with
+  the query segment's segmentation spec (keys, occurrence keys, `min_samples`, `trim_samples`), and never from a
+  segment that overlaps the query segment's own samples. Before, building one interval's segments with several
+  settings made the interval count as its own history, so a comparison could report `status = ok` without any
+  independent observation. History built with other settings now gives `insufficient_history` until it is rebuilt
+  with the query's settings.
+- **Tiny signals (#228):** normalization, distances, RMS and envelopes keep their shape for amplitudes down to
+  1e-300; ordinary inputs give bit-identical results.
+
 ## 0.3.7-alpha.1
 
 SQL version 0.3.5, with an update script from 0.3.4.
