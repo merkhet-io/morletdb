@@ -18,10 +18,8 @@ quiet() { awk -v l="$(sysctl -n vm.loadavg | awk '{print $2}')" 'BEGIN{exit !(l<
 # a violation stops the whole session.
 powered() { local b c; b=$(pmset -g batt 2>/dev/null || true); c=$(ioreg -r -k AppleClamshellState -d 1 2>/dev/null || true)
   [[ $b == *"AC Power"* ]] && [[ $c == *'"AppleClamshellState" = No'* || $c == *'"AppleClamshellCausesSleep" = No'* ]]; }
-for _ in $(seq 1 $(( ${B315_WAIT_MIN:-60} * 4 ))); do docker info >/dev/null 2>&1 && powered && quiet && break; sleep 15; done
-docker info >/dev/null 2>&1 || { echo "REFUSED: Docker is not running"; exit 1; }
-powered || { echo "REFUSED: not on AC power with the lid open"; exit 1; }
-quiet || { echo "REFUSED: machine not quiet ($(uptime))"; ps -Ao pcpu,comm -r | head -6 || true; exit 1; }
+ready=0; for _ in $(seq 1 $(( ${B315_WAIT_MIN:-60} * 4 ))); do docker info >/dev/null 2>&1 && powered && quiet && { ready=1; break; }; sleep 15; done
+[ "$ready" = 1 ] || { echo "REFUSED: no quiet, powered machine with Docker in time ($(uptime))"; ps -Ao pcpu,comm -r | head -6 || true; exit 1; }
 mkdir -p results/b315-questdb; { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -9 || true; } > results/b315-questdb/b315.start
 snap() { mkdir -p "results/$B3_RUN/machine"; { date +%FT%T; uptime; ps -Ao pcpu,comm -r | head -9 || true; } >> "results/$B3_RUN/machine/$1.txt"; }
 done_ok() { local f="results/$B3_RUN/$1.json" ; [ -f "$f" ] && grep -q '"correct": true' "$f" && { [ "$2" != D2r1 ] || grep -q '"analytics' "$f"; }; }
