@@ -62,6 +62,11 @@ and 18 on amd64 and arm64 (`deploy/Dockerfile.deb`, against the PostgreSQL
 project's packages on Debian bookworm), installs each one with apt into a clean
 official `postgres` image and runs the same quickstart and restart; the release
 attaches the four packages with `SHA256SUMS` and a build provenance attestation.
+It also builds the Python SDK wheels (`.github/workflows/sdk-wheels.yml`): one per
+platform with the native decoder for compressed transfer (Linux x86-64 and arm64,
+tagged with the glibc version the library needs; macOS 11+ on arm64), each installed
+into a clean environment and tested from the installed package, and a pure wheel for
+other platforms; they are attached, checksummed and attested with the packages.
 PRs run the candidate trial without publishing. The standalone release Compose
 file contains no build directive, so the quickstart cannot compile a local image.
 
@@ -90,6 +95,17 @@ the served names.) The packages are trialled
 only on Debian bookworm images; other distributions are not tested. pgvector
 (for probe search) is a separate package, for example `postgresql-17-pgvector`.
 An existing database is upgraded with `ALTER EXTENSION pg_morlet UPDATE`.
+
+## Install the Python SDK
+
+From the first release with SDK wheels, pick the wheel for your platform, or the
+`py3-none-any` wheel elsewhere (same results, raw transfer for long reads):
+
+```sh
+sha256sum -c SHA256SUMS --ignore-missing
+gh attestation verify morletdb-<version>-py3-none-manylinux_2_34_x86_64.whl --owner merkhet-io
+pip install ./morletdb-<version>-py3-none-manylinux_2_34_x86_64.whl
+```
 
 ## Try a published release
 

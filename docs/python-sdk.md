@@ -17,8 +17,10 @@ the stored samples. It wraps pg_morlet's SQL functions and adds no database feat
   stored chunks still encoded and decode them in the client with MorletDB's own Rust decoder, a small shared
   library (`crates/morlet-ffi`) loaded with `ctypes`: about a sixth of the bytes on the network, and the server
   does not decode. Every chunk's checksum is verified in the client, and the result is bit for bit the same as a
-  raw read. Without the library (`MORLETDB_NATIVE_LIB=/path/to/libmorlet_ffi.*`, or a platform wheel once
-  published) or on older servers the SDK reads raw samples as before. `MORLETDB_TRANSFER=auto|encoded|raw`
+  raw read. Without the library or on older servers the SDK reads raw samples as before. Releases attach wheels
+  with the library for Linux x86-64 and arm64 (glibc 2.34 or later) and macOS 11+ on arm64, and a pure wheel for
+  everything else (`sdk/python/build_wheel.py`, workflow `sdk-wheels.yml`); from a checkout, build
+  `crates/morlet-ffi` and set `MORLETDB_NATIVE_LIB=/path/to/libmorlet_ffi.*`. `MORLETDB_TRANSFER=auto|encoded|raw`
   forces a path for tests and benchmarks. Corrupt stored data is raised as `DatabaseError`, never retried.
 
 ## First run
