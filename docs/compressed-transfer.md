@@ -3,7 +3,9 @@
 Status: released in 0.3.7-alpha.1 (SQL 0.3.5) and measured in B3.15: long reads (R2) 2.6× faster than QuestDB at
 p50 and p95, and 2.4× faster than the same release with raw transfer
 ([results](../evaluation/tsdb_b3/RESULTS.md#amendment-b315-the-released-037-alpha1-with-compressed-transfer-against-questdb)).
-Short reads are below the threshold and stay raw, but were 1.1–1.4× slower in that arm; the cause is not yet established.
+Short reads are below the threshold and stay raw, but were 1.1–1.4× slower in that arm: an investigation after the
+stage traced this to the benchmark harness looking up the decoder on every read (about 80 µs); the SDK decides in
+about 0.5 µs.
 Date: 2026-11-06.
 
 ## Why
