@@ -1,0 +1,54 @@
+{
+ "system": "morletdb-i2",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.19428483303636312,
+ "samples": 101586735,
+ "started": "2026-11-06T17:27:20",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.7-alpha.1",
+ "image_id": "sha256:71b3086beadd7f5dbd14ff29c80e0ffa291ec5a22fcf161383fffaa4c889ff77",
+ "native_lib": {
+  "path": "/private/tmp/claude-502/-Users-zin-sophia-morletdb/b9124922-fe68-4e87-a54d-94a8303730c0/scratchpad/rel037/lib/libmorlet_ffi.dylib",
+  "sha256": "3857d48f7b8d5a76c8902ca3712cd4d9507b6ce5b2acc9e2cf44d9217e4cda29"
+ },
+ "ingest": {
+  "wall_s": 7.667,
+  "samples_per_s": 13250321,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 60.623,
+   "p95_ms": 71.679,
+   "max_ms": 93.241
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.603,
+  "server": {
+   "cpu_percent_mean": 101.6,
+   "cpu_percent_p95": 127.3,
+   "memory_peak_mib": 176.3,
+   "samples": 5
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 2.3
+  }
+ },
+ "correct": true
+}

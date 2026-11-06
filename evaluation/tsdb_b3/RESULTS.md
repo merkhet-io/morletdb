@@ -1324,3 +1324,82 @@ most where transfer is costly, and its gain will differ on other network paths.
 **Website.** Under the rule fixed in the amendment, the QuestDB tab and lane take the `morletdb-i2` figures above,
 labelled release 0.3.7-alpha.1 with compressed transfer, including the R4 loss and R1's missing statement. The
 other databases keep B3.13's figures, labelled 0.3.6-alpha.1.
+
+# Amendment B3.16: B3.15 with the corrected harness
+
+Protocol: Amendment B3.16 in [PROTOCOL.md](PROTOCOL.md), frozen in `f94bf29` before any load of the benchmark set.
+Runner `run_b316.sh`, summary [`summarize_b316.py`](summarize_b316.py), results in `results/b316-questdb/`. Images:
+the released `0.3.7-alpha.1`, the same image as B3.15, and QuestDB 10.1.0. Decoder sha256 `3857d48f7b8d…`, recorded
+in every `morletdb-i2` result.
+
+**Machine.** The start condition was met at 17:19:04, at a 1-minute load average of 2.89
+(`results/b316-questdb/b316.start`). The run took 17:19–17:28 on 2026-11-06, on AC power with the lid closed and
+an external display. The power log shows no sleep and no battery power, and Docker was never restarted.
+
+**Load during the run: a browser GPU process (`com.apple.WebKit.GPU`) used about one core** in almost every machine
+snapshot after the start (median 108% of a core, one snapshot at 198% for WebKit content). Load averages before
+loads had a median of 8.65 and a max of 12.20, against 5.87 in B3.15. The frozen conditions govern the start, and
+the systems alternate within the session, so the run is admissible.
+
+Host load slows client-heavy paths unevenly, though (B3.4–B3.7, B3.9), and QuestDB measured slower here than in
+B3.15: R2 at 8.28 against 6.68 ms, interval statistics at 2.88 against 2.45 ms. **B3.16's margins are therefore
+probably somewhat larger than on a quiet machine**, and B3.15's figures, which carry a harness cost of their own,
+bracket them from below.
+
+**Correctness: all 18 loads passed.** Every read matched the source bit for bit. MorletDB's stored chunks were
+byte-identical in all 12 MorletDB loads (`bd6cd3a4…`), and every `morletdb-i2` load read R2 and R3 by compressed
+transfer.
+
+## QuestDB pair (× MorletDB's figure; > 1 = MorletDB better; ingestion: ratio of medians, all-loads bound)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R4 recent / older | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.3.7, compressed transfer (`morletdb-i2`) | **1.55 (1.43)** | **1.65 (1.58)** | **1.4 / 1.6** | **3.1 / 2.8** | **3.0 / 2.5** | no statement (0.99 / 1.12); **1.5 / 1.9** | 2.01 | **5.4 / 9.8** | 13× |
+| 0.3.7, raw transfer (`morletdb-i1`) | **1.53 (1.51)** | **1.67 (1.57)** | **1.3 / 1.6** | **1.2 / 1.4** | **1.2 / 1.1** | no statement (1.06 / 1.40); **1.4 / 1.9** | 1.68 | **5.3 / 8.9** | 13× |
+
+Medians (p50 / p95 ms), `morletdb-i2` against QuestDB:
+- R1: 0.63 / 1.03 against 0.86 / 1.66.
+- R2: 2.65 / 3.83 against 8.28 / 10.80.
+- R3: 3.51 / 4.95 against 10.53 / 12.37.
+- R4 recent: 0.69 / 1.31 against 0.69 / 1.47.
+- R4 older: 0.61 / 0.93 against 0.90 / 1.79.
+- Interval statistics: 0.53 / 0.59 against 2.88 / 5.84.
+- R5: 3,974 against 1,978 queries/s, with p95 latency 1.7 against 5.3 ms.
+
+Server memory: 177 MiB against 2,289 MiB.
+
+## The frozen questions
+
+1. **R1 (4,096 samples): MorletDB is 1.4× faster at p50 and 1.6× at p95.** This is a statement again, and larger
+   than the expected 1.2×, partly because QuestDB was slower in this session.
+2. **R4:** on older data **MorletDB is 1.5× / 1.9× faster**, where B3.15 measured a loss. On recent data there is
+   **no statement** (0.99 / 1.12).
+3. **Everything else:** R2 3.1× / 2.8×, R3 3.0× / 2.5×, interval statistics 5.4× / 9.8×, ingestion 1.55× / 1.65×,
+   and 2.0× the concurrent throughput, with 13× less memory. No losses.
+
+**Compressed against raw transfer:**
+- With the corrected harness, short reads are equal (R1 1.01 / 0.98, R4 older 1.01 / 0.99, R4 recent 0.93 / 0.80;
+  no statements). That confirms the investigation.
+- R2 is 2.5× / 2.1× faster and R3 2.6× / 2.2× faster.
+
+Raw transfer also gets an R2 statement against QuestDB in this session (1.2× / 1.4×), which B3.15 did not have.
+That again points to QuestDB being slower under this session's load.
+
+## Statements against QuestDB (B3.16, released 0.3.7-alpha.1)
+
+MorletDB, used as its SDK uses it:
+- Ingests from one connection **1.55× (D2) and 1.65× (D1) faster**.
+- Reads 4,096 samples **1.4× / 1.6× faster**, 4,096 samples of older data **1.5× / 1.9× faster**, 128,000 samples
+  **3.1× / 2.8× faster**, and three channels **3.0× / 2.5× faster**.
+- Computes interval statistics **5.4× / 9.8× faster**.
+- Serves **2.0×** the concurrent queries, with 13× less server memory.
+
+Short reads of recent data have no statement, and there are no losses.
+
+**Scope.** One machine, one dataset, a client on the same host as the database's container, with a browser process
+using about one core during the session. Margins are probably larger than on a quiet machine, and B3.15 measured
+smaller ones (R2 2.6×, statistics 4.4× / 7.3×).
+
+**Website.** Under the rule fixed in the amendment, the QuestDB tab and lane take these `morletdb-i2` figures in
+place of B3.15's, with the browser load and B3.15's smaller margins stated beside them. Storage stays as B3.15
+measured it.

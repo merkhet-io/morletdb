@@ -1,0 +1,22 @@
+2026-11-06T17:22:53
+17:22  up 10 days,  2:19, 17 users, load averages: 8.02 5.41 3.14
+ %CPU COMM
+201.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+107.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 53.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 36.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 27.9 /sbin/launchd
+ 14.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 14.0 claude
+  6.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+2026-11-06T17:23:12
+17:23  up 10 days,  2:19, 17 users, load averages: 8.95 5.76 3.32
+ %CPU COMM
+196.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+106.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 86.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 60.1 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+ 28.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 24.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 17.0 /System/Library/CoreServices/talagentd
+  6.9 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
