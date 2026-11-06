@@ -15,6 +15,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
 | `coverage` | an overview per station, sensor or asset: recordings, samples, first and last time, the recording schedule (continuous or snapshots) and the largest gaps; with SQL 0.3.6 also how much of it search can find (`search_states_s`) |
 | `list_recordings` | recordings with length and UTC start and end where known; rate, channel and unit once when shared; metadata on request; filter by metadata |
+| `latest` | the current value of every sensor: each recording's last value, or its last values with statistics, or the newest chunk's statistics, with the end time and how long ago that was (SQL 0.3.6) |
 | `trend` | how level, impulsiveness and band power change over days or weeks, one point per snapshot or per time step, with candidate change points against an early baseline |
 | `locate_time` | the recordings containing a UTC time, and the sample offset of that time |
 | `describe_interval` | level, impulsiveness (crest factor, kurtosis) and spectrum (dominant frequency, centroid, energy share and power per band) of an interval; your own bands in Hz, and a minimum frequency so slow background motion does not dominate |

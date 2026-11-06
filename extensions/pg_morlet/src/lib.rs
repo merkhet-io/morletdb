@@ -3307,6 +3307,7 @@ END $$"#).unwrap();
             ),
             "A:14592..20480 searchable, A:20480..24576 gone, A:24576..30464 searchable"
         );
+    }
     /// morlet_latest (#206): the newest samples and statistics of every recording equal what morlet_read_interval
     /// and morlet_interval_stats return at the recording's end; unreadable newest samples are a note, not an error.
     #[pg_test]
