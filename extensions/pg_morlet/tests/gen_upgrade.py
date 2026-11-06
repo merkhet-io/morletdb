@@ -32,7 +32,7 @@ def rust(name):
 
 NEW_RUST = []
 NEW_SQL = ["morlet_coverage"]
-CHANGED = ["morlet_history_sql"]
+CHANGED = ["morlet_history_sql", "morlet_envelope_ranked"]
 # Signature changed: the 0.3.5 function (these argument types) is dropped and created again.
 RECREATED = {}
 

@@ -16,6 +16,10 @@ SQL version 0.3.6, with an update script from 0.3.5.
   summarized, gone or missing. The MCP server adds a `scope` to every search result (recordings and windows
   searched, the periods not searched and why, event-library entries in range), `coverage` reports the same per
   group, and the server instructions tell agents to state the scope with every negative result.
+- **Search refuses over-budget queries in seconds (#279):** screened exact search counts the eligible windows,
+  refuses above `max_candidates` and only then scores the kept windows, and the screen stays linear when many
+  windows tie (constant windows all have distance 1). On 2 million all-zero windows the refusal took 2 min 48 s
+  and now takes 2.7 s; results and latency on E7's development gallery are unchanged.
 - **Tiny signals (#228):** normalization, distances, RMS and envelopes keep their shape for amplitudes down to
   1e-300; ordinary inputs give bit-identical results.
 
