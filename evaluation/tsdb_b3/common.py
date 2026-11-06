@@ -73,8 +73,47 @@ def volume_files(volume, image):
     return rows
 
 
+_WS_LOOP = ("m=0; while [ ! -e /tmp/b3-ws-stop ]; do c=$(cat /sys/fs/cgroup/memory.current); "
+            "i=$(sed -n 's/^inactive_file //p' /sys/fs/cgroup/memory.stat); w=$((c-i)); "
+            "if [ $w -gt $m ]; then m=$w; echo $m > /tmp/b3-ws-peak; fi; sleep 0.05; done")
+
+
+def working_set_start(name):
+    """Start a sampler inside the container: the working set as `docker stats` and Kubernetes define it
+    (memory.current minus inactive file pages), read every 50 ms, keeping its maximum in /tmp/b3-ws-peak."""
+    subprocess.run(["docker", "exec", "-d", name, "sh", "-c", _WS_LOOP], capture_output=True)
+
+
+def working_set_peak(name):
+    out = subprocess.run(["docker", "exec", name, "sh", "-c", "touch /tmp/b3-ws-stop; sleep 0.1; cat /tmp/b3-ws-peak"],
+                         capture_output=True, text=True)
+    try:
+        return round(int(out.stdout.split()[0]) / 2**20, 1)
+    except (IndexError, ValueError):
+        return None
+
+
+def kernel_memory(name):
+    """The container's memory as the kernel counts it (cgroup v2), read once: `memory.peak`, the exact high-water
+    mark since the container started (every load starts its own container, so this covers start and ingestion,
+    with nothing missed between samples), and `memory.stat`'s anon, file and shmem at that moment. Unlike
+    `docker stats`, which subtracts inactive file pages, the peak includes all page cache the container held. None
+    entries when the image lacks a shell or the kernel lacks memory.peak."""
+    out = subprocess.run(["docker", "exec", name, "sh", "-c",
+                          "cat /sys/fs/cgroup/memory.peak; grep -E '^(anon|file|shmem) ' /sys/fs/cgroup/memory.stat"],
+                         capture_output=True, text=True)
+    lines = out.stdout.split()
+    if out.returncode or not lines:
+        return {"peak_mib": None, "error": (out.stderr or "no output").strip()[:200]}
+    res = {"peak_mib": round(int(lines[0]) / 2**20, 1)}
+    for k, v in zip(lines[1::2], lines[2::2]):
+        res[f"{k}_mib_at_end"] = round(int(v) / 2**20, 1)
+    return res
+
+
 class Stats:
-    """`docker stats` every second while running: CPU percent and memory of one container."""
+    """`docker stats` every second while running: CPU percent and memory of one container; on exit, the kernel's
+    exact peak (kernel_memory)."""
 
     def __init__(self, name):
         self.name, self.samples, self._stop = name, [], threading.Event()
@@ -93,12 +132,15 @@ class Stats:
             self._stop.wait(1.0)
 
     def __enter__(self):
+        working_set_start(self.name)
         self.t.start()
         return self
 
     def __exit__(self, *exc):
         self._stop.set()
         self.t.join(timeout=5)
+        self.kernel = kernel_memory(self.name)
+        self.kernel["working_set_peak_mib_50ms"] = working_set_peak(self.name)
 
     def summary(self):
         if not self.samples:
@@ -106,7 +148,8 @@ class Stats:
         cpu = [c for _, c, _ in self.samples]
         mem = [m for _, _, m in self.samples]
         return {"cpu_percent_mean": round(float(np.mean(cpu)), 1), "cpu_percent_p95": round(float(np.percentile(cpu, 95)), 1),
-                "memory_peak_mib": round(max(mem), 1), "samples": len(self.samples)}
+                "memory_peak_mib": round(max(mem), 1), "samples": len(self.samples),
+                "kernel_memory": getattr(self, "kernel", None)}
 
 
 def pcts(xs):
