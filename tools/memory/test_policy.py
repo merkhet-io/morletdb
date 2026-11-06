@@ -73,7 +73,7 @@ class PolicyTests(unittest.TestCase):
     def test_filters_veto(self):
         e = gallery()[2]
         self.assertEqual(ExemptFilter().veto(e, 3), "exempt")
-        self.assertIsNone(ExemptFilter().veto(e, 1))
+        self.assertEqual(ExemptFilter().veto(e, 1), "exempt")      # the library stays searchable
         self.assertEqual(MinAgeFilter(1000).veto(gallery()[9], 1), "too young")
         self.assertEqual(ProtectContextFilter({"program": "P9"}).veto(gallery()[8], 3), "protected context")
         self.assertIsNone(ProtectContextFilter({"program": "P9"}).veto(gallery()[8], 1))
@@ -82,9 +82,9 @@ class PolicyTests(unittest.TestCase):
         store = MemoryStore(gallery())
         picker = LadderPicker(recency(), [ExemptFilter()])
         moves = picker.pick(store, ManualSelector(4000).select(store))
-        # value = −age: the oldest episodes have the lowest value and move first; the exempt episode 3 may go to
-        # level 1 (it stays searchable-or-full only above that); each 0→1 move frees 1,600 bytes here.
-        self.assertEqual([m.episode_id for m in moves], [1, 2, 3])
+        # value = −age: the oldest episodes have the lowest value and move first; the exempt episode 3 stays;
+        # each 0→1 move frees 1,600 bytes here.
+        self.assertEqual([m.episode_id for m in moves], [1, 2, 4])
 
     def test_novelty_moves_redundant_episodes_first(self):
         store = MemoryStore(gallery())
@@ -110,7 +110,7 @@ class PolicyTests(unittest.TestCase):
         picker = LadderPicker(recency(), [ExemptFilter()])
         for _ in range(4):
             run_task(store, ManualSelector(10 ** 9), picker, dry_run=False)
-        self.assertLessEqual(store.eps[3].level, 1)
+        self.assertEqual(store.eps[3].level, 0)
         self.assertEqual({e.level for i, e in store.eps.items() if i != 3}, {4})
 
     def test_budget_selector_and_dry_run(self):
@@ -124,6 +124,19 @@ class PolicyTests(unittest.TestCase):
         res = run_task(store, sel, LadderPicker(recency(), [ExemptFilter()]), dry_run=False)
         self.assertLessEqual(store.bytes_at(), before - 5000)
         self.assertIsNone(run_task(store, BudgetSelector(10 ** 12), LadderPicker(recency()), dry_run=False))
+
+    def test_depth_picker_keeps_the_most_valuable_fully_searchable(self):
+        from policy import DepthPicker
+        store = MemoryStore(gallery())
+        res = run_task(store, ManualSelector(int(store.bytes_at() * 0.5)), DepthPicker(recency(), [ExemptFilter()]),
+                       dry_run=False)
+        levels = {i: e.level for i, e in store.eps.items()}
+        self.assertTrue(all(m.level == 3 for m in res.moves))            # straight to summaries
+        self.assertTrue(all(levels[i] == 0 for i in (8, 9, 10)))          # the youngest stay searchable
+        self.assertEqual(levels[3], 0)                                     # exempt
+        for _ in range(5):                                                 # then on to level 4
+            run_task(store, ManualSelector(10 ** 9), DepthPicker(recency(), [ExemptFilter()]), dry_run=False)
+        self.assertEqual({e.level for i, e in store.eps.items() if i != 3}, {4})
 
     def test_kmedoids_keeps_real_members_and_outliers(self):
         ids = list(range(1, 11))

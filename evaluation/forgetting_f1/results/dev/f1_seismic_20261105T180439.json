@@ -1,0 +1,2591 @@
+{
+ "dataset": "seismic held-out (E5-H)",
+ "image": "morletdb:mem",
+ "episodes": 282,
+ "known": 0,
+ "queries": {
+  "rare": 0,
+  "typical": 20
+ },
+ "episode_samples": 61440,
+ "window": 4096,
+ "stride": 2048,
+ "started": "2026-11-05T18:03:36",
+ "runs": [
+  {
+   "policy": "recency",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8813821,
+   "fraction_kept": 0.4994,
+   "policy_runs": 1,
+   "policy_s": 1.6,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.0952,
+   "recall10_rare": null,
+   "recall10_typical": 0.44,
+   "levels": {
+    "3": 142,
+    "0": 140
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.08468,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.166355,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.101437,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.137102,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.058111,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.013946,
+     "recall10": 0.8
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.239863,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.303142,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.259997,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.003903,
+     "recall10": 0.8
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.195227,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.221232,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.089011,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.118351,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.044943,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.060969,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.032232,
+     "recall10": 0.7
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.083549,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.070654,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.508066,
+     "recall10": 0.2
+    }
+   ]
+  },
+  {
+   "policy": "recency",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411414,
+   "fraction_kept": 0.25,
+   "policy_runs": 2,
+   "policy_s": 3.5,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.2632,
+   "recall10_rare": null,
+   "recall10_typical": 0.18,
+   "levels": {
+    "0": 68,
+    "3": 192,
+    "4": 22
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.227496,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.306988,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.1966,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.150485,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.194997,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.124322,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.509541,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.393698,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.35265,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.047674,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.391117,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.316857,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.312379,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.347171,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.105571,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.272066,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.135115,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.254373,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.1925,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.640649,
+     "recall10": 0.1
+    }
+   ]
+  },
+  {
+   "policy": "recency",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1764004,
+   "fraction_kept": 0.1,
+   "policy_runs": 2,
+   "policy_s": 4.3,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.4735,
+   "recall10_rare": null,
+   "recall10_typical": 0.06,
+   "levels": {
+    "0": 25,
+    "3": 251,
+    "4": 6
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.357605,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.546918,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.455743,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.226764,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.491342,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.254078,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.652939,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.635435,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.675622,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.222296,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.631041,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.627131,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.599691,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.451102,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.199838,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.540096,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.255998,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.400197,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.368182,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.860042,
+     "recall10": 0.1
+    }
+   ]
+  },
+  {
+   "policy": "recency",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 881401,
+   "fraction_kept": 0.0499,
+   "policy_runs": 2,
+   "policy_s": 4.4,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.5842,
+   "recall10_rare": null,
+   "recall10_typical": 0.02,
+   "levels": {
+    "0": 11,
+    "3": 244,
+    "4": 27
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.538365,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.575945,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.583177,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.491592,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.830108,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.35585,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.805371,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.956623,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.86369,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.250309,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.827606,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.820191,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.820941,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.585142,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.429976,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.950299,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.434573,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.557928,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.480171,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 2.072967,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8823453,
+   "fraction_kept": 0.5,
+   "policy_runs": 2,
+   "policy_s": 3.0,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.0798,
+   "recall10_rare": null,
+   "recall10_typical": 0.485,
+   "levels": {
+    "0": 138,
+    "3": 104,
+    "4": 40
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.156992,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.080007,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.175164,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.120546,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.105117,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.074066,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.083456,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.072651,
+     "recall10": 0.8
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.094779,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.049622,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.037167,
+     "recall10": 0.7
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.075871,
+     "recall10": 0.7
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.112297,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.069443,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.055866,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.141538,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.028169,
+     "recall10": 0.7
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.033895,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.079687,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.111196,
+     "recall10": 0.5
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411770,
+   "fraction_kept": 0.25,
+   "policy_runs": 2,
+   "policy_s": 3.5,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.1639,
+   "recall10_rare": null,
+   "recall10_typical": 0.24,
+   "levels": {
+    "0": 67,
+    "3": 179,
+    "4": 36
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.25406,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.148248,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.256168,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.194028,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.231118,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.133455,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.165999,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.134482,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.458837,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.084,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.068587,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.138743,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.217954,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.148951,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.111826,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.240902,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.16177,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.122527,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.188873,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.465112,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1764228,
+   "fraction_kept": 0.1,
+   "policy_runs": 2,
+   "policy_s": 3.8,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.3446,
+   "recall10_rare": null,
+   "recall10_typical": 0.105,
+   "levels": {
+    "0": 24,
+    "3": 233,
+    "4": 25
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.359459,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.339546,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.349652,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.277721,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.389731,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.198263,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.430082,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.411901,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.640014,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.204402,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.264668,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.199146,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.382553,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.320852,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.244926,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.596232,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.280649,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.266087,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.418039,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.55414,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "random",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 881486,
+   "fraction_kept": 0.0499,
+   "policy_runs": 2,
+   "policy_s": 3.9,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.5654,
+   "recall10_rare": null,
+   "recall10_typical": 0.055,
+   "levels": {
+    "0": 10,
+    "3": 244,
+    "4": 28
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.413546,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.561182,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.432753,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.446549,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.688318,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.417443,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.820223,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.636763,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.842725,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.306542,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.593498,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.569601,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.622602,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.620796,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.453691,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.868525,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.385167,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.472508,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.55353,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.896284,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8823187,
+   "fraction_kept": 0.5,
+   "policy_runs": 2,
+   "policy_s": 3.0,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.0826,
+   "recall10_rare": null,
+   "recall10_typical": 0.445,
+   "levels": {
+    "0": 138,
+    "3": 95,
+    "4": 49
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.07739,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.059851,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.044799,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.178865,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.104334,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.047151,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.119677,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.149678,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.048025,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.073778,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.098129,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.169466,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.082095,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.139909,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.035529,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.194171,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.055956,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.083078,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.05914,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.147242,
+     "recall10": 0.4
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411267,
+   "fraction_kept": 0.25,
+   "policy_runs": 2,
+   "policy_s": 3.5,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.2213,
+   "recall10_rare": null,
+   "recall10_typical": 0.18,
+   "levels": {
+    "0": 67,
+    "3": 200,
+    "4": 15
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.211516,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.177572,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.156151,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.182586,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.232851,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.168959,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.262487,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.370276,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.105341,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.158111,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.283178,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.391061,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.269714,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.301848,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.076983,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.382999,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.160846,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.231002,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.122465,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.314457,
+     "recall10": 0.1
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1763922,
+   "fraction_kept": 0.1,
+   "policy_runs": 2,
+   "policy_s": 3.8,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.4302,
+   "recall10_rare": null,
+   "recall10_typical": 0.06,
+   "levels": {
+    "0": 24,
+    "3": 246,
+    "4": 12
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.307456,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.455758,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.321088,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.298721,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.470033,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.207889,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.464128,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.598891,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.385721,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.23683,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.775115,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.528128,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.664821,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.456198,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.269145,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.652134,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.262131,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.404694,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.357346,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.87794,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 881441,
+   "fraction_kept": 0.0499,
+   "policy_runs": 2,
+   "policy_s": 4.2,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.6521,
+   "recall10_rare": null,
+   "recall10_typical": 0.03,
+   "levels": {
+    "0": 10,
+    "3": 253,
+    "4": 19
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.404021,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.5714,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.510114,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.388034,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.987259,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.392942,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.652683,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.763116,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.85938,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.375893,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 2.026178,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.778524,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.914407,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.703422,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.400238,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.828355,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.328865,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.610027,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.65156,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 2.295856,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.5,
+   "bytes_full": 17647606,
+   "bytes_after": 8823187,
+   "fraction_kept": 0.5,
+   "policy_runs": 2,
+   "policy_s": 3.1,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.0826,
+   "recall10_rare": null,
+   "recall10_typical": 0.445,
+   "levels": {
+    "0": 138,
+    "3": 95,
+    "4": 49
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.07739,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.059851,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.044799,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.178865,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.104334,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.047151,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.119677,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.149678,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.048025,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.073778,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.098129,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.169466,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.082095,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.139909,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.035529,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.194171,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.055956,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.083078,
+     "recall10": 0.5
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.05914,
+     "recall10": 0.6
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.147242,
+     "recall10": 0.4
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.25,
+   "bytes_full": 17647606,
+   "bytes_after": 4411267,
+   "fraction_kept": 0.25,
+   "policy_runs": 2,
+   "policy_s": 3.6,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.2213,
+   "recall10_rare": null,
+   "recall10_typical": 0.18,
+   "levels": {
+    "0": 67,
+    "3": 200,
+    "4": 15
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.211516,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.177572,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.156151,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.182586,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.232851,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.168959,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.262487,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.370276,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.105341,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.158111,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.283178,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.391061,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.269714,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.301848,
+     "recall10": 0.2
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.076983,
+     "recall10": 0.4
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.382999,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.160846,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.231002,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.122465,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.314457,
+     "recall10": 0.1
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.1,
+   "bytes_full": 17647606,
+   "bytes_after": 1763922,
+   "fraction_kept": 0.1,
+   "policy_runs": 2,
+   "policy_s": 3.9,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.4302,
+   "recall10_rare": null,
+   "recall10_typical": 0.06,
+   "levels": {
+    "0": 24,
+    "3": 246,
+    "4": 12
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.307456,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.455758,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.321088,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.298721,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.470033,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.207889,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.464128,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.598891,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.385721,
+     "recall10": 0.3
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.23683,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.775115,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.528128,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.664821,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.456198,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.269145,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.652134,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.262131,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.404694,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.357346,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.87794,
+     "recall10": 0.0
+    }
+   ]
+  },
+  {
+   "policy": "novelty+importance",
+   "budget": 0.05,
+   "bytes_full": 17647606,
+   "bytes_after": 881441,
+   "fraction_kept": 0.0499,
+   "policy_runs": 2,
+   "policy_s": 4.1,
+   "known_searchable": null,
+   "distance_ratio_rare": null,
+   "distance_ratio_typical": 1.6521,
+   "recall10_rare": null,
+   "recall10_typical": 0.03,
+   "levels": {
+    "0": 10,
+    "3": 253,
+    "4": 19
+   },
+   "per_query": [
+    {
+     "query": "PB01.dev.0:4024320",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.404021,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:4741120",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.5714,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:3125248",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.510114,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:12937216",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.388034,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5308416",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.987259,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:13277184",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.392942,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9369600",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.652683,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:5361664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.763116,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:14350336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.85938,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:9885696",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.375893,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5801984",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 2.026178,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:800768",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.778524,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:9697280",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.914407,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:8462336",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.703422,
+     "recall10": 0.1
+    },
+    {
+     "query": "PB01.dev.0:10600448",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.400238,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:1521664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.828355,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15284224",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.328865,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:2138112",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.610027,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:15048704",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 1.65156,
+     "recall10": 0.0
+    },
+    {
+     "query": "PB01.dev.0:5873664",
+     "group": "typical:PB01.dev.0",
+     "rare": false,
+     "distance_ratio": 2.295856,
+     "recall10": 0.0
+    }
+   ]
+  }
+ ]
+}

@@ -71,9 +71,10 @@ class Filter(Protocol):
 
 
 class ExemptFilter:
-    """Event-library episodes stay at level 0 or 1."""
+    """Event-library episodes stay searchable: a policy never moves them (the library exists for recall). The
+    database still allows an operator to move one to level 1 by hand; never below."""
     def veto(self, ep: Episode, target: int) -> Optional[str]:
-        return "exempt" if ep.exempt and target > 1 else None
+        return "exempt" if ep.exempt else None
 
 
 class MinAgeFilter:
@@ -220,12 +221,14 @@ class LadderPicker:
             v = rng.random() if rng else self.scorer.value(t)       # random policy: a seeded uniform value
             scored.append((v, e.episode_id, e, target, t))
         scored.sort(key=lambda x: (x[0], x[1]))
-        candidates = [Move(e.episode_id, target, reason={"policy": self.scorer.name if not rng else "random",
+        self.last_candidates = [Move(e.episode_id, target, reason={"policy": self.scorer.name if not rng else "random",
                                                           "version": POLICY_VERSION, "value": round(v, 6),
                                                           "terms": {k: round(x, 6) for k, x in t.items()},
                                                           "trigger": trigger.reason})
                       for v, _, e, target, t in scored]
+        candidates = self.last_candidates
         freed = store.freed(candidates) if candidates else []
+        self.last_freed = freed
         moves, total = [], 0
         for m, b in zip(candidates, freed):
             if total >= trigger.bytes_to_free:
@@ -234,6 +237,33 @@ class LadderPicker:
                 moves.append(m)
                 total += b
         return moves
+
+
+class DepthPicker(LadderPicker):
+    """Depth first: the lowest-valued episodes go straight to `first` (default level 3, summaries only) until the
+    budget is met, so the most valuable stay fully searchable; only when every movable episode is at `first` do the
+    lowest-valued move on to `last` (default 4). A step-by-step ladder takes nearly the whole archive out of search
+    before any sample is removed, because search representations are a large share of the bytes (F1 development)."""
+
+    def __init__(self, scorer: KeepValue, filters: Sequence[Filter] = (), first: int = 3, last: int = 4,
+                 seed: Optional[int] = None):
+        super().__init__(scorer, filters, steps=(first, last), seed=seed)
+        self.first, self.last = first, last
+
+    def next_level(self, level: int) -> Optional[int]:
+        return self.first if level < self.first else (self.last if level < self.last else None)
+
+    def pick(self, store: Store, trigger: Trigger) -> list[Move]:
+        eps = store.episodes()
+        movable = [e for e in eps if e.level < self.first and not first_veto(self.filters, e, self.first)]
+        if movable:   # phase 1: only episodes not yet at `first` are candidates
+            saved = self.steps
+            self.steps = [self.first]
+            try:
+                return super().pick(store, trigger)
+            finally:
+                self.steps = saved
+        return super().pick(store, trigger)
 
 
 def random_policy(seed: int) -> tuple[KeepValue, int]:
@@ -305,9 +335,12 @@ class TaskResult:
     dry_run: bool
 
 
-def run_task(store: Store, selector, picker: LadderPicker, dry_run: bool, batch: int = 500) -> Optional[TaskResult]:
-    """One policy run: the selector decides whether and how much, the picker what, then the moves are applied in
-    batches (each batch one transaction). With dry_run the moves and their sizes are reported, nothing changes."""
+def run_task(store: Store, selector, picker: LadderPicker, dry_run: bool, batch: int = 50) -> Optional[TaskResult]:
+    """One policy run: the selector decides whether and how much, the picker what. With dry_run the picked moves and
+    their estimated sizes are reported and nothing changes. Otherwise the candidates are applied in order of value, in
+    batches (each one transaction), and after every batch the actual size is measured; the run stops once the bytes
+    are freed. Per-move estimates are dry runs of each move alone; moves of neighbouring episodes free more together
+    (shared search windows), so execution measures instead of trusting the estimates (F1 development)."""
     trigger = selector.select(store)
     if trigger is None:
         return None
@@ -320,8 +353,21 @@ def run_task(store: Store, selector, picker: LadderPicker, dry_run: bool, batch:
         if dry_run:
             freed = sum(store.freed(moves)) if moves else 0
         else:
-            for i in range(0, len(moves), batch):
-                freed += sum(store.apply(run_id, moves[i:i + batch]))
+            ordered = getattr(picker, "last_candidates", moves)
+            estimates = getattr(picker, "last_freed", [1] * len(ordered))
+            start = store.bytes_at()
+            target = start - trigger.bytes_to_free
+            applied, i, now = [], 0, start
+            while i < len(ordered) and now > target:
+                # take as many moves as the estimates say are still needed (at most `batch`), then measure
+                need, j, est = now - target, i, 0
+                while j < len(ordered) and j - i < batch and est < need:
+                    est += max(estimates[j], 0)
+                    j += 1
+                store.apply(run_id, ordered[i:j])
+                applied += ordered[i:j]
+                i, now = j, store.bytes_at()
+            moves, freed = applied, start - now
         store.finish_run(run_id, "finished", {"moves": len(moves), "bytes_freed": freed})
         return TaskResult(run_id, moves, freed, dry_run)
     except Exception:
