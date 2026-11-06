@@ -6,7 +6,8 @@
 observations only (#224): morlet_history_sql keeps segments of the query segment's segmentation spec and drops
 segments that overlap the query segment's own samples (body changes, signature does not). It adds morlet_coverage
 (#215): which samples a search can find, per recording and state, and morlet_latest (#206): the newest samples
-or chunk statistics of every recording. No data or policy changes.
+or chunk statistics of every recording. morlet_envelope_ranked refuses over-budget searches before scoring
+(#279). No data or policy changes.
 tests/upgrade.sh and tests/upgrade_from_release.sh check that an upgraded catalog equals a fresh 0.3.6
 installation. The scripts of earlier steps (0.3.4 -> 0.3.5 and before) are frozen."""
 import re
@@ -33,7 +34,7 @@ def rust(name):
 
 NEW_RUST = []
 NEW_SQL = ["morlet_coverage", "morlet_latest"]
-CHANGED = ["morlet_history_sql"]
+CHANGED = ["morlet_history_sql", "morlet_envelope_ranked"]
 # Signature changed: the 0.3.5 function (these argument types) is dropped and created again.
 RECREATED = {}
 

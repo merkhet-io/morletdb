@@ -1115,7 +1115,7 @@ RETURNS TABLE(recording_id text,start_sample bigint,end_sample bigint,distance f
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; m bigint;
   ids text[]; starts bigint[]; ends bigint[]; dists float8[]; metas jsonb[]; n integer; i integer;
-  picked integer[]; idx integer; blocked boolean; screened boolean;
+  picked integer[]; idx integer; blocked boolean; screened boolean; kept jsonb;
   b_ids text[]; b_lo bigint[]; b_hi bigint[]; tjoin text:='';
 BEGIN
   IF collection IS NULL OR query_samples IS NULL OR query_channel IS NULL OR query_unit IS NULL THEN
@@ -1141,8 +1141,8 @@ BEGIN
   -- Screened path (default): a parallel aggregate bounds every eligible window's distance in float32 and
   -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
   -- scored by morlet_envelope_distance, sorted and cut as in the full path, so results are identical. The
-  -- same scan counts the eligible windows for the max_candidates check, which raises before any row is
-  -- returned; once a scan has seen more than max_candidates windows it stops screening and only counts.
+  -- same scan counts the eligible windows for the max_candidates check, which raises before any window is
+  -- scored; once a scan has seen more than max_candidates windows it stops screening and only counts.
   -- SET morlet.exact_screen = off scores every eligible window (the previous path), and so does a
   -- query too large to prepare for screening (window 32768 from lag fraction 0.1, 16384 at 0.5).
   screened:=coalesce(current_setting('morlet.exact_screen',true),'on')<>'off'
@@ -1157,23 +1157,29 @@ BEGIN
   m:=CASE WHEN suppress_overlaps THEN greatest(200,20*top_k) ELSE top_k END;
   LOOP
     IF screened THEN
-      EXECUTE format('WITH c AS (SELECT count(*) AS eligible,public.morlet_envelope_screen(e.envelope,e.recording_id,
-            e.start_sample,public.morlet_float8_le_bytes($6),$7,$11::integer,$12::bigint)
-            FILTER (WHERE $8::text IS NULL OR e.recording_id<>$8 OR e.start_sample+e.window_size<=$9 OR e.start_sample>=$10) AS j
+      -- Screen and count in one scan, refuse over budget, and only then score the kept windows (#279): the
+      -- budget check never waits for scoring.
+      EXECUTE format('SELECT count(*),public.morlet_envelope_screen(e.envelope,e.recording_id,
+            e.start_sample,public.morlet_float8_le_bytes($6),$7,$8::integer,$9::bigint)
+            FILTER (WHERE $10::text IS NULL OR e.recording_id<>$10 OR e.start_sample+e.window_size<=$11 OR e.start_sample>=$12)
           FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id%3$s
-          WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5),
-        k AS (SELECT x->>0 AS recording_id,(x->>1)::bigint AS start_sample FROM c,jsonb_array_elements(c.j) x)
-        SELECT (SELECT public.morlet_check_candidates(c.eligible,$12) FROM c),array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
+          WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',
+          rel,collection,format(tjoin,13,14,15))
+        INTO candidates,kept
+        USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,m,max_candidates,
+          exclude_recording_id,exclude_start,exclude_end,b_ids,b_lo,b_hi;
+      PERFORM public.morlet_check_candidates(candidates,max_candidates);
+      EXECUTE format('WITH k AS (SELECT x->>0 AS recording_id,(x->>1)::bigint AS start_sample FROM jsonb_array_elements($4) x)
+        SELECT array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
           array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)
         FROM (SELECT t.*,row_number() OVER (ORDER BY t.distance,t.recording_id,t.start_sample) AS o FROM (
           SELECT e.recording_id,e.start_sample,e.start_sample+e.window_size AS end_sample,
-            public.morlet_envelope_distance($6,e.envelope,$7) AS distance,r.metadata
+            public.morlet_envelope_distance($2,e.envelope,$3) AS distance,r.metadata
           FROM k JOIN %1$s e ON e.recording_id=k.recording_id AND e.window_size=$1 AND e.start_sample=k.start_sample
           JOIN %2$s r ON r.recording_id=e.recording_id
-          ORDER BY distance,e.recording_id,e.start_sample LIMIT $11) t) s',rel,collection,format(tjoin,13,14,15))
-        INTO candidates,ids,starts,ends,dists,metas
-        USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,
-          exclude_recording_id,exclude_start,exclude_end,m,max_candidates,b_ids,b_lo,b_hi;
+          ORDER BY distance,e.recording_id,e.start_sample LIMIT $5) t) s',rel,collection)
+        INTO ids,starts,ends,dists,metas
+        USING width,query_envelope,lag,coalesce(kept,'[]'::jsonb),m;
     ELSE
     EXECUTE format('SELECT array_agg(s.recording_id ORDER BY s.o),array_agg(s.start_sample ORDER BY s.o),
         array_agg(s.end_sample ORDER BY s.o),array_agg(s.distance ORDER BY s.o),array_agg(s.metadata ORDER BY s.o)

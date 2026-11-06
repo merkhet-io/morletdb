@@ -336,6 +336,11 @@ pub struct Screener<Id> {
     pending_raw: Vec<f32>,
     uppers: std::collections::BinaryHeap<OrdF64>,
     kept: Vec<(Id, f64, f64)>,
+    /// Prune when `kept` grows past this. It doubles with what a prune leaves, so windows tied at the threshold
+    /// (constant windows all have distance 1) cost amortized O(1) each instead of a full prune per row (#279).
+    prune_at: usize,
+    /// Elements visited by prunes so far (the test of #279 checks it stays linear in the rows screened).
+    prune_visits: usize,
     scratch: Vec<f32>,
 }
 
@@ -370,6 +375,8 @@ impl<Id> Screener<Id> {
             pending_raw: Vec::new(),
             uppers: std::collections::BinaryHeap::new(),
             kept: Vec::new(),
+            prune_at: 4 * m + 64,
+            prune_visits: 0,
             scratch: Vec::new(),
         })
     }
@@ -393,14 +400,21 @@ impl<Id> Screener<Id> {
         if lower <= self.threshold() {
             self.kept.push((id, lower, upper));
         }
-        if self.kept.len() > 4 * self.m + 64 {
+        if self.kept.len() > self.prune_at {
             self.prune();
         }
     }
 
     fn prune(&mut self) {
         let t = self.threshold();
+        self.prune_visits += self.kept.len();
         self.kept.retain(|k| k.1 <= t);
+        self.prune_at = (4 * self.m + 64).max(2 * self.kept.len());
+    }
+
+    /// Windows kept so far (a superset of the m nearest seen so far, ties included).
+    pub fn kept_len(&self) -> usize {
+        self.kept.len()
     }
 
     /// Screen one stored envelope (version byte + float16 values).
@@ -493,6 +507,25 @@ impl<Id> Screener<Id> {
 mod tests {
     use super::*;
     use crate::envelope::{decode, distance, encode};
+
+    /// Many windows tied at the threshold (constant windows: distance 1 to everything) are all kept, and the
+    /// screen stays linear: ties used to take a full prune per row (#279).
+    #[test]
+    fn ties_at_the_threshold_are_kept_in_linear_time() {
+        let x: Vec<f64> = (0..4096)
+            .map(|t| ((t as f64) / 7.0).sin() * (1.0 + (t % 300) as f64))
+            .collect();
+        let q = decode(&encode(&x).unwrap()).unwrap();
+        let constant = encode(&vec![0.0; 4096]).unwrap();
+        let mut s = Screener::new(&q, 30, 10).unwrap();
+        let n = 20_000usize;
+        for i in 0..n as i64 {
+            s.push(i, &constant).unwrap();
+        }
+        // a prune per row would visit about n * n / 2 elements; doubling keeps it below 2n
+        assert!(s.prune_visits < 4 * n, "{} prune visits", s.prune_visits);
+        assert_eq!(s.finish().len(), n);
+    }
 
     fn lcg(seed: &mut u64) -> f64 {
         *seed = seed
