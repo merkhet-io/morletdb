@@ -1,0 +1,91 @@
+{
+ "image": "morletdb:ct",
+ "reps": 50,
+ "max_chunk_version": 3,
+ "measures": {
+  "R1": {
+   "samples": 4096,
+   "reads": 1000,
+   "client": {
+    "raw": {
+     "p50": 0.718,
+     "p95": 1.08
+    },
+    "encoded_1": {
+     "p50": 0.768,
+     "p95": 1.029
+    },
+    "encoded_4": {
+     "p50": 0.768,
+     "p95": 0.997
+    }
+   },
+   "server_no_transfer": {
+    "raw": {
+     "p50": 0.546,
+     "p95": 0.702
+    },
+    "encoded": {
+     "p50": 0.44,
+     "p95": 0.766
+    }
+   },
+   "bytes_per_read": {
+    "raw": 32768,
+    "encoded": 9770
+   }
+  },
+  "R2": {
+   "samples": 128000,
+   "reads": 1000,
+   "client": {
+    "raw": {
+     "p50": 5.991,
+     "p95": 8.765
+    },
+    "encoded_1": {
+     "p50": 4.431,
+     "p95": 6.132
+    },
+    "encoded_4": {
+     "p50": 2.51,
+     "p95": 3.146
+    }
+   },
+   "server_no_transfer": {
+    "raw": {
+     "p50": 2.247,
+     "p95": 2.881
+    },
+    "encoded": {
+     "p50": 0.66,
+     "p95": 0.939
+    }
+   },
+   "bytes_per_read": {
+    "raw": 1024000,
+    "encoded": 153640
+   }
+  },
+  "R3": {
+   "samples": 64000,
+   "channels": 3,
+   "reads": 1000,
+   "client": {
+    "raw": {
+     "p50": 7.547,
+     "p95": 12.11
+    },
+    "encoded_1": {
+     "p50": 6.24,
+     "p95": 8.723
+    },
+    "encoded_4": {
+     "p50": 3.79,
+     "p95": 4.96
+    }
+   }
+  }
+ },
+ "load_average": "9:01  up 9 days, 17:57, 17 users, load averages: 5.02 6.59 7.87"
+}

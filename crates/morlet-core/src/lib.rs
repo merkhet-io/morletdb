@@ -7,6 +7,7 @@ pub mod intervalstats;
 pub mod morlet;
 pub mod rawcodec;
 pub mod segments;
+pub mod transfer;
 pub mod values;
 use std::fmt;
 

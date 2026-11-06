@@ -90,6 +90,11 @@ measured.
 
 ## Limits
 
+- **Encoded reads send whole chunks.** `morlet_read_interval_encoded` (compressed transfer) sends the first and
+  last chunk of the interval whole, so the client receives up to 32,767 samples of the same recording on either
+  side of the requested interval and cuts them off itself. Visibility is per recording, and a role that may read
+  the recording may read all of its samples, so this reveals nothing it could not read anyway; it would matter
+  only if visibility became finer than a recording.
 - **Not a security proof.** These are tested paths (direct reads of every companion table,
   search results, writes for hidden recordings, hidden recordings as query sources, roles
   without grants), not a formal argument.

@@ -11,6 +11,18 @@ IMMUTABLE PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_check_chunk_wrapper';
 
+CREATE FUNCTION "morlet_frame_chunks"(
+	"chunks" bytea[], /* pgrx::datum::array::Array<'_, &[u8]> */
+	"starts" bigint[], /* alloc::vec::Vec<core::option::Option<i64>> */
+	"counts" INT[], /* alloc::vec::Vec<core::option::Option<i32>> */
+	"interval_start" bigint, /* i64 */
+	"interval_end" bigint, /* i64 */
+	"max_chunk_version" INT /* i32 */
+) RETURNS bytea /* core::option::Option<alloc::vec::Vec<u8>> */
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_frame_chunks_wrapper';
+
 -- Integrity scrub (SQL 0.3.5, #193). Re-reads every chunk of up to max_recordings recordings after
 -- after_recording (in recording_id order; call again with the last returned id to continue) and reports, per
 -- recording, the chunks and samples it read and every problem found, without changing anything: a chunk that
@@ -352,6 +364,44 @@ BEGIN
   RAISE EXCEPTION 'source interval is incomplete or not fully visible';
 END $$;
 
+-- Compressed transfer (docs/compressed-transfer.md): the encoded chunks of [interval_start, interval_end) in
+-- one transfer frame, for a client that decodes them (the Python SDK's native decoder). Same limits, visibility,
+-- coverage and errors as morlet_read_interval_raw, but nothing is decoded here: coverage is checked from the
+-- stored sample counts, and the client verifies every chunk's checksum. The first and last chunks are sent
+-- whole, so the frame can hold up to 32,767 samples of the same recording on either side of the interval; the
+-- client cuts them off. If a chunk's format version is above max_chunk_version, the samples are decoded here and
+-- sent in a raw frame instead, so a client never receives a chunk it cannot decode.
+CREATE FUNCTION public.morlet_read_interval_encoded(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,max_chunk_version integer DEFAULT 3)
+RETURNS bytea
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE source record; relations record; frame bytea;
+BEGIN
+  IF interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start>16777216 THEN
+    RAISE EXCEPTION 'raw read interval must contain 1..16777216 samples at nonnegative coordinates';
+  END IF;
+  EXECUTE format('SELECT r.checkpoint FROM %s r WHERE r.recording_id=$1',collection)
+    INTO source USING source_recording_id;
+  IF source.checkpoint IS NULL THEN RAISE EXCEPTION 'source recording does not exist or is not visible'; END IF;
+  IF interval_end>(source.checkpoint->>'end')::bigint THEN
+    RAISE EXCEPTION 'source interval exceeds recording length';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN
+    RAISE EXCEPTION 'encoded reads need a collection with encoded chunks; use morlet_read_interval';
+  END IF;
+  EXECUTE format('SELECT public.morlet_frame_chunks(coalesce(array_agg(c.encoded ORDER BY c.start_sample),''{}''),
+      coalesce(array_agg(c.start_sample ORDER BY c.start_sample),''{}''),
+      coalesce(array_agg(c.sample_count ORDER BY c.start_sample),''{}''),$2,$3,$4)
+    FROM %1$s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
+      AND c.start_sample+c.sample_count>$2',relations.chunks)
+    INTO frame USING source_recording_id,interval_start,interval_end,max_chunk_version;
+  IF frame IS NULL THEN
+    PERFORM public.morlet_raise_incomplete(collection,source_recording_id,interval_start,interval_end);
+  END IF;
+  RETURN frame;
+END $$;
+
 -- Read a bounded half-open interval without exposing table internals. Both
 -- parent and chunk privileges/RLS apply; missing or hidden chunks fail closed.
 CREATE OR REPLACE FUNCTION public.morlet_read_interval(collection regclass,source_recording_id text,
@@ -620,4 +670,33 @@ BEGIN
     s:=s+stride;
   END LOOP;
   RETURN written;
+END $$;
+
+-- These tables are caller-owned. All functions use invoker privileges. New collections store a summary of every
+-- chunk (SQL 0.3.5; morlet_enable_chunk_summaries adds them to older collections): interval statistics and
+-- overviews then read summaries instead of decoding, for about 2% of ingestion speed and 1% of storage.
+CREATE OR REPLACE FUNCTION public.morlet_create_stream_collection(schema_name text,collection_name text)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  IF octet_length(collection_name)>46 OR collection_name='' THEN
+    RAISE EXCEPTION 'stream collection name must contain 1..46 bytes';
+  END IF;
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text PRIMARY KEY, sample_rate_hz float8 NOT NULL,
+    channel text NOT NULL, unit text NOT NULL,
+    metadata jsonb NOT NULL CHECK(jsonb_typeof(metadata)=''object''),
+    checkpoint jsonb NOT NULL,
+    sample_quantum float8 NOT NULL DEFAULT 1 CHECK(sample_quantum>0 AND sample_quantum<''Infinity''))',schema_name,collection_name);
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
+    encoded bytea NOT NULL CHECK(public.morlet_valid_encoded_chunk(encoded,sample_count)),
+    summary bytea CHECK(summary IS NULL OR (octet_length(summary)=66 AND get_byte(summary,0)=1)),
+    PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_chunks',schema_name,collection_name);
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),features float8[] NOT NULL,
+    PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_segments',schema_name,collection_name);
+  RETURN format('%I.%I',schema_name,collection_name)::regclass;
 END $$;
