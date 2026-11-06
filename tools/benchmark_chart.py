@@ -50,7 +50,7 @@ def xpos(r):
 def tip(name, measure, a, b, unit):
     r = a / b
     if unit == "MiB":
-        what = f"{a:,.0f} vs {b:,.0f} MiB"
+        what = f"{a:,.0f} vs {b:,.1f} MiB"   # MorletDB to one decimal (161.5): the tables say 161, not 162
     elif unit == "M samples/s":
         what = f"MorletDB {a:g} vs {b:g} M samples/s"
     else:
