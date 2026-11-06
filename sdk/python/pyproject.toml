@@ -28,4 +28,4 @@ Documentation = "https://github.com/merkhet-io/morletdb/blob/main/docs/python-sd
 where = ["src"]
 
 [tool.setuptools.package-data]
-morletdb = ["py.typed"]
+morletdb = ["py.typed", "_lib/*"]

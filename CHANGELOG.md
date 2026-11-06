@@ -25,6 +25,9 @@ SQL version 0.3.5, with an update script from 0.3.4.
   client does not decode are sent as samples instead. New crate `crates/morlet-ffi`: the chunk decoder behind a C
   interface. The Python SDK uses it through `ctypes` for reads of at least 32,768 samples, verifies every chunk's
   checksum, and falls back to raw reads without the library or on older servers (`MORLETDB_TRANSFER`).
+- **SDK wheels:** releases attach Python SDK wheels with the native decoder for Linux x86-64 and arm64 and macOS
+  arm64, each installed and tested from the installed package before release, and a pure wheel for other platforms
+  (`sdk/python/build_wheel.py`, workflow `sdk-wheels.yml`, also run on SDK and decoder pull requests).
 - **Chunk summaries by default:** `morlet_create_stream_collection` creates the chunk table with its `summary`
   column, so every new collection stores chunk summaries and interval statistics read them instead of decoding
   (about 2% of ingestion speed and 1% of storage). Existing collections are unchanged;
