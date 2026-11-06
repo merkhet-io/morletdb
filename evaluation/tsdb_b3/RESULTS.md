@@ -1184,3 +1184,107 @@ encoded and decoded in the client) targets. Short reads of older data (R4) lost 
 
 **Scope.** A development build of main, one machine, one dataset. As the amendment says, the website keeps B3.13's
 figures until a release containing this code is measured.
+
+# Amendment B3.15: the released 0.3.7-alpha.1 with compressed transfer against QuestDB
+
+Protocol: Amendment B3.15 in [PROTOCOL.md](PROTOCOL.md), frozen in `e3a3471` before any load of the benchmark set,
+with three deviations recorded there before the result run. Runner `run_b315.sh`, summary
+[`summarize_b315.py`](summarize_b315.py); results in `results/b315-questdb/` and `results/b315-previous/`. Images:
+the released `0.3.7-alpha.1` (`sha256:71b3086beadd…`) and `0.3.6-alpha.1` (`sha256:439b1f01484e…`), QuestDB 10.1.0.
+Decoder: `libmorlet_ffi.dylib` from the release's macOS wheel, checked against the release's `SHA256SUMS`, sha256
+`3857d48f7b8d…`, recorded in every `morletdb-i2` result.
+
+**Attempts.** Two earlier attempts ran all 24 loads correctly but are not admissible, and their figures were not
+looked at. Both were set aside before reading any figure, and both are kept for the record:
+- Attempt 1 (10:23) started on a busy machine, at a load average of 5.66 (`results/b315-attempt1/README.md`).
+- Attempt 2 (11:58) slept from 12:04, with the lid closed on battery (`results/b315-attempt2/README.md`, with the
+  power log).
+
+Three arming runs stopped before any load:
+- A runner bug under `pipefail`.
+- Docker Desktop not running: every load failed at once, and the empty records were deleted.
+- A start check that sampled the machine twice.
+
+The runner now waits until Docker is up, the Mac is on AC power without lid sleep, and the machine is quiet. It
+checks power and lid again before every load. None of this changes a measurement.
+
+**Machine.** The start condition was met at 15:46:46 (1-minute load average 2.48, no foreign process above half a
+core; `results/b315-questdb/b315.start`). The run took 15:46–15:58 on 2026-11-06, on AC power with the lid closed and
+an external display (deviation 3). The power log shows no sleep and no battery power during the run.
+
+Load averages before loads (median 5.87, max 7.68) came from the session itself: Docker's VM and backend are the
+only processes above half a core in the snapshots, except WebKit's networking process (57% and 51%) in two of 48.
+Docker was never restarted.
+
+**Correctness: all 24 loads passed.** Every read matched the source bit for bit, and MorletDB's stored chunks were
+byte-identical in all 18 MorletDB loads, on both images (one digest, `bd6cd3a4…`, equal to B3.10–B3.14's). Every
+`morletdb-i2` load read R2 and R3 by compressed transfer.
+
+## QuestDB pair (× MorletDB's figure; > 1 = MorletDB better; ingestion: ratio of medians, all-loads bound)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R4 recent / older | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.3.7, compressed transfer (`morletdb-i2`) | **1.53 (1.51)** | **1.58 (1.55)** | no statement (1.02 / 1.33) | **2.6 / 2.6** | **2.9 / 2.7** | no statement (0.84 / 1.02); **QuestDB 1.5 / 1.2** | 1.57 | **4.4 / 7.3** | 13× |
+| 0.3.7, raw transfer (`morletdb-i1`) | **1.54 (1.53)** | **1.60 (1.55)** | **1.2 / 1.5** | no statement (1.08 / 1.13) | **1.4 / 1.2** | no statement (0.95 / 1.26; 0.90 / 1.36) | 1.71 | **4.5 / 8.1** | 13× |
+
+Medians (p50 / p95 ms), `morletdb-i2` against QuestDB:
+- R2: 2.53 / 3.27 against 6.68 / 8.34.
+- Interval statistics: 0.56 / 0.64 against 2.45 / 4.66.
+- R4 older: 0.82 / 1.43 against 0.54 / 1.16.
+
+Server memory: 176 MiB against 2,267 MiB.
+
+## The frozen questions
+
+1. **R2 (128,000 samples): MorletDB 0.3.7 with compressed transfer is 2.6× faster than QuestDB at p50 and at p95.**
+   With raw transfer, the same release has no statement (1.08 / 1.13), as in B3.13 and B3.14.
+2. **Interval statistics: 4.4× faster at p50 and 7.3× at p95.** Chunk summaries are now on by default; raw
+   transfer gives 4.5 / 8.1.
+3. **Everything else, including the losses:**
+   - Ingestion keeps its statements (1.5× and 1.6×), and R3 keeps and strengthens its statement (2.9× / 2.7×).
+   - **R1 loses B3.13's statement in the compressed-transfer arm** (1.02 / 1.33). The raw arm keeps it (1.2 / 1.5).
+   - **R4 on older data is a loss: QuestDB is 1.5× faster at p50 and 1.2× at p95.** The raw arm has no statement
+     (0.90 / 1.36).
+   - R5 serves 1.57× more queries than QuestDB, against 1.71× for the raw arm.
+
+## Compressed against raw transfer, and 0.3.7 against 0.3.6 (same session)
+
+**Compressed against raw transfer:**
+- R2 is 2.4× / 2.3× faster (2.53 against 6.20 ms at p50) and R3 2.2× / 2.2× faster.
+- Interval statistics: no statement (0.96 / 0.90).
+- Ingestion and memory are equal (0.99).
+
+**Short reads are slower in the compressed-transfer arm** (R1 1.1× / 1.1×, R4 recent 1.1× / 1.2×, R4 older
+1.4× / 1.7×; R5 0.91×). Both arms read these by the same raw statement: they are shorter than the 32,768-sample
+threshold, as in the SDK. The cause is not established:
+- One known difference: the harness looks up the decoder on every read (about 20 µs per call, measured afterwards
+  outside the run), where the SDK decides once. That explains part of R1's 0.09 ms, not R4 older's 0.22 ms.
+- The arm also always runs first in each round.
+
+Finding the cause needs its own exploratory measurement, so these figures stand as measured.
+
+**0.3.7 with compressed transfer against 0.3.6:**
+- R2: 2.8× / 2.6× faster. R3: 2.3× / 2.0× faster.
+- Interval statistics: 4.5× / 4.1× faster, from summaries by default.
+- Ingestion: no statement (0.96 / 0.97). Memory is equal.
+- Short reads: 1.1×–1.5× slower, as above.
+
+Storage: chunk bytes are unchanged, and the summaries add 1.8 MB of heap on this dataset (2.48 MB against 4.33 MB
+for `b3_chunks`).
+
+## Statements against QuestDB (B3.15, released 0.3.7-alpha.1)
+
+MorletDB, used as its SDK uses it:
+- Ingests from one connection **1.5× (D2) and 1.6× (D1) faster**.
+- Reads 128,000 samples **2.6× faster** and three channels **2.9× / 2.7× faster**.
+- Computes interval statistics **4.4× / 7.3× faster**.
+- Serves 1.6× more concurrent queries, with 13× less server memory.
+
+**Short reads of older data (R4) are 1.5× / 1.2× faster on QuestDB, and R1 has no statement** in this arm.
+
+**Scope.** One machine, one dataset, a client on the same host as the server's Docker VM. Compressed transfer helps
+most where transfer is costly, and its gain will differ on other network paths.
+
+**Website.** Under the rule fixed in the amendment, the QuestDB tab and lane take the `morletdb-i2` figures above,
+labelled release 0.3.7-alpha.1 with compressed transfer, including the R4 loss and R1's missing statement. The
+other databases keep B3.13's figures, labelled 0.3.6-alpha.1.

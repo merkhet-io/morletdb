@@ -1,0 +1,22 @@
+2026-11-06T15:47:40
+15:47  up 10 days, 43 mins, 17 users, load averages: 3.75 3.06 4.33
+ %CPU COMM
+268.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 18.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  2.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  2.3 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.4 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+2026-11-06T15:48:38
+15:48  up 10 days, 44 mins, 17 users, load averages: 7.60 4.28 4.70
+ %CPU COMM
+305.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 31.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 27.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.7 /System/Library/ExtensionKit/Extensions/TGOnDeviceInferenceProviderService.appex/Contents/MacOS/TGOnDeviceInferenceProviderService
+  6.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  4.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.5 /System/Library/PrivateFrameworks/ModelCatalogRuntime.framework/Versions/A/modelcatalogd
+  4.0 /usr/libexec/textcomposerd

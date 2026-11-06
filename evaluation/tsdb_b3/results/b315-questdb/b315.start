@@ -1,0 +1,11 @@
+2026-11-06T15:46:46
+15:46  up 10 days, 42 mins, 17 users, load averages: 2.48 2.64 4.27
+ %CPU COMM
+ 16.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  5.3 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  3.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  1.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  1.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  1.2 /sbin/launchd
+  1.1 /usr/libexec/opendirectoryd

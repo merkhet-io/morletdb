@@ -1,0 +1,22 @@
+2026-11-06T15:55:15
+15:55  up 10 days, 51 mins, 17 users, load averages: 5.76 5.15 4.94
+ %CPU COMM
+163.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 45.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 13.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 10.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.3 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  2.3 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.7 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.0 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+2026-11-06T15:55:34
+15:55  up 10 days, 51 mins, 17 users, load averages: 5.92 5.19 4.96
+ %CPU COMM
+190.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+106.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 45.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  6.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.5 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+  3.2 /usr/libexec/sysmond
+  1.4 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
+  1.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
