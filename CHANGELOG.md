@@ -11,6 +11,11 @@ SQL version 0.3.6, with an update script from 0.3.5.
   settings made the interval count as its own history, so a comparison could report `status = ok` without any
   independent observation. History built with other settings now gives `insufficient_history` until it is rebuilt
   with the query's settings.
+- **Newest data (#206):** `morlet_latest(collection, n, metadata_filter, max_recordings)` returns every matching
+  recording's last `n` samples (1..32,768) with their statistics, or with `n = 0` the statistics of its newest
+  stored chunk, and the end time, at a fixed number of index lookups per recording (0.4–1.6 ms per recording on
+  a laptop, the same for 10 and 10,000 chunks). Unreadable newest samples (compacted, or a gap) are reported in
+  `note` without failing the call. MCP tool `latest` and SDK method `Client.latest`.
 - **Not found versus not searched (#215):** `morlet_coverage(collection, recording_ids, window_size)` splits
   every recording into ranges that are searchable, not indexed, out of search by a memory level, represented,
   summarized, gone or missing. The MCP server adds a `scope` to every search result (recordings and windows

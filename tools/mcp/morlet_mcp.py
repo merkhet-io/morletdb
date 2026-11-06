@@ -28,7 +28,8 @@ exclusive), not times; if a recording's metadata has a start time, tools also re
 
 Typical investigation:
 1. list_collections, then coverage (an overview per station, sensor or asset) or list_recordings to see what
-   exists (metadata_filter narrows by metadata); trend shows how a signal changed over days or weeks.
+   exists (metadata_filter narrows by metadata); trend shows how a signal changed over days or weeks;
+   latest gives the current value of every sensor.
 2. Pick an interval of interest (locate_time converts a UTC time to a sample offset).
 3. describe_interval to characterise it (compare_intervals against the background for weak signals;
    find_onsets to locate where something starts); search_from_time (when you know when it happened) or
@@ -309,6 +310,45 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
                 (k, sum(states.get((r["recording_id"], k), 0) / r["rate"] for r in rs))
                 for k in {k for (_, k) in states}) if v}
     return {"collection": collection, "group_by": group_by or None, "groups": out}
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit: int = 100) -> dict:
+    """The newest data of every recording whose metadata contains metadata_filter: "what is the current value
+    of each sensor?". samples=1 (default) gives each recording's last value; up to 1000 gives its last values
+    with their statistics (rms, min, max, mean), for example the last second (samples = the sample rate);
+    samples=0 gives the statistics of the newest stored chunk instead, without values. Each row has the end
+    (UTC where the recording has a start time) and how many seconds before now that was; a recording that
+    stopped long ago is not live. When the newest samples are not readable (compacted, or a gap), the row says
+    why instead of giving values. More than limit (max 1000) matching recordings is an error: narrow the
+    filter. Servers with pg_morlet SQL 0.3.6."""
+    n = max(0, min(int(samples), 1000))
+    limit = max(1, min(int(limit), 1000))
+    flt = json.dumps(json.loads(metadata_filter or "{}"))
+    with connect() as conn:
+        c = checked(conn, collection)
+        if not conn.execute("SELECT to_regproc('public.morlet_latest') IS NOT NULL").fetchone()[0]:
+            raise ValueError("latest needs a server with pg_morlet SQL 0.3.6")
+        rows, now = conn.execute(
+            "SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, samples, "
+            "sample_count, min, max, mean, rms, note FROM morlet_latest(%s::regclass, %s, %s::jsonb, %s)",
+            (c, n, flt, limit)).fetchall(), datetime.now(timezone.utc)
+    out = []
+    for rid, rate, ch, unit, a, b, end, values, count, lo, hi, mean, rms, note in rows:
+        row = {"recording_id": rid, "channel": ch, "unit": unit, "sample_rate_hz": rate, "start_sample": a,
+               "end_sample": b, "end_utc": iso(end) if end else None,
+               "seconds_ago": round((now - end).total_seconds(), 3) if end else None}
+        if note:
+            row["note"] = note
+        if values:
+            row["last_value"] = values[-1]
+            if n > 1:
+                row["values"] = values
+        if count is not None and (n != 1 or values is None):
+            row["stats"] = {"samples": count, "rms": rms, "min": lo, "max": hi, "mean": mean}
+        out.append(row)
+    return {"collection": collection, "samples": n, "recordings": out}
 
 
 def change_point(values, baseline_n, k=3, z=5.0):
