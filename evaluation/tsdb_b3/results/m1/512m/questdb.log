@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run.py", line 449, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run.py", line 202, in load
+    handle = q.start(volume, durability)
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/questdb_adapter.py", line 29, in start
+    return _wait()
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/questdb_adapter.py", line 133, in _wait
+    raise RuntimeError("QuestDB did not start")
+RuntimeError: QuestDB did not start

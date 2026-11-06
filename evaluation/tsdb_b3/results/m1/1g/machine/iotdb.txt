@@ -1,0 +1,13 @@
+2026-11-06T19:05:26
+19:05  up 10 days,  4:01, 17 users, load averages: 3.49 3.90 3.58
+ %CPU COMM
+170.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 16.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  7.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  4.0 /usr/sbin/coreaudiod
+  3.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  2.3 bash
+  1.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  1.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-06T19:05:37
+19:05  up 10 days,  4:01, 17 users, load averages: 3.51 3.89 3.58

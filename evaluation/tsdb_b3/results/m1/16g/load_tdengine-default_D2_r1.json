@@ -1,0 +1,218 @@
+{
+ "system": "tdengine-default",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.17772520799189806,
+ "samples": 101586735,
+ "image": "tdengine/tsdb:3.4.3.3",
+ "image_id": "sha256:a35f623203ffcbafea6817812080b54cbfa3e42aba3c4878d7713d67d814e877",
+ "started": "2026-11-06T18:08:45",
+ "settings": {
+  "database": [
+   [
+    "b3",
+    "CREATE DATABASE `b3` BUFFER 256 CACHESIZE 1 CACHEMODEL 'none' CACHESHARDBITS -1 COMP 2 DURATION 10d WAL_FSYNC_PERIOD 3000 MAXROWS 4096 MINROWS 100 STT_TRIGGER 2 KEEP 3650d,3650d,3650d PAGES 256 PAGESIZE 4 PRECISION 'ns' REPLICA 1 WAL_LEVEL 1 VGROUPS 2 SINGLE_STABLE 0 TABLE_PREFIX 0 TABLE_SUFFIX 0 TSDB_PAGESIZE 4 WAL_RETENTION_PERIOD 3600 WAL_RETENTION_SIZE 0 KEEP_TIME_OFFSET 0 ENCRYPT_ALGORITHM 'none' SS_CHUNKPAGES 131072 SS_KEEPLOCAL 525600m SS_COMPACT 1 COMPACT_INTERVAL 0d COMPACT_TIME_RANGE 0d,0d COMPACT_TIME_OFFSET 0h IS_AUDIT 0 SECURE_DELETE 0 ALLOW_DROP 1 SECURITY_LEVEL 0"
+   ]
+  ],
+  "high_columns": [
+   [
+    "ts",
+    "TIMESTAMP",
+    8,
+    "",
+    "delta-i",
+    "lz4",
+    "medium"
+   ],
+   [
+    "vibration_1",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "phase_current_1",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "phase_current_2",
+    "DOUBLE",
+    8,
+    "",
+    "bss",
+    "lz4",
+    "medium"
+   ],
+   [
+    "acquisition",
+    "VARCHAR",
+    64,
+    "TAG",
+    "disabled",
+    "disabled",
+    "disabled"
+   ]
+  ]
+ },
+ "server_version": [
+  [
+   "3.4.3.3.community"
+  ]
+ ],
+ "ingest": {
+  "wall_s": 18.78,
+  "samples_per_s": 5409292,
+  "conversion_s": 3.439,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 148.724,
+   "p95_ms": 169.287,
+   "max_ms": 179.048
+  },
+  "ack_per_call": {
+   "n": 1246,
+   "p50_ms": 12.689,
+   "p95_ms": 18.042,
+   "max_ms": 39.814
+  },
+  "queryable_after_last_ack_s": 0.187,
+  "server": {
+   "cpu_percent_mean": 90.4,
+   "cpu_percent_p95": 120.0,
+   "memory_peak_mib": 1110.0,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 2798.7,
+    "anon_mib_at_end": 967.2,
+    "file_mib_at_end": 1735.6,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 1114.8
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 18.5
+  }
+ },
+ "correct": true,
+ "flush_s": 0.006,
+ "settle_files_s": 66.4,
+ "storage": {
+  "classes": {
+   "mnode": {
+    "apparent": 81989,
+    "allocated": 94208,
+    "files": 4
+   },
+   "other": {
+    "apparent": 347677,
+    "allocated": 372736,
+    "files": 11
+   },
+   "vnode_other": {
+    "apparent": 593079,
+    "allocated": 638976,
+    "files": 16
+   },
+   "vnode_tsdb": {
+    "apparent": 656926762,
+    "allocated": 656986112,
+    "files": 36
+   },
+   "wal": {
+    "apparent": 1084457689,
+    "allocated": 1084710912,
+    "files": 142
+   }
+  },
+  "volume": {
+   "apparent": 1742407196,
+   "allocated": 1742802944
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 3.299,
+   "p95_ms": 4.38,
+   "max_ms": 7.262,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 43.922,
+   "p95_ms": 46.862,
+   "max_ms": 58.616,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 32.985,
+   "p95_ms": 35.096,
+   "max_ms": 47.591,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 3.352,
+   "p95_ms": 4.279,
+   "max_ms": 6.103,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 3.419,
+   "p95_ms": 4.323,
+   "max_ms": 6.262,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 3.922,
+   "p95_ms": 36.31,
+   "max_ms": 101.402,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 291.8
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 3.594,
+  "p95_ms": 9.857,
+  "max_ms": 11.421,
+  "max_relative_difference": 8.052762256150513e-14,
+  "within_1e-12": "True",
+  "computed": "database"
+ }
+}

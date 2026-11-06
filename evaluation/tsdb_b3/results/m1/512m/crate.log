@@ -1,0 +1,106 @@
+Removed server http://127.0.0.1:4201 from active pool
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/connectionpool.py", line 540, in _make_request
+    response = conn.getresponse()
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/connection.py", line 638, in getresponse
+    httplib_response = super().getresponse()
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 1450, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 305, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+                             " response")
+http.client.RemoteDisconnected: Remote end closed connection without response
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/http.py", line 640, in _request
+    response = self.server_pool[next_server].request(
+        method,
+    ...<6 lines>...
+        **kwargs,
+    )
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/http.py", line 229, in request
+    return self.pool.urlopen(
+           ~~~~~~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<4 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/connectionpool.py", line 847, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/util/retry.py", line 510, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/util/util.py", line 38, in reraise
+    raise value.with_traceback(tb)
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/connectionpool.py", line 540, in _make_request
+    response = conn.getresponse()
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/urllib3/connection.py", line 638, in getresponse
+    httplib_response = super().getresponse()
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 1450, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 305, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+                             " response")
+urllib3.exceptions.ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_crate.py", line 261, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_crate.py", line 221, in load
+    cv, per_call = c.load_one(conn, arm, a, data[a["k"]])
+                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/crate_adapter.py", line 123, in load_one
+    res = cur.executemany(f"INSERT INTO {ARRAY_TABLE} (acquisition, channel, block, samples) VALUES (?, ?, ?, ?) "
+                          f"ON CONFLICT DO NOTHING", payload)
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/cursor.py", line 180, in executemany
+    self.execute(sql, bulk_parameters=bulk_parameters)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/cursor.py", line 154, in execute
+    self._result = self.connection.client.sql(
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, parameters, bulk_parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/http.py", line 561, in sql
+    content = self._json_request("POST", self.path, data=data)
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/http.py", line 702, in _json_request
+    response = self._request(method, path, data=data, headers=headers)
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/http.py", line 685, in _request
+    self._drop_server(next_server, ex_message)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3c/lib/python3.13/site-packages/crate/client/http.py", line 763, in _drop_server
+    raise ConnectionError(
+    ...<2 lines>...
+    )
+crate.client.exceptions.ConnectionError: No more Servers available, exception from last server: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))

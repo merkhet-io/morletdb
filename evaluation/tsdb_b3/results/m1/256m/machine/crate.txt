@@ -1,0 +1,13 @@
+2026-11-06T18:50:25
+18:50  up 10 days,  3:46, 17 users, load averages: 1.59 1.97 2.47
+ %CPU COMM
+ 36.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 15.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 12.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  7.6 claude
+  5.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.5 /usr/sbin/coreaudiod
+  1.5 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.5 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+2026-11-06T18:52:28
+18:52  up 10 days,  3:48, 17 users, load averages: 3.45 2.22 2.48

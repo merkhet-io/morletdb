@@ -9,8 +9,10 @@ website rule says. Speed: the other system's time over MorletDB's (p50),
 or MorletDB's throughput over the other's, for the system's faster layout per measure. Storage (deterministic, from
 each system's stage) is the other system's data on disk over MorletDB's whole database (0.3.6: 161.5 MiB, B3.13;
 0.3.7 with its default chunk summaries: 163.3 MiB, B3.15, on QuestDB's lane); for QuestDB its native columns (dot) and
-its Parquet zstd 9 partitions (ring). Memory: median peak server memory over a
-system's loads, lowest-memory layout, over MorletDB's in the same pair. > 1 = MorletDB better.
+its Parquet zstd 9 partitions (ring). Memory (Study M1, all systems against 0.3.7-alpha.1 in one session,
+summarize_m1.py): the smallest memory cap, of 256 MB, 512 MB, 1 GB, 2 GB and 4 GB with swap off, at which the system
+completes B3's D2 load with every read exact, over MorletDB's; caps are powers of two, so these ratios are coarse.
+> 1 = MorletDB better.
 
   python3 tools/benchmark_chart.py           # rewrite the chart between its markers in docs/index.html
   python3 tools/benchmark_chart.py --check   # fail if the chart in the page differs
@@ -34,12 +36,12 @@ MEASURES = [
                                       (40.54, 8.16)], "ms p50"),
     ("Interval statistics", "stats", [(2.88, 0.53), (5.06, 3.04), (7.49, 2.63), (3.74, 2.52), (10.16, 2.62)],
      "ms p50"),
-    # median peak server memory over a layout's loads, lowest-memory layout; JVM heaps follow their documented config
-    ("Server memory", "memory", [(2289, 177), (6166, 176), (5925, 173), (1024, 168), (400, 177)], "MiB"),
+    # Study M1: smallest passing memory cap in MB (a "> 4 GB" would be drawn at 4096 as a lower bound; none occurred)
+    ("Smallest memory cap", "memory", [(2048, 256), (1024, 256), (2048, 256), (1024, 256), (2048, 256)], "cap"),
 ]
 # a dot that is not the released build's base configuration, and a ring with its own pair: (measure, system) -> ...
-DOT_NOTE = {(k, 0): "0.3.7-alpha.1, compressed transfer, B3.16"
-            for k in ("ingest", "short", "long", "stats", "memory")}
+DOT_NOTE = {(k, 0): "0.3.7-alpha.1, compressed transfer, B3.16" for k in ("ingest", "short", "long", "stats")}
+DOT_NOTE.update({("memory", i): "0.3.7-alpha.1, Study M1" for i in range(len(SYSTEMS))})
 DOT_NOTE[("storage", 0)] = "0.3.7-alpha.1, B3.15"
 RING = {}
 LO, HI = 0.4, 50.0
@@ -53,7 +55,10 @@ def xpos(r):
 
 def tip(name, measure, a, b, unit):
     r = a / b
-    if unit == "MiB":
+    if unit == "cap":
+        mb = lambda x: f"{x // 1024:g} GB" if x >= 1024 else f"{x:g} MB"
+        what = f"completes the workload within {mb(a)} vs MorletDB {mb(b)}; caps are powers of two"
+    elif unit == "MiB":
         what = f"{a:,.0f} vs {b:,.1f} MiB"   # MorletDB to one decimal (161.5): the tables say 161, not 162
     elif unit == "M samples/s":
         what = f"MorletDB {a:g} vs {b:g} M samples/s"
@@ -80,7 +85,7 @@ def svg():
     # the hollow ring: the same database in a second form, on its own line
     out.append(f'<circle cx="5" cy="42" r="4" fill="var(--paper)" stroke="{SYSTEMS[0][1]}" stroke-width="2"/>'
                f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk). QuestDB&#8217;s lane: '
-               f'MorletDB 0.3.7-alpha.1; others: 0.3.6-alpha.1</text>')
+               f'MorletDB 0.3.7-alpha.1MorletDB 0.3.7-alpha.1; others: 0.3.6-alpha.1</text>')
     # axis and grid
     y_axis = h - 34
     for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×"), (50, "50×")]:

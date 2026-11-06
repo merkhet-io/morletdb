@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_crate.py", line 261, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_crate.py", line 211, in load
+    conn = c.start(vol)
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/crate_adapter.py", line 32, in start
+    return _wait()
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/crate_adapter.py", line 65, in _wait
+    raise RuntimeError("CrateDB did not start")
+RuntimeError: CrateDB did not start
