@@ -11,7 +11,7 @@ from psycopg.types.json import Jsonb
 
 from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Match, OverviewBucket, Recording, SearchResult
+from ._types import Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, OverviewBucket, Recording, SearchResult
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
 READ_PIECE = 32768           # morlet_read_interval's per-call limit (servers without the raw read)
@@ -319,6 +319,21 @@ class Client:
                              "morlet_interval_overview(%s::regclass,%s,%s,%s,%s)",
                              (collection, recording_id, int(start_sample), int(end_sample), int(buckets))).fetchall()
         return [OverviewBucket(int(a), int(b), int(n), *map(float, r)) for a, b, n, *r in rows]
+
+    def latest(self, collection: str, n: int = 1, metadata_filter: Mapping[str, Any] | None = None, *,
+               max_recordings: int = 1000) -> list[Latest]:
+        """The newest data of every recording whose metadata contains `metadata_filter`, by recording_id: its
+        last `n` samples (1..32768) with their statistics, or with n = 0 the statistics of its newest stored
+        chunk. A fixed number of index lookups per recording, however long it is. More than `max_recordings`
+        matching recordings is an error (SQL 0.3.6)."""
+        if not self._has("public.morlet_latest(regclass,integer,jsonb,integer)"):
+            raise UnsupportedError("morlet_latest needs pg_morlet SQL 0.3.6 or later")
+        rows = self._execute("SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, "
+                             "samples, sample_count, min, max, mean, rms, note FROM morlet_latest(%s::regclass,%s,%s,%s)",
+                             (collection, int(n), Jsonb(dict(metadata_filter or {})), int(max_recordings))).fetchall()
+        return [Latest(r[0], r[1], r[2], r[3], int(r[4]), int(r[5]), r[6],
+                       None if r[7] is None else np.asarray(r[7], dtype=np.float64),
+                       None if r[8] is None else IntervalStats(int(r[8]), *map(float, r[9:13])), r[13]) for r in rows]
 
     def samples_for_time(self, recording: Recording, t_start_ns: int, t_end_ns: int) -> tuple[int, int]:
         """The half-open sample range covering UTC times [t_start_ns, t_end_ns) (integer nanoseconds), by
