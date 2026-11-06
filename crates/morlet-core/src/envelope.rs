@@ -34,7 +34,7 @@ pub fn envelope(samples: &[f64]) -> Result<Vec<f64>, SignalError> {
     let shifted: Vec<f64> = samples.iter().map(|v| v - samples[0]).collect();
     let mean = shifted.iter().sum::<f64>() / n as f64;
     let centred: Vec<f64> = shifted.iter().map(|v| v - mean).collect();
-    let scale = (centred.iter().map(|v| v * v).sum::<f64>() / n as f64).sqrt();
+    let scale = crate::root_mean_square(&centred);
     let x: Vec<f64> = if scale > 0.0 {
         centred.iter().map(|v| v / scale).collect()
     } else {
@@ -413,6 +413,22 @@ pub fn f16_to_f64(h: u16) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn envelope_is_scale_invariant_for_tiny_signals() {
+        // #228: the envelope of a scaled signal equals the envelope of the signal.
+        let x: Vec<f64> = (0..512).map(|i| (i as f64 * 0.13).sin()).collect();
+        let base = envelope(&x).unwrap();
+        assert!(base.iter().map(|v| v * v).sum::<f64>() > 1.0);
+        for scale in [1e-300, 1e-200, 1e-30, 1e8] {
+            let xs: Vec<f64> = x.iter().map(|v| v * scale).collect();
+            let e = envelope(&xs).unwrap();
+            assert!(
+                e.iter().zip(&base).all(|(p, q)| (p - q).abs() < 1e-9),
+                "scale {scale}"
+            );
+        }
+    }
 
     /// The previous arithmetic form, kept as the reference for the bit-level one.
     fn f16_to_f64_reference(h: u16) -> f64 {
