@@ -114,9 +114,13 @@ case "$OLD_VERSION" in
   0.3.1) BLOCKER="public.morlet_search_similar(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer)" ;;
   0.3.2) BLOCKER="public.morlet_decode_interval_raw(bytea[], bigint[], bigint, bigint)" ;;
   0.3.4) BLOCKER="public.morlet_verify(regclass, text, integer)" ;;
+  0.3.5) BLOCKER="" ;;   # 0.3.5 -> 0.3.6 only replaces function bodies: nothing new to block
   0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
 esac
+if [ -z "$BLOCKER" ]; then
+  echo "skip: the update from $OLD_VERSION creates no function, so a failed update cannot be provoked by a blocker"
+else
 psql -d morlet_upgrade_rel_old -c "CREATE FUNCTION $BLOCKER RETURNS void LANGUAGE sql AS ''"
 if psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE" 2>/dev/null; then
   echo "FAIL: the blocked update succeeded"; exit 1
@@ -126,6 +130,7 @@ snapshot morlet_upgrade_rel_old > "$WORK/failed.txt"
 diff "$WORK/before.txt" "$WORK/failed.txt"
 psql -d morlet_upgrade_rel_old -c "DROP FUNCTION $BLOCKER"
 echo "ok: a failed update rolls back; $OLD_VERSION stays installed and reads are identical"
+fi
 
 psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"

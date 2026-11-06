@@ -1,5 +1,5 @@
 comment = 'MorletDB signal primitives (experimental scaffold)'
-default_version = '0.3.5'
+default_version = '0.3.6'
 module_pathname = '$libdir/pg_morlet'
 relocatable = false
 superuser = true
