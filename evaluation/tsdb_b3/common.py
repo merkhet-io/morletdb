@@ -14,6 +14,8 @@ SET_DIR = HERE / "results" / ("dev" if os.environ.get("B3_SET") == "dev" else ""
 # B3_RUN=b31 writes this run's results to a subdirectory (the manifest stays with its set).
 RESULTS = SET_DIR / os.environ.get("B3_RUN", "")
 LIMITS = ["--cpus", "8", "--memory", "16g"]
+if os.environ.get("B3_MEMORY"):   # study M1: a memory cap, with swap disabled (memory-swap equal to memory)
+    LIMITS = ["--cpus", "8", "--memory", os.environ["B3_MEMORY"], "--memory-swap", os.environ["B3_MEMORY"]]
 
 
 def manifest():

@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_tdengine.py", line 261, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_tdengine.py", line 216, in load
+    c.create(s)
+    ~~~~~~~~^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/tdengine_adapter.py", line 78, in create
+    conn.execute(f"CREATE DATABASE IF NOT EXISTS {DB} PRECISION 'ns' {wal}")
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_taosws.QueryError: [0x03B1] Internal error: `No enough memory in dnode`

@@ -1,0 +1,88 @@
+{
+ "system": "timescale",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.1868563749594614,
+ "samples": 101586735,
+ "image": "timescale/timescaledb:2.31.0-pg17",
+ "image_id": "sha256:d971568f9af05e218866181151117f517282f05f299a0e4010dc6a97704f6f2c",
+ "started": "2026-11-06T18:53:30",
+ "settings": {
+  "server_version": "17.11",
+  "timescaledb": "2.31.0",
+  "synchronous_commit": "off",
+  "shared_buffers": "128MB",
+  "max_wal_size": "1GB"
+ },
+ "ingest": {
+  "wall_s": 113.135,
+  "samples_per_s": 897927,
+  "conversion_s": 3.835,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 974.88,
+   "p95_ms": 1038.52,
+   "max_ms": 1133.88
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 48.668,
+   "p95_ms": 911.86,
+   "max_ms": 1023.802
+  },
+  "queryable_after_last_ack_s": 1.957,
+  "server": {
+   "cpu_percent_mean": 95.8,
+   "cpu_percent_p95": 100.0,
+   "memory_peak_mib": 214.6,
+   "samples": 57,
+   "kernel_memory": {
+    "peak_mib": 513.2,
+    "anon_mib_at_end": 16.9,
+    "file_mib_at_end": 470.0,
+    "shmem_mib_at_end": 142.0,
+    "working_set_peak_mib_50ms": 232.8
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 27.7
+  }
+ },
+ "correct": true
+}
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_timescale.py", line 250, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_timescale.py", line 238, in load
+    state(res, "row", vol, durability, m, data, ks)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_timescale.py", line 180, in state
+    c.vacuum(conn)
+    ~~~~~~~~^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/timescale_adapter.py", line 161, in vacuum
+    conn.execute(f"VACUUM ANALYZE {TABLES[g]}")
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3/lib/python3.13/site-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.

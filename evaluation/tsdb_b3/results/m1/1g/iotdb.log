@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_iotdb.py", line 262, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_iotdb.py", line 225, in load
+    cv, per_call = c.load_one(s, a, data[a["k"]])
+                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/iotdb_adapter.py", line 113, in load_one
+    session.insert(tab)
+    ~~~~~~~~~~~~~~^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3i/lib/python3.13/site-packages/iotdb/table_session.py", line 118, in insert
+    self.__session.insert_relational_tablet(tablet)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3i/lib/python3.13/site-packages/iotdb/Session.py", line 1243, in insert_relational_tablet
+    return rpc_utils.verify_success_with_redirection(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        connection.client.insertTablet(request)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/zin/sophia/morletdb/.venv-b3i/lib/python3.13/site-packages/iotdb/utils/rpc_utils.py", line 64, in verify_success_with_redirection
+    verify_success(status)
+    ~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3i/lib/python3.13/site-packages/iotdb/utils/rpc_utils.py", line 45, in verify_success
+    raise StatementExecutionException(status)
+iotdb.utils.exception.StatementExecutionException: 620: The element size of WALEntry 9200000 is larger than the total memory size of wal buffer queue 8875671

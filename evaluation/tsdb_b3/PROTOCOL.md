@@ -896,3 +896,43 @@ everything in B3.15 except what is stated here.
   - Storage stays as B3.15 measured it, because the harness change does not touch ingestion.
   - B3.15 stays in the results.
   - The other databases keep B3.13's figures.
+
+## Study M1: memory caps (FROZEN before any load)
+
+Added 2026-11-06 at the owner's request. B3's memory row reports each system's peak working set in a 16 GB
+container with its documented configuration. That is a footprint, not a need: PostgreSQL-based systems (MorletDB,
+TimescaleDB) default to 128 MB of shared buffers, while the others size heaps, caches or mapped memory from what is
+available (CrateDB's heap is set to half the container). M1 measures how little memory each system needs for B3's
+workload. Everything common to B3 applies, except what is stated here.
+
+- **Systems and layouts:**
+  - MorletDB 0.3.7-alpha.1, arm `morletdb-i2`, with the release decoder.
+  - QuestDB 10.1.0, its native WAL tables.
+  - TimescaleDB 2.31, PostgreSQL defaults, rows then columnstore.
+  - TDengine 3.4 `default`.
+  - IoTDB 2.0 `table`.
+  - CrateDB 6.4 `array`.
+
+  Each system uses its B3 stage's configuration, sized by its own documentation for the cap: CrateDB's heap at half
+  the cap, as its documentation says. IoTDB's start script and QuestDB's JVM size themselves from the container
+  limit. The others are unchanged.
+- **Caps:** 256 MB, 512 MB, 1 GB, 2 GB and 4 GB, with swap disabled (`--memory-swap` equal to `--memory`) and 8 CPUs
+  as in B3. Each system runs one D2 load per cap, at ascending caps, stopping at its first pass. Every system also
+  runs one load at B3's 16 GB limit in the same session, as a reference.
+- **Pass:** the load runner exits 0 within 20 minutes and writes a result with every count and every read
+  bit-exact. An out-of-memory kill stops the database, so such a load cannot pass. The container state is recorded.
+- **Order:** the six references first, then for each cap in ascending order, every system that has not passed yet,
+  in the order above. Runner `run_m1.sh`, summary `summarize_m1.py`, results in `results/m1/`.
+- **Machine:** the start condition as in B3.16 (Docker up, AC power, lid open or closed without sleep, 1-minute load
+  average below 3, no foreign process above half a core). AC power and lid are checked before every load.
+- **Reported:** each system's smallest passing cap, or "> 4 GB", and that cap as a multiple of MorletDB's. At that
+  cap and at 16 GB: ingestion speed, R1, R2 and statistics p50, and the 50 ms working-set peak. One load per cell is
+  descriptive only, with no B3 speed statements.
+- **Expectation, written before measuring:** MorletDB passes at 512 MB or 256 MB, TimescaleDB at 512 MB, TDengine at
+  512 MB to 1 GB, QuestDB at 1 GB (perhaps 512 MB), IoTDB at 1 to 2 GB and CrateDB at 2 to 4 GB.
+- **Website, decided now whatever the outcome:**
+  - The chart's memory row becomes "smallest memory cap that completes the workload": each system's smallest passing
+    cap over MorletDB's, with "> 4 GB" drawn at 4 GB and labelled as a lower bound.
+  - The QuestDB table's memory row shows both figures: the smallest caps, and the 16 GB working set labelled as the
+    footprint with the documented configuration.
+  - Captions say that caps are powers of two, so the ratios are coarse.

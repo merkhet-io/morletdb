@@ -7,6 +7,7 @@
 CrateDB timestamps have millisecond resolution, so every arm stores the sample index n; time is start + n x period.
 Statements go through the official Python client over HTTP (bulk inserts via executemany -> bulk_args).
 """
+import os
 import time
 
 import numpy as np
@@ -26,14 +27,14 @@ ROW_BATCH = 10_000
 
 
 def start(volume, durability="D2"):
-    common.fresh(NAME, IMAGE, volume, "/data", [f"{PORT}:4200"], {"CRATE_HEAP_SIZE": "8g"},
+    common.fresh(NAME, IMAGE, volume, "/data", [f"{PORT}:4200"], {"CRATE_HEAP_SIZE": os.environ.get("B3_CRATE_HEAP", "8g")},
                  ["crate", "-Cdiscovery.type=single-node"])
     return _wait()
 
 
 def restart(volume):
     """Same volume, server started again; returns once every shard has recovered (state STARTED)."""
-    common.run(NAME, IMAGE, volume, "/data", [f"{PORT}:4200"], {"CRATE_HEAP_SIZE": "8g"},
+    common.run(NAME, IMAGE, volume, "/data", [f"{PORT}:4200"], {"CRATE_HEAP_SIZE": os.environ.get("B3_CRATE_HEAP", "8g")},
                ["crate", "-Cdiscovery.type=single-node"])
     conn = _wait()
     cur = conn.cursor()

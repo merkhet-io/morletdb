@@ -1,0 +1,13 @@
+2026-11-06T18:12:52
+18:12  up 10 days,  3:08, 17 users, load averages: 4.75 5.22 4.81
+ %CPU COMM
+157.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+119.3 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 14.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.5 /usr/libexec/spotlightknowledged.updater
+  1.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.0 bash
+  0.9 /usr/libexec/opendirectoryd
+2026-11-06T18:17:29
+18:17  up 10 days,  3:13, 17 users, load averages: 3.00 3.92 4.34

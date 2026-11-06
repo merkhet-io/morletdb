@@ -1430,3 +1430,56 @@ ratios. Counting page cache, which the kernel reclaims under pressure, the ratio
 MorletDB's cache is mostly the data and write-ahead log it just wrote, and shmem is PostgreSQL's 128 MB of shared
 buffers. Future stages report all three figures. The website now says that its memory figure is the working set,
 without reclaimable page cache.
+
+## Study M1: memory caps (frozen 96ee6af, run 2026-11-06 18:00–19:25)
+
+One D2 load per system and cap, swap off, 8 CPUs, the B3.16 start condition (load average 2.24 at start; the largest
+foreign process was a WebKit GPU process at 0.37 of a core). Runner `run_m1.sh`, summary `summarize_m1.py`, results
+in `results/m1/`. Descriptive only: one load per cell, no speed statements.
+
+| System | smallest passing cap | × MorletDB's | expectation (frozen) | failed caps and cause |
+|---|---|---:|---|---|
+| MorletDB 0.3.7-alpha.1 | **256 MB** | 1× | 256–512 MB | none |
+| TDengine 3.4 | 1 GB | 4× | 512 MB–1 GB | 256 MB: no progress, 20-minute limit; 512 MB: refused `CREATE DATABASE` ("No enough memory in dnode") |
+| CrateDB 6.4 | 1 GB | 4× | 2–4 GB | 256 MB: did not start; 512 MB: server closed the connection during the load |
+| QuestDB 10.1 | 2 GB | 8× | 1 GB (perhaps 512 MB) | 256 MB: did not start (out-of-memory kill); 512 MB: did not start; 1 GB: ingestion completed, the read process failed (its error output was not kept; no out-of-memory kill recorded) |
+| TimescaleDB 2.31 | 2 GB | 8× | 512 MB | 256 MB, 512 MB, 1 GB: out-of-memory kill of a server process (ingestion completed at 1 GB; the kill came during the row-store reads) |
+| IoTDB 2.0 | 2 GB | 8× | 1–2 GB | 256 MB: did not start; 512 MB: connection lost during ingestion; 1 GB: insert refused ("element size of WALEntry 9200000 is larger than the total memory size of wal buffer queue") |
+
+At the smallest cap and at 16 GB in the same session (p50; working set: 50 ms peak):
+
+| System | 16 GB: ingest / R1 / R2 / stats ms / working set MiB | smallest cap: the same |
+|---|---|---|
+| MorletDB | 14.14 M/s / 0.628 / 2.38 / 0.528 / 178.8 | 14.32 M/s / 0.609 / 2.507 / 0.543 / 172 |
+| QuestDB | 9.62 M/s / 0.647 / 6.946 / 2.441 / 2,307 | 9.85 M/s / 0.687 / 6.146 / 2.451 / 2,007 |
+| TimescaleDB | 0.97 M/s / 1.476 / 35.37 / 10.28 / 505 | 0.94 M/s / 1.486 / 34.32 / 10.12 / 247 |
+| TDengine | 5.41 M/s / 3.299 / 43.92 / 3.594 / 1,115 | 5.01 M/s / 3.983 / 45.04 / 3.662 / 677 |
+| IoTDB | 2.81 M/s / 5.82 / 39.90 / 6.29 / 6,276 | 2.74 M/s / 6.402 / 42.78 / 6.571 / 1,372 |
+| CrateDB | 0.80 M/s / 4.465 / 47.63 / 47.76 / 6,220 | 0.76 M/s / 4.515 / 51.82 / 51.26 / 1,023 |
+
+**Answer to the owner's question.** The 16 GB memory row was a footprint: IoTDB and CrateDB fill what they are given
+(about 6 GiB at 16 GB, 1.0–1.4 GiB at their smallest cap), so their 35× working-set ratios overstated the need. The
+need still favours MorletDB: every other system needed 4–8× MorletDB's cap, which is narrower than the 2–35×
+working-set ratios but nowhere below 4×. TimescaleDB's small 16 GB footprint (2–3× MorletDB's) did not translate
+into a small need: with PostgreSQL defaults it was killed for memory at 1 GB during reads. No system slowed down
+noticeably at its smallest cap.
+
+**Against the expectation.** MorletDB, TDengine and IoTDB fell inside their expected ranges; CrateDB needed less than
+expected (1 GB, not 2–4 GB); QuestDB and TimescaleDB needed more (2 GB, not 512 MB–1 GB).
+
+**Limits, stated before any use of these figures.**
+- Caps are powers of two, so a 4× or 8× ratio could be about 2× smaller or larger for a finer ladder.
+- Every system ran its B3 configuration, sized by its own documentation for the cap (CrateDB's heap at half the
+  cap; QuestDB's JVM and IoTDB's start script from the container limit). Several failures are configuration limits
+  an operator could raise or lower, not data that does not fit: TDengine's per-database buffer check, IoTDB's WAL
+  buffer against B3's 9.2 MB insert batches, TimescaleDB's per-query memory. A tuned system could pass at a smaller
+  cap; M1 measures each system as configured for B3, and MorletDB was not tuned either.
+- QuestDB's 1 GB failure is under-recorded: the runner kept only the read process's exit status, not its error
+  output, and the container shows no out-of-memory kill. It counts as a failure under the frozen pass rule.
+- The loaders remove their containers on success, so the container state is recorded only for failed loads.
+- One load per cell; a cap at the edge could pass or fail on another try.
+
+**Website** (rule frozen with M1): the chart's memory row is now each system's smallest passing cap over MorletDB's
+(QuestDB, TimescaleDB, IoTDB 8×; TDengine, CrateDB 4×; no "> 4 GB"); the QuestDB table shows both the 8× cap ratio
+and the 16 GB working set, labelled as the footprint with the documented configuration; the caption says caps are
+powers of two. The other databases' tables keep their B3.13 working-set rows.

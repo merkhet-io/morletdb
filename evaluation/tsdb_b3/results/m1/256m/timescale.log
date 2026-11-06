@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_timescale.py", line 250, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_timescale.py", line 223, in load
+    queryable = settle(conn, expected(m, ks))
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/run_timescale.py", line 43, in settle
+    if c.count(conn) == want:
+       ~~~~~~~^^^^^^
+  File "/Users/zin/sophia/morletdb-mem/evaluation/tsdb_b3/timescale_adapter.py", line 120, in count
+    return {g: int(conn.execute(f"SELECT count(*) FROM {TABLES[g]}").fetchone()[0]) for g in wl.GROUPS}
+                   ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3/lib/python3.13/site-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
