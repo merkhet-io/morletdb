@@ -3,8 +3,8 @@
 
 Every speed and memory ratio comes from one session in which a released MorletDB and that database ran alternately on
 the same machine, reads from a fresh client process, never from two sessions (evaluation/tsdb_b3/RESULTS.md):
-QuestDB's lane from B3.15, the released 0.3.7-alpha.1 reading with compressed transfer as its SDK does
-(summarize_b315.py), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.15's frozen
+QuestDB's lane from B3.16, the released 0.3.7-alpha.1 reading with compressed transfer as its SDK does
+(summarize_b316.py), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.16's frozen
 website rule says. Speed: the other system's time over MorletDB's (p50),
 or MorletDB's throughput over the other's, for the system's faster layout per measure. Storage (deterministic, from
 each system's stage) is the other system's data on disk over MorletDB's whole database (0.3.6: 161.5 MiB, B3.13;
@@ -26,20 +26,21 @@ SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0"
 MEASURES = [
     ("Data on disk", "storage", [(1162.7, 163.3, 232.7, "as Parquet zstd 9"), (1785.6, 161.5), (660.0, 161.5),
                                  (566.7, 161.5), (815.4, 161.5)], "MiB"),
-    ("Ingestion, one connection", "ingest", [(13.82, 9.04), (11.60, 0.68), (13.92, 2.69), (14.28, 4.79),
+    ("Ingestion, one connection", "ingest", [(13.80, 8.90), (11.60, 0.68), (13.92, 2.69), (14.28, 4.79),
                                              (13.84, 0.90)], "M samples/s"),
-    ("Read 4,096 samples", "short", [(0.73, 0.72), (7.16, 0.65), (8.51, 0.73), (3.65, 0.62), (1.55, 0.65)],
+    ("Read 4,096 samples", "short", [(0.86, 0.63), (7.16, 0.65), (8.51, 0.73), (3.65, 0.62), (1.55, 0.65)],
      "ms p50"),
-    ("Read 128,000 samples", "long", [(6.68, 2.53), (54.33, 7.97), (42.44, 8.91), (48.75, 6.72),
+    ("Read 128,000 samples", "long", [(8.28, 2.65), (54.33, 7.97), (42.44, 8.91), (48.75, 6.72),
                                       (40.54, 8.16)], "ms p50"),
-    ("Interval statistics", "stats", [(2.45, 0.56), (5.06, 3.04), (7.49, 2.63), (3.74, 2.52), (10.16, 2.62)],
+    ("Interval statistics", "stats", [(2.88, 0.53), (5.06, 3.04), (7.49, 2.63), (3.74, 2.52), (10.16, 2.62)],
      "ms p50"),
     # median peak server memory over a layout's loads, lowest-memory layout; JVM heaps follow their documented config
-    ("Server memory", "memory", [(2267, 176), (6166, 176), (5925, 173), (1024, 168), (400, 177)], "MiB"),
+    ("Server memory", "memory", [(2289, 177), (6166, 176), (5925, 173), (1024, 168), (400, 177)], "MiB"),
 ]
 # a dot that is not the released build's base configuration, and a ring with its own pair: (measure, system) -> ...
-DOT_NOTE = {(k, 0): "0.3.7-alpha.1, compressed transfer, B3.15"
-            for k in ("storage", "ingest", "short", "long", "stats", "memory")}
+DOT_NOTE = {(k, 0): "0.3.7-alpha.1, compressed transfer, B3.16"
+            for k in ("ingest", "short", "long", "stats", "memory")}
+DOT_NOTE[("storage", 0)] = "0.3.7-alpha.1, B3.15"
 RING = {}
 LO, HI = 0.4, 50.0
 X0, X1 = 230, 728

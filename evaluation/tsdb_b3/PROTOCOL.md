@@ -861,3 +861,38 @@ Everything common to B3 applies.
   release. Storage stays as measured: chunk bytes are unchanged, plus the summaries.
 - **Scope:** one machine, one dataset, a client on the same host as the server's Docker VM (where transfer is costly);
   the gain of compressed transfer depends on the network path and will differ elsewhere.
+
+## Amendment B3.16: B3.15 with the corrected harness (FROZEN before any load of the benchmark set)
+
+Added 2026-11-06 at the owner's request. After B3.15, an exploratory study (`short_reads_i2.py`, RESULTS.md, B3.15
+investigation) traced the compressed-transfer arm's slower short reads to the harness: it resolved the SDK's path
+and import on every read (about 80 µs), where the SDK decides in about 0.5 µs. The harness now decides once per
+length (`morletdb_adapter._encoded_reader`), and nothing else changes. Everything common to B3 applies, and so does
+everything in B3.15 except what is stated here.
+
+- **Arms**, as in B3.15 but without the previous release:
+  - `morletdb-i2`: release 0.3.7-alpha.1 with compressed transfer, using the corrected harness and the same decoder,
+    sha256 `3857d48f7b8d…`, recorded in every result.
+  - `morletdb-i1`: the same release with raw transfer.
+  - QuestDB 10.1.0.
+- **Runs:** `run_b316.sh`, for r = 1, 2, 3 and D2 then D1: `morletdb-i2`, then QuestDB, then `morletdb-i1`. That is
+  18 loads, with reads and statistics from a fresh client process, and results in `results/b316-questdb/`.
+  [`summarize_b316.py`](summarize_b316.py) prints the comparisons.
+- **Machine:** the conditions the runner enforces since B3.15:
+  - Before the first load: Docker is up, the Mac is on AC power, and the lid is open, or closed without causing
+    sleep.
+  - The 1-minute load average is below 3, and no process other than Docker's uses more than half a core.
+  - Power and lid are checked again before every load, and a failed check stops the session.
+- **Questions and statements**, by B3's rule, `morletdb-i2` against QuestDB:
+  1. **R1** (4,096 samples): a statement, or not.
+  2. **R4**, recent and older data: a statement, or not, in either direction.
+  3. Every other measure is reported, including any loss. Compressed against raw transfer is reported for every
+     read measure.
+- **Expectation, written before measuring:** from B3.15's raw arm in the same session, R1 should get a statement of
+  about 1.2× and R4 older should have no statement; neither is a hypothesis this stage must confirm.
+- **Website, decided now whatever the outcome:**
+  - The QuestDB tab and lane take B3.16's `morletdb-i2` figures in place of B3.15's, with losses and "no statement"
+    shown as measured.
+  - Storage stays as B3.15 measured it, because the harness change does not touch ingestion.
+  - B3.15 stays in the results.
+  - The other databases keep B3.13's figures.

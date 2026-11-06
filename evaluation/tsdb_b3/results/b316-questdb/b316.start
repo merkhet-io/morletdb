@@ -1,0 +1,11 @@
+2026-11-06T17:19:04
+17:19  up 10 days,  2:15, 17 users, load averages: 2.89 2.26 1.64
+ %CPU COMM
+ 32.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 26.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 15.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  5.5 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  3.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  3.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  2.1 /usr/libexec/networkserviceproxy
