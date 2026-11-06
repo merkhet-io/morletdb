@@ -1256,7 +1256,8 @@ Server memory: 176 MiB against 2,267 MiB.
 
 **Short reads are slower in the compressed-transfer arm** (R1 1.1× / 1.1×, R4 recent 1.1× / 1.2×, R4 older
 1.4× / 1.7×; R5 0.91×). Both arms read these by the same raw statement: they are shorter than the 32,768-sample
-threshold, as in the SDK. The cause is not established:
+threshold, as in the SDK. The cause, found after the stage, is the harness's per-read decoder lookup (see the
+investigation below). As recorded at the time:
 - One known difference: the harness looks up the decoder on every read (about 20 µs per call, measured afterwards
   outside the run), where the SDK decides once. That explains part of R1's 0.09 ms, not R4 older's 0.22 ms.
 - The arm also always runs first in each round.
@@ -1271,6 +1272,41 @@ Finding the cause needs its own exploratory measurement, so these figures stand 
 
 Storage: chunk bytes are unchanged, and the summaries add 1.8 MB of heap on this dataset (4.33 MB on 0.3.7 against 2.48 MB on 0.3.6
 for `b3_chunks`).
+
+## Investigation of the slower short reads (exploratory, after the stage, not part of it)
+
+[`short_reads_i2.py`](short_reads_i2.py) loaded the development set once into the released 0.3.7-alpha.1 and ran
+five client variants, each in a fresh process. The order of the variants rotated every round, and there were
+five rounds. Results are in `results/dev/short_reads_i2_20261106T163107.json`.
+
+Each value is the p50 in ms, as the median of the five rounds:
+
+| Variant | R1 | R4 recent | R4 older | R2 |
+|---|---:|---:|---:|---:|
+| `i1`: raw transfer | 0.612 | 0.626 | 0.602 | 5.83 |
+| `i2`: compressed transfer, as in B3.15 | 0.691 | 0.711 | 0.688 | 2.72 |
+| `i2-once`: as `i2`, transfer decided once per length | 0.615 | 0.644 | 0.604 | 2.59 |
+| `i1-lib`: raw, with the SDK imported and the native library loaded | 0.616 | 0.628 | 0.606 | 5.86 |
+| `i2-noR23`: as `i2`, without the compressed R2 and R3 reads | 0.689 | 0.711 | 0.689 | — |
+
+**Cause: the benchmark harness, not MorletDB and not the SDK.** B3.15's `morletdb-i2` adapter resolved the SDK's
+path and import on every read before deciding the transfer. That cost about 80 µs per read in a fresh process, which
+is the whole gap on short reads: deciding once (`i2-once`) matches raw transfer, and also takes about 0.13 ms off R2.
+
+The other candidates are ruled out:
+- Loading the library has no effect: `i1-lib` matches `i1`.
+- Earlier compressed reads leave nothing behind: `i2-noR23` matches `i2`.
+- The arm's position in a round is not the cause: the gap is the same in every rotated order.
+
+The SDK decides from an environment variable and cached lookups, measured at about 0.5 µs per read.
+
+The development set's gap (about 0.08 ms) is smaller than B3.15's R4 older (0.22 ms), which ran on a busier
+machine (load averages 5.9 to 7.7, from the session itself). The harness now caches the decision as the SDK does
+(about 0.07 µs).
+
+**B3.15's figures stay as measured**, including the R4 loss and the missing R1 statement, because the stage was
+frozen with this harness. Whether the SDK's compressed-transfer path keeps R1's statement and closes R4 against
+QuestDB needs a new frozen stage with the corrected harness.
 
 ## Statements against QuestDB (B3.15, released 0.3.7-alpha.1)
 

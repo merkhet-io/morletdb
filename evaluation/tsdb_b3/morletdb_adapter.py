@@ -145,21 +145,26 @@ def count(conn):
     return conn.execute(f"SELECT count(*), coalesce(sum((checkpoint->>'end')::bigint), 0) FROM {COLLECTION}").fetchone()
 
 
+_ENCODED = {}
+
+
 def _encoded_reader(length):
     """The SDK's native decoder when this arm reads `length` samples by compressed transfer (B3.15), else None.
     The decoder and its policy are the SDK's own (sdk/python/src/morletdb/_native.py, library from
-    MORLETDB_NATIVE_LIB); a missing library is an error, never a silent fallback to raw reads."""
+    MORLETDB_NATIVE_LIB); a missing library is an error, never a silent fallback to raw reads. Decided once per
+    length and cached, as cheap as the SDK's own decision (about 0.5 us): B3.15 ran an earlier version that resolved
+    the SDK path and import on every read, which cost about 80 us per short read (short_reads_i2.py)."""
     if not VARIANT.get("encoded_read"):
         return None
-    import sys
-    from pathlib import Path
-    sdk = str(Path(__file__).resolve().parents[2] / "sdk" / "python" / "src")
-    if sdk not in sys.path:
-        sys.path.insert(0, sdk)
-    from morletdb import _native
-    if length < _native.ENCODED_MIN_SAMPLES:
-        return None
-    return _native.require()
+    if length not in _ENCODED:
+        import sys
+        from pathlib import Path
+        sdk = str(Path(__file__).resolve().parents[2] / "sdk" / "python" / "src")
+        if sdk not in sys.path:
+            sys.path.insert(0, sdk)
+        from morletdb import _native
+        _ENCODED[length] = None if length < _native.ENCODED_MIN_SAMPLES else _native.require()
+    return _ENCODED[length]
 
 
 def read(conn, acq, channels, offset, length):
