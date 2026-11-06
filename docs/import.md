@@ -10,7 +10,7 @@ The release image (PostgreSQL 17 with pg_morlet; linux/amd64 and, from 0.3.3-alp
 machines add `MORLET_PLATFORM=linux/arm64`):
 
 ```sh
-MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:0.3.6-alpha.1 docker compose -f compose.release.yaml up -d db
+MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:0.3.7-alpha.1 docker compose -f compose.release.yaml up -d db
 export DATABASE_URL=postgresql://morlet:morlet-demo-only@127.0.0.1:54329/morlet
 psql "$DATABASE_URL" -c 'CREATE EXTENSION IF NOT EXISTS pg_morlet'
 ```

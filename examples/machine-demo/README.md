@@ -17,7 +17,7 @@ docker compose build load
 docker compose run --rm load
 ```
 
-This starts PostgreSQL 17 with pg_morlet (the `0.3.6-alpha.1` release image, native on amd64 and arm64), downloads the IMS
+This starts PostgreSQL 17 with pg_morlet (the `0.3.7-alpha.1` release image, native on amd64 and arm64), downloads the IMS
 bearing archive from NASA's prognostics data repository (about 1 GB; SHA-256 checked) and extracts tests 2 and
 3. It imports every test-2 snapshot and every sixth test-3 snapshot (one an hour) as four recordings each, one
 per bearing, and builds the search envelopes: 8,152 recordings, 167 million samples and 73,368 search
