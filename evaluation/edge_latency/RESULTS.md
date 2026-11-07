@@ -67,9 +67,13 @@ which the search contract tests check. No SQL changes.
 
 ## Check on the device
 
-N1's full search arm, all 1,393 queries, was rerun on the Pi with an image of this change: `results/pi_after_n1.json`.
+N1's full search arm, all 1,393 queries, was rerun on the Pi with an image of this change: `results/pi_after_n1.json.gz`.
 Its ids and distance bits are compared with the desktop's run from N1 (`evaluation/nilm_n1/results/m_desktop.json.gz`).
-Result: N1_RERUN.
+
+**Result: identical on all 1,393 queries**, with identical stored bytes.
+
+- Latency on the Pi: median **1.54 s**, p95 **1.59 s**, against 14.9 s and 23.9 s in N1.
+- Ingest took 700 s (657 s in N1), and the Pi ended at 66.6 °C with the soft temperature limit active (`0x80008`).
 
 ## Run
 
