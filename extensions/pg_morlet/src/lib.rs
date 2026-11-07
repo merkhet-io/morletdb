@@ -3645,6 +3645,18 @@ END $$"#).unwrap();
         assert_eq!(one("SELECT morlet_build_rollups('rf','A')"), 0);
     }
 
+    #[pg_test]
+    fn rollups_are_skipped_for_readers_who_may_not_read_them() {
+        Spi::run("SELECT morlet_create_stream_collection('public','rp'); SELECT morlet_start_recording('rp','A',1000,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunk('rp','A',k*32768,array_fill((k%7)::float8,ARRAY[32768])) FROM generate_series(0,95) k ORDER BY k;
+          SELECT morlet_enable_rollups('rp'); SELECT morlet_build_rollups('rp','A');
+          CREATE ROLE rp_reader; GRANT SELECT ON rp, rp_chunks TO rp_reader;").unwrap();
+        let q = "SELECT string_agg(encode(float8send(v),'hex'),',') FROM morlet_interval_buckets('rp','A',100,3000000,3,'overview') s, unnest(s) v";
+        let all = Spi::get_one::<String>(q).unwrap().unwrap();
+        Spi::run("SET LOCAL ROLE rp_reader").unwrap();
+        assert_eq!(Spi::get_one::<String>(q).unwrap().unwrap(), all);
+    }
+
     #[pg_test(
         error = "samples of recording A in 65536..131072 were compacted to level 4 (episode 1, ledger 1)"
     )]

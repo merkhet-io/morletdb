@@ -592,7 +592,8 @@ BEGIN
   -- inside one bucket; what it covers is removed from the parts left for finer levels and for chunks.
   gaps:=int8multirange(int8range(interval_start,interval_end));
   roll:=public.morlet_rollup_relation(collection);
-  IF roll IS NOT NULL THEN
+  -- A caller who may not read the roll-ups gets the same result from the chunks.
+  IF roll IS NOT NULL AND has_table_privilege(roll,'SELECT') THEN
     FOR lvl IN REVERSE 3..1 LOOP
       EXIT WHEN isempty(gaps);
       FOR picked IN EXECUTE format('SELECT r.start_sample,r.end_sample,r.summary
@@ -2858,7 +2859,9 @@ BEGIN
         USING ep.recording_id,ep.start_sample,ep.end_sample,ep.episode_id;
       bytes:=bytes+part;
       -- Roll-ups that hold any chunk or kept summary removed here go with them (#219): they are derived rows.
+      -- The builder's lock keeps it from writing a roll-up of these rows while they are removed.
       IF roll IS NOT NULL THEN
+        PERFORM pg_advisory_xact_lock(hashtextextended('morlet-rollup/'||collection::oid||'/'||ep.recording_id,0));
         EXECUTE format('SELECT count(*),coalesce(sum(octet_length(r.summary)),0) FROM %s r WHERE r.recording_id=$1
             AND EXISTS (SELECT 1 FROM (SELECT c.start_sample,c.sample_count FROM %s c WHERE %s
               UNION ALL SELECT c.start_sample,c.sample_count FROM %s c WHERE %s) x

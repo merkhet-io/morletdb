@@ -30,6 +30,16 @@ SQL version 0.3.6, with an update script from 0.3.5.
   dev gallery where half the windows are idle, the median screened search drops from 253 ms to 65 ms; results
   are bit-identical, and galleries without idle stretches are unchanged. Nearly constant windows keep the
   infinite bound. E7's frozen protocol describes the earlier rule.
+- **Exact roll-ups (#219):** `morlet_enable_rollups` and the resumable `morlet_build_rollups` store exact merges of
+  chunk summaries in blocks of 2^20, 2^25 and 2^30 samples. `morlet_interval_stats` and `morlet_interval_overview`
+  take the coarsest roll-ups that fit each part of the interval (and each bucket), then finer ones and chunks at
+  the edges, with bitwise the same results as from the chunks alone. YEAR_RESULT Roll-ups survive memory levels
+  2 and 3, go with the samples forgotten at level 4, follow row security, and are skipped for a reader who may not
+  read them.
+- **Interval statistics merge exactly (#219):** each chunk's part is still summed with compensation, but the parts
+  are now merged in exact arithmetic and rounded once (`morlet_core::exactstats`), so results no longer depend on
+  how an interval is split or in which order pieces are merged. Mean and RMS over more than one chunk can differ
+  from 0.3.5 in the last bits; the mean of a single chunk is unchanged. Stored chunk summaries stay valid.
 - **Tiny signals (#228):** normalization, distances, RMS and envelopes keep their shape for amplitudes down to
   1e-300; ordinary inputs give bit-identical results.
 
