@@ -75,8 +75,9 @@ and not identification of overlapping events.
 
 **M: MorletDB exact envelope search (the product, unchanged).**
 - **Storage:** one recording per record holding the current of its event window. Channel `i`, unit `A`,
-  30,000 Hz, `sample_quantum` 0.01. The importer checks that every value is a multiple of 0.01 and stops
-  otherwise, so storage is lossless. Metadata carries type and location.
+  30,000 Hz. The values are the CSV's numbers parsed to float64 (correctly rounded), stored bitwise
+  losslessly, with `sample_quantum` 0.001 as a storage hint (see Amendment 1). The harness reads every
+  record back and asserts bitwise equality. Metadata carries type and location.
 - **Envelopes:** `morlet_build_envelopes(collection, recording, 16384, 16384)`, one window per record.
 - **Query:** the current of the query's event window through
   `morlet_search_envelopes(collection, samples, 30000, 'i', 'A', '{}', top_k, 0.075)`. That is the
@@ -169,6 +170,26 @@ Either way the result is published in `RESULTS.md`.
 - No learned models, no parameter search for M or B1 (every value above is fixed).
 - No WHITED or COOLL (secondary, after this result).
 - No industrial data.
+
+## Amendment 1 (2026-11-07, before any result)
+
+**Found:** the first run of `n1.py windows` stopped on record 1, as this protocol required, because its
+values are not multiples of 0.01. Counting decimals over all 1876 files (a format check, no signal
+statistic):
+- **Current:** mostly 2–3 decimals (178M values), 0–1 decimals (15M), and about 2.8M values with 6–19
+  decimals, some of them float-formatting artifacts.
+- **Voltage:** similar.
+
+**Changed:**
+- **No fixed grid.** The windows hold the parsed float64 values.
+- **Storage.** MorletDB stores them bitwise losslessly whatever the quantum (every chunk kind decodes
+  bitwise to its input; the quantum is a storage hint only), with `sample_quantum` 0.001.
+- **Read-back.** The harness asserts bitwise read-back for every record.
+- **Same numbers on the Pi.** The windows file (float64) is what the Pi receives, so both machines search
+  identical numbers.
+
+**Unchanged:** methods, windows, splits, metrics and hypotheses. The storage figures now include any
+extra cost of the off-grid values.
 
 ## Files
 

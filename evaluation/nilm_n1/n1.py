@@ -2,7 +2,7 @@
 """Study N1 harness (PROTOCOL.md): PLAID turn-on windows, MorletDB exact envelope search (M), current-feature
 1-NN (B1) and current+voltage 1-NN (B2), leave one location out.
 
-  n1.py windows --plaid DIR --out windows.npz     event windows as 0.01 A / 0.01 V counts (exact on every machine)
+  n1.py windows --plaid DIR --out windows.npz     event windows as parsed float64 (the same numbers on every machine)
   n1.py m --windows windows.npz --dsn DSN --out m.json        M on one machine (desktop or Pi, for H3)
   n1.py report --windows windows.npz --m m.json --out results.json [--m-pi m_pi.json]
 
@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 
 RATE, CYCLE, WINDOW, PRE = 30000, 500, 16384, 5000
-QUANTUM = 0.01
+QUANTUM = 0.001  # storage hint only: MorletDB stores every value bitwise (Amendment 1)
 MAX_LAG = 0.075
 COLLECTION = "n1"
 
@@ -48,13 +48,6 @@ def onset(current):
     return max(0, min(CYCLE * c - PRE, len(current) - WINDOW)), False
 
 
-def counts(x, name):
-    k = np.round(x / QUANTUM)
-    if np.max(np.abs(x / QUANTUM - k)) > 1e-6:
-        raise SystemExit(f"{name}: values are not multiples of {QUANTUM}")
-    return k.astype(np.int32)
-
-
 def windows(plaid, out):
     meta = json.loads((plaid / "metadata_submetered.json").read_text())
     primary, unknown = select(meta)
@@ -66,8 +59,8 @@ def windows(plaid, out):
             raise SystemExit(f"record {k} is shorter than the window")
         s, f = onset(cur)
         ids.append(k)
-        ic.append(counts(cur[s:s + WINDOW], k))
-        vc.append(counts(volt[s:s + WINDOW], k))
+        ic.append(cur[s:s + WINDOW].copy())
+        vc.append(volt[s:s + WINDOW].copy())
         starts.append(s)
         flags.append(f)
     np.savez_compressed(out, ids=np.array(ids), i=np.stack(ic), v=np.stack(vc), start=np.array(starts),
@@ -83,8 +76,8 @@ def load(path):
 
 
 def samples(c):
-    """Counts back to values: k / 100 is the correctly rounded double of the CSV's two-decimal value."""
-    return c.astype(np.float64) / 100.0
+    """The window's float64 values, as parsed from the CSV (identical on every machine via windows.npz)."""
+    return np.asarray(c, dtype=np.float64)
 
 
 def rid(k):
@@ -150,6 +143,10 @@ def run_m(w, dsn, out):
                           (COLLECTION, rid(ids[j]), samples(w["i"][j]).tolist()))
                 c.execute("SELECT morlet_build_envelopes(%s::regclass, %s, %s, %s)",
                           (COLLECTION, rid(ids[j]), WINDOW, WINDOW))
+            back = c.execute("SELECT samples FROM morlet_read_interval(%s::regclass, %s, 0, %s)",
+                             (COLLECTION, rid(ids[j]), WINDOW)).fetchone()[0]
+            if np.asarray(back, dtype=np.float64).tobytes() != samples(w["i"][j]).tobytes():
+                raise SystemExit(f"record {ids[j]}: read-back is not bitwise equal")
         res["ingest_s"] = time.perf_counter() - t0
         res["bytes"] = dict(zip(("chunks", "envelopes"), c.execute(
             f"SELECT (SELECT sum(octet_length(encoded)) FROM {COLLECTION}_chunks), "

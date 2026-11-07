@@ -33,11 +33,9 @@ def test_no_clear_transient_is_flagged_at_zero():
     assert n1.onset(mains(60, 1.0) + 0.001) == (0, True)
 
 
-def test_counts_are_exact_and_refuse_finer_values():
-    x = np.array([-0.26, 163.89, 0.0, 1.0])
-    assert np.array_equal(n1.samples(n1.counts(x, "t")), x)
-    with pytest.raises(SystemExit):
-        n1.counts(np.array([0.123]), "t")
+def test_samples_are_the_stored_float64_values():
+    x = np.array([-0.26, 163.89, 0.12300000000000001, -0.0, 1e-19])
+    assert n1.samples(x).tobytes() == x.tobytes()
 
 
 def test_feature_neighbours_never_use_the_query_location():
