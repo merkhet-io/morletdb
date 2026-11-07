@@ -3644,6 +3644,91 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn commit_notifications_collect_ranges_once_per_transaction() {
+        // #205. Delivery needs a real commit and a listener (tests/notifications.sh); here: the switches, the refusals
+        // and the per-transaction ranges, with the deferred commit trigger fired early by SET CONSTRAINTS.
+        let text = |sql: &str| Spi::get_one::<String>(sql).unwrap().unwrap_or_default();
+        Spi::run("SELECT morlet_create_stream_collection('public','nt');
+          SELECT morlet_start_recording('nt',r,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['a','b']) r").unwrap();
+        assert_eq!(
+            text("SELECT morlet_enable_notifications('nt')"),
+            "morlet_nt"
+        );
+        assert_eq!(
+            text("SELECT channel||' '||detail FROM morlet_notification_channel('nt')"),
+            "morlet_nt true"
+        );
+        assert_eq!(
+            text("SELECT morlet_enable_notifications('nt','plant 7 é')"),
+            "plant 7 é"
+        );
+        assert_eq!(
+            text("SELECT channel||' '||detail FROM morlet_notification_channel('nt')"),
+            "plant 7 é true"
+        );
+        let pending = "SELECT coalesce(current_setting('morlet.notify_pending',true),'')";
+        Spi::run(
+            "SELECT morlet_append_chunk('nt','a',0,array_fill(1.5,ARRAY[4096]));
+          SELECT morlet_append_chunk('nt','a',4096,array_fill(2.5,ARRAY[100]));
+          SELECT morlet_append_chunk('nt','b',0,array_fill(0.5,ARRAY[300]));
+          SELECT morlet_append_chunk('nt','a',0,array_fill(1.5,ARRAY[4096]))",
+        )
+        .unwrap(); // the last is a replay
+        assert_eq!(
+            text(&format!(
+                "SELECT (({pending})::jsonb->('nt_chunks'::regclass::oid::text))::text"
+            )),
+            r#"{"a": [0, 4196], "b": [0, 300]}"#
+        );
+        Spi::run("SET CONSTRAINTS ALL IMMEDIATE").unwrap(); // sends the notification and clears the collection's entry
+        assert_eq!(text(&format!("SELECT ({pending})::jsonb::text")), "{}");
+        assert!(Spi::run("SELECT morlet_disable_notifications('nt')").is_ok());
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT morlet_disable_notifications('nt')").unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM pg_trigger WHERE tgrelid='nt_chunks'::regclass AND NOT tgisinternal").unwrap(),
+            Some(0)
+        );
+        // Refusals: an unencoded (float8[] chunk) collection, a bad channel, detailed payloads under row security.
+        Spi::run(
+            "CREATE FUNCTION pg_temp.nt_err(q text) RETURNS text LANGUAGE plpgsql AS $$
+          BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLERRM; END $$",
+        )
+        .unwrap();
+        let err = |sql: &str| {
+            text(&format!(
+                "SELECT pg_temp.nt_err({})",
+                pgrx::spi::quote_literal(sql)
+            ))
+        };
+        assert_eq!(
+            err("SELECT morlet_enable_notifications('nt','')"),
+            "channel must be 1..63 bytes"
+        );
+        Spi::run("SELECT morlet_enable_row_security('nt')").unwrap();
+        assert_eq!(
+            err("SELECT morlet_enable_notifications('nt')"),
+            "row security is enabled on this collection: use detail => false"
+        );
+        assert_eq!(
+            text("SELECT morlet_enable_notifications('nt', detail => false)"),
+            "morlet_nt"
+        );
+        Spi::run(
+            "CREATE TABLE nt_old(recording_id text PRIMARY KEY, checkpoint jsonb);
+          CREATE TABLE nt_old_chunks(recording_id text, start_sample bigint, samples float8[]);
+          CREATE TABLE nt_old_segments(recording_id text, start_sample bigint, features float8[])",
+        )
+        .unwrap();
+        assert_eq!(
+            err("SELECT morlet_enable_notifications('nt_old')"),
+            "notifications need a collection with encoded chunks"
+        );
+    }
+
+    #[pg_test]
     fn rollups_are_read_through_the_index() {
         // A year of chunks took 18 s with roll-ups when the planner scanned every chunk and roll-up for the gaps
         // (#219). Here: 6,800 chunks (34 appended, copied forward 199 times) and their level-1 and level-2 roll-ups.

@@ -1,8 +1,9 @@
 """Synchronous client for pg_morlet's recording API (SQL 0.3.2 and later)."""
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
-from typing import Any, Mapping
+from typing import Any, Iterator, Mapping
 
 import numpy as np
 import psycopg
@@ -11,7 +12,8 @@ from psycopg.types.json import Jsonb
 
 from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, OverviewBucket, Recording, SearchResult
+from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
+                     OverviewBucket, Recording, SearchResult)
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
 READ_PIECE = 32768           # morlet_read_interval's per-call limit (servers without the raw read)
@@ -335,6 +337,45 @@ class Client:
                        None if r[7] is None else np.asarray(r[7], dtype=np.float64),
                        None if r[8] is None else IntervalStats(int(r[8]), *map(float, r[9:13])), r[13]) for r in rows]
 
+    # --- notifications -------------------------------------------------------------------------------
+    def enable_notifications(self, collection: str, *, channel: str | None = None, detail: bool = True) -> str:
+        """Send one notification on `channel` (default morlet_<table name>) for every committed transaction that
+        stores new chunks in the collection; returns the channel. With `detail=False` notifications carry only
+        the number of recordings: use it when roles that may not read every recording can connect, since any
+        role can LISTEN (row security refuses detail). Takes effect when the transaction commits (SQL 0.3.6)."""
+        if not self._has("public.morlet_enable_notifications(regclass,text,boolean)"):
+            raise UnsupportedError("notifications need pg_morlet SQL 0.3.6 or later")
+        return self._one("SELECT morlet_enable_notifications(%s::regclass,%s,%s)", (collection, channel, detail))
+
+    def disable_notifications(self, collection: str) -> bool:
+        """Stop notifications for the collection; returns whether they were on."""
+        if not self._has("public.morlet_disable_notifications(regclass)"):
+            raise UnsupportedError("notifications need pg_morlet SQL 0.3.6 or later")
+        return bool(self._one("SELECT morlet_disable_notifications(%s::regclass)", (collection,)))
+
+    def notifications(self, collection: str, *, timeout: float | None = None,
+                      stop_after: int | None = None) -> Iterator[Notification]:
+        """Wait for commits to the collection and yield one Notification per committed transaction that stored
+        new chunks, after its samples are readable. Blocks until `stop_after` notifications arrived or no
+        notification arrived for `timeout` seconds (None: forever). Needs a connection in autocommit mode,
+        used for nothing else meanwhile (`Client.connect(dsn, autocommit=True)`): notifications reach a
+        session only between transactions. Notifications are not stored: commits while nobody listens are
+        not replayed, so a consumer that starts or reconnects reads what it missed with `latest`."""
+        if not self.connection.autocommit:
+            raise InvalidInputError("notifications need a connection in autocommit mode, used only for listening")
+        if not self._has("public.morlet_notification_channel(regclass)"):
+            raise UnsupportedError("notifications need pg_morlet SQL 0.3.6 or later")
+        row = self._execute("SELECT channel FROM morlet_notification_channel(%s::regclass)", (collection,)).fetchone()
+        if row is None:
+            raise InvalidInputError(f"notifications are not enabled for {collection} (enable_notifications)")
+        self._execute(sql.SQL("LISTEN {}").format(sql.Identifier(row[0])))
+        try:
+            for n in self.connection.notifies(timeout=timeout, stop_after=stop_after):
+                if n.channel == row[0]:
+                    yield _notification(json.loads(n.payload))
+        finally:
+            self._execute(sql.SQL("UNLISTEN {}").format(sql.Identifier(row[0])))
+
     def samples_for_time(self, recording: Recording, t_start_ns: int, t_end_ns: int) -> tuple[int, int]:
         """The half-open sample range covering UTC times [t_start_ns, t_end_ns) (integer nanoseconds), by
         the server's rule: the first sample at or after each time (ceil). Needs the recording's start time."""
@@ -405,6 +446,15 @@ class Client:
                                                for a, b, lo, hi, q in (r[12] or [])])
             matches.append(Match(i + 1, IntervalRef(collection, r[0], int(r[1]), int(r[2])), float(r[3]), r[4], ev))
         return SearchResult(query, matches, "probes" if probes else "exact", float(max_lag_fraction))
+
+def _notification(p: Mapping[str, Any]) -> Notification:
+    if p.get("v") != 1:
+        raise UnsupportedError(f"notification payload version {p.get('v')} is not supported by this SDK")
+    recs = tuple(NotifiedRange(r["recording_id"], int(r["first_sample"]), int(r["end_sample"]),
+                               float(r["sample_rate_hz"]), float(r["start_s"]), float(r["end_s"]))
+                 for r in p.get("recordings", ()))
+    return Notification(p["collection"], int(p.get("recording_count", len(recs))), recs, bool(p.get("truncated")))
+
 
 def _identifier(collection: str) -> sql.Identifier:
     schema, table = collection.split(".", 1) if "." in collection else ("public", collection)

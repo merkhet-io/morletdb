@@ -12,7 +12,8 @@
 #  with-pgvector     requires that pgvector IS installed, so the probe tests cannot skip, runs every
 #                    #[pg_test], then the two-session probe-enable race test (probe_enable_race.sh),
 #                    the concurrent context-write test (context_concurrency.sh)
-#                    the acquisition row-security test (acquisition_rls.sh) and the SQL 0.3.4 fixes (sql034_fixes.sh).
+#                    the acquisition row-security test (acquisition_rls.sh), the SQL 0.3.4 fixes (sql034_fixes.sh) and
+#                    commit notifications with a listener session (notifications.sh).
 #  upgrade           PostgreSQL 17 only: upgrades populated databases from v0.1.0-alpha.3,
 #                    v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1 and v0.3.7-alpha.1 (tags must be fetched); those releases were
 #                    built for PostgreSQL 17 only.
@@ -74,6 +75,7 @@ case "$MODE" in
       "$TESTS/context_concurrency.sh"
       "$TESTS/acquisition_rls.sh"
       "$TESTS/sql034_fixes.sh"
+      "$TESTS/notifications.sh"
     fi ;;
   upgrade)
     own_server  # the upgrade scripts restart it after each install

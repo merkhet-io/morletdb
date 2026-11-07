@@ -61,6 +61,11 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
   samples (up to 32,768) with their statistics, or with `n = 0` the statistics of its newest stored chunk, and
   the end time (SQL 0.3.6). It costs a fixed number of index lookups per recording, however long the recording
   is. Newest samples that are not readable (compacted, or a gap) come back as `samples = None` with a `note`.
+- **New data as it commits.** After `enable_notifications(c)`, `notifications(c, timeout=None, stop_after=None)`
+  yields one `Notification` per committed transaction that stored new chunks, with each recording's new range
+  (`NotifiedRange`: samples and seconds) (SQL 0.3.6). It needs an autocommit connection used only for listening,
+  because notifications reach a session only between transactions. Missed commits are not replayed; catch up
+  with `latest`. With `detail=False`, or under row security, a notification carries only the recording count.
 - **Value grid.** `sample_quantum` optionally declares a value grid such as an ADC step; it changes only how
   compactly samples are stored. Servers with automatic grid detection find it themselves.
 
@@ -106,6 +111,7 @@ interval `[start, end)` as the query.
 - Every method runs in the connection's current transaction. `ingest` of identical samples again is a no-op;
   different samples at stored offsets raise `ConflictError` (the transaction is then aborted: roll back).
   Ingestion sends its statements pipelined; an error surfaces at the end of the call.
+- `notifications` is the one method that needs `autocommit=True`: it raises `InvalidInputError` otherwise.
 - No pooling, retries, caching or async API.
 
 ## Errors

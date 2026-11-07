@@ -54,6 +54,41 @@ this page are from PostgreSQL 17.
   `VACUUM` of the probe table: on 53 k windows the vacuum took 113 s and left the index size
   unchanged; an online rebuild took 10 s (index storage doubles during the rebuild).
 
+### Commit notifications (SQL 0.3.6)
+
+Consumers such as dashboards, stream processors and agent hosts can wait for new data with PostgreSQL's
+`LISTEN` instead of polling (#205):
+
+```sql
+SELECT morlet_enable_notifications('line');                 -- channel morlet_line; returns the channel
+LISTEN morlet_line;                                         -- in the consumer's session
+```
+
+- **Delivery:** every committed transaction that stored new chunks in the collection sends exactly one
+  notification, after its samples are readable.
+  - Rolled-back transactions, rolled-back savepoints, identical replays and transactions without new chunks send
+    nothing.
+  - Several appends and recordings in one transaction are coalesced into one notification.
+- **Payload** (JSON, version 1):
+  `{"v":1,"collection":"public.line","recordings":[{"recording_id":"p1","first_sample":0,"end_sample":32768,"sample_rate_hz":1000,"start_s":0,"end_s":32.768}]}`.
+  - Each range is half-open, in samples, and in seconds from the recording's first sample.
+  - A list that would not fit PostgreSQL's 8000-byte limit becomes `"recording_count": n, "truncated": true`.
+- **Privacy:** any role that can connect may `LISTEN` on any channel.
+  - `morlet_enable_notifications(collection, detail => false)` sends only `{"v":1,"collection":...,"recording_count":n}`.
+  - Row security requires `detail => false`, and detail is dropped automatically if row security is enabled later.
+- **Not a queue:** notifications are not stored, so commits made while no consumer listens are not replayed. A
+  consumer that starts or reconnects catches up with `morlet_latest` and then listens.
+- **Cost:** a statement trigger and a deferred row trigger on the chunk table. Appends write one chunk row per
+  call, so the overhead is one small JSON update per statement and one cheap check per row at commit.
+- **Other switches:**
+  - `morlet_enable_notifications(collection, channel)` changes the channel.
+  - `morlet_disable_notifications(collection)` turns notifications off.
+  - `morlet_notification_channel(collection)` shows the current setting.
+  - Python SDK: `enable_notifications`, and `notifications(collection, timeout=, stop_after=)` on an autocommit
+    connection.
+- **Tests:** `commit_notifications_collect_ranges_once_per_transaction` (ranges, switches, refusals) and
+  `tests/notifications.sh` (a real listener session: one per commit, none for rollbacks, savepoints, replays).
+
 ## Diagnostics
 
 ```sql
