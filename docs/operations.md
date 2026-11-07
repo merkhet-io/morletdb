@@ -89,6 +89,19 @@ LISTEN morlet_line;                                         -- in the consumer's
 - **Tests:** `commit_notifications_collect_ranges_once_per_transaction` (ranges, switches, refusals) and
   `tests/notifications.sh` (a real listener session: one per commit, none for rollbacks, savepoints, replays).
 
+### Exact search on small machines
+
+Exact envelope search prepares each query as a matrix of shifted copies when that pays off. It does so only when
+the matrix fits a quarter of the CPU's last-level cache, which is read once per backend from Linux sysfs or the
+macOS sysctl.
+
+- **Raspberry Pi 3B+** (512 KB L2): 16,384-sample windows are scored directly and not screened. A query over 1,341
+  such windows takes 1.5 s instead of 15 s ([evaluation/edge_latency](../evaluation/edge_latency/RESULTS.md)).
+- **Desktop and server caches** keep the prepared forms.
+- **When the cache size cannot be read**, as in virtual machines, the budget is 4 MiB.
+- **Override:** set `MORLET_SCORE_CACHE_BYTES` in the server's environment to a byte count.
+- **Results** never depend on it.
+
 ## Diagnostics
 
 ```sql
