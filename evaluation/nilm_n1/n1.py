@@ -130,7 +130,7 @@ def run_m(w, dsn, out):
     with psycopg.connect(dsn, autocommit=True) as c:
         res["server"] = c.execute("SELECT version()").fetchone()[0]
         res["extension"] = c.execute("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'").fetchone()[0]
-        c.execute(f"DROP TABLE IF EXISTS {COLLECTION}, {COLLECTION}_chunks, {COLLECTION}_envelopes CASCADE")
+        drop(c)
         c.execute("SELECT morlet_create_stream_collection('public', %s)", (COLLECTION,))
         c.execute("SELECT morlet_enable_envelopes(%s::regclass)", (COLLECTION,))
         t0 = time.perf_counter()
@@ -162,9 +162,17 @@ def run_m(w, dsn, out):
             res["queries"][rid(ids[q])] = [[r, struct.pack(">d", d).hex()] for r, d in rows]
         res["latency_s"] = {"median": float(np.median(lat)), "p95": float(np.percentile(lat, 95))}
         res["load_after"] = _load()
-        c.execute(f"DROP TABLE IF EXISTS {COLLECTION} CASCADE")
+        drop(c)
     Path(out).write_text(json.dumps(res))
     print("M done:", len(res["queries"]), "queries, median", round(res["latency_s"]["median"] * 1000, 1), "ms")
+
+
+def drop(c):
+    """The collection and all its sibling tables (a CASCADE on the collection leaves the siblings)."""
+    names = [r[0] for r in c.execute("SELECT quote_ident(tablename) FROM pg_tables WHERE schemaname = 'public' "
+                                     "AND (tablename = %s OR tablename LIKE %s)", (COLLECTION, COLLECTION + "\\_%"))]
+    if names:
+        c.execute(f"DROP TABLE {', '.join(names)} CASCADE")
 
 
 def _load():
