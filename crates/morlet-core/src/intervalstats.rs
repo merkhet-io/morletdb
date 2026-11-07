@@ -18,6 +18,9 @@
 //! accumulate each stored chunk separately and merge the chunks in order get bitwise the same result
 //! whether a chunk's accumulator was computed now from its decoded samples or earlier from the same
 //! samples and stored as a summary.
+//!
+//! Interval statistics over several pieces merge them exactly instead ([`crate::exactstats`]), so that
+//! roll-ups of many chunks give bitwise the same result as the chunks themselves.
 
 /// Bytes of a stored summary ([`IntervalStats::to_summary`]).
 pub const SUMMARY_BYTES: usize = 66;
@@ -27,15 +30,15 @@ pub const SUMMARY_VERSION: u8 = 1;
 /// Accumulator; feed slices with [`IntervalStats::add`], read with [`IntervalStats::finish`].
 #[derive(Clone, Debug)]
 pub struct IntervalStats {
-    n: u64,
-    nan: bool,
-    lo: f64,
-    hi: f64,
-    sum: f64,
-    sum_c: f64,
-    scale: f64,
-    ssq: f64,
-    ssq_c: f64,
+    pub(crate) n: u64,
+    pub(crate) nan: bool,
+    pub(crate) lo: f64,
+    pub(crate) hi: f64,
+    pub(crate) sum: f64,
+    pub(crate) sum_c: f64,
+    pub(crate) scale: f64,
+    pub(crate) ssq: f64,
+    pub(crate) ssq_c: f64,
 }
 
 impl Default for IntervalStats {
@@ -159,6 +162,11 @@ impl IntervalStats {
             ssq: f(5),
             ssq_c: f(6),
         })
+    }
+
+    /// The accumulator's fields, for `exactstats`.
+    pub(crate) fn raw(&self) -> &IntervalStats {
+        self
     }
 
     /// Number of samples accumulated.

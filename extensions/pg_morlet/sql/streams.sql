@@ -15,6 +15,11 @@ CREATE AGGREGATE public.morlet_interval_stats_agg(bytea,bytea,bigint,integer,big
   SFUNC = public.morlet_interval_stats_step, STYPE = internal,
   FINALFUNC = public.morlet_interval_stats_final, FINALFUNC_MODIFY = READ_WRITE);
 
+-- Exact merge of chunk summaries (version 1) and roll-ups (version 2) into one roll-up (morlet_core::exactstats,
+-- #219). The result does not depend on the order of rows. Used by morlet_build_rollups.
+CREATE AGGREGATE public.morlet_rollup_agg(bytea) (
+  SFUNC = public.morlet_rollup_step, STYPE = bytea, PARALLEL = SAFE);
+
 -- These tables are caller-owned. All functions use invoker privileges. New collections store a summary of every
 -- chunk (SQL 0.3.5; morlet_enable_chunk_summaries adds them to older collections): interval statistics and
 -- overviews then read summaries instead of decoding, for about 2% of ingestion speed and 1% of storage.
@@ -540,12 +545,16 @@ END $$;
 -- Shared body of morlet_interval_stats and morlet_interval_overview: per-bucket statistics as
 -- [bucket_start, bucket_end, count, min, max, mean, rms] per non-empty bucket. With chunk summaries
 -- enabled, chunks inside the interval are not decoded (morlet_enable_chunk_summaries), and the
--- interval may be of any length; otherwise it is limited to 16,777,216 samples.
+-- interval may be of any length; otherwise it is limited to 16,777,216 samples. With roll-ups
+-- (morlet_enable_rollups, #219), each part of the interval takes the coarsest stored roll-up that lies
+-- inside it and inside one bucket, then finer ones at the edges, then chunks: pieces are merged exactly,
+-- so the result is bitwise the same as from the chunks alone.
 CREATE FUNCTION public.morlet_interval_buckets(collection regclass,source_recording_id text,
   interval_start bigint,interval_end bigint,buckets integer,what text)
 RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE source record; relations record; stats float8[]; covered float8:=0; i integer; mem record; src text;
-  cut bigint;
+  cut bigint; roll regclass; gaps int8multirange; lvl integer; r_start bigint[]:='{}'; r_count bigint[]:='{}';
+  r_sum bytea[]:='{}'; picked record;
 BEGIN
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
   SELECT * INTO mem FROM public.morlet_memory_relations(collection);
@@ -579,14 +588,36 @@ BEGIN
       UNION ALL SELECT k.recording_id,k.start_sample,k.sample_count,NULL::bytea,k.summary FROM %s k)',
       CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END,relations.chunks,mem.kept);
   END IF;
+  -- Roll-ups, coarsest first: a block is taken when it lies inside a part of the interval not yet covered and
+  -- inside one bucket; what it covers is removed from the parts left for finer levels and for chunks.
+  gaps:=int8multirange(int8range(interval_start,interval_end));
+  roll:=public.morlet_rollup_relation(collection);
+  IF roll IS NOT NULL THEN
+    FOR lvl IN REVERSE 3..1 LOOP
+      EXIT WHEN isempty(gaps);
+      FOR picked IN EXECUTE format('SELECT r.start_sample,r.end_sample,r.summary
+          FROM unnest($5::int8multirange) g, LATERAL (SELECT x.start_sample,x.end_sample,x.summary FROM %s x
+            WHERE x.recording_id=$1 AND x.level=$6 AND x.block BETWEEN lower(g)>>(15+5*$6) AND (upper(g)-1)>>(15+5*$6)
+              AND x.start_sample>=lower(g) AND x.end_sample<=upper(g)
+              AND public.morlet_interval_bucket(x.start_sample,$2,$3,$4)=public.morlet_interval_bucket(x.end_sample-1,$2,$3,$4)) r',roll)
+          USING source_recording_id,interval_start,interval_end,buckets,gaps,lvl LOOP
+        r_start:=r_start||picked.start_sample; r_count:=r_count||(picked.end_sample-picked.start_sample);
+        r_sum:=r_sum||picked.summary;
+        gaps:=gaps-int8multirange(int8range(picked.start_sample,picked.end_sample));
+      END LOOP;
+    END LOOP;
+  END IF;
   -- A chunk's encoded bytes are read only when it is cut by the interval or has no summary.
   EXECUTE format('SELECT public.morlet_interval_stats_agg(
       CASE WHEN %2$s IS NULL OR c.start_sample<$2 OR c.start_sample+c.sample_count>$3 THEN c.encoded END,
       %2$s,c.start_sample,c.sample_count,$2,$3,$4 ORDER BY c.start_sample)
-    FROM %1$s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
-      AND c.start_sample+c.sample_count>$2',coalesce(src,relations.chunks::text),
-    CASE WHEN src IS NOT NULL OR relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END)
-    INTO stats USING source_recording_id,interval_start,interval_end,buckets;
+    FROM (SELECT c.* FROM %1$s c, unnest($5::int8multirange) g WHERE c.recording_id=$1 AND c.start_sample<upper(g)
+        AND c.start_sample>lower(g)-32768 AND c.start_sample+c.sample_count>lower(g)
+      UNION ALL SELECT $1,u.s,u.n::integer,NULL::bytea,u.sm FROM unnest($6,$7,$8) u(s,n,sm)) c',
+    coalesce(src,format('(SELECT c.recording_id,c.start_sample,c.sample_count,c.encoded,%s AS summary FROM %s c)',
+      CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END,relations.chunks)),
+    'c.summary')
+    INTO stats USING source_recording_id,interval_start,interval_end,buckets,gaps,r_start,r_count,r_sum;
   FOR i IN 0..coalesce(cardinality(stats),0)/7-1 LOOP covered:=covered+stats[7*i+3]; END LOOP;
   IF covered<>interval_end-interval_start THEN
     PERFORM public.morlet_raise_incomplete(collection,source_recording_id,interval_start,interval_end);
@@ -799,7 +830,7 @@ BEGIN
   SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
   FOR t IN SELECT cl.relname FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace
       WHERE n.nspname=s AND cl.relkind='r' AND (cl.relname IN (c||'_chunks',c||'_segments',c||'_envelopes',c||'_ctx',
-        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels') OR (left(cl.relname,length(c)+8)=c||'_probes_' AND substr(cl.relname,length(c)+9) ~ '^[0-9]+$'))
+        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels',c||'_rollups') OR (left(cl.relname,length(c)+8)=c||'_probes_' AND substr(cl.relname,length(c)+9) ~ '^[0-9]+$'))
       ORDER BY cl.relname LOOP
     IF t.relname=c||'_ctx_values' THEN
       cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.segment_id=%I.segment_id)',s,c||'_ctx_segments',t.relname);
@@ -901,6 +932,100 @@ BEGIN
           ORDER BY x.start_sample LIMIT $2) t
     WHERE c.recording_id=$1 AND c.start_sample=t.start_sample',relations.chunks) USING recording_id,max_chunks;
   GET DIAGNOSTICS written = ROW_COUNT;
+  RETURN written;
+END $$;
+
+-- Exact roll-ups of chunk summaries (SQL 0.3.6, #219): one row per recording, level and block, holding the exact
+-- merge (morlet_core::exactstats) of every chunk that starts in the block. Level L has blocks of 2^(15+5L)
+-- samples (level 1: 1,048,576; level 2: 33,554,432; level 3: 1,073,741,824), so each block of a level is 32
+-- blocks of the level below. Interval statistics and overviews then read a few roll-ups instead of every chunk
+-- summary, with bitwise the same results. Roll-ups need chunk summaries (morlet_enable_chunk_summaries), are
+-- built by morlet_build_rollups, survive memory levels 2 and 3 (they hold the same summaries that are kept), and
+-- are deleted with the summaries they contain at level 4. They follow their recordings' privileges and row
+-- security.
+CREATE FUNCTION public.morlet_enable_rollups(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record; schema_name text; collection_name text;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.summarized THEN
+    RAISE EXCEPTION 'roll-ups need chunk summaries (morlet_enable_chunk_summaries)';
+  END IF;
+  SELECT n.nspname,c.relname INTO schema_name,collection_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  EXECUTE format('CREATE TABLE IF NOT EXISTS %1$I.%2$I (
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    level smallint NOT NULL CHECK(level BETWEEN 1 AND 3),
+    block bigint NOT NULL CHECK(block>=0),
+    start_sample bigint NOT NULL, end_sample bigint NOT NULL,
+    summary bytea NOT NULL CHECK(get_byte(summary,0)=2),
+    CHECK(start_sample>=block<<(15+5*level) AND start_sample<(block+1)<<(15+5*level) AND end_sample>start_sample),
+    PRIMARY KEY(recording_id,level,block))',schema_name,collection_name||'_rollups',collection_name);
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
+  RETURN format('%I.%I',schema_name,collection_name||'_rollups')::regclass;
+END $$;
+
+-- The roll-up table of a collection, or NULL when roll-ups are not enabled.
+CREATE FUNCTION public.morlet_rollup_relation(collection regclass)
+RETURNS regclass LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT to_regclass(format('%I.%I',n.nspname,c.relname||'_rollups'))
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection
+$$;
+
+-- Builds the roll-ups of up to max_blocks complete level-1 blocks of a recording after the last one stored, then
+-- every level-2 and level-3 block whose 32 blocks below are all stored. A block is complete when the recording
+-- has reached its end, so no chunk can start in it any more. A block whose chunks are not all stored (samples
+-- forgotten at memory level 4) is not built, and neither are the blocks above it: statistics there come from
+-- what is stored, as without roll-ups. Returns the number of roll-ups written; 0 means the recording is covered.
+-- Resumable; one builder per recording at a time.
+CREATE FUNCTION public.morlet_build_rollups(collection regclass,recording_id text,max_blocks integer DEFAULT 1000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE roll regclass; relations record; mem record; rec_end bigint; written bigint:=0; n bigint; first bigint;
+  last bigint; lvl integer; src text;
+BEGIN
+  IF max_blocks NOT BETWEEN 1 AND 1000000 THEN RAISE EXCEPTION 'max_blocks must be 1..1000000'; END IF;
+  roll:=public.morlet_rollup_relation(collection);
+  IF roll IS NULL THEN RAISE EXCEPTION 'roll-ups are not enabled for this collection (morlet_enable_rollups)'; END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
+  EXECUTE format('SELECT (checkpoint->>''end'')::bigint FROM %s WHERE recording_id=$1',collection)
+    INTO rec_end USING recording_id;
+  IF rec_end IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-rollup/'||collection::oid||'/'||recording_id,0));
+  src:=format('SELECT c.start_sample,c.sample_count,coalesce(c.summary,public.morlet_encoded_chunk_summary(c.encoded)) AS summary
+    FROM %s c WHERE c.recording_id=$1',relations.chunks);
+  IF mem.kept IS NOT NULL THEN
+    src:=src||format(' UNION ALL SELECT k.start_sample,k.sample_count,k.summary FROM %s k WHERE k.recording_id=$1',mem.kept);
+  END IF;
+  -- Level 1 from chunks: each stored row must start where the one before ends (the first at 0) and be followed by
+  -- one that starts where it ends, unless it ends the recording; so a block holds every chunk that starts in it.
+  EXECUTE format('SELECT coalesce(max(block)+1,0) FROM %s WHERE recording_id=$1 AND level=1',roll) INTO first USING recording_id;
+  last:=least(rec_end/1048576-1,first+max_blocks-1);
+  IF last>=first THEN
+    EXECUTE format('WITH r AS (SELECT x.start_sample s,x.start_sample+x.sample_count e,x.summary,
+          lag(x.start_sample+x.sample_count) OVER w AS pe,lead(x.start_sample) OVER w AS ns
+        FROM (%s) x WHERE x.start_sample>=($2<<20)-32768 AND x.start_sample<(($3+1)<<20)+32768 WINDOW w AS (ORDER BY x.start_sample))
+      INSERT INTO %s(recording_id,level,block,start_sample,end_sample,summary)
+      SELECT $1,1,r.s>>20,min(r.s),max(r.e),public.morlet_rollup_agg(r.summary) FROM r
+      WHERE r.s>>20 BETWEEN $2 AND $3
+      GROUP BY r.s>>20
+      HAVING bool_and((r.pe=r.s OR (r.pe IS NULL AND r.s=0)) AND (r.ns=r.e OR (r.ns IS NULL AND r.e=$4)))
+      ON CONFLICT DO NOTHING',src,roll) USING recording_id,first,last,rec_end;
+    GET DIAGNOSTICS n = ROW_COUNT; written:=written+n;
+  END IF;
+  -- Levels 2 and 3 from the level below: a block is built once all 32 blocks below are stored.
+  FOR lvl IN 2..3 LOOP
+    EXECUTE format('SELECT coalesce(max(block)+1,0) FROM %s WHERE recording_id=$1 AND level=$2',roll)
+      INTO first USING recording_id,lvl;
+    last:=(rec_end>>(15+5*lvl))-1;
+    CONTINUE WHEN last<first;
+    EXECUTE format('INSERT INTO %1$s(recording_id,level,block,start_sample,end_sample,summary)
+      SELECT $1,$2,x.block>>5,min(x.start_sample),max(x.end_sample),public.morlet_rollup_agg(x.summary)
+      FROM %1$s x WHERE x.recording_id=$1 AND x.level=$2-1 AND x.block BETWEEN $3*32 AND $4*32+31
+      GROUP BY x.block>>5 HAVING count(*)=32
+      ON CONFLICT DO NOTHING',roll) USING recording_id,lvl,first,last;
+    GET DIAGNOSTICS n = ROW_COUNT; written:=written+n;
+  END LOOP;
   RETURN written;
 END $$;
 
@@ -2646,9 +2771,10 @@ LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS 
 DECLARE mem record; rel record; env regclass; m jsonb; ep record; run record; target smallint;
   rep_id bigint; rep_level smallint; rep_cluster bigint; part bigint;
   win integer; n_env bigint; n_seg bigint; n_chunks bigint; n_sum bigint; bytes bigint; md5sum text; lid bigint;
-  chunk_filter text; sum_filter text; env_filter text; seg_filter text; summary_expr text;
+  chunk_filter text; sum_filter text; env_filter text; seg_filter text; summary_expr text; roll regclass; n_roll bigint;
 BEGIN
   SELECT * INTO mem FROM public.morlet_memory_relations(collection);
+  roll:=public.morlet_rollup_relation(collection);
   IF mem.episodes IS NULL THEN RAISE EXCEPTION 'episodic memory is not enabled for this collection (morlet_enable_memory)'; END IF;
   SELECT * INTO rel FROM public.morlet_stream_relations(collection);
   env:=to_regclass(format('%s_envelopes',collection::text));
@@ -2731,6 +2857,24 @@ BEGIN
           mem.kept,format(chunk_filter,3)) INTO n_sum,part
         USING ep.recording_id,ep.start_sample,ep.end_sample,ep.episode_id;
       bytes:=bytes+part;
+      -- Roll-ups that hold any chunk or kept summary removed here go with them (#219): they are derived rows.
+      IF roll IS NOT NULL THEN
+        EXECUTE format('SELECT count(*),coalesce(sum(octet_length(r.summary)),0) FROM %s r WHERE r.recording_id=$1
+            AND EXISTS (SELECT 1 FROM (SELECT c.start_sample,c.sample_count FROM %s c WHERE %s
+              UNION ALL SELECT c.start_sample,c.sample_count FROM %s c WHERE %s) x
+              WHERE x.start_sample<r.end_sample AND x.start_sample+x.sample_count>r.start_sample)',
+            roll,rel.chunks,format(chunk_filter,1),mem.kept,format(chunk_filter,3)) INTO n_roll,part
+          USING ep.recording_id,ep.start_sample,ep.end_sample,ep.episode_id;
+        n_env:=n_env+n_roll; bytes:=bytes+part;
+        IF NOT dry_run AND n_roll>0 THEN
+          EXECUTE format('DELETE FROM %s r WHERE r.recording_id=$1
+              AND EXISTS (SELECT 1 FROM (SELECT c.start_sample,c.sample_count FROM %s c WHERE %s
+                UNION ALL SELECT c.start_sample,c.sample_count FROM %s c WHERE %s) x
+                WHERE x.start_sample<r.end_sample AND x.start_sample+x.sample_count>r.start_sample)',
+              roll,rel.chunks,format(chunk_filter,1),mem.kept,format(chunk_filter,3))
+            USING ep.recording_id,ep.start_sample,ep.end_sample,ep.episode_id;
+        END IF;
+      END IF;
     END IF;
     IF NOT dry_run THEN
       EXECUTE format('INSERT INTO %s(run_id,episode_id,recording_id,start_sample,end_sample,from_level,to_level,reason,
