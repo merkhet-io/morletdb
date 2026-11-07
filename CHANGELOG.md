@@ -4,6 +4,15 @@
 
 SQL version 0.3.6, with an update script from 0.3.5.
 
+- **Synchronous channel groups (#292):** an acquisition sampled at the same instants (one DAQ, one rate) can be
+  declared synchronous (`morlet_enable_sync`, `morlet_declare_sync`). Its members are then:
+  - appended together in one transaction (`morlet_append_acquisition_raw`);
+  - read by sample index, failing closed (`morlet_read_sync_raw`);
+  - summarised exactly across channels (`morlet_acquisition_cross_stats`: mean(a·b), such as real power, bitwise the
+    same for any chunking).
+
+  Single-member appends, partial memory moves and new channels are refused, and `morlet_verify` reports misaligned
+  groups. See [docs/context-workflow.md](docs/context-workflow.md#synchronous-channel-groups-sql-036-292).
 - **Commit notifications (#205):** `morlet_enable_notifications(collection, channel, detail)` sends one
   `pg_notify` per committed transaction that stored new chunks, with the stored sample ranges per recording
   (payload version 1). Rolled-back transactions, savepoints and identical replays send nothing.

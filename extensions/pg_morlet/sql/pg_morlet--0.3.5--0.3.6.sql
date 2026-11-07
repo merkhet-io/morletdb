@@ -26,10 +26,40 @@ IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_rollup_values_wrapper';
 
+CREATE FUNCTION "morlet_cross_step"(
+	"state" bytea, /* :: std :: option :: Option < Vec < u8 > > */
+	"a" bytea, /* Option < & [u8] > */
+	"b" bytea, /* Option < & [u8] > */
+	"start_sample" bigint, /* Option < i64 > */
+	"interval_start" bigint, /* Option < i64 > */
+	"interval_end" bigint /* Option < i64 > */
+) RETURNS bytea /* :: std :: option :: Option < Vec < u8 > > */
+IMMUTABLE PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_cross_step_wrapper';
+
+CREATE FUNCTION "morlet_cross_combine"(
+	"a" bytea, /* :: std :: option :: Option < Vec < u8 > > */
+	"b" bytea /* :: std :: option :: Option < Vec < u8 > > */
+) RETURNS bytea /* :: std :: option :: Option < Vec < u8 > > */
+IMMUTABLE PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_cross_combine_wrapper';
+
+CREATE FUNCTION "morlet_cross_values"(
+	"state" bytea /* :: std :: option :: Option < Vec < u8 > > */
+) RETURNS double precision[] /* Vec < f64 > */
+IMMUTABLE PARALLEL SAFE
+LANGUAGE c /* Rust */
+AS 'MODULE_PATHNAME', 'morlet_cross_values_wrapper';
+
 -- Exact merge of chunk summaries (version 1) and roll-ups (version 2) into one roll-up (morlet_core::exactstats,
 -- #219). The result does not depend on the order of rows. Used by morlet_build_rollups.
 CREATE AGGREGATE public.morlet_rollup_agg(bytea) (
   SFUNC = public.morlet_rollup_step, STYPE = bytea, PARALLEL = SAFE);
+
+CREATE AGGREGATE public.morlet_cross_agg(bytea,bytea,bigint,bigint,bigint) (
+  SFUNC = public.morlet_cross_step, STYPE = bytea, COMBINEFUNC = public.morlet_cross_combine, PARALLEL = SAFE);
 
 -- What a search can find (SQL 0.3.6, #215). Splits each recording's samples 0..end into ranges, each in one state:
 --   searchable      inside a stored envelope window (of window_size; of any size when it is NULL)
@@ -401,6 +431,206 @@ RETURNS TABLE(channel text,detail boolean) LANGUAGE sql STABLE STRICT SECURITY I
   LATERAL (SELECT position('\x00'::bytea IN t.tgargs) AS p) x
 $$;
 
+-- Statement trigger on <c>_chunks (created by morlet_enable_sync): new chunks of a synchronous member must come from
+-- morlet_append_acquisition_raw for that acquisition. A guard against mistakes, not a security boundary.
+CREATE FUNCTION public.morlet_sync_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE bad record;
+BEGIN
+  EXECUTE format('SELECT n.recording_id,ch.acquisition_id FROM morlet_sync_new n
+      JOIN %s ch ON ch.recording_id=n.recording_id JOIN %s a ON a.acquisition_id=ch.acquisition_id
+    WHERE a.sync_roles IS NOT NULL
+      AND a.acquisition_id IS DISTINCT FROM nullif(current_setting(''morlet.sync_append'',true),'''') LIMIT 1',
+    TG_ARGV[1],TG_ARGV[0]) INTO bad;
+  IF bad.recording_id IS NOT NULL THEN
+    RAISE EXCEPTION 'recording % belongs to synchronous acquisition %',bad.recording_id,bad.acquisition_id
+      USING HINT='Append every member together with morlet_append_acquisition_raw.';
+  END IF;
+  RETURN NULL;
+END $$;
+
+-- Allows synchronous groups in a collection with acquisitions: the opt-in columns sync_rate_hz and sync_roles on
+-- <c>_acq and the append guard on <c>_chunks. Idempotent.
+CREATE FUNCTION public.morlet_enable_sync(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; relations record;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'synchronous groups need a collection with encoded chunks'; END IF;
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS sync_rate_hz float8
+      CHECK(sync_rate_hz>0 AND sync_rate_hz<''Infinity''),
+    ADD COLUMN IF NOT EXISTS sync_roles text[] CHECK(cardinality(sync_roles)>=2)',rel.acq);
+  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=relations.chunks AND tgname='morlet_sync_guard') THEN
+    EXECUTE format('CREATE TRIGGER morlet_sync_guard AFTER INSERT ON %s REFERENCING NEW TABLE AS morlet_sync_new
+      FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_sync_guard(%L,%L)',relations.chunks,rel.acq::text,rel.channels::text);
+  END IF;
+END $$;
+
+-- The synchronous group of an acquisition: rate, roles (sorted) and their recordings (in role order). Fails closed
+-- when the acquisition is not synchronous or any member is not visible to the caller.
+CREATE FUNCTION public.morlet_sync_group(collection regclass,acquisition_id text,
+  OUT sample_rate_hz float8,OUT roles text[],OUT recording_ids text[])
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; declared text[];
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=rel.acq AND attname='sync_roles' AND NOT attisdropped) THEN
+    RAISE EXCEPTION 'synchronous groups are not enabled for this collection (morlet_enable_sync)';
+  END IF;
+  EXECUTE format('SELECT a.sync_rate_hz,a.sync_roles FROM %s a WHERE a.acquisition_id=$1',rel.acq)
+    INTO sample_rate_hz,declared USING acquisition_id;
+  IF declared IS NULL THEN
+    RAISE EXCEPTION 'acquisition % is not synchronous (morlet_declare_sync) or not visible',acquisition_id;
+  END IF;
+  EXECUTE format('SELECT array_agg(ch.role ORDER BY ch.role),array_agg(ch.recording_id ORDER BY ch.role)
+    FROM %s ch JOIN %s r ON r.recording_id=ch.recording_id WHERE ch.acquisition_id=$1',rel.channels,collection)
+    INTO roles,recording_ids USING acquisition_id;
+  IF roles IS DISTINCT FROM declared THEN
+    RAISE EXCEPTION 'not every member of synchronous acquisition % is visible to this role',acquisition_id
+      USING HINT='Synchronous reads and appends fail closed rather than work on part of a group.';
+  END IF;
+END $$;
+
+-- Declares an acquisition synchronous at sample_rate_hz. Every member must have that rate, offset 0, clock source
+-- 'daq' with an exact offset, the same stored end and the same chunk boundaries; at least two members. Returns
+-- true, or false when it is already synchronous at that rate. Run it as a role not subject to row security, so no
+-- member is hidden. Afterwards members are appended only together and no channel can be added.
+CREATE FUNCTION public.morlet_declare_sync(collection regclass,acquisition_id text,sample_rate_hz float8)
+RETURNS boolean LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; relations record; cur record; m record; n integer; ends bigint; bounds bigint; roles text[];
+BEGIN
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=rel.acq AND attname='sync_roles' AND NOT attisdropped) THEN
+    RAISE EXCEPTION 'synchronous groups are not enabled for this collection (morlet_enable_sync)';
+  END IF;
+  IF NOT (sample_rate_hz>0 AND sample_rate_hz<'Infinity') THEN RAISE EXCEPTION 'sample rate must be positive'; END IF;
+  IF row_security_active(rel.channels) OR row_security_active(collection) THEN
+    RAISE EXCEPTION 'declare synchronous groups as a role not subject to row security'
+      USING HINT='Under row security a hidden member would be left out of the group.';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-acq/'||collection::oid||'/'||acquisition_id,0));
+  EXECUTE format('SELECT acquisition_id,sync_rate_hz FROM %s WHERE acquisition_id=$1 FOR UPDATE',rel.acq) INTO cur USING acquisition_id;
+  IF cur.acquisition_id IS NULL THEN RAISE EXCEPTION 'acquisition % does not exist',acquisition_id; END IF;
+  IF cur.sync_rate_hz IS NOT NULL THEN
+    IF cur.sync_rate_hz=sample_rate_hz THEN RETURN false; END IF;
+    RAISE EXCEPTION 'acquisition % is already synchronous at % Hz',acquisition_id,cur.sync_rate_hz;
+  END IF;
+  -- Members locked in role order, as the group append locks them.
+  n:=0;
+  FOR m IN EXECUTE format('SELECT ch.role,ch.recording_id,ch.offset_ns,ch.clock_source,ch.offset_uncertainty_ns,
+      r.sample_rate_hz FROM %s ch JOIN %s r ON r.recording_id=ch.recording_id WHERE ch.acquisition_id=$1
+      ORDER BY ch.role FOR UPDATE OF r',rel.channels,collection) USING acquisition_id LOOP
+    n:=n+1;
+    IF m.sample_rate_hz<>sample_rate_hz THEN
+      RAISE EXCEPTION 'member % (%) is sampled at % Hz, not % Hz',m.role,m.recording_id,m.sample_rate_hz,sample_rate_hz;
+    END IF;
+    IF m.offset_ns<>0 OR m.clock_source<>'daq' OR coalesce(m.offset_uncertainty_ns,0)<>0 THEN
+      RAISE EXCEPTION 'member % (%) needs offset 0, clock source daq and an exact offset',m.role,m.recording_id;
+    END IF;
+  END LOOP;
+  IF n<2 THEN RAISE EXCEPTION 'a synchronous group needs at least two members'; END IF;
+  EXECUTE format('SELECT count(DISTINCT (r.checkpoint->>''end'')::bigint) FROM %s ch JOIN %s r ON r.recording_id=ch.recording_id
+    WHERE ch.acquisition_id=$1',rel.channels,collection) INTO ends USING acquisition_id;
+  IF ends<>1 THEN RAISE EXCEPTION 'members of acquisition % end at different samples',acquisition_id; END IF;
+  EXECUTE format('SELECT count(DISTINCT b) FROM (SELECT ch.recording_id,coalesce(
+      array_agg(c.start_sample||'':''||c.sample_count ORDER BY c.start_sample) FILTER (WHERE c.start_sample IS NOT NULL),''{}'') b
+      FROM %s ch LEFT JOIN %s c ON c.recording_id=ch.recording_id WHERE ch.acquisition_id=$1 GROUP BY ch.recording_id) x',
+    rel.channels,relations.chunks) INTO bounds USING acquisition_id;
+  IF bounds>1 THEN RAISE EXCEPTION 'members of acquisition % have different chunk boundaries',acquisition_id; END IF;
+  EXECUTE format('SELECT array_agg(role ORDER BY role) FROM %s WHERE acquisition_id=$1',rel.channels) INTO roles USING acquisition_id;
+  EXECUTE format('UPDATE %s SET sync_rate_hz=$2,sync_roles=$3 WHERE acquisition_id=$1',rel.acq)
+    USING acquisition_id,sample_rate_hz,roles;
+  RETURN true;
+END $$;
+
+-- Appends the same samples interval to every member of a synchronous acquisition in one transaction: samples[k]
+-- (raw little-endian float64) for roles[k], every role exactly once, all of the same length, cut into chunks of
+-- chunk_size like morlet_append_chunks_raw. Members are locked in role order. An identical retry is a no-op; any
+-- error (a conflict on one member, a missing role) aborts the whole append, so all members stay equal. Returns the
+-- group's stored end.
+CREATE FUNCTION public.morlet_append_acquisition_raw(collection regclass,acquisition_id text,start_sample bigint,
+  roles text[],samples bytea[],chunk_size integer DEFAULT 32768)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE g record; k integer; i integer; len integer; e bigint; ends bigint; prior text;
+BEGIN
+  SELECT * INTO g FROM public.morlet_sync_group(collection,acquisition_id);
+  IF array_ndims(roles) IS DISTINCT FROM 1 OR array_ndims(samples) IS DISTINCT FROM 1
+    OR cardinality(roles)<>cardinality(samples) THEN
+    RAISE EXCEPTION 'roles and samples must be one-dimensional arrays of the same length';
+  END IF;
+  IF (SELECT array_agg(r ORDER BY r) FROM unnest(roles) r) IS DISTINCT FROM g.roles THEN
+    RAISE EXCEPTION 'a synchronous append needs every role of acquisition % exactly once: %',acquisition_id,g.roles;
+  END IF;
+  len:=octet_length(samples[array_lower(samples,1)]);
+  IF EXISTS(SELECT 1 FROM unnest(samples) s WHERE s IS NULL OR octet_length(s)<>len) THEN
+    RAISE EXCEPTION 'every role needs the same number of samples';
+  END IF;
+  prior:=current_setting('morlet.sync_append',true);
+  PERFORM set_config('morlet.sync_append',acquisition_id,true);
+  FOR k IN 1..cardinality(g.roles) LOOP
+    i:=array_position(roles,g.roles[k]);
+    e:=public.morlet_append_chunks_raw(collection,g.recording_ids[k],start_sample,samples[i],chunk_size);
+  END LOOP;
+  PERFORM set_config('morlet.sync_append',coalesce(prior,''),true);
+  EXECUTE format('SELECT count(DISTINCT (checkpoint->>''end'')::bigint) FROM %s WHERE recording_id=ANY($1)',collection)
+    INTO ends USING g.recording_ids;
+  IF ends<>1 THEN RAISE EXCEPTION 'members of acquisition % would end at different samples',acquisition_id; END IF;
+  RETURN e;
+END $$;
+
+-- The samples of [interval_start, interval_end) of every member of a synchronous acquisition, by sample index, one
+-- row per role in role order, as raw little-endian float64 (morlet_read_interval_raw). Fails closed: any member
+-- that is not visible, not stored there (memory levels, gaps) or shorter makes the whole read fail.
+CREATE FUNCTION public.morlet_read_sync_raw(collection regclass,acquisition_id text,interval_start bigint,
+  interval_end bigint)
+RETURNS TABLE(role text,recording_id text,samples bytea)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE g record; k integer; out_roles text[]:='{}'; out_ids text[]:='{}'; out_samples bytea[]:='{}';
+BEGIN
+  SELECT * INTO g FROM public.morlet_sync_group(collection,acquisition_id);
+  FOR k IN 1..cardinality(g.roles) LOOP
+    out_roles:=out_roles||g.roles[k]; out_ids:=out_ids||g.recording_ids[k];
+    out_samples:=out_samples||public.morlet_read_interval_raw(collection,g.recording_ids[k],interval_start,interval_end);
+  END LOOP;
+  RETURN QUERY SELECT u.r,u.i,u.s FROM unnest(out_roles,out_ids,out_samples) u(r,i,s);
+END $$;
+
+-- Exact statistics across two members of a synchronous acquisition over [interval_start, interval_end): the number
+-- of sample pairs, mean(a*b) (with a voltage and a current: the real power), and each member's mean and RMS.
+-- Bitwise the same however the interval is split (morlet_core::exactstats::CrossStats). Fails closed like
+-- morlet_read_sync_raw. No length limit: chunks are aggregated one pair at a time.
+CREATE FUNCTION public.morlet_acquisition_cross_stats(collection regclass,acquisition_id text,role_a text,
+  role_b text,interval_start bigint,interval_end bigint)
+RETURNS TABLE(sample_count bigint,mean_ab float8,mean_a float8,mean_b float8,rms_a float8,rms_b float8)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE g record; relations record; a text; b text; stored bigint; st bytea; covered bigint; x float8[];
+BEGIN
+  SELECT * INTO g FROM public.morlet_sync_group(collection,acquisition_id);
+  a:=g.recording_ids[array_position(g.roles,role_a)]; b:=g.recording_ids[array_position(g.roles,role_b)];
+  IF a IS NULL OR b IS NULL THEN RAISE EXCEPTION 'roles % and % must be members of acquisition %',role_a,role_b,acquisition_id; END IF;
+  IF interval_start<0 OR interval_end<=interval_start THEN
+    RAISE EXCEPTION 'interval must contain at least one sample at nonnegative coordinates';
+  END IF;
+  EXECUTE format('SELECT min((checkpoint->>''end'')::bigint) FROM %s WHERE recording_id IN ($1,$2)',collection)
+    INTO stored USING a,b;
+  IF interval_end>stored THEN RAISE EXCEPTION 'source interval exceeds recording length'; END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  EXECUTE format('SELECT public.morlet_cross_agg(ca.encoded,cb.encoded,ca.start_sample,$3,$4),
+      coalesce(sum(least(ca.start_sample+ca.sample_count,$4)-greatest(ca.start_sample,$3)),0)
+    FROM %1$s ca JOIN %1$s cb ON cb.recording_id=$2 AND cb.start_sample=ca.start_sample
+    WHERE ca.recording_id=$1 AND ca.start_sample<$4 AND ca.start_sample>$3-32768 AND ca.start_sample+ca.sample_count>$3',
+    relations.chunks) INTO st,covered USING a,b,interval_start,interval_end;
+  IF covered<>interval_end-interval_start THEN
+    RAISE EXCEPTION 'samples %..% are not stored in both % and %',interval_start,interval_end,role_a,role_b
+      USING HINT='Compacted (memory levels 2 to 4) or missing chunks; synchronous statistics fail closed.';
+  END IF;
+  x:=public.morlet_cross_values(st);
+  sample_count:=x[1]::bigint; mean_ab:=x[2]; mean_a:=x[3]; mean_b:=x[4]; rms_a:=x[5]; rms_b:=x[6];
+  RETURN NEXT;
+END $$;
+
 -- History selection shared by compare-to-history and its summary. Parameters: $1 query
 -- segment, $2 context match, $3 rate, $4 channel, $5 unit, $6 metadata filter, $7 query
 -- occurrence, $8 excluded labels. With population=true the context match and occurrence
@@ -700,6 +930,7 @@ DECLARE mem record; rel record; env regclass; m jsonb; ep record; run record; ta
   rep_id bigint; rep_level smallint; rep_cluster bigint; part bigint;
   win integer; n_env bigint; n_seg bigint; n_chunks bigint; n_sum bigint; bytes bigint; md5sum text; lid bigint;
   chunk_filter text; sum_filter text; env_filter text; seg_filter text; summary_expr text; roll regclass; n_roll bigint;
+  rep_cluster_text text;
 BEGIN
   SELECT * INTO mem FROM public.morlet_memory_relations(collection);
   roll:=public.morlet_rollup_relation(collection);
@@ -713,6 +944,24 @@ BEGIN
   END IF;
   IF jsonb_typeof(moves)<>'array' OR jsonb_array_length(moves) NOT BETWEEN 1 AND 100000 THEN
     RAISE EXCEPTION 'moves must be a JSON array of 1..100000 moves';
+  END IF;
+  -- Synchronous groups (#292): a move that removes samples (level 2 to 4) of one member must move the same interval
+  -- of every member to the same level in this call, so members never differ in what they keep.
+  IF to_regclass(format('%s_acq',collection::text)) IS NOT NULL AND EXISTS(SELECT 1 FROM pg_attribute
+      WHERE attrelid=to_regclass(format('%s_acq',collection::text)) AND attname='sync_roles' AND NOT attisdropped) THEN
+    EXECUTE format('WITH mv AS (SELECT e.recording_id,e.start_sample,e.end_sample,(x->>''level'')::smallint AS lvl
+          FROM jsonb_array_elements($1) x JOIN %1$s e ON e.episode_id=(x->>''episode_id'')::bigint
+          WHERE (x->>''level'')::smallint>=2),
+        grp AS (SELECT mv.*,ch.acquisition_id FROM mv JOIN %2$s_acq_channels ch ON ch.recording_id=mv.recording_id
+          JOIN %2$s_acq a ON a.acquisition_id=ch.acquisition_id WHERE a.sync_roles IS NOT NULL)
+      SELECT g.acquisition_id FROM grp g JOIN %2$s_acq a ON a.acquisition_id=g.acquisition_id
+      WHERE (SELECT count(DISTINCT o.recording_id) FROM grp o WHERE o.acquisition_id=g.acquisition_id
+          AND o.start_sample=g.start_sample AND o.end_sample=g.end_sample AND o.lvl=g.lvl)<cardinality(a.sync_roles)
+      LIMIT 1',mem.episodes,collection::text) INTO rep_cluster_text USING moves;
+    IF rep_cluster_text IS NOT NULL THEN
+      RAISE EXCEPTION 'these moves would change only some members of synchronous acquisition %',rep_cluster_text
+        USING HINT='Move the same interval of every member to the same level in one call.';
+    END IF;
   END IF;
   summary_expr:=CASE WHEN rel.summarized THEN 'coalesce(c.summary,public.morlet_encoded_chunk_summary(c.encoded))'
     ELSE 'public.morlet_encoded_chunk_summary(c.encoded)' END;
@@ -1008,6 +1257,148 @@ BEGIN
     start_sample bigint NOT NULL, sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
     summary bytea COMPRESSION pglz NOT NULL CHECK(octet_length(summary)=66), ledger_id bigint NOT NULL,
     PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_kept_summaries',collection_name);
+END $$;
+
+-- Adds a channel recording to an acquisition, or verifies an identical membership.
+CREATE OR REPLACE FUNCTION public.morlet_add_acquisition_channel(collection regclass,acquisition_id text,recording_id text,
+  role text,offset_ns bigint DEFAULT 0,clock_source text DEFAULT 'daq',offset_uncertainty_ns bigint DEFAULT NULL)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; existing record; n bigint;
+BEGIN
+  IF collection IS NULL OR acquisition_id IS NULL OR recording_id IS NULL OR role IS NULL OR offset_ns IS NULL
+    OR clock_source IS NULL THEN
+    RAISE EXCEPTION 'only offset_uncertainty_ns may be NULL';
+  END IF;
+  SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
+  -- One writer per acquisition and per recording at a time (#227), in a fixed order: a concurrent identical
+  -- membership waits, then sees the committed row and returns false; a taken role is refused with a message.
+  PERFORM pg_advisory_xact_lock(k) FROM unnest(ARRAY[
+      hashtextextended('morlet-acq/'||collection::oid||'/'||acquisition_id,0),
+      hashtextextended('morlet-acq-rec/'||collection::oid||'/'||recording_id,0)]) k ORDER BY k;
+  EXECUTE format('SELECT * FROM %s WHERE recording_id=$1',rel.channels) INTO existing USING recording_id;
+  IF existing.recording_id IS NOT NULL THEN
+    IF existing.acquisition_id=acquisition_id AND existing.role=role AND existing.offset_ns=offset_ns
+      AND existing.clock_source=clock_source AND existing.offset_uncertainty_ns IS NOT DISTINCT FROM offset_uncertainty_ns THEN
+      RETURN false;
+    END IF;
+    RAISE EXCEPTION 'recording % already belongs to an acquisition with different attributes',recording_id;
+  END IF;
+  IF row_security_active(rel.acq) THEN
+    EXECUTE format('SELECT count(*) FROM %s WHERE acquisition_id=$1',rel.acq) INTO n USING acquisition_id;
+    IF n=0 THEN
+      RAISE EXCEPTION 'acquisition % does not exist or is not visible to this role',acquisition_id
+        USING HINT='Under row security, a channel joins an acquisition the caller can see: one with a visible channel, or one created in the same transaction.';
+    END IF;
+  END IF;
+  EXECUTE format('SELECT count(*) FROM %s WHERE acquisition_id=$1 AND role=$2',rel.channels) INTO n USING acquisition_id,role;
+  IF n>0 THEN
+    RAISE EXCEPTION 'role % of acquisition % is already taken by another recording',role,acquisition_id;
+  END IF;
+  -- A synchronous group (#292) is fixed when it is declared.
+  IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=rel.acq AND attname='sync_roles' AND NOT attisdropped) THEN
+    EXECUTE format('SELECT count(*) FROM %s WHERE acquisition_id=$1 AND sync_roles IS NOT NULL',rel.acq) INTO n USING acquisition_id;
+    IF n>0 THEN RAISE EXCEPTION 'acquisition % is synchronous: its members are fixed',acquisition_id; END IF;
+  END IF;
+  EXECUTE format('INSERT INTO %s(acquisition_id,recording_id,role,offset_ns,clock_source,offset_uncertainty_ns)
+    VALUES ($1,$2,$3,$4,$5,$6)',rel.channels)
+    USING acquisition_id,recording_id,role,offset_ns,clock_source,offset_uncertainty_ns;
+  RETURN true;
+END $$;
+
+-- Integrity scrub (SQL 0.3.5, #193). Re-reads every chunk of up to max_recordings recordings after
+-- after_recording (in recording_id order; call again with the last returned id to continue) and reports, per
+-- recording, the chunks and samples it read and every problem found, without changing anything: a chunk that
+-- does not decode (structure, CRC-32C) to its sample_count, a missing or wrong chunk summary (collections with
+-- summaries), a gap or overlap between chunks, and chunks that do not end where the checkpoint says. At most 100
+-- problems are listed per recording, then their number. Reads follow privileges and row security: run it as a
+-- role that sees every row, or hidden chunks are reported as gaps.
+CREATE OR REPLACE FUNCTION public.morlet_verify(collection regclass,after_recording text DEFAULT NULL,
+  max_recordings integer DEFAULT 100)
+RETURNS TABLE(recording_id text,chunks bigint,samples bigint,problems text[])
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record; r record; c record; expected bigint; found bigint; checks text; mem record; src text;
+  gone boolean; sync record; grp record; grp_end boolean; grp_bounds boolean;
+BEGIN
+  IF max_recordings IS NULL OR max_recordings NOT BETWEEN 1 AND 100000 THEN
+    RAISE EXCEPTION 'max_recordings must be 1..100000';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
+  SELECT to_regclass(format('%s_acq',collection::text)) AS acq,to_regclass(format('%s_acq_channels',collection::text)) AS channels
+    INTO sync;
+  IF sync.acq IS NULL OR NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=sync.acq AND attname='sync_roles'
+      AND NOT attisdropped) THEN
+    sync:=NULL;
+  END IF;
+  checks:=CASE WHEN relations.encoded THEN format('public.morlet_check_chunk(c.encoded,c.sample_count,%s,%L)',
+    CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END,relations.summarized)
+    ELSE 'NULL::text' END;
+  FOR r IN EXECUTE format('SELECT r.recording_id,(r.checkpoint->>''end'')::bigint AS stored_end FROM %s r
+      WHERE $1 IS NULL OR r.recording_id>$1 ORDER BY r.recording_id LIMIT $2',collection)
+      USING after_recording,max_recordings LOOP
+    recording_id:=r.recording_id; chunks:=0; samples:=0; problems:='{}'; expected:=0; found:=0;
+    -- With episodic memory, chunks compacted to levels 2 and 3 are their kept summaries.
+    src:=format('SELECT c.start_sample AS s,%s AS n,%s AS bad FROM %s c WHERE c.recording_id=$1',
+      relations.count_expr,checks,relations.chunks);
+    IF mem.kept IS NOT NULL THEN
+      src:=src||format(' UNION ALL SELECT k.start_sample,k.sample_count,NULL::text FROM %s k WHERE k.recording_id=$1',mem.kept);
+    END IF;
+    FOR c IN EXECUTE src||' ORDER BY 1' USING r.recording_id LOOP
+      chunks:=chunks+1; samples:=samples+c.n;
+      gone:=false;
+      IF c.s>expected AND mem.episodes IS NOT NULL THEN   -- removed at level 4, as the ledger records
+        EXECUTE format('SELECT EXISTS (SELECT 1 FROM %s e WHERE e.recording_id=$1 AND e.level=4
+          AND e.start_sample<=$2 AND e.end_sample>=$3)',mem.episodes) INTO gone USING r.recording_id,expected,c.s;
+      END IF;
+      IF c.s>expected AND NOT gone THEN
+        found:=found+1;
+        IF found<=100 THEN problems:=problems||format('gap: samples %s..%s have no chunk',expected,c.s); END IF;
+      ELSIF c.s<expected THEN
+        found:=found+1;
+        IF found<=100 THEN problems:=problems||format('overlap: chunk at %s starts before %s',c.s,expected); END IF;
+      END IF;
+      IF c.bad IS NOT NULL THEN
+        found:=found+1;
+        IF found<=100 THEN problems:=problems||format('chunk at %s: %s',c.s,c.bad); END IF;
+      END IF;
+      expected:=greatest(expected,c.s+c.n);
+    END LOOP;
+    gone:=false;
+    IF expected<r.stored_end AND mem.episodes IS NOT NULL THEN   -- the tail removed at level 4
+      EXECUTE format('SELECT EXISTS (SELECT 1 FROM %s e WHERE e.recording_id=$1 AND e.level=4
+        AND e.start_sample<=$2 AND e.end_sample>=$3)',mem.episodes) INTO gone USING r.recording_id,expected,r.stored_end;
+    END IF;
+    IF expected IS DISTINCT FROM r.stored_end AND NOT gone THEN
+      found:=found+1;
+      IF found<=100 THEN
+        problems:=problems||format('chunks end at %s, the checkpoint at %s',expected,coalesce(r.stored_end::text,'NULL'));
+      END IF;
+    END IF;
+    -- Synchronous groups (#292): the same end and chunk boundaries as the group's first member.
+    IF sync IS NOT NULL THEN
+      EXECUTE format('SELECT ch.acquisition_id,first.recording_id AS first_id FROM %1$s ch JOIN %2$s a
+          ON a.acquisition_id=ch.acquisition_id AND a.sync_roles IS NOT NULL
+        JOIN LATERAL (SELECT f.recording_id FROM %1$s f WHERE f.acquisition_id=ch.acquisition_id ORDER BY f.role LIMIT 1) first ON true
+        WHERE ch.recording_id=$1',sync.channels,sync.acq) INTO grp USING r.recording_id;
+      IF grp.acquisition_id IS NOT NULL AND grp.first_id<>r.recording_id THEN
+        EXECUTE format('SELECT (SELECT (checkpoint->>''end'')::bigint FROM %1$s WHERE recording_id=$1)
+            IS DISTINCT FROM (SELECT (checkpoint->>''end'')::bigint FROM %1$s WHERE recording_id=$2),
+          (SELECT array_agg(start_sample||'':''||sample_count ORDER BY start_sample) FROM %2$s WHERE recording_id=$1)
+            IS DISTINCT FROM (SELECT array_agg(start_sample||'':''||sample_count ORDER BY start_sample) FROM %2$s WHERE recording_id=$2)',
+          collection,relations.chunks) INTO grp_end,grp_bounds USING r.recording_id,grp.first_id;
+        IF grp_end THEN
+          found:=found+1;
+          problems:=problems||format('synchronous acquisition %s: ends where %s does not',grp.acquisition_id,grp.first_id);
+        END IF;
+        IF grp_bounds THEN
+          found:=found+1;
+          problems:=problems||format('synchronous acquisition %s: chunk boundaries differ from %s',grp.acquisition_id,grp.first_id);
+        END IF;
+      END IF;
+    END IF;
+    IF found>100 THEN problems:=problems||format('%s more problems not listed',found-100); END IF;
+    RETURN NEXT;
+  END LOOP;
 END $$;
 
 -- Pin the TOAST compression of every existing collection (#280).

@@ -12,8 +12,9 @@ morlet_enable_rollups / morlet_build_rollups store roll-ups that morlet_interval
 memory level 4 cover them. TOAST compression of the bulk columns is pinned to pglz (#280; PostgreSQL 19
 defaults to lz4): new tables name it in their definitions, and the update pins the columns of every existing
 collection with morlet_pin_toast_compression (catalog only, no rewrite). Commit notifications (#205):
-morlet_enable_notifications sends one pg_notify per committed transaction that stored chunks. No data or policy
-changes.
+morlet_enable_notifications sends one pg_notify per committed transaction that stored chunks. Synchronous channel
+groups (#292): morlet_enable_sync adds opt-in columns to <c>_acq and an append guard; members are appended, read and
+summarised together (morlet_cross_agg, exact). No data or policy changes.
 tests/upgrade.sh and tests/upgrade_from_release.sh check that an upgraded catalog equals a fresh 0.3.6
 installation. The scripts of earlier steps (0.3.4 -> 0.3.5 and before) are frozen."""
 import re
@@ -44,14 +45,18 @@ def rust(name):
     return m.group(0).replace("CREATE  FUNCTION", "CREATE FUNCTION")
 
 
-NEW_RUST = ["morlet_interval_bucket", "morlet_rollup_step", "morlet_rollup_values"]
-NEW_AGG = ["morlet_rollup_agg"]
+NEW_RUST = ["morlet_interval_bucket", "morlet_rollup_step", "morlet_rollup_values", "morlet_cross_step",
+            "morlet_cross_combine", "morlet_cross_values"]
+NEW_AGG = ["morlet_rollup_agg", "morlet_cross_agg"]
 NEW_SQL = ["morlet_coverage", "morlet_latest", "morlet_enable_rollups", "morlet_rollup_relation", "morlet_build_rollups",
            "morlet_pin_toast_compression", "morlet_notify_collect", "morlet_notify_commit", "morlet_enable_notifications",
-           "morlet_disable_notifications", "morlet_notification_channel"]
+           "morlet_disable_notifications", "morlet_notification_channel", "morlet_sync_guard", "morlet_enable_sync",
+           "morlet_sync_group", "morlet_declare_sync", "morlet_append_acquisition_raw", "morlet_read_sync_raw",
+           "morlet_acquisition_cross_stats"]
 CHANGED = ["morlet_history_sql", "morlet_envelope_ranked", "morlet_interval_buckets", "morlet_enable_row_security",
            "morlet_set_level", "morlet_create_collection", "morlet_create_stream_collection", "morlet_enable_envelopes",
-           "morlet_enable_chunk_summaries", "morlet_enable_context", "morlet_enable_memory"]
+           "morlet_enable_chunk_summaries", "morlet_enable_context", "morlet_enable_memory",
+           "morlet_add_acquisition_channel", "morlet_verify"]
 # Signature changed: the 0.3.5 function (these argument types) is dropped and created again.
 RECREATED = {}
 
