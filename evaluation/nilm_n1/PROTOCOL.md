@@ -2,6 +2,9 @@
 
 Status: **FROZEN** in the commit that adds this file. Issue #293.
 
+**Result (2026-11-07, [RESULTS.md](RESULTS.md)):** H1 PASS (Δ macro F1 −0.008 [−0.069, 0.053]), H2 FAIL
+(AUROC 0.326), H3 PASS (Pi 3B+ bit for bit identical). The protocol below is unchanged.
+
 - **Inspected so far:**
   - `metadata_submetered.json`, in full: types, statuses, locations, lengths and sampling rates.
   - The largest absolute value of each column in 25 randomly chosen CSV files (seed 1), to establish

@@ -1,0 +1,817 @@
+{
+ "records": {
+  "primary": 1341,
+  "unknown": 52,
+  "locations": 56,
+  "flagged_no_onset": {
+   "Fridge": 16,
+   "Washing Machine": 1,
+   "Incandescent Light Bulb": 6,
+   "Laptop": 25,
+   "Heater": 2,
+   "Air Conditioner": 2,
+   "Hairdryer": 3,
+   "Compact Fluorescent Lamp": 2,
+   "Soldering Iron": 2
+  }
+ },
+ "macro_f1": {
+  "M": 0.733180226999226,
+  "B1": 0.7409254995609708,
+  "B2": 0.8156759583423359
+ },
+ "macro_f1_ci": {
+  "M": [
+   0.6917611224098221,
+   0.7701379543206796
+  ],
+  "B1": [
+   0.6949424537581078,
+   0.7841918966934969
+  ],
+  "B2": [
+   0.7632112183513262,
+   0.8564088473475439
+  ],
+  "delta": [
+   -0.06854100466815657,
+   0.0534674528012066
+  ]
+ },
+ "accuracy": {
+  "M": 0.8038777032065623,
+  "B1": 0.8076062639821029,
+  "B2": 0.854586129753915
+ },
+ "k5": {
+  "M_k5": {
+   "macro_f1": 0.7231055434359247,
+   "accuracy": 0.7994034302759135
+  },
+  "B1_k5": {
+   "macro_f1": 0.711941856292494,
+   "accuracy": 0.7949291573452647
+  },
+  "B2_k5": {
+   "macro_f1": 0.79250184262796,
+   "accuracy": 0.8404175988068605
+  }
+ },
+ "per_type_f1": {
+  "M": {
+   "Air Conditioner": 0.31496062992125984,
+   "Compact Fluorescent Lamp": 0.9826086956521739,
+   "Fan": 0.5677966101694916,
+   "Fridge": 0.6594594594594595,
+   "Hairdryer": 0.7485029940119761,
+   "Heater": 0.3958333333333333,
+   "Incandescent Light Bulb": 0.9221183800623053,
+   "Laptop": 0.8980582524271845,
+   "Microwave": 0.9545454545454546,
+   "Vacuum": 0.9764705882352941,
+   "Washing Machine": 0.6446280991735537
+  },
+  "B1": {
+   "Air Conditioner": 0.6486486486486487,
+   "Compact Fluorescent Lamp": 0.9503239740820735,
+   "Fan": 0.6774193548387096,
+   "Fridge": 0.6262626262626263,
+   "Hairdryer": 0.8571428571428571,
+   "Heater": 0.37037037037037035,
+   "Incandescent Light Bulb": 0.8264984227129337,
+   "Laptop": 0.9027431421446384,
+   "Microwave": 0.9259259259259259,
+   "Vacuum": 0.9222222222222223,
+   "Washing Machine": 0.4426229508196721
+  },
+  "B2": {
+   "Air Conditioner": 0.6782608695652174,
+   "Compact Fluorescent Lamp": 0.9658119658119658,
+   "Fan": 0.6578947368421053,
+   "Fridge": 0.6956521739130435,
+   "Hairdryer": 0.9050632911392406,
+   "Heater": 0.6410256410256411,
+   "Incandescent Light Bulb": 0.84472049689441,
+   "Laptop": 0.9273182957393483,
+   "Microwave": 0.958139534883721,
+   "Vacuum": 0.9540229885057471,
+   "Washing Machine": 0.7445255474452555
+  }
+ },
+ "confusion": {
+  "M": [
+   [
+    "Compact Fluorescent Lamp -> Compact Fluorescent Lamp",
+    226
+   ],
+   [
+    "Laptop -> Laptop",
+    185
+   ],
+   [
+    "Incandescent Light Bulb -> Incandescent Light Bulb",
+    148
+   ],
+   [
+    "Hairdryer -> Hairdryer",
+    125
+   ],
+   [
+    "Microwave -> Microwave",
+    105
+   ],
+   [
+    "Vacuum -> Vacuum",
+    83
+   ],
+   [
+    "Fan -> Fan",
+    67
+   ],
+   [
+    "Fridge -> Fridge",
+    61
+   ],
+   [
+    "Washing Machine -> Washing Machine",
+    39
+   ],
+   [
+    "Fan -> Air Conditioner",
+    28
+   ],
+   [
+    "Air Conditioner -> Air Conditioner",
+    20
+   ],
+   [
+    "Air Conditioner -> Fan",
+    20
+   ],
+   [
+    "Heater -> Heater",
+    19
+   ],
+   [
+    "Heater -> Hairdryer",
+    15
+   ],
+   [
+    "Fan -> Hairdryer",
+    14
+   ],
+   [
+    "Air Conditioner -> Hairdryer",
+    13
+   ],
+   [
+    "Fan -> Heater",
+    12
+   ],
+   [
+    "Washing Machine -> Fridge",
+    11
+   ],
+   [
+    "Hairdryer -> Heater",
+    11
+   ],
+   [
+    "Washing Machine -> Laptop",
+    11
+   ],
+   [
+    "Heater -> Fan",
+    9
+   ],
+   [
+    "Fridge -> Hairdryer",
+    9
+   ],
+   [
+    "Fridge -> Incandescent Light Bulb",
+    8
+   ],
+   [
+    "Fridge -> Laptop",
+    7
+   ],
+   [
+    "Hairdryer -> Fan",
+    6
+   ],
+   [
+    "Hairdryer -> Air Conditioner",
+    6
+   ],
+   [
+    "Incandescent Light Bulb -> Fridge",
+    6
+   ],
+   [
+    "Air Conditioner -> Heater",
+    5
+   ],
+   [
+    "Fridge -> Air Conditioner",
+    5
+   ],
+   [
+    "Washing Machine -> Air Conditioner",
+    5
+   ],
+   [
+    "Laptop -> Microwave",
+    4
+   ],
+   [
+    "Compact Fluorescent Lamp -> Laptop",
+    4
+   ],
+   [
+    "Fridge -> Fan",
+    4
+   ],
+   [
+    "Washing Machine -> Incandescent Light Bulb",
+    4
+   ],
+   [
+    "Laptop -> Washing Machine",
+    3
+   ],
+   [
+    "Incandescent Light Bulb -> Hairdryer",
+    3
+   ],
+   [
+    "Laptop -> Fridge",
+    3
+   ],
+   [
+    "Microwave -> Heater",
+    3
+   ],
+   [
+    "Washing Machine -> Vacuum",
+    3
+   ],
+   [
+    "Air Conditioner -> Fridge",
+    2
+   ],
+   [
+    "Fan -> Laptop",
+    2
+   ],
+   [
+    "Fridge -> Washing Machine",
+    2
+   ],
+   [
+    "Hairdryer -> Fridge",
+    2
+   ],
+   [
+    "Washing Machine -> Fan",
+    2
+   ],
+   [
+    "Laptop -> Compact Fluorescent Lamp",
+    2
+   ],
+   [
+    "Hairdryer -> Incandescent Light Bulb",
+    2
+   ],
+   [
+    "Laptop -> Fan",
+    2
+   ],
+   [
+    "Hairdryer -> Microwave",
+    1
+   ],
+   [
+    "Fridge -> Heater",
+    1
+   ],
+   [
+    "Heater -> Fridge",
+    1
+   ],
+   [
+    "Fan -> Fridge",
+    1
+   ],
+   [
+    "Microwave -> Laptop",
+    1
+   ],
+   [
+    "Fan -> Washing Machine",
+    1
+   ],
+   [
+    "Heater -> Incandescent Light Bulb",
+    1
+   ],
+   [
+    "Air Conditioner -> Washing Machine",
+    1
+   ],
+   [
+    "Air Conditioner -> Laptop",
+    1
+   ],
+   [
+    "Air Conditioner -> Compact Fluorescent Lamp",
+    1
+   ],
+   [
+    "Microwave -> Fan",
+    1
+   ],
+   [
+    "Hairdryer -> Compact Fluorescent Lamp",
+    1
+   ],
+   [
+    "Laptop -> Hairdryer",
+    1
+   ],
+   [
+    "Fridge -> Vacuum",
+    1
+   ],
+   [
+    "Laptop -> Incandescent Light Bulb",
+    1
+   ]
+  ],
+  "B1": [
+   [
+    "Compact Fluorescent Lamp -> Compact Fluorescent Lamp",
+    220
+   ],
+   [
+    "Laptop -> Laptop",
+    181
+   ],
+   [
+    "Hairdryer -> Hairdryer",
+    132
+   ],
+   [
+    "Incandescent Light Bulb -> Incandescent Light Bulb",
+    131
+   ],
+   [
+    "Microwave -> Microwave",
+    100
+   ],
+   [
+    "Fan -> Fan",
+    84
+   ],
+   [
+    "Vacuum -> Vacuum",
+    83
+   ],
+   [
+    "Fridge -> Fridge",
+    62
+   ],
+   [
+    "Air Conditioner -> Air Conditioner",
+    48
+   ],
+   [
+    "Washing Machine -> Washing Machine",
+    27
+   ],
+   [
+    "Washing Machine -> Fridge",
+    20
+   ],
+   [
+    "Heater -> Hairdryer",
+    19
+   ],
+   [
+    "Fan -> Air Conditioner",
+    19
+   ],
+   [
+    "Heater -> Heater",
+    15
+   ],
+   [
+    "Fan -> Incandescent Light Bulb",
+    13
+   ],
+   [
+    "Incandescent Light Bulb -> Fan",
+    12
+   ],
+   [
+    "Fridge -> Washing Machine",
+    12
+   ],
+   [
+    "Hairdryer -> Heater",
+    12
+   ],
+   [
+    "Incandescent Light Bulb -> Air Conditioner",
+    11
+   ],
+   [
+    "Compact Fluorescent Lamp -> Laptop",
+    10
+   ],
+   [
+    "Air Conditioner -> Fan",
+    10
+   ],
+   [
+    "Fridge -> Incandescent Light Bulb",
+    9
+   ],
+   [
+    "Laptop -> Compact Fluorescent Lamp",
+    8
+   ],
+   [
+    "Fridge -> Fan",
+    7
+   ],
+   [
+    "Washing Machine -> Incandescent Light Bulb",
+    7
+   ],
+   [
+    "Heater -> Fridge",
+    6
+   ],
+   [
+    "Fridge -> Heater",
+    6
+   ],
+   [
+    "Washing Machine -> Fan",
+    5
+   ],
+   [
+    "Laptop -> Washing Machine",
+    5
+   ],
+   [
+    "Microwave -> Vacuum",
+    5
+   ],
+   [
+    "Hairdryer -> Fridge",
+    5
+   ],
+   [
+    "Fan -> Vacuum",
+    5
+   ],
+   [
+    "Hairdryer -> Air Conditioner",
+    5
+   ],
+   [
+    "Laptop -> Fan",
+    5
+   ],
+   [
+    "Washing Machine -> Compact Fluorescent Lamp",
+    5
+   ],
+   [
+    "Washing Machine -> Laptop",
+    5
+   ],
+   [
+    "Washing Machine -> Vacuum",
+    4
+   ],
+   [
+    "Heater -> Microwave",
+    3
+   ],
+   [
+    "Microwave -> Laptop",
+    3
+   ],
+   [
+    "Incandescent Light Bulb -> Fridge",
+    3
+   ],
+   [
+    "Air Conditioner -> Fridge",
+    2
+   ],
+   [
+    "Laptop -> Microwave",
+    2
+   ],
+   [
+    "Heater -> Washing Machine",
+    2
+   ],
+   [
+    "Fan -> Fridge",
+    2
+   ],
+   [
+    "Washing Machine -> Heater",
+    2
+   ],
+   [
+    "Air Conditioner -> Hairdryer",
+    1
+   ],
+   [
+    "Fridge -> Air Conditioner",
+    1
+   ],
+   [
+    "Fan -> Laptop",
+    1
+   ],
+   [
+    "Fan -> Washing Machine",
+    1
+   ],
+   [
+    "Air Conditioner -> Microwave",
+    1
+   ],
+   [
+    "Microwave -> Air Conditioner",
+    1
+   ],
+   [
+    "Microwave -> Hairdryer",
+    1
+   ],
+   [
+    "Air Conditioner -> Heater",
+    1
+   ],
+   [
+    "Fridge -> Hairdryer",
+    1
+   ]
+  ],
+  "B2": [
+   [
+    "Compact Fluorescent Lamp -> Compact Fluorescent Lamp",
+    226
+   ],
+   [
+    "Laptop -> Laptop",
+    185
+   ],
+   [
+    "Hairdryer -> Hairdryer",
+    143
+   ],
+   [
+    "Incandescent Light Bulb -> Incandescent Light Bulb",
+    136
+   ],
+   [
+    "Microwave -> Microwave",
+    103
+   ],
+   [
+    "Vacuum -> Vacuum",
+    83
+   ],
+   [
+    "Fridge -> Fridge",
+    80
+   ],
+   [
+    "Fan -> Fan",
+    75
+   ],
+   [
+    "Washing Machine -> Washing Machine",
+    51
+   ],
+   [
+    "Air Conditioner -> Air Conditioner",
+    39
+   ],
+   [
+    "Heater -> Heater",
+    25
+   ],
+   [
+    "Fan -> Incandescent Light Bulb",
+    22
+   ],
+   [
+    "Heater -> Hairdryer",
+    17
+   ],
+   [
+    "Fan -> Fridge",
+    15
+   ],
+   [
+    "Air Conditioner -> Fridge",
+    13
+   ],
+   [
+    "Incandescent Light Bulb -> Fridge",
+    13
+   ],
+   [
+    "Washing Machine -> Fridge",
+    11
+   ],
+   [
+    "Air Conditioner -> Fan",
+    9
+   ],
+   [
+    "Incandescent Light Bulb -> Fan",
+    8
+   ],
+   [
+    "Hairdryer -> Heater",
+    7
+   ],
+   [
+    "Fan -> Air Conditioner",
+    7
+   ],
+   [
+    "Fridge -> Incandescent Light Bulb",
+    7
+   ],
+   [
+    "Laptop -> Compact Fluorescent Lamp",
+    7
+   ],
+   [
+    "Fan -> Washing Machine",
+    5
+   ],
+   [
+    "Laptop -> Fan",
+    5
+   ],
+   [
+    "Washing Machine -> Compact Fluorescent Lamp",
+    5
+   ],
+   [
+    "Washing Machine -> Laptop",
+    5
+   ],
+   [
+    "Fridge -> Washing Machine",
+    4
+   ],
+   [
+    "Fridge -> Fan",
+    4
+   ],
+   [
+    "Hairdryer -> Air Conditioner",
+    4
+   ],
+   [
+    "Compact Fluorescent Lamp -> Laptop",
+    4
+   ],
+   [
+    "Heater -> Vacuum",
+    3
+   ],
+   [
+    "Microwave -> Laptop",
+    3
+   ],
+   [
+    "Microwave -> Vacuum",
+    3
+   ],
+   [
+    "Washing Machine -> Fan",
+    2
+   ],
+   [
+    "Laptop -> Microwave",
+    2
+   ],
+   [
+    "Laptop -> Washing Machine",
+    2
+   ],
+   [
+    "Fridge -> Air Conditioner",
+    2
+   ],
+   [
+    "Fan -> Laptop",
+    1
+   ],
+   [
+    "Air Conditioner -> Vacuum",
+    1
+   ],
+   [
+    "Microwave -> Hairdryer",
+    1
+   ],
+   [
+    "Air Conditioner -> Heater",
+    1
+   ],
+   [
+    "Washing Machine -> Vacuum",
+    1
+   ],
+   [
+    "Fridge -> Hairdryer",
+    1
+   ]
+  ]
+ },
+ "H1": {
+  "delta": -0.0077452725617447316,
+  "ci": [
+   -0.06854100466815657,
+   0.0534674528012066
+  ],
+  "verdict": "PASS"
+ },
+ "H2": {
+  "auroc": 0.32646417713531806,
+  "ci": [
+   0.24710749727528253,
+   0.40903423105604303
+  ],
+  "verdict": "FAIL"
+ },
+ "storage": {
+  "morlet": {
+   "chunks": 23370370,
+   "envelopes": 4397139
+  },
+  "float32_bytes": 87883776
+ },
+ "m_run": {
+  "machine": "MacBook-Pro-5.local",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "server": "PostgreSQL 17.6 (Debian 17.6-2.pgdg12+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+  "extension": "0.3.6",
+  "ingest_s": 44.55469833302777,
+  "latency_s": {
+   "median": 0.16571425006259233,
+   "p95": 0.2630191501695663
+  },
+  "load_before": [
+   3.74072265625,
+   4.84326171875,
+   4.64404296875
+  ],
+  "load_after": [
+   4.79345703125,
+   4.9267578125,
+   4.744140625
+  ]
+ },
+ "H3": {
+  "identical": true,
+  "verdict": "PASS",
+  "pi": {
+   "machine": "nextcloudpi",
+   "platform": "Linux-6.1.21-v8+-aarch64-with-glibc2.31",
+   "server": "PostgreSQL 17.6 (Debian 17.6-2.pgdg12+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+   "extension": "0.3.6",
+   "latency_s": {
+    "median": 14.881202279007994,
+    "p95": 23.863351217994932
+   },
+   "load_before": [
+    0.41,
+    0.36,
+    0.25
+   ],
+   "load_after": [
+    1.02,
+    1.02,
+    1.01
+   ]
+  }
+ }
+}
