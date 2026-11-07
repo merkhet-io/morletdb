@@ -183,6 +183,11 @@ jobs:
       - name: Test the memory policy engine (no database)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s tools/memory -p 'test_*.py'
+      - name: Test the steward's decisions (no database)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        run: |
+          python -m pip install -r tools/steward/requirements.txt
+          python -m unittest discover -s tools/steward -p 'test_policy.py'
       - name: Test the MQTT collector contract (no broker)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/mqtt -p 'test_*.py'
@@ -203,6 +208,11 @@ jobs:
         run: |
           cargo pgrx install --release --pg-config "$PG_CONFIG"
           cargo pgrx start pg17
+      - name: Test the steward against the database
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        env:
+          MORLET_STEWARD_TEST_DSN: host=localhost port=28817 dbname=postgres user=runner
+        run: python -m unittest discover -s tools/steward -p 'test_steward_db.py'
       - name: Run bounded benchmark smoke test
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         env:
