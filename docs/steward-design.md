@@ -1,7 +1,15 @@
 # Steward: MorletDB keeps itself healthy on edge machines (design, #287)
 
-Status: **accepted 2026-11-07**, with the recommended answers to the open decisions (end of this page). Phase 1 is
-in `tools/steward`.
+Status: **accepted 2026-11-07**, with the recommended answers to the open decisions (end of this page).
+
+Implemented in `tools/steward`:
+
+- **P1:** automatic upkeep.
+- **P2:** the ingest hold.
+- **P3:** plans, approval and apply.
+
+Still to do: dropping derived data by policy under disk pressure, automatic retention proposals, and P4 packaging and
+soak.
 
 ## Who it is for
 

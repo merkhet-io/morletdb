@@ -51,6 +51,63 @@ CREATE OR REPLACE VIEW morlet_steward.status AS
     'upkeep and disk checks have stopped','restart the morlet-steward service','controls engineer',coalesce(h.at,now())
   FROM (SELECT 1) one LEFT JOIN morlet_steward.heartbeat h ON true
   WHERE h.at IS NULL OR h.at<now()-make_interval(secs=>greatest(3*h.tick_s,120));
+-- Plans (P3): anything that removes or changes stored samples, or updates the extension, is a plan the steward writes
+-- and a person approves and applies. The rules are enforced here, not in the steward: the payload is tied to its hash;
+-- approval needs morlet_approver and someone other than the plan's author and records the hash it approved; apply
+-- runs as the person (their privileges), refuses anything unapproved, changed, expired or applied, and applies the
+-- stored payload in one transaction.
+CREATE TABLE IF NOT EXISTS morlet_steward.plans(
+  plan_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  kind text NOT NULL CHECK(kind IN ('set_level','extension_update')),
+  collection text, payload jsonb NOT NULL, evidence jsonb NOT NULL DEFAULT '{}',
+  sha256 text NOT NULL CHECK(sha256=encode(sha256(convert_to(payload::text,'UTF8')),'hex')),
+  created_by text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
+  valid_until timestamptz NOT NULL DEFAULT now()+interval '24 hours',
+  decision text CHECK(decision IN ('approved','rejected')), decided_by text, decided_at timestamptz,
+  approved_sha256 text, applied_by text, applied_at timestamptz, outcome jsonb);
+CREATE OR REPLACE FUNCTION morlet_steward.decide(plan_id bigint,approve boolean)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE p record;
+BEGIN
+  IF NOT pg_has_role(current_user,'morlet_approver','MEMBER') THEN
+    RAISE EXCEPTION 'deciding plans needs the morlet_approver role';
+  END IF;
+  SELECT * INTO p FROM morlet_steward.plans x WHERE x.plan_id=decide.plan_id FOR UPDATE;
+  IF p.plan_id IS NULL THEN RAISE EXCEPTION 'plan % does not exist',plan_id; END IF;
+  IF p.decision IS NOT NULL THEN RAISE EXCEPTION 'plan % is already %',plan_id,p.decision; END IF;
+  IF p.created_by=current_user THEN RAISE EXCEPTION 'a plan is decided by someone other than its author'; END IF;
+  IF approve AND now()>p.valid_until THEN RAISE EXCEPTION 'plan % expired at %; its evidence is stale',plan_id,p.valid_until; END IF;
+  UPDATE morlet_steward.plans x SET decision=CASE WHEN approve THEN 'approved' ELSE 'rejected' END,
+    decided_by=current_user,decided_at=now(),approved_sha256=CASE WHEN approve THEN p.sha256 END
+  WHERE x.plan_id=decide.plan_id;
+END $$;
+CREATE OR REPLACE FUNCTION morlet_steward.apply(plan_id bigint)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE p record; run bigint; moved jsonb; result jsonb;
+BEGIN
+  IF NOT pg_has_role(current_user,'morlet_approver','MEMBER') THEN
+    RAISE EXCEPTION 'applying plans needs the morlet_approver role';
+  END IF;
+  SELECT * INTO p FROM morlet_steward.plans x WHERE x.plan_id=apply.plan_id FOR UPDATE;
+  IF p.plan_id IS NULL THEN RAISE EXCEPTION 'plan % does not exist',plan_id; END IF;
+  IF p.decision IS DISTINCT FROM 'approved' THEN RAISE EXCEPTION 'plan % is not approved',plan_id; END IF;
+  IF p.applied_at IS NOT NULL THEN RAISE EXCEPTION 'plan % was applied at %',plan_id,p.applied_at; END IF;
+  IF p.sha256 IS DISTINCT FROM p.approved_sha256 THEN RAISE EXCEPTION 'plan % changed after it was approved',plan_id; END IF;
+  IF now()>p.valid_until THEN RAISE EXCEPTION 'plan % expired at %',plan_id,p.valid_until; END IF;
+  IF p.kind='set_level' THEN
+    run:=public.morlet_start_memory_run(p.collection::regclass,coalesce(p.payload->>'policy','plan'),
+      coalesce(p.payload->>'policy_version','1'),jsonb_build_object('plan_id',p.plan_id),false);
+    SELECT coalesce(jsonb_agg(to_jsonb(m)),'[]') INTO moved
+      FROM public.morlet_set_level(p.collection::regclass,run,p.payload->'moves',false) m;
+    PERFORM public.morlet_finish_memory_run(p.collection::regclass,run,'finished',jsonb_build_object('plan_id',p.plan_id));
+    result:=jsonb_build_object('run_id',run,'moves',moved);
+  ELSE
+    EXECUTE format('ALTER EXTENSION pg_morlet UPDATE TO %L',p.payload->>'to');
+    result:=jsonb_build_object('extension',(SELECT extversion FROM pg_extension WHERE extname='pg_morlet'));
+  END IF;
+  UPDATE morlet_steward.plans x SET applied_by=current_user,applied_at=now(),outcome=result WHERE x.plan_id=apply.plan_id;
+  RETURN result;
+END $$;
 CREATE OR REPLACE VIEW morlet_steward.overall AS
   SELECT coalesce((SELECT level FROM morlet_steward.status
     ORDER BY array_position(ARRAY['normal','attention','action_required'],level) DESC LIMIT 1),'normal') AS level,
@@ -71,6 +128,14 @@ def init(conn: psycopg.Connection) -> None:
         conn.execute(f"GRANT USAGE ON SCHEMA morlet_steward TO {STEWARD_ROLE}, {APPROVER_ROLE}, PUBLIC")
         conn.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA morlet_steward TO {STEWARD_ROLE}")
         conn.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA morlet_steward TO {APPROVER_ROLE}")
+        # plans: the steward proposes and reads; only approvers decide and apply (through the functions above)
+        conn.execute(f"REVOKE UPDATE, DELETE, TRUNCATE ON morlet_steward.plans FROM {STEWARD_ROLE}")
+        conn.execute(f"GRANT UPDATE (decision, decided_by, decided_at, approved_sha256, applied_by, applied_at, outcome) "
+                     f"ON morlet_steward.plans TO {APPROVER_ROLE}")
+        conn.execute(f"GRANT INSERT ON morlet_steward.plans TO {APPROVER_ROLE}")   # people propose too; another decides
+        conn.execute("REVOKE ALL ON FUNCTION morlet_steward.decide(bigint,boolean), morlet_steward.apply(bigint) FROM PUBLIC")
+        conn.execute(f"GRANT EXECUTE ON FUNCTION morlet_steward.decide(bigint,boolean), morlet_steward.apply(bigint) "
+                     f"TO {APPROVER_ROLE}")
         conn.execute(f"GRANT UPDATE ON morlet_steward.breakers TO {APPROVER_ROLE}")
         conn.execute("GRANT SELECT ON morlet_steward.status, morlet_steward.overall TO PUBLIC")
         conn.execute(f"GRANT pg_monitor TO {STEWARD_ROLE}")   # database and WAL sizes
@@ -294,6 +359,34 @@ def verify_summary(conn) -> tuple[dict[str, int], dict[str, float | None]]:
     rows = conn.execute("SELECT collection,coalesce(last_pass_problems,0),extract(epoch FROM now()-last_pass_finished_at)"
                         "/86400 FROM morlet_steward.verify_cursor").fetchall()
     return {r[0]: int(r[1]) for r in rows}, {r[0]: None if r[2] is None else float(r[2]) for r in rows}
+
+
+# ---- plans (#287, P3) ----------------------------------------------------------------------------------------------
+
+def propose(conn, kind: str, collection: str | None, payload: dict, evidence: dict) -> int:
+    """Writes a plan; the hash ties approval to exactly this payload. Returns its id."""
+    return conn.execute("""INSERT INTO morlet_steward.plans(kind,collection,payload,evidence,sha256)
+      SELECT %s,%s,p,%s,encode(sha256(convert_to(p::text,'UTF8')),'hex') FROM (SELECT %s::jsonb p) x
+      RETURNING plan_id""", (kind, collection, json.dumps(evidence), json.dumps(payload))).fetchone()[0]
+
+
+def open_plan(conn, kind: str, payload: dict) -> int | None:
+    """An undecided or approved, unapplied, unexpired plan with this payload."""
+    r = conn.execute("""SELECT plan_id FROM morlet_steward.plans WHERE kind=%s AND payload=%s::jsonb
+      AND applied_at IS NULL AND decision IS DISTINCT FROM 'rejected' AND now()<=valid_until""",
+                     (kind, json.dumps(payload))).fetchone()
+    return r[0] if r else None
+
+
+def plans(conn) -> list[tuple]:
+    return conn.execute("""SELECT plan_id,kind,collection,created_at,valid_until,decision,decided_by,applied_at,evidence
+      FROM morlet_steward.plans ORDER BY plan_id DESC LIMIT 50""").fetchall()
+
+
+def extension_versions(conn) -> tuple[str, str] | None:
+    """(installed, available default) of pg_morlet."""
+    r = conn.execute("SELECT installed_version,default_version FROM pg_available_extensions WHERE name='pg_morlet'").fetchone()
+    return (r[0], r[1]) if r and r[0] else None
 
 
 # ---- ingest hold (#287, P2) ---------------------------------------------------------------------------------------

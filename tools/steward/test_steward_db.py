@@ -6,6 +6,7 @@ Creates a database of its own (morlet_steward_test), runs the steward as the mor
 backlogs return to 0 with an audit row for every action, that verification runs and is recorded, that the steward's
 role cannot remove samples, that a failing job opens its breaker, and that the disk reserve pauses all upkeep.
 """
+import json
 import os
 import tempfile
 import unittest
@@ -159,6 +160,98 @@ class StewardDatabase(unittest.TestCase):
         self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.status WHERE key='steward'"), 0)
         self.admin.execute("UPDATE morlet_steward.heartbeat SET at=now()-interval '1 hour'")
         self.assertIn("has not reported", self.one("SELECT cause FROM morlet_steward.status WHERE key='steward'"))
+
+
+@unittest.skipUnless(DSN, "set MORLET_STEWARD_TEST_DSN to run the steward database tests")
+class Plans(StewardDatabase):
+    """P3: nothing destructive happens without a plan another person approved, unchanged, and that person applies."""
+
+    def setUp(self):
+        super().setUp()
+        a = self.admin
+        a.execute("""SELECT morlet_enable_memory('line');
+          SELECT morlet_add_episodes('line','[{"recording_id":"r1","start_sample":0,"end_sample":65536},
+            {"recording_id":"r1","start_sample":65536,"end_sample":131072}]')""")
+        for who in ("alice", "bob"):
+            a.execute(f"DROP ROLE IF EXISTS {who}")
+            a.execute(f"CREATE ROLE {who} LOGIN IN ROLE morlet_approver")
+            a.execute(f"GRANT ALL ON ALL TABLES IN SCHEMA public TO {who}")   # data owners of the collection
+        S.init(a)        # grants on the new memory tables and plans
+        S.grant(a)
+        self.moves = os.path.join(self.tmp, "moves.json")
+        eps = [r[0] for r in a.execute("SELECT episode_id FROM line_episodes ORDER BY start_sample")]
+        with open(self.moves, "w") as f:
+            json.dump({"policy": "recency", "moves": [{"episode_id": e, "level": 3} for e in eps]}, f)
+
+    def tearDown(self):
+        super().tearDown()
+        with psycopg.connect(DSN, autocommit=True) as c:
+            for who in ("alice", "bob"):
+                c.execute(f"DROP ROLE IF EXISTS {who}")
+
+    def as_(self, who):
+        return dsn_for(DB, who)
+
+    def propose(self):
+        self.assertEqual(steward.main(["propose-levels", "line", self.moves, "--dsn", self.as_("alice")]), 0)
+        return self.one("SELECT max(plan_id) FROM morlet_steward.plans")
+
+    def test_the_steward_cannot_decide_apply_or_remove(self):
+        pid = self.propose()
+        for q in (f"SELECT morlet_steward.decide({pid},true)", f"SELECT morlet_steward.apply({pid})",
+                  f"UPDATE morlet_steward.plans SET decision='approved' WHERE plan_id={pid}",
+                  "DELETE FROM morlet_steward.plans"):
+            with self.subTest(q=q), self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                self.conn.execute(q)
+        run = self.one("SELECT morlet_start_memory_run('line','x','1')")
+        with self.assertRaises(psycopg.Error):
+            self.conn.execute(f"SELECT * FROM morlet_set_level('line',{run},%s::jsonb)",
+                              (json.dumps(json.load(open(self.moves))["moves"]),))
+        self.assertEqual(self.one("SELECT sum(sample_count) FROM line_chunks"), 2_200_000)
+
+    def test_a_plan_is_approved_by_another_person_and_applied_once(self):
+        pid = self.propose()
+        self.assertGreater(self.one("SELECT (evidence->>'bytes_freed')::bigint FROM morlet_steward.plans WHERE plan_id=%s",
+                                    (pid,)), 0)
+        self.steward().tick()
+        self.assertIn("waits for a decision", self.one("SELECT cause FROM morlet_steward.status WHERE key=%s",
+                                                       (f"plan:{pid}",)))
+        self.assertEqual(steward.main(["approve", str(pid), "--dsn", self.as_("alice")]), 2)   # the author
+        self.assertEqual(self.one("SELECT decision FROM morlet_steward.plans WHERE plan_id=%s", (pid,)), None)
+        self.assertEqual(steward.main(["approve", str(pid), "--dsn", self.as_("bob")]), 0)
+        self.assertEqual(steward.main(["apply", str(pid), "--dsn", self.as_("bob")]), 0)
+        self.assertEqual(self.one("SELECT string_agg(level::text,',' ORDER BY start_sample) FROM line_episodes"), "3,3")
+        self.assertLess(self.one("SELECT sum(sample_count) FROM line_chunks"), 2_200_000)
+        self.assertEqual(steward.main(["apply", str(pid), "--dsn", self.as_("bob")]), 2)      # once
+        self.steward().tick()
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.status WHERE key=%s", (f"plan:{pid}",)), 0)
+
+    def test_a_changed_or_expired_plan_is_refused(self):
+        pid = self.propose()
+        self.assertEqual(steward.main(["approve", str(pid), "--dsn", self.as_("bob")]), 0)
+        # changed after approval (even with a matching hash) -> refused
+        self.admin.execute("""UPDATE morlet_steward.plans SET payload=jsonb_set(payload,'{policy}','"other"'),
+          sha256=encode(sha256(convert_to(jsonb_set(payload,'{policy}','"other"')::text,'UTF8')),'hex') WHERE plan_id=%s""",
+                           (pid,))
+        self.assertEqual(steward.main(["apply", str(pid), "--dsn", self.as_("bob")]), 2)
+        with self.assertRaises(psycopg.errors.CheckViolation):    # and a payload without its hash cannot be stored
+            self.admin.execute("UPDATE morlet_steward.plans SET payload='{}' WHERE plan_id=%s", (pid,))
+        pid2 = self.propose()
+        self.admin.execute("UPDATE morlet_steward.plans SET valid_until=now()-interval '1 s' WHERE plan_id=%s", (pid2,))
+        self.assertEqual(steward.main(["approve", str(pid2), "--dsn", self.as_("bob")]), 2)
+        self.assertEqual(self.one("SELECT string_agg(level::text,',') FROM line_episodes"), "0,0")
+
+    def test_a_newer_extension_becomes_one_plan_not_an_update(self):
+        real = S.extension_versions
+        S.extension_versions = lambda conn: ("0.3.6", "0.3.7")
+        try:
+            st = self.steward()
+            st.tick()
+            st.tick()
+        finally:
+            S.extension_versions = real
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.plans WHERE kind='extension_update'"), 1)
+        self.assertEqual(self.one("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'"), "0.3.6")
 
 
 if __name__ == "__main__":
