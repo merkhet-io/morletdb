@@ -8,9 +8,10 @@ MorletDB is a developer-alpha PostgreSQL extension. The SQL extension is named `
 | --- | --- |
 | PostgreSQL 17 | Reference version; functional CI with and without pgvector; upgrades and release images target 17 |
 | PostgreSQL 18 | Supported for fresh source installations; functional CI with and without pgvector; no release image or measured performance |
-| Rust / pgrx | Repository-pinned Rust 1.91.1; pgrx and cargo-pgrx 0.16.1 |
+| PostgreSQL 19 | Supported at its release candidate (19rc1) for fresh source installations; functional CI with and without pgvector; TOAST compression pinned to pglz, so storage matches 17 and 18 ([compatibility](compatibility.md#toast-compression-postgresql-19)); no release image yet |
+| Rust / pgrx | Repository-pinned Rust 1.99.0; pgrx and cargo-pgrx 0.19.3 |
 | Container | Linux amd64; Linux arm64 from 0.3.3-alpha.1 (built and trialled natively in the release workflow) |
-| pgvector | Optional. Probe search requires 0.8 or later; CI exercises 0.8.0 (PostgreSQL 17) and 0.8.7 (18). **Use 0.8.4 or later in production:** probe search uses HNSW indexes, and pgvector 0.8.2–0.8.4 fixed a buffer overflow in parallel HNSW builds and possible index corruption and errors during HNSW vacuuming |
+| pgvector | Optional. Probe search requires 0.8 or later; CI exercises 0.8.0 (PostgreSQL 17) and 0.8.7 (18 and 19). **Use 0.8.4 or later in production:** probe search uses HNSW indexes, and pgvector 0.8.2–0.8.4 fixed a buffer overflow in parallel HNSW builds and possible index corruption and errors during HNSW vacuuming |
 
 This describes the current source and CI configuration, not a promise that every CI run passes. The paper benchmarks use PostgreSQL 17; compatibility tests and performance measurements are separate.
 
@@ -62,13 +63,13 @@ sudo apt-get install build-essential bison flex libreadline-dev zlib1g-dev libcl
 git clone https://github.com/merkhet-io/morletdb.git
 cd morletdb
 rustup show
-cargo install cargo-pgrx --version 0.16.1 --locked
+cargo install cargo-pgrx --version 0.19.3 --locked
 cargo pgrx init --pg17 download
 cd extensions/pg_morlet
 cargo pgrx run pg17
 ```
 
-For PostgreSQL 18, initialize with cargo pgrx init --pg18 download and run cargo pgrx run pg18 --no-default-features --features pg18. Build only one PostgreSQL feature at a time. Probe search on 18 needs pgvector 0.8.1 or later (CI uses 0.8.7). PostgreSQL 16 and older are not supported. See the compatibility matrix.
+For PostgreSQL 18, initialize with cargo pgrx init --pg18 download and run cargo pgrx run pg18 --no-default-features --features pg18. Build only one PostgreSQL feature at a time. Probe search on 18 needs pgvector 0.8.1 or later (CI uses 0.8.7). PostgreSQL 19 (release candidate 19rc1) works the same way with pg19: register a 19rc1 build with cargo pgrx init --pg19 /path/to/pg_config, since cargo pgrx init --pg19 download fetches 19beta4. PostgreSQL 16 and older are not supported. See the compatibility matrix.
 
 This builds a user-owned PostgreSQL 17 installation and opens psql. In the selected database:
 

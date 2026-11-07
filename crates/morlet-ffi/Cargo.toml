@@ -11,3 +11,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 morlet-core = { path = "../morlet-core" }
+
+[lints]
+workspace = true

@@ -11,7 +11,7 @@ BEGIN
     channel text NOT NULL,
     unit text NOT NULL,
     metadata jsonb NOT NULL DEFAULT ''{}''::jsonb CHECK (jsonb_typeof(metadata) = ''object''),
-    samples float8[] NOT NULL CHECK (array_ndims(samples)=1 AND array_lower(samples,1)=1 AND public.morlet_valid_recording(samples, sample_rate_hz))
+    samples float8[] COMPRESSION pglz NOT NULL CHECK (array_ndims(samples)=1 AND array_lower(samples,1)=1 AND public.morlet_valid_recording(samples, sample_rate_hz))
   )', schema_name, collection_name);
   collection := format('%I.%I', schema_name, collection_name)::regclass;
   RETURN collection;

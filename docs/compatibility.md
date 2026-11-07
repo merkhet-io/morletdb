@@ -1,7 +1,7 @@
 # PostgreSQL compatibility
 
-pg_morlet is a pgrx 0.16.1 extension. One build targets one PostgreSQL major version
-(the Cargo feature `pg17` or `pg18`; never `--all-features`).
+pg_morlet is a pgrx 0.19.3 extension (Rust 1.99.0). One build targets one PostgreSQL major version
+(the Cargo feature `pg17`, `pg18` or `pg19`; never `--all-features`).
 
 ## Support table
 
@@ -9,7 +9,8 @@ pg_morlet is a pgrx 0.16.1 extension. One build targets one PostgreSQL major ver
 |---|---|---|---|---|
 | **17** (17.11), reference | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test, upgrades from v0.1.0-alpha.3, v0.2.0-alpha.1 and v0.3.0-alpha.1, seismic example | without; with pgvector 0.8.0 | release images and packages are built for 17 only |
 | **18** (18.6) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | no upgrade path tested (earlier releases were never built for 18; install fresh), no release image, no measurements |
-| 13–16 | no | no | — | not supported; pgrx 0.16.1 could build them, but no user need is documented |
+| **19** (19rc1) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | release candidate: built from the pinned source tarball until 19.0 ships; no upgrade path tested (install fresh), no release image or packages yet, storage checked (below), no speed measurements |
+| 13–16 | no | no | — | not supported; pgrx 0.19.3 could build them, but no user need is documented |
 
 A version is listed as supported only while its CI jobs pass (`compat` in
 [`.github/workflows/rust.yml`](../.github/workflows/rust.yml)). An experimental entry would set
@@ -32,7 +33,7 @@ release supporting 18).
 
 ## What the matrix runs
 
-`compat` runs one job per PostgreSQL major and pgvector mode (four jobs), each calling
+`compat` runs one job per PostgreSQL major and pgvector mode (six jobs), each calling
 `extensions/pg_morlet/tests/ci_local.sh <major> <mode>`:
 
 | Mode | Checks |
@@ -45,11 +46,13 @@ The `postgres` job (a required status check) passes only when every non-experime
 job passed. The bounded benchmark smoke test and tool tests run once, in the PostgreSQL 17 job
 without pgvector, as a smoke test, not a measurement.
 
-Pinned versions: Rust from `rust-toolchain.toml`, pgrx and cargo-pgrx from `Cargo.lock` (0.16.1),
-PostgreSQL 17.11 and 18.6, pgvector v0.8.0 (commit 2627c5f) and v0.8.7 (commit f37c13f), checked
+Pinned versions: Rust from `rust-toolchain.toml` (1.99.0), pgrx and cargo-pgrx from `Cargo.lock` (0.19.3),
+PostgreSQL 17.11, 18.6 and 19rc1, pgvector v0.8.0 (commit 2627c5f) and v0.8.7 (commit f37c13f), checked
 against the tag's commit. `cargo pgrx init --pgNN download` always fetches the latest minor
 release, so the job fails when a new minor appears and the cache is cold; bump `pg-minor` in the
-workflow and this page together. Cache keys include runner OS and architecture, Rust, pgrx,
+workflow and this page together. A pre-release (19rc1) is built from the PostgreSQL source tarball,
+checked against its SHA-256 (`pg-sha256` in the workflow), because pgrx's download only knows 19beta4.
+Every PostgreSQL in CI is built with lz4, as distribution packages are. Cache keys include runner OS and architecture, Rust, pgrx,
 PostgreSQL minor and pgvector version; the PostgreSQL cache is saved before any test installs
 pg_morlet into it. The Rust build cache is keyed by PostgreSQL major (pgvector does not change
 what is compiled).
@@ -84,12 +87,14 @@ untouched.
 ```sh
 # 1. Tools (Debian/Ubuntu; macOS: Xcode command line tools, plus bison, flex, pkg-config)
 sudo apt-get install build-essential bison flex clang libclang-dev pkg-config libssl-dev
-cargo install cargo-pgrx --version 0.16.1 --locked
+cargo install cargo-pgrx --version 0.19.3 --locked
 
 # 2. A PostgreSQL for the chosen major version, in a dedicated pgrx home
 export PGRX_HOME=$HOME/.pgrx-compat
 cargo pgrx init --pg18 download        # or --pg17 download, or --pg18 /path/to/pg_config
-#    (CI adds --configure-flag=--without-icu --configure-flag=--without-readline --configure-flag=--without-zlib)
+#    (CI adds --configure-flag=--without-icu --configure-flag=--without-readline --configure-flag=--without-zlib
+#     --configure-flag=--with-lz4; for 19rc1 it builds the source tarball with the same flags and registers it with
+#     cargo pgrx init --pg19 /path/to/pg_config)
 
 # 3. Without pgvector
 extensions/pg_morlet/tests/ci_local.sh 18 without-pgvector
@@ -101,9 +106,11 @@ git clone --depth 1 --branch v0.8.7 https://github.com/pgvector/pgvector.git /tm
 make -C /tmp/pgvector PG_CONFIG="$PG_CONFIG" OPTFLAGS="" && make -C /tmp/pgvector install PG_CONFIG="$PG_CONFIG" OPTFLAGS=""
 extensions/pg_morlet/tests/ci_local.sh 18 with-pgvector
 
-# 5. Install and upgrade checks (PostgreSQL 17 only; needs the release tags)
+# 5. Install and upgrade checks (PostgreSQL 17 only; needs the release tags). Released versions are pgrx 0.16.1
+#    crates and build with cargo-pgrx 0.16.1 (and Rust 1.91.1, from their rust-toolchain.toml):
 git fetch origin tag v0.1.0-alpha.3 tag v0.2.0-alpha.1 tag v0.3.0-alpha.1 --no-tags
-extensions/pg_morlet/tests/ci_local.sh 17 upgrade
+cargo install cargo-pgrx --version 0.16.1 --locked --root ~/.cargo-pgrx-0.16.1
+MORLET_RELEASE_CARGO_PGRX=~/.cargo-pgrx-0.16.1/bin/cargo-pgrx extensions/pg_morlet/tests/ci_local.sh 17 upgrade
 ```
 
 The scripts in `extensions/pg_morlet/tests` find `pg_config` through `PG_CONFIG` or the
@@ -120,4 +127,26 @@ The scripts in `extensions/pg_morlet/tests` find `pg_config` through `PG_CONFIG`
 - Some evaluation scripts (`evaluation/pilot/*.py`, `evaluation/compression/extension/read_bench.py`)
   default to `~/.pgrx/17.11` paths; they belong to frozen protocols and are not part of this matrix.
 - PostgreSQL 16 or older would need a Cargo feature and matrix entries; it is not offered without a
-  documented need. A pgrx upgrade (for example for a later PostgreSQL major) is a separate change.
+  documented need.
+- PostgreSQL 19 is supported at its release candidate. When 19.0 ships, its CI entries switch to
+  `cargo pgrx init --pg19 download` (or a pgrx release that knows 19.0), and release images and Debian
+  packages for 19 follow in a release.
+
+## TOAST compression (PostgreSQL 19)
+
+PostgreSQL 19 changes `default_toast_compression` from `pglz` to `lz4` (when built with lz4, as packages
+are). pg_morlet pins the TOAST compression of every column that holds samples or values derived from them
+to `pglz`, so a collection stores the same bytes on 17, 18 and 19, and published storage figures (all
+measured with pglz) stay valid (#280):
+
+- Tables that pg_morlet's functions create name `COMPRESSION pglz` on `_chunks.encoded` and `.summary`,
+  `_segments.features`, `_envelopes.envelope`, `_rollups.summary`, `_ctx_values.vals`,
+  `_kept_summaries.summary`, and the `samples` of `morlet_create_collection` collections.
+- `ALTER EXTENSION pg_morlet UPDATE` to 0.3.6 pins the same columns of every existing collection
+  (catalog only; stored values are not rewritten). `morlet_pin_toast_compression(collection)` does the same
+  for one collection and returns the number of columns it changed, for example after restoring a dump
+  made without compression clauses (`pg_dump --no-toast-compression`).
+- Tests: `toast_compression_is_pinned_to_pglz` (creates every table with the default set to lz4) and the
+  upgrade tests (every bulk column of the upgraded collections).
+
+Measurement on PostgreSQL 19rc1 and 17.11: [evaluation/toast_compression](../evaluation/toast_compression/RESULTS.md).

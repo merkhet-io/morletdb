@@ -16,10 +16,11 @@ Verification levels:
 
 ### PostgreSQL extension
 - **What:** `pg_morlet` adds recording storage (exact, compressed), interval reads, segment features and
-  bounded-lag similarity search to PostgreSQL 17 and 18.
+  bounded-lag similarity search to PostgreSQL 17, 18 and 19.
 - **Run:** [installation and queries](installation-and-queries.md).
-- **Scope:** PostgreSQL 17 (release images, upgrades, benchmarks) and 18 (fresh source installations).
-- **Verified:** CI, extension tests on PostgreSQL 17 and 18, with and without pgvector; upgrade tests from
+- **Scope:** PostgreSQL 17 (release images, upgrades, benchmarks), 18 and 19 (fresh source installations; 19 at
+  its release candidate).
+- **Verified:** CI, extension tests on PostgreSQL 17, 18 and 19, with and without pgvector; upgrade tests from
   earlier releases.
 
 ### Optional pgvector indexing

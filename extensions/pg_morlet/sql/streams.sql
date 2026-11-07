@@ -39,14 +39,42 @@ BEGIN
     recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
     start_sample bigint NOT NULL CHECK(start_sample>=0),
     sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
-    encoded bytea NOT NULL CHECK(public.morlet_valid_encoded_chunk(encoded,sample_count)),
-    summary bytea CHECK(summary IS NULL OR (octet_length(summary)=66 AND get_byte(summary,0)=1)),
+    encoded bytea COMPRESSION pglz NOT NULL CHECK(public.morlet_valid_encoded_chunk(encoded,sample_count)),
+    summary bytea COMPRESSION pglz CHECK(summary IS NULL OR (octet_length(summary)=66 AND get_byte(summary,0)=1)),
     PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_chunks',schema_name,collection_name);
   EXECUTE format('CREATE TABLE %I.%I (
     recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
-    start_sample bigint NOT NULL CHECK(start_sample>=0),features float8[] NOT NULL,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),features float8[] COMPRESSION pglz NOT NULL,
     PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_segments',schema_name,collection_name);
   RETURN format('%I.%I',schema_name,collection_name)::regclass;
+END $$;
+
+-- TOAST compression of the stored samples and everything derived from them is pinned to pglz (#280).
+-- PostgreSQL 19 changes default_toast_compression to lz4; without a pin, storage on 19 would differ from
+-- 17 and 18 and from every published figure, which were measured with pglz. Tables created by this
+-- extension's functions name pglz in their column definitions; this function pins the columns of a
+-- collection created before that (the extension update calls it for every existing collection) and of
+-- legacy collections (morlet_create_collection). Catalog only: stored values are not rewritten and
+-- read back unchanged. Returns the number of columns it changed; 0 when everything was already pinned.
+CREATE FUNCTION public.morlet_pin_toast_compression(collection regclass)
+RETURNS integer LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; col record; changed integer:=0;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace
+    WHERE cl.oid=collection;
+  FOR col IN SELECT a.attrelid::regclass AS rel,a.attname
+    FROM (VALUES ('','samples'),('_chunks','encoded'),('_chunks','samples'),('_chunks','summary'),
+                 ('_segments','features'),('_envelopes','envelope'),('_rollups','summary'),
+                 ('_ctx_values','vals'),('_kept_summaries','summary')) v(suffix,attname)
+    JOIN pg_class t ON t.relname=c||v.suffix AND t.relnamespace=(SELECT oid FROM pg_namespace WHERE nspname=s)
+    JOIN pg_attribute a ON a.attrelid=t.oid AND a.attname=v.attname AND NOT a.attisdropped
+    WHERE a.attcompression<>'p' AND a.atttypid IN ('bytea'::regtype,'float8[]'::regtype)
+    ORDER BY 1,2
+  LOOP
+    EXECUTE format('ALTER TABLE %s ALTER COLUMN %I SET COMPRESSION pglz',col.rel,col.attname);
+    changed:=changed+1;
+  END LOOP;
+  RETURN changed;
 END $$;
 
 -- Collections created before encoded storage keep float8[] chunks; the
@@ -887,7 +915,7 @@ BEGIN
     recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
     window_size integer NOT NULL CHECK(window_size IN (512,1024,2048,4096,8192,16384,32768)),
     start_sample bigint NOT NULL CHECK(start_sample>=0),
-    envelope bytea NOT NULL CHECK(octet_length(envelope)=1+2*((window_size+9)/10) AND get_byte(envelope,0)=1),
+    envelope bytea COMPRESSION pglz NOT NULL CHECK(octet_length(envelope)=1+2*((window_size+9)/10) AND get_byte(envelope,0)=1),
     PRIMARY KEY(recording_id,window_size,start_sample))',schema_name,collection_name||'_envelopes',schema_name,collection_name);
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
   RETURN format('%I.%I',schema_name,collection_name||'_envelopes')::regclass;
@@ -915,7 +943,7 @@ DECLARE relations record;
 BEGIN
   SELECT * INTO relations FROM public.morlet_stream_relations(collection);
   IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk summaries need a collection with encoded chunks'; END IF;
-  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS summary bytea
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS summary bytea COMPRESSION pglz
     CHECK(summary IS NULL OR (octet_length(summary)=66 AND get_byte(summary,0)=1))',relations.chunks);
   RETURN relations.chunks;
 END $$;
@@ -963,7 +991,7 @@ BEGIN
     level smallint NOT NULL CHECK(level BETWEEN 1 AND 3),
     block bigint NOT NULL CHECK(block>=0),
     start_sample bigint NOT NULL, end_sample bigint NOT NULL,
-    summary bytea NOT NULL CHECK(get_byte(summary,0)=2),
+    summary bytea COMPRESSION pglz NOT NULL CHECK(get_byte(summary,0)=2),
     CHECK(start_sample>=block<<(15+5*level) AND start_sample<(block+1)<<(15+5*level) AND end_sample>start_sample),
     PRIMARY KEY(recording_id,level,block))',schema_name,collection_name||'_rollups',collection_name);
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
@@ -1667,7 +1695,7 @@ BEGIN
     UNIQUE(recording_id,start_sample,end_sample,spec))',s,c||'_ctx_segments',c);
   EXECUTE format('CREATE TABLE %1$I.%2$I (
     segment_id bigint NOT NULL REFERENCES %1$I.%3$I(segment_id) ON DELETE CASCADE,
-    representation text NOT NULL, vals float8[] NOT NULL,
+    representation text NOT NULL, vals float8[] COMPRESSION pglz NOT NULL,
     PRIMARY KEY(segment_id,representation))',s,c||'_ctx_values',c||'_ctx_segments');
   EXECUTE format('CREATE TABLE %1$I.%2$I (
     label_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -2694,7 +2722,7 @@ BEGIN
   EXECUTE format('CREATE TABLE %1$I.%2$I (
     recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
     start_sample bigint NOT NULL, sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
-    summary bytea NOT NULL CHECK(octet_length(summary)=66), ledger_id bigint NOT NULL,
+    summary bytea COMPRESSION pglz NOT NULL CHECK(octet_length(summary)=66), ledger_id bigint NOT NULL,
     PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_kept_summaries',collection_name);
 END $$;
 

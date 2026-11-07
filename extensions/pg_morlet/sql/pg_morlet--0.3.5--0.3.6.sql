@@ -12,16 +12,16 @@ LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_interval_bucket_wrapper';
 
 CREATE FUNCTION "morlet_rollup_step"(
-	"state" bytea, /* core::option::Option<alloc::vec::Vec<u8>> */
-	"summary" bytea /* core::option::Option<&[u8]> */
-) RETURNS bytea /* core::option::Option<alloc::vec::Vec<u8>> */
+	"state" bytea, /* :: std :: option :: Option < Vec < u8 > > */
+	"summary" bytea /* Option < & [u8] > */
+) RETURNS bytea /* :: std :: option :: Option < Vec < u8 > > */
 IMMUTABLE PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_rollup_step_wrapper';
 
 CREATE FUNCTION "morlet_rollup_values"(
-	"summary" bytea /* &[u8] */
-) RETURNS double precision[] /* alloc::vec::Vec<f64> */
+	"summary" bytea /* & [u8] */
+) RETURNS double precision[] /* Vec < f64 > */
 IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c /* Rust */
 AS 'MODULE_PATHNAME', 'morlet_rollup_values_wrapper';
@@ -196,7 +196,7 @@ BEGIN
     level smallint NOT NULL CHECK(level BETWEEN 1 AND 3),
     block bigint NOT NULL CHECK(block>=0),
     start_sample bigint NOT NULL, end_sample bigint NOT NULL,
-    summary bytea NOT NULL CHECK(get_byte(summary,0)=2),
+    summary bytea COMPRESSION pglz NOT NULL CHECK(get_byte(summary,0)=2),
     CHECK(start_sample>=block<<(15+5*level) AND start_sample<(block+1)<<(15+5*level) AND end_sample>start_sample),
     PRIMARY KEY(recording_id,level,block))',schema_name,collection_name||'_rollups',collection_name);
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
@@ -265,6 +265,34 @@ BEGIN
     GET DIAGNOSTICS n = ROW_COUNT; written:=written+n;
   END LOOP;
   RETURN written;
+END $$;
+
+-- TOAST compression of the stored samples and everything derived from them is pinned to pglz (#280).
+-- PostgreSQL 19 changes default_toast_compression to lz4; without a pin, storage on 19 would differ from
+-- 17 and 18 and from every published figure, which were measured with pglz. Tables created by this
+-- extension's functions name pglz in their column definitions; this function pins the columns of a
+-- collection created before that (the extension update calls it for every existing collection) and of
+-- legacy collections (morlet_create_collection). Catalog only: stored values are not rewritten and
+-- read back unchanged. Returns the number of columns it changed; 0 when everything was already pinned.
+CREATE FUNCTION public.morlet_pin_toast_compression(collection regclass)
+RETURNS integer LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; col record; changed integer:=0;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace
+    WHERE cl.oid=collection;
+  FOR col IN SELECT a.attrelid::regclass AS rel,a.attname
+    FROM (VALUES ('','samples'),('_chunks','encoded'),('_chunks','samples'),('_chunks','summary'),
+                 ('_segments','features'),('_envelopes','envelope'),('_rollups','summary'),
+                 ('_ctx_values','vals'),('_kept_summaries','summary')) v(suffix,attname)
+    JOIN pg_class t ON t.relname=c||v.suffix AND t.relnamespace=(SELECT oid FROM pg_namespace WHERE nspname=s)
+    JOIN pg_attribute a ON a.attrelid=t.oid AND a.attname=v.attname AND NOT a.attisdropped
+    WHERE a.attcompression<>'p' AND a.atttypid IN ('bytea'::regtype,'float8[]'::regtype)
+    ORDER BY 1,2
+  LOOP
+    EXECUTE format('ALTER TABLE %s ALTER COLUMN %I SET COMPRESSION pglz',col.rel,col.attname);
+    changed:=changed+1;
+  END LOOP;
+  RETURN changed;
 END $$;
 
 -- History selection shared by compare-to-history and its summary. Parameters: $1 query
@@ -701,5 +729,195 @@ BEGIN
     episode_id:=ep.episode_id; from_level:=ep.level; to_level:=target; chunks_removed:=n_chunks;
     summaries_removed:=n_sum; derived_removed:=n_env; bytes_freed:=bytes; ledger_id:=lid;
     RETURN NEXT;
+  END LOOP;
+END $$;
+
+-- Collections belong to the caller, outside extension membership: pg_dump includes
+-- their schema and data normally. All functions execute with caller privileges.
+CREATE OR REPLACE FUNCTION public.morlet_create_collection(schema_name text, collection_name text)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER
+SET search_path = pg_catalog AS $$
+DECLARE collection regclass;
+BEGIN
+  EXECUTE format('CREATE TABLE %I.%I (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sample_rate_hz float8 NOT NULL,
+    channel text NOT NULL,
+    unit text NOT NULL,
+    metadata jsonb NOT NULL DEFAULT ''{}''::jsonb CHECK (jsonb_typeof(metadata) = ''object''),
+    samples float8[] COMPRESSION pglz NOT NULL CHECK (array_ndims(samples)=1 AND array_lower(samples,1)=1 AND public.morlet_valid_recording(samples, sample_rate_hz))
+  )', schema_name, collection_name);
+  collection := format('%I.%I', schema_name, collection_name)::regclass;
+  RETURN collection;
+END $$;
+
+-- These tables are caller-owned. All functions use invoker privileges. New collections store a summary of every
+-- chunk (SQL 0.3.5; morlet_enable_chunk_summaries adds them to older collections): interval statistics and
+-- overviews then read summaries instead of decoding, for about 2% of ingestion speed and 1% of storage.
+CREATE OR REPLACE FUNCTION public.morlet_create_stream_collection(schema_name text,collection_name text)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  IF octet_length(collection_name)>46 OR collection_name='' THEN
+    RAISE EXCEPTION 'stream collection name must contain 1..46 bytes';
+  END IF;
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text PRIMARY KEY, sample_rate_hz float8 NOT NULL,
+    channel text NOT NULL, unit text NOT NULL,
+    metadata jsonb NOT NULL CHECK(jsonb_typeof(metadata)=''object''),
+    checkpoint jsonb NOT NULL,
+    sample_quantum float8 NOT NULL DEFAULT 1 CHECK(sample_quantum>0 AND sample_quantum<''Infinity''))',schema_name,collection_name);
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
+    encoded bytea COMPRESSION pglz NOT NULL CHECK(public.morlet_valid_encoded_chunk(encoded,sample_count)),
+    summary bytea COMPRESSION pglz CHECK(summary IS NULL OR (octet_length(summary)=66 AND get_byte(summary,0)=1)),
+    PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_chunks',schema_name,collection_name);
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),features float8[] COMPRESSION pglz NOT NULL,
+    PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_segments',schema_name,collection_name);
+  RETURN format('%I.%I',schema_name,collection_name)::regclass;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_enable_envelopes(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE schema_name text; collection_name text;
+BEGIN
+  SELECT n.nspname,c.relname INTO schema_name,collection_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  EXECUTE format('CREATE TABLE %I.%I (
+    recording_id text NOT NULL REFERENCES %I.%I(recording_id) ON DELETE CASCADE,
+    window_size integer NOT NULL CHECK(window_size IN (512,1024,2048,4096,8192,16384,32768)),
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    envelope bytea COMPRESSION pglz NOT NULL CHECK(octet_length(envelope)=1+2*((window_size+9)/10) AND get_byte(envelope,0)=1),
+    PRIMARY KEY(recording_id,window_size,start_sample))',schema_name,collection_name||'_envelopes',schema_name,collection_name);
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
+  RETURN format('%I.%I',schema_name,collection_name||'_envelopes')::regclass;
+END $$;
+
+-- Per-chunk summaries (encoded collections; stored by every collection created with SQL 0.3.5 or later,
+-- added to older ones by this function): count, min, max and compensated sums of every stored chunk, 66 bytes in a `summary` column of the chunk table (morlet_core::intervalstats), so
+-- interval statistics and overviews read summaries instead of decoding chunks inside the interval.
+-- Results are bitwise the same with and without them. Adding the column does not rewrite the table;
+-- appends then store each new chunk's summary, and morlet_build_chunk_summaries covers chunks stored
+-- before. Summaries follow their chunks' privileges and row-level security.
+CREATE OR REPLACE FUNCTION public.morlet_enable_chunk_summaries(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk summaries need a collection with encoded chunks'; END IF;
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS summary bytea COMPRESSION pglz
+    CHECK(summary IS NULL OR (octet_length(summary)=66 AND get_byte(summary,0)=1))',relations.chunks);
+  RETURN relations.chunks;
+END $$;
+
+-- Context model, phase 1 (docs/context-model.md): a context timeline, context
+-- segments, simple-v1 values and compare-to-history, on single recordings in
+-- sample coordinates. Opt-in per collection; all tables are caller-owned.
+CREATE OR REPLACE FUNCTION public.morlet_enable_context(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    ctx_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    kind text NOT NULL CHECK(kind IN (''interval'',''event'')),
+    key text NOT NULL CHECK(key<>''''),
+    value jsonb NOT NULL,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint CHECK(end_sample>start_sample),
+    batch_id text NOT NULL,
+    supersedes bigint REFERENCES %1$I.%2$I(ctx_id),
+    retracted boolean NOT NULL DEFAULT false,
+    recorded_at timestamptz NOT NULL DEFAULT now(),
+    recorded_by text NOT NULL DEFAULT current_user,
+    CHECK((kind=''event'')=(end_sample IS NULL)))',s,c||'_ctx',c);
+  EXECUTE format('CREATE INDEX ON %I.%I(recording_id,key,start_sample)',s,c||'_ctx');
+  EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_ctx');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    context jsonb NOT NULL, occurrence jsonb NOT NULL, ctx_ids bigint[] NOT NULL, spec jsonb NOT NULL,
+    stale boolean NOT NULL DEFAULT false,
+    UNIQUE(recording_id,start_sample,end_sample,spec))',s,c||'_ctx_segments',c);
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint NOT NULL REFERENCES %1$I.%3$I(segment_id) ON DELETE CASCADE,
+    representation text NOT NULL, vals float8[] COMPRESSION pglz NOT NULL,
+    PRIMARY KEY(segment_id,representation))',s,c||'_ctx_values',c||'_ctx_segments');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    label_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
+    author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
+    retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_enable_memory(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE schema_name text; collection_name text; relations record;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'episodic memory needs a collection with encoded chunks'; END IF;
+  SELECT n.nspname,c.relname INTO schema_name,collection_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  IF to_regclass(format('%I.%I',schema_name,collection_name||'_episodes')) IS NOT NULL THEN RETURN; END IF;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    episode_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL,
+    level smallint NOT NULL DEFAULT 0 CHECK(level BETWEEN 0 AND 4),
+    context jsonb NOT NULL DEFAULT ''{}'' CHECK(jsonb_typeof(context)=''object''),
+    importance float8 NOT NULL DEFAULT 0 CHECK(importance BETWEEN 0 AND 1),
+    exempt boolean NOT NULL DEFAULT false,
+    cluster_id bigint, representative bigint, distance float8,
+    created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+    CHECK(end_sample>start_sample), CHECK(NOT exempt OR level<=1),
+    CHECK((level=2)=(representative IS NOT NULL)))',schema_name,collection_name||'_episodes',collection_name);
+  EXECUTE format('CREATE INDEX ON %I.%I(recording_id,start_sample)',schema_name,collection_name||'_episodes');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    run_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    policy text NOT NULL, policy_version text NOT NULL, params jsonb NOT NULL DEFAULT ''{}'',
+    dry_run boolean NOT NULL, status text NOT NULL DEFAULT ''running'' CHECK(status IN (''running'',''finished'',''failed'')),
+    summary jsonb, started_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz)',
+    schema_name,collection_name||'_memory_runs');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    ledger_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    run_id bigint NOT NULL REFERENCES %1$I.%3$I(run_id),
+    episode_id bigint NOT NULL, recording_id text NOT NULL, start_sample bigint NOT NULL, end_sample bigint NOT NULL,
+    from_level smallint NOT NULL, to_level smallint NOT NULL, reason jsonb NOT NULL DEFAULT ''{}'',
+    chunks_removed bigint NOT NULL, summaries_removed bigint NOT NULL, derived_removed bigint NOT NULL,
+    bytes_freed bigint NOT NULL, removed_md5 text, cold_copy text, at timestamptz NOT NULL DEFAULT now())',
+    schema_name,collection_name||'_ledger',collection_name||'_memory_runs');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL, sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
+    summary bytea COMPRESSION pglz NOT NULL CHECK(octet_length(summary)=66), ledger_id bigint NOT NULL,
+    PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_kept_summaries',collection_name);
+END $$;
+
+-- Pin the TOAST compression of every existing collection (#280).
+DO $$
+DECLARE t regclass;
+BEGIN
+  FOR t IN SELECT p.oid::regclass FROM pg_catalog.pg_class p
+    WHERE p.relkind IN ('r','p') AND (
+      (EXISTS(SELECT 1 FROM pg_catalog.pg_attribute a WHERE a.attrelid=p.oid AND a.attname='checkpoint' AND NOT a.attisdropped)
+       AND EXISTS(SELECT 1 FROM pg_catalog.pg_class k WHERE k.relnamespace=p.relnamespace AND k.relname=p.relname||'_chunks'))
+      OR EXISTS(SELECT 1 FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_depend d
+                  ON d.classid='pg_catalog.pg_constraint'::pg_catalog.regclass AND d.objid=k.oid
+                WHERE k.conrelid=p.oid
+                  AND d.refobjid='public.morlet_valid_recording(double precision[],double precision)'::pg_catalog.regprocedure))
+    ORDER BY 1
+  LOOP
+    PERFORM public.morlet_pin_toast_compression(t);
   END LOOP;
 END $$;

@@ -9,7 +9,9 @@ segments that overlap the query segment's own samples (body changes, signature d
 or chunk statistics of every recording. morlet_envelope_ranked refuses over-budget searches before scoring
 (#279). Exact roll-ups (#219): interval statistics merge pieces exactly (Rust, same signatures), and
 morlet_enable_rollups / morlet_build_rollups store roll-ups that morlet_interval_buckets reads; row security and
-memory level 4 cover them. No data or policy changes.
+memory level 4 cover them. TOAST compression of the bulk columns is pinned to pglz (#280; PostgreSQL 19
+defaults to lz4): new tables name it in their definitions, and the update pins the columns of every existing
+collection with morlet_pin_toast_compression (catalog only, no rewrite). No data or policy changes.
 tests/upgrade.sh and tests/upgrade_from_release.sh check that an upgraded catalog equals a fresh 0.3.6
 installation. The scripts of earlier steps (0.3.4 -> 0.3.5 and before) are frozen."""
 import re
@@ -17,7 +19,7 @@ import sys
 from pathlib import Path
 
 EXT = Path(__file__).resolve().parent.parent
-streams = (EXT / "sql/streams.sql").read_text()
+streams = (EXT / "sql/streams.sql").read_text() + (EXT / "sql/collections.sql").read_text()
 schema = Path(sys.argv[1]).read_text()
 CHECK = "--check" in sys.argv[2:]
 
@@ -42,9 +44,11 @@ def rust(name):
 
 NEW_RUST = ["morlet_interval_bucket", "morlet_rollup_step", "morlet_rollup_values"]
 NEW_AGG = ["morlet_rollup_agg"]
-NEW_SQL = ["morlet_coverage", "morlet_latest", "morlet_enable_rollups", "morlet_rollup_relation", "morlet_build_rollups"]
+NEW_SQL = ["morlet_coverage", "morlet_latest", "morlet_enable_rollups", "morlet_rollup_relation", "morlet_build_rollups",
+           "morlet_pin_toast_compression"]
 CHANGED = ["morlet_history_sql", "morlet_envelope_ranked", "morlet_interval_buckets", "morlet_enable_row_security",
-           "morlet_set_level"]
+           "morlet_set_level", "morlet_create_collection", "morlet_create_stream_collection", "morlet_enable_envelopes",
+           "morlet_enable_chunk_summaries", "morlet_enable_context", "morlet_enable_memory"]
 # Signature changed: the 0.3.5 function (these argument types) is dropped and created again.
 RECREATED = {}
 
@@ -56,6 +60,27 @@ out += [agg(r) for r in NEW_AGG]
 out += [fn(r) for r in NEW_SQL]
 out += [fn(r).replace("CREATE FUNCTION public.", "CREATE OR REPLACE FUNCTION public.", 1) for r in CHANGED]
 out += [f"DROP FUNCTION public.{r}({args});\n" + fn(r) for r, args in RECREATED.items()]
+# Existing collections: stream collections (a parent with recording_id and checkpoint and a _chunks sibling) and
+# legacy collections (a samples column checked by morlet_valid_recording). Collections are not extension members,
+# so they are found from the catalog; the update runs as a superuser, who may alter them.
+out += ["""-- Pin the TOAST compression of every existing collection (#280).
+DO $$
+DECLARE t regclass;
+BEGIN
+  FOR t IN SELECT p.oid::regclass FROM pg_catalog.pg_class p
+    WHERE p.relkind IN ('r','p') AND (
+      (EXISTS(SELECT 1 FROM pg_catalog.pg_attribute a WHERE a.attrelid=p.oid AND a.attname='checkpoint' AND NOT a.attisdropped)
+       AND EXISTS(SELECT 1 FROM pg_catalog.pg_class k WHERE k.relnamespace=p.relnamespace AND k.relname=p.relname||'_chunks'))
+      OR EXISTS(SELECT 1 FROM pg_catalog.pg_constraint k JOIN pg_catalog.pg_depend d
+                  ON d.classid='pg_catalog.pg_constraint'::pg_catalog.regclass AND d.objid=k.oid
+                WHERE k.conrelid=p.oid
+                  AND d.refobjid='public.morlet_valid_recording(double precision[],double precision)'::pg_catalog.regprocedure))
+    ORDER BY 1
+  LOOP
+    PERFORM public.morlet_pin_toast_compression(t);
+  END LOOP;
+END $$;
+"""]
 target = EXT / "sql/pg_morlet--0.3.5--0.3.6.sql"
 if CHECK:
     if target.read_text() != "\n".join(out):

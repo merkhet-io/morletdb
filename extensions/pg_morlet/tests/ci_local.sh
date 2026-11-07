@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The PostgreSQL compatibility checks that CI runs, for one PostgreSQL major version and one mode.
 #
-#   PGRX_HOME=<pgrx home for these tests> tests/ci_local.sh <17|18> <without-pgvector|with-pgvector|upgrade>
+#   PGRX_HOME=<pgrx home for these tests> tests/ci_local.sh <17|18|19> <without-pgvector|with-pgvector|upgrade>
 #
 # Prerequisites (docs/compatibility.md): cargo-pgrx matching Cargo.lock, a PostgreSQL registered
 # in $PGRX_HOME (`cargo pgrx init --pgNN download`, or `--pgNN /path/to/pg_config`), and for
@@ -22,10 +22,10 @@
 # there (morlet_probe_race, morlet_upgrade_*). The script requires an explicit PGRX_HOME and refuses
 # to start a server when another one already listens on that port.
 set -euo pipefail
-usage() { echo "usage: PGRX_HOME=... $0 <17|18> <without-pgvector|with-pgvector|upgrade>" >&2; exit 2; }
+usage() { echo "usage: PGRX_HOME=... $0 <17|18|19> <without-pgvector|with-pgvector|upgrade>" >&2; exit 2; }
 [ $# -eq 2 ] || usage
 MAJOR=$1 MODE=$2
-case "$MAJOR" in 17|18) ;; *) usage ;; esac
+case "$MAJOR" in 17|18|19) ;; *) usage ;; esac
 case "$MODE" in without-pgvector|with-pgvector|upgrade) ;; *) usage ;; esac
 : "${PGRX_HOME:?set PGRX_HOME to the pgrx home whose PostgreSQL these tests may install into and start (see docs/compatibility.md)}"
 export PGRX_HOME
