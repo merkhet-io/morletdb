@@ -74,24 +74,7 @@ unsafe impl pgrx::callconv::BoxRet for F64Array {
     }
 }
 
-unsafe impl pgrx::pgrx_sql_entity_graph::metadata::SqlTranslatable for F64Array {
-    fn argument_sql() -> Result<
-        pgrx::pgrx_sql_entity_graph::metadata::SqlMapping,
-        pgrx::pgrx_sql_entity_graph::metadata::ArgumentError,
-    > {
-        Ok(pgrx::pgrx_sql_entity_graph::metadata::SqlMapping::As(
-            "double precision[]".into(),
-        ))
-    }
-    fn return_sql() -> Result<
-        pgrx::pgrx_sql_entity_graph::metadata::Returns,
-        pgrx::pgrx_sql_entity_graph::metadata::ReturnsError,
-    > {
-        Ok(pgrx::pgrx_sql_entity_graph::metadata::Returns::One(
-            pgrx::pgrx_sql_entity_graph::metadata::SqlMapping::As("double precision[]".into()),
-        ))
-    }
-}
+pgrx::impl_sql_translatable!(F64Array, "double precision[]");
 
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_version() -> &'static str {
@@ -3604,6 +3587,60 @@ END $$"#).unwrap();
         Spi::run("DELETE FROM ru_chunks c USING ru_rollups r WHERE r.level=2 AND c.start_sample>=r.start_sample
             AND c.start_sample+c.sample_count<=r.end_sample").unwrap();
         assert_eq!(Spi::get_one::<String>(block).unwrap().unwrap(), whole);
+    }
+
+    #[pg_test]
+    fn toast_compression_is_pinned_to_pglz() {
+        // PostgreSQL 19 defaults to lz4 (#280); every bulk column must name pglz whatever the default is.
+        // Builds without lz4 cannot set the default to lz4; the pins are checked all the same.
+        let lz4 = Spi::get_one::<bool>(
+            "SELECT 'lz4' = ANY(enumvals) FROM pg_settings WHERE name='default_toast_compression'",
+        )
+        .unwrap()
+        .unwrap();
+        if lz4 {
+            Spi::run("SET LOCAL default_toast_compression = lz4").unwrap();
+        }
+        Spi::run("SELECT morlet_create_stream_collection('public','tc'); SELECT morlet_enable_envelopes('tc');
+          SELECT morlet_enable_chunk_summaries('tc'); SELECT morlet_enable_rollups('tc'); SELECT morlet_enable_context('tc');
+          SELECT morlet_enable_memory('tc'); SELECT morlet_create_collection('public','tcl')").unwrap();
+        let bulk = "SELECT string_agg(a.attrelid::regclass||'.'||a.attname||'='||coalesce(nullif(a.attcompression::text,''),'default'),
+            ' ' ORDER BY a.attrelid::regclass::text, a.attname) FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid
+            WHERE (c.relname LIKE 'tc\\_%' OR c.relname='tcl') AND a.attnum>0 AND NOT a.attisdropped
+              AND a.atttypid IN ('bytea'::regtype,'float8[]'::regtype)";
+        let pins = Spi::get_one::<String>(bulk).unwrap().unwrap();
+        assert_eq!(
+            pins,
+            "tc_chunks.encoded=p tc_chunks.summary=p tc_ctx_values.vals=p tc_envelopes.envelope=p tc_kept_summaries.summary=p \
+             tc_rollups.summary=p tc_segments.features=p tcl.samples=p"
+        );
+        // A collection from before the pin (the update pins existing ones with the same function).
+        Spi::run(
+            "ALTER TABLE tc_chunks ALTER COLUMN encoded SET COMPRESSION default;
+          ALTER TABLE tc_envelopes ALTER COLUMN envelope SET COMPRESSION default;
+          ALTER TABLE tcl ALTER COLUMN samples SET COMPRESSION default",
+        )
+        .unwrap();
+        let one = |sql: &str| Spi::get_one::<i32>(sql).unwrap().unwrap();
+        assert_eq!(one("SELECT morlet_pin_toast_compression('tc')"), 2);
+        assert_eq!(one("SELECT morlet_pin_toast_compression('tcl')"), 1);
+        assert_eq!(one("SELECT morlet_pin_toast_compression('tc')"), 0);
+        assert_eq!(Spi::get_one::<String>(bulk).unwrap().unwrap(), pins);
+        // Values written under an lz4 default are stored with pglz, and read back bitwise.
+        Spi::run("SELECT morlet_start_recording('tc','r',1000,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunk('tc','r',0,ARRAY(SELECT (i%17)::float8 FROM generate_series(0,32767) i))").unwrap();
+        let method = Spi::get_one::<String>(
+            "SELECT coalesce(pg_column_compression(encoded),'none') FROM tc_chunks",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(method == "pglz" || method == "none", "{method}");
+        assert!(Spi::get_one::<bool>(
+            "SELECT samples = ARRAY(SELECT (i%17)::float8 FROM generate_series(0,32767) i)
+             FROM morlet_read_interval('tc','r',0,32768)"
+        )
+        .unwrap()
+        .unwrap());
     }
 
     #[pg_test]

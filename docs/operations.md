@@ -21,7 +21,7 @@ other machines — nothing is claimed.
 
 ```sh
 cd extensions/pg_morlet
-cargo pgrx install --release --pg-config /path/to/pg_config     # PostgreSQL 17 or 18
+cargo pgrx install --release --pg-config /path/to/pg_config     # PostgreSQL 17, 18 or 19
 ```
 
 ```sql
@@ -29,8 +29,8 @@ CREATE EXTENSION pg_morlet;
 CREATE EXTENSION vector;          -- optional: only for probe search (pgvector 0.8 or later)
 ```
 
-pg_morlet does not depend on pgvector; CI tests both with and without it, on PostgreSQL 17 and 18
-([compatibility](compatibility.md); PostgreSQL 18 needs pgvector 0.8.1 or later). The measurements on
+pg_morlet does not depend on pgvector; CI tests both with and without it, on PostgreSQL 17, 18 and 19
+([compatibility](compatibility.md); PostgreSQL 18 needs pgvector 0.8.1 or later; 19 is tested with 0.8.7). The measurements on
 this page are from PostgreSQL 17.
 
 ## Configuration

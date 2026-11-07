@@ -9,13 +9,13 @@ FROM postgres:${PG_MAJOR}-bookworm AS postgres
 ARG PG_MAJOR
 RUN apt-get update && apt-get install -y --no-install-recommends postgresql-server-dev-${PG_MAJOR} && rm -rf /var/lib/apt/lists/*
 
-FROM rust:1.91.1-bookworm AS builder
+FROM rust:1.99.0-bookworm AS builder
 ARG PG_MAJOR
 RUN apt-get update && apt-get install -y --no-install-recommends clang libclang-dev libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
 COPY --from=postgres /usr/lib/postgresql/${PG_MAJOR} /usr/lib/postgresql/${PG_MAJOR}
 COPY --from=postgres /usr/include/postgresql /usr/include/postgresql
 COPY --from=postgres /usr/share/postgresql/${PG_MAJOR} /usr/share/postgresql/${PG_MAJOR}
-RUN cargo install cargo-pgrx --version 0.16.1 --locked --debug
+RUN cargo install cargo-pgrx --version 0.19.3 --locked --debug
 RUN cargo pgrx init --pg${PG_MAJOR} /usr/lib/postgresql/${PG_MAJOR}/bin/pg_config
 WORKDIR /src
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./

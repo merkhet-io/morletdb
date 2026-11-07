@@ -103,7 +103,7 @@ Claude finds when the failing bearing first changed and whether the others show 
 ## Install
 
 Full setup and query examples: [installation and query guide](docs/installation-and-queries.md).
-Source builds use Rust 1.91.1 and pgrx 0.16.1.
+Source builds use Rust 1.99.0 and pgrx 0.19.3.
 
 **Run the release image** (prebuilt: PostgreSQL 17 with pg_morlet, Linux amd64 and arm64, with SBOM and
 build provenance; no pgvector, so no probe search; choose your own password):
@@ -123,12 +123,12 @@ docker compose run --rm walkthrough
 ```
 
 **Build from source** with Rust and [pgrx](https://github.com/pgcentralfoundation/pgrx)
-(PostgreSQL 17 or 18; on Debian/Ubuntu install `build-essential bison flex
+(PostgreSQL 17, 18 or 19; on Debian/Ubuntu install `build-essential bison flex
 libreadline-dev zlib1g-dev libclang-dev clang pkg-config libssl-dev` first):
 
 ```sh
-cargo install cargo-pgrx --version 0.16.1 --locked
-cargo pgrx init --pg17 download          # or --pg18, or --pg17 /path/to/pg_config
+cargo install cargo-pgrx --version 0.19.3 --locked
+cargo pgrx init --pg17 download          # or --pg18, --pg19 /path/to/pg_config, or --pg17 /path/to/pg_config
 cd extensions/pg_morlet
 cargo pgrx install --release --pg-config "$(sed -n 's/^pg17 = "\(.*\)"/\1/p' ~/.pgrx/config.toml)"
 ```

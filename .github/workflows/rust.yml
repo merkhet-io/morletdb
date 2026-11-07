@@ -88,7 +88,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: core-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
+          key: core-${{ runner.os }}-rust-1.99.0-${{ hashFiles('Cargo.lock') }}
       - run: cargo fmt --all -- --check
       - run: cargo test --locked -p morlet-core -p morlet-ffi
       - run: cargo clippy --locked -p morlet-core -p morlet-ffi --all-targets -- -D warnings
@@ -126,6 +126,9 @@ jobs:
           - {pg: 17, pg-minor: '17.11', mode: with-pgvector, pgvector: v0.8.0, pgvector-commit: 2627c5ff775ae6d7aef0c430121ccf857842d2f2, experimental: false}
           - {pg: 18, pg-minor: '18.6', mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
           - {pg: 18, pg-minor: '18.6', mode: with-pgvector, pgvector: v0.8.7, pgvector-commit: f37c13f68b57d2c3472b2214fbcff699d6d34876, experimental: false}
+          # PostgreSQL 19 is a release candidate: built from the pinned tarball until 19.0 ships (then 19.0 via cargo pgrx init)
+          - {pg: 19, pg-minor: '19rc1', pg-sha256: af105fc8e960fc836a09fc2cd7f582b49fd17675d9d36631abe3a565bfd7d701, mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
+          - {pg: 19, pg-minor: '19rc1', pg-sha256: af105fc8e960fc836a09fc2cd7f582b49fd17675d9d36631abe3a565bfd7d701, mode: with-pgvector, pgvector: v0.8.7, pgvector-commit: f37c13f68b57d2c3472b2214fbcff699d6d34876, experimental: false}
     steps:
       - uses: actions/checkout@v4
       - name: Verify runner build tools
@@ -135,6 +138,7 @@ jobs:
         uses: ./.github/actions/pgrx-postgres
         with:
           pg-minor: ${{ matrix.pg-minor }}
+          pg-sha256: ${{ matrix.pg-sha256 }}
           pgvector: ${{ matrix.pgvector }}
           pgvector-commit: ${{ matrix.pgvector-commit }}
       - name: Restore Rust build cache
@@ -260,6 +264,25 @@ jobs:
         uses: ./.github/actions/pgrx-postgres
         with:
           pg-minor: '17.11'
+      # Released versions are pgrx 0.16.1 crates (Rust 1.91.1 from their rust-toolchain.toml): they build with the
+      # cargo-pgrx of their own Cargo.lock, kept beside this branch's (tests/upgrade_from_release.sh, pgrx_for).
+      - name: Rust 1.91.1 for the released versions
+        run: rustup toolchain install 1.91.1 --profile minimal
+      - name: Restore cargo-pgrx 0.16.1
+        id: release-pgrx
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cargo-pgrx-0.16.1
+          key: release-cargo-pgrx-0.16.1-${{ runner.os }}-${{ runner.arch }}-debug
+      - name: Install cargo-pgrx 0.16.1
+        if: steps.release-pgrx.outputs.cache-hit != 'true'
+        run: cargo install cargo-pgrx --version 0.16.1 --locked --debug --root ~/.cargo-pgrx-0.16.1
+      - name: Save cargo-pgrx 0.16.1
+        if: steps.release-pgrx.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cargo-pgrx-0.16.1
+          key: ${{ steps.release-pgrx.outputs.cache-primary-key }}
       - name: Cache Rust build of this branch
         uses: actions/cache@v4
         with:
@@ -284,7 +307,9 @@ jobs:
       - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1 and v0.3.7-alpha.1
         env:
           MORLET_UPGRADE_CACHE: ${{ runner.temp }}/upgrade-releases
-        run: extensions/pg_morlet/tests/ci_local.sh 17 upgrade
+        run: |
+          export MORLET_RELEASE_CARGO_PGRX="$HOME/.cargo-pgrx-0.16.1/bin/cargo-pgrx"
+          extensions/pg_morlet/tests/ci_local.sh 17 upgrade
   seismic-example:
     needs: changes
     if: needs.changes.outputs.code == 'true' && needs.changes.outputs.seismic == 'true'
@@ -305,7 +330,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: seismic-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
+          key: seismic-${{ runner.os }}-rust-1.99.0-${{ hashFiles('Cargo.lock') }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -349,7 +374,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: python-sdk-${{ runner.os }}-rust-1.91.1-${{ hashFiles('Cargo.lock') }}
+          key: python-sdk-${{ runner.os }}-rust-1.99.0-${{ hashFiles('Cargo.lock') }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

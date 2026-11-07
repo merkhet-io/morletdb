@@ -9,6 +9,15 @@ edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/merkhet-io/morletdb"
 
+[workspace.lints.rust]
+# Verification harnesses: Kani proofs (cfg(kani)) in morlet-core; see docs/verification.md.
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(kani)"] }
+
+# Rust 1.99's clippy prefers `as_chunks` to `chunks_exact` with a constant size. The codec, screen and transfer
+# loops keep `chunks_exact`: they are the code the bitwise contract and the frozen measurements were checked against.
+[workspace.lints.clippy]
+chunks_exact_to_as_chunks = "allow"
+
 [profile.dev]
 panic = "unwind"
 
