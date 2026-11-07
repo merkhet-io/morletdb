@@ -4,6 +4,13 @@
 
 SQL version 0.3.6, with an update script from 0.3.5.
 
+- **Ingest hold and the steward (#287):** `tools/steward` keeps an edge database healthy without a DBA.
+  - It runs the rebuildable upkeep (envelopes, summaries, roll-ups, context values, verify, analyze) in one budgeted
+    loop, gated by load and the disk.
+  - It records every action and shows one plain status.
+  - At the disk reserve it sets `morlet_ingest_hold`: appends that would store new samples then fail with SQLSTATE
+    53100 and the reason, before PostgreSQL itself runs out of disk. It releases the hold when space is free again.
+  - Its role cannot remove stored samples.
 - **Synchronous channel groups (#292):** an acquisition sampled at the same instants (one DAQ, one rate) can be
   declared synchronous (`morlet_enable_sync`, `morlet_declare_sync`). Its members are then:
   - appended together in one transaction (`morlet_append_acquisition_raw`);

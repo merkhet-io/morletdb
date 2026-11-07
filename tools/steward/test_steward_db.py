@@ -121,10 +121,31 @@ class StewardDatabase(unittest.TestCase):
         self.run_until_idle(st)
         self.assertEqual(self.one("SELECT level FROM morlet_steward.overall"), "normal")
 
+    def test_the_disk_reserve_pauses_upkeep_holds_ingest_and_releases_it(self):
+        st = self.steward(reserve_bytes=1 << 62)      # more than any disk: the reserve is reached
+        st.tick()
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job<>'ingest_hold'"), 0)
+        self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
+        with self.assertRaises(psycopg.errors.DiskFull) as e:
+            self.admin.execute("SELECT morlet_append_chunk('line','r1',1100000,ARRAY[1,2,3]::float8[])")
+        self.assertIn("disk reserve", str(e.exception))
+        self.assertEqual(self.one("SELECT (checkpoint->>'end')::bigint FROM line WHERE recording_id='r1'"), 1_100_000)
+        st.cfg = P.Config(load_per_cpu=1000)           # space is free again
+        st.tick()
+        self.assertIsNone(self.admin.execute("SELECT * FROM morlet_ingest_hold").fetchone())
+        self.admin.execute("SELECT morlet_append_chunk('line','r1',1100000,ARRAY[1,2,3]::float8[])")
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job='ingest_hold' "
+                                  "AND outcome='done'"), 2)
+
+    def test_a_hold_set_by_a_person_stays(self):
+        self.admin.execute("SELECT morlet_set_ingest_hold('maintenance window')")
+        self.steward().tick()
+        self.assertEqual(self.one("SELECT reason FROM morlet_ingest_hold"), "maintenance window")
+
     def test_the_disk_reserve_pauses_all_upkeep(self):
         st = self.steward(reserve_bytes=1 << 62)      # more than any disk: the reserve is reached
         st.tick()
-        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions"), 0)
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job<>'ingest_hold'"), 0)
         cause = self.one("SELECT cause FROM morlet_steward.status WHERE key='disk'")
         self.assertIn("reserve", cause)
         self.assertEqual(steward.main(["check", "--dsn", dsn_for(DB)]), 2)

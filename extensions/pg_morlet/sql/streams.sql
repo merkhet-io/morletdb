@@ -118,6 +118,46 @@ BEGIN
   END IF;
 END $$;
 
+-- Ingest hold (#287): while this one-row table has its row, appends that would store new samples fail with SQLSTATE
+-- 53100 (disk_full) and the reason; identical replays still succeed. The steward sets it when the disk reserve is
+-- reached and releases it when space is free again, so PostgreSQL itself never runs out of disk. COPY or INSERT
+-- straight into chunk tables bypasses it.
+CREATE TABLE public.morlet_ingest_hold(id integer PRIMARY KEY DEFAULT 1 CHECK(id=1),
+  reason text NOT NULL CHECK(reason<>''),set_by text NOT NULL DEFAULT current_user,
+  since timestamptz NOT NULL DEFAULT now());
+GRANT SELECT ON public.morlet_ingest_hold TO PUBLIC;
+
+CREATE FUNCTION public.morlet_check_ingest_hold()
+RETURNS void LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE h record;
+BEGIN
+  SELECT reason,since INTO h FROM public.morlet_ingest_hold WHERE id=1;
+  IF h.reason IS NOT NULL THEN
+    RAISE EXCEPTION 'new samples are refused since %: %',h.since,h.reason USING ERRCODE='53100',
+      HINT='Free disk space; the steward releases the hold, or a privileged role calls morlet_release_ingest_hold().';
+  END IF;
+END $$;
+
+-- Sets the hold (true) or updates its reason (false). Needs INSERT and UPDATE on morlet_ingest_hold.
+CREATE FUNCTION public.morlet_set_ingest_hold(reason text)
+RETURNS boolean LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE fresh boolean;
+BEGIN
+  INSERT INTO public.morlet_ingest_hold(id,reason) VALUES (1,reason)
+    ON CONFLICT (id) DO UPDATE SET reason=EXCLUDED.reason RETURNING (xmax=0) INTO fresh;
+  RETURN fresh;
+END $$;
+
+-- Releases the hold; returns whether one was set. Needs DELETE on morlet_ingest_hold.
+CREATE FUNCTION public.morlet_release_ingest_hold()
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE n integer;
+BEGIN
+  DELETE FROM public.morlet_ingest_hold WHERE id=1;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n>0;
+END $$;
+
 CREATE FUNCTION public.morlet_append_chunk(collection regclass,recording_id text,start_sample bigint,samples float8[])
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE state jsonb; quantum float8:=1; previous float8[]; result jsonb; relations record; updated_rows bigint;
@@ -144,6 +184,7 @@ BEGIN
     END IF;
     RETURN (state->>'end')::bigint;
   END IF;
+  PERFORM public.morlet_check_ingest_hold();   -- an identical replay (above) stores nothing and stays allowed
   result:=public.morlet_chunk_step(state,start_sample,samples);
   IF relations.summarized THEN
     -- With chunk summaries enabled, each chunk is stored with its summary.
@@ -395,6 +436,7 @@ BEGIN
     END LOOP;
     RETURN received;
   END IF;
+  PERFORM public.morlet_check_ingest_hold();
   SELECT * INTO b FROM public.morlet_chunk_batch(state,start_sample,samples,chunk_size,quantum,relations.summarized);
   IF relations.summarized THEN
     EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded,summary)

@@ -74,6 +74,8 @@ def init(conn: psycopg.Connection) -> None:
         conn.execute(f"GRANT UPDATE ON morlet_steward.breakers TO {APPROVER_ROLE}")
         conn.execute("GRANT SELECT ON morlet_steward.status, morlet_steward.overall TO PUBLIC")
         conn.execute(f"GRANT pg_monitor TO {STEWARD_ROLE}")   # database and WAL sizes
+        if conn.execute("SELECT to_regclass('public.morlet_ingest_hold')").fetchone()[0]:
+            conn.execute(f"GRANT INSERT, UPDATE, DELETE ON public.morlet_ingest_hold TO {STEWARD_ROLE}")
 
 
 def collections(conn: psycopg.Connection) -> list[str]:
@@ -292,6 +294,24 @@ def verify_summary(conn) -> tuple[dict[str, int], dict[str, float | None]]:
     rows = conn.execute("SELECT collection,coalesce(last_pass_problems,0),extract(epoch FROM now()-last_pass_finished_at)"
                         "/86400 FROM morlet_steward.verify_cursor").fetchall()
     return {r[0]: int(r[1]) for r in rows}, {r[0]: None if r[2] is None else float(r[2]) for r in rows}
+
+
+# ---- ingest hold (#287, P2) ---------------------------------------------------------------------------------------
+
+def hold(conn) -> tuple[str, str] | None:
+    """(reason, set_by) of the current ingest hold, or None; None also when the extension has no hold yet."""
+    if not conn.execute("SELECT to_regclass('public.morlet_ingest_hold')").fetchone()[0]:
+        return None
+    r = conn.execute("SELECT reason,set_by FROM public.morlet_ingest_hold").fetchone()
+    return (r[0], r[1]) if r else None
+
+
+def set_hold(conn, reason: str) -> bool:
+    return bool(conn.execute("SELECT morlet_set_ingest_hold(%s)", (reason,)).fetchone()[0])
+
+
+def release_hold(conn) -> bool:
+    return bool(conn.execute("SELECT morlet_release_ingest_hold()").fetchone()[0])
 
 
 # ---- disk, breakers, status ----------------------------------------------------------------------------------------

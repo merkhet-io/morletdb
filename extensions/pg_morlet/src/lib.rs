@@ -4114,6 +4114,54 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn ingest_hold_refuses_new_samples_with_disk_full_and_allows_replays() {
+        // #287: the steward sets the hold at the disk reserve; appends that would store samples fail with 53100.
+        Spi::run("SELECT morlet_create_stream_collection('public','ih');
+          SELECT morlet_start_recording('ih','r',1000,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunk('ih','r',0,ARRAY(SELECT i::float8 FROM generate_series(0,99) i));
+          CREATE FUNCTION pg_temp.ih_err(q text) RETURNS text LANGUAGE plpgsql AS $$
+            BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLSTATE||' '||SQLERRM; END $$").unwrap();
+        let err = |q: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT pg_temp.ih_err({})",
+                pgrx::spi::quote_literal(q)
+            ))
+            .unwrap()
+            .unwrap()
+        };
+        let one = |q: &str| Spi::get_one::<bool>(q).unwrap().unwrap();
+        assert!(one(
+            "SELECT morlet_set_ingest_hold('disk reserve reached (steward)')"
+        ));
+        assert!(!one(
+            "SELECT morlet_set_ingest_hold('disk reserve reached (steward)')"
+        ));
+        let refused = err("SELECT morlet_append_chunk('ih','r',100,ARRAY[1,2,3]::float8[])");
+        assert!(
+            refused.starts_with("53100 new samples are refused since "),
+            "{refused}"
+        );
+        assert!(
+            refused.ends_with(": disk reserve reached (steward)"),
+            "{refused}"
+        );
+        assert!(err("SELECT morlet_append_chunks_raw('ih','r',100,morlet_float8_le_bytes(ARRAY[1,2,3]::float8[]),2)")
+            .starts_with("53100 "));
+        // an identical replay stores nothing and is allowed
+        assert_eq!(err("SELECT morlet_append_chunk('ih','r',0,ARRAY(SELECT i::float8 FROM generate_series(0,99) i))"), "");
+        assert!(one("SELECT morlet_release_ingest_hold()"));
+        assert!(!one("SELECT morlet_release_ingest_hold()"));
+        assert_eq!(
+            err("SELECT morlet_append_chunk('ih','r',100,ARRAY[1,2,3]::float8[])"),
+            ""
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT (checkpoint->>'end')::bigint FROM ih").unwrap(),
+            Some(103)
+        );
+    }
+
+    #[pg_test]
     fn rollups_are_read_through_the_index() {
         // A year of chunks took 18 s with roll-ups when the planner scanned every chunk and roll-up for the gaps
         // (#219). Here: 6,800 chunks (34 appended, copied forward 199 times) and their level-1 and level-2 roll-ups.
