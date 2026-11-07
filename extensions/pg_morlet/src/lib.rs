@@ -3607,6 +3607,55 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn rollups_are_read_through_the_index() {
+        // A year of chunks took 18 s with roll-ups when the planner scanned every chunk and roll-up for the gaps
+        // (#219). Here: 6,800 chunks (34 appended, copied forward 199 times) and their level-1 and level-2 roll-ups.
+        // A long interval must read no table sequentially and only the few chunks at its edges.
+        Spi::run("SELECT morlet_create_stream_collection('public','ri'); SELECT morlet_start_recording('ri','A',1000,'x','g','{}',512,256,'zscore','none');
+          DO $$ DECLARE k integer; s bigint:=0; BEGIN
+            FOR k IN 0..33 LOOP
+              PERFORM morlet_append_chunk('ri','A',s,array_fill((k%7)*1.5,ARRAY[CASE WHEN k%5=0 THEN 30001 ELSE 32768 END]));
+              s:=s+CASE WHEN k%5=0 THEN 30001 ELSE 32768 END;
+            END LOOP;
+            INSERT INTO ri_chunks SELECT c.recording_id,c.start_sample+r*s,c.sample_count,c.encoded,c.summary
+              FROM ri_chunks c, generate_series(1,199) r;
+            UPDATE ri SET checkpoint=checkpoint||jsonb_build_object('end',200*s,'next_start',200*s,'buffer_start',200*s);
+          END $$;
+          SELECT morlet_enable_rollups('ri'); SELECT morlet_build_rollups('ri','A'); ANALYZE ri_chunks; ANALYZE ri_rollups;").unwrap();
+        let one = |sql: &str| Spi::get_one::<i64>(sql).unwrap().unwrap();
+        assert_eq!(one("SELECT count(*) FROM ri_chunks"), 6800);
+        let read = || {
+            one("SELECT sum(pg_stat_get_xact_tuples_returned(t))::bigint
+                FROM unnest(ARRAY['ri_chunks'::regclass,'ri_rollups'::regclass]) t")
+        };
+        for (a, b, k) in [
+            (12345, 218000000, 1),
+            (0, 218000000, 37),
+            (777, 150000000, 5),
+        ] {
+            let (seq0, fetched0) = (
+                read(),
+                one("SELECT pg_stat_get_xact_tuples_fetched('ri_chunks'::regclass)"),
+            );
+            Spi::run(&format!(
+                "SELECT morlet_interval_buckets('ri','A',{a},{b},{k},'overview')"
+            ))
+            .unwrap();
+            assert_eq!(
+                read() - seq0,
+                0,
+                "{a}..{b}/{k}: no table is read sequentially"
+            );
+            let chunks =
+                one("SELECT pg_stat_get_xact_tuples_fetched('ri_chunks'::regclass)") - fetched0;
+            assert!(
+                chunks < 100 * k,
+                "{a}..{b}/{k}: {chunks} chunks read, only the edges are needed"
+            );
+        }
+    }
+
+    #[pg_test]
     fn rollups_survive_compaction_and_go_with_forgotten_samples() {
         Spi::run("SELECT morlet_create_stream_collection('public','rf'); SELECT morlet_start_recording('rf','A',1000,'x','g','{}',512,256,'zscore','none');
           SELECT morlet_append_chunk('rf','A',k*32768,CASE WHEN k BETWEEN 30 AND 40
