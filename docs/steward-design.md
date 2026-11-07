@@ -1,7 +1,7 @@
 # Steward: MorletDB keeps itself healthy on edge machines (design, #287)
 
-Status: **design for review.** Nothing here is implemented yet. Decisions marked *open* need the owner's answer
-before the phase that depends on them.
+Status: **accepted 2026-11-07**, with the recommended answers to the open decisions (end of this page). Phase 1 is
+in `tools/steward`.
 
 ## Who it is for
 
@@ -108,7 +108,7 @@ error. An approver resets it.
 - **Emergency removal of raw chunks** exists only as a policy written beforehand. It applies only to recordings with
   a checksum-verified copy elsewhere, and still goes through a plan.
 
-**Ingest hold** (*open*): new appends must stop before PostgreSQL itself fails on a full disk. Two ways:
+**Ingest hold** (decided: (a)): new appends must stop before PostgreSQL itself fails on a full disk. Two ways:
 
 - **(a) A flag the append functions read.** One small table lookup per append, about 10 µs. It stops existing
   sessions at once, with a clear error.
@@ -177,11 +177,14 @@ The status is exposed as:
    - Builds: sidecar image, systemd unit, data checksums and small-disk WAL settings in the shipped image.
    - Soak: the #191 soak on the Raspberry Pi. The home plug study D1 can be that soak's live workload.
 
-## Open decisions
+## Decisions (2026-11-07)
 
-1. **Language:** Python (recommended: same as the MCP server and policy engine, available on the Pi) or Rust (one
-   static binary, more work).
-2. **Ingest hold mechanism:** (a), a flag read by appends (recommended), or (b), revoking privileges.
-3. **Approval surface for P3:** CLI and SQL only (recommended first), or also a screen for operators.
-4. **Defaults:** tick 30 s, 2 s budget, load < 0.7 × CPUs, verify pass every 7 days, reserve 5% or 2 GB, warnings
-   at 14, 3 and 1 days.
+1. **Language:** Python, the same as the MCP server and policy engine, and available on the Pi.
+2. **Ingest hold:** (a), a flag the append functions read.
+3. **Approval surface for P3:** CLI and SQL first; a screen for operators later.
+4. **Defaults:**
+   - tick 30 s, 2 s budget per batch;
+   - load below 0.7 × CPUs;
+   - a verify pass every 7 days;
+   - reserve 5% or 2 GB;
+   - warnings at 14 days, a pause at 3, derived data dropped (by policy) at 1.
