@@ -191,6 +191,9 @@ jobs:
       - name: Test the MQTT collector contract (no broker)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/mqtt -p 'test_*.py'
+      - name: Test the Shelly collector (no plug)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        run: python -m unittest discover -s examples/collectors/shelly -p 'test_*.py'
       - name: Test viewer helpers
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: |
@@ -208,6 +211,11 @@ jobs:
         run: |
           cargo pgrx install --release --pg-config "$PG_CONFIG"
           cargo pgrx start pg17
+      - name: Test the Shelly collector against the database (fake plug)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        env:
+          MORLET_SHELLY_TEST_DSN: host=localhost port=28817 dbname=postgres user=runner
+        run: python -m unittest discover -s examples/collectors/shelly -p 'test_*.py'
       - name: Test the steward against the database
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         env:
