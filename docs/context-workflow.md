@@ -230,6 +230,50 @@ SELECT role, start_sample, samples FROM morlet_read_acquisition_raw('spindle', '
   channels only to acquisitions it can see ([access control](access-control.md)). Context batches per channel
   are `<batch>@<acquisition>/<role>`.
 
+### Synchronous channel groups (SQL 0.3.6, #292)
+
+Voltage and current for load monitoring, or three motor phases for current signature analysis, are sampled at the
+same instants by one DAQ. Declaring such an acquisition synchronous keeps its channels equal. Each channel stays its
+own recording, so storage, search, roll-ups and memory levels are unchanged.
+
+```sql
+SELECT morlet_enable_sync('plug');                                     -- once per collection
+SELECT morlet_declare_sync('plug', 'run-17', 30000);                   -- rate; members: offset 0, clock 'daq'
+SELECT morlet_append_acquisition_raw('plug', 'run-17', 0,              -- every role, one transaction
+  ARRAY['i', 'v'], ARRAY[:i_bytes, :v_bytes]::bytea[]);
+SELECT role, samples FROM morlet_read_sync_raw('plug', 'run-17', 0, 16384);       -- by sample index
+SELECT * FROM morlet_acquisition_cross_stats('plug', 'run-17', 'v', 'i', 0, 1800000); -- mean(v·i) = real power
+```
+
+- **Declaring:** `morlet_declare_sync` checks the rate, offset 0, clock source `daq` with an exact offset, the same
+  stored end and the same chunk boundaries for every member, at least two of them.
+  - Run it as a role not subject to row security, so no member is hidden.
+  - A declared group takes no new channel.
+- **Appending:** members are appended only together, with `morlet_append_acquisition_raw` (raw little-endian
+  float64 per role, the same length, the same chunking).
+  - Members are locked in role order.
+  - An identical retry is a no-op.
+  - Any failure, such as a conflicting replay on one member, aborts the whole append, so every member's end stays
+    equal.
+  - A single-channel append to a member is refused. That is a guard against mistakes, not a security boundary.
+- **Reading:** `morlet_read_sync_raw` returns every role for the same sample interval. It fails closed: a member
+  hidden by row security, compacted by a memory level, or shorter makes the whole read fail. No partial group is
+  returned.
+- **Cross statistics:** `morlet_acquisition_cross_stats` returns the number of sample pairs, mean(a·b), and each
+  member's mean and RMS.
+  - It is exact: every product of two float64 values is added without rounding and the result is rounded once
+    (`morlet_core::exactstats::CrossStats`). So it is bitwise the same however the interval is split into chunks.
+  - It has no length limit.
+- **Memory levels:** `morlet_set_level` refuses moves that would remove samples (levels 2–4) of only some members.
+  Move the same interval of every member to the same level in one call.
+- **Integrity:** `morlet_verify` reports members whose end or chunk boundaries differ from the group's first
+  member.
+- **Not yet:**
+  - Joint search over a V–I pair.
+  - Cross roll-ups for year-scale energy.
+  - Per-cycle features (P, Q, harmonics) on the server; compute them from `morlet_read_sync_raw` meanwhile.
+  - SDK and MCP methods.
+
 ## Nearest occurrences
 
 `morlet_history_neighbors(collection, segment_id, ...)` returns the history of a

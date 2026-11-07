@@ -582,6 +582,214 @@ impl ExactStats {
 
 /// `x · 2^k` for a positive normal `x` with 2^-32 ≤ x < 2, |k| ≤ 1700: exact steps keep the value normal, so
 /// only the last multiplication rounds (when the result is subnormal) or overflows.
+/// An exact sum of float64 terms that may be infinite or NaN: finite terms are added exactly, non-finite ones
+/// only set flags (the IEEE result of adding them all).
+#[derive(Clone, Debug, Default)]
+struct FlaggedSum {
+    exact: Exact,
+    nan: bool,
+    pos_inf: bool,
+    neg_inf: bool,
+}
+
+impl FlaggedSum {
+    fn flag(&mut self, v: f64) {
+        if v.is_nan() {
+            self.nan = true;
+        } else if v > 0.0 {
+            self.pos_inf = true;
+        } else {
+            self.neg_inf = true;
+        }
+    }
+
+    fn add(&mut self, v: f64) {
+        if v.is_finite() {
+            self.exact.add_f64(v);
+        } else {
+            self.flag(v);
+        }
+    }
+
+    /// Adds `a · b` exactly: the product of the two 53-bit significands is an exact 106-bit integer.
+    fn add_product(&mut self, a: f64, b: f64) {
+        if !(a.is_finite() && b.is_finite()) {
+            let p = a * b; // IEEE: inf·0 is NaN, inf·x is ±inf, NaN stays NaN
+            if p.is_finite() {
+                return; // cannot happen for a non-finite factor, kept for clarity
+            }
+            self.flag(p);
+            return;
+        }
+        if a == 0.0 || b == 0.0 {
+            return;
+        }
+        let ((ma, ea), (mb, eb)) = (decompose(a), decompose(b));
+        let p = (ma as u128) * (mb as u128); // < 2^106
+        let target = if (a < 0.0) != (b < 0.0) {
+            &mut self.exact.neg
+        } else {
+            &mut self.exact.pos
+        };
+        target.add_at(&[p as u64, (p >> 64) as u64], (ea + eb + OFFSET) as usize);
+    }
+
+    fn merge(&mut self, o: &FlaggedSum) {
+        self.exact.add(&o.exact);
+        self.nan |= o.nan;
+        self.pos_inf |= o.pos_inf;
+        self.neg_inf |= o.neg_inf;
+    }
+
+    /// `round(S) / n`, with the IEEE result for non-finite terms.
+    fn mean(&self, n: f64) -> f64 {
+        if self.nan || (self.pos_inf && self.neg_inf) {
+            return f64::NAN;
+        }
+        if self.pos_inf {
+            return f64::INFINITY;
+        }
+        if self.neg_inf {
+            return f64::NEG_INFINITY;
+        }
+        let (neg, mag) = self.exact.signed();
+        let s = mag.to_f64(0);
+        (if neg { -s } else { s }) / n
+    }
+
+    /// `sqrt(round(Q / 4^k) / n) · 2^k` for a sum of squares Q, as in [`ExactStats::finish`].
+    fn rms(&self, n: f64) -> f64 {
+        if self.nan {
+            return f64::NAN;
+        }
+        if self.pos_inf {
+            return f64::INFINITY;
+        }
+        let (neg, mag) = self.exact.signed();
+        match mag.top_bit() {
+            Some(t) if !neg => {
+                let k = (t as i32 - OFFSET).div_euclid(2);
+                ldexp((mag.to_f64(2 * k) / n).sqrt(), k)
+            }
+            _ => 0.0,
+        }
+    }
+}
+
+/// Exact statistics of two channels sampled at the same instants (#292): count, mean(a·b), and the mean and
+/// RMS of each channel. With a = voltage and b = current, mean(a·b) is the real power.
+///
+/// Every sum is exact: each sample and each product (as a 106-bit integer, no rounding) is added into the
+/// fixed-point accumulators of [`ExactStats`], and each result is rounded once in [`CrossStats::finish`]. So the
+/// result is bitwise the same however the interval is split into pieces and in whatever order they are merged.
+/// Means are `round(S) / count`; RMS as in [`ExactStats::finish`]. A NaN or infinite sample gives the IEEE result
+/// of the exact sums (for example ∞·0 makes mean(a·b) NaN).
+#[derive(Clone, Debug, Default)]
+pub struct CrossStats {
+    n: u64,
+    a: FlaggedSum,
+    b: FlaggedSum,
+    aa: FlaggedSum,
+    bb: FlaggedSum,
+    ab: FlaggedSum,
+}
+
+impl CrossStats {
+    /// Adds samples `a[i]`, `b[i]` taken at the same instants; the slices must have equal lengths.
+    pub fn add(&mut self, a: &[f64], b: &[f64]) -> Result<(), crate::SignalError> {
+        if a.len() != b.len() {
+            return Err(crate::SignalError::LengthMismatch);
+        }
+        for (&x, &y) in a.iter().zip(b) {
+            self.a.add(x);
+            self.b.add(y);
+            self.aa.add_product(x, x);
+            self.bb.add_product(y, y);
+            self.ab.add_product(x, y);
+        }
+        self.n += a.len() as u64;
+        Ok(())
+    }
+
+    /// Adds the samples of `other`; the result does not depend on the order or grouping of merges.
+    pub fn merge(&mut self, other: &CrossStats) {
+        self.n += other.n;
+        self.a.merge(&other.a);
+        self.b.merge(&other.b);
+        self.aa.merge(&other.aa);
+        self.bb.merge(&other.bb);
+        self.ab.merge(&other.ab);
+    }
+
+    /// Number of sample pairs.
+    pub fn count(&self) -> u64 {
+        self.n
+    }
+
+    /// Stored form (aggregate state): `u8 1`, `u64 count`, then for a, b, a·a, b·b and a·b a flags byte (NaN, +∞,
+    /// −∞) and the exact sum as in [`ExactStats::to_bytes`].
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = vec![1u8];
+        out.extend_from_slice(&self.n.to_le_bytes());
+        for f in [&self.a, &self.b, &self.aa, &self.bb, &self.ab] {
+            out.push(f.nan as u8 | (f.pos_inf as u8) << 1 | (f.neg_inf as u8) << 2);
+            f.exact.write(&mut out);
+        }
+        out
+    }
+
+    /// Reads [`CrossStats::to_bytes`]; None for anything else.
+    pub fn from_bytes(bytes: &[u8]) -> Option<CrossStats> {
+        if bytes.first() != Some(&1) {
+            return None;
+        }
+        let n = u64::from_le_bytes(bytes.get(1..9)?.try_into().ok()?);
+        let mut at = 9;
+        let mut sums = Vec::with_capacity(5);
+        for _ in 0..5 {
+            let flags = *bytes.get(at)?;
+            if flags > 7 {
+                return None;
+            }
+            at += 1;
+            sums.push(FlaggedSum {
+                exact: Exact::read(bytes, &mut at)?,
+                nan: flags & 1 != 0,
+                pos_inf: flags & 2 != 0,
+                neg_inf: flags & 4 != 0,
+            });
+        }
+        if at != bytes.len() {
+            return None;
+        }
+        let mut it = sums.into_iter();
+        Some(CrossStats {
+            n,
+            a: it.next()?,
+            b: it.next()?,
+            aa: it.next()?,
+            bb: it.next()?,
+            ab: it.next()?,
+        })
+    }
+
+    /// `[count, mean(a·b), mean(a), mean(b), rms(a), rms(b)]`; NaN statistics for no samples.
+    pub fn finish(&self) -> [f64; 6] {
+        if self.n == 0 {
+            return [0.0, f64::NAN, f64::NAN, f64::NAN, f64::NAN, f64::NAN];
+        }
+        let n = self.n as f64;
+        [
+            n,
+            self.ab.mean(n),
+            self.a.mean(n),
+            self.b.mean(n),
+            self.aa.rms(n),
+            self.bb.rms(n),
+        ]
+    }
+}
+
 fn ldexp(x: f64, k: i32) -> f64 {
     let (mut x, mut k) = (x, k);
     while k > 900 {
@@ -598,6 +806,171 @@ fn ldexp(x: f64, k: i32) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn bits6(x: [f64; 6]) -> [u64; 6] {
+        x.map(f64::to_bits)
+    }
+
+    fn xlcg(seed: &mut u64) -> u64 {
+        *seed = seed
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        *seed >> 11
+    }
+
+    /// Values over a wide exponent range, both signs, with exact zeros.
+    fn wide(seed: &mut u64, n: usize) -> Vec<f64> {
+        (0..n)
+            .map(|_| {
+                let r = xlcg(seed);
+                if r.is_multiple_of(17) {
+                    return 0.0;
+                }
+                let m = (r % (1 << 20)) as f64 / (1 << 20) as f64 + 0.5;
+                let e = (xlcg(seed) % 200) as i32 - 100;
+                let v = ldexp(m, e);
+                if xlcg(seed).is_multiple_of(2) {
+                    -v
+                } else {
+                    v
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn cross_stats_do_not_depend_on_splits_or_merge_order() {
+        let mut seed = 11u64;
+        let (a, b) = (wide(&mut seed, 5000), wide(&mut seed, 5000));
+        let mut whole = CrossStats::default();
+        whole.add(&a, &b).unwrap();
+        let want = bits6(whole.finish());
+        for trial in 0..20 {
+            // random cut points, then merge the pieces in a shuffled order
+            let mut cuts: Vec<usize> = (0..trial % 7)
+                .map(|_| (xlcg(&mut seed) % 5001) as usize)
+                .collect();
+            cuts.extend([0, 5000]);
+            cuts.sort_unstable();
+            let mut pieces: Vec<CrossStats> = cuts
+                .windows(2)
+                .map(|w| {
+                    let mut c = CrossStats::default();
+                    c.add(&a[w[0]..w[1]], &b[w[0]..w[1]]).unwrap();
+                    c
+                })
+                .collect();
+            for k in (1..pieces.len()).rev() {
+                pieces.swap(k, (xlcg(&mut seed) % (k as u64 + 1)) as usize);
+            }
+            let mut merged = CrossStats::default();
+            for p in &pieces {
+                merged.merge(p);
+            }
+            assert_eq!(bits6(merged.finish()), want, "trial {trial}");
+            assert_eq!(merged.count(), 5000);
+        }
+    }
+
+    #[test]
+    fn cross_stats_match_an_exact_integer_reference() {
+        // Values k·2^-20 with |k| < 2^30: every sum and product is an integer times 2^-40 that fits in i128.
+        let mut seed = 5u64;
+        let k: Vec<i64> = (0..3000)
+            .map(|_| (xlcg(&mut seed) % (1 << 31)) as i64 - (1 << 30))
+            .collect();
+        let j: Vec<i64> = (0..3000)
+            .map(|_| (xlcg(&mut seed) % (1 << 31)) as i64 - (1 << 30))
+            .collect();
+        let s = ldexp(1.0, -20);
+        let a: Vec<f64> = k.iter().map(|&v| v as f64 * s).collect();
+        let b: Vec<f64> = j.iter().map(|&v| v as f64 * s).collect();
+        let mut c = CrossStats::default();
+        c.add(&a, &b).unwrap();
+        let [n, ab, ma, mb, ra, rb] = c.finish();
+        let sab: i128 = k.iter().zip(&j).map(|(&x, &y)| x as i128 * y as i128).sum();
+        let sa: i128 = k.iter().map(|&x| x as i128).sum();
+        let sb: i128 = j.iter().map(|&y| y as i128).sum();
+        let saa: i128 = k.iter().map(|&x| x as i128 * x as i128).sum();
+        let sbb: i128 = j.iter().map(|&y| y as i128 * y as i128).sum();
+        // i128 -> f64 rounds to nearest even: round(S); powers of two scale exactly
+        assert_eq!(n, 3000.0);
+        assert_eq!(ab.to_bits(), (ldexp(sab as f64, -40) / n).to_bits());
+        assert_eq!(ma.to_bits(), (ldexp(sa as f64, -20) / n).to_bits());
+        assert_eq!(mb.to_bits(), (ldexp(sb as f64, -20) / n).to_bits());
+        // rms: sqrt(round(Q/4^k)/n)·2^k; Q = saa·2^-40, scaled by a power of four, rounds like saa itself
+        let rms = |q: i128| {
+            let t = 127 - q.leading_zeros() as i32 - 40; // top bit of Q
+            let e = t.div_euclid(2);
+            ldexp((ldexp(q as f64, -40 - 2 * e) / n).sqrt(), e)
+        };
+        assert_eq!(ra.to_bits(), rms(saa).to_bits());
+        assert_eq!(rb.to_bits(), rms(sbb).to_bits());
+    }
+
+    #[test]
+    fn cross_stats_are_exact_where_float_sums_cancel() {
+        let big = ldexp(1.0, 53);
+        let mut c = CrossStats::default();
+        c.add(&[big, 1.0, -big], &[1.0, 1.0, 1.0]).unwrap();
+        let [_, ab, ma, ..] = c.finish();
+        assert_eq!(ab, 1.0 / 3.0); // a float sum gives (2^53 + 1) - 2^53 = 0
+        assert_eq!(ma, 1.0 / 3.0);
+        // products far outside float64 cancel exactly; the survivor is rounded once
+        let mut c = CrossStats::default();
+        c.add(&[1e300, -1e300, 1e-300], &[1e-300, 1e-300, 1e300])
+            .unwrap();
+        assert_eq!(c.finish()[1], (1e-300 * 1e300) / 3.0);
+        let mut c = CrossStats::default();
+        c.add(&[1e-300, 1e-300], &[1e-300, -1e-300]).unwrap();
+        assert_eq!(c.finish()[1].to_bits(), 0f64.to_bits()); // 1e-600 - 1e-600: exactly zero
+                                                             // subnormal samples: the mean is exact, the product underflows to zero
+        let tiny = f64::from_bits(1);
+        let mut c = CrossStats::default();
+        c.add(&[tiny; 4], &[tiny; 4]).unwrap();
+        let [_, ab, ma, _, ra, _] = c.finish();
+        assert_eq!((ab, ma, ra), (0.0, tiny, tiny));
+    }
+
+    #[test]
+    fn cross_stats_survive_their_stored_form() {
+        let mut seed = 3u64;
+        let (a, b) = (wide(&mut seed, 700), wide(&mut seed, 700));
+        let mut c = CrossStats::default();
+        c.add(&a, &b).unwrap();
+        c.add(&[f64::INFINITY], &[0.0]).unwrap();
+        let back = CrossStats::from_bytes(&c.to_bytes()).unwrap();
+        assert_eq!(bits6(back.finish()).map(|x| x), bits6(c.finish()));
+        assert_eq!(back.to_bytes(), c.to_bytes());
+        let empty = CrossStats::default();
+        assert_eq!(
+            CrossStats::from_bytes(&empty.to_bytes()).unwrap().count(),
+            0
+        );
+        let mut bad = c.to_bytes();
+        bad.push(0);
+        assert!(CrossStats::from_bytes(&bad).is_none());
+        assert!(CrossStats::from_bytes(&[2]).is_none());
+    }
+
+    #[test]
+    fn cross_stats_follow_ieee_for_non_finite_samples() {
+        let f = |a: &[f64], b: &[f64]| {
+            let mut c = CrossStats::default();
+            c.add(a, b).unwrap();
+            c.finish()
+        };
+        let r = f(&[f64::INFINITY, 1.0], &[0.0, 1.0]);
+        assert!(r[1].is_nan()); // inf·0
+        assert_eq!((r[2], r[4]), (f64::INFINITY, f64::INFINITY));
+        let r = f(&[f64::INFINITY], &[-2.0]);
+        assert_eq!(r[1], f64::NEG_INFINITY);
+        let r = f(&[f64::NAN, 1.0], &[1.0, 1.0]);
+        assert!(r[1].is_nan() && r[2].is_nan() && r[4].is_nan());
+        assert_eq!((r[3], r[5]), (1.0, 1.0));
+        assert!(CrossStats::default().add(&[1.0], &[]).is_err());
+        assert_eq!(CrossStats::default().finish()[0], 0.0);
+    }
 
     fn lcg(seed: &mut u64) -> f64 {
         *seed = seed
