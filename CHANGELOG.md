@@ -4,6 +4,12 @@
 
 SQL version 0.3.6, with an update script from 0.3.5.
 
+- **Commit notifications (#205):** `morlet_enable_notifications(collection, channel, detail)` sends one
+  `pg_notify` per committed transaction that stored new chunks, with the stored sample ranges per recording
+  (payload version 1). Rolled-back transactions, savepoints and identical replays send nothing.
+  - `detail => false` sends counts only; row security requires it.
+  - Python SDK: `Client.enable_notifications`, `Client.notifications`. The SDK now needs psycopg 3.2.
+  - Tested with a real listener session (`tests/notifications.sh`).
 - **PostgreSQL 19 (#196, #280):** pg_morlet builds and passes its full test suite on PostgreSQL 19 (release
   candidate 19rc1; CI with and without pgvector 0.8.7), with pgrx 0.19.3 and Rust 1.99.0 (from 0.16.1 and 1.91.1).
   - PostgreSQL 19 defaults to lz4 TOAST compression. Every column holding samples, or values derived from them, now

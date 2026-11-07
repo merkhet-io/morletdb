@@ -3048,3 +3048,109 @@ BEGIN
   END IF;
   RAISE EXCEPTION 'source interval is incomplete or not fully visible';
 END $$;
+
+-- Commit notifications (#205): subscribers LISTEN instead of polling. With notifications enabled, every committed
+-- transaction that stored new chunks in the collection sends exactly one pg_notify on the collection's channel,
+-- after the data is visible; rolled-back transactions and savepoints send nothing, and identical replays (no new
+-- chunk) send nothing. Payload, version 1 (JSON, under PostgreSQL's 8000-byte limit):
+--   {"v":1,"collection":"public.line","recordings":[{"recording_id":"p1","first_sample":0,"end_sample":32768,
+--     "sample_rate_hz":1000,"start_s":0,"end_s":32.768}, ...]}
+-- first_sample..end_sample is the half-open range of samples the transaction stored in that recording; times are
+-- seconds from the recording's first sample. When the list would not fit, "recordings" is replaced by
+-- "recording_count" and "truncated": true. With detail => false, and whenever row security is enabled on the
+-- collection, the payload carries only {"v":1,"collection":...,"recording_count":n}: any role that can connect can
+-- LISTEN on any channel, so recording ids must not travel in payloads that bypass row security.
+CREATE FUNCTION public.morlet_notify_collect() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE pending jsonb; key text:=TG_RELID::text; mine jsonb; r record;
+BEGIN
+  pending:=coalesce(nullif(current_setting('morlet.notify_pending',true),'')::jsonb,'{}'::jsonb);
+  mine:=coalesce(pending->key,'{}'::jsonb);
+  FOR r IN SELECT n.recording_id,min(n.start_sample) AS a,max(n.start_sample+n.sample_count) AS b
+    FROM morlet_new_chunks n GROUP BY n.recording_id
+  LOOP
+    mine:=jsonb_set(mine,ARRAY[r.recording_id],jsonb_build_array(
+      least(r.a,coalesce((mine->r.recording_id->>0)::bigint,r.a)),
+      greatest(r.b,coalesce((mine->r.recording_id->>1)::bigint,r.b))));
+  END LOOP;
+  PERFORM set_config('morlet.notify_pending',jsonb_set(pending,ARRAY[key],mine)::text,true);
+  RETURN NULL;
+END $$;
+
+-- Deferred to commit; the first row event of the transaction sends the collection's notification and clears it.
+CREATE FUNCTION public.morlet_notify_commit() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE pending jsonb; key text:=TG_RELID::text; mine jsonb; collection regclass; detail boolean; payload text;
+  recs jsonb; n integer;
+BEGIN
+  pending:=nullif(current_setting('morlet.notify_pending',true),'')::jsonb;
+  mine:=pending->key;
+  IF mine IS NULL THEN RETURN NULL; END IF;
+  PERFORM set_config('morlet.notify_pending',(pending-key)::text,true);
+  collection:=format('%I.%I',TG_TABLE_SCHEMA,left(TG_TABLE_NAME,length(TG_TABLE_NAME)-7))::regclass;
+  detail:=TG_ARGV[1]::boolean AND NOT public.morlet_row_security_enabled(collection);
+  n:=(SELECT count(*) FROM jsonb_object_keys(mine));
+  IF detail THEN
+    EXECUTE format('SELECT jsonb_agg(jsonb_build_object(''recording_id'',k.key,''first_sample'',(k.value->>0)::bigint,
+        ''end_sample'',(k.value->>1)::bigint,''sample_rate_hz'',c.sample_rate_hz,
+        ''start_s'',(k.value->>0)::bigint/c.sample_rate_hz,''end_s'',(k.value->>1)::bigint/c.sample_rate_hz)
+        ORDER BY k.key)
+      FROM jsonb_each($1) k JOIN %s c ON c.recording_id=k.key',collection) INTO recs USING mine;
+    payload:=jsonb_build_object('v',1,'collection',collection::text,'recordings',coalesce(recs,'[]'::jsonb))::text;
+    IF octet_length(payload)>=8000 THEN
+      payload:=jsonb_build_object('v',1,'collection',collection::text,'recording_count',n,'truncated',true)::text;
+    END IF;
+  ELSE
+    payload:=jsonb_build_object('v',1,'collection',collection::text,'recording_count',n)::text;
+  END IF;
+  PERFORM pg_notify(TG_ARGV[0],payload);
+  RETURN NULL;
+END $$;
+
+-- Turns commit notifications on (or changes their channel or detail). channel defaults to 'morlet_' || the
+-- collection's table name. Returns the channel. Needs a collection with encoded chunks.
+CREATE FUNCTION public.morlet_enable_notifications(collection regclass,channel text DEFAULT NULL,
+  detail boolean DEFAULT true)
+RETURNS text LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record; ch text;
+BEGIN
+  IF collection IS NULL OR detail IS NULL THEN RAISE EXCEPTION 'collection and detail must not be null'; END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'notifications need a collection with encoded chunks'; END IF;
+  ch:=coalesce(channel,'morlet_'||(SELECT relname FROM pg_class WHERE oid=collection));
+  IF ch='' OR octet_length(ch)>63 THEN RAISE EXCEPTION 'channel must be 1..63 bytes'; END IF;
+  IF detail AND public.morlet_row_security_enabled(collection) THEN
+    RAISE EXCEPTION 'row security is enabled on this collection: use detail => false'
+      USING HINT='Any role that can connect can LISTEN; detailed payloads would show recording ids it may not read.';
+  END IF;
+  PERFORM public.morlet_disable_notifications(collection);
+  EXECUTE format('CREATE TRIGGER morlet_notify_collect AFTER INSERT ON %s REFERENCING NEW TABLE AS morlet_new_chunks
+    FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_notify_collect()',relations.chunks);
+  EXECUTE format('CREATE CONSTRAINT TRIGGER morlet_notify_commit AFTER INSERT ON %s DEFERRABLE INITIALLY DEFERRED
+    FOR EACH ROW EXECUTE FUNCTION public.morlet_notify_commit(%L,%L)',relations.chunks,ch,detail::text);
+  RETURN ch;
+END $$;
+
+-- Turns commit notifications off. Returns whether they were on.
+CREATE FUNCTION public.morlet_disable_notifications(collection regclass)
+RETURNS boolean LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE chunks regclass; was boolean;
+BEGIN
+  chunks:=(SELECT r.chunks FROM public.morlet_stream_relations(collection) r);
+  was:=EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=chunks AND tgname='morlet_notify_commit');
+  IF EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=chunks AND tgname='morlet_notify_collect') THEN
+    EXECUTE format('DROP TRIGGER morlet_notify_collect ON %s',chunks);
+  END IF;
+  IF was THEN EXECUTE format('DROP TRIGGER morlet_notify_commit ON %s',chunks); END IF;
+  RETURN was;
+END $$;
+
+-- The channel and detail setting of a collection's notifications; no row when they are off.
+CREATE FUNCTION public.morlet_notification_channel(collection regclass)
+RETURNS TABLE(channel text,detail boolean) LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT convert_from(substring(t.tgargs FROM 1 FOR p-1),current_setting('server_encoding')),
+    convert_from(substring(t.tgargs FROM p+1 FOR octet_length(t.tgargs)-p-1),current_setting('server_encoding'))::boolean
+  FROM public.morlet_stream_relations(collection) r
+  JOIN pg_trigger t ON t.tgrelid=r.chunks AND t.tgname='morlet_notify_commit',
+  LATERAL (SELECT position('\x00'::bytea IN t.tgargs) AS p) x
+$$;

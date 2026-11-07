@@ -51,6 +51,16 @@ with morletdb.Client.connect("postgresql://...") as db:  # commits on a clean ex
 | `stats(collection, recording_id, start, end)` | count, min, max, mean, RMS (server SQL 0.3.3) |
 | `overview(collection, recording_id, start, end, buckets=100)` | the same statistics in up to `buckets` consecutive parts, e.g. to draw an hour of data (SQL 0.3.3) |
 | `recording(...)`, `recordings(collection, metadata_filter)`, `samples_for_time(recording, t0_ns, t1_ns)` | recording information and time-to-sample conversion |
+| `enable_notifications(collection, channel=None, detail=True)` / `notifications(collection, timeout=None, stop_after=None)` | one notification per committed transaction that stored new chunks, with the stored ranges; listen on an autocommit connection (SQL 0.3.6) |
+
+Follow new data instead of polling (on its own autocommit connection):
+
+```python
+with morletdb.Client.connect("postgresql://...", autocommit=True) as listener:
+    for n in listener.notifications("public.signals"):      # after db.enable_notifications("public.signals")
+        for r in n.recordings:
+            iv = listener.read("public.signals", r.recording_id, r.first_sample, min(r.end_sample, r.first_sample + 4096))
+```
 
 The contract (intervals, timing, what the distance means, transactions, limits) is in the
 [Python SDK guide](https://github.com/merkhet-io/morletdb/blob/main/docs/python-sdk.md).

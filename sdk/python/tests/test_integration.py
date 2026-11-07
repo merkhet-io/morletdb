@@ -6,6 +6,7 @@ Without MORLET_SDK_TEST_DSN the tests are skipped; with MORLET_SDK_REQUIRE_DB=1 
 Every test works in its own schema, dropped afterwards.
 """
 import os
+import threading
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -255,6 +256,38 @@ class Contract(unittest.TestCase):
         self.assertIsNone(chunk.samples)
         self.assertEqual(chunk.end_sample, 20000)
         self.assertEqual(chunk.stats, self.db.stats(self.coll, "lt", chunk.start_sample, 20000))
+
+    def test_notifications_when_supported(self):
+        try:
+            channel = self.db.enable_notifications(self.coll)
+        except morletdb.UnsupportedError:
+            self.skipTest("server without notifications")
+        self.assertEqual(channel, "morlet_signals")
+        self.db.ingest(self.coll, "nt", np.zeros(100), sample_rate_hz=100, channel="c", unit="u")
+        self.conn.commit()
+        with morletdb.Client.connect(DSN, autocommit=True) as listener:
+            with self.assertRaises(InvalidInputError):
+                next(self.db.notifications(self.coll))       # not autocommit
+            self.assertEqual(list(listener.notifications(self.coll, timeout=0.5)), [])  # nothing committed since
+
+            def commit_later():
+                with psycopg.connect(DSN) as c:
+                    w = morletdb.Client(c)
+                    w.append(self.coll, "nt", 100, np.ones(50))
+                    c.rollback()                             # rolled back: no notification
+                    w.append(self.coll, "nt", 100, np.ones(50))
+                    c.commit()
+            it = listener.notifications(self.coll, timeout=10, stop_after=1)
+            t = threading.Timer(0.5, commit_later)               # LISTEN runs on the first next(), before it fires
+            t.start()
+            notes = list(it)
+            t.join()
+        self.assertEqual(len(notes), 1)
+        n = notes[0]
+        self.assertEqual((n.collection, n.recording_count, n.truncated), (self.coll, 1, False))
+        self.assertEqual(n.recordings, (morletdb.NotifiedRange("nt", 100, 150, 100.0, 1.0, 1.5),))
+        self.assertTrue(self.db.disable_notifications(self.coll))
+        self.assertFalse(self.db.disable_notifications(self.coll))
 
     def test_overview_and_summaries_when_supported(self):
         x = events(20000, [100, 9000], 8000)
