@@ -1,0 +1,41 @@
+{
+ "arm": "pglz",
+ "server": "PostgreSQL 17.11 on aarch64-apple-darwin27.0.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit",
+ "default_toast_compression": "pglz",
+ "extension": "0.3.6",
+ "attcompression": {
+  "tc280_chunks.encoded": "p",
+  "tc280_envelopes.envelope": "p",
+  "tc280_legacy.samples": "p"
+ },
+ "samples": 101586735,
+ "samples_sha256": "1e13dd017c666497f8303d3728d2a3b291ea2448b2d0ce83748e463acdf25bd8",
+ "chunks": {
+  "rows": 3490,
+  "logical_bytes": 137890979,
+  "stored_bytes": 137891115,
+  "methods": {
+   "none": 3490
+  },
+  "relation_bytes": 146276352
+ },
+ "envelopes": {
+  "rows": 48525,
+  "logical_bytes": 39839025,
+  "stored_bytes": 40033125,
+  "methods": {
+   "none": 48525
+  },
+  "relation_bytes": 53223424
+ },
+ "legacy": {
+  "rows": 3490,
+  "logical_bytes": 812693880,
+  "stored_bytes": 630447518,
+  "methods": {
+   "pglz": 1122,
+   "none": 2368
+  },
+  "relation_bytes": 658178048
+ }
+}

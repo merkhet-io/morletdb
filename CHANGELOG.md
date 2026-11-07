@@ -4,6 +4,15 @@
 
 SQL version 0.3.6, with an update script from 0.3.5.
 
+- **PostgreSQL 19 (#196, #280):** pg_morlet builds and passes its full test suite on PostgreSQL 19 (release
+  candidate 19rc1; CI with and without pgvector 0.8.7), with pgrx 0.19.3 and Rust 1.99.0 (from 0.16.1 and 1.91.1).
+  - PostgreSQL 19 defaults to lz4 TOAST compression. Every column holding samples, or values derived from them, now
+    names pglz, and the update pins the columns of existing collections. `morlet_pin_toast_compression(collection)`
+    does the same for one collection (catalog only).
+  - On the B3 set, PostgreSQL 19 stores exactly the bytes PostgreSQL 17 does
+    ([evaluation/toast_compression](evaluation/toast_compression/RESULTS.md)). Unpinned, lz4 would change encoded
+    chunks by 0.016% and legacy float8[] chunks by −19%.
+  - Release images and Debian packages for 19 follow 19.0.
 - **History counts independent observations (#224):** `morlet_compare_to_history`, `morlet_compare_summary`,
   `morlet_history_neighbors`, `morlet_level_track` and the pooled spreads take history only from segments built with
   the query segment's segmentation spec (keys, occurrence keys, `min_samples`, `trim_samples`), and never from a
