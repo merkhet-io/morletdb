@@ -4,6 +4,13 @@
 
 SQL version 0.3.6, with an update script from 0.3.5.
 
+- **Exact search is 10x faster on small machines:** prepared query matrices (exact scoring and screening) are
+  used only when they fit a quarter of the CPU's last-level cache; otherwise windows are scored directly, with
+  bitwise the same distances.
+  - On a Raspberry Pi 3B+, an N1 query (1,341 windows of 16,384 samples) drops from 15.1 s to 1.5 s.
+  - Desktops are unchanged.
+  - Override with `MORLET_SCORE_CACHE_BYTES`.
+  - See [evaluation/edge_latency](evaluation/edge_latency/RESULTS.md).
 - **Commit notifications (#205):** `morlet_enable_notifications(collection, channel, detail)` sends one
   `pg_notify` per committed transaction that stored new chunks, with the stored sample ranges per recording
   (payload version 1). Rolled-back transactions, savepoints and identical replays send nothing.

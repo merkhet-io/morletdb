@@ -130,6 +130,15 @@ impl ScreenQuery {
             + SLACK
     }
 
+    /// Bytes of the float32 shifted-query matrix the screen streams per window (see `LagQuery::matrix_bytes`), or
+    /// None when the query cannot be prepared.
+    pub fn matrix_bytes(n: usize, max_lag: usize) -> Option<usize> {
+        if !LagQuery::supported(n, max_lag) {
+            return None;
+        }
+        Some(n * (2 * max_lag + 1).div_ceil(LANES) * LANES * std::mem::size_of::<f32>())
+    }
+
     pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
         let n = q.len();
         // Screening scores its survivors with a prepared LagQuery; check before allocating either matrix.
@@ -513,6 +522,16 @@ impl<Id> Screener<Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrix_bytes_is_the_screen_size() {
+        for (n, lag) in [(410, 30), (1639, 122)] {
+            let q: Vec<f64> = (0..n).map(|i| (i as f64 / 5.0).cos()).collect();
+            let sq = ScreenQuery::new(&q, lag).unwrap();
+            assert_eq!(ScreenQuery::matrix_bytes(n, lag), Some(sq.s.len() * 4));
+        }
+        assert_eq!(ScreenQuery::matrix_bytes(10, 10), None);
+    }
     use crate::envelope::{decode, distance, encode};
 
     /// Many windows tied at the threshold (constant windows: distance 1 to everything) are all kept, and the
