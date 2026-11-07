@@ -7,6 +7,9 @@
   morlet-steward status --dsn ...            the plain status, for people
   morlet-steward check  --dsn ...            exit 0 normal, 1 attention, 2 action required (health checks)
   morlet-steward reset JOB --dsn ...         close a job's circuit breaker (approver)
+  morlet-steward plans --dsn ...             plans the steward or a person proposed, and their state
+  morlet-steward approve|reject|apply ID     decide or apply a plan (a person with morlet_approver, not the author)
+  morlet-steward propose-levels COLLECTION MOVES.json   a memory-level plan from a policy dry run
 
 Phase 1: automatic upkeep (builders, verify, analyze) in one budgeted loop, gated by load and disk; the disk
 ladder in time remaining; an audit row for every action; circuit breakers; the status view. It runs only jobs whose
@@ -15,6 +18,7 @@ output can be rebuilt and holds no privilege that removes stored samples.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import signal
 import sys
@@ -92,13 +96,29 @@ class Steward:
                 note = "idle: nothing to do"
             else:
                 note = self.run_job(job, work, due, breakers)
+        self.propose_extension_update()
+        open_plans = [(r[0], r[1], r[5]) for r in S.plans(conn) if r[7] is None and r[5] != "rejected"
+                      and r[4] is not None and r[4].timestamp() > time.time()]
         problems, ages = S.verify_summary(conn)
         for c in cols:
             ages.setdefault(c, None)
         items = P.status_items(cfg, P.Observed(disk, breakers, problems, ages,
-                                               [c for c in all_cols if c not in cols]))
+                                               [c for c in all_cols if c not in cols], open_plans))
         S.write_status(conn, items, cfg.tick_s, note)
         return note
+
+    def propose_extension_update(self) -> None:
+        """A newer pg_morlet installed on the server becomes a plan; the steward never updates anything itself."""
+        v = S.extension_versions(self.conn)
+        if not v or v[0] == v[1]:
+            return
+        payload = {"from": v[0], "to": v[1]}
+        if S.open_plan(self.conn, "extension_update", payload) is None:
+            pid = S.propose(self.conn, "extension_update", None, payload,
+                            {"why": f"pg_morlet {v[1]} is installed on the server; the database uses {v[0]}",
+                             "how": "ALTER EXTENSION pg_morlet UPDATE, in one transaction"})
+            aid = S.start_action(self.conn, "propose", None, None, {"plan_id": pid} | payload)
+            S.finish_action(self.conn, aid, "done")
 
     def ingest_hold(self, disk: P.DiskState) -> None:
         """At the disk reserve, new appends are refused with a reason (SQLSTATE 53100) so PostgreSQL never runs out
@@ -227,8 +247,10 @@ def cmd_run(a, cfg: P.Config) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="morlet-steward")
-    ap.add_argument("command", choices=["init", "grant", "run", "status", "check", "reset"])
-    ap.add_argument("job", nargs="?")
+    ap.add_argument("command", choices=["init", "grant", "run", "status", "check", "reset", "plans", "approve",
+                                        "reject", "apply", "propose-levels"])
+    ap.add_argument("job", nargs="?", help="job (reset), plan id (approve, reject, apply) or collection (propose-levels)")
+    ap.add_argument("moves", nargs="?", help="propose-levels: JSON file with the moves (a memory policy dry run)")
     ap.add_argument("--dsn", default=os.environ.get("MORLET_STEWARD_DSN", ""))
     ap.add_argument("--data-path")
     ap.add_argument("--once", action="store_true")
@@ -254,6 +276,41 @@ def main(argv=None) -> int:
             conn.execute("UPDATE morlet_steward.breakers SET failures=0,open=false,last_error='',updated_at=now() "
                          "WHERE job=%s", (a.job,))
             print(f"{a.job}: breaker closed")
+            return 0
+        if a.command == "plans":
+            for pid, kind, coll, created, valid, decision, by, applied, ev in S.plans(conn):
+                state = f"applied {applied:%Y-%m-%d %H:%M}" if applied else (decision or "waiting")
+                print(f"{pid:>5} {kind:<17} {coll or '-':<24} {state:<20} valid until {valid:%Y-%m-%d %H:%M}  {ev}")
+            return 0
+        if a.command in ("approve", "reject", "apply"):
+            pid = int(a.job)
+            try:
+                if a.command == "apply":
+                    print(json.dumps(conn.execute("SELECT morlet_steward.apply(%s)", (pid,)).fetchone()[0]))
+                else:
+                    conn.execute("SELECT morlet_steward.decide(%s,%s)", (pid, a.command == "approve"))
+                    print(f"plan {pid}: {a.command}d")
+            except psycopg.Error as e:
+                print(f"plan {pid}: {str(e).splitlines()[0]}", file=sys.stderr)
+                return 2
+            return 0
+        if a.command == "propose-levels":
+            # qualified, because plans are applied with search_path=pg_catalog
+            a.job = conn.execute("SELECT format('%%I.%%I',n.nspname,c.relname) FROM pg_class c JOIN pg_namespace n "
+                                 "ON n.oid=c.relnamespace WHERE c.oid=%s::regclass", (a.job,)).fetchone()[0]
+            with open(a.moves) as f:
+                spec = json.load(f)
+            moves = spec["moves"] if isinstance(spec, dict) else spec
+            payload = {"moves": moves, "policy": spec.get("policy", "manual") if isinstance(spec, dict) else "manual",
+                       "policy_version": str(spec.get("policy_version", "1")) if isinstance(spec, dict) else "1"}
+            with conn.transaction(force_rollback=True):     # evidence: what a dry run of exactly these moves frees
+                run = conn.execute("SELECT morlet_start_memory_run(%s::regclass,'plan-dry-run','1','{}',true)",
+                                   (a.job,)).fetchone()[0]
+                freed = conn.execute("SELECT coalesce(sum(bytes_freed),0),count(*) FROM morlet_set_level(%s::regclass,"
+                                     "%s,%s::jsonb,true)", (a.job, run, json.dumps(moves))).fetchone()
+            pid = S.propose(conn, "set_level", a.job, payload,
+                            {"moves": len(moves), "bytes_freed": int(freed[0]), "dry_run_rows": int(freed[1])})
+            print(f"plan {pid}: {len(moves)} moves, {int(freed[0])} bytes freed in a dry run; waits for approval")
             return 0
         level, rows = S.status(conn)
         if a.command == "status":

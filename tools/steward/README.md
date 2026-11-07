@@ -17,7 +17,17 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
   samples fail with SQLSTATE 53100 (`disk_full`) and the reason; identical replays still pass. When space is free
   again, it releases the hold it set. A hold set by a person (`morlet_set_ingest_hold`) stays until a person
   releases it.
-- **Not yet:** dropping derived data under disk pressure by policy (P2), plans and approval (P3), packaging (P4).
+- **Plans (P3):** anything that removes or changes stored samples, or updates the extension, is a plan.
+  - The steward proposes extension updates on its own when the server has a newer pg_morlet. A person proposes
+    memory-level changes from a policy dry run (`propose-levels COLLECTION MOVES.json`; the evidence is the dry
+    run's bytes freed).
+  - Another person with `morlet_approver` approves it, and a person applies it with their own privileges, in one
+    transaction.
+  - `morlet_steward.decide` and `morlet_steward.apply` enforce the rules in SQL: no self-approval; a payload tied to
+    its hash and the hash that was approved; expiry after 24 hours; applied once.
+  - The steward's role can propose and read plans, but cannot decide, apply or delete them, and cannot remove
+    samples itself.
+- **Not yet:** dropping derived data under disk pressure by policy, automatic retention proposals, packaging (P4).
 
 ```sh
 pip install -r tools/steward/requirements.txt
@@ -31,6 +41,10 @@ python tools/steward/steward.py run   --dsn "postgresql://morlet_steward@host/db
 python tools/steward/steward.py status --dsn ...     # NORMAL / ATTENTION / ACTION REQUIRED, with one action per item
 python tools/steward/steward.py check  --dsn ...     # exit 0, 1 or 2
 python tools/steward/steward.py reset envelopes --dsn ...   # close a breaker (approver)
+python tools/steward/steward.py plans --dsn ...              # proposed plans and their state
+python tools/steward/steward.py propose-levels public.line moves.json --dsn ...   # a person proposes
+python tools/steward/steward.py approve 12 --dsn ...         # another person (morlet_approver) approves
+python tools/steward/steward.py apply 12 --dsn ...           # and applies it, in one transaction
 ```
 
 - **Data path:** `--data-path` is the directory whose filesystem holds the database: the data volume, mounted

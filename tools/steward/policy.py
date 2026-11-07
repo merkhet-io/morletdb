@@ -157,6 +157,7 @@ class Observed:
     verify_problems: dict[str, int] = field(default_factory=dict)   # collection -> recordings with problems
     verify_age_days: dict[str, float | None] = field(default_factory=dict)
     no_privileges: list[str] = field(default_factory=list)          # collections the steward cannot maintain
+    plans: list[tuple[int, str, str | None]] = field(default_factory=list)   # open plans: (id, kind, decision)
 
 
 def status_items(cfg: Config, o: Observed) -> list[Item]:
@@ -189,6 +190,17 @@ def status_items(cfg: Config, o: Observed) -> list[Item]:
             items.append(Item(f"verify-age:{c}", ATTENTION, f"{c} was last verified {when}",
                               "damage would go unnoticed", "keep the steward running; verification is automatic",
                               "controls engineer"))
+    for pid, kind, decision in o.plans:
+        what = {"set_level": "a memory-level change", "extension_update": "an extension update"}.get(kind, kind)
+        if decision == "approved":
+            items.append(Item(f"plan:{pid}", ATTENTION, f"plan {pid} ({what}) is approved but not applied",
+                              "nothing changes until it is applied", f"apply it: morlet-steward apply {pid}",
+                              "data owner"))
+        else:
+            items.append(Item(f"plan:{pid}", ATTENTION, f"plan {pid} ({what}) waits for a decision",
+                              "nothing changes until someone approves it",
+                              f"review it (morlet-steward plans), then: morlet-steward approve {pid} or reject {pid}",
+                              "data owner"))
     for c in sorted(o.no_privileges):
         items.append(Item(f"privileges:{c}", ATTENTION, f"the steward has no privileges on {c}",
                           f"{c} is not maintained", f"run: morlet-steward grant (as the database owner)",
