@@ -7,9 +7,9 @@ Implemented in `tools/steward`:
 - **P1:** automatic upkeep.
 - **P2:** the ingest hold.
 - **P3:** plans, approval and apply.
+- **P4:** packaging: the sidecar image, the compose stack and the systemd unit (`deploy/steward`).
 
-Still to do: dropping derived data by policy under disk pressure, automatic retention proposals, and P4 packaging and
-soak.
+Still to do: dropping derived data by policy under disk pressure, automatic retention proposals, and the soak.
 
 ## Who it is for
 
