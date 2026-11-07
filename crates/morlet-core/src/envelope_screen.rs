@@ -29,7 +29,8 @@ const KAPPA: f64 = 1e-12;
 /// Mean, standard deviation and norm of raw values, in float64 with eight independent accumulators
 /// (vectorisable). They differ from `envelope::decode`'s sequential sums by at most KAPPA relative; the
 /// screen's bound accounts for that. A standard deviation that is zero or tiny against the values is
-/// returned as 0: such windows are always kept and scored exactly (decode then divides by 1).
+/// returned as 0: such windows are always kept and scored exactly (decode then divides by 1), except exactly
+/// constant ones, whose distance is known (see `Screener::push`).
 fn moments(raw: &[f32]) -> (f64, f64, f64) {
     let n = raw.len() as f64;
     let mut acc = [0f64; 8];
@@ -427,6 +428,12 @@ impl<Id> Screener<Id> {
             return Err(SignalError::InvalidEnvelope);
         }
         let mom = moments(&self.scratch);
+        // An exactly constant window z-scores to zeros, so its exact distance to every query is 1.0
+        // (bitwise: every lagged sum is ±0). It needs no bound; nearly constant ones keep the infinite one.
+        if mom.1 == 0.0 && self.scratch.iter().all(|&x| x == self.scratch[0]) {
+            self.admit(id, 1.0, 0.0);
+            return Ok(());
+        }
         #[cfg(target_arch = "aarch64")]
         if self.query.stride == 2 * LANES {
             match self.pending.take() {
@@ -525,6 +532,36 @@ mod tests {
         // a prune per row would visit about n * n / 2 elements; doubling keeps it below 2n
         assert!(s.prune_visits < 4 * n, "{} prune visits", s.prune_visits);
         assert_eq!(s.finish().len(), n);
+    }
+
+    /// Idle stretches cost nothing (#284): with half the gallery constant, the screen keeps the same windows
+    /// as without them, and they still contain the m nearest by exact distance.
+    #[test]
+    fn constant_windows_are_not_rescored() {
+        let mut seed = 29;
+        let g = gallery(400, &mut seed);
+        let q = decode(&g[7].1).unwrap();
+        let flat = encode(&vec![3.5; 4096]).unwrap();
+        let idle: Vec<(i64, Vec<u8>)> = (0..400).map(|i| (10_000_000 + i, flat.clone())).collect();
+        let keep = |windows: &[&(i64, Vec<u8>)]| {
+            let mut sc = Screener::new(&q, 30, 10).unwrap();
+            for (s, e) in windows {
+                sc.push(*s, e).unwrap();
+            }
+            let mut k: Vec<i64> = sc.finish().iter().map(|k| k.0).collect();
+            k.sort();
+            k
+        };
+        let busy: Vec<&(i64, Vec<u8>)> = g.iter().collect();
+        let mixed: Vec<&(i64, Vec<u8>)> = g.iter().zip(&idle).flat_map(|(a, b)| [a, b]).collect();
+        let (k_busy, k_mixed) = (keep(&busy), keep(&mixed));
+        assert_eq!(k_busy, k_mixed);
+        let mut exact: Vec<(f64, i64)> = mixed
+            .iter()
+            .map(|(s, e)| (distance(&q, &decode(e).unwrap(), 30).unwrap(), *s))
+            .collect();
+        exact.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert!(exact[..10].iter().all(|(_, s)| k_mixed.contains(s)));
     }
 
     fn lcg(seed: &mut u64) -> f64 {
@@ -668,13 +705,30 @@ mod tests {
         }
         let flat_raw = raw_values(&g[60].1).unwrap();
         assert_eq!(moments(&flat_raw).1, 0.0, "a constant window is degenerate");
-        // degenerate windows are always kept, whatever m is
+        // a constant window's distance is exactly 1 to every query, so the screen knows it (#284): it is not
+        // kept when better windows fill m, and is kept (ties included) when they do not
+        assert_eq!(
+            distance(&q, &decode(&g[60].1).unwrap(), 30)
+                .unwrap()
+                .to_bits(),
+            1f64.to_bits()
+        );
         let mut sc = Screener::new(&q, 30, 1).unwrap();
         for (s, e) in &g {
             sc.push(*s, e).unwrap();
         }
         let kept: Vec<i64> = sc.finish().iter().map(|k| k.0).collect();
-        assert!(kept.contains(&1_000_000) && kept.contains(&g[4].0));
+        assert!(!kept.contains(&1_000_000) && kept.contains(&g[4].0));
+        let mut sc = Screener::new(&q, 30, g.len() + 5).unwrap();
+        for (s, e) in &g {
+            sc.push(*s, e).unwrap();
+        }
+        let kept = sc.finish();
+        let flat = kept
+            .iter()
+            .find(|k| k.0 == 1_000_000)
+            .expect("kept when m exceeds the gallery");
+        assert_eq!((flat.1, flat.2), (1.0, 1.0));
         let mut sc = Screener::new(&q, 30, 1).unwrap();
         assert!(sc.push(0, &g[0].1[..10]).is_err());
         assert!(Screener::<i64>::new(&q, 30, 0).is_none());
