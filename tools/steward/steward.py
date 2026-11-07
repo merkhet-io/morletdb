@@ -25,6 +25,7 @@ import sys
 import time
 
 import psycopg
+import psycopg.sql
 
 import policy as P
 import store as S
@@ -60,9 +61,12 @@ class Steward:
 
     def backlog(self, cols: list[str]) -> dict[str, list]:
         """For each job, the work found: (collection, recording, end, grid) tuples, or tables to analyze."""
+        # grids of new collections at once, of all collections again every hour
         if time.time() - self.grids_at > 3600:
-            self.grids = {c: S.envelope_grids(self.conn, c) for c in cols}
-            self.grids_at = time.time()
+            self.grids, self.grids_at = {}, time.time()
+        for c in cols:
+            if not self.grids.get(c):
+                self.grids[c] = S.envelope_grids(self.conn, c)
         work: dict[str, list] = {j: [] for j in P.JOBS}
         for c in cols:
             for w, s in self.grids.get(c, []):
@@ -256,14 +260,21 @@ def main(argv=None) -> int:
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--tick", type=float, default=30.0)
+    ap.add_argument("--load-per-cpu", type=float, default=0.7, help="work only below this 1-minute load per CPU")
     a = ap.parse_args(argv)
-    cfg = P.Config(tick_s=a.tick)
+    cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu)
     if a.command == "run":
         return cmd_run(a, cfg)
     with connect(a.dsn) as conn:
         if a.command == "init":
             S.init(conn)
-            print("morlet_steward schema ready; give the steward a login: ALTER ROLE morlet_steward LOGIN PASSWORD ...")
+            password = os.environ.get("MORLET_STEWARD_PASSWORD")
+            if password:
+                conn.execute(psycopg.sql.SQL("ALTER ROLE morlet_steward LOGIN PASSWORD {}").format(
+                    psycopg.sql.Literal(password)))
+                print("morlet_steward schema ready; morlet_steward can log in")
+            else:
+                print("morlet_steward schema ready; give the steward a login: ALTER ROLE morlet_steward LOGIN PASSWORD ...")
             return 0
         if a.command == "grant":
             for c in S.grant(conn):

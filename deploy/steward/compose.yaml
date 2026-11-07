@@ -1,0 +1,47 @@
+# An edge stack: the release image with data checksums and small-disk WAL settings, and the steward beside it.
+#
+#   MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:<tag> MORLET_DB_PASSWORD=... MORLET_STEWARD_PASSWORD=... \
+#     docker compose -f deploy/steward/compose.yaml up -d
+#   docker compose -f deploy/steward/compose.yaml exec steward python steward.py status
+#   docker compose -f deploy/steward/compose.yaml run --rm steward-init grant   # after new collections appear
+services:
+  db:
+    image: ${MORLET_IMAGE:?Set MORLET_IMAGE to a release tag or digest}
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: ${MORLET_DB_PASSWORD:?Set MORLET_DB_PASSWORD}
+      POSTGRES_DB: morlet
+      POSTGRES_INITDB_ARGS: --data-checksums      # page checksums: morlet_verify checks chunks, these check pages
+    # small disks: bounded WAL, compressed full-page images
+    command: ["postgres", "-c", "max_wal_size=256MB", "-c", "min_wal_size=64MB", "-c", "wal_compression=on"]
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - morlet-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+  steward-init:
+    build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
+    environment:
+      MORLET_STEWARD_DSN: postgresql://morlet:${MORLET_DB_PASSWORD}@db:5432/morlet
+      MORLET_STEWARD_PASSWORD: ${MORLET_STEWARD_PASSWORD:?Set MORLET_STEWARD_PASSWORD}
+    entrypoint: ["sh", "-c"]
+    command: ["python steward.py init && python steward.py grant"]
+    depends_on:
+      db: {condition: service_healthy}
+    restart: "no"
+  steward:
+    build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
+    environment:
+      MORLET_STEWARD_DSN: postgresql://morlet_steward:${MORLET_STEWARD_PASSWORD}@db:5432/morlet
+    volumes:
+      - morlet-data:/data:ro
+    depends_on:
+      steward-init: {condition: service_completed_successfully}
+    restart: unless-stopped
+volumes:
+  morlet-data:

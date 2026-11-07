@@ -27,7 +27,14 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
     its hash and the hash that was approved; expiry after 24 hours; applied once.
   - The steward's role can propose and read plans, but cannot decide, apply or delete them, and cannot remove
     samples itself.
-- **Not yet:** dropping derived data under disk pressure by policy, automatic retention proposals, packaging (P4).
+- **Packaging (P4):**
+  - `deploy/steward/Dockerfile` is a sidecar image. Its health check is healthy while the status is normal or
+    attention.
+  - `deploy/steward/compose.yaml` runs the release image with data checksums and small-disk WAL settings, plus a
+    one-shot `init` and `grant`, plus the steward with the data volume read-only.
+  - `deploy/steward/morlet-steward.service` is a systemd unit for package installs.
+- **Not yet:** dropping derived data under disk pressure by policy, automatic retention proposals, and the multi-week
+  soak on the Raspberry Pi, which starts with the home plug study D1.
 
 ```sh
 pip install -r tools/steward/requirements.txt
@@ -47,6 +54,8 @@ python tools/steward/steward.py approve 12 --dsn ...         # another person (m
 python tools/steward/steward.py apply 12 --dsn ...           # and applies it, in one transaction
 ```
 
+- **Load gate:** `--load-per-cpu` sets it (default 0.7). Inside Docker Desktop the steward sees the Linux VM's load,
+  which is also the database's.
 - **Data path:** `--data-path` is the directory whose filesystem holds the database: the data volume, mounted
   read-only into a sidecar container. Without it the steward uses `SHOW data_directory`. If it cannot read free
   space it pauses all work and says so.

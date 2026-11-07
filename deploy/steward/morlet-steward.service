@@ -1,0 +1,23 @@
+# systemd unit for package installs (docs/steward-design.md). Put MORLET_STEWARD_DSN in /etc/morlet-steward.env
+# (mode 0600), copy tools/steward/*.py to /opt/morlet-steward, create the user morlet-steward, and run
+# `steward.py init` and `steward.py grant` once as the database owner.
+[Unit]
+Description=MorletDB steward: keeps the database healthy without a DBA
+After=postgresql.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=morlet-steward
+EnvironmentFile=/etc/morlet-steward.env
+ExecStart=/usr/bin/python3 /opt/morlet-steward/steward.py run --data-path /var/lib/postgresql
+Restart=always
+RestartSec=30
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
