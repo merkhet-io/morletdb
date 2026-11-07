@@ -594,26 +594,30 @@ BEGIN
   roll:=public.morlet_rollup_relation(collection);
   -- A caller who may not read the roll-ups gets the same result from the chunks.
   IF roll IS NOT NULL AND has_table_privilege(roll,'SELECT') THEN
+    -- Each gap is looked up on its own (OFFSET 0 keeps the subquery per gap), so the index on block is used and
+    -- the cost follows the number of gaps, not the size of the table; a level's picks are collected in one go.
     FOR lvl IN REVERSE 3..1 LOOP
       EXIT WHEN isempty(gaps);
-      FOR picked IN EXECUTE format('SELECT r.start_sample,r.end_sample,r.summary
+      EXECUTE format('SELECT array_agg(r.start_sample ORDER BY r.start_sample) AS s,
+            array_agg(r.end_sample-r.start_sample ORDER BY r.start_sample) AS n,
+            array_agg(r.summary ORDER BY r.start_sample) AS sm,range_agg(int8range(r.start_sample,r.end_sample)) AS covered
           FROM unnest($5::int8multirange) g, LATERAL (SELECT x.start_sample,x.end_sample,x.summary FROM %s x
             WHERE x.recording_id=$1 AND x.level=$6 AND x.block BETWEEN lower(g)>>(15+5*$6) AND (upper(g)-1)>>(15+5*$6)
               AND x.start_sample>=lower(g) AND x.end_sample<=upper(g)
-              AND public.morlet_interval_bucket(x.start_sample,$2,$3,$4)=public.morlet_interval_bucket(x.end_sample-1,$2,$3,$4)) r',roll)
-          USING source_recording_id,interval_start,interval_end,buckets,gaps,lvl LOOP
-        r_start:=r_start||picked.start_sample; r_count:=r_count||(picked.end_sample-picked.start_sample);
-        r_sum:=r_sum||picked.summary;
-        gaps:=gaps-int8multirange(int8range(picked.start_sample,picked.end_sample));
-      END LOOP;
+              AND public.morlet_interval_bucket(x.start_sample,$2,$3,$4)=public.morlet_interval_bucket(x.end_sample-1,$2,$3,$4)
+            OFFSET 0) r',roll)
+        INTO picked USING source_recording_id,interval_start,interval_end,buckets,gaps,lvl;
+      CONTINUE WHEN picked.covered IS NULL;
+      r_start:=r_start||picked.s; r_count:=r_count||picked.n; r_sum:=r_sum||picked.sm;
+      gaps:=gaps-picked.covered;
     END LOOP;
   END IF;
   -- A chunk's encoded bytes are read only when it is cut by the interval or has no summary.
   EXECUTE format('SELECT public.morlet_interval_stats_agg(
       CASE WHEN %2$s IS NULL OR c.start_sample<$2 OR c.start_sample+c.sample_count>$3 THEN c.encoded END,
       %2$s,c.start_sample,c.sample_count,$2,$3,$4 ORDER BY c.start_sample)
-    FROM (SELECT c.* FROM %1$s c, unnest($5::int8multirange) g WHERE c.recording_id=$1 AND c.start_sample<upper(g)
-        AND c.start_sample>lower(g)-32768 AND c.start_sample+c.sample_count>lower(g)
+    FROM (SELECT c.* FROM unnest($5::int8multirange) g, LATERAL (SELECT c.* FROM %1$s c WHERE c.recording_id=$1
+        AND c.start_sample<upper(g) AND c.start_sample>lower(g)-32768 AND c.start_sample+c.sample_count>lower(g) OFFSET 0) c
       UNION ALL SELECT $1,u.s,u.n::integer,NULL::bytea,u.sm FROM unnest($6,$7,$8) u(s,n,sm)) c',
     coalesce(src,format('(SELECT c.recording_id,c.start_sample,c.sample_count,c.encoded,%s AS summary FROM %s c)',
       CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END,relations.chunks)),
