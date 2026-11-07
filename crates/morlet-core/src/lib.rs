@@ -3,6 +3,7 @@ pub mod chunks;
 pub mod compare;
 pub mod envelope;
 pub mod envelope_screen;
+pub mod exactstats;
 pub mod intervalstats;
 pub mod morlet;
 pub mod rawcodec;

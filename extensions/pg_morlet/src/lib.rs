@@ -1303,15 +1303,34 @@ fn morlet_chunk_summary_values(summary: &[u8]) -> Vec<f64> {
         .to_vec()
 }
 
-/// State of `morlet_interval_stats_agg`: one accumulator per bucket of [lo, hi); each chunk's samples
-/// in the interval are accumulated on their own (or taken from its stored summary when the chunk lies
-/// entirely inside) and merged into the bucket that holds the middle of its part, in start order, so
-/// the result is bitwise the same with or without stored summaries.
+/// State of `morlet_interval_stats_agg`: one exact accumulator per bucket of [lo, hi) (`morlet_core::exactstats`).
+/// Each chunk's samples in the interval are accumulated on their own (or taken from its stored summary when the
+/// chunk lies entirely inside) and merged into the bucket that holds the middle of its part. A roll-up row (a
+/// version-2 summary of whole chunks, #219) is merged as a whole: it must lie inside the interval and inside one
+/// bucket, so every chunk it holds would have gone to that bucket. Exact merging makes the result bitwise the
+/// same with or without stored summaries and roll-ups, in any order.
 struct StatsAgg {
     lo: i64,
     hi: i64,
-    buckets: Vec<(i64, i64, morlet_core::intervalstats::IntervalStats)>,
+    buckets: Vec<(i64, i64, morlet_core::exactstats::ExactStats)>,
     previous: i64,
+}
+
+/// The bucket of [lo, hi) split into `nb` parts that holds sample position `x` (the rule of
+/// `morlet_interval_stats_agg`).
+fn bucket_of(x: i64, lo: i64, hi: i64, nb: i32) -> usize {
+    (((x as i128 - lo as i128) * nb as i128) / (hi as i128 - lo as i128)).clamp(0, nb as i128 - 1)
+        as usize
+}
+
+/// Bucket index (0-based) of sample position `x` in [lo, hi) split into `buckets` parts, as
+/// `morlet_interval_stats_agg` assigns chunk parts by their middle. Used to pick roll-ups that lie in one bucket.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_interval_bucket(x: i64, interval_start: i64, interval_end: i64, buckets: i32) -> i32 {
+    if interval_end <= interval_start || buckets < 1 {
+        pgrx::error!("the interval must be nonempty and buckets positive");
+    }
+    bucket_of(x, interval_start, interval_end, buckets) as i32
 }
 
 #[pg_extern(parallel_safe)]
@@ -1327,6 +1346,7 @@ fn morlet_interval_stats_step(
     buckets: Option<i32>,
     fcinfo: pg_sys::FunctionCallInfo,
 ) -> pgrx::Internal {
+    use morlet_core::exactstats::{ExactStats, ROLLUP_VERSION};
     use morlet_core::intervalstats::IntervalStats;
     let (Some(start), Some(count), Some(lo), Some(hi), Some(nb)) = (
         start_sample,
@@ -1348,7 +1368,7 @@ fn morlet_interval_stats_step(
                 lo,
                 hi,
                 buckets: (0..nb)
-                    .map(|_| (i64::MAX, i64::MIN, IntervalStats::default()))
+                    .map(|_| (i64::MAX, i64::MIN, ExactStats::default()))
                     .collect(),
                 previous: i64::MIN,
             };
@@ -1369,14 +1389,28 @@ fn morlet_interval_stats_step(
         if a >= b {
             return state;
         }
-        let part = match (summary, encoded) {
+        let (k, part) = match (summary, encoded) {
+            (Some(sm), _) if sm.first() == Some(&ROLLUP_VERSION) => {
+                let k = bucket_of(start, lo, hi, nb);
+                if start < lo || end > hi || bucket_of(end - 1, lo, hi, nb) != k {
+                    pgrx::error!("a roll-up must lie inside the interval and inside one bucket");
+                }
+                let s =
+                    ExactStats::from_bytes(sm).unwrap_or_else(|| pgrx::error!("invalid roll-up"));
+                if s.count() != count as u64 {
+                    pgrx::error!("roll-up does not match its sample count");
+                }
+                (k, s)
+            }
             (Some(sm), _) if start >= lo && end <= hi => {
                 let s = IntervalStats::from_summary(sm)
                     .unwrap_or_else(|| pgrx::error!("invalid chunk summary"));
                 if s.count() != count as u64 {
                     pgrx::error!("chunk summary does not match the chunk's sample count");
                 }
-                s
+                let mut e = ExactStats::default();
+                e.add_piece(&s);
+                (bucket_of(a + (b - a) / 2, lo, hi, nb), e)
             }
             (_, Some(enc)) => {
                 let samples =
@@ -1386,13 +1420,12 @@ fn morlet_interval_stats_step(
                 }
                 let mut s = IntervalStats::default();
                 s.add(&samples[(a - start) as usize..(b - start) as usize]);
-                s
+                let mut e = ExactStats::default();
+                e.add_piece(&s);
+                (bucket_of(a + (b - a) / 2, lo, hi, nb), e)
             }
             _ => pgrx::error!("a chunk needs its encoded samples unless its summary covers it"),
         };
-        let mid = a as i128 + (b - a) as i128 / 2;
-        let k = (((mid - lo as i128) * nb as i128) / (hi - lo) as i128).clamp(0, nb as i128 - 1)
-            as usize;
         let bucket = &mut agg.buckets[k];
         bucket.0 = bucket.0.min(a);
         bucket.1 = bucket.1.max(b);
@@ -1415,6 +1448,32 @@ fn morlet_interval_stats_final(mut state: pgrx::Internal) -> Vec<f64> {
         }
     }
     out
+}
+
+/// Exact merge of chunk summaries (version 1) and roll-ups (version 2) into one roll-up (#219), in any order.
+#[pg_extern(immutable, parallel_safe)]
+fn morlet_rollup_step(state: Option<Vec<u8>>, summary: Option<&[u8]>) -> Option<Vec<u8>> {
+    use morlet_core::exactstats::ExactStats;
+    let Some(sm) = summary else {
+        pgrx::error!("a roll-up needs the summary of every chunk it holds");
+    };
+    let add = ExactStats::from_summary(sm)
+        .unwrap_or_else(|| pgrx::error!("invalid chunk summary or roll-up"));
+    let mut acc = match state {
+        Some(b) => ExactStats::from_bytes(&b).unwrap_or_else(|| pgrx::error!("invalid roll-up")),
+        None => ExactStats::default(),
+    };
+    acc.merge(&add);
+    Some(acc.to_bytes())
+}
+
+/// `[count, min, max, mean, rms]` of a stored roll-up or chunk summary.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_rollup_values(summary: &[u8]) -> Vec<f64> {
+    morlet_core::exactstats::ExactStats::from_summary(summary)
+        .unwrap_or_else(|| pgrx::error!("invalid chunk summary or roll-up"))
+        .finish()
+        .to_vec()
 }
 
 /// `[start, end, min, max, rms]` (offsets into `samples`) for `buckets` consecutive parts of equal size
@@ -3482,6 +3541,135 @@ END $$"#).unwrap();
         assert_eq!(Spi::get_one::<String>(q).unwrap().unwrap(), screened);
         assert!(screened.split(',').count() >= 2);
     }
+    /// Every statistic and overview, as exact bits, for a fixed list of intervals and bucket counts.
+    fn rollup_probe(coll: &str, rid: &str) -> String {
+        let q = format!("WITH iv(a,b,k) AS (VALUES (0,(SELECT (checkpoint->>'end')::bigint FROM {coll} WHERE recording_id='{rid}'),1),
+            (12345,35000000,1),(1048576,2097152,1),(1048575,2097153,1),(31,30000,1),(7,33554439,1),
+            (0,35000000,7),(5000,34000000,100),(0,33554432,32),(2097152,3145728,3))
+          SELECT string_agg(format('%s..%s/%s:%s',a,b,k,(SELECT string_agg(encode(float8send(v),'hex'),',')
+            FROM unnest(public.morlet_interval_buckets('{coll}','{rid}',a,b,k,'overview')) v)),';' ORDER BY a,b,k) FROM iv");
+        Spi::get_one::<String>(&q).unwrap().unwrap()
+    }
+
+    #[pg_test]
+    fn rollups_give_bitwise_the_same_statistics() {
+        // 34 appended chunks (some 30,001 samples, so blocks do not follow chunk edges), repeated 33 times by copying
+        // their stored rows forward (encoded chunks do not depend on their position): 36.1 million samples, 34
+        // complete level-1 blocks and one level-2 block, without encoding them all in a debug build.
+        Spi::run("SELECT morlet_create_stream_collection('public','ru'); SELECT morlet_start_recording('ru','A',1000,'x','g','{}',512,256,'zscore','none');
+          DO $$ DECLARE k integer; s bigint:=0; n integer; BEGIN
+            FOR k IN 0..33 LOOP
+              n:=CASE WHEN k%5=0 THEN 30001 ELSE 32768 END;
+              IF k%2=0 THEN
+                PERFORM morlet_append_chunk('ru','A',s,ARRAY(SELECT sin(i/(3.0+k))*(1e3+k)+1e-3*(i%17) FROM generate_series(1,n) i));
+              ELSE
+                PERFORM morlet_append_chunk('ru','A',s,array_fill(((k%17)*0.37-3)*1e5,ARRAY[n]));
+              END IF;
+              s:=s+n;
+            END LOOP;
+            INSERT INTO ru_chunks SELECT c.recording_id,c.start_sample+r*s,c.sample_count,c.encoded,c.summary
+              FROM ru_chunks c, generate_series(1,32) r;
+            UPDATE ru SET checkpoint=checkpoint||jsonb_build_object('end',33*s,'next_start',33*s,'buffer_start',33*s);
+          END $$").unwrap();
+        let before = rollup_probe("ru", "A");
+        Spi::run("SELECT morlet_enable_rollups('ru')").unwrap();
+        assert_eq!(
+            rollup_probe("ru", "A"),
+            before,
+            "an empty roll-up table changes nothing"
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_rollups('ru','A',10)").unwrap(),
+            Some(10)
+        );
+        assert_eq!(rollup_probe("ru", "A"), before, "level 1 in part");
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_rollups('ru','A')").unwrap(),
+            Some(25)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_rollups('ru','A')").unwrap(),
+            Some(0)
+        );
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(l,',') FROM (SELECT level||':'||count(*) l FROM ru_rollups GROUP BY level ORDER BY level) x").unwrap().unwrap(),
+            "1:34,2:1"
+        );
+        assert_eq!(rollup_probe("ru", "A"), before, "levels 1 and 2");
+        // The roll-ups are what is read: with the chunks under the level-2 block deleted, its statistics still
+        // come out, bit for bit. (Only for this test: chunks are never deleted that way.)
+        let block = "SELECT string_agg(encode(float8send(v),'hex'),',') FROM ru_rollups r,
+            unnest(morlet_interval_buckets('ru','A',r.start_sample,r.end_sample,1,'statistics')) v WHERE r.level=2";
+        let whole = Spi::get_one::<String>(block).unwrap().unwrap();
+        Spi::run("DELETE FROM ru_chunks c USING ru_rollups r WHERE r.level=2 AND c.start_sample>=r.start_sample
+            AND c.start_sample+c.sample_count<=r.end_sample").unwrap();
+        assert_eq!(Spi::get_one::<String>(block).unwrap().unwrap(), whole);
+    }
+
+    #[pg_test]
+    fn rollups_survive_compaction_and_go_with_forgotten_samples() {
+        Spi::run("SELECT morlet_create_stream_collection('public','rf'); SELECT morlet_start_recording('rf','A',1000,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunk('rf','A',k*32768,CASE WHEN k BETWEEN 30 AND 40
+              THEN ARRAY(SELECT sin(i/7.0)*(1+k%5) FROM generate_series(1,32768) i) ELSE array_fill(k*0.5,ARRAY[32768]) END)
+            FROM generate_series(0,127) k ORDER BY k;
+          SELECT morlet_enable_memory('rf'); SELECT morlet_enable_rollups('rf');
+          CREATE TEMP TABLE ep AS SELECT e AS id FROM morlet_add_episodes('rf','[{\"recording_id\":\"A\",\"start_sample\":1100000,\"end_sample\":1200000}]') e;").unwrap();
+        let one = |sql: &str| Spi::get_one::<i64>(sql).unwrap().unwrap();
+        assert_eq!(one("SELECT morlet_build_rollups('rf','A')"), 4);
+        let stats = |a: i64, b: i64| {
+            Spi::get_one::<String>(&format!("SELECT string_agg(encode(float8send(v),'hex'),',') FROM morlet_interval_buckets('rf','A',{a},{b},1,'statistics') s, unnest(s) v"))
+                .unwrap()
+                .unwrap()
+        };
+        let (all, tail) = (stats(0, 4194304), stats(2097152, 4194304));
+        let id = one("SELECT id FROM ep");
+        let run = one("SELECT morlet_start_memory_run('rf','test','1')");
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('rf',{run},'[{{\"episode_id\":{id},\"level\":3}}]')"
+        ))
+        .unwrap();
+        assert_eq!(one("SELECT count(*) FROM rf_kept_summaries"), 2);
+        assert_eq!(
+            one("SELECT count(*) FROM rf_rollups"),
+            4,
+            "level 3 keeps the summaries, so the roll-ups stay"
+        );
+        assert_eq!(stats(0, 4194304), all);
+        let derived = one(&format!("SELECT derived_removed FROM morlet_set_level('rf',{run},'[{{\"episode_id\":{id},\"level\":4}}]')"));
+        assert_eq!(
+            derived, 1,
+            "the level-1 roll-up holding the forgotten chunks"
+        );
+        assert_eq!(one("SELECT count(*) FROM rf_rollups"), 3);
+        assert_eq!(stats(2097152, 4194304), tail);
+        assert_eq!(one("SELECT morlet_build_rollups('rf','A')"), 0);
+    }
+
+    #[pg_test]
+    fn rollups_are_skipped_for_readers_who_may_not_read_them() {
+        Spi::run("SELECT morlet_create_stream_collection('public','rp'); SELECT morlet_start_recording('rp','A',1000,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunk('rp','A',k*32768,array_fill((k%7)::float8,ARRAY[32768])) FROM generate_series(0,95) k ORDER BY k;
+          SELECT morlet_enable_rollups('rp'); SELECT morlet_build_rollups('rp','A');
+          CREATE ROLE rp_reader; GRANT SELECT ON rp, rp_chunks TO rp_reader;").unwrap();
+        let q = "SELECT string_agg(encode(float8send(v),'hex'),',') FROM morlet_interval_buckets('rp','A',100,3000000,3,'overview') s, unnest(s) v";
+        let all = Spi::get_one::<String>(q).unwrap().unwrap();
+        Spi::run("SET LOCAL ROLE rp_reader").unwrap();
+        assert_eq!(Spi::get_one::<String>(q).unwrap().unwrap(), all);
+    }
+
+    #[pg_test(
+        error = "samples of recording A in 65536..131072 were compacted to level 4 (episode 1, ledger 1)"
+    )]
+    fn rollups_do_not_hide_forgotten_samples() {
+        Spi::run("SELECT morlet_create_stream_collection('public','rg'); SELECT morlet_start_recording('rg','A',1000,'x','g','{}',512,256,'zscore','none');
+          SELECT morlet_append_chunk('rg','A',k*32768,array_fill(k::float8,ARRAY[32768])) FROM generate_series(0,63) k ORDER BY k;
+          SELECT morlet_enable_memory('rg'); SELECT morlet_enable_rollups('rg'); SELECT morlet_build_rollups('rg','A');
+          SELECT morlet_set_level('rg',morlet_start_memory_run('rg','test','1'),
+            jsonb_build_array(jsonb_build_object('episode_id',e,'level',4)))
+          FROM morlet_add_episodes('rg','[{\"recording_id\":\"A\",\"start_sample\":65536,\"end_sample\":131072}]') e;
+          SELECT * FROM morlet_interval_stats('rg','A',0,2097152);").unwrap();
+    }
+
     #[pg_test]
     fn screened_search_with_idle_stretches_matches_the_full_path() {
         // Constant windows have distance 1 to every query; the screen now knows that instead of re-scoring
