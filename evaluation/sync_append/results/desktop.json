@@ -1,0 +1,50 @@
+{
+ "machine": "arm64",
+ "rounds": [
+  {
+   "group": {
+    "seconds": 0.9235745840705931,
+    "samples_per_s": 8661996.700624367
+   },
+   "separate": {
+    "seconds": 0.959557207999751,
+    "samples_per_s": 8337178.787574775
+   }
+  },
+  {
+   "separate": {
+    "seconds": 0.95280820899643,
+    "samples_per_s": 8396233.286472425
+   },
+   "group": {
+    "seconds": 0.9366259590024129,
+    "samples_per_s": 8541296.472842464
+   }
+  },
+  {
+   "group": {
+    "seconds": 0.8910651659825817,
+    "samples_per_s": 8978019.010740211
+   },
+   "separate": {
+    "seconds": 0.9670291249640286,
+    "samples_per_s": 8272760.140805049
+   }
+  }
+ ],
+ "load_before": [
+  2.38525390625,
+  3.1826171875,
+  3.50439453125
+ ],
+ "server": "PostgreSQL 17.6 (Debian 17.6-2.pgdg12+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+ "bitwise_read_back": true,
+ "bytes_per_sample": 1.94883825,
+ "load_after": [
+  2.61376953125,
+  3.2080078125,
+  3.50927734375
+ ],
+ "median_group_samples_per_s": 8661996.700624367,
+ "median_separate_samples_per_s": 8337178.787574775
+}

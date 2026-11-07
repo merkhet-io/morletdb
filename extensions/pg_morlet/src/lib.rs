@@ -1530,6 +1530,75 @@ fn morlet_rollup_step(state: Option<Vec<u8>>, summary: Option<&[u8]>) -> Option<
     Some(acc.to_bytes())
 }
 
+/// Adds the part of one pair of synchronous chunks inside [interval_start, interval_end) to exact cross statistics
+/// (#292, morlet_core::exactstats::CrossStats). Both chunks start at `start_sample` and must hold the same number of
+/// samples (synchronous members have the same chunk boundaries). Order-independent: any split gives the same result.
+#[pg_extern(immutable, parallel_safe)]
+fn morlet_cross_step(
+    state: Option<Vec<u8>>,
+    a: Option<&[u8]>,
+    b: Option<&[u8]>,
+    start_sample: Option<i64>,
+    interval_start: Option<i64>,
+    interval_end: Option<i64>,
+) -> Option<Vec<u8>> {
+    use morlet_core::exactstats::CrossStats;
+    let (Some(a), Some(b), Some(start), Some(lo), Some(hi)) =
+        (a, b, start_sample, interval_start, interval_end)
+    else {
+        pgrx::error!("cross statistics need both chunks, their start and the interval");
+    };
+    let x = morlet_core::rawcodec::decode(a).unwrap_or_else(|e| pgrx::error!("{}", e));
+    let y = morlet_core::rawcodec::decode(b).unwrap_or_else(|e| pgrx::error!("{}", e));
+    if x.len() != y.len() {
+        pgrx::error!(
+            "chunks at {} differ in length: members are not synchronous",
+            start
+        );
+    }
+    let from = (lo.max(start) - start).clamp(0, x.len() as i64) as usize;
+    let to = (hi.min(start + x.len() as i64) - start).clamp(from as i64, x.len() as i64) as usize;
+    let mut acc = match state {
+        Some(s) => {
+            CrossStats::from_bytes(&s).unwrap_or_else(|| pgrx::error!("invalid cross statistics"))
+        }
+        None => CrossStats::default(),
+    };
+    acc.add(&x[from..to], &y[from..to]).unwrap();
+    Some(acc.to_bytes())
+}
+
+/// Merges two cross-statistics states (the aggregate's combine function; exact, so parallel plans agree).
+#[pg_extern(immutable, parallel_safe)]
+fn morlet_cross_combine(a: Option<Vec<u8>>, b: Option<Vec<u8>>) -> Option<Vec<u8>> {
+    use morlet_core::exactstats::CrossStats;
+    let read = |s: Vec<u8>| {
+        CrossStats::from_bytes(&s).unwrap_or_else(|| pgrx::error!("invalid cross statistics"))
+    };
+    match (a, b) {
+        (None, b) => b,
+        (a, None) => a,
+        (Some(a), Some(b)) => {
+            let mut x = read(a);
+            x.merge(&read(b));
+            Some(x.to_bytes())
+        }
+    }
+}
+
+/// `[count, mean(a*b), mean(a), mean(b), rms(a), rms(b)]` of a cross-statistics state.
+#[pg_extern(immutable, parallel_safe)]
+fn morlet_cross_values(state: Option<Vec<u8>>) -> Vec<f64> {
+    use morlet_core::exactstats::CrossStats;
+    state
+        .map(|s| {
+            CrossStats::from_bytes(&s).unwrap_or_else(|| pgrx::error!("invalid cross statistics"))
+        })
+        .unwrap_or_default()
+        .finish()
+        .to_vec()
+}
+
 /// `[count, min, max, mean, rms]` of a stored roll-up or chunk summary.
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_rollup_values(summary: &[u8]) -> Vec<f64> {
@@ -3805,6 +3874,242 @@ END $$"#).unwrap();
         assert_eq!(
             err("SELECT morlet_enable_notifications('nt_old')"),
             "notifications need a collection with encoded chunks"
+        );
+    }
+
+    /// Raw little-endian float64 SQL for v = ((k % 7) - 3) / 8 or i = ((k % 5) - 2) / 4, k in lo..hi: every sum and
+    /// product of these is exact in float64, so the reference statistics are exact.
+    fn sync_series(kind: char, lo: i64, hi: i64) -> String {
+        let e = if kind == 'v' {
+            "((k%7)-3)/8.0"
+        } else {
+            "((k%5)-2)/4.0"
+        };
+        format!(
+            "morlet_float8_le_bytes(ARRAY(SELECT ({e})::float8 FROM generate_series({lo},{}) k))",
+            hi - 1
+        )
+    }
+
+    fn sync_setup(acq: &str, chunk: i64) {
+        Spi::run(&format!(
+            "SELECT morlet_start_recording('sy',r,1000,c,u,'{{}}',512,256,'zscore','none')
+               FROM (VALUES ('{acq}-v','V','V'),('{acq}-i','I','A')) x(r,c,u);
+             SELECT morlet_create_acquisition('sy','{acq}','M1');
+             SELECT morlet_add_acquisition_channel('sy','{acq}','{acq}-v','v');
+             SELECT morlet_add_acquisition_channel('sy','{acq}','{acq}-i','i');
+             SELECT morlet_declare_sync('sy','{acq}',1000);
+             SELECT morlet_append_acquisition_raw('sy','{acq}',0,ARRAY['i','v'],ARRAY[{},{}],{chunk})",
+            sync_series('i', 0, 1000),
+            sync_series('v', 0, 1000)
+        ))
+        .unwrap();
+    }
+
+    fn sync_err_helper() {
+        Spi::run(
+            "CREATE OR REPLACE FUNCTION pg_temp.sy_err(q text) RETURNS text LANGUAGE plpgsql AS $$
+          BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLERRM; END $$",
+        )
+        .unwrap();
+    }
+
+    fn sy_err(sql: &str) -> String {
+        Spi::get_one::<String>(&format!(
+            "SELECT pg_temp.sy_err({})",
+            pgrx::spi::quote_literal(sql)
+        ))
+        .unwrap()
+        .unwrap()
+    }
+
+    #[pg_test]
+    fn sync_groups_append_together_and_cross_stats_are_exact() {
+        // #292. Three groups with the same samples and different chunk sizes (300, 7, 1000).
+        Spi::run("SELECT morlet_create_stream_collection('public','sy'); SELECT morlet_enable_acquisitions('sy');
+          SELECT morlet_enable_sync('sy'); SELECT morlet_enable_sync('sy')").unwrap();
+        sync_err_helper();
+        sync_setup("a1", 300);
+        sync_setup("a2", 7);
+        sync_setup("a3", 1000);
+        let text = |q: &str| Spi::get_one::<String>(q).unwrap().unwrap();
+        assert_eq!(
+            text("SELECT morlet_declare_sync('sy','a1',1000)::text"),
+            "false"
+        );
+        assert_eq!(
+            sy_err("SELECT morlet_declare_sync('sy','a1',2000)"),
+            "acquisition a1 is already synchronous at 1000 Hz"
+        );
+        // reads by sample index, role order, bit for bit
+        assert_eq!(
+            text(&format!(
+                "SELECT string_agg(role||':'||(samples={})::text,' ' ORDER BY role) FROM morlet_read_sync_raw('sy','a2',100,700)",
+                "CASE role WHEN 'v' THEN ".to_string() + &sync_series('v', 100, 700) + " ELSE " + &sync_series('i', 100, 700) + " END"
+            )),
+            "i:true v:true"
+        );
+        // cross statistics: the exact reference, and bitwise the same for every chunking and edge cut
+        let stats = |acq: &str, lo: i64, hi: i64| {
+            text(&format!(
+                "SELECT sample_count||' '||encode(float8send(mean_ab),'hex')||' '||encode(float8send(mean_a),'hex')||' '||
+                   encode(float8send(mean_b),'hex')||' '||encode(float8send(rms_a),'hex')||' '||encode(float8send(rms_b),'hex')
+                 FROM morlet_acquisition_cross_stats('sy','{acq}','v','i',{lo},{hi})"
+            ))
+        };
+        for (lo, hi) in [(0, 1000), (3, 997), (299, 301), (0, 1)] {
+            let want = stats("a1", lo, hi);
+            assert_eq!(stats("a2", lo, hi), want, "{lo}..{hi}");
+            assert_eq!(stats("a3", lo, hi), want, "{lo}..{hi}");
+        }
+        let reference = text(
+            "SELECT count(*)||' '||encode(float8send(sum(v*i)::float8/count(*)),'hex')||' '||
+               encode(float8send(sum(v)::float8/count(*)),'hex')||' '||encode(float8send(sum(i)::float8/count(*)),'hex')
+             FROM (SELECT ((k%7)-3)/8.0 AS v,((k%5)-2)/4.0 AS i FROM generate_series(0,999) k) x",
+        );
+        assert!(stats("a1", 0, 1000).starts_with(&reference), "{reference}");
+        // an identical retry is a no-op
+        assert_eq!(
+            text(&format!(
+                "SELECT morlet_append_acquisition_raw('sy','a1',0,ARRAY['v','i'],ARRAY[{},{}],300)::text",
+                sync_series('v', 0, 1000),
+                sync_series('i', 0, 1000)
+            )),
+            "1000"
+        );
+        assert_eq!(
+            sy_err("SELECT * FROM morlet_acquisition_cross_stats('sy','a1','v','i',0,1001)"),
+            "source interval exceeds recording length"
+        );
+    }
+
+    #[pg_test]
+    fn sync_groups_refuse_partial_changes_and_fail_closed() {
+        Spi::run("SELECT morlet_create_stream_collection('public','sy'); SELECT morlet_enable_acquisitions('sy');
+          SELECT morlet_enable_sync('sy')").unwrap();
+        sync_err_helper();
+        sync_setup("g", 300);
+        let one = |q: &str| Spi::get_one::<i64>(q).unwrap().unwrap();
+        let ends = "SELECT string_agg(recording_id||'='||(checkpoint->>'end'),' ' ORDER BY recording_id) FROM sy";
+        let before = Spi::get_one::<String>(ends).unwrap().unwrap();
+        // a single-member append is refused
+        assert_eq!(
+            sy_err(&format!(
+                "SELECT morlet_append_chunk_raw('sy','g-v',1000,{})",
+                sync_series('v', 0, 10)
+            )),
+            "recording g-v belongs to synchronous acquisition g"
+        );
+        // a group append that fails on one member (a conflicting replay of i) leaves every member unchanged
+        assert_eq!(
+            sy_err(&format!(
+                "SELECT morlet_append_acquisition_raw('sy','g',900,ARRAY['v','i'],ARRAY[{},{}],300)",
+                sync_series('v', 900, 1100),
+                sync_series('v', 900, 1100)
+            )),
+            "conflicting replay at chunk offset"
+        );
+        assert_eq!(Spi::get_one::<String>(ends).unwrap().unwrap(), before);
+        assert_eq!(
+            sy_err(&format!(
+                "SELECT morlet_append_acquisition_raw('sy','g',1000,ARRAY['v'],ARRAY[{}])",
+                sync_series('v', 0, 10)
+            )),
+            "a synchronous append needs every role of acquisition g exactly once: {i,v}"
+        );
+        assert_eq!(
+            sy_err(&format!(
+                "SELECT morlet_append_acquisition_raw('sy','g',1000,ARRAY['v','i'],ARRAY[{},{}])",
+                sync_series('v', 0, 10),
+                sync_series('i', 0, 11)
+            )),
+            "every role needs the same number of samples"
+        );
+        // declaring refuses mismatched members; a declared group takes no new channel
+        Spi::run("SELECT morlet_start_recording('sy',r,rate,'x','g','{}',512,256,'zscore','none')
+            FROM (VALUES ('h-a',1000),('h-b',500),('k-a',1000),('k-b',1000)) x(r,rate);
+          SELECT morlet_create_acquisition('sy',a,'M1') FROM unnest(ARRAY['h','k']) a;
+          SELECT morlet_add_acquisition_channel('sy','h','h-a','a'); SELECT morlet_add_acquisition_channel('sy','h','h-b','b');
+          SELECT morlet_add_acquisition_channel('sy','k','k-a','a'); SELECT morlet_add_acquisition_channel('sy','k','k-b','b',5)").unwrap();
+        assert_eq!(
+            sy_err("SELECT morlet_declare_sync('sy','h',1000)"),
+            "member b (h-b) is sampled at 500 Hz, not 1000 Hz"
+        );
+        assert_eq!(
+            sy_err("SELECT morlet_declare_sync('sy','k',1000)"),
+            "member b (k-b) needs offset 0, clock source daq and an exact offset"
+        );
+        Spi::run(&format!(
+            "SELECT morlet_start_recording('sy',r,1000,'x','g','{{}}',512,256,'zscore','none') FROM unnest(ARRAY['m-a','m-b']) r;
+             SELECT morlet_create_acquisition('sy','m','M1');
+             SELECT morlet_add_acquisition_channel('sy','m','m-a','a'); SELECT morlet_add_acquisition_channel('sy','m','m-b','b');
+             SELECT morlet_append_chunks_raw('sy','m-a',0,{},300); SELECT morlet_append_chunks_raw('sy','m-b',0,{},400)",
+            sync_series('v', 0, 1000),
+            sync_series('v', 0, 1000)
+        ))
+        .unwrap();
+        assert_eq!(
+            sy_err("SELECT morlet_declare_sync('sy','m',1000)"),
+            "members of acquisition m have different chunk boundaries"
+        );
+        assert_eq!(
+            sy_err("SELECT morlet_start_recording('sy','x-new',1000,'x','g'); SELECT morlet_add_acquisition_channel('sy','g','x-new','extra')"),
+            "acquisition g is synchronous: its members are fixed"
+        );
+        // memory: moving samples of only one member is refused; moving both is not
+        Spi::run("SELECT morlet_enable_memory('sy');
+          CREATE TEMP TABLE sy_ep AS SELECT e AS id,o FROM morlet_add_episodes('sy','[
+            {\"recording_id\":\"g-v\",\"start_sample\":0,\"end_sample\":300},
+            {\"recording_id\":\"g-i\",\"start_sample\":0,\"end_sample\":300}]') WITH ORDINALITY x(e,o)").unwrap();
+        let run = one("SELECT morlet_start_memory_run('sy','test','1')");
+        let ep = |o: i64| one(&format!("SELECT id FROM sy_ep WHERE o={o}"));
+        assert_eq!(
+            sy_err(&format!(
+                "SELECT * FROM morlet_set_level('sy',{run},'[{{\"episode_id\":{},\"level\":3}}]')",
+                ep(1)
+            )),
+            "these moves would change only some members of synchronous acquisition g"
+        );
+        assert_eq!(
+            sy_err(&format!(
+                "SELECT * FROM morlet_set_level('sy',{run},'[{{\"episode_id\":{},\"level\":1}}]')",
+                ep(1)
+            )),
+            ""
+        ); // level 1 keeps every sample
+        assert_eq!(
+            sy_err(&format!(
+                "SELECT * FROM morlet_set_level('sy',{run},'[{{\"episode_id\":{},\"level\":3}},{{\"episode_id\":{},\"level\":3}}]')",
+                ep(1),
+                ep(2)
+            )),
+            ""
+        );
+        // compacted samples: synchronous statistics and reads fail closed
+        assert_eq!(
+            sy_err("SELECT * FROM morlet_acquisition_cross_stats('sy','g','v','i',0,1000)"),
+            "samples 0..1000 are not stored in both v and i"
+        );
+        // a member hidden by row security makes reads fail rather than return part of the group
+        Spi::run("ALTER TABLE sy ENABLE ROW LEVEL SECURITY; SELECT morlet_enable_row_security('sy'); CREATE ROLE morlet_sync_reader;
+          GRANT SELECT ON ALL TABLES IN SCHEMA public TO morlet_sync_reader;
+          CREATE POLICY sy_some ON sy FOR SELECT TO morlet_sync_reader USING (recording_id<>'g-i');
+          SET LOCAL ROLE morlet_sync_reader").unwrap();
+        assert_eq!(
+            sy_err("SELECT * FROM morlet_read_sync_raw('sy','g',300,600)"),
+            "not every member of synchronous acquisition g is visible to this role"
+        );
+        Spi::run("RESET ROLE").unwrap();
+        // verify flags a group whose members disagree (a chunk removed behind the extension's back)
+        Spi::run("DELETE FROM sy_chunks WHERE recording_id='g-v' AND start_sample=900").unwrap();
+        let problems = Spi::get_one::<String>(
+            "SELECT array_to_string(problems,'; ') FROM morlet_verify('sy') WHERE recording_id='g-v'",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(
+            problems.contains("synchronous acquisition g: chunk boundaries differ from g-i"),
+            "{problems}"
         );
     }
 
