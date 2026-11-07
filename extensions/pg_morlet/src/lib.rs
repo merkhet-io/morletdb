@@ -3482,6 +3482,29 @@ END $$"#).unwrap();
         assert_eq!(Spi::get_one::<String>(q).unwrap().unwrap(), screened);
         assert!(screened.split(',').count() >= 2);
     }
+    #[pg_test]
+    fn screened_search_with_idle_stretches_matches_the_full_path() {
+        // Constant windows have distance 1 to every query; the screen now knows that instead of re-scoring
+        // them (#284). A: a signal then a long idle stretch; B: idle throughout (the all-zero case of #279).
+        Spi::run("SELECT morlet_create_stream_collection('public','idle'); SELECT morlet_enable_envelopes('idle'); SELECT morlet_start_recording('idle',r,1000,'x','g') FROM unnest(ARRAY['A','B']) r; SELECT morlet_append_chunk('idle',r,k*16384,ARRAY(SELECT CASE WHEN r = 'A' AND i < 32768 THEN sin(i/7.0)*(1+(i%97)/97.0) ELSE 0 END FROM generate_series(k*16384,k*16384+16383) i)) FROM unnest(ARRAY['A','B']) r, generate_series(0,2) k ORDER BY r,k; SELECT morlet_build_envelopes('idle',r,4096,512) FROM unnest(ARRAY['A','B']) r").unwrap();
+        for k in [5, 100] {
+            let q = format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY distance,recording_id,start_sample) FROM morlet_search_envelopes('idle',ARRAY(SELECT sin(i/6.5)*(1+(i%89)/89.0) FROM generate_series(0,4095) i),1000,'x','g','{{}}',{k},0.0075)");
+            Spi::run("SET LOCAL morlet.exact_screen = on").unwrap();
+            let screened = Spi::get_one::<String>(&q).unwrap().unwrap();
+            Spi::run("SET LOCAL morlet.exact_screen = off").unwrap();
+            assert_eq!(
+                Spi::get_one::<String>(&q).unwrap().unwrap(),
+                screened,
+                "k = {k}"
+            );
+            let ones = screened.split(',').filter(|r| r.ends_with(":1")).count();
+            assert_eq!(
+                ones > 0,
+                k == 100,
+                "constant windows appear only when k exceeds the others: {screened}"
+            );
+        }
+    }
     #[pg_test(error = "conflicting replay at chunk offset")]
     fn rejects_conflicting_chunk_replay() {
         Spi::run("SELECT morlet_create_stream_collection('public','replay_streams'); SELECT morlet_start_recording('replay_streams','A',4096,'x','g'); SELECT morlet_append_chunk('replay_streams','A',0,array_fill(0.::float8,ARRAY[137])); SELECT morlet_append_chunk('replay_streams','A',0,array_fill(1.::float8,ARRAY[137]))").unwrap();

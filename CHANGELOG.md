@@ -25,6 +25,11 @@ SQL version 0.3.6, with an update script from 0.3.5.
   refuses above `max_candidates` and only then scores the kept windows, and the screen stays linear when many
   windows tie (constant windows all have distance 1). On 2 million all-zero windows the refusal took 2 min 48 s
   and now takes 2.7 s; results and latency on E7's development gallery are unchanged.
+- **Idle stretches no longer slow exact search (#284):** the screen gives an exactly constant window its known
+  distance 1 with no error bound, instead of an infinite bound that sent every such window to exact scoring. On a
+  dev gallery where half the windows are idle, the median screened search drops from 253 ms to 65 ms; results
+  are bit-identical, and galleries without idle stretches are unchanged. Nearly constant windows keep the
+  infinite bound. E7's frozen protocol describes the earlier rule.
 - **Tiny signals (#228):** normalization, distances, RMS and envelopes keep their shape for amplitudes down to
   1e-300; ordinary inputs give bit-identical results.
 
