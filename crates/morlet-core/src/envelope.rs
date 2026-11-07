@@ -199,6 +199,18 @@ impl LagQuery {
         n.checked_mul(stride).is_some_and(|v| v <= MAX_QUERY_MATRIX)
     }
 
+    /// Bytes of the shifted-query matrix for a query of `n` values with this `max_lag`, or None when it is not
+    /// [`supported`](Self::supported). Every stored envelope streams through the whole matrix, so it pays off only
+    /// while the matrix stays in cache: on a Raspberry Pi 3B+ (512 KB L2) a 16,384-sample window's 3.36 MB matrix
+    /// made scoring 15x slower than [`distance`] (11.9 ms against 0.79 ms per window), while on a desktop with a
+    /// 16 MB cache it is 15% faster. Callers choose the form by this size; the distances are bitwise the same.
+    pub fn matrix_bytes(n: usize, max_lag: usize) -> Option<usize> {
+        if !Self::supported(n, max_lag) {
+            return None;
+        }
+        Some(n * (2 * max_lag + 1).div_ceil(QUERY_BLOCK) * QUERY_BLOCK * std::mem::size_of::<f64>())
+    }
+
     /// None when the inputs are invalid for [`distance`] or the matrix would be too large.
     pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
         let n = q.len();
@@ -413,6 +425,17 @@ pub fn f16_to_f64(h: u16) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrix_bytes_is_the_prepared_size() {
+        for (n, lag) in [(52, 3), (410, 30), (1639, 122), (3277, 245)] {
+            let q: Vec<f64> = (0..n).map(|i| (i as f64 / 7.0).sin()).collect();
+            let p = LagQuery::new(&q, lag).unwrap();
+            assert_eq!(LagQuery::matrix_bytes(n, lag), Some(p.m.len() * 8));
+        }
+        assert_eq!(LagQuery::matrix_bytes(1639, 122), Some(1639 * 256 * 8));
+        assert_eq!(LagQuery::matrix_bytes(10, 10), None);
+    }
 
     #[test]
     fn envelope_is_scale_invariant_for_tiny_signals() {

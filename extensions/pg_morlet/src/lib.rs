@@ -488,6 +488,73 @@ thread_local! {
     static STORED: std::cell::RefCell<Vec<f64>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
+/// Bytes a prepared query matrix (exact scoring or screening) may take on this machine: a quarter of the CPU's
+/// last-level cache, read once per backend. When the size cannot be read (virtual machines such as Docker Desktop's
+/// expose cache levels without sizes) it is 4 MiB, which keeps the prepared forms as before; small boards such as
+/// the Raspberry Pi report their cache. MORLET_SCORE_CACHE_BYTES in the server's environment overrides it. Each stored envelope streams the whole matrix, so a matrix larger than the
+/// cache made exact search on a Raspberry Pi 3B+ (512 KB L2) 15x slower than direct scoring; desktop and server
+/// caches keep the prepared forms. Only speed depends on this: both forms give bitwise the same distances, and
+/// screened and full exact search the same results.
+fn prepared_budget() -> usize {
+    static BUDGET: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *BUDGET.get_or_init(|| {
+        std::env::var("MORLET_SCORE_CACHE_BYTES")
+            .ok()
+            .and_then(|v| v.trim().parse().ok())
+            .unwrap_or_else(|| last_level_cache_bytes().map_or(4 << 20, |c| c / 4))
+    })
+}
+
+/// The largest cache of CPU 0 (Linux sysfs) or the performance cluster's L2 (macOS sysctl), in bytes.
+fn last_level_cache_bytes() -> Option<usize> {
+    #[cfg(target_os = "linux")]
+    {
+        let dir = std::fs::read_dir("/sys/devices/system/cpu/cpu0/cache").ok()?;
+        dir.filter_map(|e| {
+            let size = std::fs::read_to_string(e.ok()?.path().join("size")).ok()?;
+            let size = size.trim();
+            let (digits, scale) = match size.chars().last()? {
+                'K' => (&size[..size.len() - 1], 1usize << 10),
+                'M' => (&size[..size.len() - 1], 1 << 20),
+                'G' => (&size[..size.len() - 1], 1 << 30),
+                _ => (size, 1),
+            };
+            digits.parse::<usize>().ok().map(|d| d * scale)
+        })
+        .max()
+    }
+    #[cfg(target_os = "macos")]
+    {
+        [
+            "hw.perflevel0.l2cachesize",
+            "hw.l3cachesize",
+            "hw.l2cachesize",
+        ]
+        .iter()
+        .filter_map(|name| {
+            let name = std::ffi::CString::new(*name).ok()?;
+            let mut value: u64 = 0;
+            let mut len = std::mem::size_of::<u64>();
+            // SAFETY: value and len describe a valid u64 buffer; sysctlbyname writes at most len bytes.
+            let rc = unsafe {
+                libc::sysctlbyname(
+                    name.as_ptr(),
+                    (&mut value as *mut u64).cast(),
+                    &mut len,
+                    std::ptr::null_mut(),
+                    0,
+                )
+            };
+            (rc == 0 && value > 0).then_some(value as usize)
+        })
+        .max()
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        None
+    }
+}
+
 fn same_bits(a: &[f64], b: &[f64]) -> bool {
     a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
 }
@@ -515,10 +582,15 @@ fn morlet_envelope_distance(
             LAG_QUERY.with(|cell| {
                 let mut cell = cell.borrow_mut();
                 if !matches!(&*cell, Some((q, l, _)) if *l == lag && same_bits(q, query)) {
-                    *cell = morlet_core::envelope::LagQuery::new(query, lag)
+                    // Prepared only while its matrix fits this machine's cache (prepared_budget).
+                    let fits = morlet_core::envelope::LagQuery::matrix_bytes(query.len(), lag)
+                        .is_some_and(|b| b <= prepared_budget());
+                    *cell = fits
+                        .then(|| morlet_core::envelope::LagQuery::new(query, lag))
+                        .flatten()
                         .map(|p| (query.to_vec(), lag, p));
                 }
-                // Bitwise identical either way; the direct form covers queries too large to prepare.
+                // Bitwise identical either way; the direct form covers queries too large to prepare or to cache.
                 match cell.as_ref() {
                     Some((_, _, p)) => p.distance(&g),
                     None => morlet_core::envelope::distance(query, &g, lag),
@@ -947,12 +1019,20 @@ fn query_from_le_bytes(bytes: &[u8]) -> Vec<f64> {
 }
 
 /// Whether screened exact search can prepare a query envelope of `envelope_len` values with `max_lag`
-/// (morlet_core::envelope::LagQuery::supported); otherwise exact search scores every eligible window directly.
+/// (morlet_core::envelope::LagQuery::supported) and its screening matrix fits this machine's cache
+/// (prepared_budget); otherwise exact search scores every eligible window directly, with the same results. A
+/// screen that streams a matrix from memory for every window costs more than scoring the window directly (on a
+/// Raspberry Pi 3B+: 5.8 ms against 0.79 ms per 16,384-sample window). Constant for a server process.
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_envelope_screen_supported(envelope_len: i32, max_lag: i32) -> bool {
     envelope_len > 0
         && max_lag >= 0
         && morlet_core::envelope::LagQuery::supported(envelope_len as usize, max_lag as usize)
+        && morlet_core::envelope_screen::ScreenQuery::matrix_bytes(
+            envelope_len as usize,
+            max_lag as usize,
+        )
+        .is_some_and(|b| b <= prepared_budget())
 }
 
 /// A float8[] as little-endian float64 bytes (the screening aggregate's query argument).
