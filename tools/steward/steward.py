@@ -77,6 +77,7 @@ class Steward:
     def tick(self) -> str:
         cfg, conn = self.cfg, self.conn
         disk = self.disk()
+        self.ingest_hold(disk)
         all_cols = S.collections(conn)
         cols = [c for c in all_cols if S.privileged(conn, c)]
         breakers = S.load_breakers(conn, P)
@@ -98,6 +99,28 @@ class Steward:
                                                [c for c in all_cols if c not in cols]))
         S.write_status(conn, items, cfg.tick_s, note)
         return note
+
+    def ingest_hold(self, disk: P.DiskState) -> None:
+        """At the disk reserve, new appends are refused with a reason (SQLSTATE 53100) so PostgreSQL never runs out
+        of disk; once space is free again the steward releases the hold it set. A hold set by someone else stays."""
+        conn = self.conn
+        current = S.hold(conn)
+        if disk.hold_ingest:
+            reason = f"{disk.cause} (set by morlet-steward)"
+            if current is None or current[0] != reason:
+                aid = S.start_action(conn, "ingest_hold", None, None, {"reason": reason})
+                try:
+                    S.set_hold(conn, reason)
+                    S.finish_action(conn, aid, "done", {"held": True})
+                except psycopg.Error as e:
+                    S.finish_action(conn, aid, "failed", error=str(e).splitlines()[0])
+        elif current is not None and current[1] == S.STEWARD_ROLE and not disk.unknown:
+            aid = S.start_action(conn, "ingest_hold", None, None, {"release": True})
+            try:
+                S.release_hold(conn)
+                S.finish_action(conn, aid, "done", {"held": False})
+            except psycopg.Error as e:
+                S.finish_action(conn, aid, "failed", error=str(e).splitlines()[0])
 
     def run_job(self, job: str, work: dict, due: list[str], breakers: dict) -> str:
         conn, cfg = self.conn, self.cfg

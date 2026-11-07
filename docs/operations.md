@@ -89,6 +89,19 @@ LISTEN morlet_line;                                         -- in the consumer's
 - **Tests:** `commit_notifications_collect_ranges_once_per_transaction` (ranges, switches, refusals) and
   `tests/notifications.sh` (a real listener session: one per commit, none for rollbacks, savepoints, replays).
 
+### Keeping an edge database healthy: the steward
+
+`tools/steward` runs the upkeep without a person.
+
+- **Jobs:** builders until their backlogs are 0, a rolling verify pass every 7 days, and `ANALYZE`. They run in one
+  budgeted loop, only below the load threshold.
+- **Disk:** it watches free space in time remaining (attention at 14 days, pause at 3). At the reserve (5% or 2 GB)
+  it sets the ingest hold, `morlet_ingest_hold`: appends then fail with SQLSTATE 53100 and the reason, until space is
+  free again.
+- **Status:** `morlet_steward.status` has one line per item, with cause, consequence, action and who, for an HMI or
+  `morlet-steward status`. `morlet-steward check` exits 0, 1 or 2 for health checks.
+- **Design:** [steward-design.md](steward-design.md).
+
 ## Diagnostics
 
 ```sql

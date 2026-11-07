@@ -13,10 +13,11 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
 - **Status:** a plain status (`morlet_steward.status`) for people and HMIs.
 - **Safety:** the steward's role can build derived data and summaries and nothing that removes stored samples. Its
   database test shows that `DELETE`, `UPDATE` of samples, `TRUNCATE` and `DROP` are refused.
-- **Not yet:**
-  - The ingest hold: at the disk reserve the status says recording is refused, but appends are not yet blocked (P2).
-  - Dropping derived data under disk pressure (P2).
-  - Plans and approval (P3), and packaging (P4).
+- **Ingest hold (P2):** at the disk reserve the steward sets `morlet_ingest_hold`, so appends that would store new
+  samples fail with SQLSTATE 53100 (`disk_full`) and the reason; identical replays still pass. When space is free
+  again, it releases the hold it set. A hold set by a person (`morlet_set_ingest_hold`) stays until a person
+  releases it.
+- **Not yet:** dropping derived data under disk pressure by policy (P2), plans and approval (P3), packaging (P4).
 
 ```sh
 pip install -r tools/steward/requirements.txt
