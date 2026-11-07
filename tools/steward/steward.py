@@ -261,8 +261,11 @@ def main(argv=None) -> int:
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--tick", type=float, default=30.0)
     ap.add_argument("--load-per-cpu", type=float, default=0.7, help="work only below this 1-minute load per CPU")
+    ap.add_argument("--reserve-bytes", type=int, default=2 << 30, help="disk kept free: the larger of this and the share")
+    ap.add_argument("--reserve-fraction", type=float, default=0.05)
     a = ap.parse_args(argv)
-    cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu)
+    cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,
+                   reserve_fraction=a.reserve_fraction)
     if a.command == "run":
         return cmd_run(a, cfg)
     with connect(a.dsn) as conn:
