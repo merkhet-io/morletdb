@@ -9,6 +9,25 @@ crossover, not an opinion.
 Status: draft. It freezes (commit recorded here) before any measurement on the benchmark sets below;
 generators and harness are developed on the small development sizes only.
 
+## Stages
+
+- **L1-beta (closes #318, gate for the beta):** D1, D2, D4, D5 and D7 at the reduced points below, synthetic data
+  only, no crossovers. Question: within which rates, lengths, value kinds, ingest patterns and resources is
+  MorletDB correct and how fast, and what happens at and beyond each limit?
+- **L1-1.0 (before 1.0):** everything else in this protocol: D3, D6, D8, D9, the TimescaleDB crossovers, the full
+  point lists and the real data sets.
+
+| # | L1-beta points |
+|---|---|
+| D1 | 1/60 Hz, ⅓ Hz, 1 Hz, 1 kHz, 44.1 kHz, 64 kHz, 1 MHz |
+| D2 | 10⁴, 10⁶, 10⁸, 10⁹ samples in one recording |
+| D4 | all value kinds of the table |
+| D5 | chunk sizes 1, 64, 4,096, 65,536; 1, 4 and 16 concurrent writers; gaps, late, out-of-order and overlapping chunks |
+| D7 | 2 GB, 512 MB, 256 MB memory; 1 CPU; a full disk |
+
+Same rules, metrics, knee definition and three repeats as below. The machine is named at the freeze; the results
+state that the envelope holds for that machine and scales with it where the curve says so.
+
 ## Rules
 
 - **Correctness is a hard gate everywhere:** every stored sample read back bit for bit (SHA-256 per
