@@ -69,7 +69,28 @@ SELECT 'summary', round(score::numeric, 12), round(score_quantile::numeric, 12),
   FROM morlet_compare_summary('line', (SELECT max(segment_id) FROM line_ctx_segments), min_history=>1);
 SELECT 'labels', recording_id, label, start_sample, end_sample FROM line_labels ORDER BY 2;
 SQL
+  # Derived data of later releases (#195): chunk summaries (0.3.3), the integrity check (0.3.5), roll-ups and
+  # coverage (0.3.6), written by the old release and read back after the update.
+  if ver_ge "$OLD_VERSION" 0.3.3; then psql -d "$1" <<'SQL'
+SELECT 'stats', r.recording_id, iv.a, s.sample_count, s.min, s.max, round(s.mean::numeric, 12), round(s.rms::numeric, 12)
+  FROM line r, (VALUES (0::bigint, 16000::bigint), (100, 15900), (4096, 8192)) iv(a, b),
+       morlet_interval_stats('line', r.recording_id, iv.a, iv.b) s ORDER BY 2, 3;
+SQL
+  fi
+  if ver_ge "$OLD_VERSION" 0.3.5; then
+    psql -d "$1" -c "SELECT 'verify', recording_id, chunks, samples, problems FROM morlet_verify('line') ORDER BY 2"
+  fi
+  if ver_ge "$OLD_VERSION" 0.3.6; then psql -d "$1" <<'SQL'
+SELECT 'rollups', level, block, start_sample, end_sample, md5(summary::text) FROM roll_rollups ORDER BY 2, 3;
+SELECT 'rollup-stats', iv.a, s.sample_count, s.min, s.max, round(s.mean::numeric, 9), round(s.rms::numeric, 9)
+  FROM (VALUES (0::bigint, 1310720::bigint), (0, 1048576), (12345, 1300000)) iv(a, b),
+       morlet_interval_stats('roll', 'r1', iv.a, iv.b) s ORDER BY 2, 3;
+SELECT 'coverage', recording_id, start_sample, end_sample, state, windows FROM morlet_coverage('line') ORDER BY 2, 3;
+SELECT 'verify-roll', recording_id, chunks, samples, problems FROM morlet_verify('roll') ORDER BY 2;
+SQL
+  fi
 }
+ver_ge() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$2" ]; }
 
 catalog() {
   psql -d "$1" <<'SQL'
@@ -111,6 +132,23 @@ SELECT morlet_build_context_segments('line', p, ARRAY['block'], ARRAY['part']) F
 SELECT morlet_build_context_values('line', p) FROM unnest(ARRAY['p1','p2','p3']) p;
 SELECT morlet_add_label('line', 'p2', 8000, 16000, 'checked', 'upgrade test');
 SQL
+if ver_ge "$OLD_VERSION" 0.3.3; then psql -d morlet_upgrade_rel_old <<'SQL'
+SELECT morlet_enable_chunk_summaries('line');
+SELECT morlet_build_chunk_summaries('line', p, 1000) FROM unnest(ARRAY['p1','p2','p3']) p;
+SQL
+fi
+if ver_ge "$OLD_VERSION" 0.3.6; then psql -d morlet_upgrade_rel_old <<'SQL'
+SELECT morlet_create_stream_collection('public', 'roll');
+SELECT morlet_enable_chunk_summaries('roll');
+SELECT morlet_enable_rollups('roll');
+SELECT morlet_start_recording('roll', 'r1', 1000, 'vib', 'g', '{}', 512, 256, 'zscore', 'none', 0.001);
+SELECT morlet_append_chunk('roll', 'r1', c*32768, ARRAY(SELECT round(sin(i/7.)::numeric + (i % 1000) / 1000., 3)::float8
+  FROM generate_series(c*32768, c*32768+32767) i)) FROM generate_series(0, 39) c;
+SELECT morlet_build_chunk_summaries('roll', 'r1', 1000);
+SELECT morlet_build_rollups('roll', 'r1');
+DO $$ BEGIN IF (SELECT count(*) FROM roll_rollups) = 0 THEN RAISE EXCEPTION 'no roll-ups built'; END IF; END $$;
+SQL
+fi
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$OLD_VERSION"
 snapshot morlet_upgrade_rel_old > "$WORK/before.txt"
 test "$(wc -l < "$WORK/before.txt")" -gt 20
