@@ -11,7 +11,13 @@ SQL version 0.3.7, with an update script from 0.3.6.
   ordinary installations are unchanged). The update from 0.3.6 redefines the existing C functions with the new path
   (`CREATE OR REPLACE`, same OIDs; no data or table changes). Tested in CI on PostgreSQL 18 and 19
   (`tests/on_demand.sh`): the server's own copy is moved aside, and `CREATE EXTENSION`, an append, a read and
-  interval statistics work from the separate directory. An extension-only OCI image is the next step.
+  interval statistics work from the separate directory.
+- **Extension-only image (#315):** each release publishes `ghcr.io/merkhet-io/pg_morlet:<version>-pg18` (amd64,
+  arm64): pg_morlet's control, SQL and library files and nothing else, under `/share/extension` and `/lib`, with build
+  provenance. Mount it as an image volume (or copy its files) and set the two paths above. The release workflow
+  builds it from the Debian package's build stage and trials it mounted into a clean `postgres:18` image
+  (`deploy/extension_trial.sh`: install, append, read, statistics, restart) before pushing. PostgreSQL 19 follows
+  19.0.
 
 ## 0.3.8-alpha.1
 

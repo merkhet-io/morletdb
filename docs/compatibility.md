@@ -145,11 +145,26 @@ extension_control_path = '$system:<dir>/share'
 dynamic_library_path = '$libdir:<dir>/lib'
 ```
 
-and run `CREATE EXTENSION pg_morlet`. No `shared_preload_libraries` entry is needed. `cargo pgrx package` produces
-the files; `tests/on_demand.sh` assembles such a directory, moves the server's own copy aside and checks the
-extension from it (CI, PostgreSQL 18 and 19). Databases created before 0.3.7 load the library from `$libdir` until
-`ALTER EXTENSION pg_morlet UPDATE`. A ready-made extension-only OCI image is planned; until then, build the directory
-from a release checkout.
+and run `CREATE EXTENSION pg_morlet`. No `shared_preload_libraries` entry is needed. Databases created before 0.3.7
+load the library from `$libdir` until `ALTER EXTENSION pg_morlet UPDATE`.
+
+**Ready-made image.** From the release after 0.3.8-alpha.1, each release publishes an extension-only image for
+PostgreSQL 18, `ghcr.io/merkhet-io/pg_morlet:<version>-pg18` (linux/amd64 and linux/arm64, built against Debian
+bookworm's glibc like the official postgres images). It holds only `/share/extension/pg_morlet*`, `/lib/pg_morlet.so`
+and the licence. Mount it at `/extensions/pg_morlet`, for example as a Kubernetes image volume, and use the two
+settings above with `<dir>` = `/extensions/pg_morlet`. Without image volumes, copy the files out:
+
+```sh
+cid=$(docker create ghcr.io/merkhet-io/pg_morlet:<version>-pg18 /none)
+docker cp "$cid:/share" ./pg_morlet/ && docker cp "$cid:/lib" ./pg_morlet/ && docker rm "$cid"
+```
+
+Verify it with `gh attestation verify oci://ghcr.io/merkhet-io/pg_morlet:<version>-pg18 --owner merkhet-io`. pgvector,
+for probe search, is a separate extension. Images for PostgreSQL 19 follow 19.0.
+
+**Tests.** `tests/on_demand.sh` (CI, PostgreSQL 18 and 19) packages the extension into a separate directory, moves the
+server's own copy aside and checks it from there. Before each release, `deploy/extension_trial.sh` mounts the image's
+files into a clean `postgres:18` image and checks install, append, read, statistics and a restart.
 
 ## TOAST compression (PostgreSQL 19)
 
