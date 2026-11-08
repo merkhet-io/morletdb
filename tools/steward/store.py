@@ -224,8 +224,10 @@ def privileged(conn: psycopg.Connection, collection: str) -> bool:
 
 
 def envelope_grids(conn: psycopg.Connection, collection: str) -> list[tuple[int, int]]:
-    """(window, stride) pairs the collection maintains: every window size present, with its most common stride
-    (half the window when no recording has two windows yet)."""
+    """(window, stride) pairs the collection maintains: every window size present in its envelopes, with its most
+    common stride (half the window when no recording has two windows yet), and the window and stride the recordings
+    declare in their checkpoints (recordings with extractor 'none' declare no envelopes). The checkpoints are what a
+    new collection has before its first envelope: without them the steward would never start building (soak S1)."""
     env = sibling(conn, collection, "_envelopes")
     if not env:
         return []
@@ -234,7 +236,15 @@ def envelope_grids(conn: psycopg.Connection, collection: str) -> list[tuple[int,
         SELECT window_size w, start_sample-lag(start_sample) OVER (PARTITION BY recording_id,window_size
           ORDER BY start_sample) d FROM {env}) x
       WHERE d IS NULL OR d>0 GROUP BY w ORDER BY w""").fetchall()
-    return [(int(w), int(s)) for w, s in rows]
+    grids = {int(w): int(s) for w, s in rows}
+    declared = conn.execute(f"""
+      SELECT DISTINCT (checkpoint->>'window')::int, (checkpoint->>'stride')::int FROM {collection}
+      WHERE checkpoint ? 'window' AND checkpoint ? 'stride'
+        AND coalesce(checkpoint->>'extractor_version', '') <> 'none'""").fetchall()
+    for w, s in declared:
+        if w and s and s > 0:
+            grids.setdefault(int(w), int(s))
+    return sorted(grids.items())
 
 
 def candidates(conn: psycopg.Connection, job: str, collection: str, limit: int = 20) -> list[tuple[str, int]]:
