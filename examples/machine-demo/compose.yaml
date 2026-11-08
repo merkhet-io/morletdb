@@ -4,7 +4,7 @@
 name: morletdb-machine-demo
 services:
   db:
-    image: ${MORLET_IMAGE:-ghcr.io/merkhet-io/morletdb:0.3.7-alpha.1}
+    image: ${MORLET_IMAGE:-ghcr.io/merkhet-io/morletdb:0.3.8-alpha.1}
     environment:
       POSTGRES_USER: morlet
       POSTGRES_PASSWORD: morlet-demo-only
