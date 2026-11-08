@@ -1259,6 +1259,71 @@ BEGIN
   RETURN NULL;
 END $$;
 
+-- A sample rate as the exact fraction the user meant (#343). Rates are float8, and 1/60 Hz is not exactly a float;
+-- computing with float8::numeric (15 digits: 0.0166666666666667, above 1/60) put a time exactly at a sample instant
+-- on the next sample. The rate's shortest decimal (float8::text) is read as the simplest fraction within 4e-16 of
+-- it whose denominator is at most 10^6 (1/60, 1/7, 2/3), else as that exact decimal (12345.678901234); a decimal
+-- with at most 6 places (25600, 0.5) is read as written without searching.
+CREATE FUNCTION public.morlet_rate_ratio(sample_rate_hz float8,OUT num numeric,OUT den numeric)
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE x numeric; a numeric; q numeric; h0 numeric:=0; h1 numeric:=1; k0 numeric:=1; k1 numeric:=0; t numeric;
+BEGIN
+  IF NOT (sample_rate_hz>0 AND sample_rate_hz<'Infinity') THEN
+    RAISE EXCEPTION 'sample rate must be positive and finite';
+  END IF;
+  x:=sample_rate_hz::text::numeric;
+  IF x=trunc(x) THEN                         -- an integer rate (25600, 64000)
+    num:=trunc(x); den:=1;
+    RETURN;
+  END IF;
+  IF scale(x)<=6 THEN                        -- a short decimal (25600, 44100, 0.5) is its own exact fraction
+    den:=power(10::numeric,scale(x))::numeric(1000,0);
+    num:=(x*den)::numeric(1000,0);
+    RETURN;
+  END IF;
+  a:=x;
+  FOR i IN 1..64 LOOP
+    q:=floor(a);
+    t:=h1; h1:=q*h1+h0; h0:=t;
+    t:=k1; k1:=q*k1+k0; k0:=t;
+    EXIT WHEN k1>1000000;
+    IF abs(h1/k1-x)<=x*0.0000000000000004 THEN
+      num:=h1; den:=k1;
+      RETURN;
+    END IF;
+    EXIT WHEN a=q;
+    a:=1/(a-q);
+  END LOOP;
+  den:=power(10::numeric,scale(x))::numeric(1000,0);
+  num:=(x*den)::numeric(1000,0);
+END $$;
+
+-- The first sample at or after (round_up) or the last sample at or before a time, ns after sample 0: exactly
+-- ceil/floor(ns * num / (den * 1e9)) for the rate's fraction num/den. The quotient is computed in numeric and then
+-- corrected by the exact products, so rounding in the division cannot move a boundary.
+CREATE FUNCTION public.morlet_ns_to_samples(ns numeric,sample_rate_hz float8,round_up boolean)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE r record; a numeric; b numeric; k numeric;
+BEGIN
+  SELECT * INTO r FROM public.morlet_rate_ratio(sample_rate_hz);
+  a:=ns*r.num; b:=r.den*1000000000;
+  IF round_up THEN
+    k:=ceil(a/b);
+    RETURN CASE WHEN (k-1)*b>=a THEN k-1 WHEN k*b<a THEN k+1 ELSE k END;
+  END IF;
+  k:=floor(a/b);
+  RETURN CASE WHEN (k+1)*b<=a THEN k+1 WHEN k*b>a THEN k-1 ELSE k END;
+END $$;
+
+-- The time of a sample in ns after sample 0 (exact for decimal rates and for fractions with a terminating decimal).
+CREATE FUNCTION public.morlet_samples_to_ns(samples numeric,sample_rate_hz float8)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE r record;
+BEGIN
+  SELECT * INTO r FROM public.morlet_rate_ratio(sample_rate_hz);
+  RETURN samples*1000000000*r.den/r.num;
+END $$;
+
 -- Time filters of the search functions as per-recording window-start bounds: windows of `window_size`
 -- samples of an eligible recording whose whole span lies in [from_ns, to_ns) start in [lo, hi]. Recordings
 -- without a start time (morlet_recording_start_ns) have no row, so time filters exclude them.
@@ -1269,11 +1334,14 @@ LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
   RETURN QUERY EXECUTE format('SELECT x.recording_id,x.lo,x.hi FROM (
       SELECT r.recording_id,
-        CASE WHEN $5 IS NULL THEN 0 ELSE greatest(0,ceil(($5-r.t)*r.sample_rate_hz::numeric/1000000000)) END::bigint AS lo,
+        CASE WHEN $5 IS NULL THEN 0 ELSE greatest(0,CASE WHEN (w.klo-1)*w.b>=w.alo THEN w.klo-1 WHEN w.klo*w.b<w.alo THEN w.klo+1 ELSE w.klo END) END::bigint AS lo,
         CASE WHEN $6 IS NULL THEN 9223372036854775807 ELSE least(9223372036854775807,
-          floor(($6-r.t)*r.sample_rate_hz::numeric/1000000000)-$7) END::bigint AS hi
+          CASE WHEN (w.khi+1)*w.b<=w.ahi THEN w.khi+1 WHEN w.khi*w.b>w.ahi THEN w.khi-1 ELSE w.khi END-$7) END::bigint AS hi
       FROM (SELECT c.recording_id,c.sample_rate_hz,public.morlet_recording_start_ns(c.metadata) AS t FROM %s c
             WHERE c.sample_rate_hz=$1 AND c.channel=$2 AND c.unit=$3 AND c.metadata @> $4) r
+        CROSS JOIN public.morlet_rate_ratio($1) q
+        CROSS JOIN LATERAL (SELECT v.alo,v.ahi,v.b,ceil(v.alo/v.b) AS klo,floor(v.ahi/v.b) AS khi FROM (SELECT
+          ($5-r.t)*q.num AS alo,($6-r.t)*q.num AS ahi,q.den*1000000000 AS b) v) w
       WHERE r.t IS NOT NULL) x WHERE x.hi>=x.lo',collection)
     USING sample_rate_hz,channel,unit,metadata_filter,from_ns,to_ns,window_size;
 END $$;
@@ -1292,7 +1360,7 @@ BEGIN
   IF t IS NULL THEN
     RAISE EXCEPTION 'before_only needs the query recording''s start time (metadata start_ns or start)';
   END IF;
-  RETURN t+interval_start::numeric*1000000000/sample_rate_hz::numeric;
+  RETURN t+public.morlet_samples_to_ns(interval_start,sample_rate_hz);
 END $$;
 
 -- Raises when more windows are eligible than max_candidates; returns the count otherwise.
@@ -1686,8 +1754,8 @@ BEGIN
     distance:=hit.distance; metadata:=hit.metadata;
     EXECUTE format('SELECT sample_rate_hz FROM %s WHERE recording_id=$1',collection) INTO rate USING hit.recording_id;
     t0:=public.morlet_recording_start_ns(hit.metadata);
-    start_utc:=to_timestamp((t0+hit.start_sample::numeric*1000000000/rate::numeric)/1000000000);
-    end_utc:=to_timestamp((t0+hit.end_sample::numeric*1000000000/rate::numeric)/1000000000);
+    start_utc:=to_timestamp((t0+public.morlet_samples_to_ns(hit.start_sample,rate))/1000000000);
+    end_utc:=to_timestamp((t0+public.morlet_samples_to_ns(hit.end_sample,rate))/1000000000);
     sample_count:=NULL; min:=NULL; max:=NULL; mean:=NULL; rms:=NULL; overview:=NULL;
     IF encoded THEN
       b:=public.morlet_interval_buckets(collection,hit.recording_id,hit.start_sample,hit.end_sample,1,'evidence');
@@ -2011,12 +2079,14 @@ BEGIN
   SELECT * INTO rel FROM public.morlet_context_relations(collection);
   IF cutoff_ns IS NOT NULL THEN
     -- Only segments that started before the cutoff on the absolute time axis
-    -- (acquisition origin + channel offset + sample time); others are excluded.
+    -- (acquisition origin + channel offset + sample time); others are excluded. Every history row has the rate $3,
+    -- so its exact fraction is computed once per query.
     SELECT * INTO acq FROM public.morlet_acquisition_relations(collection);
     before:=format(' AND EXISTS(SELECT 1 FROM %s ch JOIN %s a ON a.acquisition_id=ch.acquisition_id
         WHERE ch.recording_id=s.recording_id AND a.origin_utc IS NOT NULL
           AND extract(epoch FROM a.origin_utc)*1000000000+ch.offset_ns
-            +s.start_sample::numeric*1000000000/r.sample_rate_hz::numeric<%s)',acq.channels,acq.acq,cutoff_ns);
+            +s.start_sample::numeric*1000000000*(SELECT q.den FROM public.morlet_rate_ratio($3) q)
+              /(SELECT q.num FROM public.morlet_rate_ratio($3) q)<%s)',acq.channels,acq.acq,cutoff_ns);
   END IF;
   RETURN format('SELECT v.vals,s.segment_id,s.recording_id,s.start_sample,s.end_sample,s.occurrence%5$s FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
         JOIN %3$s r ON r.recording_id=s.recording_id JOIN %1$s qs ON qs.segment_id=$1
@@ -2277,18 +2347,25 @@ END $$;
 CREATE FUNCTION public.morlet_time_to_samples(sample_rate_hz float8,offset_ns bigint,t_start_ns bigint,t_end_ns bigint,
   OUT start_sample bigint,OUT end_sample bigint)
 LANGUAGE plpgsql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+DECLARE r record; b numeric; a numeric; k numeric;
 BEGIN
   IF NOT (sample_rate_hz>0 AND sample_rate_hz<'Infinity') OR t_end_ns<t_start_ns THEN
     RAISE EXCEPTION 'sample rate must be positive and t_end_ns >= t_start_ns';
   END IF;
-  start_sample:=greatest(0,ceil((t_start_ns-offset_ns)::numeric*sample_rate_hz::numeric/1000000000))::bigint;
-  end_sample:=greatest(0,ceil((t_end_ns-offset_ns)::numeric*sample_rate_hz::numeric/1000000000))::bigint;
+  SELECT * INTO r FROM public.morlet_rate_ratio(sample_rate_hz);
+  b:=r.den*1000000000;
+  a:=(t_start_ns-offset_ns)::numeric*r.num;
+  k:=ceil(a/b);
+  start_sample:=greatest(0,CASE WHEN (k-1)*b>=a THEN k-1 WHEN k*b<a THEN k+1 ELSE k END)::bigint;
+  a:=(t_end_ns-offset_ns)::numeric*r.num;
+  k:=ceil(a/b);
+  end_sample:=greatest(0,CASE WHEN (k-1)*b>=a THEN k-1 WHEN k*b<a THEN k+1 ELSE k END)::bigint;
 END $$;
 
 -- Acquisition time (ns, exact numeric) of a channel sample.
 CREATE FUNCTION public.morlet_sample_time_ns(sample_rate_hz float8,offset_ns bigint,sample bigint)
 RETURNS numeric LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
-  SELECT offset_ns+sample::numeric*1000000000/sample_rate_hz::numeric
+  SELECT offset_ns+public.morlet_samples_to_ns(sample,sample_rate_hz)
 $$;
 
 -- Creates an acquisition, or verifies that an identical one exists (returns false).
@@ -2501,8 +2578,7 @@ RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path
 DECLARE rel record; ch record; n bigint:=0;
 BEGIN
   SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
-  FOR ch IN EXECUTE format('SELECT c.recording_id,ceil(coalesce(c.offset_uncertainty_ns,0)::numeric*r.sample_rate_hz::numeric
-      /1000000000)::integer AS trim FROM %s c JOIN %s r ON r.recording_id=c.recording_id WHERE c.acquisition_id=$1
+  FOR ch IN EXECUTE format('SELECT c.recording_id,public.morlet_ns_to_samples(coalesce(c.offset_uncertainty_ns,0)::numeric,r.sample_rate_hz,true)::integer AS trim FROM %s c JOIN %s r ON r.recording_id=c.recording_id WHERE c.acquisition_id=$1
       ORDER BY c.role',rel.channels,collection) USING acquisition_id
   LOOP
     n:=n+public.morlet_build_context_segments(collection,ch.recording_id,keys,occurrence_keys,min_samples,ch.trim);

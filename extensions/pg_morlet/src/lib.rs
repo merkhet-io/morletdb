@@ -2691,6 +2691,23 @@ END $$"#).unwrap();
         );
     }
 
+    #[pg_test]
+    fn time_to_samples_is_exact_at_sample_instants_of_slow_rates() {
+        // #343: float8::numeric rounded 1/60 to 0.0166666666666667 (above 1/60), so the time of sample k mapped to
+        // k + 1. Rates whose period is a whole number of seconds: sample k sits exactly at k * period.
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM (VALUES (60::bigint),(7),(6),(3),(1)) p(period_s), generate_series(0,2000) k,
+                   morlet_time_to_samples(1.0::float8/p.period_s, 0, k*p.period_s*1000000000, k*p.period_s*1000000000+1) t
+                 WHERE t.start_sample <> k OR t.end_sample <> k + 1"
+            )
+            .unwrap(),
+            Some(0)
+        );
+        // a time just before a sample instant still maps to that sample
+        assert_eq!(Spi::get_one::<String>("SELECT start_sample||'-'||end_sample FROM morlet_time_to_samples(1.0::float8/60,0,59999999999,60000000000)").unwrap().unwrap(), "1-1");
+    }
+
     fn acquisition_fixture() {
         // Two acquisitions a day apart; each: vib 1 kHz (offset 0) and current 100 Hz (offset 5 ms),
         // 20 s, blocks N1 [0,10 s) and N2 [10 s,20 s), one part each. A2's N1 vibration is louder.
