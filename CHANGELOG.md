@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.9-alpha.1
 
-SQL version 0.3.7, with an update script from 0.3.6.
+SQL version 0.3.7, with an update script from 0.3.6. Python SDK unchanged (0.1.0a2). The chunk format is unchanged;
+existing collections keep their layout.
 
 - **Extensions on demand (#315):** pg_morlet can be loaded from a directory outside the server's installation, such
   as an image volume, on PostgreSQL 18 and later: `extension_control_path` names its control and SQL files and
