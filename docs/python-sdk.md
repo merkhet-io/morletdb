@@ -4,9 +4,10 @@
 timing and metadata, read exact sample intervals, search for similar intervals, and resolve every result to
 the stored samples. It wraps pg_morlet's SQL functions and adds no database features of its own.
 
-- Package: `morletdb` 0.1.0a2 (alpha), Python 3.10+, depends on `numpy` and `psycopg` 3 only; plotting
+- Package: `morletdb` 0.1.0a2 (alpha), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
   (`[plot]` extra, matplotlib) is optional and used only by the example.
-- Not published yet: `pip install "./sdk/python[plot]"` from a checkout.
+- Not on PyPI yet: install a release wheel ([releases](releases.md#install-the-python-sdk)), or
+  `pip install "./sdk/python[plot]"` from a checkout.
 - Example: [`examples/python/quickstart.py`](../examples/python/quickstart.py), synthetic data, no download.
 - Servers: pg_morlet SQL 0.3.2 (release image `0.3.3-alpha.1`) and later. On SQL 0.3.3 (release image
   `0.3.4-alpha.1`) the SDK sends and
@@ -33,7 +34,7 @@ python -m venv .venv && . .venv/bin/activate && pip install "./sdk/python[plot]"
 DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet python examples/python/quickstart.py
 ```
 
-The example stores two two-minute recordings at 8 kHz with "impacts" and "electrical transients" at known
+The example stores two recordings of two minutes each at 8 kHz with "impacts" and "electrical transients" at known
 times, reads 0.5 s of the first impact by time, searches from it, prints the ranked matches with their time
 and generated event, and saves `quickstart.png` (the query and its three best matches). On the release image
 it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the electrical transients follow
