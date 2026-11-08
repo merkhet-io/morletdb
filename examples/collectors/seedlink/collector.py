@@ -151,6 +151,7 @@ class Store:
         if create:
             schema, _, name = collection.rpartition(".")
             with self.conn.transaction():
+                self.conn.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
                 if self.conn.execute("SELECT to_regclass(%s)", (collection,)).fetchone()[0] is None:
                     self.conn.execute("SELECT morlet_create_stream_collection(%s,%s)", (schema or "public", name))
                     self.conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (collection,))
