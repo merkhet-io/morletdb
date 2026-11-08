@@ -28,6 +28,16 @@ and context, does everything it acknowledged survive, bit for bit, and is everyt
   restart. It makes no cut between 02:45 and 03:45 (another job on the Pi).
 - **Samples** are a deterministic function of their index (`writer.values`), so any range can be regenerated.
 
+## Stages
+
+- **P1a, hard resets (no plug):** the controller makes the box restart at once through the kernel (`sysrq-b`: no
+  cache write-out, no unmount), over SSH with a key that can do nothing else (`/usr/local/sbin/pc-hard-reset`). This
+  loses everything in RAM, PostgreSQL's and the operating system's, like a power cut, but the SD card keeps its power.
+  It tests PostgreSQL's crash recovery and MorletDB's consistency, not whether the SD card honours flushes. Controller:
+  `--switch "cmd:ssh -i /keys/pc_reset ... dana@<box> true;;true"` (the box restarts by itself).
+- **P1b, power cuts (with the plug):** the same 300 cycles with `--switch shelly:<host>`; only P1b closes #190. If P1a
+  passes and P1b fails, the difference is the storage hardware.
+
 ## Procedure
 
 1. **Dry run (not counted):** 5 cycles with `--switch manual` (a person pulls the plug when told), then 5 with the
