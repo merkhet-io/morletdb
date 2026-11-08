@@ -10,4 +10,4 @@ confirmation data; results in its `RESULTS.md`).
 
 References: [`related.bib`](related.bib) (verified; notes in [`RELATED_NOTES.md`](RELATED_NOTES.md)),
 [`own.bib`](own.bib). Build: `tectonic -X compile spikes.tex` in this directory (Tectonic 0.17.0).
-Not peer reviewed; not yet released.
+Not peer reviewed; not yet released. Text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0.
