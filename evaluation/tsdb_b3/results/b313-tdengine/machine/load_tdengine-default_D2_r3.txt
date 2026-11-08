@@ -1,0 +1,22 @@
+2026-11-05T14:25:24
+14:25  up 8 days, 23:21, 13 users, load averages: 8.63 6.81 6.38
+ %CPU COMM
+303.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 97.2 /opt/homebrew/bin/tectonic
+ 67.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 62.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 41.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 33.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 18.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 16.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-05T14:26:19
+14:26  up 8 days, 23:22, 13 users, load averages: 9.25 7.31 6.59
+ %CPU COMM
+336.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+116.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 96.5 /opt/homebrew/bin/tectonic
+ 84.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 38.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 35.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 27.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 14.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

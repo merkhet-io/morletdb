@@ -1,0 +1,22 @@
+2026-11-06T15:56:32
+15:56  up 10 days, 52 mins, 17 users, load averages: 7.68 5.69 5.15
+ %CPU COMM
+181.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 44.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 26.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  8.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  4.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.0 claude
+  2.3 /usr/sbin/screencapture
+2026-11-06T15:56:52
+15:56  up 10 days, 52 mins, 17 users, load averages: 7.63 5.80 5.20
+ %CPU COMM
+202.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 82.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  8.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.6 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+  3.3 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
+  1.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.8 /usr/libexec/airportd
+  0.7 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha

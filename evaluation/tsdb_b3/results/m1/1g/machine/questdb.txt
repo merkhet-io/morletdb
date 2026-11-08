@@ -1,0 +1,13 @@
+2026-11-06T18:57:58
+18:57  up 10 days,  3:54, 17 users, load averages: 4.06 3.55 3.03
+ %CPU COMM
+163.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+107.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 33.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 23.4 /System/Applications/Weather.app/Contents/PlugIns/WeatherWidget.appex/Contents/MacOS/WeatherWidget
+ 14.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  6.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  5.7 /System/Library/CoreServices/NotificationCenter.app/Contents/MacOS/NotificationCenter
+  3.9 /usr/sbin/coreaudiod
+2026-11-06T18:58:47
+18:58  up 10 days,  3:54, 17 users, load averages: 9.97 5.15 3.64

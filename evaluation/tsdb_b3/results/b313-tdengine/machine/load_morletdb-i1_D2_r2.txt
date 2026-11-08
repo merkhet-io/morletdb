@@ -1,0 +1,22 @@
+2026-11-05T14:22:40
+14:22  up 8 days, 23:18, 13 users, load averages: 6.59 6.19 6.15
+ %CPU COMM
+352.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+183.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 86.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 59.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 34.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 21.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 18.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 16.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+2026-11-05T14:23:01
+14:23  up 8 days, 23:19, 13 users, load averages: 6.53 6.20 6.15
+ %CPU COMM
+274.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 63.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 52.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 40.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 24.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 22.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+ 19.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 16.0 /Applications/iTerm.app/Contents/MacOS/iTerm2

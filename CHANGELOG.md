@@ -1,5 +1,183 @@
 # Changelog
 
+## 0.3.9-alpha.1
+
+SQL version 0.3.7, with an update script from 0.3.6. Python SDK unchanged (0.1.0a2). The chunk format is unchanged;
+existing collections keep their layout.
+
+- **Extensions on demand (#315):** pg_morlet can be loaded from a directory outside the server's installation, such
+  as an image volume, on PostgreSQL 18 and later: `extension_control_path` names its control and SQL files and
+  `dynamic_library_path` its library. The control file's `module_pathname` is now `pg_morlet` instead of
+  `$libdir/pg_morlet`, so the C functions find the library through `dynamic_library_path` (default `$libdir`:
+  ordinary installations are unchanged). The update from 0.3.6 redefines the existing C functions with the new path
+  (`CREATE OR REPLACE`, same OIDs; no data or table changes). Tested in CI on PostgreSQL 18 and 19
+  (`tests/on_demand.sh`): the server's own copy is moved aside, and `CREATE EXTENSION`, an append, a read and
+  interval statistics work from the separate directory.
+- **Extension-only image (#315):** each release publishes `ghcr.io/merkhet-io/pg_morlet:<version>-pg18` (amd64,
+  arm64): pg_morlet's control, SQL and library files and nothing else, under `/share/extension` and `/lib`, with build
+  provenance. Mount it as an image volume (or copy its files) and set the two paths above. The release workflow
+  builds it from the Debian package's build stage and trials it mounted into a clean `postgres:18` image
+  (`deploy/extension_trial.sh`: install, append, read, statistics, restart) before pushing. PostgreSQL 19 follows
+  19.0.
+
+## 0.3.8-alpha.1
+
+SQL version 0.3.6, with an update script from 0.3.5. Python SDK 0.1.0a2. The chunk format is unchanged; existing
+collections keep their layout (the update pins their bulk columns to pglz, catalog only).
+
+- **Ingest hold and the steward (#287):** `tools/steward` keeps an edge database healthy without a DBA.
+  - It runs the rebuildable upkeep (envelopes, summaries, roll-ups, context values, verify, analyze) in one budgeted
+    loop, gated by load and the disk.
+  - It records every action and shows one plain status.
+  - At the disk reserve it sets `morlet_ingest_hold`: appends that would store new samples then fail with SQLSTATE
+    53100 and the reason, before PostgreSQL itself runs out of disk. It releases the hold when space is free again.
+  - Its role cannot remove stored samples.
+  - Changes to stored samples and extension updates are plans: proposed by the steward or a person, approved by
+    another person with `morlet_approver`, and applied by a person in one transaction. Rules: no self-approval, the
+    payload tied to the approved hash, 24-hour expiry, applied once; enforced in SQL.
+- **Synchronous channel groups (#292):** an acquisition sampled at the same instants (one DAQ, one rate) can be
+  declared synchronous (`morlet_enable_sync`, `morlet_declare_sync`). Its members are then:
+  - appended together in one transaction (`morlet_append_acquisition_raw`);
+  - read by sample index, failing closed (`morlet_read_sync_raw`);
+  - summarised exactly across channels (`morlet_acquisition_cross_stats`: mean(a·b), such as real power, bitwise the
+    same for any chunking).
+
+  Single-member appends, partial memory moves and new channels are refused, and `morlet_verify` reports misaligned
+  groups. See [docs/context-workflow.md](docs/context-workflow.md#synchronous-channel-groups-sql-036-292).
+- **Exact search is 10x faster on small machines:** prepared query matrices (exact scoring and screening) are
+  used only when they fit a quarter of the CPU's last-level cache; otherwise windows are scored directly, with
+  bitwise the same distances.
+  - On a Raspberry Pi 3B+, an N1 query (1,341 windows of 16,384 samples) drops from 15.1 s to 1.5 s.
+  - Desktops are unchanged.
+  - Override with `MORLET_SCORE_CACHE_BYTES`.
+  - See [evaluation/edge_latency](evaluation/edge_latency/RESULTS.md).
+- **Commit notifications (#205):** `morlet_enable_notifications(collection, channel, detail)` sends one
+  `pg_notify` per committed transaction that stored new chunks, with the stored sample ranges per recording
+  (payload version 1). Rolled-back transactions, savepoints and identical replays send nothing.
+  - `detail => false` sends counts only; row security requires it.
+  - Python SDK: `Client.enable_notifications`, `Client.notifications`. The SDK now needs psycopg 3.2.
+  - Tested with a real listener session (`tests/notifications.sh`).
+- **PostgreSQL 19 (#196, #280):** pg_morlet builds and passes its full test suite on PostgreSQL 19 (release
+  candidate 19rc1; CI with and without pgvector 0.8.7), with pgrx 0.19.3 and Rust 1.99.0 (from 0.16.1 and 1.91.1).
+  - PostgreSQL 19 defaults to lz4 TOAST compression. Every column holding samples, or values derived from them, now
+    names pglz, and the update pins the columns of existing collections. `morlet_pin_toast_compression(collection)`
+    does the same for one collection (catalog only).
+  - On the B3 set, PostgreSQL 19 stores exactly the bytes PostgreSQL 17 does
+    ([evaluation/toast_compression](evaluation/toast_compression/RESULTS.md)). Unpinned, lz4 would change encoded
+    chunks by 0.016% and legacy float8[] chunks by −19%.
+  - Release images and Debian packages for 19 follow 19.0.
+- **History counts independent observations (#224):** `morlet_compare_to_history`, `morlet_compare_summary`,
+  `morlet_history_neighbors`, `morlet_level_track` and the pooled spreads take history only from segments built with
+  the query segment's segmentation spec (keys, occurrence keys, `min_samples`, `trim_samples`), and never from a
+  segment that overlaps the query segment's own samples. Before, building one interval's segments with several
+  settings made the interval count as its own history, so a comparison could report `status = ok` without any
+  independent observation. History built with other settings now gives `insufficient_history` until it is rebuilt
+  with the query's settings.
+- **Newest data (#206):** `morlet_latest(collection, n, metadata_filter, max_recordings)` returns every matching
+  recording's last `n` samples (1..32,768) with their statistics, or with `n = 0` the statistics of its newest
+  stored chunk, and the end time, at a fixed number of index lookups per recording (0.4–1.6 ms per recording on
+  a laptop, the same for 10 and 10,000 chunks). Unreadable newest samples (compacted, or a gap) are reported in
+  `note` without failing the call. MCP tool `latest` and SDK method `Client.latest`.
+- **Not found versus not searched (#215):** `morlet_coverage(collection, recording_ids, window_size)` splits
+  every recording into ranges that are searchable, not indexed, out of search by a memory level, represented,
+  summarized, gone or missing. The MCP server adds a `scope` to every search result (recordings and windows
+  searched, the periods not searched and why, event-library entries in range), `coverage` reports the same per
+  group, and the server instructions tell agents to state the scope with every negative result.
+- **Search refuses over-budget queries in seconds (#279):** screened exact search counts the eligible windows,
+  refuses above `max_candidates` and only then scores the kept windows, and the screen stays linear when many
+  windows tie (constant windows all have distance 1). On 2 million all-zero windows the refusal took 2 min 48 s
+  and now takes 2.7 s; results and latency on E7's development gallery are unchanged.
+- **Idle stretches no longer slow exact search (#284):** the screen gives an exactly constant window its known
+  distance 1 with no error bound, instead of an infinite bound that sent every such window to exact scoring. On a
+  dev gallery where half the windows are idle, the median screened search drops from 253 ms to 65 ms; results
+  are bit-identical, and galleries without idle stretches are unchanged. Nearly constant windows keep the
+  infinite bound. E7's frozen protocol describes the earlier rule.
+- **Exact roll-ups (#219):** `morlet_enable_rollups` and the resumable `morlet_build_rollups` store exact merges of
+  chunk summaries in blocks of 2^20, 2^25 and 2^30 samples. `morlet_interval_stats` and `morlet_interval_overview`
+  take the coarsest roll-ups that fit each part of the interval (and each bucket), then finer ones and chunks at
+  the edges, with bitwise the same results as from the chunks alone. On a year of one 64 kHz channel (61.6M chunks; dev machine, load about 3.5) year statistics take 17 ms instead of 173 s, 365 daily buckets 137 ms instead of 170 s, one day 9 ms instead of 0.4 s, all bit for bit equal; building the roll-ups took 11 minutes. Roll-ups survive memory levels
+  2 and 3, go with the samples forgotten at level 4, follow row security, and are skipped for a reader who may not
+  read them.
+- **Interval statistics merge exactly (#219):** each chunk's part is still summed with compensation, but the parts
+  are now merged in exact arithmetic and rounded once (`morlet_core::exactstats`), so results no longer depend on
+  how an interval is split or in which order pieces are merged. Mean and RMS over more than one chunk can differ
+  from 0.3.5 in the last bits; the mean of a single chunk is unchanged. Stored chunk summaries stay valid.
+- **Tiny signals (#228):** normalization, distances, RMS and envelopes keep their shape for amplitudes down to
+  1e-300; ordinary inputs give bit-identical results.
+
+## 0.3.7-alpha.1
+
+SQL version 0.3.5, with an update script from 0.3.4.
+
+- **Integrity scrub (#193):** `morlet_verify(collection, after_recording, max_recordings)` re-reads every chunk of a
+  batch of recordings and reports, per recording, every problem it finds without changing data: a chunk that does
+  not decode (structure, CRC-32C) to its `sample_count`, a missing or wrong chunk summary, gaps or overlaps between
+  chunks, and chunks that do not end at the checkpoint. Helper `morlet_check_chunk`. Command-line wrapper
+  `tools/verify/morlet_verify.py` (batches in read-only transactions, optional pause, exit status 1 on problems).
+  Operations docs explain how it complements PostgreSQL's data checksums.
+- **Episodic memory, phase 1 (#221, [design](docs/memory-design.md)):** `morlet_enable_memory` adds episodes, runs, a
+  ledger and kept summaries to a collection; `morlet_add_episodes` registers sample intervals with context,
+  importance and an exemption flag; `morlet_set_level` moves episodes down the compaction ladder (1 not searchable,
+  2 represented by another episode, 3 summarized, 4 gone) in one transaction, with a dry run, removing only rows
+  entirely inside the episode that no overlapping episode at a lower level needs, and writing one ledger row per
+  move (what was removed, md5 of the removed chunks). Reads of compacted samples fail with the level and ledger
+  entry; interval statistics use kept summaries and stay bitwise exact on chunk boundaries; the envelope builder
+  skips episodes taken out of search; `morlet_verify` accepts compacted data. `morlet_memory_status` reports
+  episodes per level. Policies that decide the moves come in phase 2.
+- **Compressed transfer ([design](docs/compressed-transfer.md)):** `morlet_read_interval_encoded` returns an
+  interval's stored chunks unchanged in one frame, under the same visibility, checkpoint and coverage checks as
+  `morlet_read_interval_raw`, without decoding them (helper `morlet_frame_chunks`); chunks of a format version the
+  client does not decode are sent as samples instead. New crate `crates/morlet-ffi`: the chunk decoder behind a C
+  interface. The Python SDK uses it through `ctypes` for reads of at least 32,768 samples, verifies every chunk's
+  checksum, and falls back to raw reads without the library or on older servers (`MORLETDB_TRANSFER`).
+- **SDK wheels:** releases attach Python SDK wheels with the native decoder for Linux x86-64 and arm64 and macOS
+  arm64, each installed and tested from the installed package before release, and a pure wheel for other platforms
+  (`sdk/python/build_wheel.py`, workflow `sdk-wheels.yml`, also run on SDK and decoder pull requests).
+- **Chunk summaries by default:** `morlet_create_stream_collection` creates the chunk table with its `summary`
+  column, so every new collection stores chunk summaries and interval statistics read them instead of decoding
+  (about 2% of ingestion speed and 1% of storage). Existing collections are unchanged;
+  `morlet_enable_chunk_summaries` still adds them.
+- **Long reads decode on worker threads:** interval reads of at least 8 chunks (`morlet_read_interval`,
+  `morlet_read_interval_raw`) decode their chunks on up to `morlet.decode_threads` threads (1..64, default up to 4;
+  1 = the backend's own thread). Results are identical. Development set: 128,000-sample reads 41% faster inside
+  the server, 15% from the client ([reads_r2](evaluation/reads_r2/ATTRIBUTION.md)).
+
+## 0.3.6-alpha.1
+
+SQL version 0.3.4, with an update script from 0.3.3 (`ALTER EXTENSION pg_morlet UPDATE`; data and policies are not
+modified). Fixes from the 2026-11-04 review:
+
+- **Search budget on the probe route (#226).** `morlet_search_similar` now passes `max_candidates` to probe search
+  and rejects values below 1. When probe search falls back to exact search for a small gallery, more eligible
+  windows than `max_candidates` is an error, as on the exact path; on the approximate route, more candidates
+  (probes × `per_probe`) than `max_candidates` is an error. `morlet_search_envelope_probes` gains a trailing
+  `max_candidates` argument (default 1,000,000).
+- **Concurrent identical acquisitions (#227).** `morlet_create_acquisition` and `morlet_add_acquisition_channel`
+  serialize per acquisition (and per recording) with transaction-scoped advisory locks: a concurrent identical
+  call returns false instead of failing with a unique violation; conflicting attributes and a role already
+  taken are still refused, with a message. Row-security behaviour is unchanged.
+- **Concurrent envelope builders (#225).** `morlet_build_envelopes` serializes per recording and window size, so
+  two builders with different strides cannot both commit a mixed grid; an identical concurrent build resumes
+  after the other's windows.
+- Regression test `tests/sql034_fixes.sh` (two sessions; run by `ci_local.sh` with pgvector).
+
+Faster single-connection ingestion (I1, #233):
+- **`morlet_append_chunks_raw(collection, recording_id, start_sample, samples bytea, chunk_size)`** appends a
+  run of consecutive chunks (raw little-endian float64, up to 262,144 samples) in one call; the server cuts it
+  into chunks of `chunk_size`. It stores exactly what one `morlet_append_chunk_raw` call per chunk stores
+  (chunks, summaries, segments, checkpoint), with the same privileges, row security and errors; retries and
+  overlaps go through the per-chunk path. Helper `morlet_chunk_batch` does the per-chunk work in one call.
+- **Encoding on worker threads:** `morlet_chunk_batch` encodes a batch's chunks on up to `morlet.encode_threads`
+  threads (1..64, default up to 4; 1 = the backend's own thread). Output and errors do not depend on the setting.
+- **Verified appends:** with `morlet.verify_appends` on (the default), each chunk of a batch is decoded again on
+  the encoding threads and compared bit for bit with its input samples, so every chunk stored through
+  `morlet_append_chunks_raw` is proven lossless; off relies on the codec's tests. The chunk tables' CHECK
+  constraint no longer decodes chunks the append path has just encoded itself (it still decodes every other insert
+  or update in full). Development set: 4–5% faster than before with verification, 6–7% without.
+- **Importer:** 256 chunks per transaction by default (was 16); `--rpc-chunks` defaults to automatic (batched
+  raw appends when the server has them, otherwise one chunk per call); `import_files(..., conn=...)` reuses a
+  caller-owned connection; reports add `commit_wait_s`, `raw_batch` and the resolved `rpc_chunks`.
+
 ## 0.3.5-alpha.1
 
 The same SQL version 0.3.3 and extension code as 0.3.4-alpha.1; no `ALTER EXTENSION` update is needed.

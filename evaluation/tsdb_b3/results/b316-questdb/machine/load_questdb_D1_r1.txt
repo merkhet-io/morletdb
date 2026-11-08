@@ -1,0 +1,22 @@
+2026-11-06T17:22:32
+17:22  up 10 days,  2:18, 17 users, load averages: 7.25 5.12 2.99
+ %CPU COMM
+186.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+108.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 41.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  8.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.3 /usr/libexec/duetexpertd
+  2.0 claude
+2026-11-06T17:22:53
+17:22  up 10 days,  2:19, 17 users, load averages: 8.02 5.41 3.14
+ %CPU COMM
+201.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+107.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 53.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 30.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 15.4 /sbin/launchd
+ 14.0 claude
+ 13.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

@@ -1,0 +1,22 @@
+2026-11-06T14:05:29
+14:05  up 9 days, 23:01, 17 users, load averages: 11.05 9.16 6.28
+ %CPU COMM
+285.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 26.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 14.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  2.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  2.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  1.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  1.7 /usr/libexec/airportd
+2026-11-06T15:06:26
+15:06  up 10 days, 2 mins, 17 users, load averages: 8.40 8.68 6.18
+ %CPU COMM
+466.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 55.5 /usr/libexec/dasd
+ 23.6 /usr/libexec/airportd
+ 22.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.7 /usr/libexec/runningboardd
+ 15.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.2 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+  9.3 claude

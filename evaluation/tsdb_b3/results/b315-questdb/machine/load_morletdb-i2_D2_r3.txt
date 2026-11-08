@@ -1,0 +1,22 @@
+2026-11-06T15:55:54
+15:55  up 10 days, 52 mins, 17 users, load averages: 6.42 5.36 5.02
+ %CPU COMM
+144.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 54.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.7 /usr/libexec/sysmond
+  4.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.5 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+  1.2 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
+  1.0 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.0 bash
+2026-11-06T15:56:12
+15:56  up 10 days, 52 mins, 17 users, load averages: 5.82 5.27 5.00
+ %CPU COMM
+272.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 83.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 12.5 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+  7.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.1 /Applications/Slack.app/Contents/MacOS/Slack
+  1.8 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2

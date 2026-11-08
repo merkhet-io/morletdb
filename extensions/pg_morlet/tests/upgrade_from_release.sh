@@ -22,7 +22,22 @@ NEW_VERSION=$(sed -n "s/^default_version = '\(.*\)'/\1/p" "$EXT/pg_morlet.contro
 WORK=$(mktemp -d)
 trap 'git -C "$ROOT" worktree remove --force "$WORK/old" >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
 psql() { "$BIN/psql" -h localhost -p "$PORT" -v ON_ERROR_STOP=1 -qAtX "$@"; }
-install() { (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" cargo pgrx install --release --pg-config "$PG_CONFIG" >/dev/null); }
+# A ref builds with the cargo-pgrx of its own Cargo.lock. Released refs use pgrx 0.16.1; when this checkout uses
+# another version, MORLET_RELEASE_CARGO_PGRX names a cargo-pgrx binary of the released version.
+pgrx_for() {
+  local want have
+  want=$(awk '$0=="name = \"pgrx\"" {getline; gsub(/version = |"/,""); print}' "$1/Cargo.lock")
+  have=$(cargo pgrx --version | awk '{print $2}')
+  if [ "$want" = "$have" ]; then echo "cargo pgrx"; return; fi
+  if [ -z "${MORLET_RELEASE_CARGO_PGRX:-}" ] || [ "$("$MORLET_RELEASE_CARGO_PGRX" pgrx --version | awk '{print $2}')" != "$want" ]; then
+    echo "$1 needs cargo-pgrx $want (this checkout: $have): set MORLET_RELEASE_CARGO_PGRX to one" >&2; return 1
+  fi
+  echo "$MORLET_RELEASE_CARGO_PGRX pgrx"
+}
+install() {
+  local pgrx; pgrx=$(pgrx_for "$1")
+  (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" $pgrx install --release --pg-config "$PG_CONFIG" >/dev/null)
+}
 # A released ref never changes: with MORLET_UPGRADE_CACHE set, its packaged files (library, control and SQL,
 # at their absolute install paths) are built once, kept there and copied into place on later runs.
 install_release() {
@@ -31,7 +46,8 @@ install_release() {
   key="$cache/$OLD_REF-pg$PG_MAJOR"
   if [ ! -d "$key" ]; then
     rm -rf "$key.tmp"
-    (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" cargo pgrx package --pg-config "$PG_CONFIG" --out-dir "$key.tmp" >/dev/null)
+    local pgrx; pgrx=$(pgrx_for "$1")
+    (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" $pgrx package --pg-config "$PG_CONFIG" --out-dir "$key.tmp" >/dev/null)
     mv "$key.tmp" "$key"
   else
     echo "$OLD_REF: packaged build from $cache"
@@ -53,7 +69,28 @@ SELECT 'summary', round(score::numeric, 12), round(score_quantile::numeric, 12),
   FROM morlet_compare_summary('line', (SELECT max(segment_id) FROM line_ctx_segments), min_history=>1);
 SELECT 'labels', recording_id, label, start_sample, end_sample FROM line_labels ORDER BY 2;
 SQL
+  # Derived data of later releases (#195): chunk summaries (0.3.3), the integrity check (0.3.5), roll-ups and
+  # coverage (0.3.6), written by the old release and read back after the update.
+  if ver_ge "$OLD_VERSION" 0.3.3; then psql -d "$1" <<'SQL'
+SELECT 'stats', r.recording_id, iv.a, s.sample_count, s.min, s.max, round(s.mean::numeric, 12), round(s.rms::numeric, 12)
+  FROM line r, (VALUES (0::bigint, 16000::bigint), (100, 15900), (4096, 8192)) iv(a, b),
+       morlet_interval_stats('line', r.recording_id, iv.a, iv.b) s ORDER BY 2, 3;
+SQL
+  fi
+  if ver_ge "$OLD_VERSION" 0.3.5; then
+    psql -d "$1" -c "SELECT 'verify', recording_id, chunks, samples, problems FROM morlet_verify('line') ORDER BY 2"
+  fi
+  if ver_ge "$OLD_VERSION" 0.3.6; then psql -d "$1" <<'SQL'
+SELECT 'rollups', level, block, start_sample, end_sample, md5(summary::text) FROM roll_rollups ORDER BY 2, 3;
+SELECT 'rollup-stats', iv.a, s.sample_count, s.min, s.max, round(s.mean::numeric, 9), round(s.rms::numeric, 9)
+  FROM (VALUES (0::bigint, 1310720::bigint), (0, 1048576), (12345, 1300000)) iv(a, b),
+       morlet_interval_stats('roll', 'r1', iv.a, iv.b) s ORDER BY 2, 3;
+SELECT 'coverage', recording_id, start_sample, end_sample, state, windows FROM morlet_coverage('line') ORDER BY 2, 3;
+SELECT 'verify-roll', recording_id, chunks, samples, problems FROM morlet_verify('roll') ORDER BY 2;
+SQL
+  fi
 }
+ver_ge() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$2" ]; }
 
 catalog() {
   psql -d "$1" <<'SQL'
@@ -95,6 +132,23 @@ SELECT morlet_build_context_segments('line', p, ARRAY['block'], ARRAY['part']) F
 SELECT morlet_build_context_values('line', p) FROM unnest(ARRAY['p1','p2','p3']) p;
 SELECT morlet_add_label('line', 'p2', 8000, 16000, 'checked', 'upgrade test');
 SQL
+if ver_ge "$OLD_VERSION" 0.3.3; then psql -d morlet_upgrade_rel_old <<'SQL'
+SELECT morlet_enable_chunk_summaries('line');
+SELECT morlet_build_chunk_summaries('line', p, 1000) FROM unnest(ARRAY['p1','p2','p3']) p;
+SQL
+fi
+if ver_ge "$OLD_VERSION" 0.3.6; then psql -d morlet_upgrade_rel_old <<'SQL'
+SELECT morlet_create_stream_collection('public', 'roll');
+SELECT morlet_enable_chunk_summaries('roll');
+SELECT morlet_enable_rollups('roll');
+SELECT morlet_start_recording('roll', 'r1', 1000, 'vib', 'g', '{}', 512, 256, 'zscore', 'none', 0.001);
+SELECT morlet_append_chunk('roll', 'r1', c*32768, ARRAY(SELECT round(sin(i/7.)::numeric + (i % 1000) / 1000., 3)::float8
+  FROM generate_series(c*32768, c*32768+32767) i)) FROM generate_series(0, 39) c;
+SELECT morlet_build_chunk_summaries('roll', 'r1', 1000);
+SELECT morlet_build_rollups('roll', 'r1');
+DO $$ BEGIN IF (SELECT count(*) FROM roll_rollups) = 0 THEN RAISE EXCEPTION 'no roll-ups built'; END IF; END $$;
+SQL
+fi
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$OLD_VERSION"
 snapshot morlet_upgrade_rel_old > "$WORK/before.txt"
 test "$(wc -l < "$WORK/before.txt")" -gt 20
@@ -113,8 +167,15 @@ echo "ok: $OLD_VERSION SQL with the new library returns identical results"
 case "$OLD_VERSION" in
   0.3.1) BLOCKER="public.morlet_search_similar(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer)" ;;
   0.3.2) BLOCKER="public.morlet_decode_interval_raw(bytea[], bigint[], bigint, bigint)" ;;
+  0.3.4) BLOCKER="public.morlet_verify(regclass, text, integer)" ;;
+  0.3.5) BLOCKER="public.morlet_coverage(regclass, text[], integer)" ;;
+  0.3.6) BLOCKER="" ;;   # 0.3.6 -> 0.3.7 only redefines C functions with a new library path: nothing new to block
+  0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
 esac
+if [ -z "$BLOCKER" ]; then
+  echo "skip: the update from $OLD_VERSION creates no function, so a failed update cannot be provoked by a blocker"
+else
 psql -d morlet_upgrade_rel_old -c "CREATE FUNCTION $BLOCKER RETURNS void LANGUAGE sql AS ''"
 if psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE" 2>/dev/null; then
   echo "FAIL: the blocked update succeeded"; exit 1
@@ -124,12 +185,21 @@ snapshot morlet_upgrade_rel_old > "$WORK/failed.txt"
 diff "$WORK/before.txt" "$WORK/failed.txt"
 psql -d morlet_upgrade_rel_old -c "DROP FUNCTION $BLOCKER"
 echo "ok: a failed update rolls back; $OLD_VERSION stays installed and reads are identical"
+fi
 
 psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
 snapshot morlet_upgrade_rel_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
 echo "ok: updated to $NEW_VERSION; reads, envelope search and comparisons are identical"
+# The update pins TOAST compression of every existing collection's bulk columns to pglz (#280).
+pins=$(psql -d morlet_upgrade_rel_old -c "SELECT count(*) FILTER (WHERE a.attcompression='p')||' '||count(*)
+  FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid
+  WHERE c.relnamespace='public'::regnamespace AND c.relkind='r' AND a.attnum>0 AND NOT a.attisdropped
+    AND a.atttypid IN ('bytea'::regtype,'float8[]'::regtype)")
+read -r pinned total <<<"$pins"
+[ "$total" -gt 0 ] && [ "$pinned" = "$total" ] || { echo "FAIL: $pinned of $total bulk columns pinned to pglz"; exit 1; }
+echo "ok: all $total bulk columns of the existing collections are pinned to pglz"
 
 psql -d morlet_upgrade_rel_old <<'SQL'
 SELECT morlet_enable_acquisitions('line');

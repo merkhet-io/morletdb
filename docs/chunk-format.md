@@ -91,6 +91,13 @@ the table can write a valid chunk.
 - **A future version 4** must keep decoding versions 2 and 3.
 - `float8[]` collections from pg_morlet 0.1.0 are a separate layout, detected
   per collection, and remain supported (see durable-ingestion.md, Upgrading).
+- **Chunks on the wire (SQL 0.3.5):** `morlet_read_interval_encoded` sends stored
+  chunks unchanged to clients that decode them ([compressed-transfer.md](compressed-transfer.md)),
+  in a frame (`MTX1`: interval, then start sample, length and bytes per chunk,
+  CRC-32C over the frame; `morlet_core::transfer`). A client passes the highest
+  version it decodes, and the server sends decoded samples (`MTR1` frame) instead
+  of any chunk of a newer version, so a client never has to guess a format. A
+  client decoder must verify each chunk's own checksum, as the server does.
 
 ## Why own the format instead of depending on a codec library
 

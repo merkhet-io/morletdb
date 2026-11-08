@@ -83,6 +83,28 @@ Three kinds of progress are recorded separately:
 - **Idempotency:** repeating an identical append is a no-op. Rebuilding envelopes skips stored
   windows (`ON CONFLICT DO NOTHING`). Neither implies exactly-once processing.
 
+## Not found versus not searched (SQL 0.3.6)
+
+A search returns only stored windows, so a search without a match means "no close window among the windows
+searched", never "this did not happen". `morlet_coverage(collection, recording_ids DEFAULT NULL,
+window_size DEFAULT NULL)` says which samples a search can find. It splits each recording's samples
+`0..checkpoint end` into ranges, each in exactly one state:
+
+| State | Meaning | Readable |
+|---|---|---|
+| `searchable` | inside a stored window of `window_size` (of any size when NULL); `windows` counts them | yes |
+| `not_indexed` | stored at level 0, but no window covers it: not built yet, or a tail shorter than a window | yes |
+| `not_searchable` | stored, but out of search at a [memory level](memory-design.md) of 1 or above | yes |
+| `represented` | level 2: samples removed; found only through its cluster's representative | no |
+| `summarized` | level 3: chunk summaries only | no |
+| `gone` | level 4: not in the database (the ledger names any cold copy) | no |
+| `missing` | never stored: a gap between chunks | no |
+
+A sample's level is the lowest level of the episodes that contain it, as for compaction. The function reads every
+stored window of the selected recordings (about 1.3 µs per window), so pass `recording_ids` for large collections. Report every negative
+result together with what was not searched. The MCP server does this for agents: every search result carries
+a `scope` ([MCP](mcp.md#not-found-versus-not-searched)).
+
 ## Probe path: candidates, coverage and snapshots
 
 - **Fixed budget, no refill.** Each probe returns at most `per_probe` rows; source exclusion,

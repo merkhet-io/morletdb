@@ -1,0 +1,167 @@
+{
+ "image": "morletdb:b310",
+ "started": "2026-11-05T11:55:50",
+ "load_average": "11:55  up 8 days, 20:51, 12 users, load averages: 4.78 6.12 5.34",
+ "loads": [
+  {
+   "arm": "morletdb-033",
+   "rep": 1,
+   "samples_per_s": 6222381,
+   "correct": true,
+   "gc_counts": [
+    775,
+    11,
+    6
+   ],
+   "gc_objects": 87279,
+   "maxrss_mib": 1291.4,
+   "a_same_process": {
+    "R1": 0.741,
+    "R2": 7.642,
+    "R3": 8.606,
+    "R4_recent": 0.688,
+    "R4_older": 0.634,
+    "R5": 0.973,
+    "analytics": 2.573
+   },
+   "b_fresh_process": {
+    "R1": 0.628,
+    "R2": 7.006,
+    "R3": 7.58,
+    "R4_recent": 0.639,
+    "R4_older": 0.628,
+    "R5": 0.843,
+    "analytics": 2.629
+   },
+   "c_same_process_after_gc": {
+    "R1": 0.649,
+    "R2": 7.272,
+    "R3": 8.933,
+    "R4_recent": 0.669,
+    "R4_older": 0.61,
+    "R5": 0.908,
+    "analytics": 2.578
+   }
+  },
+  {
+   "arm": "morletdb-i1",
+   "rep": 1,
+   "samples_per_s": 13118324,
+   "correct": true,
+   "gc_counts": [
+    394,
+    4,
+    2
+   ],
+   "gc_objects": 86059,
+   "maxrss_mib": 1432.6,
+   "a_same_process": {
+    "R1": 0.656,
+    "R2": 6.896,
+    "R3": 8.35,
+    "R4_recent": 0.761,
+    "R4_older": 0.67,
+    "R5": 1.151,
+    "analytics": 2.548
+   },
+   "b_fresh_process": {
+    "R1": 0.631,
+    "R2": 6.692,
+    "R3": 7.185,
+    "R4_recent": 0.637,
+    "R4_older": 0.609,
+    "R5": 0.825,
+    "analytics": 2.537
+   },
+   "c_same_process_after_gc": {
+    "R1": 0.624,
+    "R2": 6.787,
+    "R3": 7.779,
+    "R4_recent": 0.635,
+    "R4_older": 0.613,
+    "R5": 0.807,
+    "analytics": 2.562
+   }
+  },
+  {
+   "arm": "morletdb-033",
+   "rep": 2,
+   "samples_per_s": 6219399,
+   "correct": true,
+   "gc_counts": [
+    135,
+    1,
+    2
+   ],
+   "gc_objects": 85645,
+   "maxrss_mib": 1455.0,
+   "a_same_process": {
+    "R1": 0.652,
+    "R2": 7.021,
+    "R3": 7.962,
+    "R4_recent": 0.631,
+    "R4_older": 0.613,
+    "R5": 1.004,
+    "analytics": 2.663
+   },
+   "b_fresh_process": {
+    "R1": 0.633,
+    "R2": 6.944,
+    "R3": 7.482,
+    "R4_recent": 0.637,
+    "R4_older": 0.617,
+    "R5": 0.805,
+    "analytics": 2.554
+   },
+   "c_same_process_after_gc": {
+    "R1": 0.619,
+    "R2": 6.868,
+    "R3": 7.536,
+    "R4_recent": 0.643,
+    "R4_older": 0.617,
+    "R5": 0.803,
+    "analytics": 2.535
+   }
+  },
+  {
+   "arm": "morletdb-i1",
+   "rep": 2,
+   "samples_per_s": 13599258,
+   "correct": true,
+   "gc_counts": [
+    364,
+    4,
+    2
+   ],
+   "gc_objects": 86012,
+   "maxrss_mib": 1460.2,
+   "a_same_process": {
+    "R1": 0.627,
+    "R2": 6.791,
+    "R3": 7.729,
+    "R4_recent": 0.676,
+    "R4_older": 0.639,
+    "R5": 0.817,
+    "analytics": 2.56
+   },
+   "b_fresh_process": {
+    "R1": 0.627,
+    "R2": 7.191,
+    "R3": 7.997,
+    "R4_recent": 0.614,
+    "R4_older": 0.602,
+    "R5": 0.931,
+    "analytics": 2.593
+   },
+   "c_same_process_after_gc": {
+    "R1": 0.681,
+    "R2": 7.286,
+    "R3": 8.896,
+    "R4_recent": 0.64,
+    "R4_older": 0.601,
+    "R5": 0.987,
+    "analytics": 2.552
+   }
+  }
+ ]
+}

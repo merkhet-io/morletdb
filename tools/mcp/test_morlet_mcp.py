@@ -17,8 +17,8 @@ class Server(unittest.TestCase):
 
     def test_tools_are_registered_read_only(self):
         tools = asyncio.run(m.mcp.list_tools())
-        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "describe_interval", "envelope_spectrum",
-                                                         "find_onsets",
+        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "decision_state", "decisions", "describe_interval", "envelope_spectrum",
+                                                         "find_onsets", "latest",
                                                          "list_collections", "list_recordings", "locate_time",
                                                          "read_interval", "search_from_time", "search_similar",
                                                          "trend"])
@@ -151,6 +151,87 @@ class Helpers(unittest.TestCase):
         f = np.fft.rfftfreq(n, 1 / rate)
         band = (f > 50) & (f < 500)
         self.assertAlmostEqual(float(f[band][np.argmax(spec[band])]), 236.4, delta=2.0)
+
+
+class Scope(unittest.TestCase):
+    """Search scope (#215): what a search searched, and what exists but was not searched."""
+
+    def test_states_are_clipped_to_the_searched_bounds_and_ranked(self):
+        t0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        ranges = [("A", 0, 1000, "searchable"), ("A", 1000, 5000, "summarized"), ("A", 5000, 6000, "searchable"),
+                  ("B", 0, 3000, "not_indexed"), ("C", 0, 9000, "gone")]
+        s = m.summarize_scope(ranges, {"A": (500, 5500), "B": (0, 3000)}, 100.0, {"A": t0, "B": None})
+        self.assertEqual(s["seconds"], {"not_indexed": 30.0, "searchable": 10.0, "summarized": 40.0})
+        self.assertFalse(s["complete"])
+        self.assertEqual(s["not_searched_seconds"], 70.0)
+        self.assertEqual([(p["recording_id"], p["state"]) for p in s["not_searched_periods"]],
+                         [("A", "summarized"), ("B", "not_indexed")])
+        self.assertEqual(s["not_searched_periods"][0]["start_utc"], "2026-01-01T00:00:10Z")
+        self.assertIsNone(s["not_searched_periods"][1]["start_utc"])
+
+    def test_a_tail_shorter_than_a_window_does_not_make_the_scope_incomplete(self):
+        ranges = [("A", 0, 39936, "searchable"), ("A", 39936, 40000, "not_indexed")]
+        s = m.summarize_scope(ranges, {"A": (0, 40000)}, 100.0, {}, window=512)
+        self.assertTrue(s["complete"])
+        self.assertEqual(s["seconds"]["shorter_than_window"], 0.64)
+        self.assertFalse(m.summarize_scope(ranges, {"A": (0, 40000)}, 100.0, {}, window=None)["complete"])
+
+    def test_a_fully_searchable_scope_is_complete(self):
+        s = m.summarize_scope([("A", 0, 100, "searchable")], {"A": (0, 100)}, 10.0, {})
+        self.assertTrue(s["complete"])
+        self.assertEqual(s["not_searched_periods"], [])
+
+    def test_instructions_ask_for_the_scope_with_negative_results(self):
+        self.assertIn("Not found is not the same as not searched", m.INSTRUCTIONS)
+        self.assertEqual(set(m.NOT_SEARCHED), {"not_indexed", "not_searchable", "represented", "summarized", "gone",
+                                               "missing"})
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class ScopeOnADatabase(unittest.TestCase):
+    """A search over a collection with a period out of search returns that period in its scope."""
+
+    def test_search_reports_the_period_it_did_not_search(self):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            conn.execute("DROP TABLE IF EXISTS public.mcp_scope CASCADE")
+            for t in ("chunks", "segments", "envelopes", "episodes", "ledger", "memory_runs", "kept_summaries"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_scope_{t} CASCADE")
+            conn.execute("""
+                SELECT morlet_create_stream_collection('public','mcp_scope'); SELECT morlet_enable_chunk_summaries('mcp_scope');
+                SELECT morlet_start_recording('mcp_scope','A',100,'x','g','{"start":"2026-01-01T00:00:00Z"}',512,256,'zscore','none');
+                SELECT morlet_append_chunks_raw('mcp_scope','A',0,morlet_float8_le_bytes(ARRAY(
+                  SELECT round(100*sin(i/9.)*(1+(i%5000)/1000.))::float8 FROM generate_series(0,39999) i)),1000);
+                SELECT morlet_enable_envelopes('mcp_scope'); SELECT morlet_build_envelopes('mcp_scope','A',512,256,100000);
+                SELECT morlet_enable_memory('mcp_scope');
+                SELECT morlet_add_episodes('mcp_scope','[{"recording_id":"A","start_sample":10000,"end_sample":30000}]');""")
+            run = conn.execute("SELECT morlet_start_memory_run('mcp_scope','test','1')").fetchone()[0]
+            conn.execute("SELECT * FROM morlet_set_level('mcp_scope',%s,'[{\"episode_id\":1,\"level\":3}]')", (run,))
+            conn.execute("SELECT morlet_finish_memory_run('mcp_scope',%s,'finished')", (run,))
+        os.environ["DATABASE_URL"] = url
+        r = m.search_similar("public.mcp_scope", "A", 0, 512)
+        scope = r["scope"]
+        self.assertFalse(scope["complete"])
+        self.assertEqual(scope["recordings"], 1)
+        self.assertGreater(scope["searched_windows"], 0)
+        period = scope["not_searched_periods"][0]
+        self.assertEqual(period["state"], "summarized")
+        self.assertTrue(10000 <= period["start_sample"] < period["end_sample"] <= 30000)
+        self.assertIn("summarized", scope["note"])
+        self.assertEqual([p["state"] for p in scope["not_searched_periods"]], ["summarized"])
+        self.assertTrue(all(not (10512 <= h["start_sample"] and h["end_sample"] <= 29488) for h in r["hits"]))
+        m.SCOPE_TIMEOUT_MS = 1
+        try:
+            slow = m.search_similar("public.mcp_scope", "A", 0, 512)
+        finally:
+            m.SCOPE_TIMEOUT_MS = 5000
+        self.assertIsNone(slow["scope"]["complete"])       # unknown, never complete
+        self.assertIn("unverified", slow["scope"]["note"])
+        self.assertEqual(len(slow["hits"]), len(r["hits"]))
+        cov = m.coverage("public.mcp_scope")["groups"][0]["search_states_s"]
+        self.assertGreater(cov["summarized"], 0)
+        self.assertGreater(cov["searchable"], 0)
 
 
 if __name__ == "__main__":

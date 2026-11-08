@@ -560,7 +560,7 @@ const fn crc32c_slices() -> [[u32; 256]; 8] {
 }
 const CRC32C_SLICES: [[u32; 256]; 8] = crc32c_slices();
 /// CRC-32C, eight bytes per step (slicing-by-8); equal to the byte-at-a-time definition.
-fn crc32c(bytes: &[u8]) -> u32 {
+pub(crate) fn crc32c(bytes: &[u8]) -> u32 {
     let t = &CRC32C_SLICES;
     let mut c = !0u32;
     let mut words = bytes.chunks_exact(8);

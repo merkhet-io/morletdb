@@ -1,0 +1,13 @@
+2026-11-06T18:48:23
+18:48  up 10 days,  3:44, 17 users, load averages: 1.53 2.14 2.61
+ %CPU COMM
+ 34.5 /sbin/launchd
+ 24.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 24.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.4 /usr/sbin/coreaudiod
+  2.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.7 /Library/Application Support/JamfAppInstallers/com.jamf.appinstallers.Slack/Jamf App Installers.app/Contents/MacOS/Jamf App Installers
+  1.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-06T18:50:25
+18:50  up 10 days,  3:46, 17 users, load averages: 1.59 1.97 2.47

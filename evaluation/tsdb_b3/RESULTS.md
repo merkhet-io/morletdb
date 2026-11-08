@@ -451,6 +451,10 @@ took 14.0 s of the 15.7 s build.
 
 # Amendment B3.4: CrateDB
 
+> **Superseded in part (B3.9):** this stage's speed ratios compared against MorletDB's B3.3 numbers from another
+> session, most likely on a busy machine; the same-session figures are in [B3.9](#amendment-b39-cratedb-iotdb-tdengine-and-timescaledb-re-paired-in-one-session).
+> Storage, correctness and semantics stand.
+
 Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `6996513`) before any load of the benchmark set;
 development on the development set only ([`results/dev/b34/`](results/dev/b34/)); run once on the benchmark set
 ([`results/b34/`](results/b34/)), 2026-11-04 15:14–19:23. CrateDB 6.4.6 (`crate:6.4.6`, linux/arm64,
@@ -535,6 +539,10 @@ clusters were not tested; similarity search was not part of B3.
 
 # Amendment B3.5: Apache IoTDB
 
+> **Superseded in part (B3.9):** this stage's speed ratios compared against MorletDB's B3.3 numbers from another
+> session, most likely on a busy machine; the same-session figures are in [B3.9](#amendment-b39-cratedb-iotdb-tdengine-and-timescaledb-re-paired-in-one-session).
+> Storage, correctness and semantics stand.
+
 Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `fa2c0a0`) before any load of the benchmark set; development on
 the development set only ([`results/dev/b35/`](results/dev/b35/)); run once on the benchmark set
 ([`results/b35/`](results/b35/)), 2026-11-04 20:40–21:04, no deviation (no system sleep in the window, `pmset`
@@ -615,3 +623,905 @@ tested; similarity search was not part of B3.
 | Interval statistics | MorletDB 35–66% faster | **MorletDB 3.0–4.2× faster** |
 | Exact time at 64 kHz | via a stored sample index | **native (nanosecond precision)** |
 | Altered resend | silently ignored | **silently replaces** |
+
+# Amendment B3.6: TDengine
+
+> **Superseded in part (B3.9):** this stage's speed ratios compared against MorletDB's B3.3 numbers from another
+> session, most likely on a busy machine; the same-session figures are in [B3.9](#amendment-b39-cratedb-iotdb-tdengine-and-timescaledb-re-paired-in-one-session).
+> Storage, correctness and semantics stand.
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `6a90427`) before any load of the benchmark set; development on
+the development set only ([`results/dev/b36/`](results/dev/b36/)); run once on the benchmark set
+([`results/b36/`](results/b36/)), 2026-11-04 22:37–23:13, no system sleep in the window. TDengine TSDB-OSS 3.4.3.3
+(`tdengine/tsdb:3.4.3.3`, linux/arm64), single node, supertables, nanosecond precision, Python WebSocket client
+`taos-ws-py` 0.7.0. MorletDB is not re-run: its numbers are B3.3's (SQL 0.3.3, same machine and limits). One
+deviation: the tsz arm is lossy (below).
+
+**Correctness.** The default (bss + lz4) and zstd (bss + zstd high) arms passed all 12 loads (868 channels read
+back with the manifest's SHA-256, every time exact to the nanosecond; 0 mismatches in every read benchmark;
+analytics within 1e-12). **The tsz arm failed**: in its first load two vibration channels differed in 7 and 47
+samples near the end of the recording, by at most 8 ULP (5.6e-17). TDengine's taosd reference documents
+`dPrecision` (default and minimum 1e-16) as the mantissa truncation of TSZ, so tsz is error-bounded lossy
+compression that cannot be made lossless; the development set happened to show no difference. The tsz arm makes
+no statement and its remaining loads were not run (deviation 1).
+
+## Ingestion (one client connection, stmt2 binding; median [range] of three loads)
+
+| Arm | D1 (WAL fsync per write) | D2 (default WAL) | Ack per acquisition, p50 (D2) | Count complete after the last ack |
+|---|---:|---:|---:|---:|
+| MorletDB (B3.3, base) | — | **6.33 M** [6.27–6.33] samples/s | 128 ms | at commit |
+| T-default (bss + lz4) | 3.94 M [3.93–4.00 M] | 4.08 M [3.90–4.13 M] | 195 ms | 0.26–0.29 s |
+| T-zstd (bss + zstd high) | 0.89 M [0.79–0.90 M] | 0.84 M [0.80–0.87 M] | 219 ms | 0.59–0.69 s |
+
+**Statement (≥ 10% in all loads): MorletDB ingested about 1.5× faster** than TDengine's faster arm (every MorletDB
+load ≥ 1.52× every TDengine load). TDengine is the fastest-ingesting of the three IIoT databases in B3, and its
+fsync-per-write class was within 4% of its default. The zstd-high arm used about 3.5 cores and ingested 4.8×
+slower than its default arm.
+
+## Storage (D2 r1, settled: `FLUSH DATABASE`, files outside the WAL unchanged for 60 s, clean stop)
+
+| | MiB | × MorletDB |
+|---|---:|---:|
+| MorletDB (B3.3): sample data / database / volume with retained WAL | **148.8** / **164.8** / 363.6 | 1 |
+| T-zstd: data files (`tsdb`) / whole volume with retained WAL (1,034.5) | 566.7 / 1,602.3 | 3.4 (database) / 4.4 (volume) |
+| T-default: data files / whole volume | 626.6 / 1,662.1 | 3.8 / 4.6 |
+| raw float64 (for scale) | 775 | 4.7 |
+
+**Statement: MorletDB stored the data in less than a third of TDengine's smaller arm** (3.4× on data files
+against MorletDB's database; 4.4× whole volume against whole volume, both with their retained WAL). TDengine
+retains about 1 GiB of WAL by default; `COMPACT` is not available in the open-source edition.
+
+## Reads and analytics (D2 r1 of each arm; p50 / p95 ms)
+
+| Query | MorletDB (B3.3) | T-default | T-zstd |
+|---|---:|---:|---:|
+| R1, 4,096 samples | **0.62 / 0.92** | 5.4 / 8.6 | 5.4 / 9.4 |
+| R2, 128,000 samples | **6.6 / 8.9** | 70.5 / 86.3 | 72.7 / 91.1 |
+| R3, 3 channels × 64,000 | **8.1 / 10.1** | 57.0 / 75.5 | 62.0 / 101.5 |
+| R4, 4,096 samples, recent / older (p50) | **0.60 / 0.59** | 5.5 / 5.0 | 5.4 / 6.0 |
+| R5, 4 threads: queries/s | **4,119** | 175 | 165 |
+| min, max, mean, RMS of 128,000 samples (SQL) | **2.5 / 2.7** | 5.0 / 11.8 | 6.9 / 14.2 |
+
+**Statements:** every read was **7–11× faster** in MorletDB than in TDengine's faster arm for that query, at p50
+and p95 (R1 9×, R2 about 10×, R3 7×, R4 7–9×), and concurrent reads reached 23× the throughput; interval analytics
+were **2.0× faster at p50 and 4.4× at p95**. As with IoTDB, part of TDengine's read time is the Python client:
+the WebSocket connector returns rows as Python tuples, and time is read as an integer because TIMESTAMP values come
+back as text without fractions of a second.
+
+## Semantics
+
+- An altered resend **silently replaces** the stored value (subset check in development), like IoTDB and
+  QuestDB; CrateDB ignores it; MorletDB refuses it.
+- Times are exact at nanosecond precision (database option).
+- Server memory peaked at about 1.0–1.1 GiB, the lowest of the IIoT databases in B3 (MorletDB: 167 MiB).
+- Similarity search is not part of TDengine (its TDgpt agent targets forecasting and anomaly detection).
+
+## Scope
+
+One dataset, one machine, single node at image defaults apart from the frozen settings, one client connection,
+the official Python WebSocket client. Clusters, the enterprise edition, TDgpt and the native connector were not
+tested.
+
+## Updated trade-off map (additions)
+
+| Dimension | Apache IoTDB 2.0 (B3.5) | **TDengine 3.4 (B3.6)** |
+|---|---|---|
+| Data on disk vs MorletDB | 4.0× | **3.4× (data files), 4.4× (whole volume)** |
+| Ingestion, one connection | MorletDB about 2.5× faster | **MorletDB about 1.5× faster** |
+| Exact reads | MorletDB 4.4–13× faster | **MorletDB 7–11× faster** |
+| Interval statistics | MorletDB 3.0–4.2× faster | **MorletDB 2.0–4.4× faster** |
+| Lossless float compression | GORILLA, LZ4, ZSTD all lossless | **tsz is lossy (1e-16 bound)**; bss + lz4 / zstd lossless |
+| Altered resend | silently replaces | **silently replaces** |
+
+# Amendment B3.7: TimescaleDB
+
+> **Superseded in part (B3.9):** this stage's speed ratios compared against MorletDB's B3.3 numbers from another
+> session, most likely on a busy machine; the same-session figures are in [B3.9](#amendment-b39-cratedb-iotdb-tdengine-and-timescaledb-re-paired-in-one-session).
+> Storage, correctness and semantics stand.
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `9953afd`) before any load of the benchmark set; development on
+the development set only ([`results/dev/b37/`](results/dev/b37/)); run once on the benchmark set
+([`results/b37/`](results/b37/)), 2026-11-04 23:52 to 2026-11-05 00:16, no system sleep in the window, no
+deviation. TimescaleDB 2.31.0 on PostgreSQL 17.11 (`timescale/timescaledb:2.31.0-pg17`, linux/arm64), PostgreSQL
+defaults as for MorletDB, integer time in nanoseconds, binary COPY through psycopg. MorletDB is not re-run: its
+numbers are B3.3's (SQL 0.3.3, PostgreSQL 17, same machine and limits).
+
+**Correctness: all 6 loads passed, in both states** (rowstore after ingestion and columnstore after compression:
+868 channels read back with the manifest's SHA-256, every time exact to the nanosecond; 0 mismatches in every
+read benchmark; analytics within 1e-12).
+
+## Ingestion (one client connection, binary COPY; median [range] of three loads)
+
+| | D1 (synchronous commit) | D2 (asynchronous commit) | Ack per acquisition, p50 (D2) | Count complete after the last ack |
+|---|---:|---:|---:|---:|
+| MorletDB (B3.3, base) | — | **6.33 M** [6.27–6.33] samples/s | 128 ms | at commit |
+| TimescaleDB (rowstore) | 0.75 M [0.74–0.77 M] | 0.75 M [0.72–0.77 M] | 1,145 ms | 0.8–0.9 s |
+
+**Statement (≥ 10% in all loads): MorletDB ingested about 8.5× faster** (every MorletDB load ≥ 8.2× every
+TimescaleDB load). The server used about one core, and a vectorised COPY stream gave the same rate in
+development, so the limit is the server's row ingestion with its unique index, not the client. Compressing the
+3 chunks into the columnstore afterwards took 33 s.
+
+## Storage (D2 r1, after VACUUM ANALYZE)
+
+| | MiB | × MorletDB database |
+|---|---:|---:|
+| MorletDB (B3.3): sample data / database / volume with retained WAL | **148.8** / **164.8** / 363.6 | 1 |
+| TimescaleDB columnstore: hypertables / database / volume with WAL (1,024) | 806.1 / 815.4 / 1,865.2 | 4.9 (database) |
+| TimescaleDB rowstore: hypertables / database | 6,582.9 / 6,592.1 | 40 |
+| raw float64 (for scale) | 775 | 4.7 |
+
+**Statement: MorletDB stored the data in about a fifth of TimescaleDB's compressed size** (4.9×, database
+against database, both PostgreSQL 17 with default settings). TimescaleDB's columnstore came out at about the raw
+float64 size: its float compression (Gorilla) gains nothing on these noisy calibrated values, as P2 had found on
+four signals. Fresh data in the rowstore needs 40× MorletDB's space until it is compressed.
+
+## Reads and analytics (D2 r1, both states; p50 / p95 ms)
+
+| Query | MorletDB (B3.3) | TS rowstore | TS columnstore |
+|---|---:|---:|---:|
+| R1, 4,096 samples | **0.62 / 0.92** | 2.9 / 4.0 | 2.8 / 4.5 |
+| R2, 128,000 samples | **6.6 / 8.9** | 67.1 / 78.0 | 59.3 / 73.5 |
+| R3, 3 channels × 64,000 | **8.1 / 10.1** | 51.5 / 68.1 | 49.2 / 66.5 |
+| R4, 4,096 samples, recent / older (p50) | **0.60 / 0.59** | 2.9 / 3.1 | 3.0 / 2.8 |
+| R5, 4 threads: queries/s | **4,119** | 563 | 687 |
+| min, max, mean, RMS of 128,000 samples (SQL) | **2.5 / 2.7** | 18.8 / 24.0 | 12.8 / 15.5 |
+
+**Statements:** every read was **4.3–9× faster** in MorletDB than in TimescaleDB's faster state for that query, at
+p50 and p95 (R1 4.3–4.6×, R2 8–9×, R3 6–7×, R4 4.6–4.9×), with 6× the concurrent throughput; interval analytics
+were **5.1× faster at p50 and 5.8× at p95**. Both are PostgreSQL extensions on the same server version, but they
+return data differently: MorletDB returns an interval as one value of raw float64 bytes, TimescaleDB returns one
+row per sample instant, which psycopg converts to Python objects; part of TimescaleDB's read time is that
+client-side conversion.
+
+## Semantics
+
+- Retries: with the unique index, **both** an identical and an altered resend are refused with a unique
+  violation and leave stored values unchanged. MorletDB accepts an identical resend as a no-op and refuses an
+  altered one.
+- Times exact at nanosecond resolution through an integer time dimension (PostgreSQL timestamps resolve
+  microseconds only, too coarse for 64 kHz).
+- Server memory peaked at about 394 MiB (MorletDB 167 MiB), with PostgreSQL's default 128 MB shared buffers in
+  both.
+- Similarity search is not part of TimescaleDB; vector search needs embeddings computed elsewhere (pgvector).
+
+## Scope
+
+One dataset, one machine, PostgreSQL defaults, one client connection, binary COPY through psycopg. Continuous
+aggregates, columnstore writes on ingest, tiered storage and TimescaleDB Cloud were not tested.
+
+## Updated trade-off map (additions)
+
+| Dimension | TDengine 3.4 (B3.6) | **TimescaleDB 2.31 (B3.7)** |
+|---|---|---|
+| Data on disk vs MorletDB | 3.4× (data files) | **4.9× (columnstore), 40× (rowstore)** |
+| Ingestion, one connection | MorletDB about 1.5× faster | **MorletDB about 8.5× faster** |
+| Exact reads | MorletDB 7–11× faster | **MorletDB 4.3–9× faster** |
+| Interval statistics | MorletDB 2.0–4.4× faster | **MorletDB 5.1–5.8× faster** |
+| Server memory | about 1 GiB | **about 394 MiB** |
+| Retries | altered resend replaces | **every resend refused (unique index)** |
+
+# Amendment B3.8: QuestDB re-measured beside the released MorletDB
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `89a9180`) before any load of the benchmark set. MorletDB
+`ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1` (SQL 0.3.3, arm `morletdb-033`) and QuestDB 10.1.0, alternating in
+one session, three loads per durability class. Run three times:
+
+| Session | Results | Window | Machine | Used for |
+|---|---|---|---|---|
+| 1 | [`results/b38/`](results/b38/) | 2026-11-05 00:39–00:51 | **busy** (see below) | nothing but this finding |
+| 2 | [`results/b38q/`](results/b38q/) | 01:08–01:15 | quiet | **every B3.8 figure** |
+| 3 | [`results/b38z/`](results/b38z/) | 03:13–03:21 | quiet, after B3.9 | drift check |
+
+**Session 1 ran on a busy machine.** MorletDB ingested at 4.38 M samples/s (D2 median) against 6.33 M in B3.3.
+Two attribution loads per image (`results/b38/attribution/`) gave 4.22 and 4.27 M for B3.3's image and 4.31 and
+4.37 M for the 0.3.5-alpha.1 release, so the release was not slower; the machine was. Its load average was 9–10:
+Messages.app had been spinning at one full core since 2026-11-03 01:40, with GUI processes on top. QuestDB gave
+7.40 M in that session, so the busy machine slowed MorletDB's client path more (QuestDB 1.69× faster) than in the
+quiet sessions (1.53×). Session 1 is therefore not used; it is why B3.9 exists. Messages.app was quit, and from
+session 2 on the runner records the load average and the busiest processes before and after every load
+(`results/<run>/machine/`). Before every later load, the busiest processes were the Docker VM (the previous
+load's container stopping) and Docker Desktop; two one-off spikes (a Docker Desktop renderer, `duetexpertd`) lasted
+less than a snapshot. Messages.app did not return.
+
+**Correctness: all 24 loads of sessions 2 and 3 passed** (every channel read back with the manifest's SHA-256,
+counts, reads and analytics as in B3).
+
+## Ingestion (one client connection; median [range] of three loads)
+
+| | D2 (asynchronous) | D1 (durable) | Server memory, median peak |
+|---|---:|---:|---:|
+| MorletDB 0.3.5-alpha.1 | 6.30 M [5.58–6.35] | 6.15 M [6.15–6.17] | 168 MiB |
+| QuestDB 10.1.0 | **9.66 M** [9.64–9.68] | **8.48 M** [8.39–8.55] | 2,301 MiB |
+| Session 3 (drift check): MorletDB / QuestDB | 6.29 M / 9.59 M | 6.12 M / 8.52 M | 167 / 2,306 MiB |
+
+**Statement (≥ 10% in all loads): QuestDB ingested from one connection about 1.5× faster (D2) and 1.4× faster
+(D1)** (every QuestDB load ≥ 1.52× and 1.36× every MorletDB load). B3.2 had found 1.3–1.6× against MorletDB's
+earlier build. MorletDB used 14× less memory. Session 3 reproduced session 2 within 1%, so the machine did not
+drift over the night. MorletDB's 6.30 M matches B3.3's 6.33 M: the B3.3 baseline was taken on a quiet machine.
+
+## Storage (D2 r1)
+
+Identical to B3.2 to the byte for QuestDB: native 1,162.7 MiB data (1,192.4 MiB volume), Parquet LZ4_RAW 496.6 MiB
+volume, Parquet zstd 9 232.7 MiB data (247.3 MiB volume). MorletDB's database: 164.8 MiB, as in B3.3.
+**MorletDB's whole database is 29% smaller than QuestDB's Parquet zstd 9 data (1.4×) and 7.1× smaller than its
+native columns.**
+
+## Reads and analytics (D2 r1; p50 / p95 ms)
+
+| Query | MorletDB | QuestDB (native) | Statement (≥ 10% at p50 and p95) |
+|---|---:|---:|---|
+| R1, 4,096 samples | **0.63 / 1.01** | 1.02 / 2.29 | MorletDB 1.6× / 2.3× faster |
+| R2, 128,000 samples | 6.89 / 9.31 | 6.01 / 10.16 | none: QuestDB 13% faster at p50, MorletDB 9% at p95 |
+| R3, 3 channels × 64,000 | **7.38 / 10.28** | 8.75 / 12.92 | MorletDB 1.2× / 1.3× faster |
+| R4, recent / older (p50) | 0.63 / 0.62 | 0.67 / 0.62 | none |
+| R5, 4 threads: queries/s (p95 ms) | **4,192** (1.5) | 2,647 (3.6) | MorletDB 1.6× |
+| Interval statistics | 2.54 / 2.69 | 2.46 / 4.73 | none: on par at p50, MorletDB 1.8× at p95 |
+
+Session 3 gave the same picture (R1 1.6× / 2.5×, R2 QuestDB 13% at p50, R5 1.6×).
+
+# Amendment B3.9: CrateDB, IoTDB, TDengine and TimescaleDB re-paired in one session
+
+Frozen in [PROTOCOL.md](PROTOCOL.md) (commit `2543976`, 2026-11-05 01:07; the amendment's text says 01:20, a
+clerical slip: the commit precedes every B3.9 load). Run once, 01:15–03:13, on the quiet machine of B3.8 session
+2, each system alternating with MorletDB 0.3.5-alpha.1 (arm `morletdb-033`), three loads per durability class,
+reads and analytics on D2 r1 of each, results in `results/b39-<system>/`. No load failed and none was rerun.
+Every number is reproduced by [`summarize_b39.py`](summarize_b39.py).
+
+**Correctness: all 60 loads passed** (30 MorletDB, 30 others: every sample and time exact, 0 mismatches in every
+read benchmark, analytics within 1e-12). Across the five pairs MorletDB's D2 medians were 6.24–6.33 M, so the
+machine stayed steady.
+
+**Why it mattered.** B3.4–B3.7 compared each system with MorletDB's B3.3 numbers from another session. The other
+systems were faster tonight than in their own stages, by 8% (IoTDB) to 73% (CrateDB arrays) for ingestion, and
+their reads had taken 1.0–2.2× as long (p50), while MorletDB matched B3.3 within 4%. Their stages, on 2026-11-04, most likely ran on the machine that
+B3.8 session 1 found busy; the clients run on the host, so a busy host slows client-heavy paths most. B3.4–B3.7's
+time-based ratios are therefore superseded by the table below; their storage, correctness and semantics findings
+stand (storage was re-measured tonight and matched to the MiB).
+
+## Same-session ratios (× MorletDB's figure; > 1 = MorletDB better)
+
+| Measure | QuestDB (B3.8) | CrateDB arrays / rows | IoTDB table | TDengine default | TimescaleDB columnstore |
+|---|---:|---:|---:|---:|---:|
+| Ingestion D2, medians (all-loads bound) | **0.65** (QuestDB ≥ 1.52×) | 8.6 (8.0) / 17.7 (17.6) | 2.3 (2.3) | 1.18 (1.14) | 6.5 (6.4) |
+| Ingestion D1 | **0.73** (QuestDB ≥ 1.36×) | 8.4 (8.3) / 17.6 (17.3) | 2.6 (2.6) | 1.21 (1.20) | 6.4 (6.3) |
+| R1, 4,096 samples (p50 / p95) | 1.6 / 2.3 | 8.0 / 7.5 · 12.5 / 12.4 | 10.7 / 9.2 | 6.0 / 5.8 | 2.4 / 2.1 |
+| R2, 128,000 samples | 0.87 / 1.09 (none) | 7.1 / 6.4 · 17.7 / 13.8 | 6.0 / 4.9 | 6.8 / 5.6 | 5.4 / 4.5 |
+| R3, 3 channels × 64,000 | 1.2 / 1.3 | 13.2 / 10.5 · 12.2 / 9.3 | 3.8 / 3.1 | 4.2 / 3.6 | 4.0 / 3.4 |
+| R5, 4 threads, queries/s | 1.6 | 5.2 · 16.7 | 6.7 | 14.9 | 3.8 |
+| Interval statistics | 0.97 / 1.76 (none) | 18.9 / 20.4 · 1.4 / 2.9 | 2.6 / 3.2 | 1.5 / 3.9 | 4.1 / 4.2 |
+| Server memory, median peak | 13.7 | 36.5 / 55.4 | 35.9 | 6.1 | 2.4 |
+
+TimescaleDB's rowstore (before compression) read 2.1–6.4× slower than MorletDB and computed statistics 5.3–5.5×
+slower; its ingestion is the rowstore's (compression into the columnstore then took 25 s). Absolute values per
+pair: `python3 evaluation/tsdb_b3/summarize_b39.py`.
+
+**Statements (B3's rule), replacing B3.4–B3.7's time-based ones:**
+- **TDengine:** MorletDB ingested about **1.2× faster** (was stated as 1.5×), read 3.6–6.8× faster (was 7–11×),
+  15× the concurrent throughput, statistics 1.5× / 3.9× faster.
+- **TimescaleDB:** ingestion about **6.5× faster** (was 8.5×), reads 2.1–5.4× faster (was 4.3–9×), statistics
+  about 4× faster (was 5.1–5.8×).
+- **IoTDB:** ingestion about **2.3–2.6× faster** (was 2.5×), reads 3.1–10.7× faster (was 4.4–13×), statistics
+  2.6× / 3.2× faster (was 3.0× / 4.2×).
+- **CrateDB:** ingestion about **8.5× faster than its array layout** (was 15×) and 18× faster than its row layout,
+  reads 6.4–12× faster than its faster layout per query (was 10–13×), statistics 1.4× / 2.9× faster than its
+  row layout (was 1.5× / 3.0× against row-best, not re-run).
+
+## Scope
+
+As each stage. Secondary layouts (TDengine zstd and tsz, IoTDB table-zstd, CrateDB row-best) were not re-run;
+their time-based figures in B3.4–B3.6 are cross-session and are no longer quoted. One dataset, one machine.
+
+# Amendment B3.10: single-connection ingestion after I1
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `a388f87`, 2026-11-05 10:07) before any benchmark-set load;
+development work in [`../ingest_i1/ATTRIBUTION.md`](../ingest_i1/ATTRIBUTION.md) (issue #233). One session,
+2026-11-05 10:08–10:18 (`results/b310/`, `run_b310.sh`, log `results/b310.log`): for r = 1, 2, 3 and D2 then D1,
+`morletdb-i1` (image `morletdb:b310`, `sha256:4a617625773a…`, built from `dc77ed1`, SQL 0.3.4 unreleased), QuestDB
+10.1.0, `morletdb-033` (released `0.3.5-alpha.1`). The smoke check (one development-set load of `morletdb-i1`,
+`results/dev/b310-smoke/`) passed before the run. Summary: `summarize_b310.py`.
+
+**Machine.** 1-minute load average 2.8 before the session, with no foreign process above half a core (the start
+condition). Before the loads it was 4.8–9.9 (median 7.9); as in B3.8 (median 7.0, maximum 11.3) this comes from
+the session's own previous load, so every load started above 4 by the frozen note rule. Foreign processes above
+half a core appeared in six of the 18 pre-load snapshots: a WebKit page (72% before `morletdb-033` D2 r1, 111%
+before its D2 r2), Spotlight indexing and media analysis (70–110% before the three D1 r3 loads) and `duetexpertd`
+(79% before `morletdb-i1` D1 r3). Snapshots are taken only before and after each load.
+
+**Correctness: all 18 loads passed** (every channel read back against the manifest's SHA-256, counts, reads and
+analytics within 1e-12). **Stored chunks of `morletdb-i1` were byte-identical to `morletdb-033`'s in every load**
+(25,138 chunks, one digest).
+
+## Ingestion (one client connection; median [range] of three loads)
+
+| | D2 (asynchronous) | D1 (durable) | Server memory, median peak |
+|---|---:|---:|---:|
+| **MorletDB, I1 (SQL 0.3.4, unreleased)** | **13.65 M** [13.51–13.73] | **12.99 M** [12.71–13.10] | 177 MiB |
+| QuestDB 10.1.0 | 9.58 M [9.03–9.67] | 8.26 M [7.14–8.46] | 2,307 MiB |
+| MorletDB 0.3.5-alpha.1 | 6.07 M [5.93–6.16] | 6.05 M [5.96–6.14] | 168 MiB |
+
+**Statements (≥ 10% in all loads):**
+- **MorletDB with I1 ingested from one connection about 1.4× faster than QuestDB (D2) and 1.6× faster (D1)**
+  (every `morletdb-i1` load ≥ 1.40× and ≥ 1.50× every QuestDB load). B3.8 had QuestDB 1.5× / 1.4× faster than the
+  released MorletDB, and this session reproduces that (QuestDB ≥ 1.47× / 1.16× `morletdb-033`).
+- I1 against the released MorletDB: 2.2× (D2) and 2.1× (D1) (all-loads bounds 2.19 and 2.07).
+- MorletDB with I1 used 13× less peak server memory than QuestDB (177 against 2,307 MiB); the encoding threads add
+  about 9 MiB over the released build.
+
+## Storage (D2 r1)
+
+Chunk data identical (155.98 MB TOAST, 2.48 MB heap, 2.09 MB indexes for both MorletDB arms). The recordings table
+is smaller with I1 (0.63 against 4.06 MB) because the checkpoint row is rewritten once per call instead of once per
+chunk, leaving fewer dead versions: database 169.3 against 172.8 MB (−2%), WAL 160 against 176 MiB.
+
+## Reads and analytics (D2 r1 of each arm; p50 / p95 ms)
+
+| Query | MorletDB, I1 | QuestDB (native) | MorletDB 0.3.5-alpha.1 | I1 against QuestDB |
+|---|---:|---:|---:|---|
+| R1 4,096 samples | 0.66 / 1.14 | 1.12 / 2.60 | 0.64 / 1.05 | MorletDB 1.7× / 2.3× faster |
+| R2 128,000 samples | 7.46 / 10.58 | 7.15 / 13.78 | 6.67 / 8.89 | no statement (0.96 / 1.30) |
+| R3 3 × 64,000 samples | 7.84 / 10.81 | 9.29 / 14.63 | 7.82 / 11.03 | MorletDB 1.2× / 1.4× faster |
+| R4 recent | 0.63 / 0.99 | 0.79 / 1.39 | 0.63 / 0.97 | MorletDB 1.3× / 1.4× faster |
+| R4 older | 0.61 / 0.98 | 0.79 / 1.51 | 0.61 / 1.01 | MorletDB 1.3× / 1.5× faster |
+| R5 4 threads, queries/s | 4,070 | 2,316 | 4,196 | |
+| Interval statistics | 2.54 / 2.66 | 2.49 / 4.70 | 2.55 / 2.66 | no statement (0.98 / 1.77) |
+
+## Acceptance criteria (frozen)
+
+| # | Criterion | Result | Met |
+|---|---|---|---|
+| 1 | every load of every arm passes B3's correctness checks | 18 of 18 | yes |
+| 2 | stored chunks of `morletdb-i1` byte-identical to `morletdb-033`'s in every load | 6 of 6 pairs | yes |
+| 3 | R1–R5 and analytics p50 of `morletdb-i1` each ≤ 1.1× `morletdb-033`'s | R2 **1.118**; R1 1.04, R3 1.00, R4 1.00 / 1.00, R5 1.03, analytics 1.00 | **no** |
+
+**Verdict: criterion 3 is not met** (R2 p50 7.46 against 6.67 ms, +11.8%), so by the frozen rule `morletdb-i1` is
+not adopted as the recommended configuration from this stage, and the website is not changed. The ingestion
+statements above stand as measured.
+
+**Attribution (exploratory, after the stage, not part of it).** The read path is the same code in both arms. On the
+development set the same image read R2 faster after an I1 load than after a `morletdb-033` load (6.99 against
+8.27 ms p50, `results/dev/b310-diag/`). Two more benchmark-set loads of `morletdb-i1` and one of `morletdb-033` on
+`morletdb:b310` (`results/b310-attr-a/`, `-b/`) gave R2 p50 8.42 and 6.94 ms for I1 and 7.34 ms for `morletdb-033`,
+while Spotlight and media analysis were running (1-minute load average up to 10.5): load-to-load spread of R2 is
+larger than the 11.8% difference, in both directions. This suggests, but does not establish, that the failed
+criterion reflects variation between single read measurements rather than a slower read path. A criterion over
+several read repetitions would decide it; that needs a new frozen amendment.
+
+# Amendment B3.11: B3.10's read criterion over three loads per arm
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `82b8b6d`, 2026-11-05 10:40) before any load; run 10:47–10:53
+(`results/b311/`, `run_b311.sh`, log `results/b311.log`): for r = 1, 2, 3 a fresh D2 load of `morletdb-i1`
+(`morletdb:b310`) then of `morletdb-033` (released `0.3.5-alpha.1`), each followed by the full read benchmark.
+
+**Machine.** 1-minute load average 2.8 before the first load (start condition met; Spotlight and media analysis
+idle). Between loads 6.7–12.0 from the session itself. Foreign processes above half a core: `clang` at 98% in the
+snapshot after `morletdb-033` D2 r2, that is, just before `morletdb-i1` D2 r3 (not started by this work; that
+load also ingested slower, 11.0 M against 12.9–13.6 M); WindowServer 68% once. Docker Desktop's backend
+(`com.docker.backend`, which carries the client connections into the container) was seen at about 400% during
+the run.
+
+**Correctness: all six loads passed; stored chunks byte-identical in all six** (25,138 chunks, one digest).
+
+## Reads and analytics (p50 ms of each load; criterion: median over three loads, `morletdb-i1` ≤ 1.1×)
+
+| Query | `morletdb-i1` (three loads) | median | `morletdb-033` (three loads) | median | ratio | met |
+|---|---|---:|---|---:|---:|---|
+| R1 | 0.737, 0.638, 0.625 | 0.638 | 0.655, 0.629, 0.641 | 0.641 | 0.995 | yes |
+| R2 | 7.150, 7.413, 7.016 | 7.150 | 7.129, 7.047, 6.561 | 7.047 | 1.015 | yes |
+| R3 | 9.743, 10.239, 8.412 | 9.743 | 7.695, 9.997, 7.479 | 7.695 | **1.266** | **no** |
+| R4 recent | 0.678, 0.690, 0.626 | 0.678 | 0.634, 0.877, 0.631 | 0.634 | 1.069 | yes |
+| R4 older | 0.622, 0.634, 0.612 | 0.622 | 0.614, 0.776, 0.610 | 0.614 | 1.013 | yes |
+| R5 (4 threads) | 1.010, 1.143, 0.807 | 1.010 | 0.823, 1.367, 0.794 | 0.823 | **1.227** | **no** |
+| Interval statistics | 2.641, 2.610, 2.559 | 2.610 | 2.575, 2.784, 2.573 | 2.575 | 1.014 | yes |
+
+p95 medians (reported, not tested): R3 14.96 against 10.71 ms, R5 1.86 against 1.55 ms; all others within 12%.
+Ingestion (reported, not tested): `morletdb-i1` 12.94, 13.62, 11.04 M samples/s; `morletdb-033` 5.99, 5.89,
+6.37 M. Server peak memory 175–179 against 167–169 MiB.
+
+**Verdict: criterion 3 is not met** (R3 1.266, R5 1.227; R2, which failed in B3.10, now 1.015). By the frozen
+decision rule, I1 is not adopted, the website is not changed, and the read difference is investigated as a
+defect before any further stage. Two candidate causes are not separated by either stage: the arms differ in the
+write path **and** in the build (`morletdb:b310` is a local `deploy/Dockerfile` build; `0.3.5-alpha.1` was built
+by the release workflow), and single-load read latencies vary widely here (R3 7.5–10.0 ms and R5 0.79–1.37 ms
+within the released arm alone). The investigation will compare the same write path on both builds and repeated
+reads on one load.
+
+## Investigation of B3.11's read difference (exploratory, after the stage, not part of it)
+
+Done as B3.11's decision rule requires, on the benchmark set, `results/i1r-*` (scripts `run_i1_reads.sh`,
+`summarize_i1_reads.py`, `i1_reads_process.py`, `i1_reads_server.py`; every load correct).
+
+1. **Build versus write path** (11:40–11:55, machine quiet; Safari at about 70% in two snapshots). Three arms in
+   rotation, three fresh D2 loads each, B3's read benchmark three times per load (`results/i1r-summary.json`):
+   the old write path on the released image, the old path on `morletdb:b310`, and I1 on `morletdb:b310`. Medians of
+   nine p50s: **build** (b310 / released, old path) 0.99–1.01 for every query; **write path** (I1 / old, same
+   image) R3 1.11, R5 1.11, R2 1.02, others 0.997–1.016. On the old path reads varied 1–4% within and between
+   loads; after I1 loads up to 17% within a load and 20% between loads. The build is not the cause.
+2. **Same process versus fresh process** (12:00, 1-minute load average 4.8–7 from the test itself). Two loads per
+   arm, reads in the ingesting process, in a fresh Python process, and again after `gc.collect()`
+   (`results/i1r-process_*.json`). Noise in this run was as large as the effect in both arms (old path R3 7.5–8.9
+   ms across the three readings of one load); fresh-process R3 7.53 against 7.59 ms (1.01), R5 1.07.
+   Inconclusive.
+3. **Inside the server** (12:03–12:06). Two loads per arm; all of B3's planned intervals read in one statement
+   per query type (50 passes, `morlet_read_interval_raw`), five rounds (`results/i1r-server_*.json`): microseconds
+   per read, I1 / old: R1 1.003, R2 0.988, R3 0.977, R4 0.981 / 0.998, R5 0.965; rounds within 1–3% (old path R5
+   up to 7%). **Reading data written by I1 costs the server the same as reading data written by the old path.**
+
+**Finding.** No read defect in the database: stored chunks are byte-identical, and the server reads them equally
+fast. The server spends about 3.2 ms of an R3 read that B3 measures at 7.5–8 ms from the macOS client, so more
+than half of a measured read is client, Docker Desktop's network path and conversion. The difference in B3.10 and
+B3.11 sits in that part; its exact cause (most likely the state of the client process that has just run the I1
+ingestion) is not established. A stage that decides adoption should therefore measure reads in a fresh client
+process and also report server-side read cost.
+
+# Amendment B3.12: B3.11 with reads from a fresh client process
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `d819edb`, 2026-11-05 12:16) before any benchmark-set load
+(smoke check on the development set, `results/dev/b312-smoke/`). Started automatically when the start condition
+held (12:17:55, 1-minute load average 2.75, no foreign process above half a core; `results/b312.start`); run
+12:17–12:27 (`results/b312/`, `run_b312.sh`, log `results/b312.log`). No foreign process above half a core in any
+snapshot; load averages between loads 3.1–5.5 from the session itself.
+
+**Correctness: all six loads passed; stored chunks byte-identical in all six** (25,138 chunks, one digest).
+Ingestion (reported): `morletdb-i1` 13.66, 13.61, 13.52 M samples/s; `morletdb-033` 6.39, 6.31, 6.19 M.
+
+## Reads from a fresh client process (p50 ms of each load) and inside the server (µs per read)
+
+| Query | `morletdb-i1` | median | `morletdb-033` | median | ratio | met | server-side ratio (medians) |
+|---|---|---:|---|---:|---:|---|---:|
+| R1 | 0.629, 0.622, 0.625 | 0.625 | 0.619, 0.624, 0.623 | 0.623 | 1.003 | yes | 1.027 |
+| R2 | 6.683, 6.785, 6.639 | 6.683 | 6.554, 6.681, 6.520 | 6.554 | 1.020 | yes | 1.002 |
+| R3 | 7.442, 7.707, 11.333 | 7.707 | 7.162, 7.694, 7.345 | 7.345 | 1.049 | yes | 1.002 |
+| R4 recent | 0.621, 0.635, 0.629 | 0.629 | 0.724, 0.632, 0.635 | 0.635 | 0.991 | yes | 0.999 |
+| R4 older | 0.619, 0.610, 0.614 | 0.614 | 0.609, 0.616, 0.606 | 0.609 | 1.008 | yes | 1.036 |
+| R5 (4 threads) | 0.810, 0.817, 0.804 | 0.810 | 0.869, 0.796, 0.780 | 0.796 | 1.018 | yes | 1.009 |
+| Interval statistics | 2.545, 2.540, 2.572 | 2.545 | 2.551, 2.536, 2.520 | 2.536 | 1.004 | yes | |
+
+p95 medians (reported): within 0.96–1.13× for every query. `morletdb-i1` D2 r3 was slower in both its client and
+its server-side reads (R3 11.3 ms and 4,275 µs, against 7.4–7.7 ms and 3,155–3,169 µs in its other loads), with
+no foreign process in its snapshots; the median over three loads absorbs it.
+
+**Verdict: all three criteria are met. `morletdb-i1` is adopted as the recommended configuration.** Together with
+B3.10: from one client connection, the next release (SQL 0.3.4, unreleased) ingests **1.4× (D2) and 1.6× (D1)
+faster than QuestDB 10.1.0** and 2.2× / 2.1× faster than 0.3.5-alpha.1, with byte-identical stored data and reads
+unchanged. The website's QuestDB tab adds the B3.10 row, labelled as not yet released; the chart and the other
+systems' tabs keep the released build's same-session pairs (B3.8, B3.9), because B3.10 paired I1 with QuestDB only.
+
+# Amendment B3.13: every system beside the released MorletDB 0.3.6-alpha.1
+
+Stage frozen in [PROTOCOL.md](PROTOCOL.md) (commit `0024d59`, 2026-11-05 14:02) before any benchmark-set load
+(development smoke check passed for every system, `results/dev/b313-smoke/`). Started automatically when the start
+condition held (14:05:53, 1-minute load average 2.39, no foreign process above half a core; `results/b313.start`);
+run 14:05–16:25 (`run_b313.sh`, log `results/b313.log`), MorletDB `ghcr.io/merkhet-io/morletdb:0.3.6-alpha.1`
+(`sha256:439b1f01484e…`), arm `morletdb-i1`, reads from a fresh client process for every system. Summary:
+`summarize_b313.py` (full tables printed by it).
+
+**Machine (reported, as the amendment requires).** From 14:07 on, a Safari/WebKit page used 60–130% of a core in
+most pre-load snapshots, Spotlight 70% once (before TimescaleDB D2 r3), and **a LaTeX build started by this work
+(`tectonic`, the second report) ran 14:23–14:27, during four loads of the TDengine pair** (MorletDB D1 r2 and r3,
+TDengine D1 r2, D2 r3). Systems alternated, so ratios within a pair are comparable; ratios close to the 10%
+threshold should be read with that in mind. Per-load snapshots are in `results/b313-*/machine/`.
+
+**Correctness: all 78 loads passed; MorletDB's stored chunks were byte-identical in every load** (25,138 chunks,
+one digest, equal to B3.10–B3.12's).
+
+## Same-session results (× MorletDB's figure; > 1 = MorletDB better; ingestion: ratio of medians, all-loads bound)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|
+| QuestDB 10.1.0 | **1.49 (1.42)** | **1.65 (1.63)** | 1.7 / 1.8 | no statement (0.95 / 1.29) | 1.1 / 1.2 | 1.7 | no statement (1.02 / 1.94) | 13× |
+| TDengine 3.4.3.3 | 2.98 (2.64) | 2.85 (2.48) | 5.9 / 4.6 | 7.3 / 6.3 | 4.9 / 4.0 | 13.8 | 1.5 / 3.9 | 6× |
+| TimescaleDB 2.31.0 (columnstore) | 15.3 (13.8) | 14.5 (14.1) | 2.4 / 2.1 | 5.0 / 4.6 | 3.3 / 2.9 | 3.5 | 3.9 / 3.3 | 2.3× |
+| IoTDB 2.0.11 (table) | 5.2 (4.9) | 5.7 (5.5) | 11.7 / 8.8 | 4.8 / 3.7 | 2.9 / 2.6 | 7.1 | 2.8 / 3.0 | 34× |
+| CrateDB 6.4.6 (array) | 17.2 (15.6) | 15.1 (13.5) | 11.0 / 10.3 | 6.8 / 6.1 | 11.5 / 8.6 | 7.3 | 24.5 / 35.3 | 35× |
+| CrateDB 6.4.6 (row) | 35.7 (34.6) | 42.0 (39.7) | 16.2 / 15.1 | 14.5 / 13.1 | 10.4 / 8.6 | 11.1 | 1.7 / 2.6 | 53× |
+
+TimescaleDB's rowstore state reads 2.8–6.2× slower than MorletDB (statistics 5.9×). MorletDB ingested 10.8–14.3 M
+samples/s from one connection across the pairs (CrateDB pairs lowest, 11.6–11.8 M D2, with the WebKit load highest
+in those snapshots); every competitor's ingestion statement holds in all loads.
+
+**Statements against QuestDB (≥ 10% in all loads, or at both p50 and p95):** MorletDB 0.3.6-alpha.1 ingests from one
+connection **1.5× (D2) and 1.65× (D1) faster** (all-loads bounds 1.42 and 1.63); reads 4,096 samples 1.7× / 1.8×
+faster, three channels 1.1× / 1.2× faster, recent and older short reads 1.3× faster, 1.7× more concurrent queries;
+long reads (R2) and interval statistics: no statement; 13× less server memory.
+
+## Chunk summaries (arm `morletdb-i1-sum`, QuestDB's pair)
+
+| | Statistics p50 / p95 | Ingestion D2 / D1 (median) | Database |
+|---|---|---|---|
+| MorletDB 0.3.6 | 2.54 / 2.69 ms | 14.13 M / 13.95 M | 169.3 MB |
+| **MorletDB 0.3.6 with chunk summaries** | **0.56 / 0.70 ms** | 13.90 M / 13.63 M (−1.7% / −2.3%) | 171.2 MB (+1.1%) |
+| QuestDB 10.1.0 | 2.59 / 5.22 ms | 9.49 M / 8.43 M | |
+
+With chunk summaries, MorletDB computes interval statistics **4.6× (p50) and 7.5× (p95) faster than QuestDB**, at
+1.7–2.3% of its ingestion speed and 1.1% more database; it still ingests 1.46× / 1.62× faster than QuestDB.
+
+## Scope
+
+One dataset, one machine, one client connection; the competitors' configurations are their stages' (B3.2,
+B3.4–B3.7). Long reads are not faster than QuestDB's on 0.3.6; parallel decoding (main, after 0.3.6) addresses them
+(`../reads_r2/ATTRIBUTION.md`) and needs its own stage once released.
+
+# Amendment B3.14: long reads and interval statistics against QuestDB with parallel decode
+
+Protocol: Amendment B3.14 in [PROTOCOL.md](PROTOCOL.md), frozen in `e0b926c` before any benchmark load; run by the
+assistant overnight at the owner's request. Runner `run_b314.sh`, summary [`summarize_b314.py`](summarize_b314.py);
+results in `results/b314-questdb/` and `results/b314-released/`. Development build `morletdb:b314` (main at
+`5274e88`, SQL 0.3.5, parallel decode; `sha256:7dff89832ff3…`) and the released `0.3.6-alpha.1`, QuestDB 10.1.0.
+
+**Machine.** The start condition was met at 23:48:57 (1-minute load average 2.71, no foreign process above half a
+core; `results/b314-questdb/b314.start`); the run took 23:48–00:00 on 2026-11-06. Load averages before loads
+(median 7.2, max 9.7) came from the session itself: Docker's VM and backend are the only processes above half a
+core in the snapshots, except `signpost_reporter` (macOS diagnostics) in two. The Mac was kept awake with
+`caffeinate` on AC power. One earlier start attempt waited for the condition (a browser process held 70% of a core)
+and was stopped before any load; the F2 study ran in between.
+
+**Correctness: all 24 loads passed; MorletDB's stored chunks were byte-identical in every load and on both images**
+(one digest, equal to B3.10–B3.13's).
+
+## QuestDB pair (× MorletDB build's figure; > 1 = MorletDB better)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R4 recent / older | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|---|
+| MorletDB build | **1.48 (1.45)** | **1.64 (1.63)** | 1.2 / 2.1 | no statement (1.03 / 1.17) | 1.2 / 1.3 | no statement (1.03 / 1.34; 0.89 / 1.26) | 1.64 | no statement (0.98 / 1.76) | 13× |
+| MorletDB build, chunk summaries | **1.47 (1.46)** | **1.62 (1.60)** | 1.2 / 2.2 | no statement (1.05 / 1.19) | 1.2 / 1.3 | no statement | 1.59 | **4.6 / 8.2** | 14× |
+
+## Build against the release (same session)
+
+Ingestion, R1, R3–R5 and statistics are equal within noise (ratios 0.97–1.07). **R2 (long reads): 1.17× faster at
+p50 (5.70 against 6.67 ms) and 1.05× at p95 (8.63 against 9.04 ms): no statement** under B3's rule. Parallel decode
+shortens the median long read but not its tail on this machine, where a long read of 64 chunks spends most of its
+time outside decoding (B3.12 found more than half of a measured read in the client and Docker's network path).
+
+## Statements against QuestDB (B3.14, development build)
+
+MorletDB ingests from one connection **1.5× (D2) and 1.6× (D1) faster** (all-loads bounds 1.45 and 1.63), reads
+4,096 samples 1.2× / 2.1× faster and three channels 1.2× / 1.3× faster, serves 1.6× more concurrent queries, with
+13× less server memory. With chunk summaries it computes interval statistics **4.6× (p50) and 8.2× (p95) faster**.
+**Long reads (R2) and base-arm statistics remain without a statement**: parallel decode does not close the R2 gap
+at p50; the remaining cost is in transfer and the client, which the planned compressed transfer (chunks sent still
+encoded and decoded in the client) targets. Short reads of older data (R4) lost B3.13's statement (0.89 / 1.26).
+
+**Scope.** A development build of main, one machine, one dataset. As the amendment says, the website keeps B3.13's
+figures until a release containing this code is measured.
+
+# Amendment B3.15: the released 0.3.7-alpha.1 with compressed transfer against QuestDB
+
+Protocol: Amendment B3.15 in [PROTOCOL.md](PROTOCOL.md), frozen in `e3a3471` before any load of the benchmark set,
+with three deviations recorded there before the result run. Runner `run_b315.sh`, summary
+[`summarize_b315.py`](summarize_b315.py); results in `results/b315-questdb/` and `results/b315-previous/`. Images:
+the released `0.3.7-alpha.1` (`sha256:71b3086beadd…`) and `0.3.6-alpha.1` (`sha256:439b1f01484e…`), QuestDB 10.1.0.
+Decoder: `libmorlet_ffi.dylib` from the release's macOS wheel, checked against the release's `SHA256SUMS`, sha256
+`3857d48f7b8d…`, recorded in every `morletdb-i2` result.
+
+**Attempts.** Two earlier attempts ran all 24 loads correctly but are not admissible, and their figures were not
+looked at. Both were set aside before reading any figure, and both are kept for the record:
+- Attempt 1 (10:23) started on a busy machine, at a load average of 5.66 (`results/b315-attempt1/README.md`).
+- Attempt 2 (11:58) slept from 12:04, with the lid closed on battery (`results/b315-attempt2/README.md`, with the
+  power log).
+
+Three arming runs stopped before any load:
+- A runner bug under `pipefail`.
+- Docker Desktop not running: every load failed at once, and the empty records were deleted.
+- A start check that sampled the machine twice.
+
+The runner now waits until Docker is up, the Mac is on AC power without lid sleep, and the machine is quiet. It
+checks power and lid again before every load. None of this changes a measurement.
+
+**Machine.** The start condition was met at 15:46:46 (1-minute load average 2.48, no foreign process above half a
+core; `results/b315-questdb/b315.start`). The run took 15:46–15:58 on 2026-11-06, on AC power with the lid closed and
+an external display (deviation 3). The power log shows no sleep and no battery power during the run.
+
+Load averages before loads (median 5.87, max 7.68) came from the session itself: Docker's VM and backend are the
+only processes above half a core in the snapshots, except WebKit's networking process (57% and 51%) in two of 48.
+Docker was never restarted.
+
+**Correctness: all 24 loads passed.** Every read matched the source bit for bit, and MorletDB's stored chunks were
+byte-identical in all 18 MorletDB loads, on both images (one digest, `bd6cd3a4…`, equal to B3.10–B3.14's). Every
+`morletdb-i2` load read R2 and R3 by compressed transfer.
+
+## QuestDB pair (× MorletDB's figure; > 1 = MorletDB better; ingestion: ratio of medians, all-loads bound)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R4 recent / older | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.3.7, compressed transfer (`morletdb-i2`) | **1.53 (1.51)** | **1.58 (1.55)** | no statement (1.02 / 1.33) | **2.6 / 2.6** | **2.9 / 2.7** | no statement (0.84 / 1.02); **QuestDB 1.5 / 1.2** | 1.57 | **4.4 / 7.3** | 13× |
+| 0.3.7, raw transfer (`morletdb-i1`) | **1.54 (1.53)** | **1.60 (1.55)** | **1.2 / 1.5** | no statement (1.08 / 1.13) | **1.4 / 1.2** | no statement (0.95 / 1.26; 0.90 / 1.36) | 1.71 | **4.5 / 8.1** | 13× |
+
+Medians (p50 / p95 ms), `morletdb-i2` against QuestDB:
+- R2: 2.53 / 3.27 against 6.68 / 8.34.
+- Interval statistics: 0.56 / 0.64 against 2.45 / 4.66.
+- R4 older: 0.82 / 1.43 against 0.54 / 1.16.
+
+Server memory: 176 MiB against 2,267 MiB.
+
+## The frozen questions
+
+1. **R2 (128,000 samples): MorletDB 0.3.7 with compressed transfer is 2.6× faster than QuestDB at p50 and at p95.**
+   With raw transfer, the same release has no statement (1.08 / 1.13), as in B3.13 and B3.14.
+2. **Interval statistics: 4.4× faster at p50 and 7.3× at p95.** Chunk summaries are now on by default; raw
+   transfer gives 4.5 / 8.1.
+3. **Everything else, including the losses:**
+   - Ingestion keeps its statements (1.5× and 1.6×), and R3 keeps and strengthens its statement (2.9× / 2.7×).
+   - **R1 loses B3.13's statement in the compressed-transfer arm** (1.02 / 1.33). The raw arm keeps it (1.2 / 1.5).
+   - **R4 on older data is a loss: QuestDB is 1.5× faster at p50 and 1.2× at p95.** The raw arm has no statement
+     (0.90 / 1.36).
+   - R5 serves 1.57× more queries than QuestDB, against 1.71× for the raw arm.
+
+## Compressed against raw transfer, and 0.3.7 against 0.3.6 (same session)
+
+**Compressed against raw transfer:**
+- R2 is 2.4× / 2.3× faster (2.53 against 6.20 ms at p50) and R3 2.2× / 2.2× faster.
+- Interval statistics: no statement (0.96 / 0.90).
+- Ingestion and memory are equal (0.99).
+
+**Short reads are slower in the compressed-transfer arm** (R1 1.1× / 1.1×, R4 recent 1.1× / 1.2×, R4 older
+1.4× / 1.7×; R5 0.91×). Both arms read these by the same raw statement: they are shorter than the 32,768-sample
+threshold, as in the SDK. The cause, found after the stage, is the harness's per-read decoder lookup (see the
+investigation below). As recorded at the time:
+- One known difference: the harness looks up the decoder on every read (about 20 µs per call, measured afterwards
+  outside the run), where the SDK decides once. That explains part of R1's 0.09 ms, not R4 older's 0.22 ms.
+- The arm also always runs first in each round.
+
+Finding the cause needs its own exploratory measurement, so these figures stand as measured.
+
+**0.3.7 with compressed transfer against 0.3.6:**
+- R2: 2.8× / 2.6× faster. R3: 2.3× / 2.0× faster.
+- Interval statistics: 4.5× / 4.1× faster, from summaries by default.
+- Ingestion: no statement (0.96 / 0.97). Memory is equal.
+- Short reads: 1.1×–1.5× slower, as above.
+
+Storage: chunk bytes are unchanged, and the summaries add 1.8 MB of heap on this dataset (4.33 MB on 0.3.7 against 2.48 MB on 0.3.6
+for `b3_chunks`).
+
+## Investigation of the slower short reads (exploratory, after the stage, not part of it)
+
+[`short_reads_i2.py`](short_reads_i2.py) loaded the development set once into the released 0.3.7-alpha.1 and ran
+five client variants, each in a fresh process. The order of the variants rotated every round, and there were
+five rounds. Results are in `results/dev/short_reads_i2_20261106T163107.json`.
+
+Each value is the p50 in ms, as the median of the five rounds:
+
+| Variant | R1 | R4 recent | R4 older | R2 |
+|---|---:|---:|---:|---:|
+| `i1`: raw transfer | 0.612 | 0.626 | 0.602 | 5.83 |
+| `i2`: compressed transfer, as in B3.15 | 0.691 | 0.711 | 0.688 | 2.72 |
+| `i2-once`: as `i2`, transfer decided once per length | 0.615 | 0.644 | 0.604 | 2.59 |
+| `i1-lib`: raw, with the SDK imported and the native library loaded | 0.616 | 0.628 | 0.606 | 5.86 |
+| `i2-noR23`: as `i2`, without the compressed R2 and R3 reads | 0.689 | 0.711 | 0.689 | — |
+
+**Cause: the benchmark harness, not MorletDB and not the SDK.** B3.15's `morletdb-i2` adapter resolved the SDK's
+path and import on every read before deciding the transfer. That cost about 80 µs per read in a fresh process, which
+is the whole gap on short reads: deciding once (`i2-once`) matches raw transfer, and also takes about 0.13 ms off R2.
+
+The other candidates are ruled out:
+- Loading the library has no effect: `i1-lib` matches `i1`.
+- Earlier compressed reads leave nothing behind: `i2-noR23` matches `i2`.
+- The arm's position in a round is not the cause: the gap is the same in every rotated order.
+
+The SDK decides from an environment variable and cached lookups, measured at about 0.5 µs per read.
+
+The development set's gap (about 0.08 ms) is smaller than B3.15's R4 older (0.22 ms), which ran on a busier
+machine (load averages 5.9 to 7.7, from the session itself). The harness now caches the decision as the SDK does
+(about 0.07 µs).
+
+**B3.15's figures stay as measured**, including the R4 loss and the missing R1 statement, because the stage was
+frozen with this harness. Whether the SDK's compressed-transfer path keeps R1's statement and closes R4 against
+QuestDB needs a new frozen stage with the corrected harness.
+
+## Statements against QuestDB (B3.15, released 0.3.7-alpha.1)
+
+MorletDB, used as its SDK uses it:
+- Ingests from one connection **1.5× (D2) and 1.6× (D1) faster**.
+- Reads 128,000 samples **2.6× faster** and three channels **2.9× / 2.7× faster**.
+- Computes interval statistics **4.4× / 7.3× faster**.
+- Serves 1.6× more concurrent queries, with 13× less server memory.
+
+**Short reads of older data (R4) are 1.5× / 1.2× faster on QuestDB, and R1 has no statement** in this arm.
+
+**Scope.** One machine, one dataset, a client on the same host as the server's Docker VM. Compressed transfer helps
+most where transfer is costly, and its gain will differ on other network paths.
+
+**Website.** Under the rule fixed in the amendment, the QuestDB tab and lane take the `morletdb-i2` figures above,
+labelled release 0.3.7-alpha.1 with compressed transfer, including the R4 loss and R1's missing statement. The
+other databases keep B3.13's figures, labelled 0.3.6-alpha.1.
+
+# Amendment B3.16: B3.15 with the corrected harness
+
+Protocol: Amendment B3.16 in [PROTOCOL.md](PROTOCOL.md), frozen in `f94bf29` before any load of the benchmark set.
+Runner `run_b316.sh`, summary [`summarize_b316.py`](summarize_b316.py), results in `results/b316-questdb/`. Images:
+the released `0.3.7-alpha.1`, the same image as B3.15, and QuestDB 10.1.0. Decoder sha256 `3857d48f7b8d…`, recorded
+in every `morletdb-i2` result.
+
+**Machine.** The start condition was met at 17:19:04, at a 1-minute load average of 2.89
+(`results/b316-questdb/b316.start`). The run took 17:19–17:28 on 2026-11-06, on AC power with the lid closed and
+an external display. The power log shows no sleep and no battery power, and Docker was never restarted.
+
+**Load during the run: a browser GPU process (`com.apple.WebKit.GPU`) used about one core** in almost every machine
+snapshot after the start (median 108% of a core, one snapshot at 198% for WebKit content). Load averages before
+loads had a median of 8.65 and a max of 12.20, against 5.87 in B3.15. The frozen conditions govern the start, and
+the systems alternate within the session, so the run is admissible.
+
+Host load slows client-heavy paths unevenly, though (B3.4–B3.7, B3.9), and QuestDB measured slower here than in
+B3.15: R2 at 8.28 against 6.68 ms, interval statistics at 2.88 against 2.45 ms. **B3.16's margins are therefore
+probably somewhat larger than on a quiet machine**, and B3.15's figures, which carry a harness cost of their own,
+bracket them from below.
+
+**Correctness: all 18 loads passed.** Every read matched the source bit for bit. MorletDB's stored chunks were
+byte-identical in all 12 MorletDB loads (`bd6cd3a4…`), and every `morletdb-i2` load read R2 and R3 by compressed
+transfer.
+
+## QuestDB pair (× MorletDB's figure; > 1 = MorletDB better; ingestion: ratio of medians, all-loads bound)
+
+| | Ingestion D2 | Ingestion D1 | R1 p50 / p95 | R2 | R3 | R4 recent / older | R5 queries/s | Statistics | Memory |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.3.7, compressed transfer (`morletdb-i2`) | **1.55 (1.43)** | **1.65 (1.58)** | **1.4 / 1.6** | **3.1 / 2.8** | **3.0 / 2.5** | no statement (0.99 / 1.12); **1.5 / 1.9** | 2.01 | **5.4 / 9.8** | 13× |
+| 0.3.7, raw transfer (`morletdb-i1`) | **1.53 (1.51)** | **1.67 (1.57)** | **1.3 / 1.6** | **1.2 / 1.4** | **1.2 / 1.1** | no statement (1.06 / 1.40); **1.4 / 1.9** | 1.68 | **5.3 / 8.9** | 13× |
+
+Medians (p50 / p95 ms), `morletdb-i2` against QuestDB:
+- R1: 0.63 / 1.03 against 0.86 / 1.66.
+- R2: 2.65 / 3.83 against 8.28 / 10.80.
+- R3: 3.51 / 4.95 against 10.53 / 12.37.
+- R4 recent: 0.69 / 1.31 against 0.69 / 1.47.
+- R4 older: 0.61 / 0.93 against 0.90 / 1.79.
+- Interval statistics: 0.53 / 0.59 against 2.88 / 5.84.
+- R5: 3,974 against 1,978 queries/s, with p95 latency 1.7 against 5.3 ms.
+
+Server memory: 177 MiB against 2,289 MiB.
+
+## The frozen questions
+
+1. **R1 (4,096 samples): MorletDB is 1.4× faster at p50 and 1.6× at p95.** This is a statement again, and larger
+   than the expected 1.2×, partly because QuestDB was slower in this session.
+2. **R4:** on older data **MorletDB is 1.5× / 1.9× faster**, where B3.15 measured a loss. On recent data there is
+   **no statement** (0.99 / 1.12).
+3. **Everything else:** R2 3.1× / 2.8×, R3 3.0× / 2.5×, interval statistics 5.4× / 9.8×, ingestion 1.55× / 1.65×,
+   and 2.0× the concurrent throughput, with 13× less memory. No losses.
+
+**Compressed against raw transfer:**
+- With the corrected harness, short reads are equal (R1 1.01 / 0.98, R4 older 1.01 / 0.99, R4 recent 0.93 / 0.80;
+  no statements). That confirms the investigation.
+- R2 is 2.5× / 2.1× faster and R3 2.6× / 2.2× faster.
+
+Raw transfer also gets an R2 statement against QuestDB in this session (1.2× / 1.4×), which B3.15 did not have.
+That again points to QuestDB being slower under this session's load.
+
+## Statements against QuestDB (B3.16, released 0.3.7-alpha.1)
+
+MorletDB, used as its SDK uses it:
+- Ingests from one connection **1.55× (D2) and 1.65× (D1) faster**.
+- Reads 4,096 samples **1.4× / 1.6× faster**, 4,096 samples of older data **1.5× / 1.9× faster**, 128,000 samples
+  **3.1× / 2.8× faster**, and three channels **3.0× / 2.5× faster**.
+- Computes interval statistics **5.4× / 9.8× faster**.
+- Serves **2.0×** the concurrent queries, with 13× less server memory.
+
+Short reads of recent data have no statement, and there are no losses.
+
+**Scope.** One machine, one dataset, a client on the same host as the database's container, with a browser process
+using about one core during the session. Margins are probably larger than on a quiet machine, and B3.15 measured
+smaller ones (R2 2.6×, statistics 4.4× / 7.3×).
+
+**Website.** Under the rule fixed in the amendment, the QuestDB tab and lane take these `morletdb-i2` figures in
+place of B3.15's, with the browser load and B3.15's smaller margins stated beside them. Storage stays as B3.15
+measured it.
+# Amendment B3.17: parallel writers with the current release
+
+Protocol: Amendment B3.17 in [PROTOCOL.md](PROTOCOL.md), frozen in `228e13f` before any load of the benchmark set
+(development smoke check `results/dev/b317-smoke/`: 4 writers, 21.6 M samples/s, correct). Runner `run_b317.sh`,
+results in `results/b317-parallel/`, log `results/b317.log`. Images: the released
+`ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (SQL 0.3.7) with B3.10's client path, and QuestDB 10.1.0.
+
+**Machine.** The start condition was met at 18:53:28 on 2026-11-08 (1-minute load average 2.63, no foreign process
+above half a core; `b317.start`, which also lists the owner's idle Langfuse containers). The run took 18:53–18:59 on
+AC power. Load averages in the snapshots before and after loads had a median of 6.95 and a maximum of 9.24, from the
+session's own loads. **A Safari WebContent process used 1.3–1.6 cores in two snapshots around 18:55:51** (after
+QuestDB's 4-writer D2 load r2, before MorletDB's 8-writer D2 load r2), while the owner closed the browser; every
+other snapshot shows no foreign process above half a core.
+
+**Correctness: all 18 loads passed** (counts and every channel by SHA-256).
+
+## Ingestion with parallel writers (median [range] of three loads, samples/s)
+
+| Writers, class | MorletDB 0.3.9-alpha.1 | QuestDB 10.1.0 | Ratio of medians (all-loads bound) | Server CPU, median of means | Working-set peak (50 ms) |
+|---|---:|---:|---|---|---|
+| 4, D2 | **22.76 M** [21.74–23.08] | 14.07 M [14.04–14.57] | **1.62 (1.49)** | 187% / 740% | 224 / 2,514 MiB |
+| 8, D2 | **22.44 M** [21.82–22.92] | 13.96 M [12.92–13.99] | **1.61 (1.56)** | 212% / 717% | 273 / 2,901 MiB |
+| 8, D1 | **23.19 M** [22.00–23.35] | 12.79 M [12.21–12.96] | **1.81 (1.70)** | 192% / 609% | 273 / 2,845 MiB |
+
+Data was queryable 3–4 ms (MorletDB) and 11–76 ms (QuestDB) after the last acknowledgement.
+
+**Statements (≥ 10% in all three loads):** with 4 or 8 parallel writers MorletDB 0.3.9-alpha.1 ingests **1.6×**
+(asynchronous) and **1.8×** (durable, 8 writers) faster than QuestDB, using about 2 cores where QuestDB uses 6–7, with
+about a tenth of its working set.
+
+**Against B3.2** (another session, so descriptive only): MorletDB 16.5 → 22.4 M samples/s with 8 writers (D2), 15.5 →
+23.2 M (D1); QuestDB 10.1 → 14.0 M and 8.4 → 12.8 M, so this session's machine or QuestDB was faster too.
+
+**Not explained:** MorletDB does not scale from 4 to 8 writers (22.8 against 22.4 M) while its server uses about
+2 of 8 cores, so the limit is outside the server: most likely the writer processes on the host, which parse and send
+the data, or Docker's network path. Not measured.
+
+**Expectation:** met (above B3.2's 16.5 M; less than the single-connection gain).
+
+**Website:** under the rule fixed in the amendment, the QuestDB tab's parallel-writer row takes the 8-writer figures
+(22.4 against 14.0 M, durable 23.2 against 12.8 M).
+
+# Memory measurement check (exploratory, after B3.16, not a stage)
+
+Question (from the owner): is MorletDB's server memory underestimated? B3 samples `docker stats` once per second
+and reports the highest sample. A MorletDB load takes about 7 seconds, so it gets only about 4 samples, where
+TimescaleDB gets about 50.
+
+The harness now also records, for every system:
+- **`working_set_peak_mib_50ms`**: the working set as `docker stats` and Kubernetes define it (`memory.current`
+  minus inactive file pages), sampled every 50 ms inside the container.
+- **`peak_mib`**: the kernel's exact high-water mark (`memory.peak`), which includes all page cache the container
+  held.
+- anon, file and shmem memory at the end of ingestion.
+
+All six database images provide these counters. One development-set D2 load each, on 0.3.7-alpha.1 and QuestDB
+10.1.0 (`results/dev/mem-check/`):
+
+| | 1 s `docker stats` peak (as published) | 50 ms working-set peak | kernel peak, with page cache | file pages at end |
+|---|---:|---:|---:|---:|
+| MorletDB | 178.6 MiB (4 samples) | 179.6 MiB | 535.3 MiB | 501.3 MiB |
+| QuestDB | 2,265.1 MiB (6 samples) | 2,301.3 MiB | 3,254.2 MiB | 2,633.1 MiB |
+| QuestDB ÷ MorletDB | 12.7× | 12.8× | 6.1× | |
+
+**The 1-second sampling did not miss MorletDB's peak**, so the published memory ratios stand as working-set
+ratios. Counting page cache, which the kernel reclaims under pressure, the ratio against QuestDB would be about 6×.
+MorletDB's cache is mostly the data and write-ahead log it just wrote, and shmem is PostgreSQL's 128 MB of shared
+buffers. Future stages report all three figures. The website now says that its memory figure is the working set,
+without reclaimable page cache.
+
+## Study M1: memory caps (frozen 96ee6af, run 2026-11-06 18:00–19:25)
+
+One D2 load per system and cap, swap off, 8 CPUs, the B3.16 start condition (load average 2.24 at start; the largest
+foreign process was a WebKit GPU process at 0.37 of a core). Runner `run_m1.sh`, summary `summarize_m1.py`, results
+in `results/m1/`. Descriptive only: one load per cell, no speed statements.
+
+| System | smallest passing cap | × MorletDB's | expectation (frozen) | failed caps and cause |
+|---|---|---:|---|---|
+| MorletDB 0.3.7-alpha.1 | **256 MB** | 1× | 256–512 MB | none |
+| TDengine 3.4 | 1 GB | 4× | 512 MB–1 GB | 256 MB: no progress, 20-minute limit; 512 MB: refused `CREATE DATABASE` ("No enough memory in dnode") |
+| CrateDB 6.4 | 1 GB | 4× | 2–4 GB | 256 MB: did not start; 512 MB: server closed the connection during the load |
+| QuestDB 10.1 | 2 GB | 8× | 1 GB (perhaps 512 MB) | 256 MB: did not start (out-of-memory kill); 512 MB: did not start; 1 GB: ingestion completed, the read process failed (its error output was not kept; no out-of-memory kill recorded) |
+| TimescaleDB 2.31 | 2 GB | 8× | 512 MB | 256 MB, 512 MB, 1 GB: out-of-memory kill of a server process (ingestion completed at 1 GB; the kill came during the row-store reads) |
+| IoTDB 2.0 | 2 GB | 8× | 1–2 GB | 256 MB: did not start; 512 MB: connection lost during ingestion; 1 GB: insert refused ("element size of WALEntry 9200000 is larger than the total memory size of wal buffer queue") |
+
+At the smallest cap and at 16 GB in the same session (p50; working set: 50 ms peak):
+
+| System | 16 GB: ingest / R1 / R2 / stats ms / working set MiB | smallest cap: the same |
+|---|---|---|
+| MorletDB | 14.14 M/s / 0.628 / 2.38 / 0.528 / 178.8 | 14.32 M/s / 0.609 / 2.507 / 0.543 / 172 |
+| QuestDB | 9.62 M/s / 0.647 / 6.946 / 2.441 / 2,307 | 9.85 M/s / 0.687 / 6.146 / 2.451 / 2,007 |
+| TimescaleDB | 0.97 M/s / 1.476 / 35.37 / 10.28 / 505 | 0.94 M/s / 1.486 / 34.32 / 10.12 / 247 |
+| TDengine | 5.41 M/s / 3.299 / 43.92 / 3.594 / 1,115 | 5.01 M/s / 3.983 / 45.04 / 3.662 / 677 |
+| IoTDB | 2.81 M/s / 5.82 / 39.90 / 6.29 / 6,276 | 2.74 M/s / 6.402 / 42.78 / 6.571 / 1,372 |
+| CrateDB | 0.80 M/s / 4.465 / 47.63 / 47.76 / 6,220 | 0.76 M/s / 4.515 / 51.82 / 51.26 / 1,023 |
+
+**Answer to the owner's question.** The 16 GB memory row was a footprint: IoTDB and CrateDB fill what they are given
+(about 6 GiB at 16 GB, 1.0–1.4 GiB at their smallest cap), so their 35× working-set ratios overstated the need. The
+need still favours MorletDB: every other system needed 4–8× MorletDB's cap, which is narrower than the 2–35×
+working-set ratios but nowhere below 4×. TimescaleDB's small 16 GB footprint (2–3× MorletDB's) did not translate
+into a small need: with PostgreSQL defaults it was killed for memory at 1 GB during reads. No system slowed down
+noticeably at its smallest cap.
+
+**Against the expectation.** MorletDB, TDengine and IoTDB fell inside their expected ranges; CrateDB needed less than
+expected (1 GB, not 2–4 GB); QuestDB and TimescaleDB needed more (2 GB, not 512 MB–1 GB).
+
+**Limits, stated before any use of these figures.**
+- Caps are powers of two, so a 4× or 8× ratio could be about 2× smaller or larger for a finer ladder.
+- Every system ran its B3 configuration, sized by its own documentation for the cap (CrateDB's heap at half the
+  cap; QuestDB's JVM and IoTDB's start script from the container limit). Several failures are configuration limits
+  an operator could raise or lower, not data that does not fit: TDengine's per-database buffer check, IoTDB's WAL
+  buffer against B3's 9.2 MB insert batches, TimescaleDB's per-query memory. A tuned system could pass at a smaller
+  cap; M1 measures each system as configured for B3, and MorletDB was not tuned either.
+- QuestDB's 1 GB failure is under-recorded: the runner kept only the read process's exit status, not its error
+  output, and the container shows no out-of-memory kill. It counts as a failure under the frozen pass rule.
+- The loaders remove their containers on success, so the container state is recorded only for failed loads.
+- One load per cell; a cap at the edge could pass or fail on another try.
+
+**Website** (rule frozen with M1): the chart's memory row is now each system's smallest passing cap over MorletDB's
+(QuestDB, TimescaleDB, IoTDB 8×; TDengine, CrateDB 4×; no "> 4 GB"); the QuestDB table shows both the 8× cap ratio
+and the 16 GB working set, labelled as the footprint with the documented configuration; the caption says caps are
+powers of two. The other databases' tables keep their B3.13 working-set rows.

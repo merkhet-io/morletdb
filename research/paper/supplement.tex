@@ -19,7 +19,7 @@
 \section*{About this supplement}
 This supplement holds studies that support the system described in the main paper but are not needed for its argument: lossless storage of raw samples, comparisons with the 2026 float codecs and with a time-series database, interval statistics from chunk summaries, envelope precision, building representations outside or inside the database, access control, recovery and load tests, small machines, agent access, and application evidence and negative results. Text, tables and numbers are carried over from draft 0.6 of the paper; protocols and raw results are in the repository~\cite{repo}. Section and table references to ``the paper'' refer to the main manuscript.
 
-The machine, PostgreSQL and pgvector versions are those of the main paper. TimescaleDB 2.30.2 ran in Docker; we compare its sizes, not its speed.
+The machine, PostgreSQL and pgvector versions are those of the main paper. In the storage study P2, TimescaleDB 2.30.2 ran in Docker and we compare only its sizes; B3.7 and B3.9 compare TimescaleDB 2.31 on storage and speed (Section~\ref{sec:b3}).
 
 \section{Lossless chunk coding}\label{sec:codec}
 Each raw chunk is one \code{bytea} value. The codec combines established techniques: fixed polynomial predictors of order 0--4 as in Shorten and FLAC~\cite{shorten,flac}, partitioned Rice coding of zig-zag mapped residuals~\cite{rice}, and a CRC-32C checksum. Its distinctive part is how it treats floats.
@@ -132,55 +132,64 @@ ECG & \textbf{7.40} & 7.84 & 8.08 & 10.87 \\
 \end{tabular}
 \end{table}
 
-\subsection{Against a time-series database (B3)}
-B3 compared \M{} with QuestDB 10.1.0 (open source) on 124 Paderborn acquisitions~\cite{paderborn}: about 4\,s each of three 64\,kHz channels (vibration, two motor currents), three 4\,kHz channels and one 1\,Hz temperature, 101,586,735 samples or 775\,MiB as float64~\cite{b3}. Each database ran alone in a container limited to 8 CPUs and 16\,GB, loaded the samples through its recommended Python client path, and passed every correctness check after every load: each of 868 channels per load read back with the manifest's SHA-256, exact timestamps, and random intervals crossing ingestion batches. Statements need at least 10\% in all loads, or at both p50 and p95. Stage~1 was frozen before any measurement; two amendments (B3.1, B3.2) changed \M{}'s client path and server functions, were tuned on a disjoint development set, and were confirmed once on the benchmark set with QuestDB rerun in the same session. The server changes of B3.1 and B3.2 are SQL 0.3.3 functions that append and read samples as raw little-endian float64 bytes and compute interval statistics while decoding, plus pipelined appends, zero-copy array arguments and a faster decoder (chunks byte-identical).
+\subsection{Against a time-series database (B3)}\label{sec:b3}
+B3 compared \M{} with QuestDB 10.1.0 (open source) on 124 Paderborn acquisitions~\cite{paderborn}: about 4\,s each of three 64\,kHz channels (vibration, two motor currents), three 4\,kHz channels and one 1\,Hz temperature, 101,586,735 samples or 775\,MiB as float64~\cite{b3}. Each database ran alone in a container limited to 8 CPUs and 16\,GB, loaded the samples through its recommended Python client path, and passed every correctness check after every load: each of 868 channels per load read back with the manifest's SHA-256, exact timestamps, and random intervals crossing ingestion batches. Statements need at least 10\% in all loads, or at both p50 and p95. Stage~1 was frozen before any measurement; two amendments (B3.1, B3.2) changed \M{}'s client path and server functions, were tuned on a disjoint development set, and were confirmed once on the benchmark set with QuestDB rerun in the same session. Later stages (B3.4--B3.7) compared other systems with \M{}'s B3.3 numbers from another session; B3.8 and B3.9 repaired that by loading each system alternately with the released \M{} (0.3.5-alpha.1, SQL 0.3.3) in one session on a quiet machine, and their ratios replace the earlier speed statements. The server changes of B3.1 and B3.2 are SQL 0.3.3 functions that append and read samples as raw little-endian float64 bytes and compute interval statistics while decoding, plus pipelined appends, zero-copy array arguments and a faster decoder (chunks byte-identical).
 
 \begin{table}[t]
-\caption{B3.2 against QuestDB 10.1, one client connection unless stated; p50 / p95 where two numbers are given.}
+\caption{B3.8: the released \M{} (0.3.5-alpha.1) against QuestDB 10.1, loaded alternately in one session, one client connection unless stated; medians of three loads; p50 / p95 where two numbers are given. Bold: better by at least 10\% (in all loads, or at both p50 and p95).}
 \label{tab:b3}
 \small\setlength{\tabcolsep}{3pt}
 \begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}Xrr@{}}
 \toprule
 Measure & \M{} & QuestDB \\
 \midrule
-sample data on disk (MiB) & \textbf{156.8} & 232.7 / 1,162.7$^a$ \\
-ingestion, M samples/s & 5.56 & \textbf{8.29} \\
-ingestion, 8 writers, M samples/s & \textbf{16.47} & 10.10 \\
-server memory, peak (MiB) & \textbf{168} & 2,138--2,306 \\
-read 4,096 samples (ms) & \textbf{0.65 / 1.04} & 1.16 / 2.66 \\
-read 128,000 samples (ms) & 7.98 / 11.64 & 7.71 / 13.31 \\
-read 3 $\times$ 64,000 samples (ms) & \textbf{10.68 / 14.62} & 12.52 / 19.11 \\
-min, max, mean, RMS (ms) & \textbf{2.70 / 2.99} & 4.02 / 8.09 \\
+sample data on disk (MiB)$^b$ & \textbf{156.8} & 232.7 / 1,162.7$^a$ \\
+ingestion, asynchronous, M samples/s & 6.30 & \textbf{9.66} \\
+ingestion, durable, M samples/s & 6.15 & \textbf{8.48} \\
+server memory, median peak (MiB) & \textbf{168} & 2,301 \\
+read 4,096 samples (ms) & \textbf{0.63 / 1.01} & 1.02 / 2.29 \\
+read 128,000 samples (ms) & 6.89 / 9.31 & 6.01 / 10.16 \\
+read 3 $\times$ 64,000 samples (ms) & \textbf{7.38 / 10.28} & 8.75 / 12.92 \\
+4 readers, queries/s & \textbf{4,192} & 2,647 \\
+min, max, mean, RMS (ms) & 2.54 / 2.69 & 2.46 / 4.73 \\
+\midrule
+ingestion, 8 writers, M samples/s (B3.2) & \textbf{16.47} & 10.10 \\
+next release (I1, B3.10), asynchronous / durable, M samples/s & \textbf{13.65 / 12.99} & 9.58 / 8.26 \\
 \bottomrule
 \end{tabularx}
-\par\smallskip\footnotesize $^a$Parquet zstd 9 / native columns.
+\par\smallskip\footnotesize $^a$Parquet zstd 9 / native columns. $^b$From B3.2; QuestDB's files and \M{}'s database had the same size in B3.8.
 \end{table}
 
-Table~\ref{tab:b3} shows the confirmed state. \M{} stored the sample data in 33\% less space than QuestDB's smallest arm (Parquet zstd 9, an explicit conversion step that never covers the newest partition) and 87\% less than its native columns. From one client connection QuestDB ingested 1.3--1.6$\times$ faster (1.2--1.4$\times$ with durable commits); with four or eight parallel writers per system \M{} ingested 1.2--2.0$\times$ faster, below four of its eight cores, while QuestDB used most of them. Short and multi-channel reads and interval statistics were faster in \M{}, long reads tied, and four concurrent readers achieved 22\% more queries per second with no latency difference at p50. A retry with one altered sample was refused by \M{} and silently replaced the stored value in QuestDB (deduplicating upsert). Stage~1, before the amendments, had QuestDB ingesting 13--15$\times$ faster and reading long intervals 2--3$\times$ faster; the gap was \M{}'s client path.
+Table~\ref{tab:b3} shows the confirmed state. \M{} stored the sample data in 33\% less space than QuestDB's smallest arm (Parquet zstd 9, an explicit conversion step that never covers the newest partition) and 87\% less than its native columns; its whole database (164.8\,MiB) was 29\% smaller than that arm's data. From one client connection QuestDB ingested about 1.5$\times$ faster with asynchronous and 1.4$\times$ with durable commits (every QuestDB load at least 1.52$\times$ and 1.36$\times$ every \M{} load; B3.2 had found 1.3--1.6$\times$ and 1.2--1.4$\times$ against an earlier build), with 14$\times$ \M{}'s server memory. With four or eight parallel writers per system (B3.2, same session) \M{} ingested 1.2--2.0$\times$ faster, below four of its eight cores, while QuestDB used most of them. Reads of 4,096 samples were 1.6$\times$ / 2.3$\times$ faster in \M{} and three-channel reads 1.2$\times$ / 1.3$\times$; long reads (QuestDB 13\% faster at p50, \M{} 9\% at p95) and interval statistics (on par at p50, \M{} 1.8$\times$ at p95) gave no statement, and four concurrent readers achieved 1.6$\times$ the queries per second. A repeat at the end of the night reproduced the ingestion figures within 1\% and the same read statements. A retry with one altered sample was refused by \M{} and silently replaced the stored value in QuestDB (deduplicating upsert). Stage~1, before the amendments, had QuestDB ingesting 13--15$\times$ faster and reading long intervals 2--3$\times$ faster; the gap was \M{}'s client path.
+
+\textbf{Next release (I1).} The importer and the append path were then changed (issue \#233: importer pacing, batched raw appends, threaded encoding; SQL 0.3.4, not yet released), with development on the development set only~\cite{repo}. B3.10, frozen before its first benchmark load, loaded it alternately with QuestDB 10.1.0 and the released \M{} in one session, three loads per durability class. All 18 loads passed every correctness check, and the stored chunks were byte-identical to the released build's in every load. From one client connection it ingested 13.65 and 12.99\,M samples/s (asynchronous / durable) against QuestDB's 9.58 and 8.26\,M: 1.4$\times$ and 1.6$\times$ faster (every load at least 1.40$\times$ and 1.50$\times$ every QuestDB load), and 2.2$\times$ / 2.1$\times$ the released build, at 177 against 2,307\,MiB peak server memory. The session reproduced B3.8 for the released build (QuestDB at least 1.47$\times$ / 1.16$\times$ faster). Its read criterion, every query's p50 at most 1.1$\times$ the released build's, failed in B3.10 (128,000 samples, 1.12$\times$) and in B3.11 over three loads per arm (three-channel reads 1.27$\times$, four readers 1.23$\times$). An exploratory investigation found no read defect in the database: the server's own read cost for data written by I1 was within 4\% of that for data written by the released path, and more than half of a measured read was client, container network path and conversion. B3.12, frozen with reads from a fresh client process and server-side read cost, met every criterion (client p50 0.99--1.05$\times$, server-side 1.00--1.04$\times$), so the change was adopted. This is one dataset on one machine with 8-CPU containers, paired with QuestDB only; the other systems below are compared with the released build.
 
 Three conditions bound these results. The storage advantage comes mostly from coding values on their grid: without it (an attribution run outside the frozen arms) \M{}'s sample data grew to 621.6\,MiB, larger than QuestDB's Parquet arm; with grid detection (G1) and no quantum declared it was 151.1\,MiB, 35\% smaller than that arm. On the whole volume, PostgreSQL's retained write-ahead log made QuestDB's Parquet arm 33\% smaller with default WAL settings; with a smaller WAL limit the two were within 3\% (240.6 against 247.3\,MiB). And this is one dataset on one machine, a map of trade-offs rather than a ranking. Similarity search was not part of the comparison.
 
 A third amendment (B3.3) measured two things QuestDB does not offer in the same form. Reading all seven channels of one acquisition over a time interval with one server call took 1.76 / 2.37\,ms (64\,ms of data) and 5.76 / 6.88\,ms (0.5\,s) at p50 / p95, 32--39\% faster than QuestDB at p50 with one query per group table; every sample, first index and time was exact. Computing search features during ingestion, with a faster feature extractor adopted under a frozen rule (features bitwise identical to the previous one), reduced ingestion from 6.33 to 1.64\,M samples/s from one connection, 3.9$\times$ the ingest time instead of 9.6$\times$; features added 130\,MB and envelopes 53\,MB to a 165\,MiB database. The extractor remained the largest single cost (49\,s of server time in an 87\,s profiled load).
 
-Two further amendments added databases aimed at industrial IoT, each frozen before its first benchmark load and compared with \M{}'s B3.3 numbers on the same machine and limits (Table~\ref{tab:b3iiot}). CrateDB 6.4 (B3.4) ran as a single node through its Python client over HTTP in three layouts: a row per sample instant, the same with its best compression, and arrays of 4,096 samples per row, its documented pattern for dense series. Its timestamps have millisecond resolution, so every layout stored the sample index. One load overlapped a sleep of the machine and was rerun from a fresh volume under the stage's rule. Apache IoTDB 2.0.11 (B3.5) ran standalone in its table model with nanosecond timestamps, so times were exact without an index, in two layouts: its defaults (GORILLA, LZ4) and ZSTD. Its Python client converts a timestamp column element by element, ten times slower than reading the time as an integer, which the protocol therefore did; part of its remaining read time is client-side decoding (the server answered a 128,000-sample query in about 20\,ms in development). All 25 loads returned every sample exactly. IoTDB's default layout stored the data at about the raw float64 size; XOR-style coding gains little on noisy waveforms. Neither system offers similarity search over an archive; IoTDB's optional function library computes DTW or cross-correlation between two given series.
+Three further amendments added databases aimed at industrial IoT, and a fourth TimescaleDB, each frozen before its first benchmark load. They compared with \M{}'s B3.3 numbers from another session; B3.9 re-paired each system's default or fastest layout with the released \M{} in one session (60 loads, all correct), and its ratios replace their speed statements, while their storage, correctness and semantics stand (storage was re-measured identical; Table~\ref{tab:b3iiot}). CrateDB 6.4 (B3.4) ran as a single node through its Python client over HTTP in three layouts: a row per sample instant, the same with its best compression, and arrays of 4,096 samples per row, its documented pattern for dense series. Its timestamps have millisecond resolution, so every layout stored the sample index. One load overlapped a sleep of the machine and was rerun from a fresh volume under the stage's rule. Apache IoTDB 2.0.11 (B3.5) ran standalone in its table model with nanosecond timestamps, so times were exact without an index, in two layouts: its defaults (GORILLA, LZ4) and ZSTD. Its Python client converts a timestamp column element by element, ten times slower than reading the time as an integer, which the protocol therefore did; part of its remaining read time is client-side decoding (the server answered a 128,000-sample query in about 20\,ms in development). TDengine 3.4.3.3 (B3.6) ran as a single node with nanosecond timestamps through its Python WebSocket client, a subtable per acquisition under supertables, in three layouts: its default (byte-stream split, LZ4), ZSTD at the highest level, and its float compressor tsz. The first two returned every sample exactly in all 12 loads; tsz did not: two channels differed in 54 samples by at most 8 ULP, and TDengine's server reference documents a mantissa truncation of doubles below $10^{-16}$ (default and minimum) for it, so it is lossy and was stopped after its first load. All 37 lossless loads returned every sample exactly. TimescaleDB 2.31.0 (B3.7) ran on PostgreSQL 17 with default settings, an integer nanosecond time dimension, a unique index and binary COPY through psycopg, measured in its rowstore after ingestion and in its columnstore after compression; all 6 loads were exact in both states, and its columnstore came out at about the raw float64 size. With the same-session ratios, \M{} ingested about 8.5$\times$ faster than CrateDB's array layout (18$\times$ its row layout), 2.3--2.6$\times$ faster than IoTDB, 1.2$\times$ faster than TDengine and 6.5$\times$ faster than TimescaleDB, and read intervals 6.4--12$\times$, 3.1--10.7$\times$, 3.6--6.8$\times$ and 2.1--5.4$\times$ faster. The earlier cross-session ingestion figures (about 15$\times$, 2.5$\times$, 1.5$\times$ and 8.5$\times$) overstated the gap: those stages most likely ran on a busy machine, which slows client-heavy paths most. IoTDB's default layout stored the data at about the raw float64 size; XOR-style coding gains little on noisy waveforms. Neither system offers similarity search over an archive; IoTDB's optional function library computes DTW or cross-correlation between two given series.
 
 \begin{table}[t]
-\caption{B3.4 and B3.5: each system's best layout per measure; p50 / p95 where two numbers are given. \M{} from B3.3, same machine and limits.}
+\caption{B3.4--B3.9 against databases for industrial IoT and TimescaleDB. Data on disk: each system's most compact lossless layout (B3.4--B3.7) as a multiple of \M{}'s 165\,MiB database; for TDengine its data files (its whole volume, with 1\,GiB of retained WAL, was 1,602\,MiB). All other rows: B3.9's same-session ratio to the released \M{}, each system's median divided by \M{}'s ($>1$: \M{} better); p50 / p95 where two numbers are given. CrateDB: the better of its array and row layouts per measure ($^r$: rows); IoTDB and TDengine: default layouts; TimescaleDB: columnstore. \M{} refuses an altered resend.}
 \label{tab:b3iiot}
 \small\setlength{\tabcolsep}{3pt}
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}Xrrr@{}}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}Xrrrr@{}}
 \toprule
-Measure & \M{} & CrateDB & IoTDB \\
+Measure & CrateDB & IoTDB & TDengine & Timescale \\
 \midrule
-data on disk (MiB) & \textbf{165} & 1,786 & 660 \\
-ingestion, M samples/s & \textbf{6.33} & 0.43 & 2.55 \\
-read 4,096 samples (ms) & \textbf{0.62 / 0.92} & 7.2 / 11.5 & 7.8 / 10.5 \\
-read 128,000 samples (ms) & \textbf{6.6 / 8.9} & 86.6 / 109.9 & 46.0 / 55.4 \\
-min, max, mean, RMS (ms) & \textbf{2.5 / 2.7} & 3.9 / 7.9 & 7.4 / 11.1 \\
-4 readers, queries/s & \textbf{4,119} & 385 & 435 \\
-altered resend & refused & ignored & replaces \\
+data on disk & 10.8 & 4.0 & 3.4 & 4.9 \\
+ingestion, async.\ / durable & 8.6 / 8.4 & 2.3 / 2.6 & 1.18 / 1.21 & 6.5 / 6.4 \\
+read 4,096 samples & 8.0 / 7.5 & 10.7 / 9.2 & 6.0 / 5.8 & 2.4 / 2.1 \\
+read 128,000 samples & 7.1 / 6.4 & 6.0 / 4.9 & 6.8 / 5.6 & 5.4 / 4.5 \\
+read 3 $\times$ 64,000 samples & 12.2 / 9.3$^r$ & 3.8 / 3.1 & 4.2 / 3.6 & 4.0 / 3.4 \\
+min, max, mean, RMS & 1.4 / 2.9$^r$ & 2.6 / 3.2 & 1.5 / 3.9 & 4.1 / 4.2 \\
+4 readers, queries/s & 5.2 & 6.7 & 14.9 & 3.8 \\
+server memory, peak & 36.5 & 35.9 & 6.1 & 2.4 \\
+altered resend & ignored & replaces & replaces & refused$^u$ \\
 \bottomrule
 \end{tabularx}
+\par\smallskip\footnotesize $^u$By its unique index, which also refuses an identical resend.
 \end{table}
 
 \section{Interval statistics from chunk summaries (CS1)}\label{sec:cs1}
@@ -274,6 +283,14 @@ CS1 (S1) & chunk summaries: faster, identical statistics? & 5c6d053 11-03 01:48 
 B3.3 & acquisition reads; cost of features at ingest & bf8d3fe 10:51 & 23b7e9d 14:13 & dev set; benchmark set & confirmed once \\
 B3.4 & CrateDB 6.4, three layouts & 6996513 11-04 & 9f8c668 19:25 & dev set; benchmark set & 1 deviation (rerun) \\
 B3.5 & Apache IoTDB 2.0, two layouts & fa2c0a0 20:40 & 50cd12d 21:18 & dev set; benchmark set & confirmatory \\
+B3.6 & TDengine 3.4, three layouts & 6a90427 22:37 & de3c790 23:29 & dev set; benchmark set & 1 deviation (tsz lossy) \\
+B3.7 & TimescaleDB 2.31, rowstore and columnstore & 9953afd 23:52 & 0db4c60 11-05 00:19 & dev set; benchmark set & confirmatory \\
+B3.8 & QuestDB beside the released \M{}, one session & 89a9180 00:39 & ce08767 03:30 & benchmark set & busy first session set aside \\
+B3.9 & B3.4--B3.7 re-paired in one session & 2543976 01:07 & ce08767 03:30 & benchmark set & supersedes B3.4--B3.7 speed \\
+B3.10 & next release (I1): one-connection ingestion & a388f87 10:07 & f1b46c9 10:27 & dev set; benchmark set & read criterion not met \\
+B3.11 & B3.10's read criterion, three loads per arm & 82b8b6d 10:40 & 1bfe6f5 10:53 & benchmark set & not met; investigated \\
+I1 reads & cause of B3.11's read difference & --- & 0d08ed4 12:07 & benchmark set & exploratory \\
+B3.12 & B3.11 with fresh-process and server-side reads & d819edb 12:16 & fd82e9d 12:28 & dev set; benchmark set & met; I1 adopted \\
 EX1 (X1) & full workflow at 2 CPUs, 512\,MB & 5a04fe9 14:33 & e354488 22:42 & B3 benchmark set & confirmatory \\
 EX2 (X2) & full workflow on a Raspberry Pi 3B+ & b927fa0 11-04 00:24 & d072dff 18:01 & B3 benchmark set & 2 deviations \\
 B4 & codec vs 2026 float codecs & ce3084e 09:25 & 15edc67 09:31 & B1 inputs; Elf series & confirmatory; reuse \\
@@ -328,7 +345,7 @@ B4 & codec vs 2026 float codecs & ce3084e 09:25 & 15edc67 09:31 & B1 inputs; Elf
 \bibitem{ex1} \M{} contributors. EX1 (X1 in the repository): the full workflow inside edge-sized container limits. \code{evaluation/edge_x1/RESULTS.md} in~\cite{repo}.
 \bibitem{ex2} \M{} contributors. EX2 (X2 in the repository): \M{} on a Raspberry Pi 3B+. \code{evaluation/edge_x2/RESULTS.md} in~\cite{repo}.
 \bibitem{g1} \M{} contributors. G1: automatic calibration-grid detection. \code{evaluation/grid_detection/RESULTS.md} in~\cite{repo}.
-\bibitem{b3} \M{} contributors. B3, B3.1--B3.5: \M{}, QuestDB, CrateDB and Apache IoTDB on dense waveforms. \code{evaluation/tsdb_b3/RESULTS.md} in~\cite{repo}.
+\bibitem{b3} \M{} contributors. B3, B3.1--B3.12: \M{}, QuestDB, CrateDB, Apache IoTDB, TDengine and TimescaleDB on dense waveforms; same-session pairs (B3.8, B3.9) and single-connection ingestion of the next release (B3.10--B3.12). \code{evaluation/tsdb_b3/RESULTS.md} in~\cite{repo}.
 \bibitem{e5} \M{} contributors. E5 and E5-H: catalogued earthquakes, bounded-lag against zero-lag search. \code{evaluation/task_relevance/} in~\cite{repo}.
 \bibitem{mcp} \M{} contributors. Read-only MCP server for AI agents, agent and machine demos. \code{tools/mcp/}, \code{docs/mcp.md}, \code{examples/} in~\cite{repo}.
 \bibitem{x1} \M{} contributors. X1: reference coding across repeated operations. \code{evaluation/compression/reference/RESULTS.md} in~\cite{repo}.

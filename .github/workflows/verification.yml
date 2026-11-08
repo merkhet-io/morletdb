@@ -67,7 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [decode_raw, decode_sealed, roundtrip]
+        target: [decode_raw, decode_sealed, roundtrip, decode_frame]
     steps:
       - uses: actions/checkout@v4
       - name: Install ${{ env.FUZZ_TOOLCHAIN }} and cargo-fuzz ${{ env.CARGO_FUZZ_VERSION }}

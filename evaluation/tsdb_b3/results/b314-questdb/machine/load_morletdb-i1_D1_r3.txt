@@ -1,0 +1,22 @@
+2026-11-05T23:59:24
+23:59  up 9 days,  8:55, 17 users, load averages: 7.49 6.93 6.57
+ %CPU COMM
+273.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 55.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.0 /usr/sbin/coreaudiod
+  2.0 claude
+  1.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 bash
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-05T23:59:42
+23:59  up 9 days,  8:55, 17 users, load averages: 6.83 6.81 6.53
+ %CPU COMM
+245.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 80.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+  4.0 /usr/sbin/coreaudiod
+  3.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  3.0 claude
+  2.1 claude
+  0.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend

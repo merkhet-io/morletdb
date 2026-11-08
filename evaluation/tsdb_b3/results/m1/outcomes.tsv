@@ -1,0 +1,37 @@
+morletdb	16g	0	52	
+missing
+questdb	16g	0	58	
+missing
+timescale	16g	0	381	
+missing
+tdengine	16g	0	248	
+missing
+iotdb	16g	0	277	
+missing
+crate	16g	0	408	
+missing
+morletdb	256m	0	52	
+missing
+questdb	256m	1	61	true false 0 268435456
+timescale	256m	1	131	true true 0 268435456
+tdengine	256m	142	1200	false false 0 268435456
+iotdb	256m	1	122	true false 0 268435456
+crate	256m	1	123	true false 0 268435456
+questdb	512m	1	61	false false 0 536870912
+timescale	512m	1	151	true true 0 536870912
+tdengine	512m	1	4	false true 0 536870912
+iotdb	512m	1	12	false true 0 536870912
+crate	512m	1	101	true false 0 536870912
+questdb	1g	1	49	false true 0 1073741824
+timescale	1g	1	141	true true 0 1073741824
+tdengine	1g	0	257	
+missing
+iotdb	1g	1	11	false true 0 1073741824
+crate	1g	0	436	
+missing
+questdb	2g	0	56	
+missing
+timescale	2g	0	384	
+missing
+iotdb	2g	0	289	
+missing

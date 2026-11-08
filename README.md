@@ -103,7 +103,7 @@ Claude finds when the failing bearing first changed and whether the others show 
 ## Install
 
 Full setup and query examples: [installation and query guide](docs/installation-and-queries.md).
-Source builds use Rust 1.91.1 and pgrx 0.16.1.
+Source builds use Rust 1.99.0 and pgrx 0.19.3.
 
 **Run the release image** (prebuilt: PostgreSQL 17 with pg_morlet, Linux amd64 and arm64, with SBOM and
 build provenance; no pgvector, so no probe search; choose your own password):
@@ -111,7 +111,7 @@ build provenance; no pgvector, so no probe search; choose your own password):
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
-  ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1
+  ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
 ```
 
@@ -123,12 +123,12 @@ docker compose run --rm walkthrough
 ```
 
 **Build from source** with Rust and [pgrx](https://github.com/pgcentralfoundation/pgrx)
-(PostgreSQL 17 or 18; on Debian/Ubuntu install `build-essential bison flex
+(PostgreSQL 17, 18 or 19; on Debian/Ubuntu install `build-essential bison flex
 libreadline-dev zlib1g-dev libclang-dev clang pkg-config libssl-dev` first):
 
 ```sh
-cargo install cargo-pgrx --version 0.16.1 --locked
-cargo pgrx init --pg17 download          # or --pg18, or --pg17 /path/to/pg_config
+cargo install cargo-pgrx --version 0.19.3 --locked
+cargo pgrx init --pg17 download          # or --pg18, --pg19 /path/to/pg_config, or --pg17 /path/to/pg_config
 cd extensions/pg_morlet
 cargo pgrx install --release --pg-config "$(sed -n 's/^pg17 = "\(.*\)"/\1/p' ~/.pgrx/config.toml)"
 ```
@@ -236,7 +236,7 @@ source exclusion, overlap suppression and snapshot semantics.
 <td width="62%">
 
 **[MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL](research/paper/morletdb.pdf)**<br>
-Version <span data-version="report">0.18</span>
+Version <span data-version="report">0.21</span>
 
 Bounded-lag cross-correlation is the right score when matches may be shifted in
 time, but standard vector indexes rank by an unshifted metric. Because each lag term
@@ -259,8 +259,11 @@ On held-out seismic data (234,622 windows):
 
 What it costs and where it is not shown: a probe table and index of about the size
 of the raw data, slower search under filters that exclude a query's neighbours, and
-extra write-ahead logging for index maintenance. All retrieval results are seismic;
-other signals, diagnostic relevance and long-running operation are not shown.
+extra write-ahead logging for index maintenance. The paper's retrieval results are seismic. Study
+[N1](evaluation/nilm_n1/RESULTS.md) added appliance identification from current transients (PLAID): exact
+envelope search named the appliance about as well as a current-feature 1-NN (H1 passed), but its distances did
+not flag unknown appliances (H2 failed). Other signals, diagnostic relevance and long-running operation are not
+shown.
 [Supplement](research/paper/supplement.pdf) · [study overview](research/paper/STUDIES.md) ·
 [reproduce the numbers](research/paper/ARTIFACT.md) · [main results](research/paper/README.md#main-numbers)
 

@@ -7,23 +7,24 @@ repository.workspace = true
 description = "PostgreSQL signal primitives scaffold for MorletDB"
 
 [lib]
-crate-type = ["cdylib", "lib"]
-
-[[bin]]
-name = "pgrx_embed_pg_morlet"
-path = "src/bin/pgrx_embed.rs"
+crate-type = ["cdylib"]
 
 [features]
 default = ["pg17"]
 pg17 = ["pgrx/pg17", "pgrx-tests/pg17"]
 pg18 = ["pgrx/pg18", "pgrx-tests/pg18"]
+pg19 = ["pgrx/pg19", "pgrx-tests/pg19"]
 pg_test = []
 
 [dependencies]
-pgrx = "=0.16.1"
+pgrx = "=0.19.3"
 morlet-core = { path = "../../crates/morlet-core" }
 
 serde_json = { version = "1", features = ["float_roundtrip"] }
+libc = "0.2"   # signal mask of the chunk encoder threads (I1 step 3)
 
 [dev-dependencies]
-pgrx-tests = "=0.16.1"
+pgrx-tests = "=0.19.3"
+
+[lints]
+workspace = true

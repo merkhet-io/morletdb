@@ -21,7 +21,7 @@ other machines — nothing is claimed.
 
 ```sh
 cd extensions/pg_morlet
-cargo pgrx install --release --pg-config /path/to/pg_config     # PostgreSQL 17 or 18
+cargo pgrx install --release --pg-config /path/to/pg_config     # PostgreSQL 17, 18 or 19
 ```
 
 ```sql
@@ -29,8 +29,8 @@ CREATE EXTENSION pg_morlet;
 CREATE EXTENSION vector;          -- optional: only for probe search (pgvector 0.8 or later)
 ```
 
-pg_morlet does not depend on pgvector; CI tests both with and without it, on PostgreSQL 17 and 18
-([compatibility](compatibility.md); PostgreSQL 18 needs pgvector 0.8.1 or later). The measurements on
+pg_morlet does not depend on pgvector; CI tests both with and without it, on PostgreSQL 17, 18 and 19
+([compatibility](compatibility.md); PostgreSQL 18 needs pgvector 0.8.1 or later; 19 is tested with 0.8.7). The measurements on
 this page are from PostgreSQL 17.
 
 ## Configuration
@@ -54,6 +54,66 @@ this page are from PostgreSQL 17.
   `VACUUM` of the probe table: on 53 k windows the vacuum took 113 s and left the index size
   unchanged; an online rebuild took 10 s (index storage doubles during the rebuild).
 
+### Commit notifications (SQL 0.3.6)
+
+Consumers such as dashboards, stream processors and agent hosts can wait for new data with PostgreSQL's
+`LISTEN` instead of polling (#205):
+
+```sql
+SELECT morlet_enable_notifications('line');                 -- channel morlet_line; returns the channel
+LISTEN morlet_line;                                         -- in the consumer's session
+```
+
+- **Delivery:** every committed transaction that stored new chunks in the collection sends exactly one
+  notification, after its samples are readable.
+  - Rolled-back transactions, rolled-back savepoints, identical replays and transactions without new chunks send
+    nothing.
+  - Several appends and recordings in one transaction are coalesced into one notification.
+- **Payload** (JSON, version 1):
+  `{"v":1,"collection":"public.line","recordings":[{"recording_id":"p1","first_sample":0,"end_sample":32768,"sample_rate_hz":1000,"start_s":0,"end_s":32.768}]}`.
+  - Each range is half-open, in samples, and in seconds from the recording's first sample.
+  - A list that would not fit PostgreSQL's 8000-byte limit becomes `"recording_count": n, "truncated": true`.
+- **Privacy:** any role that can connect may `LISTEN` on any channel.
+  - `morlet_enable_notifications(collection, detail => false)` sends only `{"v":1,"collection":...,"recording_count":n}`.
+  - Row security requires `detail => false`, and detail is dropped automatically if row security is enabled later.
+- **Not a queue:** notifications are not stored, so commits made while no consumer listens are not replayed. A
+  consumer that starts or reconnects catches up with `morlet_latest` and then listens.
+- **Cost:** a statement trigger and a deferred row trigger on the chunk table. Appends write one chunk row per
+  call, so the overhead is one small JSON update per statement and one cheap check per row at commit.
+- **Other switches:**
+  - `morlet_enable_notifications(collection, channel)` changes the channel.
+  - `morlet_disable_notifications(collection)` turns notifications off.
+  - `morlet_notification_channel(collection)` shows the current setting.
+  - Python SDK: `enable_notifications`, and `notifications(collection, timeout=, stop_after=)` on an autocommit
+    connection.
+- **Tests:** `commit_notifications_collect_ranges_once_per_transaction` (ranges, switches, refusals) and
+  `tests/notifications.sh` (a real listener session: one per commit, none for rollbacks, savepoints, replays).
+
+### Exact search on small machines
+
+Exact envelope search prepares each query as a matrix of shifted copies when that pays off. It does so only when
+the matrix fits a quarter of the CPU's last-level cache, which is read once per backend from Linux sysfs or the
+macOS sysctl.
+
+- **Raspberry Pi 3B+** (512 KB L2): 16,384-sample windows are scored directly and not screened. A query over 1,341
+  such windows takes 1.5 s instead of 15 s ([evaluation/edge_latency](../evaluation/edge_latency/RESULTS.md)).
+- **Desktop and server caches** keep the prepared forms.
+- **When the cache size cannot be read**, as in virtual machines, the budget is 4 MiB.
+- **Override:** set `MORLET_SCORE_CACHE_BYTES` in the server's environment to a byte count.
+- **Results** never depend on it.
+### Keeping an edge database healthy: the steward
+
+`tools/steward` runs the upkeep without a person.
+
+- **Jobs:** builders until their backlogs are 0, a rolling verify pass every 7 days, and `ANALYZE`. They run in one
+  budgeted loop, only below the load threshold.
+- **Disk:** it watches free space in time remaining (attention at 14 days, pause at 3). At the reserve (5% or 2 GB)
+  it sets the ingest hold, `morlet_ingest_hold`: appends then fail with SQLSTATE 53100 and the reason, until space is
+  free again.
+- **Status:** `morlet_steward.status` has one line per item, with cause, consequence, action and who, for an HMI or
+  `morlet-steward status`. `morlet-steward check` exits 0, 1 or 2 for health checks.
+- **Design:** [steward-design.md](steward-design.md).
+
 ## Diagnostics
 
 ```sql
@@ -69,6 +129,33 @@ stride per recording plus the current ingest delay.
 Audit envelopes written by an external process against the raw data with the query in
 [access control](access-control.md#the-worker-write-path).
 
+### Integrity scrub (SQL 0.3.5)
+
+```sql
+SELECT * FROM morlet_verify('signals');                    -- first 100 recordings
+SELECT * FROM morlet_verify('signals', 'last-id-seen', 100); -- the next batch
+```
+
+One row per recording: chunks and samples read, and every problem found, without changing anything.
+It decodes every chunk (structure and CRC-32C) and checks it against its `sample_count`, compares
+chunk summaries (where enabled) with the decoded samples, and checks that chunks cover the recording
+from sample 0 to its checkpoint without gaps or overlaps. A bad chunk is reported, not raised, so one
+scrub lists every problem (at most 100 per recording, then their number). Run it as a role that sees
+every row: rows hidden by row security show up as gaps. The command-line wrapper runs it in batches,
+one read-only transaction each, with an optional pause, and exits with status 1 if anything was found:
+
+```sh
+python3 tools/verify/morlet_verify.py --dsn "$DATABASE_URL" public.signals --batch 50 --sleep 0.2
+```
+
+Two layers protect the data. PostgreSQL's data checksums (`initdb --data-checksums`, or
+`pg_checksums --enable` on a stopped cluster) detect corruption of any page when it is read, for
+every table and index. MorletDB's own checks know what a chunk means: every chunk carries a CRC-32C
+over its encoded samples, every read verifies it, and the scrub reads everything on purpose, including
+data nobody has read for months, and also finds logical problems such as a missing chunk or a summary
+that no longer matches. Enable both. Envelopes, probe rows and context segments are derived data and
+are not checked by the scrub yet; they can always be rebuilt from the chunks.
+
 ## Backup and restore
 
 | Option | What is dumped | Measured (50,604 windows, 104 M samples) |
@@ -80,6 +167,9 @@ Both restores were byte-identical in raw chunks and envelopes and returned ident
 search results; probe recall stayed 1.0. Envelopes, probe tables and indexes are derived and
 can always be rebuilt; recordings, chunks, context and labels cannot. Before a raw-only
 restore, create the extensions in the target database.
+
+For point-in-time restore, a streaming replica and failover, follow the [runbooks](runbooks.md); CI runs each of
+them weekly as a drill.
 
 ## Failure behaviour (tested)
 
@@ -95,10 +185,10 @@ restore, create the extensions in the target database.
 
 ## Upgrades
 
-`ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from 0.1.0-alpha.3,
-0.2.0 and 0.3.0 with populated data (identical reads and searches; catalog equal to a fresh
-install), and that a **failed** update rolls back completely and leaves the old version
-working. Take a backup before updating anyway.
+`ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from every released SQL
+version with populated data (identical reads, searches, summaries and roll-ups; catalog equal to a
+fresh install), and that a **failed** update rolls back completely and leaves the old version
+working. Take a backup before updating anyway ([api stability](api-stability.md)).
 
 ## Known limits
 

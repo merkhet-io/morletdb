@@ -1,0 +1,20 @@
+2026-11-05T10:17:48
+10:17  up 8 days, 19:13, 12 users, load averages: 7.90 7.05 5.70
+ %CPU COMM
+263.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+110.2 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 69.9 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+ 69.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 41.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 22.2 /usr/libexec/spotlightknowledged.updater
+ 16.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+2026-11-05T10:18:17
+10:18  up 8 days, 19:14, 12 users, load averages: 7.88 7.12 5.77
+ %CPU COMM
+265.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 72.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 46.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 46.6 /System/Library/Frameworks/CoreGraphics.framework/Versions/A/XPCServices/CGPDFService.xpc/Contents/MacOS/CGPDFService
+ 19.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 17.4 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  7.5 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared

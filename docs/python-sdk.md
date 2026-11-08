@@ -4,27 +4,37 @@
 timing and metadata, read exact sample intervals, search for similar intervals, and resolve every result to
 the stored samples. It wraps pg_morlet's SQL functions and adds no database features of its own.
 
-- Package: `morletdb` 0.1.0a1 (alpha), Python 3.10+, depends on `numpy` and `psycopg` 3 only; plotting
+- Package: `morletdb` 0.1.0a2 (alpha), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
   (`[plot]` extra, matplotlib) is optional and used only by the example.
-- Not published yet: `pip install "./sdk/python[plot]"` from a checkout.
+- Not on PyPI yet: install a release wheel ([releases](releases.md#install-the-python-sdk)), or
+  `pip install "./sdk/python[plot]"` from a checkout.
 - Example: [`examples/python/quickstart.py`](../examples/python/quickstart.py), synthetic data, no download.
 - Servers: pg_morlet SQL 0.3.2 (release image `0.3.3-alpha.1`) and later. On SQL 0.3.3 (release image
   `0.3.4-alpha.1`) the SDK sends and
   reads samples as raw float64 bytes, offers `stats` and `overview`, and `create_collection` enables per-chunk
   summaries; on 0.3.2 it uses binary `float8[]` arrays instead
   (same results, more server-side parsing) and `stats` and `overview` raise `UnsupportedError`.
+- Compressed transfer (SQL 0.3.5, [design](compressed-transfer.md)): reads of at least 32,768 samples fetch the
+  stored chunks still encoded and decode them in the client with MorletDB's own Rust decoder, a small shared
+  library (`crates/morlet-ffi`) loaded with `ctypes`: about a sixth of the bytes on the network, and the server
+  does not decode. Every chunk's checksum is verified in the client, and the result is bit for bit the same as a
+  raw read. Without the library or on older servers the SDK reads raw samples as before. Releases attach wheels
+  with the library for Linux x86-64 and arm64 (glibc 2.34 or later) and macOS 11+ on arm64, and a pure wheel for
+  everything else (`sdk/python/build_wheel.py`, workflow `sdk-wheels.yml`); from a checkout, build
+  `crates/morlet-ffi` and set `MORLETDB_NATIVE_LIB=/path/to/libmorlet_ffi.*`. `MORLETDB_TRANSFER=auto|encoded|raw`
+  forces a path for tests and benchmarks. Corrupt stored data is raised as `DatabaseError`, never retried.
 
 ## First run
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 python -m venv .venv && . .venv/bin/activate && pip install "./sdk/python[plot]"
 DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet python examples/python/quickstart.py
 ```
 
-The example stores two two-minute recordings at 8 kHz with "impacts" and "electrical transients" at known
+The example stores two recordings of two minutes each at 8 kHz with "impacts" and "electrical transients" at known
 times, reads 0.5 s of the first impact by time, searches from it, prints the ranked matches with their time
 and generated event, and saves `quickstart.png` (the query and its three best matches). On the release image
 it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the electrical transients follow
@@ -48,6 +58,15 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
   `start_ns` is exact). `samples_for_time(rec, t0_ns, t1_ns)` maps a time range to the samples at or after
   each time (the server's `morlet_time_to_samples`). `Interval.time_offsets_s()` gives float64 seconds since
   sample 0, rounded in the last digits.
+- **Newest data.** `latest(c, n=1, metadata_filter)` returns, for every matching recording, its last `n`
+  samples (up to 32,768) with their statistics, or with `n = 0` the statistics of its newest stored chunk, and
+  the end time (SQL 0.3.6). It costs a fixed number of index lookups per recording, however long the recording
+  is. Newest samples that are not readable (compacted, or a gap) come back as `samples = None` with a `note`.
+- **New data as it commits.** After `enable_notifications(c)`, `notifications(c, timeout=None, stop_after=None)`
+  yields one `Notification` per committed transaction that stored new chunks, with each recording's new range
+  (`NotifiedRange`: samples and seconds) (SQL 0.3.6). It needs an autocommit connection used only for listening,
+  because notifications reach a session only between transactions. Missed commits are not replayed; catch up
+  with `latest`. With `detail=False`, or under row security, a notification carries only the recording count.
 - **Value grid.** `sample_quantum` optionally declares a value grid such as an ADC step; it changes only how
   compactly samples are stored. Servers with automatic grid detection find it themselves.
 
@@ -93,6 +112,7 @@ interval `[start, end)` as the query.
 - Every method runs in the connection's current transaction. `ingest` of identical samples again is a no-op;
   different samples at stored offsets raise `ConflictError` (the transaction is then aborted: roll back).
   Ingestion sends its statements pipelined; an error surfaces at the end of the call.
+- `notifications` is the one method that needs `autocommit=True`: it raises `InvalidInputError` otherwise.
 - No pooling, retries, caching or async API.
 
 ## Errors

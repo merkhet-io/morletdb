@@ -1,0 +1,22 @@
+2026-11-06T10:36:13
+10:36  up 9 days, 19:32, 17 users, load averages: 7.77 8.73 7.47
+ %CPU COMM
+297.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+110.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 71.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 61.5 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 55.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 47.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 18.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 13.4 /usr/libexec/cameracaptured
+2026-11-06T10:36:34
+10:36  up 9 days, 19:32, 17 users, load averages: 7.12 8.52 7.42
+ %CPU COMM
+296.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 89.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 50.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 40.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 31.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 14.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 13.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 12.6 /usr/libexec/cameracaptured

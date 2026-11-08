@@ -1,0 +1,112 @@
+{
+ "set": "dev",
+ "durability": "D2",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "samples": 101453304,
+ "started": "2026-11-05T07:22:20",
+ "client_load": {
+  "wall_s": 16.753,
+  "samples_per_s": 6055949,
+  "server": {
+   "cpu_percent_mean": 78.6,
+   "cpu_percent_p95": 80.6,
+   "memory_peak_mib": 167.7,
+   "samples": 8
+  }
+ },
+ "chunks": 25102,
+ "server_s": {
+  "full": 11.699,
+  "bytes": 0.959,
+  "check": 1.39,
+  "relations": 0.329,
+  "step": 0.279,
+  "insert": 0.725,
+  "update": 0.26,
+  "encode": 5.432,
+  "residual": 2.324
+ },
+ "server_share_of_full": {
+  "bytes": 0.082,
+  "encode": 0.464,
+  "check": 0.119,
+  "relations": 0.028,
+  "step": 0.024,
+  "insert": 0.062,
+  "update": 0.022,
+  "residual": 0.199
+ },
+ "ns_per_sample": {
+  "full": 115.3,
+  "bytes": 9.5,
+  "check": 13.7,
+  "relations": 3.2,
+  "step": 2.8,
+  "insert": 7.1,
+  "update": 2.6,
+  "encode": 53.5,
+  "residual": 22.9
+ },
+ "us_per_chunk": {
+  "full": 466.1,
+  "bytes": 38.2,
+  "check": 55.4,
+  "relations": 13.1,
+  "step": 11.1,
+  "insert": 28.9,
+  "update": 10.4,
+  "encode": 216.4,
+  "residual": 92.6
+ },
+ "raw_s": {
+  "full": [
+   11.699,
+   11.69,
+   11.719
+  ],
+  "bytes": [
+   0.959,
+   0.951,
+   0.961
+  ],
+  "encode_plus_bytes": [
+   6.408,
+   6.392,
+   6.373
+  ],
+  "check": [
+   1.39,
+   1.385,
+   1.392
+  ],
+  "relations": [
+   0.33,
+   0.328,
+   0.329
+  ],
+  "step": [
+   0.287,
+   0.271,
+   0.279
+  ],
+  "insert": [
+   0.725,
+   0.726,
+   0.719
+  ],
+  "update": [
+   0.263,
+   0.26,
+   0.254
+  ]
+ },
+ "server_settings": {
+  "fsync": "on",
+  "full_page_writes": "on",
+  "max_wal_size": "1024",
+  "shared_buffers": "16384",
+  "synchronous_commit": "off",
+  "wal_level": "replica"
+ },
+ "morlet_version": "0.3.3"
+}

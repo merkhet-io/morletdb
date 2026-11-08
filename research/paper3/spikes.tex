@@ -1,0 +1,127 @@
+\documentclass[sigconf,nonacm]{acmart}
+\usepackage{booktabs,tabularx,xurl}
+\settopmatter{printacmref=false,printccs=false,printfolios=true}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\setcopyright{none}
+\DeclareUrlCommand\code{\urlstyle{tt}}
+\emergencystretch=1.5em
+\newcommand{\M}{MorletDB}
+\newcommand{\ReportVersion}{\input{REPORT_VERSION}\unskip}
+
+\begin{document}
+\title{Keeping the Spikes at the Edge: Wavelet Approximation of Machine Waveforms at a Tenth of Lossless Size}
+\subtitle{Version \ReportVersion{} --- method, frozen study and confirmation}
+\author{Zin Nam}
+
+\begin{abstract}
+A sensor at a machine produces far more waveform than an edge device can send or keep. Lossless storage needs about 1.5 bytes per sample; a cellular or low-power uplink affords a tenth of that or less. We ask which approximation keeps the most of what diagnosis needs at 0.05--0.3 bytes per sample, and whether a small device can produce it in real time. Our candidate is a plain transform coder: an orthogonal wavelet transform, one absolute threshold for all levels, uniform quantisation, varint and deflate coding, rate control by bisection on the threshold, and per-level noise levels that let the receiver decode either plainly or with noise filling. In a study frozen before its confirmation data were used, on five held-out datasets (two bearing test rigs, screwdriving, seismic stations and CNC milling), the coder had lower error than SZ3 and ZFP at every budget on four or five of the five datasets, detected run-to-failure bearing faults no later than on the original data (SZ3 was late on five of seven bearings), and encoded a 64\,kHz channel at three times real time on one core of a Raspberry Pi 3B+. A heavy-tailed Bayesian prior for selecting coefficients did not help. Diagnosis did not survive everywhere: with noise filling, seismic STA/LTA triggered on 94.8\% of the arrivals the original found (the frozen bar was 95\%), and on short screwdriving cycles a weak shape statistic weakened further. The approximation is a strong code for vibration at the edge, not a general substitute for exact data.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+Condition monitoring at the edge faces a budget at every step. A 64\,kHz vibration channel produces 5.5 billion samples a day; lossless storage in \M{} needs 1.5--1.7 bytes per sample~\cite{morletdb}, about 9\,GB a day, and a cellular or LoRa uplink carries a small fraction of that. What diagnosis needs from the signal is often short: an impact train in the envelope spectrum~\cite{randall2011,antoni2006}, the onset of a seismic arrival~\cite{allen1978,withers1998}, the shape of a tightening curve. Downsampling removes the high-frequency content that carries impacts; statistics remove the shape. Error-bounded lossy compressors~\cite{di2016,liang2023,lindstrom2014} bound the error per sample, which for broadband vibration spends the budget on noise.
+
+Wavelets concentrate transients in few large coefficients and spread stationary background over many small ones~\cite{mallat2009,daubechies1992}; keeping the largest coefficients is the best approximation for their number in an orthogonal basis, and wavelet compression of vibration data has been used offline~\cite{staszewski1998} and on sensor nodes~\cite{xu2004}. What is missing is a measurement of what such an approximation preserves for diagnosis, against today's error-bounded compressors, at the budgets an edge uplink affords, and on a device of the size that would run it.
+
+\textbf{Contributions.} (1) A small transform coder with per-window rate control that an edge device can run. (2) Four falsifiable hypotheses with refutation criteria, fixed before confirmation data are used. (3) Development findings on bearing, seismic and screwdriving data, including the mistakes that changed the method. (4) A place in a waveform database: the approximation as a level between exact samples and summaries in a graded-forgetting ladder~\cite{paper2}.
+
+\section{Method}\label{sec:method}
+A window $x$ (one second of vibration, one screwdriving cycle, $2^{15}$ seismic samples) is decomposed with an orthogonal discrete wavelet transform (sym8; 6, 4 and 8 levels). Every detail coefficient with $|d| > T$, $T = c\cdot\mathrm{std}(x)$, is kept; kept coefficients and the coarsest band are quantised with step $qT$. The positions of kept coefficients (as gaps) and their values (zigzag) are written as LEB128 varints, preceded by the length, the number of levels and the step, and the stream is compressed with deflate. Decoding inverts each step. \emph{Rate control}: for a budget $B$ in bytes per sample, the device bisects on $c$ (eight tries, $q = 0.5$, the transform computed once) and sends the smallest threshold whose code fits $B$. The development harness used a fixed grid of $(c,q)$ instead, choosing the smallest error within $B$; on the device, bisection was both faster and slightly better (Section~\ref{sec:dev}).
+
+\textbf{Comparisons}, each with the same rate control: SZ3~\cite{liang2023} and ZFP~\cite{lindstrom2014} at absolute error bounds; decimation (FIR, zero phase) with quantised, delta-coded values and the same coder; and the same coder with coefficients selected by the posterior of an empirical-Bayes spike-and-slab model with a heavy-tailed slab~\cite{abramovich1998,johnstone2004,rivoirard2004}.
+
+\section{Hypotheses}\label{sec:hyp}
+\textbf{H1, error per byte.} At 0.05, 0.1, 0.2 and 0.3 bytes per sample the wavelet coder has lower median relative error than SZ3, ZFP and decimation on every dataset. \emph{Refuted} at a budget if SZ3 or ZFP is as good or better on two of three datasets.
+
+\textbf{H2, diagnosis survives.} At 0.1 bytes per sample, analysis on the approximation finds what it finds on the original: a run-to-failure bearing fault is detected in the envelope spectrum no more than 1\% of the run's files later; STA/LTA triggers on at least 95\% of the catalogued arrivals the original triggers on, with at most 10\% more triggers elsewhere; kurtosis separates failed screwdriving cycles, and a label-free score of RMS and kurtosis separates bad CNC milling runs, with an AUROC within 0.02 of the original. \emph{Refuted} if any fails.
+
+\textbf{H3, real time on a small device.} On a Raspberry Pi 3B+ the encoder keeps up with a 64\,kHz channel on one core with less than 64\,MB of memory. \emph{Refuted} if not.
+
+\textbf{H4, no Bayesian machinery needed.} Posterior selection does not lower the error by more than 5\% against the plain threshold at any budget. \emph{Refuted}, and the Bayesian arm recommended, if it does on two of three datasets.
+
+\section{Development}\label{sec:dev}
+Development used CWRU bearings, IMS set 2 (a bearing run to an outer-race failure), PyScrew scenario s01, two weeks of four seismic stations with a public catalogue and one of three machines of the Bosch CNC milling data~\cite{tnani2022}, all separate from the confirmation data~\cite{f2}. The first version of the study also proposed a label-free relevance score from the same posterior; it was not better than kurtosis on development data and was dropped before any freeze.
+
+\textbf{What changed the method.} A threshold set from a noise estimate per level, the usual choice for denoising, treated the seismic microseism as noise and removed most of the signal; a coder needs one absolute threshold for all levels. STA/LTA on the raw trace triggered thousands of times on the original itself and needs a band-pass (2--20\,Hz). Broadband vibration needs thresholds well above the signal's standard deviation to reach 0.05 bytes per sample. Fidelity of a diagnostic measure is two-sided: reconstructions can inflate a fault peak. And the posterior mean of a Bayesian model, a good denoiser, is a source of error in an archive.
+
+\begin{table}[t]
+\caption{Development, round 3: median relative error at 0.1 bytes per sample, and diagnosis on the approximation at 0.1 (original in brackets).}
+\label{tab:dev}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xrrr@{}}
+\toprule
+& Wavelet & SZ3 & Decimation \\
+\midrule
+Error, CWRU & \textbf{0.56} & 0.93 & 0.86 \\
+Error, IMS & \textbf{0.70} & 0.95 & 0.74 \\
+Error, seismic & \textbf{0.038} & 0.063 & 0.079 \\
+Error, PyScrew & 0.090 & -- & \textbf{0.086} \\
+Error, CNC milling & \textbf{0.42} & 0.79 & 0.47 \\
+\midrule
+IMS fault detected at file (532) & \textbf{532} & 549 & 539 \\
+Seismic arrivals triggered (28 of 30) & 29 & 26 & 26 \\
+Seismic triggers elsewhere (400) & 955 & \textbf{393} & 556 \\
+PyScrew kurtosis AUROC (0.961) & 0.957 & -- & 0.954 \\
+CNC bad-run AUROC (0.765) & 0.745 & 0.717 & 0.737 \\
+CNC RMS deviation & \textbf{4.2\%} & 5.4\% & 9.3\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Table~\ref{tab:dev} summarises the third round. The wavelet coder has the lowest error on bearing and seismic data at every budget from 0.1 up (and at 0.05 except on IMS, where decimation is marginally better), and ties decimation on short screwdriving cycles; SZ3 is never better below 0.3 bytes per sample, and ZFP's one-dimensional error-bound mode is not competitive. The bearing fault is detected on the same file as on the original at every budget down to 0.05; SZ3 detects it 172 files later at 0.05 and 17 at 0.1. The weak point is seismic false triggers: thresholding leaves artefacts that STA/LTA reads as onsets, 2.4 times as many triggers away from catalogued arrivals at 0.1 and 12\% more at 0.3, so H2 as stated fails on development data at 0.1. Posterior selection was worse than the plain threshold (0.57 against 0.56 at 0.1 and 0.45 against 0.40 at 0.2 on CWRU), so H4 holds on development data. On CNC milling the coder again has the lowest error, bad runs remain about as separable as on the original (AUROC 0.745 against 0.765, at the edge of H2's 0.02), and per-window RMS, the usual wear proxy, deviates by 4\% at 0.1 and 1.7\% at 0.2; on a machine tool the approximation should travel with exact per-window statistics, which \M{} already keeps at about 1\% of the lossless size. On the Raspberry Pi 3B+ of our earlier edge study, one core of the Python prototype encodes at 13 times real time for 64\,kHz with one fixed setting and at 2.1 times with bisection rate control, within 56\,MB; the development harness's grid search (56 tries) would not keep up (0.12 times), and bisection, with a continuous threshold, reached lower error (0.67 against 0.71) at the same budget. A fourth round added noise filling and the device's bisection rate control: with noise filling, false seismic triggers fell from 927 to 380 (original 400) and the RMS deviation on CNC data from 9\% to 0.05\%, at a higher relative error; bisection was faster than a grid search and reached lower error. The protocol then named the decode per measure (plain for waveform error and spectral diagnosis, noise-filled for energy-based detection and trends) and was frozen.
+
+\section{Confirmation}\label{sec:conf}
+The protocol was frozen in the repository before any confirmation data were loaded~\cite{f2}. Confirmation data: XJTU-SY run-to-failure bearings with a single outer- or inner-race fault (11 bearings, 25.6\,kHz)~\cite{wang2018xjtu}; Paderborn bearings with real damage and healthy references (320 files, 64\,kHz)~\cite{lessmeier2016}; PyScrew scenario s02 (12,499 cycles)~\cite{pyscrew}; 16 station-days of a held-out seismic gallery with a public catalogue~\cite{morletdb}; and two further machines of the Bosch CNC data~\cite{tnani2022}. One run per dataset; two deviations, a rerun after a crash in aggregation (no result had been written) and non-unique recording labels (no measure affected).
+
+\begin{table}[t]
+\caption{Confirmation: median relative error at 0.1 bytes per sample (plain decode), and the decisions.}
+\label{tab:conf}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xrrrr@{}}
+\toprule
+& Wavelet & SZ3 & ZFP & Decim. \\
+\midrule
+XJTU-SY & \textbf{0.70} & 0.97 & 1.00 & 0.76 \\
+Paderborn & \textbf{0.55} & 0.72 & 1.01 & 0.63 \\
+PyScrew s02 & 0.078 & -- & -- & \textbf{0.070} \\
+Seismic & \textbf{0.056} & 0.093 & -- & 0.080 \\
+Bosch CNC & \textbf{0.39} & 0.76 & -- & 0.49 \\
+\midrule
+\multicolumn{5}{@{}l}{H1 holds at 0.05, 0.1, 0.2, 0.3 (4, 5, 5, 4 of 5 datasets)} \\
+\multicolumn{5}{@{}l}{H2 refuted: (b) seismic 94.8\% $<$ 95\%; (c) PyScrew AUROC 0.529 vs 0.566} \\
+\multicolumn{5}{@{}l}{H3 holds: 3.06$\times$ real time at 64\,kHz, 55.5\,MB} \\
+\multicolumn{5}{@{}l}{H4 holds: Bayesian selection better only once} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{H1, error per byte: holds at every budget.} The coder beat SZ3 and ZFP on four of five datasets at 0.05 and 0.3 and on all five at 0.1 and 0.2 (Table~\ref{tab:conf}). It lost to SZ3 only on XJTU-SY at 0.3 (0.400 against 0.387) and could not reach 0.05 bytes per sample on most screwdriving cycles, where decimation was slightly better at 0.05 and 0.1.
+
+\textbf{H2, diagnosis: refuted.} On the seven XJTU-SY bearings on which the original data reveal the fault, the approximation detected it no later than allowed, never late at all; SZ3 was late on five, raised a false detection on one and missed another. The approximation was, however, early on four bearings and raised more isolated alarms before the fault (50 against 1 on the longest run): thresholding makes envelope spectra peakier. Bad CNC runs (AUROC 0.671 against 0.682) and damaged Paderborn bearings (kurtosis AUROC 0.220 against 0.201) stayed as separable as on the original. Two criteria failed. With noise filling, seismic STA/LTA triggered on 91 of the 96 catalogued arrivals the original found (94.8\%; the bar was 95\%), with 2,813 triggers elsewhere against 2,990; SZ3 and decimation found 90. On PyScrew s02, where kurtosis separates failed cycles only weakly even on the original (0.566), the approximation weakened it to 0.529.
+
+\textbf{H3, the device: holds.} On one core of the Raspberry Pi 3B+, the Python prototype encoded Paderborn's 64\,kHz vibration at 3.06 times real time with bisection rate control at 0.099 bytes per sample, peaking at 55.5\,MB; the coder with its per-level noise levels ran at 2.53 times.
+
+\textbf{H4: holds.} Posterior selection with a heavy-tailed slab was worse than the plain threshold at every budget on XJTU-SY and better by more than 5\% only once on Paderborn.
+
+\textbf{What this means.} As a code per byte for vibration and seismic data at the edge, a plain wavelet threshold with a simple stream beats today's error-bounded compressors, keeps a developing bearing fault visible no later than the original data, and fits a small device. It should travel with exact per-window statistics or be decoded with noise filling for trends, and alarm thresholds should be calibrated on approximated data. It is not a substitute for exact data in trigger-based event detection or on short cycles.
+
+\section{Related work}\label{sec:related}
+\textbf{Wavelet thresholding and its Bayesian forms.} Thresholding rules~\cite{donoho1994,donoho1995,johnstone1997} and their Bayesian counterparts with spike-and-slab priors~\cite{chipman1997,abramovich1998,clyde2000,vidakovic1998,vidakovic1999}, including empirical Bayes with level-wise weights~\cite{johnstone2004,johnstone2005,johnstone2005ebayes}, heavy-tailed and Pareto-based priors~\cite{achim2003,boubchir2006,figueiredo2001,rivoirard2004,rivoirard2005} and shrinkage priors outside wavelets~\cite{armagan2013,carvalho2010,rockova2018,cevher2009}, target denoising; BayesShrink links shrinkage to compression~\cite{chang2000}. In our confirmation the plain threshold was as good or better for an archive.
+
+\textbf{Compression.} Error-bounded lossy compressors~\cite{di2016,liang2023,lindstrom2014} and compressors for time series~\cite{chandak2020,munizcuza2024} bound the error per value; wavelet compression of vibration data was studied offline~\cite{staszewski1998} and on wireless nodes~\cite{xu2004}, and compressive sensing~\cite{ji2008,bao2011} moves the work to the decoder.
+
+\textbf{Edge data reduction.} Send-on-delta and event-triggered sampling~\cite{miskowicz2006}, edge reduction for condition monitoring~\cite{michala2022,pandey2025} and tiny models on microcontrollers~\cite{banbury2021,koizumi2020} decide what to send; we measure what an approximation keeps when everything is sent at a fixed budget.
+
+\section{Limitations}
+One run per dataset on one machine, and one device of one kind. The protocol was frozen by the author's assistant while the author was away, at the author's request. Relative error and five diagnostic proxies stand in for an engineer's judgement; two of the proxies (kurtosis on screwdriving cycles and on Paderborn) separate the classes only weakly even on the original data. The encoder is a Python prototype; a native implementation would be faster.
+
+\section*{Use of AI assistance and responsibility}
+Code, experiment harnesses, analyses and text were developed with Claude (Anthropic), an AI assistant, working under the author's direction. The author reviewed the content and is responsible for it.
+
+\section*{Licence}
+\copyright~2026 Zin Nam. The text and figures of this report are licensed under Creative Commons Attribution 4.0 International (CC~BY~4.0, \url{https://creativecommons.org/licenses/by/4.0/}); the MorletDB source code is licensed under Apache-2.0.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{related,own}
+\end{document}

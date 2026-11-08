@@ -1,0 +1,22 @@
+2026-11-08T18:57:20
+18:57  up 12 days,  3:53, 19 users, load averages: 6.95 6.08 5.25
+ %CPU COMM
+205.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 87.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.8 bash
+  0.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.3 /usr/sbin/notifyd
+  0.3 claude
+2026-11-08T18:57:35
+18:57  up 12 days,  3:53, 19 users, load averages: 6.50 6.02 5.25
+ %CPU COMM
+263.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 25.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.1 claude
+  2.5 claude
+  2.1 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  1.7 /usr/libexec/airportd
+  1.2 /Applications/Docker.app/Contents/MacOS/com.docker.build

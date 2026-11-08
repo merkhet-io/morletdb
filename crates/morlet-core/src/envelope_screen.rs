@@ -29,7 +29,8 @@ const KAPPA: f64 = 1e-12;
 /// Mean, standard deviation and norm of raw values, in float64 with eight independent accumulators
 /// (vectorisable). They differ from `envelope::decode`'s sequential sums by at most KAPPA relative; the
 /// screen's bound accounts for that. A standard deviation that is zero or tiny against the values is
-/// returned as 0: such windows are always kept and scored exactly (decode then divides by 1).
+/// returned as 0: such windows are always kept and scored exactly (decode then divides by 1), except exactly
+/// constant ones, whose distance is known (see `Screener::push`).
 fn moments(raw: &[f32]) -> (f64, f64, f64) {
     let n = raw.len() as f64;
     let mut acc = [0f64; 8];
@@ -127,6 +128,15 @@ impl ScreenQuery {
             + self.kappa_mean * mean.abs() / sd
             + self.kappa_scale
             + SLACK
+    }
+
+    /// Bytes of the float32 shifted-query matrix the screen streams per window (see `LagQuery::matrix_bytes`), or
+    /// None when the query cannot be prepared.
+    pub fn matrix_bytes(n: usize, max_lag: usize) -> Option<usize> {
+        if !LagQuery::supported(n, max_lag) {
+            return None;
+        }
+        Some(n * (2 * max_lag + 1).div_ceil(LANES) * LANES * std::mem::size_of::<f32>())
     }
 
     pub fn new(q: &[f64], max_lag: usize) -> Option<Self> {
@@ -336,6 +346,11 @@ pub struct Screener<Id> {
     pending_raw: Vec<f32>,
     uppers: std::collections::BinaryHeap<OrdF64>,
     kept: Vec<(Id, f64, f64)>,
+    /// Prune when `kept` grows past this. It doubles with what a prune leaves, so windows tied at the threshold
+    /// (constant windows all have distance 1) cost amortized O(1) each instead of a full prune per row (#279).
+    prune_at: usize,
+    /// Elements visited by prunes so far (the test of #279 checks it stays linear in the rows screened).
+    prune_visits: usize,
     scratch: Vec<f32>,
 }
 
@@ -370,6 +385,8 @@ impl<Id> Screener<Id> {
             pending_raw: Vec::new(),
             uppers: std::collections::BinaryHeap::new(),
             kept: Vec::new(),
+            prune_at: 4 * m + 64,
+            prune_visits: 0,
             scratch: Vec::new(),
         })
     }
@@ -393,14 +410,21 @@ impl<Id> Screener<Id> {
         if lower <= self.threshold() {
             self.kept.push((id, lower, upper));
         }
-        if self.kept.len() > 4 * self.m + 64 {
+        if self.kept.len() > self.prune_at {
             self.prune();
         }
     }
 
     fn prune(&mut self) {
         let t = self.threshold();
+        self.prune_visits += self.kept.len();
         self.kept.retain(|k| k.1 <= t);
+        self.prune_at = (4 * self.m + 64).max(2 * self.kept.len());
+    }
+
+    /// Windows kept so far (a superset of the m nearest seen so far, ties included).
+    pub fn kept_len(&self) -> usize {
+        self.kept.len()
     }
 
     /// Screen one stored envelope (version byte + float16 values).
@@ -413,6 +437,12 @@ impl<Id> Screener<Id> {
             return Err(SignalError::InvalidEnvelope);
         }
         let mom = moments(&self.scratch);
+        // An exactly constant window z-scores to zeros, so its exact distance to every query is 1.0
+        // (bitwise: every lagged sum is ±0). It needs no bound; nearly constant ones keep the infinite one.
+        if mom.1 == 0.0 && self.scratch.iter().all(|&x| x == self.scratch[0]) {
+            self.admit(id, 1.0, 0.0);
+            return Ok(());
+        }
         #[cfg(target_arch = "aarch64")]
         if self.query.stride == 2 * LANES {
             match self.pending.take() {
@@ -492,7 +522,66 @@ impl<Id> Screener<Id> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrix_bytes_is_the_screen_size() {
+        for (n, lag) in [(410, 30), (1639, 122)] {
+            let q: Vec<f64> = (0..n).map(|i| (i as f64 / 5.0).cos()).collect();
+            let sq = ScreenQuery::new(&q, lag).unwrap();
+            assert_eq!(ScreenQuery::matrix_bytes(n, lag), Some(sq.s.len() * 4));
+        }
+        assert_eq!(ScreenQuery::matrix_bytes(10, 10), None);
+    }
     use crate::envelope::{decode, distance, encode};
+
+    /// Many windows tied at the threshold (constant windows: distance 1 to everything) are all kept, and the
+    /// screen stays linear: ties used to take a full prune per row (#279).
+    #[test]
+    fn ties_at_the_threshold_are_kept_in_linear_time() {
+        let x: Vec<f64> = (0..4096)
+            .map(|t| ((t as f64) / 7.0).sin() * (1.0 + (t % 300) as f64))
+            .collect();
+        let q = decode(&encode(&x).unwrap()).unwrap();
+        let constant = encode(&vec![0.0; 4096]).unwrap();
+        let mut s = Screener::new(&q, 30, 10).unwrap();
+        let n = 20_000usize;
+        for i in 0..n as i64 {
+            s.push(i, &constant).unwrap();
+        }
+        // a prune per row would visit about n * n / 2 elements; doubling keeps it below 2n
+        assert!(s.prune_visits < 4 * n, "{} prune visits", s.prune_visits);
+        assert_eq!(s.finish().len(), n);
+    }
+
+    /// Idle stretches cost nothing (#284): with half the gallery constant, the screen keeps the same windows
+    /// as without them, and they still contain the m nearest by exact distance.
+    #[test]
+    fn constant_windows_are_not_rescored() {
+        let mut seed = 29;
+        let g = gallery(400, &mut seed);
+        let q = decode(&g[7].1).unwrap();
+        let flat = encode(&vec![3.5; 4096]).unwrap();
+        let idle: Vec<(i64, Vec<u8>)> = (0..400).map(|i| (10_000_000 + i, flat.clone())).collect();
+        let keep = |windows: &[&(i64, Vec<u8>)]| {
+            let mut sc = Screener::new(&q, 30, 10).unwrap();
+            for (s, e) in windows {
+                sc.push(*s, e).unwrap();
+            }
+            let mut k: Vec<i64> = sc.finish().iter().map(|k| k.0).collect();
+            k.sort();
+            k
+        };
+        let busy: Vec<&(i64, Vec<u8>)> = g.iter().collect();
+        let mixed: Vec<&(i64, Vec<u8>)> = g.iter().zip(&idle).flat_map(|(a, b)| [a, b]).collect();
+        let (k_busy, k_mixed) = (keep(&busy), keep(&mixed));
+        assert_eq!(k_busy, k_mixed);
+        let mut exact: Vec<(f64, i64)> = mixed
+            .iter()
+            .map(|(s, e)| (distance(&q, &decode(e).unwrap(), 30).unwrap(), *s))
+            .collect();
+        exact.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert!(exact[..10].iter().all(|(_, s)| k_mixed.contains(s)));
+    }
 
     fn lcg(seed: &mut u64) -> f64 {
         *seed = seed
@@ -635,13 +724,30 @@ mod tests {
         }
         let flat_raw = raw_values(&g[60].1).unwrap();
         assert_eq!(moments(&flat_raw).1, 0.0, "a constant window is degenerate");
-        // degenerate windows are always kept, whatever m is
+        // a constant window's distance is exactly 1 to every query, so the screen knows it (#284): it is not
+        // kept when better windows fill m, and is kept (ties included) when they do not
+        assert_eq!(
+            distance(&q, &decode(&g[60].1).unwrap(), 30)
+                .unwrap()
+                .to_bits(),
+            1f64.to_bits()
+        );
         let mut sc = Screener::new(&q, 30, 1).unwrap();
         for (s, e) in &g {
             sc.push(*s, e).unwrap();
         }
         let kept: Vec<i64> = sc.finish().iter().map(|k| k.0).collect();
-        assert!(kept.contains(&1_000_000) && kept.contains(&g[4].0));
+        assert!(!kept.contains(&1_000_000) && kept.contains(&g[4].0));
+        let mut sc = Screener::new(&q, 30, g.len() + 5).unwrap();
+        for (s, e) in &g {
+            sc.push(*s, e).unwrap();
+        }
+        let kept = sc.finish();
+        let flat = kept
+            .iter()
+            .find(|k| k.0 == 1_000_000)
+            .expect("kept when m exceeds the gallery");
+        assert_eq!((flat.1, flat.2), (1.0, 1.0));
         let mut sc = Screener::new(&q, 30, 1).unwrap();
         assert!(sc.push(0, &g[0].1[..10]).is_err());
         assert!(Screener::<i64>::new(&q, 30, 0).is_none());

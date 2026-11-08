@@ -1,0 +1,20 @@
+2026-11-05T10:17:24
+10:17  up 8 days, 19:13, 12 users, load averages: 6.31 6.69 5.54
+ %CPU COMM
+305.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+102.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+101.3 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 76.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 59.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 32.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 13.6 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+2026-11-05T10:17:48
+10:17  up 8 days, 19:13, 12 users, load averages: 7.90 7.05 5.70
+ %CPU COMM
+288.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+106.8 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 98.0 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+ 61.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 20.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 15.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

@@ -1,0 +1,386 @@
+{
+ "set": "dev",
+ "images": {
+  "check": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+  "verify": "sha256:4a375aa6c0200b360189d6dc856408d10fddd30d9eba182f80b863521c28f1c7",
+  "trusted": "sha256:4a375aa6c0200b360189d6dc856408d10fddd30d9eba182f80b863521c28f1c7"
+ },
+ "started": "2026-11-05T12:42:59",
+ "load_average_before": "12:42  up 8 days, 21:39, 12 users, load averages: 2.64 4.03 4.08",
+ "arms": {
+  "check": {
+   "commit_chunks": 256,
+   "reuse_connection": true,
+   "rpc_chunks": 0
+  },
+  "verify": {
+   "commit_chunks": 256,
+   "reuse_connection": true,
+   "rpc_chunks": 0,
+   "verify_appends": "on"
+  },
+  "trusted": {
+   "commit_chunks": 256,
+   "reuse_connection": true,
+   "rpc_chunks": 0,
+   "verify_appends": "off"
+  }
+ },
+ "loads": [
+  {
+   "wall_s": 7.522,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 108.9,
+    "cpu_percent_p95": 111.3,
+    "memory_peak_mib": 178.5,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "check",
+   "durability": "D2",
+   "rep": 1,
+   "samples_per_s": 13487544
+  },
+  {
+   "wall_s": 7.134,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 106.1,
+    "cpu_percent_p95": 115.3,
+    "memory_peak_mib": 176.9,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "verify",
+   "durability": "D2",
+   "rep": 1,
+   "samples_per_s": 14221097
+  },
+  {
+   "wall_s": 6.979,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 96.7,
+    "cpu_percent_p95": 98.5,
+    "memory_peak_mib": 177.1,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "trusted",
+   "durability": "D2",
+   "rep": 1,
+   "samples_per_s": 14536940
+  },
+  {
+   "wall_s": 7.419,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 111.8,
+    "cpu_percent_p95": 113.1,
+    "memory_peak_mib": 176.3,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "check",
+   "durability": "D2",
+   "rep": 2,
+   "samples_per_s": 13674795
+  },
+  {
+   "wall_s": 7.094,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 103.9,
+    "cpu_percent_p95": 118.2,
+    "memory_peak_mib": 176.7,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "verify",
+   "durability": "D2",
+   "rep": 2,
+   "samples_per_s": 14301283
+  },
+  {
+   "wall_s": 6.945,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 93.2,
+    "cpu_percent_p95": 98.5,
+    "memory_peak_mib": 176.7,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "trusted",
+   "durability": "D2",
+   "rep": 2,
+   "samples_per_s": 14608107
+  },
+  {
+   "wall_s": 7.428,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 109.2,
+    "cpu_percent_p95": 112.7,
+    "memory_peak_mib": 176.1,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "check",
+   "durability": "D2",
+   "rep": 3,
+   "samples_per_s": 13658226
+  },
+  {
+   "wall_s": 7.167,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 119.5,
+    "cpu_percent_p95": 122.6,
+    "memory_peak_mib": 177.0,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "verify",
+   "durability": "D2",
+   "rep": 3,
+   "samples_per_s": 14155617
+  },
+  {
+   "wall_s": 6.98,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 98.4,
+    "cpu_percent_p95": 100.3,
+    "memory_peak_mib": 177.1,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "trusted",
+   "durability": "D2",
+   "rep": 3,
+   "samples_per_s": 14534857
+  },
+  {
+   "wall_s": 7.633,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 107.2,
+    "cpu_percent_p95": 110.0,
+    "memory_peak_mib": 178.4,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "check",
+   "durability": "D1",
+   "rep": 1,
+   "samples_per_s": 13291406
+  },
+  {
+   "wall_s": 7.292,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 107.3,
+    "cpu_percent_p95": 115.0,
+    "memory_peak_mib": 175.9,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "verify",
+   "durability": "D1",
+   "rep": 1,
+   "samples_per_s": 13912960
+  },
+  {
+   "wall_s": 7.18,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 92.4,
+    "cpu_percent_p95": 99.5,
+    "memory_peak_mib": 176.5,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "trusted",
+   "durability": "D1",
+   "rep": 1,
+   "samples_per_s": 14129987
+  },
+  {
+   "wall_s": 7.641,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 110.5,
+    "cpu_percent_p95": 112.0,
+    "memory_peak_mib": 176.2,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "check",
+   "durability": "D1",
+   "rep": 2,
+   "samples_per_s": 13277490
+  },
+  {
+   "wall_s": 7.277,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 112.6,
+    "cpu_percent_p95": 114.8,
+    "memory_peak_mib": 177.6,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "verify",
+   "durability": "D1",
+   "rep": 2,
+   "samples_per_s": 13941639
+  },
+  {
+   "wall_s": 7.102,
+   "rpc_calls": 877,
+   "server": {
+    "cpu_percent_mean": 90.5,
+    "cpu_percent_p95": 101.0,
+    "memory_peak_mib": 180.0,
+    "samples": 4
+   },
+   "chunks": 25102,
+   "samples_stored": 101453304,
+   "chunk_digest": "95f03c75bbfb285182dcbe881cf32822",
+   "segments": [
+    0,
+    null
+   ],
+   "checkpoint_digest": "5ab4a2745b1708602cf1cbd310687e20",
+   "correct": true,
+   "arm": "trusted",
+   "durability": "D1",
+   "rep": 2,
+   "samples_per_s": 14285174
+  }
+ ],
+ "chunks_identical": true,
+ "median": {
+  "check D2": 13658226,
+  "check D1": 13284448,
+  "verify D2": 14221097,
+  "verify D1": 13927300,
+  "trusted D2": 14536940,
+  "trusted D1": 14207580
+ },
+ "load_average_after": "12:47  up 8 days, 21:43, 12 users, load averages: 5.90 5.47 4.74"
+}

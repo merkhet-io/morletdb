@@ -1,0 +1,22 @@
+2026-11-05T01:28:27
+ 1:28  up 8 days, 10:24, 12 users, load averages: 7.30 5.19 5.23
+ %CPU COMM
+598.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 68.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 53.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 14.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  6.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  4.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  4.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-05T01:34:48
+ 1:34  up 8 days, 10:30, 12 users, load averages: 6.53 5.66 5.35
+ %CPU COMM
+233.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 79.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 18.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  6.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  5.1 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  4.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU

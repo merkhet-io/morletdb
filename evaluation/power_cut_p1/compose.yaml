@@ -1,0 +1,51 @@
+# Power-cut study P1 (#190): the box whose power is cut runs the release image, the steward and the writer. Everything
+# restarts by itself after power returns (restart: always; Docker enabled at boot). The database stays on the box's
+# own storage (here the SD card), with PostgreSQL defaults plus the documented small-disk settings.
+#
+#   cd evaluation/power_cut_p1 && MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:<tag>@<digest> PC_DIR=$HOME/pc-study \
+#     MORLET_DB_PASSWORD=... MORLET_STEWARD_PASSWORD=... PC_ACK=<controller-host>:7190 docker compose -p pc-p1 up -d --build
+x-dsn: &dsn
+  DATABASE_URL: postgresql://morlet:${MORLET_DB_PASSWORD:?Set MORLET_DB_PASSWORD}@db:5432/morlet
+services:
+  db:
+    image: ${MORLET_IMAGE:?Set MORLET_IMAGE}
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: ${MORLET_DB_PASSWORD}
+      POSTGRES_DB: morlet
+      POSTGRES_INITDB_ARGS: --data-checksums
+    command: ["postgres", "-c", "max_wal_size=256MB", "-c", "min_wal_size=64MB", "-c", "wal_compression=on"]
+    volumes:
+      - ${PC_DIR:?Set PC_DIR}/pgdata:/var/lib/postgresql/data
+    ports: ["0.0.0.0:54340:5432"]     # the controller on a second machine checks after every restart
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    restart: always
+  writer:
+    build: {context: ../.., dockerfile: evaluation/power_cut_p1/Dockerfile}
+    environment: *dsn
+    command: ["--ack", "${PC_ACK:?Set PC_ACK to the controller host:port}"]
+    depends_on: {db: {condition: service_healthy}}
+    restart: always
+  steward-init:
+    build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
+    environment:
+      MORLET_STEWARD_DSN: postgresql://morlet:${MORLET_DB_PASSWORD}@db:5432/morlet
+      MORLET_STEWARD_PASSWORD: ${MORLET_STEWARD_PASSWORD:?Set MORLET_STEWARD_PASSWORD}
+    entrypoint: ["sh", "-c"]
+    # the writer creates the collection; grant once it exists
+    command: ["for i in $(seq 60); do python steward.py grant 2>/dev/null | grep -q pc_study && exit 0; python steward.py init >/dev/null; sleep 5; done; exit 1"]
+    depends_on: {db: {condition: service_healthy}}
+    restart: "no"
+  steward:
+    build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
+    environment:
+      MORLET_STEWARD_DSN: postgresql://morlet_steward:${MORLET_STEWARD_PASSWORD}@db:5432/morlet
+    command: ["run", "--verbose", "--data-path", "/data", "--load-per-cpu", "1.0"]
+    volumes:
+      - ${PC_DIR}:/data:ro
+    depends_on: {steward-init: {condition: service_completed_successfully}}
+    restart: always

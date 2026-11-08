@@ -1,0 +1,22 @@
+2026-11-08T18:53:46
+18:53  up 12 days,  3:49, 19 users, load averages: 5.13 4.76 4.63
+ %CPU COMM
+192.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 72.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  8.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.2 bash
+  1.8 claude
+  1.4 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-08T18:54:03
+18:54  up 12 days,  3:50, 19 users, load averages: 6.12 5.01 4.73
+ %CPU COMM
+229.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 15.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 12.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.5 claude
+  3.0 claude
+  2.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.4 /usr/sbin/bluetoothd

@@ -22,7 +22,22 @@ NEW_VERSION=$(sed -n "s/^default_version = '\(.*\)'/\1/p" "$EXT/pg_morlet.contro
 WORK=$(mktemp -d)
 trap 'git -C "$ROOT" worktree remove --force "$WORK/old" >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
 psql() { "$BIN/psql" -h localhost -p "$PORT" -v ON_ERROR_STOP=1 -qAtX "$@"; }
-install() { (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" cargo pgrx install --release --pg-config "$PG_CONFIG" >/dev/null); }
+# A ref builds with the cargo-pgrx of its own Cargo.lock. Released refs use pgrx 0.16.1; when this checkout uses
+# another version, MORLET_RELEASE_CARGO_PGRX names a cargo-pgrx binary of the released version.
+pgrx_for() {
+  local want have
+  want=$(awk '$0=="name = \"pgrx\"" {getline; gsub(/version = |"/,""); print}' "$1/Cargo.lock")
+  have=$(cargo pgrx --version | awk '{print $2}')
+  if [ "$want" = "$have" ]; then echo "cargo pgrx"; return; fi
+  if [ -z "${MORLET_RELEASE_CARGO_PGRX:-}" ] || [ "$("$MORLET_RELEASE_CARGO_PGRX" pgrx --version | awk '{print $2}')" != "$want" ]; then
+    echo "$1 needs cargo-pgrx $want (this checkout: $have): set MORLET_RELEASE_CARGO_PGRX to one" >&2; return 1
+  fi
+  echo "$MORLET_RELEASE_CARGO_PGRX pgrx"
+}
+install() {
+  local pgrx; pgrx=$(pgrx_for "$1")
+  (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" $pgrx install --release --pg-config "$PG_CONFIG" >/dev/null)
+}
 # A released ref never changes: with MORLET_UPGRADE_CACHE set, its packaged files (library, control and SQL,
 # at their absolute install paths) are built once, kept there and copied into place on later runs.
 install_release() {
@@ -31,7 +46,8 @@ install_release() {
   key="$cache/$OLD_REF-pg$PG_MAJOR"
   if [ ! -d "$key" ]; then
     rm -rf "$key.tmp"
-    (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" cargo pgrx package --pg-config "$PG_CONFIG" --out-dir "$key.tmp" >/dev/null)
+    local pgrx; pgrx=$(pgrx_for "$1")
+    (cd "$1/extensions/pg_morlet" && CARGO_TARGET_DIR="$1/target" $pgrx package --pg-config "$PG_CONFIG" --out-dir "$key.tmp" >/dev/null)
     mv "$key.tmp" "$key"
   else
     echo "$OLD_REF: packaged build from $cache"
@@ -108,6 +124,14 @@ test "$(psql -d morlet_upgrade_old -c "SELECT extversion FROM pg_extension WHERE
 snapshot morlet_upgrade_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
 echo "ok: updated to $NEW_VERSION, existing data reads identically"
+# The update pins TOAST compression of every existing collection's bulk columns to pglz (#280).
+pins=$(psql -d morlet_upgrade_old -c "SELECT count(*) FILTER (WHERE a.attcompression='p')||' '||count(*)
+  FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid
+  WHERE c.relnamespace='public'::regnamespace AND c.relkind='r' AND a.attnum>0 AND NOT a.attisdropped
+    AND a.atttypid IN ('bytea'::regtype,'float8[]'::regtype)")
+read -r pinned total <<<"$pins"
+[ "$total" -gt 0 ] && [ "$pinned" = "$total" ] || { echo "FAIL: $pinned of $total bulk columns pinned to pglz"; exit 1; }
+echo "ok: all $total bulk columns of the existing collections are pinned to pglz"
 
 psql -d morlet_upgrade_old <<'SQL'
 -- Legacy collections keep float8[] chunks and accept appends and identical replays.

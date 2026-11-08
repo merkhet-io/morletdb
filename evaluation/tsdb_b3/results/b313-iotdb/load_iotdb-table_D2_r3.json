@@ -1,0 +1,72 @@
+{
+ "system": "iotdb-table",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.23332654096884653,
+ "samples": 101586735,
+ "image": "apache/iotdb:2.0.11-standalone",
+ "image_id": "sha256:a04c66a9f5bb72ed93fe9cc1a35160da2e398f75539afb1bd7b99cc0da891e1c",
+ "started": "2026-11-05T15:01:02",
+ "settings": {
+  "properties": [
+   "timestamp_precision=ns",
+   "wal_mode=ASYNC"
+  ],
+  "xmx": [
+   "-Xmx3928M",
+   "-Xmx6552M"
+  ]
+ },
+ "server_version": [
+  [
+   "2.0.11",
+   "7c0de06"
+  ]
+ ],
+ "ingest": {
+  "wall_s": 37.79,
+  "samples_per_s": 2688178,
+  "conversion_s": 5.85,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 297.205,
+   "p95_ms": 326.535,
+   "max_ms": 987.791
+  },
+  "ack_per_call": {
+   "n": 620,
+   "p50_ms": 48.43,
+   "p95_ms": 96.989,
+   "max_ms": 620.621
+  },
+  "queryable_after_last_ack_s": 0.535,
+  "server": {
+   "cpu_percent_mean": 55.1,
+   "cpu_percent_p95": 125.1,
+   "memory_peak_mib": 5967.9,
+   "samples": 17
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.7
+  }
+ },
+ "correct": true
+}

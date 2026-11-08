@@ -34,7 +34,7 @@ pub fn envelope(samples: &[f64]) -> Result<Vec<f64>, SignalError> {
     let shifted: Vec<f64> = samples.iter().map(|v| v - samples[0]).collect();
     let mean = shifted.iter().sum::<f64>() / n as f64;
     let centred: Vec<f64> = shifted.iter().map(|v| v - mean).collect();
-    let scale = (centred.iter().map(|v| v * v).sum::<f64>() / n as f64).sqrt();
+    let scale = crate::root_mean_square(&centred);
     let x: Vec<f64> = if scale > 0.0 {
         centred.iter().map(|v| v / scale).collect()
     } else {
@@ -197,6 +197,18 @@ impl LagQuery {
         }
         let stride = (2 * max_lag + 1).div_ceil(QUERY_BLOCK) * QUERY_BLOCK;
         n.checked_mul(stride).is_some_and(|v| v <= MAX_QUERY_MATRIX)
+    }
+
+    /// Bytes of the shifted-query matrix for a query of `n` values with this `max_lag`, or None when it is not
+    /// [`supported`](Self::supported). Every stored envelope streams through the whole matrix, so it pays off only
+    /// while the matrix stays in cache: on a Raspberry Pi 3B+ (512 KB L2) a 16,384-sample window's 3.36 MB matrix
+    /// made scoring 15x slower than [`distance`] (11.9 ms against 0.79 ms per window), while on a desktop with a
+    /// 16 MB cache it is 15% faster. Callers choose the form by this size; the distances are bitwise the same.
+    pub fn matrix_bytes(n: usize, max_lag: usize) -> Option<usize> {
+        if !Self::supported(n, max_lag) {
+            return None;
+        }
+        Some(n * (2 * max_lag + 1).div_ceil(QUERY_BLOCK) * QUERY_BLOCK * std::mem::size_of::<f64>())
     }
 
     /// None when the inputs are invalid for [`distance`] or the matrix would be too large.
@@ -413,6 +425,33 @@ pub fn f16_to_f64(h: u16) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrix_bytes_is_the_prepared_size() {
+        for (n, lag) in [(52, 3), (410, 30), (1639, 122), (3277, 245)] {
+            let q: Vec<f64> = (0..n).map(|i| (i as f64 / 7.0).sin()).collect();
+            let p = LagQuery::new(&q, lag).unwrap();
+            assert_eq!(LagQuery::matrix_bytes(n, lag), Some(p.m.len() * 8));
+        }
+        assert_eq!(LagQuery::matrix_bytes(1639, 122), Some(1639 * 256 * 8));
+        assert_eq!(LagQuery::matrix_bytes(10, 10), None);
+    }
+
+    #[test]
+    fn envelope_is_scale_invariant_for_tiny_signals() {
+        // #228: the envelope of a scaled signal equals the envelope of the signal.
+        let x: Vec<f64> = (0..512).map(|i| (i as f64 * 0.13).sin()).collect();
+        let base = envelope(&x).unwrap();
+        assert!(base.iter().map(|v| v * v).sum::<f64>() > 1.0);
+        for scale in [1e-300, 1e-200, 1e-30, 1e8] {
+            let xs: Vec<f64> = x.iter().map(|v| v * scale).collect();
+            let e = envelope(&xs).unwrap();
+            assert!(
+                e.iter().zip(&base).all(|(p, q)| (p - q).abs() < 1e-9),
+                "scale {scale}"
+            );
+        }
+    }
 
     /// The previous arithmetic form, kept as the reference for the bit-level one.
     fn f16_to_f64_reference(h: u16) -> f64 {

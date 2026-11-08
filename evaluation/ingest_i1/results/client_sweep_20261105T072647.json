@@ -1,0 +1,90 @@
+{
+ "set": "dev",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "samples": 101453304,
+ "acquisitions": 124,
+ "started": "2026-11-05T07:24:44",
+ "loads": [
+  {
+   "commit_chunks": 16,
+   "rep": 1,
+   "wall_s": 16.166,
+   "samples_per_s": 6275703,
+   "server": {
+    "cpu_percent_mean": 76.8,
+    "cpu_percent_p95": 79.2,
+    "memory_peak_mib": 167.4,
+    "samples": 8
+   }
+  },
+  {
+   "commit_chunks": 64,
+   "rep": 1,
+   "wall_s": 14.232,
+   "samples_per_s": 7128379,
+   "server": {
+    "cpu_percent_mean": 84.0,
+    "cpu_percent_p95": 86.6,
+    "memory_peak_mib": 166.3,
+    "samples": 7
+   }
+  },
+  {
+   "commit_chunks": 256,
+   "rep": 1,
+   "wall_s": 13.367,
+   "samples_per_s": 7589552,
+   "server": {
+    "cpu_percent_mean": 77.8,
+    "cpu_percent_p95": 91.9,
+    "memory_peak_mib": 168.4,
+    "samples": 7
+   }
+  },
+  {
+   "commit_chunks": 16,
+   "rep": 2,
+   "wall_s": 16.103,
+   "samples_per_s": 6300168,
+   "server": {
+    "cpu_percent_mean": 75.1,
+    "cpu_percent_p95": 78.9,
+    "memory_peak_mib": 166.4,
+    "samples": 8
+   }
+  },
+  {
+   "commit_chunks": 64,
+   "rep": 2,
+   "wall_s": 14.346,
+   "samples_per_s": 7071882,
+   "server": {
+    "cpu_percent_mean": 85.9,
+    "cpu_percent_p95": 87.1,
+    "memory_peak_mib": 167.7,
+    "samples": 7
+   }
+  },
+  {
+   "commit_chunks": 256,
+   "rep": 2,
+   "wall_s": 13.455,
+   "samples_per_s": 7540068,
+   "server": {
+    "cpu_percent_mean": 78.0,
+    "cpu_percent_p95": 91.1,
+    "memory_peak_mib": 165.4,
+    "samples": 7
+   }
+  }
+ ],
+ "connect_ms": {
+  "p50": 6.31,
+  "max": 10.45
+ },
+ "median_wall_s": {
+  "16": 16.134500000000003,
+  "64": 14.289,
+  "256": 13.411000000000001
+ }
+}

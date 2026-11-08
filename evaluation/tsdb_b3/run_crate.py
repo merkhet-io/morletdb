@@ -190,6 +190,13 @@ def analytics(arm, m, data, reps=20):
             "computed": "client, after the read" if arm == "array" else "database"}
 
 
+def reads_child(arm):
+    """B3.13: the read benchmark against the running server from a new process (common.reads_maybe_fresh)."""
+    m = common.manifest()
+    data, _ = preload(m, list(range(len(m["acquisitions"]))))
+    common.print_reads_child(reads(arm, m, data), analytics(arm, m, data))
+
+
 def load(arm, durability, rep):
     rep = int(rep)
     m = common.manifest()
@@ -239,8 +246,8 @@ def load(arm, durability, rep):
         common.stop(c.NAME)
         res["storage"] = c.storage(vol, shards)
         conn = c.restart(vol)
-        res["reads"] = reads(arm, m, data)
-        res["analytics"] = analytics(arm, m, data)
+        res["reads"], res["analytics"] = common.reads_maybe_fresh(__file__, [arm], lambda: (reads(arm, m, data),
+                                                                                            analytics(arm, m, data)))
         res["optimize_one_segment_s"] = round(c.optimize(conn, arm, single_segment=True), 3)
         c.refresh(conn, arm)
         shards1 = c.shard_paths(conn)
@@ -251,4 +258,4 @@ def load(arm, durability, rep):
 
 
 if __name__ == "__main__":
-    {"subset": subset, "load": load}[sys.argv[1]](*sys.argv[2:])
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])

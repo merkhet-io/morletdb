@@ -1,4 +1,6 @@
 SELECT morlet_create_stream_collection('public','interval_streams');
+-- Without chunk summaries, as collections created before SQL 0.3.5: the length limits and decoding paths.
+ALTER TABLE interval_streams_chunks DROP COLUMN summary;
 SELECT morlet_start_recording('interval_streams','A',4096,'x','g','{"asset":"one"}');
 SELECT morlet_start_recording('interval_streams','B',4096,'x','g','{"asset":"two"}');
 SELECT morlet_append_chunk('interval_streams','A',0,array_fill(0.::float8,ARRAY[137]));
@@ -176,8 +178,10 @@ DO $$ BEGIN
   END;
 END $$;
 
--- Chunk summaries: interval statistics and overviews are bitwise the same with and without them.
+-- Chunk summaries: interval statistics and overviews are bitwise the same with and without them. The collection
+-- starts without them (as one created before SQL 0.3.5) and has them enabled below.
 SELECT morlet_create_stream_collection('public','summary_streams');
+ALTER TABLE summary_streams_chunks DROP COLUMN summary;
 CREATE TABLE summary_legacy(recording_id text PRIMARY KEY);
 CREATE TABLE summary_legacy_chunks(recording_id text,start_sample bigint,samples float8[]);
 CREATE TABLE summary_legacy_segments(recording_id text,start_sample bigint,features float8[]);

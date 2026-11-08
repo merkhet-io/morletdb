@@ -6,6 +6,7 @@ Without MORLET_SDK_TEST_DSN the tests are skipped; with MORLET_SDK_REQUIRE_DB=1 
 Every test works in its own schema, dropped afterwards.
 """
 import os
+import threading
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -204,6 +205,89 @@ class Contract(unittest.TestCase):
         self.assertEqual(s.sample_count, 7990)
         self.assertEqual((s.min, s.max), (x[10:8000].min(), x[10:8000].max()))
         self.assertAlmostEqual(s.mean, x[10:8000].mean(), delta=1e-12 * max(1, abs(x).max()))
+
+    def test_compressed_transfer_when_supported(self):
+        """Encoded reads (decoded in the client) return the raw reads' samples bit for bit, on intervals inside
+        one chunk, across chunk edges and over the whole recording, and fail the same way on missing data."""
+        from morletdb import _native
+        if _native.native() is None:
+            self.skipTest("native decoder library not available")
+        if not self.db._has("public.morlet_read_interval_encoded(regclass,text,bigint,bigint,integer)"):
+            self.skipTest("server without morlet_read_interval_encoded")
+        rng = np.random.default_rng(3)
+        x = np.concatenate([events(70000, [500, 40000], 25600), rng.standard_normal(30000)])
+        self.db.ingest(self.coll, "ct", x, sample_rate_hz=25600, channel="c", unit="u")
+        old = os.environ.get("MORLETDB_TRANSFER")
+        try:
+            for a, b in [(0, 100000), (1, 2), (4095, 4097), (1234, 98765), (69000, 71000), (99999, 100000)]:
+                got = {}
+                for mode in ("raw", "encoded"):
+                    os.environ["MORLETDB_TRANSFER"] = mode
+                    got[mode] = self.db.read(self.coll, "ct", a, b).samples
+                np.testing.assert_array_equal(got["encoded"].view("<u8"), got["raw"].view("<u8"))
+                np.testing.assert_array_equal(got["encoded"].view("<u8"), x[a:b].view("<u8"))
+                self.assertTrue(got["encoded"].flags.writeable)
+            self.conn.execute(f"DELETE FROM {self.coll}_chunks WHERE start_sample=8192")
+            os.environ["MORLETDB_TRANSFER"] = "encoded"
+            with self.assertRaises(NotFoundError):
+                self.db.read(self.coll, "ct", 0, 20000)
+        finally:
+            self.conn.rollback()
+            if old is None:
+                os.environ.pop("MORLETDB_TRANSFER", None)
+            else:
+                os.environ["MORLETDB_TRANSFER"] = old
+
+    def test_latest_when_supported(self):
+        x = events(20000, [100, 9000], 8000)
+        self.db.ingest(self.coll, "lt", x, sample_rate_hz=8000, channel="c", unit="u",
+                       metadata={"latest_test": 1}, start_time=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        try:
+            rows = self.db.latest(self.coll, 5, {"latest_test": 1})
+        except morletdb.UnsupportedError:
+            self.skipTest("server without morlet_latest")
+        self.assertEqual(len(rows), 1)
+        r = rows[0]
+        self.assertEqual((r.start_sample, r.end_sample), (19995, 20000))
+        self.assertTrue(np.array_equal(r.samples, self.db.read(self.coll, "lt", 19995, 20000).samples))
+        self.assertEqual(r.stats, self.db.stats(self.coll, "lt", 19995, 20000))
+        self.assertEqual(r.end_time, datetime(2026, 1, 1, 0, 0, 2, 500000, tzinfo=timezone.utc))
+        chunk = self.db.latest(self.coll, 0, {"latest_test": 1})[0]
+        self.assertIsNone(chunk.samples)
+        self.assertEqual(chunk.end_sample, 20000)
+        self.assertEqual(chunk.stats, self.db.stats(self.coll, "lt", chunk.start_sample, 20000))
+
+    def test_notifications_when_supported(self):
+        try:
+            channel = self.db.enable_notifications(self.coll)
+        except morletdb.UnsupportedError:
+            self.skipTest("server without notifications")
+        self.assertEqual(channel, "morlet_signals")
+        self.db.ingest(self.coll, "nt", np.zeros(100), sample_rate_hz=100, channel="c", unit="u")
+        self.conn.commit()
+        with morletdb.Client.connect(DSN, autocommit=True) as listener:
+            with self.assertRaises(InvalidInputError):
+                next(self.db.notifications(self.coll))       # not autocommit
+            self.assertEqual(list(listener.notifications(self.coll, timeout=0.5)), [])  # nothing committed since
+
+            def commit_later():
+                with psycopg.connect(DSN) as c:
+                    w = morletdb.Client(c)
+                    w.append(self.coll, "nt", 100, np.ones(50))
+                    c.rollback()                             # rolled back: no notification
+                    w.append(self.coll, "nt", 100, np.ones(50))
+                    c.commit()
+            it = listener.notifications(self.coll, timeout=10, stop_after=1)
+            t = threading.Timer(0.5, commit_later)               # LISTEN runs on the first next(), before it fires
+            t.start()
+            notes = list(it)
+            t.join()
+        self.assertEqual(len(notes), 1)
+        n = notes[0]
+        self.assertEqual((n.collection, n.recording_count, n.truncated), (self.coll, 1, False))
+        self.assertEqual(n.recordings, (morletdb.NotifiedRange("nt", 100, 150, 100.0, 1.0, 1.5),))
+        self.assertTrue(self.db.disable_notifications(self.coll))
+        self.assertFalse(self.db.disable_notifications(self.coll))
 
     def test_overview_and_summaries_when_supported(self):
         x = events(20000, [100, 9000], 8000)

@@ -1,0 +1,2507 @@
+== morletdb-i1 D2 1 10:08:15
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.19211424997774884,
+ "samples": 101586735,
+ "started": "2026-11-05T10:08:15",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.444,
+  "samples_per_s": 13646878,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.296,
+   "p95_ms": 64.84,
+   "max_ms": 92.868
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.652,
+  "server": {
+   "cpu_percent_mean": 113.4,
+   "cpu_percent_p95": 116.1,
+   "memory_peak_mib": 164.0,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.2
+  }
+ },
+ "correct": true
+}
+morletdb R1 {'n': 1000, 'p50_ms': 0.663, 'p95_ms': 1.138, 'max_ms': 3.583, 'samples_per_query': 4096, 'mismatches': 0}
+morletdb R2 {'n': 1000, 'p50_ms': 7.455, 'p95_ms': 10.579, 'max_ms': 21.246, 'samples_per_query': 128000, 'mismatches': 0}
+morletdb R3 {'n': 1000, 'p50_ms': 7.842, 'p95_ms': 10.815, 'max_ms': 16.837, 'samples_per_query': 192000, 'mismatches': 0}
+morletdb R4_recent {'n': 1000, 'p50_ms': 0.627, 'p95_ms': 0.989, 'max_ms': 6.177, 'samples_per_query': 4096, 'mismatches': 0}
+morletdb R4_older {'n': 1000, 'p50_ms': 0.613, 'p95_ms': 0.976, 'max_ms': 2.41, 'samples_per_query': 4096, 'mismatches': 0}
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.19211424997774884,
+ "samples": 101586735,
+ "started": "2026-11-05T10:08:15",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.444,
+  "samples_per_s": 13646878,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.296,
+   "p95_ms": 64.84,
+   "max_ms": 92.868
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.652,
+  "server": {
+   "cpu_percent_mean": 113.4,
+   "cpu_percent_p95": 116.1,
+   "memory_peak_mib": 164.0,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.2
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 2482176,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 167772160,
+  "database": 169323667,
+  "volume": {
+   "apparent": 360487497,
+   "allocated": 360566784,
+   "pg_wal_allocated": 167772160
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.663,
+   "p95_ms": 1.138,
+   "max_ms": 3.583,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 7.455,
+   "p95_ms": 10.579,
+   "max_ms": 21.246,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.842,
+   "p95_ms": 10.815,
+   "max_ms": 16.837,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.627,
+   "p95_ms": 0.989,
+   "max_ms": 6.177,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.613,
+   "p95_ms": 0.976,
+   "max_ms": 2.41,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.84,
+   "p95_ms": 1.612,
+   "max_ms": 5.458,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4069.6
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 2.544,
+  "p95_ms": 2.659,
+  "max_ms": 3.889,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ }
+}
+== questdb D2 1 10:08:56
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20406295801512897,
+ "samples": 101586735,
+ "started": "2026-11-05T10:08:57",
+ "ingest": {
+  "wall_s": 10.508,
+  "samples_per_s": 9667403,
+  "conversion_s": 2.135,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 83.713,
+   "p95_ms": 95.086,
+   "max_ms": 134.624
+  },
+  "queryable_after_last_ack_s": 0.01,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 333.9,
+   "cpu_percent_p95": 366.4,
+   "memory_peak_mib": 2254.8,
+   "samples": 5
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 5.779,
+   "p95_ms": 63.45,
+   "max_ms": 91.005
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.9
+  }
+ },
+ "correct": true
+}
+questdb R1 {'n': 1000, 'p50_ms': 1.121, 'p95_ms': 2.601, 'max_ms': 13.202, 'samples_per_query': 4096, 'mismatches': 0}
+questdb R2 {'n': 1000, 'p50_ms': 7.151, 'p95_ms': 13.78, 'max_ms': 24.981, 'samples_per_query': 128000, 'mismatches': 0}
+questdb R3 {'n': 1000, 'p50_ms': 9.288, 'p95_ms': 14.632, 'max_ms': 45.522, 'samples_per_query': 192000, 'mismatches': 0}
+questdb R4_recent {'n': 1000, 'p50_ms': 0.794, 'p95_ms': 1.391, 'max_ms': 6.366, 'samples_per_query': 4096, 'mismatches': 0}
+questdb R4_older {'n': 1000, 'p50_ms': 0.785, 'p95_ms': 1.508, 'max_ms': 16.077, 'samples_per_query': 4096, 'mismatches': 0}
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20406295801512897,
+ "samples": 101586735,
+ "started": "2026-11-05T10:08:57",
+ "ingest": {
+  "wall_s": 10.508,
+  "samples_per_s": 9667403,
+  "conversion_s": 2.135,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 83.713,
+   "p95_ms": 95.086,
+   "max_ms": 134.624
+  },
+  "queryable_after_last_ack_s": 0.01,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 333.9,
+   "cpu_percent_p95": 366.4,
+   "memory_peak_mib": 2254.8,
+   "samples": 5
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 5.779,
+   "p95_ms": 63.45,
+   "max_ms": 91.005
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.9
+  }
+ },
+ "correct": true,
+ "storage_native": {
+  "tables": {
+   "b3_mid": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16401,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 47652864,
+     "allocated": 47652864,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 7942144,
+     "allocated": 7942144,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 15884288,
+     "allocated": 15884288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 4974974,
+     "allocated": 4997120,
+     "files": 18
+    }
+   },
+   "b3_high": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16403,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 765087744,
+     "allocated": 765112320,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 127516672,
+     "allocated": 127524864,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 255029248,
+     "allocated": 255037440,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 11313880,
+     "allocated": 11345920,
+     "files": 18
+    }
+   },
+   "b3_process": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16409,
+     "allocated": 20480,
+     "files": 5
+    },
+    "identity": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "data": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 52901,
+     "allocated": 73728,
+     "files": 12
+    }
+   }
+  },
+  "volume": {
+   "apparent": 1250029585,
+   "allocated": 1250324480
+  }
+ },
+ "reads_native": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 1.121,
+   "p95_ms": 2.601,
+   "max_ms": 13.202,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 7.151,
+   "p95_ms": 13.78,
+   "max_ms": 24.981,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 9.288,
+   "p95_ms": 14.632,
+   "max_ms": 45.522,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.794,
+   "p95_ms": 1.391,
+   "max_ms": 6.366,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.785,
+   "p95_ms": 1.508,
+   "max_ms": 16.077,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 1.202,
+   "p95_ms": 3.379,
+   "max_ms": 27.665,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 2316.3
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 2.494,
+  "p95_ms": 4.698,
+  "max_ms": 9.966,
+  "max_relative_difference": 8.052762256150513e-14,
+  "within_1e-12": "True"
+ },
+ "parquet_LZ4_RAW": {
+  "convert_statement_s": 0.01,
+  "until_settled_s": 2.498,
+  "partitions": [
+   {
+    "nam
+== morletdb-033 D2 1 10:09:58
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21821616601664573,
+ "samples": 101586735,
+ "started": "2026-11-05T10:09:59",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 17.125,
+  "samples_per_s": 5932241,
+  "conversion_s": 0.021,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 134.522,
+   "p95_ms": 160.188,
+   "max_ms": 180.42
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.992,
+  "server": {
+   "cpu_percent_mean": 78.2,
+   "cpu_percent_p95": 80.5,
+   "memory_peak_mib": 167.4,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true
+}
+morletdb R1 {'n': 1000, 'p50_ms': 0.638, 'p95_ms': 1.054, 'max_ms': 4.247, 'samples_per_query': 4096, 'mismatches': 0}
+morletdb R2 {'n': 1000, 'p50_ms': 6.668, 'p95_ms': 8.889, 'max_ms': 11.58, 'samples_per_query': 128000, 'mismatches': 0}
+morletdb R3 {'n': 1000, 'p50_ms': 7.815, 'p95_ms': 11.025, 'max_ms': 13.376, 'samples_per_query': 192000, 'mismatches': 0}
+morletdb R4_recent {'n': 1000, 'p50_ms': 0.627, 'p95_ms': 0.968, 'max_ms': 1.927, 'samples_per_query': 4096, 'mismatches': 0}
+morletdb R4_older {'n': 1000, 'p50_ms': 0.613, 'p95_ms': 1.007, 'max_ms': 3.007, 'samples_per_query': 4096, 'mismatches': 0}
+AQ1 {'n': 1000, 'p50_ms': 2.2, 'p95_ms': 3.092, 'max_ms': 6.224, 'window_ns': 64000000, 'queries': 1000, 'samples_per_query_mean': 13026.3, 'mismatches': 0}
+AQ2 {'n': 1000, 'p50_ms': 8.208, 'p95_ms': 11.005, 'max_ms': 13.385, 'window_ns': 500000000, 'queries': 1000, 'samples_per_query_mean': 102000.65, 'mismatches': 0}
+AQ1 {'n': 1000, 'p50_ms': 1.792, 'p95_ms': 2.456, 'max_ms': 3.204, 'window_ns': 64000000, 'queries': 1000, 'samples_per_query_mean': 13026.3, 'mismatches': 0}
+AQ2 {'n': 1000, 'p50_ms': 5.904, 'p95_ms': 8.934, 'max_ms': 22.717, 'window_ns': 500000000, 'queries': 1000, 'samples_per_query_mean': 102000.65, 'mismatches': 0}
+AQ1 {'n': 1000, 'p50_ms': 1.561, 'p95_ms': 2.523, 'max_ms': 24.853, 'window_ns': 64000000, 'queries': 1000, 'samples_per_query_mean': 13026.3, 'mismatches': 0}
+AQ2 {'n': 1000, 'p50_ms': 4.228, 'p95_ms': 7.006, 'max_ms': 17.8, 'window_ns': 500000000, 'queries': 1000, 'samples_per_query_mean': 102000.65, 'mismatches': 0}
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21821616601664573,
+ "samples": 101586735,
+ "started": "2026-11-05T10:09:59",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 17.125,
+  "samples_per_s": 5932241,
+  "conversion_s": 0.021,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 134.522,
+   "p95_ms": 160.188,
+   "max_ms": 180.42
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.992,
+  "server": {
+   "cpu_percent_mean": 78.2,
+   "cpu_percent_p95": 80.5,
+   "memory_peak_mib": 167.4,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 4063232,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 2482176,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 172756115,
+  "volume": {
+   "apparent": 381150085,
+   "allocated": 381243392,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.638,
+   "p95_ms": 1.054,
+   "max_ms": 4.247,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 6.668,
+   "p95_ms": 8.889,
+   "max_ms": 11.58,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.815,
+   "p95_ms": 11.025,
+   "max_ms": 13.376,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.627,
+   "p95_ms": 0.968,
+   "max_ms": 1.927,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.613,
+   "p95_ms": 1.007,
+   "max_ms": 3.007,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.819,
+   "p95_ms": 1.54,
+   "max_ms": 4.112,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4196.4
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 2.549,
+  "p95_ms": 2.658,
+  "max_ms": 3.727,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "acquisition_register_s": 0.37,
+ "acquisition_reads": {
+  "morlet_read_acquisition": {
+   "AQ1": {
+    "n": 1000,
+    "p50_ms": 2.2,
+    "p95_ms": 3.092,
+    "max_ms": 6.224,
+    "window_ns": 64000000,
+    "queries": 1000,
+    "samples_per_query_mean": 13026.3,
+    "mismatches": 0
+   },
+   "AQ2": {
+    "n": 1000,
+    "p50_ms": 8.208,
+    "p95_ms": 11.005,
+    "max_ms": 13.385,
+    "window_ns": 500000000,
+    "queries": 1000,
+    "samples_per_query_mean": 102000.65,
+    "mismatches": 0
+   }
+  },
+  "morlet_read_acquisition_raw": {
+   "AQ1": {
+    "n": 1000,
+    "p50_ms": 1.792,
+    "p95_ms": 2.456,
+    "max_ms": 3.204,
+    "window_ns": 64000000,
+    "queries": 1000,
+    "samples_per_query_mean": 13026.3,
+    "mismatches": 0
+   },
+   "AQ2": {
+    "n": 1000,
+    "p50_ms": 5.904,
+    "p95_ms": 8.934,
+    "max_ms": 22.717,
+    "window_ns": 500000000,
+    "queries": 1000,
+    "samples_per_query_mean": 102000.65,
+    "mismatches": 0
+   }
+  },
+  "client_raw": {
+   "AQ1": {
+    "n": 1000,
+    "p50_ms": 1.561,
+    "p95_ms": 2.523,
+    "max_ms": 24.853,
+    "window_ns": 64000000,
+    "queries": 1000,
+    "samples_per_query_mean": 13026.3,
+    "mismatches": 0
+   },
+   "AQ2": {
+    "n": 1000,
+  
+== morletdb-i1 D1 1 10:11:15
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.21209399995859712,
+ "samples": 101586735,
+ "started": "2026-11-05T10:11:16",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.819,
+  "samples_per_s": 12992181,
+  "conversion_s": 0.011,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 61.462,
+   "p95_ms": 69.983,
+   "max_ms": 120.377
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.992,
+  "server": {
+   "cpu_percent_mean": 105.7,
+   "cpu_percent_p95": 108.3,
+   "memory_peak_mib": 178.0,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.0
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.21209399995859712,
+ "samples": 101586735,
+ "started": "2026-11-05T10:11:16",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.819,
+  "samples_per_s": 12992181,
+  "conversion_s": 0.011,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 61.462,
+   "p95_ms": 69.983,
+   "max_ms": 120.377
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.992,
+  "server": {
+   "cpu_percent_mean": 105.7,
+   "cpu_percent_p95": 108.3,
+   "memory_peak_mib": 178.0,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.0
+  }
+ },
+ "correct": true
+}
+== questdb D1 1 10:11:35
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.2075407090014778,
+ "samples": 101586735,
+ "started": "2026-11-05T10:11:36",
+ "ingest": {
+  "wall_s": 12.012,
+  "samples_per_s": 8457422,
+  "conversion_s": 2.171,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 95.52,
+   "p95_ms": 112.106,
+   "max_ms": 161.267
+  },
+  "queryable_after_last_ack_s": 0.061,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 305.9,
+   "cpu_percent_p95": 364.3,
+   "memory_peak_mib": 2307.1,
+   "samples": 6
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 10.415,
+   "p95_ms": 69.519,
+   "max_ms": 98.103
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.3
+  }
+ },
+ "correct": true
+}
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.2075407090014778,
+ "samples": 101586735,
+ "started": "2026-11-05T10:11:36",
+ "ingest": {
+  "wall_s": 12.012,
+  "samples_per_s": 8457422,
+  "conversion_s": 2.171,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 95.52,
+   "p95_ms": 112.106,
+   "max_ms": 161.267
+  },
+  "queryable_after_last_ack_s": 0.061,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 305.9,
+   "cpu_percent_p95": 364.3,
+   "memory_peak_mib": 2307.1,
+   "samples": 6
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 10.415,
+   "p95_ms": 69.519,
+   "max_ms": 98.103
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.3
+  }
+ },
+ "correct": true
+}
+== morletdb-033 D1 1 10:11:56
+{
+ "system": "morletdb-033",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.22535575000802055,
+ "samples": 101586735,
+ "started": "2026-11-05T10:11:56",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 17.058,
+  "samples_per_s": 5955424,
+  "conversion_s": 0.016,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 135.44,
+   "p95_ms": 153.821,
+   "max_ms": 164.482
+  },
+  "queryable_after_last_ack_s": 0.005,
+  "failures": [],
+  "excluded_preflight_s": 0.735,
+  "server": {
+   "cpu_percent_mean": 78.4,
+   "cpu_percent_p95": 79.3,
+   "memory_peak_mib": 167.7,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-033",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.22535575000802055,
+ "samples": 101586735,
+ "started": "2026-11-05T10:11:56",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 17.058,
+  "samples_per_s": 5955424,
+  "conversion_s": 0.016,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 135.44,
+   "p95_ms": 153.821,
+   "max_ms": 164.482
+  },
+  "queryable_after_last_ack_s": 0.005,
+  "failures": [],
+  "excluded_preflight_s": 0.735,
+  "server": {
+   "cpu_percent_mean": 78.4,
+   "cpu_percent_p95": 79.3,
+   "memory_peak_mib": 167.7,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.8
+  }
+ },
+ "correct": true
+}
+== morletdb-i1 D2 2 10:12:25
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.21305695798946545,
+ "samples": 101586735,
+ "started": "2026-11-05T10:12:25",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.401,
+  "samples_per_s": 13725735,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.224,
+   "p95_ms": 63.682,
+   "max_ms": 100.314
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.646,
+  "server": {
+   "cpu_percent_mean": 110.2,
+   "cpu_percent_p95": 113.7,
+   "memory_peak_mib": 163.9,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.21305695798946545,
+ "samples": 101586735,
+ "started": "2026-11-05T10:12:25",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.401,
+  "samples_per_s": 13725735,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.224,
+   "p95_ms": 63.682,
+   "max_ms": 100.314
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.646,
+  "server": {
+   "cpu_percent_mean": 110.2,
+   "cpu_percent_p95": 113.7,
+   "memory_peak_mib": 163.9,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.8
+  }
+ },
+ "correct": true
+}
+== questdb D2 2 10:12:44
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.22176683298312128,
+ "samples": 101586735,
+ "started": "2026-11-05T10:12:44",
+ "ingest": {
+  "wall_s": 11.246,
+  "samples_per_s": 9033269,
+  "conversion_s": 2.473,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 88.062,
+   "p95_ms": 109.793,
+   "max_ms": 159.438
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 324.3,
+   "cpu_percent_p95": 350.1,
+   "memory_peak_mib": 2285.6,
+   "samples": 5
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 6.126,
+   "p95_ms": 66.195,
+   "max_ms": 105.22
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.7
+  }
+ },
+ "correct": true
+}
+questdb R1 {'n': 1000, 'p50_ms': 1.827, 'p95_ms': 3.596, 'max_ms': 9.041, 'samples_per_query': 4096, 'mismatches': 0}
+questdb R2 {'n': 1000, 'p50_ms': 8.506, 'p95_ms': 13.663, 'max_ms': 17.502, 'samples_per_query': 128000, 'mismatches': 0}
+questdb R3 {'n': 1000, 'p50_ms': 11.939, 'p95_ms': 16.32, 'max_ms': 20.673, 'samples_per_query': 192000, 'mismatches': 0}
+questdb R4_recent {'n': 1000, 'p50_ms': 1.871, 'p95_ms': 2.594, 'max_ms': 5.994, 'samples_per_query': 4096, 'mismatches': 0}
+questdb R4_older {'n': 1000, 'p50_ms': 1.727, 'p95_ms': 2.629, 'max_ms': 5.417, 'samples_per_query': 4096, 'mismatches': 0}
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.22176683298312128,
+ "samples": 101586735,
+ "started": "2026-11-05T10:12:44",
+ "ingest": {
+  "wall_s": 11.246,
+  "samples_per_s": 9033269,
+  "conversion_s": 2.473,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 88.062,
+   "p95_ms": 109.793,
+   "max_ms": 159.438
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 324.3,
+   "cpu_percent_p95": 350.1,
+   "memory_peak_mib": 2285.6,
+   "samples": 5
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 6.126,
+   "p95_ms": 66.195,
+   "max_ms": 105.22
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.7
+  }
+ },
+ "correct": true,
+ "storage_native": {
+  "tables": {
+   "b3_mid": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16401,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 47652864,
+     "allocated": 47652864,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 7942144,
+     "allocated": 7942144,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 15884288,
+     "allocated": 15884288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 4974974,
+     "allocated": 4997120,
+     "files": 18
+    }
+   },
+   "b3_high": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16403,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 765087744,
+     "allocated": 765112320,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 127516672,
+     "allocated": 127524864,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 255029248,
+     "allocated": 255037440,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 11313880,
+     "allocated": 11345920,
+     "files": 18
+    }
+   },
+   "b3_process": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16409,
+     "allocated": 20480,
+     "files": 5
+    },
+    "identity": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "data": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 52901,
+     "allocated": 73728,
+     "files": 12
+    }
+   }
+  },
+  "volume": {
+   "apparent": 1250029585,
+   "allocated": 1250324480
+  }
+ },
+ "parquet_ZSTD": {
+  "convert_statement_s": 0.023,
+  "until_settled_s": 15.524,
+  "partitions": [
+   {
+    "name": "2026-01-01T00",
+    "isParquet": true,
+    "numRows": 15394401,
+    "diskSize": 101735972,
+    "parquetFileSize": 101678384
+   },
+   {
+    "name": "2026-01-01T01",
+    "isParquet": true,
+    "numRows": 15459292,
+    "diskSize": 102411400,
+    "parquetFileSize": 102353440
+   },
+   {
+    "name": "2026-01-01T02",
+    "isParquet": true,
+    "numRows": 1024099,
+    "diskSize": 6785571,
+    "parquetFileSize": 6781179
+   },
+   {
+    "name": "2026-01-01T03",
+    "isParquet": false,
+    "numRows": 1,
+    "diskSize": 83886080,
+    "parquetFileSize": -1
+   }
+  ],
+  "correctness": {
+   "reads": {
+    "acquisitions": 124,
+    "channels_checked": 868,
+    "mismatches": []
+   }
+  }
+ },
+ "storage_parquet_ZSTD": {
+  "tables": {
+   "b3_mid": {
+    "wal": {
+     "apparent": 70680,
+     "allocated": 118784,
+     "files": 30
+    },
+    "metadata": {
+     "apparent": 25041,
+     "allocated": 32768,
+     "files": 8
+    },
+    "data": {
+     "apparent": 33165826,
+     "allocated": 33173504,
+     "files": 3
+    },
+    "symbols": {
+     "apparent": 24576,
+   
+== morletdb-033 D2 2 10:14:14
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.230486957996618,
+ "samples": 101586735,
+ "started": "2026-11-05T10:14:14",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.746,
+  "samples_per_s": 6066202,
+  "conversion_s": 0.022,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 132.442,
+   "p95_ms": 155.516,
+   "max_ms": 180.121
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 1.062,
+  "server": {
+   "cpu_percent_mean": 77.4,
+   "cpu_percent_p95": 79.1,
+   "memory_peak_mib": 168.2,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.230486957996618,
+ "samples": 101586735,
+ "started": "2026-11-05T10:14:14",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.746,
+  "samples_per_s": 6066202,
+  "conversion_s": 0.022,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 132.442,
+   "p95_ms": 155.516,
+   "max_ms": 180.121
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 1.062,
+  "server": {
+   "cpu_percent_mean": 77.4,
+   "cpu_percent_p95": 79.1,
+   "memory_peak_mib": 168.2,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.8
+  }
+ },
+ "correct": true
+}
+== morletdb-i1 D1 2 10:14:43
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.22944149997783825,
+ "samples": 101586735,
+ "started": "2026-11-05T10:14:44",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.754,
+  "samples_per_s": 13101599,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 61.294,
+   "p95_ms": 68.874,
+   "max_ms": 116.315
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.084,
+  "server": {
+   "cpu_percent_mean": 103.0,
+   "cpu_percent_p95": 104.3,
+   "memory_peak_mib": 176.8,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.3
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.22944149997783825,
+ "samples": 101586735,
+ "started": "2026-11-05T10:14:44",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.754,
+  "samples_per_s": 13101599,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 61.294,
+   "p95_ms": 68.874,
+   "max_ms": 116.315
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.084,
+  "server": {
+   "cpu_percent_mean": 103.0,
+   "cpu_percent_p95": 104.3,
+   "memory_peak_mib": 176.8,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.3
+  }
+ },
+ "correct": true
+}
+== questdb D1 2 10:15:04
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.21337204199517146,
+ "samples": 101586735,
+ "started": "2026-11-05T10:15:04",
+ "ingest": {
+  "wall_s": 12.296,
+  "samples_per_s": 8261734,
+  "conversion_s": 2.266,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 95.865,
+   "p95_ms": 119.613,
+   "max_ms": 179.334
+  },
+  "queryable_after_last_ack_s": 0.072,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 311.4,
+   "cpu_percent_p95": 356.1,
+   "memory_peak_mib": 2302.0,
+   "samples": 6
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 10.956,
+   "p95_ms": 70.777,
+   "max_ms": 106.046
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 6.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.21337204199517146,
+ "samples": 101586735,
+ "started": "2026-11-05T10:15:04",
+ "ingest": {
+  "wall_s": 12.296,
+  "samples_per_s": 8261734,
+  "conversion_s": 2.266,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 95.865,
+   "p95_ms": 119.613,
+   "max_ms": 179.334
+  },
+  "queryable_after_last_ack_s": 0.072,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 311.4,
+   "cpu_percent_p95": 356.1,
+   "memory_peak_mib": 2302.0,
+   "samples": 6
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 10.956,
+   "p95_ms": 70.777,
+   "max_ms": 106.046
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 6.5
+  }
+ },
+ "correct": true
+}
+== morletdb-033 D1 2 10:15:26
+{
+ "system": "morletdb-033",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.213119333027862,
+ "samples": 101586735,
+ "started": "2026-11-05T10:15:27",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.796,
+  "samples_per_s": 6048376,
+  "conversion_s": 0.021,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 133.17,
+   "p95_ms": 149.596,
+   "max_ms": 170.251
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "failures": [],
+  "excluded_preflight_s": 0.984,
+  "server": {
+   "cpu_percent_mean": 76.4,
+   "cpu_percent_p95": 78.4,
+   "memory_peak_mib": 166.8,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-033",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.213119333027862,
+ "samples": 101586735,
+ "started": "2026-11-05T10:15:27",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.796,
+  "samples_per_s": 6048376,
+  "conversion_s": 0.021,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 133.17,
+   "p95_ms": 149.596,
+   "max_ms": 170.251
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "failures": [],
+  "excluded_preflight_s": 0.984,
+  "server": {
+   "cpu_percent_mean": 76.4,
+   "cpu_percent_p95": 78.4,
+   "memory_peak_mib": 166.8,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true
+}
+== morletdb-i1 D2 3 10:15:55
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.20977445802418515,
+ "samples": 101586735,
+ "started": "2026-11-05T10:15:56",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.519,
+  "samples_per_s": 13510102,
+  "conversion_s": 0.009,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.858,
+   "p95_ms": 65.39,
+   "max_ms": 100.356
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.863,
+  "server": {
+   "cpu_percent_mean": 109.8,
+   "cpu_percent_p95": 110.5,
+   "memory_peak_mib": 177.4,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.20977445802418515,
+ "samples": 101586735,
+ "started": "2026-11-05T10:15:56",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.519,
+  "samples_per_s": 13510102,
+  "conversion_s": 0.009,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.858,
+   "p95_ms": 65.39,
+   "max_ms": 100.356
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.863,
+  "server": {
+   "cpu_percent_mean": 109.8,
+   "cpu_percent_p95": 110.5,
+   "memory_peak_mib": 177.4,
+   "samples": 4
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true
+}
+== questdb D2 3 10:16:14
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.22463991702534258,
+ "samples": 101586735,
+ "started": "2026-11-05T10:16:15",
+ "ingest": {
+  "wall_s": 10.6,
+  "samples_per_s": 9583827,
+  "conversion_s": 2.237,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 84.346,
+   "p95_ms": 93.237,
+   "max_ms": 130.646
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 303.5,
+   "cpu_percent_p95": 323.0,
+   "memory_peak_mib": 2309.1,
+   "samples": 5
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 5.43,
+   "p95_ms": 64.273,
+   "max_ms": 78.742
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.7
+  }
+ },
+ "correct": true
+}
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.22463991702534258,
+ "samples": 101586735,
+ "started": "2026-11-05T10:16:15",
+ "ingest": {
+  "wall_s": 10.6,
+  "samples_per_s": 9583827,
+  "conversion_s": 2.237,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 84.346,
+   "p95_ms": 93.237,
+   "max_ms": 130.646
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 303.5,
+   "cpu_percent_p95": 323.0,
+   "memory_peak_mib": 2309.1,
+   "samples": 5
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 5.43,
+   "p95_ms": 64.273,
+   "max_ms": 78.742
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.7
+  }
+ },
+ "correct": true
+}
+== morletdb-033 D2 3 10:16:34
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.21170458401320502,
+ "samples": 101586735,
+ "started": "2026-11-05T10:16:35",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.48,
+  "samples_per_s": 6164358,
+  "conversion_s": 0.016,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 129.319,
+   "p95_ms": 148.567,
+   "max_ms": 163.325
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.679,
+  "server": {
+   "cpu_percent_mean": 79.9,
+   "cpu_percent_p95": 82.3,
+   "memory_peak_mib": 166.5,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.4
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-033",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.21170458401320502,
+ "samples": 101586735,
+ "started": "2026-11-05T10:16:35",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.48,
+  "samples_per_s": 6164358,
+  "conversion_s": 0.016,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 129.319,
+   "p95_ms": 148.567,
+   "max_ms": 163.325
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.679,
+  "server": {
+   "cpu_percent_mean": 79.9,
+   "cpu_percent_p95": 82.3,
+   "memory_peak_mib": 166.5,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.4
+  }
+ },
+ "correct": true
+}
+== morletdb-i1 D1 3 10:17:03
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.23099329200340435,
+ "samples": 101586735,
+ "started": "2026-11-05T10:17:03",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.99,
+  "samples_per_s": 12713532,
+  "conversion_s": 0.01,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 62.185,
+   "p95_ms": 78.898,
+   "max_ms": 107.107
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.828,
+  "server": {
+   "cpu_percent_mean": 88.5,
+   "cpu_percent_p95": 111.0,
+   "memory_peak_mib": 176.3,
+   "samples": 5
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.1
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.23099329200340435,
+ "samples": 101586735,
+ "started": "2026-11-05T10:17:03",
+ "image": "morletdb:b310",
+ "image_id": "sha256:4a617625773a176b8d48625e6ac53a43a92a5c6269ca040e064a0def68ad4a97",
+ "ingest": {
+  "wall_s": 7.99,
+  "samples_per_s": 12713532,
+  "conversion_s": 0.01,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 62.185,
+   "p95_ms": 78.898,
+   "max_ms": 107.107
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.828,
+  "server": {
+   "cpu_percent_mean": 88.5,
+   "cpu_percent_p95": 111.0,
+   "memory_peak_mib": 176.3,
+   "samples": 5
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.1
+  }
+ },
+ "correct": true
+}
+== questdb D1 3 10:17:24
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.2105644170078449,
+ "samples": 101586735,
+ "started": "2026-11-05T10:17:25",
+ "ingest": {
+  "wall_s": 14.224,
+  "samples_per_s": 7141822,
+  "conversion_s": 2.832,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 111.804,
+   "p95_ms": 139.327,
+   "max_ms": 222.201
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 317.3,
+   "cpu_percent_p95": 378.7,
+   "memory_peak_mib": 2349.1,
+   "samples": 7
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 13.328,
+   "p95_ms": 80.594,
+   "max_ms": 144.127
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.9
+  }
+ },
+ "correct": true
+}
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.2105644170078449,
+ "samples": 101586735,
+ "started": "2026-11-05T10:17:25",
+ "ingest": {
+  "wall_s": 14.224,
+  "samples_per_s": 7141822,
+  "conversion_s": 2.832,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 111.804,
+   "p95_ms": 139.327,
+   "max_ms": 222.201
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 317.3,
+   "cpu_percent_p95": 378.7,
+   "memory_peak_mib": 2349.1,
+   "samples": 7
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 13.328,
+   "p95_ms": 80.594,
+   "max_ms": 144.127
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.9
+  }
+ },
+ "correct": true
+}
+== morletdb-033 D1 3 10:17:48
+{
+ "system": "morletdb-033",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.2241257500136271,
+ "samples": 101586735,
+ "started": "2026-11-05T10:17:49",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.556,
+  "samples_per_s": 6136002,
+  "conversion_s": 0.018,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 131.453,
+   "p95_ms": 148.476,
+   "max_ms": 163.62
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.75,
+  "server": {
+   "cpu_percent_mean": 78.5,
+   "cpu_percent_p95": 79.8,
+   "memory_peak_mib": 168.0,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.1
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-033",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.2241257500136271,
+ "samples": 101586735,
+ "started": "2026-11-05T10:17:49",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1",
+ "image_id": "sha256:07c2cfa4621fa7b8451b66dddabdfef7b784ad9c2cfa48b2618e54e1e49e4e8a",
+ "ingest": {
+  "wall_s": 16.556,
+  "samples_per_s": 6136002,
+  "conversion_s": 0.018,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 131.453,
+   "p95_ms": 148.476,
+   "max_ms": 163.62
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.75,
+  "server": {
+   "cpu_percent_mean": 78.5,
+   "cpu_percent_p95": 79.8,
+   "memory_peak_mib": 168.0,
+   "samples": 8
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.1
+  }
+ },
+ "correct": true
+}
+== B3.10 done 10:18:17

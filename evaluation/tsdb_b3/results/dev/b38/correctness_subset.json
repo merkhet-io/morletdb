@@ -1,0 +1,62 @@
+{
+ "questdb": {
+  "counts": {
+   "rows": {
+    "high": 768099,
+    "mid": 48009,
+    "process": 14
+   },
+   "expected_rows": {
+    "high": 768099,
+    "mid": 48009,
+    "process": 14
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 3,
+   "channels_checked": 21,
+   "mismatches": []
+  },
+  "intervals": {
+   "intervals": 20,
+   "mismatches": []
+  },
+  "identical_retry": {
+   "counts_unchanged": true,
+   "reads": []
+  },
+  "altered_retry": {
+   "accepted": true,
+   "counts_unchanged": true,
+   "stored_value_is_altered": true
+  }
+ },
+ "morletdb": {
+  "counts": {
+   "recordings": 21,
+   "expected_recordings": 21,
+   "samples": 2448338,
+   "expected_samples": 2448338,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 3,
+   "channels_checked": 21,
+   "mismatches": []
+  },
+  "intervals": {
+   "intervals": 20,
+   "mismatches": []
+  },
+  "identical_retry": {
+   "counts_unchanged": true,
+   "reads": []
+  },
+  "altered_retry": {
+   "accepted": false,
+   "error": "conflicting replay at chunk offset",
+   "reads_unchanged": true
+  }
+ }
+}

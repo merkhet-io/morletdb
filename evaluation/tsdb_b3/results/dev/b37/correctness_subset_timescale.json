@@ -1,0 +1,45 @@
+{
+ "settings": {
+  "server_version": "17.11",
+  "timescaledb": "2.31.0",
+  "synchronous_commit": "off",
+  "shared_buffers": "128MB",
+  "max_wal_size": "1GB"
+ },
+ "counts": {
+  "got": {
+   "high": 768099,
+   "mid": 48009,
+   "process": 14
+  },
+  "want": {
+   "high": 768099,
+   "mid": 48009,
+   "process": 14
+  },
+  "ok": true
+ },
+ "reads": {
+  "acquisitions": 3,
+  "channels_checked": 21,
+  "mismatches": []
+ },
+ "identical_retry": {
+  "accepted": false,
+  "error": "duplicate key value violates unique constraint \"_hyper_1_1_chunk_b3_high_acquisition_t_idx\"",
+  "counts_unchanged": true,
+  "stored_value_unchanged": true
+ },
+ "altered_retry": {
+  "accepted": false,
+  "error": "duplicate key value violates unique constraint \"_hyper_1_1_chunk_b3_high_acquisition_t_idx\"",
+  "counts_unchanged": true,
+  "stored_value_unchanged": true
+ },
+ "compressed": {
+  "seconds": 0.454,
+  "chunks": 3,
+  "reads_after": []
+ },
+ "ok": true
+}

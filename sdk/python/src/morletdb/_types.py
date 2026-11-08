@@ -103,6 +103,47 @@ class IntervalStats:
 
 
 @dataclass(frozen=True)
+class NotifiedRange:
+    """Samples one committed transaction stored in a recording: the half-open range [first_sample, end_sample),
+    and the same in seconds from the recording's first sample."""
+    recording_id: str
+    first_sample: int
+    end_sample: int
+    sample_rate_hz: float
+    start_s: float
+    end_s: float
+
+
+@dataclass(frozen=True)
+class Notification:
+    """One committed transaction that stored new chunks in `collection` (Client.notifications). `recordings`
+    lists what it stored; it is empty when the collection sends counts only (detail off, or row security
+    enabled) or when the list did not fit in a notification (`truncated`)."""
+    collection: str
+    recording_count: int
+    recordings: tuple[NotifiedRange, ...] = ()
+    truncated: bool = False
+
+
+@dataclass(frozen=True)
+class Latest:
+    """The newest data of one recording (Client.latest). `samples` are the last n samples (None for n = 0),
+    `stats` their statistics or, for n = 0, those of the newest stored chunk. `end_time` is the time just after
+    the last sample, or None without a start time. When the newest samples are not readable (compacted by a
+    memory level, or a gap), `samples` and `stats` are None and `note` says why."""
+    recording_id: str
+    sample_rate_hz: float
+    channel: str
+    unit: str
+    start_sample: int
+    end_sample: int
+    end_time: datetime | None
+    samples: np.ndarray | None = field(repr=False)
+    stats: IntervalStats | None
+    note: str | None = None
+
+
+@dataclass(frozen=True)
 class OverviewBucket:
     """One part of an interval overview: the half-open sample range it covers and its statistics, computed
     by the server like IntervalStats."""

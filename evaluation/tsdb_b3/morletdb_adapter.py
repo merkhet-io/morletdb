@@ -29,10 +29,13 @@ GROUP_OF = {c: g for g, s in wl.GROUPS.items() for c in s["channels"]}
 
 
 def start(volume, durability="D2"):
+    _WRITER.clear()   # a fresh server: never reuse a connection to the previous one
     cmd = ["postgres"] + (["-c", "synchronous_commit=off"] if durability == "D2" else []) + \
         (["-c", f"min_wal_size={VARIANT['min_wal_size']}"] if VARIANT.get("min_wal_size") else []) + \
         (["-c", f"max_wal_size={VARIANT['max_wal_size']}"] if VARIANT.get("max_wal_size") else []) + \
-        (["-c", "track_functions=all"] if VARIANT.get("profile") else [])
+        (["-c", "track_functions=all"] if VARIANT.get("profile") else []) + \
+        (["-c", f"morlet.encode_threads={VARIANT['encode_threads']}"] if VARIANT.get("encode_threads") else []) + \
+        (["-c", f"morlet.verify_appends={VARIANT['verify_appends']}"] if VARIANT.get("verify_appends") else [])
     common.fresh(NAME, IMAGE, volume, "/var/lib/postgresql/data", [f"{PORT}:5432"],
                  {"POSTGRES_USER": "morlet", "POSTGRES_PASSWORD": _PASSWORD, "POSTGRES_DB": "morlet"}, cmd)
     for _ in range(240):
@@ -71,6 +74,8 @@ def create(conn, envelopes=False):
     conn.execute("SELECT morlet_create_stream_collection('public', %s)", (COLLECTION,))
     if envelopes:
         conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (COLLECTION,))
+    if VARIANT.get("summaries"):   # B3.13: chunk summaries (count, min, max, sums per chunk), stored at append
+        conn.execute("SELECT morlet_enable_chunk_summaries(%s::regclass)", (COLLECTION,))
 
 
 def rid(acq, channel):
@@ -104,7 +109,18 @@ def reader_for(acq, data, search, timer):
 VARIANT = {"rpc_chunks": 1, "quantum": True, "binary": True, "binary_read": True, "short_read": True,
            "raw_read": False, "native_stats": False, "chunk_size": 4096,
            "raw_append": False, "pipeline": False,
-           "one_statement": False}   # the last two need SQL 0.3.3   # attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+           "one_statement": False,   # the last two need SQL 0.3.3
+           "commit_chunks": 16,      # I1 (issue #233): the importer default became 256; B3's arms keep 16
+           "reuse_connection": False}   # I1: one importer connection for all acquisitions; attribution runs only (RESULTS.md, "Attribution"); frozen arms use the defaults
+
+
+_WRITER = []   # I1 reuse_connection: the importer's connection, kept across acquisitions
+
+
+def writer():
+    if not _WRITER or _WRITER[0].closed:
+        _WRITER[:] = [psycopg.connect(DSN)]
+    return _WRITER[0]
 
 
 def load_one(acq, data, search=False):
@@ -113,8 +129,10 @@ def load_one(acq, data, search=False):
     path = wl.ROOT / acq["path"]
     rep = import_files([path], COLLECTION, Config(rpc_chunks=VARIANT["rpc_chunks"], chunk_size=VARIANT["chunk_size"],
                                                           raw_append=VARIANT["raw_append"],
-                                                          pipeline=VARIANT["pipeline"]), dsn=DSN,
-                       reader=reader_for(acq, data, search, timer))
+                                                          pipeline=VARIANT["pipeline"],
+                                                          commit_chunks=VARIANT["commit_chunks"]), dsn=DSN,
+                       reader=reader_for(acq, data, search, timer),
+                       conn=writer() if VARIANT["reuse_connection"] else None)
     # elapsed_s excludes the importer's source-file hashing (preflight); conversion is inside it
     return timer[0], rep["elapsed_s"], rep
 
@@ -127,11 +145,44 @@ def count(conn):
     return conn.execute(f"SELECT count(*), coalesce(sum((checkpoint->>'end')::bigint), 0) FROM {COLLECTION}").fetchone()
 
 
+_ENCODED = {}
+
+
+def _encoded_reader(length):
+    """The SDK's native decoder when this arm reads `length` samples by compressed transfer (B3.15), else None.
+    The decoder and its policy are the SDK's own (sdk/python/src/morletdb/_native.py, library from
+    MORLETDB_NATIVE_LIB); a missing library is an error, never a silent fallback to raw reads. Decided once per
+    length and cached, as cheap as the SDK's own decision (about 0.5 us): B3.15 ran an earlier version that resolved
+    the SDK path and import on every read, which cost about 80 us per short read (short_reads_i2.py)."""
+    if not VARIANT.get("encoded_read"):
+        return None
+    if length not in _ENCODED:
+        import sys
+        from pathlib import Path
+        sdk = str(Path(__file__).resolve().parents[2] / "sdk" / "python" / "src")
+        if sdk not in sys.path:
+            sys.path.insert(0, sdk)
+        from morletdb import _native
+        _ENCODED[length] = None if length < _native.ENCODED_MIN_SAMPLES else _native.require()
+    return _ENCODED[length]
+
+
 def read(conn, acq, channels, offset, length):
     """Exact samples [offset, offset+length) per channel as float64 arrays; one round trip per channel,
     pieces of at most 32,768 samples (the documented per-call limit), assembled in order."""
     import numpy as np
     out = {}
+    native = _encoded_reader(length)
+    if native is not None:
+        # B3.15: compressed transfer as the SDK does it (docs/compressed-transfer.md): the stored chunks, decoded
+        # and checked in the client by the native decoder, for reads of at least ENCODED_MIN_SAMPLES samples; all
+        # channels in one statement, in the requested order.
+        rows = conn.execute(
+            "SELECT morlet_read_interval_encoded(%s::regclass, r.id, %s, %s, %s) FROM unnest(%s::text[]) WITH "
+            "ORDINALITY r(id, o) ORDER BY r.o",
+            (COLLECTION, offset, offset + length, native.max_chunk_version, [rid(acq, c) for c in channels]),
+            binary=True, prepare=True).fetchall()
+        return {c: native.decode(r[0], offset, offset + length) for c, r in zip(channels, rows)}
     if VARIANT["raw_read"] and VARIANT.get("one_statement") and len(channels) > 1:
         # B3.2: all channels of the interval in one statement (one round trip), in the requested order
         rows = conn.execute(

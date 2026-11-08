@@ -1,0 +1,266 @@
+[
+ {
+  "policy": "novelty",
+  "budget": 0.5,
+  "kept": 0.5,
+  "known": 0.5329,
+  "known_recency": 0.4494,
+  "rare": {
+   "mean": -0.02866394565217392,
+   "lo": -0.07211682065217392,
+   "hi": 0.016496581521739124,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": -0.020608906658595647,
+   "lo": -0.055499396865751956,
+   "hi": 0.015643231329028777,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "no difference demonstrated"
+ },
+ {
+  "policy": "novelty+importance",
+  "budget": 0.5,
+  "kept": 0.4999,
+  "known": 1.0,
+  "known_recency": 0.4494,
+  "rare": {
+   "mean": 0.013662130434782599,
+   "lo": -0.023016157608695662,
+   "hi": 0.05421283695652174,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": -0.009098341148775904,
+   "lo": -0.04166600049098737,
+   "hi": 0.02495136140032284,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "no difference demonstrated"
+ },
+ {
+  "policy": "random",
+  "budget": 0.5,
+  "kept": 0.5,
+  "known": 0.492,
+  "known_recency": 0.4494,
+  "rare": {
+   "mean": -0.0059769239130434805,
+   "lo": -0.04162648369565218,
+   "hi": 0.032205668478260875,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": 0.03962731665994081,
+   "lo": 0.014430415711595384,
+   "hi": 0.06676953841807909,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "no difference demonstrated"
+ },
+ {
+  "policy": "novelty",
+  "budget": 0.25,
+  "kept": 0.2499,
+  "known": 0.2629,
+  "known_recency": 0.2274,
+  "rare": {
+   "mean": -0.05244402717391306,
+   "lo": -0.11373011413043481,
+   "hi": 0.007902842391304331,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": -0.06290122744148506,
+   "lo": -0.10329757461662631,
+   "hi": -0.022331831537530256,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "no difference demonstrated"
+ },
+ {
+  "policy": "novelty+importance",
+  "budget": 0.25,
+  "kept": 0.2499,
+  "known": 1.0,
+  "known_recency": 0.2274,
+  "rare": {
+   "mean": 0.06871779891304346,
+   "lo": 0.024247782608695635,
+   "hi": 0.11655235869565214,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": -0.0316436974307237,
+   "lo": -0.06442090495022867,
+   "hi": 0.004011642762980901,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "better"
+ },
+ {
+  "policy": "random",
+  "budget": 0.25,
+  "kept": 0.25,
+  "known": 0.238,
+  "known_recency": 0.2274,
+  "rare": {
+   "mean": -0.013669989130434794,
+   "lo": -0.062384597826086984,
+   "hi": 0.03556896195652172,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": 0.03625101460182944,
+   "lo": 0.005388665166801188,
+   "hi": 0.0693933392251816,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "no difference demonstrated"
+ },
+ {
+  "policy": "novelty",
+  "budget": 0.1,
+  "kept": 0.0999,
+  "known": 0.103,
+  "known_recency": 0.0853,
+  "rare": {
+   "mean": -0.11741847826086957,
+   "lo": -0.1788570706521739,
+   "hi": -0.05549654347826088,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": -0.1483535094969061,
+   "lo": -0.1964359953322572,
+   "hi": -0.10133533932606942,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "worse"
+ },
+ {
+  "policy": "novelty+importance",
+  "budget": 0.1,
+  "kept": 0.0998,
+  "known": 1.0,
+  "known_recency": 0.0853,
+  "rare": {
+   "mean": 0.1920458532608696,
+   "lo": 0.12073381521739131,
+   "hi": 0.27077956521739127,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": -0.0029402307707828926,
+   "lo": -0.028797668845843415,
+   "hi": 0.02517875405569007,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "better"
+ },
+ {
+  "policy": "random",
+  "budget": 0.1,
+  "kept": 0.1,
+  "known": 0.087,
+  "known_recency": 0.0853,
+  "rare": {
+   "mean": -0.006739804347826083,
+   "lo": -0.044381972826086954,
+   "hi": 0.032810206521739146,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": 0.02437651167608287,
+   "lo": -0.005605691411084191,
+   "hi": 0.055347725921442034,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "no difference demonstrated"
+ },
+ {
+  "policy": "novelty",
+  "budget": 0.05,
+  "kept": 0.0499,
+  "known": 0.0426,
+  "known_recency": 0.0426,
+  "rare": {
+   "mean": -0.1332625,
+   "lo": -0.2130466195652174,
+   "hi": -0.047796510869565226,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": -0.23642394906510625,
+   "lo": -0.30222191446731234,
+   "hi": -0.17337996220069948,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "worse"
+ },
+ {
+  "policy": "novelty+importance",
+  "budget": 0.05,
+  "kept": 0.075,
+  "known": 1.0,
+  "known_recency": 0.0426,
+  "rare": {
+   "mean": 0.36886224456521743,
+   "lo": 0.26671740217391304,
+   "hi": 0.48449760326086955,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": 0.07778525643664246,
+   "lo": 0.04782301798493409,
+   "hi": 0.10802104737691687,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "unreachable"
+ },
+ {
+  "policy": "random",
+  "budget": 0.05,
+  "kept": 0.0499,
+  "known": 0.0337,
+  "known_recency": 0.0426,
+  "rare": {
+   "mean": 0.08344486413043478,
+   "lo": 0.012390472826086948,
+   "hi": 0.16105703804347826,
+   "groups": 92,
+   "queries": 116
+  },
+  "typical": {
+   "mean": 0.0022690547417272035,
+   "lo": -0.03229734769975786,
+   "hi": 0.03571342875302664,
+   "groups": 59,
+   "queries": 300
+  },
+  "verdict": "no difference demonstrated"
+ }
+]

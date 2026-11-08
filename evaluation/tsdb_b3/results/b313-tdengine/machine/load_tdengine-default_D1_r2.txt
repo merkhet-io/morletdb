@@ -1,0 +1,22 @@
+2026-11-05T14:24:13
+14:24  up 8 days, 23:20, 13 users, load averages: 6.84 6.29 6.19
+ %CPU COMM
+273.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+110.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 90.0 /opt/homebrew/bin/tectonic
+ 55.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 48.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 37.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 36.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 34.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+2026-11-05T14:25:03
+14:25  up 8 days, 23:21, 13 users, load averages: 7.79 6.55 6.28
+ %CPU COMM
+283.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 98.4 /opt/homebrew/bin/tectonic
+ 50.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper (Renderer).app/Contents/MacOS/Docker Desktop Helper (Renderer)
+ 44.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 32.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 31.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 17.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 16.7 /Applications/iTerm.app/Contents/MacOS/iTerm2

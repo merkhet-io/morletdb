@@ -4,7 +4,7 @@ A small, synchronous Python client for [MorletDB](https://github.com/merkhet-io/
 `pg_morlet` extension): store regularly sampled waveforms losslessly with their timing and metadata, read
 exact sample intervals back, and search for similar intervals.
 
-Status: alpha (0.1.0a1), not yet published to PyPI. Install from the repository.
+Status: alpha (0.1.0a2), not yet published to PyPI. Install from the repository.
 
 ```sh
 pip install "./sdk/python[plot]"        # from a checkout; [plot] adds matplotlib for the example
@@ -14,7 +14,7 @@ pip install "./sdk/python[plot]"        # from a checkout; [plot] adds matplotli
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.5-alpha.1
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 export DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet
 python examples/python/quickstart.py     # ingest, read, search, plot (no download)
@@ -51,6 +51,16 @@ with morletdb.Client.connect("postgresql://...") as db:  # commits on a clean ex
 | `stats(collection, recording_id, start, end)` | count, min, max, mean, RMS (server SQL 0.3.3) |
 | `overview(collection, recording_id, start, end, buckets=100)` | the same statistics in up to `buckets` consecutive parts, e.g. to draw an hour of data (SQL 0.3.3) |
 | `recording(...)`, `recordings(collection, metadata_filter)`, `samples_for_time(recording, t0_ns, t1_ns)` | recording information and time-to-sample conversion |
+| `enable_notifications(collection, channel=None, detail=True)` / `notifications(collection, timeout=None, stop_after=None)` | one notification per committed transaction that stored new chunks, with the stored ranges; listen on an autocommit connection (SQL 0.3.6) |
+
+Follow new data instead of polling (on its own autocommit connection):
+
+```python
+with morletdb.Client.connect("postgresql://...", autocommit=True) as listener:
+    for n in listener.notifications("public.signals"):      # after db.enable_notifications("public.signals")
+        for r in n.recordings:
+            iv = listener.read("public.signals", r.recording_id, r.first_sample, min(r.end_sample, r.first_sample + 4096))
+```
 
 The contract (intervals, timing, what the distance means, transactions, limits) is in the
 [Python SDK guide](https://github.com/merkhet-io/morletdb/blob/main/docs/python-sdk.md).

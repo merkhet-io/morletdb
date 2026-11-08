@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.5-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.9-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -28,6 +28,27 @@ a leading v; GHCR image tags do not.
 - **0.3.5-alpha.1:** the same SQL version 0.3.3 and extension code as 0.3.4-alpha.1 (no update script needed).
   The first release with Debian packages for existing PostgreSQL 17 and 18 servers (amd64 and arm64), each
   installed with apt and trialled before release, with checksums and build provenance.
+- **0.3.6-alpha.1:** SQL version 0.3.4, with an update script from 0.3.3 (`ALTER EXTENSION pg_morlet UPDATE`). Fixes
+  #225–#227 (search budget on the probe route, concurrent acquisitions, concurrent envelope builders) and adds
+  faster single-connection ingestion (I1): batched raw appends (`morlet_append_chunks_raw`), encoding on worker
+  threads (`morlet.encode_threads`) and verified appends (`morlet.verify_appends`, on by default); the importer
+  commits 256 chunks per transaction and batches automatically. Stored data is byte-identical to 0.3.5-alpha.1.
+- **0.3.7-alpha.1:** SQL version 0.3.5, with an update script from 0.3.4. Adds compressed transfer
+  (`morlet_read_interval_encoded`; the Python SDK decodes stored chunks in the client with the native decoder in its
+  platform wheels), long reads decoded on worker threads (`morlet.decode_threads`), chunk summaries in every new
+  collection, the integrity scrub `morlet_verify` and episodic memory, phase 1. The first release with Python SDK
+  wheels. The chunk format is unchanged; existing collections keep their layout.
+- **0.3.8-alpha.1:** SQL version 0.3.6, with an update script from 0.3.5; Python SDK 0.1.0a2. Adds the steward and
+  the ingest hold (`tools/steward`, refusals with SQLSTATE 53100 before the disk is full), synchronous channel
+  groups, commit notifications, `morlet_latest`, `morlet_coverage`, exact roll-ups and exact merging of interval
+  statistics, and exact search 10x faster on small machines. Builds on PostgreSQL 19 (19rc1, from source); release
+  images and Debian packages stay on PostgreSQL 17 and 18 until 19.0. The chunk format is unchanged; existing
+  collections keep their layout.
+- **0.3.9-alpha.1:** SQL version 0.3.7, with an update script from 0.3.6. The C functions find their library through
+  `dynamic_library_path`, so on PostgreSQL 18 and later pg_morlet loads from a directory outside the server, such as
+  an image volume (`extension_control_path`). The first release with an extension-only image,
+  `ghcr.io/merkhet-io/pg_morlet:0.3.9-alpha.1-pg18` (amd64, arm64), trialled mounted into a clean `postgres:18` before
+  publishing. The chunk format is unchanged; existing collections keep their layout.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
@@ -57,6 +78,11 @@ and 18 on amd64 and arm64 (`deploy/Dockerfile.deb`, against the PostgreSQL
 project's packages on Debian bookworm), installs each one with apt into a clean
 official `postgres` image and runs the same quickstart and restart; the release
 attaches the four packages with `SHA256SUMS` and a build provenance attestation.
+It also builds the Python SDK wheels (`.github/workflows/sdk-wheels.yml`): one per
+platform with the native decoder for compressed transfer (Linux x86-64 and arm64,
+tagged with the glibc version the library needs; macOS 11+ on arm64), each installed
+into a clean environment and tested from the installed package, and a pure wheel for
+other platforms; they are attached, checksummed and attested with the packages.
 PRs run the candidate trial without publishing. The standalone release Compose
 file contains no build directive, so the quickstart cannot compile a local image.
 
@@ -85,6 +111,17 @@ the served names.) The packages are trialled
 only on Debian bookworm images; other distributions are not tested. pgvector
 (for probe search) is a separate package, for example `postgresql-17-pgvector`.
 An existing database is upgraded with `ALTER EXTENSION pg_morlet UPDATE`.
+
+## Install the Python SDK
+
+From the first release with SDK wheels, pick the wheel for your platform, or the
+`py3-none-any` wheel elsewhere (same results, raw transfer for long reads):
+
+```sh
+sha256sum -c SHA256SUMS --ignore-missing
+gh attestation verify morletdb-<version>-py3-none-manylinux_2_34_x86_64.whl --owner merkhet-io
+pip install ./morletdb-<version>-py3-none-manylinux_2_34_x86_64.whl
+```
 
 ## Try a published release
 

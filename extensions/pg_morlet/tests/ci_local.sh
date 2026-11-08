@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The PostgreSQL compatibility checks that CI runs, for one PostgreSQL major version and one mode.
 #
-#   PGRX_HOME=<pgrx home for these tests> tests/ci_local.sh <17|18> <without-pgvector|with-pgvector|upgrade>
+#   PGRX_HOME=<pgrx home for these tests> tests/ci_local.sh <17|18|19> <without-pgvector|with-pgvector|upgrade>
 #
 # Prerequisites (docs/compatibility.md): cargo-pgrx matching Cargo.lock, a PostgreSQL registered
 # in $PGRX_HOME (`cargo pgrx init --pgNN download`, or `--pgNN /path/to/pg_config`), and for
@@ -12,9 +12,12 @@
 #  with-pgvector     requires that pgvector IS installed, so the probe tests cannot skip, runs every
 #                    #[pg_test], then the two-session probe-enable race test (probe_enable_race.sh),
 #                    the concurrent context-write test (context_concurrency.sh)
-#                    and the acquisition row-security test (acquisition_rls.sh).
+#                    the acquisition row-security test (acquisition_rls.sh), the SQL 0.3.4 fixes (sql034_fixes.sh) and
+#                    commit notifications with a listener session (notifications.sh), and on PostgreSQL 18 and
+#                    later, loading from a separate directory through extension_control_path (on_demand.sh), and the
+#                    API stability gate (api_stability.sh).
 #  upgrade           PostgreSQL 17 only: upgrades populated databases from v0.1.0-alpha.3,
-#                    v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1 and v0.3.3-alpha.1 (tags must be fetched); those releases were
+#                    v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1, v0.3.7-alpha.1 and v0.3.8-alpha.1 (tags must be fetched); those releases were
 #                    built for PostgreSQL 17 only.
 #
 # #[pg_test]s run in pgrx's own throwaway cluster (target/pgrx-test-data-NN). The race and upgrade
@@ -22,10 +25,10 @@
 # there (morlet_probe_race, morlet_upgrade_*). The script requires an explicit PGRX_HOME and refuses
 # to start a server when another one already listens on that port.
 set -euo pipefail
-usage() { echo "usage: PGRX_HOME=... $0 <17|18> <without-pgvector|with-pgvector|upgrade>" >&2; exit 2; }
+usage() { echo "usage: PGRX_HOME=... $0 <17|18|19> <without-pgvector|with-pgvector|upgrade>" >&2; exit 2; }
 [ $# -eq 2 ] || usage
 MAJOR=$1 MODE=$2
-case "$MAJOR" in 17|18) ;; *) usage ;; esac
+case "$MAJOR" in 17|18|19) ;; *) usage ;; esac
 case "$MODE" in without-pgvector|with-pgvector|upgrade) ;; *) usage ;; esac
 : "${PGRX_HOME:?set PGRX_HOME to the pgrx home whose PostgreSQL these tests may install into and start (see docs/compatibility.md)}"
 export PGRX_HOME
@@ -73,6 +76,10 @@ case "$MODE" in
       "$TESTS/probe_enable_race.sh"
       "$TESTS/context_concurrency.sh"
       "$TESTS/acquisition_rls.sh"
+      "$TESTS/sql034_fixes.sh"
+      "$TESTS/notifications.sh"
+      "$TESTS/on_demand.sh"
+      "$TESTS/api_stability.sh"
     fi ;;
   upgrade)
     own_server  # the upgrade scripts restart it after each install
@@ -80,6 +87,10 @@ case "$MODE" in
     "$TESTS/upgrade_from_release.sh" v0.2.0-alpha.1 0.2.0
     "$TESTS/upgrade_from_release.sh" v0.3.0-alpha.1 0.3.0
     "$TESTS/upgrade_from_release.sh" v0.3.1-alpha.1 0.3.1
-    "$TESTS/upgrade_from_release.sh" v0.3.3-alpha.1 0.3.2 ;;
+    "$TESTS/upgrade_from_release.sh" v0.3.3-alpha.1 0.3.2
+    "$TESTS/upgrade_from_release.sh" v0.3.5-alpha.1 0.3.3
+    "$TESTS/upgrade_from_release.sh" v0.3.6-alpha.1 0.3.4
+    "$TESTS/upgrade_from_release.sh" v0.3.7-alpha.1 0.3.5
+    "$TESTS/upgrade_from_release.sh" v0.3.8-alpha.1 0.3.6 ;;
 esac
 echo "== pg$MAJOR $MODE: PASS"

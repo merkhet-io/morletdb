@@ -30,6 +30,19 @@ class ParquetContractTests(unittest.TestCase):
         self.assertEqual(expected,list(chunks(self.path,Config(layout="samples",chunk_size=512,batch_rows=17))))
         self.assertEqual([c[2] for c in expected],[0,512,1024,1536])
 
+    def test_caller_owned_connection_must_be_idle_and_transactional(self):
+        self.write([{**self.base(), "start_sample":0, "samples":self.values}])
+        class Conn:
+            autocommit = False
+            class info:
+                transaction_status = None
+        for conn in (Conn(), type("Auto", (Conn,), {"autocommit": True})()):
+            with self.assertRaises(ValueError):
+                import_files([self.path], "public.unused", Config(chunk_size=512), conn=conn)
+        with self.assertRaises(ValueError):
+            import_files([self.path], "public.unused", validate_only=True, conn=Conn())
+        self.assertEqual(Config().commit_chunks, 256)
+
     def test_mapping_and_validation_without_database(self):
         self.write([{**self.base(), "offset":0,"wave":self.values}])
         report=import_files([self.path],"public.unused",Config(chunk_size=512),

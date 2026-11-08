@@ -1,0 +1,1 @@
+{"started": "2026-11-05T22:08:06", "cost": {"wavelet lam=3.0 q=2.0": {"samples_per_s": 21026434.98209036, "realtime_x_at_64khz": 328.5380465951619}, "wavelet lam=4.0 q=4.0": {"samples_per_s": 22300201.70194394, "realtime_x_at_64khz": 348.4406515928741}}}

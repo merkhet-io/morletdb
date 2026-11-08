@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import psycopg
+
+import decision
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
@@ -28,7 +30,8 @@ exclusive), not times; if a recording's metadata has a start time, tools also re
 
 Typical investigation:
 1. list_collections, then coverage (an overview per station, sensor or asset) or list_recordings to see what
-   exists (metadata_filter narrows by metadata); trend shows how a signal changed over days or weeks.
+   exists (metadata_filter narrows by metadata); trend shows how a signal changed over days or weeks;
+   latest gives the current value of every sensor.
 2. Pick an interval of interest (locate_time converts a UTC time to a sample offset).
 3. describe_interval to characterise it (compare_intervals against the background for weak signals;
    find_onsets to locate where something starts); search_from_time (when you know when it happened) or
@@ -44,7 +47,14 @@ Typical investigation:
    included, is 1, and search_similar says so (query_note).
 4. read_interval or describe_interval on each hit to check it, and cite hits as collection, recording,
    start_sample..end_sample: they refer to the original stored samples, which read back bit for bit.
-Search results are candidates for inspection, not diagnoses."""
+Search results are candidates for inspection, not diagnoses.
+
+Not found is not the same as not searched. Search sees only stored search windows. Older data may be readable
+but out of search (memory levels), compacted to summaries, or gone, and new data may not be indexed yet. Every
+search result has a scope: the recordings and windows searched and the periods that were not searched, with
+why (coverage shows the same per group). Whenever a search finds nothing close, or you conclude that something
+has not happened before, state the scope with it, e.g. "no similar event in the searched 2024-03..2026-11;
+2021-2023 is summarized only and was not searched"."""
 
 mcp = MCPServer("morletdb", instructions=INSTRUCTIONS)
 
@@ -260,11 +270,20 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
     schedule (typical recording length and time between recording starts), time covered, and the largest
     gaps. For continuous recording every pause between recordings is a gap; for snapshots (recordings
     shorter than the usual pause, for example 1 s every 10 min) only pauses longer than 1.5 times the usual
-    one are. Needs recordings with a start time."""
+    one are. Needs recordings with a start time. On servers with SQL 0.3.6, search_states_s splits each
+    group's recorded time by what search can find: searchable, not_indexed (no search window built yet),
+    not_searchable (readable, out of search by a memory level), represented, summarized, gone, missing."""
     flt = json.loads(metadata_filter or "{}")
     with connect() as conn:
         c = checked(conn, collection)
         recs = recordings_in(conn, c, flt)
+        states = None
+        if conn.execute("SELECT to_regproc('public.morlet_coverage') IS NOT NULL").fetchone()[0]:
+            states = {}
+            for rid, state, n in conn.execute(
+                    "SELECT recording_id, state, sum(end_sample - start_sample) FROM morlet_coverage(%s::regclass, "
+                    "%s::text[]) GROUP BY 1, 2", (c, [r["recording_id"] for r in recs])).fetchall():
+                states[(rid, state)] = int(n)
     groups = {}
     for r in recs:
         groups.setdefault(str(r["metadata"].get(group_by, "")) if group_by else "all", []).append(r)
@@ -288,7 +307,50 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
                     "gaps": len(gaps), "gap_s": float(sum(g[0] for g in gaps)),
                     "largest_gaps": [{"from_utc": iso(a["t1"]), "to_utc": iso(b["t0"]), "seconds": round(p, 1)}
                                      for p, a, b in gaps[:max(0, min(max_gaps, 50))]]})
+        if states is not None:
+            out[-1]["search_states_s"] = {k: round(v, 3) for k, v in sorted(
+                (k, sum(states.get((r["recording_id"], k), 0) / r["rate"] for r in rs))
+                for k in {k for (_, k) in states}) if v}
     return {"collection": collection, "group_by": group_by or None, "groups": out}
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit: int = 100) -> dict:
+    """The newest data of every recording whose metadata contains metadata_filter: "what is the current value
+    of each sensor?". samples=1 (default) gives each recording's last value; up to 1000 gives its last values
+    with their statistics (rms, min, max, mean), for example the last second (samples = the sample rate);
+    samples=0 gives the statistics of the newest stored chunk instead, without values. Each row has the end
+    (UTC where the recording has a start time) and how many seconds before now that was; a recording that
+    stopped long ago is not live. When the newest samples are not readable (compacted, or a gap), the row says
+    why instead of giving values. More than limit (max 1000) matching recordings is an error: narrow the
+    filter. Servers with pg_morlet SQL 0.3.6."""
+    n = max(0, min(int(samples), 1000))
+    limit = max(1, min(int(limit), 1000))
+    flt = json.dumps(json.loads(metadata_filter or "{}"))
+    with connect() as conn:
+        c = checked(conn, collection)
+        if not conn.execute("SELECT to_regproc('public.morlet_latest') IS NOT NULL").fetchone()[0]:
+            raise ValueError("latest needs a server with pg_morlet SQL 0.3.6")
+        rows, now = conn.execute(
+            "SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, samples, "
+            "sample_count, min, max, mean, rms, note FROM morlet_latest(%s::regclass, %s, %s::jsonb, %s)",
+            (c, n, flt, limit)).fetchall(), datetime.now(timezone.utc)
+    out = []
+    for rid, rate, ch, unit, a, b, end, values, count, lo, hi, mean, rms, note in rows:
+        row = {"recording_id": rid, "channel": ch, "unit": unit, "sample_rate_hz": rate, "start_sample": a,
+               "end_sample": b, "end_utc": iso(end) if end else None,
+               "seconds_ago": round((now - end).total_seconds(), 3) if end else None}
+        if note:
+            row["note"] = note
+        if values:
+            row["last_value"] = values[-1]
+            if n > 1:
+                row["values"] = values
+        if count is not None and (n != 1 or values is None):
+            row["stats"] = {"samples": count, "rms": rms, "min": lo, "max": hi, "mean": mean}
+        out.append(row)
+    return {"collection": collection, "samples": n, "recordings": out}
 
 
 def change_point(values, baseline_n, k=3, z=5.0):
@@ -462,6 +524,117 @@ def merge_hits(runs, query_recording, query_lo, query_hi):
     return kept
 
 
+NOT_SEARCHED = {   # morlet_coverage states other than searchable (SQL 0.3.6, #215)
+    "not_indexed": "stored and readable, but no search window was built there yet",
+    "not_searchable": "readable, but taken out of search by a memory level (L1 or above)",
+    "represented": "compacted to L2: only its cluster's representative can be found",
+    "summarized": "compacted to L3: chunk summaries only",
+    "gone": "compacted to L4: no longer in the database",
+    "missing": "never stored (a gap)",
+}
+
+
+def summarize_scope(ranges, bounds, rate, t0s, max_periods=10, window=None):
+    """Totals per state and the largest not-searched periods from morlet_coverage rows (recording_id, start, end,
+    state), each clipped to its recording's searched bounds {recording_id: (lo, hi)}. An unindexed range shorter
+    than one window (typically a recording's last samples) cannot hold a window: it is counted as
+    shorter_than_window and does not make the scope incomplete."""
+    samples, periods = {}, []
+    for rid, a, b, state in ranges:
+        lo, hi = bounds.get(rid, (None, None))
+        if lo is None:
+            continue
+        a, b = max(a, lo), min(b, hi)
+        if a >= b:
+            continue
+        if state == "not_indexed" and window and b - a < window:
+            state = "shorter_than_window"
+        samples[state] = samples.get(state, 0) + (b - a)
+        if state not in ("searchable", "shorter_than_window"):
+            periods.append({"recording_id": rid, "start_sample": a, "end_sample": b, "state": state,
+                            "start_utc": at(t0s.get(rid), rate, a), "end_utc": at(t0s.get(rid), rate, b)})
+    periods.sort(key=lambda p: (-(p["end_sample"] - p["start_sample"]), p["recording_id"], p["start_sample"]))
+    not_searched = sum(n for k, n in samples.items() if k not in ("searchable", "shorter_than_window"))
+    return {"seconds": {k: round(n / rate, 3) for k, n in sorted(samples.items())},
+            "not_searched_seconds": round(not_searched / rate, 3), "complete": not_searched == 0,
+            "not_searched_periods": periods[:max(0, max_periods)], "not_searched_period_count": len(periods)}
+
+
+SCOPE_TIMEOUT_MS = int(os.environ.get("MORLET_MCP_SCOPE_TIMEOUT_MS", "5000"))   # morlet_coverage: ~1.3 us per window
+
+
+def search_scope(conn, c, src, flt, window, time_bounds=(None, None), before=None):
+    """search_scope_exact within SCOPE_TIMEOUT_MS; past it, a scope that says it is unknown (never complete)."""
+    try:
+        with conn.transaction():                 # a savepoint: a cancelled scope leaves the search intact
+            conn.execute(f"SET LOCAL statement_timeout = {max(1, SCOPE_TIMEOUT_MS)}")
+            return search_scope_exact(conn, c, src, flt, window, time_bounds, before)
+    except psycopg.errors.QueryCanceled:
+        return {"window_samples": window, "complete": None,
+                "note": f"the search scope could not be computed within {SCOPE_TIMEOUT_MS / 1000:g} s, so it is "
+                        "unknown which periods were searched: treat a missing match as unverified, and use coverage "
+                        "for the collection's search states"}
+
+
+def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), before=None):
+    """What a search over collection c actually searched: the recordings it could match (same rate, channel and
+    unit as the query, metadata containing flt, inside the time bounds), the stored windows of its length there,
+    and, on servers with morlet_coverage, the periods that exist but were not searched and why."""
+    rows = conn.execute(f"SELECT recording_id, metadata, (checkpoint->>'end')::bigint FROM {c} WHERE metadata @> %s::jsonb "
+                        f"AND sample_rate_hz = %s AND channel = %s AND unit = %s",
+                        (flt, src["rate"], src["channel"], src["unit"])).fetchall()
+    timed = before is not None or any(t is not None for t in time_bounds)
+    bounds, t0s, untimed = {}, {}, 0
+    for rid, meta, n in rows:
+        t0 = start_time(meta)
+        t0s[rid] = t0
+        lo, hi = 0, n or 0
+        if timed:
+            if t0 is None:
+                untimed += 1
+                continue
+            sec = lambda t: (t - t0).total_seconds() * src["rate"]
+            if time_bounds[0] is not None:
+                lo = max(lo, math.ceil(sec(time_bounds[0])))
+            if time_bounds[1] is not None:
+                hi = min(hi, math.floor(sec(time_bounds[1])))
+            if before is not None:
+                hi = min(hi, math.floor(sec(before)))
+        if hi > lo:
+            bounds[rid] = (lo, hi)
+    ids = sorted(bounds)
+    out = {"window_samples": window, "recordings": len(ids), "searched_windows": 0}
+    if untimed:
+        out["recordings_left_out_without_start_time"] = untimed
+    env = conn.execute("SELECT to_regclass(%s)", (c + "_envelopes",)).fetchone()[0]
+    if env is not None and ids:
+        out["searched_windows"] = conn.execute(
+            f"SELECT count(*) FROM {c}_envelopes v JOIN unnest(%s::text[], %s::bigint[], %s::bigint[]) b(rid, lo, hi) "
+            f"ON v.recording_id = b.rid WHERE v.window_size = %s AND v.start_sample >= b.lo "
+            f"AND v.start_sample + v.window_size <= b.hi",
+            (ids, [bounds[i][0] for i in ids], [bounds[i][1] for i in ids], window)).fetchone()[0]
+    if not conn.execute("SELECT to_regproc('public.morlet_coverage') IS NOT NULL").fetchone()[0]:
+        out["note"] = ("this server (before pg_morlet SQL 0.3.6) cannot report which periods were not searched; "
+                       "a search without a match only means no match among the searched windows")
+        return out
+    ranges = conn.execute("SELECT recording_id, start_sample, end_sample, state FROM morlet_coverage(%s::regclass, "
+                          "%s::text[], %s)", (c, ids, window)).fetchall() if ids else []
+    out.update(summarize_scope(ranges, bounds, src["rate"], t0s, window=window))
+    mem = conn.execute("SELECT to_regclass(%s)", (c + "_episodes",)).fetchone()[0]
+    if mem is not None and ids:
+        lib = conn.execute(
+            f"SELECT count(*) FILTER (WHERE e.level = 0), count(*) FILTER (WHERE e.level > 0) FROM {c}_episodes e "
+            f"JOIN unnest(%s::text[], %s::bigint[], %s::bigint[]) b(rid, lo, hi) ON e.recording_id = b.rid "
+            f"WHERE e.exempt AND e.start_sample < b.hi AND e.end_sample > b.lo",
+            (ids, [bounds[i][0] for i in ids], [bounds[i][1] for i in ids])).fetchone()
+        out["event_library"] = {"entries": lib[0] + lib[1], "at_full_level": lib[0], "out_of_search": lib[1]}
+    out["note"] = ("every period of the matching recordings was searchable" if out["complete"] else
+                   f"{out['not_searched_seconds']:g} s of the matching recordings were not searched "
+                   f"({', '.join(k for k in out['seconds'] if k in NOT_SEARCHED)}): a missing match says nothing "
+                   f"about those periods")
+    return out
+
+
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def search_similar(collection: str, recording_id: str, start_sample: int, end_sample: int,
@@ -482,7 +655,9 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     time_from / time_to (UTC, ISO 8601) keep intervals inside that range. Both need recordings with start
     times and leave out recordings without one. With evidence (default), each hit also carries the
     matched interval's rms, min, max and an 8-part min/max sketch, so you can judge it without reading it
-    (servers with SQL 0.3.3)."""
+    (servers with SQL 0.3.3). scope says what was searched: the matching recordings, the stored windows
+    searched, and (servers with SQL 0.3.6) the periods that exist but were not searched, with why; report it
+    with every negative or thin result."""
     top_k = max(1, min(top_k, 100))
     shifts = max(0, min(shifts, 4))
     flt = json.dumps(json.loads(metadata_filter or "{}"))
@@ -526,6 +701,9 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
                                        "sketch_min_max": [[p[2], p[3]] for p in overview or []]}
                 run.append(hit)
             runs.append(run)
+        q0 = start_time(src["metadata"])
+        before = q0 + timedelta(seconds=start_sample / src["rate"]) if before_only and q0 else None
+        scope = search_scope(conn, c, src, flt, window, bounds, before)
     lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
     hits = merge_hits(runs, recording_id, lo, hi)[:top_k]
     t0 = start_time(src["metadata"])
@@ -534,7 +712,8 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
                       "shifts_samples": used, "before_only": before_only,
                       "time_range": [time_from or None, time_to or None],
                       **({"query_note": note} if note else {})},
-            "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)", "hits": hits,
+            "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)",
+            "scope": scope, "hits": hits,
             "recordings": {h["recording_id"]: metas[h["recording_id"]] for h in hits}}
 
 
@@ -874,6 +1053,64 @@ def find_onsets(collection: str, recording_id: str, start_sample: int, end_sampl
             "filter_hz": [min_frequency_hz or None, max_frequency_hz or None], "sta_seconds": sta_seconds,
             "lta_seconds": lta_seconds, "threshold": threshold, "onsets": onsets,
             "truncated": len(onsets) >= max(1, min(max_onsets, 200))}
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def decision_state(collection: str, recording_id: str, sample: int, match_keys: str = "", exclude_labels: str = "",
+                   min_history: int = 3, neighbors: int = 3, include_occurrence: bool = False,
+                   reliable_history: int = 10, baseline_recordings: str = "", examples: int = 0,
+                   example_labels: str = "") -> dict:
+    """What a fast decision model needs to know about the context segment (a cut, a cycle, a part) that contains
+    a sample: its context (program, tool, material, ...); per value (rms, std, p75, crest, kurtosis, ...) its
+    deviation from the same-context history; a summary score with its quantile in that history; and the nearest
+    earlier cases with their labels. Needs a collection with context (morlet_enable_context) and built segments.
+
+    match_keys: comma-separated context keys the history must share (empty: all of the segment's keys).
+    exclude_labels: comma-separated labels whose segments are left out of the history (e.g. "crash,air_cut").
+    Relative deviation is (value - history median) / |history median|; quantile is the value's position within
+    the history. Occurrence identifiers (run or part numbers) are left out unless include_occurrence is true.
+    With fewer than reliable_history earlier segments, history.small is true and history.note says why that matters:
+    one unusual segment, or a short transient in this one (high kurtosis or crest), can dominate the deviations.
+    baseline_recordings: comma-separated recording ids (optionally recording_id@sample) of this asset's own
+    reference segments, e.g. a tool's first cuts after a change; own_baseline then shows each value's drift from
+    them, which is how wear often shows. examples: how many nearest labelled earlier cases of the same context to
+    include, with their labels, notes and values (example_labels: comma-separated labels that count; default any
+    label except logged decisions).
+    This describes how unusual the segment is for its context; it is not a diagnosis. Cite the segment and the
+    neighbours by recording and sample range."""
+    keys = [k.strip() for k in match_keys.split(",") if k.strip()]
+    labels = [k.strip() for k in exclude_labels.split(",") if k.strip()]
+    with connect() as conn:
+        c = checked(conn, collection)
+        seg = decision.segment_at(conn, c, recording_id, sample)
+        base = []
+        for item in (x.strip() for x in baseline_recordings.split(",") if x.strip()):
+            brid, _, bs = item.partition("@")
+            base.append(decision.segment_at(conn, c, brid, int(bs) if bs else 0))
+        wanted = [x.strip() for x in example_labels.split(",") if x.strip()] or None
+        return decision.decision_state(conn, c, seg, match_keys=keys, exclude_labels=labels,
+                                       min_history=min_history, neighbors=max(0, min(neighbors, 20)),
+                                       include_occurrence=include_occurrence,
+                                       reliable_history=max(1, reliable_history), baseline=base,
+                                       examples=max(0, min(examples, 20)), example_labels=wanted)
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def decisions(collection: str, recording_prefix: str = "", answer: str = "", limit: int = 20,
+              with_state: bool = False) -> dict:
+    """Decisions a fast decision model ("System 1") logged on recordings (labels "s1:<answer>"), newest first:
+    the answer, model, question, probability, the threshold that turned it into the answer, when and by whom,
+    and the recordings and sample ranges it is about. with_state also returns the exact state the model saw (its
+    sha256 is always returned). To explain a decision, look at those recordings: decision_state shows how the
+    segment deviates from its history now (history may have grown since), describe_interval and read_interval
+    show the samples. The model gives a probability, not a reason; the explanation has to come from the data."""
+    with connect() as conn:
+        c = checked(conn, collection)
+        found = decision.decisions(conn, c, recording_prefix=recording_prefix, answer=answer,
+                                   limit=max(1, min(limit, 200)), with_state=with_state)
+    return {"collection": collection, "decisions": found, "truncated": len(found) >= max(1, min(limit, 200))}
 
 
 if __name__ == "__main__":

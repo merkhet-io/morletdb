@@ -1,0 +1,71 @@
+{
+ "set": "dev",
+ "durability": "D2",
+ "image": "morletdb:i1-dev",
+ "samples": 101453304,
+ "image_id": "sha256:8747abd3aaaa2ee364fffab629d9eed3191ebdbdda22bf7e2cfca1d2c5b9ec8b",
+ "started": "2026-11-05T09:47:23",
+ "client_load": {
+  "wall_s": 10.25,
+  "samples_per_s": 9897706,
+  "rpc_calls": 877,
+  "server": {
+   "cpu_percent_mean": 74.5,
+   "cpu_percent_p95": 76.3,
+   "memory_peak_mib": 175.6,
+   "samples": 5
+  }
+ },
+ "chunks": 25102,
+ "runs": 877,
+ "seconds": {
+  "full_batched": 8.038,
+  "batch": 6.011,
+  "bytes": 0.969,
+  "check": 1.376,
+  "insert": 0.692,
+  "encode": 5.497,
+  "other_server": -0.04,
+  "client_and_wire": 2.212
+ },
+ "share_of_load": {
+  "batch": 0.586,
+  "encode": 0.536,
+  "check": 0.134,
+  "insert": 0.067,
+  "other_server": -0.004,
+  "client_and_wire": 0.216
+ },
+ "raw_s": {
+  "full_batched": [
+   8.339,
+   8.038,
+   8.017
+  ],
+  "batch": [
+   6.011,
+   6.213,
+   5.848
+  ],
+  "encode_plus_bytes": [
+   6.495,
+   6.465,
+   6.274
+  ],
+  "bytes": [
+   0.969,
+   1.023,
+   0.892
+  ],
+  "check": [
+   1.376,
+   1.376,
+   1.363
+  ],
+  "insert": [
+   0.692,
+   0.688,
+   0.692
+  ]
+ }
+}

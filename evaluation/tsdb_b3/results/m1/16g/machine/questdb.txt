@@ -1,0 +1,13 @@
+2026-11-06T18:01:25
+18:01  up 10 days,  2:57, 17 users, load averages: 2.67 2.89 3.64
+ %CPU COMM
+307.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 63.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 34.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 26.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 23.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 16.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 16.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  8.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+2026-11-06T18:02:23
+18:02  up 10 days,  2:58, 17 users, load averages: 7.72 4.30 4.12

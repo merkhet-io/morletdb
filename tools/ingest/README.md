@@ -76,10 +76,25 @@ input array may contain at most 32768 values. Memory is bounded by decoded batch
 and one recording buffer at the Python layer; Parquet row-group decoding can have
 additional format-dependent memory overhead. This is not a hard RSS limit.
 
-`--commit-chunks` defaults to 16 (1..256). Each transaction commits all raw chunks,
+`--commit-chunks` defaults to 256 (1..256; it was 16 before I1). Each transaction commits all raw chunks,
 features and checkpoints together. Earlier batches remain committed when later
 input fails. Failures report acknowledged committed submissions; the pending batch
-is rolled back. A connection loss during commit can leave the outcome uncertain;
+(up to about one million samples at the default chunk size) is rolled back. The
+importer pipelines its statements and waits for the server only at each commit, so
+small transactions leave the server idle while the client prepares the next one:
+on B3's development set, 256 chunks per transaction with one connection loaded
+31% faster than 16 (6.22 M to 8.17 M samples/s)
+([I1 step 0](../../evaluation/ingest_i1/ATTRIBUTION.md)). A transaction holds its
+recordings' checkpoint rows locked, so another writer appending to the same
+recording waits longer; writers on different recordings are unaffected.
+Reports add `commit_wait_s`, the time spent waiting at commits (with large
+transactions the client mostly waits while sending instead, so it is small there).
+
+From Python, `import_files(..., conn=conn)` reuses a caller-owned connection instead
+of opening one per call (about 6 ms each on a local server). The connection must be
+idle and not in autocommit mode; the importer commits on it as usual, rolls back
+its pending transaction on failure and leaves it open. Its session settings are not
+changed (the importer's own connections set `statement_timeout` to 120 s). A connection loss during commit can leave the outcome uncertain;
 rerun unchanged input to resolve it safely.
 
 Recording creation is idempotent through `morlet_ensure_recording`: existing rate,
@@ -116,13 +131,18 @@ scales and an asynchronous extraction contract.
 
 ## Database call batching
 
-`--rpc-chunks` defaults to 1 (1..64), preserving the single-chunk baseline.
-Enable batching explicitly, for example `--rpc-chunks 16`. In batched mode the importer registers the server's
-`morlet_input_chunk` composite type and sends a typed array per append call. Calls
-are flushed at recording/file boundaries, the RPC limit, or the transaction limit.
-`--commit-chunks` still controls transaction size independently. The default uses the original single-chunk API. The initial local sweep reduced
-RPC counts through batching but did not improve throughput, so a new default is
-not justified without representative network/workload measurements.
+`--rpc-chunks` sets the chunks per append call (0..64). The default, 0, is
+automatic: when the server has `morlet_append_chunks_raw` (SQL 0.3.4), consecutive
+chunks of a recording go to the server as one run of little-endian float64 bytes,
+up to 64 chunks and 262,144 samples per call, and the server cuts them into the same
+chunks; the stored chunks, summaries, segments and checkpoints are identical to one
+call per chunk ([I1](../../evaluation/ingest_i1/ATTRIBUTION.md)). Against older
+servers automatic means one chunk per call. `--rpc-chunks 1` keeps one call per
+chunk. Any other value batches that many chunks, as one raw run when possible and
+otherwise as a typed `morlet_input_chunk` array. Calls are flushed at
+recording/file boundaries, the RPC limit, or the transaction limit;
+`--commit-chunks` still controls transaction size independently. Reports add
+`raw_batch` and the resolved `rpc_chunks`.
 
 The configured RPC size times chunk size may not exceed 262144 samples; the server
 also validates actual payload size. Default chunks are 4096 samples. A batch error

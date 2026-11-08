@@ -1,17 +1,19 @@
 """Synchronous client for pg_morlet's recording API (SQL 0.3.2 and later)."""
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
-from typing import Any, Mapping
+from typing import Any, Iterator, Mapping
 
 import numpy as np
 import psycopg
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
-from . import _pgnumpy
+from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Match, OverviewBucket, Recording, SearchResult
+from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
+                     OverviewBucket, Recording, SearchResult)
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
 READ_PIECE = 32768           # morlet_read_interval's per-call limit (servers without the raw read)
@@ -114,6 +116,27 @@ class Client:
                 "SELECT encoded FROM morlet_stream_relations(%s::regclass)", (collection,)))
         return self._encoded[collection]
 
+    def _encoded_read(self, collection: str, samples: int):
+        """The native decoder when this read should use compressed transfer (docs/compressed-transfer.md):
+        MORLETDB_TRANSFER is not `raw`, the library is available, the server has morlet_read_interval_encoded
+        (SQL 0.3.5), the collection stores encoded chunks, and the read is long enough (or the mode is
+        `encoded`). Decided by lookups, never by a failing statement."""
+        mode = _native.mode()
+        if mode == "raw":
+            return None
+        native = _native.require() if mode == "encoded" else _native.native()
+        if native is None:
+            return None
+        if mode == "auto" and samples < _native.ENCODED_MIN_SAMPLES:
+            return None
+        if not (self._has("public.morlet_read_interval_encoded(regclass,text,bigint,bigint,integer)")
+                and self._raw_reads(collection)):
+            if mode == "encoded":
+                raise UnsupportedError("compressed transfer needs pg_morlet SQL 0.3.5 and a collection with "
+                                       "encoded chunks")
+            return None
+        return native
+
     def _one(self, sql: str, args: tuple = (), **kw: Any) -> Any:
         row = self._execute(sql, args, **kw).fetchone()
         return None if row is None else row[0]
@@ -131,8 +154,9 @@ class Client:
         """Create a stream collection `schema.name` (or `name` in public) if it does not exist, enable
         search envelopes on it when `searchable`, and per-chunk summaries when `summaries` and the server
         supports them (SQL 0.3.3): statistics and overviews of long intervals then read summaries instead
-        of decoding, with identical results, for about 5% slower ingestion and 1% more chunk storage.
-        Idempotent."""
+        of decoding, with identical results, for about 2% slower ingestion and 1% more chunk storage. From
+        SQL 0.3.5 the server creates every new collection with summaries, so `summaries=False` only matters
+        for older servers. Idempotent."""
         schema, table = name.split(".", 1) if "." in name else ("public", name)
         if self._one("SELECT to_regclass(%s)", (f"{schema}.{table}",)) is None:
             self._execute("SELECT morlet_create_stream_collection(%s, %s)", (schema, table))
@@ -254,7 +278,15 @@ class Client:
         if ref.end_sample > rec.samples:
             raise NotFoundError(f"interval ends at {ref.end_sample}, but {ref.recording_id} has {rec.samples} samples")
         parts = []
-        if self._raw_reads(ref.collection):
+        encoded = self._encoded_read(ref.collection, ref.end_sample - ref.start_sample)
+        if encoded is not None:
+            # Compressed transfer: the stored chunks, decoded and checked in the client (bit for bit the same).
+            for a in range(ref.start_sample, ref.end_sample, RAW_READ_MAX):
+                b = min(a + RAW_READ_MAX, ref.end_sample)
+                frame = self._one("SELECT morlet_read_interval_encoded(%s::regclass,%s,%s,%s,%s)",
+                                  (ref.collection, ref.recording_id, a, b, encoded.max_chunk_version), binary=True)
+                parts.append(encoded.decode(frame, a, b))
+        elif self._raw_reads(ref.collection):
             for a in range(ref.start_sample, ref.end_sample, RAW_READ_MAX):
                 b = min(a + RAW_READ_MAX, ref.end_sample)
                 raw = self._one("SELECT morlet_read_interval_raw(%s::regclass,%s,%s,%s)",
@@ -289,6 +321,60 @@ class Client:
                              "morlet_interval_overview(%s::regclass,%s,%s,%s,%s)",
                              (collection, recording_id, int(start_sample), int(end_sample), int(buckets))).fetchall()
         return [OverviewBucket(int(a), int(b), int(n), *map(float, r)) for a, b, n, *r in rows]
+
+    def latest(self, collection: str, n: int = 1, metadata_filter: Mapping[str, Any] | None = None, *,
+               max_recordings: int = 1000) -> list[Latest]:
+        """The newest data of every recording whose metadata contains `metadata_filter`, by recording_id: its
+        last `n` samples (1..32768) with their statistics, or with n = 0 the statistics of its newest stored
+        chunk. A fixed number of index lookups per recording, however long it is. More than `max_recordings`
+        matching recordings is an error (SQL 0.3.6)."""
+        if not self._has("public.morlet_latest(regclass,integer,jsonb,integer)"):
+            raise UnsupportedError("morlet_latest needs pg_morlet SQL 0.3.6 or later")
+        rows = self._execute("SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, "
+                             "samples, sample_count, min, max, mean, rms, note FROM morlet_latest(%s::regclass,%s,%s,%s)",
+                             (collection, int(n), Jsonb(dict(metadata_filter or {})), int(max_recordings))).fetchall()
+        return [Latest(r[0], r[1], r[2], r[3], int(r[4]), int(r[5]), r[6],
+                       None if r[7] is None else np.asarray(r[7], dtype=np.float64),
+                       None if r[8] is None else IntervalStats(int(r[8]), *map(float, r[9:13])), r[13]) for r in rows]
+
+    # --- notifications -------------------------------------------------------------------------------
+    def enable_notifications(self, collection: str, *, channel: str | None = None, detail: bool = True) -> str:
+        """Send one notification on `channel` (default morlet_<table name>) for every committed transaction that
+        stores new chunks in the collection; returns the channel. With `detail=False` notifications carry only
+        the number of recordings: use it when roles that may not read every recording can connect, since any
+        role can LISTEN (row security refuses detail). Takes effect when the transaction commits (SQL 0.3.6)."""
+        if not self._has("public.morlet_enable_notifications(regclass,text,boolean)"):
+            raise UnsupportedError("notifications need pg_morlet SQL 0.3.6 or later")
+        return self._one("SELECT morlet_enable_notifications(%s::regclass,%s,%s)", (collection, channel, detail))
+
+    def disable_notifications(self, collection: str) -> bool:
+        """Stop notifications for the collection; returns whether they were on."""
+        if not self._has("public.morlet_disable_notifications(regclass)"):
+            raise UnsupportedError("notifications need pg_morlet SQL 0.3.6 or later")
+        return bool(self._one("SELECT morlet_disable_notifications(%s::regclass)", (collection,)))
+
+    def notifications(self, collection: str, *, timeout: float | None = None,
+                      stop_after: int | None = None) -> Iterator[Notification]:
+        """Wait for commits to the collection and yield one Notification per committed transaction that stored
+        new chunks, after its samples are readable. Blocks until `stop_after` notifications arrived or no
+        notification arrived for `timeout` seconds (None: forever). Needs a connection in autocommit mode,
+        used for nothing else meanwhile (`Client.connect(dsn, autocommit=True)`): notifications reach a
+        session only between transactions. Notifications are not stored: commits while nobody listens are
+        not replayed, so a consumer that starts or reconnects reads what it missed with `latest`."""
+        if not self.connection.autocommit:
+            raise InvalidInputError("notifications need a connection in autocommit mode, used only for listening")
+        if not self._has("public.morlet_notification_channel(regclass)"):
+            raise UnsupportedError("notifications need pg_morlet SQL 0.3.6 or later")
+        row = self._execute("SELECT channel FROM morlet_notification_channel(%s::regclass)", (collection,)).fetchone()
+        if row is None:
+            raise InvalidInputError(f"notifications are not enabled for {collection} (enable_notifications)")
+        self._execute(sql.SQL("LISTEN {}").format(sql.Identifier(row[0])))
+        try:
+            for n in self.connection.notifies(timeout=timeout, stop_after=stop_after):
+                if n.channel == row[0]:
+                    yield _notification(json.loads(n.payload))
+        finally:
+            self._execute(sql.SQL("UNLISTEN {}").format(sql.Identifier(row[0])))
 
     def samples_for_time(self, recording: Recording, t_start_ns: int, t_end_ns: int) -> tuple[int, int]:
         """The half-open sample range covering UTC times [t_start_ns, t_end_ns) (integer nanoseconds), by
@@ -360,6 +446,15 @@ class Client:
                                                for a, b, lo, hi, q in (r[12] or [])])
             matches.append(Match(i + 1, IntervalRef(collection, r[0], int(r[1]), int(r[2])), float(r[3]), r[4], ev))
         return SearchResult(query, matches, "probes" if probes else "exact", float(max_lag_fraction))
+
+def _notification(p: Mapping[str, Any]) -> Notification:
+    if p.get("v") != 1:
+        raise UnsupportedError(f"notification payload version {p.get('v')} is not supported by this SDK")
+    recs = tuple(NotifiedRange(r["recording_id"], int(r["first_sample"]), int(r["end_sample"]),
+                               float(r["sample_rate_hz"]), float(r["start_s"]), float(r["end_s"]))
+                 for r in p.get("recordings", ()))
+    return Notification(p["collection"], int(p.get("recording_count", len(recs))), recs, bool(p.get("truncated")))
+
 
 def _identifier(collection: str) -> sql.Identifier:
     schema, table = collection.split(".", 1) if "." in collection else ("public", collection)

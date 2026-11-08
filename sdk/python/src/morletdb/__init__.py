@@ -11,9 +11,10 @@
 from ._client import Client
 from ._errors import (ConflictError, DatabaseError, InvalidInputError, MorletError, NotFoundError,
                       UnsupportedError)
-from ._types import Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Match, OverviewBucket, Recording, SearchResult
+from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
+                     OverviewBucket, Recording, SearchResult)
 
-__version__ = "0.1.0a1"
-__all__ = ["Client", "Recording", "Interval", "IntervalRef", "IntervalStats", "OverviewBucket", "Match", "Evidence", "EvidencePart", "SearchResult",
+__version__ = "0.1.0a2"
+__all__ = ["Client", "Recording", "Interval", "IntervalRef", "IntervalStats", "Latest", "Notification", "NotifiedRange", "OverviewBucket", "Match", "Evidence", "EvidencePart", "SearchResult",
            "MorletError", "InvalidInputError", "NotFoundError", "ConflictError", "UnsupportedError",
            "DatabaseError"]

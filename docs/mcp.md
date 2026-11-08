@@ -13,8 +13,9 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | Tool | What it does |
 |---|---|
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
-| `coverage` | an overview per station, sensor or asset: recordings, samples, first and last time, the recording schedule (continuous or snapshots) and the largest gaps |
+| `coverage` | an overview per station, sensor or asset: recordings, samples, first and last time, the recording schedule (continuous or snapshots) and the largest gaps; with SQL 0.3.6 also how much of it search can find (`search_states_s`) |
 | `list_recordings` | recordings with length and UTC start and end where known; rate, channel and unit once when shared; metadata on request; filter by metadata |
+| `latest` | the current value of every sensor: each recording's last value, or its last values with statistics, or the newest chunk's statistics, with the end time and how long ago that was (SQL 0.3.6) |
 | `trend` | how level, impulsiveness and band power change over days or weeks, one point per snapshot or per time step, with candidate change points against an early baseline |
 | `locate_time` | the recordings containing a UTC time, and the sample offset of that time |
 | `describe_interval` | level, impulsiveness (crest factor, kurtosis) and spectrum (dominant frequency, centroid, energy share and power per band) of an interval; your own bands in Hz, and a minimum frequency so slow background motion does not dominate |
@@ -23,6 +24,8 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `find_onsets` | candidate onsets in an interval, where short-term energy rises above the preceding background (STA/LTA, optional band-pass); candidates to inspect, not evaluated detections |
 | `search_from_time` | the intervals most similar to what happens at a UTC time: finds the onset near that time, frames the window and searches (with `shifts`); the easiest way to search when you know when something happened |
 | `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times; optionally also searches with the window moved a little (`shifts`) and merges the results. With SQL 0.3.3: `before_only` (only what happened before the query) and a time range, and each hit's rms, min, max and an 8-part sketch inline |
+| `decision_state` | for the context segment (a cut, a cycle, a part) containing a sample: its context, each value's deviation from the same-context history (median, relative deviation, quantile), a summary score, and the nearest earlier cases with their labels; the state a fast decision model ("System 1") decides from, and that an agent can cite afterwards (#328). A history smaller than `reliable_history` (10) is flagged, because one transient can then dominate. Optionally also the drift from the asset's own reference segments (`baseline_recordings`, e.g. a tool's first cuts after a change) and the nearest labelled earlier cases as worked examples (`examples`). Needs a collection with context |
+| `decisions` | decisions a fast model logged on recordings (labels `s1:<answer>`): answer, model, question, probability, threshold, time, the recordings and sample ranges, and on request the exact state the model saw; the starting point for explaining a decision |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
 **Safety:** the tools are typed signal operations; there is no tool that runs arbitrary SQL. Every call runs in a read-only transaction with a statement timeout, as the database role in
@@ -136,6 +139,30 @@ The server tells agents what that does and does not mean:
 Earlier versions of the server told agents that distances below about 0.3 are strong and above about 0.6 weak;
 those numbers were never evaluated across signal types and were removed. The core test
 `distance_semantics_for_agents` checks the four cases above.
+
+## Not found versus not searched
+
+Search sees only stored search windows. Older data can still be readable but out of search, compacted to
+summaries, or gone ([memory levels](memory-design.md)); new data may not be indexed yet. So an agent that finds
+no match must not conclude "this has never happened" unless everything was searched. Every `search_similar`
+and `search_from_time` result therefore carries a `scope`:
+
+- `recordings` and `searched_windows`: the recordings the search could match (same rate, channel and unit,
+  the metadata filter, the time range or `before_only`) and the stored windows of the query's length there;
+- with SQL 0.3.6, `seconds` per state of [`morlet_coverage`](search-contract.md#not-found-versus-not-searched-sql-036),
+  `complete`, the largest `not_searched_periods` with their state and UTC times, and the event-library entries
+  in range (`event_library`: exempt episodes at full level or out of search);
+- a `note` in plain words. A not-indexed range shorter than one window (usually a recording's last samples)
+  is counted as `shorter_than_window` and does not make the scope incomplete.
+
+Computing the scope costs about 1.3 µs per stored window of the matching recordings (2 million windows: 2.6 s on
+an Apple M-series laptop), comparable to an exact search. It runs under its own time limit
+(`MORLET_MCP_SCOPE_TIMEOUT_MS`, default 5000); past it the scope says it is unknown (`complete: null`) and the agent
+is told to treat a missing match as unverified, never as complete.
+
+The server instructions tell agents to state the scope with every negative result, for example "no similar
+event in the searched 2024-03 to 2026-11; 2021 to 2023 is summarized only and was not searched". Servers
+before SQL 0.3.6 report the searched windows and say that they cannot list what was not searched.
 
 ## Check an installation
 

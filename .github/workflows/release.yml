@@ -4,7 +4,7 @@ on:
     branches: [main]
     paths: ['VERSION', '.github/workflows/release.yml']
   pull_request:
-    paths: ['VERSION', '.github/workflows/release.yml', 'compose.release.yaml', 'deploy/Dockerfile', 'deploy/Dockerfile.deb']
+    paths: ['VERSION', '.github/workflows/release.yml', 'compose.release.yaml', 'deploy/Dockerfile', 'deploy/Dockerfile.deb', 'deploy/extension_trial.sh']
   workflow_dispatch:
 permissions:
   contents: read
@@ -77,14 +77,16 @@ jobs:
             org.opencontainers.image.licenses=Apache-2.0
           cache-from: type=gha,scope=alpha-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=alpha-${{ matrix.arch }}
+      # syft from its container image (pinned by digest), not from GitHub release downloads, which failed for hours on
+      # 2026-11-08 (HTTP 504 for the arm64 archive). Same tool and version as anchore/sbom-action used before.
       - name: Software bill of materials of the candidate (SPDX)
-        uses: anchore/sbom-action@v0
-        with:
-          image: morletdb:candidate
-          format: spdx-json
-          output-file: morletdb-${{ steps.version.outputs.value }}-${{ matrix.arch }}.spdx.json
-          upload-artifact: false
-          upload-release-assets: false
+        env:
+          SBOM: morletdb-${{ steps.version.outputs.value }}-${{ matrix.arch }}.spdx.json
+        run: |
+          for _ in 1 2 3; do docker pull -q anchore/syft:v1.42.3@sha256:5999d209a342e55e9edf70bf8930fb5b86d8f2a783fa401178372c50e21b1d36 && break; sleep 30; done
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/out" \
+            anchore/syft:v1.42.3@sha256:5999d209a342e55e9edf70bf8930fb5b86d8f2a783fa401178372c50e21b1d36 docker:morletdb:candidate -o "spdx-json=/out/$SBOM"
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d['spdxVersion'], len(d['packages']), 'packages')" "$SBOM"
       - name: Keep the SBOM for the release
         uses: actions/upload-artifact@v4
         with:
@@ -161,7 +163,7 @@ jobs:
             --cache-to "type=gha,mode=max,scope=deb-$PG_MAJOR-${{ matrix.arch }}" \
             --output type=local,dest=dist .
           ls -l dist
-          test "$(ls dist/*.deb | wc -l)" -eq 1
+          test "$(find dist -maxdepth 1 -name '*.deb' | wc -l)" -eq 1
       - name: Install it with apt into a clean postgres image
         run: |
           docker buildx build -f deploy/Dockerfile.deb --target trial --platform "$MORLET_PLATFORM" \
@@ -186,6 +188,94 @@ jobs:
           name: deb-${{ matrix.pg }}-${{ matrix.arch }}
           path: dist/*.deb
           if-no-files-found: error
+
+  # Extension-only image (#315) for PostgreSQL 18: pg_morlet's control, SQL and library files and nothing else, for
+  # image volumes and other extensions-on-demand setups (extension_control_path, dynamic_library_path). Built natively
+  # from the Debian package's builder stage, mounted into a clean official postgres image and trialled
+  # (deploy/extension_trial.sh) before it is pushed under its architecture tag.
+  extension-image:
+    needs: image
+    strategy:
+      fail-fast: true
+      matrix:
+        pg: ['18']
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PG_MAJOR: ${{ matrix.pg }}
+      MORLET_PLATFORM: linux/${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the extension image
+        run: |
+          docker buildx build -f deploy/Dockerfile.deb --target extension --platform "$MORLET_PLATFORM" \
+            --build-arg PG_MAJOR="$PG_MAJOR" --build-arg VERSION="$(cat VERSION)" \
+            --cache-from "type=gha,scope=deb-$PG_MAJOR-${{ matrix.arch }}" \
+            --load -t pg-morlet-extension:candidate .
+      - name: Trial it mounted into a clean postgres image
+        run: deploy/extension_trial.sh pg-morlet-extension:candidate "$PG_MAJOR" "$MORLET_PLATFORM"
+      - name: Log in to GitHub Container Registry
+        if: needs.image.outputs.publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the tested extension image under its architecture tag
+        if: needs.image.outputs.publish == 'true'
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pg_morlet"
+          tag="$(cat VERSION)-pg$PG_MAJOR-${{ matrix.arch }}"
+          docker tag pg-morlet-extension:candidate "$image:$tag"
+          docker push "$image:$tag"
+
+  extension-publish:
+    needs: [image, extension-image]
+    if: needs.image.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      digest: ${{ steps.index.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Combine the tested architecture images into the PostgreSQL 18 tag
+        id: index
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pg_morlet"
+          tag="$(cat VERSION)-pg18"
+          docker buildx imagetools create -t "$image:$tag" "$image:$tag-amd64" "$image:$tag-arm64"
+          digest=$(docker buildx imagetools inspect "$image:$tag" --format '{{json .Manifest}}' | jq -r .digest)
+          docker buildx imagetools inspect "$image:$tag"
+          { echo "digest=$image@$digest"; echo "name=$image"; echo "sha=$digest"; } >> "$GITHUB_OUTPUT"
+      - name: Build provenance attestation for the extension image
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ steps.index.outputs.name }}
+          subject-digest: ${{ steps.index.outputs.sha }}
+          push-to-registry: true
+
+  sdk-wheels:
+    uses: ./.github/workflows/sdk-wheels.yml
 
   publish:
     needs: image
@@ -215,10 +305,7 @@ jobs:
           docker buildx imagetools create -t "$image:$version" "$image:$version-amd64" "$image:$version-arm64"
           digest=$(docker buildx imagetools inspect "$image:$version" --format '{{json .Manifest}}' | jq -r .digest)
           docker buildx imagetools inspect "$image:$version"
-          echo "digest=$image@$digest" >> "$GITHUB_OUTPUT"
-          echo "name=$image" >> "$GITHUB_OUTPUT"
-          echo "sha=$digest" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          { echo "digest=$image@$digest"; echo "name=$image"; echo "sha=$digest"; echo "version=$version"; } >> "$GITHUB_OUTPUT"
       - name: Build provenance attestation for the release index
         uses: actions/attest-build-provenance@v2
         with:
@@ -259,7 +346,7 @@ jobs:
         run: docker compose -f compose.release.yaml down -v
 
   release:
-    needs: [publish, registry-trial, packages]
+    needs: [publish, registry-trial, packages, sdk-wheels, extension-publish]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -277,27 +364,41 @@ jobs:
         with:
           pattern: deb-*
           merge-multiple: true
+      - name: Collect the tested SDK wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sdk-wheel-*
+          merge-multiple: true
       - name: Checksums of the packages
         run: |
           # GitHub release assets cannot contain "~" (it becomes "."), so name the files as GitHub will serve
           # them before the checksums are written; the package version inside stays 0.3.5~alpha.1-1.
-          for f in *~*.deb; do [ -e "$f" ] && mv -- "$f" "${f//\~/.}"; done
-          ls -l *.deb
-          test "$(ls *.deb | wc -l)" -eq 4
-          sha256sum *.deb > SHA256SUMS
+          for f in ./*~*.deb; do [ -e "$f" ] && mv -- "$f" "${f//\~/.}"; done
+          ls -l -- *.deb
+          test "$(find . -maxdepth 1 -name '*.deb' | wc -l)" -eq 4
+          ls -l -- *.whl
+          test "$(find . -maxdepth 1 -name '*.whl' | wc -l)" -eq 4
+          sha256sum -- *.deb *.whl > SHA256SUMS
           cat SHA256SUMS
       - name: Build provenance attestation for the packages
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: '*.deb'
+          subject-path: |
+            *.deb
+            *.whl
       - name: Publish GitHub prerelease only after both registry trials succeed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.publish.outputs.version }}
           DIGEST: ${{ needs.publish.outputs.digest }}
+          EXT_DIGEST: ${{ needs.extension-publish.outputs.digest }}
         run: |
           printf '%s\n' "$DIGEST" > image-digest.txt
+          # shellcheck disable=SC2016  # the backticks are Markdown in the release notes, not command substitution
           { cat CHANGELOG.md; printf '\nImage: %s (linux/amd64 and linux/arm64)\nCommit: %s\n' "$DIGEST" "$GITHUB_SHA"
             printf 'SBOMs (SPDX): attached. Verify the build provenance with: gh attestation verify oci://%s --owner %s\n' "$DIGEST" "$GITHUB_REPOSITORY_OWNER"
-            printf '\nDebian packages for existing PostgreSQL 17 and 18 servers (PostgreSQL project packages on Debian bookworm; amd64, arm64), each installed with apt and trialled before release: `sudo apt install ./postgresql-17-pg-morlet_<version>_<arch>.deb`, then `CREATE EXTENSION pg_morlet`. Checksums: SHA256SUMS. Verify with: gh attestation verify <file>.deb --owner %s\n' "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
-          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json *.deb SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
+            printf '\nDebian packages for existing PostgreSQL 17 and 18 servers (PostgreSQL project packages on Debian bookworm; amd64, arm64), each installed with apt and trialled before release: `sudo apt install ./postgresql-17-pg-morlet_<version>_<arch>.deb`, then `CREATE EXTENSION pg_morlet`. Checksums: SHA256SUMS. Verify with: gh attestation verify <file>.deb --owner %s\n' "$GITHUB_REPOSITORY_OWNER"
+            printf '\nPython SDK wheels: with the native decoder for compressed transfer on Linux x86-64 and arm64 (manylinux: the glibc version in the file name or later) and macOS 11+ on arm64, and a pure wheel for every other platform, which reads raw samples (same results, slower long reads). Install with: `pip install morletdb-<version>-<platform>.whl`.\n'
+            printf '\nExtension-only image for PostgreSQL 18 (amd64, arm64), for image volumes and other extensions-on-demand setups: %s (tag %s-pg18). Mount it, for example at /extensions/pg_morlet, set extension_control_path = %s and dynamic_library_path = %s, then CREATE EXTENSION pg_morlet. Trialled in a clean postgres:18 image before release. Verify with: gh attestation verify oci://%s --owner %s\n' \
+              "$EXT_DIGEST" "$VERSION" "'\$system:/extensions/pg_morlet/share'" "'\$libdir:/extensions/pg_morlet/lib'" "$EXT_DIGEST" "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
+          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json ./*.deb ./*.whl SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
