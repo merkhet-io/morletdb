@@ -20,7 +20,8 @@ import math
 import uuid
 from typing import Any, Iterable
 
-STATE_VERSION = 1
+STATE_VERSION = 2
+SUMMARY_VALUES = ("duration_s", "std", "crest", "kurtosis")   # morlet_compare_summary's default score values
 
 
 def _num(x, digits=6):
@@ -35,13 +36,19 @@ def _num(x, digits=6):
 
 def decision_state(conn, collection: str, segment_id: int, *, match_keys: Iterable[str] = (),
                    exclude_labels: Iterable[str] = (), min_history: int = 3, values: Iterable[str] | None = None,
-                   neighbors: int = 3, include_occurrence: bool = False) -> dict[str, Any]:
+                   neighbors: int = 3, include_occurrence: bool = False, reliable_history: int = 10,
+                   summary_quantile: bool = False) -> dict[str, Any]:
     """The decision state of one segment of `collection` (a regclass name such as 'public.milling').
 
     match_keys: context keys the history must share (empty: all of the segment's context keys).
     exclude_labels: history segments overlapping these labels are left out (for example known-bad parts).
     values: the simple-v1 value names to report (default: all); the summary score uses pg_morlet's defaults.
     neighbors: how many nearest earlier cases to include (0: none).
+    reliable_history: below this many history segments the state says so (history.small, history.note): with few
+    earlier segments one unusual segment, or a short transient in this one, can dominate the deviations.
+    summary_quantile: also compute the summary score's quantile within the history (morlet_compare_summary; it
+    repeats the history query and costs about twice as much). The summary score itself is derived from the
+    per-value rows, equal to morlet_compare_summary's score and top value.
     """
     match_keys, exclude_labels = list(match_keys), list(exclude_labels)
     seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
@@ -70,13 +77,20 @@ def decision_state(conn, collection: str, segment_id: int, *, match_keys: Iterab
             for n, v, h, m, r, q, s in rows if wanted is None or n in wanted]
     hist_n = max((h for _, _, h, *_ in rows if h is not None), default=0)
 
-    summ = conn.execute(
-        "SELECT score, score_quantile, top_value, top_relative_deviation, hist_n, status "
-        "FROM morlet_compare_summary(%s::regclass, %s, %s::text[], exclude_labels => %s::text[], "
-        "min_history => %s)", (collection, segment_id, match_keys, exclude_labels, min_history)).fetchone()
-    summary = None if summ is None else {
-        "score": _num(summ[0]), "score_quantile": _num(summ[1]), "top_value": summ[2],
-        "top_relative_deviation": _num(summ[3]), "history_size": summ[4], "status": summ[5]}
+    scored = [(abs(r), n) for n, _v, _h, _m, r, _q, _s in rows if n in SUMMARY_VALUES and r is not None]
+    summary = None
+    if scored:
+        top = max(scored)
+        summary = {"score": _num(top[0]), "top_value": top[1],
+                   "top_relative_deviation": _num(next(r for n, *_x, r, _q, _s in rows if n == top[1])),
+                   "score_values": list(SUMMARY_VALUES)}
+    if summary_quantile:
+        summ = conn.execute(
+            "SELECT score_quantile FROM morlet_compare_summary(%s::regclass, %s, %s::text[], "
+            "exclude_labels => %s::text[], min_history => %s)",
+            (collection, segment_id, match_keys, exclude_labels, min_history)).fetchone()
+        if summary is not None and summ is not None:
+            summary["score_quantile"] = _num(summ[0])
 
     near = []
     if neighbors > 0 and hist_n > 0:
@@ -87,9 +101,13 @@ def decision_state(conn, collection: str, segment_id: int, *, match_keys: Iterab
             near.append({"recording_id": nrid, "start_sample": ns, "end_sample": ne, "distance": _num(dist),
                          "labels": sorted({lab["label"] for lab in labels or []})})
 
+    history = {"match_keys": match_keys or sorted(context), "size": hist_n, "excluded_labels": exclude_labels}
+    if hist_n < reliable_history:
+        history["small"] = True
+        history["note"] = (f"only {hist_n} earlier comparable segments: one unusual segment, or a short transient in "
+                           f"this one, can dominate the deviations")
     return {"v": STATE_VERSION, "segment": segment,
-            "history": {"match_keys": match_keys or sorted(context), "size": hist_n,
-                        "excluded_labels": exclude_labels},
+            "history": history,
             "values": vals, "summary": summary, "neighbors": near}
 
 

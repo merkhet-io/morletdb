@@ -1058,7 +1058,8 @@ def find_onsets(collection: str, recording_id: str, start_sample: int, end_sampl
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def decision_state(collection: str, recording_id: str, sample: int, match_keys: str = "", exclude_labels: str = "",
-                   min_history: int = 3, neighbors: int = 3, include_occurrence: bool = False) -> dict:
+                   min_history: int = 3, neighbors: int = 3, include_occurrence: bool = False,
+                   reliable_history: int = 10) -> dict:
     """What a fast decision model needs to know about the context segment (a cut, a cycle, a part) that contains
     a sample: its context (program, tool, material, ...); per value (rms, std, p75, crest, kurtosis, ...) its
     deviation from the same-context history; a summary score with its quantile in that history; and the nearest
@@ -1068,6 +1069,8 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
     exclude_labels: comma-separated labels whose segments are left out of the history (e.g. "crash,air_cut").
     Relative deviation is (value - history median) / |history median|; quantile is the value's position within
     the history. Occurrence identifiers (run or part numbers) are left out unless include_occurrence is true.
+    With fewer than reliable_history earlier segments, history.small is true and history.note says why that matters:
+    one unusual segment, or a short transient in this one (high kurtosis or crest), can dominate the deviations.
     This describes how unusual the segment is for its context; it is not a diagnosis. Cite the segment and the
     neighbours by recording and sample range."""
     keys = [k.strip() for k in match_keys.split(",") if k.strip()]
@@ -1077,7 +1080,8 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
         seg = decision.segment_at(conn, c, recording_id, sample)
         return decision.decision_state(conn, c, seg, match_keys=keys, exclude_labels=labels,
                                        min_history=min_history, neighbors=max(0, min(neighbors, 20)),
-                                       include_occurrence=include_occurrence)
+                                       include_occurrence=include_occurrence,
+                                       reliable_history=max(1, reliable_history))
 
 
 @mcp.tool(annotations=READ_ONLY)
