@@ -7,7 +7,7 @@ MorletDB is a developer-alpha PostgreSQL extension. The SQL extension is named `
 | Component | Current scope |
 | --- | --- |
 | PostgreSQL 17 | Reference version; functional CI with and without pgvector; upgrades and release images target 17 |
-| PostgreSQL 18 | Supported for fresh source installations; functional CI with and without pgvector; no release image or measured performance |
+| PostgreSQL 18 | Supported for fresh source installations; functional CI with and without pgvector; Debian packages (amd64, arm64) from 0.3.5-alpha.1; no release image or measured performance |
 | PostgreSQL 19 | Supported at its release candidate (19rc1) for fresh source installations; functional CI with and without pgvector; TOAST compression pinned to pglz, so storage matches 17 and 18 ([compatibility](compatibility.md#toast-compression-postgresql-19)); no release image yet |
 | Rust / pgrx | Repository-pinned Rust 1.99.0; pgrx and cargo-pgrx 0.19.3 |
 | Container | Linux amd64; Linux arm64 from 0.3.3-alpha.1 (built and trialled natively in the release workflow) |
@@ -192,4 +192,4 @@ Do not directly edit managed companion tables. Versioned extractors, original sa
 - [Operations and recovery](https://github.com/merkhet-io/morletdb/blob/main/docs/operations.md)
 - [Versioned releases](https://github.com/merkhet-io/morletdb/blob/main/docs/releases.md)
 
-Installation commands and API names were checked against the current Cargo features, workflow configuration and `extensions/pg_morlet/sql/streams.sql`. The examples are source-checked; they were not executed against PostgreSQL in the website editing environment.
+Installation commands and API names were checked against the current Cargo features, workflow configuration and `extensions/pg_morlet/sql/streams.sql`. CI runs the Python quickstart on PostgreSQL 17; the SQL snippets here are checked against the SQL definitions, not executed.

@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT"
 status=0
-for pair in "research/paper/morletdb.pdf:docs/morletdb.pdf" "research/paper/supplement.pdf:docs/morletdb-supplement.pdf" "research/paper3/spikes.pdf:docs/morletdb-edge.pdf"; do
+for pair in "research/paper/morletdb.pdf:docs/morletdb.pdf" "research/paper/supplement.pdf:docs/morletdb-supplement.pdf" "research/paper3/spikes.pdf:docs/morletdb-edge.pdf" "research/paper2/memory.pdf:docs/morletdb-memory.pdf"; do
   src=${pair%%:*}; dst=${pair#*:}
   if [ "${1:-}" = "--check" ]; then
     if cmp -s "$src" "$dst"; then echo "ok    $dst = $src"; else echo "STALE $dst differs from $src"; status=1; fi

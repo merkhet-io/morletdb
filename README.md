@@ -259,8 +259,11 @@ On held-out seismic data (234,622 windows):
 
 What it costs and where it is not shown: a probe table and index of about the size
 of the raw data, slower search under filters that exclude a query's neighbours, and
-extra write-ahead logging for index maintenance. All retrieval results are seismic;
-other signals, diagnostic relevance and long-running operation are not shown.
+extra write-ahead logging for index maintenance. The paper's retrieval results are seismic. Study
+[N1](evaluation/nilm_n1/RESULTS.md) added appliance identification from current transients (PLAID): exact
+envelope search named the appliance about as well as a current-feature 1-NN (H1 passed), but its distances did
+not flag unknown appliances (H2 failed). Other signals, diagnostic relevance and long-running operation are not
+shown.
 [Supplement](research/paper/supplement.pdf) · [study overview](research/paper/STUDIES.md) ·
 [reproduce the numbers](research/paper/ARTIFACT.md) · [main results](research/paper/README.md#main-numbers)
 
