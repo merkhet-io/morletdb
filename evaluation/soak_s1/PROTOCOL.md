@@ -42,6 +42,13 @@ fast at the end as at the start?
 
 If the test week passes, it may continue towards 30 days without a restart; the extension is reported separately.
 
+## Shakedown changes (recorded before freezing)
+
+1. **Load gate** (2026-11-08, after 20 minutes): with the steward's default (pause upkeep above 0.7 × CPUs = 1.4),
+   the soak's own load of 1.4–1.6 paused it almost always; no search envelopes were built, so nothing became
+   searchable. Changed to `--load-per-cpu 1.0` (2.0). The database container's 1-CPU cap still keeps upkeep off the
+   host's second core.
+
 ## Hypotheses (all must hold; each is reported with its numbers)
 
 - **H1, nothing lost or changed.**

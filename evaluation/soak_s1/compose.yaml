@@ -47,6 +47,10 @@ services:
     build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
     environment:
       MORLET_STEWARD_DSN: postgresql://morlet_steward:${MORLET_STEWARD_PASSWORD}@db:5432/morlet
+    # Shakedown finding 1: with the default load gate (0.7 per CPU = 1.4 here) the soak's own load (1.4-1.6) paused
+    # the steward almost always, and no envelopes were built. 1.0 per CPU; the database container is capped at 1 CPU,
+    # so upkeep can never take both cores from the host's other services.
+    command: ["run", "--verbose", "--data-path", "/data", "--load-per-cpu", "1.0"]
     volumes:
       - ${SOAK_DIR}:/data:ro
     cpus: 0.5
