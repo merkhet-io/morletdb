@@ -1,0 +1,8 @@
+# The controller of power-cut study P1 (#190), on the second machine. Network: host (it listens for acknowledgements
+# and reaches the box's database); mount the reset key at /keys and a state directory at /state.
+FROM python:3.12.10-slim-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-client && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir "psycopg[binary]==3.2.10" "numpy==2.2.6"
+COPY evaluation/power_cut_p1/writer.py evaluation/power_cut_p1/controller.py /opt/pc/
+WORKDIR /opt/pc
+ENTRYPOINT ["python", "-u", "controller.py"]
