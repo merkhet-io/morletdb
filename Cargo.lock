@@ -811,7 +811,7 @@ dependencies = [
 
 [[package]]
 name = "morlet-core"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "proptest",
  "serde",
@@ -820,7 +820,7 @@ dependencies = [
 
 [[package]]
 name = "morlet-ffi"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "morlet-core",
 ]
@@ -993,7 +993,7 @@ dependencies = [
 
 [[package]]
 name = "pg_morlet"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "libc",
  "morlet-core",

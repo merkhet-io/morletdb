@@ -242,8 +242,9 @@ class Plans(StewardDatabase):
         self.assertEqual(self.one("SELECT string_agg(level::text,',') FROM line_episodes"), "0,0")
 
     def test_a_newer_extension_becomes_one_plan_not_an_update(self):
+        installed = self.one("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")
         real = S.extension_versions
-        S.extension_versions = lambda conn: ("0.3.6", "0.3.7")
+        S.extension_versions = lambda conn: (installed, "999.0.0")  # a newer version the server pretends to have
         try:
             st = self.steward()
             st.tick()
@@ -251,7 +252,7 @@ class Plans(StewardDatabase):
         finally:
             S.extension_versions = real
         self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.plans WHERE kind='extension_update'"), 1)
-        self.assertEqual(self.one("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'"), "0.3.6")
+        self.assertEqual(self.one("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'"), installed)
 
 
 if __name__ == "__main__":

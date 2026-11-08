@@ -134,6 +134,23 @@ The scripts in `extensions/pg_morlet/tests` find `pg_config` through `PG_CONFIG`
   `cargo pgrx init --pg19 download` (or a pgrx release that knows 19.0), and release images and Debian
   packages for 19 follow in a release.
 
+## Loading from a separate directory (PostgreSQL 18 and later)
+
+From SQL 0.3.7 (#315), pg_morlet can be loaded from a directory outside the server's installation, for example an
+image volume mounted into a PostgreSQL 18 or 19 container. Put the control and SQL files in `<dir>/share/extension`
+and the library in `<dir>/lib`, then set, as a superuser or in `postgresql.conf`:
+
+```
+extension_control_path = '$system:<dir>/share'
+dynamic_library_path = '$libdir:<dir>/lib'
+```
+
+and run `CREATE EXTENSION pg_morlet`. No `shared_preload_libraries` entry is needed. `cargo pgrx package` produces
+the files; `tests/on_demand.sh` assembles such a directory, moves the server's own copy aside and checks the
+extension from it (CI, PostgreSQL 18 and 19). Databases created before 0.3.7 load the library from `$libdir` until
+`ALTER EXTENSION pg_morlet UPDATE`. A ready-made extension-only OCI image is planned; until then, build the directory
+from a release checkout.
+
 ## TOAST compression (PostgreSQL 19)
 
 PostgreSQL 19 changes `default_toast_compression` from `pglz` to `lz4` (when built with lz4, as packages
