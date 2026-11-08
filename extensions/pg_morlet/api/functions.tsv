@@ -114,8 +114,10 @@ morlet_normalize	stable	0.1.0	documented since SQL 0.1.0 or earlier
 morlet_notification_channel	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_notify_collect	internal	0.3.6	helper
 morlet_notify_commit	internal	0.3.6	helper
+morlet_ns_to_samples	internal	0.3.8	helper (#343)
 morlet_pin_toast_compression	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_raise_incomplete	internal	0.3.5	helper
+morlet_rate_ratio	internal	0.3.8	helper (#343)
 morlet_read_acquisition	stable	0.3.0	documented since SQL 0.3.0 or earlier
 morlet_read_acquisition_raw	stable	0.3.3	documented since SQL 0.3.3 or earlier
 morlet_read_interval	stable	0.2.0	documented since SQL 0.2.0 or earlier
@@ -135,6 +137,7 @@ morlet_rollup_values	internal	0.3.6	not documented
 morlet_row_security_enabled	stable	0.3.1	documented since SQL 0.3.1 or earlier
 morlet_sample_time_ns	stable	0.3.0	documented since SQL 0.3.0 or earlier
 morlet_samples_overview	internal	0.3.3	not documented
+morlet_samples_to_ns	internal	0.3.8	helper (#343)
 morlet_search	internal	0.1.0	not documented
 morlet_search_envelope_interval	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_search_envelope_probes	stable	0.3.1	documented since SQL 0.3.1 or earlier

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+SQL version 0.3.8, with an update script from 0.3.7.
+
+- **Exact times at slow rates (#343):** converting a time to a sample (`morlet_time_to_samples`) and the time filters,
+  `before_only` cutoffs, hit times of search and acquisition alignment computed with `sample_rate_hz::numeric`,
+  which rounds a float8 to 15 significant digits. At 1/60 Hz (0.0166666666666667, above 1/60) a time exactly at a
+  sample instant mapped to the next sample; about half of all whole-second periods were affected. A rate is now read
+  as the exact fraction it stands for (`morlet_rate_ratio`: 1/60, 1/7, 25600/1, or its exact decimal) and sample
+  boundaries are computed in integer arithmetic. Found by the L1 limits study; a regression test checks 2,001
+  sample instants at periods of 1, 3, 6, 7 and 60 s; checked once over every whole-second period from 1 to 3,600 s.
+  Rates such as 25.6 kHz and 64 kHz map exactly as before. `morlet_time_to_samples` costs about 50 µs per call
+  instead of 22; where it runs per row (time filters, `before_only`) the fraction is computed once per query.
+
 ## 0.3.9-alpha.1
 
 SQL version 0.3.7, with an update script from 0.3.6. Python SDK unchanged (0.1.0a2). The chunk format is unchanged;
