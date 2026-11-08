@@ -63,6 +63,23 @@ COPY --from=dist / /tmp/dist/
 RUN apt-get update && apt-get install -y --no-install-recommends /tmp/dist/postgresql-${PG_MAJOR}-pg-morlet_*.deb \
     && rm -rf /var/lib/apt/lists/* /tmp/dist
 
+# Extension-only image (#315), PostgreSQL 18 and later: pg_morlet's control and SQL files under /share/extension and its
+# library under /lib, nothing else. Mount it (for example as an image volume at /extensions/pg_morlet) and set
+#   extension_control_path = '$system:/extensions/pg_morlet/share'
+#   dynamic_library_path   = '$libdir:/extensions/pg_morlet/lib'
+#   docker buildx build -f deploy/Dockerfile.deb --target extension --build-arg PG_MAJOR=18 --build-arg VERSION=$(cat VERSION) --load -t pg_morlet:pg18 .
+FROM scratch AS extension
+ARG PG_MAJOR
+ARG VERSION
+LABEL org.opencontainers.image.title="pg_morlet" \
+      org.opencontainers.image.description="MorletDB extension files for PostgreSQL ${PG_MAJOR} (extension_control_path / image volume)" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/merkhet-io/morletdb"
+COPY --from=builder /src/target/release/pg_morlet-pg${PG_MAJOR}/usr/share/postgresql/${PG_MAJOR}/extension/ /share/extension/
+COPY --from=builder /src/target/release/pg_morlet-pg${PG_MAJOR}/usr/lib/postgresql/${PG_MAJOR}/lib/ /lib/
+COPY --from=builder /src/LICENSE /share/doc/pg_morlet/LICENSE
+
 # Default target: only the .deb file.
 FROM scratch AS package
 COPY --from=builder /out/ /
