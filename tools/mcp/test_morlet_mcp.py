@@ -17,7 +17,7 @@ class Server(unittest.TestCase):
 
     def test_tools_are_registered_read_only(self):
         tools = asyncio.run(m.mcp.list_tools())
-        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "describe_interval", "envelope_spectrum",
+        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "decision_state", "decisions", "describe_interval", "envelope_spectrum",
                                                          "find_onsets", "latest",
                                                          "list_collections", "list_recordings", "locate_time",
                                                          "read_interval", "search_from_time", "search_similar",

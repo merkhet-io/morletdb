@@ -1,0 +1,76 @@
+{
+ "runs_scored": 64,
+ "runs_in_study": 64,
+ "worn": 33,
+ "calls": 192,
+ "calls_ok": 192,
+ "http_errors": 0,
+ "schema_errors": 0,
+ "auroc": {
+  "jev_replace_insert": 0.9481915933528837,
+  "conditioned_score": 0.9657869012707723,
+  "time_in_use": 0.9090909090909091
+ },
+ "delta_auroc_vs_conditioned": {
+  "point": -0.017595307917888547,
+  "ci95": [
+   -0.08064726142473122,
+   0.04104140797689181
+  ]
+ },
+ "delta_auroc_vs_time_in_use": {
+  "point": 0.03910068426197466,
+  "ci95": [
+   -0.014288194444444503,
+   0.10314027370478979
+  ]
+ },
+ "spearman_vb": {
+  "jev_wear_level": 0.8138333900659095,
+  "jev_replace_insert": 0.8420588471649871,
+  "conditioned_score": 0.890927028234969,
+  "time_in_use": 0.7936002573721957
+ },
+ "brier_jev": 0.19562951388888888,
+ "brier_base_rate": 0.249755859375,
+ "calibration": [
+  {
+   "bin": "0.0-0.2",
+   "n": 0,
+   "mean_p": null,
+   "worn_rate": null
+  },
+  {
+   "bin": "0.2-0.4",
+   "n": 4,
+   "mean_p": 0.33166666666666667,
+   "worn_rate": 0.0
+  },
+  {
+   "bin": "0.4-0.6",
+   "n": 22,
+   "mean_p": 0.5262121212121212,
+   "worn_rate": 0.09090909090909091
+  },
+  {
+   "bin": "0.6-0.8",
+   "n": 38,
+   "mean_p": 0.6635964912280702,
+   "worn_rate": 0.8157894736842105
+  },
+  {
+   "bin": "0.8-1.0",
+   "n": 0,
+   "mean_p": null,
+   "worn_rate": null
+  }
+ ],
+ "repeat_spread_mean_abs": 0.011562499999999991,
+ "latency_ms": {
+  "p50": 245.35000000000002,
+  "p95": 531.93
+ },
+ "input_tokens": 729768,
+ "cost_usd_at_list_price": 0.030650256,
+ "decision": "SUPPORTED"
+}

@@ -14,6 +14,8 @@ from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import psycopg
+
+import decision
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
@@ -1051,6 +1053,48 @@ def find_onsets(collection: str, recording_id: str, start_sample: int, end_sampl
             "filter_hz": [min_frequency_hz or None, max_frequency_hz or None], "sta_seconds": sta_seconds,
             "lta_seconds": lta_seconds, "threshold": threshold, "onsets": onsets,
             "truncated": len(onsets) >= max(1, min(max_onsets, 200))}
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def decision_state(collection: str, recording_id: str, sample: int, match_keys: str = "", exclude_labels: str = "",
+                   min_history: int = 3, neighbors: int = 3, include_occurrence: bool = False) -> dict:
+    """What a fast decision model needs to know about the context segment (a cut, a cycle, a part) that contains
+    a sample: its context (program, tool, material, ...); per value (rms, std, p75, crest, kurtosis, ...) its
+    deviation from the same-context history; a summary score with its quantile in that history; and the nearest
+    earlier cases with their labels. Needs a collection with context (morlet_enable_context) and built segments.
+
+    match_keys: comma-separated context keys the history must share (empty: all of the segment's keys).
+    exclude_labels: comma-separated labels whose segments are left out of the history (e.g. "crash,air_cut").
+    Relative deviation is (value - history median) / |history median|; quantile is the value's position within
+    the history. Occurrence identifiers (run or part numbers) are left out unless include_occurrence is true.
+    This describes how unusual the segment is for its context; it is not a diagnosis. Cite the segment and the
+    neighbours by recording and sample range."""
+    keys = [k.strip() for k in match_keys.split(",") if k.strip()]
+    labels = [k.strip() for k in exclude_labels.split(",") if k.strip()]
+    with connect() as conn:
+        c = checked(conn, collection)
+        seg = decision.segment_at(conn, c, recording_id, sample)
+        return decision.decision_state(conn, c, seg, match_keys=keys, exclude_labels=labels,
+                                       min_history=min_history, neighbors=max(0, min(neighbors, 20)),
+                                       include_occurrence=include_occurrence)
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def decisions(collection: str, recording_prefix: str = "", answer: str = "", limit: int = 20,
+              with_state: bool = False) -> dict:
+    """Decisions a fast decision model ("System 1") logged on recordings (labels "s1:<answer>"), newest first:
+    the answer, model, question, probability, the threshold that turned it into the answer, when and by whom,
+    and the recordings and sample ranges it is about. with_state also returns the exact state the model saw (its
+    sha256 is always returned). To explain a decision, look at those recordings: decision_state shows how the
+    segment deviates from its history now (history may have grown since), describe_interval and read_interval
+    show the samples. The model gives a probability, not a reason; the explanation has to come from the data."""
+    with connect() as conn:
+        c = checked(conn, collection)
+        found = decision.decisions(conn, c, recording_prefix=recording_prefix, answer=answer,
+                                   limit=max(1, min(limit, 200)), with_state=with_state)
+    return {"collection": collection, "decisions": found, "truncated": len(found) >= max(1, min(limit, 200))}
 
 
 if __name__ == "__main__":
