@@ -28,6 +28,53 @@ generators and harness are developed on the small development sizes only.
 Same rules, metrics, knee definition and three repeats as below. The machine is named at the freeze; the results
 state that the envelope holds for that machine and scales with it where the curve says so.
 
+## L1-beta, frozen (2026-11-08)
+
+Frozen in the commit that adds this section and `l1.py`, `summarize.py` and `run_l1.sh`, before any reported
+measurement. Development runs (`l1.py --dev`, a tenth of the samples, `results/dev/`) built and checked the harness
+on five points and are not reported. Where this section differs from the draft above, this section applies.
+
+- **System:** the release image `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (SQL 0.3.7; image id recorded per
+  run), data checksums, `max_wal_size=1GB`, otherwise image defaults (durable commits); a fresh container and volume
+  per point and repeat; one collection with chunk summaries, no search structures (search limits are D6, for 1.0).
+- **Machine:** the owner's Apple M5 Max, Docker Desktop (VM: 12 CPUs, 33.6 GB); the client on the same host.
+  Start condition as in B3.16 (`run_l1.sh`: load average below 3, no foreign process above half a core, AC power).
+- **Baseline:** 8 CPUs, 16 GB; 64 kHz; 4,096-sample chunks; calibrated ADC values on a grid of 100/32768; one writer
+  sending batches of 64 chunks (262,144 samples) through `morlet_append_chunks_raw`, one durable commit per batch.
+- **Points** (`l1.py list`), with the samples per recording:
+  - **D1 rate:** 1/60, 1/3, 1, 1,000, 44,100, 64,000, 1,000,000 Hz, 1,048,576 samples each (a fixed count, not
+    60 s: at 1/60 Hz a minute is one sample). Baseline point: 64,000 Hz.
+  - **D2 length:** 10⁴, 10⁶, 10⁸, 10⁹ samples in one recording. Baseline point: 10⁶.
+  - **D4 values:** integer counts, decimals (3 places), calibrated ADC values, full-entropy floats, a constant,
+    denormals, values at ±1e9, NaN and ±Inf; 1,048,576 each. Baseline point: ADC values.
+  - **D5 ingest:** chunk sizes 4,096, 64, 1 (65,536 samples) and 65,536; 1, 4 and 16 concurrent writers with
+    1,048,576 samples each; the pattern point: a gap, an identical replay, a late chunk with one altered sample, an
+    overlap of stored and new samples, and an out-of-order range, each after half of 262,144 samples.
+  - **D7 resources:** the 10⁸-sample workload of D2 within 2 GB, 512 MB and 256 MB memory (8 CPUs), within 1 CPU
+    (16 GB), and a full disk: a 400 MB data directory (tmpfs) and a 10⁹-sample target. Baseline point: D2's 10⁸.
+- **Per point:** correctness first (every stored sample read back and compared with the generator by SHA-256; the
+  stored end; at D1 1,002 derived times against an exact rational reference; at D5's pattern point each case
+  refused or stored and the earlier samples unchanged; after a refused or failed write, the stored samples intact
+  and readable, and whether the server restarted); then ingest samples/s, commit latency (p50, p95, first and last
+  tenth), full read-back samples/s, reads of 4,096 samples and statistics over 10⁶ samples at the start, middle and
+  end, an overview of the whole recording (100 buckets), storage (chunk table with TOAST and indexes, checkpoint),
+  and container memory (cgroup peak, out-of-memory kills).
+- **Repeats:** three per point; medians and ranges (`summarize.py`).
+- **Knee** (`summarize.py`): a point is a knee if it shows an error, refusal, correctness problem or out-of-memory
+  kill, or if ingest or read-back samples/s, the read latencies, the statistics or the overview are more than 2×
+  worse than the dimension's baseline point. A refusal at a documented limit (NaN, ±Inf, beyond ±1e9, chunks above
+  32,768) is reported as the limit, not as a defect.
+- **Output:** `RESULTS.md` with every point, knee and refusal; the website and docs state the envelope; an issue for
+  every knee that looks like an engineering fix rather than a design limit.
+
+**Expectation (written before measuring):** D1: rates are stored as given, so all rates should store and time
+exactly; 1 MHz may reach the ingest limit of one writer only in samples/s, not in correctness. D2: reads at the end
+of a 10⁹-sample recording should stay near the start's; the commit latency may grow with the checkpoint. D4: NaN,
+±Inf refused; random floats near 64 bits per sample, the constant near zero. D5: chunk size 1 is far slower per
+sample (a knee); 65,536 refused; writers scale until the client or one CPU limits. D7: 256 MB may hold (the
+memory-cap study M1 completed B3 within 256 MB); 1 CPU will be slower; the full disk must fail visibly with the
+stored samples intact.
+
 ## Rules
 
 - **Correctness is a hard gate everywhere:** every stored sample read back bit for bit (SHA-256 per

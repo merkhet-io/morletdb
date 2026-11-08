@@ -1,0 +1,61 @@
+{
+ "point": "d5-pattern",
+ "rep": 1,
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "dev": true,
+ "host": {
+  "machine": "arm64",
+  "load_avg": [
+   1.810546875,
+   1.76513671875,
+   1.42041015625
+  ]
+ },
+ "started": "2026-11-08T21:08:47",
+ "extension": "0.3.7",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "samples": 26214,
+ "config": {
+  "cpus": "8",
+  "memory": "16g",
+  "chunk": 4096,
+  "kind": "adc",
+  "writers": 1
+ },
+ "problems": [],
+ "refusals": [],
+ "cases": {
+  "gap: 4096 samples skipped": {
+   "outcome": "refused: chunk offset must equal the next sample offset (no gaps, overlaps or replays)",
+   "stored_end": 13107,
+   "earlier_samples_unchanged": true
+  },
+  "identical replay of stored samples": {
+   "outcome": "stored",
+   "stored_end": 13107,
+   "earlier_samples_unchanged": true
+  },
+  "late chunk with one altered sample": {
+   "outcome": "refused: conflicting replay at chunk offset",
+   "stored_end": 13107,
+   "earlier_samples_unchanged": true
+  },
+  "overlap: last stored chunk plus new samples": {
+   "outcome": "refused: chunk offset must equal the next sample offset (no gaps, overlaps or replays)",
+   "stored_end": 13107,
+   "earlier_samples_unchanged": true
+  },
+  "out of order: a later range before the next": {
+   "outcome": "refused: chunk offset must equal the next sample offset (no gaps, overlaps or replays)",
+   "stored_end": 13107,
+   "earlier_samples_unchanged": true
+  }
+ },
+ "memory": {
+  "stats_peak_mib": 0.0,
+  "cgroup_peak_mib": 83.2,
+  "oom_events": 0,
+  "container": "false running"
+ },
+ "finished": "2026-11-08T21:08:48"
+}

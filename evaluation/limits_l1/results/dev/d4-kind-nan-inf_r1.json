@@ -1,0 +1,45 @@
+{
+ "point": "d4-kind-nan-inf",
+ "rep": 1,
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "dev": true,
+ "host": {
+  "machine": "arm64",
+  "load_avg": [
+   1.533203125,
+   1.7109375,
+   1.3994140625
+  ]
+ },
+ "started": "2026-11-08T21:08:43",
+ "extension": "0.3.7",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "samples": 104857,
+ "config": {
+  "cpus": "8",
+  "memory": "16g",
+  "chunk": 4096,
+  "kind": "nan-inf",
+  "writers": 1
+ },
+ "problems": [],
+ "refusals": [
+  {
+   "step": "append",
+   "error_visible": true,
+   "error": "samples must be finite and within +/-1e9",
+   "server_answers_after_s": 0.0,
+   "stored_end": 0,
+   "stored_intact": true,
+   "server_restarted": true,
+   "server_log_tail": []
+  }
+ ],
+ "memory": {
+  "stats_peak_mib": 0.0,
+  "cgroup_peak_mib": 83.5,
+  "oom_events": 0,
+  "container": "false running"
+ },
+ "finished": "2026-11-08T21:08:44"
+}
