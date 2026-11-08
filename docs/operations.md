@@ -13,9 +13,15 @@ average 3–20); treat latencies as indicative until re-measured on the pilot's 
 | Archive | about 960,000 windows (4096 / 2048) in one collection, 4.8 GB database | larger archives are untested |
 | Search | 4 analysts, one query every 2 s, half filtered (exact path), half unfiltered (probe path), plus one unfiltered exact search per minute defaults: filtered p95 167 ms, probe p95 337 ms (recall 0.998), exact p95 9.7 s; configuration below, 111 min: filtered p95 118 ms, probe p95 138 ms (recall 0.993), exact p95 14.5 s on a growing archive |
 | Recovery | backup/restore, aborted appends/builds, worker kills, deletions, online index rebuild, failed upgrade | all checks passed (see below) |
+| Sample rate (L1) | 1/60 Hz to 64 kHz, 1,048,576 samples each | all exact and equally fast; **rates above 200 kHz are refused**; time-to-sample conversion is off by one sample at rates such as 1/60 and 1/7 Hz (fix pending) |
+| Recording length (L1) | 10⁴ to 10⁹ samples in one recording | 10⁹: 7.2 M samples/s in, 24 M out, reads of 4,096 samples 0.6–0.7 ms anywhere, flat commit latency; statistics over 10⁶ samples 8.9× slower than on short recordings, a whole-recording overview 117 ms without roll-ups; below about 10⁵ samples per recording fixed overhead dominates |
+| Values (L1) | integer counts, decimals, ADC values, full-entropy floats, constants, denormals, ±1e9 | all exact; NaN, ±Inf and values beyond ±1e9 are refused; full-entropy floats take 6% more than raw float64 |
+| Ingest pattern (L1) | chunks of 1 to 32,768 samples, 1–16 writers, gaps, resends | gaps, altered resends, overlaps and out-of-order ranges are refused, identical replays accepted; use chunks of about 4,096 samples (64-sample chunks: 5.5× slower, 2.6× larger); 16 writers 21 M samples/s |
+| Memory, CPU, disk (L1) | 10⁸ samples within 256 MB; 1 CPU; a full 400 MB disk | 256 MB: no out-of-memory kill, read-back 31% slower; 1 CPU: ingest 28% slower; **a full disk stops PostgreSQL** (PANIC on the write-ahead log) until space is freed: keep the steward's disk guard on |
 
-Outside this range — higher rates, larger archives, cold caches, many tenants under load,
-other machines — nothing is claimed.
+The L1 rows come from [study L1-beta](../evaluation/limits_l1/RESULTS.md) (one Apple M5 Max, synthetic data,
+no search structures). Outside this range — larger archives, cold caches, many tenants under load, other
+machines — nothing is claimed.
 
 ## Installation
 

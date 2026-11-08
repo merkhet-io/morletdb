@@ -1,0 +1,82 @@
+{
+ "point": "d5-writers-1",
+ "rep": 2,
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "dev": false,
+ "host": {
+  "machine": "arm64",
+  "load_avg": [
+   4.388671875,
+   3.89404296875,
+   2.93408203125
+  ]
+ },
+ "started": "2026-11-08T21:22:24",
+ "extension": "0.3.7",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "samples": 1048576,
+ "config": {
+  "cpus": "8",
+  "memory": "16g",
+  "chunk": 4096,
+  "kind": "adc",
+  "writers": 1
+ },
+ "problems": [],
+ "refusals": [],
+ "ingest_s": 0.169,
+ "ingest_samples_per_s": 6204592,
+ "commit_ms": {
+  "p50": 26.442,
+  "p95": 32.816,
+  "first_tenth_p50": 33.912,
+  "last_tenth_p50": 26.605
+ },
+ "read_all_s": 0.06,
+ "read_samples_per_s": 17476267,
+ "queries": {
+  "read4096_start": {
+   "p50_ms": 0.79,
+   "p95_ms": 1.304
+  },
+  "stats1e6_start": {
+   "p50_ms": 0.913,
+   "p95_ms": 1.321
+  },
+  "read4096_middle": {
+   "p50_ms": 0.673,
+   "p95_ms": 0.835
+  },
+  "stats1e6_middle": {
+   "p50_ms": 0.74,
+   "p95_ms": 0.818
+  },
+  "read4096_end": {
+   "p50_ms": 0.705,
+   "p95_ms": 1.142
+  },
+  "stats1e6_end": {
+   "p50_ms": 0.641,
+   "p95_ms": 0.746
+  },
+  "overview_whole": {
+   "p50_ms": 0.92,
+   "p95_ms": 0.934
+  }
+ },
+ "sizes": {
+  "chunks_total_bytes": 1540096,
+  "chunks_heap_bytes": 40960,
+  "chunks_toast_bytes": 1458176,
+  "checkpoint_bytes": 264,
+  "database_bytes": 9628819
+ },
+ "bits_per_sample": 11.75,
+ "memory": {
+  "stats_peak_mib": 0.0,
+  "cgroup_peak_mib": 95.0,
+  "oom_events": 0,
+  "container": "false running"
+ },
+ "finished": "2026-11-08T21:22:26"
+}

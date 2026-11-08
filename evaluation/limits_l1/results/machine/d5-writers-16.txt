@@ -1,0 +1,24 @@
+2026-11-08T21:14:09
+21:14  up 12 days,  6:10, 19 users, load averages: 5.54 3.55 2.29
+ %CPU COMM
+180.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 55.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  6.7 claude
+2026-11-08T21:22:29
+21:22  up 12 days,  6:18, 19 users, load averages: 4.36 3.90 2.94
+ %CPU COMM
+185.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 49.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  5.3 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+2026-11-08T21:30:48
+21:30  up 12 days,  6:26, 19 users, load averages: 3.44 3.90 3.39
+ %CPU COMM
+187.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 61.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 13.3 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  4.1 /usr/sbin/coreaudiod
+  1.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop

@@ -1,0 +1,17 @@
+2026-11-08T21:10:08
+21:10  up 12 days,  6:06, 19 users, load averages: 1.22 1.62 1.39
+ %CPU COMM
+ 32.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 18.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 14.0 claude
+ 13.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  4.2 /usr/sbin/coreaudiod
+  4.1 /usr/libexec/syspolicyd
+  4.1 /usr/libexec/trustd
+  3.9 caffeinate
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1

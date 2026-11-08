@@ -1,0 +1,24 @@
+2026-11-08T21:13:50
+21:13  up 12 days,  6:09, 19 users, load averages: 5.21 3.39 2.21
+ %CPU COMM
+157.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 26.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 15.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  8.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  8.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+2026-11-08T21:22:11
+21:22  up 12 days,  6:18, 19 users, load averages: 4.73 3.94 2.94
+ %CPU COMM
+155.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 17.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 15.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.0 /usr/sbin/coreaudiod
+2026-11-08T21:30:30
+21:30  up 12 days,  6:26, 19 users, load averages: 3.69 3.98 3.40
+ %CPU COMM
+170.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 87.4 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 14.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.2 claude
+  4.2 /usr/sbin/coreaudiod

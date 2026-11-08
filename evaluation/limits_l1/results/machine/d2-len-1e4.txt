@@ -1,0 +1,24 @@
+2026-11-08T21:10:26
+21:10  up 12 days,  6:06, 19 users, load averages: 2.16 1.80 1.47
+ %CPU COMM
+120.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 37.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 22.5 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 14.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 12.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-08T21:18:23
+21:18  up 12 days,  6:14, 19 users, load averages: 2.46 3.05 2.42
+ %CPU COMM
+ 89.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 34.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 18.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 13.8 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 11.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-08T21:26:45
+21:26  up 12 days,  6:22, 19 users, load averages: 4.58 4.02 3.24
+ %CPU COMM
+139.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 27.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.4 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  8.8 /usr/libexec/spotlightknowledged.updater
