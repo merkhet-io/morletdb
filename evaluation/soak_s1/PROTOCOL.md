@@ -48,6 +48,11 @@ If the test week passes, it may continue towards 30 days without a restart; the 
    the soak's own load of 1.4–1.6 paused it almost always; no search envelopes were built, so nothing became
    searchable. Changed to `--load-per-cpu 1.0` (2.0). The database container's 1-CPU cap still keeps upkeep off the
    host's second core.
+2. **Steward bug: no envelopes for a new collection** (2026-11-08, after 35 minutes, with change 1 in place): the
+   steward learnt which window and stride to build only from existing envelope rows, so a collection without any
+   never got its first. Fixed in the steward (it also reads the grid the recordings declare), with a regression test;
+   the soak runs the fixed steward. Found by the shakedown, not by the existing tests, which built one envelope by
+   hand in their setup.
 
 ## Hypotheses (all must hold; each is reported with its numbers)
 
