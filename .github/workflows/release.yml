@@ -77,14 +77,16 @@ jobs:
             org.opencontainers.image.licenses=Apache-2.0
           cache-from: type=gha,scope=alpha-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=alpha-${{ matrix.arch }}
+      # syft from its container image (pinned by digest), not from GitHub release downloads, which failed for hours on
+      # 2026-11-08 (HTTP 504 for the arm64 archive). Same tool and version as anchore/sbom-action used before.
       - name: Software bill of materials of the candidate (SPDX)
-        uses: anchore/sbom-action@v0
-        with:
-          image: morletdb:candidate
-          format: spdx-json
-          output-file: morletdb-${{ steps.version.outputs.value }}-${{ matrix.arch }}.spdx.json
-          upload-artifact: false
-          upload-release-assets: false
+        env:
+          SBOM: morletdb-${{ steps.version.outputs.value }}-${{ matrix.arch }}.spdx.json
+        run: |
+          for _ in 1 2 3; do docker pull -q anchore/syft:v1.42.3@sha256:5999d209a342e55e9edf70bf8930fb5b86d8f2a783fa401178372c50e21b1d36 && break; sleep 30; done
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/out" \
+            anchore/syft:v1.42.3@sha256:5999d209a342e55e9edf70bf8930fb5b86d8f2a783fa401178372c50e21b1d36 docker:morletdb:candidate -o "spdx-json=/out/$SBOM"
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d['spdxVersion'], len(d['packages']), 'packages')" "$SBOM"
       - name: Keep the SBOM for the release
         uses: actions/upload-artifact@v4
         with:
