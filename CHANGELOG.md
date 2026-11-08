@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+SQL version 0.3.7, with an update script from 0.3.6.
+
+- **Extensions on demand (#315):** pg_morlet can be loaded from a directory outside the server's installation, such
+  as an image volume, on PostgreSQL 18 and later: `extension_control_path` names its control and SQL files and
+  `dynamic_library_path` its library. The control file's `module_pathname` is now `pg_morlet` instead of
+  `$libdir/pg_morlet`, so the C functions find the library through `dynamic_library_path` (default `$libdir`:
+  ordinary installations are unchanged). The update from 0.3.6 redefines the existing C functions with the new path
+  (`CREATE OR REPLACE`, same OIDs; no data or table changes). Tested in CI on PostgreSQL 18 and 19
+  (`tests/on_demand.sh`): the server's own copy is moved aside, and `CREATE EXTENSION`, an append, a read and
+  interval statistics work from the separate directory. An extension-only OCI image is the next step.
+
 ## 0.3.8-alpha.1
 
 SQL version 0.3.6, with an update script from 0.3.5. Python SDK 0.1.0a2. The chunk format is unchanged; existing

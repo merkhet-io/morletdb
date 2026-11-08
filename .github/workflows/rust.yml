@@ -277,13 +277,15 @@ jobs:
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.5-alpha.1:refs/tags/v0.3.5-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.6-alpha.1:refs/tags/v0.3.6-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.7-alpha.1:refs/tags/v0.3.7-alpha.1
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.3.8-alpha.1:refs/tags/v0.3.8-alpha.1
       - name: PostgreSQL 17.11
         id: pg
         uses: ./.github/actions/pgrx-postgres
         with:
           pg-minor: '17.11'
-      # Released versions are pgrx 0.16.1 crates (Rust 1.91.1 from their rust-toolchain.toml): they build with the
-      # cargo-pgrx of their own Cargo.lock, kept beside this branch's (tests/upgrade_from_release.sh, pgrx_for).
+      # Releases up to 0.3.7-alpha.1 are pgrx 0.16.1 crates (Rust 1.91.1 from their rust-toolchain.toml): they build with
+      # the cargo-pgrx of their own Cargo.lock, kept beside this branch's (tests/upgrade_from_release.sh, pgrx_for).
+      # 0.3.8-alpha.1 uses this branch's pgrx.
       - name: Rust 1.91.1 for the released versions
         run: rustup toolchain install 1.91.1 --profile minimal
       - name: Restore cargo-pgrx 0.16.1
@@ -314,15 +316,15 @@ jobs:
         with:
           path: ${{ runner.temp }}/upgrade-releases
           key: upgrade-releases-${{ runner.os }}-${{ runner.arch }}-pg17.11-pgrx-${{ steps.pg.outputs.pgrx }}-${{ hashFiles('extensions/pg_morlet/tests/ci_local.sh') }}
-      - name: The 0.3.5 -> 0.3.6 update script is generated from the current sources
-        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.5--0.3.6.sql') != ''
+      - name: The 0.3.6 -> 0.3.7 update script is generated from the current sources
+        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.6--0.3.7.sql') != ''
         working-directory: extensions/pg_morlet
         run: |
-          if grep -q "^default_version = '0.3.6'" pg_morlet.control; then
+          if grep -q "^default_version = '0.3.7'" pg_morlet.control; then
             cargo pgrx schema pg17 --pg-config "$PG_CONFIG" -o "$RUNNER_TEMP/new.sql"
             python3 tests/gen_upgrade.py "$RUNNER_TEMP/new.sql" --check
           fi
-      - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1 and v0.3.7-alpha.1
+      - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1, v0.3.7-alpha.1 and v0.3.8-alpha.1
         env:
           MORLET_UPGRADE_CACHE: ${{ runner.temp }}/upgrade-releases
         run: |
