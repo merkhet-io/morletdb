@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.8-alpha.1
 
-SQL version 0.3.6, with an update script from 0.3.5.
+SQL version 0.3.6, with an update script from 0.3.5. Python SDK 0.1.0a2. The chunk format is unchanged; existing
+collections keep their layout (the update pins their bulk columns to pglz, catalog only).
 
 - **Ingest hold and the steward (#287):** `tools/steward` keeps an edge database healthy without a DBA.
   - It runs the rebuildable upkeep (envelopes, summaries, roll-ups, context values, verify, analyze) in one budgeted

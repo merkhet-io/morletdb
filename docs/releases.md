@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.7-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.8-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -38,6 +38,12 @@ a leading v; GHCR image tags do not.
   platform wheels), long reads decoded on worker threads (`morlet.decode_threads`), chunk summaries in every new
   collection, the integrity scrub `morlet_verify` and episodic memory, phase 1. The first release with Python SDK
   wheels. The chunk format is unchanged; existing collections keep their layout.
+- **0.3.8-alpha.1:** SQL version 0.3.6, with an update script from 0.3.5; Python SDK 0.1.0a2. Adds the steward and
+  the ingest hold (`tools/steward`, refusals with SQLSTATE 53100 before the disk is full), synchronous channel
+  groups, commit notifications, `morlet_latest`, `morlet_coverage`, exact roll-ups and exact merging of interval
+  statistics, and exact search 10x faster on small machines. Builds on PostgreSQL 19 (19rc1, from source); release
+  images and Debian packages stay on PostgreSQL 17 and 18 until 19.0. The chunk format is unchanged; existing
+  collections keep their layout.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
