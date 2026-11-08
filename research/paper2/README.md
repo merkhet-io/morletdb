@@ -13,4 +13,4 @@ policies, study F1 ([`evaluation/forgetting_f1`](../../evaluation/forgetting_f1)
 confirmation runs, results in its `RESULTS.md`.
 
 Build: `tectonic -X compile memory.tex` in this directory (Tectonic 0.17.0, as for the first report).
-Not peer reviewed; not yet released.
+Not peer reviewed; not yet released. Text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0.

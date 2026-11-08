@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.20, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.21, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,13 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.21 (correction, no new measurement)
+
+The conclusion still said probes stayed 5–8.5 times faster at p95 than an exact path made 1.6–2.7 times faster: the
+comparison with the scorer rewrite (E6), before screened exact search (E7). It now says 1.6–2.3 times faster than the
+fastest in-database exact path, as the abstract, the ablation section and the limitations already did. Nothing else
+changed.
 
 ## What changed in 0.20 (same-session speed ratios, next-release ingestion; no new retrieval measurement)
 
