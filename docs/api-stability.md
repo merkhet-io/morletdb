@@ -24,7 +24,11 @@ Every SQL function and aggregate of the extension is classified in
 2. **Stored data stays readable.** Chunks written by any release from the beta on are readable by every later
    release of the same major version. The chunk format is versioned; golden chunk files that a change may not alter
    are checked in CI (`docs/verification.md`). Derived data (chunk summaries, envelopes, probe rows, roll-ups) can
-   always be rebuilt from the chunks; when its format changes, the update script or the steward rebuilds it.
+   always be rebuilt from the chunks; when its format changes, the update script or the steward rebuilds it. Until
+   then CI checks that derived data written by each release reads back identically after the update: envelopes,
+   context segments and values, comparisons, chunk summaries and interval statistics (from SQL 0.3.3), the
+   integrity check (0.3.5), roll-ups and coverage (0.3.6). Probe rows need pgvector and are not part of the upgrade
+   test; they are rebuilt from the envelopes (`morlet_enable_envelope_probes`).
 3. **Every version upgrades.** Every SQL version ships an update script from the previous one, and CI upgrades
    populated databases from every release (`tests/upgrade.sh`, `tests/upgrade_from_release.sh`): the upgraded catalog
    must equal a fresh installation, and reads before and after must be identical. No release requires dumping and
@@ -43,7 +47,7 @@ Every SQL function and aggregate of the extension is classified in
 
 ## Still to do before 1.0
 
-- Golden files for chunk summaries, envelopes and probe rows (today only chunks have them).
+- Probe rows in the upgrade test (needs a pgvector build of every release).
 - Mark experimental functions in the documentation pages, not only in `functions.tsv`.
 - Deprecate or document the undocumented older functions that look public (`morlet_search`,
   `morlet_create_collection`, `morlet_search_recording`, `morlet_decode_interval`, ...): today they are internal.

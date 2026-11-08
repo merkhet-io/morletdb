@@ -168,6 +168,9 @@ search results; probe recall stayed 1.0. Envelopes, probe tables and indexes are
 can always be rebuilt; recordings, chunks, context and labels cannot. Before a raw-only
 restore, create the extensions in the target database.
 
+For point-in-time restore, a streaming replica and failover, follow the [runbooks](runbooks.md); CI runs each of
+them weekly as a drill.
+
 ## Failure behaviour (tested)
 
 - An append transaction aborted mid-statement or before `COMMIT` (20 trials) leaves no partial
@@ -182,10 +185,10 @@ restore, create the extensions in the target database.
 
 ## Upgrades
 
-`ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from 0.1.0-alpha.3,
-0.2.0 and 0.3.0 with populated data (identical reads and searches; catalog equal to a fresh
-install), and that a **failed** update rolls back completely and leaves the old version
-working. Take a backup before updating anyway.
+`ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from every released SQL
+version with populated data (identical reads, searches, summaries and roll-ups; catalog equal to a
+fresh install), and that a **failed** update rolls back completely and leaves the old version
+working. Take a backup before updating anyway ([api stability](api-stability.md)).
 
 ## Known limits
 
