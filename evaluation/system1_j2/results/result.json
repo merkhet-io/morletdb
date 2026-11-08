@@ -1,0 +1,255 @@
+{
+ "runs": 64,
+ "worn": 33,
+ "inserts": [
+  9,
+  10,
+  11,
+  12,
+  13
+ ],
+ "fewshot_calls": 192,
+ "fewshot_http_errors": 0,
+ "fewshot_schema_errors": 0,
+ "fewshot_input_tokens": 3316245,
+ "fewshot_latency_ms_p50": 319.8,
+ "scores": {
+  "jev_zero_shot": {
+   "auroc": 0.9481915933528837,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.8264907135874877,
+    "sensitivity": 0.8787878787878788,
+    "specificity": 0.7741935483870968,
+    "per_insert": {
+     "9": {
+      "threshold": 0.6233333333333333,
+      "first_flag_cut_index": 8,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": -3
+     },
+     "10": {
+      "threshold": 0.6233333333333333,
+      "first_flag_cut_index": 5,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": 0
+     },
+     "11": {
+      "threshold": 0.595,
+      "first_flag_cut_index": 6,
+      "first_worn_cut_index": 12,
+      "cuts_early(+)/late(-)": 6
+     },
+     "12": {
+      "threshold": 0.6266666666666667,
+      "first_flag_cut_index": 5,
+      "first_worn_cut_index": 6,
+      "cuts_early(+)/late(-)": 1
+     },
+     "13": {
+      "threshold": 0.6233333333333333,
+      "first_flag_cut_index": 1,
+      "first_worn_cut_index": 3,
+      "cuts_early(+)/late(-)": 2
+     }
+    }
+   },
+   "at_0.5": {
+    "balanced_accuracy": 0.6774193548387097,
+    "sensitivity": 1.0,
+    "specificity": 0.3548387096774194
+   },
+   "brier": 0.19562951388888888
+  },
+  "jev_four_examples": {
+   "auroc": 0.9765395894428153,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.8587487781036168,
+    "sensitivity": 0.8787878787878788,
+    "specificity": 0.8387096774193549,
+    "per_insert": {
+     "9": {
+      "threshold": 0.6466666666666667,
+      "first_flag_cut_index": 7,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": -2
+     },
+     "10": {
+      "threshold": 0.645,
+      "first_flag_cut_index": 7,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": -2
+     },
+     "11": {
+      "threshold": 0.5616666666666666,
+      "first_flag_cut_index": 8,
+      "first_worn_cut_index": 12,
+      "cuts_early(+)/late(-)": 4
+     },
+     "12": {
+      "threshold": 0.575,
+      "first_flag_cut_index": 5,
+      "first_worn_cut_index": 6,
+      "cuts_early(+)/late(-)": 1
+     },
+     "13": {
+      "threshold": 0.575,
+      "first_flag_cut_index": 3,
+      "first_worn_cut_index": 3,
+      "cuts_early(+)/late(-)": 0
+     }
+    }
+   },
+   "at_0.5": {
+    "balanced_accuracy": 0.8548387096774194,
+    "sensitivity": 1.0,
+    "specificity": 0.7096774193548387
+   },
+   "brier": 0.12060034722222222
+  },
+  "conditioned_score": {
+   "auroc": 0.9657869012707723,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.8587487781036168,
+    "sensitivity": 0.8787878787878788,
+    "specificity": 0.8387096774193549,
+    "per_insert": {
+     "9": {
+      "threshold": 0.46242700000000003,
+      "first_flag_cut_index": 0,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": 5
+     },
+     "10": {
+      "threshold": 0.4884495,
+      "first_flag_cut_index": 6,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": -1
+     },
+     "11": {
+      "threshold": 0.4884495,
+      "first_flag_cut_index": 14,
+      "first_worn_cut_index": 12,
+      "cuts_early(+)/late(-)": -2
+     },
+     "12": {
+      "threshold": 0.4827585,
+      "first_flag_cut_index": 1,
+      "first_worn_cut_index": 6,
+      "cuts_early(+)/late(-)": 5
+     },
+     "13": {
+      "threshold": 0.4884495,
+      "first_flag_cut_index": 4,
+      "first_worn_cut_index": 3,
+      "cuts_early(+)/late(-)": -1
+     }
+    }
+   }
+  },
+  "time_in_use": {
+   "auroc": 0.9090909090909091,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.7952101661779081,
+    "sensitivity": 0.8484848484848485,
+    "specificity": 0.7419354838709677,
+    "per_insert": {
+     "9": {
+      "threshold": 24.5,
+      "first_flag_cut_index": 5,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": 0
+     },
+     "10": {
+      "threshold": 27.5,
+      "first_flag_cut_index": 6,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": -1
+     },
+     "11": {
+      "threshold": 24.5,
+      "first_flag_cut_index": 7,
+      "first_worn_cut_index": 12,
+      "cuts_early(+)/late(-)": 5
+     },
+     "12": {
+      "threshold": 23.5,
+      "first_flag_cut_index": 3,
+      "first_worn_cut_index": 6,
+      "cuts_early(+)/late(-)": 3
+     },
+     "13": {
+      "threshold": 25.5,
+      "first_flag_cut_index": 7,
+      "first_worn_cut_index": 3,
+      "cuts_early(+)/late(-)": -4
+     }
+    }
+   }
+  },
+  "local_logistic_regression": {
+   "auroc": 0.9687194525904204,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.9042033235581624,
+    "sensitivity": 0.9696969696969697,
+    "specificity": 0.8387096774193549,
+    "per_insert": {
+     "9": {
+      "threshold": 0.46451521427321085,
+      "first_flag_cut_index": 5,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": 0
+     },
+     "10": {
+      "threshold": 0.4625170064196547,
+      "first_flag_cut_index": 5,
+      "first_worn_cut_index": 5,
+      "cuts_early(+)/late(-)": 0
+     },
+     "11": {
+      "threshold": 0.4625170064196547,
+      "first_flag_cut_index": 10,
+      "first_worn_cut_index": 12,
+      "cuts_early(+)/late(-)": 2
+     },
+     "12": {
+      "threshold": 0.3775909825265881,
+      "first_flag_cut_index": 3,
+      "first_worn_cut_index": 6,
+      "cuts_early(+)/late(-)": 3
+     },
+     "13": {
+      "threshold": 0.4625170064196547,
+      "first_flag_cut_index": 3,
+      "first_worn_cut_index": 3,
+      "cuts_early(+)/late(-)": 0
+     }
+    }
+   },
+   "at_0.5": {
+    "balanced_accuracy": 0.8900293255131965,
+    "sensitivity": 0.9090909090909091,
+    "specificity": 0.8709677419354839
+   },
+   "brier": 0.06876168088626496
+  }
+ },
+ "delta_auroc_examples_vs_zero_shot": {
+  "point": 0.02834799608993155,
+  "ci95": [
+   0.0009655916913981439,
+   0.06591796875
+  ]
+ },
+ "delta_auroc_local_vs_jev_zero_shot": {
+  "point": 0.02052785923753664,
+  "ci95": [
+   -0.01124246183923613,
+   0.05804315476190474
+  ]
+ },
+ "answers": {
+  "Q1_threshold_transfers": "YES",
+  "Q2_local_model_matches_jev": "YES",
+  "Q3_examples_help": "YES"
+ }
+}
