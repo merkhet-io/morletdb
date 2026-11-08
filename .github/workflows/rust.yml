@@ -194,6 +194,9 @@ jobs:
       - name: Test the Shelly collector (no plug)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/shelly -p 'test_*.py'
+      - name: Test the SeedLink collector (no server, no database)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        run: python -m unittest discover -s examples/collectors/seedlink -p 'test_*.py'
       - name: Test viewer helpers
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: |

@@ -1,0 +1,92 @@
+# Soak S1 (#191) on a small x86 box: the release image, the SeedLink collector, the steward and the probe.
+# Data lives on a dedicated, size-limited filesystem (SOAK_DIR, 40 GB) so the soak can never fill the host's disk.
+#
+#   cd evaluation/soak_s1 && MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:<tag>@<digest> SOAK_DIR=/srv/morlet-soak \
+#     MORLET_DB_PASSWORD=... MORLET_STEWARD_PASSWORD=... docker compose -p soak-s1 up -d --build
+x-dsn: &dsn
+  DATABASE_URL: postgresql://morlet:${MORLET_DB_PASSWORD:?Set MORLET_DB_PASSWORD}@db:5432/morlet
+services:
+  db:
+    image: ${MORLET_IMAGE:?Set MORLET_IMAGE to a release tag with digest}
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: ${MORLET_DB_PASSWORD}
+      POSTGRES_DB: morlet
+      POSTGRES_INITDB_ARGS: --data-checksums
+    command: ["postgres", "-c", "max_wal_size=256MB", "-c", "min_wal_size=64MB", "-c", "wal_compression=on",
+              "-c", "shared_buffers=128MB", "-c", "log_min_messages=warning", "-c", "log_checkpoints=on"]
+    volumes:
+      - ${SOAK_DIR:?Set SOAK_DIR}/pgdata:/var/lib/postgresql/data
+    ports: ["127.0.0.1:54339:5432"]
+    cpus: 1.0
+    mem_limit: 1g
+    blkio_config: {weight: 100}     # lower disk priority than the host's other services (default 500)
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+  collector-setup:
+    build: {context: ../.., dockerfile: examples/collectors/seedlink/Dockerfile}
+    environment: *dsn
+    command: ["--collection", "public.live", "--create", "--setup-only", "--streams", "none"]
+    depends_on: {db: {condition: service_healthy}}
+    restart: "no"
+  steward-init:
+    build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
+    environment:
+      MORLET_STEWARD_DSN: postgresql://morlet:${MORLET_DB_PASSWORD}@db:5432/morlet
+      MORLET_STEWARD_PASSWORD: ${MORLET_STEWARD_PASSWORD:?Set MORLET_STEWARD_PASSWORD}
+    entrypoint: ["sh", "-c"]
+    command: ["python steward.py init && python steward.py grant"]
+    depends_on: {collector-setup: {condition: service_completed_successfully}}
+    restart: "no"
+  steward:
+    build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
+    environment:
+      MORLET_STEWARD_DSN: postgresql://morlet_steward:${MORLET_STEWARD_PASSWORD}@db:5432/morlet
+    volumes:
+      - ${SOAK_DIR}:/data:ro
+    cpus: 0.5
+    mem_limit: 256m
+    depends_on: {steward-init: {condition: service_completed_successfully}}
+    restart: unless-stopped
+  collector:
+    build: {context: ../.., dockerfile: examples/collectors/seedlink/Dockerfile}
+    environment: *dsn
+    command:   # 12 stations x 3 channels x 100 Hz = 3,600 samples/s
+      - --server=geofon.gfz.de:18000
+      - --collection=public.live
+      - --streams
+      - "GE.WLF..HH?"
+      - "GE.STU..HH?"
+      - "GE.RUE..HH?"
+      - "GE.IBBN..HH?"
+      - "GE.PSZ..HH?"
+      - "GE.MORC..HH?"
+      - "CX.PB01..HH?"
+      - "CX.PB02..HH?"
+      - "CX.PB03..HH?"
+      - "CX.PB06..HH?"
+      - "CX.PB08..HH?"
+      - "CX.PB09..HH?"
+    volumes:
+      - ${SOAK_DIR}/spool:/spool
+    cpus: 0.5
+    mem_limit: 512m
+    stop_grace_period: 60s
+    depends_on: {collector-setup: {condition: service_completed_successfully}}
+    restart: unless-stopped
+  probe:
+    build: {context: ../.., dockerfile: examples/collectors/seedlink/Dockerfile}
+    environment: *dsn
+    entrypoint: ["python", "/opt/soak/probe.py", "--out", "/out/probe.jsonl", "--every", "900"]
+    volumes:
+      - ./probe.py:/opt/soak/probe.py:ro
+      - ${SOAK_DIR}/results:/out
+    cpus: 0.25
+    mem_limit: 256m
+    depends_on: {collector-setup: {condition: service_completed_successfully}}
+    restart: unless-stopped
