@@ -1403,6 +1403,48 @@ smaller ones (R2 2.6×, statistics 4.4× / 7.3×).
 **Website.** Under the rule fixed in the amendment, the QuestDB tab and lane take these `morletdb-i2` figures in
 place of B3.15's, with the browser load and B3.15's smaller margins stated beside them. Storage stays as B3.15
 measured it.
+# Amendment B3.17: parallel writers with the current release
+
+Protocol: Amendment B3.17 in [PROTOCOL.md](PROTOCOL.md), frozen in `228e13f` before any load of the benchmark set
+(development smoke check `results/dev/b317-smoke/`: 4 writers, 21.6 M samples/s, correct). Runner `run_b317.sh`,
+results in `results/b317-parallel/`, log `results/b317.log`. Images: the released
+`ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (SQL 0.3.7) with B3.10's client path, and QuestDB 10.1.0.
+
+**Machine.** The start condition was met at 18:53:28 on 2026-11-08 (1-minute load average 2.63, no foreign process
+above half a core; `b317.start`, which also lists the owner's idle Langfuse containers). The run took 18:53–18:59 on
+AC power. Load averages in the snapshots before and after loads had a median of 6.95 and a maximum of 9.24, from the
+session's own loads. **A Safari WebContent process used 1.3–1.6 cores in two snapshots around 18:55:51** (after
+QuestDB's 4-writer D2 load r2, before MorletDB's 8-writer D2 load r2), while the owner closed the browser; every
+other snapshot shows no foreign process above half a core.
+
+**Correctness: all 18 loads passed** (counts and every channel by SHA-256).
+
+## Ingestion with parallel writers (median [range] of three loads, samples/s)
+
+| Writers, class | MorletDB 0.3.9-alpha.1 | QuestDB 10.1.0 | Ratio of medians (all-loads bound) | Server CPU, median of means | Working-set peak (50 ms) |
+|---|---:|---:|---|---|---|
+| 4, D2 | **22.76 M** [21.74–23.08] | 14.07 M [14.04–14.57] | **1.62 (1.49)** | 187% / 740% | 224 / 2,514 MiB |
+| 8, D2 | **22.44 M** [21.82–22.92] | 13.96 M [12.92–13.99] | **1.61 (1.56)** | 212% / 717% | 273 / 2,901 MiB |
+| 8, D1 | **23.19 M** [22.00–23.35] | 12.79 M [12.21–12.96] | **1.81 (1.70)** | 192% / 609% | 273 / 2,845 MiB |
+
+Data was queryable 3–4 ms (MorletDB) and 11–76 ms (QuestDB) after the last acknowledgement.
+
+**Statements (≥ 10% in all three loads):** with 4 or 8 parallel writers MorletDB 0.3.9-alpha.1 ingests **1.6×**
+(asynchronous) and **1.8×** (durable, 8 writers) faster than QuestDB, using about 2 cores where QuestDB uses 6–7, with
+about a tenth of its working set.
+
+**Against B3.2** (another session, so descriptive only): MorletDB 16.5 → 22.4 M samples/s with 8 writers (D2), 15.5 →
+23.2 M (D1); QuestDB 10.1 → 14.0 M and 8.4 → 12.8 M, so this session's machine or QuestDB was faster too.
+
+**Not explained:** MorletDB does not scale from 4 to 8 writers (22.8 against 22.4 M) while its server uses about
+2 of 8 cores, so the limit is outside the server: most likely the writer processes on the host, which parse and send
+the data, or Docker's network path. Not measured.
+
+**Expectation:** met (above B3.2's 16.5 M; less than the single-connection gain).
+
+**Website:** under the rule fixed in the amendment, the QuestDB tab's parallel-writer row takes the 8-writer figures
+(22.4 against 14.0 M, durable 23.2 against 12.8 M).
+
 # Memory measurement check (exploratory, after B3.16, not a stage)
 
 Question (from the owner): is MorletDB's server memory underestimated? B3 samples `docker stats` once per second

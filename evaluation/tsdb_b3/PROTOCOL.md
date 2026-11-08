@@ -897,6 +897,31 @@ everything in B3.15 except what is stated here.
   - B3.15 stays in the results.
   - The other databases keep B3.13's figures.
 
+## Amendment B3.17: parallel writers with the current release (FROZEN before any load of the benchmark set)
+
+Added 2026-11-08 at the owner's request. The website's parallel-writer row still comes from B3.2 (MorletDB's B3.2
+image, before the single-connection work of I1 and B3.10). B3.17 repeats B3.2's track B with the current release.
+Everything common to B3 applies, and so does B3.2's track B except what is stated here.
+
+- **Arms:**
+  - `morletdb-i1`: the released `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (SQL 0.3.7) with B3.10's client path
+    (256 chunks per transaction, one connection per writer process, batched raw appends); image id recorded in
+    every result.
+  - QuestDB 10.1.0 with its B3 configuration.
+- **Runs:** `run_b317.sh`, for r = 1, 2, 3 and (4 writers, D2), (8 writers, D2), (8 writers, D1): MorletDB, then
+  QuestDB. 18 loads with full correctness after each (counts and every channel by SHA-256); results in
+  `results/b317-parallel/`. Ingestion only; reads are B3.16's.
+- **Machine:** B3.16's start and power conditions, enforced by the runner (waits up to 3 hours, else refuses). The
+  owner's other Docker containers that are idle stay up and are listed in `b317.start`.
+- **Statements**, by B3's rule (≥ 10% in all three loads, ratio of medians and the all-loads bound), in either
+  direction, per writer count and durability class. Server CPU and peak memory are reported.
+- **Expectation, written before measuring:** single-connection ingestion rose from about 5.6 M (B3.2) to about
+  13.8 M samples/s (B3.16), so with 8 writers MorletDB should exceed B3.2's 16.5 M, perhaps by less than the
+  single-connection gain because the encoder becomes the limit; not a hypothesis this stage must confirm.
+- **Website, decided now whatever the outcome:** the QuestDB tab's parallel-writer row takes B3.17's 8-writer
+  figures in place of B3.2's (durable figures in brackets), with a loss shown as a loss; B3.2 stays in the
+  results.
+
 ## Study M1: memory caps (FROZEN before any load)
 
 Added 2026-11-06 at the owner's request. B3's memory row reports each system's peak working set in a 16 GB

@@ -4,7 +4,7 @@ alike. Acquisitions are dealt round-robin to the writers; every writer parses it
 barrier (untimed); wall time runs from the barrier to the last acknowledgement, then until everything is
 queryable. Full correctness (counts and every channel by SHA-256) after the load.
 
-  ../../.venv-b3/bin/python parallel.py <questdb|morletdb-032> <D1|D2> <writers> <rep>
+  ../../.venv-b3/bin/python parallel.py <questdb|morletdb-032|morletdb-i1> <D1|D2> <writers> <rep>
 """
 import multiprocessing as mp
 import sys
@@ -26,6 +26,8 @@ def writer(system, durability, ks, barrier, out_q):
         import morletdb_adapter as mo
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
                            "one_statement": True})
+        if system == "morletdb-i1":   # B3.17: B3.10's client path (256 chunks per transaction, one connection per
+            mo.VARIANT.update({"commit_chunks": 256, "reuse_connection": True, "rpc_chunks": 0})   # writer, batched)
         load = lambda a: mo.load_one(a, data[a["k"]])
     acks = []
     barrier.wait()
