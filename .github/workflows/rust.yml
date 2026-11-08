@@ -224,6 +224,11 @@ jobs:
         env:
           MORLET_STEWARD_TEST_DSN: host=localhost port=28817 dbname=postgres user=runner
         run: python -m unittest discover -s tools/steward -p 'test_steward_db.py'
+      - name: Test the MCP server against the database (search scope, decision state and log)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        env:
+          MORLET_MCP_TEST_DATABASE_URL: host=localhost port=28817 dbname=postgres user=runner
+        run: python -m unittest discover -s tools/mcp -p 'test_*.py'
       - name: Run bounded benchmark smoke test
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         env:

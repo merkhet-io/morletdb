@@ -70,7 +70,7 @@ def run_state(conn, case, run):
         seg = decision.segment_at(conn, "public.milling", rid, 0)
         t = time.perf_counter()
         st = decision.decision_state(conn, "public.milling", seg, exclude_labels=["evaluation", "not_sharp"],
-                                     min_history=c1.MIN_HISTORY, neighbors=0)
+                                     min_history=c1.MIN_HISTORY, neighbors=0, summary_quantile=True)
         ms.append(1e3 * (time.perf_counter() - t))
         setting = {k: st["segment"]["context"][k] for k in SETTING}
         dev = {v["name"]: v for v in st["values"]}
