@@ -1,0 +1,19 @@
+== bare r1 23:18:38
+{"arm": "bare", "rep": 1, "acked_end": 183238656, "stored_end": 183238656, "error": {"sqlstate": "53100", "message": "could not extend file \"base/16384/16613\": No space left on device"}, "recovery_s": 1.1, "resumed_after_free_s": null, "problems": [], "harness_error": null}
+== bare-wal r1 23:19:29
+{"arm": "bare-wal", "rep": 1, "acked_end": 129761280, "stored_end": 129761280, "error": {"sqlstate": "53100", "message": "could not write to file \"pg_wal/xlogtemp.77\": No space left on device"}, "recovery_s": 1.1, "resumed_after_free_s": null, "problems": [], "harness_error": null}
+== steward r1 23:20:46
+{"arm": "steward", "rep": 1, "acked_end": 143392768, "stored_end": 143654912, "error": {"sqlstate": "53100", "message": "new samples are refused since 2026-11-08 22:23:07.573759+00: the disk reserve is reached: new recordings are refused until space is freed (set by morlet-steward)"}, "recovery_s": null, "resumed_after_free_s": 1.1, "problems": [], "harness_error": null}
+== bare r2 23:23:42
+{"arm": "bare", "rep": 2, "acked_end": 183238656, "stored_end": 183238656, "error": {"sqlstate": "53100", "message": "could not extend file \"base/16384/16613\": No space left on device"}, "recovery_s": 1.1, "resumed_after_free_s": null, "problems": [], "harness_error": null}
+== bare-wal r2 23:24:29
+{"arm": "bare-wal", "rep": 2, "acked_end": 129761280, "stored_end": 129761280, "error": {"sqlstate": "53100", "message": "could not write to file \"pg_wal/xlogtemp.77\": No space left on device"}, "recovery_s": 1.1, "resumed_after_free_s": null, "problems": [], "harness_error": null}
+== steward r2 23:25:42
+{"arm": "steward", "rep": 2, "acked_end": 143130624, "stored_end": 143392768, "error": {"sqlstate": "53100", "message": "new samples are refused since 2026-11-08 22:28:02.780234+00: the disk reserve is reached: new recordings are refused until space is freed (set by morlet-steward)"}, "recovery_s": null, "resumed_after_free_s": 1.1, "problems": [], "harness_error": null}
+== bare r3 23:28:38
+{"arm": "bare", "rep": 3, "acked_end": 183238656, "stored_end": 183238656, "error": {"sqlstate": "53100", "message": "could not extend file \"base/16384/16613\": No space left on device"}, "recovery_s": 1.1, "resumed_after_free_s": null, "problems": [], "harness_error": null}
+== bare-wal r3 23:29:29
+{"arm": "bare-wal", "rep": 3, "acked_end": 129761280, "stored_end": 129761280, "error": {"sqlstate": "53100", "message": "could not write to file \"pg_wal/xlogtemp.77\": No space left on device"}, "recovery_s": 1.1, "resumed_after_free_s": null, "problems": [], "harness_error": null}
+== steward r3 23:30:42
+{"arm": "steward", "rep": 3, "acked_end": 142868480, "stored_end": 143130624, "error": {"sqlstate": "53100", "message": "new samples are refused since 2026-11-08 22:33:02.625894+00: the disk reserve is reached: new recordings are refused until space is freed (set by morlet-steward)"}, "recovery_s": null, "resumed_after_free_s": 1.1, "problems": [], "harness_error": null}
+== FD1 done 23:33:39

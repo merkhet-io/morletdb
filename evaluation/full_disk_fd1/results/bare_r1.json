@@ -1,0 +1,39 @@
+{
+ "arm": "bare",
+ "rep": 1,
+ "image": "morletdb-fd1:local",
+ "image_id": "sha256:aa952a6837fee4793ca0bfc3ad3060b804016f1c74113bde7318896034687cdb",
+ "started": "2026-11-08T23:18:38",
+ "disk_at_start": {
+  "total": 601563136,
+  "used": 115343360,
+  "free": 473636864
+ },
+ "acked_end": 183238656,
+ "error": {
+  "sqlstate": "53100",
+  "message": "could not extend file \"base/16384/16613\": No space left on device"
+ },
+ "write_s": 25.5,
+ "disk_at_error": {
+  "total": 601563136,
+  "used": 588980224,
+  "free": 0
+ },
+ "server_after_error": "answers",
+ "container_after_error": "running",
+ "log_at_error": [
+  "2026-11-08 22:19:05.557 UTC [77] ERROR:  could not extend file \"base/16384/16613\": No space left on device",
+  "2026-11-08 22:19:09.964 UTC [2890] FATAL:  could not write init file: No space left on device"
+ ],
+ "recovery_s": 1.1,
+ "disk_after_free": {
+  "total": 601563136,
+  "used": 538673152,
+  "free": 50307072
+ },
+ "stored_end": 183238656,
+ "appends_after": 2,
+ "problems": [],
+ "finished": "2026-11-08T23:19:29"
+}

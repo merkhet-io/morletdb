@@ -53,3 +53,9 @@ hold before the disk is full, no failure at all.
 Real hardware and file systems other than ext4 on a loop device; WAL on its own volume; a disk filled by something
 other than the database; the steward running in its own container or on another schedule; recovery without restart
 in the WAL case.
+
+## Amendment (2026-11-09, clerical, after the run)
+
+The issue this study answers is **#341** (full disk: recovery after freeing space and the steward's guard), not
+#340 as the title line and `fd1.py` say; #340 is an unrelated performance issue. Nothing about the method, the
+runs or the analysis changes.
