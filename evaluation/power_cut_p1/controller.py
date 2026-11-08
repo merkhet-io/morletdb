@@ -203,7 +203,8 @@ def main(argv=None) -> int:
     ap.add_argument("--switch", required=True, help="shelly:<host>, manual, or cmd:<off>;;<on> (simulated crash)")
     ap.add_argument("--dsn", default=os.environ.get("PC_DSN"), help="the box's database (or PC_DSN)")
     ap.add_argument("--collection", default="pc_study")
-    ap.add_argument("--cycles", type=int, default=300)
+    ap.add_argument("--cycles", type=int, default=300, help="stop after this many cycles")
+    ap.add_argument("--restarts", type=int, default=0, help="or after this many confirmed restarts (0: cycles only)")
     ap.add_argument("--listen", type=int, default=7190)
     ap.add_argument("--batch", type=int, default=4096)
     ap.add_argument("--run-min", type=float, default=60)
@@ -218,7 +219,10 @@ def main(argv=None) -> int:
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     sw, rng = Switch(a.switch), random.Random(a.seed)
     version0, acked_at_cut, first, last_cut, pm_before = None, 0, True, 0.0, None
+    confirmed = 0
     for k in range(a.cycles):
+        if a.restarts and confirmed >= a.restarts:
+            break
         while quiet_hour(dt.datetime.now()):
             time.sleep(60)
         rec = {"cycle": k, "on_at": time.time()}
@@ -238,6 +242,8 @@ def main(argv=None) -> int:
             rec.update(res)
             # counted only if PostgreSQL really restarted since the previous cut
             rec["restarted"] = bool(pm_before) and res.get("postmaster_start") not in (None, pm_before)
+            confirmed += bool(rec["restarted"])
+            rec["confirmed_restarts"] = confirmed
             conn.close()
         first = False
         run = rng.uniform(a.run_min, a.run_max)

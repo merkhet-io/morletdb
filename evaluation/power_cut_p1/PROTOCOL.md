@@ -1,6 +1,6 @@
 # P1: power cuts during durable ingestion on a Raspberry Pi (#190)
 
-Status: **DRAFT.** Frozen, with image digest, commit and switch filled in, in a commit made before the first counted
+Status: **FROZEN for stage P1a** (2026-11-08); P1b is frozen when the plug is set up. Originally: frozen, with image digest, commit and switch filled in, in a commit made before the first counted
 cut. A dry run with a person pulling the plug comes first and is not counted. Changes after freezing are dated
 amendments at the end.
 
@@ -61,6 +61,18 @@ and context, does everything it acknowledged survive, bit for bit, and is everyt
    answering within 30 s, otherwise the reset is repeated (at most 3 times, attempts and errors recorded); and a
    cycle counts only if PostgreSQL's start time changed (`restarted`). Unconfirmed cycles are reported, not counted;
    the study runs until 300 confirmed restarts.
+4. **Reset command** (third dry run, 5 of 5 restarts confirmed, 0 problems): the first attempt always timed out on the
+   SSH keep-alive (2 × 2 s) under the Pi's load, and the second worked. The keep-alive is dropped; the 15 s outer
+   timeout still bounds the command.
+
+## Frozen settings (2026-11-08)
+
+- Image `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1@sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b`
+  (linux/arm64 on the Pi); harness at the commit of this freeze; controller seed 190; batch 4,096 samples; run
+  60–240 s; off 15 s; full `morlet_verify` every 25th cycle and at the end.
+- **Stage P1a** (kernel hard resets): `--switch "cmd:timeout 15 ssh -i /keys/pc_reset -o ConnectTimeout=10
+  -o BatchMode=yes dana@<pi> true;;true" --restarts 300 --cycles 400`.
+- The database already holds the dry runs' data (about 9.2 million samples of `pc`); the study continues on it.
 
 ## Checks after every restart (`controller.check`)
 
