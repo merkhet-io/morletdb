@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import uuid
 from typing import Any, Iterable
 
 STATE_VERSION = 1
@@ -103,6 +104,56 @@ def segment_at(conn, collection: str, recording_id: str, sample: int) -> int:
         raise ValueError(f"no context segment of {recording_id!r} contains sample {sample} "
                          f"(segments are built with morlet_build_context_segments)")
     return row[0]
+
+
+DECISION_PREFIX = "s1:"     # labels written by the decision log: "s1:<answer>", e.g. "s1:replace_insert"
+LOG_VERSION = 1
+
+
+def log_decision(conn, collection: str, segments: Iterable[tuple[str, int, int]], answer: str, *, model: str,
+                 question: str, probability: float | None = None, threshold: float | None = None,
+                 state: dict | None = None, extra: dict | None = None) -> list[int]:
+    """Store one decision as a label "s1:<answer>" on every (recording_id, start_sample, end_sample) it is about,
+    for example the channels of one cut. The note holds the model, question, probability, threshold, the state the
+    model saw and its hash, so the decision can be explained later from the same recordings; the database adds
+    author and time. Needs a role that may insert labels (the MCP server's role cannot). Returns the label ids."""
+    if not answer or any(ch.isspace() for ch in answer):
+        raise ValueError("answer must be one word, such as replace_insert or continue")
+    note = {"v": LOG_VERSION, "decision_id": uuid.uuid4().hex, "model": model, "question": question, "answer": answer,
+            "probability": _num(probability), "threshold": _num(threshold),
+            "state_sha256": state_hash(state) if state is not None else None, "state": state, **(extra or {})}
+    text = json.dumps(note, sort_keys=True, separators=(",", ":"))
+    return [conn.execute("SELECT morlet_add_label(%s::regclass, %s, %s, %s, %s, %s)",
+                         (collection, rid, start, end, DECISION_PREFIX + answer, text)).fetchone()[0]
+            for rid, start, end in segments]
+
+
+def decisions(conn, collection: str, *, recording_prefix: str = "", answer: str = "", limit: int = 100,
+              with_state: bool = False) -> list[dict[str, Any]]:
+    """Logged decisions, newest first, grouped by the note they share (one decision on several recordings)."""
+    labels = conn.execute("SELECT labels::text FROM morlet_context_relations(%s::regclass)",
+                          (collection,)).fetchone()[0]
+    rows = conn.execute(
+        f"SELECT label_id, recording_id, start_sample, end_sample, label, note, author, created_at FROM {labels} "
+        f"WHERE NOT retracted AND starts_with(label, %s) AND (%s = '' OR label = %s) AND starts_with(recording_id, %s) "
+        f"ORDER BY created_at DESC, label_id DESC",
+        (DECISION_PREFIX, answer, DECISION_PREFIX + answer, recording_prefix)).fetchall()
+    out: dict[str, dict] = {}
+    for lid, rid, start, end, label, note, author, created in rows:
+        if note not in out:
+            if len(out) >= limit:
+                continue
+            try:
+                n = json.loads(note)
+            except ValueError:
+                n = {"note": note}
+            if not with_state:
+                n.pop("state", None)
+            out[note] = {**n, "answer": label[len(DECISION_PREFIX):], "author": author,
+                         "decided_at": created.isoformat(), "label_ids": [], "segments": []}
+        out[note]["label_ids"].append(lid)
+        out[note]["segments"].append({"recording_id": rid, "start_sample": start, "end_sample": end})
+    return list(out.values())
 
 
 def state_hash(state: dict) -> str:

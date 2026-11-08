@@ -1080,5 +1080,22 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
                                        include_occurrence=include_occurrence)
 
 
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def decisions(collection: str, recording_prefix: str = "", answer: str = "", limit: int = 20,
+              with_state: bool = False) -> dict:
+    """Decisions a fast decision model ("System 1") logged on recordings (labels "s1:<answer>"), newest first:
+    the answer, model, question, probability, the threshold that turned it into the answer, when and by whom,
+    and the recordings and sample ranges it is about. with_state also returns the exact state the model saw (its
+    sha256 is always returned). To explain a decision, look at those recordings: decision_state shows how the
+    segment deviates from its history now (history may have grown since), describe_interval and read_interval
+    show the samples. The model gives a probability, not a reason; the explanation has to come from the data."""
+    with connect() as conn:
+        c = checked(conn, collection)
+        found = decision.decisions(conn, c, recording_prefix=recording_prefix, answer=answer,
+                                   limit=max(1, min(limit, 200)), with_state=with_state)
+    return {"collection": collection, "decisions": found, "truncated": len(found) >= max(1, min(limit, 200))}
+
+
 if __name__ == "__main__":
     mcp.run("stdio")
