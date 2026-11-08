@@ -99,6 +99,18 @@ class StewardDatabase(unittest.TestCase):
                          (1_110_000 - 4096) // 2048 + 1)
         self.assertLess(self.one("SELECT count(*) FROM morlet_steward.actions") - before, 10)
 
+    def test_a_new_collection_gets_envelopes_without_any_built_by_hand(self):
+        # soak S1: grids came only from existing envelopes, so a fresh collection never got its first one
+        a = self.admin
+        a.execute("""SELECT morlet_create_stream_collection('public','fresh'); SELECT morlet_enable_envelopes('fresh');
+          SELECT morlet_start_recording('fresh','f1',100,'HHZ','counts','{}',2048,512,'zscore','morlet-energy-lowrate-v1')""")
+        a.execute("SELECT morlet_append_chunks_raw('fresh','f1',0,morlet_float8_le_bytes(ARRAY(SELECT "
+                  "round(100*sin(i/9.0))::float8 FROM generate_series(0,99999) i)),4096)")
+        S.grant(a)
+        self.assertEqual(self.one("SELECT count(*) FROM fresh_envelopes"), 0)
+        self.run_until_idle(self.steward())
+        self.assertEqual(self.one("SELECT count(*) FROM fresh_envelopes WHERE window_size=2048"), (100000 - 2048) // 512 + 1)
+
     def test_the_steward_cannot_remove_samples(self):
         for q in ("DELETE FROM line_chunks", "UPDATE line_chunks SET encoded=encoded", "TRUNCATE line_chunks",
                   "DROP TABLE line_chunks"):
