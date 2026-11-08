@@ -14,7 +14,8 @@
 #                    the concurrent context-write test (context_concurrency.sh)
 #                    the acquisition row-security test (acquisition_rls.sh), the SQL 0.3.4 fixes (sql034_fixes.sh) and
 #                    commit notifications with a listener session (notifications.sh), and on PostgreSQL 18 and
-#                    later, loading from a separate directory through extension_control_path (on_demand.sh).
+#                    later, loading from a separate directory through extension_control_path (on_demand.sh), and the
+#                    API stability gate (api_stability.sh).
 #  upgrade           PostgreSQL 17 only: upgrades populated databases from v0.1.0-alpha.3,
 #                    v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1, v0.3.7-alpha.1 and v0.3.8-alpha.1 (tags must be fetched); those releases were
 #                    built for PostgreSQL 17 only.
@@ -78,6 +79,7 @@ case "$MODE" in
       "$TESTS/sql034_fixes.sh"
       "$TESTS/notifications.sh"
       "$TESTS/on_demand.sh"
+      "$TESTS/api_stability.sh"
     fi ;;
   upgrade)
     own_server  # the upgrade scripts restart it after each install
