@@ -24,6 +24,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `find_onsets` | candidate onsets in an interval, where short-term energy rises above the preceding background (STA/LTA, optional band-pass); candidates to inspect, not evaluated detections |
 | `search_from_time` | the intervals most similar to what happens at a UTC time: finds the onset near that time, frames the window and searches (with `shifts`); the easiest way to search when you know when something happened |
 | `search_similar` | the intervals most similar to a query interval, tolerant to small time shifts, with distances and UTC times; optionally also searches with the window moved a little (`shifts`) and merges the results. With SQL 0.3.3: `before_only` (only what happened before the query) and a time range, and each hit's rms, min, max and an 8-part sketch inline |
+| `decision_state` | for the context segment (a cut, a cycle, a part) containing a sample: its context, each value's deviation from the same-context history (median, relative deviation, quantile), a summary score, and the nearest earlier cases with their labels; the state a fast decision model ("System 1") decides from, and that an agent can cite afterwards (#328). Needs a collection with context |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
 **Safety:** the tools are typed signal operations; there is no tool that runs arbitrary SQL. Every call runs in a read-only transaction with a statement timeout, as the database role in
