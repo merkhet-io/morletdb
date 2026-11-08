@@ -1,0 +1,38 @@
+{
+ "arm": "steward",
+ "rep": 0,
+ "image": "morletdb-fd1:local",
+ "image_id": "sha256:62d6c2025edcb9b271e3e6c4905af15583c0d1eaa6df513ad12936d0677d2a97",
+ "started": "2026-11-08T23:15:08",
+ "disk_at_start": {
+  "total": 601563136,
+  "used": 115695616,
+  "free": 473284608
+ },
+ "acked_end": 143130624,
+ "error": {
+  "sqlstate": "53100",
+  "message": "new samples are refused since 2026-11-08 22:17:28.547602+00: the disk reserve is reached: new recordings are refused until space is freed (set by morlet-steward)"
+ },
+ "write_s": 138.3,
+ "disk_at_error": {
+  "total": 601563136,
+  "used": 500129792,
+  "free": 88850432
+ },
+ "refused_by_hold": true,
+ "refused_while_held": 20,
+ "answered_while_held": true,
+ "disk_while_held": {
+  "total": 601563136,
+  "used": 500170752,
+  "free": 88809472
+ },
+ "panic_in_log": false,
+ "resumed_after_free_s": 1.1,
+ "steward_log": [],
+ "stored_end": 143392768,
+ "appends_after": 2,
+ "problems": [],
+ "finished": "2026-11-08T23:18:04"
+}
