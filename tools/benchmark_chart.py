@@ -84,8 +84,8 @@ def svg():
         x += 15 + 7 * len(name) + 16
     # the hollow ring: the same database in a second form, on its own line
     out.append(f'<circle cx="5" cy="42" r="4" fill="var(--paper)" stroke="{SYSTEMS[0][1]}" stroke-width="2"/>'
-               f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk). QuestDB&#8217;s lane: '
-               f'MorletDB 0.3.7-alpha.1MorletDB 0.3.7-alpha.1; others: 0.3.6-alpha.1</text>')
+               f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk) &#183; MorletDB 0.3.7 on '
+               f'QuestDB&#8217;s lane, 0.3.6 on the others</text>')
     # axis and grid
     y_axis = h - 34
     for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×"), (50, "50×")]:
