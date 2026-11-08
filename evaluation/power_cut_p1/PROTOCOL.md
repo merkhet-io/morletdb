@@ -34,7 +34,7 @@ and context, does everything it acknowledged survive, bit for bit, and is everyt
   cache write-out, no unmount), over SSH with a key that can do nothing else (`/usr/local/sbin/pc-hard-reset`). This
   loses everything in RAM, PostgreSQL's and the operating system's, like a power cut, but the SD card keeps its power.
   It tests PostgreSQL's crash recovery and MorletDB's consistency, not whether the SD card honours flushes. Controller:
-  `--switch "cmd:ssh -i /keys/pc_reset ... dana@<box> true;;true"` (the box restarts by itself).
+  `--switch "cmd:timeout 15 ssh -i /keys/pc_reset ... dana@<box> true; true;;true"` (the box restarts by itself).
 - **P1b, power cuts (with the plug):** the same 300 cycles with `--switch shelly:<host>`; only P1b closes #190. If P1a
   passes and P1b fails, the difference is the storage hardware.
 
@@ -46,6 +46,15 @@ and context, does everything it acknowledged survive, bit for bit, and is everyt
 3. **Study:** 300 cycles. Each cycle: power on; wait for the database (at most 10 minutes); run the checks below
    against the last end acknowledged before the previous cut; let the writer run for a seeded random 60-240 s; cut the
    power; wait 15 s. Seed 190. About 15-20 hours.
+
+## Dry-run changes (recorded before freezing)
+
+1. **One snapshot for all checks** (2026-11-08, P1a dry run): the writer restarts with the box and commits while the
+   checks run; reading the stored end and then counting context rows a moment later found one row more than batches
+   (twice in 5 cycles). Every check now runs in one read-only REPEATABLE READ transaction. Not a MorletDB finding.
+2. **Recovery time from the cut** (same dry run): the reset's SSH connection hung until TCP gave up, so the time from
+   "on" to a working database looked like 0.1 s. The reset command now has a 15 s timeout, and `since_cut_s` (cut to
+   database answering, including the boot) is recorded.
 
 ## Checks after every restart (`controller.check`)
 

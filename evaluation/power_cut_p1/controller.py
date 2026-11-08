@@ -90,9 +90,25 @@ def connect(dsn: str, timeout: float):
 
 
 def check(conn, c: str, acked: int, batch: int, rng: random.Random, full: bool, version0: str | None) -> dict:
+    """All queries in one read-only REPEATABLE READ transaction: the writer resumes after the restart and keeps
+    committing while the checks run, so they must all see the same snapshot."""
+    conn.execute("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY")
+    try:
+        return _check(conn, c, acked, batch, rng, full, version0)
+    finally:
+        conn.execute("ROLLBACK")
+
+
+def _check(conn, c: str, acked: int, batch: int, rng: random.Random, full: bool, version0: str | None) -> dict:
     import numpy as np
     out: dict = {"problems": []}
     bad = out["problems"].append
+    if conn.execute("SELECT to_regclass(%s)", (c,)).fetchone()[0] is None:
+        if acked:
+            bad(f"collection {c} missing although {acked} samples were acknowledged")
+        else:
+            out["note"] = "collection not created yet (first start)"
+        return out
     end = int(conn.execute(f"SELECT coalesce((checkpoint->>'end')::bigint,0) FROM {c} WHERE recording_id='pc'")
               .fetchone()[0])
     out["stored_end"], out["acked_end"] = end, acked
@@ -176,13 +192,15 @@ def main(argv=None) -> int:
     srv.daemon_threads = True
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     sw, rng = Switch(a.switch), random.Random(a.seed)
-    version0, acked_at_cut, first = None, 0, True
+    version0, acked_at_cut, first, last_cut = None, 0, True, 0.0
     for k in range(a.cycles):
         while quiet_hour(dt.datetime.now()):
             time.sleep(60)
         rec = {"cycle": k, "on_at": time.time()}
         sw.set(True)
         conn, rec["recovered_s"] = connect(a.dsn, 600)
+        if last_cut:
+            rec["since_cut_s"] = round(time.time() - last_cut, 1)   # cut to database answering (includes boot)
         if conn is None:
             rec["problems"] = ["database not reachable 10 minutes after power-on"]
         else:
@@ -201,6 +219,7 @@ def main(argv=None) -> int:
             acked_at_cut, rec["ack_lines"] = ACK["pc"], ACK["lines"]
             rec["last_ack_age_s"] = round(time.time() - ACK["t"], 2) if ACK["t"] else None
         rec["run_s"], rec["cut_at"], rec["acked_at_cut"] = round(run, 1), time.time(), acked_at_cut
+        last_cut = rec["cut_at"]
         sw.set(False)
         with open(a.out, "a") as f:
             f.write(json.dumps(rec) + "\n")
