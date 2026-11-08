@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.8-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.9-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -44,6 +44,11 @@ a leading v; GHCR image tags do not.
   statistics, and exact search 10x faster on small machines. Builds on PostgreSQL 19 (19rc1, from source); release
   images and Debian packages stay on PostgreSQL 17 and 18 until 19.0. The chunk format is unchanged; existing
   collections keep their layout.
+- **0.3.9-alpha.1:** SQL version 0.3.7, with an update script from 0.3.6. The C functions find their library through
+  `dynamic_library_path`, so on PostgreSQL 18 and later pg_morlet loads from a directory outside the server, such as
+  an image volume (`extension_control_path`). The first release with an extension-only image,
+  `ghcr.io/merkhet-io/pg_morlet:0.3.9-alpha.1-pg18` (amd64, arm64), trialled mounted into a clean `postgres:18` before
+  publishing. The chunk format is unchanged; existing collections keep their layout.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean

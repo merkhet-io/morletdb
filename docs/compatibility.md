@@ -148,7 +148,7 @@ dynamic_library_path = '$libdir:<dir>/lib'
 and run `CREATE EXTENSION pg_morlet`. No `shared_preload_libraries` entry is needed. Databases created before 0.3.7
 load the library from `$libdir` until `ALTER EXTENSION pg_morlet UPDATE`.
 
-**Ready-made image.** From the release after 0.3.8-alpha.1, each release publishes an extension-only image for
+**Ready-made image.** From 0.3.9-alpha.1, each release publishes an extension-only image for
 PostgreSQL 18, `ghcr.io/merkhet-io/pg_morlet:<version>-pg18` (linux/amd64 and linux/arm64, built against Debian
 bookworm's glibc like the official postgres images). It holds only `/share/extension/pg_morlet*`, `/lib/pg_morlet.so`
 and the licence. Mount it at `/extensions/pg_morlet`, for example as a Kubernetes image volume, and use the two
