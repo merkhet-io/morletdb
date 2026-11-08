@@ -48,6 +48,8 @@ class DecisionOnADatabase(unittest.TestCase):
                           (rid,))
                 c.execute("SELECT morlet_build_context_values('dtest',%s)", (rid,))
         cls.seg12 = decision.segment_at(c, C, "p12-a", 5)
+        c.execute("SELECT morlet_add_label('dtest','p10-a',0,2048,'worn','test: wear above the limit')")
+        c.execute("SELECT morlet_add_label('dtest','p11-a',0,2048,'s1:replace','{}')")   # a decision, not an outcome
 
     @classmethod
     def tearDownClass(cls):
@@ -67,7 +69,7 @@ class DecisionOnADatabase(unittest.TestCase):
 
     def test_small_history_is_flagged(self):
         st = decision.decision_state(self.conn, C, self.seg12, neighbors=0)
-        self.assertEqual(st["v"], 2)
+        self.assertEqual(st["v"], 3)
         self.assertEqual(st["history"]["size"], 11)          # the other 11 parts; its own occurrence is excluded
         self.assertNotIn("small", st["history"])            # default reliable_history 10
         small = decision.decision_state(self.conn, C, self.seg12, neighbors=0, reliable_history=20)
@@ -100,12 +102,46 @@ class DecisionOnADatabase(unittest.TestCase):
         with self.assertRaises(ValueError):
             decision.log_decision(self.conn, C, [("p12-a", 0, 2048)], "two words", model="m", question="q")
 
+    def test_own_baseline_is_the_drift_from_the_assets_first_segments(self):
+        base = [decision.segment_at(self.conn, C, f"p0{k}-a", 0) for k in (1, 2, 3)]
+        st = decision.decision_state(self.conn, C, self.seg12, neighbors=0, baseline=base + [self.seg12])
+        ob = st["own_baseline"]
+        self.assertEqual(ob["segments"], 3)                   # the segment itself is never its own baseline
+        names = self.conn.execute("SELECT morlet_simple_value_names()").fetchone()[0]
+        vals = {sid: v for sid, v in self.conn.execute(
+            "SELECT segment_id, vals FROM dtest_ctx_values WHERE segment_id = ANY(%s)", (base + [self.seg12],))}
+        i = names.index("rms")
+        med = sorted(vals[b][i] for b in base)[1]
+        rms = next(v for v in ob["values"] if v["name"] == "rms")
+        self.assertAlmostEqual(rms["relative_deviation"], (vals[self.seg12][i] - med) / abs(med), places=5)
+        self.assertGreater(rms["relative_deviation"], 0)      # the level grows with the part number
+        other = decision.segment_at(self.conn, C, "p01-b", 0)
+        self.assertEqual(st["v"], 3)
+        with self.assertRaises(ValueError):                   # another channel is no baseline
+            decision.decision_state(self.conn, C, self.seg12, neighbors=0, baseline=[other])
+
+    def test_examples_are_labelled_earlier_cases_not_decisions(self):
+        st = decision.decision_state(self.conn, C, self.seg12, neighbors=0, examples=3)
+        ex = st["examples"]
+        self.assertEqual([e["recording_id"] for e in ex], ["p10-a"])          # p11-a only has a decision label
+        self.assertEqual(ex[0]["labels"], [{"label": "worn", "note": "test: wear above the limit"}])
+        self.assertIn("kurtosis", ex[0]["values"])
+        self.assertEqual(decision.decision_state(self.conn, C, self.seg12, neighbors=0, examples=3,
+                                                 example_labels=["sharp"])["examples"], [])
+        self.assertNotIn("examples", decision.decision_state(self.conn, C, self.seg12, neighbors=0))
+
     def test_the_mcp_tools(self):
         os.environ["DATABASE_URL"] = URL
         r = asyncio.run(m.mcp.call_tool("decision_state", {"collection": C, "recording_id": "p12-a", "sample": 100,
                                                             "neighbors": 2}))
         st = json.loads(r.content[0].text)
         self.assertEqual(st["segment"]["recording_id"], "p12-a")
+        r = asyncio.run(m.mcp.call_tool("decision_state", {"collection": C, "recording_id": "p12-a", "sample": 0,
+                                                            "baseline_recordings": "p01-a,p02-a@5,p03-a",
+                                                            "examples": 2, "example_labels": "worn"}))
+        st2 = json.loads(r.content[0].text)
+        self.assertEqual(st2["own_baseline"]["segments"], 3)
+        self.assertEqual(st2["examples"][0]["recording_id"], "p10-a")
         self.assertEqual(len(st["neighbors"]), 2)
         r = asyncio.run(m.mcp.call_tool("decisions", {"collection": C, "recording_prefix": "p12"}))
         self.assertIn("decisions", json.loads(r.content[0].text))

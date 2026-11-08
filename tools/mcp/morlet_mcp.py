@@ -1059,7 +1059,8 @@ def find_onsets(collection: str, recording_id: str, start_sample: int, end_sampl
 @safe
 def decision_state(collection: str, recording_id: str, sample: int, match_keys: str = "", exclude_labels: str = "",
                    min_history: int = 3, neighbors: int = 3, include_occurrence: bool = False,
-                   reliable_history: int = 10) -> dict:
+                   reliable_history: int = 10, baseline_recordings: str = "", examples: int = 0,
+                   example_labels: str = "") -> dict:
     """What a fast decision model needs to know about the context segment (a cut, a cycle, a part) that contains
     a sample: its context (program, tool, material, ...); per value (rms, std, p75, crest, kurtosis, ...) its
     deviation from the same-context history; a summary score with its quantile in that history; and the nearest
@@ -1071,6 +1072,11 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
     the history. Occurrence identifiers (run or part numbers) are left out unless include_occurrence is true.
     With fewer than reliable_history earlier segments, history.small is true and history.note says why that matters:
     one unusual segment, or a short transient in this one (high kurtosis or crest), can dominate the deviations.
+    baseline_recordings: comma-separated recording ids (optionally recording_id@sample) of this asset's own
+    reference segments, e.g. a tool's first cuts after a change; own_baseline then shows each value's drift from
+    them, which is how wear often shows. examples: how many nearest labelled earlier cases of the same context to
+    include, with their labels, notes and values (example_labels: comma-separated labels that count; default any
+    label except logged decisions).
     This describes how unusual the segment is for its context; it is not a diagnosis. Cite the segment and the
     neighbours by recording and sample range."""
     keys = [k.strip() for k in match_keys.split(",") if k.strip()]
@@ -1078,10 +1084,16 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
     with connect() as conn:
         c = checked(conn, collection)
         seg = decision.segment_at(conn, c, recording_id, sample)
+        base = []
+        for item in (x.strip() for x in baseline_recordings.split(",") if x.strip()):
+            brid, _, bs = item.partition("@")
+            base.append(decision.segment_at(conn, c, brid, int(bs) if bs else 0))
+        wanted = [x.strip() for x in example_labels.split(",") if x.strip()] or None
         return decision.decision_state(conn, c, seg, match_keys=keys, exclude_labels=labels,
                                        min_history=min_history, neighbors=max(0, min(neighbors, 20)),
                                        include_occurrence=include_occurrence,
-                                       reliable_history=max(1, reliable_history))
+                                       reliable_history=max(1, reliable_history), baseline=base,
+                                       examples=max(0, min(examples, 20)), example_labels=wanted)
 
 
 @mcp.tool(annotations=READ_ONLY)
