@@ -54,6 +54,7 @@ class AckHandler(socketserver.StreamRequestHandler):
 class Switch:
     def __init__(self, spec: str):
         self.spec = spec
+        self.last: tuple | None = None
 
     def set(self, on: bool) -> None:
         if self.spec == "manual":
@@ -62,7 +63,15 @@ class Switch:
         if self.spec.startswith("cmd:"):   # cmd:<off command>;;<on command>, for a simulated crash (no power cut)
             off, on_cmd = self.spec[4:].split(";;", 1)
             import subprocess
-            subprocess.run(on_cmd if on else off, shell=True, check=True)
+            if on:   # an "on" command may start background processes: never wait on their output
+                subprocess.run(on_cmd, shell=True, timeout=300, stdin=subprocess.DEVNULL,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                return
+            try:
+                r = subprocess.run(off, shell=True, capture_output=True, text=True, timeout=60, stdin=subprocess.DEVNULL)
+                self.last = (r.returncode, (r.stderr or "").strip()[-300:])
+            except subprocess.TimeoutExpired:
+                self.last = ("timeout", "")
             return
         host = self.spec.split(":", 1)[1]
         url = f"http://{host}/rpc/Switch.Set?id=0&on={'true' if on else 'false'}"
@@ -108,6 +117,7 @@ def _check(conn, c: str, acked: int, batch: int, rng: random.Random, full: bool,
             bad(f"collection {c} missing although {acked} samples were acknowledged")
         else:
             out["note"] = "collection not created yet (first start)"
+        out["postmaster_start"] = str(conn.execute("SELECT pg_postmaster_start_time()").fetchone()[0])
         return out
     end = int(conn.execute(f"SELECT coalesce((checkpoint->>'end')::bigint,0) FROM {c} WHERE recording_id='pc'")
               .fetchone()[0])
@@ -155,6 +165,7 @@ def _check(conn, c: str, acked: int, batch: int, rng: random.Random, full: bool,
         bad(f"envelopes inconsistent: {n} rows, last at {mx}, {off} off the grid, {beyond} beyond the end")
     v = conn.execute("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'").fetchone()[0]
     out["extension"] = v
+    out["postmaster_start"] = str(conn.execute("SELECT pg_postmaster_start_time()").fetchone()[0])
     if version0 and v != version0:
         bad(f"extension version changed from {version0} to {v}")
     if full:
@@ -165,6 +176,20 @@ def _check(conn, c: str, acked: int, batch: int, rng: random.Random, full: bool,
             if problems:
                 bad(f"morlet_verify {rid}: {problems[:3]}")
     return out
+
+
+def down_within(dsn: str, seconds: float) -> bool:
+    """True once a connection attempt fails within `seconds` (the box went down)."""
+    import psycopg
+    t0 = time.time()
+    while time.time() - t0 < seconds:
+        try:
+            with psycopg.connect(dsn, connect_timeout=3) as c:
+                c.execute("SELECT 1")
+        except psycopg.Error:
+            return True
+        time.sleep(2)
+    return False
 
 
 def quiet_hour(now: dt.datetime) -> bool:
@@ -192,7 +217,7 @@ def main(argv=None) -> int:
     srv.daemon_threads = True
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     sw, rng = Switch(a.switch), random.Random(a.seed)
-    version0, acked_at_cut, first, last_cut = None, 0, True, 0.0
+    version0, acked_at_cut, first, last_cut, pm_before = None, 0, True, 0.0, None
     for k in range(a.cycles):
         while quiet_hour(dt.datetime.now()):
             time.sleep(60)
@@ -211,6 +236,8 @@ def main(argv=None) -> int:
                 res = {"problems": [f"check failed: {type(exc).__name__}: {str(exc).splitlines()[0]}"]}
             version0 = version0 or res.get("extension")
             rec.update(res)
+            # counted only if PostgreSQL really restarted since the previous cut
+            rec["restarted"] = bool(pm_before) and res.get("postmaster_start") not in (None, pm_before)
             conn.close()
         first = False
         run = rng.uniform(a.run_min, a.run_max)
@@ -220,11 +247,20 @@ def main(argv=None) -> int:
             rec["last_ack_age_s"] = round(time.time() - ACK["t"], 2) if ACK["t"] else None
         rec["run_s"], rec["cut_at"], rec["acked_at_cut"] = round(run, 1), time.time(), acked_at_cut
         last_cut = rec["cut_at"]
-        sw.set(False)
+        rec["reset_attempts"], rec["reset_confirmed"] = 0, a.switch == "manual"
+        for _ in range(1 if a.switch == "manual" else 3):
+            rec["reset_attempts"] += 1
+            sw.set(False)
+            if a.switch == "manual" or down_within(a.dsn, 30):
+                rec["reset_confirmed"] = True
+                break
+            rec.setdefault("reset_failures", []).append(sw.last)
+        pm_before = rec.get("postmaster_start")
         with open(a.out, "a") as f:
             f.write(json.dumps(rec) + "\n")
-        print(f"cycle {k}: recovered {rec.get('recovered_s', 0):.0f}s, stored {rec.get('stored_end')}, "
-              f"problems {len(rec.get('problems', []))}", flush=True)
+        print(f"cycle {k}: restarted {rec.get('restarted')}, since cut {rec.get('since_cut_s')}s, "
+              f"stored {rec.get('stored_end')}, problems {len(rec.get('problems', []))}, "
+              f"reset attempts {rec.get('reset_attempts')}", flush=True)
         time.sleep(a.off_s)
     sw.set(True)
     return 0

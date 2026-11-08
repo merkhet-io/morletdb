@@ -43,7 +43,7 @@ and context, does everything it acknowledged survive, bit for bit, and is everyt
 1. **Dry run (not counted):** 5 cycles with `--switch manual` (a person pulls the plug when told), then 5 with the
    plug; the controller and the box are adjusted if needed, and every change is recorded here before freezing.
 2. **Freeze.**
-3. **Study:** 300 cycles. Each cycle: power on; wait for the database (at most 10 minutes); run the checks below
+3. **Study:** 300 confirmed restarts. Each cycle: power on; wait for the database (at most 10 minutes); run the checks below
    against the last end acknowledged before the previous cut; let the writer run for a seeded random 60-240 s; cut the
    power; wait 15 s. Seed 190. About 15-20 hours.
 
@@ -55,6 +55,12 @@ and context, does everything it acknowledged survive, bit for bit, and is everyt
 2. **Recovery time from the cut** (same dry run): the reset's SSH connection hung until TCP gave up, so the time from
    "on" to a working database looked like 0.1 s. The reset command now has a 15 s timeout, and `since_cut_s` (cut to
    database answering, including the boot) is recorded.
+
+3. **Every reset confirmed** (second P1a dry run): 2 of 5 reset commands had no effect (5 cuts, 3 new boots), and
+   those cycles would have been counted as restarts. The controller now confirms each cut: the database must stop
+   answering within 30 s, otherwise the reset is repeated (at most 3 times, attempts and errors recorded); and a
+   cycle counts only if PostgreSQL's start time changed (`restarted`). Unconfirmed cycles are reported, not counted;
+   the study runs until 300 confirmed restarts.
 
 ## Checks after every restart (`controller.check`)
 
