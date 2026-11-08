@@ -20,7 +20,7 @@ import math
 import uuid
 from typing import Any, Iterable
 
-STATE_VERSION = 2
+STATE_VERSION = 3
 SUMMARY_VALUES = ("duration_s", "std", "crest", "kurtosis")   # morlet_compare_summary's default score values
 
 
@@ -37,7 +37,8 @@ def _num(x, digits=6):
 def decision_state(conn, collection: str, segment_id: int, *, match_keys: Iterable[str] = (),
                    exclude_labels: Iterable[str] = (), min_history: int = 3, values: Iterable[str] | None = None,
                    neighbors: int = 3, include_occurrence: bool = False, reliable_history: int = 10,
-                   summary_quantile: bool = False) -> dict[str, Any]:
+                   summary_quantile: bool = False, baseline: Iterable[int] = (), examples: int = 0,
+                   example_labels: Iterable[str] | None = None) -> dict[str, Any]:
     """The decision state of one segment of `collection` (a regclass name such as 'public.milling').
 
     match_keys: context keys the history must share (empty: all of the segment's context keys).
@@ -46,6 +47,14 @@ def decision_state(conn, collection: str, segment_id: int, *, match_keys: Iterab
     neighbors: how many nearest earlier cases to include (0: none).
     reliable_history: below this many history segments the state says so (history.small, history.note): with few
     earlier segments one unusual segment, or a short transient in this one, can dominate the deviations.
+    baseline: segment ids of this asset's own reference segments, such as a tool's first cuts after it was
+    changed. The state then also reports each value's deviation from their median (own_baseline): wear shows as
+    a drift away from the tool's own start, which a comparison with other tools can miss.
+    examples: how many labelled earlier cases of the same context to include as worked examples (examples): the
+    nearest segments that carry a label (decision labels "s1:..." do not count), with their labels and notes and
+    their values, so a model can see what labelled cases looked like. Unlike the history, examples may come from
+    segments that exclude_labels keeps out of the history (for example known worn tools). example_labels limits
+    which labels count.
     summary_quantile: also compute the summary score's quantile within the history (morlet_compare_summary; it
     repeats the history query and costs about twice as much). The summary score itself is derived from the
     per-value rows, equal to morlet_compare_summary's score and top value.
@@ -101,6 +110,14 @@ def decision_state(conn, collection: str, segment_id: int, *, match_keys: Iterab
             near.append({"recording_id": nrid, "start_sample": ns, "end_sample": ne, "distance": _num(dist),
                          "labels": sorted({lab["label"] for lab in labels or []})})
 
+    out_extra = {}
+    baseline = [int(b) for b in baseline if int(b) != segment_id]
+    if baseline:
+        out_extra["own_baseline"] = _own_baseline(conn, collection, seg_table, segment_id, rid, baseline)
+    if examples > 0:
+        out_extra["examples"] = _examples(conn, collection, segment_id, match_keys, examples,
+                                          None if example_labels is None else set(example_labels))
+
     history = {"match_keys": match_keys or sorted(context), "size": hist_n, "excluded_labels": exclude_labels}
     if hist_n < reliable_history:
         history["small"] = True
@@ -108,7 +125,69 @@ def decision_state(conn, collection: str, segment_id: int, *, match_keys: Iterab
                            f"this one, can dominate the deviations")
     return {"v": STATE_VERSION, "segment": segment,
             "history": history,
-            "values": vals, "summary": summary, "neighbors": near}
+            "values": vals, "summary": summary, "neighbors": near, **out_extra}
+
+
+def _value_rows(conn, collection, seg_table, ids):
+    vals_table = conn.execute("SELECT vals::text FROM morlet_context_relations(%s::regclass)",
+                              (collection,)).fetchone()[0]
+    return {sid: (rid, list(v)) for sid, rid, v in conn.execute(
+        f"SELECT s.segment_id, s.recording_id, v.vals FROM {seg_table} s JOIN {vals_table} v USING (segment_id) "
+        f"WHERE v.representation = 'simple-v1' AND s.segment_id = ANY(%s)", (list(ids),))}
+
+
+def _own_baseline(conn, collection, seg_table, segment_id, rid, baseline):
+    """Each simple-v1 value's deviation from the median of the given reference segments of the same channel."""
+    names = conn.execute("SELECT morlet_simple_value_names()").fetchone()[0]
+    rows = _value_rows(conn, collection, seg_table, [segment_id, *baseline])
+    if segment_id not in rows:
+        raise ValueError(f"segment {segment_id} has no simple-v1 values (morlet_build_context_values)")
+    missing = sorted(set(baseline) - set(rows))
+    if missing:
+        raise ValueError(f"baseline segments without values or not visible: {missing}")
+    key = lambda r: tuple(conn.execute(f"SELECT sample_rate_hz, channel, unit FROM {collection} WHERE recording_id = %s",
+                                       (r,)).fetchone())
+    q_key = key(rid)
+    bad = sorted(b for b in baseline if key(rows[b][0]) != q_key)
+    if bad:
+        raise ValueError(f"baseline segments of another rate, channel or unit: {bad}")
+    q = rows[segment_id][1]
+    base = [rows[b][1] for b in baseline]
+    rms_i = names.index("rms")
+    level = sorted(b[rms_i] for b in base)[len(base) // 2]
+    out = []
+    for i, n in enumerate(names):
+        col = sorted(b[i] for b in base)
+        med = (col[(len(col) - 1) // 2] + col[len(col) // 2]) / 2
+        unit_valued = n in ("mean", "std", "rms", "p75", "peak_abs")
+        zero = med == 0 or (unit_valued and abs(med) <= 1e-9 * abs(level))
+        out.append({"name": n, "value": _num(q[i]), "baseline_median": _num(med),
+                    "relative_deviation": None if zero else _num((q[i] - med) / abs(med)),
+                    "status": "zero_median" if zero else "ok"})
+    return {"segments": len(base), "values": out}
+
+
+def _examples(conn, collection, segment_id, match_keys, k, wanted):
+    """The k nearest earlier segments of the same context that carry a label other than a logged decision."""
+    names = conn.execute("SELECT morlet_simple_value_names()").fetchone()[0]
+    labels_table = conn.execute("SELECT labels::text FROM morlet_context_relations(%s::regclass)",
+                                (collection,)).fetchone()[0]
+    out = []
+    for _nid, nrid, ns, ne, _occ, dist, vals, _labels in conn.execute(
+            "SELECT * FROM morlet_history_neighbors(%s::regclass, %s, %s::text[], top_k => %s)",
+            (collection, segment_id, match_keys, min(1000, max(10 * k, 50)))):
+        labs = [{"label": lab, "note": note} for lab, note in conn.execute(
+            f"SELECT label, note FROM {labels_table} WHERE recording_id = %s AND NOT retracted "
+            f"AND start_sample < %s AND %s < end_sample ORDER BY label_id", (nrid, ne, ns))
+                if not lab.startswith(DECISION_PREFIX) and (wanted is None or lab in wanted)]
+        if not labs:
+            continue
+        out.append({"recording_id": nrid, "start_sample": ns, "end_sample": ne, "distance": _num(dist),
+                    "labels": [{**lab, "note": lab["note"] or None} for lab in labs],
+                    "values": {n: _num(v) for n, v in zip(names, vals)}})
+        if len(out) == k:
+            break
+    return out
 
 
 def segment_at(conn, collection: str, recording_id: str, sample: int) -> int:
