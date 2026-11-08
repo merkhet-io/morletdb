@@ -18,7 +18,7 @@ import urllib.request
 from pathlib import Path
 
 URL = os.environ.get("JEV_URL", "https://api.typesafe.ai/v1/systemone")
-MODEL = os.environ.get("JEV_MODEL", "jev")
+MODEL = os.environ.get("JEV_MODEL", "jev-1.14.0")   # amendment 1
 KEY_FILE = Path(os.environ.get("JEV_KEY_FILE", Path.home() / ".config/typesafe/jev.key"))
 CALLS, SEED = 3, 328
 TOKEN_CAP = 2_000_000          # input tokens over the whole study; the run stops before exceeding it

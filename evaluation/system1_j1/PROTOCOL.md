@@ -67,3 +67,11 @@ build the state from six channels fits per-part decisions, not decisions within 
 
 Other machines or tasks; fine-tuning or few-shot examples; on-premises models (the state is model-neutral and can
 be sent to one later); the decision log (#328, after J1).
+
+## Amendment 1 (2026-11-08, after the connectivity calls, before any study call)
+
+The endpoint `https://api.typesafe.ai/v1/systemone` and the key work. The model id `jev` is unknown to it, and so is
+DigitalOcean's `typesafe-jev-1.13.0`; `jev-1.13.0` and `jev-latest` answer, the latter as `jev-1.14.0`. The study uses
+the pinned id **`jev-1.14.0`** (the newest, not the moving alias), now the default in `jev.py`. Connectivity calls
+(all with the fixed non-study state): `jev` 400, `typesafe-jev-1.13.0` 400, `jev-1.13.0` 200 (noul 1.0),
+`jev-latest` 200 (noul 0.99), `jev-1.14.0` 200 (noul 0.99, 228 ms, 287 input tokens; `results/check.json`).
