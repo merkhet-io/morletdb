@@ -1,0 +1,22 @@
+2026-11-08T18:54:22
+18:54  up 12 days,  3:50, 19 users, load averages: 6.72 5.21 4.80
+ %CPU COMM
+225.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 72.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 26.7 /System/Library/CoreServices/talagentd
+ 21.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  9.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  5.9 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+  4.3 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent
+2026-11-08T18:54:39
+18:54  up 12 days,  3:50, 19 users, load averages: 8.10 5.60 4.95
+ %CPU COMM
+230.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 41.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 33.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  8.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  8.4 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+  4.4 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
+  1.5 /Applications/Slack.app/Contents/MacOS/Slack
+  0.9 /Applications/Tailscale.app/Contents/MacOS/Tailscale

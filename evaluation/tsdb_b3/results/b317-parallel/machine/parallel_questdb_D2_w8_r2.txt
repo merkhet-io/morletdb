@@ -1,0 +1,22 @@
+2026-11-08T18:56:09
+18:56  up 12 days,  3:52, 19 users, load averages: 6.33 5.82 5.11
+ %CPU COMM
+210.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 68.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 20.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  5.8 /System/Library/PrivateFrameworks/TextInputUIMacHelper.framework/Versions/A/XPCServices/CursorUIViewService.xpc/Contents/MacOS/CursorUIViewService
+  4.9 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+  4.5 /System/Library/CoreServices/WindowManager.app/Contents/MacOS/WindowManager
+2026-11-08T18:56:25
+18:56  up 12 days,  3:52, 19 users, load averages: 6.42 5.86 5.13
+ %CPU COMM
+238.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 22.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  1.0 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  0.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.3 /usr/libexec/airportd
+  0.3 claude

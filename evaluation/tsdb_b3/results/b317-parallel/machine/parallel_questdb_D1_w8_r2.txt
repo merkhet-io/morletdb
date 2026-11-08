@@ -1,0 +1,22 @@
+2026-11-08T18:56:44
+18:56  up 12 days,  3:52, 19 users, load averages: 5.77 5.76 5.11
+ %CPU COMM
+205.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 75.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.2 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.9 /usr/libexec/airportd
+  0.8 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  0.8 bash
+2026-11-08T18:57:01
+18:57  up 12 days,  3:53, 19 users, load averages: 7.49 6.13 5.26
+ %CPU COMM
+238.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 63.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.4 claude
+  1.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.6 /Library/Application Support/JamfAppInstallers/com.jamf.appinstallers.Slack/Jamf App Installers.app/Contents/MacOS/Jamf App Installers
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.4 claude

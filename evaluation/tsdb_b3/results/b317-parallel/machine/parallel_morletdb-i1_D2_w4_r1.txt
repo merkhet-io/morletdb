@@ -1,0 +1,22 @@
+2026-11-08T18:53:28
+18:53  up 12 days,  3:49, 19 users, load averages: 2.63 4.32 4.48
+ %CPU COMM
+ 27.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 20.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 18.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.7 claude
+  4.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.4 bash
+  2.1 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.1 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+2026-11-08T18:53:46
+18:53  up 12 days,  3:49, 19 users, load averages: 5.13 4.76 4.63
+ %CPU COMM
+216.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 93.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.2 claude
+  1.9 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.1 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  1.0 claude

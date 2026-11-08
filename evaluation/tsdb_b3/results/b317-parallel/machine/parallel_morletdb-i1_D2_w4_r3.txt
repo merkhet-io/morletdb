@@ -1,0 +1,22 @@
+2026-11-08T18:57:01
+18:57  up 12 days,  3:53, 19 users, load averages: 7.49 6.13 5.26
+ %CPU COMM
+152.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 41.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.0 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+  3.8 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
+  1.5 claude
+  1.0 bash
+  0.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-08T18:57:19
+18:57  up 12 days,  3:53, 19 users, load averages: 6.95 6.08 5.25
+ %CPU COMM
+141.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+132.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.3 /usr/sbin/notifyd
+  0.3 claude
+  0.2 /usr/libexec/opendirectoryd
