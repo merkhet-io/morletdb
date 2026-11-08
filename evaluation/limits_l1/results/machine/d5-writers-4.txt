@@ -1,0 +1,24 @@
+2026-11-08T21:14:06
+21:14  up 12 days,  6:10, 19 users, load averages: 5.54 3.55 2.29
+ %CPU COMM
+190.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 28.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 22.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 21.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  7.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+2026-11-08T21:22:26
+21:22  up 12 days,  6:18, 19 users, load averages: 4.36 3.90 2.94
+ %CPU COMM
+156.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 54.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 50.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 29.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 26.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-08T21:30:45
+21:30  up 12 days,  6:26, 19 users, load averages: 3.40 3.90 3.38
+ %CPU COMM
+176.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 29.6 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 23.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.0 /usr/sbin/coreaudiod
+  0.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

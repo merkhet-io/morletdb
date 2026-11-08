@@ -1,0 +1,24 @@
+2026-11-08T21:10:48
+21:10  up 12 days,  6:06, 19 users, load averages: 3.95 2.22 1.62
+ %CPU COMM
+151.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 68.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 19.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.9 /usr/sbin/coreaudiod
+2026-11-08T21:18:47
+21:18  up 12 days,  6:14, 19 users, load averages: 3.40 3.21 2.49
+ %CPU COMM
+196.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 45.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 33.8 /System/Library/ExtensionKit/Extensions/TGOnDeviceInferenceProviderService.appex/Contents/MacOS/TGOnDeviceInferenceProviderService
+ 32.9 /usr/libexec/aned
+ 19.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+2026-11-08T21:27:09
+21:27  up 12 days,  6:23, 19 users, load averages: 4.50 4.02 3.26
+ %CPU COMM
+130.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 50.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 12.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.9 /usr/sbin/coreaudiod
+  2.0 claude

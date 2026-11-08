@@ -1,0 +1,46 @@
+{
+ "point": "d7-disk-full",
+ "rep": 3,
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "dev": false,
+ "host": {
+  "machine": "arm64",
+  "load_avg": [
+   6.62060546875,
+   4.83740234375,
+   3.79736328125
+  ]
+ },
+ "started": "2026-11-08T21:32:15",
+ "extension": "0.3.7",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "samples": 1000000000,
+ "config": {
+  "cpus": "8",
+  "memory": "16g",
+  "chunk": 4096,
+  "kind": "adc",
+  "writers": 1
+ },
+ "problems": [],
+ "refusals": [
+  {
+   "step": "append",
+   "error_visible": true,
+   "error": "could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+   "after_error": "RuntimeError: server did not come back",
+   "server_log": [
+    "2026-11-08 20:32:34.005 UTC [71] PANIC:  could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+    "2026-11-08 20:32:34.018 UTC [2275] FATAL:  the database system is in recovery mode",
+    "2026-11-08 20:32:34.202 UTC [2272] FATAL:  could not write to file \"pg_wal/xlogtemp.2272\": No space left on device"
+   ]
+  }
+ ],
+ "memory": {
+  "stats_peak_mib": 559.0,
+  "cgroup_peak_mib": null,
+  "oom_events": null,
+  "container": "false exited"
+ },
+ "finished": "2026-11-08T21:34:34"
+}

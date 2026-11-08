@@ -1,0 +1,24 @@
+2026-11-08T21:14:36
+21:14  up 12 days,  6:10, 19 users, load averages: 5.06 3.61 2.35
+ %CPU COMM
+178.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 65.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 48.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 26.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 16.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+2026-11-08T21:22:56
+21:22  up 12 days,  6:19, 19 users, load averages: 4.07 3.87 2.96
+ %CPU COMM
+182.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 73.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 35.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.1 /usr/sbin/coreaudiod
+  3.2 /usr/libexec/spotlightknowledged.updater
+2026-11-08T21:31:11
+21:31  up 12 days,  6:27, 19 users, load averages: 4.91 4.25 3.53
+ %CPU COMM
+203.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 74.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  6.2 claude
+  4.1 /usr/sbin/coreaudiod
+  1.9 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder

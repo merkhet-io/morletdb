@@ -1,0 +1,24 @@
+2026-11-08T21:13:39
+21:13  up 12 days,  6:09, 19 users, load averages: 5.74 3.39 2.19
+ %CPU COMM
+148.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 59.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 25.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 11.0 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+2026-11-08T21:22:00
+21:22  up 12 days,  6:18, 19 users, load averages: 5.70 4.08 2.97
+ %CPU COMM
+179.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 22.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 10.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.8 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  3.9 /usr/sbin/coreaudiod
+2026-11-08T21:30:19
+21:30  up 12 days,  6:26, 19 users, load averages: 4.17 4.08 3.43
+ %CPU COMM
+156.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 37.7 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 29.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  3.9 /usr/sbin/coreaudiod
+  1.9 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
