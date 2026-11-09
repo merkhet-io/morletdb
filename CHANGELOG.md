@@ -26,6 +26,12 @@ SQL version 0.3.8, with an update script from 0.3.7.
   sample instants at periods of 1, 3, 6, 7 and 60 s; checked once over every whole-second period from 1 to 3,600 s.
   Rates such as 25.6 kHz and 64 kHz map exactly as before. `morlet_time_to_samples` costs about 50 µs per call
   instead of 22; where it runs per row (time filters, `before_only`) the fraction is computed once per query.
+- **Interval statistics on very long recordings (#340):** on a recording of 10^9 samples, statistics over 10^6
+  samples took 5.4–6.1 ms instead of about 0.6 ms. The query itself took 0.1 ms; the rest was PostgreSQL compiling
+  it (JIT), because the planner's row estimate, and so its cost, grew with the table until it crossed
+  `jit_above_cost`. The general path (`morlet_interval_buckets`, behind `morlet_interval_stats` for long intervals and
+  `morlet_interval_overview`) now runs with `jit=off` and takes 0.6–0.8 ms there. The fast path (#348, #349) already
+  avoided it for intervals below 2^20 samples.
 - **Faster interval statistics (#346):** `morlet_interval_stats` over an interval shorter than a roll-up block
   (2^20 samples) on a collection without memory levels now runs the chunk aggregate directly, through a new internal
   Rust function (`morlet_interval_stats_fast`) that resolves the collection's tables through the system caches and

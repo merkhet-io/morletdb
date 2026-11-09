@@ -92,6 +92,87 @@ BEGIN
   RETURN QUERY SELECT stats[3]::bigint,stats[4],stats[5],stats[6],stats[7];
 END $$;
 
+CREATE OR REPLACE FUNCTION public.morlet_interval_buckets(collection regclass,source_recording_id text,
+  interval_start bigint,interval_end bigint,buckets integer,what text)
+RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog SET jit=off AS $$
+DECLARE source record; relations record; stats float8[]; covered float8:=0; i integer; mem record; src text;
+  cut bigint; roll regclass; gaps int8multirange; lvl integer; r_start bigint[]:='{}'; r_count bigint[]:='{}';
+  r_sum bytea[]:='{}'; picked record;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
+  IF NOT relations.summarized AND (interval_start<0 OR interval_end<=interval_start OR interval_end-interval_start>16777216) THEN
+    RAISE EXCEPTION '% interval must contain 1..16777216 samples at nonnegative coordinates',what
+      USING HINT='With chunk summaries enabled (morlet_enable_chunk_summaries) the interval may be of any length.';
+  ELSIF interval_start<0 OR interval_end<=interval_start THEN
+    RAISE EXCEPTION '% interval must contain at least one sample at nonnegative coordinates',what;
+  END IF;
+  IF buckets NOT BETWEEN 1 AND 100000 THEN RAISE EXCEPTION 'buckets must be 1..100000'; END IF;
+  EXECUTE format('SELECT r.checkpoint FROM %s r WHERE r.recording_id=$1',collection)
+    INTO source USING source_recording_id;
+  IF source.checkpoint IS NULL THEN RAISE EXCEPTION 'source recording does not exist or is not visible'; END IF;
+  IF interval_end>(source.checkpoint->>'end')::bigint THEN
+    RAISE EXCEPTION 'source interval exceeds recording length';
+  END IF;
+  IF NOT relations.encoded THEN
+    RAISE EXCEPTION 'interval % need a collection with encoded chunks',what;
+  END IF;
+  -- With episodic memory, chunks compacted to levels 2 and 3 contribute their kept summaries; those are exact
+  -- only for whole chunks, so an interval that cuts one is refused.
+  IF mem.kept IS NOT NULL THEN
+    EXECUTE format('SELECT k.start_sample FROM %s k WHERE k.recording_id=$1 AND k.start_sample<$3
+        AND k.start_sample+k.sample_count>$2 AND (k.start_sample<$2 OR k.start_sample+k.sample_count>$3) LIMIT 1',mem.kept)
+      INTO cut USING source_recording_id,interval_start,interval_end;
+    IF cut IS NOT NULL THEN
+      RAISE EXCEPTION 'the % interval cuts the compacted chunk at sample % of recording %',what,cut,source_recording_id
+        USING HINT='Compacted chunks keep exact statistics for whole chunks only: widen or narrow the interval to chunk boundaries.';
+    END IF;
+    src:=format('(SELECT c.recording_id,c.start_sample,c.sample_count,c.encoded,%s AS summary FROM %s c
+      UNION ALL SELECT k.recording_id,k.start_sample,k.sample_count,NULL::bytea,k.summary FROM %s k)',
+      CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END,relations.chunks,mem.kept);
+  END IF;
+  -- Roll-ups, coarsest first: a block is taken when it lies inside a part of the interval not yet covered and
+  -- inside one bucket; what it covers is removed from the parts left for finer levels and for chunks.
+  gaps:=int8multirange(int8range(interval_start,interval_end));
+  roll:=public.morlet_rollup_relation(collection);
+  -- A caller who may not read the roll-ups gets the same result from the chunks.
+  IF roll IS NOT NULL AND has_table_privilege(roll,'SELECT') THEN
+    -- Each gap is looked up on its own (OFFSET 0 keeps the subquery per gap), so the index on block is used and
+    -- the cost follows the number of gaps, not the size of the table; a level's picks are collected in one go.
+    FOR lvl IN REVERSE 3..1 LOOP
+      EXIT WHEN isempty(gaps);
+      EXECUTE format('SELECT array_agg(r.start_sample ORDER BY r.start_sample) AS s,
+            array_agg(r.end_sample-r.start_sample ORDER BY r.start_sample) AS n,
+            array_agg(r.summary ORDER BY r.start_sample) AS sm,range_agg(int8range(r.start_sample,r.end_sample)) AS covered
+          FROM unnest($5::int8multirange) g, LATERAL (SELECT x.start_sample,x.end_sample,x.summary FROM %s x
+            WHERE x.recording_id=$1 AND x.level=$6 AND x.block BETWEEN lower(g)>>(15+5*$6) AND (upper(g)-1)>>(15+5*$6)
+              AND x.start_sample>=lower(g) AND x.end_sample<=upper(g)
+              AND public.morlet_interval_bucket(x.start_sample,$2,$3,$4)=public.morlet_interval_bucket(x.end_sample-1,$2,$3,$4)
+            OFFSET 0) r',roll)
+        INTO picked USING source_recording_id,interval_start,interval_end,buckets,gaps,lvl;
+      CONTINUE WHEN picked.covered IS NULL;
+      r_start:=r_start||picked.s; r_count:=r_count||picked.n; r_sum:=r_sum||picked.sm;
+      gaps:=gaps-picked.covered;
+    END LOOP;
+  END IF;
+  -- A chunk's encoded bytes are read only when it is cut by the interval or has no summary.
+  EXECUTE format('SELECT public.morlet_interval_stats_agg(
+      CASE WHEN %2$s IS NULL OR c.start_sample<$2 OR c.start_sample+c.sample_count>$3 THEN c.encoded END,
+      %2$s,c.start_sample,c.sample_count,$2,$3,$4 ORDER BY c.start_sample)
+    FROM (SELECT c.* FROM unnest($5::int8multirange) g, LATERAL (SELECT c.* FROM %1$s c WHERE c.recording_id=$1
+        AND c.start_sample<upper(g) AND c.start_sample>lower(g)-32768 AND c.start_sample+c.sample_count>lower(g) OFFSET 0) c
+      UNION ALL SELECT $1,u.s,u.n::integer,NULL::bytea,u.sm FROM unnest($6,$7,$8) u(s,n,sm)) c',
+    coalesce(src,format('(SELECT c.recording_id,c.start_sample,c.sample_count,c.encoded,%s AS summary FROM %s c)',
+      CASE WHEN relations.summarized THEN 'c.summary' ELSE 'NULL::bytea' END,relations.chunks)),
+    'c.summary')
+    INTO stats USING source_recording_id,interval_start,interval_end,buckets,gaps,r_start,r_count,r_sum;
+  FOR i IN 0..coalesce(cardinality(stats),0)/7-1 LOOP covered:=covered+stats[7*i+3]; END LOOP;
+  IF covered<>interval_end-interval_start THEN
+    PERFORM public.morlet_raise_incomplete(collection,source_recording_id,interval_start,interval_end);
+  END IF;
+  RETURN stats;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.morlet_time_to_samples(sample_rate_hz float8,offset_ns bigint,t_start_ns bigint,t_end_ns bigint,
   OUT start_sample bigint,OUT end_sample bigint)
 LANGUAGE plpgsql IMMUTABLE STRICT SET search_path=pg_catalog AS $$

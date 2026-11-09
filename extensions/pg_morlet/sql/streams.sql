@@ -630,9 +630,12 @@ END $$;
 -- (morlet_enable_rollups, #219), each part of the interval takes the coarsest stored roll-up that lies
 -- inside it and inside one bucket, then finer ones at the edges, then chunks: pieces are merged exactly,
 -- so the result is bitwise the same as from the chunks alone.
+-- jit=off (#340): the chunk query below reads a few hundred rows through the index, but the planner cannot know how
+-- many gaps it gets and estimates rows in proportion to the table, so on long recordings (about 10^9 samples) its
+-- cost crossed jit_above_cost and every call spent about 5 ms compiling a 0.1 ms query.
 CREATE FUNCTION public.morlet_interval_buckets(collection regclass,source_recording_id text,
   interval_start bigint,interval_end bigint,buckets integer,what text)
-RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog SET jit=off AS $$
 DECLARE source record; relations record; stats float8[]; covered float8:=0; i integer; mem record; src text;
   cut bigint; roll regclass; gaps int8multirange; lvl integer; r_start bigint[]:='{}'; r_count bigint[]:='{}';
   r_sum bytea[]:='{}'; picked record;
