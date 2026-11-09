@@ -4,7 +4,9 @@ A small, synchronous Python client for [MorletDB](https://github.com/merkhet-io/
 `pg_morlet` extension): store regularly sampled waveforms losslessly with their timing and metadata, read
 exact sample intervals back, and search for similar intervals.
 
-Status: alpha (0.1.0a2), not yet published to PyPI. Install from the repository.
+Status: alpha (0.1.0a3), not yet published to PyPI. Install from the repository or a release wheel. The platform
+wheels also carry the embedded edition (experimental): `morletdb.open("x.morlet")`, a recording in one SQLite file
+without a server ([docs/embedded-edition.md](../../docs/embedded-edition.md)).
 
 ```sh
 pip install "./sdk/python[plot]"        # from a checkout; [plot] adds matplotlib for the example
@@ -14,7 +16,7 @@ pip install "./sdk/python[plot]"        # from a checkout; [plot] adds matplotli
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 export DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet
 python examples/python/quickstart.py     # ingest, read, search, plot (no download)
