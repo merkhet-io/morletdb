@@ -1,0 +1,140 @@
+{
+ "arm": "jev",
+ "model": "jev-1.14.0",
+ "load_s": 0.0,
+ "passed": true,
+ "calls": [
+  {
+   "labels": null,
+   "state": "A clear day: the sky is blue and there are no clouds.",
+   "question": "Is the sky described as blue?",
+   "expected": true,
+   "noul": 0.99,
+   "correct": true,
+   "wall_ms": 239.3
+  },
+  {
+   "labels": null,
+   "state": "A grey day: the sky is overcast and it is raining.",
+   "question": "Is the sky described as blue?",
+   "expected": false,
+   "noul": 0.01,
+   "correct": true,
+   "wall_ms": 191.4
+  },
+  {
+   "labels": null,
+   "state": "The machine stopped: the spindle motor drew no current and the table did not vibrate.",
+   "question": "Was the machine cutting?",
+   "expected": false,
+   "noul": 0.04,
+   "correct": true,
+   "wall_ms": 185.5
+  },
+  {
+   "labels": null,
+   "state": "The machine cut steel at full feed; spindle current and vibration were high.",
+   "question": "Was the machine cutting?",
+   "expected": true,
+   "noul": 0.97,
+   "correct": true,
+   "wall_ms": 187.1
+  },
+  {
+   "labels": {
+    "false": "true",
+    "true": "false"
+   },
+   "state": "A clear day: the sky is blue and there are no clouds.",
+   "question": "Is the sky described as blue?",
+   "expected": true,
+   "noul": 0.99,
+   "correct": true,
+   "wall_ms": 191.3
+  },
+  {
+   "labels": {
+    "false": "true",
+    "true": "false"
+   },
+   "state": "A grey day: the sky is overcast and it is raining.",
+   "question": "Is the sky described as blue?",
+   "expected": false,
+   "noul": 0.01,
+   "correct": true,
+   "wall_ms": 190.9
+  },
+  {
+   "labels": {
+    "false": "true",
+    "true": "false"
+   },
+   "state": "The machine stopped: the spindle motor drew no current and the table did not vibrate.",
+   "question": "Was the machine cutting?",
+   "expected": false,
+   "noul": 0.04,
+   "correct": true,
+   "wall_ms": 178.1
+  },
+  {
+   "labels": {
+    "false": "true",
+    "true": "false"
+   },
+   "state": "The machine cut steel at full feed; spindle current and vibration were high.",
+   "question": "Was the machine cutting?",
+   "expected": true,
+   "noul": 0.97,
+   "correct": true,
+   "wall_ms": 170.2
+  },
+  {
+   "labels": {
+    "false": "B",
+    "true": "A"
+   },
+   "state": "A clear day: the sky is blue and there are no clouds.",
+   "question": "Is the sky described as blue?",
+   "expected": true,
+   "noul": 0.99,
+   "correct": true,
+   "wall_ms": 267.1
+  },
+  {
+   "labels": {
+    "false": "B",
+    "true": "A"
+   },
+   "state": "A grey day: the sky is overcast and it is raining.",
+   "question": "Is the sky described as blue?",
+   "expected": false,
+   "noul": 0.01,
+   "correct": true,
+   "wall_ms": 190.6
+  },
+  {
+   "labels": {
+    "false": "B",
+    "true": "A"
+   },
+   "state": "The machine stopped: the spindle motor drew no current and the table did not vibrate.",
+   "question": "Was the machine cutting?",
+   "expected": false,
+   "noul": 0.03,
+   "correct": true,
+   "wall_ms": 216.6
+  },
+  {
+   "labels": {
+    "false": "B",
+    "true": "A"
+   },
+   "state": "The machine cut steel at full feed; spindle current and vibration were high.",
+   "question": "Was the machine cutting?",
+   "expected": true,
+   "noul": 0.97,
+   "correct": true,
+   "wall_ms": 182.5
+  }
+ ]
+}

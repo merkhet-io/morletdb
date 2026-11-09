@@ -1,0 +1,17 @@
+{
+ "k": 3,
+ "report": {
+  "3": {
+   "laya": {
+    "room": 410,
+    "max_state_tokens": 399,
+    "fits": true
+   },
+   "laya-td": {
+    "room": 922,
+    "max_state_tokens": 399,
+    "fits": true
+   }
+  }
+ }
+}
