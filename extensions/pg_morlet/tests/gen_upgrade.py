@@ -20,6 +20,7 @@ EXT = Path(__file__).resolve().parent.parent
 OUT = EXT / "sql/pg_morlet--0.3.7--0.3.8.sql"
 FUNCTIONS = ("morlet_rate_ratio", "morlet_ns_to_samples", "morlet_samples_to_ns",   # new in 0.3.8, used below
              "morlet_interval_stats",                      # #346: the fast path for short intervals
+             "morlet_interval_buckets",                    # #340: jit=off
              "morlet_time_to_samples", "morlet_sample_time_ns", "morlet_time_bounds", "morlet_before_ns",
              "morlet_history_sql", "morlet_search_similar_evidence", "morlet_build_acquisition_segments")
 schema = Path(sys.argv[1]).read_text()

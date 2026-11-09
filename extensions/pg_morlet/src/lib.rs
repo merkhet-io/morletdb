@@ -3442,6 +3442,17 @@ END $$"#).unwrap();
             Some(-3000.0)
         );
     }
+    /// #340: the general statistics path never JIT-compiles its few-row index queries, whatever the session sets.
+    #[pg_test]
+    fn interval_buckets_runs_without_jit() {
+        let config = Spi::get_one::<Vec<String>>(
+            "SELECT proconfig FROM pg_proc WHERE oid='public.morlet_interval_buckets(regclass,text,bigint,bigint,integer,text)'::regprocedure",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(config.iter().any(|c| c == "jit=off"), "{config:?}");
+        assert!(config.iter().any(|c| c == "search_path=pg_catalog"), "{config:?}");
+    }
     #[pg_test(error = "source interval exceeds recording length")]
     fn interval_stats_fast_path_keeps_the_errors() {
         Spi::run("SELECT morlet_create_stream_collection('public','fpe'); SELECT morlet_start_recording('fpe','A',4096,'x','g');
