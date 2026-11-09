@@ -1,0 +1,22 @@
+2026-11-09T04:24:11
+ 4:24  up 12 days, 13:20, 19 users, load averages: 4.36 4.84 3.56
+ %CPU COMM
+148.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 64.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.2 /Applications/Slack.app/Contents/MacOS/Slack
+  1.0 bash
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.7 /usr/libexec/symptomsd
+  0.4 /usr/sbin/notifyd
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-09T05:23:44
+ 5:23  up 12 days, 14:19, 19 users, load averages: 5.90 5.07 3.73
+ %CPU COMM
+152.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 72.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  6.1 /usr/libexec/airportd
+  1.9 /Applications/Docker.app/Contents/MacOS/com.docker.build
+  1.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.1 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  0.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.6 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder

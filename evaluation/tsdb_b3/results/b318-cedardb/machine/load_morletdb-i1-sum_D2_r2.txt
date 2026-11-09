@@ -1,0 +1,22 @@
+2026-11-09T03:56:45
+ 3:56  up 12 days, 12:52, 19 users, load averages: 7.68 5.22 3.53
+ %CPU COMM
+160.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.7 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 38.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 15.0 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent
+  5.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  5.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.2 bash
+  1.7 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+2026-11-09T04:07:12
+ 4:07  up 12 days, 13:03, 19 users, load averages: 7.30 5.29 3.59
+ %CPU COMM
+206.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 96.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.8 claude
+  1.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.1 /Applications/Docker.app/Contents/MacOS/com.docker.build
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.1 claude

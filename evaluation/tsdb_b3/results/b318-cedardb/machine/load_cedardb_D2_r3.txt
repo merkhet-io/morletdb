@@ -1,0 +1,22 @@
+2026-11-09T05:24:03
+ 5:24  up 12 days, 14:20, 19 users, load averages: 5.93 5.13 3.78
+ %CPU COMM
+188.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 56.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.2 bash
+  0.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.6 /usr/sbin/notifyd
+  0.2 claude
+2026-11-09T06:09:11
+ 6:09  up 12 days, 15:05, 19 users, load averages: 4.30 4.80 3.74
+ %CPU COMM
+179.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 55.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.7 bash
+  0.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.6 ps
+  0.5 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  0.4 head
