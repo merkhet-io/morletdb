@@ -369,6 +369,11 @@ jobs:
         with:
           pattern: sdk-wheel-*
           merge-multiple: true
+      - name: Download the embedded edition archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: morlet-sqlite-*
+          merge-multiple: true
       - name: Checksums of the packages
         run: |
           # GitHub release assets cannot contain "~" (it becomes "."), so name the files as GitHub will serve
@@ -378,7 +383,9 @@ jobs:
           test "$(find . -maxdepth 1 -name '*.deb' | wc -l)" -eq 4
           ls -l -- *.whl
           test "$(find . -maxdepth 1 -name '*.whl' | wc -l)" -eq 4
-          sha256sum -- *.deb *.whl > SHA256SUMS
+          ls -l -- morlet-sqlite-*.tar.gz
+          test "$(find . -maxdepth 1 -name 'morlet-sqlite-*.tar.gz' | wc -l)" -eq 3
+          sha256sum -- *.deb *.whl morlet-sqlite-*.tar.gz > SHA256SUMS
           cat SHA256SUMS
       - name: Build provenance attestation for the packages
         uses: actions/attest-build-provenance@v2
@@ -386,6 +393,7 @@ jobs:
           subject-path: |
             *.deb
             *.whl
+            morlet-sqlite-*.tar.gz
       - name: Publish GitHub prerelease only after both registry trials succeed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -398,7 +406,8 @@ jobs:
           { cat CHANGELOG.md; printf '\nImage: %s (linux/amd64 and linux/arm64)\nCommit: %s\n' "$DIGEST" "$GITHUB_SHA"
             printf 'SBOMs (SPDX): attached. Verify the build provenance with: gh attestation verify oci://%s --owner %s\n' "$DIGEST" "$GITHUB_REPOSITORY_OWNER"
             printf '\nDebian packages for existing PostgreSQL 17 and 18 servers (PostgreSQL project packages on Debian bookworm; amd64, arm64), each installed with apt and trialled before release: `sudo apt install ./postgresql-17-pg-morlet_<version>_<arch>.deb`, then `CREATE EXTENSION pg_morlet`. Checksums: SHA256SUMS. Verify with: gh attestation verify <file>.deb --owner %s\n' "$GITHUB_REPOSITORY_OWNER"
-            printf '\nPython SDK wheels: with the native decoder for compressed transfer on Linux x86-64 and arm64 (manylinux: the glibc version in the file name or later) and macOS 11+ on arm64, and a pure wheel for every other platform, which reads raw samples (same results, slower long reads). Install with: `pip install morletdb-<version>-<platform>.whl`.\n'
+            printf '\nPython SDK wheels: with the native decoder for compressed transfer on Linux x86-64 and arm64 (manylinux: the glibc version in the file name or later) and macOS 11+ on arm64, and a pure wheel for every other platform, which reads raw samples (same results, slower long reads). Install with: `pip install morletdb-<version>-<platform>.whl`. The platform wheels include the embedded edition (experimental): `morletdb.open("x.morlet")`.\n'
+            printf '\nEmbedded edition (experimental, MorletDB in one SQLite file, no server): morlet-sqlite-<platform>.tar.gz holds the morlet-sqlite command line, the shared library and its C header (include/morlet_sqlite.h) for Linux x86-64 and arm64 and macOS 11+ on arm64. See embedded-edition.md inside.\n'
             printf '\nExtension-only image for PostgreSQL 18 (amd64, arm64), for image volumes and other extensions-on-demand setups: %s (tag %s-pg18). Mount it, for example at /extensions/pg_morlet, set extension_control_path = %s and dynamic_library_path = %s, then CREATE EXTENSION pg_morlet. Trialled in a clean postgres:18 image before release. Verify with: gh attestation verify oci://%s --owner %s\n' \
               "$EXT_DIGEST" "$VERSION" "'\$system:/extensions/pg_morlet/share'" "'\$libdir:/extensions/pg_morlet/lib'" "$EXT_DIGEST" "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
-          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json ./*.deb ./*.whl SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
+          gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json ./*.deb ./*.whl ./morlet-sqlite-*.tar.gz SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md

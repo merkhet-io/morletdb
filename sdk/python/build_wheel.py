@@ -2,9 +2,10 @@
 """Build the SDK wheel, optionally with the native decoder for compressed transfer (docs/compressed-transfer.md).
 
   python build_wheel.py --out DIR                                  # pure wheel (py3-none-any), raw reads only
-  python build_wheel.py --out DIR --lib PATH --platform TAG        # platform wheel with the decoder in _lib/
+  python build_wheel.py --out DIR --lib PATH [--lib PATH] --platform TAG    # platform wheel, libraries in _lib/
 
-PATH is the built crates/morlet-ffi library (libmorlet_ffi.so or .dylib); TAG a wheel platform tag such as
+PATH is a built native library: crates/morlet-ffi (libmorlet_ffi.so or .dylib, the decoder for compressed
+transfer) and crates/morlet-sqlite (libmorlet_sqlite, the embedded edition, #351); TAG a wheel platform tag such as
 manylinux_2_28_x86_64, manylinux_2_28_aarch64 or macosx_11_0_arm64. The library is plain C ABI and independent of
 the Python version, so the wheel is tagged py3-none-<TAG>. Needs `build` and `wheel` (pinned in CI)."""
 import argparse
@@ -21,7 +22,7 @@ LIB_DIR = HERE / "src" / "morletdb" / "_lib"
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--lib", type=Path)
+    ap.add_argument("--lib", type=Path, action="append", default=[])
     ap.add_argument("--platform")
     a = ap.parse_args()
     if bool(a.lib) != bool(a.platform):
@@ -32,7 +33,8 @@ def main():
     try:
         if a.lib:
             LIB_DIR.mkdir()
-            shutil.copy2(a.lib, LIB_DIR / a.lib.name)
+            for lib in a.lib:
+                shutil.copy2(lib, LIB_DIR / lib.name)
         with tempfile.TemporaryDirectory() as tmp:
             subprocess.run([sys.executable, "-m", "build", "--wheel", "--outdir", tmp, str(HERE)], check=True)
             (whl,) = Path(tmp).glob("*.whl")

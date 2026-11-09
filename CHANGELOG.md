@@ -4,6 +4,19 @@
 
 SQL version 0.3.8, with an update script from 0.3.7.
 
+- **Embedded edition, experimental (#351):** MorletDB in one SQLite file, with no server. Implemented in
+  `crates/morlet-sqlite`, with SQLite included, as a Rust library, a C interface and the `morlet-sqlite` command line.
+  In Python: `morletdb.open("x.morlet")`, which offers ingest, append, read and stats. Chunks and summaries are byte
+  for byte pg_morlet's, so interval statistics are the same bit for bit (cross-checked against pg_morlet). `Client.import_file` and `Client.export_file` move recordings between a file and a server
+  chunk for chunk, checking the chunk bytes on both sides. The SDK's platform wheels carry the library, and the
+  release attaches `morlet-sqlite-<platform>.tar.gz` (the command line, the library and a C header).
+  [docs/embedded-edition.md](docs/embedded-edition.md).
+- **File format 1, a portable format for lossless waveforms (#351):** [docs/file-format.md](docs/file-format.md)
+  specifies the file (tables, meaning, rules) with a compatibility promise. [docs/chunk-format.md](docs/chunk-format.md)
+  now specifies decoding exactly (bit stream, prediction, integer mappings, chunk summaries).
+  `reference/python/morletfile.py` reads the format with the Python standard library alone. CI checks it and the
+  library against a committed corpus covering every chunk kind (`testdata/morlet-file-1`), and against fresh files
+  from the library.
 - **Exact times at slow rates (#343):** converting a time to a sample (`morlet_time_to_samples`) and the time filters,
   `before_only` cutoffs, hit times of search and acquisition alignment computed with `sample_rate_hz::numeric`,
   which rounds a float8 to 15 significant digits. At 1/60 Hz (0.0166666666666667, above 1/60) a time exactly at a

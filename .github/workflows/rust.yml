@@ -90,8 +90,8 @@ jobs:
             target
           key: core-${{ runner.os }}-rust-1.99.0-${{ hashFiles('Cargo.lock') }}
       - run: cargo fmt --all -- --check
-      - run: cargo test --locked -p morlet-core -p morlet-ffi
-      - run: cargo clippy --locked -p morlet-core -p morlet-ffi --all-targets -- -D warnings
+      - run: cargo test --locked -p morlet-core -p morlet-ffi -p morlet-sqlite
+      - run: cargo clippy --locked -p morlet-core -p morlet-ffi -p morlet-sqlite --all-targets -- -D warnings
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -100,6 +100,8 @@ jobs:
       - run: python -m pip install -r evaluation/requirements.txt
       - run: cargo build --locked --release -p morlet-core --example features
       - run: python -m unittest discover -s evaluation -p 'test_*.py'
+      - name: File format 1 reference reader against the corpus (standard library only)
+        run: python reference/python/test_reference.py
       - name: Wave-index candidate recall and temporal-control report
         run: python evaluation/wave_index.py --size 128 --output wave-index-output/report.json
       - uses: actions/upload-artifact@v4
@@ -412,8 +414,8 @@ jobs:
         run: |
           cargo pgrx install --release --pg-config "$PG_CONFIG"
           cargo pgrx start pg17
-      - name: Build the native decoder for compressed transfer (crates/morlet-ffi)
-        run: cargo build --locked --release -p morlet-ffi
+      - name: Build the native decoder for compressed transfer (crates/morlet-ffi) and the embedded edition (crates/morlet-sqlite)
+        run: cargo build --locked --release -p morlet-ffi -p morlet-sqlite
       - name: Build and install the SDK wheel
         run: |
           python -m pip install build==1.2.2.post1 matplotlib==3.9.2
@@ -426,11 +428,16 @@ jobs:
           MORLET_SDK_REQUIRE_DB: '1'
           MORLETDB_NATIVE_LIB: ${{ github.workspace }}/target/release/libmorlet_ffi.so
           MORLET_SDK_REQUIRE_NATIVE: '1'
+          MORLETDB_SQLITE_LIB: ${{ github.workspace }}/target/release/libmorlet_sqlite.so
+          MORLET_SDK_REQUIRE_SQLITE: '1'
         run: |
           python -c 'import morletdb, sys; assert "site-packages" in morletdb.__file__, morletdb.__file__'
-          python -m unittest -v test_offline test_native test_integration 2>&1 | tee unittest.log
+          python -m unittest -v test_offline test_native test_integration test_local test_transfer 2>&1 | tee unittest.log
           test "${PIPESTATUS[0]}" -eq 0
-          if grep -q -E "skipped '(set MORLET|server without|native decoder)" unittest.log; then echo "::error::SDK tests were skipped"; exit 1; fi
+          python ../../../reference/python/test_reference.py 2>&1 | tee reference.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "skipped" reference.log; then echo "::error::the reference reader was not checked against the library"; exit 1; fi
+          if grep -q -E "skipped '(set MORLET|server without|native decoder|morlet-sqlite)" unittest.log; then echo "::error::SDK tests were skipped"; exit 1; fi
       - name: Quickstart example
         env:
           DATABASE_URL: postgresql://runner@localhost:28817/postgres

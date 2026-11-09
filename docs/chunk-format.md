@@ -65,6 +65,63 @@ A stream is a bit-packed (MSB-first) sequence with these fields:
   7-bit width);
 - the residuals, padded with zero bits to a byte boundary.
 
+### Decoding a stream, exactly
+
+These are the rules a decoder needs beyond the field list above. The reference reader
+(`reference/python/morletfile.py`, standard library only) implements them; together with this page
+it is the specification.
+
+- **Header checks:** predictor order ≤ 4, partition order ≤ 8, and `n >> partition_order` ≥ 1.
+- **Partitions:** there are `2^p` of them. Partition `j` holds the residuals of samples
+  `[(j·n) >> p, ((j+1)·n) >> p)`, and the partitions follow each other in one stream.
+- **Residual code:**
+  - With Rice parameter `k` (0..62): a unary quotient `q` (q zero bits, then a one bit), then `k`
+    remainder bits `r`; the value is `(q << k) | r`.
+  - With the escape (63): a 7-bit width `w` (≤ 64), then each value in `w` bits.
+- **Zigzag:** a coded value `u` stands for the signed residual `(u >> 1) XOR −(u AND 1)`.
+- **Prediction:** residual `e[i]` is added to a prediction `x̂[i]` from the values before it. The
+  order used at sample `i` is `min(order, i)`, so the first samples use lower orders:
+  - order 0: 0;
+  - order 1: `x[i−1]`;
+  - order 2: `2x[i−1] − x[i−2]`;
+  - order 3: `3(x[i−1] − x[i−2]) + x[i−3]`;
+  - order 4: `4(x[i−1] + x[i−3]) − 6x[i−2] − x[i−4]`.
+
+  All integer arithmetic wraps as signed 64-bit two's complement.
+- **End of stream:** after the last residual only zero padding bits up to the end of the stream's
+  bytes are allowed.
+- **Order-preserving integers** (float kind and corrections): the float64 bit pattern `b` maps
+  to `b` when the sign bit is clear and to `−(b AND 0x7FFF…F) − 1` when it is set. So +0 is 0,
+  −0 is −1, and numeric order is kept. The inverse maps `o ≥ 0` to the bit pattern `o`, and
+  `o < 0` to `(−(o + 1)) OR 0x8000…0`.
+- **Grid values:**
+  - `k` converted to float64, then `k · scale` (mode 0) or `k / scale` (mode 1), both in float64.
+  - Version 3 then adds `offset`, as `offset + that`.
+  - With corrections, each value is `from_ordered(ordered(grid value) + c)`, with wrapping addition.
+- **Grid stream lengths:** the index stream has the byte length given before it, and the
+  correction stream (if `has_fix`) takes the remaining bytes before the checksum. Without
+  corrections no bytes may remain.
+- **Kinds by version:** kind 0 (raw) and kind 2 (float) appear only with version 2; kind 1
+  (grid) with versions 2 and 3.
+- **Checksum:** CRC-32C (Castagnoli; reflected polynomial `0x82F63B78`, initial value and final
+  XOR `0xFFFFFFFF`) over every byte before it, stored little-endian.
+
+## Chunk summary (version 1, 66 bytes)
+
+Stored next to a chunk to answer interval statistics without decoding it. Readers may ignore it;
+it is derived from the samples, and writers of the file format may leave it NULL.
+
+| Bytes | Field |
+|---|---|
+| 0 | `1` (summary version) |
+| 1–8 | `u64` sample count |
+| 9 | `1` if any sample is NaN, else `0` |
+| 10–65 | `f64` min, max, sum, sum compensation, scale, scaled sum of squares, its compensation |
+
+The sums are compensated (Neumaier) sums in sample order. Squares are summed as `(x / scale)²`,
+where `scale` is the largest `|x|` so far and the sum is rescaled whenever `scale` grows
+(`morlet_core::intervalstats`).
+
 The decoder rejects:
 - an unknown version, or version 1;
 - a checksum mismatch;
