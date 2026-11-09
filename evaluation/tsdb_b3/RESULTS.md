@@ -1525,3 +1525,53 @@ expected (1 GB, not 2–4 GB); QuestDB and TimescaleDB needed more (2 GB, not 51
 (QuestDB, TimescaleDB, IoTDB 8×; TDengine, CrateDB 4×; no "> 4 GB"); the QuestDB table shows both the 8× cap ratio
 and the 16 GB working set, labelled as the footprint with the documented configuration; the caption says caps are
 powers of two. The other databases' tables keep their B3.13 working-set rows.
+
+# Amendment B3.18: CedarDB and InfluxDB 3 Core beside MorletDB 0.3.9-alpha.1
+
+Protocol: Amendment B3.18 in [PROTOCOL.md](PROTOCOL.md), frozen before any load of the benchmark set. Runner
+`run_b318.sh`, results in `results/b318-cedardb/` and `results/b318-influxdb3/`, log `results/b318.log`. Images: the
+released `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (arm `morletdb-i1-sum`, chunk summaries on), CedarDB v2026-11-04
+(`cedardb/cedardb@sha256:737ce1bf2ef3…`), InfluxDB 3 Core 3.12.2.
+
+**Machine.** The start condition was met at 02:53:30 on 2026-11-09 (1-minute load average 1.91). The CedarDB pair ran
+02:53–06:45. Pre- and post-load snapshots had a median load average of 5.9 (max 7.7) from the session's own loads, and
+in 10 of 28 snapshots a foreign process used more than half a core: macOS maintenance at night (XProtect 4×,
+PerfPowerServices 2×, fseventsd, suggestd) and Slack 2×. Systems alternated, so ratios within the pair are comparable.
+Gaps of 15–60 minutes between loads come from each step's fresh process parsing the 124 source files, not from the
+loads (MorletDB 7.1–7.6 s, CedarDB 38–41 s).
+
+## CedarDB pair
+
+**Correctness: all 12 loads passed** (every channel by SHA-256, exact times).
+
+| | MorletDB 0.3.9 | CedarDB | Statement |
+|---|---:|---:|---|
+| Ingestion D2, median [range] | 13.39 M [13.35–14.28] samples/s | 2.66 M [2.59–2.66] | MorletDB **5.0×** faster (all-loads bound 5.0) |
+| Ingestion D1 (durable) | 13.92 M [13.92–14.17] | 2.64 M [2.50–2.67] | MorletDB **5.3×** faster (bound 5.2) |
+| Data on disk | 163.3 MiB (database) | 4,155.7 MiB (data directory; 5,436 MiB allocated) | MorletDB 25× smaller |
+| R1, 4,096 samples, p50 / p95 | 0.62 / 1.01 ms | 2.70 / 3.51 ms | MorletDB 4.4× / 3.5× |
+| R2, 128,000 samples | 5.75 / 6.97 ms | 35.78 / 37.99 ms | MorletDB 6.2× / 5.4× |
+| R3, 3 × 64,000 samples | 7.25 / 8.99 ms | 29.62 / 32.22 ms | MorletDB 4.1× / 3.6× |
+| R4 recent / older | 0.62 / 0.96; 0.61 / 0.99 ms | 2.61 / 3.37; 2.86 / 3.44 ms | MorletDB 4.2× / 3.5×; 4.7× / 3.5× |
+| R5, 4 threads | 4,210 queries/s | 1,126 queries/s | MorletDB 3.7× |
+| **Interval statistics** | 0.68 / 0.75 ms (chunk summaries) | **0.51 / 0.56 ms** | **CedarDB 1.35× / 1.34× faster** |
+| Server working set while ingesting | 180 MiB | 4,673 MiB | MorletDB 26× less (footprint in a 16 GB container, not a need) |
+| Retries | identical: no-op; altered: refused | both refused (primary key) | |
+
+**Attribution.**
+- *Data model.* CedarDB stores one row per sample (34 million rows with a timestamp, the acquisition key and a primary
+  key); MorletDB stores a recording as compressed chunks with implicit timing and codes calibrated values on their
+  grid. That is the storage gap.
+- *Reads.* An interval comes back from CedarDB as one row per sample over the PostgreSQL protocol, from MorletDB as
+  chunks; long reads widen the gap (6.2× at 128,000 samples). Transfer and the client, not the engine, dominate.
+- *Ingestion.* CedarDB was loaded as TimescaleDB was (B3.7): binary COPY with one row per sample from one Python
+  client; its server averaged 1.3 cores. Parallel writers were not measured and may narrow the gap.
+- *Interval statistics.* CedarDB aggregates over its own columns with compiled, vectorised code and is faster than
+  MorletDB's chunk summaries: the one loss in this pair, and where CedarDB's design is aimed.
+
+**Publication.** Shown on the website only after CedarDB's Community Edition terms were checked for restrictions on
+publishing benchmark results (the PDF linked from its licensing page returned 404 on 2026-11-08 and 2026-11-09).
+
+## InfluxDB 3 Core pair
+
+Running at the time of writing; results follow.
