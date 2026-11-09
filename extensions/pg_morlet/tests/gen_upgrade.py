@@ -7,7 +7,8 @@ rounds a float8 to 15 significant digits (1/60 Hz -> 0.0166666666666667, slightl
 sample instant mapped to the next sample. A rate is now read as the exact fraction it stands for (morlet_rate_ratio:
 1/60, 1/7, 25600/1, or its exact decimal), and sample boundaries are computed in integer arithmetic
 (morlet_ns_to_samples, morlet_samples_to_ns). The script creates those three functions and replaces the ones that
-convert rates, taking each definition verbatim from the
+convert rates, and morlet_interval_stats, which takes a fast path for intervals shorter than a roll-up block
+(#346), taking each definition verbatim from the
 generated schema (CREATE OR REPLACE keeps OIDs, dependencies and privileges), so tests/upgrade.sh and
 tests/upgrade_from_release.sh find an upgraded catalog equal to a fresh 0.3.8 installation. No signature, table or
 data changes. The scripts of earlier steps are frozen."""
@@ -18,6 +19,7 @@ from pathlib import Path
 EXT = Path(__file__).resolve().parent.parent
 OUT = EXT / "sql/pg_morlet--0.3.7--0.3.8.sql"
 FUNCTIONS = ("morlet_rate_ratio", "morlet_ns_to_samples", "morlet_samples_to_ns",   # new in 0.3.8, used below
+             "morlet_interval_stats",                      # #346: a fast path for short intervals
              "morlet_time_to_samples", "morlet_sample_time_ns", "morlet_time_bounds", "morlet_before_ns",
              "morlet_history_sql", "morlet_search_similar_evidence", "morlet_build_acquisition_segments")
 schema = Path(sys.argv[1]).read_text()
