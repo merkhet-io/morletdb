@@ -537,8 +537,39 @@ CREATE FUNCTION public.morlet_interval_stats(collection regclass,source_recordin
   interval_start bigint,interval_end bigint)
 RETURNS TABLE(sample_count bigint,min float8,max float8,mean float8,rms float8)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE stats float8[];
+DECLARE stats float8[]; rel record; rec_end bigint;
 BEGIN
+  -- Fast path (#346): an interval shorter than a level-1 roll-up block (2^20 samples) cannot contain a whole roll-up
+  -- block, and without kept summaries (memory levels) no chunk is compacted, so the statistics are the chunk
+  -- aggregate of morlet_interval_buckets alone: the same rows in the same order, so the same result bit for bit,
+  -- in one cached catalog query and one statement instead of the general path's lookups. Anything else (errors,
+  -- missing or invisible samples, longer intervals, memory levels) takes the general path.
+  IF interval_start>=0 AND interval_end>interval_start AND interval_end-interval_start<1048576 THEN
+    SELECT format('%I.%I',n.nspname,c.relname||'_chunks') AS chunks,
+        to_regclass(format('%I.%I',n.nspname,c.relname||'_kept_summaries')) AS kept,
+        (SELECT coalesce(bool_or(a.attname='encoded'),false) FROM pg_attribute a
+          WHERE a.attrelid=to_regclass(format('%I.%I',n.nspname,c.relname||'_chunks')) AND a.attname='encoded'
+            AND NOT a.attisdropped) AS encoded,
+        (SELECT coalesce(bool_or(a.attname='summary'),false) FROM pg_attribute a
+          WHERE a.attrelid=to_regclass(format('%I.%I',n.nspname,c.relname||'_chunks')) AND a.attname='summary'
+            AND NOT a.attisdropped) AS summarized
+      INTO rel FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+    IF rel.encoded AND rel.kept IS NULL THEN
+      EXECUTE format('SELECT (SELECT (r.checkpoint->>''end'')::bigint FROM %1$s r WHERE r.recording_id=$1),
+          (SELECT public.morlet_interval_stats_agg(
+              CASE WHEN %3$s IS NULL OR c.start_sample<$2 OR c.start_sample+c.sample_count>$3 THEN c.encoded END,
+              %3$s,c.start_sample,c.sample_count,$2,$3,1 ORDER BY c.start_sample)
+            FROM %2$s c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
+              AND c.start_sample+c.sample_count>$2)',
+          collection,rel.chunks,CASE WHEN rel.summarized THEN 'c.summary' ELSE 'NULL::bytea' END)
+        INTO rec_end,stats USING source_recording_id,interval_start,interval_end;
+      IF rec_end IS NOT NULL AND interval_end<=rec_end AND cardinality(stats)=7
+          AND stats[3]=interval_end-interval_start THEN
+        RETURN QUERY SELECT stats[3]::bigint,stats[4],stats[5],stats[6],stats[7];
+        RETURN;
+      END IF;
+    END IF;
+  END IF;
   stats:=public.morlet_interval_buckets(collection,source_recording_id,interval_start,interval_end,1,'statistics');
   RETURN QUERY SELECT stats[3]::bigint,stats[4],stats[5],stats[6],stats[7];
 END $$;

@@ -3250,6 +3250,43 @@ END $$"#).unwrap();
         // Enabling them again is a no-op.
         Spi::run("SELECT morlet_enable_chunk_summaries('sum_dflt')").unwrap();
     }
+    /// #346: the fast path of morlet_interval_stats returns exactly what the general path returns, for intervals that
+    /// cut chunks, lie inside one, span many, meet chunks without summaries, or end at the recording's end; and
+    /// requests the fast path does not take still raise the general path's errors.
+    #[pg_test]
+    fn interval_stats_fast_path_equals_the_general_path() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','fp'); SELECT morlet_start_recording('fp','A',4096,'x','g');
+             SELECT morlet_append_chunks_raw('fp','A',h*150000,morlet_float8_le_bytes(ARRAY(SELECT (round(1000*sin(i/7.)+37*sin(i/1.3))/64)::float8
+               FROM generate_series(h*150000,h*150000+149999) i)),1000) FROM generate_series(0,1) h;
+             UPDATE fp_chunks SET summary=NULL WHERE (start_sample/1000)%7=3;",
+        )
+        .unwrap();
+        let differ = Spi::get_one::<i64>(
+            "SELECT count(*) FROM (SELECT (k*7919)%299990 AS a, least(300000,(k*7919)%299990+1+(k*104729)%200000) AS b
+               FROM generate_series(0,299) k) iv,
+             LATERAL (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] AS fast FROM morlet_interval_stats('fp','A',iv.a,iv.b) s) f,
+             LATERAL (SELECT (public.morlet_interval_buckets('fp','A',iv.a,iv.b,1,'statistics'))[3:7] AS general) g
+             WHERE f.fast IS DISTINCT FROM g.general",
+        )
+        .unwrap();
+        assert_eq!(differ, Some(0));
+        // the fast path's own edge cases agree too: one sample, a whole chunk, the last sample
+        let edges = Spi::get_one::<i64>(
+            "SELECT count(*) FROM (VALUES (5,6),(1000,2000),(299999,300000),(2999,3001),(0,300000)) iv(a,b),
+             LATERAL (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] AS fast FROM morlet_interval_stats('fp','A',iv.a,iv.b) s) f,
+             LATERAL (SELECT (public.morlet_interval_buckets('fp','A',iv.a,iv.b,1,'statistics'))[3:7] AS general) g
+             WHERE f.fast IS DISTINCT FROM g.general",
+        )
+        .unwrap();
+        assert_eq!(edges, Some(0));
+    }
+    #[pg_test(error = "source interval exceeds recording length")]
+    fn interval_stats_fast_path_keeps_the_errors() {
+        Spi::run("SELECT morlet_create_stream_collection('public','fpe'); SELECT morlet_start_recording('fpe','A',4096,'x','g');
+                  SELECT morlet_append_chunks_raw('fpe','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,9999) i)),1000);
+                  SELECT * FROM morlet_interval_stats('fpe','A',9000,10001)").unwrap();
+    }
     /// #193: the integrity scrub finds every injected corruption, reports nothing on sound data, never
     /// changes data, and continues in batches.
     #[pg_test]

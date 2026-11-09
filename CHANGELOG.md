@@ -13,6 +13,11 @@ SQL version 0.3.8, with an update script from 0.3.7.
   sample instants at periods of 1, 3, 6, 7 and 60 s; checked once over every whole-second period from 1 to 3,600 s.
   Rates such as 25.6 kHz and 64 kHz map exactly as before. `morlet_time_to_samples` costs about 50 µs per call
   instead of 22; where it runs per row (time filters, `before_only`) the fraction is computed once per query.
+- **Faster interval statistics (#346):** `morlet_interval_stats` over an interval shorter than a roll-up block
+  (2^20 samples) on a collection without memory levels now skips the general overview machinery (relation, memory
+  and roll-up lookups) and runs the chunk aggregate directly: the same rows in the same order, so the same result bit
+  for bit (tested over 305 intervals against the general path). Server time about 1.7× lower in a local measurement
+  (128,000 samples: 581 against 977 µs, debug-assertion PostgreSQL). Other requests take the general path as before.
 
 ## 0.3.9-alpha.1
 
