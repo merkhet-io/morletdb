@@ -4,12 +4,13 @@
 //! pg_morlet stores them, so a chunk moves between the editions bit for bit. Interval statistics merge the same
 //! pieces in the same order as pg_morlet's aggregate (exact sums), so they are the same bit for bit.
 //!
-//! File format 0 (`PRAGMA user_version`, `PRAGMA application_id` = `MRLT`):
+//! File format 1 (`PRAGMA user_version`, `PRAGMA application_id` = `MRLT`), specified in docs/file-format.md:
 //!
 //! - `morlet_meta(key, value)`: `format`, `format_version`, `created_by`.
 //! - `recordings(recording_id, sample_rate_hz, channel, unit, sample_quantum, metadata, end_sample)`, as pg_morlet's
 //!   recording rows (the start time is in the metadata as `start` and `start_ns`, as the Python SDK writes it).
-//! - `chunks(recording_id, start_sample, sample_count, encoded, summary)`, contiguous from 0 per recording.
+//! - `chunks(recording_id, start_sample, sample_count, encoded, summary)`, contiguous from 0 per recording; the
+//!   summary may be NULL (files from other writers), and statistics then decode the chunk, with the same result.
 //!
 //! Every other tool can read the tables; only the samples need this library (or pg_morlet) to decode.
 use morlet_core::exactstats::ExactStats;
@@ -19,7 +20,7 @@ use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
 use std::fmt;
 use std::path::Path;
 
-pub const FORMAT_VERSION: i64 = 0;
+pub const FORMAT_VERSION: i64 = 1;
 /// `PRAGMA application_id`: "MRLT".
 pub const APPLICATION_ID: i64 = 0x4d52_4c54;
 /// The largest interval `read` returns in one call (as pg_morlet's interval reads, 2^24 samples).
@@ -41,7 +42,7 @@ CREATE TABLE chunks(
   start_sample INTEGER NOT NULL CHECK(start_sample >= 0),
   sample_count INTEGER NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
   encoded BLOB NOT NULL,
-  summary BLOB NOT NULL,
+  summary BLOB,
   PRIMARY KEY(recording_id, start_sample)
 ) WITHOUT ROWID;
 ";
@@ -351,7 +352,7 @@ impl Store {
     pub fn interval_stats(&self, recording_id: &str, a: i64, b: i64) -> Result<[f64; 5]> {
         check_interval(&self.conn, recording_id, a, b, i64::MAX)?;
         let mut st = self.conn.prepare_cached(
-            "SELECT start_sample,sample_count,CASE WHEN start_sample<?2 OR start_sample+sample_count>?3 THEN encoded END,
+            "SELECT start_sample,sample_count,CASE WHEN summary IS NULL OR start_sample<?2 OR start_sample+sample_count>?3 THEN encoded END,
                     summary
              FROM chunks WHERE recording_id=?1 AND start_sample<?3 AND start_sample>?2-32768 AND start_sample+sample_count>?2
              ORDER BY start_sample",
@@ -362,8 +363,8 @@ impl Store {
         while let Some(r) = rows.next()? {
             let (start, count): (i64, i64) = (r.get(0)?, r.get(1)?);
             let (lo, hi) = (a.max(start), b.min(start + count));
-            let piece = if start >= a && start + count <= b {
-                let sm: Vec<u8> = r.get(3)?;
+            let summary: Option<Vec<u8>> = r.get(3)?;
+            let piece = if let (true, Some(sm)) = (start >= a && start + count <= b, summary) {
                 let s = IntervalStats::from_summary(&sm)
                     .ok_or_else(|| Error::Invalid("invalid chunk summary".into()))?;
                 if s.count() != count as u64 {

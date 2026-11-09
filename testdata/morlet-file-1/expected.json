@@ -1,0 +1,90 @@
+{
+ "adc-counts-div": {
+  "description": "ADC counts on a 1/512 grid (grid, mode 1 = k / scale)",
+  "samples": 20000,
+  "sha256_float64le": "c89fe2795813220b46da0e523c3ad069ac210e979618cae81f28b14719c614d0",
+  "first": [
+   "0.005859375",
+   "0.16015625",
+   "0.302734375",
+   "0.474609375"
+  ]
+ },
+ "decimal-mul": {
+  "description": "multiples of 0.3, not exact in binary (grid, mode 0 = k * scale, last-place corrections)",
+  "samples": 9000,
+  "sha256_float64le": "77b16af0c9c837cc5e80e342c78273eda6bbba69bbbcde5db3e6fe9653544788",
+  "first": [
+   "1.2",
+   "-1.7999999999999998",
+   "3.3",
+   "-5.3999999999999995"
+  ]
+ },
+ "calibrated-offset": {
+  "description": "an offset grid detected from the data: 273.15 + k / 16 (version 3)",
+  "samples": 6000,
+  "sha256_float64le": "236c49187f8fc6cae8bec395a5387b6ffbf2a3ce458e4d28379469016d66af25",
+  "first": [
+   "267.275",
+   "290.0875",
+   "273.0875",
+   "267.7125"
+  ]
+ },
+ "float-noise": {
+  "description": "values on no grid (float bits)",
+  "samples": 5000,
+  "sha256_float64le": "b730a3787fe995fdafead20b82590a172b1cf24b0749106316448afabaebc6cd",
+  "first": [
+   "-0.7810421843768108",
+   "-1.2386853422818536",
+   "1.5048853193429632",
+   "0.13366165978530228"
+  ]
+ },
+ "raw-bits": {
+  "description": "incompressible values (float bits or raw, whichever is smaller)",
+  "samples": 3000,
+  "sha256_float64le": "cbc34a8466d070f188e44d14117b179aef697c3729eddec9b4fc88f54adc1a8e",
+  "first": [
+   "-3.522544354067408e-43",
+   "-6.30156748792951e-270",
+   "-3.5314475838397923e-130",
+   "-1.78522959053184e-264"
+  ]
+ },
+ "edge-values": {
+  "description": "zero and negative zero, the amplitude limits, subnormals, repeats; chunks of 1, 32, 3567",
+  "samples": 3600,
+  "sha256_float64le": "829c7f7f07b3752314691099fcaa6a1133732322eb0cedeb0305e5af9ba38599",
+  "first": [
+   "0.0",
+   "-0.0",
+   "1000000000.0",
+   "-1000000000.0"
+  ]
+ },
+ "constant-long": {
+  "description": "one full 32,768-sample chunk and a short one",
+  "samples": 32773,
+  "sha256_float64le": "84847082773f1b9dbdf3b1b2ba805b1b5f94d22fb9eefbe3070d6c056886425e",
+  "first": [
+   "42.5",
+   "42.5",
+   "42.5",
+   "42.5"
+  ]
+ },
+ "no-summaries": {
+  "description": "chunks whose summary is NULL (as a writer without summaries leaves them)",
+  "samples": 8192,
+  "sha256_float64le": "4358f57f3f824ee043e5f38aaab0eaedf8aa5e1fe28992049473700c00d867c4",
+  "first": [
+   "25.0",
+   "24.5",
+   "23.0",
+   "20.75"
+  ]
+ }
+}

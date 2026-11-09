@@ -200,6 +200,40 @@ fn explicit_chunk_layouts_are_kept() {
 }
 
 #[test]
+fn chunks_without_summaries_give_the_same_statistics() {
+    let path = tmp("nosummary");
+    let mut s = Store::open(&path).unwrap();
+    s.create_recording("r", 1000.0, "x", "", 1.0 / 512.0, "{}")
+        .unwrap();
+    let x = signal(200_000, 9);
+    s.append("r", 0, &x, 4096).unwrap();
+    let ivs = [
+        (0i64, 200_000i64),
+        (4096, 8192),
+        (1, 199_999),
+        (12_345, 150_000),
+    ];
+    let with: Vec<[f64; 5]> = ivs
+        .iter()
+        .map(|&(a, b)| s.interval_stats("r", a, b).unwrap())
+        .collect();
+    // another writer may leave summaries out (file format 1); every third chunk here
+    s.connection()
+        .execute(
+            "UPDATE chunks SET summary=NULL WHERE (start_sample/4096)%3=1",
+            [],
+        )
+        .unwrap();
+    for (&(a, b), w) in ivs.iter().zip(&with) {
+        assert_eq!(
+            bits(&s.interval_stats("r", a, b).unwrap()),
+            bits(w),
+            "[{a},{b})"
+        );
+    }
+}
+
+#[test]
 fn foreign_files_are_refused() {
     let path = tmp("foreign");
     let c = rusqlite::Connection::open(&path).unwrap();

@@ -1,7 +1,8 @@
 # Embedded edition: MorletDB in one SQLite file (experimental, #351)
 
-**Status: experimental.** File format 0 may still change before the beta; the server edition (PostgreSQL with
-pg_morlet) is the supported product. Nothing here is a benchmark statement yet (see "Evidence").
+**Status: experimental.** The edition is experimental. The file format ([file-format.md](file-format.md),
+format 1) is frozen with the release that first ships it, with a compatibility promise. The server edition
+(PostgreSQL with pg_morlet) is the supported product. Nothing here is a benchmark statement yet (see "Evidence").
 
 The embedded edition stores recordings in **one SQLite file**, in the program that uses it: no server, no
 installation, no administration. It uses the same chunk encoding and summaries as pg_morlet (`morlet-core`), so the
@@ -71,18 +72,15 @@ recordings as JSON, last error); `tests/c/smoke.c` is a complete example.
   statistics equal pg_morlet's bit for bit (`crates/morlet-sqlite/tests/cross/cross_pg.py`: 293 chunks, 200
   intervals, 0 differences).
 
-## File format 0
+## File format
 
-An ordinary SQLite database (`PRAGMA application_id` = `0x4d524c54`, "MRLT"; `PRAGMA user_version` = 0) that any
-SQLite tool can open. The tables:
-
-- `morlet_meta(key, value)`: `format` = `morletdb-sqlite`, `format_version`, `created_by`.
-- `recordings(recording_id, sample_rate_hz, channel, unit, sample_quantum, metadata, end_sample)`, like pg_morlet's
-  recording rows; the start time is in `metadata` (`start`, `start_ns`), as the Python SDK writes it.
-- `chunks(recording_id, start_sample, sample_count, encoded, summary)`: contiguous from sample 0, at most 32,768
-  samples each; `encoded` in [chunk format](chunk-format.md), `summary` the chunk's statistics summary.
-
-Only the samples need this library or pg_morlet to decode; metadata, layout and sizes are plain SQL.
+Format 1 is specified in [file-format.md](file-format.md):
+- **The file:** an ordinary SQLite database with `recordings` and `chunks` tables, and an application id and
+  version.
+- **Promise:** a format-1 file stays readable by every later version.
+- **Without MorletDB:** the reference reader `reference/python/morletfile.py` (Python standard library only)
+  reads it, and CI checks both readers against a corpus that covers every chunk kind
+  (`testdata/morlet-file-1`).
 
 ## Distribution (plan)
 
