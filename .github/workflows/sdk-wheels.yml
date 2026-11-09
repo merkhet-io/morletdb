@@ -1,12 +1,12 @@
 name: SDK wheels
 # The Python SDK as wheels (docs/compressed-transfer.md): one per platform with the native decoder for compressed
-# transfer (crates/morlet-ffi) in morletdb/_lib/, and a pure wheel that reads raw samples everywhere else. Each
+# transfer (crates/morlet-ffi) and the embedded edition (crates/morlet-sqlite, #351) in morletdb/_lib/, and a pure wheel that reads raw samples everywhere else. Each
 # platform wheel is installed into a clean environment and its native tests run from the installed package, without
 # MORLETDB_NATIVE_LIB, so they prove the wheel finds and uses its own library. The release workflow calls this and
 # attaches the wheels to the GitHub release; nothing is published to a package index.
 on:
   pull_request:
-    paths: ['sdk/python/**', 'crates/morlet-ffi/**', 'crates/morlet-core/**', 'Cargo.lock', 'rust-toolchain.toml',
+    paths: ['sdk/python/**', 'crates/morlet-ffi/**', 'crates/morlet-sqlite/**', 'crates/morlet-core/**', 'Cargo.lock', 'rust-toolchain.toml',
             '.github/workflows/sdk-wheels.yml']
   workflow_call:
   workflow_dispatch:
@@ -20,13 +20,13 @@ jobs:
         include:
           - runner: ubuntu-24.04
             arch: x86_64
-            lib: libmorlet_ffi.so
+            ext: so
           - runner: ubuntu-24.04-arm
             arch: aarch64
-            lib: libmorlet_ffi.so
+            ext: so
           - runner: macos-15
             arch: arm64
-            lib: libmorlet_ffi.dylib
+            ext: dylib
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     env:
@@ -36,28 +36,31 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Build the decoder
-        run: cargo build --locked --release -p morlet-ffi
+      - name: Build the decoder and the embedded edition
+        run: cargo build --locked --release -p morlet-ffi -p morlet-sqlite
       - name: Platform tag from the built library
         id: tag
         run: |
-          lib=target/release/${{ matrix.lib }}
+          libs="target/release/libmorlet_ffi.${{ matrix.ext }} target/release/libmorlet_sqlite.${{ matrix.ext }}"
           if [ "$RUNNER_OS" = Linux ]; then
-            # The newest glibc symbol version the library needs decides the manylinux tag (PEP 600).
-            v=$(objdump -T "$lib" | grep -o 'GLIBC_2\.[0-9]*' | sed 's/GLIBC_2\.//' | sort -n | tail -1)
+            # The newest glibc symbol version the libraries need decides the manylinux tag (PEP 600).
+            v=$(for lib in $libs; do objdump -T "$lib"; done | grep -o 'GLIBC_2\.[0-9]*' | sed 's/GLIBC_2\.//' | sort -n | tail -1)
             test -n "$v"
-            if ldd "$lib" | grep -v -E 'linux-vdso|libgcc_s|libm\.so|libc\.so|ld-linux' | grep -q '=>'; then
-              echo "::error::the decoder links a library beyond libc, libm and libgcc_s"; ldd "$lib"; exit 1
-            fi
+            for lib in $libs; do
+              if ldd "$lib" | grep -v -E 'linux-vdso|libgcc_s|libm\.so|libc\.so|ld-linux' | grep -q '=>'; then
+                echo "::error::$lib links a library beyond libc, libm and libgcc_s"; ldd "$lib"; exit 1
+              fi
+            done
             echo "platform=manylinux_2_${v}_${{ matrix.arch }}" >> "$GITHUB_OUTPUT"
           else
-            otool -l "$lib" | grep -A3 LC_BUILD_VERSION | grep -q 'minos 11.0'
+            for lib in $libs; do otool -l "$lib" | grep -A3 LC_BUILD_VERSION | grep -q 'minos 11.0'; done
             echo "platform=macosx_11_0_${{ matrix.arch }}" >> "$GITHUB_OUTPUT"
           fi
       - name: Build the wheel
         run: |
           python -m pip install build==1.2.2.post1 wheel==0.45.1
-          python sdk/python/build_wheel.py --out sdk-dist --lib "target/release/${{ matrix.lib }}" \
+          python sdk/python/build_wheel.py --out sdk-dist --lib "target/release/libmorlet_ffi.${{ matrix.ext }}" \
+            --lib "target/release/libmorlet_sqlite.${{ matrix.ext }}" \
             --platform "${{ steps.tag.outputs.platform }}"
           ls -l sdk-dist
       - name: Install into a clean environment and run the native tests from the installed package
@@ -66,14 +69,15 @@ jobs:
           /tmp/clean/bin/pip install sdk-dist/*.whl
           cd sdk/python/tests
           /tmp/clean/bin/python -c 'import morletdb, morletdb._native as n; assert "site-packages" in morletdb.__file__; assert n.native() is not None'
-          env -u MORLETDB_NATIVE_LIB MORLET_SDK_REQUIRE_NATIVE=1 /tmp/clean/bin/python -m unittest -v test_native test_offline 2>&1 | tee unittest.log
+          env -u MORLETDB_NATIVE_LIB -u MORLETDB_SQLITE_LIB MORLET_SDK_REQUIRE_NATIVE=1 MORLET_SDK_REQUIRE_SQLITE=1 \
+            /tmp/clean/bin/python -m unittest -v test_native test_offline test_local 2>&1 | tee unittest.log
           test "${PIPESTATUS[0]}" -eq 0
           if grep -q "skipped" unittest.log; then echo "::error::native tests were skipped"; exit 1; fi
       - name: On the oldest supported Python, in a Debian 12 container (glibc 2.36)
         if: runner.os == 'Linux'
         run: |
           docker run --rm -v "$PWD":/src -w /src/sdk/python/tests python:3.10-slim-bookworm bash -c '
-            pip install -q /src/sdk-dist/*.whl && MORLET_SDK_REQUIRE_NATIVE=1 python -m unittest test_native'
+            pip install -q /src/sdk-dist/*.whl && MORLET_SDK_REQUIRE_NATIVE=1 MORLET_SDK_REQUIRE_SQLITE=1 python -m unittest test_native test_local'
       - uses: actions/upload-artifact@v4
         with:
           name: sdk-wheel-${{ steps.tag.outputs.platform }}

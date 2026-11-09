@@ -1,0 +1,20 @@
+[package]
+name = "morlet-sqlite"
+description = "MorletDB's embedded edition: lossless waveform recordings in one SQLite file (experimental, #351)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+morlet-core = { path = "../morlet-core" }
+rusqlite = { version = "0.37", features = ["bundled"] }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+rusqlite = { version = "0.37", features = ["bundled"] }
