@@ -1513,6 +1513,125 @@ fn morlet_interval_stats_final(mut state: pgrx::Internal) -> Vec<f64> {
     out
 }
 
+/// A prepared interval-statistics query per collection, kept for the backend's lifetime (#346).
+struct StatsPlan {
+    nsp: pg_sys::Oid,
+    relname: String,
+    chunks: pg_sys::Oid,
+    summarized: bool,
+    plan: pgrx::spi::OwnedPreparedStatement,
+}
+
+thread_local! {
+    static STATS_PLANS: std::cell::RefCell<std::collections::HashMap<u32, StatsPlan>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
+}
+
+/// Statistics `[count, min, max, mean, rms]` of an interval shorter than a level-1 roll-up block (2^20 samples) on a
+/// collection without kept summaries, or NULL when that fast path does not apply (the caller then takes the general
+/// path, which also raises every error). The chunk aggregate of `morlet_interval_buckets` over the same rows in the
+/// same order, so the same result bit for bit; the collection's tables are resolved through the system caches and
+/// the query is prepared once per backend and collection (PostgreSQL re-plans it when a table changes), so a call
+/// costs no catalog query and no planning. Runs as the caller: privileges and row security apply.
+#[pg_extern(stable)]
+fn morlet_interval_stats_fast(
+    collection: pg_sys::Oid,
+    source_recording_id: &str,
+    interval_start: i64,
+    interval_end: i64,
+) -> Option<Vec<f64>> {
+    use std::ffi::{CStr, CString};
+    if interval_start < 0
+        || interval_end <= interval_start
+        || interval_end - interval_start >= 1 << 20
+    {
+        return None;
+    }
+    let (nsp, relname) = unsafe {
+        let name = pg_sys::get_rel_name(collection);
+        if name.is_null() {
+            return None;
+        }
+        (
+            pg_sys::get_rel_namespace(collection),
+            CStr::from_ptr(name).to_string_lossy().into_owned(),
+        )
+    };
+    let relid = |suffix: &str| -> pg_sys::Oid {
+        let n = CString::new(format!("{relname}{suffix}")).unwrap();
+        unsafe { pg_sys::get_relname_relid(n.as_ptr(), nsp) }
+    };
+    let chunks = relid("_chunks");
+    if chunks == pg_sys::InvalidOid || relid("_kept_summaries") != pg_sys::InvalidOid {
+        return None;
+    }
+    let has = |att: &str| -> bool {
+        let a = CString::new(att).unwrap();
+        unsafe { pg_sys::SearchSysCacheExistsAttName(chunks, a.as_ptr()) }
+    };
+    if !has("encoded") {
+        return None;
+    }
+    let summarized = has("summary");
+    let key = collection.to_u32();
+    let row = Spi::connect(|client| {
+        STATS_PLANS.with(|plans| {
+            let mut plans = plans.borrow_mut();
+            // The plan names the tables, so a rename, a re-created chunks table or a new summary column rebuilds it.
+            let stale = plans.get(&key).is_none_or(|p| {
+                p.nsp != nsp || p.relname != relname || p.chunks != chunks || p.summarized != summarized
+            });
+            if stale {
+                let quote = |s: &str| -> String {
+                    let c = CString::new(s).unwrap();
+                    unsafe { CStr::from_ptr(pg_sys::quote_identifier(c.as_ptr())).to_string_lossy().into_owned() }
+                };
+                let schema = unsafe { CStr::from_ptr(pg_sys::get_namespace_name(nsp)).to_string_lossy().into_owned() };
+                let (s, r) = (quote(&schema), quote(&relname));
+                let c = quote(&format!("{relname}_chunks"));
+                let sm = if summarized { "c.summary" } else { "NULL::bytea" };
+                let q = format!(
+                    "SELECT (SELECT (r.checkpoint->>'end')::bigint FROM {s}.{r} r WHERE r.recording_id=$1),
+                       (SELECT public.morlet_interval_stats_agg(
+                          CASE WHEN {sm} IS NULL OR c.start_sample<$2 OR c.start_sample+c.sample_count>$3 THEN c.encoded END,
+                          {sm},c.start_sample,c.sample_count,$2,$3,1 ORDER BY c.start_sample)
+                        FROM {s}.{c} c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
+                          AND c.start_sample+c.sample_count>$2)"
+                );
+                let plan = client
+                    .prepare(
+                        q.as_str(),
+                        &[
+                            PgOid::BuiltIn(PgBuiltInOids::TEXTOID),
+                            PgOid::BuiltIn(PgBuiltInOids::INT8OID),
+                            PgOid::BuiltIn(PgBuiltInOids::INT8OID),
+                        ],
+                    )?
+                    .keep();
+                plans.insert(key, StatsPlan { nsp, relname: relname.clone(), chunks, summarized, plan });
+            }
+            let p = plans.get(&key).unwrap();
+            client
+                .select(
+                    &p.plan,
+                    Some(1),
+                    &[source_recording_id.into(), interval_start.into(), interval_end.into()],
+                )?
+                .first()
+                .get_two::<i64, Vec<f64>>()
+        })
+    })
+    .unwrap_or_else(|e| pgrx::error!("{}", e));
+    let (Some(end), Some(stats)) = row else {
+        return None;
+    };
+    if interval_end > end || stats.len() != 7 || stats[2] != (interval_end - interval_start) as f64
+    {
+        return None;
+    }
+    Some(stats[2..7].to_vec())
+}
+
 /// Exact merge of chunk summaries (version 1) and roll-ups (version 2) into one roll-up (#219), in any order.
 #[pg_extern(immutable, parallel_safe)]
 fn morlet_rollup_step(state: Option<Vec<u8>>, summary: Option<&[u8]>) -> Option<Vec<u8>> {
@@ -3280,6 +3399,48 @@ END $$"#).unwrap();
         )
         .unwrap();
         assert_eq!(edges, Some(0));
+        // the native function takes these intervals (and none it must not), and its plan, cached per session and
+        // collection, stays right after new samples and after the collection is dropped and created again
+        let taken = "SELECT morlet_interval_stats_fast('fp'::regclass::oid,'A',5,6) IS NOT NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'A',0,300000) IS NOT NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'A',299999,300001) IS NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'B',0,10) IS NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'A',0,1048576) IS NULL";
+        assert_eq!(Spi::get_one::<bool>(taken).unwrap(), Some(true));
+        let same = |a: i64, b: i64| {
+            Spi::get_one::<bool>(&format!(
+                "SELECT (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] FROM morlet_interval_stats('fp','A',{a},{b}) s)
+                   = (public.morlet_interval_buckets('fp','A',{a},{b},1,'statistics'))[3:7]"
+            ))
+            .unwrap()
+        };
+        Spi::run("SELECT morlet_append_chunks_raw('fp','A',300000,morlet_float8_le_bytes(ARRAY(SELECT (i%97)::float8 FROM generate_series(1,5000) i)),1000)").unwrap();
+        assert_eq!(same(299500, 305000), Some(true));
+        // a second collection: its plan is cached, then its chunk table changes (summaries enabled) and gains rows
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','fq'); SELECT morlet_start_recording('fq','A',4096,'x','g');
+             SELECT morlet_append_chunks_raw('fq','A',0,morlet_float8_le_bytes(ARRAY(SELECT (-i)::float8 FROM generate_series(1,3000) i)),1000)",
+        )
+        .unwrap();
+        let fq = |a: i64, b: i64| {
+            Spi::get_one::<bool>(&format!(
+                "SELECT (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] FROM morlet_interval_stats('fq','A',{a},{b}) s)
+                   = (public.morlet_interval_buckets('fq','A',{a},{b},1,'statistics'))[3:7]
+                   AND morlet_interval_stats_fast('fq'::regclass::oid,'A',{a},{b}) IS NOT NULL"
+            ))
+            .unwrap()
+        };
+        assert_eq!(fq(10, 2990), Some(true));
+        Spi::run(
+            "SELECT morlet_enable_chunk_summaries('fq');
+             SELECT morlet_append_chunks_raw('fq','A',3000,morlet_float8_le_bytes(ARRAY(SELECT (i*i%1009)::float8 FROM generate_series(1,4000) i)),1000)",
+        )
+        .unwrap();
+        assert_eq!(fq(10, 6990), Some(true));
+        assert_eq!(
+            Spi::get_one::<f64>("SELECT min FROM morlet_interval_stats('fq','A',0,7000)").unwrap(),
+            Some(-3000.0)
+        );
     }
     #[pg_test(error = "source interval exceeds recording length")]
     fn interval_stats_fast_path_keeps_the_errors() {
