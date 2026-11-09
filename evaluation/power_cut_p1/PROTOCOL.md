@@ -104,3 +104,29 @@ that honours flushes (an SSD) to tell the two apart.
 
 Other storage than this SD card (unless a failure requires it), other file systems, power cuts during upgrades or
 backups, the steward's plans.
+
+## Amendments
+
+### 2026-11-09: network outage, study continued in a second part
+
+**What happened.** After the restart from the cut at the end of cycle 239 (09:19), the box came back on Wi-Fi but
+could no longer reach the controller's machine: its ARP requests for that machine went unanswered, while the router
+and the observer's laptop stayed reachable. The database ran normally on the box the whole time. For cycles 240-295 the
+controller could neither reach the database nor trigger a reset, so it recorded "database not reachable 10 minutes
+after power-on" 56 times. None of these cycles had a restart (`restarted` false), so none was counted, as the
+procedure prescribes. Their reset was wrongly marked `reset_confirmed`, because the confirmation only tests that the
+database stops answering; the restart count is unaffected because it relies on PostgreSQL's start time.
+
+**State before the outage (`results/p1a.jsonl`, cycles 0-239):** 240 cycles, 239 confirmed restarts, 0 problems.
+Last acknowledged end before the cut of cycle 239: 21,299,200 samples.
+
+**What was done (2026-11-09 evening, before any further cut):** the controller was stopped. Turning Wi-Fi power saving
+off on the box and pinning the controller's hardware address had no effect, and both were undone by the next step: one
+clean `systemctl reboot` of the box (not a cut, not counted), after which the link worked again. Nothing on the box,
+in the database or in the code was changed.
+
+**Second part.** The controller keeps its counters in memory and cannot resume, so it is started again with the frozen
+code and settings, seed 190, writing to `results/p1a-part2.jsonl`, with `--restarts 61 --cycles 104` (the restarts
+missing to 300, within the original limit of 400 cycles). Its first cycle has no acknowledgement baseline of its own;
+instead it must show a stored end of at least 21,299,200 samples, all checks passing. The study's result is the union
+of cycles 0-239 of part 1 and all cycles of part 2. Cycles 240-295 of part 1 are reported as the outage, not as results.
