@@ -3451,7 +3451,10 @@ END $$"#).unwrap();
         .unwrap()
         .unwrap();
         assert!(config.iter().any(|c| c == "jit=off"), "{config:?}");
-        assert!(config.iter().any(|c| c == "search_path=pg_catalog"), "{config:?}");
+        assert!(
+            config.iter().any(|c| c == "search_path=pg_catalog"),
+            "{config:?}"
+        );
     }
     #[pg_test(error = "source interval exceeds recording length")]
     fn interval_stats_fast_path_keeps_the_errors() {
