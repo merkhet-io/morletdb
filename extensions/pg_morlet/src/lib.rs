@@ -2018,7 +2018,41 @@ mod tests {
             SELECT count(*) FROM h a JOIN h b ON a.start_sample<b.start_sample AND b.start_sample<a.end_sample"#).unwrap(), Some(0));
     }
 
-    #[pg_test(error = "sample_rate_hz must be finite and in (0,200000]")]
+    /// #342: recordings without feature extraction accept rates up to 100 MHz, and time conversion stays exact there.
+    #[pg_test]
+    fn raw_only_recordings_accept_mhz_rates() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','mhz');
+             SELECT morlet_start_recording('mhz',r,f,'ae','V','{\"start_ns\": 1767225600000000000}',512,256,'zscore','none')
+               FROM (VALUES ('a',1000000.0),('b',2500000.0),('c',3125000.0),('d',100000000.0)) v(r,f);
+             SELECT morlet_append_chunks_raw('mhz',r,0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(1,100000) i)),4096)
+               FROM unnest(ARRAY['a','b','c','d']) r;",
+        )
+        .unwrap();
+        // sample k of a recording at rate f starts at k * 1e9 / f ns after its start; at 100 MHz that is 10 ns per sample
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT sample_count FROM morlet_interval_stats('mhz','d',0,100000)"
+            )
+            .unwrap(),
+            Some(100000)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT public.morlet_samples_to_ns(99999, 100000000.0)::bigint")
+                .unwrap(),
+            Some(999990)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT public.morlet_samples_to_ns(5, 3125000.0)::bigint")
+                .unwrap(),
+            Some(1600)
+        );
+    }
+    #[pg_test(error = "sample_rate_hz must be finite and in (0,100000000]")]
+    fn raw_only_recordings_refuse_rates_above_100_mhz() {
+        Spi::run("SELECT morlet_create_stream_collection('public','raw_fast'); SELECT morlet_start_recording('raw_fast','A',100000001,'x','g','{}',512,256,'zscore','none')").unwrap();
+    }
+    #[pg_test(error = "sample_rate_hz must be finite and in (0,100000000]")]
     fn raw_only_recordings_validate_rate() {
         Spi::run("SELECT morlet_create_stream_collection('public','raw_only_bad'); SELECT morlet_start_recording('raw_only_bad','A',0,'x','g','{}',512,256,'zscore','none')").unwrap();
     }

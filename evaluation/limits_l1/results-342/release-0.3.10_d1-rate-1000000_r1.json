@@ -1,0 +1,39 @@
+{
+ "point": "d1-rate-1000000",
+ "rep": 1,
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "dev": false,
+ "host": {
+  "machine": "arm64",
+  "load_avg": [
+   7.2021484375,
+   5.115234375,
+   3.892578125
+  ]
+ },
+ "started": "2026-11-09T13:17:47",
+ "extension": "0.3.8",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "samples": 1048576,
+ "config": {
+  "cpus": "8",
+  "memory": "16g",
+  "chunk": 4096,
+  "kind": "adc",
+  "writers": 1
+ },
+ "problems": [],
+ "refusals": [
+  {
+   "step": "start_recording",
+   "error": "sample_rate_hz must be finite and in (0,200000]"
+  }
+ ],
+ "memory": {
+  "stats_peak_mib": 0.0,
+  "cgroup_peak_mib": 82.1,
+  "oom_events": 0,
+  "container": "false running"
+ },
+ "finished": "2026-11-09T13:17:51"
+}
