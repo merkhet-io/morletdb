@@ -246,8 +246,32 @@ impl Store {
         if !(1..=MAX_SAMPLES).contains(&chunk_size) {
             return invalid("chunk_size must be 1..32768");
         }
+        let n = samples.len();
+        let lengths: Vec<usize> = (0..n)
+            .step_by(chunk_size)
+            .map(|i| chunk_size.min(n - i))
+            .collect();
+        self.append_chunks(recording_id, start_sample, samples, &lengths)
+    }
+
+    /// As `append`, with the chunk boundaries given: `lengths` (each 1..32768) must add up to `samples.len()`.
+    /// Used to reproduce another store's chunk layout, so that the chunks are the same bytes.
+    pub fn append_chunks(
+        &mut self,
+        recording_id: &str,
+        start_sample: i64,
+        samples: &[f64],
+        lengths: &[usize],
+    ) -> Result<i64> {
         if samples.is_empty() {
             return invalid("no samples to append");
+        }
+        if lengths.iter().any(|l| !(1..=MAX_SAMPLES).contains(l))
+            || lengths.iter().sum::<usize>() != samples.len()
+        {
+            return invalid(
+                "chunk lengths must be 1..32768 each and add up to the number of samples",
+            );
         }
         let tx = self
             .conn
@@ -282,7 +306,10 @@ impl Store {
                 "INSERT INTO chunks(recording_id,start_sample,sample_count,encoded,summary) VALUES (?1,?2,?3,?4,?5)",
             )?;
             let mut offset = start_sample;
-            for chunk in samples.chunks(chunk_size) {
+            let mut at = 0usize;
+            for &len in lengths {
+                let chunk = &samples[at..at + len];
+                at += len;
                 let encoded =
                     rawcodec::encode(chunk, quantum).map_err(|e| Error::Invalid(e.to_string()))?;
                 let back = rawcodec::decode(&encoded).map_err(|e| Error::Invalid(e.to_string()))?;

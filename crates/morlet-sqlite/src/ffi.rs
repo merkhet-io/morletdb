@@ -158,6 +158,50 @@ pub unsafe extern "C" fn morlet_sqlite_append(
     })
 }
 
+/// As `morlet_sqlite_append` with the chunk boundaries given: `lengths` holds `nlen` chunk lengths (1..32768) that
+/// add up to `n`.
+///
+/// # Safety
+/// `h` is a live handle; `samples` is readable for `n` values, `lengths` for `nlen`; `out_end` is NULL or writable.
+#[no_mangle]
+pub unsafe extern "C" fn morlet_sqlite_append_chunks(
+    h: *mut Store,
+    recording_id: *const c_char,
+    start_sample: i64,
+    samples: *const f64,
+    n: usize,
+    lengths: *const u32,
+    nlen: usize,
+    out_end: *mut i64,
+) -> i32 {
+    run(|| {
+        if (samples.is_null() && n > 0) || (lengths.is_null() && nlen > 0) {
+            return Err(Error::Invalid(
+                "samples and lengths must not be NULL".into(),
+            ));
+        }
+        let xs = if n == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(samples, n)
+        };
+        let ls: Vec<usize> = if nlen == 0 {
+            vec![]
+        } else {
+            std::slice::from_raw_parts(lengths, nlen)
+                .iter()
+                .map(|&l| l as usize)
+                .collect()
+        };
+        let end =
+            store(h)?.append_chunks(text(recording_id, "recording_id")?, start_sample, xs, &ls)?;
+        if !out_end.is_null() {
+            *out_end = end;
+        }
+        Ok(())
+    })
+}
+
 /// Reads `[a, b)` into `out`, which must hold exactly `b - a` values.
 ///
 /// # Safety

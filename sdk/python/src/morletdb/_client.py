@@ -247,6 +247,19 @@ class Client:
             if not n:
                 return total
 
+    # --- files (the embedded edition, #351) -------------------------------------------------------------
+    def import_file(self, path: str, collection: str, recording_ids: Any = None) -> list[Recording]:
+        """Copy recordings from a MorletDB file (morletdb.open) into `collection`, chunk for chunk; the server's
+        chunk bytes are checked against the file's. Continues recordings already started. Commit to keep it."""
+        from ._transfer import import_file
+        return import_file(self, path, collection, recording_ids)
+
+    def export_file(self, collection: str, path: str, recording_ids: Any = None) -> list[Recording]:
+        """Copy recordings of `collection` into a MorletDB file, chunk for chunk; the file's chunk bytes are
+        checked against the server's. Continues recordings already in the file."""
+        from ._transfer import export_file
+        return export_file(self, collection, path, recording_ids)
+
     # --- recordings ----------------------------------------------------------------------------------
     def recording(self, collection: str, recording_id: str) -> Recording:
         rows = self.recordings(collection, recording_id=recording_id)

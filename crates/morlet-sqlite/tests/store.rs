@@ -171,6 +171,35 @@ fn appends_are_contiguous_and_retries_are_idempotent() {
 }
 
 #[test]
+fn explicit_chunk_layouts_are_kept() {
+    let mut s = Store::open(tmp("layout")).unwrap();
+    s.create_recording("r", 1000.0, "x", "", 1.0, "{}").unwrap();
+    let x = signal(10_000, 3);
+    assert_eq!(
+        s.append_chunks("r", 0, &x, &[1, 4095, 32, 5872]).unwrap(),
+        10_000
+    );
+    let layout: Vec<(i64, i64)> = s
+        .connection()
+        .prepare("SELECT start_sample,sample_count FROM chunks ORDER BY start_sample")
+        .unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert_eq!(layout, vec![(0, 1), (1, 4095), (4096, 32), (4128, 5872)]);
+    assert_eq!(bits(&s.read("r", 0, 10_000).unwrap()), bits(&x));
+    assert!(
+        s.append_chunks("r", 10_000, &x[..10], &[5, 4]).is_err(),
+        "lengths must add up"
+    );
+    assert!(
+        s.append_chunks("r", 10_000, &x[..10], &[10, 0]).is_err(),
+        "no empty chunk"
+    );
+}
+
+#[test]
 fn foreign_files_are_refused() {
     let path = tmp("foreign");
     let c = rusqlite::Connection::open(&path).unwrap();

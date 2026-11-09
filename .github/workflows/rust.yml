@@ -430,7 +430,7 @@ jobs:
           MORLET_SDK_REQUIRE_SQLITE: '1'
         run: |
           python -c 'import morletdb, sys; assert "site-packages" in morletdb.__file__, morletdb.__file__'
-          python -m unittest -v test_offline test_native test_integration test_local 2>&1 | tee unittest.log
+          python -m unittest -v test_offline test_native test_integration test_local test_transfer 2>&1 | tee unittest.log
           test "${PIPESTATUS[0]}" -eq 0
           if grep -q -E "skipped '(set MORLET|server without|native decoder|morlet-sqlite)" unittest.log; then echo "::error::SDK tests were skipped"; exit 1; fi
       - name: Quickstart example

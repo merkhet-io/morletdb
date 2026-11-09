@@ -83,6 +83,29 @@ jobs:
           name: sdk-wheel-${{ steps.tag.outputs.platform }}
           path: sdk-dist/*.whl
           if-no-files-found: error
+      - name: Embedded edition archive (command line, library, C header) and its smoke tests
+        run: |
+          d=morlet-sqlite-${{ steps.tag.outputs.platform }}
+          mkdir -p "$d/bin" "$d/lib" "$d/include"
+          cp target/release/morlet-sqlite "$d/bin/"
+          cp "target/release/libmorlet_sqlite.${{ matrix.ext }}" "$d/lib/"
+          cp crates/morlet-sqlite/include/morlet_sqlite.h "$d/include/"
+          cp LICENSE docs/embedded-edition.md "$d/"
+          tar czf "$d.tar.gz" "$d"
+          # from the unpacked archive only: the command line, then a C program against the library
+          mkdir -p /tmp/try && tar xzf "$d.tar.gz" -C /tmp/try && t=/tmp/try/$d
+          python3 -c 'import struct; open("/tmp/try/x.f64","wb").write(struct.pack("<10000d", *[i / 8 for i in range(10000)]))'
+          "$t/bin/morlet-sqlite" create /tmp/try/a.morlet r 1000 --channel x --unit V --quantum 0.125
+          "$t/bin/morlet-sqlite" append /tmp/try/a.morlet r 0 /tmp/try/x.f64
+          test "$("$t/bin/morlet-sqlite" stats /tmp/try/a.morlet r 0 10000)" = '{"sample_count":10000,"min":0.0,"max":1249.875,"mean":624.9375,"rms":721.6337096737514}'
+          cc -Wall -Wextra -Werror -o /tmp/try/smoke crates/morlet-sqlite/tests/c/smoke.c -I "$t/include" -L "$t/lib" -lmorlet_sqlite -lm
+          if [ "$RUNNER_OS" = Linux ]; then export LD_LIBRARY_PATH="$t/lib"; else export DYLD_LIBRARY_PATH="$t/lib"; fi
+          /tmp/try/smoke /tmp/try/c.morlet
+      - uses: actions/upload-artifact@v4
+        with:
+          name: morlet-sqlite-${{ steps.tag.outputs.platform }}
+          path: morlet-sqlite-*.tar.gz
+          if-no-files-found: error
 
   pure:
     runs-on: ubuntu-24.04

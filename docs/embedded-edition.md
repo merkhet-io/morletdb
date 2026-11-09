@@ -43,8 +43,22 @@ morlet-sqlite read   line3.morlet pump-7/accel-x 40960 45056 out.f64
 morlet-sqlite info   line3.morlet
 ```
 
-Rust: `morlet_sqlite::Store`. Other languages: the C interface in `crates/morlet-sqlite/src/ffi.rs` (ABI 1: open,
-create, append, read, stats, info as JSON, last error).
+Between a file and a server (Python):
+
+```python
+with morletdb.Client.connect("postgresql://...") as server:
+    server.import_file("line3.morlet", "public.signals")          # file -> server; continues where it stopped
+    server.export_file("public.signals", "case-1187.morlet", ["pump-7/accel-x"])   # server -> file
+```
+
+The receiving side encodes with the sending side's chunk boundaries, so both hold the same chunk bytes; each batch
+of 256 chunks is checked by a hash of the chunk bytes on both sides. A recording that already exists continues
+from its end if its stored chunks equal the other side's; otherwise the transfer is refused. Recordings whose raw
+samples a memory level removed cannot be exported (they are no longer lossless).
+
+Rust: `morlet_sqlite::Store`. C and every language that calls C (C++, Go, .NET, LabVIEW, Node): the shared
+library with `include/morlet_sqlite.h` (ABI 1: open, create, append, append with chunk lengths, read, stats,
+recordings as JSON, last error); `tests/c/smoke.c` is a complete example.
 
 ## Guarantees
 
@@ -75,13 +89,12 @@ Only the samples need this library or pg_morlet to decode; metadata, layout and 
 | Channel | What | State |
 |---|---|---|
 | Python wheels | `morletdb` with `libmorlet_sqlite` in `_lib/`, one wheel per platform for every Python ≥ 3.10 (C ABI via ctypes): Linux x86_64 and aarch64 (manylinux; Raspberry Pi OS 64-bit), macOS arm64 | built and tested from the installed wheel in `sdk-wheels.yml`; attached to GitHub releases |
-| Command line | `morlet-sqlite` binaries per platform with checksums | next: in the release workflow |
-| C library | `libmorlet_sqlite` + header for C/C++, Go, .NET, LabVIEW (test benches) | next: header and release archive |
+| Command line and C library | `morlet-sqlite-<platform>.tar.gz`: the `morlet-sqlite` binary, `libmorlet_sqlite` and its C header, for the same platforms, with checksums and build provenance | built in `sdk-wheels.yml`, smoke-tested from the unpacked archive (command line and a C program); attached to GitHub releases |
 | Rust | the `morlet-sqlite` crate | after `morlet-core` is published |
 | PyPI | `pip install morletdb` | the owner's decision, together with the server client |
 
-Next in the edition itself: export and import between a file and the server (same chunks, no re-encoding), envelope
-search, Windows and macOS x86_64 builds, and a SQLite loadable extension for SQL access from other SQLite tools.
+Next in the edition itself: envelope search, Windows and macOS x86_64 builds, a Homebrew formula, and a SQLite
+loadable extension for SQL access from other SQLite tools.
 
 ## Evidence before claims
 

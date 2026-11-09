@@ -48,6 +48,7 @@ def _load() -> ctypes.CDLL:
     sig = {"open": [_C, ctypes.c_int32, ctypes.POINTER(_P)],
            "create_recording": [_P, _C, _D, _C, _C, _D, _C],
            "append": [_P, _C, _I64, _P, ctypes.c_size_t, ctypes.c_uint32, ctypes.POINTER(_I64)],
+           "append_chunks": [_P, _C, _I64, _P, ctypes.c_size_t, _P, ctypes.c_size_t, ctypes.POINTER(_I64)],
            "read": [_P, _C, _I64, _I64, _P, ctypes.c_size_t],
            "stats": [_P, _C, _I64, _I64, _P],
            "info_json": [_P, _P, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)]}
@@ -151,6 +152,23 @@ class LocalStore:
             json.dumps(meta).encode()))
         self.append(recording_id, 0, x)
         return self.recording(recording_id)
+
+    def ingest_empty(self, recording_id: str, *, sample_rate_hz: float, channel: str, unit: str,
+                     metadata: Mapping[str, Any] | None = None, sample_quantum: float = 1.0) -> None:
+        """Create a recording without samples (metadata stored as given)."""
+        _check(_lib().morlet_sqlite_create_recording(
+            self._handle(), recording_id.encode(), float(sample_rate_hz), channel.encode(), unit.encode(),
+            float(sample_quantum), json.dumps(dict(metadata or {})).encode()))
+
+    def append_chunks(self, recording_id: str, start_sample: int, samples: Any, lengths: list[int]) -> int:
+        """Append with the chunk boundaries given (lengths 1..32768 adding up to len(samples)), in one durable
+        transaction; used to reproduce another store's chunk layout. Returns the recording's new end."""
+        x = _samples(samples)
+        ls = np.ascontiguousarray(lengths, dtype=np.uint32)
+        end = ctypes.c_int64(-1)
+        _check(_lib().morlet_sqlite_append_chunks(self._handle(), recording_id.encode(), start_sample,
+                                                  x.ctypes.data, x.size, ls.ctypes.data, ls.size, ctypes.byref(end)))
+        return int(end.value)
 
     def append(self, recording_id: str, start_sample: int, samples: Any) -> int:
         """Append at the recording's end (an identical replay of stored samples is a no-op); one transaction per
