@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.10-alpha.1
 
-SQL version 0.3.8, with an update script from 0.3.7.
+SQL version 0.3.8, with an update script from 0.3.7. Python SDK 0.1.0a3. The chunk format is unchanged;
+existing collections keep their layout. New: the embedded edition (experimental) and file format 1.
 
 - **Embedded edition, experimental (#351):** MorletDB in one SQLite file, with no server. Implemented in
   `crates/morlet-sqlite`, with SQLite included, as a Rust library, a C interface and the `morlet-sqlite` command line.

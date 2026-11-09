@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.9-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.10-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -49,6 +49,14 @@ a leading v; GHCR image tags do not.
   an image volume (`extension_control_path`). The first release with an extension-only image,
   `ghcr.io/merkhet-io/pg_morlet:0.3.9-alpha.1-pg18` (amd64, arm64), trialled mounted into a clean `postgres:18` before
   publishing. The chunk format is unchanged; existing collections keep their layout.
+- **0.3.10-alpha.1:** SQL version 0.3.8, with an update script from 0.3.7; Python SDK 0.1.0a3.
+  - **Exact times at slow rates (#343):** rates are read as exact fractions.
+  - **Interval statistics:** a native fast path for intervals below 2^20 samples (#346, #349), and no JIT compilation
+    on very long recordings (#340).
+  - **Embedded edition (experimental, #351):** MorletDB in one SQLite file. The SDK's platform wheels carry it
+    (`morletdb.open`), and the release attaches `morlet-sqlite-<platform>.tar.gz` (command line, library, C header).
+  - **File format 1:** frozen with a compatibility promise ([file-format.md](file-format.md)).
+  - The chunk format is unchanged; existing collections keep their layout.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for
 linux/amd64 and linux/arm64: each architecture is built natively on its own CI runner, trialled from a clean
