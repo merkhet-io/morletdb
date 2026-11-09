@@ -11,19 +11,22 @@ containers=$(docker ps -a --filter label=com.docker.compose.project=soak-s1 --fo
 stats=$( { if [ -n "$containers" ]; then docker stats --no-stream --format '{{json .}}' $containers 2>/dev/null; fi; } | python3 -c '
 import json, sys
 print(json.dumps({d["Name"]: {"cpu": d["CPUPerc"], "mem": d["MemUsage"]} for d in map(json.loads, sys.stdin)}))')
-state=$(for c in $containers; do docker inspect -f '{{json .Name}}: {"status": {{json .State.Status}}, "restarts": {{.RestartCount}}, "started": {{json .State.StartedAt}}, "oom": {{.State.OOMKilled}}}' "$c"; done | paste -sd, -)
+state=$(for c in $containers; do docker inspect -f '{{json .Name}}: {"status": {{json .State.Status}}, "health": {{if .State.Health}}{{json .State.Health.Status}}{{else}}null{{end}}, "restarts": {{.RestartCount}}, "started": {{json .State.StartedAt}}, "oom": {{.State.OOMKilled}}}' "$c"; done | paste -sd, -)
+# the steward's own status (NORMAL / ATTENTION / ACTION REQUIRED, with its findings and any ingest hold): H2
+steward=$(timeout 60 docker exec soak-s1-steward-1 python steward.py status 2>&1 | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' || echo null)
 other=$(docker ps --filter label=com.docker.compose.project --format '{{.Names}} {{.Status}}' | grep -v soak-s1 | python3 -c '
 import json, sys
 print(json.dumps({l.split()[0]: " ".join(l.split()[1:]) for l in sys.stdin if l.strip()}))')
 temp=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1)
 status=$(cat "$SOAK_DIR/spool/status.json" 2>/dev/null || echo null)
-python3 - "$stats" "{${state}}" "$other" "$temp" "$status" "$SOAK_DIR" >> "$OUT" <<'EOF'
+python3 - "$stats" "{${state}}" "$other" "$temp" "$status" "$SOAK_DIR" "$steward" >> "$OUT" <<'EOF'
 import json, os, shutil, sys, time
-stats, state, other, temp, status, soak = sys.argv[1:]
+stats, state, other, temp, status, soak, steward = sys.argv[1:]
 du = shutil.disk_usage(soak)
 root = shutil.disk_usage("/")
 print(json.dumps({"at": time.time(), "load": os.getloadavg(), "temp_c": int(temp) / 1000 if temp else None,
                   "soak_fs": {"total": du.total, "used": du.used, "free": du.free},
                   "root_free": root.free, "containers": json.loads(stats), "state": json.loads(state),
-                  "other_services": json.loads(other), "collector": json.loads(status)}))
+                  "other_services": json.loads(other), "collector": json.loads(status),
+                  "steward": json.loads(steward)}))
 EOF

@@ -53,6 +53,22 @@ If the test week passes, it may continue towards 30 days without a restart; the 
    never got its first. Fixed in the steward (it also reads the grid the recordings declare), with a regression test;
    the soak runs the fixed steward. Found by the shakedown, not by the existing tests, which built one envelope by
    hand in their setup.
+3. **Load gate 1.5 per CPU** (2026-11-09, after 33 hours with change 1): the soak's load stayed at about 2.0, mostly
+   processes waiting on the hard disk, so the steward paused about 90 times an hour at a gate of 2.0. Envelopes fell
+   behind steadily (unsearchable backlog 1.0 h after 4 hours, 3.2 h after 33 hours) and the steward's verification
+   never ran (its status: "last verified never"). H5 would have failed from the gate alone. Changed to
+   `--load-per-cpu 1.5` (3.0); the database container keeps its 1-CPU cap and low disk priority. The rest of the
+   shakedown runs with this gate and must show a bounded backlog before freezing.
+4. **H4 for search normalised by the searched history** (2026-11-09): the probe's search covers the channel's whole
+   stored history, so its work grows with the archive (the slowest check went from 0.1 s to 2.2 s while the archive
+   grew from 0 to 1.2 GB). A fixed 2x bound would test data growth, not drift. H4 now bounds search latency per
+   searched sample; absolute latencies are reported. `latest` and `stats` do a fixed amount of work and keep the
+   plain bound.
+5. **Steward status recorded** (2026-11-09): `host.jsonl` had no record of the steward's status, which H2 needs. The
+   host probe now records `steward.py status` (status, findings, any ingest hold) and each container's health.
+6. **Release and fresh start** (2026-11-09): the first 33 hours ran 0.3.8-alpha.1. From change 3 on, the shakedown runs
+   the current release 0.3.10-alpha.1 on a fresh database; the test week starts on another fresh database with the
+   same image. The first 33 hours' data and results are kept aside (`shakedown-1/`), not evaluated.
 
 ## Hypotheses (all must hold; each is reported with its numbers)
 
@@ -68,7 +84,9 @@ If the test week passes, it may continue towards 30 days without a restart; the 
 - **H3, recovery.** After D1 and after D2, storing resumes within 5 minutes (stored sample counts in `probe.jsonl` and
   the collector's `status.json`), and every sample spooled before D1 is stored (replay lines in `gaps.jsonl`).
 - **H4, steady.** Comparing the last 24 hours of the test week with the first 24 hours:
-  - the p95 latency of each probe check (latest, interval statistics, similarity search) is at most 2× as high;
+  - the p95 latency of `latest` and of interval statistics is at most 2× as high;
+  - for similarity search, the p95 of latency divided by the searched history (the stored samples of the probed
+    station and channel at the time of the query) is at most 2× as high; absolute latencies are reported;
   - the database container's peak memory is at most 1.25× as high, and the collector's as well.
 - **H5, keeps up.**
   - The collector's backlog never exceeds 10,000 packets.
