@@ -102,6 +102,7 @@ morlet_interval_buckets	internal	0.3.3	not documented
 morlet_interval_overview	stable	0.3.3	documented since SQL 0.3.3 or earlier
 morlet_interval_stats	stable	0.3.3	documented since SQL 0.3.3 or earlier
 morlet_interval_stats_agg	internal	0.3.3	not documented
+morlet_interval_stats_fast	internal	0.3.8	helper (#346)
 morlet_interval_stats_final	internal	0.3.3	helper
 morlet_interval_stats_step	internal	0.3.3	helper
 morlet_invalidate_context_segments	internal	0.3.3	not documented
