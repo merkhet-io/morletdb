@@ -1,0 +1,13 @@
+2026-11-09T08:00:44
+ 8:00  up 12 days, 16:56, 19 users, load averages: 2.12 2.62 2.37
+ %CPU COMM
+ 31.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 14.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  6.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  5.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  1.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  1.0 bash
+  0.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+2026-11-09T08:03:46
+ 8:03  up 12 days, 16:59, 19 users, load averages: 7.47 4.68 3.26

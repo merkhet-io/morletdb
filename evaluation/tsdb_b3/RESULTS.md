@@ -1572,6 +1572,28 @@ loads (MorletDB 7.1–7.6 s, CedarDB 38–41 s).
 **Publication.** Shown on the website only after CedarDB's Community Edition terms were checked for restrictions on
 publishing benchmark results (the PDF linked from its licensing page returned 404 on 2026-11-08 and 2026-11-09).
 
+## Study M1b: CedarDB's smallest memory cap
+
+Protocol: "Study M1, amendment M1b" in [PROTOCOL.md](PROTOCOL.md), frozen at `a468e58` before any load. Run once,
+2026-11-09 07:52–08:05 (`run_m1b.sh`, `results/m1b/`, outcomes in `results/m1b/outcomes.tsv`), start condition met
+(load average 1.03). CedarDB sizes itself to 90% of the container's memory limit by default; nothing was changed per cap.
+
+| System | 256 MB | 512 MB | 1 GB | 16 GB (reference) | Smallest passing cap |
+|---|---|---|---|---|---|
+| CedarDB v2026-11-04 | did not start | did not start | **pass** | pass | **1 GB** |
+| MorletDB 0.3.9-alpha.1 | **pass** | | | pass | **256 MB** |
+
+At 256 and 512 MB the CedarDB container stopped before it accepted connections (no out-of-memory kill recorded; its
+log was not kept); the runner reported a failed start (its message said "TimescaleDB", a copy slip in the adapter,
+fixed after the run). CedarDB needs **4×** MorletDB's cap, as TDengine and CrateDB did in M1 (caps are powers of two,
+so the ratio is coarse).
+
+At the passing cap and at 16 GB (one load each, descriptive): CedarDB ingested 2.40 and 2.60 M samples/s, R1 2.56 and
+3.04 ms, R2 36.2 and 36.2 ms, statistics 0.51 ms in both, working-set peak 1,020 and 4,677 MiB; MorletDB 14.14 and
+14.16 M samples/s, R1 0.62 and 0.63 ms, R2 5.94 and 6.04 ms, statistics 0.67 ms in both, 175 and 181 MiB. Neither slowed
+down at its smallest cap.
+
 ## InfluxDB 3 Core pair
 
-Running at the time of writing; results follow.
+The first attempt (2026-11-09 06:45–07:48) was stopped when the owner had to close the laptop; its two loads are kept
+in `results/b318-influxdb3-aborted/` and not reported. The pair is rerun in one session.

@@ -46,7 +46,7 @@ def _wait():
             return
         except Exception:
             time.sleep(0.5)
-    raise RuntimeError("TimescaleDB did not start")
+    raise RuntimeError("CedarDB did not start")
 
 
 def connect(durability="D1"):

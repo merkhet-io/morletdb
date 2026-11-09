@@ -1,0 +1,141 @@
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.1928544589318335,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T07:52:46",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 39.089,
+  "samples_per_s": 2598887,
+  "conversion_s": 3.467,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 317.7,
+   "p95_ms": 350.027,
+   "max_ms": 372.243
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.628,
+   "p95_ms": 268.369,
+   "max_ms": 298.063
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 110.5,
+   "cpu_percent_p95": 182.5,
+   "memory_peak_mib": 4672.5,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4682.2,
+    "anon_mib_at_end": 4648.6,
+    "file_mib_at_end": 12.7,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4676.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.9
+  }
+ },
+ "correct": true,
+ "volume_db": {
+  "apparent": 4411521907,
+  "allocated": 5753733120,
+  "by_directory": {
+   "database": {
+    "apparent": 4411521907,
+    "allocated": 5753733120,
+    "files": 133
+   }
+  }
+ },
+ "correct_db": true,
+ "reads_db": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 3.037,
+   "p95_ms": 3.419,
+   "max_ms": 10.586,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 36.164,
+   "p95_ms": 38.751,
+   "max_ms": 55.701,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 30.152,
+   "p95_ms": 32.295,
+   "max_ms": 48.13,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 3.035,
+   "p95_ms": 3.39,
+   "max_ms": 8.677,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 3.291,
+   "p95_ms": 3.574,
+   "max_ms": 15.674,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 3.279,
+   "p95_ms": 3.861,
+   "max_ms": 10.87,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 1158.3
+  }
+ },
+ "analytics_db": {
+  "n": 400,
+  "p50_ms": 0.514,
+  "p95_ms": 0.581,
+  "max_ms": 15.68,
+  "max_relative_difference": 1.8197102040898385e-14,
+  "within_1e-12": "True",
+  "computed": "database"
+ }
+}
