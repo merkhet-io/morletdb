@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Sample rates up to 100 MHz (#342):** recordings without feature extraction (`extractor 'none'`) accept rates up
+  to 100 MHz instead of 200 kHz, so acoustic emission and ultrasound (1–10 MHz) can be stored, read and summarized
+  losslessly. Nothing else depended on the rate. L1's rate points at 1, 2.5, 3.125, 10 and 100 MHz: every derived
+  time exact, every sample read back identical, about 7 M samples/s per writer at every rate
+  (evaluation/limits_l1/results-342). Rates above 100 MHz are refused with a clear message. Search features keep
+  their domains (128 Hz–200 kHz, and 1–128 Hz).
+
 ## 0.3.10-alpha.1
 
 SQL version 0.3.8, with an update script from 0.3.7. Python SDK 0.1.0a3. The chunk format is unchanged;
