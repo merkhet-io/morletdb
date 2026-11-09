@@ -1,0 +1,22 @@
+2026-11-09T06:45:21
+ 6:45  up 12 days, 15:41, 19 users, load averages: 5.85 5.07 3.93
+ %CPU COMM
+192.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 46.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 11.8 /usr/libexec/airportd
+  4.0 /usr/libexec/configd
+  2.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  2.8 /System/Library/CoreServices/powerd.bundle/powerd
+  2.5 /usr/libexec/PerfPowerServices
+  1.8 /usr/sbin/coreaudiod
+2026-11-09T07:26:59
+ 7:26  up 12 days, 16:23, 19 users, load averages: 4.82 4.99 3.99
+ %CPU COMM
+290.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 61.0 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 30.7 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 30.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.9 /usr/libexec/coreduetd
+ 14.1 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  2.6 /usr/libexec/eligibilityd
+  2.2 /System/Library/CoreServices/Dock.app/Contents/MacOS/Dock
