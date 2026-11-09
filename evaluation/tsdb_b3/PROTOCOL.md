@@ -961,3 +961,44 @@ workload. Everything common to B3 applies, except what is stated here.
   - The QuestDB table's memory row shows both figures: the smallest caps, and the 16 GB working set labelled as the
     footprint with the documented configuration.
   - Captions say that caps are powers of two, so the ratios are coarse.
+
+## Amendment B3.18: CedarDB and InfluxDB 3 Core beside MorletDB 0.3.9-alpha.1 (FROZEN before any load of the benchmark set)
+
+Added 2026-11-08 at the owner's request: two more systems, measured as B3.13 measured the others. Results stay local
+until the owner decides on publication; CedarDB's Community Edition terms (a PDF linked from its licensing page,
+not reachable on 2026-11-08) must be read before any result is published. Everything common to B3 applies.
+
+- **MorletDB:** `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (SQL 0.3.7; digest recorded per result), arm
+  `morletdb-i1-sum` (B3.13's: B3.10's client path with chunk summaries, which MorletDB enables by default since 0.3.7).
+- **CedarDB** (`cedar_adapter.py`, `run_cedar.py`): image `cedardb/cedardb@sha256:737ce1bf2ef3…` (v2026-11-04,
+  arm64), its defaults, PostgreSQL wire protocol. One table per group (`acquisition TEXT, t BIGINT` nanoseconds, the
+  group's channels as DOUBLE PRECISION, primary key (acquisition, t)), loaded with binary COPY as B3.7 loads
+  TimescaleDB. D1: CedarDB's default commits (`synchronous_commit` on, which it refuses to change); D2: `SET
+  async_commit = on` per session, CedarDB's own setting, whose effect is reported, not assumed. Storage: the data
+  directory on disk, by top-level directory (its relation-size functions return a constant).
+- **InfluxDB 3 Core** (`influx_adapter.py`, `run_influx.py`): image `influxdb@sha256:26875ba5ae6e…` (3.12.2-core,
+  arm64), `influxdb3 serve` with a local file object store and its defaults, no authentication (local only). One
+  table per group, the acquisition as a tag, channels as float fields, nanosecond time. Writes: line protocol over one
+  persistent HTTP connection, at most 50,000 rows per request (the default request limit is 10 MB), floats as their
+  shortest round-trip decimal (Arrow's cast; exact); line building is timed as conversion within the load. D1: the
+  default (acknowledged after the WAL is persisted, flushed every second); D2: `no_sync=true`. Reads: SQL with
+  `format=parquet` (exact float64). Storage: InfluxDB keeps new data in its WAL until a snapshot writes Parquet (by
+  default after 600 WAL files, about 10 minutes of writes; an idle server never snapshots: none after 75 minutes idle
+  in the smoke check). Before measuring storage the runner writes one point per second to a separate `heartbeat`
+  table, as continuous operation would, until Parquet bytes exist and are unchanged over two polls 30 s apart (at
+  most 30 minutes; whether it settled and the heartbeat rows are recorded), then reports the Parquet bytes and the
+  whole volume, which still holds WAL files InfluxDB keeps after a snapshot (by default the last 300).
+- **Correctness** (subset, before the run): both systems passed B3's subset check (3 acquisitions, every channel by
+  SHA-256, exact times). Retries: CedarDB refuses identical and altered retries (primary key), as TimescaleDB does;
+  InfluxDB accepts both and **an altered retry replaces the stored value**, as QuestDB does.
+- **Runs:** `run_b318.sh`: CedarDB's pair, then InfluxDB's; in each, for r = 1, 2, 3 and D2 then D1,
+  `morletdb-i1-sum`, then the system. Storage, reads and statistics on D2 r1 of each arm, reads from a fresh client
+  process. Results in `results/b318-cedardb/` and `results/b318-influxdb3/`; machine snapshots before and after every
+  load; B3.16's start and power conditions.
+- **Smoke check (not a result):** one development-set D2 load of each system and of `morletdb-i1-sum`
+  (`results/dev/b318-smoke/`): all correct. It showed InfluxDB's data still entirely in its WAL right after the load
+  and after 75 idle minutes; with the heartbeat a snapshot came after about 17 minutes: 40 Parquet files, 425 MB,
+  while 2.07 GB of WAL stayed on the volume (hence the wait above) and CedarDB's data directory several times larger than the others' (hence the breakdown).
+- **Reported:** every measure for both pairs, statements by B3's rule (≥ 10% in all loads for ingestion, at both p50
+  and p95 for latencies; otherwise no statement), including every loss. Nothing goes to the website before the owner
+  decides.

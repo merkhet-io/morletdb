@@ -1,0 +1,22 @@
+2026-11-09T03:06:54
+ 3:06  up 12 days, 12:03, 19 users, load averages: 5.01 3.00 2.43
+ %CPU COMM
+305.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 97.7 /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/MacOS/XProtectRemediatorMRTv3
+ 36.0 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 32.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.7 /usr/sbin/notifyd
+  0.6 claude
+2026-11-09T03:09:38
+ 3:09  up 12 days, 12:05, 19 users, load averages: 6.32 4.49 3.14
+ %CPU COMM
+193.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 99.0 /Library/Apple/System/Library/CoreServices/XProtect.app/Contents/MacOS/XProtectRemediatorMRTv3
+  9.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.1 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.8 /sbin/launchd
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2

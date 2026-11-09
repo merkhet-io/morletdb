@@ -1,0 +1,22 @@
+2026-11-09T04:07:12
+ 4:07  up 12 days, 13:03, 19 users, load averages: 7.30 5.29 3.59
+ %CPU COMM
+140.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 63.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.6 claude
+  1.0 bash
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.5 /Applications/Docker.app/Contents/MacOS/com.docker.build
+  0.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-09T04:23:52
+ 4:23  up 12 days, 13:20, 19 users, load averages: 5.40 5.06 3.62
+ %CPU COMM
+196.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 96.7 /Applications/Slack.app/Contents/MacOS/Slack
+ 68.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+ 55.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 21.9 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+  8.3 /Applications/Slack.app/Contents/Frameworks/Slack Helper.app/Contents/MacOS/Slack Helper
+  8.3 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  7.5 /System/Library/Frameworks/AppKit.framework/Versions/C/XPCServices/DocumentPopoverViewService.xpc/Contents/MacOS/DocumentPopoverViewService

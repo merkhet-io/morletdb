@@ -1,0 +1,17 @@
+2026-11-09T02:53:30
+ 2:53  up 12 days, 11:49, 19 users, load averages: 1.91 2.20 2.12
+ %CPU COMM
+ 20.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+ 12.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  8.6 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+  5.4 /usr/sbin/securityd
+  4.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.2 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  2.3 /usr/libexec/runningboardd
+  2.1 /usr/libexec/PerfPowerServices
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1

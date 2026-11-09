@@ -4,7 +4,8 @@
 Every speed and memory ratio comes from one session in which a released MorletDB and that database ran alternately on
 the same machine, reads from a fresh client process, never from two sessions (evaluation/tsdb_b3/RESULTS.md):
 QuestDB's lane from B3.16, the released 0.3.7-alpha.1 reading with compressed transfer as its SDK does
-(summarize_b316.py), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.16's frozen
+(summarize_b316.py), CedarDB's from B3.18 against 0.3.9-alpha.1 with its default chunk summaries (no memory-cap
+study: "not measured"), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.16's frozen
 website rule says. Speed: the other system's time over MorletDB's (p50),
 or MorletDB's throughput over the other's, for the system's faster layout per measure. Storage (deterministic, from
 each system's stage) is the other system's data on disk over MorletDB's whole database (0.3.6: 161.5 MiB, B3.13;
@@ -23,25 +24,28 @@ from pathlib import Path
 
 PAGE = Path(__file__).resolve().parents[1] / "docs" / "index.html"
 START, END = "<!-- benchmark-chart:start -->", "<!-- benchmark-chart:end -->"
-SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0", "#199e70"), ("TDengine 3.4", "#c98500"), ("TimescaleDB 2.31", "#d55181")]
+SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0", "#199e70"), ("TDengine 3.4", "#c98500"), ("TimescaleDB 2.31", "#d55181"),
+           ("CedarDB 2026-11", "#f0c8a0")]   # sixth hue: OKLab dE >= 17.9 to the five under normal, protan, deutan and
+                                             # tritan vision (the five's own worst pair is 1.6, deutan); 12.6:1 on paper
 # measure: [(numerator, denominator) per system, in SYSTEMS order] - the measured values, not rounded ratios
 MEASURES = [
     ("Data on disk", "storage", [(1162.7, 163.3, 232.7, "as Parquet zstd 9"), (1785.6, 161.5), (660.0, 161.5),
-                                 (566.7, 161.5), (815.4, 161.5)], "MiB"),
+                                 (566.7, 161.5), (815.4, 161.5), (4155.7, 163.3)], "MiB"),
     ("Ingestion, one connection", "ingest", [(13.80, 8.90), (11.60, 0.68), (13.92, 2.69), (14.28, 4.79),
-                                             (13.84, 0.90)], "M samples/s"),
-    ("Read 4,096 samples", "short", [(0.86, 0.63), (7.16, 0.65), (8.51, 0.73), (3.65, 0.62), (1.55, 0.65)],
+                                             (13.84, 0.90), (13.39, 2.66)], "M samples/s"),
+    ("Read 4,096 samples", "short", [(0.86, 0.63), (7.16, 0.65), (8.51, 0.73), (3.65, 0.62), (1.55, 0.65), (2.70, 0.62)],
      "ms p50"),
     ("Read 128,000 samples", "long", [(8.28, 2.65), (54.33, 7.97), (42.44, 8.91), (48.75, 6.72),
-                                      (40.54, 8.16)], "ms p50"),
-    ("Interval statistics", "stats", [(2.88, 0.53), (5.06, 3.04), (7.49, 2.63), (3.74, 2.52), (10.16, 2.62)],
+                                      (40.54, 8.16), (35.78, 5.75)], "ms p50"),
+    ("Interval statistics", "stats", [(2.88, 0.53), (5.06, 3.04), (7.49, 2.63), (3.74, 2.52), (10.16, 2.62), (0.505, 0.682)],
      "ms p50"),
     # Study M1: smallest passing memory cap in MB (a "> 4 GB" would be drawn at 4096 as a lower bound; none occurred)
-    ("Smallest memory cap", "memory", [(2048, 256), (1024, 256), (2048, 256), (1024, 256), (2048, 256)], "cap"),
+    ("Smallest memory cap", "memory", [(2048, 256), (1024, 256), (2048, 256), (1024, 256), (2048, 256), None], "cap"),
 ]
 # a dot that is not the released build's base configuration, and a ring with its own pair: (measure, system) -> ...
 DOT_NOTE = {(k, 0): "0.3.7-alpha.1, compressed transfer, B3.16" for k in ("ingest", "short", "long", "stats")}
 DOT_NOTE.update({("memory", i): "0.3.7-alpha.1, Study M1" for i in range(len(SYSTEMS))})
+DOT_NOTE.update({(k, 5): "0.3.9-alpha.1, B3.18" for k in ("storage", "ingest", "short", "long", "stats")})
 DOT_NOTE[("storage", 0)] = "0.3.7-alpha.1, B3.15"
 RING = {}
 LO, HI = 0.4, 50.0
@@ -84,8 +88,8 @@ def svg():
         x += 15 + 7 * len(name) + 16
     # the hollow ring: the same database in a second form, on its own line
     out.append(f'<circle cx="5" cy="42" r="4" fill="var(--paper)" stroke="{SYSTEMS[0][1]}" stroke-width="2"/>'
-               f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk) &#183; MorletDB 0.3.7 on '
-               f'QuestDB&#8217;s lane, 0.3.6 on the others</text>')
+               f'<text x="15" y="46" fill="{ink}">Hollow ring: QuestDB as Parquet zstd 9 (data on disk) &#183; each dot&#8217;s '
+               f'MorletDB release is in its tooltip</text>')
     # axis and grid
     y_axis = h - 34
     for t, lab in [(0.5, "0.5×"), (1, "1×"), (2, "2×"), (5, "5×"), (10, "10×"), (20, "20×"), (50, "50×")]:
@@ -104,9 +108,12 @@ def svg():
         out.append(f'<text x="0" y="{y + rows / 2 + 4:.1f}" fill="{ink}">{label}</text>')
         out.append(f'<line x1="{X0}" x2="{X1}" y1="{y + rows + GAP / 2:.1f}" y2="{y + rows + GAP / 2:.1f}" stroke="{line}"/>')
         for i, ((name, col), pr) in enumerate(zip(SYSTEMS, pairs)):
+            cy = y + i * LANE + LANE / 2
+            if pr is None:   # not measured for this system: say so on its lane
+                out.append(f'<text x="{xpos(1) + 8:.1f}" y="{cy + 4:.1f}" fill="{muted}" font-size="10">{name}: not measured</text>')
+                continue
             a, b = pr[:2]
             r = a / b
-            cy = y + i * LANE + LANE / 2
             cx = xpos(r)
             out.append(f'<line x1="{xpos(1):.1f}" x2="{cx:.1f}" y1="{cy:.1f}" y2="{cy:.1f}" stroke="{col}" '
                        f'stroke-width="2" stroke-opacity="0.45"/>')
