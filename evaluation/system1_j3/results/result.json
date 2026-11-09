@@ -1,0 +1,143 @@
+{
+ "runs": 64,
+ "worn": 33,
+ "k": 3,
+ "arms": {
+  "laya": {
+   "control_passed": true,
+   "probability_from": "noul",
+   "calls": 64,
+   "schema_errors": 0,
+   "truncated": 0,
+   "latency_ms_p50": 790.1,
+   "latency_ms_p95": 926.0,
+   "wear_level_spearman_vb": 0.09680189898901054
+  },
+  "laya-td": {
+   "control_passed": true,
+   "probability_from": "noul",
+   "calls": 64,
+   "schema_errors": 0,
+   "truncated": 0,
+   "latency_ms_p50": 771.4,
+   "latency_ms_p95": 812.2,
+   "wear_level_spearman_vb": 0.5013053494527071
+  },
+  "jev": {
+   "control_passed": true,
+   "probability_from": "noul",
+   "calls": 64,
+   "schema_errors": 0,
+   "truncated": 0,
+   "latency_ms_p50": 198.0,
+   "latency_ms_p95": 238.2,
+   "wear_level_spearman_vb": 0.8677877057140573
+  }
+ },
+ "scores": {
+  "laya": {
+   "n": 64,
+   "auroc": 0.3020527859237537,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.4638318670576735,
+    "sensitivity": 0.12121212121212122,
+    "specificity": 0.8064516129032258
+   },
+   "at_0.5_balanced_accuracy": 0.5,
+   "brier": 0.3006175525,
+   "recalibrated_brier": 0.2515820179396072,
+   "recalibrated_at_0.5_balanced_accuracy": 0.5923753665689149
+  },
+  "laya-td": {
+   "n": 64,
+   "auroc": 0.5928641251221897,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.5987292277614858,
+    "sensitivity": 0.9393939393939394,
+    "specificity": 0.25806451612903225
+   },
+   "at_0.5_balanced_accuracy": 0.563049853372434,
+   "brier": 0.24372019578124998,
+   "recalibrated_brier": 0.2539186019161048,
+   "recalibrated_at_0.5_balanced_accuracy": 0.4662756598240469
+  },
+  "jev": {
+   "n": 64,
+   "auroc": 0.966275659824047,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.8597262952101662,
+    "sensitivity": 0.8484848484848485,
+    "specificity": 0.8709677419354839
+   },
+   "at_0.5_balanced_accuracy": 0.6129032258064516,
+   "brier": 0.19845937500000002,
+   "recalibrated_brier": 0.08288047397750409,
+   "recalibrated_at_0.5_balanced_accuracy": 0.8900293255131965
+  },
+  "jev_full_state_j1": {
+   "n": 64,
+   "auroc": 0.9481915933528837,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.8264907135874877,
+    "sensitivity": 0.8787878787878788,
+    "specificity": 0.7741935483870968
+   },
+   "at_0.5_balanced_accuracy": 0.6774193548387097,
+   "brier": 0.19562951388888888,
+   "recalibrated_brier": 0.11987382012281048,
+   "recalibrated_at_0.5_balanced_accuracy": 0.8264907135874877
+  },
+  "conditioned_score": {
+   "n": 64,
+   "auroc": 0.9657869012707723,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.8587487781036168,
+    "sensitivity": 0.8787878787878788,
+    "specificity": 0.8387096774193549
+   }
+  },
+  "local_logistic_regression": {
+   "n": 64,
+   "auroc": 0.9687194525904204,
+   "transferred_threshold": {
+    "balanced_accuracy": 0.9042033235581624,
+    "sensitivity": 0.9696969696969697,
+    "specificity": 0.8387096774193549
+   },
+   "at_0.5_balanced_accuracy": 0.8900293255131965,
+   "brier": 0.06876168088626496
+  }
+ },
+ "base_rate_brier": 0.249755859375,
+ "deltas": {
+  "laya-td_vs_jev_compact": {
+   "point": -0.3734115347018573,
+   "ci95": [
+    -0.51710205078125,
+    -0.23645606102881506
+   ]
+  },
+  "laya_vs_jev_compact": {
+   "point": -0.6642228739002933,
+   "ci95": [
+    -0.7893561816948913,
+    -0.5284068627450982
+   ]
+  },
+  "jev_compact_vs_jev_full": {
+   "point": 0.01808406647116323,
+   "ci95": [
+    -0.024437927663734094,
+    0.06551724137931025
+   ]
+  },
+  "laya-td_vs_local_lr": {
+   "point": -0.3758553274682307,
+   "ci95": [
+    -0.5172536945812808,
+    -0.23275199142156894
+   ]
+  }
+ },
+ "decision": "NOT SUPPORTED"
+}
