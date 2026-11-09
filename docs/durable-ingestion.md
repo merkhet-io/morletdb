@@ -227,7 +227,8 @@ policy; no automatic upgrade/migration is provided for this unreleased prototype
   extractor `none`;
 - feature search skips these recordings; reads, replay checks and storage
   accounting work as usual;
-- the sample rate can be any finite value in (0, 200000] Hz.
+- the sample rate can be any finite value in (0, 200000] Hz. Higher rates (acoustic emission, ultrasound) are
+  refused for now; raising the limit is tracked in #342.
 
 Use it when recordings are searched by other means, for example materialized
 envelopes. In the frozen seismic timing test, envelope cross-correlation beat
