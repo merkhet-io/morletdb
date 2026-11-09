@@ -1002,3 +1002,20 @@ not reachable on 2026-11-08) must be read before any result is published. Everyt
 - **Reported:** every measure for both pairs, statements by B3's rule (≥ 10% in all loads for ingestion, at both p50
   and p95 for latencies; otherwise no statement), including every loss. Nothing goes to the website before the owner
   decides.
+
+## Study M1, amendment M1b: CedarDB (FROZEN before any load)
+
+Added 2026-11-09 at the owner's request: CedarDB's smallest memory cap, with the rules of Study M1 (caps 256 MB, 512 MB,
+1 GB, 2 GB, 4 GB, swap disabled, 8 CPUs, ascending until the first pass; pass = the runner exits 0 within 20 minutes
+with every count and read exact; one load per cell; descriptive only, no speed statements).
+
+- **CedarDB** as in B3.18 (`run_cedar.py load D2 1`). It sizes itself from the container: by default it uses 90% of
+  the cgroup memory limit (`memorysize`, shared by its buffer manager and working memory; its documentation), so no
+  setting changes per cap.
+- **MorletDB** 0.3.9-alpha.1, arm `morletdb-i1-sum` (B3.18's), at 256 MB and at 16 GB, so the multiple compares two
+  releases measured in one session (M1 measured 0.3.7-alpha.1).
+- **References:** both systems at 16 GB first. Then CedarDB at ascending caps until it passes; then MorletDB at 256 MB.
+- **Machine:** M1's start condition; AC power and lid checked before every load. A cell interrupted by the machine
+  (sleep, power) is rerun; cells are independent, so the study may span sessions (recorded).
+- **Reported:** CedarDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at 16 GB
+  the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1.
