@@ -1019,3 +1019,24 @@ with every count and read exact; one load per cell; descriptive only, no speed s
   (sleep, power) is rerun; cells are independent, so the study may span sessions (recorded).
 - **Reported:** CedarDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at 16 GB
   the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1.
+
+## Amendment B3.19: interval statistics against CedarDB with MorletDB 0.3.10-alpha.1 (FROZEN before any load)
+
+Added 2026-11-09 at the owner's request. B3.18's one loss to CedarDB was interval statistics (p50/p95 0.68/0.75 ms
+against 0.51/0.56 ms). Release 0.3.10-alpha.1 computes them natively (one prepared plan per session, #346, #349); a
+development measurement on a busy machine gave about 0.41 ms. This stage asks only: **which system answers B3's
+interval statistics faster, MorletDB 0.3.10-alpha.1 or CedarDB?** Results stay local until the owner decides, as in
+B3.18 (CedarDB's terms are still to be read before any publication).
+
+- **Systems:** MorletDB `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1` (digest recorded per result), arm
+  `morletdb-i1-sum`, unchanged from B3.18; CedarDB exactly as in B3.18 (same image digest, adapter and settings).
+- **Runs** (`run_b319.sh`): three rounds in one session; each round loads D2 r1 into MorletDB, then into CedarDB, each
+  followed by B3.18's storage, reads and analytics from a fresh client process. Results in
+  `results/b319-cedardb-s1..s3/`, machine snapshots before and after every load.
+- **Machine:** B3.16's start and power conditions (quiet: 5-minute load below 3 and no process above 50% CPU besides
+  Docker; AC power, lid open). Started after the B3.18 InfluxDB pair on the night of 2026-11-09, never after 07:00;
+  a round not started by then is not run, and the rounds done are reported as such.
+- **Statement:** interval statistics only. One system is faster if it is faster by ≥ 10% at both p50 and p95 in every
+  completed round, at least two rounds; otherwise no statement. All other measures of these loads (ingestion, storage,
+  R1-R4) are reported descriptively, without statements, since this stage has no D1 loads.
+- **Correctness:** every load must pass B3's full correctness check, as always; a failed load voids its round.

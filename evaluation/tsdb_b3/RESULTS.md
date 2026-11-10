@@ -1569,8 +1569,10 @@ loads (MorletDB 7.1–7.6 s, CedarDB 38–41 s).
 - *Interval statistics.* CedarDB aggregates over its own columns with compiled, vectorised code and is faster than
   MorletDB's chunk summaries: the one loss in this pair, and where CedarDB's design is aimed.
 
-**Publication.** Shown on the website only after CedarDB's Community Edition terms were checked for restrictions on
-publishing benchmark results (the PDF linked from its licensing page returned 404 on 2026-11-08 and 2026-11-09).
+**Publication.** CedarDB's Community Edition terms (`cedardb.com/legal/agreements/community_tcs.pdf`, linked from its
+licensing page; 404 on 2026-11-08 and 2026-11-09, read on 2026-11-10, German text binding) restrict copying, passing
+on, modifying, reverse engineering, unlawful use and circumventing the 64 GiB limit. They contain no clause on
+benchmarks or publishing results.
 
 ## Study M1b: CedarDB's smallest memory cap
 
@@ -1596,4 +1598,62 @@ down at its smallest cap.
 ## InfluxDB 3 Core pair
 
 The first attempt (2026-11-09 06:45–07:48) was stopped when the owner had to close the laptop; its two loads are kept
-in `results/b318-influxdb3-aborted/` and not reported. The pair is rerun in one session.
+in `results/b318-influxdb3-aborted/` and not reported. The pair was rerun unchanged in one session, 2026-11-10
+00:00–01:13 (`caffeinate`, AC power, lid open). Snapshots before and after every load: median load average 2.8 (max
+4.6), no foreign process above half a core. Tables from `summarize_b318.py pair results/b318-influxdb3 influxdb3`.
+
+**Correctness: all 12 loads passed** (every channel by SHA-256, exact times), also after the restart that precedes the
+reads.
+
+| | MorletDB 0.3.9 | InfluxDB 3 Core 3.12.2 | Statement |
+|---|---:|---:|---|
+| Ingestion D2, median [range] | 13.92 M [13.87–13.99] samples/s | 0.93 M [0.93–0.93] | MorletDB **14.9×** faster (all-loads bound 14.8) |
+| Ingestion D1 (durable) | 13.60 M [13.51–13.76] | 0.10 M [0.10–0.10] | MorletDB **133×** faster (bound 132); see attribution |
+| Data on disk | 163.3 MiB (database) | 406.7 MiB (Parquet after the snapshot; volume 409.2 MiB allocated, 684 files) | MorletDB 2.5× smaller |
+| R1, 4,096 samples, p50 / p95 | 0.62 / 0.99 ms | 9.36 / 10.45 ms | MorletDB 15.0× / 10.5× |
+| R2, 128,000 samples | 5.89 / 7.57 ms | 25.56 / 27.74 ms | MorletDB 4.3× / 3.7× |
+| R3, 3 × 64,000 samples | 7.44 / 9.80 ms | 22.06 / 24.05 ms | MorletDB 3.0× / 2.5× |
+| R4 recent / older | 0.64 / 0.96; 0.61 / 0.96 ms | 5.56 / 8.39; 9.36 / 10.33 ms | MorletDB 8.7× / 8.7×; 15.3× / 10.7× |
+| R5, 4 threads | 4,298 queries/s | 382 queries/s | MorletDB 11.2× |
+| Interval statistics | 0.68 / 0.74 ms (chunk summaries) | 17.53 / 20.50 ms | MorletDB 25.8× / 27.9× |
+| Server working set while ingesting | 180 MiB | 5,447 MiB | MorletDB 30× less (footprint in a 16 GB container, not a need) |
+| Retries | identical: no-op; altered: refused | both accepted; an altered retry replaces the value | |
+
+**Attribution.**
+- *Durable ingestion (D1).* InfluxDB's default acknowledges a write once its WAL is persisted, and it flushes the WAL
+  once a second. With one client sending requests one after another (B3's single connection), every request waited
+  for the next flush: 996 ms at p50 and 1,011 ms at p95 per request of up to 50,000 rows, in all three loads. Several
+  concurrent writers would share a flush and narrow this gap; they were not measured. With `no_sync=true` (D2) a
+  request took 120 ms.
+- *Ingestion D2.* One row per sample as line protocol over HTTP. Building the lines (exact shortest decimals) took
+  25.9 s of the 109.7 s load in the client and is counted in the load, as the protocol says; the server averaged 0.8
+  cores.
+- *Storage.* InfluxDB keeps new data in its WAL until a snapshot writes Parquet. Before storage was measured, a
+  heartbeat of one point per second ran for 1,650 s (826 rows) until the Parquet bytes were stable (settled); the WAL
+  was then down to 85 kB. MorletDB's 163.3 MiB is its whole database; its WAL directory (176 MiB) is not counted, as
+  in every B3 stage.
+- *Reads and statistics.* Queries go through InfluxDB's SQL engine and return Parquet; each carries a fixed cost of
+  several milliseconds (R1 9.4 ms for 4,096 samples), which dominates short reads and the statistics query.
+
+## Amendment B3.19: interval statistics against CedarDB with MorletDB 0.3.10-alpha.1
+
+Protocol: Amendment B3.19 in [PROTOCOL.md](PROTOCOL.md), frozen at `aea30f7` before any load. Run 2026-11-10
+01:13–01:40, right after the InfluxDB pair (`run_b319.sh`, `results/b319-cedardb-s1..s3/`). Snapshots: median load
+average 1.7, 5.3 and 5.0 per round (max 6.6, the session's own loads), no foreign process above half a core. Table
+from `summarize_b318.py b319 ...`.
+
+| Round | MorletDB 0.3.10 p50 / p95 | CedarDB p50 / p95 | CedarDB's time over MorletDB's (p50 / p95) | Valid |
+|---|---|---|---|---|
+| 1 | 0.484 / 0.523 ms | 0.518 / 0.583 ms | 1.07 / 1.11 | yes |
+| 2 | 0.478 / 0.527 ms | 0.520 / 0.578 ms | 1.09 / 1.10 | yes |
+| 3 | 0.475 / 0.508 ms | — | — | no: CedarDB failed the correctness check |
+
+**Statement: none.** MorletDB 0.3.10 was faster in both valid rounds, but by 7–9% at p50, below the rule's 10%.
+B3.18's loss (CedarDB 1.35× / 1.34× faster against 0.3.9) is gone: the two are level on this query.
+
+**Round 3.** CedarDB's load counted every row correctly, but reading acquisition `N15_M07_F04_KA06_1` back (one query
+per group, ordered by the primary key's time) returned wrong times for the high-rate group and wrong samples on three
+of its channels. B3 voids the round. It is the only failed correctness check in CedarDB's 17 completed loads (12 in B3.18, 2 in M1b,
+3 in B3.19). The
+container was removed by the runner, the failure has not been reproduced, and its cause (CedarDB or this harness) is
+not determined; it is reported, not interpreted.
