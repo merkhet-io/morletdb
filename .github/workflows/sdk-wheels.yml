@@ -6,7 +6,7 @@ name: SDK wheels
 # attaches the wheels to the GitHub release; nothing is published to a package index.
 on:
   pull_request:
-    paths: ['sdk/python/**', 'crates/morlet-ffi/**', 'crates/morlet-sqlite/**', 'crates/morlet-core/**', 'Cargo.lock', 'rust-toolchain.toml',
+    paths: ['sdk/python/**', 'crates/morlet-ffi/**', 'crates/morlet-sqlite/**', 'crates/grizzbit/**', 'crates/morlet-core/**', 'Cargo.lock', 'rust-toolchain.toml',
             '.github/workflows/sdk-wheels.yml']
   workflow_call:
   workflow_dispatch:

@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.21, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.22, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,12 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.22 (naming, no new measurement)
+
+The chunk codec is named: Section 4 and supplement Section 1 call it Grizzbit, MorletDB's lossless chunk codec
+(Grizzbit 1 is chunk format versions 2 and 3; [docs/grizzbit.md](../../docs/grizzbit.md)). No number, claim or
+technique changed.
 
 ## What changed in 0.21 (correction, no new measurement)
 

@@ -1,7 +1,7 @@
 //! Property tests for the chunk codec: the layer between the Kani proofs (all inputs,
 //! tiny sizes) and fuzzing (unbounded time). See docs/verification.md.
-use morlet_core::rawcodec::{decode, encode};
-use morlet_core::{MAX_AMPLITUDE, MAX_SAMPLES};
+use grizzbit::{decode, encode};
+use grizzbit::{MAX_AMPLITUDE, MAX_SAMPLES};
 use proptest::prelude::*;
 
 /// The CRC-32C the codec appends, reimplemented only to reseal mutated bodies.

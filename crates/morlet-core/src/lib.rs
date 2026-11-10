@@ -6,14 +6,18 @@ pub mod envelope_screen;
 pub mod exactstats;
 pub mod intervalstats;
 pub mod morlet;
-pub mod rawcodec;
+/// The chunk codec, now the `grizzbit` crate (Grizzbit 1 = chunk format versions 2 and 3, unchanged). Kept under
+/// this name so every `morlet_core::rawcodec::...` path still compiles.
+pub use grizzbit as rawcodec;
 pub mod segments;
 pub mod transfer;
 pub mod values;
 use std::fmt;
 
-pub const MAX_SAMPLES: usize = 32_768;
-pub const MAX_AMPLITUDE: f64 = 1e9;
+/// The most samples one chunk (and one waveform) holds: the codec's limit.
+pub const MAX_SAMPLES: usize = grizzbit::MAX_SAMPLES;
+/// The largest sample magnitude accepted: the codec's limit.
+pub const MAX_AMPLITUDE: f64 = grizzbit::MAX_AMPLITUDE;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum SignalError {
@@ -53,6 +57,14 @@ impl fmt::Display for SignalError {
     }
 }
 impl std::error::Error for SignalError {}
+impl From<grizzbit::SampleError> for SignalError {
+    fn from(e: grizzbit::SampleError) -> Self {
+        match e {
+            grizzbit::SampleError::InvalidLength => Self::InvalidLength,
+            grizzbit::SampleError::InvalidSample => Self::InvalidSample,
+        }
+    }
+}
 
 pub fn validate(samples: &[f64]) -> Result<(), SignalError> {
     if samples.is_empty() || samples.len() > MAX_SAMPLES {
@@ -188,5 +200,33 @@ mod tests {
             normalize(&[1.], "unknown"),
             Err(SignalError::InvalidNormalization)
         );
+    }
+    /// The codec's sample check and this crate's are one rule with one wording: the SQL functions and tests match
+    /// on the messages, whichever of the two refuses the samples.
+    #[test]
+    fn sample_checks_agree_with_the_codec() {
+        assert_eq!(MAX_SAMPLES, 32_768);
+        assert_eq!(MAX_AMPLITUDE, 1e9);
+        let long = vec![0.0; MAX_SAMPLES + 1];
+        let full = vec![1e9; MAX_SAMPLES];
+        let inputs: [&[f64]; 9] = [
+            &[],
+            &long,
+            &full,
+            &[0.0],
+            &[-1e9, 1e9],
+            &[f64::NAN],
+            &[f64::NEG_INFINITY],
+            &[1.000_000_001e9],
+            &[1.0, f64::INFINITY],
+        ];
+        for x in inputs {
+            let ours = validate(x);
+            let codec = grizzbit::validate(x).map_err(SignalError::from);
+            assert_eq!(ours, codec, "{} samples", x.len());
+            if let (Err(a), Err(b)) = (ours, grizzbit::validate(x)) {
+                assert_eq!(a.to_string(), b.to_string());
+            }
+        }
     }
 }
