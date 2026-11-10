@@ -5,5 +5,5 @@ mod common;
 
 fuzz_target!(|data: &[u8]| {
     common::check_decode(data);
-    let _ = morlet_core::rawcodec::kind(data);
+    let _ = grizzbit::kind(data);
 });

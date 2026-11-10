@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **The chunk codec is now the `grizzbit` crate (Grizzbit 1 = chunk format versions 2 and 3, unchanged):**
+  `crates/grizzbit` holds the encoder, decoder, CRC-32C, sample limits, unit and property tests, golden-chunk test,
+  Kani proofs and the codec's fuzz targets, with no dependencies. `morlet_core::rawcodec` re-exports it, so every
+  existing path keeps compiling; `morlet_core::MAX_SAMPLES` and `MAX_AMPLITUDE` are the codec's limits.
+  `CodecError::Signal` now carries `grizzbit::SampleError` (same messages; `SignalError: From<SampleError>`). No
+  byte changes: a new frozen vector (testdata/grizzbit), written by the encoder before the move, must be
+  reproduced exactly, and SQL function names and messages are unchanged. The crate is not published.
+
 - **Docs: the chunk codec is named Grizzbit:** [docs/grizzbit.md](docs/grizzbit.md) describes it (what it does, why it
   is lossless, where it is strong and weak in B4, lineage, versions, the planned Grizzbit 2 of #326);
   docs/chunk-format.md is retitled "Grizzbit format specification" with its content unchanged (Grizzbit 1 = chunk format
