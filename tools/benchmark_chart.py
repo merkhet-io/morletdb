@@ -6,7 +6,7 @@ the same machine, reads from a fresh client process, never from two sessions (ev
 QuestDB's lane from B3.16, the released 0.3.7-alpha.1 reading with compressed transfer as its SDK does
 (summarize_b316.py), CedarDB's from B3.18 against 0.3.9-alpha.1 with its default chunk summaries (interval statistics
 from B3.19 against 0.3.10-alpha.1, memory cap from Study M1b against 0.3.9-alpha.1), InfluxDB 3 Core's from B3.18
-against 0.3.9-alpha.1 (summarize_b318.py; data on disk is its Parquet after the snapshot; memory cap not measured), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.16's frozen
+against 0.3.9-alpha.1 (summarize_b318.py; data on disk is its Parquet after the snapshot; memory cap from Study M1c against 0.3.9-alpha.1), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.16's frozen
 website rule says. Speed: the other system's time over MorletDB's (p50),
 or MorletDB's throughput over the other's, for the system's faster layout per measure. Storage (deterministic, from
 each system's stage) is the other system's data on disk over MorletDB's whole database (0.3.6: 161.5 MiB, B3.13;
@@ -46,7 +46,7 @@ MEASURES = [
                                       (17.53, 0.68)],
      "ms p50"),
     # Study M1: smallest passing memory cap in MB (a "> 4 GB" would be drawn at 4096 as a lower bound; none occurred)
-    ("Smallest memory cap", "memory", [(2048, 256), (1024, 256), (2048, 256), (1024, 256), (2048, 256), (1024, 256), None], "cap"),
+    ("Smallest memory cap", "memory", [(2048, 256), (1024, 256), (2048, 256), (1024, 256), (2048, 256), (1024, 256), (4096, 256)], "cap"),
 ]
 # a dot that is not the released build's base configuration, and a ring with its own pair: (measure, system) -> ...
 DOT_NOTE = {(k, 0): "0.3.7-alpha.1, compressed transfer, B3.16" for k in ("ingest", "short", "long", "stats")}
@@ -55,6 +55,7 @@ DOT_NOTE.update({(k, 5): "0.3.9-alpha.1, B3.18" for k in ("storage", "ingest", "
 DOT_NOTE[("stats", 5)] = "0.3.10-alpha.1, B3.19, mean of its 2 valid rounds; no statement (under 10%)"
 DOT_NOTE.update({(k, 6): "0.3.9-alpha.1, B3.18" for k in ("storage", "ingest", "short", "long", "stats")})
 DOT_NOTE[("memory", 5)] = "0.3.9-alpha.1, Study M1b"
+DOT_NOTE[("memory", 6)] = "0.3.9-alpha.1, Study M1c"
 DOT_NOTE[("storage", 0)] = "0.3.7-alpha.1, B3.15"
 RING = {}
 LO, HI = 0.4, 50.0

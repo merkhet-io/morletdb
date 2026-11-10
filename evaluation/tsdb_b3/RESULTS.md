@@ -1595,6 +1595,27 @@ At the passing cap and at 16 GB (one load each, descriptive): CedarDB ingested 2
 14.16 M samples/s, R1 0.62 and 0.63 ms, R2 5.94 and 6.04 ms, statistics 0.67 ms in both, 175 and 181 MiB. Neither slowed
 down at its smallest cap.
 
+## Study M1c: InfluxDB 3 Core's smallest memory cap
+
+Protocol: "Study M1, amendment M1c" in [PROTOCOL.md](PROTOCOL.md), frozen at `70312c2` before any load. Run once,
+2026-11-10 10:34–11:16 (`run_m1c.sh` under `caffeinate`, `results/m1c/`, outcomes in `results/m1c/outcomes.tsv`).
+Start condition met (load average 2.41 at the start); the machine was in use during the run (the window server used up
+to about one core), which does not affect pass or fail, and the speeds below are descriptive only. Each load
+includes InfluxDB's snapshot to Parquet within the 50-minute limit.
+
+| System | 256 MB | 512 MB | 1 GB | 2 GB | 4 GB | 16 GB (reference) | Smallest passing cap |
+|---|---|---|---|---|---|---|---|
+| InfluxDB 3 Core 3.12.2 | out of memory (5 s) | out of memory (7 s) | out of memory (26 s) | out of memory (82 s) | **pass** | pass | **4 GB** |
+| MorletDB 0.3.9-alpha.1 | **pass** | | | | | pass | **256 MB** |
+
+Below 4 GB the kernel killed the InfluxDB container while it ingested (Docker recorded `OOMKilled`); the runner
+then failed with a broken pipe. InfluxDB needs **16×** MorletDB's cap (caps are powers of two, so the ratio is
+coarse).
+
+At the passing cap and at 16 GB (one load each, descriptive): InfluxDB ingested 0.92 and 0.91 M samples/s, working-set
+peak 3,017 and 5,549 MiB, and its snapshot came 61 s and 1,650 s after the load (a tighter cap made it snapshot
+sooner); MorletDB 13.46 and 14.13 M samples/s, 172 and 180 MiB. Neither slowed down at its smallest cap.
+
 ## InfluxDB 3 Core pair
 
 The first attempt (2026-11-09 06:45–07:48) was stopped when the owner had to close the laptop; its two loads are kept

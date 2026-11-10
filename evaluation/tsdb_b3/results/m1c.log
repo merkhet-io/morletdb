@@ -1,0 +1,22 @@
+== 2026-11-10T10:34:26 M1c (70312c2) started; waits up to 12 h for a quiet, powered machine
+== m1c influxdb3 16g 10:34:42
+   rc=0 state=[
+missing] 1906s
+== m1c morletdb 16g 11:06:28
+   rc=0 state=[
+missing] 66s
+== m1c influxdb3 256m 11:07:34
+   rc=1 state=[true false 0 268435456] 5s
+== m1c influxdb3 512m 11:07:39
+   rc=1 state=[true false 0 536870912] 7s
+== m1c influxdb3 1g 11:07:46
+   rc=1 state=[true false 0 1073741824] 26s
+== m1c influxdb3 2g 11:08:12
+   rc=1 state=[true false 0 2147483648] 83s
+== m1c influxdb3 4g 11:09:35
+   rc=0 state=[
+missing] 339s
+== m1c morletdb 256m 11:15:14
+   rc=0 state=[
+missing] 70s
+== M1c done 11:16:24
