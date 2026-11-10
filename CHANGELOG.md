@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- **Every append path proves at write time that a chunk decodes to its input (#366):** with
+  `morlet.verify_appends` on (the default), the batch append `morlet_append_chunks_raw` decoded each encoded chunk
+  again and compared it bit for bit with its input, but the single-chunk append `morlet_append_chunk` (and so
+  `morlet_append_chunk_raw`, `morlet_append_chunks`, and the batch append's chunk-by-chunk fallback for retries,
+  overlaps and float8[] collections) stored `morlet_encode_chunk`'s output unchecked. `morlet_encode_chunk` now
+  runs the same check, from one function shared with the batch path, so no SQL function changes. The codec was
+  and is lossless by design and every chunk keeps its CRC-32C; this closes the gap in the write-time proof.
+  Tests: the single-chunk path stores the same bytes with the check on and off, and refuses (single and batch)
+  a code that does not decode to its input, which with the check off is stored, so the check is what refuses it.
+
+- **File and server transfers verify samples, not chunk bytes (#356):** `Client.import_file` and
+  `Client.export_file` compared a hash of the chunk bytes on both sides after every 256 chunks, and to continue a
+  recording. A file whose chunks another encoder version wrote (the same samples as other bytes) would have been
+  refused with "chunks differ after the import", although no sample was lost. They now compare a hash of the
+  decoded float64 samples, every bit (hashed by the server from `morlet_read_interval_raw`), and continue a
+  recording if its samples equal the other side's first samples. The chunk bytes are still compared when both
+  sides report the same encoder version, and reported: `report=[...]` collects a `TransferCheck` per recording.
+  Tests import, verify and continue a file written with other chunk bytes, export server chunks written with
+  other bytes, and refuse a sample changed by one ulp, a changed sign of zero, and a sample changed on the way.
+
 - **Sample rates up to 100 MHz (#342):** recordings without feature extraction (`extractor 'none'`) accept rates up
   to 100 MHz instead of 200 kHz, so acoustic emission and ultrasound (1–10 MHz) can be stored, read and summarized
   losslessly. Nothing else depended on the rate. L1's rate points at 1, 2.5, 3.125, 10 and 100 MHz: every derived

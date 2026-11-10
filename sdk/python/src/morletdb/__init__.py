@@ -13,9 +13,9 @@ from ._local import LocalStore, open
 from ._errors import (ConflictError, DatabaseError, InvalidInputError, MorletError, NotFoundError,
                       UnsupportedError)
 from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
-                     OverviewBucket, Recording, SearchResult)
+                     OverviewBucket, Recording, SearchResult, TransferCheck)
 
 __version__ = "0.1.0a3"
-__all__ = ["Client", "LocalStore", "open", "Recording", "Interval", "IntervalRef", "IntervalStats", "Latest", "Notification", "NotifiedRange", "OverviewBucket", "Match", "Evidence", "EvidencePart", "SearchResult",
+__all__ = ["Client", "LocalStore", "open", "Recording", "Interval", "IntervalRef", "IntervalStats", "Latest", "Notification", "NotifiedRange", "OverviewBucket", "Match", "Evidence", "EvidencePart", "SearchResult", "TransferCheck",
            "MorletError", "InvalidInputError", "NotFoundError", "ConflictError", "UnsupportedError",
            "DatabaseError"]

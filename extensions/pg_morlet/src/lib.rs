@@ -248,11 +248,40 @@ fn morlet_valid_chunk(samples: pgrx::Array<'_, f64>) -> bool {
     true
 }
 
-/// Lossless chunk encoding: integer grid + Rice coding, or raw float64 off the grid.
+/// Lossless chunk encoding: integer grid + Rice coding, or raw float64 off the grid. With
+/// `morlet.verify_appends` on (the default) the code is decoded again and compared bit for bit with the input,
+/// as in the batch append, so every append path that encodes through this function (`morlet_append_chunk`)
+/// proves at write time that what it stores decodes to its input.
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_encode_chunk(samples: pgrx::Array<'_, f64>, sample_quantum: f64) -> Vec<u8> {
-    morlet_core::rawcodec::encode(&sample_slice(&samples), sample_quantum)
+    encode_checked(&sample_slice(&samples), sample_quantum, verify_appends())
         .unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
+/// Test only: when set, the next encoding returns the code of a different chunk (its first sample one unit in
+/// the last place away), so tests can show that the write-time check is what refuses it. Cleared when used.
+#[cfg(feature = "pg_test")]
+static WRONG_NEXT_CODE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Encodes one chunk; with `verify`, decodes the code again and compares it bit for bit with the input (a
+/// mismatch is an error). Shared by `morlet_encode_chunk` and the batch append's `encode_chunks`.
+fn encode_checked(c: &[f64], quantum: f64, verify: bool) -> Result<Vec<u8>, String> {
+    let bytes = morlet_core::rawcodec::encode(c, quantum).map_err(|e| e.to_string())?;
+    #[cfg(feature = "pg_test")]
+    let bytes = if WRONG_NEXT_CODE.swap(false, std::sync::atomic::Ordering::SeqCst) {
+        let mut other = c.to_vec();
+        other[0] = f64::from_bits(other[0].to_bits() ^ 1);
+        morlet_core::rawcodec::encode(&other, quantum).map_err(|e| e.to_string())?
+    } else {
+        bytes
+    };
+    if verify {
+        let back = morlet_core::rawcodec::decode(&bytes).map_err(|e| e.to_string())?;
+        if back.len() != c.len() || back.iter().zip(c).any(|(a, b)| a.to_bits() != b.to_bits()) {
+            return Err("encoded chunk does not decode to its input samples".into());
+        }
+    }
+    Ok(bytes)
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -779,22 +808,7 @@ type ChunkCode = Option<Result<Vec<u8>, String>>;
 fn encode_chunks(chunks: &[&[f64]], quantum: f64, verify: bool) -> Vec<ChunkCode> {
     let one = move |c: &[f64]| -> ChunkCode {
         morlet_core::validate(c).ok()?;
-        Some(
-            morlet_core::rawcodec::encode(c, quantum)
-                .map_err(|e| e.to_string())
-                .and_then(|bytes| {
-                    if verify {
-                        let back =
-                            morlet_core::rawcodec::decode(&bytes).map_err(|e| e.to_string())?;
-                        if back.len() != c.len()
-                            || back.iter().zip(c).any(|(a, b)| a.to_bits() != b.to_bits())
-                        {
-                            return Err("encoded chunk does not decode to its input samples".into());
-                        }
-                    }
-                    Ok(bytes)
-                }),
-        )
+        Some(encode_checked(c, quantum, verify))
     };
     on_threads(chunks, encode_threads(), "morlet-encode", |c| one(c))
 }
@@ -3262,6 +3276,54 @@ END $$"#).unwrap();
         )
         .unwrap()
         .unwrap());
+    }
+    /// #366: the single-chunk append stores the same bytes with the write-time check on and off.
+    #[pg_test]
+    fn verify_appends_single_chunk_does_not_change_chunks() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['ver1_on','ver1_off']) c;
+             SELECT morlet_start_recording(c::regclass,'A',4096,'x','g') FROM unnest(ARRAY['ver1_on','ver1_off']) c;
+             SET morlet.verify_appends = on;
+             SELECT morlet_append_chunk('ver1_on','A',0,ARRAY(SELECT CASE WHEN i<500 THEN round(1000*sin(i/7.)) ELSE sin(i/7.) END FROM generate_series(0,999) i)::float8[]);
+             SET morlet.verify_appends = off;
+             SELECT morlet_append_chunk('ver1_off','A',0,ARRAY(SELECT CASE WHEN i<500 THEN round(1000*sin(i/7.)) ELSE sin(i/7.) END FROM generate_series(0,999) i)::float8[]);
+             RESET morlet.verify_appends;",
+        )
+        .unwrap();
+        assert!(Spi::get_one::<bool>(
+            "SELECT (SELECT array_agg(encoded ORDER BY start_sample) FROM ver1_on_chunks)
+                  = (SELECT array_agg(encoded ORDER BY start_sample) FROM ver1_off_chunks)
+                AND (SELECT count(*) FROM ver1_on_chunks) >= 1"
+        )
+        .unwrap()
+        .unwrap());
+    }
+    /// #366: with the check on, a code that does not decode to the input is refused on the single-chunk path.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_single_chunk_refuses_a_wrong_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_bad'); SELECT morlet_start_recording('ver1_bad','A',4096,'x','g'); SET morlet.verify_appends = on").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunk('ver1_bad','A',0,ARRAY[1.5,2.5,3.5,4.5]::float8[])")
+            .unwrap();
+    }
+    /// #366: the same wrong code is stored when the check is off, so the check is what refuses it above.
+    #[pg_test]
+    fn verify_appends_off_lets_a_wrong_code_through() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_off2'); SELECT morlet_start_recording('ver1_off2','A',4096,'x','g'); SET morlet.verify_appends = off").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunk('ver1_off2','A',0,ARRAY[1.5,2.5,3.5,4.5]::float8[]); RESET morlet.verify_appends").unwrap();
+        assert_eq!(
+            Spi::get_one::<f64>("SELECT (morlet_decode_chunk(encoded))[1] FROM ver1_off2_chunks")
+                .unwrap(),
+            Some(f64::from_bits(1.5f64.to_bits() ^ 1))
+        );
+    }
+    /// #366: the batch path refuses the same wrong code.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_batch_refuses_a_wrong_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_bad'); SELECT morlet_start_recording('ver_bad','A',4096,'x','g'); SET morlet.verify_appends = on; SET morlet.encode_threads = 1").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunks_raw('ver_bad','A',0,morlet_float8_le_bytes(ARRAY[1.5,2.5,3.5,4.5]::float8[]),4)").unwrap();
     }
     #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
     fn check_still_decodes_direct_copies_of_appended_chunks() {
