@@ -11,6 +11,7 @@ brand illustration, not a plotted measurement.
 | [wordmark.svg](wordmark.svg) / [PNG](wordmark.png) | Horizontal identity on a light surface |
 | [hero.svg](hero.svg) / [PNG](hero.png) | README banner on a self-contained dark surface |
 | [pipeline.svg](pipeline.svg) / [PNG](pipeline.png) | README diagram: recording to evidence, on the same dark surface |
+| [grizzbit.svg](grizzbit.svg) | Grizzbit, the codec's mascot: a green bear with a waveform on its belly, on the same dark surface (SVG only) |
 
 Use **MorletDB** in prose and `morletdb` in code/URLs. The visual wordmark is
 lowercase. The promise is **Search your waveforms.** The category is **signal

@@ -102,6 +102,27 @@ Claude finds when the failing bearing first changed and whether the others show 
    approximate candidates from a vector index followed by exact re-ranking.
 4. **Read back** each match as the original samples, with its recording metadata.
 
+## Grizzbit, the codec
+
+<p align="center"><img src="assets/brand/grizzbit.svg" alt="Grizzbit, the codec's mascot: a green cartoon bear dashing forward, with a waveform on its belly." width="240"></p>
+
+**Grizzbit** is MorletDB's lossless chunk codec: what goes in comes back **bit for bit**. Each chunk of up to
+32,768 float64 samples is stored in the smallest of three exact forms: integer steps on the value grid the
+encoder detects (predicted and Rice-coded as in FLAC, with last-place corrections where needed), the float64 bit
+patterns coded the same way, or plain float64. Every chunk carries a CRC-32C checksum.
+
+- **No precision parameter.** Nothing can be configured to drop detail. Finite values up to ±10⁹ are stored
+  exactly; anything else is refused at write time, never altered.
+- **Checked when written.** With `morlet.verify_appends` on (the default), every append decodes each chunk again
+  and compares it bit for bit before storing it.
+- **Strong on gridded signals, weaker without a grid.** On ADC counts, fixed decimals and calibrated waveforms it
+  is among the smallest codecs measured (B4); on floats without a clean grid it is 1.6–4× larger than the best.
+  Grizzbit 2, an additional chunk kind for such data, is being built and measured (study B5, #326).
+- **Nothing here is novel**, and the docs say so: Grizzbit is a named, specified format built from established
+  lossless techniques (FLAC's fixed predictors and Rice coding, SEED and EDF style gain and offset).
+
+More: [docs/grizzbit.md](docs/grizzbit.md) · [format specification](docs/chunk-format.md) · [crates/grizzbit](crates/grizzbit)
+
 ## Install
 
 Full setup and query examples: [installation and query guide](docs/installation-and-queries.md).
