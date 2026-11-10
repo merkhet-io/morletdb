@@ -254,8 +254,13 @@ fn morlet_valid_chunk(samples: pgrx::Array<'_, f64>) -> bool {
 /// proves at write time that what it stores decodes to its input.
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_encode_chunk(samples: pgrx::Array<'_, f64>, sample_quantum: f64) -> Vec<u8> {
-    encode_checked(&sample_slice(&samples), sample_quantum, verify_appends())
-        .unwrap_or_else(|e| pgrx::error!("{}", e))
+    let samples = sample_slice(&samples);
+    let bytes = encode_checked(&samples, sample_quantum, verify_appends())
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    if let Ok(n) = i32::try_from(samples.len()) {
+        ENCODED_LAST.with(|last| *last.borrow_mut() = Some((bytes.clone(), n)));
+    }
+    bytes
 }
 
 /// Test only: when set, the next encoding returns the code of a different chunk (its first sample one unit in
@@ -720,6 +725,12 @@ thread_local! {
     /// `morlet.verify_appends` on, already decoded and compared bit for bit with their input. Every other
     /// insert or update is decoded in full. Each entry is used once; the list is replaced by the next batch.
     static ENCODED_HERE: std::cell::RefCell<Vec<(Vec<u8>, i32)>> = const { std::cell::RefCell::new(Vec::new()) };
+    /// The chunk this backend encoded in its latest `morlet_encode_chunk` call, with its sample count: the
+    /// single-chunk append (`morlet_append_chunk`) inserts it in the same statement, so the CHECK constraint can
+    /// skip its decode as for a batch's chunks (#366: with `morlet.verify_appends` on, the chunk was just decoded
+    /// and compared bit for bit, and decoding it a second time cost the single-chunk path about 12% of a load).
+    /// Used once; replaced by the next call.
+    static ENCODED_LAST: std::cell::RefCell<Option<(Vec<u8>, i32)>> = const { std::cell::RefCell::new(None) };
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -730,6 +741,14 @@ fn morlet_valid_encoded_chunk(encoded: &[u8], sample_count: i32) -> bool {
             .iter()
             .position(|(bytes, n)| *n == sample_count && bytes.as_slice() == encoded);
         found.map(|i| list.swap_remove(i)).is_some()
+    }) || ENCODED_LAST.with(|last| {
+        let mut last = last.borrow_mut();
+        let hit =
+            matches!(&*last, Some((bytes, n)) if *n == sample_count && bytes.as_slice() == encoded);
+        if hit {
+            *last = None;
+        }
+        hit
     });
     if known {
         return true;
@@ -3324,6 +3343,12 @@ END $$"#).unwrap();
         Spi::run("SELECT morlet_create_stream_collection('public','ver_bad'); SELECT morlet_start_recording('ver_bad','A',4096,'x','g'); SET morlet.verify_appends = on; SET morlet.encode_threads = 1").unwrap();
         crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
         Spi::run("SELECT morlet_append_chunks_raw('ver_bad','A',0,morlet_float8_le_bytes(ARRAY[1.5,2.5,3.5,4.5]::float8[]),4)").unwrap();
+    }
+    /// #366: the single-chunk path's remembered chunk is used once; an identical copy inserted afterwards is
+    /// decoded in full, and a corrupted copy is refused.
+    #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
+    fn check_still_decodes_copies_of_single_appended_chunks() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_copy'); SELECT morlet_start_recording('ver1_copy','A',4096,'x','g'); SELECT morlet_start_recording('ver1_copy','B',4096,'x','g'); SELECT morlet_start_recording('ver1_copy','C',4096,'x','g'); SELECT morlet_append_chunk('ver1_copy','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,999) i)); INSERT INTO ver1_copy_chunks SELECT 'B',start_sample,sample_count,encoded FROM ver1_copy_chunks WHERE recording_id='A'; INSERT INTO ver1_copy_chunks SELECT 'C',start_sample,sample_count,set_byte(encoded,20,get_byte(encoded,20) # 1) FROM ver1_copy_chunks WHERE recording_id='A'").unwrap();
     }
     #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
     fn check_still_decodes_direct_copies_of_appended_chunks() {
