@@ -3,7 +3,8 @@
 //! `testdata/grizzbit/encoder-equivalence.bin` holds, for every case in `cases()`, what the chunk
 //! encoder of morlet-core 0.3.8 (`morlet_core::rawcodec`, before the codec became the `grizzbit`
 //! crate) returned: the encoded bytes, or the error message. The file was written once from that
-//! encoder and is never regenerated: Grizzbit 1 is the chunk format versions 2 and 3, unchanged, so
+//! encoder (main at 1be8e41) and is never regenerated. Inputs use only integer arithmetic, IEEE
+//! division and products, never libm functions such as `sin`, whose last bit differs between platforms: Grizzbit 1 is the chunk format versions 2 and 3, unchanged, so
 //! the current encoder must reproduce every record exactly.
 //!
 //! Record layout: one status byte (0 = encoded, 1 = error), a little-endian u32 length, then the
@@ -87,12 +88,7 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
         // Shifted decimals: off the plain grid by a constant.
         out.push((counts.iter().map(|k| 0.0004 + k / 1000.).collect(), 0.001));
         // Smooth floats (float kind) and white noise (raw kind).
-        out.push((
-            (0..n)
-                .map(|i| smooth(i, 232) * 3.7 + 11.0)
-                .collect(),
-            1.0,
-        ));
+        out.push(((0..n).map(|i| smooth(i, 232) * 3.7 + 11.0).collect(), 1.0));
         out.push(((0..n).map(|_| (unit(&mut s) - 0.5) * 2e9).collect(), 1.0));
         out.push(((0..n).map(|_| (unit(&mut s) - 0.5) * 1e-3).collect(), 1e-6));
         // Mostly on the grid with a few far-off samples.
@@ -130,10 +126,7 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
             .collect(),
         1.0,
     ));
-    out.push((
-        (0..32768).map(|i| smooth(i, 6283) + 2.0).collect(),
-        1.0,
-    ));
+    out.push(((0..32768).map(|i| smooth(i, 6283) + 2.0).collect(), 1.0));
     // Errors: no samples, too many, non-finite or too large samples, bad quanta.
     out.push((vec![], 1.0));
     out.push((vec![0.0; 32769], 1.0));
