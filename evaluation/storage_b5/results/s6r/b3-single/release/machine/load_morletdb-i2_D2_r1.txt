@@ -1,0 +1,23 @@
+gate met 2026-11-10T21:11:46 after 160 s, load { 2.88 5.27 6.99 }
+2026-11-10T21:11:46
+21:11  up 14 days,  6:07, 19 users, load averages: 2.88 5.27 6.99
+ %CPU COMM
+319.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 20.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.3 /usr/sbin/coreaudiod
+  4.2 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  3.3 claude
+  2.8 bash
+  2.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-10T21:12:41
+21:12  up 14 days,  6:08, 19 users, load averages: 5.47 5.64 7.02
+ %CPU COMM
+294.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 27.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 21.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 18.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.1 claude
+  2.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.5 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  1.1 /usr/libexec/spotlightknowledged.updater

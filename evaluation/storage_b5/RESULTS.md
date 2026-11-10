@@ -10,17 +10,20 @@ judged as frozen.
 
 ## Verdict
 
-**Grizzbit 2 does not pass B5: S2 fails, and S6 fails in one cell (S6a).** S1, S3, S4 and S5 hold. Under the
-protocol, the release keeps Grizzbit 1.
+**B5 fails. Grizzbit 2 does not pass, and the release keeps Grizzbit 1.** S2 fails on storage, which decides B5
+whatever happens in the B3 sessions. S6 fails too: in the first session it failed in one ingestion cell, and in the
+re-run session of amendment B5.S6r, which is the session S6 is judged on, it fails in two read cells (details
+below). S1, S3, S4 and S5 hold.
 
 | Criterion | Result | Key figures |
 |---|---|---|
-| S1 exact | **holds** | every chunk of all 28 inputs round trips bit for bit (both programs); all 36 B3 loads pass B3's full check; 0 read mismatches on D2 r1 for all three arms |
+| S1 exact | **holds** | every chunk of all 28 inputs round trips bit for bit (both programs); all 72 B3 loads of both sessions pass B3's full check; 0 read mismatches on D2 r1 for all three arms in both sessions |
 | S2 large losses ≤ 1.25× CH best | **fails** | SSD-bench 1.005, Bird-migration 1.044, Food-price 0.766 hold; **Basel-temp 1.561, Basel-wind 1.378 fail** |
 | S3 no other gap > 1.10× | **holds** | worst: Paderborn physical 1.012, POI-lon 1.002; Bitcoin-price G2 = G1 (46.11 bits, 1.60× CH-ALP-zstd9, a remaining loss) |
 | S4 a chunk changes only when smaller | **holds** | 0 violations on 28 inputs; every changed chunk is version 4 and strictly smaller; every other chunk byte-identical |
 | S5 decode ≥ 50 M samples/s | **holds** | waveforms 72.8 (Sleep-EDF) to 157.9 (IMS) M samples/s |
-| S6 B3 standing | **fails (a); (b) holds** | (a) track P, 8 writers, D2: the release is faster than QuestDB (1.81, bound 1.49); Grizzbit 2 has no statement (1.53, no bound) because of one load at 4.30 M samples/s (see "S6 and the machine"). (b) no read or statistics measure where Grizzbit 2 is slower than the release |
+| S6 B3 standing (judged on the B5.S6r re-run) | **fails: (a) and (b)** | (a) R4 recent: the release is faster than QuestDB (1.15 / 1.47), Grizzbit 2 has no statement (1.07 / 1.28). (b) R3: Grizzbit 2 is slower than the release (0.87 / 0.81: 3.27 / 4.59 ms against 2.83 / 3.72). Every ingestion cell now holds |
+| *S6, first session (superseded)* | *(a) fails, (b) holds* | *(a) track P 8 writers D2, one load disturbed by an operator test suite (4.30 M samples/s); kept in full below* |
 
 ## Run
 
@@ -159,7 +162,9 @@ Single thread, M samples/s, total samples / total time over all chunks, best of 
 **S5 holds:** G2 decodes the six waveforms at 72.8–157.9 M samples/s. **Encode cost:** keeping the smaller runs both
 codings, so G2 encodes at 0.43–0.58× G1 on the waveforms and 0.46–0.67× on the Elf series.
 
-## B3 session (section 4B)
+## B3 session 1 (section 4B; superseded for S6 by amendment B5.S6r)
+
+This is the first session, reported in full. S6 is judged on session 2 below, the re-run of amendment B5.S6r.
 
 One session, 36 loads: track S (B3.16: r = 1–3, D2 then D1, Grizzbit 2, QuestDB, release) and track P (B3.17:
 r = 1–3, 8 writers D2 then D1, same order). Reads and statistics on D2 r1 from a fresh client process; both MorletDB
@@ -205,21 +210,21 @@ Ingestion per load (M samples/s; server CPU % mean; `docker stats` memory peak M
 | P D2 | 19.95, 18.03, **4.30** — CPU 426, 403, 129; peak 230, 271, 269 | 21.66, 21.38, 20.26 — CPU 234, 232, 239; peak 234, 227, 242 | 13.65, 11.79, 10.38 — CPU 752, 721, 595; peak 2353, 2594, 2631 |
 | P D1 | 20.17, 19.99, 17.92 — CPU 424, 415, 382; peak 243, 234, 268 | 21.87, 21.46, 20.88 — CPU 225, 236, 259; peak 240, 232, 231 | 11.55, 10.59, 9.17 — CPU 711, 694, 623; peak 2405, 2691, 2592 |
 
-**Cost (section 5, S6):** single-connection ingestion of Grizzbit 2 is **11% slower than the release in both
-durability classes** (ratio of medians 0.89, every load ≥ 10% slower), a statement under B3's rule, with about 40%
-more server CPU (164–179% against 121–127%). With 8 writers there is no statement (0.84 and 0.93), with server CPU
-up from about 2.3 to about 4.1 cores. The protocol requires this cost to be written into the docs; that is left
-for the owner's approval with the rest of the publication.
+**Ingestion against the release, session 1:** single-connection ingestion of Grizzbit 2 was 11% slower than the
+release in both durability classes (ratio of medians 0.89, every load ≥ 10% slower), a statement in this session,
+with about 40% more server CPU (164–179% against 121–127%). With 8 writers there was no statement (0.84 and 0.93).
+The cost reported under S6 is session 2's (below), where this statement does not hold.
 
-**S6 and the machine.** S6(a) fails in exactly one cell: track P, 8 writers, D2, where the release keeps B3.17's
-statement against QuestDB and Grizzbit 2 does not. Grizzbit 2's loads there were 19.95, 18.03 and **4.30** M
-samples/s; the third (r3, 20:58:06–20:58:49) took 23.6 s against about 5 s, with server CPU 129%. The machine
-snapshots around it show the 1-minute load rising from 8.55 to 16.71 with another session's Rust builds (`cargo`,
-`rustc`) running. The session's start condition was met (1-minute load 2.75 at 20:45:31), but the protocol checks
-quiet only before the session, and the machine was busy throughout (1-minute load 2.7–16.7 at the per-load
-snapshots; 5-minute 6–11). With r3 excluded, the remaining two loads (≥ 18.03) would be ≥ 1.32× QuestDB's fastest
-load; this is stated as context only — the frozen rule counts all three loads, and the load was correct, so it is
-not void and was not rerun. The result as measured is a failure of S6(a).
+**S6 in session 1, and the machine.** S6(a) failed in exactly one cell: track P, 8 writers, D2. There the release
+kept B3.17's statement against QuestDB and Grizzbit 2 did not. Grizzbit 2's loads there were 19.95, 18.03 and
+**4.30** M samples/s. The third (r3, 20:58:06–20:58:49) took 23.6 s against about 5 s, with server CPU at 129%.
+
+During track P the operator ran a test suite (`cargo pgrx test`) on the same Mac. The snapshots around r3 show the
+1-minute load rising from 8.55 to 16.71 with `cargo` and `rustc` running. The session's start condition was met
+(1-minute load 2.75 at 20:45:31), but the frozen protocol checks quiet only before the session. The machine was
+busy throughout: 1-minute load 2.7–16.7 at the per-load snapshots, 5-minute 6–11. The load was correct, so it was
+not void and was not rerun. The owner approved re-running the whole session as amendment B5.S6r, with the start
+condition checked before every load.
 
 **Release against B3.16 and B3.17 (other sessions, other releases: descriptive only).** B3.16 measured 0.3.7, B3.17
 0.3.9; B5's release arm is 0.3.10. Differences in this session's release statements: R1 now has a statement
@@ -238,7 +243,87 @@ R5 1.51 (1.57).
 | Database | 168,520,851 B | 171,289,747 B |
 
 Grizzbit 2 stores B3's chunks 1.7% smaller (high group, with B3's declared quanta) and 2.2% smaller (mid). QuestDB's
-native volume on D2 r1: 1,250 MB.
+native volume on D2 r1: 1,250 MB. Session 2 stored exactly the same chunks: same digest over all stored chunks for
+each arm, same bytes per group, same database size.
+
+## B3 session 2: amendment B5.S6r (S6 is judged here)
+
+- **What ran:** the complete session again, 2026-11-10 21:06:45 – 22:25:19. It used the same 36 loads, order,
+  repetitions, durability classes, images, decoders and harness (`run_b5_b3.sh s6r`, results in `results/s6r/`,
+  fresh `b5-s6r-*` volumes). B3.16's start condition was checked **before every load**.
+- **Gate:** all 36 loads passed it, so none was reported as not run. Waits were median 36 s, maximum 1,132 s. The
+  longest waits were before release D2 r2, held about 19 minutes while macOS's `mediaanalysisd` and `mds` used more
+  than half a core.
+- **Loads:** all 36 passed B3's full correctness check on the first attempt. None was void or rerun.
+- **Load at the per-load snapshots:** 1-minute load 2.70–10.39, median 2.98.
+- **One disturbance after a gate:** a foreign multi-process Python job, not part of B5, started at 21:26:40. That
+  was 4 s after the gate passed for Grizzbit 2 track S D2 r2. Its ingestion (8.1 s) ran at 12.51 M samples/s against
+  12.40 and 12.75 for r1 and r3, so no effect is visible. The load average then rose above 100, and the gate held the
+  following loads until the job ended.
+
+| Measure | Release vs QuestDB | Grizzbit 2 vs QuestDB | Grizzbit 2 vs release |
+|---|---|---|---|
+| Ingestion S, D2 | **1.41 (1.40)** | **1.28 (1.21)** | no statement (0.91) |
+| Ingestion S, D1 | **1.63 (1.54)** | **1.45 (1.41)** | no statement (0.89) |
+| Ingestion P (8 writers), D2 | **1.61 (1.59)** | **1.48 (1.44)** | no statement (0.92) |
+| Ingestion P (8 writers), D1 | **1.74 (1.60)** | **1.64 (1.55)** | no statement (0.94) |
+| R1 4,096 (p50 / p95) | **1.32 / 1.61** | **1.28 / 1.41** | no statement (0.97 / 0.87) |
+| R2 128,000 | **3.19 / 4.57** | **2.99 / 4.46** | no statement (0.94 / 0.98) |
+| R3 3 × 64,000 | **3.70 / 4.24** | **3.20 / 3.44** | **0.87 / 0.81, slower** |
+| R4 recent | **1.15 / 1.47** | no statement (1.07 / 1.28) | no statement (0.93 / 0.87) |
+| R4 older | **1.25 / 1.57** | **1.33 / 1.58** | no statement (1.06 / 1.00) |
+| R5 queries/s (4 threads) | **1.65** | **1.72** | no statement (1.04) |
+| Interval statistics | **5.40 / 9.49** | **5.42 / 8.94** | no statement (1.00 / 0.94) |
+
+Latencies (ms, p50 / p95):
+
+| Read | Grizzbit 2 | Release | QuestDB |
+|---|---|---|---|
+| R1 | 0.651 / 1.200 | 0.630 / 1.045 | 0.833 / 1.686 |
+| R2 | 2.401 / 3.094 | 2.250 / 3.022 | 7.169 / 13.806 |
+| R3 | 3.270 / 4.586 | 2.831 / 3.718 | 10.468 / 15.769 |
+| R4 recent | 0.673 / 1.164 | 0.627 / 1.011 | 0.721 / 1.487 |
+| R4 older | 0.569 / 0.981 | 0.603 / 0.985 | 0.755 / 1.547 |
+| R5 | 0.868 / 1.547 | 0.916 / 1.569 | 1.191 / 3.812 |
+| Statistics | 0.455 / 0.539 | 0.457 / 0.508 | 2.467 / 4.819 |
+
+Ingestion per load (M samples/s; server CPU % mean; `docker stats` memory peak MiB):
+
+| Cell | Grizzbit 2 | Release | QuestDB |
+|---|---|---|---|
+| S D2 | 11.83, 12.51, 12.75 — CPU 181, 166, 163; peak 179, 177, 178 | 13.72, 14.27, 13.78 — CPU 102, 120, 124; peak 178, 178, 178 | 8.90, 9.75, 9.81 — CPU 304, 284, 282; peak 2277, 2307, 2308 |
+| S D1 | 12.40, 12.44, 12.22 — CPU 171, 166, 168; peak 175, 176, 173 | 13.38, 13.97, 13.99 — CPU 101, 117, 116; peak 178, 178, 179 | 8.56, 8.69, 7.57 — CPU 320, 333, 286; peak 2215, 2242, 2292 |
+| P D2 | 21.19, 20.71, 21.43 — CPU 366, 383, 362; peak 228, 218, 231 | 23.20, 23.08, 22.77 — CPU 187, 182, 193; peak 238, 240, 238 | 14.34, 14.32, 10.70 — CPU 754, 742, 701; peak 2400, 2482, 2507 |
+| P D1 | 21.51, 21.56, 20.61 — CPU 363, 361, 406; peak 229, 233, 231 | 22.98, 22.81, 21.15 — CPU 187, 183, 249; peak 236, 236, 230 | 13.25, 13.15, 12.32 — CPU 674, 587, 637; peak 2386, 2744, 2613 |
+
+**S6 verdict (session 2): fails, in two read cells. Every ingestion cell holds.**
+- **S6(a), R4 recent:** the release is faster than QuestDB (1.15 / 1.47). Grizzbit 2 has no statement (1.07 / 1.28):
+  it is 1.07× at p50, short of 1.10.
+- **S6(b), R3:** Grizzbit 2 is slower than the release, 0.87 at p50 and 0.81 at p95 (3.27 / 4.59 ms against 2.83 /
+  3.72 ms).
+- **All other measures:** Grizzbit 2 makes every statement the release makes against QuestDB, and is not slower than
+  the release on any other read or on statistics. All four ingestion cells hold, including track P 8 writers D2 (1.48,
+  bound 1.44), the cell that failed in session 1.
+
+**Read-to-read variation between sessions.** Some of these read ratios moved by more than 10% between the two
+sessions on identical stored chunks. R3, Grizzbit 2 against the release, was 1.13 / 1.17 (Grizzbit 2 faster) in
+session 1 and is 0.87 / 0.81 (slower) in session 2. R4 recent, release against QuestDB, was 0.95 / 1.25 (no
+statement) and is now 1.15 / 1.47.
+
+Both sessions decode with the same decoders and read the same chunks. Between sessions, Grizzbit 2's own R3 rose
+from 2.61 / 3.44 to 3.27 / 4.59 ms, while the release's moved from 2.96 / 4.01 to 2.83 / 3.72 ms. This is not
+attributed: B5 has no repeated read measurement within a session to separate noise from cost. As the amendment
+fixes, the re-run counts, and S6 fails.
+
+**Ingestion cost (section 5, S6, from session 2):** Grizzbit 2 against the release has **no statement** in any cell.
+The ratios of medians are 0.91 (S, D2), 0.89 (S, D1), 0.92 (P, D2) and 0.94 (P, D1); in S D2 and S D1 at least one
+Grizzbit 2 load is within 10% of a release load. Grizzbit 2 does use more server CPU: about 1.65–1.8 cores against
+1.0–1.25 from one connection, and about 3.6–4.1 against 1.8–2.5 cores with 8 writers. Peak memory is the same,
+about 175–230 MiB. So the cost is about 6–11% throughput, below the statement threshold, at roughly 1.4–2× the
+server CPU.
+
+**Release against session 1 (same release, same day: descriptive).** R1 1.32 / 1.61 (1.51 / 1.71), R4 recent
+1.15 / 1.47 (none), R4 older 1.25 / 1.57 (none), 8-writer ingestion 1.61 / 1.74 (1.81 / 2.03).
 
 ## Harness notes (no criterion changed)
 
@@ -254,16 +339,21 @@ These are how the frozen protocol was carried out, recorded so nothing is silent
 4. **`evaluation/tsdb_b3`** changed only by `B3_VOLUME_PREFIX` (fresh `b5-g2-*`, `b5-q-*`, `b5-rel-*` volumes).
 5. **The smoke check** (`results/dev/b3-smoke/`, B3's development set) ran without waiting for a quiet machine; it
    is a harness check and none of its figures is used.
-6. The session took 15 minutes against a 3-hour budget; no load was near 07:00.
+6. Session 1 took 15 minutes and session 2 took 79 minutes, against a 3-hour budget each. No load was near 07:00.
+7. **Amendment B5.S6r** (`aff752f`, runner `d302543`) was committed and pushed before session 2 started. Its runner
+   change only adds the per-load gate, the `results/s6r/` output and the `b5-s6r-*` volume prefix.
 
 ## For the owner
 
-- B5 fails (S2; S6a in one cell). Section 5 allows a fallback only as a new frozen amendment (B5.1, …), labelled
-  "after B5's results were known". The S2 failure is the chunk size on Basel-temp and Basel-wind (pco per chunk is
-  2.1× Pcodec on the whole series there), which neither listed fallback (grid-only exclusion, level 4) addresses;
-  other chunk sizes are outside B5 (section 7).
-- The S6(a) failure rests on one load disturbed by other work on the machine. Whether that warrants a new session
-  (as an amendment, with a stricter quiet check per load) is the owner's decision; nothing was rerun.
-- The single-connection ingestion cost (−11%) is a statement to be documented if Grizzbit 2 is pursued.
+- **B5 fails, plainly, on S2 alone, whatever S6 says.** S6 also fails in the B5.S6r re-run, in R4 recent (S6a) and R3
+  (S6b). Section 5 allows a fallback only as a new frozen amendment (B5.1, …), labelled "after B5's results were
+  known". The S2 failure is the chunk size on Basel-temp and Basel-wind: pco per chunk is 2.1× Pcodec on the whole
+  series there. Neither listed fallback (grid-only exclusion, level 4) addresses that, and other chunk sizes are
+  outside B5 (section 7).
+- **The S6 read failures are small and flip between sessions.** R3 was Grizzbit 2 faster by 1.13 / 1.17 in session 1
+  and slower by 0.87 / 0.81 in session 2. That suggests B3's read rule is sensitive to session noise at this
+  margin, which may matter for any future S6-style criterion. The re-run counts, as fixed.
+- **Ingestion cost:** in the re-run, no statement against the release in any cell (medians 0.89–0.94), with about
+  1.4–2× the server CPU. Session 1's −11% statement did not repeat.
 - Section 6: with Grizzbit 2 not shipping, card 2 ("Floats without a value grid") is to get B4's real numbers
   (2.2–4.0×); nothing was changed on the website, docs or paper.
