@@ -1,0 +1,46 @@
+== B5 run 2026-11-10T20:44:03 at 81a76bd
+waiting for a quiet, powered machine until 2026-11-11T07:00 (20:44:04)
+== storage 20:44:49
+== speed: waiting for the start condition 20:45:00
+== speed 20:45:00
+== storage and speed done 20:45:15
+storage and speed exit 0 20:45:15
+waiting for a quiet, powered machine until 2026-11-11T07:00 (20:45:15)
+== S grizzbit2 load_morletdb-i2_D2_r1 20:45:33
+== S questdb load_questdb_D2_r1 20:46:25
+== S release load_morletdb-i2_D2_r1 20:47:25
+== S grizzbit2 load_morletdb-i2_D1_r1 20:48:19
+== S questdb load_questdb_D1_r1 20:48:37
+== S release load_morletdb-i2_D1_r1 20:48:58
+== S grizzbit2 load_morletdb-i2_D2_r2 20:49:14
+== S questdb load_questdb_D2_r2 20:49:32
+== S release load_morletdb-i2_D2_r2 20:51:01
+== S grizzbit2 load_morletdb-i2_D1_r2 20:51:18
+== S questdb load_questdb_D1_r2 20:51:36
+== S release load_morletdb-i2_D1_r2 20:51:56
+== S grizzbit2 load_morletdb-i2_D2_r3 20:52:13
+== S questdb load_questdb_D2_r3 20:52:31
+== S release load_morletdb-i2_D2_r3 20:52:51
+== S grizzbit2 load_morletdb-i2_D1_r3 20:53:07
+== S questdb load_questdb_D1_r3 20:53:32
+== S release load_morletdb-i2_D1_r3 20:53:58
+== P grizzbit2 parallel_morletdb-i1_D2_w8_r1 20:54:15
+== P questdb parallel_questdb_D2_w8_r1 20:54:34
+== P release parallel_morletdb-i1_D2_w8_r1 20:54:51
+== P grizzbit2 parallel_morletdb-i1_D1_w8_r1 20:55:11
+== P questdb parallel_questdb_D1_w8_r1 20:55:30
+== P release parallel_morletdb-i1_D1_w8_r1 20:55:48
+== P grizzbit2 parallel_morletdb-i1_D2_w8_r2 20:56:07
+== P questdb parallel_questdb_D2_w8_r2 20:56:28
+== P release parallel_morletdb-i1_D2_w8_r2 20:56:46
+== P grizzbit2 parallel_morletdb-i1_D1_w8_r2 20:57:06
+== P questdb parallel_questdb_D1_w8_r2 20:57:25
+== P release parallel_morletdb-i1_D1_w8_r2 20:57:44
+== P grizzbit2 parallel_morletdb-i1_D2_w8_r3 20:58:06
+== P questdb parallel_questdb_D2_w8_r3 20:58:49
+== P release parallel_morletdb-i1_D2_w8_r3 20:59:10
+== P grizzbit2 parallel_morletdb-i1_D1_w8_r3 20:59:30
+== P questdb parallel_questdb_D1_w8_r3 20:59:55
+== P release parallel_morletdb-i1_D1_w8_r3 21:00:18
+== B5 B3 session done 21:00:42
+== B5 run finished 2026-11-10T21:00:42 (B3 exit 0)

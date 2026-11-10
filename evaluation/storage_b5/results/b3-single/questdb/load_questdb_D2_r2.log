@@ -1,0 +1,281 @@
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.20479774998966604,
+ "samples": 101586735,
+ "started": "2026-11-10T20:49:32",
+ "ingest": {
+  "wall_s": 10.459,
+  "samples_per_s": 9713257,
+  "conversion_s": 2.122,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 83.619,
+   "p95_ms": 91.328,
+   "max_ms": 127.257
+  },
+  "queryable_after_last_ack_s": 0.008,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 304.4,
+   "cpu_percent_p95": 399.2,
+   "memory_peak_mib": 2352.1,
+   "samples": 6,
+   "kernel_memory": {
+    "peak_mib": 3308.4,
+    "anon_mib_at_end": 583.8,
+    "file_mib_at_end": 2636.5,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2353.5
+   }
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 5.866,
+   "p95_ms": 63.087,
+   "max_ms": 75.057
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.4
+  }
+ },
+ "correct": true
+}
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.20479774998966604,
+ "samples": 101586735,
+ "started": "2026-11-10T20:49:32",
+ "ingest": {
+  "wall_s": 10.459,
+  "samples_per_s": 9713257,
+  "conversion_s": 2.122,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 83.619,
+   "p95_ms": 91.328,
+   "max_ms": 127.257
+  },
+  "queryable_after_last_ack_s": 0.008,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 304.4,
+   "cpu_percent_p95": 399.2,
+   "memory_peak_mib": 2352.1,
+   "samples": 6,
+   "kernel_memory": {
+    "peak_mib": 3308.4,
+    "anon_mib_at_end": 583.8,
+    "file_mib_at_end": 2636.5,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2353.5
+   }
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 5.866,
+   "p95_ms": 63.087,
+   "max_ms": 75.057
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.4
+  }
+ },
+ "correct": true,
+ "storage_native": {
+  "tables": {
+   "b3_mid": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16401,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 47652864,
+     "allocated": 47652864,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 7942144,
+     "allocated": 7942144,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 15884288,
+     "allocated": 15884288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 4974974,
+     "allocated": 4997120,
+     "files": 18
+    }
+   },
+   "b3_high": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16403,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 765087744,
+     "allocated": 765112320,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 127516672,
+     "allocated": 127524864,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 255029248,
+     "allocated": 255037440,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 11313880,
+     "allocated": 11345920,
+     "files": 18
+    }
+   },
+   "b3_process": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16409,
+     "allocated": 20480,
+     "files": 5
+    },
+    "identity": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "data": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 52901,
+     "allocated": 73728,
+     "files": 12
+    }
+   }
+  },
+  "volume": {
+   "apparent": 1250029585,
+   "allocated": 1250324480
+  }
+ },
+ "parquet_ZSTD": {
+  "convert_statement_s": 0.009,
+  "until_settled_s": 15.101,
+  "partitions": [
+   {
+    "name": "2026-01-01T00",
+    "isParquet": true,
+    "numRows": 15394401,
+    "diskSize": 101735972,
+    "parquetFileSize": 101678384
+   },
+   {
+    "name": "2026-01-01T01",
+    "isParquet": true,
+    "numRows": 15459292,
+    "diskSize": 102411400,
+    "parquetFileSize": 102353440
+   },
+   {
+    "name": "2026-01-01T02",
+    "isParquet": true,
+    "numRows": 1024099,
+    "diskSize": 6785571,
+    "parquetFileSize": 6781179
+   },
+   {
+    "name": "2026-01-01T03",
+    "isParquet": false,
+    "numRows": 1,
+    "diskSize": 83886080,
+    "parquetFileSize": -1
+   }
+  ],
+  "correctness": {
+   "reads": {
+    "acquisitions": 124,
+    "channels_checked": 868,
+    "mismatches": []
+   }
+  }
+ },
+ "storage_parquet_ZSTD": {
+  "tables": {
+   "b3_mid": {
+    "wal": {
+     "apparent": 70680,
+     "allocated": 118784,
+     "files": 30
+    },
+    "metadata": {
+     "apparent": 25041,
+   

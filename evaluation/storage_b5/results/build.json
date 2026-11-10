@@ -1,0 +1,55 @@
+{
+ "build_commit": "5ce0328",
+ "pco": {
+  "version": "1.0.4",
+  "cargo_lock_entry": "name = \"pco\"\nversion = \"1.0.4\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\nchecksum = \"52f01ab51a847e7002371c2384b2c88f50dd45982cc2764e7997751971f1bfbf\"\ndependencies = [\n \"better_io\",\n \"dtype_dispatch\",\n \"half 2.7.1\",\n \"rand_xoshiro\",\n]",
+  "cargo_lock_sha256_at_build_commit": "d3eb41593f14efc399fd316033121e19a9742e9dd08dceb0d6eb3f2cd0cf7e38"
+ },
+ "images": {
+  "morletdb:b5": {
+   "id": "sha256:2f9d5e33df909778e9c77b1d3fe603b1298482044479d30deafb16b3326e3fa6",
+   "repo_digests": [
+    "morletdb@sha256:2f9d5e33df909778e9c77b1d3fe603b1298482044479d30deafb16b3326e3fa6"
+   ]
+  },
+  "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1": {
+   "id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+   "repo_digests": [
+    "ghcr.io/merkhet-io/morletdb@sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38"
+   ]
+  },
+  "questdb/questdb:10.1.0": {
+   "id": "sha256:3b11dc5f77aa299c7c9191b10cf50124c9e97663ce93bc50df5040374e87efc9",
+   "repo_digests": [
+    "questdb/questdb@sha256:3b11dc5f77aa299c7c9191b10cf50124c9e97663ce93bc50df5040374e87efc9"
+   ]
+  }
+ },
+ "decoders": {
+  "b5": {
+   "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/b5/libmorlet_ffi.dylib",
+   "sha256": "e55b6d38a65282d58c81ff93ec1e880f2f5c66078c5f5459d7991941c7fbcebd",
+   "built_from": "5ce0328, cargo build --locked --release -p morlet-ffi"
+  },
+  "release": {
+   "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/release/libmorlet_ffi.dylib",
+   "sha256": "343a8d9fd17d19c3c0ece5aab270d6ec9e7f3eb3591573cf321b49fd68aa42ff",
+   "from": "morletdb-0.1.0a3-py3-none-macosx_11_0_arm64.whl of release v0.3.10-alpha.1",
+   "wheel_sha256": "a08b6cb00f858ac9116998f0b9cd1f54dea93b44eb72f93c8750b2df1b6f165f",
+   "wheel_sha256_in_SHA256SUMS": "a08b6cb00f858ac9116998f0b9cd1f54dea93b44eb72f93c8750b2df1b6f165f"
+  }
+ },
+ "programs": {
+  "rawcodec_bench": {
+   "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/b5/rawcodec_bench",
+   "sha256": "44778582c4e3095b90c1e66d9062b2ac7b75bb7a2450cce3573f83a6c17dd3cc",
+   "built_from": "5ce0328, cargo build --locked --release -p morlet-core --example rawcodec_bench"
+  },
+  "b5codec": {
+   "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/b5codec/target/release/b5codec",
+   "sha256": "791a6db9e71bf29afe6b566b13a1f3f0eb7b7e0f41443341d0ea465f9861dcaa",
+   "built_from": "evaluation/storage_b5/b5codec, grizzbit crate identical to 5ce0328"
+  }
+ },
+ "written": "2026-11-10T20:44:04"
+}
