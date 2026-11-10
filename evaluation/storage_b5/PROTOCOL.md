@@ -485,3 +485,27 @@ with the spike: grid chunks sometimes lose to pco (15 of 25 on Blockchain-tr).
     harness still reads it.
 16. **Specification.** The version-4 layout is in docs/chunk-format.md as a section marked "Draft ... under
     study B5", becoming part of the specification only if a release ships Grizzbit 2 (section 6), and here.
+
+## Amendment B5.S6r (2026-11-10, written after B5's results were known)
+
+Approved by the owner on 2026-11-10, after B5's first B3 session (20:45–21:00, results in `results/b3-single/`,
+`results/b3-parallel/`, reported in RESULTS.md).
+
+- **Reason:** during track P of that session the operator ran a test suite (`cargo pgrx test`) on the same Mac. The
+  machine snapshots around track P, 8 writers, D2, r3 show the 1-minute load rising from 8.6 to 16.7; that Grizzbit 2
+  load ran at 4.30 M samples/s against 18.0–20.0 M for its other two loads, and S6(a) failed in that cell alone.
+  The disturbance came from the operator's side, not from either build. The frozen start condition was checked
+  only before the session, so it did not catch it.
+- **Change:** the complete B3 session of section 4B is run once more: both tracks S and P, all three arms, in the
+  same order, with the same repetitions, durability classes, images (by digest), decoders and harness as frozen
+  (`run_b5_b3.sh`, results in `results/s6r/`, fresh `b5-*` volumes). The only difference is that B3.16's start
+  condition (`quiet()` and `powered()`: 1-minute load average below 3, no process other than Docker's VM above half
+  a core, AC power, lid open or closed without causing sleep) is checked **before every load**. The runner waits
+  up to 20 minutes per load. A load whose condition never holds in that time is reported as not run, and so is any
+  load not started by 07:00. A failed load is rerun once at the end, as before.
+- **Nothing else changes:**
+  - S1–S5 stand as measured.
+  - S6(a) and S6(b) are judged on the re-run session alone, and the ingestion cost is reported from it.
+  - The first session stays reported in full beside it, with no cherry-picking: if the re-run is worse, the re-run
+    counts.
+  - S2 failed, so B5 fails overall whatever S6's re-run shows.
