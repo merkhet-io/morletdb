@@ -40,3 +40,10 @@ path = "fuzz_targets/roundtrip.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "decode_v4"
+path = "fuzz_targets/decode_v4.rs"
+test = false
+doc = false
+bench = false

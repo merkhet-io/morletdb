@@ -35,10 +35,43 @@
 //! chunks of every version, kind and grid mode) and `testdata/grizzbit` (the encoder's output on a varied
 //! sample set, written before the move) prove it. A future change to the bytes would be a new format
 //! version and a new Grizzbit number; version-2 and version-3 chunks keep decoding.
+//!
+//! # Grizzbit 2 (development, study B5)
+//!
+//! [`FORMAT_2`], "Grizzbit 2", is Grizzbit 1 plus chunk format version 4: a chunk whose body is pco's
+//! wrapped format ([`Kind::Pco`], the `pco` crate pinned at 1.0.4, level 8). [`encode_with`]`(x, q,
+//! `[`Format::Grizzbit2`]`)` codes every chunk with Grizzbit 1 exactly as [`encode`] does and with pco, and
+//! keeps the pco chunk only if it has strictly fewer bytes; on a tie, and whenever pco is not smaller, the
+//! output is byte for byte [`encode`]'s. [`decode`] reads all three versions. [`encode`] itself stays
+//! Grizzbit 1 and never writes version 4. Grizzbit 2 is a development build under study B5
+//! (evaluation/storage_b5/PROTOCOL.md); only a release after B5 passes may make it a default.
 use std::fmt;
 
-/// The name and number of the format this crate writes and reads: chunk format versions 2 and 3.
+mod pco_body;
+
+/// The name and number of the format [`encode`] writes: chunk format versions 2 and 3.
 pub const FORMAT: &str = "Grizzbit 1";
+/// The name and number of the format [`encode_with`]`(.., `[`Format::Grizzbit2`]`)` writes: chunk format
+/// versions 2, 3 and 4.
+pub const FORMAT_2: &str = "Grizzbit 2";
+
+/// Which chunk coding an encoder writes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Format {
+    /// Chunk format versions 2 and 3 only: [`encode`].
+    #[default]
+    Grizzbit1,
+    /// Grizzbit 1, or a version-4 (pco) chunk where that is strictly smaller.
+    Grizzbit2,
+}
+impl Format {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Grizzbit1 => FORMAT,
+            Self::Grizzbit2 => FORMAT_2,
+        }
+    }
+}
 
 /// The most samples one chunk holds.
 pub const MAX_SAMPLES: usize = 32_768;
@@ -82,11 +115,16 @@ pub fn validate(samples: &[f64]) -> Result<(), SampleError> {
 /// reinterpreted. Version 3 is version 2 plus an offset in the grid header; it
 /// is written only for offset grids, so every other chunk keeps its version-2 bytes.
 pub const FORMAT_VERSION: u8 = 3;
+/// Chunk format version 4 (Grizzbit 2): a pco body ([`Kind::Pco`]).
+pub const PCO_VERSION: u8 = 4;
+/// The highest chunk format version [`decode`] reads.
+pub const MAX_VERSION: u8 = PCO_VERSION;
 const BASE_VERSION: u8 = 2;
 const CHECKSUM_BYTES: usize = 4;
 const KIND_RAW: u8 = 0;
 const KIND_GRID: u8 = 1;
 const KIND_FLOAT: u8 = 2;
+const KIND_PCO: u8 = 3;
 const MODE_MUL: u8 = 0;
 const MODE_DIV: u8 = 1;
 const MAX_ORDER: usize = 4;
@@ -126,6 +164,8 @@ pub enum Kind {
     Grid,
     Float,
     Raw,
+    /// Version 4 (Grizzbit 2): pco's wrapped format.
+    Pco,
 }
 impl Kind {
     pub fn name(self) -> &'static str {
@@ -133,6 +173,7 @@ impl Kind {
             Self::Grid => "grid",
             Self::Float => "float",
             Self::Raw => "raw",
+            Self::Pco => "pco",
         }
     }
 }
@@ -213,6 +254,48 @@ pub fn encode(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
     let checksum = crc32c(&out);
     out.extend_from_slice(&checksum.to_le_bytes());
     Ok(out)
+}
+
+/// Encodes validated samples in `format`. [`Format::Grizzbit1`] is [`encode`]. [`Format::Grizzbit2`] also codes
+/// the chunk as version 4 (pco) and returns that only if it has strictly fewer bytes than [`encode`]'s output,
+/// which it returns otherwise, byte for byte. Either result decodes bitwise to the input.
+pub fn encode_with(samples: &[f64], quantum: f64, format: Format) -> Result<Vec<u8>, CodecError> {
+    let grizzbit1 = encode(samples, quantum)?;
+    if format == Format::Grizzbit1 {
+        return Ok(grizzbit1);
+    }
+    Ok(keep_smaller(grizzbit1, encode_pco(samples)))
+}
+
+/// The pco chunk if it has strictly fewer bytes, otherwise Grizzbit 1's chunk unchanged (ties included).
+fn keep_smaller(grizzbit1: Vec<u8>, pco: Option<Vec<u8>>) -> Vec<u8> {
+    match pco {
+        Some(pco) if pco.len() < grizzbit1.len() => pco,
+        _ => grizzbit1,
+    }
+}
+
+/// The version-4 (pco) chunk of validated samples, whatever its size: what [`encode_with`] compares with
+/// Grizzbit 1. For tests, the golden pco chunks and fuzzing; storage uses [`encode_with`].
+pub fn encode_version4(samples: &[f64]) -> Result<Vec<u8>, CodecError> {
+    validate(samples).map_err(CodecError::Signal)?;
+    encode_pco(samples).ok_or(CodecError::Corrupt("pco refused the samples"))
+}
+
+/// The version-4 chunk of validated samples: version, kind, varint count, pco body, CRC-32C. `None` if pco
+/// refuses the samples (not expected for valid samples; [`encode_with`] then keeps Grizzbit 1).
+fn encode_pco(samples: &[f64]) -> Option<Vec<u8>> {
+    let mut out = pco_body::compress(samples, pco_header(samples.len()))?;
+    let checksum = crc32c(&out);
+    out.extend_from_slice(&checksum.to_le_bytes());
+    Some(out)
+}
+
+/// Version, kind and varint sample count of a version-4 chunk.
+fn pco_header(n: usize) -> Vec<u8> {
+    let mut out = vec![PCO_VERSION, KIND_PCO];
+    put_varint(&mut out, n as u64);
+    out
 }
 
 fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
@@ -479,7 +562,7 @@ fn encode_off_grid(samples: &[f64], out: &mut Vec<u8>) {
 fn verified(encoded: &[u8]) -> Result<&[u8], CodecError> {
     match encoded.first() {
         None => return Err(CodecError::Corrupt("empty")),
-        Some(&BASE_VERSION) | Some(&FORMAT_VERSION) => {}
+        Some(&BASE_VERSION) | Some(&FORMAT_VERSION) | Some(&PCO_VERSION) => {}
         Some(&v) if v < BASE_VERSION => return Err(CodecError::UnsupportedVersion(v)),
         Some(_) => return Err(CodecError::Corrupt("unknown format version")),
     }
@@ -499,9 +582,10 @@ pub fn kind(encoded: &[u8]) -> Result<Kind, CodecError> {
 }
 fn kind_of(body: &[u8]) -> Result<Kind, CodecError> {
     match (body[0], body[1]) {
-        (_, KIND_GRID) => Ok(Kind::Grid),
+        (BASE_VERSION | FORMAT_VERSION, KIND_GRID) => Ok(Kind::Grid),
         (BASE_VERSION, KIND_FLOAT) => Ok(Kind::Float),
         (BASE_VERSION, KIND_RAW) => Ok(Kind::Raw),
+        (PCO_VERSION, KIND_PCO) => Ok(Kind::Pco),
         _ => Err(CodecError::Corrupt("unknown kind")),
     }
 }
@@ -534,6 +618,14 @@ fn decode_verified(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
             .into_iter()
             .map(float_from_ordered)
             .collect(),
+        // The checksum was verified before; pco must yield exactly n samples and use every body byte.
+        Kind::Pco => {
+            let samples = pco_body::decompress(&encoded[pos..], n).map_err(CodecError::Corrupt)?;
+            if samples.len() != n {
+                return Err(CodecError::Corrupt("pco sample count"));
+            }
+            samples
+        }
         Kind::Grid => {
             let shifted = encoded[0] == FORMAT_VERSION;
             let size = if shifted { 17 } else { 9 };
@@ -1791,7 +1883,7 @@ mod tests {
         assert_eq!(decode(&v1), Err(CodecError::UnsupportedVersion(1)));
         assert_eq!(kind(&v1), Err(CodecError::UnsupportedVersion(1)));
         assert_eq!(
-            decode(&[4, 1, 1, 0, 0, 0, 0]),
+            decode(&[5, 1, 1, 0, 0, 0, 0]),
             Err(CodecError::Corrupt("unknown format version"))
         );
     }
@@ -1820,6 +1912,247 @@ mod tests {
         let mut body = grid[..grid.len() - CHECKSUM_BYTES].to_vec();
         body.push(0);
         assert!(decode(&seal(body)).is_err());
+    }
+}
+
+/// The version-4 frame (Grizzbit 2): what the decoder refuses, with the pco body from the real `pco` crate.
+#[cfg(test)]
+mod version4_tests {
+    use super::*;
+
+    fn seal(mut body: Vec<u8>) -> Vec<u8> {
+        let c = crc32c(&body);
+        body.extend_from_slice(&c.to_le_bytes());
+        body
+    }
+
+    /// A version-4 chunk with header count `n` around the pco body of `samples` (any values, any length).
+    fn frame(n: u64, samples: &[f64]) -> Vec<u8> {
+        let mut head = vec![PCO_VERSION, KIND_PCO];
+        put_varint(&mut head, n);
+        seal(pco_body::compress(samples, head).unwrap())
+    }
+
+    fn noise(n: usize) -> Vec<f64> {
+        let mut s = 7u64;
+        (0..n)
+            .map(|_| {
+                s = s
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(1442695040888963407);
+                ((s >> 11) as f64 / 9_007_199_254_740_992.0 - 0.5) * 100.0
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_version4_chunk_is_the_frozen_frame() {
+        let x = noise(300);
+        let c = encode_version4(&x).unwrap();
+        assert_eq!(&c[..4], &[4, 3, 0xAC, 0x02]); // version, kind, varint 300
+        assert_eq!(c, frame(300, &x));
+        assert_eq!(kind(&c), Ok(Kind::Pco));
+        let back = decode(&c).unwrap();
+        assert!(back.iter().zip(&x).all(|(a, b)| a.to_bits() == b.to_bits()));
+    }
+
+    #[test]
+    fn the_checksum_is_checked_first() {
+        let mut c = encode_version4(&noise(100)).unwrap();
+        let last = c.len() - 1;
+        c[last] ^= 1;
+        assert_eq!(decode(&c), Err(CodecError::Corrupt("checksum mismatch")));
+        assert_eq!(kind(&c), Err(CodecError::Corrupt("checksum mismatch")));
+        // A pco body that would decode to invalid samples is still refused by its checksum first.
+        let mut bad = frame(3, &[1.0, f64::NAN, 2.0]);
+        bad[5] ^= 0x10;
+        assert_eq!(decode(&bad), Err(CodecError::Corrupt("checksum mismatch")));
+    }
+
+    #[test]
+    fn length_mismatches_and_trailing_bytes_are_refused() {
+        let x = noise(100);
+        // The header says more or fewer samples than the body holds.
+        assert!(decode(&frame(101, &x)).is_err());
+        assert!(decode(&frame(99, &x)).is_err());
+        assert!(decode(&frame(1, &x)).is_err());
+        // One byte after the pco page, or one byte missing.
+        let good = encode_version4(&x).unwrap();
+        let body = &good[..good.len() - CHECKSUM_BYTES];
+        let mut longer = body.to_vec();
+        longer.push(0);
+        assert_eq!(
+            decode(&seal(longer)),
+            Err(CodecError::Corrupt("trailing data"))
+        );
+        assert!(decode(&seal(body[..body.len() - 1].to_vec())).is_err());
+        // Counts outside 1..=32768.
+        assert_eq!(
+            decode(&frame(0, &x)),
+            Err(CodecError::Corrupt("sample count"))
+        );
+        let long = noise(MAX_SAMPLES + 1);
+        assert_eq!(
+            decode(&frame(MAX_SAMPLES as u64 + 1, &long)),
+            Err(CodecError::Corrupt("sample count"))
+        );
+        // Only the frame header, no pco body.
+        let mut head = vec![PCO_VERSION, KIND_PCO];
+        put_varint(&mut head, 1);
+        assert!(decode(&seal(head)).is_err());
+    }
+
+    #[test]
+    fn invalid_samples_in_a_pco_body_are_refused() {
+        for bad in [
+            f64::NAN,
+            f64::INFINITY,
+            -f64::INFINITY,
+            1e9 * (1.0 + f64::EPSILON),
+            -2e9,
+        ] {
+            let c = frame(3, &[1.0, bad, 2.0]);
+            assert_eq!(
+                decode(&c),
+                Err(CodecError::Signal(SampleError::InvalidSample)),
+                "{bad}"
+            );
+        }
+        assert_eq!(
+            encode_version4(&[1.0, f64::NAN]),
+            Err(CodecError::Signal(SampleError::InvalidSample))
+        );
+        assert_eq!(
+            encode_version4(&[]),
+            Err(CodecError::Signal(SampleError::InvalidLength))
+        );
+    }
+
+    #[test]
+    fn versions_and_kinds_are_never_reinterpreted() {
+        let x = noise(64);
+        let pco = encode_version4(&x).unwrap();
+        let body = &pco[..pco.len() - CHECKSUM_BYTES];
+        // Version 4 with any other kind, and kind 3 under versions 2 and 3.
+        for k in [KIND_RAW, KIND_GRID, KIND_FLOAT, 4, 255] {
+            let mut b = body.to_vec();
+            b[1] = k;
+            assert_eq!(decode(&seal(b)), Err(CodecError::Corrupt("unknown kind")));
+        }
+        for v in [BASE_VERSION, FORMAT_VERSION] {
+            let mut b = body.to_vec();
+            b[0] = v;
+            assert_eq!(decode(&seal(b)), Err(CodecError::Corrupt("unknown kind")));
+        }
+        // A Grizzbit 1 grid chunk relabelled as version 4 is refused, not read as a grid.
+        let grid = encode(&[1.0, 2.0, 3.0], 1.0).unwrap();
+        let mut b = grid[..grid.len() - CHECKSUM_BYTES].to_vec();
+        b[0] = PCO_VERSION;
+        assert_eq!(decode(&seal(b)), Err(CodecError::Corrupt("unknown kind")));
+    }
+
+    /// Found by the decode_v4 fuzz target in development: a 40-byte chunk whose pco metadata declares a
+    /// dictionary of 2^24 numbers made pco allocate 128 MiB before finding the body too short. A dictionary
+    /// longer than the chunk is refused before pco reads it.
+    #[test]
+    fn oversized_pco_dictionaries_are_refused_before_allocation() {
+        let rest = [
+            0x01, 0x04, 0x01, 0x04, 0x01, 0x00, 0x10, 0x00, 0x90, 0x2a, 0x18, 0x95, 0xd4, 0xad,
+            0x65, 0xeb, 0x01, 0x00, 0x10, 0x00, 0x90, 0x2a, 0x2a, 0x18, 0x95, 0xd4, 0xad, 0x65,
+            0xfb, 0x01, 0x18, 0x95, 0xd4, 0xad, 0x65, 0xfb, 0x01, 0x00, 0x01, 0x00,
+        ];
+        let mut body = vec![PCO_VERSION, KIND_PCO];
+        body.extend_from_slice(&rest);
+        assert_eq!(
+            decode(&seal(body)),
+            Err(CodecError::Corrupt("pco dictionary"))
+        );
+    }
+
+    /// pco's dictionary mode (which its default mode detection, and so the encoder, never chooses; pco 1.0.4
+    /// writes it only with `ModeSpec::TryDict`) still decodes when the dictionary is no longer than the chunk.
+    /// The pre-read must agree with pco's own reading of the length; a length one above or below is refused.
+    #[test]
+    fn pco_dictionary_chunks_decode_and_their_length_is_checked() {
+        let levels: Vec<f64> = (0..37)
+            .map(|i| 0.1 + i as f64 * 1.37e-3 * i as f64)
+            .collect();
+        let mut s = 3u64;
+        let x: Vec<f64> = (0..4096)
+            .map(|_| {
+                s = s
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(1442695040888963407);
+                levels[(s >> 33) as usize % levels.len()]
+            })
+            .collect();
+        let c = {
+            use pco::wrapped::FileCompressor;
+            let config = pco::ChunkConfig::default().with_mode_spec(pco::ModeSpec::TryDict);
+            let fc = FileCompressor::default();
+            let out = fc.write_header(pco_header(x.len())).unwrap();
+            let mut cc = fc.chunk_compressor(&x, &config).unwrap();
+            let out = cc.write_meta(out).unwrap();
+            seal(cc.write_page(0, out).unwrap())
+        };
+        let mut at = 2;
+        get_varint(&c, &mut at).unwrap();
+        let body = &c[at..c.len() - CHECKSUM_BYTES];
+        assert_eq!(pco_body::dictionary_len(body), Some(levels.len() as u64));
+        assert!(decode(&c)
+            .unwrap()
+            .iter()
+            .zip(&x)
+            .all(|(a, b)| a.to_bits() == b.to_bits()));
+        // The 25-bit length starts 4 bits into the chunk metadata (byte 2 of the body, pco format 4.x).
+        for delta in [1i64, -1] {
+            let mut b = c[..c.len() - CHECKSUM_BYTES].to_vec();
+            let meta = at + 2;
+            let mut w = u32::from_le_bytes(b[meta..meta + 4].try_into().unwrap());
+            let len = ((w >> 4) & ((1 << 25) - 1)) as i64 + delta;
+            w = (w & !(((1 << 25) - 1) << 4)) | ((len as u32) << 4);
+            b[meta..meta + 4].copy_from_slice(&w.to_le_bytes());
+            assert!(decode(&seal(b)).is_err(), "{delta}");
+        }
+        // The same length as the chunk is accepted by the pre-read.
+        assert!(pco_body::dictionary_len(&[4, 1, 0x04 | 0x10, 0, 0, 0]).is_some_and(|k| k == 1));
+    }
+
+    /// Lookback delta chunks as pco writes them (window at most 2^15) pass the window check, at every chunk
+    /// length up to the maximum.
+    #[test]
+    fn pco_lookback_chunks_decode() {
+        for n in [1usize, 17, 4096, MAX_SAMPLES] {
+            let x: Vec<f64> = (0..n).map(|i| ((i * 7919) % 613) as f64 * 0.37).collect();
+            let config = pco::ChunkConfig::default().with_delta_spec(pco::DeltaSpec::TryLookback);
+            let fc = pco::wrapped::FileCompressor::default();
+            let out = fc.write_header(pco_header(n)).unwrap();
+            let mut cc = fc.chunk_compressor(&x, &config).unwrap();
+            assert!(matches!(
+                cc.meta().delta_encoding,
+                pco::metadata::DeltaEncoding::Lookback { .. }
+            ));
+            let out = cc.write_meta(out).unwrap();
+            let c = seal(cc.write_page(0, out).unwrap());
+            let back = decode(&c).unwrap();
+            assert!(back.iter().zip(&x).all(|(a, b)| a.to_bits() == b.to_bits()));
+        }
+    }
+
+    #[test]
+    fn keep_the_smaller_ties_keep_grizzbit1() {
+        // Any chunk: Grizzbit 2 is Grizzbit 1's bytes unless the pco chunk is strictly shorter.
+        for x in [noise(1), noise(4096), vec![5.0; 4096], vec![0.5, -0.0]] {
+            let g1 = encode(&x, 1.0).unwrap();
+            let p = encode_version4(&x).unwrap();
+            let g2 = encode_with(&x, 1.0, Format::Grizzbit2).unwrap();
+            if p.len() < g1.len() {
+                assert_eq!(g2, p);
+            } else {
+                assert_eq!(g2, g1);
+            }
+            assert_eq!(encode_with(&x, 1.0, Format::Grizzbit1).unwrap(), g1);
+        }
     }
 }
 
@@ -1904,6 +2237,103 @@ mod proofs {
             unzigzag(residual).wrapping_add(predict(&x[..i], i, order)),
             x[i]
         );
+    }
+
+    /// Grizzbit 2, version-4 frame: the header the encoder writes (version 4, kind 3, varint n) reads back as
+    /// a version-4 pco chunk of n samples, for every n in 1..=32,768, in at most 5 bytes.
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn version4_header_roundtrips() {
+        let n: usize = kani::any();
+        kani::assume((1..=MAX_SAMPLES).contains(&n));
+        let head = pco_header(n);
+        assert!(head.len() <= 5);
+        assert_eq!((head[0], head[1]), (PCO_VERSION, KIND_PCO));
+        assert_eq!(kind_of(&head), Ok(Kind::Pco));
+        let mut pos = 2;
+        assert_eq!(get_varint(&head, &mut pos), Ok(n as u64));
+        assert_eq!(pos, head.len());
+    }
+
+    /// Version and kind dispatch: kind 3 is pco only under version 4, version 4 holds only kind 3, and the
+    /// Grizzbit 1 kinds keep their versions. No version-2 or version-3 chunk is ever read as pco.
+    #[kani::proof]
+    fn version4_kind_dispatch() {
+        let (v, k): (u8, u8) = (kani::any(), kani::any());
+        kani::assume(v == BASE_VERSION || v == FORMAT_VERSION || v == PCO_VERSION);
+        let body = [v, k, 1];
+        match kind_of(&body) {
+            Ok(Kind::Pco) => assert!(v == PCO_VERSION && k == KIND_PCO),
+            Ok(Kind::Grid) => assert!(v != PCO_VERSION && k == KIND_GRID),
+            Ok(Kind::Float) => assert!(v == BASE_VERSION && k == KIND_FLOAT),
+            Ok(Kind::Raw) => assert!(v == BASE_VERSION && k == KIND_RAW),
+            Err(_) => assert!(!(v == PCO_VERSION && k == KIND_PCO)),
+        }
+        if v == PCO_VERSION {
+            assert_eq!(kind_of(&body).is_ok(), k == KIND_PCO);
+        }
+    }
+
+    /// Decoding a version-4 body behind a valid checksum, with pco stubbed (any sample vector of any
+    /// length, or an error): never a panic; a result has exactly the header's sample count, 1..=32,768,
+    /// and only finite samples within +/-1e9; every other count, and any invalid sample, is an error.
+    #[kani::proof]
+    #[kani::unwind(8)]
+    fn version4_decode_checks_count_and_samples() {
+        let bytes: [u8; 6] = kani::any();
+        let len: usize = kani::any();
+        kani::assume((3..=6).contains(&len));
+        let mut body = bytes;
+        body[0] = PCO_VERSION;
+        body[1] = KIND_PCO;
+        let mut pos = 2;
+        let header_n = get_varint(&body[..len], &mut pos);
+        match decode_verified(&body[..len]) {
+            Ok(x) => {
+                assert_eq!(header_n, Ok(x.len() as u64));
+                assert!(!x.is_empty() && x.len() <= MAX_SAMPLES);
+                assert!(x.iter().all(|v| v.is_finite() && v.abs() <= MAX_AMPLITUDE));
+            }
+            Err(_) => {}
+        }
+    }
+
+    /// The checksum is checked before pco sees a byte: `verified`, which `decode` and `kind` call before
+    /// anything else, refuses every version-4 chunk whose CRC-32C does not match (a symbolic body byte, a
+    /// symbolic checksum) and returns the body unchanged when it matches.
+    #[kani::proof]
+    #[kani::unwind(25)]
+    fn version4_checksum_is_checked_before_pco() {
+        let mut chunk: [u8; 7] = kani::any();
+        chunk[0] = PCO_VERSION;
+        chunk[1] = KIND_PCO;
+        let (body, tail) = chunk.split_at(3);
+        let good = crc32c(body).to_le_bytes() == tail;
+        match verified(&chunk) {
+            Ok(b) => assert!(good && b == body),
+            Err(e) => assert!(!good && e == CodecError::Corrupt("checksum mismatch")),
+        }
+    }
+
+    /// Keep the smaller: the pco chunk is kept exactly when it is strictly shorter; otherwise (ties
+    /// included, or no pco chunk) Grizzbit 1's bytes are returned unchanged.
+    #[kani::proof]
+    #[kani::unwind(5)]
+    fn keep_smaller_keeps_grizzbit1_unless_strictly_smaller() {
+        let (a, b): ([u8; 3], [u8; 3]) = (kani::any(), kani::any());
+        let (la, lb): (usize, usize) = (kani::any(), kani::any());
+        kani::assume(la <= 3 && lb <= 3);
+        let g1 = a[..la].to_vec();
+        let pco = if kani::any() {
+            Some(b[..lb].to_vec())
+        } else {
+            None
+        };
+        let kept = keep_smaller(g1.clone(), pco.clone());
+        match pco {
+            Some(p) if p.len() < g1.len() => assert_eq!(kept, p),
+            _ => assert_eq!(kept, g1),
+        }
     }
 
     /// A last-place correction restores the sample bit for bit from any grid value,

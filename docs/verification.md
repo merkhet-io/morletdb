@@ -2,7 +2,8 @@
 
 What is machine-checked about the raw-chunk codec (Grizzbit, `crates/grizzbit/src/lib.rs`; re-exported as `morlet_core::rawcodec`; format versions
 2 and 3), how, with which bounds, and what is not. Wording elsewhere (README, website, paper) must not claim
-more than this page.
+more than this page. Grizzbit 2's version 4 (pco chunks, a development build under study B5) has its own
+section below.
 
 ## Summary
 
@@ -55,7 +56,7 @@ Golden coverage:
 | Tool | Version | Use |
 |---|---|---|
 | Kani | 0.68.0 (CBMC 6.11.0, nightly-2026-08-21 as installed by `cargo kani setup`) | proofs, `#[cfg(kani)] mod proofs` in `crates/grizzbit/src/lib.rs` (run from `crates/grizzbit`) |
-| cargo-fuzz | 0.13.2, toolchain nightly-2026-10-11, libfuzzer-sys 0.4.13, arbitrary 1.5.0 | `crates/grizzbit/fuzz/` (codec: `decode_raw`, `decode_sealed`, `roundtrip`); `crates/morlet-core/fuzz/` (transfer frames: `decode_frame`) |
+| cargo-fuzz | 0.13.2, toolchain nightly-2026-10-11, libfuzzer-sys 0.4.13, arbitrary 1.5.0 | `crates/grizzbit/fuzz/` (codec: `decode_raw`, `decode_sealed`, `roundtrip`, `decode_v4`); `crates/morlet-core/fuzz/` (transfer frames: `decode_frame`) |
 | proptest | 1.x (locked in `Cargo.lock`) | `crates/morlet-core/tests/codec_props.rs` |
 
 **Proofs:** CBMC verification time per harness on an Apple M5 Max:
@@ -69,9 +70,16 @@ Golden coverage:
 | `varint_reader_is_total` | 0.8 s |
 | `prediction_residuals_invert` | 8.7 s |
 | `corrections_restore_any_sample` | 0.17 s |
+| `version4_header_roundtrips` | 3.0 s |
+| `version4_kind_dispatch` | 0.12 s |
+| `version4_decode_checks_count_and_samples` | 6.7 s |
+| `version4_checksum_is_checked_before_pco` | 1.0 s |
+| `keep_smaller_keeps_grizzbit1_unless_strictly_smaller` | 1.7 s |
 
-That is about 12 s in total, plus compilation. All seven run on every pull request that touches
-`morlet-core` (`.github/workflows/verification.yml`).
+(The five version-4 times were measured on 2026-11-10 while fuzzing ran at low priority on the same machine.)
+
+All twelve run on every pull request that touches `grizzbit` or `morlet-core`
+(`.github/workflows/verification.yml`).
 
 **Fuzzing:** the first runs (2026-11-01/02), each roughly an hour of CPU, with debug assertions and overflow
 checks on. None found a crash.
@@ -85,6 +93,10 @@ checks on. None found a crash.
 Saved "timeout" and "slow unit" inputs replayed in 0–5 ms. They coincided with the machine sleeping during
 the run and are not findings.
 
+**Grizzbit 2 (study B5, gate 4):** `decode_v4` and the extended `roundtrip`, each at least 2 CPU-hours
+locally before B5's benchmark run; hours, inputs and corpus sizes are in the build record of
+[evaluation/storage_b5/PROTOCOL.md](../evaluation/storage_b5/PROTOCOL.md).
+
 The nightly workflow fuzzes each target for 40 minutes and keeps the corpus between runs. Crashing inputs
 are uploaded as artifacts, and minimized ones become regression tests.
 
@@ -93,13 +105,36 @@ are uploaded as artifacts, and minimized ones become regression tests.
 ```sh
 cargo test -p grizzbit                                      # unit, golden, equivalence and property tests
 cd crates/grizzbit
-cargo kani --harness corrections_restore_any_sample         # one proof (all seven: see verification.yml)
+cargo kani --harness corrections_restore_any_sample         # one proof (all twelve: see verification.yml)
 cargo +nightly-2026-10-11 fuzz run -O -a decode_sealed fuzz/corpus/decode_sealed -- -max_total_time=600
 MORLET_WRITE_GOLDEN=1 cargo test -p grizzbit --test codec_golden -- --ignored      # add new golden files only
 ```
 
 The fuzz targets recompute CRC-32C themselves (`fuzz_targets/common.rs`) so that mutated bodies reach the
 parser. The codec's own checksum verification is what is under test.
+
+## Grizzbit 2: version 4 (pco), study B5
+
+Version 4 wraps a body written by the third-party `pco` crate (1.0.4, pinned) in Grizzbit's own frame
+([chunk-format.md](chunk-format.md), draft section). What is checked, and how:
+
+| Function(s) | Property | How checked | Status |
+|---|---|---|---|
+| `pco_header` / frame parse | For every n in 1..=32,768 the header (version 4, kind 3, varint n) reads back as a version-4 pco chunk of n samples, in at most 5 bytes | Kani `version4_header_roundtrips` | **proven** |
+| `kind_of` | Kind 3 only under version 4; version 4 only with kind 3; versions 2 and 3 keep their kinds and are never read as pco | Kani `version4_kind_dispatch` | **proven** |
+| `decode_verified` on version 4, pco stubbed | No panic; a result has exactly the header's count, 1..=32,768, of finite samples within ±1e9, whatever pco returns (any vector, any length, or an error) | Kani `version4_decode_checks_count_and_samples` (bodies up to 6 bytes; the stub returns up to 3 samples) | **proven** within bounds |
+| Checksum dispatch | `verified`, which `decode` and `kind` call before anything else, refuses a version-4 chunk whose CRC-32C does not match, so pco never sees its bytes, and passes the body on unchanged when it matches | Kani `version4_checksum_is_checked_before_pco` (7-byte chunks: a symbolic body byte and a symbolic checksum) | **proven** within bounds. A first form over 8-byte chunks through `decode` ran 18 minutes without a verdict and was replaced |
+| `keep_smaller` | The pco chunk is kept exactly when strictly shorter; otherwise (ties, or no pco chunk) Grizzbit 1's bytes are returned unchanged | Kani `keep_smaller_keeps_grizzbit1_unless_strictly_smaller` | **proven** (chunks of up to 3 bytes; the rule only compares lengths) |
+| `encode_with(.., Grizzbit2)` → `decode` | Bit-exact round trip; output is Grizzbit 1's bytes or a strictly smaller version-4 chunk; the version-4 chunk of every valid chunk round trips too | unit tests (edge cases of gate 1: n = 1 and 32,768, constants, signed zeros, denormals, ±1e9, alternating extremes, float32 values, near-grid values, random bit patterns); proptest (2 properties × 500 cases); fuzz `roundtrip` | **tested and fuzzed** |
+| `decode` of version 4 on arbitrary bytes | No panic; any success returns valid samples; pco is reached on every input | fuzz `decode_v4` (sealed, version and kind fixed); `decode_raw`, `decode_sealed` | **fuzzed** |
+| Allocation on version-4 decode | pco allocates two declared sizes before checking the body holds them: a dictionary (up to 2^25 numbers) and a lookback window (up to 2^24). The frame code refuses a dictionary longer than `n` (read from the body before pco reads it, and checked against pco's own reading) and a window above 2^15, pco's encoder maximum | unit tests; fuzzing under a 64 MB malloc limit (the dictionary case was found this way in development) | **bounded**, by these two checks plus fuzzing |
+| Golden pco chunks | 6 frozen version-4 chunks in `testdata/rawcodec/v4-*` (float without a grid, float32 held as float64, near-grid values, a constant, a single sample, 32,768 samples) decode bit for bit, and the encoder still writes them byte for byte. They are the upgrade check for any later `pco` | `codec_golden.rs`; the C interface test in `morlet-ffi` | **tested** |
+
+**pco itself is not proved.** Its decoder is third-party code with about 100 `unsafe` sites. The proofs
+above cover MorletDB's own frame code around it, with pco replaced by a stub (`pco_body.rs`, `cfg(kani)`).
+What covers pco: fuzzing (`decode_v4`, `roundtrip`), the golden chunks, and write-time verification
+(`morlet.verify_appends`, on by default), which decodes every stored chunk again, version 4 included, and
+compares it bit for bit before it is stored.
 
 ## Gaps (not proven, or proven only within bounds)
 

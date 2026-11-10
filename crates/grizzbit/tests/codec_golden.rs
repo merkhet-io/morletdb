@@ -8,7 +8,12 @@
 //! New cases: add them to `cases()` and run
 //!   MORLET_WRITE_GOLDEN=1 cargo test -p grizzbit --test codec_golden -- --ignored
 //! which writes missing files only.
-use grizzbit::{decode, encode, kind};
+//!
+//! Version-4 (Grizzbit 2, pco) chunks are marked `"encoder": "version4"` in their `.json`: they are written by
+//! `encode_version4` and checked against it. They are the upgrade check for any later `pco` version (study
+//! B5): a new pco must decode every one of them bit for bit; its encoder may write other bytes, and then
+//! `encoder_current` is set to false and new files are added.
+use grizzbit::{decode, encode, encode_version4, kind};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
@@ -33,6 +38,50 @@ type Case = (
     Option<u8>,
     bool,
 );
+
+/// Uniform in [0, 1), from the generator only (no libm: platform-independent inputs).
+fn unit(seed: &mut u64) -> f64 {
+    lcg(seed) as f64 / 9_007_199_254_740_992.0
+}
+
+/// Version-4 cases: (name, samples). Inputs use integer arithmetic, IEEE division and products only.
+fn pco_cases() -> Vec<(&'static str, Vec<f64>)> {
+    let mut s = 0x4235_7063_6f34;
+    let mut walk = |n: usize, step: f64| -> Vec<f64> {
+        let mut x = 20.0;
+        (0..n)
+            .map(|_| {
+                x += (unit(&mut s) - 0.5) * step;
+                x
+            })
+            .collect()
+    };
+    let float = walk(4096, 0.37);
+    let float32: Vec<f64> = walk(4096, 2.5)
+        .into_iter()
+        .map(|v| v as f32 as f64)
+        .collect();
+    let longest = walk(32768, 0.01);
+    let mut t = 0x6e65_6172;
+    let near_grid: Vec<f64> = (0..4096)
+        .map(|i| {
+            let x = ((lcg(&mut t) % 20_000) as f64 - 10_000.0) * 0.1;
+            if i % 7 == 0 {
+                f64::from_bits(x.to_bits() + 1)
+            } else {
+                x
+            }
+        })
+        .collect();
+    vec![
+        ("v4-pco-float", float),
+        ("v4-pco-float32", float32),
+        ("v4-pco-near-grid", near_grid),
+        ("v4-pco-constant", vec![0.1; 4096]),
+        ("v4-pco-single", vec![-1234.5678]),
+        ("v4-pco-max-length", longest),
+    ]
+}
 
 fn cases() -> Vec<Case> {
     let mut s = 1;
@@ -223,6 +272,22 @@ fn cases() -> Vec<Case> {
 fn write_missing_golden_files() {
     assert_eq!(std::env::var("MORLET_WRITE_GOLDEN").as_deref(), Ok("1"));
     std::fs::create_dir_all(dir()).unwrap();
+    for (name, samples) in pco_cases() {
+        let chunk = dir().join(format!("{name}.chunk"));
+        if chunk.exists() {
+            continue;
+        }
+        std::fs::write(&chunk, encode_version4(&samples).unwrap()).unwrap();
+        let raw: Vec<u8> = samples.iter().flat_map(|x| x.to_le_bytes()).collect();
+        std::fs::write(chunk.with_extension("f64"), raw).unwrap();
+        let v = json!({"quantum_bits": format!("{:016x}", 1f64.to_bits()), "encoder_current": true,
+                       "encoder": "version4"});
+        std::fs::write(
+            chunk.with_extension("json"),
+            serde_json::to_string(&v).unwrap() + "\n",
+        )
+        .unwrap();
+    }
     for (name, samples, quantum, ..) in cases() {
         let chunk = dir().join(format!("{name}.chunk"));
         if chunk.exists() {
@@ -238,6 +303,25 @@ fn write_missing_golden_files() {
             serde_json::to_string(&v).unwrap() + "\n",
         )
         .unwrap();
+    }
+}
+
+#[test]
+fn every_pco_case_has_a_frozen_version4_file() {
+    let cases = pco_cases();
+    assert!(cases.len() >= 6);
+    for (name, samples) in cases {
+        let chunk = std::fs::read(dir().join(format!("{name}.chunk")))
+            .unwrap_or_else(|_| panic!("{name}: missing golden file"));
+        assert_eq!(&chunk[..2], &[4, 3], "{name}: version 4, kind pco");
+        assert_eq!(kind(&chunk).unwrap().name(), "pco", "{name}: kind");
+        let frozen: Vec<u64> = std::fs::read(dir().join(format!("{name}.f64")))
+            .unwrap()
+            .chunks_exact(8)
+            .map(|b| u64::from_le_bytes(b.try_into().unwrap()))
+            .collect();
+        let now: Vec<u64> = samples.iter().map(|x| x.to_bits()).collect();
+        assert_eq!(now, frozen, "{name}: case inputs changed");
     }
 }
 
@@ -288,8 +372,13 @@ fn frozen_chunks_decode_bit_for_bit() {
                 u64::from_str_radix(meta["quantum_bits"].as_str().unwrap(), 16).unwrap(),
             );
             let samples: Vec<f64> = want.iter().map(|&b| f64::from_bits(b)).collect();
+            let encoded = match meta["encoder"].as_str() {
+                None => encode(&samples, q).unwrap(),
+                Some("version4") => encode_version4(&samples).unwrap(),
+                Some(other) => panic!("{}: unknown encoder {other}", chunk.display()),
+            };
             assert_eq!(
-                encode(&samples, q).unwrap(),
+                encoded,
                 bytes,
                 "{}: encoder output changed",
                 chunk.display()

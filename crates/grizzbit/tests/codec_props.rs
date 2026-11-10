@@ -1,6 +1,6 @@
 //! Property tests for the chunk codec: the layer between the Kani proofs (all inputs,
 //! tiny sizes) and fuzzing (unbounded time). See docs/verification.md.
-use grizzbit::{decode, encode};
+use grizzbit::{decode, encode, encode_with, Format, PCO_VERSION};
 use grizzbit::{MAX_AMPLITUDE, MAX_SAMPLES};
 use proptest::prelude::*;
 
@@ -86,6 +86,61 @@ proptest! {
         edits in prop::collection::vec((any::<prop::sample::Index>(), any::<u8>(), 0u8..3), 1..8),
     ) {
         let Ok(good) = encode(&samples, q) else { return Ok(()) };
+        let mut body = good[..good.len() - 4].to_vec();
+        for (at, byte, op) in edits {
+            let i = at.index(body.len().max(1));
+            match op {
+                0 if i < body.len() => body[i] = byte,
+                1 => body.insert(i.min(body.len()), byte),
+                _ if body.len() > 1 && i < body.len() => { body.remove(i); }
+                _ => {}
+            }
+        }
+        if let Ok(x) = decode(&seal(&body)) {
+            prop_assert!(valid(&x));
+        }
+    }
+
+    /// Grizzbit 2's keep-the-smaller encoder on the same chunks: bit-for-bit round trips, and the output is
+    /// Grizzbit 1's bytes unless it is a version-4 chunk with strictly fewer bytes.
+    #[test]
+    fn grizzbit2_valid_chunks_roundtrip_bit_for_bit((samples, q) in chunk()) {
+        match encode_with(&samples, q, Format::Grizzbit2) {
+            Ok(bytes) => {
+                prop_assert!(valid(&samples));
+                let g1 = encode(&samples, q).unwrap();
+                if bytes != g1 {
+                    prop_assert_eq!(bytes[0], PCO_VERSION);
+                    prop_assert!(bytes.len() < g1.len());
+                }
+                let back = decode(&bytes).unwrap();
+                prop_assert_eq!(back.len(), samples.len());
+                for (a, b) in back.iter().zip(&samples) {
+                    prop_assert_eq!(a.to_bits(), b.to_bits());
+                }
+            }
+            Err(e) => {
+                prop_assert!(!valid(&samples) || !(q.is_finite() && q > 0.0));
+                prop_assert_eq!(Err(e), encode(&samples, q));
+            }
+        }
+    }
+
+    /// Every version-4 chunk, kept or not, round trips; resealed mutations of it never panic.
+    #[test]
+    fn grizzbit2_version4_chunks_roundtrip_and_resealed_mutations_never_panic(
+        (samples, _q) in chunk(),
+        edits in prop::collection::vec((any::<prop::sample::Index>(), any::<u8>(), 0u8..3), 1..8),
+    ) {
+        let Ok(good) = grizzbit::encode_version4(&samples) else {
+            prop_assert!(!valid(&samples));
+            return Ok(());
+        };
+        let back = decode(&good).unwrap();
+        prop_assert_eq!(back.len(), samples.len());
+        for (a, b) in back.iter().zip(&samples) {
+            prop_assert_eq!(a.to_bits(), b.to_bits());
+        }
         let mut body = good[..good.len() - 4].to_vec();
         for (at, byte, op) in edits {
             let i = at.index(body.len().max(1));

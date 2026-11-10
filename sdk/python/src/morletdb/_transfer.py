@@ -68,12 +68,20 @@ def _file_encoder(path: str) -> str:
 
 
 def _server_encoder(client: "Client") -> str:
-    return f"pg_morlet {client._one('SELECT morlet_version()')}"
+    """The server's encoder, for example "pg_morlet 0.3.8", with " (Grizzbit 2)" when the session's appends write
+    Grizzbit 2 (`morlet.chunk_format`, study B5); servers without that setting write Grizzbit 1."""
+    version = client._one("SELECT morlet_version()")     # loads the library, which defines the setting
+    coding = client._one("SELECT current_setting('morlet.chunk_format', true)")
+    return f"pg_morlet {version}" + (" (Grizzbit 2)" if coding == "grizzbit2" else "")
 
 
 def _same_encoder(a: str, b: str) -> bool:
-    """Whether two writer labels ("<name> <version>") report the same encoder version."""
-    return "unknown" not in (a, b) and a.rsplit(" ", 1)[-1] == b.rsplit(" ", 1)[-1]
+    """Whether two writer labels ("<name> <version>", optionally followed by " (<chunk coding>)", Grizzbit 1 when
+    absent) report the same encoder version and chunk coding."""
+    def parts(label: str) -> tuple[str, str]:
+        head, _, coding = label.partition(" (")
+        return head.rsplit(" ", 1)[-1], coding.rstrip(")") or "Grizzbit 1"
+    return "unknown" not in (a, b) and parts(a) == parts(b)
 
 
 # --- chunk bytes: a stronger check between equal encoders, and a fast path for an equal prefix ---------------

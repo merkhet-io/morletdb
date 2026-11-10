@@ -63,6 +63,9 @@ jobs:
           --harness ordered_bits_is_a_bijection --harness ordered_bits_keeps_order
           --harness zigzag_is_a_bijection --harness varint_roundtrips --harness varint_reader_is_total
           --harness prediction_residuals_invert --harness corrections_restore_any_sample
+          --harness version4_header_roundtrips --harness version4_kind_dispatch
+          --harness version4_decode_checks_count_and_samples --harness version4_checksum_is_checked_before_pco
+          --harness keep_smaller_keeps_grizzbit1_unless_strictly_smaller
   fuzz:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
@@ -70,11 +73,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [decode_raw, decode_sealed, roundtrip, decode_frame]
+        target: [decode_raw, decode_sealed, roundtrip, decode_v4, decode_frame]
         include:
           - { target: decode_raw, crate: grizzbit }
           - { target: decode_sealed, crate: grizzbit }
           - { target: roundtrip, crate: grizzbit }
+          - { target: decode_v4, crate: grizzbit }
           - { target: decode_frame, crate: morlet-core }
     steps:
       - uses: actions/checkout@v4
@@ -95,6 +99,9 @@ jobs:
             case "${{ matrix.target }}" in
               decode_raw) cp "$f" "crates/${{ matrix.crate }}/fuzz/corpus/decode_raw/$(basename "$f")" ;;
               decode_sealed) head -c -4 "$f" > "crates/${{ matrix.crate }}/fuzz/corpus/decode_sealed/$(basename "$f")" ;;
+              # Version-4 chunks without version, kind and checksum: the target adds them back.
+              decode_v4) if [ "$(head -c 1 "$f" | od -An -tu1 | tr -d ' ')" = 4 ]; then
+                  tail -c +3 "$f" | head -c -4 > "crates/${{ matrix.crate }}/fuzz/corpus/decode_v4/$(basename "$f")"; fi ;;
             esac
           done
       - name: Fuzz for 40 minutes (debug assertions and overflow checks on)

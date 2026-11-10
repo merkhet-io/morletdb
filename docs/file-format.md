@@ -68,7 +68,9 @@ CREATE TABLE chunks(
 - A later format gets a new `user_version`. The library reads it and every earlier format; it never changes a
   file's format unless asked.
 - Chunk format versions 2 and 3 stay decodable (chunk-format.md, Compatibility). A new chunk version needs a
-  new file format version, so a format-1 reader never meets a chunk it cannot decode.
+  new file format version, so a format-1 reader never meets a chunk it cannot decode. Version 4 (Grizzbit 2,
+  under study B5) is therefore never written into a format-1 file, and the library refuses it when reading
+  one.
 - Files are not compatible with format 0, which was only on the development branch of #352 and was never
   released.
 

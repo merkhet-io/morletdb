@@ -244,3 +244,49 @@ fn foreign_files_are_refused() {
         .to_string()
         .contains("not a MorletDB file"));
 }
+
+/// Study B5: file format 1 never contains a version-4 (Grizzbit 2, pco) chunk. The writer keeps Grizzbit 1 even
+/// for samples whose pco chunk would be smaller, and a version-4 chunk put into a file is refused on read.
+#[test]
+fn file_format_1_never_holds_version4_chunks() {
+    let path = tmp("version4");
+    let mut s = Store::open(&path).unwrap();
+    s.create_recording("r", 1000.0, "x", "", 1.0, "{}").unwrap();
+    // A smooth float walk: Grizzbit 2 would store pco chunks for it.
+    let mut v = 20.0f64;
+    let x: Vec<f64> = (0..20_000u64)
+        .map(|i| {
+            v += ((i.wrapping_mul(2654435761) % 1000) as f64 - 499.5) * 1e-3;
+            v
+        })
+        .collect();
+    let first = &x[..4096];
+    let v4 = morlet_core::rawcodec::encode_version4(first).unwrap();
+    assert!(v4.len() < morlet_core::rawcodec::encode(first, 1.0).unwrap().len());
+    s.append("r", 0, &x, 4096).unwrap();
+    let versions: Vec<u8> = s
+        .connection()
+        .prepare("SELECT encoded FROM chunks ORDER BY start_sample")
+        .unwrap()
+        .query_map([], |r| r.get::<_, Vec<u8>>(0))
+        .unwrap()
+        .map(|e| e.unwrap()[0])
+        .collect();
+    assert_eq!(versions.len(), 5);
+    assert!(versions.iter().all(|&v| v == 2 || v == 3), "{versions:?}");
+    assert_eq!(bits(&s.read("r", 0, 20_000).unwrap()), bits(&x));
+    // The same samples as a version-4 chunk, written by another program: refused by reads and statistics.
+    s.connection()
+        .execute(
+            "UPDATE chunks SET encoded=?1, summary=NULL WHERE start_sample=0",
+            [&v4],
+        )
+        .unwrap();
+    let err = s.read("r", 0, 100).unwrap_err().to_string();
+    assert!(
+        err.contains("chunk format version 4 is not allowed in file format 1"),
+        "{err}"
+    );
+    assert!(s.interval_stats("r", 0, 100).is_err());
+    assert_eq!(bits(&s.read("r", 4096, 20_000).unwrap()), bits(&x[4096..]));
+}

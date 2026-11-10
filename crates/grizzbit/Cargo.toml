@@ -13,8 +13,11 @@ publish = false
 [lib]
 name = "grizzbit"
 
-# No runtime dependencies: the codec, its CRC-32C and its sample limits are all here.
+# Grizzbit 1 has no runtime dependencies: the codec, its CRC-32C and its sample limits are all here. Grizzbit 2's
+# version-4 chunks use pco, pinned exactly (study B5's frozen build; a later pco is an upgrade gated by the golden
+# pco chunks in testdata/rawcodec).
 [dependencies]
+pco = "=1.0.4"
 
 [dev-dependencies]
 serde_json = { version = "1", features = ["float_roundtrip"] }

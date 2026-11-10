@@ -1,10 +1,17 @@
 //! Structured chunks into `encode`: every valid chunk decodes bit for bit, every
 //! invalid one (empty, too long, NaN, infinite, beyond 1e9) or invalid quantum is
 //! rejected, and the encoding is never larger than plain float64 plus its header.
+//! The same chunks go through Grizzbit 2's keep-the-smaller encoder (`encode_with`,
+//! `Format::Grizzbit2`): its output is Grizzbit 1's bytes, or a version-4 chunk with
+//! strictly fewer bytes, and decodes bit for bit; the version-4 (pco) chunk of every
+//! valid chunk, kept or not, decodes bit for bit too.
 #![no_main]
 use arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use grizzbit::{decode, encode, CodecError, MAX_AMPLITUDE, MAX_SAMPLES};
+use grizzbit::{
+    decode, encode, encode_version4, encode_with, CodecError, Format, MAX_AMPLITUDE, MAX_SAMPLES,
+    PCO_VERSION,
+};
 mod common;
 
 #[derive(Debug)]
@@ -81,6 +88,14 @@ impl<'a> Arbitrary<'a> for Chunk {
     }
 }
 
+fn assert_decodes_to(bytes: &[u8], samples: &[f64]) {
+    let back = decode(bytes).expect("decodes");
+    assert_eq!(back.len(), samples.len());
+    for (a, b) in back.iter().zip(samples) {
+        assert_eq!(a.to_bits(), b.to_bits());
+    }
+}
+
 fuzz_target!(|c: Chunk| {
     let valid_samples = !c.samples.is_empty()
         && c.samples.len() <= MAX_SAMPLES
@@ -88,19 +103,37 @@ fuzz_target!(|c: Chunk| {
             .iter()
             .all(|v| v.is_finite() && v.abs() <= MAX_AMPLITUDE);
     let valid_quantum = c.quantum.is_finite() && c.quantum > 0.0;
-    match encode(&c.samples, c.quantum) {
+    let grizzbit1 = encode(&c.samples, c.quantum);
+    match &grizzbit1 {
         Ok(bytes) => {
             assert!(valid_samples && valid_quantum);
             // Version, kind, varint count (<= 3 bytes), float64 payload, checksum.
             assert!(bytes.len() <= 1 + 1 + 3 + 8 * c.samples.len() + 4);
-            let back = decode(&bytes).expect("decodes");
-            assert_eq!(back.len(), c.samples.len());
-            for (a, b) in back.iter().zip(&c.samples) {
-                assert_eq!(a.to_bits(), b.to_bits());
-            }
+            assert_decodes_to(bytes, &c.samples);
         }
         Err(CodecError::InvalidQuantum) => assert!(valid_samples && !valid_quantum),
         Err(CodecError::Signal(_)) => assert!(!valid_samples),
         Err(e) => panic!("unexpected encode error {e:?}"),
+    }
+    // Grizzbit 2: the same errors, or Grizzbit 1's bytes, or a strictly smaller version-4 chunk.
+    let grizzbit2 = encode_with(&c.samples, c.quantum, Format::Grizzbit2);
+    match (&grizzbit1, &grizzbit2) {
+        (Ok(g1), Ok(g2)) => {
+            if g2 != g1 {
+                assert_eq!(g2[0], PCO_VERSION);
+                assert!(g2.len() < g1.len());
+            }
+            assert_decodes_to(g2, &c.samples);
+        }
+        (Err(a), Err(b)) => assert_eq!(a, b),
+        _ => panic!("Grizzbit 1 and 2 disagree on validity"),
+    }
+    match encode_version4(&c.samples) {
+        Ok(v4) => {
+            assert!(valid_samples);
+            assert_decodes_to(&v4, &c.samples);
+        }
+        Err(CodecError::Signal(_)) => assert!(!valid_samples),
+        Err(e) => panic!("unexpected version-4 encode error {e:?}"),
     }
 });

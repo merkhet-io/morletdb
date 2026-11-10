@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **Grizzbit 2, development build for study B5 (#326; not for a release before B5 passes):** chunk format version 4,
+  kind 3, holds a body in pco's wrapped format (`pco` pinned at `=1.0.4`, level 8; docs/chunk-format.md, draft
+  section). `grizzbit::encode_with(x, q, Format::Grizzbit2)` codes every chunk with Grizzbit 1 exactly as before and
+  with pco, and keeps the pco chunk only if it is strictly smaller; `grizzbit::encode` stays Grizzbit 1. `decode`
+  reads versions 2, 3 and 4 with Grizzbit 1's rules (checksum first, exact count, no trailing bytes, finite samples
+  within ±1e9). pg_morlet: `morlet.chunk_format` (`grizzbit2`, this build's default, or `grizzbit1`) selects what
+  every append path writes; write-time verification covers version 4. The native decoder reports version 4
+  (`morlet_ffi_max_chunk_version`), so compressed transfer sends version-4 chunks to it and samples to older
+  clients. File format 1 never holds version 4: its writer keeps Grizzbit 1 and its reader refuses version 4. The
+  SDK labels a server writing Grizzbit 2 as another encoder for transfer checks. Six golden pco chunks, a
+  `decode_v4` fuzz target, five Kani proofs with pco stubbed (docs/verification.md). No SQL change.
+
 - **The chunk codec is now the `grizzbit` crate (Grizzbit 1 = chunk format versions 2 and 3, unchanged):**
   `crates/grizzbit` holds the encoder, decoder, CRC-32C, sample limits, unit and property tests, golden-chunk test,
   Kani proofs and the codec's fuzz targets, with no dependencies. `morlet_core::rawcodec` re-exports it, so every

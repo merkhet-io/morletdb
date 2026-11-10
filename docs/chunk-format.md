@@ -68,6 +68,40 @@ A stream is a bit-packed (MSB-first) sequence with these fields:
   7-bit width);
 - the residuals, padded with zero bits to a byte boundary.
 
+## Draft: version 4 (Grizzbit 2, pco), under study B5
+
+**Not part of any release.** This section describes the development build measured by study B5
+([protocol](../evaluation/storage_b5/PROTOCOL.md)). It becomes part of this specification only if a release
+ships Grizzbit 2 after B5 passes; until then no release writes or reads version 4.
+
+| Field | Size | Meaning |
+|---|---|---|
+| version | 1 byte | `4` |
+| kind | 1 byte | `3` (pco) |
+| n | varint | sample count, 1..32768 |
+| body | — | pco's wrapped format: pco wrapped header, pco chunk metadata, one pco page of all `n` samples |
+| crc | 4 bytes | CRC-32C of every preceding byte |
+
+- **Body:** written by the `pco` crate, pinned at exactly 1.0.4 (pco format 4.1), compression level 8, mode
+  and delta detection at pco's defaults. It is one pco chunk with one page, as `pco::wrapped` writes it:
+  `FileCompressor::write_header`, `ChunkCompressor::write_meta`, then `write_page(0)`. pco's wrapped format
+  stores no sample count; `n` is it. pco's standalone format is not used.
+- **Kinds per version:** version 4 has kind 3 only, and kind 3 exists only under version 4. Versions 2 and 3
+  are never reinterpreted.
+- **Encoder (keep the smaller):** every chunk is coded with Grizzbit 1 exactly as above, and as version 4. The
+  version-4 chunk is stored only if it has strictly fewer bytes; on a tie Grizzbit 1 is kept. A Grizzbit 1
+  chunk that stays is byte for byte what Grizzbit 1 alone writes.
+- **Decoder,** with Grizzbit 1's rules:
+  - the checksum is checked before pco reads a byte;
+  - pco must yield exactly `n` samples and use every body byte (no trailing bytes);
+  - every sample must be finite and within ±1e9.
+  - Before pco reads them, two declared sizes are bounded, because pco allocates them before checking that
+    the body holds them: a dictionary (pco's dictionary mode) may hold at most `n` entries, and a lookback
+    window at most 2^15 numbers, which is what pco's encoder writes at most. Neither bound refuses a chunk
+    the encoder writes.
+- **Not in file format 1:** the one-file format's version 1 allows chunk versions 2 and 3 only, so its writer
+  keeps Grizzbit 1 and its reader refuses version 4 ([file-format.md](file-format.md)).
+
 ### Decoding a stream, exactly
 
 These are the rules a decoder needs beyond the field list above. The reference reader
@@ -148,8 +182,9 @@ the table can write a valid chunk.
 - **Downgrade:** a version-3 chunk is reported as "unknown format version" by
   pg_morlet 0.3.0 and earlier, so downgrading after appending such chunks needs
   them re-appended.
-- **A future version 4** (for example the planned Grizzbit 2, #326) must keep decoding
-  versions 2 and 3.
+- **Version 4** (Grizzbit 2, #326, the draft above) keeps decoding versions 2 and 3.
+  A decoder that reads version 4 reports it as its highest version on the wire (below),
+  so older clients receive samples instead of version-4 chunks.
 - `float8[]` collections from pg_morlet 0.1.0 are a separate layout, detected
   per collection, and remain supported (see durable-ingestion.md, Upgrading).
 - **Chunks on the wire (SQL 0.3.5):** `morlet_read_interval_encoded` sends stored
