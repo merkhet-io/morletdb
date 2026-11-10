@@ -11,6 +11,7 @@ load that fails the read-back keeps its container's volume (CEDARDB_RANGE_SCAN_F
   ../../.venv-b3/bin/python parallel.py <questdb|morletdb-032|morletdb-i1|cedardb> <D1|D2> <writers> <rep>
 """
 import multiprocessing as mp
+import os
 import sys
 import time
 
@@ -50,7 +51,8 @@ def main(system, durability, writers, rep):
     writers, rep = int(writers), int(rep)
     m = common.manifest()
     n = len(m["acquisitions"])
-    volume = f"b3-par-{system}-{durability.lower()}-w{writers}-r{rep}"
+    # B5: B3_VOLUME_PREFIX names the volume (fresh b5-* volumes); default b3, as before
+    volume = f"{os.environ.get('B3_VOLUME_PREFIX', 'b3')}-par-{system}-{durability.lower()}-w{writers}-r{rep}"
     if system == "questdb":
         import questdb_adapter as q
         handle = q.start(volume, durability)

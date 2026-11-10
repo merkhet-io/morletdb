@@ -1,0 +1,22 @@
+2026-11-10T20:38:57
+20:38  up 14 days,  5:35, 19 users, load averages: 7.60 9.36 10.75
+ %CPU COMM
+140.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 27.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 14.2 /System/Library/PrivateFrameworks/XprotectFramework.framework/Versions/A/XPCServices/XprotectService.xpc/Contents/MacOS/XprotectService
+ 10.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.0 /usr/libexec/syspolicyd
+  6.8 claude
+  3.7 /usr/sbin/coreaudiod
+2026-11-10T20:40:08
+20:40  up 14 days,  5:36, 19 users, load averages: 14.48 11.39 11.43
+ %CPU COMM
+340.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+133.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 49.9 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 36.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 34.6 /System/Library/PrivateFrameworks/XprotectFramework.framework/Versions/A/XPCServices/XprotectService.xpc/Contents/MacOS/XprotectService
+ 18.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.6 /usr/libexec/syspolicyd
+ 10.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
