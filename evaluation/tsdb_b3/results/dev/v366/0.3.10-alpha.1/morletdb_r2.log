@@ -1,0 +1,146 @@
+{
+ "system": "morletdb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.4524841670645401,
+ "samples": 101453304,
+ "started": "2026-11-10T18:54:58",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 41.9,
+  "samples_per_s": 2421305,
+  "conversion_s": 0.038,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 333.704,
+   "p95_ms": 365.685,
+   "max_ms": 455.724
+  },
+  "queryable_after_last_ack_s": 0.007,
+  "failures": [],
+  "excluded_preflight_s": 1.04,
+  "server": {
+   "cpu_percent_mean": 44.6,
+   "cpu_percent_p95": 47.0,
+   "memory_peak_mib": 170.1,
+   "samples": 21,
+   "kernel_memory": {
+    "peak_mib": 535.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 505.1,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 170.6
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.1
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.4524841670645401,
+ "samples": 101453304,
+ "started": "2026-11-10T18:54:58",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 41.9,
+  "samples_per_s": 2421305,
+  "conversion_s": 0.038,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 333.704,
+   "p95_ms": 365.685,
+   "max_ms": 455.724
+  },
+  "queryable_after_last_ack_s": 0.007,
+  "failures": [],
+  "excluded_preflight_s": 1.04,
+  "server": {
+   "cpu_percent_mean": 44.6,
+   "cpu_percent_p95": 47.0,
+   "memory_peak_mib": 170.1,
+   "samples": 21,
+   "kernel_memory": {
+    "peak_mib": 535.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 505.1,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 170.6
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.1
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 4063232,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4308992,
+    "toast": 155885568,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 121972546,
+    "samples": 95499936
+   },
+   "mid": {
+    "encoded_bytes": 16586659,
+    "samples": 5952756
+   },
+   "process": {
+    "encoded_bytes": 4059,
+    "samples": 612
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 174607507,
+  "volume": {
+   "apparent": 382557533,
+   "allocated": 382623744,
+   "pg_wal_allocated": 184549376
+  }
+ }
+}

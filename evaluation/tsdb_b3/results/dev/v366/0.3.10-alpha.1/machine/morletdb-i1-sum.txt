@@ -1,0 +1,24 @@
+2026-11-10T18:57:56
+18:57  up 14 days,  3:54, 19 users, load averages: 10.44 6.41 5.39
+ %CPU COMM
+288.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 27.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.1 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  4.3 /usr/sbin/coreaudiod
+2026-11-10T19:01:58
+19:01  up 14 days,  3:58, 19 users, load averages: 6.84 6.06 5.46
+ %CPU COMM
+218.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 61.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 13.5 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 10.6 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+2026-11-10T19:06:20
+19:06  up 14 days,  4:02, 19 users, load averages: 11.76 8.10 6.41
+ %CPU COMM
+224.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 99.9 cbmc
+ 66.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 24.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 14.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
