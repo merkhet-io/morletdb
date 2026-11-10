@@ -52,10 +52,16 @@ with morletdb.Client.connect("postgresql://...") as server:
     server.export_file("public.signals", "case-1187.morlet", ["pump-7/accel-x"])   # server -> file
 ```
 
-The receiving side encodes with the sending side's chunk boundaries, so both hold the same chunk bytes; each batch
-of 256 chunks is checked by a hash of the chunk bytes on both sides. A recording that already exists continues
-from its end if its stored chunks equal the other side's; otherwise the transfer is refused. Recordings whose raw
-samples a memory level removed cannot be exported (they are no longer lossless).
+The receiving side encodes with the sending side's chunk boundaries. Each batch of 256 chunks is checked by what
+lossless means, the samples: a hash of the decoded float64 values (every bit, including the sign of zero) on both
+sides (#356). The chunk bytes need not match, so a file written by an older or newer encoder, which may store the
+same samples as other bytes, imports and exports as well. When both sides report the same encoder version (the
+file's `created_by`, the server's `morlet_version()`) the copied chunk bytes are compared too; with
+`report=[...]` each transfer appends a `TransferCheck` per recording (samples copied and verified; chunk bytes
+`identical`, `different` or `not compared`). Equal versions with different bytes give a warning, not an error: the
+samples are verified. A recording that already exists continues from its end if its samples equal the other side's
+first samples (identical chunk bytes settle that without decoding); otherwise the transfer is refused. Recordings
+whose raw samples a memory level removed cannot be exported (they are no longer lossless).
 
 Rust: `morlet_sqlite::Store`. C and every language that calls C (C++, Go, .NET, LabVIEW, Node): the shared
 library with `include/morlet_sqlite.h` (ABI 1: open, create, append, append with chunk lengths, read, stats,
