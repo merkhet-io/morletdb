@@ -17,16 +17,22 @@ steward=$(timeout 60 docker exec soak-s1-steward-1 python steward.py status 2>&1
 other=$(docker ps --filter label=com.docker.compose.project --format '{{.Names}} {{.Status}}' | grep -v soak-s1 | python3 -c '
 import json, sys
 print(json.dumps({l.split()[0]: " ".join(l.split()[1:]) for l in sys.stdin if l.strip()}))')
+# shakedown change 7 (H4): process memory from cgroup v2 memory.stat (anon, shmem), page cache (file) reported apart
+memstat=$(for c in $containers; do id=$(docker inspect -f '{{if .State.Running}}{{.Id}}{{end}}' "$c" 2>/dev/null) || continue
+  f=/sys/fs/cgroup/system.slice/docker-$id.scope/memory.stat
+  [ -n "$id" ] && [ -r "$f" ] || continue
+  awk -v n="$c" '$1=="anon"||$1=="shmem"||$1=="file"{v[$1]=$2} END{printf "\"%s\": {\"anon\": %d, \"shmem\": %d, \"file\": %d}\n", n, v["anon"], v["shmem"], v["file"]}' "$f"
+done | paste -sd, - || true)
 temp=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1)
 status=$(cat "$SOAK_DIR/spool/status.json" 2>/dev/null || echo null)
-python3 - "$stats" "{${state}}" "$other" "$temp" "$status" "$SOAK_DIR" "$steward" >> "$OUT" <<'EOF'
+python3 - "$stats" "{${state}}" "$other" "$temp" "$status" "$SOAK_DIR" "$steward" "{${memstat}}" >> "$OUT" <<'EOF'
 import json, os, shutil, sys, time
-stats, state, other, temp, status, soak, steward = sys.argv[1:]
+stats, state, other, temp, status, soak, steward, memstat = sys.argv[1:]
 du = shutil.disk_usage(soak)
 root = shutil.disk_usage("/")
 print(json.dumps({"at": time.time(), "load": os.getloadavg(), "temp_c": int(temp) / 1000 if temp else None,
                   "soak_fs": {"total": du.total, "used": du.used, "free": du.free},
                   "root_free": root.free, "containers": json.loads(stats), "state": json.loads(state),
                   "other_services": json.loads(other), "collector": json.loads(status),
-                  "steward": json.loads(steward)}))
+                  "steward": json.loads(steward), "memstat": json.loads(memstat)}))
 EOF

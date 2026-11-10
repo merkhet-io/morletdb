@@ -1,7 +1,7 @@
 # S1: a week of live seismic data on a small x86 box, without a person (soak, #191)
 
-Status: **DRAFT until the shakedown ends.** It is frozen, with the image digest and commit filled in, in a commit made
-before the test week starts. Changes after that are dated amendments at the end of this file.
+Status: **FROZEN 2026-11-10** (section "Frozen" below), before the test week started. Changes after that are dated
+amendments at the end of this file.
 
 ## Question
 
@@ -69,6 +69,18 @@ If the test week passes, it may continue towards 30 days without a restart; the 
 6. **Release and fresh start** (2026-11-09): the first 33 hours ran 0.3.8-alpha.1. From change 3 on, the shakedown runs
    the current release 0.3.10-alpha.1 on a fresh database; the test week starts on another fresh database with the
    same image. The first 33 hours' data and results are kept aside (`shakedown-1/`), not evaluated.
+7. **H4 bounds the database's process memory, not its page cache** (2026-11-10, after 19 hours of the second
+   shakedown). `analyze.py` run on the shakedown showed the database container's memory as Docker reports it (usage
+   minus inactive file cache) growing from 155 to 649 MiB. Its cgroup's `memory.stat` at that point: anon 11 MB, shmem
+   143 MB (shared buffers), active_file 484 MB, inactive_file 349 MB. The growth is the kernel's page cache of a
+   growing archive, which the 1 GB limit lets it fill and reclaim; a 1.25x bound on it would test the archive's size,
+   not a leak. `host_probe.sh` now records each container's `memory.stat` anon, shmem and file, and H4 bounds the
+   database's anon + shmem; its page cache and Docker's figure are reported, not bounded. The collector's bound is
+   unchanged (Docker's figure; it holds little cache: 54-58 MiB).
+   *Watched, not changed:* in the same run, with 6-hour windows instead of the protocol's 24 hours (a cold, empty
+   database in the first), `latest` p95 rose 1.82x (0.155 to 0.282 s) and interval statistics p95 3.6x (8 to 29 ms,
+   at most 61 ms), varying through the day with the hard disk's load. The protocol's 24-hour windows each span a full
+   daily recording; the bounds stay.
 
 ## Hypotheses (all must hold; each is reported with its numbers)
 
@@ -87,7 +99,8 @@ If the test week passes, it may continue towards 30 days without a restart; the 
   - the p95 latency of `latest` and of interval statistics is at most 2× as high;
   - for similarity search, the p95 of latency divided by the searched history (the stored samples of the probed
     station and channel at the time of the query) is at most 2× as high; absolute latencies are reported;
-  - the database container's peak memory is at most 1.25× as high, and the collector's as well.
+  - the database container's peak process memory (`memory.stat` anon + shmem, shakedown change 7) is at most 1.25× as
+    high, and the collector's peak memory (as Docker reports it) as well; the database's page cache is reported.
 - **H5, keeps up.**
   - The collector's backlog never exceeds 10,000 packets.
   - At the end, at least 99% of the stored samples older than one hour are searchable (`morlet_coverage`).
@@ -111,3 +124,23 @@ only), `gaps.jsonl`, the verification report and RESULTS.md. No waveforms (the a
 
 Power loss (#190, on the Raspberry Pi), several weeks (an extension at most), other feeds or rates, comparison with
 other databases.
+
+## Frozen (2026-11-10)
+
+- **Image:** `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1@sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38`.
+- **Commit:** the commit that adds this section, on branch `soak/seedlink-collector`; the box runs that checkout
+  (`compose.yaml`, `probe.py`, `host_probe.sh` from cron every 15 minutes, the steward and collector built from it).
+  Shakedown changes 1-7 are in force.
+- **Analysis:** `analyze.py` of this commit, run once at the end:
+  `python3 analyze.py $SOAK_DIR/results --start <start> --verify-fdsn <reports> --morlet-verify <output>
+  --manual-actions <n> --json analysis.json`, with
+  `verify_fdsn.py --windows 60 --seed 191 --from <start> --to <end> --out ...` (and `--at` the hour after D1 and
+  after D2 on every channel of one station drawn with seed 191) and
+  `tools/verify/morlet_verify.py public.live --json`, both after the week.
+- **Disturbances:** `disturb.sh` of this commit, run by hand once each from a shell on the box (it refuses outside
+  its day and a second run): D1 between start + 48 h and start + 72 h, D2 between start + 96 h and start + 120 h,
+  each at a time the owner or the operator chooses in that window. No scheduler is installed for them.
+- **Fresh start:** the second shakedown's database, spool and results are kept aside in `shakedown-2/`, not
+  evaluated; the test week starts on an empty database.
+- **Test-week start:** recorded below when the containers are up.
+
