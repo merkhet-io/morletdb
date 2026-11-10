@@ -1,5 +1,7 @@
 # CedarDB v2026-11-04: a table scan with a time range returned one wrong row
 
+Reported to CedarDB on 2026-11-10 as [cedardb/issues#85](https://github.com/cedardb/issues/issues/85).
+
 Found by B3's read-back check in round 3 of Amendment B3.19 (2026-11-10, 01:39), diagnosed the same day on the preserved
 database. This note describes the fault on its own; the benchmark context is in [RESULTS.md](RESULTS.md) ("Amendment
 B3.19"). Everything here is observed behaviour of a closed-source system; where in CedarDB the fault arises is not known.
