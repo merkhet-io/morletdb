@@ -1,0 +1,22 @@
+2026-11-10T18:05:55
+18:05  up 14 days,  3:02, 19 users, load averages: 4.60 3.36 2.45
+ %CPU COMM
+204.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 55.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 20.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.7 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  6.6 /Applications/Firefox.app/Contents/MacOS/plugin-container.app/Contents/MacOS/plugin-container
+  4.3 /usr/sbin/coreaudiod
+  3.7 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+  2.4 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+2026-11-10T18:06:37
+18:06  up 14 days,  3:02, 19 users, load averages: 7.20 4.25 2.82
+ %CPU COMM
+150.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 80.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 16.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.3 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  6.0 claude
+  4.3 /usr/sbin/coreaudiod
+  3.8 /Applications/Docker.app/Contents/MacOS/com.docker.build
+  3.6 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService

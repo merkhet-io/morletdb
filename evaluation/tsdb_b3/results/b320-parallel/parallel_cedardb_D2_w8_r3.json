@@ -1,0 +1,61 @@
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 3,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 20.02,
+  "samples_per_s": 5074219,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1103.655,
+   "p95_ms": 2406.765,
+   "max_ms": 4061.251
+  },
+  "queryable_after_last_ack_s": 0.023,
+  "server": {
+   "cpu_percent_mean": 385.6,
+   "cpu_percent_p95": 560.4,
+   "memory_peak_mib": 8174.6,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 8392.6,
+    "anon_mib_at_end": 8349.3,
+    "file_mib_at_end": 12.3,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 8383.0
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.7
+  }
+ },
+ "correct": true
+}

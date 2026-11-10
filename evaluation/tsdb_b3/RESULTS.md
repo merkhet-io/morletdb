@@ -1656,6 +1656,33 @@ reads.
 - *Reads and statistics.* Queries go through InfluxDB's SQL engine and return Parquet; each carries a fixed cost of
   several milliseconds (R1 9.4 ms for 4,096 samples), which dominates short reads and the statistics query.
 
+## Amendment B3.20: CedarDB ingestion with parallel writers
+
+Protocol: Amendment B3.20 in [PROTOCOL.md](PROTOCOL.md), frozen at `22f1e35` before any load. Run once, 2026-11-10
+18:04–18:13 (`run_b320.sh`, `results/b320-parallel/`), start condition met (load average 2.69). MorletDB 0.3.10-alpha.1
+(B3.17's client path) and CedarDB v2026-11-04 (B3.18's image and adapter, binary COPY), each writer its own process
+and connection, alternating per load. Table from `summarize_b320.py results/b320-parallel`.
+
+**Correctness: all 18 loads passed** (every channel by SHA-256, exact times). With B3.18, M1b, B3.19 and the
+reproduction runs, CedarDB has now read back 62 of 63 loads exactly (the exception is B3.19's round 3,
+[CEDARDB_RANGE_SCAN_FAULT.md](CEDARDB_RANGE_SCAN_FAULT.md)); MorletDB 40 of 40 in the same sessions.
+
+| Cell | MorletDB, median [range] M samples/s | CedarDB | Statement | Server CPU (M / C) | Working set peak (M / C) |
+|---|---|---|---|---|---|
+| D2, 4 writers | 22.58 [22.22–22.69] | 4.99 [4.62–5.25] | MorletDB **4.5×** faster (all-loads bound 4.23) | 191% / 279% | 222 / 8,497 MiB |
+| D2, 8 writers | 22.48 [22.23–22.57] | 5.11 [5.07–5.25] | MorletDB **4.4×** faster (all-loads bound 4.23) | 200% / 358% | 273 / 8,432 MiB |
+| D1, 8 writers | 22.05 [21.04–22.63] | 5.15 [4.86–5.18] | MorletDB **4.3×** faster (all-loads bound 4.06) | 211% / 348% | 269 / 8,220 MiB |
+
+**Against the expectation** written before measuring: CedarDB roughly doubled its single-connection rate (B3.18:
+2.7 M samples/s; descriptive, other session) but stayed at about 5 M with both 4 and 8 writers, below the 6–10 M
+expected, using about 3.5 of its 8 CPUs; MorletDB reached the expected 22 M. The gap is therefore larger than the
+expected 2–4×. Why CedarDB stops scaling between 4 and 8 writers was not attributed (the writers are separate
+processes, so not one client's interpreter lock).
+
+**Session.** Snapshots before and after every load: median load average 7.6 (max 10.9), mostly the session's own
+8 writers; a foreign process used more than half a core in 3 of 36 snapshots (a browser's GPU process twice, the
+window server once). With an all-loads bound above 4 that does not change any statement.
+
 ## Amendment B3.19: interval statistics against CedarDB with MorletDB 0.3.10-alpha.1
 
 Protocol: Amendment B3.19 in [PROTOCOL.md](PROTOCOL.md), frozen at `aea30f7` before any load. Run 2026-11-10
