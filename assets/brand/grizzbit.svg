@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" viewBox="0 0 520 520" role="img" aria-labelledby="t d">
+<title id="t">Grizzbit, the codec's mascot</title>
+<desc id="d">A green cartoon bear dashing forward with a confident grin, motion lines behind it and a waveform drawn on its pale belly.</desc>
+<defs>
+  <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8fe36c"/>
+    <stop offset="1" stop-color="#4fae4a"/>
+  </linearGradient>
+  <linearGradient id="belly" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f1f7e8"/>
+    <stop offset="1" stop-color="#d6ecc4"/>
+  </linearGradient>
+</defs>
+<rect width="520" height="520" rx="28" fill="#090c0d"/>
+<rect x="0.5" y="0.5" width="519" height="519" rx="28" fill="none" stroke="#24302e"/>
+
+<!-- motion lines -->
+<g stroke="#a8df73" stroke-linecap="round" fill="none">
+  <path d="M40 250 H120" stroke-width="6" stroke-opacity="0.55"/>
+  <path d="M28 290 H112" stroke-width="5" stroke-opacity="0.4"/>
+  <path d="M46 330 H124" stroke-width="6" stroke-opacity="0.55"/>
+  <path d="M36 370 H104" stroke-width="4" stroke-opacity="0.3"/>
+</g>
+
+<!-- body leaning forward -->
+<g transform="rotate(-8 270 320)">
+  <!-- back leg -->
+  <path d="M188 392 C170 420 168 452 196 462 C222 470 236 446 232 420 Z" fill="url(#fur)" stroke="#2f6b2c" stroke-width="4"/>
+  <ellipse cx="196" cy="462" rx="34" ry="14" fill="#2f6b2c"/>
+  <!-- front leg -->
+  <path d="M300 396 C318 428 336 450 366 446 C392 442 388 412 362 398 Z" fill="url(#fur)" stroke="#2f6b2c" stroke-width="4"/>
+  <ellipse cx="372" cy="446" rx="34" ry="14" fill="#2f6b2c"/>
+  <!-- torso -->
+  <ellipse cx="262" cy="330" rx="112" ry="102" fill="url(#fur)" stroke="#2f6b2c" stroke-width="5"/>
+  <!-- belly with waveform -->
+  <ellipse cx="270" cy="346" rx="74" ry="64" fill="url(#belly)" stroke="#2f6b2c" stroke-width="3"/>
+  <path d="M206 348 C214 348 216 336 222 336 C228 336 228 364 236 364 C244 364 244 318 252 318 C260 318 260 376 268 376 C276 376 276 324 284 324 C292 324 292 360 300 360 C306 360 308 342 314 342 C320 342 322 350 334 348"
+        fill="none" stroke="#0b1523" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- arm swinging back -->
+  <path d="M168 300 C130 296 112 318 120 338 C128 356 156 350 176 334 Z" fill="url(#fur)" stroke="#2f6b2c" stroke-width="4"/>
+  <!-- arm reaching forward, fist -->
+  <path d="M348 300 C386 288 412 296 414 318 C416 338 390 344 356 334 Z" fill="url(#fur)" stroke="#2f6b2c" stroke-width="4"/>
+  <circle cx="414" cy="318" r="18" fill="#4fae4a" stroke="#2f6b2c" stroke-width="4"/>
+</g>
+
+<!-- head -->
+<g transform="rotate(-6 300 170)">
+  <!-- ears -->
+  <circle cx="232" cy="98" r="30" fill="url(#fur)" stroke="#2f6b2c" stroke-width="5"/>
+  <circle cx="232" cy="98" r="14" fill="#d6ecc4"/>
+  <circle cx="356" cy="92" r="30" fill="url(#fur)" stroke="#2f6b2c" stroke-width="5"/>
+  <circle cx="356" cy="92" r="14" fill="#d6ecc4"/>
+  <!-- tuft of fur blown back by speed -->
+  <path d="M272 82 C258 64 238 60 222 66 C244 72 254 84 258 96 Z" fill="#4fae4a" stroke="#2f6b2c" stroke-width="3"/>
+  <path d="M292 80 C284 58 266 50 248 52 C270 62 278 76 280 92 Z" fill="#4fae4a" stroke="#2f6b2c" stroke-width="3"/>
+  <!-- head -->
+  <ellipse cx="296" cy="168" rx="98" ry="88" fill="url(#fur)" stroke="#2f6b2c" stroke-width="5"/>
+  <!-- muzzle -->
+  <ellipse cx="324" cy="204" rx="54" ry="38" fill="url(#belly)" stroke="#2f6b2c" stroke-width="3"/>
+  <ellipse cx="344" cy="186" rx="16" ry="11" fill="#0b1523"/>
+  <ellipse cx="340" cy="182" rx="5" ry="3" fill="#ffffff" fill-opacity="0.7"/>
+  <!-- confident grin -->
+  <path d="M298 214 C312 232 346 232 362 212" fill="none" stroke="#0b1523" stroke-width="5" stroke-linecap="round"/>
+  <path d="M304 220 C318 234 340 234 354 220 C344 226 316 228 304 220 Z" fill="#ffffff"/>
+  <!-- eyes: determined, looking ahead -->
+  <ellipse cx="270" cy="150" rx="20" ry="24" fill="#ffffff" stroke="#0b1523" stroke-width="3"/>
+  <ellipse cx="326" cy="146" rx="20" ry="24" fill="#ffffff" stroke="#0b1523" stroke-width="3"/>
+  <circle cx="278" cy="154" r="10" fill="#0b1523"/>
+  <circle cx="334" cy="150" r="10" fill="#0b1523"/>
+  <circle cx="281" cy="150" r="3.5" fill="#ffffff"/>
+  <circle cx="337" cy="146" r="3.5" fill="#ffffff"/>
+  <!-- brows -->
+  <path d="M248 122 L290 132" stroke="#2f6b2c" stroke-width="7" stroke-linecap="round"/>
+  <path d="M310 128 L350 116" stroke="#2f6b2c" stroke-width="7" stroke-linecap="round"/>
+</g>
+
+<text x="260" y="500" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#8a9793" letter-spacing="2.4">GRIZZBIT · BIT FOR BIT</text>
+</svg>
