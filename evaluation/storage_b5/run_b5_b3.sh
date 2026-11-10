@@ -18,6 +18,7 @@
 #
 #   run_b5_b3.sh            the session; results in evaluation/storage_b5/results/b3-single/, b3-parallel/
 #   run_b5_b3.sh smoke      development set (B3_SET=dev), one D2 load per arm and track; results/dev/b3-smoke/
+#   run_b5_b3.sh s6r        amendment B5.S6r: the session again, start condition before every load; results/s6r/
 set -uo pipefail
 H="$(cd "$(dirname "$0")" && pwd)"
 cd "$H/../tsdb_b3" || exit 1
@@ -31,7 +32,11 @@ REL_LIB_SHA=343a8d9fd17d19c3c0ece5aab270d6ec9e7f3eb3591573cf321b49fd68aa42ff   #
 G2_LIB_SHA=e55b6d38a65282d58c81ff93ec1e880f2f5c66078c5f5459d7991941c7fbcebd    # built from 5ce0328
 MODE=${1:-session}
 export B3_READS_FRESH_PROCESS=1
-if [ "$MODE" = smoke ]; then export B3_SET=dev; OUT=$H/results/dev/b3-smoke; else OUT=$H/results; fi
+if [ "$MODE" = smoke ]; then export B3_SET=dev; OUT=$H/results/dev/b3-smoke
+elif [ "$MODE" = s6r ]; then OUT=$H/results/s6r   # amendment B5.S6r: the session again, gate before every load
+else OUT=$H/results; fi
+VP=b5; [ "$MODE" = s6r ] && VP=b5-s6r
+notrun=()
 
 [ "$(shasum -a 256 "$REL_LIB" | cut -d' ' -f1)" = "$REL_LIB_SHA" ] || { echo "REFUSED: release decoder sha256"; exit 1; }
 [ "$(shasum -a 256 "$G2_LIB" | cut -d' ' -f1)" = "$G2_LIB_SHA" ] || { echo "REFUSED: B5 decoder sha256"; exit 1; }
@@ -66,9 +71,9 @@ stop_now() { local t; t=$(date +%s)
 clean() { docker rm -f b3-questdb b3-morletdb >/dev/null 2>&1 || true; }
 # arm <g2|q|rel> sets: SYS (S track system), IMG, LIB, PRE (volume prefix), SUB (results subdirectory)
 arm() { case $1 in
-  g2) SYS=morletdb-i2; IMG=$G2; LIB=$G2_LIB; PRE=b5-g2; SUB=grizzbit2;;
-  q) SYS=questdb; IMG=$REL; LIB=$REL_LIB; PRE=b5-q; SUB=questdb;;
-  rel) SYS=morletdb-i2; IMG=$REL; LIB=$REL_LIB; PRE=b5-rel; SUB=release;; esac; }
+  g2) SYS=morletdb-i2; IMG=$G2; LIB=$G2_LIB; PRE=$VP-g2; SUB=grizzbit2;;
+  q) SYS=questdb; IMG=$REL; LIB=$REL_LIB; PRE=$VP-q; SUB=questdb;;
+  rel) SYS=morletdb-i2; IMG=$REL; LIB=$REL_LIB; PRE=$VP-rel; SUB=release;; esac; }
 # one load: run <S|P> <arm> <D> <rep> [writers]
 run() { local track=$1 a=$2 d=$3 r=$4 w=${5:-8} dir name sys tag
   arm "$a"
@@ -81,6 +86,14 @@ run() { local track=$1 a=$2 d=$3 r=$4 w=${5:-8} dir name sys tag
   local s; s=failed-$(date +%H%M%S)
   for x in json log; do [ -f "$dir/$name.$x" ] && mv "$dir/$name.$x" "$dir/$name.$s.$x"; done
   powered || { echo "STOPPED: not on AC power with the lid open before $SUB $name $(date +%H:%M:%S)"; exit 1; }
+  if [ "$MODE" = s6r ]; then   # amendment B5.S6r: the start condition before every load, up to 20 minutes
+    local until=$(( $(date +%s) + 1200 )) ok=0 t0; t0=$(date +%s)
+    [ "$until" -le "$DEADLINE" ] || until=$DEADLINE
+    while [ "$(date +%s)" -lt "$until" ]; do docker info >/dev/null 2>&1 && powered && quiet && { ok=1; break; }; sleep 5; done
+    if [ $ok != 1 ]; then echo "NOT RUN $track $SUB $name: start condition not met within 20 minutes or before 07:00 $(date +%H:%M:%S)"
+      notrun+=("$track $a $d $r $w"); return 0; fi
+    mkdir -p "$dir/machine"; echo "gate met $(date +%FT%T) after $(( $(date +%s) - t0 )) s, load $(sysctl -n vm.loadavg)" >> "$dir/machine/$name.txt"
+  fi
   echo "== $track $SUB $name $(date +%H:%M:%S)"; snap "$dir" "$name"
   if [ "$track" = S ]; then
     B3_RUN=$dir B3_MORLET_IMAGE=$IMG MORLETDB_NATIVE_LIB=$LIB B3_VOLUME_PREFIX=$PRE \
@@ -107,5 +120,6 @@ else
   for f in "${again[@]+"${again[@]}"}"; do set -- $f; echo "rerun once: $f"; run "$1" "$2" "$3" "$4" "$5"; done
   [ ${#failed[@]} = 0 ] || echo "FAILED after rerun: ${failed[*]}"
 fi
+[ ${#notrun[@]} = 0 ] || echo "NOT RUN (start condition): ${notrun[*]}"
 { date +%FT%T; uptime; docker system df; } > "$OUT/b3-single/b5_b3.end"
 echo "== B5 B3 $MODE done $(date +%H:%M:%S)"
