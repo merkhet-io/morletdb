@@ -1062,3 +1062,42 @@ B3.18 (CedarDB's terms are still to be read before any publication).
   completed round, at least two rounds; otherwise no statement. All other measures of these loads (ingestion, storage,
   R1-R4) are reported descriptively, without statements, since this stage has no D1 loads.
 - **Correctness:** every load must pass B3's full correctness check, as always; a failed load voids its round.
+
+## Amendment B3.20: CedarDB ingestion with parallel writers (FROZEN before any load of the benchmark set)
+
+Added 2026-11-10 at the owner's request. B3.18 loaded CedarDB from one client connection; its server used about 1.3
+cores, so the CedarDB tab says "parallel loading may narrow the gap (not measured)". B3.20 measures it with B3.17's
+parallel-writer track. Everything common to B3 applies, and so does B3.17 except what is stated here.
+
+- **Arms:**
+  - `morletdb-i1`: the released `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1` with B3.10's client path, as B3.17
+    (256 chunks per transaction, one connection per writer process, batched raw appends); image id recorded.
+  - CedarDB v2026-11-04, B3.18's image digest and adapter: one connection per writer process, binary COPY per
+    acquisition and group, `SET async_commit = on` for D2; rows are built by each writer after the start barrier, so
+    conversion is counted, as in B3.18.
+- **Runs:** `run_b320.sh` (`parallel.py`, CedarDB path added for B3.20), for r = 1, 2, 3 and (4 writers, D2),
+  (8 writers, D2), (8 writers, D1): MorletDB, then CedarDB, alternating. 18 loads, each on a fresh volume
+  (`b3-par-<system>-<class>-w<writers>-r<rep>`, which cannot collide with the volumes kept for the CedarDB fault),
+  with full correctness after each (counts, and every channel by SHA-256 with exact times through each adapter's
+  read query). Results in `results/b320-parallel/`. Ingestion only.
+- **Development smoke check before freezing** (development set, `results/dev/b320-smoke/`, 4 writers, D2, one load
+  each): both correct. It showed that a writer failing before the start barrier hung the run; `parallel.py` now times
+  out the barrier (15 min) and each writer's result (60 min), so such a failure becomes a failed load.
+- **A failed correctness check voids that load** and is reported. CedarDB's read-back uses the query that showed the
+  range-scan fault ([CEDARDB_RANGE_SCAN_FAULT.md](CEDARDB_RANGE_SCAN_FAULT.md)); a failed CedarDB load keeps its
+  volume as evidence. Each voided CedarDB load is replaced once, at the end of the session, by a load with rep r+3
+  after a MorletDB load of the same cell (that MorletDB load is reported, not used); a cell whose replacement also
+  fails has no statement.
+- **Machine:** B3.16's start and power conditions, enforced by the runner (1-minute load average below 3, no foreign
+  process above half a core, AC power, lid open or closed without sleep). It waits for them until 07:00 at the
+  latest and starts no load after 07:00; loads done by then are reported as such.
+- **Statements**, by B3's rule (≥ 10% in all three loads, ratio of medians and the all-loads bound), in either
+  direction, per writer count and durability class. Server CPU and peak working set are reported. Against B3.18's
+  single-connection loads (same session for neither system) the scaling is descriptive only.
+- **Expectation, written before measuring:** CedarDB's single-connection load was client-bound (Python rows, about
+  2.5 M samples/s, server 1.3 cores), so 4 and 8 writers should raise it several times, perhaps to 6–10 M samples/s;
+  MorletDB about 22 M as in B3.17. MorletDB is expected to stay faster, by perhaps 2–4×. Not a hypothesis this stage
+  must confirm.
+- **Website, decided now whatever the outcome:** the CedarDB tab gets a row "Ingestion with 8 parallel writers" with
+  B3.20's 8-writer D2 figures (D1 in brackets) and its statement, a loss shown as a loss, and its sentence "parallel
+  loading may narrow the gap (not measured)" is replaced by the result. Published only after the owner approves.
