@@ -16,6 +16,13 @@ fn path() -> PathBuf {
         .join("../../testdata/grizzbit/encoder-equivalence.bin")
 }
 
+/// A smooth, platform-independent wave in [0, 1]: a parabola per period, from integer division and
+/// products only (exactly rounded in IEEE 754, unlike `sin`, whose last bit differs between libms).
+fn smooth(i: usize, period: usize) -> f64 {
+    let p = (i % period) as f64 / period as f64;
+    4.0 * p * (1.0 - p)
+}
+
 fn lcg(seed: &mut u64) -> u64 {
     *seed = seed
         .wrapping_mul(6364136223846793005)
@@ -40,12 +47,12 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
         1usize, 2, 3, 4, 5, 7, 8, 15, 16, 17, 63, 64, 65, 255, 256, 1000, 4096,
     ];
     for &n in &lengths {
-        // Integer counts: random walk plus a sine, on quantum 1.
+        // Integer counts: random walk plus a smooth wave, on quantum 1.
         let mut d = 0i64;
         let counts: Vec<f64> = (0..n)
             .map(|i| {
                 d += (lcg(&mut s) % 21) as i64 - 10;
-                (d + ((i as f64 / 13.).sin() * 500.) as i64) as f64
+                (d + ((smooth(i, 82) - 0.5) * 1000.) as i64) as f64
             })
             .collect();
         out.push((counts.clone(), 1.0));
@@ -82,7 +89,7 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
         // Smooth floats (float kind) and white noise (raw kind).
         out.push((
             (0..n)
-                .map(|i| (i as f64 / 37.).sin() * 3.7 + 11.0)
+                .map(|i| smooth(i, 232) * 3.7 + 11.0)
                 .collect(),
             1.0,
         ));
@@ -124,7 +131,7 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
         1.0,
     ));
     out.push((
-        (0..32768).map(|i| (i as f64 / 1000.).sin() + 2.0).collect(),
+        (0..32768).map(|i| smooth(i, 6283) + 2.0).collect(),
         1.0,
     ));
     // Errors: no samples, too many, non-finite or too large samples, bad quanta.
