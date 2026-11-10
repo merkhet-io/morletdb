@@ -1,0 +1,15 @@
+[package]
+name = "codec_c1"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+morlet-core = { path = "../../crates/morlet-core" }
+pco = "=1.0.4"
+
+[profile.release]
+lto = "thin"
+
+# Own workspace: the spike and pco stay out of the main workspace's Cargo.lock.
+[workspace]
