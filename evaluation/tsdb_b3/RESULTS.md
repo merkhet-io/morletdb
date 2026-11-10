@@ -1679,23 +1679,17 @@ B3.18, 2 in M1b, 3 in B3.19); MorletDB passed all 11 of its loads in the same se
 section said 17 loads, counting both systems' B3.18 loads; corrected 2026-11-10.)
 
 **Diagnosis (2026-11-10, after the run; not part of the frozen protocol).** The runner had removed the container but
-not its volume. The volume (created 01:39:08, the start of round 3) was copied byte for byte (131 files, same
-checksums), a new password was set on the copy with CedarDB's offline shell (the run's password was never stored), and
-CedarDB was started on the copy with the same image. Read-only queries (`diag_cedar_r3*.py`, outputs in
-`results/b319-cedardb-s3/diagnosis/`) show that **the stored data is correct and one query result is not**:
+not its volume. On a byte-identical copy of it, read-only queries show that **the stored data is correct and one access
+path is not**: every query that CedarDB runs as a table scan with a range predicate on `t` returns, for this
+acquisition, a row with an off-grid time and row 1020's values in place of row 1023. Index scans over the same range,
+point lookups and a table scan without a time predicate return the correct row. The B3 read-back query runs as a table
+scan, which is why the check failed. For a given plan the wrong result is deterministic (repeats, restarts, binary
+and text format). Full description, query table and files: [CEDARDB_RANGE_SCAN_FAULT.md](CEDARDB_RANGE_SCAN_FAULT.md).
 
-- The full-range read of the acquisition (256,001 rows at 15,625 ns) returns the right number of rows, but row 1023
-  (t = …015984375) is missing and one row is present that was never written: t = 1767228120197362652, which is not on
-  the sampling grid (offset 12,631.21 periods) and whose three values match neither row 1023 nor any row compared. Sorted
-  by time, it shifts rows 1023–12631 by one; that is every mismatch the check reported. The other 255,999 rows are exact.
-- A point query on row 1023's time returns the row with the values as sent, bit for bit. A point query on the stray
-  time returns nothing. A read of the acquisition without a time range, and range reads of rows 0–2,047 and
-  1,000–1,099, are exact.
-- The wrong result is the same with and without `ORDER BY`, without the acquisition filter, in text instead of binary
-  format, after a restart and on three repeated reads. A count evaluated entirely in the server over the full range
-  finds 0 rows at row 1023's time and 1 at the stray time.
-
-The plan is a table scan with an in-memory sort. This is a correctness fault in CedarDB v2026-11-04's range scan:
-on data it stored correctly, a wide range predicate on the time column returned one corrupted row in place of a
-correct one. Where in CedarDB it arises is not known, and whether a fresh load of the same data reproduces it has not
-been tested. The original volume is kept.
+**Reproduction (2026-11-10 13:04–14:11).** 43 further fresh D2 loads of the whole dataset with the same image, adapter
+and read-back check all passed: 23 one after another (`run_b319_repro.sh`, `results/b319-repro/`), and 20 in round 3's
+sequence after a MorletDB load, 10 of them with 4 busy host threads (load average up to 13; `run_b319_repro2.sh`,
+`results/b319-repro2/`). CedarDB's record is therefore 1 failed read-back in 54 loads; the fault is not reproduced
+from a fresh load. CedarDB v2026-10-22 cannot open the data directory (its block format is newer), and CedarDB's
+files differ from run to run, so neither an older version nor a file comparison localises it. The original volume
+is kept.
