@@ -12,7 +12,7 @@
 //! coordinates, like the Morlet extractor. Windows are powers of two in 512..=32768.
 //! Stored values are IEEE binary16 (round to nearest even), decoded and z-scored again
 //! before matching. Matching is `1 - max` over lags of the biased cross-correlation.
-use crate::{rawcodec, validate, SignalError};
+use crate::{validate, SignalError};
 
 pub const ENVELOPE_VERSION: &str = "xc-envelope-f16-v1";
 const SMOOTH: usize = 50;
@@ -136,7 +136,7 @@ pub fn encode_windows(
         if start != base + samples.len() as i64 {
             return Err(SignalError::LengthMismatch);
         }
-        samples.extend(rawcodec::decode(encoded).map_err(|_| SignalError::LengthMismatch)?);
+        samples.extend(grizzbit::decode(encoded).map_err(|_| SignalError::LengthMismatch)?);
     }
     let mut out = Vec::new();
     let mut s = first;
@@ -682,10 +682,7 @@ mod tests {
         let mut chunks = vec![];
         let mut at = 0usize;
         for n in sizes {
-            chunks.push((
-                at as i64,
-                crate::rawcodec::encode(&x[at..at + n], 1.0).unwrap(),
-            ));
+            chunks.push((at as i64, grizzbit::encode(&x[at..at + n], 1.0).unwrap()));
             at += n;
         }
         let refs: Vec<(i64, &[u8])> = chunks.iter().map(|(s, e)| (*s, e.as_slice())).collect();

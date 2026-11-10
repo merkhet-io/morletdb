@@ -11,13 +11,13 @@
 //! with its own checksum, verified again when decoded. `decode_frame` writes exactly the interval's samples, or
 //! fails: a frame for another interval, a gap, an overlap or a chunk outside the interval is an error, so a
 //! frame can never yield samples that differ from a read of the same interval.
-use crate::rawcodec::{self, CodecError};
+use grizzbit::CodecError;
 use std::fmt;
 
 pub const CHUNK_MAGIC: [u8; 4] = *b"MTX1";
 pub const RAW_MAGIC: [u8; 4] = *b"MTR1";
 /// The highest chunk format version this build decodes.
-pub const MAX_CHUNK_VERSION: u8 = rawcodec::FORMAT_VERSION;
+pub const MAX_CHUNK_VERSION: u8 = grizzbit::FORMAT_VERSION;
 /// Longest interval in one frame, as for raw reads.
 pub const MAX_INTERVAL: i64 = 1 << 24;
 const HEADER: usize = 4 + 8 + 8 + 4;
@@ -73,7 +73,7 @@ fn header(magic: [u8; 4], start: i64, end: i64, n: usize, capacity: usize) -> Ve
 }
 
 fn seal(mut out: Vec<u8>) -> Vec<u8> {
-    let crc = rawcodec::crc32c(&out);
+    let crc = grizzbit::crc32c(&out);
     out.extend_from_slice(&crc.to_le_bytes());
     out
 }
@@ -144,7 +144,7 @@ pub fn decode_frame(
         return Err(FrameError::Frame("truncated"));
     }
     let (body, tail) = frame.split_at(frame.len() - CRC);
-    if rawcodec::crc32c(body).to_le_bytes() != tail {
+    if grizzbit::crc32c(body).to_le_bytes() != tail {
         return Err(FrameError::Frame("checksum mismatch"));
     }
     let mut pos = 0;
@@ -197,7 +197,7 @@ fn write_chunks(
     threads: usize,
 ) -> Result<(), FrameError> {
     let decode = |(s, c): &(i64, &[u8])| {
-        rawcodec::decode(c).map_err(|error| FrameError::Chunk {
+        grizzbit::decode(c).map_err(|error| FrameError::Chunk {
             start_sample: *s,
             error,
         })
@@ -252,7 +252,7 @@ mod tests {
         let enc = samples
             .chunks(size)
             .enumerate()
-            .map(|(k, c)| ((k * size) as i64, rawcodec::encode(c, 1.0).unwrap()))
+            .map(|(k, c)| ((k * size) as i64, grizzbit::encode(c, 1.0).unwrap()))
             .collect();
         (samples, enc)
     }
@@ -261,7 +261,7 @@ mod tests {
         let sel: Vec<(i64, &[u8])> = enc
             .iter()
             .filter(|(s, c)| {
-                let n = rawcodec::decode(c).unwrap().len() as i64;
+                let n = grizzbit::decode(c).unwrap().len() as i64;
                 *s < end && s + n > start
             })
             .map(|(s, c)| (*s, c.as_slice()))
@@ -324,7 +324,7 @@ mod tests {
             Err(FrameError::Coverage)
         );
         // overlap: a chunk restated one sample later
-        let c0 = rawcodec::encode(&[0.0; 4096], 1.0).unwrap();
+        let c0 = grizzbit::encode(&[0.0; 4096], 1.0).unwrap();
         let f = chunk_frame(&[(0, &c0), (4095, &c0)], 0, 8191).unwrap();
         let mut o = vec![0.0; 8191];
         assert_eq!(
