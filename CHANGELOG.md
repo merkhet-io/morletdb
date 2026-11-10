@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **File and server transfers verify samples, not chunk bytes (#356):** `Client.import_file` and
+  `Client.export_file` compared a hash of the chunk bytes on both sides after every 256 chunks, and to continue a
+  recording. A file whose chunks another encoder version wrote (the same samples as other bytes) would have been
+  refused with "chunks differ after the import", although no sample was lost. They now compare a hash of the
+  decoded float64 samples, every bit (hashed by the server from `morlet_read_interval_raw`), and continue a
+  recording if its samples equal the other side's first samples. The chunk bytes are still compared when both
+  sides report the same encoder version, and reported: `report=[...]` collects a `TransferCheck` per recording.
+  Tests import, verify and continue a file written with other chunk bytes, export server chunks written with
+  other bytes, and refuse a sample changed by one ulp, a changed sign of zero, and a sample changed on the way.
+
 - **Sample rates up to 100 MHz (#342):** recordings without feature extraction (`extractor 'none'`) accept rates up
   to 100 MHz instead of 200 kHz, so acoustic emission and ultrasound (1–10 MHz) can be stored, read and summarized
   losslessly. Nothing else depended on the rate. L1's rate points at 1, 2.5, 3.125, 10 and 100 MHz: every derived

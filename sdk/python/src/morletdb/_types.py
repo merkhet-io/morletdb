@@ -175,3 +175,21 @@ class Evidence:
     end_utc: datetime | None
     stats: IntervalStats | None
     overview: list[EvidencePart]
+
+
+@dataclass(frozen=True)
+class TransferCheck:
+    """How `Client.import_file` / `export_file` verified one recording (#356).
+
+    `samples_verified` samples, from 0 to the recording's end, were checked equal on both sides bit for bit,
+    as decoded float64 values: the prefix already there before the transfer and every copied batch. That is
+    the lossless guarantee, whatever encoder wrote either side's chunks. `chunk_bytes` is the additional
+    comparison of the copied chunk bytes: "identical" or "different" when `sender_encoder` and
+    `receiver_encoder` report the same version, "not compared" when they differ (an encoder may write the same
+    samples as other bytes) or when nothing was copied."""
+    recording_id: str
+    samples_copied: int
+    samples_verified: int
+    chunk_bytes: str
+    sender_encoder: str
+    receiver_encoder: str
