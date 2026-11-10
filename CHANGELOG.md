@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Docs: the chunk codec is named Grizzbit:** [docs/grizzbit.md](docs/grizzbit.md) describes it (what it does, why it
+  is lossless, where it is strong and weak in B4, lineage, versions, the planned Grizzbit 2 of #326);
+  docs/chunk-format.md is retitled "Grizzbit format specification" with its content unchanged (Grizzbit 1 = chunk format
+  versions 2 and 3); README and website name it. No format or behaviour change.
+
 - **Every append path proves at write time that a chunk decodes to its input (#366):** with
   `morlet.verify_appends` on (the default), the batch append `morlet_append_chunks_raw` decoded each encoded chunk
   again and compared it bit for bit with its input, but the single-chunk append `morlet_append_chunk` (and so

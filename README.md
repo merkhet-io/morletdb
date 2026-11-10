@@ -32,7 +32,9 @@ calibration and its acquisition metadata. MorletDB keeps that unit intact inside
 PostgreSQL, instead of scattering samples over rows or vectors.
 
 - **Lossless and compact.** Raw samples are coded bit-exactly, often several times
-  smaller than general-purpose time-series compression on the same data.
+  smaller than general-purpose time-series compression on the same data. The codec,
+  [Grizzbit](docs/grizzbit.md), stores each chunk on the value grid it detects, with no
+  precision parameter, and is weaker on floats without a grid.
 - **Search that tolerates time shifts.** Two occurrences of the same pattern rarely
   line up with a window grid. MorletDB scores similarity over a bounded range of
   shifts, exactly or through a standard vector index.
@@ -346,7 +348,8 @@ to that transform, and our evaluations have not shown a general advantage for it
 | Path | What |
 |---|---|
 | [extensions/pg_morlet](extensions/pg_morlet) | the PostgreSQL extension: storage, ingestion, interval reads, search |
-| [crates/morlet-core](crates/morlet-core) | portable Rust core: codec, envelopes, features, checkpoints |
+| [crates/grizzbit](crates/grizzbit) | [Grizzbit](docs/grizzbit.md), the lossless chunk codec ([specification](docs/chunk-format.md)) |
+| [crates/morlet-core](crates/morlet-core) | portable Rust core: envelopes, features, checkpoints; re-exports the codec |
 | [tools](tools) | Parquet import, Python client, recording viewer, independent numerical reference |
 | [examples](examples) | sleep staging, notebooks and other worked examples |
 | [evaluation](evaluation) · [benchmarks](benchmarks) | frozen evaluations and workload benchmarks |
