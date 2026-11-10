@@ -16,8 +16,8 @@ step() { printf '== %s\n' "$*"; }
 
 if touches '\.rs$|Cargo\.(toml|lock)$|rust-toolchain'; then
   step "cargo fmt"; cargo fmt --all -- --check
-  step "clippy (morlet-core, -D warnings)"; cargo clippy --locked -q -p morlet-core --all-targets -- -D warnings
-  step "morlet-core tests"; cargo test --locked -q -p morlet-core 2>&1 | grep -E "^test result|FAILED|panicked" || true
+  step "clippy (grizzbit, morlet-core, -D warnings)"; cargo clippy --locked -q -p grizzbit -p morlet-core --all-targets -- -D warnings
+  step "grizzbit and morlet-core tests"; cargo test --locked -q -p grizzbit -p morlet-core 2>&1 | grep -E "^test result|FAILED|panicked" || true
 fi
 if touches '^extensions/pg_morlet/(src|sql)/|gen_upgrade\.py$'; then
   pgc=${PG_CONFIG:-$HOME/.pgrx/17.11/pgrx-install/bin/pg_config}

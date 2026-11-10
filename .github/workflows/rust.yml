@@ -90,8 +90,8 @@ jobs:
             target
           key: core-${{ runner.os }}-rust-1.99.0-${{ hashFiles('Cargo.lock') }}
       - run: cargo fmt --all -- --check
-      - run: cargo test --locked -p morlet-core -p morlet-ffi -p morlet-sqlite
-      - run: cargo clippy --locked -p morlet-core -p morlet-ffi -p morlet-sqlite --all-targets -- -D warnings
+      - run: cargo test --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite
+      - run: cargo clippy --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite --all-targets -- -D warnings
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

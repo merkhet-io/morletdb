@@ -8,11 +8,12 @@
 //!
 //! Record layout: one status byte (0 = encoded, 1 = error), a little-endian u32 length, then the
 //! encoded bytes or the UTF-8 error message.
-use morlet_core::rawcodec::{decode, encode};
+use grizzbit::{decode, encode};
 use std::path::PathBuf;
 
 fn path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../testdata/grizzbit/encoder-equivalence.bin")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../testdata/grizzbit/encoder-equivalence.bin")
 }
 
 fn lcg(seed: &mut u64) -> u64 {
@@ -35,7 +36,9 @@ fn ulp_up(x: f64, n: u64) -> f64 {
 fn cases() -> Vec<(Vec<f64>, f64)> {
     let mut s = 0x6772_697a_7a62_6974;
     let mut out: Vec<(Vec<f64>, f64)> = Vec::new();
-    let lengths = [1usize, 2, 3, 4, 5, 7, 8, 15, 16, 17, 63, 64, 65, 255, 256, 1000, 4096];
+    let lengths = [
+        1usize, 2, 3, 4, 5, 7, 8, 15, 16, 17, 63, 64, 65, 255, 256, 1000, 4096,
+    ];
     for &n in &lengths {
         // Integer counts: random walk plus a sine, on quantum 1.
         let mut d = 0i64;
@@ -49,7 +52,10 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
         // The same counts scaled by a calibrated, a dyadic and a decimal step.
         let cal = 100.0 / 32768.0 * (1.0 - 7e-10);
         out.push((counts.iter().map(|k| k * cal).collect(), 100.0 / 32768.0));
-        out.push((counts.iter().map(|k| k * (1.0 / 1024.0)).collect(), 1.0 / 1024.0));
+        out.push((
+            counts.iter().map(|k| k * (1.0 / 1024.0)).collect(),
+            1.0 / 1024.0,
+        ));
         out.push((
             counts
                 .iter()
@@ -75,7 +81,9 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
         out.push((counts.iter().map(|k| 0.0004 + k / 1000.).collect(), 0.001));
         // Smooth floats (float kind) and white noise (raw kind).
         out.push((
-            (0..n).map(|i| (i as f64 / 37.).sin() * 3.7 + 11.0).collect(),
+            (0..n)
+                .map(|i| (i as f64 / 37.).sin() * 3.7 + 11.0)
+                .collect(),
             1.0,
         ));
         out.push(((0..n).map(|_| (unit(&mut s) - 0.5) * 2e9).collect(), 1.0));
@@ -110,7 +118,9 @@ fn cases() -> Vec<(Vec<f64>, f64)> {
     out.push((vec![0.5, 1.5, 2.5], 1e300));
     // Maximum length, grid and float.
     out.push((
-        (0..32768).map(|i| ((i * 37) % 1001) as f64 - 500.0).collect(),
+        (0..32768)
+            .map(|i| ((i * 37) % 1001) as f64 - 500.0)
+            .collect(),
         1.0,
     ));
     out.push((
