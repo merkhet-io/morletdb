@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Every append path proves at write time that a chunk decodes to its input (#366):** with
+  `morlet.verify_appends` on (the default), the batch append `morlet_append_chunks_raw` decoded each encoded chunk
+  again and compared it bit for bit with its input, but the single-chunk append `morlet_append_chunk` (and so
+  `morlet_append_chunk_raw`, `morlet_append_chunks`, and the batch append's chunk-by-chunk fallback for retries,
+  overlaps and float8[] collections) stored `morlet_encode_chunk`'s output unchecked. `morlet_encode_chunk` now
+  runs the same check, from one function shared with the batch path, so no SQL function changes. The codec was
+  and is lossless by design and every chunk keeps its CRC-32C; this closes the gap in the write-time proof.
+  Tests: the single-chunk path stores the same bytes with the check on and off, and refuses (single and batch)
+  a code that does not decode to its input, which with the check off is stored, so the check is what refuses it.
+
 - **File and server transfers verify samples, not chunk bytes (#356):** `Client.import_file` and
   `Client.export_file` compared a hash of the chunk bytes on both sides after every 256 chunks, and to continue a
   recording. A file whose chunks another encoder version wrote (the same samples as other bytes) would have been
