@@ -1,0 +1,453 @@
+{
+ "k": 3,
+ "rows": [
+  {
+   "case": 9,
+   "run": 1,
+   "vb": 0.0,
+   "time_in_use_min": 1.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.12 (rank 0.33); largest: peak -13% (rank 0.00), std -12% (rank 0.00), rms -11% (rank 0.00)\n- spindle motor current, AC: overall deviation 0.14 (rank 0.33); largest: peak -23% (rank 0.00), 75th percentile -14% (rank 0.00), std -14% (rank 0.00)\n- vibration at the table: overall deviation 0.27 (rank 0.33); largest: peak +29% (rank 1.00), 75th percentile +28% (rank 1.00), mean +28% (rank 1.00)\n- vibration at the spindle: overall deviation 0.84 (rank 1.00); largest: std -84% (rank 0.00), peak -56% (rank 0.00), 75th percentile -46% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.39 (rank 1.00); largest: std -39% (rank 0.00), peak -30% (rank 0.00), crest factor -23% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.16 (rank 0.33); largest: std -16% (rank 0.00), crest factor -13% (rank 0.33), kurtosis -9% (rank 0.33)"
+  },
+  {
+   "case": 9,
+   "run": 2,
+   "vb": 0.1,
+   "time_in_use_min": 3.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.13 (rank 0.33); largest: std -13% (rank 0.00), 75th percentile -12% (rank 0.00), rms -12% (rank 0.00)\n- spindle motor current, AC: overall deviation 0.14 (rank 0.33); largest: peak -20% (rank 0.00), std -14% (rank 0.00), rms -14% (rank 0.00)\n- vibration at the table: overall deviation 0.04 (rank 0.00); largest: peak -4% (rank 0.33), kurtosis +4% (rank 0.67), std -2% (rank 0.33)\n- vibration at the spindle: overall deviation 0.84 (rank 1.00); largest: std -84% (rank 0.00), kurtosis +59% (rank 1.00), peak -54% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.34 (rank 1.00); largest: std -34% (rank 0.00), peak -28% (rank 0.00), crest factor -24% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.20 (rank 0.33); largest: kurtosis -20% (rank 0.00), std -16% (rank 0.00), crest factor -14% (rank 0.33)"
+  },
+  {
+   "case": 9,
+   "run": 3,
+   "vb": 0.14,
+   "time_in_use_min": 9.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.16 (rank 0.33); largest: std +16% (rank 0.67), 75th percentile +12% (rank 0.67), rms +11% (rank 0.67)\n- spindle motor current, AC: overall deviation 0.14 (rank 0.33); largest: crest factor -14% (rank 0.00), 75th percentile +12% (rank 0.67), std +8% (rank 0.67)\n- vibration at the table: overall deviation 0.08 (rank 0.00); largest: kurtosis +8% (rank 0.67), peak +8% (rank 0.67), crest factor +8% (rank 1.00)\n- vibration at the spindle: overall deviation 0.80 (rank 1.00); largest: std -80% (rank 0.00), kurtosis +62% (rank 1.00), peak -47% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.18 (rank 0.33); largest: std -18% (rank 0.00), crest factor -17% (rank 0.00), peak -17% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.20 (rank 0.33); largest: std +20% (rank 1.00), peak +16% (rank 0.67), 75th percentile +14% (rank 1.00)"
+  },
+  {
+   "case": 9,
+   "run": 4,
+   "vb": 0.19,
+   "time_in_use_min": 16.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.32 (rank 1.00); largest: std +32% (rank 1.00), 75th percentile +28% (rank 1.00), rms +27% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.23 (rank 0.67); largest: 75th percentile +29% (rank 0.67), std +23% (rank 0.67), rms +23% (rank 0.67)\n- vibration at the table: overall deviation 0.07 (rank 0.00); largest: peak +13% (rank 1.00), mean +10% (rank 0.67), rms +9% (rank 0.67)\n- vibration at the spindle: overall deviation 0.87 (rank 1.00); largest: std -87% (rank 0.00), kurtosis +77% (rank 1.00), peak -53% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.27 (rank 1.00); largest: crest factor -27% (rank 0.00), peak -22% (rank 0.00), mean +8% (rank 0.67)\n- acoustic emission at the spindle: overall deviation 0.28 (rank 1.00); largest: std +28% (rank 1.00), peak +24% (rank 1.00), 75th percentile +23% (rank 1.00)"
+  },
+  {
+   "case": 9,
+   "run": 5,
+   "vb": 0.27,
+   "time_in_use_min": 22.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.36 (rank 1.00); largest: std +36% (rank 1.00), rms +33% (rank 1.00), mean +33% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.38 (rank 1.00); largest: 75th percentile +48% (rank 1.00), std +38% (rank 1.00), rms +37% (rank 1.00)\n- vibration at the table: overall deviation 0.36 (rank 0.33); largest: std -36% (rank 0.33), 75th percentile -31% (rank 0.33), rms -30% (rank 0.33)\n- vibration at the spindle: overall deviation 191.72 (rank 1.00); largest: kurtosis +19172% (rank 1.00), crest factor +125% (rank 1.00), std -83% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.19 (rank 0.67); largest: 75th percentile +24% (rank 1.00), mean +24% (rank 1.00), rms +24% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.29 (rank 1.00); largest: 75th percentile +33% (rank 1.00), mean +33% (rank 1.00), rms +32% (rank 1.00)"
+  },
+  {
+   "case": 9,
+   "run": 6,
+   "vb": 0.38,
+   "time_in_use_min": 28.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.35 (rank 1.00); largest: mean +35% (rank 1.00), rms +35% (rank 1.00), std +35% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.48 (rank 1.00); largest: 75th percentile +56% (rank 1.00), std +48% (rank 1.00), rms +48% (rank 1.00)\n- vibration at the table: overall deviation 0.49 (rank 1.00); largest: std -49% (rank 0.00), 75th percentile -44% (rank 0.00), rms -43% (rank 0.00)\n- vibration at the spindle: overall deviation 414.33 (rank 1.00); largest: kurtosis +41434% (rank 1.00), crest factor +323% (rank 1.00), peak +123% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.30 (rank 1.00); largest: 75th percentile +37% (rank 1.00), mean +36% (rank 1.00), rms +36% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.46 (rank 1.00); largest: std +46% (rank 1.00), 75th percentile +42% (rank 1.00), mean +40% (rank 1.00)"
+  },
+  {
+   "case": 9,
+   "run": 7,
+   "vb": 0.47,
+   "time_in_use_min": 34.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.30 (rank 1.00); largest: mean +38% (rank 1.00), rms +37% (rank 1.00), 75th percentile +33% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.63 (rank 1.00); largest: 75th percentile +79% (rank 1.00), std +63% (rank 1.00), rms +63% (rank 1.00)\n- vibration at the table: overall deviation 0.56 (rank 1.00); largest: std -56% (rank 0.00), 75th percentile -49% (rank 0.00), rms -47% (rank 0.00)\n- vibration at the spindle: overall deviation 468.58 (rank 1.00); largest: kurtosis +46858% (rank 1.00), crest factor +224% (rank 1.00), std -81% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.46 (rank 1.00); largest: 75th percentile +51% (rank 1.00), rms +49% (rank 1.00), mean +49% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.60 (rank 1.00); largest: std +60% (rank 1.00), 75th percentile +52% (rank 1.00), mean +48% (rank 1.00)"
+  },
+  {
+   "case": 9,
+   "run": 8,
+   "vb": 0.64,
+   "time_in_use_min": 40.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.32 (rank 1.00); largest: mean +40% (rank 1.00), rms +38% (rank 1.00), 75th percentile +33% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.76 (rank 1.00); largest: 75th percentile +93% (rank 1.00), std +76% (rank 1.00), rms +75% (rank 1.00)\n- vibration at the table: overall deviation 0.59 (rank 1.00); largest: std -59% (rank 0.00), 75th percentile -51% (rank 0.00), peak -51% (rank 0.00)\n- vibration at the spindle: overall deviation 316.17 (rank 1.00); largest: kurtosis +31617% (rank 1.00), crest factor +232% (rank 1.00), std -76% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.67 (rank 1.00); largest: std +67% (rank 1.00), 75th percentile +66% (rank 1.00), rms +63% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.50 (rank 1.00); largest: std +50% (rank 1.00), peak +48% (rank 1.00), 75th percentile +47% (rank 1.00)"
+  },
+  {
+   "case": 9,
+   "run": 9,
+   "vb": 0.81,
+   "time_in_use_min": 46.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.5 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.41 (rank 1.00); largest: mean +42% (rank 1.00), kurtosis +41% (rank 1.00), rms +39% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.88 (rank 1.00); largest: 75th percentile +103% (rank 1.00), std +88% (rank 1.00), rms +87% (rank 1.00)\n- vibration at the table: overall deviation 0.63 (rank 1.00); largest: std -63% (rank 0.00), 75th percentile -55% (rank 0.00), rms -54% (rank 0.00)\n- vibration at the spindle: overall deviation 320.40 (rank 1.00); largest: kurtosis +32040% (rank 1.00), crest factor +242% (rank 1.00), std -74% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.95 (rank 1.00); largest: std +95% (rank 1.00), 75th percentile +84% (rank 1.00), rms +81% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 1.08 (rank 1.00); largest: std +108% (rank 1.00), 75th percentile +77% (rank 1.00), rms +73% (rank 1.00)"
+  },
+  {
+   "case": 10,
+   "run": 1,
+   "vb": 0.0,
+   "time_in_use_min": 0.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.24 (rank 1.00); largest: kurtosis -24% (rank 0.00), mean -13% (rank 0.33), rms -12% (rank 0.33)\n- spindle motor current, AC: overall deviation 0.12 (rank 0.67); largest: 75th percentile -15% (rank 0.33), std -12% (rank 0.33), rms -11% (rank 0.33)\n- vibration at the table: overall deviation 0.45 (rank 1.00); largest: kurtosis +45% (rank 1.00), 75th percentile -21% (rank 0.33), rms -19% (rank 0.33)\n- vibration at the spindle: overall deviation 0.39 (rank 1.00); largest: kurtosis -39% (rank 0.00), std +11% (rank 1.00), 75th percentile +4% (rank 0.83)\n- acoustic emission at the table: overall deviation 0.39 (rank 0.67); largest: peak -41% (rank 0.00), std -39% (rank 0.00), crest factor -28% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.57 (rank 1.00); largest: std -57% (rank 0.00), peak -46% (rank 0.00), crest factor -33% (rank 0.00)"
+  },
+  {
+   "case": 10,
+   "run": 2,
+   "vb": 0.04,
+   "time_in_use_min": 4.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.08 (rank 0.33); largest: mean -9% (rank 0.33), rms -9% (rank 0.33), 75th percentile -9% (rank 0.33)\n- spindle motor current, AC: overall deviation 0.09 (rank 0.67); largest: peak -10% (rank 0.33), 75th percentile -10% (rank 0.33), std -9% (rank 0.33)\n- vibration at the table: overall deviation 0.35 (rank 0.67); largest: kurtosis +35% (rank 1.00), 75th percentile -30% (rank 0.00), rms -29% (rank 0.00)\n- vibration at the spindle: overall deviation 16.43 (rank 1.00); largest: kurtosis +1643% (rank 1.00), peak +138% (rank 1.00), std +133% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.33 (rank 0.33); largest: std -33% (rank 0.00), peak -25% (rank 0.00), crest factor -12% (rank 0.33)\n- acoustic emission at the spindle: overall deviation 0.43 (rank 1.00); largest: std -43% (rank 0.00), peak -35% (rank 0.00), crest factor -26% (rank 0.00)"
+  },
+  {
+   "case": 10,
+   "run": 3,
+   "vb": 0.08,
+   "time_in_use_min": 9.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.04 (rank 0.00); largest: peak +4% (rank 1.00), kurtosis +4% (rank 0.67), std +3% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.05 (rank 0.00); largest: 75th percentile +6% (rank 1.00), kurtosis -5% (rank 0.00), peak +3% (rank 1.00)\n- vibration at the table: overall deviation 0.63 (rank 1.00); largest: kurtosis +63% (rank 1.00), 75th percentile -35% (rank 0.00), rms -33% (rank 0.00)\n- vibration at the spindle: overall deviation 0.41 (rank 1.00); largest: kurtosis -41% (rank 0.00), peak -10% (rank 0.00), crest factor -9% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.23 (rank 0.33); largest: peak -30% (rank 0.00), std -23% (rank 0.00), crest factor -23% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.38 (rank 0.67); largest: std -38% (rank 0.00), peak -33% (rank 0.00), crest factor -28% (rank 0.00)"
+  },
+  {
+   "case": 10,
+   "run": 4,
+   "vb": 0.16,
+   "time_in_use_min": 15.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.16 (rank 1.00); largest: std +16% (rank 1.00), peak +14% (rank 1.00), rms +14% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.14 (rank 0.67); largest: 75th percentile +21% (rank 1.00), std +14% (rank 1.00), rms +13% (rank 1.00)\n- vibration at the table: overall deviation 0.96 (rank 1.00); largest: kurtosis +96% (rank 1.00), 75th percentile -37% (rank 0.00), rms -32% (rank 0.00)\n- vibration at the spindle: overall deviation 0.28 (rank 1.00); largest: kurtosis -28% (rank 0.00), std +11% (rank 1.00), 75th percentile +4% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.24 (rank 0.33); largest: crest factor -24% (rank 0.00), peak -20% (rank 0.33), mean +10% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.39 (rank 0.67); largest: std -39% (rank 0.00), peak -36% (rank 0.00), crest factor -34% (rank 0.00)"
+  },
+  {
+   "case": 10,
+   "run": 5,
+   "vb": 0.25,
+   "time_in_use_min": 21.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.41 (rank 1.00); largest: std +41% (rank 1.00), peak +28% (rank 1.00), 75th percentile +27% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.26 (rank 1.00); largest: 75th percentile +35% (rank 1.00), std +26% (rank 1.00), rms +26% (rank 1.00)\n- vibration at the table: overall deviation 0.91 (rank 1.00); largest: kurtosis +91% (rank 1.00), 75th percentile -46% (rank 0.00), peak -42% (rank 0.00)\n- vibration at the spindle: overall deviation 38.58 (rank 1.00); largest: kurtosis +3858% (rank 1.00), crest factor +128% (rank 1.00), peak +127% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.22 (rank 0.33); largest: std +22% (rank 1.00), rms +21% (rank 1.00), 75th percentile +21% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.31 (rank 0.33); largest: std -31% (rank 0.00), crest factor -25% (rank 0.00), peak -24% (rank 0.00)"
+  },
+  {
+   "case": 10,
+   "run": 6,
+   "vb": 0.36,
+   "time_in_use_min": 27.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.53 (rank 1.00); largest: std +53% (rank 1.00), peak +39% (rank 1.00), 75th percentile +38% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.37 (rank 1.00); largest: 75th percentile +47% (rank 1.00), std +37% (rank 1.00), rms +37% (rank 1.00)\n- vibration at the table: overall deviation 0.72 (rank 1.00); largest: kurtosis +72% (rank 1.00), 75th percentile -47% (rank 0.00), rms -44% (rank 0.00)\n- vibration at the spindle: overall deviation 95.60 (rank 1.00); largest: kurtosis +9560% (rank 1.00), crest factor +269% (rank 1.00), peak +263% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.43 (rank 0.67); largest: std +43% (rank 1.00), rms +36% (rank 1.00), 75th percentile +35% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.27 (rank 0.00); largest: crest factor -27% (rank 0.00), kurtosis +22% (rank 0.67), rms +21% (rank 1.00)"
+  },
+  {
+   "case": 10,
+   "run": 7,
+   "vb": 0.43,
+   "time_in_use_min": 33.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.65 (rank 1.00); largest: std +65% (rank 1.00), rms +52% (rank 1.00), 75th percentile +51% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.52 (rank 1.00); largest: 75th percentile +66% (rank 1.00), std +52% (rank 1.00), rms +51% (rank 1.00)\n- vibration at the table: overall deviation 1.03 (rank 1.00); largest: kurtosis +103% (rank 1.00), 75th percentile -59% (rank 0.00), rms -55% (rank 0.00)\n- vibration at the spindle: overall deviation 50.29 (rank 1.00); largest: kurtosis +5029% (rank 1.00), crest factor +169% (rank 1.00), peak +161% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.57 (rank 1.00); largest: std +57% (rank 1.00), rms +45% (rank 1.00), 75th percentile +45% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.33 (rank 0.33); largest: kurtosis +33% (rank 1.00), crest factor -33% (rank 0.00), mean +18% (rank 0.67)"
+  },
+  {
+   "case": 10,
+   "run": 8,
+   "vb": 0.47,
+   "time_in_use_min": 39.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.74 (rank 1.00); largest: std +74% (rank 1.00), rms +57% (rank 1.00), mean +55% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.64 (rank 1.00); largest: 75th percentile +77% (rank 1.00), std +64% (rank 1.00), rms +63% (rank 1.00)\n- vibration at the table: overall deviation 1.05 (rank 1.00); largest: kurtosis +105% (rank 1.00), 75th percentile -51% (rank 0.00), peak -47% (rank 0.00)\n- vibration at the spindle: overall deviation 50.66 (rank 1.00); largest: kurtosis +5066% (rank 1.00), crest factor +170% (rank 1.00), peak +160% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.87 (rank 1.00); largest: std +87% (rank 1.00), 75th percentile +57% (rank 1.00), rms +56% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.43 (rank 1.00); largest: rms +43% (rank 1.00), std +43% (rank 1.00), mean +41% (rank 1.00)"
+  },
+  {
+   "case": 10,
+   "run": 9,
+   "vb": 0.53,
+   "time_in_use_min": 45.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.69 (rank 1.00); largest: std +69% (rank 1.00), rms +58% (rank 1.00), mean +57% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.74 (rank 1.00); largest: 75th percentile +94% (rank 1.00), std +74% (rank 1.00), rms +73% (rank 1.00)\n- vibration at the table: overall deviation 1.07 (rank 1.00); largest: kurtosis +107% (rank 1.00), 75th percentile -64% (rank 0.00), std -63% (rank 0.00)\n- vibration at the spindle: overall deviation 98.24 (rank 1.00); largest: kurtosis +9824% (rank 1.00), crest factor +266% (rank 1.00), peak +251% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.09 (rank 1.00); largest: std +109% (rank 1.00), 75th percentile +74% (rank 1.00), rms +73% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.76 (rank 1.00); largest: kurtosis +76% (rank 1.00), peak +66% (rank 1.00), std +62% (rank 1.00)"
+  },
+  {
+   "case": 10,
+   "run": 10,
+   "vb": 0.7,
+   "time_in_use_min": 57.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 1.5 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.22 (rank 1.00); largest: std +122% (rank 1.00), 75th percentile +55% (rank 1.00), kurtosis -51% (rank 0.00)\n- spindle motor current, AC: overall deviation 0.69 (rank 1.00); largest: std +69% (rank 1.00), rms +68% (rank 1.00), peak +63% (rank 1.00)\n- vibration at the table: overall deviation 0.55 (rank 1.00); largest: 75th percentile -66% (rank 0.00), mean -66% (rank 0.00), rms -66% (rank 0.00)\n- vibration at the spindle: overall deviation 138.58 (rank 1.00); largest: kurtosis +13858% (rank 1.00), peak +374% (rank 1.00), crest factor +366% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.69 (rank 1.00); largest: std +169% (rank 1.00), 75th percentile +79% (rank 1.00), rms +70% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 2.36 (rank 1.00); largest: std +236% (rank 1.00), peak +139% (rank 1.00), rms +89% (rank 1.00)"
+  },
+  {
+   "case": 11,
+   "run": 1,
+   "vb": 0.0,
+   "time_in_use_min": 1.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.25 (rank 0.33); largest: kurtosis -25% (rank 0.00), mean -13% (rank 0.00), rms -12% (rank 0.00)\n- spindle motor current, AC: overall deviation 0.13 (rank 0.33); largest: 75th percentile -18% (rank 0.00), peak -13% (rank 0.00), std -13% (rank 0.00)\n- vibration at the table: overall deviation 0.19 (rank 0.00); largest: std +19% (rank 0.67), crest factor -9% (rank 0.17), 75th percentile +8% (rank 0.83)\n- vibration at the spindle: overall deviation 0.12 (rank 0.00); largest: kurtosis -12% (rank 0.00), std +8% (rank 0.83), peak +2% (rank 0.83)\n- acoustic emission at the table: overall deviation 0.27 (rank 1.00); largest: std -27% (rank 0.00), peak -18% (rank 0.00), kurtosis -15% (rank 0.17)\n- acoustic emission at the spindle: overall deviation 0.32 (rank 0.83); largest: std -32% (rank 0.00), peak -16% (rank 0.00), 75th percentile -13% (rank 0.17)"
+  },
+  {
+   "case": 11,
+   "run": 2,
+   "vb": 0.04,
+   "time_in_use_min": 3.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.20 (rank 0.33); largest: kurtosis -20% (rank 0.17), rms -12% (rank 0.00), mean -12% (rank 0.00)\n- spindle motor current, AC: overall deviation 0.12 (rank 0.33); largest: peak -17% (rank 0.00), 75th percentile -17% (rank 0.00), std -12% (rank 0.00)\n- vibration at the table: overall deviation 0.08 (rank 0.00); largest: peak -12% (rank 0.00), crest factor -8% (rank 0.17), kurtosis +8% (rank 0.50)\n- vibration at the spindle: overall deviation 0.07 (rank 0.00); largest: kurtosis -7% (rank 0.50), std -4% (rank 0.50), crest factor -3% (rank 0.17)\n- acoustic emission at the table: overall deviation 0.30 (rank 1.00); largest: std -30% (rank 0.00), peak -23% (rank 0.00), crest factor -18% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.19 (rank 0.50); largest: kurtosis +19% (rank 0.83), crest factor +18% (rank 0.67), peak +12% (rank 0.67)"
+  },
+  {
+   "case": 11,
+   "run": 3,
+   "vb": 0.07,
+   "time_in_use_min": 10.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.16 (rank 0.17); largest: kurtosis -16% (rank 0.17), rms -7% (rank 0.33), mean -6% (rank 0.33)\n- spindle motor current, AC: overall deviation 0.07 (rank 0.00); largest: peak -11% (rank 0.17), 75th percentile -10% (rank 0.17), std -7% (rank 0.33)\n- vibration at the table: overall deviation 0.18 (rank 0.00); largest: kurtosis +18% (rank 0.67), peak -9% (rank 0.33), crest factor -8% (rank 0.17)\n- vibration at the spindle: overall deviation 0.10 (rank 0.00); largest: std -10% (rank 0.33), peak -6% (rank 0.00), 75th percentile -4% (rank 0.33)\n- acoustic emission at the table: overall deviation 0.24 (rank 1.00); largest: std -24% (rank 0.00), peak -22% (rank 0.00), 75th percentile -13% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.20 (rank 0.50); largest: peak -21% (rank 0.00), std -20% (rank 0.00), 75th percentile -13% (rank 0.17)"
+  },
+  {
+   "case": 11,
+   "run": 4,
+   "vb": 0.07,
+   "time_in_use_min": 12.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.12 (rank 0.17); largest: std +12% (rank 0.83), kurtosis -11% (rank 0.33), peak +2% (rank 0.50)\n- spindle motor current, AC: overall deviation 0.02 (rank 0.00); largest: mean -5% (rank 0.17), 75th percentile +4% (rank 0.50), rms +2% (rank 0.50)\n- vibration at the table: overall deviation 0.56 (rank 0.83); largest: kurtosis +56% (rank 1.00), peak -21% (rank 0.00), crest factor -16% (rank 0.00)\n- vibration at the spindle: overall deviation 0.16 (rank 0.33); largest: std -16% (rank 0.00), peak -7% (rank 0.00), 75th percentile -4% (rank 0.33)\n- acoustic emission at the table: overall deviation 0.27 (rank 1.00); largest: std -27% (rank 0.00), peak -24% (rank 0.00), crest factor -15% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.04 (rank 0.00); largest: 75th percentile -6% (rank 0.33), rms -5% (rank 0.33), peak -5% (rank 0.33)"
+  },
+  {
+   "case": 11,
+   "run": 5,
+   "vb": 0.08,
+   "time_in_use_min": 14.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.10 (rank 0.00); largest: std +10% (rank 0.67), kurtosis -10% (rank 0.33), peak +3% (rank 0.58)\n- spindle motor current, AC: overall deviation 0.05 (rank 0.00); largest: peak -6% (rank 0.33), crest factor -5% (rank 0.00), mean -5% (rank 0.17)\n- vibration at the table: overall deviation 0.59 (rank 0.83); largest: kurtosis +59% (rank 1.00), mean +45% (rank 1.00), rms +39% (rank 0.83)\n- vibration at the spindle: overall deviation 0.12 (rank 0.00); largest: kurtosis +12% (rank 0.67), mean +3% (rank 0.50), rms +3% (rank 0.50)\n- acoustic emission at the table: overall deviation 0.28 (rank 1.00); largest: std -28% (rank 0.00), peak -27% (rank 0.00), crest factor -17% (rank 0.00)\n- acoustic emission at the spindle: overall deviation 0.67 (rank 1.00); largest: std +67% (rank 1.00), peak +42% (rank 0.83), crest factor +22% (rank 0.67)"
+  },
+  {
+   "case": 11,
+   "run": 6,
+   "vb": 0.09,
+   "time_in_use_min": 17.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.27 (rank 0.50); largest: std +27% (rank 1.00), kurtosis -21% (rank 0.17), 75th percentile +9% (rank 0.67)\n- spindle motor current, AC: overall deviation 0.08 (rank 0.00); largest: 75th percentile +9% (rank 0.50), std +8% (rank 0.67), rms +7% (rank 0.67)\n- vibration at the table: overall deviation 0.42 (rank 0.67); largest: kurtosis +42% (rank 1.00), std +24% (rank 0.67), mean +23% (rank 0.83)\n- vibration at the spindle: overall deviation 0.18 (rank 0.50); largest: std -18% (rank 0.00), peak -8% (rank 0.00), kurtosis -6% (rank 0.50)\n- acoustic emission at the table: overall deviation 0.20 (rank 0.67); largest: peak -22% (rank 0.00), std -20% (rank 0.00), kurtosis -16% (rank 0.17)\n- acoustic emission at the spindle: overall deviation 0.54 (rank 1.00); largest: std +54% (rank 1.00), peak +32% (rank 0.83), crest factor +19% (rank 0.67)"
+  },
+  {
+   "case": 11,
+   "run": 8,
+   "vb": 0.12,
+   "time_in_use_min": 21.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.39 (rank 0.67); largest: std +39% (rank 1.00), peak +22% (rank 1.00), 75th percentile +21% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.20 (rank 1.00); largest: 75th percentile +25% (rank 1.00), std +20% (rank 1.00), rms +19% (rank 1.00)\n- vibration at the table: overall deviation 1.11 (rank 1.00); largest: kurtosis +111% (rank 1.00), std -29% (rank 0.00), 75th percentile -24% (rank 0.17)\n- vibration at the spindle: overall deviation 24.71 (rank 1.00); largest: kurtosis +2471% (rank 1.00), crest factor +96% (rank 1.00), peak +92% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.16 (rank 0.50); largest: crest factor -16% (rank 0.00), peak -16% (rank 0.00), kurtosis -8% (rank 0.17)\n- acoustic emission at the spindle: overall deviation 0.22 (rank 0.67); largest: kurtosis +22% (rank 0.83), mean +6% (rank 0.67), rms +6% (rank 0.67)"
+  },
+  {
+   "case": 11,
+   "run": 9,
+   "vb": 0.16,
+   "time_in_use_min": 27.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.23 (rank 0.33); largest: std +23% (rank 1.00), mean +14% (rank 1.00), rms +14% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.14 (rank 0.67); largest: 75th percentile +22% (rank 1.00), std +14% (rank 1.00), rms +14% (rank 1.00)\n- vibration at the table: overall deviation 1.30 (rank 1.00); largest: kurtosis +130% (rank 1.00), std -25% (rank 0.00), peak -23% (rank 0.00)\n- vibration at the spindle: overall deviation 105.76 (rank 1.00); largest: kurtosis +10576% (rank 1.00), peak +185% (rank 1.00), crest factor +177% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.14 (rank 0.33); largest: peak -16% (rank 0.00), crest factor -14% (rank 0.00), std -12% (rank 0.17)\n- acoustic emission at the spindle: overall deviation 0.28 (rank 0.67); largest: kurtosis +28% (rank 0.83), std -19% (rank 0.00), peak -13% (rank 0.17)"
+  },
+  {
+   "case": 11,
+   "run": 10,
+   "vb": 0.18,
+   "time_in_use_min": 33.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.31 (rank 0.67); largest: std +31% (rank 1.00), rms +19% (rank 1.00), mean +19% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.19 (rank 1.00); largest: 75th percentile +28% (rank 1.00), std +19% (rank 1.00), rms +19% (rank 1.00)\n- vibration at the table: overall deviation 1.37 (rank 1.00); largest: kurtosis +137% (rank 1.00), std -29% (rank 0.00), peak -27% (rank 0.00)\n- vibration at the spindle: overall deviation 149.82 (rank 1.00); largest: kurtosis +14982% (rank 1.00), crest factor +197% (rank 1.00), peak +177% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.15 (rank 0.33); largest: crest factor -15% (rank 0.00), peak -15% (rank 0.00), kurtosis -6% (rank 0.33)\n- acoustic emission at the spindle: overall deviation 0.36 (rank 0.83); largest: kurtosis +36% (rank 0.83), std -26% (rank 0.00), peak -19% (rank 0.00)"
+  },
+  {
+   "case": 11,
+   "run": 11,
+   "vb": 0.2,
+   "time_in_use_min": 39.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.25 (rank 0.33); largest: kurtosis +25% (rank 0.67), mean +21% (rank 1.00), std +21% (rank 0.83)\n- spindle motor current, AC: overall deviation 0.21 (rank 1.00); largest: 75th percentile +32% (rank 1.00), std +21% (rank 1.00), rms +20% (rank 1.00)\n- vibration at the table: overall deviation 0.88 (rank 1.00); largest: kurtosis +88% (rank 1.00), std -30% (rank 0.00), peak -26% (rank 0.00)\n- vibration at the spindle: overall deviation 115.63 (rank 1.00); largest: kurtosis +11563% (rank 1.00), crest factor +315% (rank 1.00), peak +300% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.13 (rank 0.33); largest: crest factor -13% (rank 0.00), peak -7% (rank 0.33), mean +6% (rank 0.83)\n- acoustic emission at the spindle: overall deviation 0.48 (rank 0.83); largest: kurtosis +48% (rank 1.00), peak +26% (rank 0.67), std +20% (rank 0.67)"
+  },
+  {
+   "case": 11,
+   "run": 12,
+   "vb": 0.23,
+   "time_in_use_min": 45.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.42 (rank 0.67); largest: std +42% (rank 1.00), 75th percentile +22% (rank 1.00), rms +22% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.22 (rank 1.00); largest: 75th percentile +31% (rank 1.00), std +22% (rank 1.00), rms +21% (rank 1.00)\n- vibration at the table: overall deviation 0.64 (rank 0.83); largest: kurtosis +64% (rank 1.00), mean +17% (rank 0.67), rms +12% (rank 0.67)\n- vibration at the spindle: overall deviation 59.27 (rank 1.00); largest: kurtosis +5927% (rank 1.00), peak +497% (rank 1.00), crest factor +469% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.15 (rank 0.33); largest: std +15% (rank 0.67), crest factor -13% (rank 0.00), rms +8% (rank 0.83)\n- acoustic emission at the spindle: overall deviation 0.19 (rank 0.50); largest: kurtosis +19% (rank 0.83), std +17% (rank 0.67), mean +10% (rank 0.83)"
+  },
+  {
+   "case": 11,
+   "run": 13,
+   "vb": 0.26,
+   "time_in_use_min": 51.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.50 (rank 0.67); largest: std +50% (rank 1.00), mean +39% (rank 1.00), rms +39% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.38 (rank 1.00); largest: 75th percentile +54% (rank 1.00), std +38% (rank 1.00), rms +38% (rank 1.00)\n- vibration at the table: overall deviation 0.97 (rank 1.00); largest: kurtosis +97% (rank 1.00), std -47% (rank 0.00), 75th percentile -39% (rank 0.00)\n- vibration at the spindle: overall deviation 100.71 (rank 1.00); largest: kurtosis +10071% (rank 1.00), crest factor +289% (rank 1.00), peak +271% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.22 (rank 0.83); largest: std +22% (rank 1.00), crest factor -11% (rank 0.00), kurtosis +9% (rank 0.67)\n- acoustic emission at the spindle: overall deviation 0.64 (rank 1.00); largest: kurtosis +64% (rank 1.00), peak +27% (rank 0.67), std +18% (rank 0.67)"
+  },
+  {
+   "case": 11,
+   "run": 15,
+   "vb": 0.31,
+   "time_in_use_min": 57.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.55 (rank 0.67); largest: std +55% (rank 1.00), peak +36% (rank 1.00), 75th percentile +36% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.35 (rank 1.00); largest: 75th percentile +48% (rank 1.00), std +35% (rank 1.00), rms +34% (rank 1.00)\n- vibration at the table: overall deviation 0.63 (rank 0.83); largest: kurtosis +63% (rank 1.00), std -50% (rank 0.00), 75th percentile -46% (rank 0.00)\n- vibration at the spindle: overall deviation 186.94 (rank 1.00); largest: kurtosis +18694% (rank 1.00), crest factor +379% (rank 1.00), peak +348% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.45 (rank 1.00); largest: std +45% (rank 1.00), 75th percentile +25% (rank 1.00), rms +24% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.38 (rank 0.83); largest: kurtosis +38% (rank 0.83), mean +16% (rank 0.83), rms +15% (rank 0.83)"
+  },
+  {
+   "case": 11,
+   "run": 16,
+   "vb": 0.37,
+   "time_in_use_min": 63.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.52 (rank 0.67); largest: std +52% (rank 1.00), rms +32% (rank 1.00), mean +32% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.32 (rank 1.00); largest: 75th percentile +44% (rank 1.00), std +32% (rank 1.00), rms +31% (rank 1.00)\n- vibration at the table: overall deviation 0.46 (rank 0.67); largest: kurtosis +46% (rank 1.00), 75th percentile -22% (rank 0.17), rms -8% (rank 0.33)\n- vibration at the spindle: overall deviation 115.52 (rank 1.00); largest: kurtosis +11552% (rank 1.00), crest factor +512% (rank 1.00), peak +485% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.34 (rank 1.00); largest: std +34% (rank 1.00), 75th percentile +22% (rank 1.00), rms +21% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.26 (rank 0.67); largest: kurtosis +26% (rank 0.83), mean +20% (rank 1.00), rms +19% (rank 1.00)"
+  },
+  {
+   "case": 11,
+   "run": 18,
+   "vb": 0.42,
+   "time_in_use_min": 72.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.69 (rank 0.83); largest: std +69% (rank 1.00), peak +54% (rank 1.00), rms +54% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.54 (rank 1.00); largest: 75th percentile +74% (rank 1.00), std +54% (rank 1.00), rms +53% (rank 1.00)\n- vibration at the table: overall deviation 1.24 (rank 1.00); largest: kurtosis +124% (rank 1.00), std -56% (rank 0.00), peak -51% (rank 0.00)\n- vibration at the spindle: overall deviation 265.75 (rank 1.00); largest: kurtosis +26575% (rank 1.00), crest factor +536% (rank 1.00), peak +478% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.65 (rank 1.00); largest: std +65% (rank 1.00), 75th percentile +43% (rank 1.00), rms +43% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.47 (rank 0.83); largest: kurtosis +47% (rank 1.00), peak +33% (rank 0.83), mean +26% (rank 1.00)"
+  },
+  {
+   "case": 11,
+   "run": 19,
+   "vb": 0.47,
+   "time_in_use_min": 80.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.28 (rank 1.00); largest: std +128% (rank 1.00), peak +82% (rank 1.00), 75th percentile +80% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.78 (rank 1.00); largest: 75th percentile +101% (rank 1.00), std +78% (rank 1.00), rms +76% (rank 1.00)\n- vibration at the table: overall deviation 1.71 (rank 1.00); largest: kurtosis +171% (rank 1.00), std -46% (rank 0.00), peak -39% (rank 0.00)\n- vibration at the spindle: overall deviation 260.50 (rank 1.00); largest: kurtosis +26050% (rank 1.00), crest factor +267% (rank 1.00), peak +230% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.84 (rank 1.00); largest: std +84% (rank 1.00), 75th percentile +35% (rank 1.00), rms +33% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.77 (rank 1.00); largest: std +77% (rank 1.00), peak +53% (rank 1.00), kurtosis +38% (rank 0.83)"
+  },
+  {
+   "case": 11,
+   "run": 20,
+   "vb": 0.57,
+   "time_in_use_min": 86.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.98 (rank 1.00); largest: std +98% (rank 1.00), peak +73% (rank 1.00), rms +72% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.72 (rank 1.00); largest: 75th percentile +97% (rank 1.00), std +72% (rank 1.00), rms +70% (rank 1.00)\n- vibration at the table: overall deviation 1.30 (rank 1.00); largest: kurtosis +130% (rank 1.00), std -61% (rank 0.00), peak -51% (rank 0.00)\n- vibration at the spindle: overall deviation 624.82 (rank 1.00); largest: kurtosis +62482% (rank 1.00), crest factor +496% (rank 1.00), peak +432% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.23 (rank 1.00); largest: std +123% (rank 1.00), peak +65% (rank 1.00), 75th percentile +65% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.92 (rank 1.00); largest: std +92% (rank 1.00), peak +84% (rank 1.00), kurtosis +48% (rank 1.00)"
+  },
+  {
+   "case": 11,
+   "run": 21,
+   "vb": 0.65,
+   "time_in_use_min": 93.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.37 (rank 1.00); largest: std +137% (rank 1.00), 75th percentile +84% (rank 1.00), peak +84% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.82 (rank 1.00); largest: 75th percentile +106% (rank 1.00), std +82% (rank 1.00), rms +80% (rank 1.00)\n- vibration at the table: overall deviation 1.38 (rank 1.00); largest: kurtosis +138% (rank 1.00), std -53% (rank 0.00), peak -46% (rank 0.00)\n- vibration at the spindle: overall deviation 91.87 (rank 1.00); largest: kurtosis +9187% (rank 1.00), crest factor +454% (rank 1.00), peak +402% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.18 (rank 1.00); largest: std +118% (rank 1.00), peak +54% (rank 1.00), 75th percentile +53% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.89 (rank 1.00); largest: std +89% (rank 1.00), peak +62% (rank 1.00), rms +39% (rank 1.00)"
+  },
+  {
+   "case": 11,
+   "run": 22,
+   "vb": 0.68,
+   "time_in_use_min": 100.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.44 (rank 1.00); largest: std +144% (rank 1.00), peak +97% (rank 1.00), 75th percentile +95% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.92 (rank 1.00); largest: 75th percentile +120% (rank 1.00), std +92% (rank 1.00), rms +90% (rank 1.00)\n- vibration at the table: overall deviation 1.85 (rank 1.00); largest: kurtosis +185% (rank 1.00), std -78% (rank 0.00), peak -73% (rank 0.00)\n- vibration at the spindle: overall deviation 71.70 (rank 1.00); largest: kurtosis +7170% (rank 1.00), crest factor +158% (rank 1.00), peak +133% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.61 (rank 1.00); largest: std +161% (rank 1.00), peak +77% (rank 1.00), 75th percentile +74% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 2.03 (rank 1.00); largest: peak +215% (rank 1.00), kurtosis +203% (rank 1.00), std +173% (rank 1.00)"
+  },
+  {
+   "case": 11,
+   "run": 23,
+   "vb": 0.76,
+   "time_in_use_min": 105.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 6 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.55 (rank 1.00); largest: std +155% (rank 1.00), peak +81% (rank 1.00), 75th percentile +76% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.69 (rank 1.00); largest: 75th percentile +84% (rank 1.00), std +69% (rank 1.00), rms +68% (rank 1.00)\n- vibration at the table: overall deviation 0.74 (rank 1.00); largest: std -74% (rank 0.00), 75th percentile -71% (rank 0.00), kurtosis +71% (rank 1.00)\n- vibration at the spindle: overall deviation 522.14 (rank 1.00); largest: kurtosis +52214% (rank 1.00), crest factor +381% (rank 1.00), peak +335% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.80 (rank 1.00); largest: std +180% (rank 1.00), peak +73% (rank 1.00), 75th percentile +68% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 5.58 (rank 1.00); largest: std +558% (rank 1.00), peak +267% (rank 1.00), rms +141% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 2,
+   "vb": 0.05,
+   "time_in_use_min": 3.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.31 (rank 1.00); largest: std -31% (rank 0.00), 75th percentile -26% (rank 0.00), rms -26% (rank 0.00)\n- spindle motor current, AC: overall deviation 0.26 (rank 1.00); largest: 75th percentile -34% (rank 0.00), std -26% (rank 0.00), rms -25% (rank 0.00)\n- vibration at the table: overall deviation 0.53 (rank 1.00); largest: std +53% (rank 1.00), 75th percentile +39% (rank 1.00), kurtosis -39% (rank 0.00)\n- vibration at the spindle: overall deviation 1.67 (rank 0.60); largest: kurtosis +167% (rank 0.60), std -79% (rank 0.00), peak -28% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.15 (rank 0.00); largest: kurtosis +15% (rank 1.00), std -14% (rank 0.00), crest factor -7% (rank 0.20)\n- acoustic emission at the spindle: overall deviation 0.38 (rank 1.00); largest: kurtosis +38% (rank 1.00), std -29% (rank 0.00), 75th percentile -14% (rank 0.00)"
+  },
+  {
+   "case": 12,
+   "run": 3,
+   "vb": 0.08,
+   "time_in_use_min": 6.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.17 (rank 0.80); largest: std -17% (rank 0.00), 75th percentile -15% (rank 0.00), rms -14% (rank 0.00)\n- spindle motor current, AC: overall deviation 0.14 (rank 0.80); largest: 75th percentile -19% (rank 0.00), std -14% (rank 0.00), rms -14% (rank 0.00)\n- vibration at the table: overall deviation 0.75 (rank 1.00); largest: std +75% (rank 1.00), 75th percentile +62% (rank 1.00), peak +60% (rank 1.00)\n- vibration at the spindle: overall deviation 4.76 (rank 0.60); largest: kurtosis +476% (rank 0.60), std -81% (rank 0.00), 75th percentile -25% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.12 (rank 0.00); largest: mean +15% (rank 1.00), peak +15% (rank 0.80), kurtosis +12% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.10 (rank 0.20); largest: kurtosis -10% (rank 0.00), crest factor -6% (rank 0.20), mean +6% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 5,
+   "vb": 0.12,
+   "time_in_use_min": 19.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.05 (rank 0.20); largest: peak +11% (rank 0.80), mean +7% (rank 0.80), 75th percentile +7% (rank 0.60)\n- spindle motor current, AC: overall deviation 0.10 (rank 0.40); largest: peak +20% (rank 1.00), kurtosis +10% (rank 1.00), crest factor +8% (rank 1.00)\n- vibration at the table: overall deviation 0.20 (rank 0.40); largest: kurtosis -20% (rank 0.00), peak +15% (rank 0.60), std +10% (rank 0.60)\n- vibration at the spindle: overall deviation 167.52 (rank 1.00); largest: kurtosis +16752% (rank 1.00), crest factor +235% (rank 0.80), peak +173% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.14 (rank 0.00); largest: mean +24% (rank 1.00), peak +22% (rank 1.00), rms +18% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.12 (rank 0.80); largest: mean +14% (rank 1.00), 75th percentile +14% (rank 1.00), rms +13% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 6,
+   "vb": 0.17,
+   "time_in_use_min": 24.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.14 (rank 0.20); largest: peak +20% (rank 1.00), mean +17% (rank 1.00), 75th percentile +16% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.17 (rank 0.80); largest: peak +30% (rank 1.00), 75th percentile +19% (rank 0.80), std +17% (rank 1.00)\n- vibration at the table: overall deviation 0.45 (rank 1.00); largest: std -45% (rank 0.00), peak -44% (rank 0.00), 75th percentile -41% (rank 0.00)\n- vibration at the spindle: overall deviation 129.50 (rank 1.00); largest: kurtosis +12950% (rank 1.00), crest factor +318% (rank 1.00), peak +230% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.16 (rank 0.00); largest: mean +29% (rank 1.00), peak +23% (rank 1.00), rms +22% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.13 (rank 0.80); largest: peak +14% (rank 1.00), kurtosis +13% (rank 1.00), mean +12% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 7,
+   "vb": 0.2,
+   "time_in_use_min": 30.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.21 (rank 0.80); largest: peak +28% (rank 1.00), mean +26% (rank 1.00), rms +25% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.25 (rank 1.00); largest: peak +35% (rank 1.00), 75th percentile +34% (rank 1.00), std +25% (rank 1.00)\n- vibration at the table: overall deviation 0.31 (rank 0.80); largest: std -31% (rank 0.00), rms -27% (rank 0.00), mean -27% (rank 0.00)\n- vibration at the spindle: overall deviation 84.32 (rank 0.80); largest: kurtosis +8432% (rank 1.00), crest factor +220% (rank 0.80), peak +143% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.35 (rank 0.60); largest: mean +46% (rank 1.00), rms +39% (rank 1.00), 75th percentile +38% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.36 (rank 1.00); largest: std +36% (rank 1.00), 75th percentile +34% (rank 1.00), mean +34% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 8,
+   "vb": 0.24,
+   "time_in_use_min": 36.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.29 (rank 1.00); largest: peak +38% (rank 1.00), mean +34% (rank 1.00), rms +33% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.34 (rank 1.00); largest: 75th percentile +45% (rank 1.00), peak +34% (rank 1.00), std +34% (rank 1.00)\n- vibration at the table: overall deviation 0.40 (rank 1.00); largest: std -40% (rank 0.00), rms -36% (rank 0.00), mean -36% (rank 0.00)\n- vibration at the spindle: overall deviation 213.56 (rank 1.00); largest: kurtosis +21356% (rank 1.00), crest factor +321% (rank 1.00), peak +205% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.58 (rank 0.60); largest: std +58% (rank 0.60), mean +56% (rank 1.00), rms +49% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.19 (rank 0.80); largest: mean +34% (rank 1.00), rms +33% (rank 1.00), 75th percentile +32% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 9,
+   "vb": 0.32,
+   "time_in_use_min": 42.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.48 (rank 1.00); largest: peak +57% (rank 1.00), mean +53% (rank 1.00), 75th percentile +53% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.53 (rank 1.00); largest: 75th percentile +68% (rank 1.00), peak +56% (rank 1.00), std +53% (rank 1.00)\n- vibration at the table: overall deviation 0.30 (rank 0.80); largest: crest factor +30% (rank 1.00), std -26% (rank 0.00), 75th percentile -25% (rank 0.00)\n- vibration at the spindle: overall deviation 225.42 (rank 1.00); largest: kurtosis +22542% (rank 1.00), crest factor +339% (rank 1.00), peak +218% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.62 (rank 0.60); largest: std +62% (rank 0.60), mean +51% (rank 1.00), peak +47% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.38 (rank 1.00); largest: std +38% (rank 1.00), peak +36% (rank 1.00), mean +35% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 11,
+   "vb": 0.4,
+   "time_in_use_min": 49.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.61 (rank 1.00); largest: std +61% (rank 1.00), peak +61% (rank 1.00), 75th percentile +58% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.57 (rank 1.00); largest: 75th percentile +73% (rank 1.00), std +57% (rank 1.00), rms +56% (rank 1.00)\n- vibration at the table: overall deviation 0.29 (rank 0.80); largest: crest factor +29% (rank 1.00), peak +18% (rank 0.60), std -11% (rank 0.20)\n- vibration at the spindle: overall deviation 287.00 (rank 1.00); largest: kurtosis +28700% (rank 1.00), crest factor +344% (rank 1.00), peak +219% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.52 (rank 0.60); largest: peak +52% (rank 1.00), std +52% (rank 0.60), mean +46% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.37 (rank 1.00); largest: std +37% (rank 1.00), rms +29% (rank 1.00), mean +29% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 12,
+   "vb": 0.45,
+   "time_in_use_min": 55.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.72 (rank 1.00); largest: std +72% (rank 1.00), peak +68% (rank 1.00), 75th percentile +64% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.55 (rank 1.00); largest: 75th percentile +64% (rank 1.00), peak +60% (rank 1.00), std +55% (rank 1.00)\n- vibration at the table: overall deviation 0.30 (rank 0.80); largest: 75th percentile -31% (rank 0.00), std -30% (rank 0.00), crest factor +29% (rank 1.00)\n- vibration at the spindle: overall deviation 157.91 (rank 1.00); largest: kurtosis +15791% (rank 1.00), crest factor +321% (rank 1.00), peak +209% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.57 (rank 0.60); largest: std +57% (rank 0.60), mean +47% (rank 1.00), rms +41% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.57 (rank 1.00); largest: std +57% (rank 1.00), peak +48% (rank 1.00), rms +32% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 13,
+   "vb": 0.49,
+   "time_in_use_min": 61.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.68 (rank 1.00); largest: std +68% (rank 1.00), peak +65% (rank 1.00), 75th percentile +64% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.65 (rank 1.00); largest: 75th percentile +84% (rank 1.00), std +65% (rank 1.00), rms +63% (rank 1.00)\n- vibration at the table: overall deviation 0.53 (rank 1.00); largest: std -53% (rank 0.00), 75th percentile -47% (rank 0.00), rms -47% (rank 0.00)\n- vibration at the spindle: overall deviation 1289.25 (rank 1.00); largest: kurtosis +128925% (rank 1.00), crest factor +396% (rank 1.00), peak +249% (rank 0.80)\n- acoustic emission at the table: overall deviation 0.52 (rank 0.60); largest: std +52% (rank 0.60), mean +48% (rank 1.00), rms +41% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.31 (rank 1.00); largest: peak +32% (rank 1.00), std +31% (rank 1.00), mean +29% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 14,
+   "vb": 0.58,
+   "time_in_use_min": 67.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.83 (rank 1.00); largest: std +83% (rank 1.00), 75th percentile +81% (rank 1.00), rms +80% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.81 (rank 1.00); largest: 75th percentile +106% (rank 1.00), std +81% (rank 1.00), rms +79% (rank 1.00)\n- vibration at the table: overall deviation 0.67 (rank 1.00); largest: std -67% (rank 0.00), 75th percentile -57% (rank 0.00), rms -56% (rank 0.00)\n- vibration at the spindle: overall deviation 72.56 (rank 0.60); largest: kurtosis +7256% (rank 0.80), std -88% (rank 0.00), 75th percentile -35% (rank 0.00)\n- acoustic emission at the table: overall deviation 0.52 (rank 0.60); largest: std +52% (rank 0.60), mean +48% (rank 1.00), peak +44% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.28 (rank 0.80); largest: peak +33% (rank 1.00), std +28% (rank 1.00), mean +27% (rank 1.00)"
+  },
+  {
+   "case": 12,
+   "run": 15,
+   "vb": 0.65,
+   "time_in_use_min": 74.0,
+   "text": "One cut on a milling machine (cast iron, depth of cut 0.75 mm, feed 0.5 mm/rev), compared with 5 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.81 (rank 1.00); largest: mean +87% (rank 1.00), rms +86% (rank 1.00), 75th percentile +84% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.93 (rank 1.00); largest: 75th percentile +123% (rank 1.00), std +93% (rank 1.00), rms +91% (rank 1.00)\n- vibration at the table: overall deviation 0.72 (rank 1.00); largest: std -72% (rank 0.00), 75th percentile -61% (rank 0.00), peak -61% (rank 0.00)\n- vibration at the spindle: overall deviation 99.35 (rank 1.00); largest: kurtosis +9935% (rank 1.00), std -87% (rank 0.00), crest factor +48% (rank 0.60)\n- acoustic emission at the table: overall deviation 0.77 (rank 0.60); largest: std +77% (rank 0.80), mean +71% (rank 1.00), peak +70% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.69 (rank 1.00); largest: peak +80% (rank 1.00), std +69% (rank 1.00), kurtosis +54% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 3,
+   "vb": 0.1,
+   "time_in_use_min": 4.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.23 (rank 0.33); largest: kurtosis +23% (rank 1.00), std +4% (rank 0.67), rms +4% (rank 0.67)\n- spindle motor current, AC: overall deviation 0.06 (rank 0.33); largest: peak +10% (rank 1.00), crest factor +6% (rank 1.00), 75th percentile +5% (rank 1.00)\n- vibration at the table: overall deviation 0.20 (rank 0.33); largest: peak -22% (rank 0.00), crest factor -20% (rank 0.00), kurtosis +11% (rank 1.00)\n- vibration at the spindle: overall deviation 533.21 (rank 1.00); largest: kurtosis +53321% (rank 1.00), crest factor +351% (rank 1.00), peak +319% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.66 (rank 1.00); largest: kurtosis +66% (rank 1.00), crest factor +14% (rank 1.00), std +14% (rank 0.67)\n- acoustic emission at the spindle: overall deviation 0.26 (rank 0.33); largest: kurtosis +26% (rank 0.67), std +19% (rank 0.67), peak +13% (rank 0.67)"
+  },
+  {
+   "case": 13,
+   "run": 4,
+   "vb": 0.13,
+   "time_in_use_min": 7.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.27 (rank 0.33); largest: kurtosis +27% (rank 1.00), std +16% (rank 0.67), 75th percentile +12% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.12 (rank 0.33); largest: peak +17% (rank 1.00), 75th percentile +15% (rank 1.00), std +12% (rank 1.00)\n- vibration at the table: overall deviation 0.20 (rank 0.33); largest: kurtosis +20% (rank 1.00), crest factor -7% (rank 0.33), 75th percentile -7% (rank 0.33)\n- vibration at the spindle: overall deviation 103.72 (rank 1.00); largest: kurtosis +10372% (rank 1.00), crest factor +198% (rank 1.00), peak +179% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.53 (rank 1.00); largest: std +53% (rank 1.00), peak +35% (rank 1.00), kurtosis +35% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 1.23 (rank 0.67); largest: std +123% (rank 1.00), kurtosis +111% (rank 1.00), peak +70% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 5,
+   "vb": 0.17,
+   "time_in_use_min": 11.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.53 (rank 1.00); largest: std +53% (rank 1.00), 75th percentile +24% (rank 1.00), peak +23% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.22 (rank 1.00); largest: peak +31% (rank 1.00), 75th percentile +22% (rank 1.00), std +22% (rank 1.00)\n- vibration at the table: overall deviation 0.42 (rank 1.00); largest: crest factor -42% (rank 0.00), peak -41% (rank 0.00), kurtosis -9% (rank 0.33)\n- vibration at the spindle: overall deviation 0.14 (rank 0.33); largest: kurtosis +14% (rank 1.00), mean -6% (rank 0.00), rms -6% (rank 0.00)\n- acoustic emission at the table: overall deviation 1.03 (rank 1.00); largest: std +103% (rank 1.00), kurtosis +43% (rank 1.00), peak +8% (rank 0.67)\n- acoustic emission at the spindle: overall deviation 0.98 (rank 0.67); largest: kurtosis +98% (rank 1.00), peak +60% (rank 1.00), crest factor +52% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 6,
+   "vb": 0.32,
+   "time_in_use_min": 16.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.71 (rank 1.00); largest: std +71% (rank 1.00), 75th percentile +44% (rank 1.00), rms +42% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.43 (rank 1.00); largest: 75th percentile +53% (rank 1.00), std +43% (rank 1.00), rms +42% (rank 1.00)\n- vibration at the table: overall deviation 0.46 (rank 1.00); largest: mean +51% (rank 1.00), rms +51% (rank 1.00), std +46% (rank 1.00)\n- vibration at the spindle: overall deviation 322.54 (rank 1.00); largest: kurtosis +32254% (rank 1.00), crest factor +435% (rank 1.00), peak +397% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.78 (rank 1.00); largest: std +78% (rank 1.00), peak +58% (rank 1.00), crest factor +22% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 1.09 (rank 0.67); largest: std +109% (rank 1.00), peak +73% (rank 1.00), crest factor +41% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 7,
+   "vb": 0.38,
+   "time_in_use_min": 19.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 0.64 (rank 1.00); largest: std +64% (rank 1.00), 75th percentile +53% (rank 1.00), rms +53% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.52 (rank 1.00); largest: 75th percentile +67% (rank 1.00), std +52% (rank 1.00), peak +52% (rank 1.00)\n- vibration at the table: overall deviation 0.54 (rank 1.00); largest: std +54% (rank 1.00), rms +53% (rank 1.00), mean +53% (rank 1.00)\n- vibration at the spindle: overall deviation 78.88 (rank 1.00); largest: kurtosis +7888% (rank 1.00), crest factor +144% (rank 1.00), peak +123% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.69 (rank 1.00); largest: std +169% (rank 1.00), peak +43% (rank 1.00), 75th percentile +24% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.92 (rank 0.67); largest: std +92% (rank 1.00), peak +38% (rank 0.67), kurtosis -30% (rank 0.33)"
+  },
+  {
+   "case": 13,
+   "run": 8,
+   "vb": 0.49,
+   "time_in_use_min": 22.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.00 (rank 1.00); largest: std +100% (rank 1.00), 75th percentile +60% (rank 1.00), peak +58% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.57 (rank 1.00); largest: 75th percentile +67% (rank 1.00), std +57% (rank 1.00), peak +57% (rank 1.00)\n- vibration at the table: overall deviation 0.64 (rank 1.00); largest: std +64% (rank 1.00), rms +53% (rank 1.00), mean +52% (rank 1.00)\n- vibration at the spindle: overall deviation 181.83 (rank 1.00); largest: kurtosis +18183% (rank 1.00), crest factor +350% (rank 1.00), peak +304% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.15 (rank 1.00); largest: peak +121% (rank 1.00), std +115% (rank 1.00), crest factor +57% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 2.44 (rank 1.00); largest: std +244% (rank 1.00), peak +118% (rank 1.00), rms +48% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 9,
+   "vb": 0.56,
+   "time_in_use_min": 25.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.27 (rank 1.00); largest: std +127% (rank 1.00), 75th percentile +69% (rank 1.00), peak +64% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.64 (rank 1.00); largest: 75th percentile +70% (rank 1.00), std +64% (rank 1.00), peak +63% (rank 1.00)\n- vibration at the table: overall deviation 0.63 (rank 1.00); largest: std +63% (rank 1.00), rms +43% (rank 1.00), mean +41% (rank 1.00)\n- vibration at the spindle: overall deviation 68.80 (rank 1.00); largest: kurtosis +6880% (rank 1.00), crest factor +395% (rank 1.00), peak +358% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.49 (rank 0.67); largest: std +49% (rank 1.00), kurtosis -42% (rank 0.00), 75th percentile +27% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.96 (rank 0.67); largest: peak +118% (rank 1.00), std +96% (rank 1.00), crest factor +67% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 10,
+   "vb": 0.68,
+   "time_in_use_min": 29.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.55 (rank 1.00); largest: std +155% (rank 1.00), 75th percentile +96% (rank 1.00), rms +91% (rank 1.00)\n- spindle motor current, AC: overall deviation 0.91 (rank 1.00); largest: 75th percentile +109% (rank 1.00), peak +94% (rank 1.00), std +91% (rank 1.00)\n- vibration at the table: overall deviation 0.80 (rank 1.00); largest: mean +100% (rank 1.00), rms +98% (rank 1.00), 75th percentile +94% (rank 1.00)\n- vibration at the spindle: overall deviation 267.77 (rank 1.00); largest: kurtosis +26777% (rank 1.00), crest factor +341% (rank 1.00), peak +287% (rank 1.00)\n- acoustic emission at the table: overall deviation 0.94 (rank 1.00); largest: std +94% (rank 1.00), 75th percentile +44% (rank 1.00), peak +44% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 0.95 (rank 0.67); largest: std +95% (rank 1.00), 75th percentile +53% (rank 1.00), peak +46% (rank 0.67)"
+  },
+  {
+   "case": 13,
+   "run": 11,
+   "vb": 0.83,
+   "time_in_use_min": 32.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.41 (rank 1.00); largest: std +141% (rank 1.00), 75th percentile +108% (rank 1.00), rms +106% (rank 1.00)\n- spindle motor current, AC: overall deviation 1.07 (rank 1.00); largest: 75th percentile +129% (rank 1.00), std +107% (rank 1.00), rms +104% (rank 1.00)\n- vibration at the table: overall deviation 0.57 (rank 1.00); largest: mean +87% (rank 1.00), rms +82% (rank 1.00), 75th percentile +73% (rank 1.00)\n- vibration at the spindle: overall deviation 134.16 (rank 1.00); largest: kurtosis +13416% (rank 1.00), crest factor +192% (rank 1.00), peak +158% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.92 (rank 1.00); largest: std +192% (rank 1.00), peak +124% (rank 1.00), 75th percentile +55% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 2.20 (rank 1.00); largest: std +220% (rank 1.00), peak +87% (rank 1.00), rms +55% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 12,
+   "vb": 0.92,
+   "time_in_use_min": 35.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.81 (rank 1.00); largest: std +181% (rank 1.00), 75th percentile +118% (rank 1.00), rms +114% (rank 1.00)\n- spindle motor current, AC: overall deviation 1.15 (rank 1.00); largest: 75th percentile +137% (rank 1.00), peak +116% (rank 1.00), std +115% (rank 1.00)\n- vibration at the table: overall deviation 0.40 (rank 1.00); largest: mean +65% (rank 1.00), rms +62% (rank 1.00), 75th percentile +55% (rank 1.00)\n- vibration at the spindle: overall deviation 79.52 (rank 1.00); largest: kurtosis +7952% (rank 1.00), crest factor +164% (rank 1.00), peak +132% (rank 1.00)\n- acoustic emission at the table: overall deviation 2.26 (rank 1.00); largest: std +226% (rank 1.00), peak +153% (rank 1.00), 75th percentile +60% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 3.52 (rank 1.00); largest: std +352% (rank 1.00), peak +170% (rank 1.00), rms +69% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 13,
+   "vb": 1.07,
+   "time_in_use_min": 38.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 2.03 (rank 1.00); largest: std +203% (rank 1.00), 75th percentile +127% (rank 1.00), peak +122% (rank 1.00)\n- spindle motor current, AC: overall deviation 1.21 (rank 1.00); largest: 75th percentile +144% (rank 1.00), std +121% (rank 1.00), rms +118% (rank 1.00)\n- vibration at the table: overall deviation 0.44 (rank 1.00); largest: std +44% (rank 1.00), rms +41% (rank 1.00), mean +40% (rank 1.00)\n- vibration at the spindle: overall deviation 160.75 (rank 1.00); largest: kurtosis +16075% (rank 1.00), crest factor +287% (rank 1.00), peak +237% (rank 1.00)\n- acoustic emission at the table: overall deviation 2.98 (rank 1.00); largest: std +298% (rank 1.00), peak +191% (rank 1.00), rms +68% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 3.32 (rank 1.00); largest: std +332% (rank 1.00), peak +163% (rank 1.00), rms +76% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 14,
+   "vb": 1.3,
+   "time_in_use_min": 42.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 2.37 (rank 1.00); largest: std +237% (rank 1.00), 75th percentile +138% (rank 1.00), rms +132% (rank 1.00)\n- spindle motor current, AC: overall deviation 1.48 (rank 1.00); largest: 75th percentile +173% (rank 1.00), std +148% (rank 1.00), rms +145% (rank 1.00)\n- vibration at the table: overall deviation 0.66 (rank 1.00); largest: std +66% (rank 1.00), 75th percentile +62% (rank 1.00), rms +60% (rank 1.00)\n- vibration at the spindle: overall deviation 169.07 (rank 1.00); largest: kurtosis +16907% (rank 1.00), crest factor +204% (rank 1.00), peak +168% (rank 1.00)\n- acoustic emission at the table: overall deviation 1.99 (rank 1.00); largest: std +199% (rank 1.00), peak +96% (rank 1.00), 75th percentile +67% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 1.08 (rank 0.67); largest: std +108% (rank 1.00), peak +62% (rank 1.00), 75th percentile +56% (rank 1.00)"
+  },
+  {
+   "case": 13,
+   "run": 15,
+   "vb": 1.53,
+   "time_in_use_min": 45.0,
+   "text": "One cut on a milling machine (steel, depth of cut 0.75 mm, feed 0.25 mm/rev), compared with 3 earlier cuts of the same setting made with a sharp insert. Deviation is (value - earlier median) / |earlier median|; rank is the value's position among the earlier cuts (0 lowest, 1 highest).\n- spindle motor current, DC: overall deviation 1.91 (rank 1.00); largest: std +191% (rank 1.00), rms +138% (rank 1.00), 75th percentile +138% (rank 1.00)\n- spindle motor current, AC: overall deviation 1.53 (rank 1.00); largest: 75th percentile +188% (rank 1.00), std +153% (rank 1.00), rms +149% (rank 1.00)\n- vibration at the table: overall deviation 0.25 (rank 0.67); largest: kurtosis -25% (rank 0.33), crest factor -24% (rank 0.00), mean +17% (rank 1.00)\n- vibration at the spindle: overall deviation 382.58 (rank 1.00); largest: kurtosis +38258% (rank 1.00), crest factor +429% (rank 1.00), peak +364% (rank 1.00)\n- acoustic emission at the table: overall deviation 2.75 (rank 1.00); largest: std +275% (rank 1.00), peak +164% (rank 1.00), 75th percentile +72% (rank 1.00)\n- acoustic emission at the spindle: overall deviation 3.55 (rank 1.00); largest: std +355% (rank 1.00), peak +163% (rank 1.00), rms +71% (rank 1.00)"
+  }
+ ]
+}

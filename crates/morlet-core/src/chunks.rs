@@ -7,6 +7,11 @@ use std::collections::VecDeque;
 /// Raw-only streams: offsets are tracked and checkpointed, no windows or features are computed.
 pub const NO_EXTRACTOR: &str = "none";
 
+/// The highest sample rate of a recording stored without feature extraction (`extractor 'none'`): 100 MHz, a
+/// 10 ns sample period, which covers acoustic emission (1-10 MHz) and ultrasound. Storage, reads, statistics and
+/// time conversion do not depend on the rate; the extractors keep their own domains (#342).
+pub const MAX_STORE_RATE_HZ: f64 = 100_000_000.0;
+
 #[derive(Debug, PartialEq, Serialize)]
 pub struct ChunkSegment {
     pub start_sample: u64,
@@ -67,8 +72,8 @@ impl ChunkExtractor {
         extractor: &str,
     ) -> Result<Self, String> {
         let version = if extractor == NO_EXTRACTOR {
-            if !(rate > 0.0 && rate <= 200000.0) {
-                return Err("sample_rate_hz must be finite and in (0,200000]".into());
+            if !(rate > 0.0 && rate <= MAX_STORE_RATE_HZ) {
+                return Err("sample_rate_hz must be finite and in (0,100000000]".into());
             }
             NO_EXTRACTOR
         } else {

@@ -61,7 +61,7 @@ class Config:
 # "none" stores raw samples only (no segments, not feature-searchable).
 RATE_DOMAINS = {"morlet-energy-v1": (128, 200000, True),
                 "morlet-energy-lowrate-v1": (1, 128, False),
-                "none": (0, 200000, True)}
+                "none": (0, 100_000_000, True)}
 
 
 def sample_rate(value, extractor):

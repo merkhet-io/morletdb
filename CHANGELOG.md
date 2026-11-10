@@ -2,8 +2,31 @@
 
 ## Unreleased
 
-SQL version 0.3.8, with an update script from 0.3.7.
+- **Sample rates up to 100 MHz (#342):** recordings without feature extraction (`extractor 'none'`) accept rates up
+  to 100 MHz instead of 200 kHz, so acoustic emission and ultrasound (1–10 MHz) can be stored, read and summarized
+  losslessly. Nothing else depended on the rate. L1's rate points at 1, 2.5, 3.125, 10 and 100 MHz: every derived
+  time exact, every sample read back identical, about 7 M samples/s per writer at every rate
+  (evaluation/limits_l1/results-342). Rates above 100 MHz are refused with a clear message. Search features keep
+  their domains (128 Hz–200 kHz, and 1–128 Hz).
 
+## 0.3.10-alpha.1
+
+SQL version 0.3.8, with an update script from 0.3.7. Python SDK 0.1.0a3. The chunk format is unchanged;
+existing collections keep their layout. New: the embedded edition (experimental) and file format 1.
+
+- **Embedded edition, experimental (#351):** MorletDB in one SQLite file, with no server. Implemented in
+  `crates/morlet-sqlite`, with SQLite included, as a Rust library, a C interface and the `morlet-sqlite` command line.
+  In Python: `morletdb.open("x.morlet")`, which offers ingest, append, read and stats. Chunks and summaries are byte
+  for byte pg_morlet's, so interval statistics are the same bit for bit (cross-checked against pg_morlet). `Client.import_file` and `Client.export_file` move recordings between a file and a server
+  chunk for chunk, checking the chunk bytes on both sides. The SDK's platform wheels carry the library, and the
+  release attaches `morlet-sqlite-<platform>.tar.gz` (the command line, the library and a C header).
+  [docs/embedded-edition.md](docs/embedded-edition.md).
+- **File format 1, a portable format for lossless waveforms (#351):** [docs/file-format.md](docs/file-format.md)
+  specifies the file (tables, meaning, rules) with a compatibility promise. [docs/chunk-format.md](docs/chunk-format.md)
+  now specifies decoding exactly (bit stream, prediction, integer mappings, chunk summaries).
+  `reference/python/morletfile.py` reads the format with the Python standard library alone. CI checks it and the
+  library against a committed corpus covering every chunk kind (`testdata/morlet-file-1`), and against fresh files
+  from the library.
 - **Exact times at slow rates (#343):** converting a time to a sample (`morlet_time_to_samples`) and the time filters,
   `before_only` cutoffs, hit times of search and acquisition alignment computed with `sample_rate_hz::numeric`,
   which rounds a float8 to 15 significant digits. At 1/60 Hz (0.0166666666666667, above 1/60) a time exactly at a
@@ -13,6 +36,20 @@ SQL version 0.3.8, with an update script from 0.3.7.
   sample instants at periods of 1, 3, 6, 7 and 60 s; checked once over every whole-second period from 1 to 3,600 s.
   Rates such as 25.6 kHz and 64 kHz map exactly as before. `morlet_time_to_samples` costs about 50 µs per call
   instead of 22; where it runs per row (time filters, `before_only`) the fraction is computed once per query.
+- **Interval statistics on very long recordings (#340):** on a recording of 10^9 samples, statistics over 10^6
+  samples took 5.4–6.1 ms instead of about 0.6 ms. The query itself took 0.1 ms; the rest was PostgreSQL compiling
+  it (JIT), because the planner's row estimate, and so its cost, grew with the table until it crossed
+  `jit_above_cost`. The general path (`morlet_interval_buckets`, behind `morlet_interval_stats` for long intervals and
+  `morlet_interval_overview`) now runs with `jit=off` and takes 0.6–0.8 ms there. The fast path (#348, #349) already
+  avoided it for intervals below 2^20 samples.
+- **Faster interval statistics (#346):** `morlet_interval_stats` over an interval shorter than a roll-up block
+  (2^20 samples) on a collection without memory levels now runs the chunk aggregate directly, through a new internal
+  Rust function (`morlet_interval_stats_fast`) that resolves the collection's tables through the system caches and
+  keeps its prepared query per session: no catalog query and no planning per call. The same rows in the same order,
+  so the same result bit for bit (tested over 305 intervals against the general path, and after new samples and
+  enabled summaries). Release image, 128,000-sample intervals, alternating rounds on a loaded development machine:
+  server time 113 µs against 302 µs in 0.3.9-alpha.1; end to end p50 0.41 ms against 0.62 ms (a `SELECT 1` round
+  trip was 0.28 ms). Other requests take the general path as before.
 
 ## 0.3.9-alpha.1
 

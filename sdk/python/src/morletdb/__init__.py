@@ -9,12 +9,13 @@
         best = db.read_ref(result.matches[0].ref)                        # original samples, bit for bit
 """
 from ._client import Client
+from ._local import LocalStore, open
 from ._errors import (ConflictError, DatabaseError, InvalidInputError, MorletError, NotFoundError,
                       UnsupportedError)
 from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
                      OverviewBucket, Recording, SearchResult)
 
-__version__ = "0.1.0a2"
-__all__ = ["Client", "Recording", "Interval", "IntervalRef", "IntervalStats", "Latest", "Notification", "NotifiedRange", "OverviewBucket", "Match", "Evidence", "EvidencePart", "SearchResult",
+__version__ = "0.1.0a3"
+__all__ = ["Client", "LocalStore", "open", "Recording", "Interval", "IntervalRef", "IntervalStats", "Latest", "Notification", "NotifiedRange", "OverviewBucket", "Match", "Evidence", "EvidencePart", "SearchResult",
            "MorletError", "InvalidInputError", "NotFoundError", "ConflictError", "UnsupportedError",
            "DatabaseError"]
