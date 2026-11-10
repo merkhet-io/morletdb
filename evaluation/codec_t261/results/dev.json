@@ -1,0 +1,4126 @@
+{
+ "study": "codec comparison T1 (development only)",
+ "started": "2026-11-10T20:06:32",
+ "finished": "2026-11-10T20:35:08",
+ "reference": "T.261 reference software 7.0",
+ "excluded": [
+  {
+   "name": "N09_M07_F10_K001_19.speed",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.torque",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.temp_2_bearing_module",
+   "samples": 5,
+   "why": "fewer than 4096 samples"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.speed",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.torque",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.temp_2_bearing_module",
+   "samples": 5,
+   "why": "fewer than 4096 samples"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.speed",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.torque",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.temp_2_bearing_module",
+   "samples": 5,
+   "why": "fewer than 4096 samples"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.speed",
+   "samples": 16006,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.torque",
+   "samples": 16006,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.temp_2_bearing_module",
+   "samples": 5,
+   "why": "fewer than 4096 samples"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.speed",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.torque",
+   "samples": 16001,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.temp_2_bearing_module",
+   "samples": 5,
+   "why": "fewer than 4096 samples"
+  },
+  {
+   "name": "XJTU-SY.B1_1.horiz",
+   "samples": 4030464,
+   "why": "no grid: not within 1e-3 steps of any offset + k*step"
+  }
+ ],
+ "inputs": [
+  {
+   "name": "N09_M07_F10_K001_19.vibration_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 12,
+   "quantum": 0.0030517578125,
+   "max_dev_steps": 1.0606885189190508e-06,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_K001_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 302166,
+     "chunks": 63,
+     "bits_per_sample": 9.4427,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019972,
+     "dec_s": 0.003331,
+     "enc_msps": 12.82,
+     "dec_msps": 76.85
+    },
+    "32768": {
+     "bytes": 300822,
+     "chunks": 8,
+     "bits_per_sample": 9.4007,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011618,
+     "dec_s": 0.00322,
+     "enc_msps": 22.03,
+     "dec_msps": 79.5
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_K001_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 262050,
+     "chunks": 63,
+     "bits_per_sample": 8.189,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.014311,
+     "dec_s": 0.001792,
+     "enc_msps": 17.89,
+     "dec_msps": 142.86
+    },
+    "32768": {
+     "bytes": 260819,
+     "chunks": 8,
+     "bits_per_sample": 8.1506,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008417,
+     "dec_s": 0.00176,
+     "enc_msps": 30.42,
+     "dec_msps": 145.42
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_K001_19.vibration_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 8.1342,
+     "fixed_ac": 8.036,
+     "lpc_rice": 8.1288,
+     "lpc_ac": 8.0273,
+     "nlms_rice": 8.1288,
+     "nlms_ac": 8.0273,
+     "blk_rice": 8.1283,
+     "blk_ac": 8.0273,
+     "wins_ac": {
+      "fixed": 19,
+      "lpc": 44,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "0": 19,
+      "2": 42,
+      "4": 2
+     }
+    },
+    "32768": {
+     "fixed_rice": 8.1356,
+     "fixed_ac": 8.0291,
+     "lpc_rice": 8.1164,
+     "lpc_ac": 8.0033,
+     "nlms_rice": 8.1164,
+     "nlms_ac": 8.0033,
+     "blk_rice": 8.1164,
+     "blk_ac": 8.0033,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "2": 3,
+      "32": 5
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 255421,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.201,
+     "dec_s": 0.051,
+     "bits_per_sample": 7.981875070800505,
+     "enc_msps": 1.273636815920398,
+     "dec_msps": 5.019627450980392
+    },
+    "EMG": {
+     "bytes": 254069,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.78,
+     "dec_s": 0.053,
+     "bits_per_sample": 7.939625235838922,
+     "enc_msps": 0.14382078651685393,
+     "dec_msps": 4.830207547169811
+    },
+    "ECG": {
+     "bytes": 253405,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.903,
+     "dec_s": 0.054,
+     "bits_per_sample": 7.918875316893294,
+     "enc_msps": 0.1345249605885444,
+     "dec_msps": 4.740759259259259
+    },
+    "ACoM": {
+     "bytes": 253687,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.25,
+     "dec_s": 0.052,
+     "bits_per_sample": 7.9276877824696,
+     "enc_msps": 0.06023552941176471,
+     "dec_msps": 4.923096153846154
+    }
+   },
+   "t261_best": "ECG",
+   "t261_intra4096": {
+    "bytes": 255443,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 1.522,
+    "dec_s": 0.056,
+    "bits_per_sample": 7.982562568114968
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.6112845091989772e-07,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_K001_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 338671,
+     "chunks": 63,
+     "bits_per_sample": 10.5834,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019228,
+     "dec_s": 0.003982,
+     "enc_msps": 13.31,
+     "dec_msps": 64.3
+    },
+    "32768": {
+     "bytes": 336540,
+     "chunks": 8,
+     "bits_per_sample": 10.5168,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011333,
+     "dec_s": 0.003837,
+     "enc_msps": 22.59,
+     "dec_msps": 66.71
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_K001_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 295242,
+     "chunks": 63,
+     "bits_per_sample": 9.2263,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013934,
+     "dec_s": 0.002469,
+     "enc_msps": 18.37,
+     "dec_msps": 103.7
+    },
+    "32768": {
+     "bytes": 293220,
+     "chunks": 8,
+     "bits_per_sample": 9.1631,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008528,
+     "dec_s": 0.002478,
+     "enc_msps": 30.02,
+     "dec_msps": 103.3
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_K001_19.phase_current_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.136,
+     "fixed_ac": 9.0738,
+     "lpc_rice": 7.8939,
+     "lpc_ac": 7.7997,
+     "nlms_rice": 7.8896,
+     "nlms_ac": 7.7929,
+     "blk_rice": 7.8939,
+     "blk_ac": 7.7997,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 42,
+      "nlms": 21
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.1279,
+     "fixed_ac": 9.056,
+     "lpc_rice": 7.7462,
+     "lpc_ac": 7.6449,
+     "nlms_rice": 7.7462,
+     "nlms_ac": 7.6449,
+     "blk_rice": 7.7462,
+     "blk_ac": 7.6449,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 256685,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.197,
+     "dec_s": 0.047,
+     "bits_per_sample": 8.021374916504232,
+     "enc_msps": 1.299497461928934,
+     "dec_msps": 5.4468297872340425
+    },
+    "EMG": {
+     "bytes": 250155,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.744,
+     "dec_s": 0.048,
+     "bits_per_sample": 7.81731321362026,
+     "enc_msps": 0.1467895642201835,
+     "dec_msps": 5.333354166666667
+    },
+    "ECG": {
+     "bytes": 251387,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.664,
+     "dec_s": 0.056,
+     "bits_per_sample": 7.855813063230221,
+     "enc_msps": 0.1538467548076923,
+     "dec_msps": 4.571446428571428
+    },
+    "ACoM": {
+     "bytes": 249793,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.17,
+     "dec_s": 0.049,
+     "bits_per_sample": 7.80600075780954,
+     "enc_msps": 0.06139112709832135,
+     "dec_msps": 5.224510204081632
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 257059,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.048,
+    "dec_s": 0.051,
+    "bits_per_sample": 8.033062370850114
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_2",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.5840375469490676e-07,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_K001_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 344656,
+     "chunks": 63,
+     "bits_per_sample": 10.7705,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.018906,
+     "dec_s": 0.004751,
+     "enc_msps": 13.54,
+     "dec_msps": 53.88
+    },
+    "32768": {
+     "bytes": 343333,
+     "chunks": 8,
+     "bits_per_sample": 10.7291,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011437,
+     "dec_s": 0.003827,
+     "enc_msps": 22.38,
+     "dec_msps": 66.9
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_K001_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 301144,
+     "chunks": 63,
+     "bits_per_sample": 9.4107,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.014013,
+     "dec_s": 0.002464,
+     "enc_msps": 18.27,
+     "dec_msps": 103.89
+    },
+    "32768": {
+     "bytes": 299932,
+     "chunks": 8,
+     "bits_per_sample": 9.3728,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008516,
+     "dec_s": 0.002366,
+     "enc_msps": 30.06,
+     "dec_msps": 108.18
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_K001_19.phase_current_2",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.2925,
+     "fixed_ac": 9.2276,
+     "lpc_rice": 7.5202,
+     "lpc_ac": 7.4237,
+     "nlms_rice": 7.5202,
+     "nlms_ac": 7.4237,
+     "blk_rice": 7.5202,
+     "blk_ac": 7.4237,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 63,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.2855,
+     "fixed_ac": 9.2101,
+     "lpc_rice": 7.3638,
+     "lpc_ac": 7.2613,
+     "nlms_rice": 7.3638,
+     "nlms_ac": 7.2613,
+     "blk_rice": 7.3638,
+     "blk_ac": 7.2613,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 245045,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.193,
+     "dec_s": 0.048,
+     "bits_per_sample": 7.65762633739712,
+     "enc_msps": 1.3264300518134713,
+     "dec_msps": 5.333354166666667
+    },
+    "EMG": {
+     "bytes": 240581,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.706,
+     "dec_s": 0.049,
+     "bits_per_sample": 7.518126882316866,
+     "enc_msps": 0.15005920281359905,
+     "dec_msps": 5.224510204081632
+    },
+    "ECG": {
+     "bytes": 242215,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.634,
+     "dec_s": 0.052,
+     "bits_per_sample": 7.569189182854754,
+     "enc_msps": 0.15667135862913098,
+     "dec_msps": 4.923096153846154
+    },
+    "ACoM": {
+     "bytes": 240049,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.174,
+     "dec_s": 0.049,
+     "bits_per_sample": 7.501501947258019,
+     "enc_msps": 0.06133229516051748,
+     "dec_msps": 5.224510204081632
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 245977,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.043,
+    "dec_s": 0.05,
+    "bits_per_sample": 7.686751223628033
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.force",
+   "set": "b3-dev",
+   "group": "mid",
+   "class": "near",
+   "samples": 16001,
+   "bits": 14,
+   "quantum": 0.3051757810480922,
+   "max_dev_steps": 7.934868340973678e-10,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_K001_19.force",
+    "n": 16001,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 17852,
+     "chunks": 4,
+     "bits_per_sample": 8.9254,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.001664,
+     "dec_s": 0.000245,
+     "enc_msps": 9.62,
+     "dec_msps": 65.38
+    },
+    "32768": {
+     "bytes": 18409,
+     "chunks": 1,
+     "bits_per_sample": 9.2039,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.00113,
+     "dec_s": 0.000325,
+     "enc_msps": 14.16,
+     "dec_msps": 49.2
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_K001_19.force",
+    "n": 16001,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 14752,
+     "chunks": 4,
+     "bits_per_sample": 7.3755,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000779,
+     "dec_s": 0.000168,
+     "enc_msps": 20.53,
+     "dec_msps": 95.41
+    },
+    "32768": {
+     "bytes": 15031,
+     "chunks": 1,
+     "bits_per_sample": 7.515,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000539,
+     "dec_s": 0.000177,
+     "enc_msps": 29.7,
+     "dec_msps": 90.53
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_K001_19.force",
+    "n": 16001,
+    "4096": {
+     "fixed_rice": 7.3172,
+     "fixed_ac": 7.3415,
+     "lpc_rice": 7.3172,
+     "lpc_ac": 7.307,
+     "nlms_rice": 7.1804,
+     "nlms_ac": 7.2098,
+     "blk_rice": 7.3172,
+     "blk_ac": 7.307,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 0,
+      "nlms": 4
+     },
+     "lpc_order_ac": {
+      "32": 4
+     }
+    },
+    "32768": {
+     "fixed_rice": 7.4956,
+     "fixed_ac": 7.3144,
+     "lpc_rice": 7.3555,
+     "lpc_ac": 7.1826,
+     "nlms_rice": 7.3555,
+     "nlms_ac": 7.173,
+     "blk_rice": 7.3555,
+     "blk_ac": 7.1826,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 0,
+      "nlms": 1
+     },
+     "lpc_order_ac": {
+      "32": 1
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 14727,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.014,
+     "dec_s": 0.004,
+     "bits_per_sample": 7.363039810011874,
+     "enc_msps": 1.1429285714285713,
+     "dec_msps": 4.00025
+    },
+    "EMG": {
+     "bytes": 14729,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.086,
+     "dec_s": 0.004,
+     "bits_per_sample": 7.36403974751578,
+     "enc_msps": 0.18605813953488373,
+     "dec_msps": 4.00025
+    },
+    "ECG": {
+     "bytes": 14683,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.096,
+     "dec_s": 0.004,
+     "bits_per_sample": 7.341041184925942,
+     "enc_msps": 0.16667708333333334,
+     "dec_msps": 4.00025
+    },
+    "ACoM": {
+     "bytes": 14713,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.181,
+     "dec_s": 0.004,
+     "bits_per_sample": 7.356040247484533,
+     "enc_msps": 0.08840331491712708,
+     "dec_msps": 4.00025
+    }
+   },
+   "t261_best": "ECG",
+   "t261_intra4096": {
+    "bytes": 14761,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 0.09,
+    "dec_s": 0.004,
+    "bits_per_sample": 7.3800387475782765
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.vibration_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 12,
+   "quantum": 0.0030517578125,
+   "max_dev_steps": 9.443762246519327e-07,
+   "grizzbit_orig": {
+    "name": "N15_M01_F10_KA01_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 306970,
+     "chunks": 63,
+     "bits_per_sample": 9.5928,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019817,
+     "dec_s": 0.004018,
+     "enc_msps": 12.92,
+     "dec_msps": 63.71
+    },
+    "32768": {
+     "bytes": 305649,
+     "chunks": 8,
+     "bits_per_sample": 9.5515,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.012426,
+     "dec_s": 0.004665,
+     "enc_msps": 20.6,
+     "dec_msps": 54.88
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M01_F10_KA01_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 263388,
+     "chunks": 63,
+     "bits_per_sample": 8.2308,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.01478,
+     "dec_s": 0.002621,
+     "enc_msps": 17.32,
+     "dec_msps": 97.67
+    },
+    "32768": {
+     "bytes": 262179,
+     "chunks": 8,
+     "bits_per_sample": 8.1931,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008499,
+     "dec_s": 0.002509,
+     "enc_msps": 30.12,
+     "dec_msps": 102.04
+    }
+   },
+   "ideas": {
+    "name": "N15_M01_F10_KA01_19.vibration_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 8.1526,
+     "fixed_ac": 8.0206,
+     "lpc_rice": 7.8317,
+     "lpc_ac": 7.703,
+     "nlms_rice": 7.7578,
+     "nlms_ac": 7.6265,
+     "blk_rice": 7.8317,
+     "blk_ac": 7.703,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 0,
+      "nlms": 63
+     },
+     "lpc_order_ac": {
+      "4": 4,
+      "32": 59
+     }
+    },
+    "32768": {
+     "fixed_rice": 8.1672,
+     "fixed_ac": 8.0174,
+     "lpc_rice": 7.71,
+     "lpc_ac": 7.5744,
+     "nlms_rice": 7.71,
+     "nlms_ac": 7.5744,
+     "blk_rice": 7.71,
+     "blk_ac": 7.5744,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 249951,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.201,
+     "dec_s": 0.056,
+     "bits_per_sample": 7.810938238522506,
+     "enc_msps": 1.273636815920398,
+     "dec_msps": 4.571446428571428
+    },
+    "EMG": {
+     "bytes": 243991,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.717,
+     "dec_s": 0.051,
+     "bits_per_sample": 7.624688966058726,
+     "enc_msps": 0.1490978450786255,
+     "dec_msps": 5.019627450980392
+    },
+    "ECG": {
+     "bytes": 244161,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.694,
+     "dec_s": 0.053,
+     "bits_per_sample": 7.6300014453068545,
+     "enc_msps": 0.15112219598583237,
+     "dec_msps": 4.830207547169811
+    },
+    "ACoM": {
+     "bytes": 243571,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.125,
+     "dec_s": 0.052,
+     "bits_per_sample": 7.611564017328058,
+     "enc_msps": 0.06206084848484849,
+     "dec_msps": 4.923096153846154
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 248769,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.005,
+    "dec_s": 0.061,
+    "bits_per_sample": 7.774000882809052
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 13,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.0279055129149474e-07,
+   "grizzbit_orig": {
+    "name": "N15_M01_F10_KA01_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 336546,
+     "chunks": 63,
+     "bits_per_sample": 10.517,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.020023,
+     "dec_s": 0.003988,
+     "enc_msps": 12.79,
+     "dec_msps": 64.19
+    },
+    "32768": {
+     "bytes": 334322,
+     "chunks": 8,
+     "bits_per_sample": 10.4475,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.012005,
+     "dec_s": 0.003851,
+     "enc_msps": 21.32,
+     "dec_msps": 66.47
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M01_F10_KA01_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 293313,
+     "chunks": 63,
+     "bits_per_sample": 9.166,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.01485,
+     "dec_s": 0.002395,
+     "enc_msps": 17.24,
+     "dec_msps": 106.9
+    },
+    "32768": {
+     "bytes": 291203,
+     "chunks": 8,
+     "bits_per_sample": 9.1001,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008329,
+     "dec_s": 0.002392,
+     "enc_msps": 30.74,
+     "dec_msps": 107.03
+    }
+   },
+   "ideas": {
+    "name": "N15_M01_F10_KA01_19.phase_current_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.0555,
+     "fixed_ac": 9.0058,
+     "lpc_rice": 7.4748,
+     "lpc_ac": 7.3722,
+     "nlms_rice": 7.4735,
+     "nlms_ac": 7.3703,
+     "blk_rice": 7.4748,
+     "blk_ac": 7.3722,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 58,
+      "nlms": 5
+     },
+     "lpc_order_ac": {
+      "16": 1,
+      "32": 62
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.0577,
+     "fixed_ac": 8.9923,
+     "lpc_rice": 7.3214,
+     "lpc_ac": 7.2144,
+     "nlms_rice": 7.3214,
+     "nlms_ac": 7.2144,
+     "blk_rice": 7.3214,
+     "blk_ac": 7.2144,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 240727,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.198,
+     "dec_s": 0.044,
+     "bits_per_sample": 7.52268936449467,
+     "enc_msps": 1.2929343434343434,
+     "dec_msps": 5.818204545454546
+    },
+    "EMG": {
+     "bytes": 235049,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.743,
+     "dec_s": 0.046,
+     "bits_per_sample": 7.345252557607197,
+     "enc_msps": 0.14687378083763625,
+     "dec_msps": 5.565239130434782
+    },
+    "ECG": {
+     "bytes": 235797,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.629,
+     "dec_s": 0.051,
+     "bits_per_sample": 7.3686274662989595,
+     "enc_msps": 0.15715224063842848,
+     "dec_msps": 5.019627450980392
+    },
+    "ACoM": {
+     "bytes": 234481,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.143,
+     "dec_s": 0.046,
+     "bits_per_sample": 7.327502626942864,
+     "enc_msps": 0.06179121409606565,
+     "dec_msps": 5.565239130434782
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 240687,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 1.993,
+    "dec_s": 0.048,
+    "bits_per_sample": 7.521439369377464
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_2",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 13,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.0184470903828562e-07,
+   "grizzbit_orig": {
+    "name": "N15_M01_F10_KA01_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 339757,
+     "chunks": 63,
+     "bits_per_sample": 10.6174,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019876,
+     "dec_s": 0.003965,
+     "enc_msps": 12.88,
+     "dec_msps": 64.56
+    },
+    "32768": {
+     "bytes": 337503,
+     "chunks": 8,
+     "bits_per_sample": 10.5469,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011538,
+     "dec_s": 0.003861,
+     "enc_msps": 22.19,
+     "dec_msps": 66.31
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M01_F10_KA01_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 296386,
+     "chunks": 63,
+     "bits_per_sample": 9.262,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013722,
+     "dec_s": 0.002623,
+     "enc_msps": 18.66,
+     "dec_msps": 97.58
+    },
+    "32768": {
+     "bytes": 294244,
+     "chunks": 8,
+     "bits_per_sample": 9.1951,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.007261,
+     "dec_s": 0.002588,
+     "enc_msps": 35.26,
+     "dec_msps": 98.91
+    }
+   },
+   "ideas": {
+    "name": "N15_M01_F10_KA01_19.phase_current_2",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.1495,
+     "fixed_ac": 9.0796,
+     "lpc_rice": 7.4939,
+     "lpc_ac": 7.3873,
+     "nlms_rice": 7.4937,
+     "nlms_ac": 7.387,
+     "blk_rice": 7.4939,
+     "blk_ac": 7.3873,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 62,
+      "nlms": 1
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.1453,
+     "fixed_ac": 9.0666,
+     "lpc_rice": 7.3335,
+     "lpc_ac": 7.2253,
+     "nlms_rice": 7.3335,
+     "nlms_ac": 7.2253,
+     "blk_rice": 7.3335,
+     "blk_ac": 7.2253,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 242043,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.193,
+     "dec_s": 0.05,
+     "bits_per_sample": 7.563814203850766,
+     "enc_msps": 1.3264300518134713,
+     "dec_msps": 5.12002
+    },
+    "EMG": {
+     "bytes": 236629,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.698,
+     "dec_s": 0.046,
+     "bits_per_sample": 7.394627364736857,
+     "enc_msps": 0.15076619552414605,
+     "dec_msps": 5.565239130434782
+    },
+    "ECG": {
+     "bytes": 237561,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.618,
+     "dec_s": 0.05,
+     "bits_per_sample": 7.42375225096777,
+     "enc_msps": 0.15822064276885042,
+     "dec_msps": 5.12002
+    },
+    "ACoM": {
+     "bytes": 236085,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.123,
+     "dec_s": 0.044,
+     "bits_per_sample": 7.377627431142847,
+     "enc_msps": 0.06209095318942517,
+     "dec_msps": 5.818204545454546
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 242137,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.017,
+    "dec_s": 0.05,
+    "bits_per_sample": 7.566751692376202
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.force",
+   "set": "b3-dev",
+   "group": "mid",
+   "class": "near",
+   "samples": 16001,
+   "bits": 14,
+   "quantum": 0.3051757810480922,
+   "max_dev_steps": 4.999339583843509e-10,
+   "grizzbit_orig": {
+    "name": "N15_M01_F10_KA01_19.force",
+    "n": 16001,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 17840,
+     "chunks": 4,
+     "bits_per_sample": 8.9194,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.001816,
+     "dec_s": 0.000259,
+     "enc_msps": 8.81,
+     "dec_msps": 61.75
+    },
+    "32768": {
+     "bytes": 18371,
+     "chunks": 1,
+     "bits_per_sample": 9.1849,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.00123,
+     "dec_s": 0.000333,
+     "enc_msps": 13.01,
+     "dec_msps": 48.11
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M01_F10_KA01_19.force",
+    "n": 16001,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 15032,
+     "chunks": 4,
+     "bits_per_sample": 7.5155,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000899,
+     "dec_s": 0.000156,
+     "enc_msps": 17.79,
+     "dec_msps": 102.57
+    },
+    "32768": {
+     "bytes": 15026,
+     "chunks": 1,
+     "bits_per_sample": 7.5125,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000568,
+     "dec_s": 0.000154,
+     "enc_msps": 28.15,
+     "dec_msps": 104.04
+    }
+   },
+   "ideas": {
+    "name": "N15_M01_F10_KA01_19.force",
+    "n": 16001,
+    "4096": {
+     "fixed_rice": 7.4628,
+     "fixed_ac": 7.3715,
+     "lpc_rice": 7.4628,
+     "lpc_ac": 7.3618,
+     "nlms_rice": 7.4586,
+     "nlms_ac": 7.3618,
+     "blk_rice": 7.4628,
+     "blk_ac": 7.3618,
+     "wins_ac": {
+      "fixed": 1,
+      "lpc": 3,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "0": 1,
+      "4": 3
+     }
+    },
+    "32768": {
+     "fixed_rice": 7.5015,
+     "fixed_ac": 7.3256,
+     "lpc_rice": 7.4298,
+     "lpc_ac": 7.2769,
+     "nlms_rice": 7.4298,
+     "nlms_ac": 7.2769,
+     "blk_rice": 7.4298,
+     "blk_ac": 7.2769,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 1,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 1
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 14845,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.013,
+     "dec_s": 0.003,
+     "bits_per_sample": 7.422036122742329,
+     "enc_msps": 1.230846153846154,
+     "dec_msps": 5.333666666666667
+    },
+    "EMG": {
+     "bytes": 14693,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.081,
+     "dec_s": 0.004,
+     "bits_per_sample": 7.346040872445472,
+     "enc_msps": 0.1975432098765432,
+     "dec_msps": 4.00025
+    },
+    "ECG": {
+     "bytes": 14773,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.092,
+     "dec_s": 0.003,
+     "bits_per_sample": 7.386038372601712,
+     "enc_msps": 0.17392391304347826,
+     "dec_msps": 5.333666666666667
+    },
+    "ACoM": {
+     "bytes": 14569,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.169,
+     "dec_s": 0.003,
+     "bits_per_sample": 7.2840447472033,
+     "enc_msps": 0.09468047337278106,
+     "dec_msps": 5.333666666666667
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 14865,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 0.124,
+    "dec_s": 0.003,
+    "bits_per_sample": 7.4320354977813885
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.vibration_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 11,
+   "quantum": 0.0030517578125,
+   "max_dev_steps": 5.4190939408727e-07,
+   "grizzbit_orig": {
+    "name": "N15_M07_F04_KA09_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 299869,
+     "chunks": 63,
+     "bits_per_sample": 9.3709,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019361,
+     "dec_s": 0.004076,
+     "enc_msps": 13.22,
+     "dec_msps": 62.8
+    },
+    "32768": {
+     "bytes": 298144,
+     "chunks": 8,
+     "bits_per_sample": 9.317,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011869,
+     "dec_s": 0.003972,
+     "enc_msps": 21.57,
+     "dec_msps": 64.46
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F04_KA09_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 257439,
+     "chunks": 63,
+     "bits_per_sample": 8.0449,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013494,
+     "dec_s": 0.002603,
+     "enc_msps": 18.97,
+     "dec_msps": 98.34
+    },
+    "32768": {
+     "bytes": 255827,
+     "chunks": 8,
+     "bits_per_sample": 7.9946,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008351,
+     "dec_s": 0.002479,
+     "enc_msps": 30.65,
+     "dec_msps": 103.25
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F04_KA09_19.vibration_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 7.9792,
+     "fixed_ac": 7.86,
+     "lpc_rice": 7.856,
+     "lpc_ac": 7.7512,
+     "nlms_rice": 7.7668,
+     "nlms_ac": 7.6449,
+     "blk_rice": 7.856,
+     "blk_ac": 7.7512,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 1,
+      "nlms": 62
+     },
+     "lpc_order_ac": {
+      "4": 3,
+      "8": 2,
+      "16": 17,
+      "32": 41
+     }
+    },
+    "32768": {
+     "fixed_rice": 7.9799,
+     "fixed_ac": 7.8571,
+     "lpc_rice": 7.7368,
+     "lpc_ac": 7.6301,
+     "nlms_rice": 7.7282,
+     "nlms_ac": 7.6047,
+     "blk_rice": 7.7368,
+     "blk_ac": 7.6301,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 0,
+      "nlms": 8
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 248855,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.196,
+     "dec_s": 0.044,
+     "bits_per_sample": 7.776688372311046,
+     "enc_msps": 1.306127551020408,
+     "dec_msps": 5.818204545454546
+    },
+    "EMG": {
+     "bytes": 248563,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.706,
+     "dec_s": 0.047,
+     "bits_per_sample": 7.767563407955437,
+     "enc_msps": 0.15005920281359905,
+     "dec_msps": 5.4468297872340425
+    },
+    "ECG": {
+     "bytes": 248485,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.801,
+     "dec_s": 0.056,
+     "bits_per_sample": 7.765125917476885,
+     "enc_msps": 0.14214380899500278,
+     "dec_msps": 4.571446428571428
+    },
+    "ACoM": {
+     "bytes": 247997,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.153,
+     "dec_s": 0.048,
+     "bits_per_sample": 7.7498759770469645,
+     "enc_msps": 0.06164242716108837,
+     "dec_msps": 5.333354166666667
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 249597,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 1.953,
+    "dec_s": 0.049,
+    "bits_per_sample": 7.799875781735228
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.6793761249872625e-07,
+   "grizzbit_orig": {
+    "name": "N15_M07_F04_KA09_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 338242,
+     "chunks": 63,
+     "bits_per_sample": 10.57,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.016946,
+     "dec_s": 0.003987,
+     "enc_msps": 15.11,
+     "dec_msps": 64.21
+    },
+    "32768": {
+     "bytes": 335369,
+     "chunks": 8,
+     "bits_per_sample": 10.4802,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011538,
+     "dec_s": 0.004313,
+     "enc_msps": 22.19,
+     "dec_msps": 59.36
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F04_KA09_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 294918,
+     "chunks": 63,
+     "bits_per_sample": 9.2162,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013632,
+     "dec_s": 0.002481,
+     "enc_msps": 18.78,
+     "dec_msps": 103.17
+    },
+    "32768": {
+     "bytes": 292156,
+     "chunks": 8,
+     "bits_per_sample": 9.1298,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008376,
+     "dec_s": 0.002408,
+     "enc_msps": 30.56,
+     "dec_msps": 106.3
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F04_KA09_19.phase_current_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.0959,
+     "fixed_ac": 9.0443,
+     "lpc_rice": 7.7263,
+     "lpc_ac": 7.6244,
+     "nlms_rice": 7.7257,
+     "nlms_ac": 7.6235,
+     "blk_rice": 7.7263,
+     "blk_ac": 7.6244,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 61,
+      "nlms": 2
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.0949,
+     "fixed_ac": 9.0259,
+     "lpc_rice": 7.5727,
+     "lpc_ac": 7.4637,
+     "nlms_rice": 7.5727,
+     "nlms_ac": 7.4637,
+     "blk_rice": 7.5727,
+     "blk_ac": 7.4637,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 248971,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.189,
+     "dec_s": 0.044,
+     "bits_per_sample": 7.780313358150945,
+     "enc_msps": 1.3545026455026454,
+     "dec_msps": 5.818204545454546
+    },
+    "EMG": {
+     "bytes": 243639,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.721,
+     "dec_s": 0.05,
+     "bits_per_sample": 7.613689009027309,
+     "enc_msps": 0.14875130737943057,
+     "dec_msps": 5.12002
+    },
+    "ECG": {
+     "bytes": 244389,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.659,
+     "dec_s": 0.049,
+     "bits_per_sample": 7.637126417474931,
+     "enc_msps": 0.1543104279686558,
+     "dec_msps": 5.224510204081632
+    },
+    "ACoM": {
+     "bytes": 243015,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.171,
+     "dec_s": 0.048,
+     "bits_per_sample": 7.594189085198886,
+     "enc_msps": 0.06137640853512347,
+     "dec_msps": 5.333354166666667
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 249187,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.037,
+    "dec_s": 0.05,
+    "bits_per_sample": 7.78706333178386
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_2",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.653270363001961e-07,
+   "grizzbit_orig": {
+    "name": "N15_M07_F04_KA09_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 343964,
+     "chunks": 63,
+     "bits_per_sample": 10.7488,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019956,
+     "dec_s": 0.003993,
+     "enc_msps": 12.83,
+     "dec_msps": 64.12
+    },
+    "32768": {
+     "bytes": 341662,
+     "chunks": 8,
+     "bits_per_sample": 10.6769,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011458,
+     "dec_s": 0.003903,
+     "enc_msps": 22.34,
+     "dec_msps": 65.58
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F04_KA09_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 300540,
+     "chunks": 63,
+     "bits_per_sample": 9.3918,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013873,
+     "dec_s": 0.002482,
+     "enc_msps": 18.45,
+     "dec_msps": 103.13
+    },
+    "32768": {
+     "bytes": 298352,
+     "chunks": 8,
+     "bits_per_sample": 9.3235,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008172,
+     "dec_s": 0.002401,
+     "enc_msps": 31.33,
+     "dec_msps": 106.61
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F04_KA09_19.phase_current_2",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.2628,
+     "fixed_ac": 9.1924,
+     "lpc_rice": 7.7379,
+     "lpc_ac": 7.6353,
+     "nlms_rice": 7.7379,
+     "nlms_ac": 7.6353,
+     "blk_rice": 7.7379,
+     "blk_ac": 7.6353,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 63,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "16": 1,
+      "32": 62
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.2561,
+     "fixed_ac": 9.1749,
+     "lpc_rice": 7.5816,
+     "lpc_ac": 7.4752,
+     "nlms_rice": 7.5816,
+     "nlms_ac": 7.4752,
+     "blk_rice": 7.5816,
+     "blk_ac": 7.4752,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 249699,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.192,
+     "dec_s": 0.046,
+     "bits_per_sample": 7.803063269284104,
+     "enc_msps": 1.3333385416666668,
+     "dec_msps": 5.565239130434782
+    },
+    "EMG": {
+     "bytes": 243925,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.74,
+     "dec_s": 0.047,
+     "bits_per_sample": 7.622626474115336,
+     "enc_msps": 0.14712701149425286,
+     "dec_msps": 5.4468297872340425
+    },
+    "ECG": {
+     "bytes": 244913,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.654,
+     "dec_s": 0.048,
+     "bits_per_sample": 7.653501353510338,
+     "enc_msps": 0.1547769044740024,
+     "dec_msps": 5.333354166666667
+    },
+    "ACoM": {
+     "bytes": 243611,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.188,
+     "dec_s": 0.049,
+     "bits_per_sample": 7.612814012445264,
+     "enc_msps": 0.06112726838586438,
+     "dec_msps": 5.224510204081632
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 249947,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.016,
+    "dec_s": 0.05,
+    "bits_per_sample": 7.810813239010785
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.force",
+   "set": "b3-dev",
+   "group": "mid",
+   "class": "near",
+   "samples": 16001,
+   "bits": 13,
+   "quantum": 0.30517578104820586,
+   "max_dev_steps": 3.1813979169901393e-10,
+   "grizzbit_orig": {
+    "name": "N15_M07_F04_KA09_19.force",
+    "n": 16001,
+    "quantum": 0.30517578104820586,
+    "4096": {
+     "bytes": 17871,
+     "chunks": 4,
+     "bits_per_sample": 8.9349,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.001823,
+     "dec_s": 0.000249,
+     "enc_msps": 8.78,
+     "dec_msps": 64.21
+    },
+    "32768": {
+     "bytes": 17921,
+     "chunks": 1,
+     "bits_per_sample": 8.9599,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.001223,
+     "dec_s": 0.000276,
+     "enc_msps": 13.08,
+     "dec_msps": 58.07
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F04_KA09_19.force",
+    "n": 16001,
+    "quantum": 0.30517578104820586,
+    "4096": {
+     "bytes": 14832,
+     "chunks": 4,
+     "bits_per_sample": 7.4155,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000917,
+     "dec_s": 0.000159,
+     "enc_msps": 17.45,
+     "dec_msps": 100.77
+    },
+    "32768": {
+     "bytes": 14911,
+     "chunks": 1,
+     "bits_per_sample": 7.455,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000578,
+     "dec_s": 0.000153,
+     "enc_msps": 27.7,
+     "dec_msps": 104.58
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F04_KA09_19.force",
+    "n": 16001,
+    "4096": {
+     "fixed_rice": 7.3601,
+     "fixed_ac": 7.288,
+     "lpc_rice": 7.3601,
+     "lpc_ac": 7.288,
+     "nlms_rice": 7.3601,
+     "nlms_ac": 7.288,
+     "blk_rice": 7.3601,
+     "blk_ac": 7.288,
+     "wins_ac": {
+      "fixed": 4,
+      "lpc": 0,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "0": 4
+     }
+    },
+    "32768": {
+     "fixed_rice": 7.4428,
+     "fixed_ac": 7.2638,
+     "lpc_rice": 7.4428,
+     "lpc_ac": 7.2638,
+     "nlms_rice": 7.4428,
+     "nlms_ac": 7.2638,
+     "blk_rice": 7.3941,
+     "blk_ac": 7.2638,
+     "wins_ac": {
+      "fixed": 1,
+      "lpc": 0,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "0": 1
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 14615,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.013,
+     "dec_s": 0.003,
+     "bits_per_sample": 7.307043309793138,
+     "enc_msps": 1.230846153846154,
+     "dec_msps": 5.333666666666667
+    },
+    "EMG": {
+     "bytes": 14567,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.082,
+     "dec_s": 0.004,
+     "bits_per_sample": 7.283044809699394,
+     "enc_msps": 0.1951341463414634,
+     "dec_msps": 4.00025
+    },
+    "ECG": {
+     "bytes": 14583,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.097,
+     "dec_s": 0.003,
+     "bits_per_sample": 7.291044309730641,
+     "enc_msps": 0.16495876288659791,
+     "dec_msps": 5.333666666666667
+    },
+    "ACoM": {
+     "bytes": 14521,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.173,
+     "dec_s": 0.003,
+     "bits_per_sample": 7.260046247109556,
+     "enc_msps": 0.0924913294797688,
+     "dec_msps": 5.333666666666667
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 14653,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 0.125,
+    "dec_s": 0.004,
+    "bits_per_sample": 7.326042122367352
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.vibration_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256106,
+   "bits": 13,
+   "quantum": 0.0030517578125,
+   "max_dev_steps": 2.2092717699706554e-06,
+   "grizzbit_orig": {
+    "name": "N15_M07_F10_KB24_19.vibration_1",
+    "n": 256106,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 352100,
+     "chunks": 63,
+     "bits_per_sample": 10.9986,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.018372,
+     "dec_s": 0.004076,
+     "enc_msps": 13.94,
+     "dec_msps": 62.83
+    },
+    "32768": {
+     "bytes": 350464,
+     "chunks": 8,
+     "bits_per_sample": 10.9475,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011525,
+     "dec_s": 0.003905,
+     "enc_msps": 22.22,
+     "dec_msps": 65.58
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F10_KB24_19.vibration_1",
+    "n": 256106,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 307016,
+     "chunks": 63,
+     "bits_per_sample": 9.5903,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.014651,
+     "dec_s": 0.00249,
+     "enc_msps": 17.48,
+     "dec_msps": 102.86
+    },
+    "32768": {
+     "bytes": 305496,
+     "chunks": 8,
+     "bits_per_sample": 9.5428,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008384,
+     "dec_s": 0.002477,
+     "enc_msps": 30.55,
+     "dec_msps": 103.41
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F10_KB24_19.vibration_1",
+    "n": 256106,
+    "4096": {
+     "fixed_rice": 9.5209,
+     "fixed_ac": 9.4084,
+     "lpc_rice": 9.3794,
+     "lpc_ac": 9.2744,
+     "nlms_rice": 9.2709,
+     "nlms_ac": 9.1536,
+     "blk_rice": 9.3789,
+     "blk_ac": 9.2743,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 1,
+      "nlms": 62
+     },
+     "lpc_order_ac": {
+      "2": 4,
+      "4": 2,
+      "8": 2,
+      "16": 6,
+      "32": 49
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.5201,
+     "fixed_ac": 9.4048,
+     "lpc_rice": 9.2582,
+     "lpc_ac": 9.1486,
+     "nlms_rice": 9.2492,
+     "nlms_ac": 9.1325,
+     "blk_rice": 9.2582,
+     "blk_ac": 9.1486,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 0,
+      "nlms": 8
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 298335,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.211,
+     "dec_s": 0.051,
+     "bits_per_sample": 9.319110055992441,
+     "enc_msps": 1.2137725118483411,
+     "dec_msps": 5.021686274509804
+    },
+    "EMG": {
+     "bytes": 295171,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.766,
+     "dec_s": 0.052,
+     "bits_per_sample": 9.220275979477247,
+     "enc_msps": 0.14502038505096262,
+     "dec_msps": 4.925115384615385
+    },
+    "ECG": {
+     "bytes": 295619,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.794,
+     "dec_s": 0.054,
+     "bits_per_sample": 9.234270185001522,
+     "enc_msps": 0.14275696767001117,
+     "dec_msps": 4.742703703703703
+    },
+    "ACoM": {
+     "bytes": 294653,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.253,
+     "dec_s": 0.05,
+     "bits_per_sample": 9.204095179339804,
+     "enc_msps": 0.060217728662120856,
+     "dec_msps": 5.12212
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 296707,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.009,
+    "dec_s": 0.056,
+    "bits_per_sample": 9.268256112703334
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256106,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.6816456305982345e-07,
+   "grizzbit_orig": {
+    "name": "N15_M07_F10_KB24_19.phase_current_1",
+    "n": 256106,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 340880,
+     "chunks": 63,
+     "bits_per_sample": 10.6481,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.018734,
+     "dec_s": 0.004067,
+     "enc_msps": 13.67,
+     "dec_msps": 62.97
+    },
+    "32768": {
+     "bytes": 337981,
+     "chunks": 8,
+     "bits_per_sample": 10.5575,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.012004,
+     "dec_s": 0.004317,
+     "enc_msps": 21.33,
+     "dec_msps": 59.33
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F10_KB24_19.phase_current_1",
+    "n": 256106,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 297453,
+     "chunks": 63,
+     "bits_per_sample": 9.2916,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013633,
+     "dec_s": 0.002449,
+     "enc_msps": 18.79,
+     "dec_msps": 104.57
+    },
+    "32768": {
+     "bytes": 294665,
+     "chunks": 8,
+     "bits_per_sample": 9.2045,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008326,
+     "dec_s": 0.002451,
+     "enc_msps": 30.76,
+     "dec_msps": 104.5
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F10_KB24_19.phase_current_1",
+    "n": 256106,
+    "4096": {
+     "fixed_rice": 9.1769,
+     "fixed_ac": 9.1226,
+     "lpc_rice": 7.972,
+     "lpc_ac": 7.8806,
+     "nlms_rice": 7.9719,
+     "nlms_ac": 7.8803,
+     "blk_rice": 7.972,
+     "blk_ac": 7.8806,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 62,
+      "nlms": 1
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.1749,
+     "fixed_ac": 9.1046,
+     "lpc_rice": 7.8229,
+     "lpc_ac": 7.7274,
+     "nlms_rice": 7.8229,
+     "nlms_ac": 7.7274,
+     "blk_rice": 7.8229,
+     "blk_ac": 7.7274,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 258005,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.201,
+     "dec_s": 0.046,
+     "bits_per_sample": 8.059319188148658,
+     "enc_msps": 1.2741592039800995,
+     "dec_msps": 5.567521739130434
+    },
+    "EMG": {
+     "bytes": 251541,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.731,
+     "dec_s": 0.049,
+     "bits_per_sample": 7.857402794155545,
+     "enc_msps": 0.14795262853841712,
+     "dec_msps": 5.226653061224489
+    },
+    "ECG": {
+     "bytes": 253085,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.668,
+     "dec_s": 0.054,
+     "bits_per_sample": 7.90563282390885,
+     "enc_msps": 0.15354076738609115,
+     "dec_msps": 4.742703703703703
+    },
+    "ACoM": {
+     "bytes": 251051,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.216,
+     "dec_s": 0.048,
+     "bits_per_sample": 7.842096631863369,
+     "enc_msps": 0.06074620493358633,
+     "dec_msps": 5.335541666666667
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 257615,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.099,
+    "dec_s": 0.055,
+    "bits_per_sample": 8.047136732446722
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_2",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256106,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.651007304850111e-07,
+   "grizzbit_orig": {
+    "name": "N15_M07_F10_KB24_19.phase_current_2",
+    "n": 256106,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 344772,
+     "chunks": 63,
+     "bits_per_sample": 10.7697,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019097,
+     "dec_s": 0.003974,
+     "enc_msps": 13.41,
+     "dec_msps": 64.44
+    },
+    "32768": {
+     "bytes": 343559,
+     "chunks": 8,
+     "bits_per_sample": 10.7318,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011564,
+     "dec_s": 0.004461,
+     "enc_msps": 22.15,
+     "dec_msps": 57.41
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F10_KB24_19.phase_current_2",
+    "n": 256106,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 301253,
+     "chunks": 63,
+     "bits_per_sample": 9.4103,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.0146,
+     "dec_s": 0.002531,
+     "enc_msps": 17.54,
+     "dec_msps": 101.19
+    },
+    "32768": {
+     "bytes": 300152,
+     "chunks": 8,
+     "bits_per_sample": 9.3759,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008122,
+     "dec_s": 0.002369,
+     "enc_msps": 31.53,
+     "dec_msps": 108.09
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F10_KB24_19.phase_current_2",
+    "n": 256106,
+    "4096": {
+     "fixed_rice": 9.2766,
+     "fixed_ac": 9.2058,
+     "lpc_rice": 7.6308,
+     "lpc_ac": 7.5448,
+     "nlms_rice": 7.6308,
+     "nlms_ac": 7.5448,
+     "blk_rice": 7.6308,
+     "blk_ac": 7.5448,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 63,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.2684,
+     "fixed_ac": 9.1878,
+     "lpc_rice": 7.4708,
+     "lpc_ac": 7.3864,
+     "nlms_rice": 7.4708,
+     "nlms_ac": 7.3864,
+     "blk_rice": 7.4708,
+     "blk_ac": 7.3864,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 246647,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.192,
+     "dec_s": 0.045,
+     "bits_per_sample": 7.704528593629201,
+     "enc_msps": 1.3338854166666667,
+     "dec_msps": 5.691244444444445
+    },
+    "EMG": {
+     "bytes": 240747,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.729,
+     "dec_s": 0.045,
+     "bits_per_sample": 7.520229904805042,
+     "enc_msps": 0.14812377096587623,
+     "dec_msps": 5.691244444444445
+    },
+    "ECG": {
+     "bytes": 242755,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.651,
+     "dec_s": 0.044,
+     "bits_per_sample": 7.582953933137061,
+     "enc_msps": 0.15512174439733495,
+     "dec_msps": 5.820590909090909
+    },
+    "ACoM": {
+     "bytes": 240169,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.234,
+     "dec_s": 0.047,
+     "bits_per_sample": 7.502174880713454,
+     "enc_msps": 0.06048795465281058,
+     "dec_msps": 5.449063829787234
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 246539,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.133,
+    "dec_s": 0.052,
+    "bits_per_sample": 7.701154990511741
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.force",
+   "set": "b3-dev",
+   "group": "mid",
+   "class": "near",
+   "samples": 16006,
+   "bits": 13,
+   "quantum": 0.3051757810480922,
+   "max_dev_steps": 1.9151717437063697e-09,
+   "grizzbit_orig": {
+    "name": "N15_M07_F10_KB24_19.force",
+    "n": 16006,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 20023,
+     "chunks": 4,
+     "bits_per_sample": 10.0077,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.0019,
+     "dec_s": 0.00025,
+     "enc_msps": 8.42,
+     "dec_msps": 63.91
+    },
+    "32768": {
+     "bytes": 20923,
+     "chunks": 1,
+     "bits_per_sample": 10.4576,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.001394,
+     "dec_s": 0.000317,
+     "enc_msps": 11.48,
+     "dec_msps": 50.57
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N15_M07_F10_KB24_19.force",
+    "n": 16006,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 17275,
+     "chunks": 4,
+     "bits_per_sample": 8.6343,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000874,
+     "dec_s": 0.000192,
+     "enc_msps": 18.31,
+     "dec_msps": 83.2
+    },
+    "32768": {
+     "bytes": 17349,
+     "chunks": 1,
+     "bits_per_sample": 8.6712,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000586,
+     "dec_s": 0.000205,
+     "enc_msps": 27.33,
+     "dec_msps": 77.92
+    }
+   },
+   "ideas": {
+    "name": "N15_M07_F10_KB24_19.force",
+    "n": 16006,
+    "4096": {
+     "fixed_rice": 8.5823,
+     "fixed_ac": 8.5007,
+     "lpc_rice": 8.5823,
+     "lpc_ac": 8.4923,
+     "nlms_rice": 8.5808,
+     "nlms_ac": 8.4915,
+     "blk_rice": 8.5823,
+     "blk_ac": 8.4923,
+     "wins_ac": {
+      "fixed": 1,
+      "lpc": 2,
+      "nlms": 1
+     },
+     "lpc_order_ac": {
+      "0": 2,
+      "2": 1,
+      "4": 1
+     }
+    },
+    "32768": {
+     "fixed_rice": 8.6571,
+     "fixed_ac": 8.4775,
+     "lpc_rice": 8.6282,
+     "lpc_ac": 8.4709,
+     "nlms_rice": 8.6282,
+     "nlms_ac": 8.4709,
+     "blk_rice": 8.6168,
+     "blk_ac": 8.4709,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 1,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "8": 1
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 17263,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.015,
+     "dec_s": 0.004,
+     "bits_per_sample": 8.628264400849682,
+     "enc_msps": 1.0670666666666668,
+     "dec_msps": 4.0015
+    },
+    "EMG": {
+     "bytes": 16353,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.082,
+     "dec_s": 0.003,
+     "bits_per_sample": 8.173434961889292,
+     "enc_msps": 0.19519512195121952,
+     "dec_msps": 5.335333333333333
+    },
+    "ECG": {
+     "bytes": 16349,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.096,
+     "dec_s": 0.004,
+     "bits_per_sample": 8.171435711608147,
+     "enc_msps": 0.16672916666666665,
+     "dec_msps": 4.0015
+    },
+    "ACoM": {
+     "bytes": 16317,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.181,
+     "dec_s": 0.004,
+     "bits_per_sample": 8.15544170935899,
+     "enc_msps": 0.08843093922651935,
+     "dec_msps": 4.0015
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 16895,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 0.126,
+    "dec_s": 0.004,
+    "bits_per_sample": 8.444333374984382
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.vibration_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 12,
+   "quantum": 0.0030517578125,
+   "max_dev_steps": 8.392985910177231e-07,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_KI08_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 283198,
+     "chunks": 63,
+     "bits_per_sample": 8.8499,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019701,
+     "dec_s": 0.003991,
+     "enc_msps": 12.99,
+     "dec_msps": 64.14
+    },
+    "32768": {
+     "bytes": 282098,
+     "chunks": 8,
+     "bits_per_sample": 8.8155,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.012056,
+     "dec_s": 0.00394,
+     "enc_msps": 21.23,
+     "dec_msps": 64.98
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_KI08_19.vibration_1",
+    "n": 256001,
+    "quantum": 0.0030517578125,
+    "4096": {
+     "bytes": 242949,
+     "chunks": 63,
+     "bits_per_sample": 7.5921,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013451,
+     "dec_s": 0.002867,
+     "enc_msps": 19.03,
+     "dec_msps": 89.29
+    },
+    "32768": {
+     "bytes": 241961,
+     "chunks": 8,
+     "bits_per_sample": 7.5613,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.00765,
+     "dec_s": 0.002621,
+     "enc_msps": 33.46,
+     "dec_msps": 97.67
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_KI08_19.vibration_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 7.6076,
+     "fixed_ac": 7.5116,
+     "lpc_rice": 7.4392,
+     "lpc_ac": 7.331,
+     "nlms_rice": 7.3709,
+     "nlms_ac": 7.2461,
+     "blk_rice": 7.4391,
+     "blk_ac": 7.331,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 0,
+      "nlms": 63
+     },
+     "lpc_order_ac": {
+      "2": 17,
+      "4": 6,
+      "32": 40
+     }
+    },
+    "32768": {
+     "fixed_rice": 7.6246,
+     "fixed_ac": 7.528,
+     "lpc_rice": 7.3262,
+     "lpc_ac": 7.2114,
+     "nlms_rice": 7.3262,
+     "nlms_ac": 7.199,
+     "blk_rice": 7.3262,
+     "blk_ac": 7.2114,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 2,
+      "nlms": 6
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 236769,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.196,
+     "dec_s": 0.047,
+     "bits_per_sample": 7.399002347647079,
+     "enc_msps": 1.306127551020408,
+     "dec_msps": 5.4468297872340425
+    },
+    "EMG": {
+     "bytes": 232595,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.699,
+     "dec_s": 0.056,
+     "bits_per_sample": 7.268565357166573,
+     "enc_msps": 0.15067745732783988,
+     "dec_msps": 4.571446428571428
+    },
+    "ECG": {
+     "bytes": 231739,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.776,
+     "dec_s": 0.05,
+     "bits_per_sample": 7.241815461658353,
+     "enc_msps": 0.1441447072072072,
+     "dec_msps": 5.12002
+    },
+    "ACoM": {
+     "bytes": 232365,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.207,
+     "dec_s": 0.051,
+     "bits_per_sample": 7.261377885242636,
+     "enc_msps": 0.06085120038031852,
+     "dec_msps": 5.019627450980392
+    }
+   },
+   "t261_best": "ECG",
+   "t261_intra4096": {
+    "bytes": 233771,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 1.443,
+    "dec_s": 0.052,
+    "bits_per_sample": 7.305315213612447
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_1",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.651007304850111e-07,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_KI08_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 336347,
+     "chunks": 63,
+     "bits_per_sample": 10.5108,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.018868,
+     "dec_s": 0.003968,
+     "enc_msps": 13.57,
+     "dec_msps": 64.51
+    },
+    "32768": {
+     "bytes": 334229,
+     "chunks": 8,
+     "bits_per_sample": 10.4446,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011563,
+     "dec_s": 0.003821,
+     "enc_msps": 22.14,
+     "dec_msps": 67.0
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_KI08_19.phase_current_1",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 293063,
+     "chunks": 63,
+     "bits_per_sample": 9.1582,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.013562,
+     "dec_s": 0.002375,
+     "enc_msps": 18.88,
+     "dec_msps": 107.79
+    },
+    "32768": {
+     "bytes": 291058,
+     "chunks": 8,
+     "bits_per_sample": 9.0955,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.008192,
+     "dec_s": 0.002626,
+     "enc_msps": 31.25,
+     "dec_msps": 97.5
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_KI08_19.phase_current_1",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.0606,
+     "fixed_ac": 8.9899,
+     "lpc_rice": 7.6839,
+     "lpc_ac": 7.5737,
+     "nlms_rice": 7.6595,
+     "nlms_ac": 7.5427,
+     "blk_rice": 7.6839,
+     "blk_ac": 7.5737,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 17,
+      "nlms": 46
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.0536,
+     "fixed_ac": 8.971,
+     "lpc_rice": 7.5598,
+     "lpc_ac": 7.4135,
+     "nlms_rice": 7.5598,
+     "nlms_ac": 7.4102,
+     "blk_rice": 7.5598,
+     "blk_ac": 7.4135,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 4,
+      "nlms": 4
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 250643,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.204,
+     "dec_s": 0.05,
+     "bits_per_sample": 7.832563154050179,
+     "enc_msps": 1.254906862745098,
+     "dec_msps": 5.12002
+    },
+    "EMG": {
+     "bytes": 243599,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.718,
+     "dec_s": 0.05,
+     "bits_per_sample": 7.612439013910102,
+     "enc_msps": 0.14901105937136205,
+     "dec_msps": 5.12002
+    },
+    "ECG": {
+     "bytes": 244421,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.655,
+     "dec_s": 0.053,
+     "bits_per_sample": 7.638126413568697,
+     "enc_msps": 0.1546833836858006,
+     "dec_msps": 4.830207547169811
+    },
+    "ACoM": {
+     "bytes": 243599,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.17,
+     "dec_s": 0.051,
+     "bits_per_sample": 7.612439013910102,
+     "enc_msps": 0.06139112709832135,
+     "dec_msps": 5.019627450980392
+    }
+   },
+   "t261_best": "EMG",
+   "t261_intra4096": {
+    "bytes": 251643,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 1.081,
+    "dec_s": 0.051,
+    "bits_per_sample": 7.863813031980344
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_2",
+   "set": "b3-dev",
+   "group": "high",
+   "class": "near",
+   "samples": 256001,
+   "bits": 14,
+   "quantum": 0.0006887817378,
+   "max_dev_steps": 1.8621100114252497e-07,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_KI08_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 344512,
+     "chunks": 63,
+     "bits_per_sample": 10.766,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.019959,
+     "dec_s": 0.003977,
+     "enc_msps": 12.83,
+     "dec_msps": 64.38
+    },
+    "32768": {
+     "bytes": 342552,
+     "chunks": 8,
+     "bits_per_sample": 10.7047,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.011468,
+     "dec_s": 0.003854,
+     "enc_msps": 22.32,
+     "dec_msps": 66.42
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_KI08_19.phase_current_2",
+    "n": 256001,
+    "quantum": 0.0006887817378,
+    "4096": {
+     "bytes": 301050,
+     "chunks": 63,
+     "bits_per_sample": 9.4078,
+     "kinds": {
+      "grid": 63,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.014574,
+     "dec_s": 0.002412,
+     "enc_msps": 17.57,
+     "dec_msps": 106.15
+    },
+    "32768": {
+     "bytes": 299205,
+     "chunks": 8,
+     "bits_per_sample": 9.3501,
+     "kinds": {
+      "grid": 8,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.01048,
+     "dec_s": 0.002435,
+     "enc_msps": 24.43,
+     "dec_msps": 105.14
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_KI08_19.phase_current_2",
+    "n": 256001,
+    "4096": {
+     "fixed_rice": 9.307,
+     "fixed_ac": 9.2345,
+     "lpc_rice": 7.8042,
+     "lpc_ac": 7.6941,
+     "nlms_rice": 7.7998,
+     "nlms_ac": 7.688,
+     "blk_rice": 7.8042,
+     "blk_ac": 7.6941,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 45,
+      "nlms": 18
+     },
+     "lpc_order_ac": {
+      "32": 63
+     }
+    },
+    "32768": {
+     "fixed_rice": 9.2998,
+     "fixed_ac": 9.2179,
+     "lpc_rice": 7.6822,
+     "lpc_ac": 7.5336,
+     "nlms_rice": 7.6822,
+     "nlms_ac": 7.5336,
+     "blk_rice": 7.6822,
+     "blk_ac": 7.5336,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 8,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 8
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 254723,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.203,
+     "dec_s": 0.047,
+     "bits_per_sample": 7.96006265600525,
+     "enc_msps": 1.2610886699507389,
+     "dec_msps": 5.4468297872340425
+    },
+    "EMG": {
+     "bytes": 247927,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.775,
+     "dec_s": 0.054,
+     "bits_per_sample": 7.747688485591853,
+     "enc_msps": 0.14422591549295774,
+     "dec_msps": 4.740759259259259
+    },
+    "ECG": {
+     "bytes": 248891,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.677,
+     "dec_s": 0.054,
+     "bits_per_sample": 7.777813367916532,
+     "enc_msps": 0.1526541443053071,
+     "dec_msps": 4.740759259259259
+    },
+    "ACoM": {
+     "bytes": 247847,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.189,
+     "dec_s": 0.052,
+     "bits_per_sample": 7.74518849535744,
+     "enc_msps": 0.06111267605633803,
+     "dec_msps": 4.923096153846154
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 255285,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 2.12,
+    "dec_s": 0.052,
+    "bits_per_sample": 7.977625087402003
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.force",
+   "set": "b3-dev",
+   "group": "mid",
+   "class": "near",
+   "samples": 16001,
+   "bits": 14,
+   "quantum": 0.3051757810480922,
+   "max_dev_steps": 7.838010793149586e-10,
+   "grizzbit_orig": {
+    "name": "N09_M07_F10_KI08_19.force",
+    "n": 16001,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 16830,
+     "chunks": 4,
+     "bits_per_sample": 8.4145,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.001802,
+     "dec_s": 0.000276,
+     "enc_msps": 8.88,
+     "dec_msps": 57.99
+    },
+    "32768": {
+     "bytes": 17171,
+     "chunks": 1,
+     "bits_per_sample": 8.585,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.001224,
+     "dec_s": 0.00029,
+     "enc_msps": 13.08,
+     "dec_msps": 55.12
+    }
+   },
+   "grizzbit_grid": {
+    "name": "N09_M07_F10_KI08_19.force",
+    "n": 16001,
+    "quantum": 0.3051757810480922,
+    "4096": {
+     "bytes": 14171,
+     "chunks": 4,
+     "bits_per_sample": 7.0851,
+     "kinds": {
+      "grid": 4,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000932,
+     "dec_s": 0.000157,
+     "enc_msps": 17.17,
+     "dec_msps": 101.84
+    },
+    "32768": {
+     "bytes": 14561,
+     "chunks": 1,
+     "bits_per_sample": 7.28,
+     "kinds": {
+      "grid": 1,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.000588,
+     "dec_s": 0.000155,
+     "enc_msps": 27.21,
+     "dec_msps": 103.01
+    }
+   },
+   "ideas": {
+    "name": "N09_M07_F10_KI08_19.force",
+    "n": 16001,
+    "4096": {
+     "fixed_rice": 7.0321,
+     "fixed_ac": 7.1482,
+     "lpc_rice": 7.0321,
+     "lpc_ac": 7.1383,
+     "nlms_rice": 7.0272,
+     "nlms_ac": 7.1158,
+     "blk_rice": 7.0321,
+     "blk_ac": 7.1383,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 1,
+      "nlms": 3
+     },
+     "lpc_order_ac": {
+      "0": 2,
+      "8": 2
+     }
+    },
+    "32768": {
+     "fixed_rice": 7.267,
+     "fixed_ac": 7.1089,
+     "lpc_rice": 7.2439,
+     "lpc_ac": 7.1089,
+     "nlms_rice": 7.2385,
+     "nlms_ac": 7.072,
+     "blk_rice": 7.0799,
+     "blk_ac": 7.1089,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 0,
+      "nlms": 1
+     },
+     "lpc_order_ac": {
+      "0": 1
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 13905,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.013,
+     "dec_s": 0.003,
+     "bits_per_sample": 6.952065495906506,
+     "enc_msps": 1.230846153846154,
+     "dec_msps": 5.333666666666667
+    },
+    "EMG": {
+     "bytes": 13881,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.084,
+     "dec_s": 0.003,
+     "bits_per_sample": 6.940066245859634,
+     "enc_msps": 0.19048809523809523,
+     "dec_msps": 5.333666666666667
+    },
+    "ECG": {
+     "bytes": 13827,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.1,
+     "dec_s": 0.003,
+     "bits_per_sample": 6.913067933254172,
+     "enc_msps": 0.16001,
+     "dec_msps": 5.333666666666667
+    },
+    "ACoM": {
+     "bytes": 13865,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 0.182,
+     "dec_s": 0.003,
+     "bits_per_sample": 6.932066745828386,
+     "enc_msps": 0.08791758241758242,
+     "dec_msps": 5.333666666666667
+    }
+   },
+   "t261_best": "ECG",
+   "t261_intra4096": {
+    "bytes": 13905,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 0.09,
+    "dec_s": 0.004,
+    "bits_per_sample": 6.952065495906506
+   }
+  },
+  {
+   "name": "FEMTO.B1_1.horiz",
+   "set": "nonB4",
+   "group": "femto",
+   "class": "exact",
+   "samples": 4193280,
+   "bits": 15,
+   "quantum": 0.001,
+   "max_dev_steps": 0.0,
+   "grizzbit_orig": {
+    "name": "FEMTO.B1_1.horiz",
+    "n": 4193280,
+    "quantum": 0.001,
+    "4096": {
+     "bytes": 5584507,
+     "chunks": 1024,
+     "bits_per_sample": 10.6542,
+     "kinds": {
+      "grid": 1024,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.239638,
+     "dec_s": 0.06079,
+     "enc_msps": 17.5,
+     "dec_msps": 68.98
+    },
+    "32768": {
+     "bytes": 5570017,
+     "chunks": 128,
+     "bits_per_sample": 10.6266,
+     "kinds": {
+      "grid": 128,
+      "float": 0,
+      "raw": 0
+     },
+     "fail": 0,
+     "enc_s": 0.168324,
+     "dec_s": 0.058243,
+     "enc_msps": 24.91,
+     "dec_msps": 72.0
+    }
+   },
+   "ideas": {
+    "name": "FEMTO.B1_1.horiz",
+    "n": 4193280,
+    "4096": {
+     "fixed_rice": 10.4434,
+     "fixed_ac": 10.4074,
+     "lpc_rice": 10.0446,
+     "lpc_ac": 10.0348,
+     "nlms_rice": 10.0409,
+     "nlms_ac": 10.0324,
+     "blk_rice": 10.0446,
+     "blk_ac": 10.0348,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 737,
+      "nlms": 287
+     },
+     "lpc_order_ac": {
+      "16": 1024
+     }
+    },
+    "32768": {
+     "fixed_rice": 10.4408,
+     "fixed_ac": 10.4037,
+     "lpc_rice": 9.9617,
+     "lpc_ac": 9.9512,
+     "nlms_rice": 9.9617,
+     "nlms_ac": 9.9512,
+     "blk_rice": 9.9617,
+     "blk_ac": 9.9512,
+     "wins_ac": {
+      "fixed": 0,
+      "lpc": 128,
+      "nlms": 0
+     },
+     "lpc_order_ac": {
+      "32": 128
+     }
+    }
+   },
+   "t261": {
+    "EEG": {
+     "bytes": 5216095,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 3.341,
+     "dec_s": 0.797,
+     "bits_per_sample": 9.951341193528693,
+     "enc_msps": 1.2550972762645913,
+     "dec_msps": 5.261329987452949
+    },
+    "EMG": {
+     "bytes": 5254973,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 29.499,
+     "dec_s": 0.836,
+     "bits_per_sample": 10.025513202075702,
+     "enc_msps": 0.1421499033865555,
+     "dec_msps": 5.0158851674641145
+    },
+    "ECG": {
+     "bytes": 5310053,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 30.427,
+     "dec_s": 0.844,
+     "bits_per_sample": 10.13059561965812,
+     "enc_msps": 0.13781444112137248,
+     "dec_msps": 4.9683412322274885
+    },
+    "ACoM": {
+     "bytes": 5215745,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 71.52,
+     "dec_s": 0.805,
+     "bits_per_sample": 9.950673458485959,
+     "enc_msps": 0.05863087248322148,
+     "dec_msps": 5.209043478260869
+    }
+   },
+   "t261_best": "ACoM",
+   "t261_intra4096": {
+    "bytes": 5242985,
+    "decoded_equal": true,
+    "mismatched_samples": 0,
+    "rec_equal": true,
+    "enc_s": 34.8,
+    "dec_s": 0.843,
+    "bits_per_sample": 10.002642322954824
+   }
+  }
+ ],
+ "ablations": [
+  {
+   "name": "N09_M07_F10_K001_19.vibration_1",
+   "preset": "ECG",
+   "base": 7.918875316893294,
+   "no_lms": 7.9201253120105,
+   "no_cc_lms": 7.918875316893294,
+   "no_linear_model": 7.918875316893294,
+   "no_block_matching": 7.919000316405014,
+   "no_lpc_dct": 7.918875316893294,
+   "no_zero_lsb": 7.918750317381573,
+   "lms_order_8": 7.918875316893294,
+   "lms_order_32": 7.916875324705763
+  },
+  {
+   "name": "N09_M07_F10_K001_19.force",
+   "preset": "ECG",
+   "base": 7.341041184925942,
+   "no_lms": 7.343041059933754,
+   "no_cc_lms": 7.341041184925942,
+   "no_linear_model": 7.341041184925942,
+   "no_block_matching": 7.322042372351728,
+   "no_lpc_dct": 7.341041184925942,
+   "no_zero_lsb": 7.340041247422036,
+   "lms_order_8": 7.343041059933754,
+   "lms_order_32": 7.34404099743766
+  },
+  {
+   "name": "FEMTO.B1_1.horiz",
+   "preset": "ACoM",
+   "base": 9.950673458485959,
+   "no_lms": 9.950669642857143,
+   "no_cc_lms": 9.950669642857143,
+   "no_linear_model": 9.950673458485959,
+   "no_block_matching": 9.950497939560439,
+   "no_lpc_dct": 9.950673458485959,
+   "no_zero_lsb": 9.950665827228327,
+   "lms_order_8": 9.950673458485959,
+   "lms_order_32": 9.950673458485959
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_1",
+   "preset": "ACoM",
+   "base": 7.80600075780954,
+   "no_lms": 7.806125757321261,
+   "no_cc_lms": 7.805938258053679,
+   "no_linear_model": 7.80600075780954,
+   "no_block_matching": 8.016874934082288,
+   "no_lpc_dct": 7.8076257514619085,
+   "no_zero_lsb": 7.805938258053679,
+   "lms_order_8": 7.80600075780954,
+   "lms_order_32": 7.80600075780954
+  }
+ ],
+ "joint": [
+  {
+   "name": "N09_M07_F10_K001_19.high",
+   "samples": 768003,
+   "bits": 14,
+   "t261_joint": {
+    "EEG": {
+     "bytes": 747763,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.035,
+     "dec_s": 0.115,
+     "bits_per_sample": 7.789167490231158,
+     "enc_msps": 0.742031884057971,
+     "dec_msps": 6.678286956521739
+    },
+    "EMG": {
+     "bytes": 738653,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.499,
+     "dec_s": 0.118,
+     "bits_per_sample": 7.694272027583225,
+     "enc_msps": 0.1707052678372972,
+     "dec_msps": 6.5085
+    },
+    "ECG": {
+     "bytes": 745637,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 3.278,
+     "dec_s": 0.132,
+     "bits_per_sample": 7.767021743404648,
+     "enc_msps": 0.2342901159243441,
+     "dec_msps": 5.818204545454545
+    },
+    "ACoM": {
+     "bytes": 737839,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 14.428,
+     "dec_s": 0.127,
+     "bits_per_sample": 7.685792894038174,
+     "enc_msps": 0.053230038813418354,
+     "dec_msps": 6.047267716535433
+    }
+   },
+   "t261_indep_best_sum_bps": 7.742126007320284,
+   "grizzbit_orig_sum_bps": {
+    "4096": 10.265511983677147,
+    "32768": 10.215533012240838
+   },
+   "grizzbit_grid_sum_bps": {
+    "4096": 8.94200673695285,
+    "32768": 8.89549650196679
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.high",
+   "samples": 768003,
+   "bits": 13,
+   "t261_joint": {
+    "EEG": {
+     "bytes": 729319,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.252,
+     "dec_s": 0.124,
+     "bits_per_sample": 7.597043240716507,
+     "enc_msps": 0.6134209265175719,
+     "dec_msps": 6.193572580645162
+    },
+    "EMG": {
+     "bytes": 722201,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.423,
+     "dec_s": 0.12,
+     "bits_per_sample": 7.522897697014204,
+     "enc_msps": 0.17363848066922902,
+     "dec_msps": 6.400025
+    },
+    "ECG": {
+     "bytes": 723495,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 3.208,
+     "dec_s": 0.127,
+     "bits_per_sample": 7.536376811028082,
+     "enc_msps": 0.23940243142144638,
+     "dec_msps": 6.047267716535433
+    },
+    "ACoM": {
+     "bytes": 721635,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 11.031,
+     "dec_s": 0.114,
+     "bits_per_sample": 7.51700188671138,
+     "enc_msps": 0.0696222463965189,
+     "dec_msps": 6.736868421052631
+    }
+   },
+   "t261_indep_best_sum_bps": 7.438898025137923,
+   "grizzbit_orig_sum_bps": {
+    "4096": 10.242387074008825,
+    "32768": 10.181981059969818
+   },
+   "grizzbit_grid_sum_bps": {
+    "4096": 8.886288204603368,
+    "32768": 8.829403010144492
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.high",
+   "samples": 768003,
+   "bits": 14,
+   "t261_joint": {
+    "EEG": {
+     "bytes": 745225,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.031,
+     "dec_s": 0.111,
+     "bits_per_sample": 7.762730093502239,
+     "enc_msps": 0.7449107662463629,
+     "dec_msps": 6.9189459459459455
+    },
+    "EMG": {
+     "bytes": 737687,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.497,
+     "dec_s": 0.116,
+     "bits_per_sample": 7.684209566889713,
+     "enc_msps": 0.17078118745830553,
+     "dec_msps": 6.620715517241379
+    },
+    "ECG": {
+     "bytes": 737531,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 3.195,
+     "dec_s": 0.123,
+     "bits_per_sample": 7.682584573237344,
+     "enc_msps": 0.24037652582159627,
+     "dec_msps": 6.243926829268292
+    },
+    "ACoM": {
+     "bytes": 735997,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 11.841,
+     "dec_s": 0.114,
+     "bits_per_sample": 7.6666054689890535,
+     "enc_msps": 0.06485964023308842,
+     "dec_msps": 6.736868421052631
+    }
+   },
+   "t261_indep_best_sum_bps": 7.652293024897038,
+   "grizzbit_orig_sum_bps": {
+    "4096": 10.229907956088713,
+    "32768": 10.158033236849334
+   },
+   "grizzbit_grid_sum_bps": {
+    "4096": 8.88430904566779,
+    "32768": 8.815955146008545
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.high",
+   "samples": 768318,
+   "bits": 14,
+   "t261_joint": {
+    "EEG": {
+     "bytes": 801511,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.04,
+     "dec_s": 0.114,
+     "bits_per_sample": 8.345617309499453,
+     "enc_msps": 0.7387673076923076,
+     "dec_msps": 6.739631578947368
+    },
+    "EMG": {
+     "bytes": 789783,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.483,
+     "dec_s": 0.12,
+     "bits_per_sample": 8.22350120653167,
+     "enc_msps": 0.17138478697300916,
+     "dec_msps": 6.40265
+    },
+    "ECG": {
+     "bytes": 793691,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 3.195,
+     "dec_s": 0.121,
+     "bits_per_sample": 8.264192691047196,
+     "enc_msps": 0.24047511737089203,
+     "dec_msps": 6.3497355371900825
+    },
+    "ACoM": {
+     "bytes": 788923,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 11.776,
+     "dec_s": 0.116,
+     "bits_per_sample": 8.214546580972982,
+     "enc_msps": 0.06524439538043478,
+     "dec_msps": 6.623431034482758
+    }
+   },
+   "t261_indep_best_sum_bps": 8.182788897305542,
+   "grizzbit_orig_sum_bps": {
+    "4096": 10.805442538115727,
+    "32768": 10.74559231984673
+   },
+   "grizzbit_grid_sum_bps": {
+    "4096": 9.430699267751114,
+    "32768": 9.374378837929086
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.high",
+   "samples": 768003,
+   "bits": 14,
+   "t261_joint": {
+    "EEG": {
+     "bytes": 732427,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 1.031,
+     "dec_s": 0.126,
+     "bits_per_sample": 7.629418114252158,
+     "enc_msps": 0.7449107662463629,
+     "dec_msps": 6.095261904761905
+    },
+    "EMG": {
+     "bytes": 722017,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 4.436,
+     "dec_s": 0.132,
+     "bits_per_sample": 7.5209810378344875,
+     "enc_msps": 0.17312962128043283,
+     "dec_msps": 5.818204545454545
+    },
+    "ECG": {
+     "bytes": 723307,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 3.143,
+     "dec_s": 0.13,
+     "bits_per_sample": 7.5344184853444585,
+     "enc_msps": 0.24435348393254852,
+     "dec_msps": 5.9077153846153845
+    },
+    "ACoM": {
+     "bytes": 722989,
+     "decoded_equal": true,
+     "mismatched_samples": 0,
+     "rec_equal": true,
+     "enc_s": 11.671,
+     "dec_s": 0.127,
+     "bits_per_sample": 7.531105998283861,
+     "enc_msps": 0.06580438694199299,
+     "dec_msps": 6.047267716535433
+    }
+   },
+   "t261_indep_best_sum_bps": 7.533147656975299,
+   "grizzbit_orig_sum_bps": {
+    "4096": 10.042221189240147,
+    "32768": 9.988283899932682
+   },
+   "grizzbit_grid_sum_bps": {
+    "4096": 8.719361773326407,
+    "32768": 8.668966136851028
+   }
+  }
+ ]
+}

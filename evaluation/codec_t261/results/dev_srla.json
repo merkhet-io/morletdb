@@ -1,0 +1,758 @@
+{
+ "arm": "SRLA (owner's clone, commit 73cbb9a, codec version 18, format 10)",
+ "settings": {
+  "default": [],
+  "max": [
+   "-m",
+   "6"
+  ],
+  "max+": [
+   "-m",
+   "6",
+   "-V",
+   "2",
+   "-L",
+   "8",
+   "-P",
+   "3"
+  ]
+ },
+ "excluded": [],
+ "inputs": [
+  {
+   "name": "N09_M07_F10_K001_19.vibration_1",
+   "samples": 256001,
+   "bits": 12,
+   "default": {
+    "bytes": 264666,
+    "bits_per_sample": 8.270780192264874,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.024831749964505434,
+    "dec_s": 0.010652957949787378,
+    "enc_msps": 10.309422427574717,
+    "dec_msps": 24.03097817588865
+   },
+   "max": {
+    "bytes": 264666,
+    "bits_per_sample": 8.270780192264874,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.03817449999041855,
+    "dec_s": 0.011995332897640765,
+    "enc_msps": 6.706073427661236,
+    "dec_msps": 21.341716998146016
+   },
+   "max+": {
+    "bytes": 264726,
+    "bits_per_sample": 8.272655184940684,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.11926279100589454,
+    "dec_s": 0.03602054202929139,
+    "enc_msps": 2.1465286686720857,
+    "dec_msps": 7.107083502292209
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_1",
+   "samples": 256001,
+   "bits": 14,
+   "default": {
+    "bytes": 253021,
+    "bits_per_sample": 7.90687536376811,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.02912233304232359,
+    "dec_s": 0.01235729199834168,
+    "enc_msps": 8.790538849615958,
+    "dec_msps": 20.716593897300054
+   },
+   "max": {
+    "bytes": 253110,
+    "bits_per_sample": 7.909656602903895,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04121474991552532,
+    "dec_s": 0.013035750016570091,
+    "enc_msps": 6.2113927786703895,
+    "dec_msps": 19.638379047971178
+   },
+   "max+": {
+    "bytes": 257825,
+    "bits_per_sample": 8.05699977734462,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.13102179195266217,
+    "dec_s": 0.013179374975152314,
+    "enc_msps": 1.9538810772218143,
+    "dec_msps": 19.42436575957893
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_2",
+   "samples": 256001,
+   "bits": 14,
+   "default": {
+    "bytes": 240922,
+    "bits_per_sample": 7.528783090691052,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.029151667025871575,
+    "dec_s": 0.011671124957501888,
+    "enc_msps": 8.781693334134332,
+    "dec_msps": 21.934560801308994
+   },
+   "max": {
+    "bytes": 240946,
+    "bits_per_sample": 7.529533087761376,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04015987494494766,
+    "dec_s": 0.011680916999466717,
+    "enc_msps": 6.3745467422628606,
+    "dec_msps": 21.91617319185536
+   },
+   "max+": {
+    "bytes": 248100,
+    "bits_per_sample": 7.753094714473772,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.13154429208952934,
+    "dec_s": 0.01202662498690188,
+    "enc_msps": 1.946120169362918,
+    "dec_msps": 21.286187960363698
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.force",
+   "samples": 16001,
+   "bits": 14,
+   "default": {
+    "bytes": 15149,
+    "bits_per_sample": 7.574026623336041,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.008084749919362366,
+    "dec_s": 0.006860416964627802,
+    "enc_msps": 1.9791583115859666,
+    "dec_msps": 2.332365522751881
+   },
+   "max": {
+    "bytes": 15149,
+    "bits_per_sample": 7.574026623336041,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.0091530840145424,
+    "dec_s": 0.007030750042758882,
+    "enc_msps": 1.7481539527636418,
+    "dec_msps": 2.275859602842768
+   },
+   "max+": {
+    "bytes": 15448,
+    "bits_per_sample": 7.72351728016999,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.01379499991890043,
+    "dec_s": 0.007242207997478545,
+    "enc_msps": 1.15991301877988,
+    "dec_msps": 2.2094090649662266
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.vibration_1",
+   "samples": 256001,
+   "bits": 12,
+   "default": {
+    "bytes": 246716,
+    "bits_per_sample": 7.709844883418424,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.027004500036127865,
+    "dec_s": 0.13591991597786546,
+    "enc_msps": 9.479938516081026,
+    "dec_msps": 1.8834693809087533
+   },
+   "max": {
+    "bytes": 246716,
+    "bits_per_sample": 7.709844883418424,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.058938125032000244,
+    "dec_s": 0.09492904099170119,
+    "enc_msps": 4.343555209145272,
+    "dec_msps": 2.6967616793092843
+   },
+   "max+": {
+    "bytes": 247482,
+    "bits_per_sample": 7.73378228991293,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.1580655419966206,
+    "dec_s": 0.02509487501811236,
+    "enc_msps": 1.619587651845544,
+    "dec_msps": 10.201325960588761
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_1",
+   "samples": 256001,
+   "bits": 13,
+   "default": {
+    "bytes": 239714,
+    "bits_per_sample": 7.491033238151413,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.029909375007264316,
+    "dec_s": 0.011972290929406881,
+    "enc_msps": 8.559222649681683,
+    "dec_msps": 21.382791439790257
+   },
+   "max": {
+    "bytes": 239714,
+    "bits_per_sample": 7.491033238151413,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04249312507454306,
+    "dec_s": 0.012066915980540216,
+    "enc_msps": 6.0245274865266625,
+    "dec_msps": 21.21511415284912
+   },
+   "max+": {
+    "bytes": 248318,
+    "bits_per_sample": 7.759907187862548,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.13111933402251452,
+    "dec_s": 0.013058624928817153,
+    "enc_msps": 1.9524275493653898,
+    "dec_msps": 19.603978320494463
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_2",
+   "samples": 256001,
+   "bits": 13,
+   "default": {
+    "bytes": 240648,
+    "bits_per_sample": 7.520220624138187,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.028066291008144617,
+    "dec_s": 0.01225166697986424,
+    "enc_msps": 9.121297856054815,
+    "dec_msps": 20.895197398096165
+   },
+   "max": {
+    "bytes": 240648,
+    "bits_per_sample": 7.520220624138187,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04190604202449322,
+    "dec_s": 0.011318917036987841,
+    "enc_msps": 6.108928155285405,
+    "dec_msps": 22.61709306318286
+   },
+   "max+": {
+    "bytes": 250001,
+    "bits_per_sample": 7.812500732419014,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.13206283294130117,
+    "dec_s": 0.012056833016686141,
+    "enc_msps": 1.9384787854262255,
+    "dec_msps": 21.232856061430525
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.force",
+   "samples": 16001,
+   "bits": 14,
+   "default": {
+    "bytes": 15403,
+    "bits_per_sample": 7.701018686332104,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.008206833968870342,
+    "dec_s": 0.007426583091728389,
+    "enc_msps": 1.9497165485123753,
+    "dec_msps": 2.154557459650813
+   },
+   "max": {
+    "bytes": 15403,
+    "bits_per_sample": 7.701018686332104,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.009522499982267618,
+    "dec_s": 0.007393999956548214,
+    "enc_msps": 1.6803360493354016,
+    "dec_msps": 2.164051946717869
+   },
+   "max+": {
+    "bytes": 15067,
+    "bits_per_sample": 7.533029185675895,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.01475175004452467,
+    "dec_s": 0.008148833061568439,
+    "enc_msps": 1.0846848646231644,
+    "dec_msps": 1.9635940359932005
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.vibration_1",
+   "samples": 256001,
+   "bits": 11,
+   "default": {
+    "bytes": 248919,
+    "bits_per_sample": 7.778688364498576,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.02732304099481553,
+    "dec_s": 0.012432041927240789,
+    "enc_msps": 9.369418288710087,
+    "dec_msps": 20.59203158244317
+   },
+   "max": {
+    "bytes": 248919,
+    "bits_per_sample": 7.778688364498576,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.040505707962438464,
+    "dec_s": 0.012397166108712554,
+    "enc_msps": 6.320121604525305,
+    "dec_msps": 20.64996126978456
+   },
+   "max+": {
+    "bytes": 249301,
+    "bits_per_sample": 7.790625817867899,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.12374241708312184,
+    "dec_s": 0.01269133307505399,
+    "enc_msps": 2.0688217188131675,
+    "dec_msps": 20.171324673780255
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_1",
+   "samples": 256001,
+   "bits": 14,
+   "default": {
+    "bytes": 247037,
+    "bits_per_sample": 7.719876094234007,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.028215166996233165,
+    "dec_s": 0.01227708300575614,
+    "enc_msps": 9.073169761291052,
+    "dec_msps": 20.85194014571485
+   },
+   "max": {
+    "bytes": 247037,
+    "bits_per_sample": 7.719876094234007,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04196745797526091,
+    "dec_s": 0.012247834005393088,
+    "enc_msps": 6.09998823733637,
+    "dec_msps": 20.901736575403874
+   },
+   "max+": {
+    "bytes": 250713,
+    "bits_per_sample": 7.834750645505291,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.12732562504243106,
+    "dec_s": 0.012489458080381155,
+    "enc_msps": 2.0106007719552768,
+    "dec_msps": 20.497366527226244
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_2",
+   "samples": 256001,
+   "bits": 14,
+   "default": {
+    "bytes": 247586,
+    "bits_per_sample": 7.737032277217667,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.0283504999242723,
+    "dec_s": 0.010910125100053847,
+    "enc_msps": 9.029858404042624,
+    "dec_msps": 23.464533875852304
+   },
+   "max": {
+    "bytes": 247586,
+    "bits_per_sample": 7.737032277217667,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.041476916056126356,
+    "dec_s": 0.011627250001765788,
+    "enc_msps": 6.172131979474576,
+    "dec_msps": 22.01732997580013
+   },
+   "max+": {
+    "bytes": 252889,
+    "bits_per_sample": 7.902750379881328,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.128529499983415,
+    "dec_s": 0.012662083026953042,
+    "enc_msps": 1.991768426960608,
+    "dec_msps": 20.217921447447907
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.force",
+   "samples": 16001,
+   "bits": 13,
+   "default": {
+    "bytes": 15236,
+    "bits_per_sample": 7.617523904755953,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.009193250094540417,
+    "dec_s": 0.007402125047519803,
+    "enc_msps": 1.7405161216600094,
+    "dec_msps": 2.161676531709145
+   },
+   "max": {
+    "bytes": 15244,
+    "bits_per_sample": 7.621523654771576,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.009529958944767714,
+    "dec_s": 0.007346625090576708,
+    "enc_msps": 1.679020874353831,
+    "dec_msps": 2.1780068810812185
+   },
+   "max+": {
+    "bytes": 15085,
+    "bits_per_sample": 7.542028623211049,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.015352374990470707,
+    "dec_s": 0.0077744589652866125,
+    "enc_msps": 1.0422491640499856,
+    "dec_msps": 2.058149650213005
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.vibration_1",
+   "samples": 256106,
+   "bits": 13,
+   "default": {
+    "bytes": 297619,
+    "bits_per_sample": 9.296744316806322,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.027438458055257797,
+    "dec_s": 0.012594708008691669,
+    "enc_msps": 9.33383353700973,
+    "dec_msps": 20.334413455497344
+   },
+   "max": {
+    "bytes": 297659,
+    "bits_per_sample": 9.297993799442418,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.040802041068673134,
+    "dec_s": 0.012465249979868531,
+    "enc_msps": 6.276793839037437,
+    "dec_msps": 20.54559679217128
+   },
+   "max+": {
+    "bytes": 297667,
+    "bits_per_sample": 9.298243695969637,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.1259831660427153,
+    "dec_s": 0.011790874996222556,
+    "enc_msps": 2.0328588973003408,
+    "dec_msps": 21.72069503595354
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_1",
+   "samples": 256106,
+   "bits": 14,
+   "default": {
+    "bytes": 256123,
+    "bits_per_sample": 8.00053103012034,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.02799508289899677,
+    "dec_s": 0.011853458010591567,
+    "enc_msps": 9.14824938808014,
+    "dec_msps": 21.606015710449935
+   },
+   "max": {
+    "bytes": 256205,
+    "bits_per_sample": 8.003092469524338,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04122833407018334,
+    "dec_s": 0.012208917061798275,
+    "enc_msps": 6.21189300455431,
+    "dec_msps": 20.976962879152993
+   },
+   "max+": {
+    "bytes": 258834,
+    "bits_per_sample": 8.085214715781747,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.12825487495865673,
+    "dec_s": 0.012388958944939077,
+    "enc_msps": 1.9968519721574434,
+    "dec_msps": 20.672116288239053
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_2",
+   "samples": 256106,
+   "bits": 14,
+   "default": {
+    "bytes": 244560,
+    "bits_per_sample": 7.639336837090892,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.02784633298870176,
+    "dec_s": 0.012467290973290801,
+    "enc_msps": 9.197117627800804,
+    "dec_msps": 20.542233316657693
+   },
+   "max": {
+    "bytes": 244623,
+    "bits_per_sample": 7.641304772242743,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.041941958013921976,
+    "dec_s": 0.012263584067113698,
+    "enc_msps": 6.106200380892796,
+    "dec_msps": 20.883454510397137
+   },
+   "max+": {
+    "bytes": 249506,
+    "bits_per_sample": 7.793835365044162,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.12715783307794482,
+    "dec_s": 0.012649166979826987,
+    "enc_msps": 2.014079619011854,
+    "dec_msps": 20.24686688130849
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.force",
+   "samples": 16006,
+   "bits": 13,
+   "default": {
+    "bytes": 17262,
+    "bits_per_sample": 8.627764588279396,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.008829999947920442,
+    "dec_s": 0.007850665948353708,
+    "enc_msps": 1.8126840424013344,
+    "dec_msps": 2.0388079311101595
+   },
+   "max": {
+    "bytes": 17132,
+    "bits_per_sample": 8.562788954142198,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.011011958005838096,
+    "dec_s": 0.008109708083793521,
+    "enc_msps": 1.4535108099317364,
+    "dec_msps": 1.9736838656358626
+   },
+   "max+": {
+    "bytes": 17496,
+    "bits_per_sample": 8.744720729726353,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.014743166044354439,
+    "dec_s": 0.0078563749557361,
+    "enc_msps": 1.08565554724449,
+    "dec_msps": 2.037326386556142
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.vibration_1",
+   "samples": 256001,
+   "bits": 12,
+   "default": {
+    "bytes": 236778,
+    "bits_per_sample": 7.399283596548451,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.02665999997407198,
+    "dec_s": 0.012069166987203062,
+    "enc_msps": 9.602438118866175,
+    "dec_msps": 21.211157345940933
+   },
+   "max": {
+    "bytes": 236778,
+    "bits_per_sample": 7.399283596548451,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04011029202956706,
+    "dec_s": 0.01240020792465657,
+    "enc_msps": 6.382426730059466,
+    "dec_msps": 20.64489575944672
+   },
+   "max+": {
+    "bytes": 237058,
+    "bits_per_sample": 7.408033562368897,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.12362154200673103,
+    "dec_s": 0.010983291896991432,
+    "enc_msps": 2.070844578091908,
+    "dec_msps": 23.308221469569098
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_1",
+   "samples": 256001,
+   "bits": 14,
+   "default": {
+    "bytes": 245625,
+    "bits_per_sample": 7.675751266596615,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.029271792038343847,
+    "dec_s": 0.012320000096224248,
+    "enc_msps": 8.745655191341136,
+    "dec_msps": 20.779301785757088
+   },
+   "max": {
+    "bytes": 245714,
+    "bits_per_sample": 7.6785325057324,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.042635500081814826,
+    "dec_s": 0.01249762496445328,
+    "enc_msps": 6.004409459458674,
+    "dec_msps": 20.4839720129335
+   },
+   "max+": {
+    "bytes": 250298,
+    "bits_per_sample": 7.821781946164273,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.12939524999819696,
+    "dec_s": 0.01194829202722758,
+    "enc_msps": 1.9784420216628291,
+    "dec_msps": 21.425740132282417
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_2",
+   "samples": 256001,
+   "bits": 14,
+   "default": {
+    "bytes": 249898,
+    "bits_per_sample": 7.809281994992207,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.028557499987073243,
+    "dec_s": 0.012212625006213784,
+    "enc_msps": 8.964405151567213,
+    "dec_msps": 20.9619962841524
+   },
+   "max": {
+    "bytes": 250055,
+    "bits_per_sample": 7.814188225827243,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.04062329209409654,
+    "dec_s": 0.01199108303990215,
+    "enc_msps": 6.301828010566445,
+    "dec_msps": 21.349280890484852
+   },
+   "max+": {
+    "bytes": 256498,
+    "bits_per_sample": 8.015531189331291,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.12894804193638265,
+    "dec_s": 0.0128869159379974,
+    "enc_msps": 1.9853035079532246,
+    "dec_msps": 19.865187390970284
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.force",
+   "samples": 16001,
+   "bits": 14,
+   "default": {
+    "bytes": 14592,
+    "bits_per_sample": 7.2955440284982185,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.008750000037252903,
+    "dec_s": 0.007748249918222427,
+    "enc_msps": 1.8286857065001314,
+    "dec_msps": 2.065111498580945
+   },
+   "max": {
+    "bytes": 14592,
+    "bits_per_sample": 7.2955440284982185,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.009704167023301125,
+    "dec_s": 0.007722791051492095,
+    "enc_msps": 1.648879286761992,
+    "dec_msps": 2.071919322083497
+   },
+   "max+": {
+    "bytes": 14212,
+    "bits_per_sample": 7.105555902756078,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.01462645793799311,
+    "dec_s": 0.015124708996154368,
+    "enc_msps": 1.0939764136904557,
+    "dec_msps": 1.0579377100126977
+   }
+  },
+  {
+   "name": "FEMTO.B1_1.horiz",
+   "samples": 4193280,
+   "bits": 15,
+   "default": {
+    "bytes": 5262695,
+    "bits_per_sample": 10.040245344932845,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.31889524997677654,
+    "dec_s": 0.08494529104791582,
+    "enc_msps": 13.149396236868924,
+    "dec_msps": 49.364478575212146
+   },
+   "max": {
+    "bytes": 5262695,
+    "bits_per_sample": 10.040245344932845,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 0.49540783290285617,
+    "dec_s": 0.2659814580110833,
+    "enc_msps": 8.464298950279728,
+    "dec_msps": 15.765309474411815
+   },
+   "max+": {
+    "bytes": 5266419,
+    "bits_per_sample": 10.047350045787546,
+    "mismatched_samples": 0,
+    "decoded_equal": true,
+    "enc_s": 2.174731833045371,
+    "dec_s": 0.0893938330700621,
+    "enc_msps": 1.9281825631475533,
+    "dec_msps": 46.90793375772948
+   }
+  }
+ ]
+}
