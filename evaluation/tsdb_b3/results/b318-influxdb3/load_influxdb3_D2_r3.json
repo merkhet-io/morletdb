@@ -1,0 +1,69 @@
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.2043071249499917,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T01:10:07",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"e06d3c2a-7903-45e8-9d6b-d403080e3e46\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 108.719,
+  "samples_per_s": 934396,
+  "conversion_s": 25.702,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 871.752,
+   "p95_ms": 904.788,
+   "max_ms": 1025.697
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 120.475,
+   "p95_ms": 127.923,
+   "max_ms": 159.307
+  },
+  "queryable_after_last_ack_s": 2.158,
+  "server": {
+   "cpu_percent_mean": 76.9,
+   "cpu_percent_p95": 74.9,
+   "memory_peak_mib": 5397.5,
+   "samples": 54,
+   "kernel_memory": {
+    "peak_mib": 7465.6,
+    "anon_mib_at_end": 3794.5,
+    "file_mib_at_end": 1985.5,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5411.2
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 10.6
+  }
+ },
+ "correct": true
+}
