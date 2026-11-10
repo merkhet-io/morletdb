@@ -35,7 +35,20 @@
 //! chunks of every version, kind and grid mode) and `testdata/grizzbit` (the encoder's output on a varied
 //! sample set, written before the move) prove it. A future change to the bytes would be a new format
 //! version and a new Grizzbit number; version-2 and version-3 chunks keep decoding.
+//!
+//! # Grizzbit 2.1 (development build)
+//!
+//! [`encode_with`]`(.., `[`Format::Grizzbit21`]`)` opts in to chunk format version 5
+//! ([`GRIZZBIT21_VERSION`]): Grizzbit 1's grid path with last-place corrections stored once per grid
+//! index (or as sparse exceptions) and a per-chunk LPC predictor beside the fixed ones. It is written
+//! only where it is strictly smaller than the Grizzbit 1 chunk, so every other chunk stays Grizzbit 1
+//! byte for byte; [`encode`] never writes it. Layout and rules: the `g21` module (src/g21.rs). Version 4
+//! was the unshipped Grizzbit 2 and is never reused.
 use std::fmt;
+
+mod g21;
+#[doc(hidden)]
+pub use g21::layout as grizzbit21_layout;
 
 /// The name and number of the format this crate writes and reads: chunk format versions 2 and 3.
 pub const FORMAT: &str = "Grizzbit 1";
@@ -82,6 +95,11 @@ pub fn validate(samples: &[f64]) -> Result<(), SampleError> {
 /// reinterpreted. Version 3 is version 2 plus an offset in the grid header; it
 /// is written only for offset grids, so every other chunk keeps its version-2 bytes.
 pub const FORMAT_VERSION: u8 = 3;
+/// Grizzbit 2.1 (DEVELOPMENT BUILD): chunk format version 5, written only by [`encode_with`] with
+/// [`Format::Grizzbit21`] and read by [`decode`]. Version 4 belongs to the unshipped Grizzbit 2 (a pco
+/// chunk kind that failed its frozen study B5); it is never reused and is rejected as unknown.
+/// [`FORMAT_VERSION`] stays 3: it is what [`encode`] writes and what transfer clients are offered.
+pub const GRIZZBIT21_VERSION: u8 = 5;
 const BASE_VERSION: u8 = 2;
 const CHECKSUM_BYTES: usize = 4;
 const KIND_RAW: u8 = 0;
@@ -140,7 +158,7 @@ impl Kind {
 /// Grid index <-> sample mapping. A quantum of 1/d for integer d decodes as
 /// k / d, so decimal grids such as 0.001 reproduce parsed values exactly.
 #[derive(Clone, Copy)]
-struct Grid {
+pub(crate) struct Grid {
     mode: u8,
     scale: f64,
     /// Added to every grid value; None for version-2 grids, which never add it
@@ -169,7 +187,7 @@ impl Grid {
             })
         }
     }
-    fn step(self) -> f64 {
+    pub(crate) fn step(self) -> f64 {
         if self.mode == MODE_DIV {
             1.0 / self.scale
         } else {
@@ -199,7 +217,7 @@ impl Grid {
             k as f64 * self.scale
         }
     }
-    fn value(self, k: i64) -> f64 {
+    pub(crate) fn value(self, k: i64) -> f64 {
         match self.offset {
             Some(o) => o + self.unshifted(k),
             None => self.unshifted(k),
@@ -207,15 +225,86 @@ impl Grid {
     }
 }
 
-/// Encodes validated samples. The result decodes bitwise to the input.
+/// Encodes validated samples as Grizzbit 1 (chunk format versions 2 and 3). The result decodes bitwise
+/// to the input. Unchanged by Grizzbit 2.1: use [`encode_with`] to opt in to version 5.
 pub fn encode(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
-    let mut out = encode_body(samples, quantum)?;
-    let checksum = crc32c(&out);
-    out.extend_from_slice(&checksum.to_le_bytes());
-    Ok(out)
+    seal(encode_body(samples, quantum, None)?)
 }
 
-fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
+/// The chunk formats this crate writes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Format {
+    /// Chunk format versions 2 and 3, what [`encode`] writes.
+    Grizzbit1,
+    /// DEVELOPMENT BUILD, not a stable format: chunk format version 5 ([`GRIZZBIT21_VERSION`]) where it is
+    /// strictly smaller than Grizzbit 1, otherwise Grizzbit 1 byte for byte. See the `g21` module docs.
+    Grizzbit21,
+}
+
+/// Encodes validated samples in `format`. [`Format::Grizzbit1`] is [`encode`]. [`Format::Grizzbit21`]
+/// keeps Grizzbit 1's grid detection and fit, and writes a version-5 chunk only when it is strictly
+/// smaller than the Grizzbit 1 chunk (a tie keeps Grizzbit 1). [`decode`] reads both.
+pub fn encode_with(samples: &[f64], quantum: f64, format: Format) -> Result<Vec<u8>, CodecError> {
+    match format {
+        Format::Grizzbit1 => encode(samples, quantum),
+        Format::Grizzbit21 => encode_experimental(samples, quantum, Grizzbit21Features::ALL),
+    }
+}
+
+/// Which of Grizzbit 2.1's two codings the encoder may use (for development measurements of each alone).
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Grizzbit21Features {
+    /// Corrections once per grid index (table) or as sparse exceptions.
+    pub corrections: bool,
+    /// Per-chunk LPC beside the fixed predictors.
+    pub lpc: bool,
+}
+impl Grizzbit21Features {
+    pub const ALL: Self = Self {
+        corrections: true,
+        lpc: true,
+    };
+}
+
+/// [`encode_with`]`(.., `[`Format::Grizzbit21`]`)` with a subset of its codings. Development only.
+#[doc(hidden)]
+pub fn encode_experimental(
+    samples: &[f64],
+    quantum: f64,
+    features: Grizzbit21Features,
+) -> Result<Vec<u8>, CodecError> {
+    let mut plans = Vec::new();
+    let mut best = encode_body(samples, quantum, Some(&mut plans))?;
+    for plan in &plans {
+        let candidate = g21::encode_plan(samples.len(), plan, features);
+        if candidate.len() < best.len() {
+            best = candidate;
+        }
+    }
+    seal(best)
+}
+
+fn seal(mut body: Vec<u8>) -> Result<Vec<u8>, CodecError> {
+    let checksum = crc32c(&body);
+    body.extend_from_slice(&checksum.to_le_bytes());
+    Ok(body)
+}
+
+/// A grid coding the Grizzbit 1 encoder computed: the fitted grid, the indices and the per-sample
+/// last-place corrections (differences of order-preserving integers). Version 5 recodes it.
+pub(crate) struct Plan {
+    pub(crate) grid: Grid,
+    pub(crate) ints: Vec<i64>,
+    pub(crate) fix: Vec<i64>,
+}
+
+/// The Grizzbit 1 body (no checksum). With `plans`, every grid coding it computes is also handed out.
+fn encode_body(
+    samples: &[f64],
+    quantum: f64,
+    mut plans: Option<&mut Vec<Plan>>,
+) -> Result<Vec<u8>, CodecError> {
     validate(samples).map_err(CodecError::Signal)?;
     let grid = Grid::new(quantum)?;
     // Chunks on the plain grid keep their version-2 encoding. Only a chunk off it
@@ -225,7 +314,7 @@ fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
         .map(|&x| grid.index(x))
         .collect::<Option<Vec<i64>>>()
     {
-        Some(ints) => Ok(encode_version2(samples, grid, ints)),
+        Some(ints) => Ok(encode_version2(samples, grid, ints, plans)),
         None => {
             // Values off the declared grid may still sit on a grid of their own (calibrated ADC counts
             // or fixed decimals delivered as floats with no quantum). Try the step detected from the
@@ -239,8 +328,8 @@ fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
                     .map(|&x| g.index(x))
                     .collect::<Option<Vec<i64>>>()
                 {
-                    Some(ints) => Some(encode_version2(samples, g, ints)),
-                    None => encode_offset_grid(samples, g),
+                    Some(ints) => Some(encode_version2(samples, g, ints, plans.as_deref_mut())),
+                    None => encode_offset_grid(samples, g, plans.as_deref_mut()),
                 }
             });
             if let Some(d) = detected
@@ -249,7 +338,7 @@ fn encode_body(samples: &[f64], quantum: f64) -> Result<Vec<u8>, CodecError> {
             {
                 return Ok(d.clone());
             }
-            let fallback = encode_offset_grid(samples, grid).unwrap_or_else(|| {
+            let fallback = encode_offset_grid(samples, grid, plans).unwrap_or_else(|| {
                 let mut out = vec![BASE_VERSION];
                 encode_off_grid(samples, &mut out);
                 out
@@ -365,7 +454,11 @@ fn put_grid(out: &mut Vec<u8>, n: usize, grid: Grid, ints: &[i64], fix: &[i64]) 
 /// step and offset are then refitted to within one ulp of the values that need
 /// the fewest corrections. None when the chunk is not on any shifted grid or the
 /// result is not smaller than plain float64.
-fn encode_offset_grid(samples: &[f64], grid: Grid) -> Option<Vec<u8>> {
+fn encode_offset_grid(
+    samples: &[f64],
+    grid: Grid,
+    plans: Option<&mut Vec<Plan>>,
+) -> Option<Vec<u8>> {
     let x0 = samples[0];
     let k0 = (if grid.mode == MODE_DIV {
         x0 * grid.scale
@@ -416,12 +509,20 @@ fn encode_offset_grid(samples: &[f64], grid: Grid) -> Option<Vec<u8>> {
     let (grid, fix) = best_grid(samples, &ints, candidates);
     let mut out = vec![FORMAT_VERSION];
     put_grid(&mut out, samples.len(), grid, &ints, &fix);
+    if let Some(plans) = plans {
+        plans.push(Plan { grid, ints, fix });
+    }
     (out.len() < 3 + 8 * samples.len()).then_some(out)
 }
 
 /// The version-2 grid encoding of samples at grid indices `ints`, or float-bit
 /// coding when that grid encoding is not smaller than plain float64.
-fn encode_version2(samples: &[f64], grid: Grid, ints: Vec<i64>) -> Vec<u8> {
+fn encode_version2(
+    samples: &[f64],
+    grid: Grid,
+    ints: Vec<i64>,
+    plans: Option<&mut Vec<Plan>>,
+) -> Vec<u8> {
     let mut out = vec![BASE_VERSION];
     {
         {
@@ -451,6 +552,9 @@ fn encode_version2(samples: &[f64], grid: Grid, ints: Vec<i64>) -> Vec<u8> {
             }
             let (grid, fix) = best_grid(samples, &ints, candidates);
             put_grid(&mut out, samples.len(), grid, &ints, &fix);
+            if let Some(plans) = plans {
+                plans.push(Plan { grid, ints, fix });
+            }
             if out.len() < 3 + 8 * samples.len() {
                 return out;
             }
@@ -479,7 +583,7 @@ fn encode_off_grid(samples: &[f64], out: &mut Vec<u8>) {
 fn verified(encoded: &[u8]) -> Result<&[u8], CodecError> {
     match encoded.first() {
         None => return Err(CodecError::Corrupt("empty")),
-        Some(&BASE_VERSION) | Some(&FORMAT_VERSION) => {}
+        Some(&BASE_VERSION) | Some(&FORMAT_VERSION) | Some(&GRIZZBIT21_VERSION) => {}
         Some(&v) if v < BASE_VERSION => return Err(CodecError::UnsupportedVersion(v)),
         Some(_) => return Err(CodecError::Corrupt("unknown format version")),
     }
@@ -499,7 +603,7 @@ pub fn kind(encoded: &[u8]) -> Result<Kind, CodecError> {
 }
 fn kind_of(body: &[u8]) -> Result<Kind, CodecError> {
     match (body[0], body[1]) {
-        (_, KIND_GRID) => Ok(Kind::Grid),
+        (BASE_VERSION | FORMAT_VERSION | GRIZZBIT21_VERSION, KIND_GRID) => Ok(Kind::Grid),
         (BASE_VERSION, KIND_FLOAT) => Ok(Kind::Float),
         (BASE_VERSION, KIND_RAW) => Ok(Kind::Raw),
         _ => Err(CodecError::Corrupt("unknown kind")),
@@ -514,6 +618,11 @@ pub fn decode(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
 /// Decodes a body that `verified` accepted: a known version byte and at least three bytes.
 fn decode_verified(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
     let kind = kind_of(encoded)?;
+    if encoded[0] == GRIZZBIT21_VERSION {
+        let samples = g21::decode_body(encoded)?;
+        validate(&samples).map_err(CodecError::Signal)?;
+        return Ok(samples);
+    }
     let mut pos = 2;
     let n = get_varint(encoded, &mut pos)?;
     if n == 0 || n > MAX_SAMPLES as u64 {
@@ -647,7 +756,7 @@ pub fn crc32c(bytes: &[u8]) -> u32 {
 
 /// Monotonic float64 -> i64 map: +0 is 0, -0 is -1, and numeric order is kept,
 /// so smooth signals within a binade give small prediction residuals.
-fn ordered_bits(x: f64) -> i64 {
+pub(crate) fn ordered_bits(x: f64) -> i64 {
     let bits = x.to_bits();
     if bits >> 63 == 1 {
         -((bits & !(1 << 63)) as i64) - 1
@@ -655,7 +764,7 @@ fn ordered_bits(x: f64) -> i64 {
         bits as i64
     }
 }
-fn float_from_ordered(o: i64) -> f64 {
+pub(crate) fn float_from_ordered(o: i64) -> f64 {
     if o < 0 {
         f64::from_bits((o.wrapping_add(1).wrapping_neg() as u64) | (1 << 63))
     } else {
@@ -663,7 +772,7 @@ fn float_from_ordered(o: i64) -> f64 {
     }
 }
 
-fn predict(x: &[i64], i: usize, order: usize) -> i64 {
+pub(crate) fn predict(x: &[i64], i: usize, order: usize) -> i64 {
     match order.min(i) {
         0 => 0,
         1 => x[i - 1],
@@ -680,10 +789,10 @@ fn predict(x: &[i64], i: usize, order: usize) -> i64 {
     }
 }
 
-fn zigzag(v: i64) -> u64 {
+pub(crate) fn zigzag(v: i64) -> u64 {
     ((v << 1) ^ (v >> 63)) as u64
 }
-fn unzigzag(u: u64) -> i64 {
+pub(crate) fn unzigzag(u: u64) -> i64 {
     ((u >> 1) as i64) ^ -((u & 1) as i64)
 }
 
@@ -708,7 +817,7 @@ fn best_param(sum: u128, max: u64, count: usize) -> (u64, u128) {
     (best.0, best.1 + 6)
 }
 
-fn partition_bounds(n: usize, porder: u32, p: usize) -> (usize, usize) {
+pub(crate) fn partition_bounds(n: usize, porder: u32, p: usize) -> (usize, usize) {
     ((p * n) >> porder, ((p + 1) * n) >> porder)
 }
 
@@ -757,56 +866,109 @@ fn residuals(x: &[i64], order: usize, r: &mut [u64]) {
     }
 }
 
-/// Chooses the predictor order and partition order with the smallest coded size (first minimum in
-/// order-major, partition-order-minor sequence), then writes the partitioned Rice stream. Partition
-/// sums and maxima are computed once at the finest partition order and merged pairwise for coarser
-/// ones: partition p at order o is exactly partitions 2p and 2p+1 at order o+1, since
-/// ((2p * n) >> (o+1)) == ((p * n) >> o).
-fn encode_ints(x: &[i64], out: &mut Vec<u8>) {
-    let n = x.len();
-    let max_porder = MAX_PARTITION_ORDER.min(usize::BITS - 1 - n.leading_zeros());
-    let mut r = vec![0u64; n];
-    let mut best: Option<(u128, usize, u32)> = None;
-    let mut sums: Vec<u128> = Vec::with_capacity(1 << max_porder);
-    let mut maxs: Vec<u64> = Vec::with_capacity(1 << max_porder);
-    let mut costs = vec![0u128; max_porder as usize + 1];
-    for order in 0..=MAX_ORDER {
-        residuals(x, order, &mut r);
-        sums.clear();
-        maxs.clear();
-        for p in 0..(1usize << max_porder) {
-            let (a, b) = partition_bounds(n, max_porder, p);
-            let chunk = &r[a..b];
-            sums.push(chunk.iter().map(|&v| v as u128).sum());
-            maxs.push(chunk.iter().copied().max().unwrap_or(0));
+/// Smallest partitioned-Rice cost of the residuals `r` over partition orders 0..=`max_porder` (the first
+/// minimum) and that partition order. Partition sums and maxima are computed once at the finest partition
+/// order and merged pairwise for coarser ones: partition p at order o is exactly partitions 2p and 2p+1 at
+/// order o+1, since ((2p * n) >> (o+1)) == ((p * n) >> o).
+pub(crate) fn partition_search(r: &[u64], max_porder: u32, scratch: &mut Scratch) -> (u128, u32) {
+    let n = r.len();
+    let Scratch { sums, maxs, costs } = scratch;
+    sums.clear();
+    maxs.clear();
+    for p in 0..(1usize << max_porder) {
+        let (a, b) = partition_bounds(n, max_porder, p);
+        let chunk = &r[a..b];
+        sums.push(chunk.iter().map(|&v| v as u128).sum());
+        maxs.push(chunk.iter().copied().max().unwrap_or(0));
+    }
+    costs.clear();
+    costs.resize(max_porder as usize + 1, 0);
+    for porder in (0..=max_porder).rev() {
+        let parts = 1usize << porder;
+        let mut cost = 0u128;
+        for p in 0..parts {
+            let (a, b) = partition_bounds(n, porder, p);
+            cost += best_param(sums[p], maxs[p], b - a).1;
         }
-        for porder in (0..=max_porder).rev() {
-            let parts = 1usize << porder;
-            let mut cost = 0u128;
-            for p in 0..parts {
-                let (a, b) = partition_bounds(n, porder, p);
-                cost += best_param(sums[p], maxs[p], b - a).1;
-            }
-            costs[porder as usize] = cost;
-            if porder > 0 {
-                for p in 0..parts / 2 {
-                    sums[p] = sums[2 * p] + sums[2 * p + 1];
-                    maxs[p] = maxs[2 * p].max(maxs[2 * p + 1]);
-                }
-            }
-        }
-        for porder in 0..=max_porder {
-            let cost = costs[porder as usize];
-            if best.is_none_or(|b| cost < b.0) {
-                best = Some((cost, order, porder));
+        costs[porder as usize] = cost;
+        if porder > 0 {
+            for p in 0..parts / 2 {
+                sums[p] = sums[2 * p] + sums[2 * p + 1];
+                maxs[p] = maxs[2 * p].max(maxs[2 * p + 1]);
             }
         }
     }
-    let (_, order, porder) = best.expect("at least one candidate");
-    residuals(x, order, &mut r);
+    let mut best = (costs[0], 0);
+    for porder in 1..=max_porder {
+        if costs[porder as usize] < best.0 {
+            best = (costs[porder as usize], porder);
+        }
+    }
+    best
+}
+
+/// Buffers reused by [`partition_search`].
+#[derive(Default)]
+pub(crate) struct Scratch {
+    sums: Vec<u128>,
+    maxs: Vec<u64>,
+    costs: Vec<u128>,
+}
+
+pub(crate) fn max_partition_order(n: usize) -> u32 {
+    MAX_PARTITION_ORDER.min(usize::BITS - 1 - n.leading_zeros())
+}
+
+/// Chooses the predictor order and partition order with the smallest coded size (first minimum in
+/// order-major, partition-order-minor sequence), then writes the partitioned Rice stream. Grizzbit 1's
+/// stream coder; version 5 also uses it for its correction streams.
+fn encode_ints(x: &[i64], out: &mut Vec<u8>) {
+    encode_stream(x, false, out)
+}
+
+/// [`encode_ints`], and with `lpc` (version 5 only) also a per-chunk LPC predictor, written instead of
+/// the best fixed predictor only when its size, side information included, is strictly smaller.
+/// Without `lpc`, or when LPC does not win, the bytes are exactly [`encode_ints`]'s.
+pub(crate) fn encode_stream(x: &[i64], lpc: bool, out: &mut Vec<u8>) {
+    let n = x.len();
+    let max_porder = max_partition_order(n);
+    let mut r = vec![0u64; n];
+    let mut scratch = Scratch::default();
+    let mut best: Option<(u128, usize, u32)> = None;
+    for order in 0..=MAX_ORDER {
+        residuals(x, order, &mut r);
+        let (cost, porder) = partition_search(&r, max_porder, &mut scratch);
+        if best.is_none_or(|b| cost < b.0) {
+            best = Some((cost, order, porder));
+        }
+    }
+    let (cost, order, mut porder) = best.expect("at least one candidate");
     let mut w = BitWriter::default();
-    w.put(order as u64, 3);
-    w.put(porder as u64, 4);
+    let chosen = if lpc {
+        g21::best_lpc(x, cost, &mut r, max_porder, &mut scratch)
+    } else {
+        None
+    };
+    match chosen {
+        Some((model, lpc_porder)) => {
+            // `r` holds this model's residuals.
+            porder = lpc_porder;
+            w.put(g21::PREDICTOR_LPC, 3);
+            w.put(porder as u64, 4);
+            model.write(&mut w);
+        }
+        None => {
+            residuals(x, order, &mut r);
+            w.put(order as u64, 3);
+            w.put(porder as u64, 4);
+        }
+    }
+    write_partitions(&mut w, &r, porder);
+    out.extend(w.finish());
+}
+
+fn write_partitions(w: &mut BitWriter, r: &[u64], porder: u32) {
+    let n = r.len();
     for p in 0..(1usize << porder) {
         let (a, b) = partition_bounds(n, porder, p);
         let chunk = &r[a..b];
@@ -827,17 +989,30 @@ fn encode_ints(x: &[i64], out: &mut Vec<u8>) {
             }
         }
     }
-    out.extend(w.finish());
 }
 
 fn decode_ints(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
+    decode_stream(bytes, n, false)
+}
+
+/// Decodes one stream of `n` integers. With `lpc` (version 5) the predictor field may also be
+/// [`g21::PREDICTOR_LPC`], whose parameters follow the partition order.
+pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64>, CodecError> {
     let mut rd = BitReader::new(bytes);
-    let order = rd.get(3)? as usize;
+    let order = rd.get(3)?;
     let porder = rd.get(4)? as u32;
-    if order > MAX_ORDER || porder > MAX_PARTITION_ORDER || (n >> porder) == 0 {
+    let is_lpc = lpc && order == g21::PREDICTOR_LPC;
+    if (order as usize > MAX_ORDER && !is_lpc) || porder > MAX_PARTITION_ORDER || (n >> porder) == 0
+    {
         return Err(CodecError::Corrupt("predictor header"));
     }
-    // Residuals first, then the prediction in a second pass with the order fixed for the chunk.
+    let model = if is_lpc {
+        Some(g21::Lpc::read(&mut rd)?)
+    } else {
+        None
+    };
+    let order = order as usize;
+    // Residuals first, then the prediction in a second pass with the predictor fixed for the chunk.
     let mut x = Vec::with_capacity(n);
     for p in 0..(1usize << porder) {
         let (a, b) = partition_bounds(n, porder, p);
@@ -858,6 +1033,10 @@ fn decode_ints(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
     }
     if !rd.rest_is_padding() {
         return Err(CodecError::Corrupt("trailing data"));
+    }
+    if let Some(model) = model {
+        model.restore(&mut x);
+        return Ok(x);
     }
     let warm = order.min(n);
     for i in 0..warm {
@@ -900,14 +1079,14 @@ fn decode_ints(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
     Ok(x)
 }
 
-fn put_varint(out: &mut Vec<u8>, mut v: u64) {
+pub(crate) fn put_varint(out: &mut Vec<u8>, mut v: u64) {
     while v >= 0x80 {
         out.push((v as u8) | 0x80);
         v >>= 7;
     }
     out.push(v as u8);
 }
-fn get_varint(bytes: &[u8], pos: &mut usize) -> Result<u64, CodecError> {
+pub(crate) fn get_varint(bytes: &[u8], pos: &mut usize) -> Result<u64, CodecError> {
     let mut v = 0u64;
     for shift in (0..64).step_by(7) {
         let b = *bytes.get(*pos).ok_or(CodecError::Corrupt("truncated"))?;
@@ -921,7 +1100,7 @@ fn get_varint(bytes: &[u8], pos: &mut usize) -> Result<u64, CodecError> {
 }
 
 #[derive(Default)]
-struct BitWriter {
+pub(crate) struct BitWriter {
     out: Vec<u8>,
     acc: u64,
     bits: u32,
@@ -929,7 +1108,7 @@ struct BitWriter {
 impl BitWriter {
     /// Appends the low `n` bits of `v`, most significant first.
     #[inline(always)]
-    fn put(&mut self, v: u64, n: u32) {
+    pub(crate) fn put(&mut self, v: u64, n: u32) {
         if n > 32 {
             self.put(v >> 32, n - 32);
             self.put(v & 0xffff_ffff, 32);
@@ -967,7 +1146,7 @@ impl BitWriter {
 /// MSB-first bit reader over a byte slice. Reads take a 64-bit big-endian window at the current
 /// byte, so `get` costs a few instructions and unary codes are counted with `leading_zeros`.
 /// Reading past the end is an error ("truncated bitstream"), as with a bit-by-bit reader.
-struct BitReader<'a> {
+pub(crate) struct BitReader<'a> {
     bytes: &'a [u8],
     pos: usize,
 }
@@ -994,7 +1173,7 @@ impl<'a> BitReader<'a> {
         (self.bytes.len() * 8).saturating_sub(self.pos)
     }
     #[inline(always)]
-    fn get(&mut self, n: u32) -> Result<u64, CodecError> {
+    pub(crate) fn get(&mut self, n: u32) -> Result<u64, CodecError> {
         if n == 0 {
             return Ok(0);
         }
@@ -1267,8 +1446,8 @@ mod tests {
                 .map(|&v| grid.index(v))
                 .collect::<Option<Vec<i64>>>()
             {
-                Some(ints) => encode_version2(&x, grid, ints),
-                None => encode_offset_grid(&x, grid).unwrap_or_else(|| {
+                Some(ints) => encode_version2(&x, grid, ints, None),
+                None => encode_offset_grid(&x, grid, None).unwrap_or_else(|| {
                     let mut out = vec![BASE_VERSION];
                     encode_off_grid(&x, &mut out);
                     out

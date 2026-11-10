@@ -35,6 +35,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_v5"
+path = "fuzz_targets/decode_v5.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "roundtrip"
 path = "fuzz_targets/roundtrip.rs"
 test = false

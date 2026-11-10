@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Grizzbit 2.1, development build (#377), opt-in and not used by pg_morlet:** `grizzbit::encode_with(.., Format::Grizzbit21)`
+  writes chunk format version 5 (corrections once per grid index, per-chunk LPC) only where it is strictly smaller
+  than Grizzbit 1; `grizzbit::decode` reads it. `grizzbit::encode` and every stored chunk are unchanged (Grizzbit 1
+  goldens and `testdata/grizzbit/encoder-equivalence.bin` byte for byte). Development figures only
+  (evaluation/codec_g21); a frozen study comes before any claim.
+
 - **The chunk codec is now the `grizzbit` crate (Grizzbit 1 = chunk format versions 2 and 3, unchanged):**
   `crates/grizzbit` holds the encoder, decoder, CRC-32C, sample limits, unit and property tests, golden-chunk test,
   Kani proofs and the codec's fuzz targets, with no dependencies. `morlet_core::rawcodec` re-exports it, so every

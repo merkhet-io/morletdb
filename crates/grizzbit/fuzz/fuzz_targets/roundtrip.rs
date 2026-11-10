@@ -4,7 +4,9 @@
 #![no_main]
 use arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use grizzbit::{decode, encode, CodecError, MAX_AMPLITUDE, MAX_SAMPLES};
+use grizzbit::{
+    decode, encode, encode_with, CodecError, Format, GRIZZBIT21_VERSION, MAX_AMPLITUDE, MAX_SAMPLES,
+};
 mod common;
 
 #[derive(Debug)]
@@ -94,6 +96,19 @@ fuzz_target!(|c: Chunk| {
             // Version, kind, varint count (<= 3 bytes), float64 payload, checksum.
             assert!(bytes.len() <= 1 + 1 + 3 + 8 * c.samples.len() + 4);
             let back = decode(&bytes).expect("decodes");
+            assert_eq!(back.len(), c.samples.len());
+            for (a, b) in back.iter().zip(&c.samples) {
+                assert_eq!(a.to_bits(), b.to_bits());
+            }
+            // Grizzbit 2.1 (development build): exact too, never larger, and Grizzbit 1 byte for byte
+            // unless it writes a strictly smaller version-5 chunk.
+            let g21 = encode_with(&c.samples, c.quantum, Format::Grizzbit21).expect("encodes");
+            if g21[0] == GRIZZBIT21_VERSION {
+                assert!(g21.len() < bytes.len());
+            } else {
+                assert_eq!(g21, bytes);
+            }
+            let back = decode(&g21).expect("decodes");
             assert_eq!(back.len(), c.samples.len());
             for (a, b) in back.iter().zip(&c.samples) {
                 assert_eq!(a.to_bits(), b.to_bits());
