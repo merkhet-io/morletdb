@@ -1020,6 +1020,28 @@ with every count and read exact; one load per cell; descriptive only, no speed s
 - **Reported:** CedarDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at 16 GB
   the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1.
 
+
+## Study M1, amendment M1c: InfluxDB 3 Core (FROZEN before any load)
+
+Added 2026-11-10 at the owner's request: InfluxDB 3 Core's smallest memory cap, with the rules of Study M1 and M1b
+(caps 256 MB, 512 MB, 1 GB, 2 GB, 4 GB, swap disabled, 8 CPUs, ascending until the first pass; one load per cell;
+descriptive only, no speed statements).
+
+- **InfluxDB 3 Core** exactly as in B3.18 (`run_influx.py load D2 1`: image 3.12.2-core, its defaults, `no_sync`).
+  The load includes B3.18's storage step: a heartbeat of one point per second until a snapshot has written the data
+  as Parquet and the Parquet bytes are stable (at most 30 minutes). Persisting is part of InfluxDB's normal operation
+  and needs memory, so it stays in the cell.
+- **Pass:** the runner exits 0 within **50 minutes** (M1's 20 plus the 30-minute snapshot allowance) and writes a
+  result with every count and every read bit-exact, also after the restart before the reads; the container state is
+  recorded. Whether the snapshot settled is reported per cell.
+- **MorletDB** 0.3.9-alpha.1, arm `morletdb-i1-sum` (B3.18's), at 256 MB and at 16 GB, so the multiple compares two
+  releases measured in one session.
+- **Order:** both systems at 16 GB first, then InfluxDB at ascending caps until it passes, then MorletDB at 256 MB
+  (`run_m1c.sh`, `results/m1c/`, outcomes in `results/m1c/outcomes.tsv`).
+- **Machine:** M1's start condition; AC power and lid checked before every load. A cell interrupted by the machine
+  (sleep, power) is rerun; cells are independent, so the study may span sessions (recorded).
+- **Reported:** InfluxDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at 16 GB
+  the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1.
 ## Amendment B3.19: interval statistics against CedarDB with MorletDB 0.3.10-alpha.1 (FROZEN before any load)
 
 Added 2026-11-09 at the owner's request. B3.18's one loss to CedarDB was interval statistics (p50/p95 0.68/0.75 ms
