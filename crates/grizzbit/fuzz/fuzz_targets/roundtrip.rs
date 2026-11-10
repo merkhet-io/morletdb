@@ -4,10 +4,7 @@
 #![no_main]
 use arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use morlet_core::{
-    rawcodec::{decode, encode, CodecError},
-    MAX_AMPLITUDE, MAX_SAMPLES,
-};
+use grizzbit::{decode, encode, CodecError, MAX_AMPLITUDE, MAX_SAMPLES};
 mod common;
 
 #[derive(Debug)]

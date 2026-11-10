@@ -540,6 +540,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
 
 [[package]]
+name = "grizzbit"
+version = "0.3.8"
+dependencies = [
+ "proptest",
+ "serde_json",
+]
+
+[[package]]
 name = "half"
 version = "1.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -845,7 +853,7 @@ dependencies = [
 name = "morlet-core"
 version = "0.3.8"
 dependencies = [
- "proptest",
+ "grizzbit",
  "serde",
  "serde_json",
 ]

@@ -6,9 +6,9 @@
 //! false and add a new file instead of editing the old one.
 //!
 //! New cases: add them to `cases()` and run
-//!   MORLET_WRITE_GOLDEN=1 cargo test -p morlet-core --test codec_golden -- --ignored
+//!   MORLET_WRITE_GOLDEN=1 cargo test -p grizzbit --test codec_golden -- --ignored
 //! which writes missing files only.
-use morlet_core::rawcodec::{decode, encode, kind};
+use grizzbit::{decode, encode, kind};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 

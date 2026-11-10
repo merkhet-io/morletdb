@@ -1,4 +1,10 @@
-//! Lossless storage encoding for raw chunks.
+//! Grizzbit: lossless float64 compression for sampled signals.
+//!
+//! A chunk of up to [`MAX_SAMPLES`] float64 samples is stored in one of three kinds: values on a
+//! detected grid as Rice-coded integers with last-place corrections ([`Kind::Grid`]), the float64 bit
+//! patterns with the same coder ([`Kind::Float`]), or plain float64 ([`Kind::Raw`]). Every chunk ends
+//! with a CRC-32C, and every kind decodes bit for bit: [`decode`]`(&`[`encode`]`(x, q)?)` returns `x`
+//! exactly, signed zeros included.
 //!
 //! Samples that lie exactly on a recording's sample grid (integer ADC counts,
 //! fixed decimals, a dyadic ADC step) or within a thousandth of a step of it
@@ -12,8 +18,64 @@
 //! offset grid (format version 3) when that is smaller than plain float64.
 //! The stage-1 compression benchmark (evaluation/compression) motivates this:
 //! a standard codec on native integers beat every decomposition codec tested.
-use crate::{validate, SignalError, MAX_SAMPLES};
+//!
+//! # Lineage
+//!
+//! The integer coder is FLAC's fixed polynomial predictors (orders 0 to 4) with partitioned Rice
+//! coding of the residuals. The grid is the gain/offset calibration of seismic and biomedical formats
+//! (SEED and miniSEED, EDF): a stored value is `offset + k * step` for an integer count `k`. Grizzbit
+//! adds what float64 storage needs on top: last-place corrections, so a value a few ulps off its grid
+//! point still decodes bit for bit, and the float-bit and raw fallbacks for chunks that are not on a grid.
+//!
+//! # Format identity
+//!
+//! [`FORMAT`], "Grizzbit 1", is MorletDB's encoded chunk format versions 2 and 3, byte for byte
+//! (docs/chunk-format.md): version 2 for raw, float and plain-grid chunks, version 3 only for offset
+//! grids. The crate was split out of morlet-core without changing a byte; `testdata/rawcodec` (frozen
+//! chunks of every version, kind and grid mode) and `testdata/grizzbit` (the encoder's output on a varied
+//! sample set, written before the move) prove it. A future change to the bytes would be a new format
+//! version and a new Grizzbit number; version-2 and version-3 chunks keep decoding.
 use std::fmt;
+
+/// The name and number of the format this crate writes and reads: chunk format versions 2 and 3.
+pub const FORMAT: &str = "Grizzbit 1";
+
+/// The most samples one chunk holds.
+pub const MAX_SAMPLES: usize = 32_768;
+/// The largest sample magnitude a chunk holds; larger and non-finite samples are refused.
+pub const MAX_AMPLITUDE: f64 = 1e9;
+
+/// Why a chunk's samples cannot be encoded (or why decoded samples are refused).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SampleError {
+    /// No samples, or more than [`MAX_SAMPLES`].
+    InvalidLength,
+    /// A sample is NaN, infinite or beyond +/-[`MAX_AMPLITUDE`].
+    InvalidSample,
+}
+impl fmt::Display for SampleError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::InvalidLength => "waveform must contain 1..32768 samples",
+            Self::InvalidSample => "samples must be finite and within +/-1e9",
+        })
+    }
+}
+impl std::error::Error for SampleError {}
+
+/// Checks that `samples` fit in one chunk: 1..=[`MAX_SAMPLES`] finite values within +/-[`MAX_AMPLITUDE`].
+pub fn validate(samples: &[f64]) -> Result<(), SampleError> {
+    if samples.is_empty() || samples.len() > MAX_SAMPLES {
+        return Err(SampleError::InvalidLength);
+    }
+    if samples
+        .iter()
+        .any(|v| !v.is_finite() || v.abs() > MAX_AMPLITUDE)
+    {
+        return Err(SampleError::InvalidSample);
+    }
+    Ok(())
+}
 
 /// Version 2 appends a CRC-32C of all preceding bytes. Version 1 (no checksum)
 /// existed only on an unreleased development branch and is rejected, never
@@ -37,7 +99,8 @@ const MAX_GRID_INDEX: f64 = 9_007_199_254_740_992.0;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CodecError {
-    Signal(SignalError),
+    /// The samples do not fit in a chunk (encoding), or decoded samples are invalid.
+    Signal(SampleError),
     InvalidQuantum,
     UnsupportedVersion(u8),
     Corrupt(&'static str),
@@ -560,7 +623,7 @@ const fn crc32c_slices() -> [[u32; 256]; 8] {
 }
 const CRC32C_SLICES: [[u32; 256]; 8] = crc32c_slices();
 /// CRC-32C, eight bytes per step (slicing-by-8); equal to the byte-at-a-time definition.
-pub(crate) fn crc32c(bytes: &[u8]) -> u32 {
+pub fn crc32c(bytes: &[u8]) -> u32 {
     let t = &CRC32C_SLICES;
     let mut c = !0u32;
     let mut words = bytes.chunks_exact(8);

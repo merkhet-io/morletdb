@@ -1,0 +1,1010 @@
+waiting for a quiet, powered machine until 2026-11-11T07:00 (18:03)
+== parallel_morletdb-i1_D2_w4_r1 18:04:33
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 4,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.573,
+  "samples_per_s": 22216271,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 145.114,
+   "p95_ms": 170.851,
+   "max_ms": 198.466
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "server": {
+   "cpu_percent_mean": 192.9,
+   "cpu_percent_p95": 232.6,
+   "memory_peak_mib": 185.7,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 567.2,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.6,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 222.4
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.9
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D2_w4_r1 18:04:52
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "writers": 4,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 20.37,
+  "samples_per_s": 4987055,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 604.966,
+   "p95_ms": 878.286,
+   "max_ms": 959.236
+  },
+  "queryable_after_last_ack_s": 0.023,
+  "server": {
+   "cpu_percent_mean": 276.1,
+   "cpu_percent_p95": 386.8,
+   "memory_peak_mib": 8497.2,
+   "samples": 11,
+   "kernel_memory": {
+    "peak_mib": 8498.3,
+    "anon_mib_at_end": 8463.3,
+    "file_mib_at_end": 12.1,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 8497.0
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.3
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D2_w8_r1 18:05:35
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.571,
+  "samples_per_s": 22225952,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 293.058,
+   "p95_ms": 335.716,
+   "max_ms": 366.079
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "server": {
+   "cpu_percent_mean": 201.2,
+   "cpu_percent_p95": 230.2,
+   "memory_peak_mib": 233.8,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 613.2,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 271.2
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.7
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D2_w8_r1 18:05:55
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 19.349,
+  "samples_per_s": 5250251,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1101.693,
+   "p95_ms": 2022.841,
+   "max_ms": 3762.192
+  },
+  "queryable_after_last_ack_s": 0.024,
+  "server": {
+   "cpu_percent_mean": 352.7,
+   "cpu_percent_p95": 468.3,
+   "memory_peak_mib": 8398.8,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 8510.3,
+    "anon_mib_at_end": 8461.3,
+    "file_mib_at_end": 12.0,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 8496.8
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 20.9
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D1_w8_r1 18:06:37
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "writers": 8,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.607,
+  "samples_per_s": 22050713,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 291.851,
+   "p95_ms": 345.379,
+   "max_ms": 361.262
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "server": {
+   "cpu_percent_mean": 210.9,
+   "cpu_percent_p95": 254.3,
+   "memory_peak_mib": 233.4,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 604.3,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 271.2
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.6
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D1_w8_r1 18:06:57
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "writers": 8,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 19.615,
+  "samples_per_s": 5178952,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1134.553,
+   "p95_ms": 2033.518,
+   "max_ms": 3431.826
+  },
+  "queryable_after_last_ack_s": 0.028,
+  "server": {
+   "cpu_percent_mean": 348.1,
+   "cpu_percent_p95": 501.3,
+   "memory_peak_mib": 8162.3,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 8231.8,
+    "anon_mib_at_end": 8187.1,
+    "file_mib_at_end": 12.3,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 8220.5
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.3
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D2_w4_r2 18:07:38
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 4,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.478,
+  "samples_per_s": 22686721,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 141.11,
+   "p95_ms": 169.158,
+   "max_ms": 190.407
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "server": {
+   "cpu_percent_mean": 182.9,
+   "cpu_percent_p95": 226.4,
+   "memory_peak_mib": 187.9,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 566.7,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.4,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 224.1
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.4
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D2_w4_r2 18:07:57
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "writers": 4,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 19.361,
+  "samples_per_s": 5246902,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 574.148,
+   "p95_ms": 770.516,
+   "max_ms": 1293.373
+  },
+  "queryable_after_last_ack_s": 0.025,
+  "server": {
+   "cpu_percent_mean": 280.0,
+   "cpu_percent_p95": 339.7,
+   "memory_peak_mib": 6854.7,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 6949.2,
+    "anon_mib_at_end": 6901.9,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 6931.2
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.4
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D2_w8_r2 18:08:38
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.519,
+  "samples_per_s": 22477434,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 283.275,
+   "p95_ms": 332.832,
+   "max_ms": 348.543
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "server": {
+   "cpu_percent_mean": 195.7,
+   "cpu_percent_p95": 228.9,
+   "memory_peak_mib": 241.2,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 608.7,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.6,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 276.6
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.5
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D2_w8_r2 18:08:58
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 19.884,
+  "samples_per_s": 5108868,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1125.59,
+   "p95_ms": 2136.418,
+   "max_ms": 3142.547
+  },
+  "queryable_after_last_ack_s": 0.022,
+  "server": {
+   "cpu_percent_mean": 357.7,
+   "cpu_percent_p95": 529.4,
+   "memory_peak_mib": 8144.9,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 8433.9,
+    "anon_mib_at_end": 8397.3,
+    "file_mib_at_end": 12.3,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 8431.7
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.4
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D1_w8_r2 18:09:39
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "writers": 8,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.829,
+  "samples_per_s": 21038127,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 306.553,
+   "p95_ms": 348.928,
+   "max_ms": 377.287
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "server": {
+   "cpu_percent_mean": 248.3,
+   "cpu_percent_p95": 275.4,
+   "memory_peak_mib": 223.0,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 604.4,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.6,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 268.6
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.4
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D1_w8_r2 18:10:00
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "writers": 8,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 20.924,
+  "samples_per_s": 4855122,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1239.337,
+   "p95_ms": 1772.04,
+   "max_ms": 4237.252
+  },
+  "queryable_after_last_ack_s": 0.023,
+  "server": {
+   "cpu_percent_mean": 405.2,
+   "cpu_percent_p95": 600.7,
+   "memory_peak_mib": 7895.0,
+   "samples": 11,
+   "kernel_memory": {
+    "peak_mib": 7899.4,
+    "anon_mib_at_end": 7863.0,
+    "file_mib_at_end": 12.3,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 7895.4
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 20.0
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D2_w4_r3 18:10:43
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 4,
+ "rep": 3,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.498,
+  "samples_per_s": 22584843,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 143.693,
+   "p95_ms": 170.646,
+   "max_ms": 182.103
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "server": {
+   "cpu_percent_mean": 191.3,
+   "cpu_percent_p95": 229.3,
+   "memory_peak_mib": 184.7,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 563.9,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.2,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 221.0
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.6
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D2_w4_r3 18:11:03
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "writers": 4,
+ "rep": 3,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 21.991,
+  "samples_per_s": 4619377,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 657.133,
+   "p95_ms": 942.358,
+   "max_ms": 1216.319
+  },
+  "queryable_after_last_ack_s": 0.024,
+  "server": {
+   "cpu_percent_mean": 278.7,
+   "cpu_percent_p95": 390.3,
+   "memory_peak_mib": 8341.5,
+   "samples": 11,
+   "kernel_memory": {
+    "peak_mib": 8611.3,
+    "anon_mib_at_end": 8576.5,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 8610.2
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.5
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D2_w8_r3 18:11:47
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 3,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.501,
+  "samples_per_s": 22569640,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 285.161,
+   "p95_ms": 331.382,
+   "max_ms": 336.888
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "server": {
+   "cpu_percent_mean": 199.6,
+   "cpu_percent_p95": 242.5,
+   "memory_peak_mib": 237.0,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 607.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 273.3
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.7
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D2_w8_r3 18:12:06
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 3,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 20.02,
+  "samples_per_s": 5074219,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1103.655,
+   "p95_ms": 2406.765,
+   "max_ms": 4061.251
+  },
+  "queryable_after_last_ack_s": 0.023,
+  "server": {
+   "cpu_percent_mean": 385.6,
+   "cpu_percent_p95": 560.4,
+   "memory_peak_mib": 8174.6,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 8392.6,
+    "anon_mib_at_end": 8349.3,
+    "file_mib_at_end": 12.3,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 8383.0
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.7
+  }
+ },
+ "correct": true
+}
+== parallel_morletdb-i1_D1_w8_r3 18:12:49
+{
+ "system": "morletdb-i1",
+ "durability": "D1",
+ "writers": 8,
+ "rep": 3,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.488,
+  "samples_per_s": 22633270,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 283.116,
+   "p95_ms": 334.363,
+   "max_ms": 352.009
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "server": {
+   "cpu_percent_mean": 200.5,
+   "cpu_percent_p95": 240.2,
+   "memory_peak_mib": 233.0,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 600.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 267.6
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.7
+  }
+ },
+ "correct": true
+}
+== parallel_cedardb_D1_w8_r3 18:13:08
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "writers": 8,
+ "rep": 3,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 19.731,
+  "samples_per_s": 5148704,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1119.559,
+   "p95_ms": 2247.77,
+   "max_ms": 3560.598
+  },
+  "queryable_after_last_ack_s": 0.022,
+  "server": {
+   "cpu_percent_mean": 348.5,
+   "cpu_percent_p95": 464.4,
+   "memory_peak_mib": 8991.7,
+   "samples": 10,
+   "kernel_memory": {
+    "peak_mib": 9130.4,
+    "anon_mib_at_end": 9083.7,
+    "file_mib_at_end": 12.3,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 9118.9
+   }
+  }
+ },
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 20.0
+  }
+ },
+ "correct": true
+}
+== B3.20 done 18:13:50

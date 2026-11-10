@@ -1,6 +1,6 @@
 # Verification of the chunk codec
 
-What is machine-checked about the raw-chunk codec (`crates/morlet-core/src/rawcodec.rs`, format versions
+What is machine-checked about the raw-chunk codec (Grizzbit, `crates/grizzbit/src/lib.rs`; re-exported as `morlet_core::rawcodec`; format versions
 2 and 3), how, with which bounds, and what is not. Wording elsewhere (README, website, paper) must not claim
 more than this page.
 
@@ -41,7 +41,7 @@ property-tested."* Not: "proven lossless".
 | `decode` on arbitrary bytes | No panic; any success returns 1–32,768 finite samples within ±1e9 | fuzz `decode_raw`, `decode_sealed`; proptest | **fuzzed** |
 | Allocation on decode | At most `MAX_SAMPLES` (32,768) values per stream, whatever the declared count. The count is checked before allocating | code review; fuzzing under a 64 MB malloc limit | **bounded by construction**, not by input length (see gaps) |
 | `crc32c` | Matches the CRC-32C check value `123456789 → 0xE3069283` | unit test | **tested** |
-| Every format version, kind and grid mode | 16 frozen encoded chunks (`testdata/rawcodec/`) decode to their frozen samples, and the current encoder still produces 16 of 16 byte for byte | `tests/codec_golden.rs`; CI rejects changes to existing files | **tested** |
+| Every format version, kind and grid mode | 16 frozen encoded chunks (`testdata/rawcodec/`) decode to their frozen samples, and the current encoder still produces 16 of 16 byte for byte | `crates/grizzbit/tests/codec_golden.rs`, plus `tests/encoder_equivalence.rs` (221 frozen records in `testdata/grizzbit/`, written by the encoder before it moved into its own crate); CI rejects changes to existing files | **tested** |
 
 Golden coverage:
 - **Version 2:** raw (64 samples and a single sample), float bits, grid in division mode (counts, decimals,
@@ -54,8 +54,8 @@ Golden coverage:
 
 | Tool | Version | Use |
 |---|---|---|
-| Kani | 0.68.0 (CBMC 6.11.0, nightly-2026-08-21 as installed by `cargo kani setup`) | proofs, `#[cfg(kani)] mod proofs` in `rawcodec.rs` |
-| cargo-fuzz | 0.13.2, toolchain nightly-2026-10-11, libfuzzer-sys 0.4.13, arbitrary 1.5.0 | `crates/morlet-core/fuzz/` |
+| Kani | 0.68.0 (CBMC 6.11.0, nightly-2026-08-21 as installed by `cargo kani setup`) | proofs, `#[cfg(kani)] mod proofs` in `crates/grizzbit/src/lib.rs` (run from `crates/grizzbit`) |
+| cargo-fuzz | 0.13.2, toolchain nightly-2026-10-11, libfuzzer-sys 0.4.13, arbitrary 1.5.0 | `crates/grizzbit/fuzz/` (codec: `decode_raw`, `decode_sealed`, `roundtrip`); `crates/morlet-core/fuzz/` (transfer frames: `decode_frame`) |
 | proptest | 1.x (locked in `Cargo.lock`) | `crates/morlet-core/tests/codec_props.rs` |
 
 **Proofs:** CBMC verification time per harness on an Apple M5 Max:
@@ -91,11 +91,11 @@ are uploaded as artifacts, and minimized ones become regression tests.
 ## How to run
 
 ```sh
-cargo test -p morlet-core                                   # unit, golden and property tests
-cd crates/morlet-core
+cargo test -p grizzbit                                      # unit, golden, equivalence and property tests
+cd crates/grizzbit
 cargo kani --harness corrections_restore_any_sample         # one proof (all seven: see verification.yml)
 cargo +nightly-2026-10-11 fuzz run -O -a decode_sealed fuzz/corpus/decode_sealed -- -max_total_time=600
-MORLET_WRITE_GOLDEN=1 cargo test -p morlet-core --test codec_golden -- --ignored   # add new golden files only
+MORLET_WRITE_GOLDEN=1 cargo test -p grizzbit --test codec_golden -- --ignored      # add new golden files only
 ```
 
 The fuzz targets recompute CRC-32C themselves (`fuzz_targets/common.rs`) so that mutated bodies reach the
