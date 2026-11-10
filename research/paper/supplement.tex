@@ -22,7 +22,7 @@ This supplement holds studies that support the system described in the main pape
 The machine, PostgreSQL and pgvector versions are those of the main paper. In the storage study P2, TimescaleDB 2.30.2 ran in Docker and we compare only its sizes; B3.7 and B3.9 compare TimescaleDB 2.31 on storage and speed (Section~\ref{sec:b3}).
 
 \section{Lossless chunk coding}\label{sec:codec}
-Each raw chunk is one \code{bytea} value. The codec combines established techniques: fixed polynomial predictors of order 0--4 as in Shorten and FLAC~\cite{shorten,flac}, partitioned Rice coding of zig-zag mapped residuals~\cite{rice}, and a CRC-32C checksum. Its distinctive part is how it treats floats.
+Each raw chunk is one \code{bytea} value, coded by Grizzbit, \M{}'s lossless chunk codec (Grizzbit~1 is chunk format versions 2 and 3). The codec is a named, specified format, not a new algorithm; it combines established techniques: fixed polynomial predictors of order 0--4 as in Shorten and FLAC~\cite{shorten,flac}, partitioned Rice coding of zig-zag mapped residuals~\cite{rice}, and a CRC-32C checksum. Its distinctive part is how it treats floats.
 
 Most sensor values are calibrated integers: a digitizer emits counts $d$, and acquisition software stores $x=f(d)$, for example $x=d\cdot s$ (seismic counts, WAV) or, in EDF~\cite{edf}, $x=(d-d_{\min})(p_{\max}-p_{\min})/(d_{\max}-d_{\min})+p_{\min}$. The recording declares a nominal quantum $q$: 1 for counts, 0.001 for three decimals, the ADC step for calibrated values. Per chunk, the encoder seeks a grid
 \begin{equation}

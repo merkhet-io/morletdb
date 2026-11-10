@@ -1,12 +1,15 @@
-# Encoded chunk format
+# Grizzbit format specification
 
-Stream collections created by pg_morlet 0.2.0 store each raw chunk as one `bytea`
-value produced by `morlet_core::rawcodec`. This page specifies that format and
-records why MorletDB owns it.
+Grizzbit is MorletDB's chunk codec ([overview](grizzbit.md)). Grizzbit 1 is the encoded
+chunk format versions 2 and 3 specified on this page. Stream collections created by
+pg_morlet 0.2.0 store each raw chunk as one `bytea` value produced by Grizzbit
+(`crates/grizzbit`, re-exported as `morlet_core::rawcodec`); the one-file format and
+compressed transfer carry the same chunks. This page specifies that format and records
+why MorletDB owns it.
 
 ## Techniques
 
-Nothing here is novel. The codec combines established lossless audio and
+Nothing here is novel. Grizzbit combines established lossless audio and
 seismic techniques:
 
 - fixed polynomial predictors of order 0–4 (Shorten, FLAC "fixed" subframes);
@@ -22,7 +25,7 @@ seismic techniques:
 It has no linear-prediction (LPC) stage. On the stage-1 benchmark data it is 2–7%
 larger than FLAC.
 
-## Layout (format versions 2 and 3)
+## Layout (Grizzbit 1: format versions 2 and 3)
 
 All integers are little-endian; `varint` is unsigned LEB128.
 
@@ -145,7 +148,8 @@ the table can write a valid chunk.
 - **Downgrade:** a version-3 chunk is reported as "unknown format version" by
   pg_morlet 0.3.0 and earlier, so downgrading after appending such chunks needs
   them re-appended.
-- **A future version 4** must keep decoding versions 2 and 3.
+- **A future version 4** (for example the planned Grizzbit 2, #326) must keep decoding
+  versions 2 and 3.
 - `float8[]` collections from pg_morlet 0.1.0 are a separate layout, detected
   per collection, and remain supported (see durable-ingestion.md, Upgrading).
 - **Chunks on the wire (SQL 0.3.5):** `morlet_read_interval_encoded` sends stored
