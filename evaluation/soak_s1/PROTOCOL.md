@@ -142,5 +142,7 @@ other databases.
   each at a time the owner or the operator chooses in that window. No scheduler is installed for them.
 - **Fresh start:** the second shakedown's database, spool and results are kept aside in `shakedown-2/`, not
   evaluated; the test week starts on an empty database.
-- **Test-week start:** recorded below when the containers are up.
+- **Test-week start:** 2026-11-10T16:02:49Z (epoch 1794326569), when `docker compose up` of commit `b7abed4`
+  returned on an empty database (collector started 16:02:34Z). The week ends 2026-11-17T16:02:49Z. D1 window:
+  2026-11-12T16:02Z .. 2026-11-13T16:02Z; D2 window: 2026-11-14T16:02Z .. 2026-11-15T16:02Z.
 
