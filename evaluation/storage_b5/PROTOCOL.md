@@ -314,3 +314,174 @@ failing, with its figures.
   - Edge devices and cross-machine speed.
   - Cold-cache reads.
   - Any website change beyond section 6.
+
+## 8. Build record (gate 8)
+
+Written 2026-11-10, after the gates and before any benchmark input is read. It records what development
+decided; it changes no criterion, input list or rule above. No B4 benchmark input was read for B5: the only real
+data read were the development inputs of gate 7 (below).
+
+### Build
+
+- **Build commit:** `5ce0328` on `bench/b5-grizzbit2` ("Grizzbit 2 (B5 build): pco chunk kind, chunk format
+  version 4"), on top of `e9619ab`, the merge of main at `38bdd91` (which contains `crates/grizzbit`) into this
+  branch at `758f6cf`. The image `morletdb:b5` and the B5 decoder are built from this commit. Later commits on the
+  branch add only results and this record.
+- **`pco`:** 1.0.4, `pco = "=1.0.4"` in `crates/grizzbit/Cargo.toml`; Cargo.lock entry checksum
+  `52f01ab51a847e7002371c2384b2c88f50dd45982cc2764e7997751971f1bfbf`; `Cargo.lock` at the build commit has
+  sha256 `d3eb41593f14efc399fd316033121e19a9742e9dd08dceb0d6eb3f2cd0cf7e38` (the fuzz crate's own lockfile
+  `crates/grizzbit/fuzz/Cargo.lock`: `8cffdf54089876e72248493d243c28865da31ce509c2e75cfd36308e8304a2b7`). New
+  dependencies, all Apache-2.0 or MIT-compatible: pco, better_io, dtype_dispatch (Apache-2.0), half,
+  rand_core 0.6.4, rand_xoshiro (MIT or Apache-2.0), zerocopy, zerocopy-derive (BSD-2-Clause, Apache-2.0 or MIT),
+  crunchy (MIT).
+
+### Body layout (version 4), exact
+
+All integers little-endian.
+
+| Bytes | Field |
+|---|---|
+| 1 | version `0x04` |
+| 1 | kind `0x03` |
+| 1–3 | n, unsigned LEB128 varint, 1..32,768 |
+| 2 | pco wrapped header: format version major `0x04`, minor `0x01` (pco 1.0.4 writes format 4.1) |
+| ≥ 1 | pco chunk metadata as `ChunkCompressor::write_meta` writes it: mode, delta encoding, then per latent variable its ANS size and bins, ending at a byte boundary |
+| ≥ 1 | the one pco page as `ChunkCompressor::write_page(0)` writes it: delta state, ANS final states, the interleaved ANS-coded latents, ending at a byte boundary |
+| 4 | CRC-32C of every preceding byte |
+
+- Written by `FileCompressor::default()`: `write_header`, then `chunk_compressor(samples,
+  &ChunkConfig::default().with_compression_level(8))`, `write_meta`, `write_page(0)`. Every other `ChunkConfig`
+  field is pco's default: `ModeSpec::Auto`, `DeltaSpec::Auto`, `PagingSpec::EqualPagesUpTo(2^18)` (so one page
+  for every n ≤ 32,768; the encoder checks `n_per_page() == [n]`), `enable_8_bit` false.
+- Read by `FileDecompressor::new`, `chunk_decompressor::<f64>`, `page_decompressor(rest, n)` and one `read` of
+  exactly n samples. The read must report all n samples processed and the page finished, and the remaining
+  input must be empty.
+- Examples: `testdata/rawcodec/v4-pco-single.chunk` is `04 03 01 | 04 01 | 00 10 00 90 2a 18 95 d4 ad 65 fb 01
+  00 | 72 97 cc d4` (22 bytes); every version-4 chunk starts `04 03 <varint n> 04 01`.
+
+### Gate results
+
+| Gate | Result |
+|---|---|
+| 1. Round trip and property tests | **Pass.** Grizzbit 1's property tests run through the keep-the-smaller encoder (`codec_props.rs`: 2 new properties, 500 cases each per run, alongside the 3 Grizzbit 1 properties): every output is Grizzbit 1's bytes or a strictly smaller version-4 chunk, decodes bit for bit, and every version-4 chunk (kept or not) round trips; resealed mutations of version-4 chunks never panic. Edge cases (`tests/grizzbit2_edges.rs`, 25 cases, each through the version-4 coder alone and through keep-the-smaller, decoded and compared by `to_bits`, encoded twice for determinism): n = 1 (5 values incl. 0, −0, 1e9, a denormal), n = 32,768 (a constant and a float walk), constants on and off a grid, signed zeros, denormals (signed), ±1e9, alternating extremes, extremes with ulp neighbours, float32 held as float64 (4,096 and 32,768), near-grid decimals with ulp noise, decimals as products, values within a thousandth of a grid, random bit patterns within ±1e9, random magnitudes, integer counts; 16 of the 25 keep the pco chunk. Frame rejection and pco modes (`version4_tests`, 9 tests): checksum first, count above/below/0/32,769, trailing byte, missing byte, header without body, NaN/±inf/beyond ±1e9 inside a valid pco body, every other kind under version 4 and kind 3 under versions 2 and 3, dictionaries and lookback windows (below). `cargo test -p grizzbit`: 31 unit, 5 property, 3 edge-case, 3 golden, 1 equivalence test, all passing. |
+| 2. Golden pco chunks | **Pass.** 6 new chunks in `testdata/rawcodec` with `.f64` and `.json` (`"encoder": "version4"`): `v4-pco-float` (4,096 samples, 23,891 bytes), `v4-pco-float32` (4,096, 10,743), `v4-pco-near-grid` (4,096, 7,789), `v4-pco-constant` (4,096 × 0.1, 23), `v4-pco-single` (1, 22), `v4-pco-max-length` (32,768, 169,456). `codec_golden.rs` decodes each bit for bit and checks that the encoder still writes it byte for byte; `morlet-ffi`'s C-interface test and the SDK's `test_native` decode them through the native decoder. Inputs are integer arithmetic and IEEE products only (no libm). |
+| 3. Grizzbit 1 golden chunks unchanged | **Pass.** The 16 existing v2/v3 chunks decode bit for bit and `encode` still writes each byte for byte; `testdata/grizzbit/encoder-equivalence.bin` (221 records) is reproduced exactly; no file under `testdata/rawcodec` or `testdata/grizzbit` was changed, renamed or removed (18 files added). |
+| 4. Fuzzing | **Pass.** See "Fuzzing" below: `decode_v4` 2.67 CPU-hours and `roundtrip` 2.67 CPU-hours on the build commit's codec, no crash, timeout, memory-limit violation or mismatch. Both targets are in the nightly matrix (`.github/workflows/verification.yml`; `decode_v4` seeded from the golden version-4 chunks). |
+| 5. Kani | **Pass.** 12 of 12 harnesses verified (CBMC 6.11.0, Kani 0.68.0), the 7 existing ones and 5 new ones of the version-4 frame code with pco stubbed: `version4_header_roundtrips` (3.0 s), `version4_kind_dispatch` (0.12 s), `version4_decode_checks_count_and_samples` (6.7 s), `version4_checksum_is_checked_before_pco` (1.0 s), `keep_smaller_keeps_grizzbit1_unless_strictly_smaller` (1.7 s). docs/verification.md states that pco's decoder is not proved and what covers it. |
+| 6. All existing tests | **Pass,** locally on the build commit: `cargo test --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite` (all pass); `cargo clippy --locked` on the same four crates `--all-targets -D warnings` (clean); `cargo fmt --all --check` (clean); `cargo pgrx test` pg17, pg18 and pg19 (153 of 153 each, pgrx 0.19.3); SDK tests `test_offline test_native test_integration test_local test_transfer` against a PostgreSQL 17 server with this build's extension (default Grizzbit 2), the native decoder and the embedded edition from this commit (34 of 34, none skipped); embedded edition and file-format tests (`morlet-sqlite`, 6 of 6, including the new file-format-1 test); the reference reader on `testdata/morlet-file-1` with the library (4 of 4, none skipped). Not run locally, left to CI on the pull request: the with-pgvector extra scripts and the upgrade mode of `ci_local.sh`, the benchmark smoke test and the other Python suites. |
+| 7. Development inputs | Only these were read: B4's development Elf series Blockchain-tr, POI-lat, Stocks-USA and electric_vehicle_charging (by name; B4's `dev_names()` was not called, because it hashes every Elf file); XJTU-SY Bearing1_1 (35 Hz / 12 kN) horizontal, files 1–123; FEMTO Bearing1_1 horizontal, files 1–1,638. B3's development set was not needed (no smoke check yet). Synthetic data in tests. |
+| 8. Build record | This section. |
+
+### Fuzzing
+
+Local runs on the build commit's codec (the grizzbit library code fuzzed is identical to `5ce0328`'s), on the
+Apple M5 Max, 2026-11-10 19:45:29–20:25:31: cargo-fuzz 0.13.2, nightly-2026-10-11, `-O -a` (optimised, debug
+assertions and overflow checks on), libFuzzer `-jobs=4 -workers=4 -max_total_time=2400` per target, the nightly
+workflow's limits (`-timeout=20 -rss_limit_mb=2048`, `-malloc_limit_mb` 64 for `decode_v4` and 256 for
+`roundtrip`, `-max_len` 65,536 and 300,000), at `nice 19`. Each job held about one core throughout (process CPU
+time ≈ wall time, checked with `ps` at 20 minutes), so each target ran 4 × 2,401 s = **2.67 CPU-hours**.
+
+| Target | CPU-hours | Inputs run | Coverage (edges / features) | Corpus at the end (per job) | Peak RSS | Result |
+|---|---:|---:|---|---|---:|---|
+| `decode_v4` | 2.67 | 123.3 M (31.9 + 28.6 + 32.0 + 30.8 M) | 1,623 / 3,867 | 443–448 inputs, 469–485 KB | 605 MB | no crash, timeout, memory-limit violation or failed assertion |
+| `roundtrip` | 2.67 | 5.65 M (1.40 + 1.42 + 1.43 + 1.41 M) | 4,661 / 19,566 | 2,539–2,580 inputs, 3.0 MB | 874 MB | no crash, timeout, memory-limit violation or mismatch |
+
+- `decode_v4` was seeded from the 6 golden version-4 chunks (bytes 2 to n − 4); `roundtrip` started from the
+  corpus of a 2-job, 2-minute development run.
+- libFuzzer's length control grew `roundtrip` inputs to about 10.7 KB, so its chunks stayed below about 5,000
+  samples in this run; chunks of up to 32,768 samples are covered by the edge-case tests and golden chunks, and
+  by the nightly runs, whose corpus persists.
+- Development runs before the official ones: `decode_v4` found the dictionary allocation (decision 4) in 20
+  seconds of its first run; after the fix, 4 jobs × 3 minutes (2.4 M inputs) and the official run found
+  nothing.
+- Hours remaining for gate 4: none.
+
+### Development figures
+
+`results/dev/dev_storage.json`, written by `dev_figures.py` (4,096-sample chunks, quantum 1, both arms through
+the codec bench example, which decodes every chunk and compares it by `to_bits`; all exact). G1 = Grizzbit 1
+(pco kind disabled), G2 = this build. Speeds were taken while fuzzing ran and are not controlled.
+
+| Input | Samples | Chunks | G1 bits/sample | G2 bits/sample | G2/G1 | Chunks changed (G1 kind) |
+|---|---:|---:|---:|---:|---:|---|
+| Blockchain-tr | 99,999 | 25 | 13.96 | 13.26 | 0.950 | 15 (v2 grid) |
+| POI-lat | 100,001 | 25 | 60.84 | 53.58 | 0.881 | 25 (v2 float) |
+| Stocks-USA | 100,002 | 25 | 4.56 | 4.56 | 1.000 | 0 |
+| electric_vehicle_charging | 3,395 | 1 | 10.03 | 10.03 | 1.000 | 0 |
+| XJTU-SY Bearing1_1 horizontal | 4,030,464 | 984 | 63.66 | 29.79 | 0.468 | 984 (921 v2 float, 63 v2 raw) |
+| FEMTO Bearing1_1 horizontal | 4,193,280 | 1,024 | 10.65 | 10.65 | 1.000 | 0 |
+
+Every changed chunk is a version-4 chunk with strictly fewer bytes than G1's (checked by the script). This agrees
+with the spike: grid chunks sometimes lose to pco (15 of 25 on Blockchain-tr).
+
+### Development decisions
+
+1. **How callers choose the coding.** `grizzbit::encode(x, q)` stays Grizzbit 1, byte for byte, so the golden
+   chunks and the equivalence vector keep testing Grizzbit 1 unchanged. Grizzbit 2 is
+   `grizzbit::encode_with(x, q, Format::Grizzbit2)`; `Format::Grizzbit1` (the `Default`) is `encode`. B5's G1
+   arm ("pco kind disabled") is `Format::Grizzbit1`. `grizzbit::encode_version4(x)` returns the version-4 chunk
+   whatever its size, for tests, golden chunks and fuzzing.
+2. **Keep the smaller, as built.** `encode_with` computes Grizzbit 1 first, then the version-4 chunk, and keeps
+   the version-4 chunk only if `len(v4) < len(g1)`; on a tie, or if pco returns an error (never seen; the
+   `roundtrip` fuzz target asserts it does not happen for valid samples), Grizzbit 1's bytes are returned. pco
+   is always run; there is no shortcut that skips it.
+3. **pco configuration.** `ChunkConfig::default().with_compression_level(8)`; everything else at pco's defaults
+   (Auto mode and delta detection, default paging, which gives one page). The encoder treats more than one page
+   as "pco not available" (keeps Grizzbit 1); it cannot happen for n ≤ 32,768.
+4. **Decoder bounds on two pco allocations.** In development the new `decode_v4` fuzz target found within 20
+   seconds that a 46-byte version-4 chunk made pco allocate 128 MiB: pco's reader allocates a declared
+   dictionary (up to 2^25 numbers) before checking that the body holds it. pco also accepts lookback windows up
+   to 2^24 numbers and allocates them when the page is opened. The frame code therefore:
+   - reads the dictionary length from the body before pco does (wrapped header 1 or 2 bytes, then a 4-bit mode
+     variant and, for mode 4, a 25-bit length, least significant bit first), refuses a dictionary longer than
+     n, and after pco has read the metadata refuses the chunk if pco's dictionary length differs from that
+     pre-read;
+   - refuses a lookback window above 2^15 numbers after pco reads the metadata and before it opens the page.
+     2^15 is the most pco 1.0.4's encoder writes (its private `ENCODING_LOOKBACK_MAX_WINDOW_N_LOG`), so no chunk
+     the encoder writes is refused. pco's encoder never writes dictionary mode (only with `ModeSpec::TryDict`);
+     dictionary chunks of up to n entries still decode (tested with `TryDict`).
+   Errors are `CodecError::Corrupt` with "pco header", "pco chunk metadata", "pco page", "pco sample count",
+   "trailing data", "pco dictionary" or "pco lookback window".
+5. **Frame code details.** `kind_of` now maps the grid kind to versions 2 and 3 only (before, `verified`
+   admitted only 2 and 3 anyway, so Grizzbit 1 behaviour is unchanged). `grizzbit::MAX_VERSION = 4` is the
+   highest version `decode` reads; `FORMAT_VERSION` stays 3. A unit test that used version byte 4 as an unknown
+   version now uses 5.
+6. **pg_morlet's default.** The B3 arm runs `morletdb:b5` "with server defaults", so this build's pg_morlet
+   writes Grizzbit 2 by default: `morlet.chunk_format` = `grizzbit2` (or `grizzbit1`), a registered enum
+   setting (unlike `morlet.verify_appends`, so that `current_setting` reports it once the library is loaded).
+   It is read in the backend's thread and passed to the encoder threads. `morlet_encode_chunk` stays declared
+   immutable although its bytes now depend on the setting. No SQL change.
+7. **Write-time verification (#366).** `encode_checked` decodes whichever chunk was kept and compares it bit for
+   bit; a mismatch fails the append, with no fallback to the other coding. A pg test forces a wrong version-4
+   code and checks that the batch append refuses it.
+8. **Compressed transfer.** `morlet_core::transfer::MAX_CHUNK_VERSION` and `morlet_ffi_max_chunk_version()` are
+   4. The SQL default of `max_chunk_version` stays 3 (no SQL change), so a caller that does not state its
+   version gets samples for version-4 chunks; the SDK passes its decoder's version. The pg test
+   `encoded_reads_decode_to_raw_reads` now loops over client versions 4..1 and checks that its data holds
+   version-4 chunks; its compressed-size check passes version 4.
+9. **`morlet_recording_storage`** (SQL unchanged) counts pco chunks in `chunks` and `encoded_bytes` but in none of
+   `grid_chunks`, `float_chunks`, `raw_chunks`; a pg test records this. The existing pg test of those kind counts
+   now runs its appends with `SET LOCAL morlet.chunk_format = grizzbit1`, so it keeps testing Grizzbit 1's kinds.
+   B5 counts kinds from the chunks themselves (section 3), not from this function.
+10. **File format 1.** morlet-sqlite's writer calls `encode` (Grizzbit 1). Its reader now refuses a chunk whose
+    version byte is above 3 ("chunk format version 4 is not allowed in file format 1"), on reads, statistics
+    and its own write-time check. The standard-library reference reader already refused version 4.
+11. **SDK transfer labels.** The server's encoder label gets " (Grizzbit 2)" when
+    `current_setting('morlet.chunk_format', true)` is `grizzbit2`, so file-to-server checks report chunk bytes
+    as "not compared" rather than "different" between a Grizzbit 1 file and a Grizzbit 2 server. The existing
+    transfer integration tests compare bytes between equal encoders and now set `grizzbit1` in `setUp`; a new
+    test covers a Grizzbit 2 server with format-1 files.
+12. **Golden pco chunks** live with the others in `testdata/rawcodec`, marked `"encoder": "version4"` and
+    `encoder_current: true`; a later pco that writes other bytes sets that to false and adds files.
+13. **Fuzz targets.** `decode_v4` prefixes version 4 and kind 3 to the input and seals it, so every input reaches
+    the frame parser and pco. `roundtrip` additionally runs `encode_with(.., Grizzbit2)` (Grizzbit 1's bytes or
+    a strictly smaller version-4 chunk, same errors, decodes bit for bit) and `encode_version4` (decodes bit for
+    bit). Local runs used the nightly workflow's limits and debug assertions (`-O -a`).
+14. **Kani stubs** are `cfg(kani)` replacements of the two pco calls in `crates/grizzbit/src/pco_body.rs`, not
+    `kani::stub`, so the CI invocation needs no unstable flag. A first form of the checksum proof (8-byte chunks
+    through `decode`) ran 18 minutes without a verdict; the proof as built checks `verified` on 7-byte chunks.
+15. **Bench example.** `rawcodec_bench` gains `--grizzbit2` (adds `format` and `pco_chunks` to its line) and
+    `--per-chunk` (version, kind and bytes of every chunk). Without them its output is as before, so B4's
+    harness still reads it.
+16. **Specification.** The version-4 layout is in docs/chunk-format.md as a section marked "Draft ... under
+    study B5", becoming part of the specification only if a release ships Grizzbit 2 (section 6), and here.
