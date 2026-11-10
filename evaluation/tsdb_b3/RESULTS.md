@@ -1686,6 +1686,10 @@ point lookups and a table scan without a time predicate return the correct row. 
 scan, which is why the check failed. For a given plan the wrong result is deterministic (repeats, restarts, binary
 and text format). Full description, query table and files: [CEDARDB_RANGE_SCAN_FAULT.md](CEDARDB_RANGE_SCAN_FAULT.md).
 
-**Reproduction (2026-11-10 13:04–13:28).** 23 further fresh D2 loads of the whole dataset with the same image, adapter
-and read-back check (`run_b319_repro.sh`, `results/b319-repro/`) all passed. CedarDB's record is therefore 1 failed
-read-back in 34 loads; the fault is not reproduced from a fresh load. The original volume is kept.
+**Reproduction (2026-11-10 13:04–14:11).** 43 further fresh D2 loads of the whole dataset with the same image, adapter
+and read-back check all passed: 23 one after another (`run_b319_repro.sh`, `results/b319-repro/`), and 20 in round 3's
+sequence after a MorletDB load, 10 of them with 4 busy host threads (load average up to 13; `run_b319_repro2.sh`,
+`results/b319-repro2/`). CedarDB's record is therefore 1 failed read-back in 54 loads; the fault is not reproduced
+from a fresh load. CedarDB v2026-10-22 cannot open the data directory (its block format is newer), and CedarDB's
+files differ from run to run, so neither an older version nor a file comparison localises it. The original volume
+is kept.

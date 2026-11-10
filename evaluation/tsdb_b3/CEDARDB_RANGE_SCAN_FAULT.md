@@ -9,8 +9,8 @@ B3.19"). Everything here is observed behaviour of a closed-source system; where 
 On a database whose stored data is correct, every query that CedarDB executes as a **table scan with a range predicate on
 the time column** returns one wrong row for one acquisition: row 1023 is replaced by a row with an invalid time and the
 values of row 1020. Index scans over the same range, point lookups, and a table scan without a time predicate return the
-correct row. On the preserved database the wrong result is deterministic for a given plan. It was seen once: 1 of 34
-fresh loads of the same data with the same image (11 in the benchmark sessions, 23 in a reproduction run) failed the
+correct row. On the preserved database the wrong result is deterministic for a given plan. It was seen once: 1 of 54
+fresh loads of the same data with the same image (11 in the benchmark sessions, 43 in two reproduction runs) failed the
 check, and a fresh load has not reproduced it.
 
 ## Environment
@@ -92,21 +92,38 @@ offline shell (`cedardb -i`, `ALTER USER`); no other statement was run in that s
 
 ## Reproduction from scratch
 
-Not reproduced: 23 further fresh loads of the same data with the same image, adapter and read-back check, run
-2026-11-10 13:04–13:28 ([`run_b319_repro.sh`](run_b319_repro.sh), `results/b319-repro/`), all passed, as did 10 of
-the 11 loads in the benchmark sessions. The check reads every acquisition with the benchmark's query (the first row
-of the table above), so a recurrence would have been caught. Round 3 ran after a MorletDB load at the end of a
-long benchmark session, with a busier machine (median load average 5.0 against 2–4 for the reproduction); whether that
-matters is not known.
+Not reproduced in 43 further fresh loads of the same data with the same image, adapter and read-back check, all on
+2026-11-10. The check reads every acquisition with the benchmark's query (the first row of the table above), so a
+recurrence would have been caught.
 
-## Open questions
+| Run | Conditions | Loads | Failed |
+|---|---|---|---|
+| [`run_b319_repro.sh`](run_b319_repro.sh), 13:04–13:28, `results/b319-repro/` | CedarDB loads one after another; load average 2–4 | 23 | 0 |
+| [`run_b319_repro2.sh`](run_b319_repro2.sh) A, 13:41–13:57, `results/b319-repro2/` | round 3's sequence: a MorletDB 0.3.10 load right before each CedarDB load; load average 2.9–9.1 at the start of a pair | 10 | 0 |
+| `run_b319_repro2.sh` B, 13:57–14:11 | as A, with 4 busy host threads; load average 7.6–13.4 | 10 | 0 |
 
-- Is the fault in how the time column's block was written during the load (so that only the table scan's filtered
-  path decodes it wrongly), or in the filtered scan itself? The preserved data directory would let CedarDB answer
-  this; it holds only the public dataset and can be shared.
-- Does it occur on other versions?
+With the benchmark sessions (10 of 11 passed), CedarDB failed the read-back once in 54 loads. Round 3 itself ran at
+the end of a long benchmark session with a median load average of 5.0; the busier reproduction runs did not trigger
+the fault, so machine load alone does not explain it.
+
+## What could not be determined from outside
+
+- *An older version on the same data.* CedarDB v2026-10-22
+  (`sha256:d029f6d020edeedfe86d26525b9aac436d7aad3f8702aca1b39992456a1e2777`), started on a third copy of the data
+  directory, refuses the query: "Unable to read data block with version 6. This CedarDB version only supports data
+  blocks with version <= 5." v2026-11-04 therefore writes a block format that v2026-10-22 cannot read
+  (`diagnosis/10_v2026-10-22.json` is empty for that reason). The table scan that fails reads blocks in this format; whether the
+  format is involved is not known. No newer version than v2026-11-04 had been published on 2026-11-10.
+- *A file comparison with a correct load.* A fresh load of the same data, ended as round 3's was (read-back check, then
+  the container removed without a shutdown; `diag_cedar_fresh_volume.py`, check passed), produced a data directory
+  that differs from round 3's in nearly every data file, by about half of their bytes, with partly different file
+  names (`compare_volumes.sh`, `diagnosis/11_compare_round3_vs_fresh.txt`). CedarDB's files are not reproducible from
+  run to run, so a byte comparison cannot locate a faulty block.
+- *Whether the block holding row 1023 was written wrongly or is decoded wrongly by the filtered scan.* The storage
+  format is not documented and CedarDB is closed source. The preserved data directory would let CedarDB answer this;
+  it holds only the public dataset and can be shared.
 
 ## Files
 
-Diagnosis scripts `diag_cedar_r3.py` and `diag_cedar_r3b.py` … `diag_cedar_r3i.py`; outputs 1–9 in
+Diagnosis scripts `diag_cedar_r3.py` and `diag_cedar_r3b.py` … `diag_cedar_r3i.py`, `diag_cedar_fresh_volume.py`, `compare_volumes.sh`; outputs 1–11 in
 `results/b319-cedardb-s3/diagnosis/`; the failing load's record in `results/b319-cedardb-s3/load_cedardb_D2_r1.json`.
