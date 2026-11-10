@@ -1,0 +1,22 @@
+2026-11-10T18:11:47
+18:11  up 14 days,  3:07, 19 users, load averages: 8.65 7.31 4.69
+ %CPU COMM
+221.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 47.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 15.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.0 /usr/sbin/coreaudiod
+  2.7 claude
+  2.0 claude
+  1.9 claude
+  1.7 claude
+2026-11-10T18:12:06
+18:12  up 14 days,  3:08, 19 users, load averages: 8.11 7.26 4.73
+ %CPU COMM
+174.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 87.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 20.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  3.9 /usr/sbin/coreaudiod
+  3.4 claude
+  2.2 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  1.2 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
