@@ -104,8 +104,6 @@ Claude finds when the failing bearing first changed and whether the others show 
 
 ## Grizzbit, the codec
 
-<p align="center"><img src="assets/brand/grizzbit.svg" alt="Grizzbit, the codec's mascot: a green cartoon bear dashing forward, with a waveform on its belly." width="240"></p>
-
 **Grizzbit** is MorletDB's lossless chunk codec: what goes in comes back **bit for bit**. Each chunk of up to
 32,768 float64 samples is stored in the smallest of three exact forms: integer steps on the value grid the
 encoder detects (predicted and Rice-coded as in FLAC, with last-place corrections where needed), the float64 bit
