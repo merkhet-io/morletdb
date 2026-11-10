@@ -56,13 +56,14 @@ jobs:
           command -v cargo-kani || cargo install --locked kani-verifier --version "$KANI_VERSION"
           cargo kani setup
           cargo kani --version
-      - name: Proofs (every run; CBMC time about 12 s in total, plus compilation)
+      - name: Proofs (every run; CBMC time about 40 s in total, plus compilation)
         working-directory: crates/grizzbit
         run: >-
           cargo kani
           --harness ordered_bits_is_a_bijection --harness ordered_bits_keeps_order
           --harness zigzag_is_a_bijection --harness varint_roundtrips --harness varint_reader_is_total
           --harness prediction_residuals_invert --harness corrections_restore_any_sample
+          --harness coefficient_sign_extension_roundtrips --harness lpc_residuals_invert
   fuzz:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04

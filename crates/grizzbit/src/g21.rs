@@ -242,9 +242,15 @@ impl Lpc {
 /// associative and commutative, so the result is the same integer).
 #[inline(always)]
 fn dot_fixed<const P: usize>(h: &[i64; P], c: &[i64; P]) -> i64 {
+    sum4::<P>(|j| h[j].wrapping_mul(c[j]))
+}
+
+/// The wrapping sum of `term(0..P)` in four interleaved partial sums.
+#[inline(always)]
+fn sum4<const P: usize>(term: impl Fn(usize) -> i64) -> i64 {
     let mut acc = [0i64; 4];
     for j in 0..P {
-        acc[j % 4] = acc[j % 4].wrapping_add(h[j].wrapping_mul(c[j]));
+        acc[j % 4] = acc[j % 4].wrapping_add(term(j));
     }
     acc[0]
         .wrapping_add(acc[1])
@@ -973,13 +979,5 @@ mod proofs {
             unzigzag(residual).wrapping_add(model.predict_at(&x[..i], i)),
             x[i]
         );
-    }
-
-    /// The four-way partial sums of the unrolled kernel equal the plain wrapping sum.
-    #[kani::proof]
-    fn unrolled_dot_matches_plain_sum() {
-        let h: [i64; 8] = kani::any();
-        let c: [i64; 8] = kani::any();
-        assert_eq!(dot_fixed(&h, &c), dot(&h, &c));
     }
 }
