@@ -113,3 +113,13 @@ then, a recommendation, evidence links. The recommendation follows fixed rules:
 6. Evidence check: share of top windows whose `read_interval` values equal the HDF5 values bit for bit.
 
 No pass or fail thresholds: this is a demonstration, and every number is reported as it comes out.
+
+## Deviations
+
+- **2026-11-11, after the run, additions only (nothing above was changed):** `metrics.py` also reports (a) a
+  control: the Q2 window rule applied leave-one-out to the good runs of each pool, to show how often the
+  "inspect"/"check" thresholds fire on good runs; (b) how many bad hits in the top 5 of `search_similar` come
+  from the flagged run's own period. Both were added because the first results raised the question; they are
+  descriptive.
+- **Before the full run:** one wording fix in `demo_agent.py` after a trial on the first run: the #385 caveat
+  under Q5 now says when the deviating window *is* the lead-in (window 0) instead of always saying it is not.

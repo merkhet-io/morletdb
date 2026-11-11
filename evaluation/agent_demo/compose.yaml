@@ -1,0 +1,22 @@
+# Agent demo "Why this part?" (README.md): the database only. The loader, the agent and the MCP server run from
+# a local Python environment and connect to 127.0.0.1:54351.
+name: morletdb-agentdemo-why
+services:
+  db:
+    image: ${MORLET_IMAGE:-ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1}
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: morlet-demo-only
+      POSTGRES_DB: morlet
+    ports:
+      - "127.0.0.1:54351:5432"
+    cpus: 2
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+volumes:
+  db:

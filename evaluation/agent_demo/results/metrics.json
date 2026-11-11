@@ -1,0 +1,78 @@
+{
+ "investigations": 34,
+ "completed": 34,
+ "stopped": [],
+ "pool_top_in_flagged_run": {
+  "share": 0.618,
+  "n": 34,
+  "hits": 21,
+  "chance": 0.14
+ },
+ "search_similar": {
+  "runs": 34,
+  "precision_at_5": 0.406,
+  "precision_at_10": 0.282,
+  "runs_with_10_scored_hits": 34,
+  "own_run_hits_dropped_mean": 2.941,
+  "own_run_hits_dropped_max": 11,
+  "hits_returned_mean": 50,
+  "bad_hits_in_top5_same_period": 59,
+  "bad_hits_in_top5_other_period": 10
+ },
+ "search_from_time": {
+  "runs": 34,
+  "precision_at_5": 0.282,
+  "precision_at_10": 0.15,
+  "runs_with_10_scored_hits": 34,
+  "own_run_hits_dropped_mean": 0,
+  "own_run_hits_dropped_max": 0,
+  "hits_returned_mean": 28.824
+ },
+ "chance_bad_window_share": 0.063,
+ "statements": {
+  "total": 549,
+  "with_evidence": 515,
+  "share": 0.938
+ },
+ "wall_s": {
+  "median": 9.12,
+  "max": 18.68,
+  "min": 4.87,
+  "total": 311.7
+ },
+ "tool_calls_per_investigation": {
+  "median": 434.5,
+  "max": 940
+ },
+ "tool_errors": {
+  "total": 0,
+  "by_tool": {},
+  "messages": {}
+ },
+ "kind": {
+  "level and shape": 33,
+  "level": 1
+ },
+ "top_abs_db": {
+  "median": 15.0
+ },
+ "recommendations": {
+  "Inspect this part": 33,
+  "Check this part": 1
+ },
+ "control_good_runs": {
+  "runs": 65,
+  "median_top_abs_db": 5.41,
+  "share_ge_6db_inspect": 0.431,
+  "share_ge_3db_check": 0.815,
+  "note": "good runs scored against the other good runs of their pool (4 references, not 5)"
+ },
+ "flagged_runs_top_abs_db": {
+  "share_ge_6db": 0.971,
+  "share_ge_3db": 1.0
+ },
+ "evidence_bit_identical": {
+  "checked": 34,
+  "identical": 34
+ }
+}

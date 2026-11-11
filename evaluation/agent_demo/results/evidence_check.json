@@ -1,0 +1,312 @@
+{
+ "investigations": 34,
+ "bit_identical": 34,
+ "rows": [
+  {
+   "run": "M01_Aug_2019_OP01_000-22f510",
+   "checked": true,
+   "recording_id": "M01_Aug_2019_OP01_000-22f510-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2019_OP03_000-28373c",
+   "checked": true,
+   "recording_id": "M01_Aug_2019_OP03_000-28373c-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2019_OP04_000-4b5737",
+   "checked": true,
+   "recording_id": "M01_Aug_2019_OP04_000-4b5737-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2019_OP05_000-d14913",
+   "checked": true,
+   "recording_id": "M01_Aug_2019_OP05_000-d14913-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2019_OP06_000-e07830",
+   "checked": true,
+   "recording_id": "M01_Aug_2019_OP06_000-e07830-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2019_OP07_000-b59619",
+   "checked": true,
+   "recording_id": "M01_Aug_2019_OP07_000-b59619-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2019_OP09_000-879774",
+   "checked": true,
+   "recording_id": "M01_Aug_2019_OP09_000-879774-y",
+   "start_sample": 69632,
+   "end_sample": 73728,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2021_OP06_000-c10ff9",
+   "checked": true,
+   "recording_id": "M01_Aug_2021_OP06_000-c10ff9-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2021_OP06_001-e93485",
+   "checked": true,
+   "recording_id": "M01_Aug_2021_OP06_001-e93485-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2021_OP06_002-77af89",
+   "checked": true,
+   "recording_id": "M01_Aug_2021_OP06_002-77af89-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2021_OP07_000-291d9b",
+   "checked": true,
+   "recording_id": "M01_Aug_2021_OP07_000-291d9b-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2021_OP07_001-79fb6f",
+   "checked": true,
+   "recording_id": "M01_Aug_2021_OP07_001-79fb6f-z",
+   "start_sample": 12288,
+   "end_sample": 16384,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Aug_2021_OP10_000-20cabd",
+   "checked": true,
+   "recording_id": "M01_Aug_2021_OP10_000-20cabd-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP01_000-19a013",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP01_000-19a013-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP02_000-88ad90",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP02_000-88ad90-y",
+   "start_sample": 57344,
+   "end_sample": 61440,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP04_000-a006c2",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP04_000-a006c2-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP05_000-7ae1f3",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP05_000-7ae1f3-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP05_001-2d0950",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP05_001-2d0950-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP07_000-a6943b",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP07_000-a6943b-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP08_000-74457e",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP08_000-74457e-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP08_001-6859de",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP08_001-6859de-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP08_002-0079a9",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP08_002-0079a9-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP10_000-92ff92",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP10_000-92ff92-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP10_001-d4b8d6",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP10_001-d4b8d6-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP10_002-c5f4f2",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP10_002-c5f4f2-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP11_000-3a47d6",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP11_000-3a47d6-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP11_001-6d7cea",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP11_001-6d7cea-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP11_002-560372",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP11_002-560372-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP12_000-376c2e",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP12_000-376c2e-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP12_001-90d0e3",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP12_001-90d0e3-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP12_002-2c4c97",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP12_002-2c4c97-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2019_OP14_000-c54e41",
+   "checked": true,
+   "recording_id": "M01_Feb_2019_OP14_000-c54e41-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2021_OP05_000-eca4e2",
+   "checked": true,
+   "recording_id": "M01_Feb_2021_OP05_000-eca4e2-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  },
+  {
+   "run": "M01_Feb_2021_OP11_000-34e04c",
+   "checked": true,
+   "recording_id": "M01_Feb_2021_OP11_000-34e04c-z",
+   "start_sample": 0,
+   "end_sample": 4096,
+   "values": 4096,
+   "bit_identical": true
+  }
+ ]
+}

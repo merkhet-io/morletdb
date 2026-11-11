@@ -1,0 +1,19 @@
+{
+ "collection": "public.bosch_m01",
+ "dataset_commit": "d60581d6a3ab6015dcc5488c3d76112bb8e1bcb1",
+ "runs": 519,
+ "morlet_version": "0.3.8",
+ "import": {
+  "status": "complete",
+  "committed_sample_submissions": 168368787,
+  "rpc_calls": 1777
+ },
+ "import_s": 129.7,
+ "envelope_windows": 80187,
+ "envelopes_s": 21.3,
+ "context": "enabled: segments, simple-v1 values, bad labels, s1:flagged decisions",
+ "context_s": 10.8,
+ "recordings": 1557,
+ "search_windows": 80187,
+ "total_s": 161.9
+}
