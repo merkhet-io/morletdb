@@ -171,6 +171,7 @@ case "$OLD_VERSION" in
   0.3.5) BLOCKER="public.morlet_coverage(regclass, text[], integer)" ;;
   0.3.6) BLOCKER="" ;;   # 0.3.6 -> 0.3.7 only redefines C functions with a new library path: nothing new to block
   0.3.7) BLOCKER="public.morlet_samples_to_ns(numeric, double precision)" ;;
+  0.3.8) BLOCKER="" ;;   # 0.3.8 -> 0.3.9 only changes the volatility of two functions: nothing new to block
   0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
 esac

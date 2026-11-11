@@ -176,10 +176,12 @@ docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=chang
   ghcr.io/merkhet-io/morletdb:<version> -c morlet.chunk_format=grizzbit21
 ```
 
-Check the value with `SELECT current_setting('morlet.chunk_format');`. pg_morlet defines the setting when its
-library loads, which happens with the first `morlet_*` call of a session. A value set before that, such as a
-misspelt `grizzbit2`, is only checked at that point: PostgreSQL warns and the session writes Grizzbit 1. So check
-the setting after a `morlet_*` call (`SELECT morlet_version();` is enough).
+Check the value with `SELECT current_setting('morlet.chunk_format');`. **A misspelt value never writes
+Grizzbit 1 quietly**. Once pg_morlet's library is loaded in a session (with its first `morlet_*` call),
+`SET` refuses any value but `grizzbit1` and `grizzbit21`. A value that reaches the session before that, through `SET`,
+`ALTER DATABASE` or `ALTER ROLE ... SET`, `postgresql.conf` or `-c`, is kept as written, and every append then fails
+with `invalid value for parameter "morlet.chunk_format": "grizbit21"; available values: grizzbit1, grizzbit21`,
+storing nothing.
 
 **What it affects.** Only chunks written from then on, by every append path. Chunks already stored keep their
 format; there is no tool yet to recode them (#374). A collection or a recording can hold both formats, and every
@@ -248,9 +250,10 @@ chunks already written stay readable.
   ([one-file format](file-format.md)).
 - **Downgrade:** pg_morlet below the release that ships Grizzbit 2.1 cannot read version-5 chunks. Re-append them
   with `grizzbit1` before downgrading.
-- **No `ALTER EXTENSION ... UPDATE` is needed for it:** the SQL version stays 0.3.8; Grizzbit 2.1 comes with the
-  new library (release image or package). Run the update anyway if the release you install changes the SQL
-  version.
+- **`ALTER EXTENSION pg_morlet UPDATE`:** Grizzbit 2.1 comes with the new library (release image or package) and
+  encodes without the update. The update (SQL 0.3.8 to 0.3.9) marks the encoding functions STABLE instead of
+  IMMUTABLE, so PostgreSQL never reuses bytes encoded under another value of the setting: run it after installing
+  the release.
 
 **A lossless contrast.** Some time-series databases offer lossy float compression. TDengine's float
 compressor tsz is documented as lossy (it truncates doubles below 10⁻¹⁶); its default and ZSTD layouts are

@@ -1,43 +1,101 @@
 use pgrx::prelude::*;
 use pgrx::{GucContext, GucFlags, GucRegistry, GucSetting, JsonB};
+use std::ffi::{CStr, CString};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pgrx::pg_module_magic!(name, version);
 
 /// `morlet.chunk_format`: the chunk coding every append path writes. `grizzbit1` (the default) writes chunk
-/// format versions 2 and 3, as every release does; `grizzbit21` (study B6's Grizzbit 2.1 arm) keeps a version-5
+/// format versions 2 and 3, as every release does; `grizzbit21` (Grizzbit 2.1, study B6) keeps a version-5
 /// chunk where it is strictly smaller than the Grizzbit 1 chunk, which is stored otherwise, byte for byte. Reads
 /// decode every version whatever the setting. Registered (unlike `morlet.verify_appends`) so that `SHOW` and
 /// `current_setting` report the coding in use once the library is loaded; the SDK reads it to label the
 /// server's encoder.
-#[derive(pgrx::PostgresGucEnum, Clone, Copy, PartialEq, Eq, Debug)]
-enum ChunkFormat {
-    #[name = c"grizzbit1"]
-    Grizzbit1,
-    #[name = c"grizzbit21"]
-    Grizzbit21,
+///
+/// A string, not an enum, so that a misspelt value can never quietly become the default: PostgreSQL keeps a
+/// value set before the library loads (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `-c`,
+/// `postgresql.conf`) as a placeholder, and when an enum is defined it only warns about an invalid placeholder
+/// and falls back to the default. A string keeps the value as written. Values set after the library loaded are
+/// refused by the check hook; a value carried over from before is refused by every encode (`chunk_format`), so
+/// the append fails and nothing is written.
+static CHUNK_FORMAT: GucSetting<Option<CString>> =
+    GucSetting::<Option<CString>>::new(Some(c"grizzbit1"));
+
+/// The values `morlet.chunk_format` accepts, for messages.
+const CHUNK_FORMATS: &str = "grizzbit1, grizzbit21";
+
+/// Set once `morlet.chunk_format` is defined; until then its check hook accepts every value, so placeholders
+/// carried over from before the library loaded keep their text (and fail at the first encode if invalid).
+static CHUNK_FORMAT_DEFINED: AtomicBool = AtomicBool::new(false);
+
+fn parse_chunk_format(value: Option<&CStr>) -> Option<morlet_core::rawcodec::Format> {
+    match value.map(CStr::to_bytes) {
+        Some(b"grizzbit1") => Some(morlet_core::rawcodec::Format::Grizzbit1),
+        Some(b"grizzbit21") => Some(morlet_core::rawcodec::Format::Grizzbit21),
+        _ => None,
+    }
 }
 
-static CHUNK_FORMAT: GucSetting<ChunkFormat> =
-    GucSetting::<ChunkFormat>::new(ChunkFormat::Grizzbit1);
+/// Check hook of `morlet.chunk_format`: once the setting is defined, a value other than the two names is
+/// refused where it is set (`SET`, `ALTER DATABASE/ROLE/SYSTEM ... SET`, a configuration reload).
+#[pg_guard]
+unsafe extern "C-unwind" fn check_chunk_format(
+    newval: *mut *mut std::ffi::c_char,
+    _extra: *mut *mut std::ffi::c_void,
+    _source: pg_sys::GucSource::Type,
+) -> bool {
+    if !CHUNK_FORMAT_DEFINED.load(Ordering::Relaxed) {
+        return true;
+    }
+    // SAFETY: PostgreSQL passes a valid pointer to the new value, which is NULL or a NUL-terminated string.
+    let value = unsafe {
+        if newval.is_null() || (*newval).is_null() {
+            None
+        } else {
+            Some(CStr::from_ptr(*newval))
+        }
+    };
+    if parse_chunk_format(value).is_some() {
+        return true;
+    }
+    // SAFETY: called as a GUC check hook.
+    unsafe {
+        pgrx::guc::GucCheckError::default()
+            .with_hint(format!("Available values: {CHUNK_FORMATS}."))
+            .apply()
+    };
+    false
+}
 
 #[pg_guard]
 pub extern "C-unwind" fn _PG_init() {
-    GucRegistry::define_enum_guc(
-        c"morlet.chunk_format",
-        c"Chunk coding of appends: grizzbit1 (the default) or grizzbit21 (keeps a version-5 chunk where strictly smaller).",
-        c"Reads decode every chunk format version whatever this setting (study B6, Grizzbit 2.1).",
-        &CHUNK_FORMAT,
-        GucContext::Userset,
-        GucFlags::default(),
-    );
+    // SAFETY: the check hook is guarded and only reads the value it is given.
+    unsafe {
+        GucRegistry::define_string_guc_with_hooks(
+            c"morlet.chunk_format",
+            c"Chunk coding of appends: grizzbit1 (the default) or grizzbit21 (keeps a version-5 chunk where strictly smaller).",
+            c"Reads decode every chunk format version whatever this setting (study B6, Grizzbit 2.1). Any other value makes appends fail.",
+            &CHUNK_FORMAT,
+            GucContext::Userset,
+            GucFlags::default(),
+            Some(check_chunk_format),
+            None,
+            None,
+        );
+    }
+    CHUNK_FORMAT_DEFINED.store(true, Ordering::Relaxed);
 }
 
-/// The chunk coding appends write now (`morlet.chunk_format`). Read in the backend's thread only.
+/// The chunk coding appends write now (`morlet.chunk_format`). Read in the backend's thread only. An invalid
+/// value (one set before the library loaded) is an error, so a misspelt setting never writes Grizzbit 1 quietly.
 fn chunk_format() -> morlet_core::rawcodec::Format {
-    match CHUNK_FORMAT.get() {
-        ChunkFormat::Grizzbit1 => morlet_core::rawcodec::Format::Grizzbit1,
-        ChunkFormat::Grizzbit21 => morlet_core::rawcodec::Format::Grizzbit21,
-    }
+    let value = CHUNK_FORMAT.get();
+    parse_chunk_format(value.as_deref()).unwrap_or_else(|| {
+        pgrx::error!(
+            "invalid value for parameter \"morlet.chunk_format\": \"{}\"; available values: {CHUNK_FORMATS}",
+            value.as_deref().map(|v| v.to_string_lossy()).unwrap_or_default()
+        )
+    })
 }
 
 fn checked_samples(input: Vec<Option<f64>>) -> Vec<f64> {
@@ -290,7 +348,7 @@ fn morlet_valid_chunk(samples: pgrx::Array<'_, f64>) -> bool {
 /// `morlet.verify_appends` on (the default) the code is decoded again and compared bit for bit with the input,
 /// as in the batch append, so every append path that encodes through this function (`morlet_append_chunk`)
 /// proves at write time that what it stores decodes to its input.
-#[pg_extern(immutable, parallel_safe, strict)]
+#[pg_extern(stable, parallel_safe, strict)]
 fn morlet_encode_chunk(samples: pgrx::Array<'_, f64>, sample_quantum: f64) -> Vec<u8> {
     let samples = sample_slice(&samples);
     let bytes = encode_checked(&samples, sample_quantum, verify_appends(), chunk_format())
@@ -971,7 +1029,7 @@ const DECODE_PARALLEL_MIN: usize = 8;
 /// and compared bit for bit with its input. The encoded chunks are remembered for the chunk table's CHECK
 /// constraint, which then skips its own decode for exactly these bytes (`ENCODED_HERE`).
 #[allow(clippy::type_complexity)]
-#[pg_extern(immutable, parallel_safe, strict)]
+#[pg_extern(stable, parallel_safe, strict)]
 fn morlet_chunk_batch(
     checkpoint: JsonB,
     start_sample: i64,
@@ -3458,6 +3516,92 @@ END $$"#).unwrap();
     fn chunk_format_is_validated() {
         // Grizzbit 2 (version 4) was never shipped: its name is not a value of the setting.
         Spi::run("SELECT morlet_version(); SET morlet.chunk_format = grizzbit2").unwrap();
+    }
+    /// A value set before the library loaded (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `-c`) is not
+    /// seen by the check hook. It must not quietly become `grizzbit1`: the first encode refuses it, on the
+    /// single-chunk path. (tests/chunk_format_guard.sh checks the same with real sessions.)
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.chunk_format\": \"grizbit21\"; available values: grizzbit1, grizzbit21"
+    )]
+    fn chunk_format_from_before_loading_fails_a_single_append() {
+        Spi::run("SELECT morlet_create_stream_collection('public','cf_one'); SELECT morlet_start_recording('cf_one','A',4096,'x','g')").unwrap();
+        set_as_if_before_loading("grizbit21");
+        Spi::run("SELECT morlet_append_chunk('cf_one','A',0,ARRAY[1,2,3]::float8[])").unwrap();
+    }
+    /// The same on the batch path (`morlet_append_chunks_raw`, `morlet_chunk_batch`).
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.chunk_format\": \"Grizzbit21\"; available values: grizzbit1, grizzbit21"
+    )]
+    fn chunk_format_from_before_loading_fails_a_batch_append() {
+        Spi::run("SELECT morlet_create_stream_collection('public','cf_batch'); SELECT morlet_start_recording('cf_batch','A',4096,'x','g')").unwrap();
+        set_as_if_before_loading("Grizzbit21");
+        Spi::run("SELECT morlet_append_chunks_raw('cf_batch','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),4)").unwrap();
+    }
+    /// Sets `morlet.chunk_format` as PostgreSQL does for a placeholder value carried over when the library loads:
+    /// without the check hook refusing it.
+    fn set_as_if_before_loading(value: &str) {
+        crate::CHUNK_FORMAT_DEFINED.store(false, std::sync::atomic::Ordering::Relaxed);
+        let set = Spi::run(&format!("SET morlet.chunk_format = '{value}'"));
+        crate::CHUNK_FORMAT_DEFINED.store(true, std::sync::atomic::Ordering::Relaxed);
+        set.unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('morlet.chunk_format')").unwrap(),
+            Some(value.into())
+        );
+    }
+    /// Unset means grizzbit1, and a valid value set with the check hook active is taken.
+    #[pg_test]
+    fn chunk_format_unset_is_grizzbit1_and_valid_values_work() {
+        Spi::run("SELECT morlet_create_stream_collection('public','cf_ok'); SELECT morlet_start_recording('cf_ok','A',4096,'x','g'); RESET morlet.chunk_format").unwrap();
+        let data = "ARRAY(SELECT round(3000*sin(i/7.3))::float8 FROM generate_series(0,4095) i)";
+        Spi::run(&format!("SELECT morlet_append_chunk('cf_ok','A',0,{data}); SET morlet.chunk_format = grizzbit21; SELECT morlet_append_chunk('cf_ok','A',4096,{data}); SET morlet.chunk_format = grizzbit1; SELECT morlet_append_chunk('cf_ok','A',8192,{data}); RESET morlet.chunk_format")).unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(get_byte(encoded,0)::text,',' ORDER BY start_sample) FROM cf_ok_chunks").unwrap(),
+            Some("2,5,2".into())
+        );
+    }
+    /// The functions whose output depends on `morlet.chunk_format` are STABLE (SQL 0.3.9), so PostgreSQL never
+    /// folds or caches their result across a change of the setting: a generic plan prepared under grizzbit1 encodes
+    /// with grizzbit21 once that is set. (Declared IMMUTABLE, the call is folded into the plan and keeps returning
+    /// a version-2 chunk.)
+    #[pg_test]
+    fn encoding_functions_are_stable_and_follow_the_setting() {
+        assert_eq!(
+            Spi::get_one::<String>(
+                "SELECT string_agg(proname||'='||provolatile::text,',' ORDER BY proname) FROM pg_proc WHERE proname IN ('morlet_encode_chunk','morlet_chunk_batch')"
+            )
+            .unwrap(),
+            Some("morlet_chunk_batch=s,morlet_encode_chunk=s".into())
+        );
+        let samples: Vec<String> = (0..4096)
+            .map(|i| format!("{}", (3000.0 * (i as f64 / 7.3).sin()).round()))
+            .collect();
+        let literal = format!("'{{{}}}'::float8[]", samples.join(","));
+        // force_generic_plan: the plan is made once, at the first EXECUTE, and reused; changing a custom setting
+        // does not invalidate it. EXECUTE cannot be prepared through SPI; CREATE TABLE AS runs it.
+        let versions = |volatility: &str| -> (i32, i32) {
+            Spi::run(&format!(
+                "ALTER FUNCTION morlet_encode_chunk(float8[], float8) {volatility};
+                 SET plan_cache_mode = force_generic_plan; RESET morlet.chunk_format;
+                 PREPARE cf_enc AS SELECT get_byte(morlet_encode_chunk({literal}, 1), 0) AS v;
+                 CREATE TEMP TABLE cf_before AS EXECUTE cf_enc;
+                 SET morlet.chunk_format = grizzbit21;
+                 CREATE TEMP TABLE cf_after AS EXECUTE cf_enc"
+            ))
+            .unwrap();
+            let before = Spi::get_one::<i32>("SELECT v FROM cf_before")
+                .unwrap()
+                .unwrap();
+            let after = Spi::get_one::<i32>("SELECT v FROM cf_after")
+                .unwrap()
+                .unwrap();
+            Spi::run("DROP TABLE cf_before, cf_after; DEALLOCATE cf_enc; RESET morlet.chunk_format; RESET plan_cache_mode")
+                .unwrap();
+            (before, after)
+        };
+        assert_eq!(versions("STABLE"), (2, 5));
+        // The failure the change prevents (the test's transaction is rolled back, so this ALTER does not last).
+        assert_eq!(versions("IMMUTABLE"), (2, 2));
     }
     /// B6 / #366: with Grizzbit 2.1 a wrong version-5 code is refused on the batch path; there is no fallback to
     /// Grizzbit 1.
