@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.10-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.11-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -56,6 +56,16 @@ a leading v; GHCR image tags do not.
   - **Embedded edition (experimental, #351):** MorletDB in one SQLite file. The SDK's platform wheels carry it
     (`morletdb.open`), and the release attaches `morlet-sqlite-<platform>.tar.gz` (command line, library, C header).
   - **File format 1:** frozen with a compatibility promise ([file-format.md](file-format.md)).
+  - The chunk format is unchanged; existing collections keep their layout.
+- **0.3.11-alpha.1:** SQL version 0.3.8, unchanged (no `ALTER EXTENSION` needed); Python SDK 0.1.0a4.
+  - **Write-time proof on every append path (#366):** with `morlet.verify_appends` on (the default), every chunk is
+    decoded again and compared bit for bit with its input before it is stored.
+  - **Transfers verify samples, not chunk bytes (#356):** file and server transfers compare decoded samples.
+  - **Sample rates up to 100 MHz (#342)** for recordings without feature extraction.
+  - **MCP server:** starts under `python -I` again (#382; 0.3.10-alpha.1's server fails there with
+    `No module named 'decision'`). `search_similar` can leave out the query's own recording or part (`exclude`,
+    #384), and `coverage`, `locate_time` and `latest` give clearer answers on snapshot data (#386).
+  - **The chunk codec is the `grizzbit` crate** (Grizzbit 1 = chunk format versions 2 and 3); no byte changed.
   - The chunk format is unchanged; existing collections keep their layout.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for

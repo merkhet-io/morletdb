@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.3.11-alpha.1
+
+SQL version 0.3.8, unchanged; Python SDK 0.1.0a4. The chunk format is unchanged; existing collections keep their
+layout.
+
+- **MCP server starts under `python -I` again (#382):** `morlet_mcp.py` loads its sibling `decision.py` by path. In
+  0.3.10-alpha.1 the server fails in isolated mode with `No module named 'decision'`; a test now imports it under `-I`.
 
 - **MCP server, findings from a field evaluation (#384, #386):**
   - `search_similar` takes `exclude`: `"recording"` drops every hit in the query's recording, and `"metadata:<key>"`
