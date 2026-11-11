@@ -338,3 +338,188 @@ with its figures.
 4. **Beta interplay:** B6 does not gate the beta (#201). The beta freezes the format with Grizzbit 1. If B6
    passes, version 5 is added later as an additive chunk version with upgrade scripts. Every version 2 and 3
    chunk stays valid, and readers older than that release cannot read version-5 chunks.
+
+## 9. Build record (gate 8)
+
+Written 2026-11-11, after the gates and before any benchmark input is read. It records what development
+decided. It changes no criterion, input list or rule above. No B6 benchmark input was read, and the
+`paderborn_b6` inputs were not built. The only real data read were gate 7's development inputs (below).
+
+### Build
+
+- **Build commit:** `50562e8` on `bench/b6-grizzbit21` ("Grizzbit 2.1 (B6 build): server integration, chunk
+  format version 5").
+  - It sits on top of the WIP checkpoint `611f439`, which sits on the frozen protocol `ff504b4`.
+  - The image `morletdb:b6` and the B6 decoder are built from a `git archive` of this commit.
+  - `62566b8` changes the CI workflow only (gate 2, below).
+  - Later commits add only results and this record.
+- **Codec:** as fixed in section 1. The encoder is the tuned one at `1ede52b`: only the estimated LPC order is
+  coded exactly, side streams use fixed predictors 0–1, the main stream uses 0–4 plus LPC, and keep-the-smaller
+  applies per chunk. No new dependency.
+  - `Cargo.lock`: sha256 `b6ae996a…ef44b765`.
+  - `crates/grizzbit/fuzz/Cargo.lock`: sha256 `b7002edb…2f6da8c3`.
+- **Artifacts** (`results/build.json`):
+  - `morletdb:b6`: `sha256:99ad124df31fef7dee84d041eba537a88e1321da660e9d9edfb3eb82ed0429eb`, arm64. A smoke
+    check on synthetic data passed: the default is `grizzbit1`, and with `grizzbit21` five integer-count chunks
+    are stored as version 5 and read back equal.
+  - The B6 decoder `libmorlet_ffi.dylib` (macOS/arm64, `cargo build --locked --release -p morlet-ffi`): sha256
+    `4cd33b93261f48b1edc5d49daf85d170b1458b8be0cadb6dd78023bbf49fc0ba`. Its max chunk version is 5.
+  - The release arm `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1` is pinned at
+    `sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38`, and QuestDB 10.1.0 at
+    `sha256:3b11dc5f…87efc9`.
+
+### Gate results
+
+| Gate | Result |
+|---|---|
+| 1. Round trip and property tests | **Pass.** `codec_props.rs` runs 2 new properties through keep-the-smaller, 500 cases each per run, beside Grizzbit 1's 3. Every output is Grizzbit 1's bytes or a strictly smaller version-5 chunk and decodes bit for bit. Every version-5 chunk, kept or not, round trips, and resealed mutations of it never panic. `tests/grizzbit21_edges.rs` has 37 edge cases. Each goes through keep-the-smaller, each coding alone and the version-5 coder alone (`encode_version5`), is compared by `to_bits` and encoded twice for determinism. They cover: n = 1 (7 values incl. ±0, ±1e9, a denormal) and n = 32,768 (a constant, a tone, a calibrated walk); constants and signed zeros; denormals and ±1e9; alternating extremes; multiplier and offset grids with few and many distinct indices; near-grid mixed corrections; LPC on pure tones, two tones, a chirp, white noise and steps; random bit patterns within ±1e9. Invalid inputs give the same errors through every encoder. `tests/grizzbit21.rs` (9 tests) and the unit tests also pass. |
+| 2. Golden version-5 chunks | **Pass.** The 8 `testdata/rawcodec/v5-*` chunks decode bit for bit and are re-encoded byte for byte in CI on macOS/arm64, Linux/x86_64 and Linux/arm64. The native jobs of PR #381 run `codec_golden` and `encoder_equivalence` on each platform (added in `62566b8`), and the core job runs them on Linux/x86_64. All pass on head `62566b8`. |
+| 3. Grizzbit 1 golden chunks unchanged | **Pass.** All 16 v2/v3 chunks decode bit for bit and are re-encoded byte for byte. `testdata/grizzbit/encoder-equivalence.bin` is reproduced exactly. No file under `testdata/` was changed, renamed or added by this build (CI's golden-files check passes). |
+| 4. Fuzzing | **Pass.** `decode_v5` 2.52 CPU-hours and `roundtrip` 2.52 CPU-hours, measured, in one completed run. No crash, timeout, memory-limit violation or mismatch. Both targets are in the nightly matrix. See "Fuzzing". |
+| 5. Kani | **Pass.** 16 of 16 harnesses verify (CBMC 6.11.0, Kani 0.68.0): the 7 Grizzbit 1 proofs and 9 for version 5. All 16 are in the PR proof list (`verification.yml`), and CI's Kani job passes on #381. See "Proofs". |
+| 6. Server integration and all existing tests | **Pass.** See "Gate 6". |
+| 7. Development inputs | Only these were read: T1's development inputs, as T1's `prepare.py` wrote them (B3 development acquisitions K001, KA01, KA09, KB24 and KI08: vibration_1, phase_current_1, phase_current_2, force); FEMTO Bearing1_1 horizontal, files 1–1,638; B4's four development Elf series, by name; XJTU-SY Bearing1_1 horizontal, files 1–123. B3's development set was not needed (no smoke check yet). Tests use synthetic data. |
+| 8. Build record | This section. |
+
+### Gate 6
+
+Run locally on the build commit's code (macOS/arm64) unless stated:
+- **Rust:**
+  - `cargo test --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite`: all pass;
+  - `cargo clippy --locked` on the same crates, `--all-targets -D warnings`: clean;
+  - `cargo fmt --all --check`: clean.
+- **`cargo pgrx test`** with pgrx 0.19.3 (`~/.cargo-pgrx-019`, `PGRX_HOME=~/.pgrx-019`): pg17, pg18 and pg19
+  each pass 156 of 156. New tests:
+  - `grizzbit21_keeps_version5_chunks_only_where_strictly_smaller` (batch and single-chunk paths);
+  - `chunk_format_is_validated`;
+  - `verify_appends_batch_refuses_a_wrong_version5_code` and
+    `verify_appends_single_chunk_refuses_a_wrong_version5_code`: a forced wrong version-5 code is refused;
+  - `verify_appends_off_lets_a_wrong_version5_code_through`: it is stored with the check off, so the check is
+    what refuses it;
+  - `encoded_reads_decode_to_raw_reads`, which now writes version-5 chunks and loops over client versions 5..1.
+- **SDK** (`test_offline test_native test_integration test_local test_transfer`): 35 of 35, none skipped.
+  - Run against pgrx's PostgreSQL 19 server (port 28819) with this build's extension and
+    `morlet.chunk_format = grizzbit21` in the server configuration (`ALTER SYSTEM`, reset afterwards).
+  - The native decoder and the embedded edition were built from this tree.
+  - The suites include compressed transfer of version-5 chunks (frames carry chunks, not samples) and file
+    transfers with a `grizzbit21` server.
+- **Embedded edition and file format:** `morlet-sqlite` tests pass, including
+  `file_format_1_never_holds_version5_chunks`.
+- **Reference reader** on `testdata/morlet-file-1`, with the library: 4 of 4, none skipped.
+- **CI on PR #381, head `62566b8`:** all 20 checks pass. These include core, pg17/18/19 with and without
+  pgvector, upgrade, python-sdk, Kani, golden-files and the three native jobs. Fuzz is skipped on pull
+  requests.
+
+### Fuzzing
+
+cargo-fuzz 0.13.2 and nightly-2026-10-11 built the binaries with `-O -a` (optimised, debug assertions and
+overflow checks on). Rebuilt from the build commit's tree, they are byte-identical to the ones fuzzed: sha256
+`6c455659…` (`decode_v5`) and `afaad4fa…` (`roundtrip`). Edits after the fuzzed build touched only
+`#[cfg(kani)]` proofs.
+
+Each run used the nightly workflow's limits: `-timeout=20 -rss_limit_mb=2048`, `-malloc_limit_mb` 64 / 256,
+`-max_len` 65,536 / 300,000, with libFuzzer `-jobs=4 -workers=4 -max_total_time=2400` per target, at nice 19 on
+the Apple M5 Max.
+- `decode_v5` was seeded from the 8 golden version-5 chunks, without their checksum.
+- `roundtrip` covers the keep-the-smaller encoder and the version-5 coder alone.
+
+| Run | Window (UTC, 2026-11-11) | `decode_v5` | `roundtrip` | Counted for gate 4 |
+|---|---|---|---|---|
+| 1 | 07:29:41–07:46:40 | interrupted (pause), about 1.1 CPU-h | interrupted, about 1.1 CPU-h | **no** (interrupted) |
+| 2 | 08:34:16–09:14:17 | completed, 4 × 2,401 s wall, 9.65 M inputs | completed, 4 × 2,401 s wall, 6.60 M inputs | **no**: CPU time not measured (wall time only, on a shared host) |
+| 3 | 09:15:19–10:00:20 | completed, **2.52 CPU-h** (8,956 s user + 126 s sys), 8.06 M inputs, coverage 1,045 edges / 3,129 features, peak RSS 573 MB | completed, **2.52 CPU-h** (8,559 s user + 521 s sys), 4.53 M inputs, coverage 2,223 edges / 8,595 features, peak RSS 1.42 GB | **yes** |
+
+- No run produced a crash, timeout, memory-limit violation, failed assertion or mismatch.
+- Runs 2 and 3 continued from the corpora of the run before. Run 3 measured CPU with `/usr/bin/time -l` (user
+  and system time of the fuzzer and its jobs).
+- The corpora are kept locally, not in the repository: 4,580 inputs (19 MB) for `decode_v5` and 8,179 (35 MB)
+  for `roundtrip`.
+- Hours remaining for gate 4: none.
+
+### Proofs
+
+CBMC verification time per harness, taken while fuzzing ran at nice 19:
+
+| Harness | Time | Bounds |
+|---|---|---|
+| 7 Grizzbit 1 proofs | 0.02–8.8 s each | as in docs/verification.md |
+| `coefficient_sign_extension_roundtrips` | 0.19 s | every precision 1–15 |
+| `lpc_residuals_invert` | 24.9 s | order 2, any history, coefficients and shift |
+| `version5_flags_are_checked` | 0.06 s | all 256 flags bytes |
+| `exception_positions_are_in_range` | 1.8 s | 3 gaps of any i64, any n ≤ 32,768 |
+| `version5_kind_dispatch` | 0.32 s | every kind byte; version 4 refused |
+| `version5_checksum_is_checked_first` | 22.1 s | 7-byte chunks |
+| `keep_smaller_keeps_grizzbit1_unless_strictly_smaller` | 2.9 s | up to 3 bytes each |
+| `lpc_prediction_matches_wide_reference` | 13.3 s | values below 2^40, 15-bit coefficients, any shift; i128 reference |
+| `lpc_kernel_restores_reference_residuals` | 255 s | 9 values of any i64, coefficients in [−4, 4), any shift |
+
+Narrowed during development (decisions 6 and 7):
+- The exception proof with a symbolic count of 0–4 gaps, and the kernel proof with 15-bit coefficients, each
+  exceeded 20 minutes.
+- Two first forms compared error strings, or whole arrays, with `assert_eq!`. CBMC then hits `memcmp` without
+  a loop bound and reports an unwinding failure, not a property failure. They now compare message lengths and
+  elements.
+
+### Development figures
+
+`results/dev/dev_storage.json`, written by `dev_figures.py`:
+- 4,096-sample chunks at quantum 1, as B6's arms.
+- Both arms run through the codec bench example, which decodes every chunk and compares it by `to_bits`. All
+  chunks were exact.
+- Every changed chunk is a strictly smaller version-5 chunk; the script checks this.
+- No speeds are recorded: the gates ran without B6's start conditions.
+
+| Input group | Samples | G1 bits/sample | G21 bits/sample | G21/G1 | Chunks changed | Version-5 paths |
+|---|---:|---:|---:|---:|---:|---|
+| T1 Paderborn development channels (20) + FEMTO | 8,113,620 | 10.479 | 9.357 | 0.893 | all 1,989 | table on every Paderborn chunk; LPC on 300 of 315 vibration chunks, every current chunk and no force chunk; FEMTO: exceptions only 896, none 128, LPC 1,024 |
+| Elf, B4 development (4) | 303,397 | 26.271 | 26.268 | 0.9999 | 1 of 76 | electric_vehicle_charging: LPC |
+| XJTU-SY Bearing1_1 horizontal | 4,030,464 | 63.659 | 63.659 | 1.000 | 0 of 984 | — (float32-derived values, no grid) |
+
+- **Per input:** G21/G1 is 0.786–0.911 on the Paderborn development channels and 0.947 on FEMTO.
+- **G1 matches earlier studies:** B4's development values (Stocks-USA 4.56, electric_vehicle_charging 10.03,
+  Blockchain-tr 13.96, POI-lat 60.84) and B5's (XJTU-SY 63.66, FEMTO 10.65).
+
+### Development decisions
+
+1. **`morlet.chunk_format` default: `grizzbit1`,** as section 1 fixes. Unlike B5, whose build defaulted to its
+   new coding, every existing test and server keeps Grizzbit 1. The version-5 pg tests and the B6 arm set
+   `grizzbit21` explicitly. The setting is a registered enum, read in the backend's thread and passed to the
+   encoder threads. `morlet_encode_chunk` stays declared immutable although its bytes depend on the setting.
+   No SQL change.
+2. **Version-5 chunks in `morlet_recording_storage`:** they have the grid kind, so they are counted in
+   `grid_chunks` (SQL unchanged). A pg test records this. B6 counts versions and version-5 paths from the
+   chunks themselves (section 3), not from this function.
+3. **Write-time check test path:** with `grizzbit21`, the test-only wrong code is built with
+   `encode_version5` on a sample one ulp away. So it is a version-5 chunk whatever its size, and the tests show
+   that the check covers version 5.
+4. **`encode_version5`** (doc-hidden) returns the smallest version-5 chunk whatever its size against Grizzbit 1,
+   for tests and fuzzing, like B5's `encode_version4`. Stores use `encode_with`.
+5. **Proof refactors without output change:** `positions_from_gaps`, `parse_flags` and `keep_smaller` were
+   factored out of the decoder and encoder so Kani can check them on their own. `MAX_VERSION = 5` is the
+   highest version `decode` reads; `FORMAT_VERSION` stays 3.
+6. **Exception-positions proof** with exactly 3 gaps: a symbolic count exceeded 20 minutes.
+7. **Kernel proof** with coefficients in [−4, 4): 15-bit coefficients exceeded 20 minutes. Full-precision
+   arithmetic is covered by `lpc_residuals_invert` and `lpc_prediction_matches_wide_reference`, and by the unit
+   test of every order against the definition.
+8. **Compressed transfer:** `transfer::MAX_CHUNK_VERSION` and `morlet_ffi_max_chunk_version()` are 5. The SQL
+   default of `max_chunk_version` stays 3, so a caller that does not state its version gets samples for
+   version-5 chunks; the SDK passes its decoder's version. `encoded_reads_decode_to_raw_reads` now asks for
+   version 5 in its corrupt-chunk step, because with a default request the server decodes the chunk itself and
+   reports the corruption.
+9. **File format 1:** morlet-sqlite's writer calls `encode` (Grizzbit 1). Its reader refuses a chunk whose
+   version byte is above 3 ("chunk format version 5 is not allowed in file format 1") on reads, statistics and
+   its own write-time check. The reference reader already refused every version other than 2 and 3.
+10. **SDK transfer labels:** the server's encoder label gets " (Grizzbit 2.1)" when
+    `current_setting('morlet.chunk_format', true)` is `grizzbit21`, so file-to-server checks report chunk bytes
+    as "not compared" rather than "different". The transfer tests that compare bytes set `grizzbit1` in
+    `setUp`, so they also pass against a server configured with `grizzbit21`.
+11. **Bench example:** `rawcodec_bench` gains `--grizzbit21`, which adds `format` and `v5_chunks` to its line,
+    and `--per-chunk`, which lists version, kind, bytes, version-5 correction mode and LPC for every chunk.
+    Without them its output is as before, so B4's harness still reads it.
+12. **Specification:** the version-5 layout is in docs/chunk-format.md as "Draft: version 5 (Grizzbit 2.1),
+    under study B6". It becomes part of the specification only if a release ships Grizzbit 2.1.
+13. **Golden chunks on every platform (gate 2):** the native CI jobs now re-encode the golden chunks
+    (`62566b8`). Before, only Linux/x86_64 re-encoded them.
+14. **Fuzz runs execute the `-O -a` binaries directly.** Each target runs in its own directory, because
+    libFuzzer writes `fuzz-N.log` into the working directory and two targets started from the crate collided.
+    `cargo fuzz run` builds and runs the same binary.

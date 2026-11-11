@@ -1,0 +1,46 @@
+{
+ "study": "B6 build record (gate 8)",
+ "build_commit": "50562e8dcdd08fb0f3691660e521a20e72b233e3",
+ "ci_commit": "62566b8c6ecdf25147e880c30adbab49dbd22600",
+ "ci_commit_note": "workflow only (golden chunks re-encoded on the three native CI platforms); no code change against the build commit",
+ "cargo_lock_sha256_at_build_commit": "b6ae996a558cf0f6d8a2978c424bdcb89cbc9ba388a01734b1a2daabef44b765",
+ "fuzz_cargo_lock_sha256_at_build_commit": "b7002edb3f796d43c7773020ffd55151b623174615192d4c90928b632f6da8c3",
+ "new_dependencies": [],
+ "images": {
+  "morletdb:b6": {
+   "id": "sha256:99ad124df31fef7dee84d041eba537a88e1321da660e9d9edfb3eb82ed0429eb",
+   "repo_digests": [
+    "morletdb@sha256:99ad124df31fef7dee84d041eba537a88e1321da660e9d9edfb3eb82ed0429eb"
+   ],
+   "architecture": "arm64",
+   "built_from": "git archive of 50562e8, docker build -f deploy/Dockerfile -t morletdb:b6 .",
+   "smoke_check": "synthetic data: CREATE EXTENSION; morlet.chunk_format default grizzbit1; with grizzbit21 five 4,096-sample chunks of integer counts stored as version 5; read back equal to the input"
+  },
+  "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1": {
+   "id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+   "repo_digests": [
+    "ghcr.io/merkhet-io/morletdb@sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38"
+   ],
+   "role": "release arm (PROTOCOL.md section 8, item 3)"
+  },
+  "questdb/questdb:10.1.0": {
+   "id": "sha256:3b11dc5f77aa299c7c9191b10cf50124c9e97663ce93bc50df5040374e87efc9",
+   "repo_digests": [
+    "questdb/questdb@sha256:3b11dc5f77aa299c7c9191b10cf50124c9e97663ce93bc50df5040374e87efc9"
+   ]
+  }
+ },
+ "decoders": {
+  "b6": {
+   "file": "libmorlet_ffi.dylib (macOS/arm64)",
+   "sha256": "4cd33b93261f48b1edc5d49daf85d170b1458b8be0cadb6dd78023bbf49fc0ba",
+   "built_from": "git archive of 50562e8, cargo build --locked --release -p morlet-ffi",
+   "max_chunk_version": 5
+  }
+ },
+ "fuzzed_binaries_sha256": {
+  "decode_v5": "6c4556591deae025b740f746d8de30ffcdbc74df6f90eab2e18458a299f8d72b",
+  "roundtrip": "afaad4fa1d9585cd2b1106caf0d82f35164217792a44cef63d28cf6f0ec449eb",
+  "note": "cargo +nightly-2026-10-11 fuzz build -O -a; rebuilt from the build commit's tree, the binaries are byte-identical"
+ }
+}
