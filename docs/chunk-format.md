@@ -68,12 +68,13 @@ A stream is a bit-packed (MSB-first) sequence with these fields:
   7-bit width);
 - the residuals, padded with zero bits to a byte boundary.
 
-## Draft: version 5 (Grizzbit 2.1), under study B6
+## Version 5 (Grizzbit 2.1, opt-in)
 
-**Not part of any release.** This section describes the build measured by study B6
-([protocol](../evaluation/storage_b6/PROTOCOL.md)). It becomes part of this specification only if a release
-ships Grizzbit 2.1 after B6 passes. Until then, no release writes or reads version 5. The reference text is
-the module documentation of `crates/grizzbit/src/g21.rs`. Version 4 was Grizzbit 2 (pco, study B5, failed). It
+Version 5 is part of this specification from the next release after 0.3.11-alpha.1, as an **opt-in** format: a
+server writes it only with `morlet.chunk_format = grizzbit21`; the default, `grizzbit1`, writes versions 2 and 3
+only. Every reader of that release decodes version 5 whatever the setting. It passed study B6
+([protocol](../evaluation/storage_b6/PROTOCOL.md), [results](../evaluation/storage_b6/RESULTS.md)) on every
+criterion. The reference text is the module documentation of `crates/grizzbit/src/g21.rs`. Version 4 was Grizzbit 2 (pco, study B5, failed). It
 is never reused, and decoders refuse it as an unknown version.
 
 Version 5 has the grid kind only. It is a version-2 or version-3 grid chunk with two additions: corrections
@@ -223,9 +224,12 @@ the table can write a valid chunk.
   them re-appended.
 - **Version 4** was the planned Grizzbit 2 (#326, study B5). It failed B5, was never released, and stays
   reserved: decoders refuse it, and no later format reuses the number.
-- **Version 5** (Grizzbit 2.1, the draft above, study B6) keeps decoding versions 2 and 3. A decoder that reads
-  version 5 reports it as its highest version on the wire (below), so older clients receive samples instead of
-  version-5 chunks.
+- **Version 5** (Grizzbit 2.1, opt-in, above) keeps decoding versions 2 and 3. A decoder that reads version 5
+  reports it as its highest version on the wire (below), so older clients receive samples instead of version-5
+  chunks.
+- **Downgrade from version 5:** pg_morlet 0.3.11-alpha.1 and earlier, and decoders of those releases, report a
+  version-5 chunk as an unknown format version. A collection that stored version-5 chunks needs them re-appended
+  with `grizzbit1` before such a downgrade.
 - `float8[]` collections from pg_morlet 0.1.0 are a separate layout, detected
   per collection, and remain supported (see durable-ingestion.md, Upgrading).
 - **Chunks on the wire (SQL 0.3.5):** `morlet_read_interval_encoded` sends stored

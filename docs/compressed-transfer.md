@@ -56,7 +56,7 @@ same order:
    `max_chunk_version`, the server decodes the interval itself, as the raw read does, and returns the samples in a
    raw frame (below). A client never receives a chunk version it cannot decode, and no statement fails, which
    matters because the SDK never leaves a failed statement in the caller's transaction. The default stays 3, so
-   a caller that does not state its version gets samples for version-5 (Grizzbit 2.1, study B6) chunks; the SDK
+   a caller that does not state its version gets samples for version-5 (Grizzbit 2.1) chunks; the SDK
    passes its native decoder's version.
 5. Legacy collections that store `float8[]` (`relations.encoded = false`) are not read this way: the SDK already
    looks up the storage layout once per collection (`_raw_reads`) and uses the existing read for them.
@@ -91,7 +91,7 @@ int32_t morlet_decode_frame(const uint8_t *frame, size_t frame_len,
                             double *out, size_t out_len, uint32_t threads,
                             int64_t *error_sample);
 uint32_t morlet_ffi_abi_version(void);        /* 1 */
-uint32_t morlet_ffi_max_chunk_version(void);  /* 3 up to 0.3.10; 5 in the Grizzbit 2.1 build (study B6) */
+uint32_t morlet_ffi_max_chunk_version(void);  /* 3 up to 0.3.11-alpha.1; 5 from the next release (Grizzbit 2.1) */
 ```
 
 It accepts both frame kinds. It checks the frame (magic, CRC, ascending and non-overlapping chunks, lengths within the frame), verifies and

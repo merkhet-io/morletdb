@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- **Grizzbit 2.1, chunk format version 5, opt-in (#377, study B6):** `SET morlet.chunk_format = grizzbit21` makes
+  every append path keep a version-5 chunk (last-place corrections once per grid index, per-chunk LPC) wherever it
+  is strictly smaller than Grizzbit 1's chunk, which is stored otherwise, byte for byte. The default stays
+  `grizzbit1`; existing chunks are never rewritten.
+  - **Study B6 passed** all six criteria: waveforms 12.6% smaller in total and none larger, decode ≥ 53.1 and
+    encode ≥ 10.8 M samples/s per thread, identical bytes on four platforms, B3 standing kept
+    (evaluation/storage_b6/RESULTS.md).
+  - Write-time verification (#366) covers version 5, with no fallback. Version 4 stays reserved and rejected.
+  - Every reader of this release decodes version 5 whatever the setting. **Readers older than this release cannot
+    read version-5 chunks**; downgrading needs them re-appended with `grizzbit1`.
+  - **Compressed transfer negotiates the version:** the native decoder (`morlet-ffi`) and
+    `transfer::MAX_CHUNK_VERSION` report 5; SQL's `max_chunk_version` default stays 3, so a client that states no
+    version, or a lower one, receives samples.
+  - **File format 1 stays Grizzbit 1:** its writer never writes version 5 and its reader refuses it.
+  - The SDK labels a Grizzbit 2.1 server's encoder. `grizzbit::encode` is unchanged (Grizzbit 1 goldens and
+    `testdata/grizzbit/encoder-equivalence.bin` byte for byte); `grizzbit::encode_with(.., Format::Grizzbit21)`
+    writes version 5.
+  - Specification: docs/chunk-format.md, "Version 5"; overview and limits: docs/grizzbit.md.
+
 ## 0.3.11-alpha.1
 
 SQL version 0.3.8, unchanged; Python SDK 0.1.0a4. The chunk format is unchanged; existing collections keep their
@@ -21,23 +42,6 @@ layout.
   - `latest` reports a too-small `limit` by that name instead of the SQL argument `max_recordings`.
 - **Docs (#389):** `morlet_read_interval_raw` returns a bare `bytea`, while `morlet_read_interval` returns a table with
   `samples`; notes for Windows (no `chmod 600` on NTFS, running the tools from a container).
-
-- **Grizzbit 2.1 server integration, study B6 build (opt-in, default unchanged):**
-  - pg_morlet gets `morlet.chunk_format` = `grizzbit1` (the default) | `grizzbit21`, a registered enum setting.
-    With `grizzbit21` every append path stores a version-5 chunk only where it is strictly smaller than Grizzbit 1.
-  - Write-time verification (#366) covers version 5, with no fallback.
-  - The native decoder (`morlet-ffi`) and `transfer::MAX_CHUNK_VERSION` read version 5. SQL's
-    `max_chunk_version` default stays 3, so callers that do not state a version get samples.
-  - File format 1 keeps Grizzbit 1 and refuses versions above 3.
-  - The SDK labels a Grizzbit 2.1 server's encoder.
-  - Version 4 stays reserved and rejected.
-  - Draft spec in docs/chunk-format.md. Not a release decision: B6 (evaluation/storage_b6) decides.
-
-- **Grizzbit 2.1, development build (#377), opt-in and not used by pg_morlet:** `grizzbit::encode_with(.., Format::Grizzbit21)`
-  writes chunk format version 5 (corrections once per grid index, per-chunk LPC) only where it is strictly smaller
-  than Grizzbit 1; `grizzbit::decode` reads it. `grizzbit::encode` and every stored chunk are unchanged (Grizzbit 1
-  goldens and `testdata/grizzbit/encoder-equivalence.bin` byte for byte). Development figures only
-  (evaluation/codec_g21); a frozen study comes before any claim.
 
 - **The chunk codec is now the `grizzbit` crate (Grizzbit 1 = chunk format versions 2 and 3, unchanged):**
   `crates/grizzbit` holds the encoder, decoder, CRC-32C, sample limits, unit and property tests, golden-chunk test,

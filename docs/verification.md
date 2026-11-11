@@ -50,10 +50,10 @@ Golden coverage:
 - **Version 3 (offset grid):** multiplication mode (EDF-style, with and without added ulp noise, and an exact
   dyadic offset) and division mode (shifted decimals, quarter offset).
 
-## Version 5 (Grizzbit 2.1, study B6 build)
+## Version 5 (Grizzbit 2.1, opt-in)
 
-Version 5 is the draft chunk format of study B6 ([chunk-format.md](chunk-format.md), "Draft: version 5"). It is
-not in any release. What is checked about it:
+Version 5 is the opt-in chunk format Grizzbit 2.1 ([chunk-format.md](chunk-format.md), "Version 5"), which passed
+study B6. What is checked about it:
 
 | Function(s) | Property | How checked | Status |
 |---|---|---|---|

@@ -1,7 +1,7 @@
 # Study B6: Grizzbit 2.1 — results
 
-**UNPUBLISHED: measured 2026-11-11, awaiting the owner's approval.** Nothing here goes to the website, docs or paper
-until then (PROTOCOL.md section 6).
+**Published 2026-11-11 with the owner's approval.** Measured 2026-11-11; the results below are unchanged from the
+run (`54f8e12`).
 
 Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at `ff504b4`; build commit `50562e8` (CI-only commit `62566b8`); build
 record `3cedcec` (section 9). Harness committed in `40fe0cd` and `8f871e4` before any benchmark input was read; it was
