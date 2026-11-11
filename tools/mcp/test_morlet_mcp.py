@@ -240,6 +240,77 @@ if __name__ == "__main__":
     unittest.main()
 
 
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class FieldFindingsOnADatabase(unittest.TestCase):
+    """Snapshot data from series production: 3 parts, 2 channels each, recorded at the same time (#384, #386)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            conn.execute("DROP TABLE IF EXISTS public.mcp_parts CASCADE")
+            for t in ("chunks", "segments", "envelopes"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_parts_{t} CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_parts')")
+            for part in range(3):
+                for ch in ("x", "y"):
+                    rid = f"p{part}.{ch}"
+                    meta = '{"part": %d, "channel": "%s", "start": "2026-01-01T00:%02d:00Z"}' % (part, ch, part)
+                    conn.execute("SELECT morlet_start_recording('mcp_parts',%s,100,'acc','g',%s,512,256,'zscore','none')",
+                                 (rid, meta))
+                    conn.execute("SELECT morlet_append_chunks_raw('mcp_parts',%s,0,morlet_float8_le_bytes(ARRAY("
+                                 "SELECT round(100*sin(i/(7.+%s))*(1+(i%%700)/300.))::float8 "
+                                 "FROM generate_series(0,1999) i)),1000)", (rid, part))
+            conn.execute("SELECT morlet_enable_envelopes('mcp_parts')")
+            for part in range(3):
+                for ch in ("x", "y"):
+                    conn.execute("SELECT morlet_build_envelopes('mcp_parts',%s,512,256,100000)", (f"p{part}.{ch}",))
+        os.environ["DATABASE_URL"] = url
+
+    def test_coverage_counts_simultaneous_channels_once(self):
+        g = m.coverage("public.mcp_parts")["groups"][0]
+        self.assertEqual(g["recordings"], 6)
+        self.assertEqual(g["recorded_blocks"], 3)
+        self.assertEqual(g["recordings_per_block"], 2.0)
+        self.assertEqual(g["schedule"], "snapshots")
+        self.assertAlmostEqual(g["typical_start_interval_s"], 60.0)
+        self.assertLessEqual(g["covered_fraction"], 1.0)
+        self.assertAlmostEqual(g["covered_s"], 60.0)
+
+    def test_locate_time_explains_a_gap(self):
+        r = m.locate_time("public.mcp_parts", "2026-01-01T00:00:30Z")
+        self.assertEqual(r["matches"], [])
+        self.assertIn("gap", r["note"])
+        self.assertEqual(r["previous"]["seconds_before"], 10.0)
+        self.assertEqual(r["next"]["seconds_after"], 30.0)
+        self.assertIn("after the last", m.locate_time("public.mcp_parts", "2026-01-02T00:00:00Z")["note"])
+        self.assertEqual(len(m.locate_time("public.mcp_parts", "2026-01-01T00:01:05Z")["matches"]), 2)
+
+    def test_latest_names_the_limit_the_caller_passed(self):
+        with self.assertRaises(Exception) as cm:
+            m.latest("public.mcp_parts", limit=2)
+        self.assertIn("limit (2)", str(cm.exception))
+        self.assertNotIn("max_recordings", str(cm.exception))
+
+    def test_search_can_exclude_the_query_recording_or_part(self):
+        plain = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20)
+        self.assertNotIn("exclude", plain["query"])
+        r = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20, exclude="recording")
+        self.assertTrue(r["hits"])
+        self.assertTrue(all(h["recording_id"] != "p1.x" for h in r["hits"]))
+        self.assertEqual(r["query"]["excluded_hits"],
+                         sum(h["recording_id"] == "p1.x" for h in
+                             m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=100)["hits"]))
+        r = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20, exclude="metadata:part")
+        self.assertTrue(r["hits"])
+        self.assertTrue(all(not h["recording_id"].startswith("p1.") for h in r["hits"]))
+        with self.assertRaises(Exception):
+            m.search_similar("public.mcp_parts", "p1.x", 512, 1024, exclude="part")
+        with self.assertRaises(Exception):
+            m.search_similar("public.mcp_parts", "p1.x", 512, 1024, exclude="metadata:shift")
+
+
 class IsolatedMode(unittest.TestCase):
     def test_server_module_imports_under_python_isolated_mode(self):
         """`python -I` drops the script directory from sys.path; the server must still find decision.py."""
