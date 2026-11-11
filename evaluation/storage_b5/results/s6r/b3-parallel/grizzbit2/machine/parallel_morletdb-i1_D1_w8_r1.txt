@@ -1,0 +1,23 @@
+gate met 2026-11-10T22:10:49 after 36 s, load { 2.96 4.32 9.06 }
+2026-11-10T22:10:49
+22:10  up 14 days,  7:06, 19 users, load averages: 2.96 4.32 9.06
+ %CPU COMM
+ 40.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  3.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.8 claude
+  1.2 bash
+  1.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.6 /Applications/Warp.app/Contents/MacOS/stable
+  0.6 claude
+  0.5 /usr/sbin/notifyd
+2026-11-10T22:11:09
+22:11  up 14 days,  7:07, 19 users, load averages: 4.27 4.53 9.02
+ %CPU COMM
+202.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 77.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.1 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.5 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  1.0 claude
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.4 /Applications/Warp.app/Contents/MacOS/stable

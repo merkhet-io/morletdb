@@ -1,0 +1,22 @@
+2026-11-10T20:59:55
+20:59  up 14 days,  5:56, 19 users, load averages: 12.94 10.12 9.13
+ %CPU COMM
+218.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 75.7 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 74.4 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 73.8 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 71.5 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 64.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 45.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 45.0 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+2026-11-10T21:00:18
+21:00  up 14 days,  5:56, 19 users, load averages: 15.01 10.80 9.40
+ %CPU COMM
+228.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+112.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 32.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 29.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 17.5 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 16.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+ 12.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  6.2 claude

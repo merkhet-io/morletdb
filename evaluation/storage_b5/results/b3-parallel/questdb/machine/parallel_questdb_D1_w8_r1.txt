@@ -1,0 +1,22 @@
+2026-11-10T20:55:30
+20:55  up 14 days,  5:51, 19 users, load averages: 7.47 6.85 8.06
+ %CPU COMM
+229.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 77.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.2 /usr/sbin/coreaudiod
+  3.6 claude
+  2.8 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-10T20:55:48
+20:55  up 14 days,  5:51, 19 users, load averages: 8.12 7.02 8.10
+ %CPU COMM
+323.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 72.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.0 /sbin/launchd
+  4.2 /usr/sbin/coreaudiod
+  3.7 /usr/libexec/opendirectoryd
+  3.6 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds

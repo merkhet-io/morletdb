@@ -1,0 +1,286 @@
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20446179097052664,
+ "samples": 101586735,
+ "started": "2026-11-10T21:08:03",
+ "ingest": {
+  "wall_s": 11.41,
+  "samples_per_s": 8903171,
+  "conversion_s": 2.404,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 88.981,
+   "p95_ms": 109.87,
+   "max_ms": 184.948
+  },
+  "queryable_after_last_ack_s": 0.008,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 303.9,
+   "cpu_percent_p95": 349.9,
+   "memory_peak_mib": 2277.4,
+   "samples": 6,
+   "kernel_memory": {
+    "peak_mib": 3255.5,
+    "anon_mib_at_end": 532.1,
+    "file_mib_at_end": 2636.4,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2300.9
+   }
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 6.201,
+   "p95_ms": 68.299,
+   "max_ms": 118.657
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 6.9
+  }
+ },
+ "correct": true
+}
+{
+ "system": "questdb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20446179097052664,
+ "samples": 101586735,
+ "started": "2026-11-10T21:08:03",
+ "ingest": {
+  "wall_s": 11.41,
+  "samples_per_s": 8903171,
+  "conversion_s": 2.404,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 88.981,
+   "p95_ms": 109.87,
+   "max_ms": 184.948
+  },
+  "queryable_after_last_ack_s": 0.008,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 303.9,
+   "cpu_percent_p95": 349.9,
+   "memory_peak_mib": 2277.4,
+   "samples": 6,
+   "kernel_memory": {
+    "peak_mib": 3255.5,
+    "anon_mib_at_end": 532.1,
+    "file_mib_at_end": 2636.4,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2300.9
+   }
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 6.201,
+   "p95_ms": 68.299,
+   "max_ms": 118.657
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 6.9
+  }
+ },
+ "correct": true,
+ "storage_native": {
+  "tables": {
+   "b3_mid": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16401,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 47652864,
+     "allocated": 47652864,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 7942144,
+     "allocated": 7942144,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 15884288,
+     "allocated": 15884288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 4974974,
+     "allocated": 4997120,
+     "files": 18
+    }
+   },
+   "b3_high": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16403,
+     "allocated": 20480,
+     "files": 5
+    },
+    "data": {
+     "apparent": 765087744,
+     "allocated": 765112320,
+     "files": 9
+    },
+    "identity": {
+     "apparent": 127516672,
+     "allocated": 127524864,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 255029248,
+     "allocated": 255037440,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 11313880,
+     "allocated": 11345920,
+     "files": 18
+    }
+   },
+   "b3_process": {
+    "symbols": {
+     "apparent": 24576,
+     "allocated": 24576,
+     "files": 4
+    },
+    "metadata": {
+     "apparent": 16409,
+     "allocated": 20480,
+     "files": 5
+    },
+    "identity": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "data": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "timestamps": {
+     "apparent": 12288,
+     "allocated": 12288,
+     "files": 3
+    },
+    "wal": {
+     "apparent": 52901,
+     "allocated": 73728,
+     "files": 12
+    }
+   }
+  },
+  "volume": {
+   "apparent": 1250029585,
+   "allocated": 1250324480
+  }
+ },
+ "reads_native": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.833,
+   "p95_ms": 1.686,
+   "max_ms": 3.708,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 7.169,
+   "p95_ms": 13.806,
+   "max_ms": 27.328,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 10.468,
+   "p95_ms": 15.769,
+   "max_ms": 23.479,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.721,
+   "p95_ms": 1.487,
+   "max_ms": 7.201,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.755,
+   "p95_ms": 1.547,
+   "max_ms": 12.239,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 1.191,
+   "p95_ms": 3.812,
+   "max_ms": 47.797,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 2353.7
+  }
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 2.467,
+  "p95_ms": 4.819,
+  "max_ms": 9.991,
+  "max_r
