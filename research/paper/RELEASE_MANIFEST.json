@@ -14,11 +14,11 @@
   "report_text_and_figures": "CC-BY-4.0 (LICENSE.md)"
  },
  "tag": "paper-v0.23",
- "report_source_commit": "6b119a2a88a5e522e15f3830dfa6c63bc4a7c580",
+ "report_source_commit": "70d26a4b8915ae3ea972583f9574bea3f270d7a7",
  "pdf_sha256": {
-  "research/paper/morletdb.pdf": "9c4526640687dbc42269a93e3a5ea04286c0e80805bf1428bf1af58d29c962c7",
+  "research/paper/morletdb.pdf": "6e5adea532cc97b88c0c46595ecc55abba86e3ad53f24e32113af56f06a2f6d0",
   "research/paper/supplement.pdf": "20af49e6e04d99f01b5c0995925dd1c8cd6feb5597874328e3e01c85e6fb44ef",
-  "docs/morletdb.pdf": "9c4526640687dbc42269a93e3a5ea04286c0e80805bf1428bf1af58d29c962c7",
+  "docs/morletdb.pdf": "6e5adea532cc97b88c0c46595ecc55abba86e3ad53f24e32113af56f06a2f6d0",
   "docs/morletdb-supplement.pdf": "20af49e6e04d99f01b5c0995925dd1c8cd6feb5597874328e3e01c85e6fb44ef"
  }
 }
