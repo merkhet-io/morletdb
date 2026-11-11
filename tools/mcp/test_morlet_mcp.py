@@ -2,6 +2,8 @@
 import asyncio
 from datetime import datetime, timezone
 import os
+import subprocess
+import sys
 import unittest
 
 import numpy as np
@@ -236,3 +238,15 @@ class ScopeOnADatabase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IsolatedMode(unittest.TestCase):
+    def test_server_module_imports_under_python_isolated_mode(self):
+        """`python -I` drops the script directory from sys.path; the server must still find decision.py."""
+        here = os.path.dirname(os.path.abspath(__file__))
+        code = ("import importlib.util as u; s = u.spec_from_file_location('m', %r); m = u.module_from_spec(s); "
+                "s.loader.exec_module(m); print(sorted(t.name for t in __import__('asyncio').run(m.mcp.list_tools()))[2])"
+                % os.path.join(here, "morlet_mcp.py"))
+        r = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, cwd="/", timeout=120)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.strip(), "decision_state")

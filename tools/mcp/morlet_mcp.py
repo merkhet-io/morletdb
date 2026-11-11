@@ -7,18 +7,37 @@ Every tool runs in a read-only transaction with a statement timeout, as the data
 so privileges and row-level security decide what the agent can see. Nothing is written.
 """
 import functools
+import importlib.util
 import json
 import math
 import os
+import sys
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import psycopg
 
-import decision
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
+
+
+def _sibling(name: str):
+    """Import a module that sits next to this file, by path.
+
+    `python -I` (isolated mode, used by smoke_stdio.py and recommended for MCP clients) leaves the script's
+    directory off sys.path, so a plain `import decision` fails there. Loading by path works in every mode and
+    cannot pick up a same-named module from the current directory or the environment."""
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, os.path.join(os.path.dirname(os.path.abspath(__file__)), f"{name}.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+decision = _sibling("decision")
 
 MAX_READ = 32768                 # samples per morlet_read_interval call
 MAX_SPAN = 2_000_000             # samples per read_interval / describe_interval request
