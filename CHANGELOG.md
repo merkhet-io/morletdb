@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Grizzbit 2.1 server integration, study B6 build (opt-in, default unchanged):**
+  - pg_morlet gets `morlet.chunk_format` = `grizzbit1` (the default) | `grizzbit21`, a registered enum setting.
+    With `grizzbit21` every append path stores a version-5 chunk only where it is strictly smaller than Grizzbit 1.
+  - Write-time verification (#366) covers version 5, with no fallback.
+  - The native decoder (`morlet-ffi`) and `transfer::MAX_CHUNK_VERSION` read version 5. SQL's
+    `max_chunk_version` default stays 3, so callers that do not state a version get samples.
+  - File format 1 keeps Grizzbit 1 and refuses versions above 3.
+  - The SDK labels a Grizzbit 2.1 server's encoder.
+  - Version 4 stays reserved and rejected.
+  - Draft spec in docs/chunk-format.md. Not a release decision: B6 (evaluation/storage_b6) decides.
+
 - **Grizzbit 2.1, development build (#377), opt-in and not used by pg_morlet:** `grizzbit::encode_with(.., Format::Grizzbit21)`
   writes chunk format version 5 (corrections once per grid index, per-chunk LPC) only where it is strictly smaller
   than Grizzbit 1; `grizzbit::decode` reads it. `grizzbit::encode` and every stored chunk are unchanged (Grizzbit 1

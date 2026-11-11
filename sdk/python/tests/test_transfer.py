@@ -88,6 +88,10 @@ class EncoderVersions(unittest.TestCase):
         self.assertTrue(_same_encoder("morlet-sqlite 0.3.8", "pg_morlet 0.3.8"))
         self.assertFalse(_same_encoder("morlet-sqlite 0.3.9", "pg_morlet 0.3.8"))
         self.assertFalse(_same_encoder("unknown", "pg_morlet 0.3.8"))
+        # Study B6: a server writing Grizzbit 2.1 is another encoder than a file writer of the same version.
+        self.assertFalse(_same_encoder("morlet-sqlite 0.3.8", "pg_morlet 0.3.8 (Grizzbit 2.1)"))
+        self.assertTrue(_same_encoder("pg_morlet 0.3.8 (Grizzbit 2.1)", "pg_morlet 0.3.8 (Grizzbit 2.1)"))
+        self.assertTrue(_same_encoder("morlet-sqlite 0.3.8", "pg_morlet 0.3.8 (Grizzbit 1)"))
 
 
 @unittest.skipUnless(DSN, "set MORLET_SDK_TEST_DSN to run the integration tests")
@@ -98,6 +102,11 @@ class Transfer(unittest.TestCase):
         self.conn = psycopg.connect(DSN)
         self.conn.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
         self.conn.execute(f"CREATE SCHEMA {self.schema}")
+        # These tests compare chunk bytes between a file and a server writing the same coding: the file format 1
+        # writer's Grizzbit 1. A server that writes Grizzbit 2.1 (study B6's arm, whose configuration may set it)
+        # is tested in test_grizzbit21_server_and_format1_files.
+        self.conn.execute("SELECT morlet_version()")
+        self.conn.execute("SET morlet.chunk_format = grizzbit1")
         self.conn.commit()
         self.db = morletdb.Client(self.conn)
         self.coll = f"{self.schema}.signals"
@@ -116,6 +125,39 @@ class Transfer(unittest.TestCase):
         return [(s, n, bytes(e), bytes(m)) for s, n, e, m in self.conn.execute(
             f"SELECT start_sample, sample_count, encoded, summary FROM {self.coll}_chunks WHERE recording_id=%s "
             "ORDER BY start_sample", (rid,))]
+
+    def test_grizzbit21_server_and_format1_files(self):
+        """Study B6: a server writing Grizzbit 2.1 stores version-5 chunks where they are smaller; the transfer
+        verifies samples, labels the server's encoder, does not compare chunk bytes, compressed reads through the
+        native decoder return the samples bit for bit, and the exported file holds only chunk format versions 2
+        and 3 (file format 1)."""
+        self.conn.execute("SET morlet.chunk_format = grizzbit21")
+        self.conn.commit()
+        rng = np.random.default_rng(6)
+        # Integer counts of a noisy resonance: Grizzbit 2.1 codes them with LPC, smaller than Grizzbit 1.
+        e = rng.integers(-20, 21, 50_000)
+        y = np.zeros(50_000)
+        for i in range(2, 50_000):
+            y[i] = round(1.95 * y[i - 1] - 0.97 * y[i - 2] + e[i])
+        x = y.astype("<f8")
+        src, out = Path(self.dir.name) / "src.morlet", Path(self.dir.name) / "out.morlet"
+        with morletdb.open(src) as f:
+            f.ingest("r", x, sample_rate_hz=1000, channel="x", unit="")
+        report = []
+        [rec] = self.db.import_file(src, self.coll, report=report)
+        self.conn.commit()
+        self.assertEqual(rec.samples, 50_000)
+        self.assertTrue(report[0].receiver_encoder.endswith(" (Grizzbit 2.1)"), report[0].receiver_encoder)
+        self.assertEqual((report[0].samples_verified, report[0].chunk_bytes), (50_000, "not compared"))
+        versions = {c[2][0] for c in self.server_chunks("r")}
+        self.assertIn(5, versions)
+        self.assertTrue({c[2][0] for c in chunks_of_file(src, "r")} <= {2, 3})
+        self.assertEqual(self.db.read(self.coll, "r", 0, 50_000).samples.tobytes(), x.tobytes())
+        [rec] = self.db.export_file(self.coll, out, report=report)
+        self.assertEqual((rec.samples, report[1].chunk_bytes), (50_000, "not compared"))
+        self.assertTrue({c[2][0] for c in chunks_of_file(out, "r")} <= {2, 3})
+        with morletdb.open(out) as f:
+            self.assertEqual(f.read("r", 0, 50_000).samples.tobytes(), x.tobytes())
 
     def test_file_to_server_to_file(self):
         rng = np.random.default_rng(351)

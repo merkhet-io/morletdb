@@ -17,7 +17,7 @@ use std::fmt;
 pub const CHUNK_MAGIC: [u8; 4] = *b"MTX1";
 pub const RAW_MAGIC: [u8; 4] = *b"MTR1";
 /// The highest chunk format version this build decodes.
-pub const MAX_CHUNK_VERSION: u8 = grizzbit::FORMAT_VERSION;
+pub const MAX_CHUNK_VERSION: u8 = grizzbit::MAX_VERSION;
 /// Longest interval in one frame, as for raw reads.
 pub const MAX_INTERVAL: i64 = 1 << 24;
 const HEADER: usize = 4 + 8 + 8 + 4;

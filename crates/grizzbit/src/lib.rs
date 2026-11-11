@@ -102,6 +102,9 @@ pub const FORMAT_VERSION: u8 = 3;
 /// chunk kind that failed its frozen study B5); it is never reused and is rejected as unknown.
 /// [`FORMAT_VERSION`] stays 3: it is what [`encode`] writes and what transfer clients are offered.
 pub const GRIZZBIT21_VERSION: u8 = 5;
+/// The highest chunk format version [`decode`] reads (study B6 build): versions 2, 3 and 5. Version 4 is
+/// reserved for the unshipped Grizzbit 2 and rejected.
+pub const MAX_VERSION: u8 = GRIZZBIT21_VERSION;
 const BASE_VERSION: u8 = 2;
 const CHECKSUM_BYTES: usize = 4;
 const KIND_RAW: u8 = 0;
@@ -282,12 +285,33 @@ pub fn encode_experimental(
     let mut plans = Vec::new();
     let mut best = encode_body(samples, quantum, Some(&mut plans))?;
     for plan in &plans {
-        let candidate = g21::encode_plan(samples.len(), plan, features);
-        if candidate.len() < best.len() {
-            best = candidate;
-        }
+        best = keep_smaller(best, g21::encode_plan(samples.len(), plan, features));
     }
     seal(best)
+}
+
+/// The smallest version-5 chunk for `samples` (sealed), whatever its size against Grizzbit 1, or None when
+/// Grizzbit 1 found no grid coding (version 5 has the grid kind only). For tests, golden chunks and fuzzing:
+/// stores use [`encode_with`], which keeps it only where it is strictly smaller.
+#[doc(hidden)]
+pub fn encode_version5(samples: &[f64], quantum: f64) -> Result<Option<Vec<u8>>, CodecError> {
+    let mut plans = Vec::new();
+    encode_body(samples, quantum, Some(&mut plans))?;
+    let best = plans
+        .iter()
+        .map(|p| g21::encode_plan(samples.len(), p, Grizzbit21Features::ALL))
+        .min_by_key(|c| c.len());
+    best.map(seal).transpose()
+}
+
+/// Keep the smaller: `candidate` (a version-5 body) replaces `best` only if it has strictly fewer bytes, so
+/// on a tie the earlier coding, Grizzbit 1's, stays byte for byte.
+fn keep_smaller(best: Vec<u8>, candidate: Vec<u8>) -> Vec<u8> {
+    if candidate.len() < best.len() {
+        candidate
+    } else {
+        best
+    }
 }
 
 fn seal(mut body: Vec<u8>) -> Result<Vec<u8>, CodecError> {

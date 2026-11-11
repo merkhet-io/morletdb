@@ -754,12 +754,20 @@ fn read_exceptions(
     }
     let gaps = decode_stream(take(bytes, pos)?, m, true)?;
     let values = decode_stream(take(bytes, pos)?, m, true)?;
-    let mut positions = Vec::with_capacity(m);
+    Ok((positions_from_gaps(&gaps, n)?, values))
+}
+
+/// Exception positions from their gaps: the first gap is the first position, each further one the distance
+/// to the previous position minus one. Every gap must be >= 0 and every position < `n`, so the positions are
+/// strictly increasing and index the chunk's samples.
+pub(crate) fn positions_from_gaps(gaps: &[i64], n: usize) -> Result<Vec<usize>, CodecError> {
+    let mut positions = Vec::with_capacity(gaps.len());
     let mut next = 0u64;
-    for g in gaps {
+    for &g in gaps {
         if g < 0 {
             return Err(CodecError::Corrupt("exception position"));
         }
+        // next <= n <= 2^15 and g < 2^63, so the sum cannot overflow.
         let p = next + g as u64;
         if p >= n as u64 {
             return Err(CodecError::Corrupt("exception position"));
@@ -767,7 +775,15 @@ fn read_exceptions(
         positions.push(p as usize);
         next = p + 1;
     }
-    Ok((positions, values))
+    Ok(positions)
+}
+
+/// The flags byte of a version-5 chunk: (offset present, correction mode). Bits 3-7 must be zero.
+pub(crate) fn parse_flags(flags: u8) -> Result<(bool, u8), CodecError> {
+    if flags & !FLAGS_KNOWN != 0 {
+        return Err(CodecError::Corrupt("grid header"));
+    }
+    Ok((flags & FLAG_OFFSET != 0, flags >> 1))
 }
 
 /// Decodes a checksum-verified version-5 body (`kind_of` accepted it: version 5, grid kind).
@@ -780,11 +796,7 @@ pub(crate) fn decode_body(b: &[u8]) -> Result<Vec<f64>, CodecError> {
     let n = n as usize;
     let flags = *b.get(pos).ok_or(CodecError::Corrupt("truncated"))?;
     pos += 1;
-    if flags & !FLAGS_KNOWN != 0 {
-        return Err(CodecError::Corrupt("grid header"));
-    }
-    let shifted = flags & FLAG_OFFSET != 0;
-    let fix_mode = flags >> 1;
+    let (shifted, fix_mode) = parse_flags(flags)?;
     let size = if shifted { 17 } else { 9 };
     let header = b
         .get(pos..pos + size)
@@ -1072,6 +1084,147 @@ mod tests {
 #[cfg(kani)]
 mod proofs {
     use super::*;
+
+    /// The flags byte: accepted exactly when bits 3-7 are zero, giving the offset bit and a correction mode
+    /// 0..=3.
+    #[kani::proof]
+    fn version5_flags_are_checked() {
+        let flags: u8 = kani::any();
+        match parse_flags(flags) {
+            Ok((offset, mode)) => {
+                assert!(flags < 8);
+                assert_eq!(offset, flags & 1 == 1);
+                assert!(mode <= 3 && mode == flags >> 1);
+            }
+            Err(e) => {
+                assert!(flags >= 8);
+                // (messages are compared by length: CBMC cannot bound a string comparison)
+                assert!(matches!(e, CodecError::Corrupt(m) if m.len() == "grid header".len()));
+            }
+        }
+    }
+
+    /// Exception positions from any gaps: never a panic or overflow, and when accepted, strictly increasing
+    /// and below n (so every exception indexes a sample of the chunk).
+    #[kani::proof]
+    #[kani::unwind(6)]
+    fn exception_positions_are_in_range() {
+        let gaps: [i64; 4] = kani::any();
+        let m: usize = kani::any();
+        kani::assume(m <= 4);
+        let n: usize = kani::any();
+        kani::assume(n >= 1 && n <= MAX_SAMPLES);
+        if let Ok(p) = positions_from_gaps(&gaps[..m], n) {
+            assert_eq!(p.len(), m);
+            for k in 0..m {
+                assert!(p[k] < n);
+                assert!(gaps[k] >= 0);
+                if k > 0 {
+                    assert_eq!(p[k], p[k - 1] + 1 + gaps[k] as usize);
+                }
+            }
+        }
+    }
+
+    /// Kinds by version: version 5 has the grid kind only; every other kind byte under version 5 is refused,
+    /// and version 4 (the unshipped Grizzbit 2) is refused as an unknown version before its checksum is read.
+    #[kani::proof]
+    fn version5_kind_dispatch() {
+        let kind: u8 = kani::any();
+        match kind_of(&[GRIZZBIT21_VERSION, kind]) {
+            Ok(k) => {
+                assert_eq!(kind, KIND_GRID);
+                assert_eq!(k, Kind::Grid);
+            }
+            Err(e) => {
+                assert!(kind != KIND_GRID);
+                assert!(matches!(e, CodecError::Corrupt(m) if m.len() == "unknown kind".len()));
+            }
+        }
+        let rest: [u8; 6] = kani::any();
+        let mut chunk = [4u8; 7];
+        chunk[1..].copy_from_slice(&rest);
+        assert!(matches!(
+            verified(&chunk),
+            Err(CodecError::Corrupt(m)) if m.len() == "unknown format version".len()
+        ));
+    }
+
+    /// A version-5 chunk whose checksum does not match is refused before its body is parsed.
+    #[kani::proof]
+    fn version5_checksum_is_checked_first() {
+        let chunk: [u8; 7] = kani::any();
+        kani::assume(chunk[0] == GRIZZBIT21_VERSION);
+        let body = &chunk[..3];
+        match verified(&chunk) {
+            Ok(b) => {
+                assert!(crc32c(body).to_le_bytes() == chunk[3..]);
+                assert!(b.len() == 3 && b.as_ptr() == chunk.as_ptr());
+            }
+            Err(e) => {
+                assert!(crc32c(body).to_le_bytes() != chunk[3..]);
+                assert!(
+                    matches!(e, CodecError::Corrupt(m) if m.len() == "checksum mismatch".len())
+                );
+            }
+        }
+    }
+
+    /// Keep the smaller: the version-5 candidate replaces Grizzbit 1's bytes only if strictly shorter.
+    #[kani::proof]
+    #[kani::unwind(5)]
+    fn keep_smaller_keeps_grizzbit1_unless_strictly_smaller() {
+        let (a, b): ([u8; 3], [u8; 3]) = (kani::any(), kani::any());
+        let (la, lb): (usize, usize) = (kani::any(), kani::any());
+        kani::assume(la <= 3 && lb <= 3);
+        let kept = keep_smaller(a[..la].to_vec(), b[..lb].to_vec());
+        if lb < la {
+            assert_eq!(kept, b[..lb].to_vec());
+        } else {
+            assert_eq!(kept, a[..la].to_vec());
+        }
+    }
+
+    /// The LPC prediction in wrapping i64 equals the exact (i128) sum shifted right, on bounded inputs: values
+    /// below the encoder's 2^40 limit and coefficients of up to 15 bits, order 2, any shift. So for every
+    /// stream the encoder writes, the wrapping arithmetic never wraps.
+    #[kani::proof]
+    fn lpc_prediction_matches_wide_reference() {
+        let x: [i64; 2] = kani::any();
+        let c: [i64; 2] = kani::any();
+        for k in 0..2 {
+            kani::assume(x[k] > -(1i64 << 40) && x[k] < (1i64 << 40));
+            kani::assume(c[k] >= -(1i64 << 14) && c[k] < (1i64 << 14));
+        }
+        let shift: u32 = kani::any();
+        kani::assume(shift <= MAX_LPC_SHIFT);
+        let model = Lpc::new(c.to_vec(), MAX_LPC_PRECISION, shift);
+        let hist = [x[0], x[1], 0];
+        let wide = (c[0] as i128 * x[1] as i128 + c[1] as i128 * x[0] as i128) >> shift;
+        assert_eq!(model.predict_at(&hist, 2) as i128, wide);
+    }
+
+    /// The LPC decoder on any residuals and any coefficients of the allowed precision: no panic or overflow
+    /// check fires (all arithmetic wraps), and the unrolled kernel restores exactly the values whose
+    /// residuals the format's definition gives, through the warm-up and the first kernel position.
+    #[kani::proof]
+    #[kani::unwind(10)]
+    fn lpc_kernel_restores_reference_residuals() {
+        let x: [i64; 9] = kani::any();
+        let c: [i64; 2] = kani::any();
+        for &v in &c {
+            kani::assume(v >= -(1i64 << 14) && v < (1i64 << 14));
+        }
+        let shift: u32 = kani::any();
+        kani::assume(shift <= MAX_LPC_SHIFT);
+        let model = Lpc::new(c.to_vec(), MAX_LPC_PRECISION, shift);
+        let mut r = [0i64; 9];
+        for i in 0..9 {
+            r[i] = x[i].wrapping_sub(model.predict_at(&x, i));
+        }
+        model.restore(&mut r);
+        assert_eq!(r, x);
+    }
 
     /// Every coefficient a writer can store (a `precision`-bit two's-complement integer) reads back as
     /// itself, for every precision the format allows.
