@@ -3,7 +3,7 @@
  "version": "0.23",
  "date": "2026-11-11",
  "type": "technical report / preprint (not peer reviewed)",
- "author": "Zin Nam; Semir Maslo",
+ "author": "Zin Nam; Semir Maslo (Sulzer-BDiM)",
  "measured_commit": "68594d7",
  "measured_commit_scope": "E1 consolidated comparison and diagnostics D1-D2; earlier studies used earlier implementation states (STUDIES.md)",
  "measured_library_sha256": "3c786684421f3132e7a97b5ff38801e802948bf3e014aaae656b16bb109de7b7",
@@ -14,11 +14,11 @@
   "report_text_and_figures": "CC-BY-4.0 (LICENSE.md)"
  },
  "tag": "paper-v0.23",
- "report_source_commit": "70d26a4b8915ae3ea972583f9574bea3f270d7a7",
+ "report_source_commit": "8875aa65597a78f5ac71b5ab3dbd3c639e47b030",
  "pdf_sha256": {
-  "research/paper/morletdb.pdf": "6e5adea532cc97b88c0c46595ecc55abba86e3ad53f24e32113af56f06a2f6d0",
-  "research/paper/supplement.pdf": "20af49e6e04d99f01b5c0995925dd1c8cd6feb5597874328e3e01c85e6fb44ef",
-  "docs/morletdb.pdf": "6e5adea532cc97b88c0c46595ecc55abba86e3ad53f24e32113af56f06a2f6d0",
-  "docs/morletdb-supplement.pdf": "20af49e6e04d99f01b5c0995925dd1c8cd6feb5597874328e3e01c85e6fb44ef"
+  "research/paper/morletdb.pdf": "31454f1c2ea029a208146d1bcdb7799fd6d61296ea131f44011523cf6dc0b28a",
+  "research/paper/supplement.pdf": "70fb00eb9961044453e13bd8b20f69e6ce133854576aee64cb6bedb63431d7a1",
+  "docs/morletdb.pdf": "31454f1c2ea029a208146d1bcdb7799fd6d61296ea131f44011523cf6dc0b28a",
+  "docs/morletdb-supplement.pdf": "70fb00eb9961044453e13bd8b20f69e6ce133854576aee64cb6bedb63431d7a1"
  }
 }
