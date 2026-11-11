@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.22, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.23, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -18,7 +18,7 @@ technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md
 4. **A first relevance check.** With a catalogued earthquake in the query, the bounded-lag top ten held
    catalogued earthquakes in 0.297 of positions against 0.213 for zero lag on development data, and 0.139
    against 0.060 on held-out stations and year (E5, E5-H; exact search, catalogue proxy).
-5. **Not shown:** other signal domains, diagnostic relevance for machines, cold caches, and stable
+5. **Not shown:** other signal domains (beyond the external, not yet deposited IU1 on one machining dataset), diagnostic relevance for machines, cold caches, and stable
    operation beyond 111 minutes (the planned two-hour run stopped early; paper Section 12).
 
 ## Main numbers
@@ -61,6 +61,20 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.23 (second author, industrial use; no new measurement in this repository)
+
+- **Second author:** Semir Maslo (no affiliation stated).
+- **New Section 10, "Industrial use":** IU1, an external study by S. Maslo on the public Bosch CNC milling data
+  (CC BY 4.0): bounded lag against zero lag and RMS for retrieval of bad runs, a nearest-neighbour history score,
+  the same operation on another machine, synthetic time stretching, and probe search on 85,042 windows. Five ledger
+  rows (marked †). The bad runs cluster in time (20 of the 36 bad confirmation runs come from M02 in February
+  2019), so part of the separation may reflect drift between periods; checks by period and without each run's
+  lead-in are pending. **IU1's protocol, scripts and results are not yet in this repository;** they will be
+  deposited under `evaluation/industrial_iu1/`. Its numbers are literal text in the manuscript, not generated.
+- **Limitations and conclusion** name this single machining dataset where they said all results were seismic.
+- **Section 4** notes that from release 0.3.11-alpha.1 every append path decodes each encoded chunk again before
+  storing it and refuses one that does not reproduce its input (#366).
 
 ## What changed in 0.22 (naming, no new measurement)
 
