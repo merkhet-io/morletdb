@@ -25,7 +25,7 @@ localhost and the data is kept in the named volume `morletdb-data`.
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
-  ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1
+  ghcr.io/merkhet-io/morletdb:0.3.11-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
 ```
 
@@ -33,6 +33,12 @@ The image does not include pgvector, so [probe search](#optional-indexed-probe-s
 installation or an image you build on top of it; exact and screened search work as they are. A newer image
 does not upgrade the SQL objects of an existing database: run `ALTER EXTENSION pg_morlet UPDATE` after
 switching images.
+
+**On Windows** (Docker Desktop with WSL2) the image runs as it does elsewhere. Two things differ:
+- A password file such as `.env` cannot be protected with `chmod 600` on NTFS; it has no effect there.
+  Restrict the file to your own user with an ACL instead, e.g. `icacls .env /inheritance:r /grant:r "%USERNAME%:R"`.
+- Without Python on the host, run the importer and the MCP server from a container (for example
+  `python:3.12-slim`) with their `requirements.txt`, and connect to the database through the host port.
 
 ## Docker walkthrough with synthetic data
 
@@ -150,8 +156,8 @@ Envelopes are opt-in and are not automatically built by append. Call the bounded
 | Declare a recording | `morlet_start_recording`, `morlet_ensure_recording` | Fixes rate, channel, units and extraction configuration |
 | Append samples | `morlet_append_chunk`, `morlet_append_chunks` | Global sample offsets; identical retries are checked; gaps and conflicting retries fail. The plural form appends several chunks in one call. With `morlet.verify_appends` on (the default), every chunk is decoded again after encoding and compared bit for bit with its input before it is stored, as on every append path (#366) |
 | Append samples as bytes | `morlet_append_chunk_raw`, `morlet_append_chunks_raw` | The same append with samples as little-endian float64 bytes, without per-element parsing (SQL 0.3.3); the plural form takes a run of consecutive chunks in one call and stores exactly what one call per chunk stores (SQL 0.3.4), encoding the chunks on up to `morlet.encode_threads` threads (default up to 4; 1 = none) and, with `morlet.verify_appends` on (the default), decoding each chunk again to prove it bit for bit lossless; used by the importer |
-| Read samples | `morlet_read_interval` | Reconstructs original samples, including across chunk boundaries |
-| Read samples as bytes | `morlet_read_interval_raw` | The same samples as little-endian float64 bytes, up to 16,777,216 per call (SQL 0.3.3); map them with e.g. `numpy.frombuffer(raw, "<f8")` |
+| Read samples | `morlet_read_interval` | Reconstructs original samples, including across chunk boundaries. Returns a table: `SELECT samples FROM morlet_read_interval(...)` |
+| Read samples as bytes | `morlet_read_interval_raw` | The same samples as little-endian float64 bytes, up to 16,777,216 per call (SQL 0.3.3); map them with e.g. `numpy.frombuffer(raw, "<f8")`. Returns a bare `bytea`, not a table: `SELECT morlet_read_interval_raw(...)` (there is no `samples` column) |
 | Interval statistics | `morlet_interval_stats` | Count, min, max, mean and RMS computed while decoding, without building a sample array (SQL 0.3.3); min and max exact; each chunk's part is summed with compensation in float64 and the parts are merged exactly, rounding once (SQL 0.3.6), so the result does not depend on how the interval is split |
 | Interval overview | `morlet_interval_overview` | The same statistics in up to N consecutive buckets of an interval, for example a waveform overview (SQL 0.3.3) |
 | Chunk summaries | `morlet_enable_chunk_summaries`, `morlet_build_chunk_summaries` | Opt-in per-chunk summaries: statistics and overviews of long intervals without decoding them, with identical results (SQL 0.3.3) |

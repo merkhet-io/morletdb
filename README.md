@@ -132,7 +132,7 @@ build provenance; no pgvector, so no probe search; choose your own password):
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
-  ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1
+  ghcr.io/merkhet-io/morletdb:0.3.11-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
 ```
 
@@ -257,7 +257,7 @@ source exclusion, overlap suppression and snapshot semantics.
 <td width="62%">
 
 **[MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL](research/paper/morletdb.pdf)**<br>
-Version <span data-version="report">0.22</span>
+Version <span data-version="report">0.23</span>
 
 Bounded-lag cross-correlation is the right score when matches may be shifted in
 time, but standard vector indexes rank by an unshifted metric. Because each lag term

@@ -1,6 +1,26 @@
 # Changelog
 
-## Unreleased
+## 0.3.11-alpha.1
+
+SQL version 0.3.8, unchanged; Python SDK 0.1.0a4. The chunk format is unchanged; existing collections keep their
+layout.
+
+- **MCP server starts under `python -I` again (#382):** `morlet_mcp.py` loads its sibling `decision.py` by path. In
+  0.3.10-alpha.1 the server fails in isolated mode with `No module named 'decision'`; a test now imports it under `-I`.
+
+- **MCP server, findings from a field evaluation (#384, #386):**
+  - `search_similar` takes `exclude`: `"recording"` drops every hit in the query's recording, and `"metadata:<key>"`
+    drops hits from recordings sharing the query's value of that key (e.g. the other channels of the same part). It
+    fetches up to 100 candidates so that `top_k` hits remain, and reports how many were left out. The SQL option
+    remains open in #384.
+  - `coverage` treats recordings that overlap in time (channels of one acquisition) as one recorded block, so covered
+    time is no longer added up per channel (`covered_fraction` stays at most 1), and snapshots recorded on several
+    channels are recognised as snapshots. New fields: `recorded_blocks`, `recordings_per_block`.
+  - `locate_time` says when a time falls into a gap, or before the first or after the last recording, and names the
+    nearest recording on each side.
+  - `latest` reports a too-small `limit` by that name instead of the SQL argument `max_recordings`.
+- **Docs (#389):** `morlet_read_interval_raw` returns a bare `bytea`, while `morlet_read_interval` returns a table with
+  `samples`; notes for Windows (no `chmod 600` on NTFS, running the tools from a container).
 
 - **Grizzbit 2.1 server integration, study B6 build (opt-in, default unchanged):**
   - pg_morlet gets `morlet.chunk_format` = `grizzbit1` (the default) | `grizzbit21`, a registered enum setting.
