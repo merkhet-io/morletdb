@@ -1,0 +1,62 @@
+== B6 run (dev) 2026-11-11T12:05:39 at 3cedcec; no step after 2026-11-12T12:05
+== setup 2026-11-11T12:05:39 load { 2.99 3.25 3.38 }
+setup ok: { "build_commit": "50562e8dcdd08fb0f3691660e521a20e72b233e3", "tree": "3cedcec18df5f5a5e319cd3b8ad1b21d7120be73", "written": "2026-11-11T12:05:40", "b6_decoder": "4cd33b93261f48b1edc5d49daf85d170b1458b8be0cadb6dd78023bbf49fc0ba", "release_decoder": "343a8d9fd17d19c3c0ece5aab270d6ec9e7f3eb3591573cf321b49fd68aa42ff", "rawcodec_bench": "574314a639b3326c67ff87e6b694f6b8c799e8267df06fc8564bfd2f8c0d5254", "b6codec": "31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f"}
+== setup exit 0 2026-11-11T12:05:40
+== prepare 2026-11-11T12:05:40 load { 2.99 3.25 3.38 }
+== prepare exit 0 2026-11-11T12:05:44
+== storage 2026-11-11T12:05:44 load { 2.91 3.23 3.37 }
+== storage exit 0 2026-11-11T12:06:17
+== speed 2026-11-11T12:06:17 load { 3.03 3.24 3.37 }
+== speed exit 0 2026-11-11T12:07:08
+== b3 2026-11-11T12:07:08 load { 3.02 3.21 3.35 }
+== S grizzbit21 load_morletdb-i2_D2_r1 12:07:11
+FAILED S grizzbit21 load_morletdb-i2_D2_r1 (exit 1) 12:07:18
+== S questdb load_questdb_D2_r1 12:07:18
+FAILED S questdb load_questdb_D2_r1 (exit 1) 12:07:43
+== S release load_morletdb-i2_D2_r1 12:07:43
+FAILED S release load_morletdb-i2_D2_r1 (exit 1) 12:07:50
+== P grizzbit21 parallel_morletdb-i1_D2_w8_r1 12:07:50
+== B6 run (dev) 2026-11-11T12:37:20 at 3cedcec; no step after 2026-11-12T12:37
+== setup: done earlier (2026-11-11T12:05:40), skipped
+== prepare: done earlier (2026-11-11T12:05:44), skipped
+== storage: done earlier (2026-11-11T12:06:17), skipped
+== speed: done earlier (2026-11-11T12:07:08), skipped
+== b3 2026-11-11T12:37:20 load { 2.01 2.09 2.24 }
+== S grizzbit21 load_morletdb-i2_D2_r1 12:37:23
+skip questdb load_questdb_D2_r1
+== S release load_morletdb-i2_D2_r1 12:38:19
+== P grizzbit21 parallel_morletdb-i1_D2_w8_r1 12:39:12
+== P questdb parallel_questdb_D2_w8_r1 12:39:32
+== P release parallel_morletdb-i1_D2_w8_r1 12:39:49
+== B6 B3 smoke done 12:40:11
+== b3 exit 0 2026-11-11T12:40:11
+== platforms 2026-11-11T12:40:11 load { 6.12 3.93 2.97 }
+== macos-arm64 12:40:11
+ok: 14 inputs, b6codec 31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f, Darwin arm64
+== linux-arm64 12:40:21
+ok: 14 inputs, rust:1.99.0-bookworm sha256:e393e07b3c3c39f238de676b0eb60c03dc7aefe5d6e37be6d29c686bf4d7e256, b6codec b773dc8d3c38dd5b0cc318f10bc52cec53b107ee72311455ec143c943ca0a67d
+== linux-amd64 12:40:32
+not available: rust:1.99.0-bookworm for linux/amd64 is not local (docker pull --platform linux/amd64 rust:1.99.0-bookworm needs the owner's OK)
+{"platforms": ["linux-arm64", "macos-arm64"], "differing_inputs": []}
+== platforms exit 0 2026-11-11T12:40:32
+== pi 2026-11-11T12:40:32 load { 4.99 3.82 2.96 }
+skipped: no Pi in the harness test
+== pi exit 0 2026-11-11T12:40:32
+== B6 run (dev) finished 2026-11-11T12:40:32: {'S1': False, 'S2': False, 'S3': False, 'S4': False, 'S5': False, 'S6': None, 'passes': False}
+== B6 run (dev) 2026-11-11T12:41:21 at 3cedcec; no step after 2026-11-12T12:41
+== setup: done earlier (2026-11-11T12:05:40), skipped
+== prepare: done earlier (2026-11-11T12:05:44), skipped
+== storage: done earlier (2026-11-11T12:06:17), skipped
+== speed: done earlier (2026-11-11T12:07:08), skipped
+== b3 2026-11-11T12:41:21 load { 3.80 3.63 2.93 }
+skip grizzbit21 load_morletdb-i2_D2_r1
+== S questdb load_questdb_D2_r1 12:41:24
+skip release load_morletdb-i2_D2_r1
+skip grizzbit21 parallel_morletdb-i1_D2_w8_r1
+skip questdb parallel_questdb_D2_w8_r1
+skip release parallel_morletdb-i1_D2_w8_r1
+== B6 B3 smoke done 12:42:25
+== b3 exit 0 2026-11-11T12:42:25
+== platforms: done earlier (2026-11-11T12:40:32), skipped
+== pi: done earlier (2026-11-11T12:40:32), skipped
+== B6 run (dev) finished 2026-11-11T12:42:25: {'S1': True, 'S2': False, 'S3': False, 'S4': False, 'S5': False, 'S6': None, 'passes': False}

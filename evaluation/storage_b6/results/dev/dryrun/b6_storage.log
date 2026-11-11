@@ -1,0 +1,14 @@
+{"input": "pad-c-b6", "set": "waveform", "bits_per_sample": {"G1": 7.8192, "G21": 7.5868}, "chunks_changed": 1014, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "pad-p-b6", "set": "waveform", "bits_per_sample": {"G1": 9.1151, "G21": 7.7364}, "chunks_changed": 1024, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "femto-dev", "set": "waveform", "bits_per_sample": {"G1": 10.6542, "G21": 10.0917}, "chunks_changed": 1024, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "xjtu-dev", "set": "waveform", "bits_per_sample": {"G1": 63.6592, "G21": 63.6592}, "chunks_changed": 0, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "Blockchain-tr", "set": "elf", "bits_per_sample": {"G1": 13.9605, "G21": 13.9605}, "chunks_changed": 0, "G1_matches_B4": true, "G1_matches_B5": true}
+{"input": "POI-lat", "set": "elf", "bits_per_sample": {"G1": 60.8407, "G21": 60.8407}, "chunks_changed": 0, "G1_matches_B4": true, "G1_matches_B5": true}
+{"input": "Stocks-USA", "set": "elf", "bits_per_sample": {"G1": 4.5621, "G21": 4.5621}, "chunks_changed": 0, "G1_matches_B4": true, "G1_matches_B5": true}
+{"input": "electric_vehicle_charging", "set": "elf", "bits_per_sample": {"G1": 10.0312, "G21": 9.8003}, "chunks_changed": 1, "G1_matches_B4": true, "G1_matches_B5": true}
+{"input": "b3-vibration_1", "set": "b3", "bits_per_sample": {"G1": 9.2736, "G21": 7.8214}, "chunks_changed": 6570, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "b3-phase_current_1", "set": "b3", "bits_per_sample": {"G1": 10.5541, "G21": 8.6265}, "chunks_changed": 6570, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "b3-phase_current_2", "set": "b3", "bits_per_sample": {"G1": 10.7446, "G21": 8.6066}, "chunks_changed": 6570, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "b3-force", "set": "b3", "bits_per_sample": {"G1": 8.6697, "G21": 7.4678}, "chunks_changed": 416, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "b3-speed", "set": "b3", "bits_per_sample": {"G1": 9.1899, "G21": 9.1899}, "chunks_changed": 0, "G1_matches_B4": null, "G1_matches_B5": null}
+{"input": "b3-torque", "set": "b3", "bits_per_sample": {"G1": 48.93, "G21": 48.93}, "chunks_changed": 0, "G1_matches_B4": null, "G1_matches_B5": null}
