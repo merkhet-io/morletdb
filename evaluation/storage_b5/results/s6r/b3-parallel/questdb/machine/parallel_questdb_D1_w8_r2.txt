@@ -1,0 +1,23 @@
+gate met 2026-11-10T22:16:04 after 37 s, load { 2.94 3.62 7.28 }
+2026-11-10T22:16:04
+22:16  up 14 days,  7:12, 19 users, load averages: 2.94 3.62 7.28
+ %CPU COMM
+ 16.5 /sbin/launchd
+ 15.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  2.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.9 claude
+  1.1 /Applications/Warp.app/Contents/MacOS/stable
+  1.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  1.0 bash
+  0.7 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+2026-11-10T22:16:21
+22:16  up 14 days,  7:12, 19 users, load averages: 5.57 4.18 7.41
+ %CPU COMM
+222.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 74.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  6.3 claude
+  2.2 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.3 /usr/sbin/notifyd

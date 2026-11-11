@@ -1,0 +1,17 @@
+[package]
+name = "b5codec"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Study B5 harness (PROTOCOL.md sections 3 and 4A): Grizzbit 1 and Grizzbit 2 per chunk, through the grizzbit crate
+# of this branch (pco pinned =1.0.4 there; this lockfile is seeded from the workspace's).
+[dependencies]
+grizzbit = { path = "../../../crates/grizzbit" }
+
+[workspace]
+
+# As the workspace's release profile (the bench example's).
+[profile.release]
+panic = "unwind"
+lto = "thin"

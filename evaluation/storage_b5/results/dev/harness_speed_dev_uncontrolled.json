@@ -1,0 +1,162 @@
+{
+ "study": "B5 codec speed (PROTOCOL.md section 4A)",
+ "set": "dev",
+ "started": "2026-11-10T20:39:23",
+ "passes": 3,
+ "threads": 1,
+ "b5codec": {
+  "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/b5codec/target/release/b5codec",
+  "sha256": "791a6db9e71bf29afe6b566b13a1f3f0eb7b7e0f41443341d0ea465f9861dcaa"
+ },
+ "inputs": [
+  {
+   "input": "Blockchain-tr",
+   "set": "elf-dev",
+   "samples": 99999,
+   "G1": {
+    "encode_msamples_s": 14.82,
+    "decode_msamples_s": 99.51,
+    "encode_passes": [
+     14.11,
+     14.62,
+     14.82
+    ],
+    "decode_passes": [
+     98.87,
+     99.51,
+     98.28
+    ]
+   },
+   "G2": {
+    "encode_msamples_s": 7.63,
+    "decode_msamples_s": 118.74,
+    "encode_passes": [
+     7.34,
+     7.63,
+     7.31
+    ],
+    "decode_passes": [
+     109.69,
+     118.74,
+     113.72
+    ]
+   },
+   "G2_over_G1_encode": 0.5148,
+   "G2_over_G1_decode": 1.1932,
+   "load1_before": 11.4,
+   "load1_after": 11.4
+  },
+  {
+   "input": "POI-lat",
+   "set": "elf-dev",
+   "samples": 100001,
+   "G1": {
+    "encode_msamples_s": 8.61,
+    "decode_msamples_s": 55.24,
+    "encode_passes": [
+     7.97,
+     8.41,
+     8.61
+    ],
+    "decode_passes": [
+     54.39,
+     55.24,
+     50.7
+    ]
+   },
+   "G2": {
+    "encode_msamples_s": 5.24,
+    "decode_msamples_s": 135.21,
+    "encode_passes": [
+     5.07,
+     5.24,
+     5.0
+    ],
+    "decode_passes": [
+     132.5,
+     127.34,
+     135.21
+    ]
+   },
+   "G2_over_G1_encode": 0.6086,
+   "G2_over_G1_decode": 2.4477,
+   "load1_before": 11.4,
+   "load1_after": 11.4
+  },
+  {
+   "input": "Stocks-USA",
+   "set": "elf-dev",
+   "samples": 100002,
+   "G1": {
+    "encode_msamples_s": 22.37,
+    "decode_msamples_s": 119.08,
+    "encode_passes": [
+     21.99,
+     22.37,
+     22.16
+    ],
+    "decode_passes": [
+     119.04,
+     119.08,
+     117.18
+    ]
+   },
+   "G2": {
+    "encode_msamples_s": 13.5,
+    "decode_msamples_s": 119.91,
+    "encode_passes": [
+     12.95,
+     13.12,
+     13.5
+    ],
+    "decode_passes": [
+     118.49,
+     119.91,
+     119.8
+    ]
+   },
+   "G2_over_G1_encode": 0.6035,
+   "G2_over_G1_decode": 1.007,
+   "load1_before": 11.4,
+   "load1_after": 11.4
+  },
+  {
+   "input": "electric_vehicle_charging",
+   "set": "elf-dev",
+   "samples": 3395,
+   "G1": {
+    "encode_msamples_s": 22.14,
+    "decode_msamples_s": 110.26,
+    "encode_passes": [
+     15.41,
+     18.34,
+     22.14
+    ],
+    "decode_passes": [
+     106.09,
+     110.26,
+     109.96
+    ]
+   },
+   "G2": {
+    "encode_msamples_s": 9.83,
+    "decode_msamples_s": 118.95,
+    "encode_passes": [
+     8.34,
+     8.4,
+     9.83
+    ],
+    "decode_passes": [
+     115.74,
+     117.07,
+     118.95
+    ]
+   },
+   "G2_over_G1_encode": 0.444,
+   "G2_over_G1_decode": 1.0788,
+   "load1_before": 11.4,
+   "load1_after": 11.4
+  }
+ ],
+ "finished": "2026-11-10T20:39:23"
+}
