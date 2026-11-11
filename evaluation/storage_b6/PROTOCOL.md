@@ -1,8 +1,7 @@
 # Study B6: Grizzbit 2.1 — protocol (DRAFT, not frozen)
 
-**Status: DRAFT for the owner's review, 2026-11-11.** Nothing here is frozen yet. The thresholds in section 5 are
-proposals, derived from the development figures with a margin. The owner confirms or changes them before the
-freeze. The freeze is a commit that changes this line to "FROZEN", names the commit it was frozen on, and
+**Status: DRAFT, 2026-11-11.** Nothing here is frozen yet. The owner confirmed the thresholds in section 5 on
+2026-11-11. One input question (section 8, item 1) is still open. The freeze is a commit that changes this line to "FROZEN", names the commit it was frozen on, and
 resolves the pre-freeze checks (section 8). No B6 benchmark input may be read with a Grizzbit 2.1 build before
 that commit.
 
@@ -211,7 +210,7 @@ Runs:
 
 **Results:** `results/b3-single/` and `results/b3-parallel/`.
 
-## 5. Pass criteria (thresholds PROPOSED, confirmed at the freeze)
+## 5. Pass criteria (thresholds confirmed by the owner, 2026-11-11)
 
 All criteria are judged on the 24 benchmark inputs and the B3 session. Each is reported as holding or failing,
 with its figures.
@@ -298,11 +297,27 @@ with its figures.
 
 ## 8. Pre-freeze checks (resolved in the freezing commit)
 
-1. **Paderborn provenance:** confirm from `data/b1-runs` and its preparation script which Paderborn
-   acquisition(s) B1's "Paderborn counts" and "Paderborn physical" come from. If any is K001, KA01, KA09, KB24 or
-   KI08 (2.1's development acquisitions), that input moves to development, and S2 is judged on the remaining
-   waveforms with its count bound scaled (4 of 6 becomes 3 of 5, or 3 of 4).
-2. **Thresholds:** the owner confirms or changes S2 (5% and 4 of 6) and S4 (50 M decode, 10 M encode).
+1. **Paderborn provenance, checked 2026-11-11: overlap found.** B1's "Paderborn counts" and "Paderborn
+   physical" are built by `evaluation/compression/datasets.py` from `paderborn("heldout")`: the first 2 accepted
+   vibration files per bearing and setting, over every bearing outside `evaluation/decision/bearings.py`'s `DEV`
+   (K001, K002, KA01, KI01, KA04, KA15, KI04, KI14) and KA08. That held-out set includes **KA09, KB24 and KI08**,
+   three of the five acquisitions Grizzbit 2.1 was developed on. K001 and KA01 are not in it. So both Paderborn
+   inputs contain bearings that 2.1's development read.
+
+   **Proposed resolution (owner to confirm):**
+   - The two Paderborn inputs are rebuilt with the same loader and rules, minus every file of KA09, KB24 and
+     KI08 (`paderborn_b6`). The six waveforms and S2's "4 of 6" stay as confirmed.
+   - The unfiltered B4 Paderborn inputs are reported as development.
+   - **B3's benchmark acquisitions are added** as codec inputs: vibration, phase currents and force, as B3 stores
+     them. They are disjoint from B3's development set, which is the five 2.1 development acquisitions.
+     They count in S3 (never larger) and S4 (speed, where phase currents are the critical case), and their
+     storage is reported without an S2 criterion.
+
+   The fallback written earlier still applies if the owner prefers it: the two Paderborn inputs move to
+   development, and S2 is judged on the remaining four waveforms (3 of 4).
+2. **Thresholds: confirmed by the owner on 2026-11-11.** S2: 5% and 4 of 6. S4: decode 50 M, encode 10 M,
+   single thread, on the benchmark machine. Edge hardware is not judged by S4. The Raspberry Pi is about 10×
+   slower in development, so an edge figure is reported separately.
 3. **Release arm:** the release named in section 4C (today `0.3.10-alpha.1`). If the beta has shipped before
    the freeze, the beta is the release arm.
 4. **Beta interplay:** B6 does not gate the beta (#201). The beta freezes the format with Grizzbit 1. If B6
