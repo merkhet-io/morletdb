@@ -42,5 +42,24 @@
   "decode_v5": "6c4556591deae025b740f746d8de30ffcdbc74df6f90eab2e18458a299f8d72b",
   "roundtrip": "afaad4fa1d9585cd2b1106caf0d82f35164217792a44cef63d28cf6f0ec449eb",
   "note": "cargo +nightly-2026-10-11 fuzz build -O -a; rebuilt from the build commit's tree, the binaries are byte-identical"
+ },
+ "platform_images": {
+  "linux-amd64": {
+   "image": "rust:1.99.0-bookworm",
+   "platform": "linux/amd64",
+   "id": "sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7",
+   "repo_digests": [
+    "rust@sha256:114c7a4425406451c2866b6aafe69fe29b1b298832db1277d411ac73c82d04d6"
+   ]
+  },
+  "linux-arm64": {
+   "image": "rust:1.99.0-bookworm",
+   "platform": "linux/arm64",
+   "id": "sha256:e393e07b3c3c39f238de676b0eb60c03dc7aefe5d6e37be6d29c686bf4d7e256",
+   "repo_digests": [
+    "rust@sha256:114c7a4425406451c2866b6aafe69fe29b1b298832db1277d411ac73c82d04d6"
+   ]
+  },
+  "recorded": "2026-11-11T19:57:23"
  }
 }

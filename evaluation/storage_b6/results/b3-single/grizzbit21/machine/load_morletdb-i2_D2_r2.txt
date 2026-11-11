@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:23:14 after 31 s, load { 2.92 3.91 4.39 }
+-- before
+2026-11-11T19:23:14
+19:23  up 15 days,  4:19, 19 users, load averages: 2.92 3.91 4.39
+Now drawing from 'AC Power'
+ %CPU COMM
+ 24.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 23.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  6.0 claude
+  3.0 claude
+  2.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.3 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  2.0 bash
+  0.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+-- after (exit 0)
+2026-11-11T19:23:31
+19:23  up 15 days,  4:19, 19 users, load averages: 2.98 3.85 4.36
+Now drawing from 'AC Power'
+ %CPU COMM
+196.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 51.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 22.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  1.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  0.6 claude
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
