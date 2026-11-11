@@ -14,6 +14,7 @@ arm is decoded bit for bit there.
 """
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -40,6 +41,9 @@ def main():
     ap.add_argument("--chunk", type=int, default=4096)
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--only", default="")
+    ap.add_argument("--view", default="", help="only this view ('as stored' or 'on k*q')")
+    ap.add_argument("--strategies", action="store_true",
+                    help="compare the LPC order-selection strategies instead of the four arms")
     a = ap.parse_args()
     work, elf = Path(a.work), Path(a.elf)
     inputs = json.loads((work / "inputs.json").read_text())["inputs"]
@@ -52,18 +56,20 @@ def main():
         jobs.append((name, "as stored", "elf (B4 dev)", elf / f"{name}.csv", 1.0))
     rows = []
     for name, view, g, path, q in jobs:
-        if a.only and a.only not in name:
+        if (a.only and a.only not in name) or (a.view and a.view != view):
             continue
+        env = dict(os.environ, **({"G21_STRATEGIES": "1"} if a.strategies else {}))
         out = subprocess.run([str(BENCH), name, str(path), repr(q), str(a.chunk), str(a.reps)],
-                             check=True, capture_output=True, text=True).stdout
+                             check=True, capture_output=True, text=True, env=env).stdout
         row = json.loads(out)
         row.update({"view": view, "group": g})
         rows.append(row)
-        print(f"{name:40s} {view:9s} g1 {row['g1']['bits_per_sample']:.3f} corr {row['corr']['bits_per_sample']:.3f} "
-              f"lpc {row['lpc']['bits_per_sample']:.3f} g21 {row['g21']['bits_per_sample']:.3f} "
-              f"dec g1/g21 {row['g1']['dec_msps']:.0f}/{row['g21']['dec_msps']:.0f} "
-              f"enc g1/g21 {row['g1']['enc_msps']:.1f}/{row['g21']['enc_msps']:.1f}", flush=True)
-    Path(a.out).write_text(json.dumps({"chunk": a.chunk, "reps": a.reps, "rows": rows}, indent=1) + "\n")
+        arms = [k for k, v in row.items() if isinstance(v, dict) and "bits_per_sample" in v]
+        print(f"{name[-28:]:28s} {view:9s} " + " ".join(
+            f"{k} {row[k]['bits_per_sample']:.3f}/{row[k]['enc_msps']:.1f}/{row[k]['dec_msps']:.0f}" for k in arms),
+            flush=True)
+    Path(a.out).write_text(json.dumps({"chunk": a.chunk, "reps": a.reps, "strategies": a.strategies,
+                                       "rows": rows}, indent=1) + "\n")
 
 
 if __name__ == "__main__":

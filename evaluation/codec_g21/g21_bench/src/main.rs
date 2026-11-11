@@ -12,7 +12,9 @@
 //! Every chunk of every arm is decoded and compared bit for bit (a mismatch aborts), and no 2.1 chunk may be
 //! larger than its Grizzbit 1 chunk. Sizes include every chunk's header and CRC-32C. Speed: single thread,
 //! best of REPS passes over all chunks (encode, then decode). One JSON line on stdout.
-use grizzbit::{decode, encode, encode_experimental, grizzbit21_layout, Grizzbit21Features};
+use grizzbit::{
+    decode, encode, encode_experimental, grizzbit21_layout, Grizzbit21Features, LpcSearch,
+};
 use std::time::Instant;
 
 fn read_series(path: &str) -> Vec<f64> {
@@ -35,6 +37,32 @@ fn same(a: &[f64], b: &[f64]) -> bool {
     a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
 }
 
+/// The LPC order-selection strategies compared in `strategies` mode (both ideas on).
+const STRATEGIES: [&str; 8] = [
+    "around",
+    "estimated",
+    "est+max",
+    "fixed-8-16-32",
+    "fixed-12-32",
+    "fixed-32",
+    "skip-20",
+    "skip-50",
+];
+
+fn strategy(name: &str) -> Option<LpcSearch> {
+    Some(match name {
+        "around" => LpcSearch::Around,
+        "estimated" => LpcSearch::Estimated,
+        "est+max" => LpcSearch::EstimatedAndMax,
+        "fixed-8-16-32" => LpcSearch::Fixed(&[8, 16, 32]),
+        "fixed-12-32" => LpcSearch::Fixed(&[12, 32]),
+        "fixed-32" => LpcSearch::Fixed(&[32]),
+        "skip-20" => LpcSearch::EstimatedSkip(20),
+        "skip-50" => LpcSearch::EstimatedSkip(50),
+        _ => return None,
+    })
+}
+
 fn arm(
     name: &str,
     chunks: &[&[f64]],
@@ -42,28 +70,19 @@ fn arm(
     reps: usize,
     g1: Option<&[Vec<u8>]>,
 ) -> (String, Vec<Vec<u8>>) {
+    let features = |corrections, lpc, search| Grizzbit21Features {
+        corrections,
+        lpc,
+        search,
+    };
+    let search = strategy(name);
     let enc_one = |c: &[f64]| -> Vec<u8> {
         match name {
             "g1" => encode(c, q).unwrap(),
-            "corr" => encode_experimental(
-                c,
-                q,
-                Grizzbit21Features {
-                    corrections: true,
-                    lpc: false,
-                },
-            )
-            .unwrap(),
-            "lpc" => encode_experimental(
-                c,
-                q,
-                Grizzbit21Features {
-                    corrections: false,
-                    lpc: true,
-                },
-            )
-            .unwrap(),
-            _ => grizzbit::encode_with(c, q, grizzbit::Format::Grizzbit21).unwrap(),
+            "corr" => encode_experimental(c, q, features(true, false, LpcSearch::DEFAULT)).unwrap(),
+            "lpc" => encode_experimental(c, q, features(false, true, LpcSearch::DEFAULT)).unwrap(),
+            "g21" => grizzbit::encode_with(c, q, grizzbit::Format::Grizzbit21).unwrap(),
+            _ => encode_experimental(c, q, features(true, true, search.unwrap())).unwrap(),
         }
     };
     let enc: Vec<Vec<u8>> = chunks.iter().map(|c| enc_one(c)).collect();
@@ -123,6 +142,22 @@ fn arm(
 
 fn main() {
     let a: Vec<String> = std::env::args().collect();
+    if a[1] == "loop" {
+        // Profiling aid: g21_bench loop FILE QUANTUM CHUNK PASSES encodes with Grizzbit 2.1 only.
+        let x = read_series(&a[2]);
+        let q = a[3].parse::<f64>().unwrap();
+        let size = a[4].parse::<usize>().unwrap();
+        let mut s = 0usize;
+        for _ in 0..a[5].parse::<usize>().unwrap() {
+            for c in x.chunks(size) {
+                s += grizzbit::encode_with(c, q, grizzbit::Format::Grizzbit21)
+                    .unwrap()
+                    .len();
+            }
+        }
+        println!("{s}");
+        return;
+    }
     let (name, path, q, size, reps) = (
         &a[1],
         &a[2],
@@ -134,7 +169,12 @@ fn main() {
     let chunks: Vec<&[f64]> = x.chunks(size).collect();
     let (g1_row, g1) = arm("g1", &chunks, q, reps, None);
     let mut rows = vec![g1_row];
-    for name in ["corr", "lpc", "g21"] {
+    let arms: Vec<&str> = if std::env::var("G21_STRATEGIES").is_ok() {
+        STRATEGIES.to_vec()
+    } else {
+        vec!["corr", "lpc", "g21"]
+    };
+    for name in arms {
         rows.push(arm(name, &chunks, q, reps, Some(&g1)).0);
     }
     let kinds = g1.iter().fold([0usize; 3], |mut k, e| {

@@ -31,9 +31,47 @@ def mean(rows, arm, key="bits_per_sample"):
     return sum(r[arm][key] * r["n"] for r in rows) / n
 
 
+STRATEGIES = ["around", "estimated", "est+max", "fixed-8-16-32", "fixed-12-32", "fixed-32", "skip-20", "skip-50"]
+
+
+def strategies(d):
+    """LPC order-selection strategies (results/dev_strategies.json): bits/sample, encode and decode speed."""
+    rows = d["rows"]
+    print(f"chunk {d['chunk']} samples, best of {d['reps']}, as stored\n")
+    print("### Per group: bits/sample | encode | decode (M samples/s, harmonic mean)\n")
+    print("| group | Grizzbit 1 | " + " | ".join(STRATEGIES) + " |")
+    print("|---|" + "---|" * (len(STRATEGIES) + 1))
+    sels = [("Paderborn 64 kHz", lambda r: r["group"] in ("vibration", "phase currents"))]
+    sels += [(g, (lambda g: lambda r: r["group"] == g)(g)) for g in GROUPS]
+    sels += [("all 21 (T1 inputs)", lambda r: r["group"] != "elf (B4 dev)")]
+    for g, f in sels:
+        sel = [r for r in rows if f(r)]
+        if not sel:
+            continue
+        n = sum(r["n"] for r in sel)
+        cell = lambda a: (f"{mean(sel, a):.3f} / {n / sum(r['n'] / r[a]['enc_msps'] for r in sel):.1f} / "
+                          f"{n / sum(r['n'] / r[a]['dec_msps'] for r in sel):.0f}")
+        print(f"| {g} | {cell('g1')} | " + " | ".join(cell(a) for a in STRATEGIES) + " |")
+    print()
+    print("### Per input: bits/sample | encode M samples/s\n")
+    print("| input | Grizzbit 1 | " + " | ".join(STRATEGIES) + " |")
+    print("|---|" + "---|" * (len(STRATEGIES) + 1))
+    for r in rows:
+        cell = lambda a: f"{r[a]['bits_per_sample']:.3f} / {r[a]['enc_msps']:.1f}"
+        print(f"| {r['name']} | {cell('g1')} | " + " | ".join(cell(a) for a in STRATEGIES) + " |")
+    print()
+    print("### Slowest decode per strategy (M samples/s, input)\n")
+    for a in STRATEGIES:
+        w = [r for r in rows if r["group"] != "elf (B4 dev)"]
+        slow = min(w, key=lambda r: r[a]["dec_msps"])
+        print(f"- {a}: {slow[a]['dec_msps']:.0f} ({slow['name']})")
+
+
 def main():
     path = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "results/dev.json"
     d = json.loads(path.read_text())
+    if d.get("strategies"):
+        return strategies(d)
     rows = d["rows"]
     print(f"chunk {d['chunk']} samples, best of {d['reps']}\n")
     for view in ["as stored", "on k*q"]:
