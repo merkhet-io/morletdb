@@ -294,3 +294,30 @@ nice -n 10 python3 -I evaluation/codec_g21/run.py WORK data/b4-elf evaluation/co
 python3 -I evaluation/codec_g21/summarize.py
 python3 -I evaluation/codec_g21/summarize.py evaluation/codec_g21/results/dev_strategies.json
 ```
+
+## Raspberry Pi 3B+ (development)
+
+**DEVELOPMENT ONLY, like everything in this file.** The same development inputs on the edge reference box of X2
+(Raspberry Pi 3B+, Cortex-A53, 1 GB, Debian 11), measured 2026-11-11. Binaries were built from `1ede52b` for
+linux/arm64 and run in `python:3.12.10-slim-bookworm` with one CPU. Each input waited for a load below 0.5 and a
+temperature below 60 °C, and was timed best of 3. Temperatures were 48.9–55.8 °C. `get_throttled` was 0x80000
+throughout: a soft temperature limit had been reached at some point since boot, but none was active during the runs.
+
+- **Byte identity:** the grizzbit test binaries pass on the Pi (47 passed, 0 failed, 2 ignored writers). That
+  includes re-encoding the v2, v3 and v5 goldens and `encoder-equivalence.bin` byte for byte. Every chunk size of
+  every input equals the Mac's `dev.json`, with 0 differences.
+- **Speed, as stored, in M samples/s (Mac figures in brackets):**
+
+  | group | encode G1 | encode 2.1 | decode G1 | decode 2.1 |
+  |---|---|---|---|---|
+  | vibration | 2.40 (33.1) | 1.28 (17.0) | 10.21 (78.8) | 6.39 (74.5) |
+  | phase currents | 2.38 (32.9) | 1.17 (15.2) | 9.76 (77.3) | 4.59 (53.2) |
+  | force | 1.63 (19.5) | 1.08 (14.0) | 9.59 (71.9) | 10.55 (84.2) |
+  | FEMTO | 2.67 (42.5) | 1.59 (24.6) | 10.91 (94.1) | 7.85 (108.4) |
+  | Elf, B4 dev | 2.66 (27.5) | 2.02 (23.7) | 11.33 (88.1) | 11.33 (87.4) |
+
+- The Pi is about 10–14× slower than the Mac. For one 64 kHz channel, 2.1 still encodes about 18× and decodes about
+  70× faster than real time. B6's speed floors (decode ≥ 50 M, encode ≥ 10 M) are judged on the benchmark machine
+  only. An edge statement would need its own criterion.
+
+Per-input figures, including the on-k\*q view, are in `results/dev_pi.json`.
