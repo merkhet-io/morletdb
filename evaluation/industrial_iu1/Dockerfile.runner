@@ -1,0 +1,2 @@
+FROM python:3.12.10-slim-bookworm
+RUN pip install --no-cache-dir "psycopg[binary]==3.2.*" "h5py==3.12.*" "numpy==2.1.*"
