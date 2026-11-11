@@ -1,9 +1,9 @@
-# Study B6: Grizzbit 2.1 — protocol (DRAFT, not frozen)
+# Study B6: Grizzbit 2.1 — protocol (FROZEN)
 
-**Status: DRAFT, 2026-11-11.** Nothing here is frozen yet. The owner confirmed the thresholds in section 5 on
-2026-11-11. The input question (section 8, item 1) is resolved. The freeze is a commit that changes this line to "FROZEN", names the commit it was frozen on, and
-resolves the pre-freeze checks (section 8). No B6 benchmark input may be read with a Grizzbit 2.1 build before
-that commit.
+**FROZEN 2026-11-11** in the commit that adds this line, on branch `bench/b6-grizzbit21` on top of `709b444`.
+That is on the Grizzbit 2.1 development build `1ede52b` (draft PR #378). The owner approved B6, confirmed
+the thresholds in section 5, and decided the input question in section 8, item 1, all on 2026-11-11. No B6
+benchmark input has been read with a Grizzbit 2.1 build. The pre-freeze checks in section 8 are resolved.
 
 After the freeze, development decisions go into the **build record** (section 2, gate 8). The build record is
 written before any benchmark input is read. It can fix open implementation details. It can never change a
@@ -332,8 +332,9 @@ with its figures.
 2. **Thresholds: confirmed by the owner on 2026-11-11.** S2: 5% and 4 of 6. S4: decode 50 M, encode 10 M,
    single thread, on the benchmark machine. Edge hardware is not judged by S4. The Raspberry Pi is about 10×
    slower in development, so an edge figure is reported separately.
-3. **Release arm:** the release named in section 4C (today `0.3.10-alpha.1`). If the beta has shipped before
-   the freeze, the beta is the release arm.
+3. **Release arm: resolved at the freeze.** The release arm is `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1`
+   (the beta has not shipped). It is pinned by digest in `results/build.json`. If a newer release ships before the
+   B3 session, the session still uses 0.3.10-alpha.1, so the build being compared stays fixed.
 4. **Beta interplay:** B6 does not gate the beta (#201). The beta freezes the format with Grizzbit 1. If B6
    passes, version 5 is added later as an additive chunk version with upgrade scripts. Every version 2 and 3
    chunk stays valid, and readers older than that release cannot read version-5 chunks.
