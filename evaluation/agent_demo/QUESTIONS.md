@@ -123,3 +123,52 @@ No pass or fail thresholds: this is a demonstration, and every number is reporte
   descriptive.
 - **Before the full run:** one wording fix in `demo_agent.py` after a trial on the first run: the #385 caveat
   under Q5 now says when the deviating window *is* the lead-in (window 0) instead of always saying it is not.
+
+## Version 2 (fixed 2026-11-11, before any v2 run on the data)
+
+v1's rules, scripts and results stay as they are (`demo_agent.py`, `metrics.py`, `results/`), labelled v1. v2
+is `demo_agent_v2.py`, `metrics_v2.py` and `results_v2/`. Same data (M01 only), same image, same 34 flagged
+runs, same 5 comparison runs per operation (seed 20261111). What changes:
+
+**V2.1 Alignment.** Per run and axis, the start of machining is found with a fixed rule on `read_interval`'s
+min/max buckets of the whole recording (`max_points` = 2·ceil(n/512), so buckets of about 512 samples):
+- bucket amplitude a_j = (max_j − min_j)/2 (the offset of the axis does not matter); M = median of all a_j;
+- onset = start sample of the first bucket j with median(a_j..a_j+3) ≥ 0.5·M;
+- the onset is **clear** if j = 0 (no lead-in: machining from the first sample) or the lead-in's median
+  amplitude, median(a_0..a_j−1), is ≤ 0.25·M; otherwise it is **unclear**, and that axis falls back to onset 0
+  (raw positions). Counts of each case are reported.
+- Aligned window i of a run and axis = samples [onset + 4096·i, onset + 4096·(i+1)), i ≥ 0, inside the
+  recording. The lead-in is not compared. d(r, a, i) is v1's deviation (|dB| of the window variance against the
+  median over the comparison runs ≠ r with window i, at least 3 of them), on aligned windows.
+
+**V2.2 Calibrated thresholds.** Run measure D(r) = max over axes and aligned windows of d(r, a, i), against
+the operation's 5 comparison runs. The good runs of each operation that are not comparison runs are split by
+`numpy.random.default_rng(20261112).permutation` of their sorted list: the first floor(n/2) are
+**calibration** runs, the rest **held-out** runs. check = 80th and inspect = 95th percentile of D over the
+calibration runs (`numpy.percentile`, linear), per operation where it has at least 40 calibration runs, else
+pooled over the 13 operations that have bad runs. Headline: the share of flagged runs and of held-out good runs
+reaching check and inspect.
+
+**V2.3 Period handling.** `search_similar` hits (own run dropped, as v1) are split into hits from the flagged
+run's own period and from other periods; precision@5 and @10 are computed on each list separately, each with
+its own chance level (the share of bad runs' stored windows among the other runs of the operation in the same
+period, or in the other periods). The answer says "similar to N other bad runs, M of them from other periods"
+(N = distinct bad runs among the top 10 hits overall). The same split is reported for `search_from_time`.
+
+**V2.4 Level vs shape.** For a run's top window (the window giving D):
+- **level** if D ≥ the check threshold;
+- **shape** if S ≥ the 80th percentile of S over the calibration runs, where S = the median, over the
+  comparison runs (other than the run itself), of the smallest `search_similar` distance from the top window
+  to that comparison run's recording of the same axis (`metadata_filter = {"run": <comparison run>}`,
+  `top_k = 1`): "no good run has a window with this envelope shape";
+- reported as level only, shape only, both, or neither; the distribution is reported on flagged and on
+  held-out good runs. The v1 kurtosis/crest/envelope-line rule is dropped (kurtosis, crest factor and the
+  envelope spectrum are still described, not classified).
+
+**V2.5 Recommendation.** inspect if D ≥ inspect, check if D ≥ check, else "no clear deviation", with the
+seen-before sentence of V2.3. The window is named in aligned and in raw samples.
+
+**Headline table, v1 against v2:** flagged-run top-window rate (pool top in the flagged run), and how often the
+flagged run's top window does not start at sample 0; inspect/check firing on flagged and on held-out good runs
+(v1's fixed 6 and 3 dB applied to the same held-out runs, raw positions); precision@5/10 overall, same period
+and other periods; evidence links and bit-exactness; time per investigation (calibration timed separately).
