@@ -176,12 +176,17 @@ docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=chang
   ghcr.io/merkhet-io/morletdb:<version> -c morlet.chunk_format=grizzbit21
 ```
 
-Check the value with `SELECT current_setting('morlet.chunk_format');`. **A misspelt value never writes
-Grizzbit 1 quietly**. Once pg_morlet's library is loaded in a session (with its first `morlet_*` call),
-`SET` refuses any value but `grizzbit1` and `grizzbit21`. A value that reaches the session before that, through `SET`,
-`ALTER DATABASE` or `ALTER ROLE ... SET`, `postgresql.conf` or `-c`, is kept as written, and every append then fails
-with `invalid value for parameter "morlet.chunk_format": "grizbit21"; available values: grizzbit1, grizzbit21`,
-storing nothing.
+Check the value with `SHOW morlet.chunk_format;` after a `morlet_*` call in the session (`SELECT morlet_version();`
+is enough). pg_morlet's library loads with a session's first `morlet_*` call; before that, `current_setting` shows
+only a value set for the session, database, role or server, and nothing (NULL with `missing_ok`) when the default
+applies. The same holds for `morlet.verify_appends`.
+
+**A misspelt value never falls back quietly.** Once the library is loaded, `SET` refuses any `morlet.chunk_format`
+but `grizzbit1` and `grizzbit21`. A value that reaches the session before that, through `SET`, `ALTER DATABASE` or
+`ALTER ROLE ... SET`, `postgresql.conf` or `-c`, is kept as written, and every append then fails with
+`invalid value for parameter "morlet.chunk_format": "grizbit21"; available values: grizzbit1, grizzbit21`, storing
+nothing. `morlet.verify_appends` behaves the same way: a value other than on or off (or true/false, yes/no, 1/0),
+however it was set, makes every append fail with `invalid value for parameter "morlet.verify_appends": "..."`.
 
 **What it affects.** Only chunks written from then on, by every append path. Chunks already stored keep their
 format; there is no tool yet to recode them (#374). A collection or a recording can hold both formats, and every

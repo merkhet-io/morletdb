@@ -9,7 +9,10 @@ SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_mor
   `-c`) and, for an enum setting, only warned about an invalid one and used the default. The setting is now a
   string checked by pg_morlet: once the library is loaded, `SET` refuses an invalid value; a value from before makes
   every append fail with `invalid value for parameter "morlet.chunk_format": "..."; available values: grizzbit1,
-  grizzbit21`, storing nothing. Values are exact and lower case (`grizzbit1`, `grizzbit21`).
+  grizzbit21`, storing nothing. Values are exact and lower case (`grizzbit1`, `grizzbit21`). An invalid
+  `morlet.verify_appends`, however it was set, already failed every append; the message now names the value
+  (`invalid value for parameter "morlet.verify_appends": "..."; available values: on, off`). Before a session's
+  first `morlet_*` call, `current_setting` shows only explicitly set values; check with `SHOW` after one.
 - **SQL 0.3.9: `morlet_encode_chunk` and `morlet_chunk_batch` are STABLE, not IMMUTABLE.** Their output depends on
   `morlet.chunk_format`, so PostgreSQL could fold or cache an IMMUTABLE call (for example in a generic plan) and keep
   bytes encoded under another setting; the samples were exact either way. Encoding works before the update; the

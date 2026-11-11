@@ -911,21 +911,23 @@ fn encode_threads() -> usize {
 
 /// `morlet.verify_appends` (on/off, default on): after encoding, decode each chunk of a batch again and
 /// compare it bit for bit with its input samples (I1, #233). Off relies on the codec's tests instead.
+///
+/// Not registered: PostgreSQL keeps it as a placeholder string however it is set (`SET`, `ALTER DATABASE/ROLE ...
+/// SET`, `postgresql.conf`, `-c`), before or after the library loads, and it is read here on every encode. So an
+/// invalid value never falls back to a default: every append fails, naming the value.
 fn verify_appends() -> bool {
     // SAFETY: GetConfigOption returns NULL or a NUL-terminated string valid until the setting changes.
     let raw = unsafe { pg_sys::GetConfigOption(c"morlet.verify_appends".as_ptr(), true, false) };
     if raw.is_null() {
         return true;
     }
-    match unsafe { std::ffi::CStr::from_ptr(raw) }
-        .to_string_lossy()
-        .trim()
-        .to_ascii_lowercase()
-        .as_str()
-    {
+    let text = unsafe { std::ffi::CStr::from_ptr(raw) }.to_string_lossy();
+    match text.trim().to_ascii_lowercase().as_str() {
         "" | "on" | "true" | "yes" | "1" => true,
         "off" | "false" | "no" | "0" => false,
-        _ => pgrx::error!("morlet.verify_appends must be on or off"),
+        _ => pgrx::error!(
+            "invalid value for parameter \"morlet.verify_appends\": \"{text}\"; available values: on, off"
+        ),
     }
 }
 
@@ -3652,9 +3654,18 @@ END $$"#).unwrap();
         // An identical copy under a different sample_count is not trusted and fails the full check.
         Spi::run("SELECT morlet_create_stream_collection('public','ver_count'); SELECT morlet_start_recording('ver_count','A',4096,'x','g'); SELECT morlet_start_recording('ver_count','B',4096,'x','g'); SET morlet.verify_appends = off; SELECT morlet_append_chunks_raw('ver_count','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,999) i)),500); INSERT INTO ver_count_chunks SELECT 'B',start_sample,sample_count+1,encoded FROM ver_count_chunks WHERE recording_id='A' AND start_sample=0").unwrap();
     }
-    #[pg_test(error = "morlet.verify_appends must be on or off")]
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.verify_appends\": \"maybe\"; available values: on, off"
+    )]
     fn verify_appends_is_validated() {
         Spi::run("SELECT morlet_create_stream_collection('public','ver_guc'); SELECT morlet_start_recording('ver_guc','A',4096,'x','g'); SET morlet.verify_appends = 'maybe'; SELECT morlet_append_chunks_raw('ver_guc','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),2)").unwrap();
+    }
+    /// The single-chunk path refuses an invalid `morlet.verify_appends` too, instead of verifying by default.
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.verify_appends\": \"yes please\"; available values: on, off"
+    )]
+    fn verify_appends_is_validated_on_a_single_append() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_guc1'); SELECT morlet_start_recording('ver_guc1','A',4096,'x','g'); SET morlet.verify_appends = 'yes please'; SELECT morlet_append_chunk('ver_guc1','A',0,ARRAY[1,2,3]::float8[])").unwrap();
     }
     /// Long reads decode on worker threads; the samples are identical to decoding in the backend's thread.
     #[pg_test]

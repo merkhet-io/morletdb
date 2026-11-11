@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# morlet.chunk_format with real sessions: a misspelt value never writes Grizzbit 1 quietly.
+# morlet.chunk_format and morlet.verify_appends with real sessions: a misspelt value never falls back quietly.
 #
 #   tests/chunk_format_guard.sh        (needs the installed extension)
 #
@@ -66,6 +66,21 @@ got=$(PGOPTIONS='-c morlet.chunk_format=grizbit21' psql -d "$DB" -c "SELECT morl
         morlet_float8_le_bytes(ARRAY(SELECT round(3000*sin(i/7.3))::float8 FROM generate_series(0,8191) i)),4096)" 2>&1 \
       | sed -n 's/^.*ERROR: *//p' | head -1) || true
 expect "batch append, misspelt: fails" "$got" "$BAD"
+
+# morlet.verify_appends is never registered, so it stays the text it was set to; an invalid value set before the
+# library loads makes the append fail as well, instead of verifying (or not) by default.
+VBAD='invalid value for parameter "morlet.verify_appends": "yes please"; available values: on, off'
+expect "verify_appends, SET before the library loads, invalid: the append fails" \
+  "$(append -c "SET morlet.verify_appends = 'yes please'")" "$VBAD"
+expect "verify_appends, -c, invalid: the append fails" "$(PGOPTIONS='-c morlet.verify_appends=yes\ please' append)" "$VBAD"
+psql -d postgres -c "ALTER DATABASE $DB SET morlet.verify_appends = 'yes please'"
+expect "verify_appends, ALTER DATABASE, invalid: the append fails" "$(append)" "$VBAD"
+psql -d postgres -c "ALTER DATABASE $DB RESET morlet.verify_appends"
+# Before the first morlet_* call, current_setting shows only what was set (NULL when unset, which means the
+# default); SHOW after a morlet_* call shows morlet.chunk_format as pg_morlet sees it.
+expect "current_setting before loading, unset" \
+  "$(psql -d "$DB" -c "SELECT coalesce(current_setting('morlet.chunk_format', true), '<null>')")" "<null>"
+expect "SHOW after a morlet_* call" "$(psql -d "$DB" -c "SELECT morlet_version()" -c "SHOW morlet.chunk_format" | tail -1)" grizzbit1
 
 # Every failed append stored nothing: one chunk for each of the five successful appends above.
 expect "failed appends stored nothing" "$(stored)" 5
