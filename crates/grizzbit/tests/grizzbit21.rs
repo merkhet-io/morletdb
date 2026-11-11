@@ -43,10 +43,12 @@ const ARMS: [Grizzbit21Features; 3] = [
     Grizzbit21Features {
         corrections: true,
         lpc: false,
+        search: grizzbit::LpcSearch::DEFAULT,
     },
     Grizzbit21Features {
         corrections: false,
         lpc: true,
+        search: grizzbit::LpcSearch::DEFAULT,
     },
     Grizzbit21Features::ALL,
 ];

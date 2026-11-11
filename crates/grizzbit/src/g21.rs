@@ -65,10 +65,27 @@
 //! The encoder computes the coefficients in floating point (Welch-windowed autocorrelation,
 //! Levinson-Durbin, then FLAC-style quantisation with error feedback), using only IEEE basic operations,
 //! so its output does not depend on a platform's libm. The decoder uses integers only.
+//!
+//! # Encoder search (development default)
+//!
+//! - **LPC:** one order is coded exactly, the one with the smallest code length estimated from the
+//!   Levinson prediction errors ([`LpcSearch::Estimated`]). It is kept only if it beats the best fixed
+//!   predictor. Development measurement (evaluation/codec_g21) found the other strategies within
+//!   0.01 bits/sample and slower.
+//! - **Reuse:** the index and per-sample correction streams Grizzbit 1 already wrote are reused, and
+//!   correction variants whose lower-bound size cannot win are skipped.
+//! - **Side streams** (table, exception gaps and values) try fixed predictors 0 and 1 only.
+//!
+//! **Determinism:** every floating-point step is an IEEE basic operation in a fixed order: no fused
+//! multiply-add (Rust never contracts `a * b + c` unless `mul_add` is called), no libm, and each
+//! autocorrelation lag summed in sample order. Encoder output is therefore the same bytes on every
+//! platform. CI's golden-file check on Linux reproduces the version-5 goldens written on macOS/aarch64.
 use super::*;
 
 /// Predictor field value for LPC in a version-5 stream.
 pub(crate) const PREDICTOR_LPC: u64 = 7;
+/// Highest fixed predictor order the encoder tries for side streams (table, exceptions).
+pub(crate) const SIDE_MAX_ORDER: usize = 1;
 /// Highest LPC order.
 pub(crate) const MAX_LPC_ORDER: usize = 32;
 const MAX_LPC_PRECISION: u32 = 15;
@@ -329,23 +346,24 @@ fn quantize(a: &[f64], precision: u32) -> Option<Lpc> {
     })
 }
 
+/// The Welch window of length `n`: 1 - t^2, t = (i - c) / (c + 1), c = (n - 1) / 2.
+fn welch(n: usize) -> impl Iterator<Item = f64> {
+    let c = (n - 1) as f64 / 2.0;
+    (0..n).map(move |i| {
+        let t = (i as f64 - c) / (c + 1.0);
+        1.0 - t * t
+    })
+}
+
 /// Real LPC coefficients for orders 1..=`pmax` by Levinson-Durbin on the Welch-windowed autocorrelation
 /// of `x`, with each order's prediction error. Stops early when the error stops being positive.
 fn levinson(x: &[i64], pmax: usize) -> Vec<(Vec<f64>, f64)> {
-    let n = x.len();
-    let c = (n - 1) as f64 / 2.0;
     let w: Vec<f64> = x
         .iter()
-        .enumerate()
-        .map(|(i, &v)| {
-            let t = (i as f64 - c) / (c + 1.0);
-            v as f64 * (1.0 - t * t)
-        })
+        .zip(welch(x.len()))
+        .map(|(&v, w)| v as f64 * w)
         .collect();
-    let mut r = vec![0.0f64; pmax + 1];
-    for (lag, slot) in r.iter_mut().enumerate() {
-        *slot = w[lag..].iter().zip(&w).map(|(a, b)| a * b).sum();
-    }
+    let r = autocorrelation(&w, pmax);
     let mut out = Vec::with_capacity(pmax);
     if !r[0].is_finite() || r[0] <= 0.0 {
         return out;
@@ -375,15 +393,85 @@ fn levinson(x: &[i64], pmax: usize) -> Vec<(Vec<f64>, f64)> {
     out
 }
 
-/// The LPC predictor that codes `x` smallest, if it beats `fixed_cost` (the best fixed predictor's
-/// estimated size in bits, partition headers included) once its side information is charged. On
-/// `Some`, `r` holds its residuals; on `None`, `r` is clobbered.
+/// Which LPC orders the encoder codes exactly (the format allows any order 1..=32; this only trades
+/// encode time against size). Development knob: `DEFAULT` is what [`Format::Grizzbit21`] uses.
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LpcSearch {
+    /// The order with the smallest estimated code length, its half and its double (the first development
+    /// build).
+    Around,
+    /// Only the order with the smallest estimated code length.
+    Estimated,
+    /// The estimated order and the highest order.
+    EstimatedAndMax,
+    /// A fixed set of orders (each capped at n / 8), no estimate.
+    Fixed(&'static [usize]),
+    /// [`LpcSearch::Estimated`], skipped when the estimate does not beat the fixed predictor's size by
+    /// at least this many thousandths of a bit per sample.
+    EstimatedSkip(u32),
+}
+
+impl LpcSearch {
+    pub const DEFAULT: Self = Self::Estimated;
+}
+
+/// Floating point in the LPC fit: only IEEE 754 basic operations (+, -, *, / and comparisons), in a fixed
+/// order, so every platform computes the same coefficients and the encoder's output is the same bytes
+/// everywhere. Rust never contracts `a * b + c` into a fused multiply-add unless `mul_add` is called,
+/// which this module does not; vectorising the lag loop below keeps each lag's sum in sample order.
+/// No libm function (log, exp, cos, pow) is used: [`log2_approx`] and the Welch window are built from
+/// basic operations. The decoder uses no floating point in prediction at all.
+fn autocorrelation(w: &[f64], pmax: usize) -> Vec<f64> {
+    const P: usize = MAX_LPC_ORDER;
+    let n = w.len();
+    let mut r = [0.0f64; P + 1];
+    // Every lag is its own accumulator, summed in increasing sample order (as sum over j of
+    // w[j] * w[j - lag]); the lags are independent, so the inner loop runs them side by side.
+    let head = (pmax + 1).min(n);
+    for j in 0..head {
+        for lag in 0..=j.min(pmax) {
+            r[lag] += w[j] * w[j - lag];
+        }
+    }
+    if pmax == P {
+        for j in head..n {
+            let wj = w[j];
+            let hist: &[f64; P + 1] = w[j - P..=j].try_into().unwrap();
+            for lag in 0..=P {
+                r[lag] += wj * hist[P - lag];
+            }
+        }
+    } else {
+        for j in head..n {
+            for lag in 0..=pmax {
+                r[lag] += w[j] * w[j - lag];
+            }
+        }
+    }
+    r[..=pmax].to_vec()
+}
+
+/// The LPC stream for `x` if one codes smaller than `fixed_cost` (the best fixed predictor's estimated
+/// size in bits, partitions only) once its side information is charged; None otherwise.
+pub(crate) fn lpc_stream(x: &[i64], fixed_cost: u128, search: LpcSearch) -> Option<Vec<u8>> {
+    let n = x.len();
+    let max_porder = max_partition_order(n);
+    let mut r = vec![0u64; n];
+    let mut scratch = Scratch::default();
+    let (model, porder) = best_lpc(x, fixed_cost, &mut r, max_porder, &mut scratch, search)?;
+    Some(write_lpc_stream(&model, &r, porder))
+}
+
+/// The LPC predictor that codes `x` smallest among the orders `search` tries, if it beats `fixed_cost`.
+/// On `Some`, `r` holds its residuals; on `None`, `r` is clobbered.
 pub(crate) fn best_lpc(
     x: &[i64],
     fixed_cost: u128,
     r: &mut [u64],
     max_porder: u32,
     scratch: &mut Scratch,
+    search: LpcSearch,
 ) -> Option<(Lpc, u32)> {
     let n = x.len();
     if n < LPC_MIN_SAMPLES || x.iter().any(|v| v.unsigned_abs() >= LPC_MAX_MAGNITUDE) {
@@ -398,7 +486,7 @@ pub(crate) fn best_lpc(
     // Order by estimated code length: n/2 * log2(error) + side information.
     let estimate =
         |p: usize, err: f64| 0.5 * n as f64 * log2_approx(err) + (p as u32 * precision) as f64;
-    let (best_p, _) = models
+    let (best_p, best_est) = models
         .iter()
         .enumerate()
         .map(|(i, (_, e))| (i + 1, estimate(i + 1, *e)))
@@ -406,11 +494,31 @@ pub(crate) fn best_lpc(
     if best_p == 0 {
         return None;
     }
-    // A few orders around the estimate: it is close, but the Rice coder is not Gaussian.
-    let mut orders = vec![best_p, (best_p * 2).min(models.len()), best_p.div_ceil(2)];
+    let mut orders: Vec<usize> = match search {
+        LpcSearch::Around => vec![best_p, (best_p * 2).min(models.len()), best_p.div_ceil(2)],
+        LpcSearch::Estimated => vec![best_p],
+        LpcSearch::EstimatedAndMax => vec![best_p, models.len()],
+        LpcSearch::Fixed(set) => set.iter().map(|&p| p.min(models.len())).collect(),
+        LpcSearch::EstimatedSkip(milli) => {
+            // Absolute size estimate: Rice on a Laplacian residual of variance err / sum(w^2) costs
+            // about log2(sigma) + 1.25 bits per sample.
+            let wsum: f64 = welch(n).map(|w| w * w).sum();
+            let err = models[best_p - 1].1 / wsum;
+            let est = n as f64 * (0.5 * log2_approx(err) + 1.25) + best_est
+                - 0.5 * n as f64 * log2_approx(models[best_p - 1].1);
+            let bar = fixed_cost as f64 - milli as f64 / 1000.0 * n as f64;
+            if est >= bar {
+                return None;
+            }
+            vec![best_p]
+        }
+    };
+    orders.retain(|&p| p >= 1);
     orders.sort_unstable();
     orders.dedup();
     let mut best: Option<(u128, Lpc, u32)> = None;
+    // Whether `r` still holds the best candidate's residuals (it does when that was the last one tried).
+    let mut r_is_best = false;
     for p in orders {
         let Some(model) = quantize(&models[p - 1].0, precision) else {
             continue;
@@ -419,12 +527,15 @@ pub(crate) fn best_lpc(
         let (cost, porder) = partition_search(r, max_porder, scratch);
         let total = cost + model.side_bits();
         let bar = best.as_ref().map_or(fixed_cost, |b| b.0);
-        if total < bar {
+        r_is_best = total < bar;
+        if r_is_best {
             best = Some((total, model, porder));
         }
     }
     let (_, model, porder) = best?;
-    model.residuals(x, r);
+    if !r_is_best {
+        model.residuals(x, r);
+    }
     Some((model, porder))
 }
 
@@ -531,7 +642,7 @@ fn put_exceptions(out: &mut Vec<u8>, positions: &[usize], fix: &[i64]) {
     let values: Vec<i64> = positions.iter().map(|&p| fix[p]).collect();
     for stream in [gaps, values] {
         let mut s = Vec::new();
-        encode_ints(&stream, &mut s);
+        encode_side_stream(&stream, &mut s);
         put_varint(out, s.len() as u64);
         out.extend(s);
     }
@@ -539,23 +650,33 @@ fn put_exceptions(out: &mut Vec<u8>, positions: &[usize], fix: &[i64]) {
 
 /// The smallest correction section for `fix`: none, per sample, or (with `sparse`) table plus exceptions
 /// or exceptions only. Per sample wins ties, so a chunk changes only when a new coding is smaller.
-fn corrections(ints: &[i64], fix: &[i64], sparse: bool) -> (u8, Vec<u8>) {
-    if fix.iter().all(|&c| c == 0) {
+///
+/// `per_sample` is Grizzbit 1's correction stream for `fix` (empty when every correction is 0). A
+/// variant is skipped, never changing the result, when a lower bound of its size is not smaller: every
+/// value in a stream costs at least one bit and a nonzero one at least two (a Rice code of a value >= 1
+/// with parameter k takes at least k + 1 bits, and at least 2 when k is 0), so `m` exceptions with
+/// nonzero corrections cost at least 3m bits and a table of `d` entries at least d bits.
+fn corrections(ints: &[i64], fix: &[i64], per_sample: &[u8], sparse: bool) -> (u8, Vec<u8>) {
+    if per_sample.is_empty() {
         return (FIX_NONE, Vec::new());
     }
-    let mut per_sample = Vec::new();
-    encode_ints(fix, &mut per_sample);
-    let mut best = (FIX_SAMPLES, per_sample);
+    let mut best = (FIX_SAMPLES, per_sample.to_vec());
     if !sparse {
         return best;
     }
-    let nonzero: Vec<usize> = (0..fix.len()).filter(|&i| fix[i] != 0).collect();
-    let mut exceptions = Vec::new();
-    put_exceptions(&mut exceptions, &nonzero, fix);
-    if exceptions.len() < best.1.len() {
-        best = (FIX_EXCEPTIONS, exceptions);
+    let m = fix.iter().filter(|&&c| c != 0).count();
+    if 3 * m < 8 * best.1.len() {
+        let nonzero: Vec<usize> = (0..fix.len()).filter(|&i| fix[i] != 0).collect();
+        let mut exceptions = Vec::new();
+        put_exceptions(&mut exceptions, &nonzero, fix);
+        if exceptions.len() < best.1.len() {
+            best = (FIX_EXCEPTIONS, exceptions);
+        }
     }
     let (slots, d) = first_occurrence_slots(ints);
+    if d >= 8 * best.1.len() {
+        return best;
+    }
     let table = majority(&slots, d, fix);
     if table.iter().any(|&c| c != 0) {
         let off: Vec<usize> = (0..fix.len())
@@ -563,7 +684,7 @@ fn corrections(ints: &[i64], fix: &[i64], sparse: bool) -> (u8, Vec<u8>) {
             .collect();
         let mut bytes = Vec::new();
         put_exceptions(&mut bytes, &off, fix);
-        encode_ints(&table, &mut bytes);
+        encode_side_stream(&table, &mut bytes);
         if bytes.len() < best.1.len() {
             best = (FIX_TABLE, bytes);
         }
@@ -573,7 +694,12 @@ fn corrections(ints: &[i64], fix: &[i64], sparse: bool) -> (u8, Vec<u8>) {
 
 /// The version-5 body (no checksum) of a grid coding the Grizzbit 1 encoder computed.
 pub(crate) fn encode_plan(n: usize, plan: &Plan, features: Grizzbit21Features) -> Vec<u8> {
-    let (fix_mode, fix_bytes) = corrections(&plan.ints, &plan.fix, features.corrections);
+    let (fix_mode, fix_bytes) = corrections(
+        &plan.ints,
+        &plan.fix,
+        &plan.fix_stream,
+        features.corrections,
+    );
     let mut out = vec![GRIZZBIT21_VERSION, KIND_GRID];
     put_varint(&mut out, n as u64);
     out.push(
@@ -588,10 +714,14 @@ pub(crate) fn encode_plan(n: usize, plan: &Plan, features: Grizzbit21Features) -
     if let Some(o) = plan.grid.offset {
         out.extend_from_slice(&o.to_le_bytes());
     }
-    let mut stream = Vec::new();
-    encode_stream(&plan.ints, features.lpc, &mut stream);
+    // Grizzbit 1's index stream, unless an LPC stream beats its fixed predictor.
+    let lpc = features
+        .lpc
+        .then(|| lpc_stream(&plan.ints, plan.ints_cost, features.search))
+        .flatten();
+    let stream = lpc.as_deref().unwrap_or(&plan.ints_stream);
     put_varint(&mut out, stream.len() as u64);
-    out.extend(stream);
+    out.extend_from_slice(stream);
     out.extend(fix_bytes);
     out
 }

@@ -49,6 +49,8 @@ use std::fmt;
 mod g21;
 #[doc(hidden)]
 pub use g21::layout as grizzbit21_layout;
+#[doc(hidden)]
+pub use g21::LpcSearch;
 
 /// The name and number of the format this crate writes and reads: chunk format versions 2 and 3.
 pub const FORMAT: &str = "Grizzbit 1";
@@ -259,11 +261,14 @@ pub struct Grizzbit21Features {
     pub corrections: bool,
     /// Per-chunk LPC beside the fixed predictors.
     pub lpc: bool,
+    /// Which LPC orders the encoder tries.
+    pub search: LpcSearch,
 }
 impl Grizzbit21Features {
     pub const ALL: Self = Self {
         corrections: true,
         lpc: true,
+        search: LpcSearch::DEFAULT,
     };
 }
 
@@ -297,6 +302,12 @@ pub(crate) struct Plan {
     pub(crate) grid: Grid,
     pub(crate) ints: Vec<i64>,
     pub(crate) fix: Vec<i64>,
+    /// Grizzbit 1's index stream and its estimated size in bits (partitions, without the 7 header
+    /// bits), which version 5 reuses when no LPC predictor beats it.
+    pub(crate) ints_stream: Vec<u8>,
+    pub(crate) ints_cost: u128,
+    /// Grizzbit 1's correction stream (empty without corrections), version 5's per-sample mode.
+    pub(crate) fix_stream: Vec<u8>,
 }
 
 /// The Grizzbit 1 body (no checksum). With `plans`, every grid coding it computes is also handed out.
@@ -410,16 +421,26 @@ fn best_grid(samples: &[f64], ints: &[i64], candidates: Vec<Grid>) -> (Grid, Vec
             .map(|(&k, &x)| ordered_bits(x).wrapping_sub(ordered_bits(g.value(k))))
             .collect()
     };
-    let cost = |c: &Vec<i64>| {
-        let nonzero = c.iter().filter(|&&v| v != 0).count();
-        let size: u128 = c.iter().map(|&v| v.unsigned_abs() as u128).sum();
+    // Each candidate is scored in one pass without storing its corrections; only the winner's are
+    // built. min_by_key keeps the first of equal minima, as before.
+    let cost = |g: Grid| {
+        let (mut nonzero, mut size) = (0usize, 0u128);
+        for (&k, &x) in ints.iter().zip(samples) {
+            let c = ordered_bits(x).wrapping_sub(ordered_bits(g.value(k)));
+            nonzero += (c != 0) as usize;
+            size += c.unsigned_abs() as u128;
+        }
         (nonzero, size)
     };
-    candidates
-        .into_iter()
-        .map(|g| (g, corrections(g)))
-        .min_by_key(|(_, c)| cost(c))
-        .expect("at least one candidate")
+    let grid = if candidates.len() == 1 {
+        candidates[0]
+    } else {
+        candidates
+            .into_iter()
+            .min_by_key(|&g| cost(g))
+            .expect("at least one candidate")
+    };
+    (grid, corrections(grid))
 }
 
 /// Floats within `ulps` units in the last place of `x`, in increasing order.
@@ -431,7 +452,16 @@ fn ulp_neighbours(x: f64, ulps: u64) -> Vec<f64> {
         .collect()
 }
 
-fn put_grid(out: &mut Vec<u8>, n: usize, grid: Grid, ints: &[i64], fix: &[i64]) {
+/// Writes a Grizzbit 1 grid chunk body after the version byte. With `plans`, also hands out the grid
+/// coding with its two streams for version 5.
+fn put_grid(
+    out: &mut Vec<u8>,
+    n: usize,
+    grid: Grid,
+    ints: Vec<i64>,
+    fix: Vec<i64>,
+    plans: Option<&mut Vec<Plan>>,
+) {
     out.push(KIND_GRID);
     put_varint(out, n as u64);
     out.push(grid.mode);
@@ -442,11 +472,23 @@ fn put_grid(out: &mut Vec<u8>, n: usize, grid: Grid, ints: &[i64], fix: &[i64]) 
     let has_fix = fix.iter().any(|&v| v != 0);
     out.push(has_fix as u8);
     let mut stream = Vec::new();
-    encode_ints(ints, &mut stream);
+    let ints_cost = encode_stream(&ints, false, &mut stream);
     put_varint(out, stream.len() as u64);
-    out.extend(stream);
+    out.extend_from_slice(&stream);
+    let mut fix_stream = Vec::new();
     if has_fix {
-        encode_ints(fix, out);
+        encode_ints(&fix, &mut fix_stream);
+        out.extend_from_slice(&fix_stream);
+    }
+    if let Some(plans) = plans {
+        plans.push(Plan {
+            grid,
+            ints,
+            fix,
+            ints_stream: stream,
+            ints_cost,
+            fix_stream,
+        });
     }
 }
 
@@ -508,10 +550,7 @@ fn encode_offset_grid(
     }
     let (grid, fix) = best_grid(samples, &ints, candidates);
     let mut out = vec![FORMAT_VERSION];
-    put_grid(&mut out, samples.len(), grid, &ints, &fix);
-    if let Some(plans) = plans {
-        plans.push(Plan { grid, ints, fix });
-    }
+    put_grid(&mut out, samples.len(), grid, ints, fix, plans);
     (out.len() < 3 + 8 * samples.len()).then_some(out)
 }
 
@@ -551,10 +590,7 @@ fn encode_version2(
                 }
             }
             let (grid, fix) = best_grid(samples, &ints, candidates);
-            put_grid(&mut out, samples.len(), grid, &ints, &fix);
-            if let Some(plans) = plans {
-                plans.push(Plan { grid, ints, fix });
-            }
+            put_grid(&mut out, samples.len(), grid, ints, fix, plans);
             if out.len() < 3 + 8 * samples.len() {
                 return out;
             }
@@ -802,9 +838,34 @@ fn best_param(sum: u128, max: u64, count: usize) -> (u64, u128) {
     // and ceil((sum >> k) / 2) never grows with k. The first k at which the cost stops falling is
     // therefore the first minimum over 0..ESCAPE, the same choice as a full scan keeping strict
     // improvements.
+    //
+    // The walk starts at a lower bound of that minimum: for every k <= B - 2 - bitlen(m), with B the bit
+    // length of `sum`, (sum >> k) >= 2^(bitlen(m) + 1) > 2m, so the cost still falls at k. Starting at
+    // k0 = B - 1 - bitlen(m) (at least 0, at most ESCAPE - 1) therefore gives the same k as starting at 0.
+    if sum < 1 << 62 && count < 1 << 32 {
+        // The same arithmetic in u64: with sum < 2^62, m < 2^32 and k <= 63 nothing overflows.
+        let m = count as u64;
+        let sum = sum as u64;
+        let cost = |k: u64| m * (k + 1) + (sum >> k);
+        let bits_sum = 64 - sum.leading_zeros() as i64;
+        let bits_m = 64 - m.leading_zeros() as i64;
+        let mut k = (bits_sum - 1 - bits_m).clamp(0, ESCAPE as i64 - 1) as u64;
+        while k + 1 < ESCAPE && cost(k + 1) < cost(k) {
+            k += 1;
+        }
+        let mut best = (k, cost(k));
+        let width = 64 - max.leading_zeros() as u64;
+        let escape = 7 + m * width;
+        if escape < best.1 {
+            best = (ESCAPE, escape);
+        }
+        return (best.0, best.1 as u128 + 6);
+    }
     let m = count as u128;
     let cost = |k: u64| m * (k as u128 + 1) + (sum >> k);
-    let mut k = 0;
+    let bits_sum = 128 - sum.leading_zeros() as i64;
+    let bits_m = 128 - m.leading_zeros() as i64;
+    let mut k = (bits_sum - 1 - bits_m).clamp(0, ESCAPE as i64 - 1) as u64;
     while k + 1 < ESCAPE && cost(k + 1) < cost(k) {
         k += 1;
     }
@@ -877,9 +938,9 @@ pub(crate) fn partition_search(r: &[u64], max_porder: u32, scratch: &mut Scratch
     maxs.clear();
     for p in 0..(1usize << max_porder) {
         let (a, b) = partition_bounds(n, max_porder, p);
-        let chunk = &r[a..b];
-        sums.push(chunk.iter().map(|&v| v as u128).sum());
-        maxs.push(chunk.iter().copied().max().unwrap_or(0));
+        let (sum, max) = sum_and_max(&r[a..b]);
+        sums.push(sum);
+        maxs.push(max);
     }
     costs.clear();
     costs.resize(max_porder as usize + 1, 0);
@@ -907,6 +968,20 @@ pub(crate) fn partition_search(r: &[u64], max_porder: u32, scratch: &mut Scratch
     best
 }
 
+/// The exact sum (as u128) and the maximum of `chunk`: summed in u64 when the maximum shows that cannot
+/// overflow (the common case, and one that vectorises), otherwise in u128.
+#[inline]
+fn sum_and_max(chunk: &[u64]) -> (u128, u64) {
+    let max = chunk.iter().copied().max().unwrap_or(0);
+    let len = chunk.len() as u128;
+    let sum = if (max as u128) * len <= u64::MAX as u128 {
+        chunk.iter().sum::<u64>() as u128
+    } else {
+        chunk.iter().map(|&v| v as u128).sum()
+    };
+    (sum, max)
+}
+
 /// Buffers reused by [`partition_search`].
 #[derive(Default)]
 pub(crate) struct Scratch {
@@ -923,13 +998,15 @@ pub(crate) fn max_partition_order(n: usize) -> u32 {
 /// order-major, partition-order-minor sequence), then writes the partitioned Rice stream. Grizzbit 1's
 /// stream coder; version 5 also uses it for its correction streams.
 fn encode_ints(x: &[i64], out: &mut Vec<u8>) {
-    encode_stream(x, false, out)
+    encode_stream(x, false, out);
 }
 
 /// [`encode_ints`], and with `lpc` (version 5 only) also a per-chunk LPC predictor, written instead of
 /// the best fixed predictor only when its size, side information included, is strictly smaller.
 /// Without `lpc`, or when LPC does not win, the bytes are exactly [`encode_ints`]'s.
-pub(crate) fn encode_stream(x: &[i64], lpc: bool, out: &mut Vec<u8>) {
+/// Returns the chosen fixed predictor's estimated size in bits (partitions, without the 7 header bits),
+/// whether or not LPC replaced it.
+pub(crate) fn encode_stream(x: &[i64], lpc: bool, out: &mut Vec<u8>) -> u128 {
     let n = x.len();
     let max_porder = max_partition_order(n);
     let mut r = vec![0u64; n];
@@ -942,29 +1019,54 @@ pub(crate) fn encode_stream(x: &[i64], lpc: bool, out: &mut Vec<u8>) {
             best = Some((cost, order, porder));
         }
     }
-    let (cost, order, mut porder) = best.expect("at least one candidate");
-    let mut w = BitWriter::default();
-    let chosen = if lpc {
-        g21::best_lpc(x, cost, &mut r, max_porder, &mut scratch)
-    } else {
-        None
-    };
-    match chosen {
-        Some((model, lpc_porder)) => {
-            // `r` holds this model's residuals.
-            porder = lpc_porder;
-            w.put(g21::PREDICTOR_LPC, 3);
-            w.put(porder as u64, 4);
-            model.write(&mut w);
-        }
-        None => {
-            residuals(x, order, &mut r);
-            w.put(order as u64, 3);
-            w.put(porder as u64, 4);
+    let (cost, order, porder) = best.expect("at least one candidate");
+    if lpc {
+        if let Some(stream) = g21::lpc_stream(x, cost, g21::LpcSearch::DEFAULT) {
+            out.extend(stream);
+            return cost;
         }
     }
+    let mut w = BitWriter::default();
+    residuals(x, order, &mut r);
+    w.put(order as u64, 3);
+    w.put(porder as u64, 4);
     write_partitions(&mut w, &r, porder);
     out.extend(w.finish());
+    cost
+}
+
+/// A version-5 side stream (table, exception gaps and values): fixed predictors 0..=`SIDE_MAX_ORDER`
+/// only. These streams are nearly white, so higher orders rarely win; any order is valid to a decoder.
+pub(crate) fn encode_side_stream(x: &[i64], out: &mut Vec<u8>) {
+    let n = x.len();
+    let max_porder = max_partition_order(n);
+    let mut r = vec![0u64; n];
+    let mut scratch = Scratch::default();
+    let mut best: Option<(u128, usize, u32)> = None;
+    for order in 0..=g21::SIDE_MAX_ORDER {
+        residuals(x, order, &mut r);
+        let (cost, porder) = partition_search(&r, max_porder, &mut scratch);
+        if best.is_none_or(|b| cost < b.0) {
+            best = Some((cost, order, porder));
+        }
+    }
+    let (_, order, porder) = best.expect("at least one candidate");
+    let mut w = BitWriter::default();
+    residuals(x, order, &mut r);
+    w.put(order as u64, 3);
+    w.put(porder as u64, 4);
+    write_partitions(&mut w, &r, porder);
+    out.extend(w.finish());
+}
+
+/// Writes an LPC stream whose residuals `r` are already computed.
+pub(crate) fn write_lpc_stream(model: &g21::Lpc, r: &[u64], porder: u32) -> Vec<u8> {
+    let mut w = BitWriter::default();
+    w.put(g21::PREDICTOR_LPC, 3);
+    w.put(porder as u64, 4);
+    model.write(&mut w);
+    write_partitions(&mut w, r, porder);
+    w.finish()
 }
 
 fn write_partitions(w: &mut BitWriter, r: &[u64], porder: u32) {
@@ -972,8 +1074,7 @@ fn write_partitions(w: &mut BitWriter, r: &[u64], porder: u32) {
     for p in 0..(1usize << porder) {
         let (a, b) = partition_bounds(n, porder, p);
         let chunk = &r[a..b];
-        let sum = chunk.iter().map(|&v| v as u128).sum();
-        let max = chunk.iter().copied().max().unwrap_or(0);
+        let (sum, max) = sum_and_max(chunk);
         let (k, _) = best_param(sum, max, chunk.len());
         w.put(k, 6);
         if k == ESCAPE {
@@ -984,8 +1085,7 @@ fn write_partitions(w: &mut BitWriter, r: &[u64], porder: u32) {
             }
         } else {
             for &v in chunk {
-                w.put_unary(v >> k);
-                w.put(v, k as u32);
+                w.put_rice(v, k as u32);
             }
         }
     }
@@ -1105,6 +1205,9 @@ pub(crate) struct BitWriter {
     acc: u64,
     bits: u32,
 }
+/// Holds fewer than 32 pending bits in `acc` between calls and emits whole 32-bit words, so a call adds at
+/// most 32 bits without overflowing the 64-bit accumulator. The bytes are the MSB-first bit sequence of
+/// the calls, as a byte-at-a-time writer would produce.
 impl BitWriter {
     /// Appends the low `n` bits of `v`, most significant first.
     #[inline(always)]
@@ -1119,14 +1222,41 @@ impl BitWriter {
         } else {
             v & (u64::MAX >> (64 - n))
         };
+        self.push_bits(v, n);
+    }
+
+    /// Appends `n` <= 32 bits `v` (already masked) and emits a word once 32 or more are pending.
+    #[inline(always)]
+    fn push_bits(&mut self, v: u64, n: u32) {
         self.acc = (self.acc << n) | v;
         self.bits += n;
-        while self.bits >= 8 {
-            self.bits -= 8;
-            self.out.push((self.acc >> self.bits) as u8);
+        if self.bits >= 32 {
+            self.bits -= 32;
+            let word = (self.acc >> self.bits) as u32;
+            self.out.extend_from_slice(&word.to_be_bytes());
+            self.acc &= (1u64 << self.bits) - 1;
         }
-        self.acc &= (1u64 << self.bits) - 1;
     }
+
+    /// A Rice code with parameter `k`: `v >> k` zero bits, a one bit, then the low `k` bits of `v`. The
+    /// same bits as `put_unary(v >> k)` then `put(v, k)`, written in one step when they fit in 32 bits.
+    #[inline(always)]
+    pub(crate) fn put_rice(&mut self, v: u64, k: u32) {
+        let q = v >> k;
+        if q + 1 + (k as u64) <= 32 {
+            let low = if k == 0 {
+                0
+            } else {
+                v & (u64::MAX >> (64 - k))
+            };
+            // q zeros, then 1, then k bits: the value (1 << k) | low in q + 1 + k bits.
+            self.push_bits((1u64 << k) | low, q as u32 + 1 + k);
+            return;
+        }
+        self.put_unary(q);
+        self.put(v, k);
+    }
+
     #[inline(always)]
     fn put_unary(&mut self, mut q: u64) {
         while q >= 32 {
@@ -1136,6 +1266,10 @@ impl BitWriter {
         self.put(1, q as u32 + 1);
     }
     fn finish(mut self) -> Vec<u8> {
+        while self.bits >= 8 {
+            self.bits -= 8;
+            self.out.push((self.acc >> self.bits) as u8);
+        }
         if self.bits > 0 {
             self.out.push((self.acc << (8 - self.bits)) as u8);
         }
@@ -1348,6 +1482,72 @@ mod tests {
                     best_param_scan(sum, max, count)
                 );
             }
+        }
+    }
+
+    /// The word-emitting writer produces the MSB-first bit sequence of its calls, as a bit-by-bit one.
+    #[test]
+    fn bit_writer_matches_a_bit_by_bit_writer() {
+        let mut seed = 13u64;
+        for _ in 0..300 {
+            let mut w = BitWriter::default();
+            let mut bits: Vec<bool> = Vec::new();
+            for _ in 0..(lcg(&mut seed) % 400) {
+                let v = lcg(&mut seed) << 11 | lcg(&mut seed);
+                match lcg(&mut seed) % 3 {
+                    0 => {
+                        let n = (lcg(&mut seed) % 65) as u32;
+                        w.put(v, n);
+                        bits.extend((0..n).rev().map(|b| v >> b & 1 == 1));
+                    }
+                    1 => {
+                        let k = (lcg(&mut seed) % 30) as u32;
+                        let q = lcg(&mut seed) % 70;
+                        let v = (q << k) | (v & ((1u64 << k) - 1));
+                        w.put_rice(v, k);
+                        bits.extend(std::iter::repeat_n(false, (v >> k) as usize));
+                        bits.push(true);
+                        bits.extend((0..k).rev().map(|b| v >> b & 1 == 1));
+                    }
+                    _ => {
+                        let q = lcg(&mut seed) % 100;
+                        w.put_unary(q);
+                        bits.extend(std::iter::repeat_n(false, q as usize));
+                        bits.push(true);
+                    }
+                }
+            }
+            let want: Vec<u8> = bits
+                .chunks(8)
+                .map(|c| {
+                    c.iter()
+                        .enumerate()
+                        .fold(0u8, |a, (i, &b)| a | (b as u8) << (7 - i))
+                })
+                .collect();
+            assert_eq!(w.finish(), want);
+        }
+    }
+
+    /// The fast Rice-parameter search (u64 path, walk from a lower bound) equals the full scan.
+    #[test]
+    fn rice_parameter_search_matches_the_full_scan() {
+        let mut seed = 9u64;
+        for _ in 0..20000 {
+            let count = 1 + (lcg(&mut seed) % 32768) as usize;
+            let bits = lcg(&mut seed) % 128;
+            let sum = match lcg(&mut seed) % 4 {
+                0 => (lcg(&mut seed) as u128) % (1u128 << (bits % 70)),
+                1 => (1u128 << 62) - (lcg(&mut seed) % 3) as u128,
+                2 => (count as u128) * (lcg(&mut seed) as u128 % 64),
+                _ => ((lcg(&mut seed) as u128) << 64 | lcg(&mut seed) as u128) >> (bits % 64),
+            };
+            let max = lcg(&mut seed) >> (lcg(&mut seed) % 64);
+            assert_eq!(
+                best_param(sum, max, count),
+                best_param_scan(sum, max, count),
+                "sum {sum} count {count} max {max}"
+            );
         }
     }
 
