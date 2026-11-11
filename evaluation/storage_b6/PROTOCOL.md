@@ -1,7 +1,7 @@
 # Study B6: Grizzbit 2.1 — protocol (DRAFT, not frozen)
 
 **Status: DRAFT, 2026-11-11.** Nothing here is frozen yet. The owner confirmed the thresholds in section 5 on
-2026-11-11. One input question (section 8, item 1) is still open. The freeze is a commit that changes this line to "FROZEN", names the commit it was frozen on, and
+2026-11-11. The input question (section 8, item 1) is resolved. The freeze is a commit that changes this line to "FROZEN", names the commit it was frozen on, and
 resolves the pre-freeze checks (section 8). No B6 benchmark input may be read with a Grizzbit 2.1 build before
 that commit.
 
@@ -26,13 +26,13 @@ judged on inputs its development never read.
 
 **Hypotheses.** These come from the development measurement (`evaluation/codec_g21`, commit `1ede52b`) and are
 tested by the criteria in section 5:
-- **H1:** on B4's six waveforms, Grizzbit 2.1 stores at least 5% fewer bits than Grizzbit 1 in total. On
+- **H1:** on the six waveforms (B4's, with Paderborn rebuilt without the development bearings), Grizzbit 2.1 stores at least 5% fewer bits than Grizzbit 1 in total. On
   development inputs it stored 10.7% fewer over all 21 inputs, 16.8% fewer on Paderborn and 5.3% fewer on
   FEMTO.
 - **H2:** no chunk gets larger. A version-5 chunk is kept only if it is strictly smaller, and every other chunk
   is Grizzbit 1's chunk, byte for byte.
-- **H3:** decoding stays at or above 50 M samples/s and encoding at or above 10 M samples/s, single thread, on
-  each waveform. In development the lowest values were 53 M for decode (phase currents) and 14.0 M for encode
+- **H3:** decoding stays at or above 50 M samples/s and encoding at or above 10 M samples/s, single thread, on each waveform
+  and each of B3's machine channels. In development the lowest values were 53 M for decode (phase currents) and 14.0 M for encode
   (force).
 - **H4:** the encoder writes the same bytes on macOS/arm64, Linux/arm64 and Linux/x86_64.
 - **H5:** B3's statements against QuestDB hold.
@@ -134,16 +134,38 @@ The server integration follows B5's build record, decisions 6–11, with version
 
 ## 3. Storage measurements (benchmark inputs)
 
-**Inputs** are B4's benchmark inputs as B4 parses them (`measure_b4.py` loaders, unchanged):
-- **Waveforms (6):** CX counts, IMS decimals, Paderborn counts, Paderborn physical, Sleep-EDF and ECG
-  (`data/b1-runs`).
+**Development bearings.** Grizzbit 2.1 was developed on five Paderborn bearings: K001, KA01, KA09, KB24 and KI08.
+Every file of these five bearings is excluded from every benchmark input below (section 8, item 1).
+
+**Inputs:**
+- **Waveforms (6), the inputs of S2:** CX counts, IMS decimals, Sleep-EDF and ECG as B4 parses them
+  (`data/b1-runs`, `measure_b4.py` loaders, unchanged), and **Paderborn counts (B6)** and **Paderborn physical
+  (B6)**:
+  - built by B1's loader and rules (`evaluation/compression/datasets.py`, `paderborn("heldout")`: the first 2
+    accepted vibration files per bearing and setting), minus every file of the five development bearings;
+  - the file list and the SHA-256 of each built input are recorded in the build record before any measurement.
+
+  B4's unfiltered Paderborn inputs are measured too, but reported as development.
 - **Elf (18):** B4's 22 series minus its four development series:
   - Air-pressure, Air-sensor, Basel-temp, Basel-wind, Bird-migration, Bitcoin-price;
   - City-lat, City-lon, City-temp, Dew-point-temp, Food-price, IR-bio-temp;
   - PM10-dust, POI-lon, SSD-bench, Stocks-DE, Stocks-UK, Wind-Speed.
 
-That is 24 benchmark inputs. B4 and B5 have read them, and their Grizzbit 1 sizes are published. No Grizzbit 2.1
-code, and none of its development (T1, codec_g21), has read them. The development series are measured in the
+- **B3 machine channels (6 inputs), the inputs where phase currents are the critical case:** B3's benchmark set
+  (`evaluation/tsdb_b3`, every 20th file starting with the first: 124 acquisitions), minus every file of the
+  five development bearings:
+  - `vibration_1`, `phase_current_1`, `phase_current_2` at 64 kHz;
+  - `force`, `speed`, `torque` at 4 kHz;
+  - each channel is one input: its acquisitions are concatenated in B3's file order, and every acquisition starts
+    a new chunk, as B3 stores them;
+  - the number of acquisitions left after the exclusion is recorded in the build record.
+
+  B3's benchmark set and its development set (every 20th file starting at the 11th) share no file. The exclusion
+  also removes benchmark files that come from the bearings 2.1 was developed on.
+
+That is 30 benchmark inputs. B4 and B5 have read the B4-derived inputs, and B3 has read its benchmark set, so
+their Grizzbit 1 sizes are known. No Grizzbit 2.1 code, and none of its development (T1, codec_g21), has read any
+of them. The development series are measured in the
 same run but reported apart and not counted in any criterion.
 
 **Arms,** all at 4,096-sample chunks and quantum 1:
@@ -170,7 +192,8 @@ same run but reported apart and not counted in any criterion.
 ## 4. Speed and platform measurements
 
 **A. Codec, single thread.**
-- **Inputs:** the six waveforms. The 18 Elf series are reported without a criterion.
+- **Inputs:** the six waveforms and the six B3 machine channels. The 18 Elf series are reported without a
+  criterion.
 - **Measures:** encode and decode of G1 and G21, in M samples/s: the input's total samples over its total time
   across all chunks, best of 3 passes, codec in process.
 - **Start condition (B3.16, checked before every pass, as amendment B5.S6r learned):**
@@ -182,7 +205,7 @@ same run but reported apart and not counted in any criterion.
   Machine snapshots are taken before and after.
 - **Results:** `results/b6_speed.json`.
 
-**B. Platforms.** G21 encodes every chunk of all 24 benchmark inputs on:
+**B. Platforms.** G21 encodes every chunk of all 30 benchmark inputs on:
 - macOS/arm64, native;
 - Linux/arm64 in Docker;
 - Linux/x86_64 in Docker under emulation. This is slow but sufficient: the encoder uses IEEE basic operations
@@ -212,7 +235,7 @@ Runs:
 
 ## 5. Pass criteria (thresholds confirmed by the owner, 2026-11-11)
 
-All criteria are judged on the 24 benchmark inputs and the B3 session. Each is reported as holding or failing,
+All criteria are judged on the 30 benchmark inputs and the B3 session. Each is reported as holding or failing,
 with its figures.
 
 - **S1 (exact):** every chunk of every input, every B3 read and every B3 correctness check is bit for bit exact.
@@ -222,8 +245,8 @@ with its figures.
 - **S3 (never larger):**
   - every G21 chunk that differs from G1's chunk is a version-5 chunk with strictly fewer bytes;
   - every other chunk is byte-identical to G1's;
-  - on every one of the 24 inputs, G21 ≤ G1.
-- **S4 (speed):** on each of the six waveforms, single thread:
+  - on every one of the 30 inputs, G21 ≤ G1.
+- **S4 (speed):** on each of the six waveforms and each of the six B3 machine channels, single thread:
   - G21 **decode ≥ 50 M samples/s**;
   - G21 **encode ≥ 10 M samples/s**.
 
@@ -297,24 +320,15 @@ with its figures.
 
 ## 8. Pre-freeze checks (resolved in the freezing commit)
 
-1. **Paderborn provenance, checked 2026-11-11: overlap found.** B1's "Paderborn counts" and "Paderborn
-   physical" are built by `evaluation/compression/datasets.py` from `paderborn("heldout")`: the first 2 accepted
-   vibration files per bearing and setting, over every bearing outside `evaluation/decision/bearings.py`'s `DEV`
-   (K001, K002, KA01, KI01, KA04, KA15, KI04, KI14) and KA08. That held-out set includes **KA09, KB24 and KI08**,
-   three of the five acquisitions Grizzbit 2.1 was developed on. K001 and KA01 are not in it. So both Paderborn
-   inputs contain bearings that 2.1's development read.
-
-   **Proposed resolution (owner to confirm):**
-   - The two Paderborn inputs are rebuilt with the same loader and rules, minus every file of KA09, KB24 and
-     KI08 (`paderborn_b6`). The six waveforms and S2's "4 of 6" stay as confirmed.
-   - The unfiltered B4 Paderborn inputs are reported as development.
-   - **B3's benchmark acquisitions are added** as codec inputs: vibration, phase currents and force, as B3 stores
-     them. They are disjoint from B3's development set, which is the five 2.1 development acquisitions.
-     They count in S3 (never larger) and S4 (speed, where phase currents are the critical case), and their
-     storage is reported without an S2 criterion.
-
-   The fallback written earlier still applies if the owner prefers it: the two Paderborn inputs move to
-   development, and S2 is judged on the remaining four waveforms (3 of 4).
+1. **Paderborn provenance: overlap found and resolved, 2026-11-11.**
+   - **Finding:** B1's "Paderborn counts" and "Paderborn physical" come from `paderborn("heldout")`, every bearing
+     outside `evaluation/decision/bearings.py`'s `DEV` and KA08. That held-out set includes KA09, KB24 and KI08,
+     three of the five bearings 2.1 was developed on.
+   - **Resolution, decided by the owner on 2026-11-11:**
+     - every file of the five development bearings is excluded from every benchmark input;
+     - the two Paderborn waveforms are rebuilt without them (section 3), keeping S2's "4 of 6";
+     - B3's benchmark channels, with the same exclusion, are added for S3 and S4;
+     - B4's unfiltered Paderborn inputs are reported as development.
 2. **Thresholds: confirmed by the owner on 2026-11-11.** S2: 5% and 4 of 6. S4: decode 50 M, encode 10 M,
    single thread, on the benchmark machine. Edge hardware is not judged by S4. The Raspberry Pi is about 10×
    slower in development, so an edge figure is reported separately.
