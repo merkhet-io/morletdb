@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **`morlet.chunk_format`: a misspelt value fails, never writes Grizzbit 1 quietly.** PostgreSQL keeps a value set
+  before pg_morlet's library loads (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `postgresql.conf`,
+  `-c`) and, for an enum setting, only warned about an invalid one and used the default. The setting is now a
+  string checked by pg_morlet: once the library is loaded, `SET` refuses an invalid value; a value from before makes
+  every append fail with `invalid value for parameter "morlet.chunk_format": "..."; available values: grizzbit1,
+  grizzbit21`, storing nothing. Values are exact and lower case (`grizzbit1`, `grizzbit21`). An invalid
+  `morlet.verify_appends`, however it was set, already failed every append; the message now names the value
+  (`invalid value for parameter "morlet.verify_appends": "..."; available values: on, off`). Before a session's
+  first `morlet_*` call, `current_setting` shows only explicitly set values; check with `SHOW` after one.
+- **SQL 0.3.9: `morlet_encode_chunk` and `morlet_chunk_batch` are STABLE, not IMMUTABLE.** Their output depends on
+  `morlet.chunk_format`, so PostgreSQL could fold or cache an IMMUTABLE call (for example in a generic plan) and keep
+  bytes encoded under another setting; the samples were exact either way. Encoding works before the update; the
+  update only changes the two functions' volatility.
 - **Grizzbit 2.1, chunk format version 5, opt-in (#377, study B6):** `SET morlet.chunk_format = grizzbit21` makes
   every append path keep a version-5 chunk (last-place corrections once per grid index, per-chunk LPC) wherever it
   is strictly smaller than Grizzbit 1's chunk, which is stored otherwise, byte for byte. The default stays
