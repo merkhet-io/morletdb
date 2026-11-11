@@ -1104,23 +1104,23 @@ mod proofs {
         }
     }
 
-    /// Exception positions from any gaps: never a panic or overflow, and when accepted, strictly increasing
-    /// and below n (so every exception indexes a sample of the chunk).
+    /// Exception positions from any three gaps (any i64 each) and any n: never a panic or overflow, and when
+    /// accepted, strictly increasing and below n (so every exception indexes a sample of the chunk). Three
+    /// gaps cover a first position and two steps; a symbolic count (0..=4) exceeded 20 minutes in CBMC.
     #[kani::proof]
-    #[kani::unwind(6)]
+    #[kani::unwind(5)]
     fn exception_positions_are_in_range() {
-        let gaps: [i64; 4] = kani::any();
-        let m: usize = kani::any();
-        kani::assume(m <= 4);
+        let gaps: [i64; 3] = kani::any();
         let n: usize = kani::any();
         kani::assume(n >= 1 && n <= MAX_SAMPLES);
-        if let Ok(p) = positions_from_gaps(&gaps[..m], n) {
-            assert_eq!(p.len(), m);
-            for k in 0..m {
+        if let Ok(p) = positions_from_gaps(&gaps, n) {
+            assert!(p.len() == 3);
+            assert!(gaps[0] >= 0 && p[0] == gaps[0] as usize);
+            for k in 0..3 {
                 assert!(p[k] < n);
                 assert!(gaps[k] >= 0);
                 if k > 0 {
-                    assert_eq!(p[k], p[k - 1] + 1 + gaps[k] as usize);
+                    assert!(p[k] == p[k - 1] + 1 + gaps[k] as usize);
                 }
             }
         }
@@ -1204,16 +1204,20 @@ mod proofs {
         assert_eq!(model.predict_at(&hist, 2) as i128, wide);
     }
 
-    /// The LPC decoder on any residuals and any coefficients of the allowed precision: no panic or overflow
+    /// The LPC decoder on any values (any i64, so sums wrap) with small coefficients: no panic or overflow
     /// check fires (all arithmetic wraps), and the unrolled kernel restores exactly the values whose
-    /// residuals the format's definition gives, through the warm-up and the first kernel position.
+    /// residuals the format's definition gives, through the warm-up, the generic positions and the first
+    /// kernel position. Coefficients are bounded to 3 bits: with 15-bit ones CBMC exceeded 20 minutes on the
+    /// nine positions' multiplications. The arithmetic for full 15-bit coefficients is proven by
+    /// `lpc_residuals_invert` and `lpc_prediction_matches_wide_reference`, and the kernels for every order
+    /// and full coefficients are tested against the definition (`unrolled_lpc_matches_the_definition`).
     #[kani::proof]
     #[kani::unwind(10)]
     fn lpc_kernel_restores_reference_residuals() {
         let x: [i64; 9] = kani::any();
         let c: [i64; 2] = kani::any();
         for &v in &c {
-            kani::assume(v >= -(1i64 << 14) && v < (1i64 << 14));
+            kani::assume((-4..4).contains(&v));
         }
         let shift: u32 = kani::any();
         kani::assume(shift <= MAX_LPC_SHIFT);
@@ -1223,7 +1227,10 @@ mod proofs {
             r[i] = x[i].wrapping_sub(model.predict_at(&x, i));
         }
         model.restore(&mut r);
-        assert_eq!(r, x);
+        // element by element: a whole-array comparison is a memcmp CBMC cannot bound with this unwinding
+        for i in 0..9 {
+            assert!(r[i] == x[i]);
+        }
     }
 
     /// Every coefficient a writer can store (a `precision`-bit two's-complement integer) reads back as
