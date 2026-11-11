@@ -4,6 +4,7 @@
   python3 -I evaluation/storage_b6/measure_b6.py storage WORK OUT.json
   python3 -I evaluation/storage_b6/measure_b6.py speed WORK OUT.json
   python3 -I evaluation/storage_b6/measure_b6.py platforms WORK PLATFORM_DIR OUT.json
+  python3 -I evaluation/storage_b6/measure_b6.py record-images PLATFORM_DIR BUILD.json
 
 WORK is prepare_b6.py's directory (inputs.json and the chunk files). Started by run_b6.sh, which sets the budget
 (B6_STOP_AT) and, for the harness test only, B6_DRYRUN=1 (the start condition is then recorded but not waited for).
@@ -301,5 +302,18 @@ def main_platforms(work, pdir, out):
     print(json.dumps({"platforms": res["platforms"], "differing_inputs": differ}))
 
 
+def main_record_images(pdir, build_json):
+    """Records the platform images of section 4B (PDIR/<platform>.image) in the build record's `platform_images`."""
+    p = Path(build_json)
+    b = json.loads(p.read_text()) if p.is_file() else {}
+    imgs = b.setdefault("platform_images", {})
+    for f in sorted(Path(pdir).glob("*.image")):
+        imgs[f.stem] = json.loads(f.read_text())
+    imgs["recorded"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    write(p, b)
+    print(json.dumps({k: v.get("id") if isinstance(v, dict) else v for k, v in imgs.items()}))
+
+
 if __name__ == "__main__":
-    {"storage": main_storage, "speed": main_speed, "platforms": main_platforms}[sys.argv[1]](*sys.argv[2:])
+    {"storage": main_storage, "speed": main_speed, "platforms": main_platforms,
+     "record-images": main_record_images}[sys.argv[1]](*sys.argv[2:])

@@ -60,3 +60,21 @@ skip release parallel_morletdb-i1_D2_w8_r1
 == platforms: done earlier (2026-11-11T12:40:32), skipped
 == pi: done earlier (2026-11-11T12:40:32), skipped
 == B6 run (dev) finished 2026-11-11T12:42:25: {'S1': True, 'S2': False, 'S3': False, 'S4': False, 'S5': False, 'S6': None, 'passes': False}
+== B6 run (dev) 2026-11-11T12:53:31 at 40fe0cd; no step after 2026-11-12T12:53
+== setup: done earlier (2026-11-11T12:05:40), skipped
+== prepare: done earlier (2026-11-11T12:05:44), skipped
+== storage: done earlier (2026-11-11T12:06:17), skipped
+== speed: done earlier (2026-11-11T12:07:08), skipped
+== b3: done earlier (2026-11-11T12:42:25), skipped
+== platforms 2026-11-11T12:53:31 load { 2.64 2.82 2.83 }
+== macos-arm64 12:53:32
+ok: 14 inputs, b6codec 31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f, Darwin arm64
+== linux-arm64 12:53:42
+ok: 14 inputs, rust:1.99.0-bookworm sha256:e393e07b3c3c39f238de676b0eb60c03dc7aefe5d6e37be6d29c686bf4d7e256, b6codec b773dc8d3c38dd5b0cc318f10bc52cec53b107ee72311455ec143c943ca0a67d
+== linux-amd64 12:53:53
+ok: 14 inputs, rust:1.99.0-bookworm sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7, b6codec 92629626af343fe3c10b7ea91b16f7b8bc9837d078088e0b4375bc564c68136d
+{"platforms": ["linux-amd64", "linux-arm64", "macos-arm64"], "differing_inputs": []}
+{"linux-amd64": "sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7", "linux-arm64": "sha256:e393e07b3c3c39f238de676b0eb60c03dc7aefe5d6e37be6d29c686bf4d7e256", "recorded": "2026-11-11T12:54:20"}
+== platforms exit 0 2026-11-11T12:54:20
+== pi: done earlier (2026-11-11T12:40:32), skipped
+== B6 run (dev) finished 2026-11-11T12:54:20: {'S1': True, 'S2': False, 'S3': False, 'S4': False, 'S5': True, 'S6': None, 'passes': False}

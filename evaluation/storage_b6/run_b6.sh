@@ -65,6 +65,9 @@ do_b3() { if [ "$MODE" = dev ]; then "$H/run_b6_b3.sh" smoke "$OUT"; else "$H/ru
 do_platforms() {
   "$H/platforms_b6.sh" "$WORK" "$OUT/platforms"; local rc=$?
   "$PY" -I "$H/measure_b6.py" platforms "$WORK" "$OUT/platforms" "$OUT/b6_platforms.json" || rc=3
+  # the platform images (linux/arm64 and linux/amd64 rust:1.99.0-bookworm) go into the build record
+  local record=$OUT/build.json; [ "$MODE" = dev ] && record=$OUT/b6_platform_images.json
+  "$PY" -I "$H/measure_b6.py" record-images "$OUT/platforms" "$record" || rc=3
   return $rc; }
 do_pi() {
   if [ "$MODE" = dev ]; then echo "skipped: no Pi in the harness test"; return 0; fi

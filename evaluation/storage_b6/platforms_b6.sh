@@ -43,6 +43,9 @@ linux() { # linux <arm64|amd64>
       /out/b6codec selftest >/dev/null
       for n in '"$names"'; do /out/b6codec hash /work/inputs/$n.bin; done' > "$f" 2> "$OUT/$plat.stderr"
   local rc=$?
+  # the image used, for the build record: its platform's config id and the image index digest
+  docker image inspect --platform "linux/$arch" "$IMG" \
+    --format "{\"image\": \"$IMG\", \"platform\": \"linux/$arch\", \"id\": \"{{.Id}}\", \"repo_digests\": {{json .RepoDigests}}}" > "$OUT/$plat.image"
   if [ $rc = 0 ]; then
     echo "ok: $(wc -l < "$f" | tr -d ' ') inputs, $IMG $(docker image inspect --platform "linux/$arch" "$IMG" --format '{{.Id}}'), b6codec $(shasum -a 256 "$bin/b6codec" | cut -d' ' -f1)" > "$OUT/$plat.status"
   else

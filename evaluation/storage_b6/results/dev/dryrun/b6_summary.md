@@ -6,7 +6,7 @@
 | S2 | False |
 | S3 | False |
 | S4 | False |
-| S5 | False |
+| S5 | True |
 | S6 | — |
 | passes | False |
 
@@ -50,9 +50,9 @@
 | b3-speed | b3 | 48.4 | 105.0 | 49.3 | 104.3 | 1.019 | 0.994 | 3.02, 3.02, 3.02 |
 | b3-torque | b3 | 25.0 | 86.7 | 25.3 | 114.3 | 1.011 | 1.319 | 3.02, 3.02, 3.02 |
 
-## Platforms: linux-arm64, macos-arm64; differing inputs: none; required missing: linux-amd64
+## Platforms: linux-amd64, linux-arm64, macos-arm64; differing inputs: none; required missing: none
 
-- linux-amd64: not available: rust:1.99.0-bookworm for linux/amd64 is not local (docker pull --platform linux/amd64 rust:1.99.0-bookworm needs the owner's OK)
+- linux-amd64: ok: 14 inputs, rust:1.99.0-bookworm sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7, b6codec 92629626af343fe3c10b7ea91b16f7b8bc9837d078088e0b4375bc564c68136d
 - linux-arm64: ok: 14 inputs, rust:1.99.0-bookworm sha256:e393e07b3c3c39f238de676b0eb60c03dc7aefe5d6e37be6d29c686bf4d7e256, b6codec b773dc8d3c38dd5b0cc318f10bc52cec53b107ee72311455ec143c943ca0a67d
 - macos-arm64: ok: 14 inputs, b6codec 31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f, Darwin arm64
 

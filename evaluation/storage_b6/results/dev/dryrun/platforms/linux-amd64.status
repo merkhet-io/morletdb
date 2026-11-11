@@ -1,1 +1,1 @@
-not available: rust:1.99.0-bookworm for linux/amd64 is not local (docker pull --platform linux/amd64 rust:1.99.0-bookworm needs the owner's OK)
+ok: 14 inputs, rust:1.99.0-bookworm sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7, b6codec 92629626af343fe3c10b7ea91b16f7b8bc9837d078088e0b4375bc564c68136d
