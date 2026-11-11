@@ -20,7 +20,8 @@ def main():
     rows = []
     for t in sorted((res / "transcripts").glob("*.json.gz")):
         doc = json.load(gzip.open(t, "rt"))
-        call = next((c for c in doc["calls"] if c["tool"] == "read_interval" and "result" in c), None)
+        call = next((c for c in reversed(doc["calls"]) if c["tool"] == "read_interval" and "samples" in c.get("result", {})),
+                    None)                      # the evidence read (v2 also reads min/max buckets for alignment)
         if call is None:
             rows.append({"run": doc["run"], "checked": False, "why": "no read_interval result"})
             continue

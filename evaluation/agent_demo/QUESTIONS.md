@@ -172,3 +172,10 @@ seen-before sentence of V2.3. The window is named in aligned and in raw samples.
 flagged run's top window does not start at sample 0; inspect/check firing on flagged and on held-out good runs
 (v1's fixed 6 and 3 dB applied to the same held-out runs, raw positions); precision@5/10 overall, same period
 and other periods; evidence links and bit-exactness; time per investigation (calibration timed separately).
+
+### Version 2 deviations
+
+- **2026-11-11, after the first v2 run, wording only:** the "seen before" sentence and the recommendation said
+  "1 other bad runs" and "n/a of the nearest 5" when a period had fewer than 5 hits. The wording was fixed and
+  the investigations rerun with the same `calibration.json` (calibration not repeated); every number is
+  unchanged (checked against the first run's log).
