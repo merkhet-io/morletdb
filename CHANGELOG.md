@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- **Grizzbit 2.1, chunk format version 5, opt-in (#377, study B6):** `SET morlet.chunk_format = grizzbit21` makes
+  every append path keep a version-5 chunk (last-place corrections once per grid index, per-chunk LPC) wherever it
+  is strictly smaller than Grizzbit 1's chunk, which is stored otherwise, byte for byte. The default stays
+  `grizzbit1`; existing chunks are never rewritten.
+  - **Study B6 passed** all six criteria: waveforms 12.6% smaller in total and none larger, decode ≥ 53.1 and
+    encode ≥ 10.8 M samples/s per thread, identical bytes on four platforms, B3 standing kept
+    (evaluation/storage_b6/RESULTS.md).
+  - Write-time verification (#366) covers version 5, with no fallback. Version 4 stays reserved and rejected.
+  - Every reader of this release decodes version 5 whatever the setting. **Readers older than this release cannot
+    read version-5 chunks**; downgrading needs them re-appended with `grizzbit1`.
+  - **Compressed transfer negotiates the version:** the native decoder (`morlet-ffi`) and
+    `transfer::MAX_CHUNK_VERSION` report 5; SQL's `max_chunk_version` default stays 3, so a client that states no
+    version, or a lower one, receives samples.
+  - **File format 1 stays Grizzbit 1:** its writer never writes version 5 and its reader refuses it.
+  - The SDK labels a Grizzbit 2.1 server's encoder. `grizzbit::encode` is unchanged (Grizzbit 1 goldens and
+    `testdata/grizzbit/encoder-equivalence.bin` byte for byte); `grizzbit::encode_with(.., Format::Grizzbit21)`
+    writes version 5.
+  - Specification: docs/chunk-format.md, "Version 5"; overview and limits: docs/grizzbit.md.
+
 ## 0.3.11-alpha.1
 
 SQL version 0.3.8, unchanged; Python SDK 0.1.0a4. The chunk format is unchanged; existing collections keep their

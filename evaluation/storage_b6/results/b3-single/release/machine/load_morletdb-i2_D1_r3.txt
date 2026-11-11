@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:35:11 after 113 s, load { 2.98 3.81 4.08 }
+-- before
+2026-11-11T19:35:11
+19:35  up 15 days,  4:31, 19 users, load averages: 2.98 3.81 4.08
+Now drawing from 'AC Power'
+ %CPU COMM
+ 40.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 25.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 11.9 claude
+  4.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.2 /usr/libexec/xprotectd
+  1.1 /Applications/Warp.app/Contents/MacOS/stable
+  1.0 bash
+-- after (exit 0)
+2026-11-11T19:35:29
+19:35  up 15 days,  4:31, 19 users, load averages: 3.64 3.92 4.12
+Now drawing from 'AC Power'
+ %CPU COMM
+204.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 64.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 44.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.1 claude
+  2.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.4 claude
+  2.1 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  1.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari

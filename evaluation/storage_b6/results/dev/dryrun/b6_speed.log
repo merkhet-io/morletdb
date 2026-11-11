@@ -1,0 +1,14 @@
+{"input": "pad-c-b6", "G21_over_G1_encode": 0.5472, "G21_over_G1_decode": 0.7812, "G21": {"encode_msamples_s": 33.41, "decode_msamples_s": 103.68}}
+{"input": "pad-p-b6", "G21_over_G1_encode": 0.6076, "G21_over_G1_decode": 0.9891, "G21": {"encode_msamples_s": 14.15, "decode_msamples_s": 78.29}}
+{"input": "femto-dev", "G21_over_G1_encode": 0.716, "G21_over_G1_decode": 1.138, "G21": {"encode_msamples_s": 16.41, "decode_msamples_s": 107.01}}
+{"input": "xjtu-dev", "G21_over_G1_encode": 1.0352, "G21_over_G1_decode": 1.0054, "G21": {"encode_msamples_s": 24.42, "decode_msamples_s": 78.37}}
+{"input": "Blockchain-tr", "G21_over_G1_encode": 0.831, "G21_over_G1_decode": 1.0183, "G21": {"encode_msamples_s": 21.78, "decode_msamples_s": 112.12}}
+{"input": "POI-lat", "G21_over_G1_encode": 1.0237, "G21_over_G1_decode": 0.9547, "G21": {"encode_msamples_s": 21.19, "decode_msamples_s": 58.0}}
+{"input": "Stocks-USA", "G21_over_G1_encode": 0.7579, "G21_over_G1_decode": 1.0005, "G21": {"encode_msamples_s": 23.17, "decode_msamples_s": 119.91}}
+{"input": "electric_vehicle_charging", "G21_over_G1_encode": 0.9334, "G21_over_G1_decode": 1.1263, "G21": {"encode_msamples_s": 18.78, "decode_msamples_s": 107.21}}
+{"input": "b3-vibration_1", "G21_over_G1_encode": 0.6136, "G21_over_G1_decode": 0.9695, "G21": {"encode_msamples_s": 13.53, "decode_msamples_s": 74.47}}
+{"input": "b3-phase_current_1", "G21_over_G1_encode": 0.5817, "G21_over_G1_decode": 0.6866, "G21": {"encode_msamples_s": 11.43, "decode_msamples_s": 52.75}}
+{"input": "b3-phase_current_2", "G21_over_G1_encode": 0.5812, "G21_over_G1_decode": 0.6769, "G21": {"encode_msamples_s": 11.49, "decode_msamples_s": 52.56}}
+{"input": "b3-force", "G21_over_G1_encode": 0.6703, "G21_over_G1_decode": 1.1311, "G21": {"encode_msamples_s": 12.28, "decode_msamples_s": 81.6}}
+{"input": "b3-speed", "G21_over_G1_encode": 1.0188, "G21_over_G1_decode": 0.9935, "G21": {"encode_msamples_s": 49.29, "decode_msamples_s": 104.29}}
+{"input": "b3-torque", "G21_over_G1_encode": 1.0112, "G21_over_G1_decode": 1.3185, "G21": {"encode_msamples_s": 25.27, "decode_msamples_s": 114.31}}

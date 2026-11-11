@@ -244,3 +244,59 @@ fn foreign_files_are_refused() {
         .to_string()
         .contains("not a MorletDB file"));
 }
+
+/// Study B6: file format 1 never contains a version-5 (Grizzbit 2.1) chunk. The writer keeps Grizzbit 1 even for
+/// samples whose version-5 chunk would be smaller, and a version-5 chunk put into a file is refused on read and by
+/// interval statistics.
+#[test]
+fn file_format_1_never_holds_version5_chunks() {
+    let path = tmp("version5");
+    let mut s = Store::open(&path).unwrap();
+    s.create_recording("r", 1000.0, "x", "", 1.0, "{}").unwrap();
+    // Integer counts of a resonance: Grizzbit 2.1 stores LPC chunks for them.
+    let (mut y1, mut y2, mut seed) = (0.0f64, 0.0f64, 7u64);
+    let x: Vec<f64> = (0..20_000)
+        .map(|_| {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            let e = ((seed >> 33) % 41) as f64 - 20.0;
+            let y = 1.95 * y1 - 0.97 * y2 + e;
+            y2 = y1;
+            y1 = y;
+            y.round()
+        })
+        .collect();
+    let first = &x[..4096];
+    let v5 =
+        morlet_core::rawcodec::encode_with(first, 1.0, morlet_core::rawcodec::Format::Grizzbit21)
+            .unwrap();
+    assert_eq!(v5[0], 5);
+    assert!(v5.len() < morlet_core::rawcodec::encode(first, 1.0).unwrap().len());
+    s.append("r", 0, &x, 4096).unwrap();
+    let versions: Vec<u8> = s
+        .connection()
+        .prepare("SELECT encoded FROM chunks ORDER BY start_sample")
+        .unwrap()
+        .query_map([], |r| r.get::<_, Vec<u8>>(0))
+        .unwrap()
+        .map(|e| e.unwrap()[0])
+        .collect();
+    assert_eq!(versions.len(), 5);
+    assert!(versions.iter().all(|&v| v == 2 || v == 3), "{versions:?}");
+    assert_eq!(bits(&s.read("r", 0, 20_000).unwrap()), bits(&x));
+    // The same samples as a version-5 chunk, written by another program: refused by reads and statistics.
+    s.connection()
+        .execute(
+            "UPDATE chunks SET encoded=?1, summary=NULL WHERE start_sample=0",
+            [&v5],
+        )
+        .unwrap();
+    let err = s.read("r", 0, 100).unwrap_err().to_string();
+    assert!(
+        err.contains("chunk format version 5 is not allowed in file format 1"),
+        "{err}"
+    );
+    assert!(s.interval_stats("r", 0, 100).is_err());
+    assert_eq!(bits(&s.read("r", 4096, 20_000).unwrap()), bits(&x[4096..]));
+}

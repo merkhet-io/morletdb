@@ -50,12 +50,39 @@ Golden coverage:
 - **Version 3 (offset grid):** multiplication mode (EDF-style, with and without added ulp noise, and an exact
   dyadic offset) and division mode (shifted decimals, quarter offset).
 
+## Version 5 (Grizzbit 2.1, opt-in)
+
+Version 5 is the opt-in chunk format Grizzbit 2.1 ([chunk-format.md](chunk-format.md), "Version 5"), which passed
+study B6. What is checked about it:
+
+| Function(s) | Property | How checked | Status |
+|---|---|---|---|
+| `parse_flags` | Accepted exactly when bits 3–7 are zero; gives the offset bit and a correction mode 0..=3 | Kani `version5_flags_are_checked` | **proven** (all 256 bytes) |
+| `kind_of`, `verified` | Version 5 has the grid kind only; every other kind byte under version 5 is refused; version 4 (the unshipped Grizzbit 2) is refused as an unknown version before its checksum is read | Kani `version5_kind_dispatch` | **proven** |
+| `verified` | A version-5 chunk is accepted only if its CRC-32C matches, before any byte of the body is parsed | Kani `version5_checksum_is_checked_first` | **proven** (7-byte chunks) |
+| `positions_from_gaps` | Exception positions from any gaps: no panic or overflow; when accepted, strictly increasing and below n | Kani `exception_positions_are_in_range` | **proven** (3 gaps of any i64, any n; a symbolic count exceeded 20 minutes) |
+| `keep_smaller` | The version-5 candidate replaces Grizzbit 1's bytes only if strictly shorter (a tie keeps Grizzbit 1) | Kani `keep_smaller_keeps_grizzbit1_unless_strictly_smaller` | **proven** (up to 3 bytes each) |
+| LPC coefficients | Every `precision`-bit two's-complement coefficient (precision 1–15) reads back as itself, and any stored bits give a value in range | Kani `coefficient_sign_extension_roundtrips` | **proven** |
+| LPC predictor and its inverse | Decoding adds back exactly the prediction the encoder subtracted, for any history, coefficients of the allowed precision and shift (wrapping on both sides) | Kani `lpc_residuals_invert` | **proven** (order 2, histories of 3 values) |
+| LPC arithmetic against a wide-integer reference | With values below the encoder's 2^40 limit and 15-bit coefficients, the wrapping i64 prediction equals the exact i128 sum shifted right, so no stream the encoder writes ever wraps | Kani `lpc_prediction_matches_wide_reference` | **proven** (order 2, any shift) |
+| Unrolled LPC kernel | On any residuals and coefficients: no panic or overflow check fires, and the decoder restores exactly the values whose residuals the format's definition gives, through the warm-up and the first kernel position | Kani `lpc_kernel_restores_reference_residuals` | **proven** (order 2, 9 values of any i64, coefficients in [−4, 4), any shift; with 15-bit coefficients CBMC exceeded 20 minutes) |
+| `encode_with(.., Grizzbit21)` → `decode` | Bit-exact round trip; the output is Grizzbit 1's bytes unless it is a strictly smaller version-5 chunk; every version-5 chunk, kept or not, round trips | unit tests; 37 edge cases (`tests/grizzbit21_edges.rs`); proptest (2 properties × 500 cases per run); fuzz target `roundtrip` | **tested and fuzzed** |
+| `decode` on version-5 bodies | No panic; any success returns 1–32,768 finite samples within ±1e9 | fuzz `decode_v5` (arbitrary bodies behind a version-5 grid header, sealed); proptest (resealed mutations) | **fuzzed** |
+| Unrolled kernels for all orders 1–32 | Same integers as the format's definition, including values whose sums overflow | unit test `unrolled_lpc_matches_the_definition` (400 cases) | **tested** |
+| Version-5 golden chunks | 8 frozen chunks (`testdata/rawcodec/v5-*`): every correction mode, LPC and fixed predictors, an offset grid, 32,768 samples; they decode bit for bit and the encoder still writes each byte for byte, on every CI platform | `crates/grizzbit/tests/codec_golden.rs` | **tested** |
+
+Not proven: the LPC fit (floating point, encoder only; it only chooses coefficients, and any coefficients
+decode exactly) and the table's first-occurrence numbering (tested against a reference implementation on both
+of its paths).
+
+**B6 build fuzzing (gate 4):** `decode_v5` and `roundtrip` (which runs the keep-the-smaller encoder and the version-5 coder alone), at least 2 CPU-hours each with the nightly workflow's limits and `-O -a`. Figures are in the build record, [evaluation/storage_b6/PROTOCOL.md](../evaluation/storage_b6/PROTOCOL.md), section 9.
+
 ## Tools and runs
 
 | Tool | Version | Use |
 |---|---|---|
-| Kani | 0.68.0 (CBMC 6.11.0, nightly-2026-08-21 as installed by `cargo kani setup`) | proofs, `#[cfg(kani)] mod proofs` in `crates/grizzbit/src/lib.rs` (run from `crates/grizzbit`) |
-| cargo-fuzz | 0.13.2, toolchain nightly-2026-10-11, libfuzzer-sys 0.4.13, arbitrary 1.5.0 | `crates/grizzbit/fuzz/` (codec: `decode_raw`, `decode_sealed`, `roundtrip`); `crates/morlet-core/fuzz/` (transfer frames: `decode_frame`) |
+| Kani | 0.68.0 (CBMC 6.11.0, nightly-2026-08-21 as installed by `cargo kani setup`) | proofs, `#[cfg(kani)] mod proofs` in `crates/grizzbit/src/lib.rs` and `src/g21.rs` (run from `crates/grizzbit`) |
+| cargo-fuzz | 0.13.2, toolchain nightly-2026-10-11, libfuzzer-sys 0.4.13, arbitrary 1.5.0 | `crates/grizzbit/fuzz/` (codec: `decode_raw`, `decode_sealed`, `decode_v5`, `roundtrip`); `crates/morlet-core/fuzz/` (transfer frames: `decode_frame`) |
 | proptest | 1.x (locked in `Cargo.lock`) | `crates/morlet-core/tests/codec_props.rs` |
 
 **Proofs:** CBMC verification time per harness on an Apple M5 Max:
@@ -69,9 +96,19 @@ Golden coverage:
 | `varint_reader_is_total` | 0.8 s |
 | `prediction_residuals_invert` | 8.7 s |
 | `corrections_restore_any_sample` | 0.17 s |
+| `coefficient_sign_extension_roundtrips` (version 5) | 0.19 s |
+| `lpc_residuals_invert` (version 5) | 24.9 s |
+| `version5_flags_are_checked` | 0.06 s |
+| `exception_positions_are_in_range` | 1.8 s |
+| `version5_kind_dispatch` | 0.32 s |
+| `version5_checksum_is_checked_first` | 22.1 s |
+| `keep_smaller_keeps_grizzbit1_unless_strictly_smaller` | 2.9 s |
+| `lpc_prediction_matches_wide_reference` | 13.3 s |
+| `lpc_kernel_restores_reference_residuals` | 255 s |
 
-That is about 12 s in total, plus compilation. All seven run on every pull request that touches
-`morlet-core` (`.github/workflows/verification.yml`).
+That is about 6 minutes in total, plus compilation (the version-5 times were taken while fuzzing ran at low
+priority). All sixteen run on every pull request that touches `grizzbit` or `morlet-core`
+(`.github/workflows/verification.yml`).
 
 **Fuzzing:** the first runs (2026-11-01/02), each roughly an hour of CPU, with debug assertions and overflow
 checks on. None found a crash.

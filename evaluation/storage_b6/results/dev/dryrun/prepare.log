@@ -1,0 +1,15 @@
+{"input": "pad-c-b6", "set": "waveform", "samples": 4194304, "chunks": 1024}
+{"input": "pad-p-b6", "set": "waveform", "samples": 4194304, "chunks": 1024}
+{"input": "femto-dev", "set": "waveform", "samples": 4193280, "chunks": 1024}
+{"input": "xjtu-dev", "set": "waveform", "samples": 4030464, "chunks": 984}
+{"input": "Blockchain-tr", "set": "elf", "samples": 99999, "chunks": 25}
+{"input": "POI-lat", "set": "elf", "samples": 100001, "chunks": 25}
+{"input": "Stocks-USA", "set": "elf", "samples": 100002, "chunks": 25}
+{"input": "electric_vehicle_charging", "set": "elf", "samples": 3395, "chunks": 1}
+{"input": "b3-vibration_1", "set": "b3", "samples": 26709131, "chunks": 6570}
+{"input": "b3-phase_current_1", "set": "b3", "samples": 26709131, "chunks": 6570}
+{"input": "b3-phase_current_2", "set": "b3", "samples": 26709131, "chunks": 6570}
+{"input": "b3-force", "set": "b3", "samples": 1664207, "chunks": 416}
+{"input": "b3-speed", "set": "b3", "samples": 1664207, "chunks": 416}
+{"input": "b3-torque", "set": "b3", "samples": 1664207, "chunks": 416}
+{"inputs": 14, "sets": {"b3": 6, "elf": 4, "waveform": 4}}

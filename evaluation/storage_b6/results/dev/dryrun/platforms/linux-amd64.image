@@ -1,0 +1,1 @@
+{"image": "rust:1.99.0-bookworm", "platform": "linux/amd64", "id": "sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7", "repo_digests": ["rust@sha256:114c7a4425406451c2866b6aafe69fe29b1b298832db1277d411ac73c82d04d6"]}

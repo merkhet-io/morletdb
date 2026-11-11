@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:37:49 after 51 s, load { 2.97 3.67 3.99 }
+-- before
+2026-11-11T19:37:49
+19:37  up 15 days,  4:33, 19 users, load averages: 2.97 3.67 3.99
+Now drawing from 'AC Power'
+ %CPU COMM
+ 40.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 28.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 13.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  8.6 claude
+  8.0 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  6.1 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  5.9 /System/Library/CoreServices/talagentd
+  5.5 /usr/libexec/spotlightknowledged.updater
+-- after (exit 0)
+2026-11-11T19:38:09
+19:38  up 15 days,  4:34, 19 users, load averages: 5.59 4.18 4.16
+Now drawing from 'AC Power'
+ %CPU COMM
+212.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 79.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 36.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  6.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  5.6 claude
+  2.8 claude

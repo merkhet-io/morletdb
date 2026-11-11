@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:53:10 after 67 s, load { 2.83 3.53 3.73 }
+-- before
+2026-11-11T19:53:10
+19:53  up 15 days,  4:49, 19 users, load averages: 2.83 3.53 3.73
+Now drawing from 'AC Power'
+ %CPU COMM
+ 34.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 27.1 /sbin/launchd
+ 21.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 11.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  5.2 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  3.5 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.2 claude
+-- after (exit 0)
+2026-11-11T19:53:29
+19:53  up 15 days,  4:49, 19 users, load averages: 3.29 3.59 3.75
+Now drawing from 'AC Power'
+ %CPU COMM
+213.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 90.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 30.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.0 claude
+  1.9 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /usr/libexec/airportd

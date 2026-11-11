@@ -38,6 +38,8 @@ jobs:
           python-version: '3.12'
       - name: Build the decoder and the embedded edition
         run: cargo build --locked --release -p morlet-ffi -p morlet-sqlite
+      - name: The encoder writes every golden chunk byte for byte on this platform (B6 gate 2, version 5 included)
+        run: cargo test --locked --release -p grizzbit --test codec_golden --test encoder_equivalence
       - name: Platform tag from the built library
         id: tag
         run: |

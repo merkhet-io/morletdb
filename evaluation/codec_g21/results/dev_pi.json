@@ -1,0 +1,3644 @@
+{
+ "chunk": 4096,
+ "reps": 3,
+ "strategies": false,
+ "host": "Raspberry Pi 3B+ (edge reference box of X2), Cortex-A53, aarch64, 1 CPU (docker --cpus 1)",
+ "compared_with": "results/dev.json (Mac)",
+ "size_differences_vs_mac": 0,
+ "rows": [
+  {
+   "name": "N09_M07_F10_K001_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 302166,
+    "bits_per_sample": 9.4427,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.41,
+    "dec_msps": 11.14
+   },
+   "corr": {
+    "bytes": 268580,
+    "bits_per_sample": 8.3931,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.86,
+    "dec_msps": 12.67
+   },
+   "lpc": {
+    "bytes": 301906,
+    "bits_per_sample": 9.4345,
+    "v5_chunks": 45,
+    "v5_samples": 184320,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 45,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 45,
+    "enc_msps": 1.68,
+    "dec_msps": 9.17
+   },
+   "g21": {
+    "bytes": 268350,
+    "bits_per_sample": 8.3859,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 57,
+    "enc_msps": 1.35,
+    "dec_msps": 9.19
+   },
+   "view": "as stored",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:21:27Z load=0.43 0.99 1.03 temp=52.1'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:21:48Z load=1.64 1.23 1.11 temp=54.8'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 262050,
+    "bits_per_sample": 8.189,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.52,
+    "dec_msps": 18.54
+   },
+   "corr": {
+    "bytes": 262050,
+    "bits_per_sample": 8.189,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.51,
+    "dec_msps": 18.54
+   },
+   "lpc": {
+    "bytes": 261790,
+    "bits_per_sample": 8.1809,
+    "v5_chunks": 45,
+    "v5_samples": 184320,
+    "fix_mode": {
+     "none": 45,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 45,
+    "enc_msps": 2.14,
+    "dec_msps": 13.23
+   },
+   "g21": {
+    "bytes": 261790,
+    "bits_per_sample": 8.1809,
+    "v5_chunks": 45,
+    "v5_samples": 184320,
+    "fix_mode": {
+     "none": 45,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 45,
+    "enc_msps": 2.15,
+    "dec_msps": 13.27
+   },
+   "view": "on k*q",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:23:19Z load=0.43 0.93 1.01 temp=50.5'C throttled=0x80000 freq=1000000000",
+    "post": "2026-11-11T06:23:31Z load=0.68 0.96 1.02 temp=53.2'C throttled=0x80000 freq=1399998000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 338671,
+    "bits_per_sample": 10.5834,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 9.8
+   },
+   "corr": {
+    "bytes": 327218,
+    "bits_per_sample": 10.2255,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.73,
+    "dec_msps": 8.75
+   },
+   "lpc": {
+    "bytes": 296839,
+    "bits_per_sample": 9.2762,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.43,
+    "dec_msps": 4.93
+   },
+   "g21": {
+    "bytes": 285386,
+    "bits_per_sample": 8.9183,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.16,
+    "dec_msps": 4.58
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:23:51Z load=0.49 0.90 0.99 temp=50.5'C throttled=0x80000 freq=900000000",
+    "post": "2026-11-11T06:24:01Z load=0.73 0.93 1.00 temp=53.2'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 295242,
+    "bits_per_sample": 9.2263,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.46,
+    "dec_msps": 15.14
+   },
+   "corr": {
+    "bytes": 295242,
+    "bits_per_sample": 9.2263,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.43,
+    "dec_msps": 15.1
+   },
+   "lpc": {
+    "bytes": 253410,
+    "bits_per_sample": 7.919,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.88
+   },
+   "g21": {
+    "bytes": 253410,
+    "bits_per_sample": 7.919,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.88
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:24:31Z load=0.44 0.84 0.97 temp=50.5'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:24:39Z load=1.01 0.95 1.00 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 344656,
+    "bits_per_sample": 10.7705,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.3,
+    "dec_msps": 9.66
+   },
+   "corr": {
+    "bytes": 333078,
+    "bits_per_sample": 10.4086,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.65,
+    "dec_msps": 8.6
+   },
+   "lpc": {
+    "bytes": 284830,
+    "bits_per_sample": 8.9009,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.39,
+    "dec_msps": 4.87
+   },
+   "g21": {
+    "bytes": 273252,
+    "bits_per_sample": 8.5391,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.14,
+    "dec_msps": 4.52
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:25:29Z load=0.43 0.80 0.95 temp=51.0'C throttled=0x80000 freq=1000000000",
+    "post": "2026-11-11T06:25:38Z load=0.56 0.82 0.96 temp=55.8'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 301144,
+    "bits_per_sample": 9.4107,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.44,
+    "dec_msps": 15.0
+   },
+   "corr": {
+    "bytes": 301144,
+    "bits_per_sample": 9.4107,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.42,
+    "dec_msps": 14.98
+   },
+   "lpc": {
+    "bytes": 241318,
+    "bits_per_sample": 7.5412,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.83
+   },
+   "g21": {
+    "bytes": 241318,
+    "bits_per_sample": 7.5412,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.76,
+    "dec_msps": 5.82
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:26:38Z load=0.46 0.76 0.93 temp=51.5'C throttled=0x80000 freq=1000000000",
+    "post": "2026-11-11T06:26:46Z load=0.51 0.76 0.93 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17852,
+    "bits_per_sample": 8.9254,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.61,
+    "dec_msps": 9.46
+   },
+   "corr": {
+    "bytes": 15443,
+    "bits_per_sample": 7.721,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.29,
+    "dec_msps": 10.36
+   },
+   "lpc": {
+    "bytes": 17852,
+    "bits_per_sample": 8.9254,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.29,
+    "dec_msps": 9.45
+   },
+   "g21": {
+    "bytes": 15443,
+    "bits_per_sample": 7.721,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.08,
+    "dec_msps": 10.29
+   },
+   "view": "as stored",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:26:56Z load=0.43 0.74 0.92 temp=52.1'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:27:02Z load=0.47 0.74 0.92 temp=53.7'C throttled=0x80000 freq=1400002000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_K001_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.42,
+    "dec_msps": 15.33
+   },
+   "corr": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.43,
+    "dec_msps": 15.38
+   },
+   "lpc": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.19,
+    "dec_msps": 15.3
+   },
+   "g21": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.19,
+    "dec_msps": 15.38
+   },
+   "view": "on k*q",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:27:02Z load=0.47 0.74 0.92 temp=53.7'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:27:07Z load=0.52 0.75 0.92 temp=54.2'C throttled=0x80000 freq=1399998000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 306970,
+    "bits_per_sample": 9.5928,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.41,
+    "dec_msps": 10.0
+   },
+   "corr": {
+    "bytes": 271563,
+    "bits_per_sample": 8.4863,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.82,
+    "dec_msps": 11.03
+   },
+   "lpc": {
+    "bytes": 294938,
+    "bits_per_sample": 9.2168,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.44,
+    "dec_msps": 4.96
+   },
+   "g21": {
+    "bytes": 259531,
+    "bits_per_sample": 8.1103,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.21,
+    "dec_msps": 5.12
+   },
+   "view": "as stored",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:27:17Z load=0.44 0.72 0.91 temp=52.6'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:27:26Z load=0.75 0.78 0.92 temp=54.8'C throttled=0x80000 freq=1399998000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 263388,
+    "bits_per_sample": 8.2308,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.48,
+    "dec_msps": 15.53
+   },
+   "corr": {
+    "bytes": 263388,
+    "bits_per_sample": 8.2308,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.47,
+    "dec_msps": 15.53
+   },
+   "lpc": {
+    "bytes": 251356,
+    "bits_per_sample": 7.8548,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.78,
+    "dec_msps": 5.91
+   },
+   "g21": {
+    "bytes": 251356,
+    "bits_per_sample": 7.8548,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.78,
+    "dec_msps": 5.92
+   },
+   "view": "on k*q",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:27:56Z load=0.45 0.70 0.89 temp=51.5'C throttled=0x80000 freq=1400002000",
+    "post": "2026-11-11T06:28:04Z load=0.78 0.77 0.91 temp=54.2'C throttled=0x80000 freq=1400002000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 336546,
+    "bits_per_sample": 10.517,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 9.75
+   },
+   "corr": {
+    "bytes": 319810,
+    "bits_per_sample": 9.994,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.74,
+    "dec_msps": 9.07
+   },
+   "lpc": {
+    "bytes": 282987,
+    "bits_per_sample": 8.8433,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.44,
+    "dec_msps": 4.95
+   },
+   "g21": {
+    "bytes": 266251,
+    "bits_per_sample": 8.3203,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.18,
+    "dec_msps": 4.7
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:28:34Z load=0.47 0.69 0.88 temp=51.5'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:28:42Z load=0.51 0.70 0.88 temp=54.2'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 293313,
+    "bits_per_sample": 9.166,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 14.98
+   },
+   "corr": {
+    "bytes": 293313,
+    "bits_per_sample": 9.166,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.43,
+    "dec_msps": 14.97
+   },
+   "lpc": {
+    "bytes": 239754,
+    "bits_per_sample": 7.4923,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.88
+   },
+   "g21": {
+    "bytes": 239754,
+    "bits_per_sample": 7.4923,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.9
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:28:52Z load=0.43 0.67 0.87 temp=52.1'C throttled=0x80000 freq=1000000000",
+    "post": "2026-11-11T06:29:00Z load=0.74 0.73 0.89 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 339757,
+    "bits_per_sample": 10.6174,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.38,
+    "dec_msps": 9.75
+   },
+   "corr": {
+    "bytes": 323145,
+    "bits_per_sample": 10.0982,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.74,
+    "dec_msps": 9.04
+   },
+   "lpc": {
+    "bytes": 283657,
+    "bits_per_sample": 8.8642,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.44,
+    "dec_msps": 4.94
+   },
+   "g21": {
+    "bytes": 267045,
+    "bits_per_sample": 8.3451,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.18,
+    "dec_msps": 4.67
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:29:30Z load=0.45 0.66 0.86 temp=50.5'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:29:40Z load=1.01 0.77 0.90 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 296386,
+    "bits_per_sample": 9.262,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 14.93
+   },
+   "corr": {
+    "bytes": 296386,
+    "bits_per_sample": 9.262,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.43,
+    "dec_msps": 14.98
+   },
+   "lpc": {
+    "bytes": 240286,
+    "bits_per_sample": 7.5089,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.9
+   },
+   "g21": {
+    "bytes": 240286,
+    "bits_per_sample": 7.5089,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.9
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:30:31Z load=0.44 0.65 0.85 temp=50.5'C throttled=0x80000 freq=1000000000",
+    "post": "2026-11-11T06:30:46Z load=0.70 0.70 0.86 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17840,
+    "bits_per_sample": 8.9194,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.63,
+    "dec_msps": 9.51
+   },
+   "corr": {
+    "bytes": 15502,
+    "bits_per_sample": 7.7505,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.31,
+    "dec_msps": 10.89
+   },
+   "lpc": {
+    "bytes": 17840,
+    "bits_per_sample": 8.9194,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.25,
+    "dec_msps": 9.49
+   },
+   "g21": {
+    "bytes": 15502,
+    "bits_per_sample": 7.7505,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.06,
+    "dec_msps": 10.86
+   },
+   "view": "as stored",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:31:16Z load=0.42 0.63 0.83 temp=50.5'C throttled=0x80000 freq=700000000",
+    "post": "2026-11-11T06:31:22Z load=0.47 0.64 0.83 temp=52.6'C throttled=0x80000 freq=900000000"
+   }
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.44,
+    "dec_msps": 15.64
+   },
+   "corr": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.46,
+    "dec_msps": 15.68
+   },
+   "lpc": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.12,
+    "dec_msps": 15.67
+   },
+   "g21": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.12,
+    "dec_msps": 15.66
+   },
+   "view": "on k*q",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:31:22Z load=0.47 0.64 0.83 temp=52.6'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:31:26Z load=0.51 0.65 0.83 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 299869,
+    "bits_per_sample": 9.3709,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 10.03
+   },
+   "corr": {
+    "bytes": 262430,
+    "bits_per_sample": 8.2009,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.84,
+    "dec_msps": 11.47
+   },
+   "lpc": {
+    "bytes": 294729,
+    "bits_per_sample": 9.2102,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.49,
+    "dec_msps": 5.49
+   },
+   "g21": {
+    "bytes": 257290,
+    "bits_per_sample": 8.0403,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.26,
+    "dec_msps": 5.78
+   },
+   "view": "as stored",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:31:37Z load=0.43 0.62 0.82 temp=52.1'C throttled=0x80000 freq=900000000",
+    "post": "2026-11-11T06:31:49Z load=0.91 0.72 0.85 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 257439,
+    "bits_per_sample": 8.0449,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.46,
+    "dec_msps": 15.67
+   },
+   "corr": {
+    "bytes": 257439,
+    "bits_per_sample": 8.0449,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.46,
+    "dec_msps": 15.63
+   },
+   "lpc": {
+    "bytes": 252299,
+    "bits_per_sample": 7.8843,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.85,
+    "dec_msps": 6.69
+   },
+   "g21": {
+    "bytes": 252299,
+    "bits_per_sample": 7.8843,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.85,
+    "dec_msps": 6.69
+   },
+   "view": "on k*q",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:32:40Z load=0.43 0.63 0.81 temp=50.5'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:32:55Z load=0.90 0.72 0.84 temp=52.6'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 338242,
+    "bits_per_sample": 10.57,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.38,
+    "dec_msps": 9.78
+   },
+   "corr": {
+    "bytes": 327114,
+    "bits_per_sample": 10.2223,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.71,
+    "dec_msps": 8.64
+   },
+   "lpc": {
+    "bytes": 291025,
+    "bits_per_sample": 9.0945,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.44,
+    "dec_msps": 4.95
+   },
+   "g21": {
+    "bytes": 279897,
+    "bits_per_sample": 8.7467,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.17,
+    "dec_msps": 4.59
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:33:56Z load=0.44 0.63 0.80 temp=50.5'C throttled=0x80000 freq=1399998000",
+    "post": "2026-11-11T06:34:08Z load=0.60 0.66 0.81 temp=52.6'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 294918,
+    "bits_per_sample": 9.2162,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 15.02
+   },
+   "corr": {
+    "bytes": 294918,
+    "bits_per_sample": 9.2162,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 15.01
+   },
+   "lpc": {
+    "bytes": 247701,
+    "bits_per_sample": 7.7406,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.92
+   },
+   "g21": {
+    "bytes": 247701,
+    "bits_per_sample": 7.7406,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.92
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:34:28Z load=0.43 0.62 0.79 temp=50.5'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:34:44Z load=0.96 0.73 0.83 temp=53.2'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 343964,
+    "bits_per_sample": 10.7488,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.38,
+    "dec_msps": 9.75
+   },
+   "corr": {
+    "bytes": 332694,
+    "bits_per_sample": 10.3966,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.71,
+    "dec_msps": 8.63
+   },
+   "lpc": {
+    "bytes": 291463,
+    "bits_per_sample": 9.1082,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.43,
+    "dec_msps": 4.95
+   },
+   "g21": {
+    "bytes": 280193,
+    "bits_per_sample": 8.756,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.16,
+    "dec_msps": 4.58
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:35:25Z load=0.49 0.63 0.79 temp=50.5'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:35:42Z load=1.57 0.86 0.86 temp=52.1'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 300540,
+    "bits_per_sample": 9.3918,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.43,
+    "dec_msps": 14.94
+   },
+   "corr": {
+    "bytes": 300540,
+    "bits_per_sample": 9.3918,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.44,
+    "dec_msps": 14.97
+   },
+   "lpc": {
+    "bytes": 248039,
+    "bits_per_sample": 7.7512,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.76,
+    "dec_msps": 5.9
+   },
+   "g21": {
+    "bytes": 248039,
+    "bits_per_sample": 7.7512,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.76,
+    "dec_msps": 5.9
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:37:03Z load=0.49 0.70 0.80 temp=50.5'C throttled=0x80000 freq=900000000",
+    "post": "2026-11-11T06:37:20Z load=1.15 0.83 0.85 temp=52.6'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.30517578104820586,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17871,
+    "bits_per_sample": 8.9349,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.66,
+    "dec_msps": 9.86
+   },
+   "corr": {
+    "bytes": 15285,
+    "bits_per_sample": 7.642,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.33,
+    "dec_msps": 10.86
+   },
+   "lpc": {
+    "bytes": 17871,
+    "bits_per_sample": 8.9349,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.3,
+    "dec_msps": 9.95
+   },
+   "g21": {
+    "bytes": 15285,
+    "bits_per_sample": 7.642,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.1,
+    "dec_msps": 10.89
+   },
+   "view": "as stored",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:38:21Z load=0.47 0.69 0.80 temp=49.9'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:38:28Z load=0.51 0.70 0.80 temp=50.5'C throttled=0x80000 freq=900000000"
+   }
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.30517578104820586,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.44,
+    "dec_msps": 15.47
+   },
+   "corr": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.38,
+    "dec_msps": 15.44
+   },
+   "lpc": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.2,
+    "dec_msps": 15.42
+   },
+   "g21": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.22,
+    "dec_msps": 15.23
+   },
+   "view": "on k*q",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:38:38Z load=0.43 0.68 0.79 temp=50.5'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:38:46Z load=0.91 0.77 0.82 temp=51.5'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.vibration_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 352100,
+    "bits_per_sample": 10.9986,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 10.0
+   },
+   "corr": {
+    "bytes": 320385,
+    "bits_per_sample": 10.0079,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.78,
+    "dec_msps": 10.49
+   },
+   "lpc": {
+    "bytes": 345929,
+    "bits_per_sample": 10.8058,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.46,
+    "dec_msps": 5.12
+   },
+   "g21": {
+    "bytes": 314214,
+    "bits_per_sample": 9.8151,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.21,
+    "dec_msps": 5.16
+   },
+   "view": "as stored",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:39:46Z load=0.47 0.67 0.78 temp=49.9'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:40:03Z load=1.27 0.84 0.83 temp=51.5'C throttled=0x80000 freq=900000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.vibration_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 307016,
+    "bits_per_sample": 9.5903,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.39,
+    "dec_msps": 15.44
+   },
+   "corr": {
+    "bytes": 307016,
+    "bits_per_sample": 9.5903,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.42,
+    "dec_msps": 15.29
+   },
+   "lpc": {
+    "bytes": 300845,
+    "bits_per_sample": 9.3975,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.74,
+    "dec_msps": 6.09
+   },
+   "g21": {
+    "bytes": 300845,
+    "bits_per_sample": 9.3975,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.74,
+    "dec_msps": 5.99
+   },
+   "view": "on k*q",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:41:04Z load=0.47 0.68 0.78 temp=49.4'C throttled=0x80000 freq=1000000000",
+    "post": "2026-11-11T06:41:19Z load=1.63 0.93 0.86 temp=54.2'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 340880,
+    "bits_per_sample": 10.6481,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 9.87
+   },
+   "corr": {
+    "bytes": 329608,
+    "bits_per_sample": 10.296,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.72,
+    "dec_msps": 8.72
+   },
+   "lpc": {
+    "bytes": 298778,
+    "bits_per_sample": 9.3329,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.44,
+    "dec_msps": 4.95
+   },
+   "g21": {
+    "bytes": 287506,
+    "bits_per_sample": 8.9808,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.17,
+    "dec_msps": 4.58
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:42:40Z load=0.47 0.74 0.80 temp=49.9'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:42:59Z load=1.24 0.90 0.85 temp=51.5'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 297453,
+    "bits_per_sample": 9.2916,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.46,
+    "dec_msps": 15.24
+   },
+   "corr": {
+    "bytes": 297453,
+    "bits_per_sample": 9.2916,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.47,
+    "dec_msps": 15.24
+   },
+   "lpc": {
+    "bytes": 255351,
+    "bits_per_sample": 7.9764,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.78,
+    "dec_msps": 5.9
+   },
+   "g21": {
+    "bytes": 255351,
+    "bits_per_sample": 7.9764,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.78,
+    "dec_msps": 5.91
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:43:59Z load=0.49 0.75 0.80 temp=49.9'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:44:17Z load=0.98 0.84 0.83 temp=51.5'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_2",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 344772,
+    "bits_per_sample": 10.7697,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 9.78
+   },
+   "corr": {
+    "bytes": 333518,
+    "bits_per_sample": 10.4181,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.72,
+    "dec_msps": 8.66
+   },
+   "lpc": {
+    "bytes": 287972,
+    "bits_per_sample": 8.9954,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.44,
+    "dec_msps": 4.95
+   },
+   "g21": {
+    "bytes": 276718,
+    "bits_per_sample": 8.6439,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.17,
+    "dec_msps": 4.58
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:45:07Z load=0.48 0.72 0.79 temp=49.4'C throttled=0x80000 freq=900000000",
+    "post": "2026-11-11T06:45:15Z load=0.64 0.75 0.80 temp=52.1'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_2",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 301253,
+    "bits_per_sample": 9.4103,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.46,
+    "dec_msps": 15.01
+   },
+   "corr": {
+    "bytes": 301253,
+    "bits_per_sample": 9.4103,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.41,
+    "dec_msps": 15.02
+   },
+   "lpc": {
+    "bytes": 244453,
+    "bits_per_sample": 7.636,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.76,
+    "dec_msps": 5.91
+   },
+   "g21": {
+    "bytes": 244453,
+    "bits_per_sample": 7.636,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.91
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:45:36Z load=0.46 0.70 0.78 temp=49.9'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:45:55Z load=1.60 0.95 0.86 temp=50.5'C throttled=0x80000 freq=1000000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.force",
+   "n": 16006,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 20023,
+    "bits_per_sample": 10.0077,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.62,
+    "dec_msps": 10.01
+   },
+   "corr": {
+    "bytes": 18232,
+    "bits_per_sample": 9.1126,
+    "v5_chunks": 4,
+    "v5_samples": 16006,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.31,
+    "dec_msps": 10.07
+   },
+   "lpc": {
+    "bytes": 20023,
+    "bits_per_sample": 10.0077,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.24,
+    "dec_msps": 10.01
+   },
+   "g21": {
+    "bytes": 18232,
+    "bits_per_sample": 9.1126,
+    "v5_chunks": 4,
+    "v5_samples": 16006,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.06,
+    "dec_msps": 10.04
+   },
+   "view": "as stored",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:47:16Z load=0.42 0.72 0.79 temp=48.9'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:47:22Z load=0.47 0.73 0.79 temp=51.5'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.force",
+   "n": 16006,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.47,
+    "dec_msps": 15.54
+   },
+   "corr": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 15.6
+   },
+   "lpc": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.11,
+    "dec_msps": 15.47
+   },
+   "g21": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.11,
+    "dec_msps": 15.56
+   },
+   "view": "on k*q",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:47:22Z load=0.47 0.73 0.79 temp=51.0'C throttled=0x80000 freq=1399998000",
+    "post": "2026-11-11T06:47:30Z load=1.03 0.84 0.82 temp=50.5'C throttled=0x80000 freq=1000000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 283198,
+    "bits_per_sample": 8.8499,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.41,
+    "dec_msps": 9.99
+   },
+   "corr": {
+    "bytes": 247025,
+    "bits_per_sample": 7.7195,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.86,
+    "dec_msps": 11.5
+   },
+   "lpc": {
+    "bytes": 280527,
+    "bits_per_sample": 8.7664,
+    "v5_chunks": 53,
+    "v5_samples": 215041,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 53,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 53,
+    "enc_msps": 1.66,
+    "dec_msps": 8.17
+   },
+   "g21": {
+    "bytes": 244355,
+    "bits_per_sample": 7.6361,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 54,
+    "enc_msps": 1.38,
+    "dec_msps": 8.93
+   },
+   "view": "as stored",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:48:21Z load=0.45 0.70 0.78 temp=49.4'C throttled=0x80000 freq=900000000",
+    "post": "2026-11-11T06:48:28Z load=0.49 0.71 0.78 temp=52.1'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 242949,
+    "bits_per_sample": 7.5921,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.48,
+    "dec_msps": 15.5
+   },
+   "corr": {
+    "bytes": 242949,
+    "bits_per_sample": 7.5921,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.48,
+    "dec_msps": 15.51
+   },
+   "lpc": {
+    "bytes": 240278,
+    "bits_per_sample": 7.5087,
+    "v5_chunks": 53,
+    "v5_samples": 215041,
+    "fix_mode": {
+     "none": 53,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 53,
+    "enc_msps": 2.11,
+    "dec_msps": 11.2
+   },
+   "g21": {
+    "bytes": 240278,
+    "bits_per_sample": 7.5087,
+    "v5_chunks": 53,
+    "v5_samples": 215041,
+    "fix_mode": {
+     "none": 53,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 53,
+    "enc_msps": 2.1,
+    "dec_msps": 11.21
+   },
+   "view": "on k*q",
+   "group": "vibration",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:48:28Z load=0.49 0.71 0.78 temp=52.1'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:48:37Z load=0.94 0.80 0.81 temp=52.1'C throttled=0x80000 freq=1000000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 336347,
+    "bits_per_sample": 10.5108,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 9.73
+   },
+   "corr": {
+    "bytes": 325086,
+    "bits_per_sample": 10.1589,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.72,
+    "dec_msps": 8.67
+   },
+   "lpc": {
+    "bytes": 289998,
+    "bits_per_sample": 9.0624,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.4,
+    "dec_msps": 4.93
+   },
+   "g21": {
+    "bytes": 278737,
+    "bits_per_sample": 8.7105,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.17,
+    "dec_msps": 4.58
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:49:17Z load=0.48 0.70 0.77 temp=49.4'C throttled=0x80000 freq=1400002000",
+    "post": "2026-11-11T06:49:25Z load=0.79 0.76 0.79 temp=52.6'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 293063,
+    "bits_per_sample": 9.1582,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 14.95
+   },
+   "corr": {
+    "bytes": 293063,
+    "bits_per_sample": 9.1582,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 14.94
+   },
+   "lpc": {
+    "bytes": 246714,
+    "bits_per_sample": 7.7098,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.89
+   },
+   "g21": {
+    "bytes": 246714,
+    "bits_per_sample": 7.7098,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.89
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:49:56Z load=0.48 0.68 0.77 temp=49.4'C throttled=0x80000 freq=700000000",
+    "post": "2026-11-11T06:50:03Z load=0.52 0.69 0.77 temp=51.5'C throttled=0x80000 freq=1400002000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 344512,
+    "bits_per_sample": 10.766,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.39,
+    "dec_msps": 9.76
+   },
+   "corr": {
+    "bytes": 333226,
+    "bits_per_sample": 10.4133,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.72,
+    "dec_msps": 8.68
+   },
+   "lpc": {
+    "bytes": 294034,
+    "bits_per_sample": 9.1885,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.44,
+    "dec_msps": 4.92
+   },
+   "g21": {
+    "bytes": 282748,
+    "bits_per_sample": 8.8358,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.17,
+    "dec_msps": 4.57
+   },
+   "view": "as stored",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:50:13Z load=0.44 0.67 0.76 temp=49.4'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:50:22Z load=0.60 0.69 0.77 temp=52.1'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 301050,
+    "bits_per_sample": 9.4078,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 14.95
+   },
+   "corr": {
+    "bytes": 301050,
+    "bits_per_sample": 9.4078,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.45,
+    "dec_msps": 14.97
+   },
+   "lpc": {
+    "bytes": 250572,
+    "bits_per_sample": 7.8303,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.77,
+    "dec_msps": 5.89
+   },
+   "g21": {
+    "bytes": 250572,
+    "bits_per_sample": 7.8303,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 1.76,
+    "dec_msps": 5.88
+   },
+   "view": "on k*q",
+   "group": "phase currents",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:50:42Z load=0.43 0.65 0.75 temp=49.4'C throttled=0x80000 freq=900000000",
+    "post": "2026-11-11T06:50:50Z load=0.60 0.68 0.76 temp=52.6'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 16830,
+    "bits_per_sample": 8.4145,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.65,
+    "dec_msps": 9.15
+   },
+   "corr": {
+    "bytes": 14559,
+    "bits_per_sample": 7.279,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.36,
+    "dec_msps": 10.78
+   },
+   "lpc": {
+    "bytes": 16830,
+    "bits_per_sample": 8.4145,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.29,
+    "dec_msps": 9.13
+   },
+   "g21": {
+    "bytes": 14559,
+    "bits_per_sample": 7.279,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.11,
+    "dec_msps": 10.7
+   },
+   "view": "as stored",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:51:10Z load=0.43 0.63 0.74 temp=49.9'C throttled=0x80000 freq=900000000",
+    "post": "2026-11-11T06:51:15Z load=0.79 0.70 0.76 temp=51.5'C throttled=0x80000 freq=1000000000"
+   }
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.42,
+    "dec_msps": 15.14
+   },
+   "corr": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.42,
+    "dec_msps": 15.24
+   },
+   "lpc": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.15,
+    "dec_msps": 15.2
+   },
+   "g21": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.16,
+    "dec_msps": 15.2
+   },
+   "view": "on k*q",
+   "group": "force",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:51:45Z load=0.48 0.64 0.74 temp=49.4'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:51:50Z load=0.60 0.66 0.74 temp=52.1'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "FEMTO.B1_1.horiz",
+   "n": 4193280,
+   "chunk": 4096,
+   "chunks": 1024,
+   "quantum": 0.001,
+   "g1_kinds": {
+    "grid": 1024,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 5584507,
+    "bits_per_sample": 10.6542,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.67,
+    "dec_msps": 10.91
+   },
+   "corr": {
+    "bytes": 5516358,
+    "bits_per_sample": 10.5242,
+    "v5_chunks": 896,
+    "v5_samples": 3668992,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 896
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.51,
+    "dec_msps": 15.61
+   },
+   "lpc": {
+    "bytes": 5357792,
+    "bits_per_sample": 10.2217,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 128,
+     "per_sample": 896,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 1.65,
+    "dec_msps": 6.11
+   },
+   "g21": {
+    "bytes": 5289643,
+    "bits_per_sample": 10.0917,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 128,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 896
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 1.59,
+    "dec_msps": 7.85
+   },
+   "view": "as stored",
+   "group": "femto",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:52:11Z load=0.43 0.62 0.73 temp=49.9'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:52:58Z load=0.73 0.67 0.74 temp=54.8'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "FEMTO.B1_1.horiz",
+   "n": 4193280,
+   "chunk": 4096,
+   "chunks": 1024,
+   "quantum": 0.001,
+   "g1_kinds": {
+    "grid": 1024,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 5506161,
+    "bits_per_sample": 10.5047,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.89,
+    "dec_msps": 15.72
+   },
+   "corr": {
+    "bytes": 5506161,
+    "bits_per_sample": 10.5047,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 3.88,
+    "dec_msps": 15.74
+   },
+   "lpc": {
+    "bytes": 5279446,
+    "bits_per_sample": 10.0722,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 1024,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 2.05,
+    "dec_msps": 7.87
+   },
+   "g21": {
+    "bytes": 5279446,
+    "bits_per_sample": 10.0722,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 1024,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 2.05,
+    "dec_msps": 7.87
+   },
+   "view": "on k*q",
+   "group": "femto",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:53:29Z load=0.44 0.61 0.71 temp=51.0'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:54:07Z load=0.85 0.70 0.74 temp=54.8'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "Blockchain-tr",
+   "n": 99999,
+   "chunk": 4096,
+   "chunks": 25,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 25,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.56,
+    "dec_msps": 14.76
+   },
+   "corr": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.54,
+    "dec_msps": 14.8
+   },
+   "lpc": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.77,
+    "dec_msps": 14.73
+   },
+   "g21": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.77,
+    "dec_msps": 14.78
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:54:48Z load=0.43 0.61 0.71 temp=50.5'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:54:53Z load=0.48 0.62 0.71 temp=53.2'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "POI-lat",
+   "n": 100001,
+   "chunk": 4096,
+   "chunks": 25,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 0,
+    "float": 25,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.64,
+    "dec_msps": 7.42
+   },
+   "corr": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.64,
+    "dec_msps": 7.44
+   },
+   "lpc": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.64,
+    "dec_msps": 7.44
+   },
+   "g21": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.64,
+    "dec_msps": 7.45
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:54:53Z load=0.48 0.62 0.71 temp=53.7'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:54:59Z load=0.68 0.66 0.72 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  },
+  {
+   "name": "Stocks-USA",
+   "n": 100002,
+   "chunk": 4096,
+   "chunks": 25,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 25,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.78,
+    "dec_msps": 15.85
+   },
+   "corr": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.77,
+    "dec_msps": 15.87
+   },
+   "lpc": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.85,
+    "dec_msps": 15.85
+   },
+   "g21": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 1.85,
+    "dec_msps": 15.88
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:55:19Z load=0.49 0.61 0.71 temp=51.0'C throttled=0x80000 freq=1400000000",
+    "post": "2026-11-11T06:55:25Z load=0.95 0.71 0.74 temp=53.2'C throttled=0x80000 freq=1000000000"
+   }
+  },
+  {
+   "name": "electric_vehicle_charging",
+   "n": 3395,
+   "chunk": 4096,
+   "chunks": 1,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 1,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 4257,
+    "bits_per_sample": 10.0312,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.52,
+    "dec_msps": 14.99
+   },
+   "corr": {
+    "bytes": 4257,
+    "bits_per_sample": 10.0312,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 2.54,
+    "dec_msps": 14.73
+   },
+   "lpc": {
+    "bytes": 4159,
+    "bits_per_sample": 9.8003,
+    "v5_chunks": 1,
+    "v5_samples": 3395,
+    "fix_mode": {
+     "none": 1,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1,
+    "enc_msps": 1.65,
+    "dec_msps": 11.34
+   },
+   "g21": {
+    "bytes": 4159,
+    "bits_per_sample": 9.8003,
+    "v5_chunks": 1,
+    "v5_samples": 3395,
+    "fix_mode": {
+     "none": 1,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1,
+    "enc_msps": 1.69,
+    "dec_msps": 11.41
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)",
+   "pi_status": {
+    "rc": "rc=0",
+    "pre": "2026-11-11T06:56:15Z load=0.46 0.61 0.70 temp=49.4'C throttled=0x80000 freq=800000000",
+    "post": "2026-11-11T06:56:21Z load=0.82 0.69 0.73 temp=53.7'C throttled=0x80000 freq=1400000000"
+   }
+  }
+ ]
+}

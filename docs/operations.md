@@ -46,6 +46,7 @@ this page are from PostgreSQL 17.
 | `maintenance_work_mem` | 2–4 GB for the session that runs `morlet_enable_envelope_probes` or rebuilds the probe index | with 64 MB the HNSW build for 235 k windows took ~25 min instead of ~1 min; 939 k windows took 4.6 min with 4 GB |
 | `max_parallel_workers_per_gather` | default (2) or higher | exact search runs as one parallel statement |
 | `shared_buffers`, `max_wal_size`, `checkpoint_timeout`, `wal_compression` | tested together: 8 GB, 16 GB, 15 min, on (pglz) | with defaults, 15 min of target ingest wrote 13.8 GB of WAL for 0.76 GB of growth; with these four settings, 1.91 GB for 0.65 GB (15 min) and 11.96 GB for 4.68 GB (111 min). They were changed together, so no single setting is credited |
+| `morlet.chunk_format` | default `grizzbit1`; `grizzbit21` to opt in to Grizzbit 2.1 (chunk format version 5) | study B6: waveforms 12.6% smaller in total and B3's machine channels up to 20% smaller, ingest about 5% slower with more server CPU, decode down to 53 M samples/s per thread. Releases up to 0.3.11-alpha.1 cannot read version-5 chunks, so a downgrade needs them re-appended ([how to use it](grizzbit.md#using-grizzbit-21)) |
 | WAL archiving / disk | with the settings above, about 6.5 GB of WAL per hour at the tested rate (about 2.6× the database growth); with defaults, about 55 GB per hour | as above |
 
 ## Ingest and maintenance

@@ -4,7 +4,10 @@
 #![no_main]
 use arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use grizzbit::{decode, encode, CodecError, MAX_AMPLITUDE, MAX_SAMPLES};
+use grizzbit::{
+    decode, encode, encode_version5, encode_with, CodecError, Format, GRIZZBIT21_VERSION,
+    MAX_AMPLITUDE, MAX_SAMPLES,
+};
 mod common;
 
 #[derive(Debug)]
@@ -97,6 +100,28 @@ fuzz_target!(|c: Chunk| {
             assert_eq!(back.len(), c.samples.len());
             for (a, b) in back.iter().zip(&c.samples) {
                 assert_eq!(a.to_bits(), b.to_bits());
+            }
+            // Grizzbit 2.1 (study B6 build): exact too, never larger, and Grizzbit 1 byte for byte unless it
+            // writes a strictly smaller version-5 chunk.
+            let g21 = encode_with(&c.samples, c.quantum, Format::Grizzbit21).expect("encodes");
+            if g21[0] == GRIZZBIT21_VERSION {
+                assert!(g21.len() < bytes.len());
+            } else {
+                assert_eq!(g21, bytes);
+            }
+            let back = decode(&g21).expect("decodes");
+            assert_eq!(back.len(), c.samples.len());
+            for (a, b) in back.iter().zip(&c.samples) {
+                assert_eq!(a.to_bits(), b.to_bits());
+            }
+            // The version-5 coder alone, kept or not, decodes bit for bit too.
+            if let Some(v5) = encode_version5(&c.samples, c.quantum).expect("encodes") {
+                assert_eq!(v5[0], GRIZZBIT21_VERSION);
+                let back = decode(&v5).expect("decodes");
+                assert_eq!(back.len(), c.samples.len());
+                for (a, b) in back.iter().zip(&c.samples) {
+                    assert_eq!(a.to_bits(), b.to_bits());
+                }
             }
         }
         Err(CodecError::InvalidQuantum) => assert!(valid_samples && !valid_quantum),

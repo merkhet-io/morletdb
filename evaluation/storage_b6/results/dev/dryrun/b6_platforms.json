@@ -1,0 +1,234 @@
+{
+ "study": "B6 platforms (PROTOCOL.md section 4B)",
+ "set": "dev",
+ "written": "2026-11-11T12:54:20",
+ "platforms": [
+  "linux-amd64",
+  "linux-arm64",
+  "macos-arm64"
+ ],
+ "platform_status": {
+  "linux-amd64": "ok: 14 inputs, rust:1.99.0-bookworm sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7, b6codec 92629626af343fe3c10b7ea91b16f7b8bc9837d078088e0b4375bc564c68136d",
+  "linux-arm64": "ok: 14 inputs, rust:1.99.0-bookworm sha256:e393e07b3c3c39f238de676b0eb60c03dc7aefe5d6e37be6d29c686bf4d7e256, b6codec b773dc8d3c38dd5b0cc318f10bc52cec53b107ee72311455ec143c943ca0a67d",
+  "macos-arm64": "ok: 14 inputs, b6codec 31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f, Darwin arm64"
+ },
+ "complete": {
+  "linux-amd64": [],
+  "linux-arm64": [],
+  "macos-arm64": []
+ },
+ "inputs": [
+  {
+   "input": "pad-c-b6",
+   "set": "waveform",
+   "sha256": {
+    "linux-amd64": "c71294f663770f644495e8906329a593e7ce31c92a50e7e2acd80c96d0872653",
+    "linux-arm64": "c71294f663770f644495e8906329a593e7ce31c92a50e7e2acd80c96d0872653",
+    "macos-arm64": "c71294f663770f644495e8906329a593e7ce31c92a50e7e2acd80c96d0872653"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 3977674,
+    "linux-arm64": 3977674,
+    "macos-arm64": 3977674
+   }
+  },
+  {
+   "input": "pad-p-b6",
+   "set": "waveform",
+   "sha256": {
+    "linux-amd64": "b74e6c7cd7417a544ca1062029a309625f49edff39d466fbaaaadb4d207f7d62",
+    "linux-arm64": "b74e6c7cd7417a544ca1062029a309625f49edff39d466fbaaaadb4d207f7d62",
+    "macos-arm64": "b74e6c7cd7417a544ca1062029a309625f49edff39d466fbaaaadb4d207f7d62"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 4056080,
+    "linux-arm64": 4056080,
+    "macos-arm64": 4056080
+   }
+  },
+  {
+   "input": "femto-dev",
+   "set": "waveform",
+   "sha256": {
+    "linux-amd64": "a00b93c59396bed619497b27bc296251c9120c30de58fdd9ed3e1d4c36d17576",
+    "linux-arm64": "a00b93c59396bed619497b27bc296251c9120c30de58fdd9ed3e1d4c36d17576",
+    "macos-arm64": "a00b93c59396bed619497b27bc296251c9120c30de58fdd9ed3e1d4c36d17576"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 5289643,
+    "linux-arm64": 5289643,
+    "macos-arm64": 5289643
+   }
+  },
+  {
+   "input": "xjtu-dev",
+   "set": "waveform",
+   "sha256": {
+    "linux-amd64": "1a6c6832199464a5c5459d0de62a5bd09c72614a19f8527d782d84e141476963",
+    "linux-arm64": "1a6c6832199464a5c5459d0de62a5bd09c72614a19f8527d782d84e141476963",
+    "macos-arm64": "1a6c6832199464a5c5459d0de62a5bd09c72614a19f8527d782d84e141476963"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 32072036,
+    "linux-arm64": 32072036,
+    "macos-arm64": 32072036
+   }
+  },
+  {
+   "input": "Blockchain-tr",
+   "set": "elf",
+   "sha256": {
+    "linux-amd64": "ba94245f47edab4abe511e2e0fb42bfbc9d31bf7972dec0d15d864473c3356ad",
+    "linux-arm64": "ba94245f47edab4abe511e2e0fb42bfbc9d31bf7972dec0d15d864473c3356ad",
+    "macos-arm64": "ba94245f47edab4abe511e2e0fb42bfbc9d31bf7972dec0d15d864473c3356ad"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 174505,
+    "linux-arm64": 174505,
+    "macos-arm64": 174505
+   }
+  },
+  {
+   "input": "POI-lat",
+   "set": "elf",
+   "sha256": {
+    "linux-amd64": "74c2d3424ffb906836d333fa1da1327e1bbe51e0367dfd5c466e70dc41f278bb",
+    "linux-arm64": "74c2d3424ffb906836d333fa1da1327e1bbe51e0367dfd5c466e70dc41f278bb",
+    "macos-arm64": "74c2d3424ffb906836d333fa1da1327e1bbe51e0367dfd5c466e70dc41f278bb"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 760516,
+    "linux-arm64": 760516,
+    "macos-arm64": 760516
+   }
+  },
+  {
+   "input": "Stocks-USA",
+   "set": "elf",
+   "sha256": {
+    "linux-amd64": "be6e9b7812ceb6f7cb92b940d6019ba4939ddb74058ef7c78432d97454b4712a",
+    "linux-arm64": "be6e9b7812ceb6f7cb92b940d6019ba4939ddb74058ef7c78432d97454b4712a",
+    "macos-arm64": "be6e9b7812ceb6f7cb92b940d6019ba4939ddb74058ef7c78432d97454b4712a"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 57027,
+    "linux-arm64": 57027,
+    "macos-arm64": 57027
+   }
+  },
+  {
+   "input": "electric_vehicle_charging",
+   "set": "elf",
+   "sha256": {
+    "linux-amd64": "0c9d65d1f4f526bf7e9c51e40bbb953c4954daaf09b1e5ab63944c28d72ddeb3",
+    "linux-arm64": "0c9d65d1f4f526bf7e9c51e40bbb953c4954daaf09b1e5ab63944c28d72ddeb3",
+    "macos-arm64": "0c9d65d1f4f526bf7e9c51e40bbb953c4954daaf09b1e5ab63944c28d72ddeb3"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 4159,
+    "linux-arm64": 4159,
+    "macos-arm64": 4159
+   }
+  },
+  {
+   "input": "b3-vibration_1",
+   "set": "b3",
+   "sha256": {
+    "linux-amd64": "89509dd24a2e0e87ed5aecbbdf617e5ddf9813312990a6b94ad5f96837ee0071",
+    "linux-arm64": "89509dd24a2e0e87ed5aecbbdf617e5ddf9813312990a6b94ad5f96837ee0071",
+    "macos-arm64": "89509dd24a2e0e87ed5aecbbdf617e5ddf9813312990a6b94ad5f96837ee0071"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 26112787,
+    "linux-arm64": 26112787,
+    "macos-arm64": 26112787
+   }
+  },
+  {
+   "input": "b3-phase_current_1",
+   "set": "b3",
+   "sha256": {
+    "linux-amd64": "a4896b4fdf3eb09be9a4c574c24fd4718a47cf0e244fc8a5b560fa77ea614b91",
+    "linux-arm64": "a4896b4fdf3eb09be9a4c574c24fd4718a47cf0e244fc8a5b560fa77ea614b91",
+    "macos-arm64": "a4896b4fdf3eb09be9a4c574c24fd4718a47cf0e244fc8a5b560fa77ea614b91"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 28800679,
+    "linux-arm64": 28800679,
+    "macos-arm64": 28800679
+   }
+  },
+  {
+   "input": "b3-phase_current_2",
+   "set": "b3",
+   "sha256": {
+    "linux-amd64": "441c8fd4c42a5926457bdfc9618b36b447828e39a753e9bfe7cc03a9ce7deff6",
+    "linux-arm64": "441c8fd4c42a5926457bdfc9618b36b447828e39a753e9bfe7cc03a9ce7deff6",
+    "macos-arm64": "441c8fd4c42a5926457bdfc9618b36b447828e39a753e9bfe7cc03a9ce7deff6"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 28734253,
+    "linux-arm64": 28734253,
+    "macos-arm64": 28734253
+   }
+  },
+  {
+   "input": "b3-force",
+   "set": "b3",
+   "sha256": {
+    "linux-amd64": "09c822e72a1a0f1668ec3462d1fcae6303188eb1c8931c026e74e5be4fbd1da2",
+    "linux-arm64": "09c822e72a1a0f1668ec3462d1fcae6303188eb1c8931c026e74e5be4fbd1da2",
+    "macos-arm64": "09c822e72a1a0f1668ec3462d1fcae6303188eb1c8931c026e74e5be4fbd1da2"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 1553501,
+    "linux-arm64": 1553501,
+    "macos-arm64": 1553501
+   }
+  },
+  {
+   "input": "b3-speed",
+   "set": "b3",
+   "sha256": {
+    "linux-amd64": "8f15f057390de132ea69773d494240ec622613680531aa3a891a4e0a35297ef2",
+    "linux-arm64": "8f15f057390de132ea69773d494240ec622613680531aa3a891a4e0a35297ef2",
+    "macos-arm64": "8f15f057390de132ea69773d494240ec622613680531aa3a891a4e0a35297ef2"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 1911735,
+    "linux-arm64": 1911735,
+    "macos-arm64": 1911735
+   }
+  },
+  {
+   "input": "b3-torque",
+   "set": "b3",
+   "sha256": {
+    "linux-amd64": "188a38c33b7b182400b4245d8759cf74b57bc5093529e9b47886bb423f6ea219",
+    "linux-arm64": "188a38c33b7b182400b4245d8759cf74b57bc5093529e9b47886bb423f6ea219",
+    "macos-arm64": "188a38c33b7b182400b4245d8759cf74b57bc5093529e9b47886bb423f6ea219"
+   },
+   "same": true,
+   "bytes": {
+    "linux-amd64": 10178706,
+    "linux-arm64": 10178706,
+    "macos-arm64": 10178706
+   }
+  }
+ ],
+ "differing_inputs": [],
+ "edge_speeds": {}
+}

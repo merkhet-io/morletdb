@@ -5,10 +5,13 @@
 //! encoder still produces byte for byte; when an encoder change alters one, set it to
 //! false and add a new file instead of editing the old one.
 //!
-//! New cases: add them to `cases()` and run
+//! Version 5 (Grizzbit 2.1, development build) chunks are in `cases_v5()`; their `.json` says
+//! `"format": "grizzbit21"`, and `encoder_current` then refers to `encode_with(.., Format::Grizzbit21)`.
+//!
+//! New cases: add them to `cases()` (or `cases_v5()`) and run
 //!   MORLET_WRITE_GOLDEN=1 cargo test -p grizzbit --test codec_golden -- --ignored
 //! which writes missing files only.
-use grizzbit::{decode, encode, kind};
+use grizzbit::{decode, encode, encode_with, grizzbit21_layout, kind, Format};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
@@ -218,26 +221,189 @@ fn cases() -> Vec<Case> {
     ]
 }
 
+fn walk(n: usize, seed: &mut u64, step: u64) -> Vec<i64> {
+    let mut k = 0i64;
+    (0..n)
+        .map(|_| {
+            k += (lcg(seed) % (2 * step + 1)) as i64 - step as i64;
+            k
+        })
+        .collect()
+}
+
+/// A noisy two-pole resonance, rounded to integers (IEEE basic operations only).
+fn resonance(n: usize, seed: &mut u64) -> Vec<i64> {
+    let (mut y1, mut y2) = (0.0f64, 0.0f64);
+    (0..n)
+        .map(|_| {
+            let e = (lcg(seed) % 41) as f64 - 20.0;
+            let y = 1.95 * y1 - 0.97 * y2 + e;
+            y2 = y1;
+            y1 = y;
+            y.round() as i64
+        })
+        .collect()
+}
+
+/// (name, samples, quantum, correction mode, index stream uses LPC, offset grid)
+type CaseV5 = (&'static str, Vec<f64>, f64, u8, bool, bool);
+
+/// Version-5 chunks: every correction mode, LPC and fixed predictors, offset grid, 32,768 samples.
+fn cases_v5() -> Vec<CaseV5> {
+    let mut s = 21;
+    let current = 0.000_688_781_737_8;
+    // Two float64 steps: the value is a function of the index, a few ulps off the fitted grid.
+    let two_step = |ks: &[i64]| -> Vec<f64> {
+        ks.iter()
+            .map(|&k| k as f64 * current * 1.000_000_7)
+            .collect()
+    };
+    let walk_k = walk(4096, &mut s, 6);
+    let mut table_exceptions = two_step(&walk_k);
+    for (i, v) in table_exceptions.iter_mut().enumerate() {
+        if i % 97 == 5 {
+            *v = f64::from_bits(v.to_bits() ^ 1);
+        }
+    }
+    let negzero: Vec<f64> = walk(4096, &mut s, 40)
+        .iter()
+        .enumerate()
+        .map(|(i, &k)| {
+            let k = k % 200;
+            if k == 0 && i % 2 == 0 {
+                -0.0
+            } else {
+                k as f64 / 1000.0
+            }
+        })
+        .collect();
+    let res = resonance(4096, &mut s);
+    let res_long = resonance(32768, &mut s);
+    let res_cal = resonance(4096, &mut s);
+    let res_noisy: Vec<f64> = resonance(4096, &mut s)
+        .iter()
+        .map(|&k| {
+            let v = k as f64 * (100.0 / 32768.0);
+            if v == 0.0 {
+                return v;
+            }
+            f64::from_bits((v.to_bits() as i64 + (lcg(&mut s) % 5) as i64 - 2) as u64)
+        })
+        .collect();
+    let edf_step = 417.0 / 4095.0;
+    let edf: Vec<f64> = walk(4096, &mut s, 6)
+        .iter()
+        .map(|&k| ((k % 2000) as f64 + 2048.0) * 417.0 / 4095.0 - 208.0)
+        .collect();
+    vec![
+        (
+            "v5-grid-mul-table",
+            two_step(&walk_k),
+            current,
+            2,
+            false,
+            false,
+        ),
+        (
+            "v5-grid-mul-table-exceptions",
+            table_exceptions,
+            current,
+            2,
+            false,
+            false,
+        ),
+        (
+            "v5-grid-div-negzero-exceptions",
+            negzero,
+            0.001,
+            3,
+            false,
+            false,
+        ),
+        (
+            "v5-grid-div-lpc",
+            res.iter().map(|&k| k as f64).collect(),
+            1.0,
+            0,
+            true,
+            false,
+        ),
+        (
+            "v5-grid-div-lpc-max-length",
+            res_long.iter().map(|&k| k as f64).collect(),
+            1.0,
+            0,
+            true,
+            false,
+        ),
+        (
+            "v5-grid-mul-lpc-table",
+            two_step(&res_cal),
+            current,
+            2,
+            true,
+            false,
+        ),
+        (
+            "v5-grid-mul-lpc-corrections",
+            res_noisy,
+            100.0 / 32768.0,
+            1,
+            true,
+            false,
+        ),
+        ("v5-grid-mul-offset-table", edf, edf_step, 2, false, true),
+    ]
+}
+
+fn write_case(name: &str, samples: &[f64], quantum: f64, format: Format) {
+    let chunk = dir().join(format!("{name}.chunk"));
+    if chunk.exists() {
+        return;
+    }
+    std::fs::write(&chunk, encode_with(samples, quantum, format).unwrap()).unwrap();
+    let raw: Vec<u8> = samples.iter().flat_map(|x| x.to_le_bytes()).collect();
+    std::fs::write(chunk.with_extension("f64"), raw).unwrap();
+    let mut v =
+        json!({"quantum_bits": format!("{:016x}", quantum.to_bits()), "encoder_current": true});
+    if format == Format::Grizzbit21 {
+        v["format"] = json!("grizzbit21");
+    }
+    std::fs::write(
+        chunk.with_extension("json"),
+        serde_json::to_string(&v).unwrap() + "\n",
+    )
+    .unwrap();
+}
+
 #[test]
 #[ignore]
 fn write_missing_golden_files() {
     assert_eq!(std::env::var("MORLET_WRITE_GOLDEN").as_deref(), Ok("1"));
     std::fs::create_dir_all(dir()).unwrap();
     for (name, samples, quantum, ..) in cases() {
-        let chunk = dir().join(format!("{name}.chunk"));
-        if chunk.exists() {
-            continue;
-        }
-        std::fs::write(&chunk, encode(&samples, quantum).unwrap()).unwrap();
-        let raw: Vec<u8> = samples.iter().flat_map(|x| x.to_le_bytes()).collect();
-        std::fs::write(chunk.with_extension("f64"), raw).unwrap();
-        let v =
-            json!({"quantum_bits": format!("{:016x}", quantum.to_bits()), "encoder_current": true});
-        std::fs::write(
-            chunk.with_extension("json"),
-            serde_json::to_string(&v).unwrap() + "\n",
-        )
-        .unwrap();
+        write_case(name, &samples, quantum, Format::Grizzbit1);
+    }
+    for (name, samples, quantum, ..) in cases_v5() {
+        write_case(name, &samples, quantum, Format::Grizzbit21);
+    }
+}
+
+#[test]
+fn every_version5_case_has_a_frozen_file_of_the_intended_shape() {
+    for (name, samples, _, fix_mode, lpc, offset) in cases_v5() {
+        let chunk = std::fs::read(dir().join(format!("{name}.chunk")))
+            .unwrap_or_else(|_| panic!("{name}: missing golden file"));
+        assert_eq!(chunk[0], 5, "{name}: version");
+        assert_eq!(kind(&chunk).unwrap().name(), "grid", "{name}: kind");
+        assert_eq!(
+            grizzbit21_layout(&chunk),
+            Some((fix_mode, lpc)),
+            "{name}: layout"
+        );
+        let count_len = chunk[2..].iter().position(|&b| b < 0x80).unwrap() + 1;
+        assert_eq!(chunk[2 + count_len] & 1 == 1, offset, "{name}: offset flag");
+        assert_eq!(decode(&chunk).unwrap().len(), samples.len(), "{name}");
     }
 }
 
@@ -288,8 +454,16 @@ fn frozen_chunks_decode_bit_for_bit() {
                 u64::from_str_radix(meta["quantum_bits"].as_str().unwrap(), 16).unwrap(),
             );
             let samples: Vec<f64> = want.iter().map(|&b| f64::from_bits(b)).collect();
+            let format = match meta["format"].as_str() {
+                None => Format::Grizzbit1,
+                Some("grizzbit21") => Format::Grizzbit21,
+                Some(other) => panic!("{}: unknown format {other}", chunk.display()),
+            };
+            if format == Format::Grizzbit1 {
+                assert_eq!(encode(&samples, q).unwrap(), bytes, "{}", chunk.display());
+            }
             assert_eq!(
-                encode(&samples, q).unwrap(),
+                encode_with(&samples, q, format).unwrap(),
                 bytes,
                 "{}: encoder output changed",
                 chunk.display()

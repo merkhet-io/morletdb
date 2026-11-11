@@ -1,0 +1,52 @@
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.665,
+  "samples_per_s": 21774713,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 297.784,
+   "p95_ms": 339.63,
+   "max_ms": 351.53
+  },
+  "queryable_after_last_ack_s": 0.004,
+  "server": {
+   "cpu_percent_mean": 232.3,
+   "cpu_percent_p95": 265.4,
+   "memory_peak_mib": 235.0,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 593.0,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.5,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 270.6
+   }
+  }
+ },
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.0
+  }
+ },
+ "correct": true,
+ "b6_chunk_format": {
+  "asked": ""
+ }
+}

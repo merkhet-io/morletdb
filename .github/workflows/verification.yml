@@ -56,13 +56,18 @@ jobs:
           command -v cargo-kani || cargo install --locked kani-verifier --version "$KANI_VERSION"
           cargo kani setup
           cargo kani --version
-      - name: Proofs (every run; CBMC time about 12 s in total, plus compilation)
+      - name: Proofs (every run; CBMC time about 6 minutes in total, plus compilation)
         working-directory: crates/grizzbit
         run: >-
           cargo kani
           --harness ordered_bits_is_a_bijection --harness ordered_bits_keeps_order
           --harness zigzag_is_a_bijection --harness varint_roundtrips --harness varint_reader_is_total
           --harness prediction_residuals_invert --harness corrections_restore_any_sample
+          --harness coefficient_sign_extension_roundtrips --harness lpc_residuals_invert
+          --harness version5_flags_are_checked --harness exception_positions_are_in_range
+          --harness version5_kind_dispatch --harness version5_checksum_is_checked_first
+          --harness keep_smaller_keeps_grizzbit1_unless_strictly_smaller
+          --harness lpc_prediction_matches_wide_reference --harness lpc_kernel_restores_reference_residuals
   fuzz:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
@@ -70,10 +75,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [decode_raw, decode_sealed, roundtrip, decode_frame]
+        target: [decode_raw, decode_sealed, decode_v5, roundtrip, decode_frame]
         include:
           - { target: decode_raw, crate: grizzbit }
           - { target: decode_sealed, crate: grizzbit }
+          - { target: decode_v5, crate: grizzbit }
           - { target: roundtrip, crate: grizzbit }
           - { target: decode_frame, crate: morlet-core }
     steps:
@@ -95,6 +101,7 @@ jobs:
             case "${{ matrix.target }}" in
               decode_raw) cp "$f" "crates/${{ matrix.crate }}/fuzz/corpus/decode_raw/$(basename "$f")" ;;
               decode_sealed) head -c -4 "$f" > "crates/${{ matrix.crate }}/fuzz/corpus/decode_sealed/$(basename "$f")" ;;
+              decode_v5) case "$(basename "$f")" in v5-*) head -c -4 "$f" > "crates/${{ matrix.crate }}/fuzz/corpus/decode_v5/$(basename "$f")" ;; esac ;;
             esac
           done
       - name: Fuzz for 40 minutes (debug assertions and overflow checks on)

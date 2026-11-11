@@ -1,0 +1,17 @@
+[package]
+name = "b6codec"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Study B6 harness (PROTOCOL.md sections 3, 4A and 4B): Grizzbit 1 and Grizzbit 2.1 per chunk, through the grizzbit
+# crate of this branch. No other dependency, so it builds offline on every platform of section 4B.
+[dependencies]
+grizzbit = { path = "../../../crates/grizzbit" }
+
+[workspace]
+
+# As the workspace's release profile (the bench example's).
+[profile.release]
+panic = "unwind"
+lto = "thin"
