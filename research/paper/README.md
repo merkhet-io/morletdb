@@ -18,7 +18,7 @@ technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md
 4. **A first relevance check.** With a catalogued earthquake in the query, the bounded-lag top ten held
    catalogued earthquakes in 0.297 of positions against 0.213 for zero lag on development data, and 0.139
    against 0.060 on held-out stations and year (E5, E5-H; exact search, catalogue proxy).
-5. **Not shown:** other signal domains (beyond the external, not yet deposited IU1 on one machining dataset), diagnostic relevance for machines, cold caches, and stable
+5. **Not shown:** other signal domains (beyond IU1 on one public machining dataset), diagnostic relevance for machines, cold caches, and stable
    operation beyond 111 minutes (the planned two-hour run stopped early; paper Section 12).
 
 ## Main numbers
@@ -62,17 +62,21 @@ cd research/paper && tectonic -X compile supplement.tex
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
 
-## What changed in 0.23 (second author, industrial use; no new measurement in this repository)
+## What changed in 0.23 (second author, industrial use)
 
-- **Second author:** Semir Maslo (no affiliation stated).
-- **New Section 10, "Industrial use":** IU1, an external study by S. Maslo on the public Bosch CNC milling data
-  (CC BY 4.0): bounded lag against zero lag and RMS for retrieval of bad runs, a nearest-neighbour history score,
-  the same operation on another machine, synthetic time stretching, and probe search on 85,042 windows. Five ledger
-  rows (marked †). The bad runs cluster in time (20 of the 36 bad confirmation runs come from M02 in February
-  2019), so part of the separation may reflect drift between periods; checks by period and without each run's
-  lead-in are pending. **IU1's protocol, scripts and results are not yet in this repository;** they will be
-  deposited under `evaluation/industrial_iu1/`. Its numbers are literal text in the manuscript, not generated.
-- **Limitations and conclusion** name this single machining dataset where they said all results were seismic.
+- **Second author:** Semir Maslo (Sulzer-BDiM).
+- **New Section 10, "Industrial use":** IU1, a study by S. Maslo on the public Bosch CNC milling data (CC BY 4.0),
+  with protocol, scripts and results in [`evaluation/industrial_iu1/`](../../evaluation/industrial_iu1/): a
+  nearest-neighbour score against a good history (AUROC 0.925 bounded lag, 0.875 zero lag, 0.852 RMS), the same
+  operation on another machine, synthetic time stretching, and probe search on 85,042 windows. Post hoc addenda
+  with rules written first: A1 (drift between half-years) and A2 (lead-in). The separation holds inside a machine
+  and half-year (0.905 against 0.790 for zero lag) and without the lead-in (0.900), but run length alone separates
+  better (0.982), a history from earlier half-years only does not separate (0.603), and retrieval of other bad
+  runs was inflated by the half-year (0.254 against chance 0.183, replacing 0.177 against 0.026). Nine ledger rows.
+  Its numbers are literal text in the manuscript, not generated.
+- **Limitations and conclusion:** storage holds and bounded lag beats zero lag on these data; as a detector, level
+  values and run length do as well or better; the history must be recent, and the data allow no causal test at
+  finer than half-year resolution.
 - **Section 4** notes that from release 0.3.11-alpha.1 every append path decodes each encoded chunk again before
   storing it and refuses one that does not reproduce its input (#366).
 

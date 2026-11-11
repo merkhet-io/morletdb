@@ -23,7 +23,7 @@ STATIC = {
     "version": (ROOT / "research/paper/REPORT_VERSION").read_text().strip(),
     "date": "2026-11-11",
     "type": "technical report / preprint (not peer reviewed)",
-    "author": "Zin Nam; Semir Maslo",
+    "author": "Zin Nam; Semir Maslo (Sulzer-BDiM)",
     "measured_commit": "68594d7",
     "measured_commit_scope": "E1 consolidated comparison and diagnostics D1-D2; earlier studies used earlier implementation states (STUDIES.md)",
     "measured_library_sha256": "3c786684421f3132e7a97b5ff38801e802948bf3e014aaae656b16bb109de7b7",
