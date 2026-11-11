@@ -51,8 +51,8 @@ Every chunk starts with its format version byte; a reader dispatches on it. Deta
 |---|---|---|---|---|---|
 | Grizzbit 1 | 2: grid, float and raw kinds | default | yes | samples on a value grid (`k · scale` or `k / scale`): ADC counts, fixed decimals, calibrated waveforms | B4 |
 | Grizzbit 1 | 3: offset grid | default | yes | the same, for grids with an offset (`offset + k · scale`), such as EDF calibration | B4 |
-| Grizzbit 2 (pco) | 4 | reserved, rejected | yes | floats off any grid; never shipped | B5 (failed) |
-| Grizzbit 2.1 | 5: grid only | opt-in | yes | grid waveforms with structure a fixed predictor misses: vibration, motor currents, EEG | B6 (passed) |
+| Grizzbit 2 (pco) | 4 | reserved, rejected | yes | meant for floats off any grid; never shipped | [B5](../evaluation/storage_b5/RESULTS.md) (failed) |
+| Grizzbit 2.1 | 5: grid only | opt-in | yes | grid waveforms with structure a fixed predictor misses: vibration, motor currents, EEG | [B6](../evaluation/storage_b6/RESULTS.md) (passed) |
 
 - **Version 2:** the encoder detects a value grid per chunk, codes the grid indices with a fixed predictor of
   order 0–4 and partitioned Rice coding, and stores last-place (ULP) corrections where a value is off its grid
@@ -60,8 +60,9 @@ Every chunk starts with its format version byte; a reader dispatches on it. Deta
   of the three kinds is kept.
 - **Version 3:** written only when a chunk's grid needs an offset; otherwise the chunk stays version 2, byte for
   byte.
-- **Version 4:** Grizzbit 2 coded floats off a grid with pco. It failed study B5, was never released, and readers
-  refuse the number.
+- **Version 4:** Grizzbit 2 coded floats off a grid with pco. Studied in B5, failed (S2: Basel-temp 1.56×,
+  Basel-wind 1.38× ClickHouse's best; S6), never shipped; version 4 reserved and rejected
+  ([results](../evaluation/storage_b5/RESULTS.md)).
 - **Version 5:** Grizzbit 2.1 stores the corrections once per grid index instead of per sample and adds a
   per-chunk linear predictor (LPC). The encoder keeps it only where it is strictly smaller than versions 2 and 3.
 
