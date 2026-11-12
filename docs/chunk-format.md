@@ -70,7 +70,7 @@ A stream is a bit-packed (MSB-first) sequence with these fields:
 
 ## Version 5 (Grizzbit 2.1, opt-in)
 
-Version 5 is part of this specification from the next release after 0.3.11-alpha.1, as an **opt-in** format: a
+Version 5 is part of this specification from 0.3.12-alpha.1, as an **opt-in** format: a
 server writes it only with `morlet.chunk_format = grizzbit21`; the default, `grizzbit1`, writes versions 2 and 3
 only. Every reader of that release decodes version 5 whatever the setting. It passed study B6
 ([protocol](../evaluation/storage_b6/PROTOCOL.md), [results](../evaluation/storage_b6/RESULTS.md)) on every

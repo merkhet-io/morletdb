@@ -91,7 +91,7 @@ int32_t morlet_decode_frame(const uint8_t *frame, size_t frame_len,
                             double *out, size_t out_len, uint32_t threads,
                             int64_t *error_sample);
 uint32_t morlet_ffi_abi_version(void);        /* 1 */
-uint32_t morlet_ffi_max_chunk_version(void);  /* 3 up to 0.3.11-alpha.1; 5 from the next release (Grizzbit 2.1) */
+uint32_t morlet_ffi_max_chunk_version(void);  /* 3 up to 0.3.11-alpha.1; 5 from 0.3.12-alpha.1 (Grizzbit 2.1) */
 ```
 
 It accepts both frame kinds. It checks the frame (magic, CRC, ascending and non-overlapping chunks, lengths within the frame), verifies and

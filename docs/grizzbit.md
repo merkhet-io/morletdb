@@ -117,7 +117,7 @@ coding: last-place corrections stored once per grid index instead of per sample,
 codes each grid chunk as version 5, and keeps the version-5 chunk only if it is strictly smaller. Chunks that stay
 Grizzbit 1 are byte for byte what Grizzbit 1 writes.
 
-It is **opt-in** from the next release after 0.3.11-alpha.1, with the setting `morlet.chunk_format`
+It is **opt-in** from 0.3.12-alpha.1, with the setting `morlet.chunk_format`
 ([how to use it](#using-grizzbit-21)). The default stays `grizzbit1`.
 
 Measured in study B6, against Grizzbit 1 on the same inputs, with criteria fixed before any benchmark input was
@@ -246,7 +246,7 @@ chunks already written stay readable.
 
 **Compatibility.**
 - **Readers of version 5:** pg_morlet, the native decoder (`morlet-ffi`, whose `morlet_ffi_max_chunk_version()`
-  returns 5) and the Python SDK of the next release after 0.3.11-alpha.1 and later. Releases up to 0.3.11-alpha.1
+  returns 5) and the Python SDK of 0.3.12-alpha.1 and later. Releases up to 0.3.11-alpha.1
   (pg_morlet, `morlet-ffi` 3, SDK 0.1.0a4) cannot.
 - **Compressed transfer negotiates the version:** a client states the highest version it decodes, and the server
   sends samples for any newer chunk, so older clients and SDKs keep working against a server that stores version 5
@@ -287,7 +287,7 @@ format instead of depending on a codec library is set out in the
 | Grizzbit | Chunk format versions | Since | What |
 |---|---|---|---|
 | Grizzbit 1 | 2 and 3 | 2 in pg_morlet 0.2.0; 3 in SQL 0.3.1 | grid, float and raw kinds (2); offset grid (3) |
-| Grizzbit 2.1 | 5 (opt-in) | the next release after 0.3.11-alpha.1 | grid chunks with corrections per grid index and a per-chunk LPC, kept only where smaller ([above](#grizzbit-21-opt-in)) |
+| Grizzbit 2.1 | 5 (opt-in) | 0.3.12-alpha.1 | grid chunks with corrections per grid index and a per-chunk LPC, kept only where smaller ([above](#grizzbit-21-opt-in)) |
 
 Version 4 was Grizzbit 2 (pco), which failed study B5 and was never released; the number stays reserved.
 

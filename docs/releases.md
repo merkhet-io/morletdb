@@ -57,6 +57,18 @@ a leading v; GHCR image tags do not.
     (`morletdb.open`), and the release attaches `morlet-sqlite-<platform>.tar.gz` (command line, library, C header).
   - **File format 1:** frozen with a compatibility promise ([file-format.md](file-format.md)).
   - The chunk format is unchanged; existing collections keep their layout.
+- **0.3.12-alpha.1:** SQL version 0.3.9 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a5.
+  - **Grizzbit 2.1, chunk format version 5, opt-in (#377):** `SET morlet.chunk_format = grizzbit21`; a misspelt value
+    fails. Releases up to 0.3.11-alpha.1 cannot read version-5 chunks.
+  - **Lossless chunk shipping from edge to centre (#420):** `morlet_encoded_chunks`, `morlet_append_encoded_chunk` and
+    `tools/ingest/morlet_ship.py` (resumable, SHA-256 compared at the end).
+  - **Decision states:** about ten times faster and all channels of a cut in one call (#403, #414); precedents in
+    logged decisions (#418); a label glossary (#333); alarm and PLC events inside a segment (#421); value rules
+    `simple-v2` for new collections (#387; existing collections keep `simple-v1` until `morlet_set_value_rules`).
+  - **Steward:** integrity checks get a minimum share under constant load; missing summaries are backlog, not damage.
+  - **Importer:** wide plant exports with a time column (#388), clock drift fitted and reported (#393).
+  - **MCP server:** `trend` per context segment and over an order key (#385, #334), `search_similar`
+    `exclude="occurrence"` (#384), negative answers state their scope (#379).
 - **0.3.11-alpha.1:** SQL version 0.3.8, unchanged (no `ALTER EXTENSION` needed); Python SDK 0.1.0a4.
   - **Write-time proof on every append path (#366):** with `morlet.verify_appends` on (the default), every chunk is
     decoded again and compared bit for bit with its input before it is stored.
