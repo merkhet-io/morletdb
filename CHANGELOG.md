@@ -4,6 +4,18 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Value rules `simple-v2`: a near-zero median on a quantised history counts as zero (#387, study V2).** A p75
+  history of 0, −1 and −2 converter steps had a median of half a step, so a segment at 0 deviated by exactly 1.0
+  and dominated every score. Under `simple-v2`, a history whose distinct values (at least 3) lie on multiples of
+  their smallest gap is quantised, and a median within two steps of zero is treated as zero (`zero_median`), in
+  `morlet_compare_to_history`, `morlet_compare_summary`, `morlet_history_neighbors`, `morlet_value_spreads` and
+  the decision state (`history.value_rules`). Values that are not quantised compare exactly as before, and the
+  stored values are unchanged. The rules belong to the collection: `morlet_value_rules` reads them and
+  `morlet_set_value_rules` sets them. Context enabled from SQL 0.3.9 on starts with `simple-v2`; existing
+  collections keep `simple-v1` until switched. Study V2 (`evaluation/values_v2/`, protocol frozen before any
+  run): the artefact disappears, continuous values are unchanged, and C2's and C3's AUROCs are identical under
+  both rules (0 of 37,670 and 0 of 24 history medians affected). New functions: `morlet_quantised_step`,
+  `morlet_value_floors`, `morlet_value_rules`, `morlet_set_value_rules`; the 0.3.8 → 0.3.9 update script adds them.
 - **Importer: wide plant exports (#388).** For CSV, `--time-column` now sets the start time (ISO 8601) and,
   without `--rate`, the rate from the median row spacing. The metadata records how far the timestamps depart
   from the even axis; they are not corrected. `--context-columns program,block` stores controller columns as
