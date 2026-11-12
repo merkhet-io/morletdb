@@ -96,3 +96,15 @@ a sparse grid of query-side shifted probes into one stock inner-product ANN inde
 Searches beyond the notes: image retrieval with rotated query copies; "cross-correlation as maximum inner
 product search with shifted queries"; cryo-EM rotational nearest neighbours (Zhao & Singer use
 data-side invariant features and align candidates afterwards).
+
+## Addendum 2026-11-12 (report 0.25, #419): similar past events in monitoring
+
+| Work | Read | What is compared | Shift | Retrieval | Data | Evaluation |
+|---|---|---|---|---|---|---|
+| Balazinska, Kwon, Kuchta, Lee: Moirae, CIDR 2007 | P (abstract, introduction, challenges) | a newly detected event's *context* (state of the monitored objects around it) against past events' contexts, with IR techniques | none | top-k most similar past events; approximate results first, refined incrementally; history partitioned, recent partitions first | stream engine (Borealis) + PostgreSQL as the historical log; scalar monitoring attributes | design paper |
+| Kwon, Xu, Balazinska: Identifying Similar Past Events in a Continuous Monitoring System, UW-CSE-07-05-01, 2007 | F | Context Distance Measure (CDM): events most alike when the same monitored objects show similar abnormal values | none | ranking of past events | PlanetLab monitoring data, scalar snapshots | CDM ranks better than Jaccard, Earth Mover's Distance and Match-and-Compare |
+
+**Overlap with MorletDB.** The premise that context decides which past cases are comparable is shared by the decision
+state (match keys) and the industrial studies. **Difference:** no waveforms, no time-shift tolerance, no exact
+read-back of the evidence. The "What is new" claim (bounded lag on an unmodified inner-product index) is not affected.
+
