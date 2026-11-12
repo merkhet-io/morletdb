@@ -1,7 +1,6 @@
 # Study P1a: 300 kernel hard resets on a Raspberry Pi — results
 
-> **DRAFT.** All three parts are complete. One check is still open (the final full `morlet_verify`, below); not
-> published until it has run and the owner approves.
+> **DRAFT.** All three parts and the final full verification are complete. Not published until the owner approves.
 
 Protocol: [PROTOCOL.md](PROTOCOL.md), frozen 2026-11-08 (`42b7368`), with two dated amendments for Wi-Fi outages
 (2026-11-09, `6a6defc`; 2026-11-10, `7588106`). Image `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (linux/arm64; the SQL
@@ -47,11 +46,14 @@ It is a controller delay, not a database figure; leaving it out does not change 
   acknowledgement did not reach the writer. That is allowed; losing an acknowledged batch is not.
 - 14 resets needed a second attempt; each was confirmed (database down within 30 s) before the cycle counted.
 
-## Open before publication
+## Final full verification
 
-- **Final full verification.** The protocol asks for a full `morlet_verify` "every 25th cycle and at the end". The
-  controller ran it every 25th cycle, but not after the last cycle of a part. It is run once on the box's database in
-  its final state and the result is added here.
+The protocol asks for a full `morlet_verify` "every 25th cycle and at the end". The controller ran it every 25th
+cycle, not after the last cycle of a part, so it was run once on the box's database in its final state
+(2026-11-12 22:13 UTC, database container only, writer and steward not started): **2 recordings, 8,569 chunks,
+35,098,624 samples, 0 problems**; recording `rb` (rolled back) holds no sample. The recording `pc` ends beyond the
+last cycle's stored end (32,776,192) because the writer kept writing after the last counted cut until it was
+stopped.
 
 ## Not shown by this study
 
