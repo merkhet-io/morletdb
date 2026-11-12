@@ -187,6 +187,24 @@ class DecisionOnADatabase(unittest.TestCase):
         b = decision.segment_at(self.conn, C, "p02-b", 0)       # channel b has no labelled case at all
         self.assertIn("examples_note", decision.decision_state(self.conn, C, b, neighbors=0, examples=2))
 
+    def test_quantised_step_equals_the_sql_function(self):
+        """decision.quantised_step (numpy) gives morlet_quantised_step's answer on grids, near-grids and edge cases."""
+        import random
+        rnd = random.Random(5)
+        cols = [[], [1.0], [1.0, 2.0], [0.0, -0.0, 0.5, 1.0], [1.0, 1.0, 1.0, 2.0, 3.0], [0.1, 0.2, 0.3, 0.7],
+                [0.0, 1e-7, 2e-7, 1.0], [0.0, 1.0, 2.5], [float("nan"), 0.0, 0.25, 0.5], [0.0, 1.0, 2e6],
+                [0.0, 1.0, 1e6], [float("inf"), 1.0, 2.0, 4.0], [3.0, 1.0, 2.0]]
+        for _ in range(60):
+            step = rnd.choice([0.001, 0.01, 0.1, 0.25, 1.0, 9.81 / 1024])
+            col = [round(rnd.randint(-500, 500) * step, rnd.choice([3, 6, 12])) for _ in range(rnd.randint(3, 400))]
+            if rnd.random() < 0.3:
+                col.append(rnd.uniform(-1, 1))                      # off the grid
+            cols.append(col)
+        for col in cols:
+            want = self.conn.execute("SELECT morlet_quantised_step(%s::float8[])", (col,)).fetchone()[0]
+            got = decision.quantised_step(col)
+            self.assertEqual(got, want, col[:8])
+
     def test_segments_at_equals_segment_at(self):
         pts = [("p03-a", 0), ("p07-b", 100), ("p12-a", 2047)]
         self.assertEqual(decision.segments_at(self.conn, C, pts),
