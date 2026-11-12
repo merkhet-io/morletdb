@@ -4,6 +4,10 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **`decision.finish_recordings`: build a cut's channels on several connections (#414).** Context, segments and
+  values for several recordings at once, spread over the given autocommit connections (one thread each, each
+  recording in its own transaction), with the same results as one by one. On a Raspberry Pi 3B+, 4
+  connections took the end of a 7-channel cut from 1.21 to 0.72 s (p50, with #423); 7 connections were slower.
 - **Logged decisions keep their precedents (#418).** `decision.log_decision` stores, beside the state the model
   saw, its k nearest labelled precedents (default 3): the state's examples (labelled cases from the whole
   history), else its labelled neighbours, never logged decisions, with recording, sample range, distance and
