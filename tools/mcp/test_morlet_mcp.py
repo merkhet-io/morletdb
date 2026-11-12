@@ -336,6 +336,58 @@ class TimeQualityOnADatabase(unittest.TestCase):
 
 
 @unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class SeriesProductionOnADatabase(unittest.TestCase):
+    """#384: one recording of three parts machined alike; the same cut on the other parts, not the query's own."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments", "envelopes"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_cyc_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_cyc CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_cyc')")
+            conn.execute("SELECT morlet_enable_context('mcp_cyc')")
+            conn.execute("SELECT morlet_start_recording('mcp_cyc','line',1000,'acc','g',"
+                         "'{\"start\": \"2026-01-01T00:00:00Z\"}',512,256,'zscore','none')")
+            # three parts of 4,000 samples, each the same cut with a little part-specific noise
+            conn.execute("SELECT morlet_append_chunks_raw('mcp_cyc','line',0,morlet_float8_le_bytes(ARRAY("
+                         "SELECT round(100*sin((i%4000)/9.0)*(1+((i%4000)/1500))+((i/4000)+1)*sin(i/1.7))::float8 "
+                         "FROM generate_series(0,11999) i)),4000)")
+            ctx = [{"recording_id": "line", "key": "part", "value": f"P{k + 1}", "start_sample": 4000 * k,
+                    "end_sample": 4000 * (k + 1)} for k in range(3)]
+            ctx.append({"recording_id": "line", "key": "program", "value": "O100", "start_sample": 0,
+                        "end_sample": 12000})
+            ctx += [{"recording_id": "line", "key": "block", "value": blk, "start_sample": 4000 * k + off,
+                     "end_sample": 4000 * k + off + 2000} for k in range(3) for blk, off in (("N10", 0), ("N20", 2000))]
+            conn.execute("SELECT morlet_add_context('mcp_cyc','parts',%s)", (json.dumps(ctx),))
+            conn.execute("SELECT morlet_build_context_segments('mcp_cyc','line',ARRAY['program','block'],"
+                         "ARRAY['part'])")
+            conn.execute("SELECT morlet_enable_envelopes('mcp_cyc')")
+            conn.execute("SELECT morlet_build_envelopes('mcp_cyc','line',512,256,100000)")
+        os.environ["DATABASE_URL"] = url
+
+    def test_exclude_occurrence_keeps_the_same_cut_on_other_parts(self):
+        q = (4000 + 1024, 4000 + 1536)                  # inside part P2
+        plain = m.search_similar("public.mcp_cyc", "line", *q, top_k=5, evidence=False)
+        occ = m.search_similar("public.mcp_cyc", "line", *q, top_k=5, evidence=False, exclude="occurrence")
+        part = lambda s: s // 4000 + 1                   # noqa: E731
+        self.assertTrue(any(part(h["start_sample"]) == 2 for h in plain["hits"]))   # without: its own part shows up
+        self.assertTrue(occ["hits"])
+        self.assertTrue(all(part(h["start_sample"]) != 2 for h in occ["hits"]))
+        self.assertEqual({part(h["start_sample"]) for h in occ["hits"]}, {1, 3})      # the other parts remain
+        self.assertGreater(occ["query"]["excluded_hits"], 0)
+        rec = m.search_similar("public.mcp_cyc", "line", *q, top_k=5, evidence=False, exclude="recording")
+        self.assertEqual(rec["hits"], [])                # "recording" would drop the other parts too
+
+    def test_exclude_occurrence_needs_a_segment(self):
+        with self.assertRaises(Exception):
+            m.search_similar("public.mcp_parts", "p0.x", 0, 512, exclude="occurrence")
+
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
 class TrendOverOrderOnADatabase(unittest.TestCase):
     """#334: numbered cuts without clock time; trend over the cut number."""
 

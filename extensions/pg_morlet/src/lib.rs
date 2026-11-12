@@ -2928,6 +2928,34 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn label_glossary_defines_replaces_and_reads() {
+        // #333: a label's meaning, unit and source, so an agent does not guess what "not_sharp" means.
+        Spi::run("SELECT morlet_create_stream_collection('public','gl')").unwrap();
+        Spi::run("SELECT morlet_enable_context('gl')").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_label_definitions('gl')").unwrap(),
+            Some(0)
+        );
+        Spi::run("SELECT morlet_define_label('gl','not_sharp','flank wear above the C1 limit','mm','C1 protocol')").unwrap();
+        Spi::run("SELECT morlet_define_label('gl','not_sharp','flank wear VB above 0.2','mm','C1 protocol, section 3')").unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT label||'|'||definition||'|'||unit||'|'||source FROM morlet_label_definitions('gl')").unwrap().as_deref(),
+            Some("not_sharp|flank wear VB above 0.2|mm|C1 protocol, section 3")
+        );
+        // a collection whose context predates the glossary gets the table with its first definition
+        Spi::run("DROP TABLE public.gl_label_definitions").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_label_definitions('gl')").unwrap(),
+            Some(0)
+        );
+        Spi::run("SELECT morlet_define_label('gl','worn','VB at least 100','um')").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_label_definitions('gl')").unwrap(),
+            Some(1)
+        );
+    }
+
+    #[pg_test]
     fn context_segments_values_and_compare_to_history() {
         context_fixture();
         // Identical retry is a no-op.

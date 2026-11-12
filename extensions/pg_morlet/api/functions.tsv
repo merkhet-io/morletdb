@@ -52,6 +52,7 @@ morlet_declare_sync	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_decode_chunk	internal	0.2.0	not documented
 morlet_decode_interval	internal	0.3.1	not documented
 morlet_decode_interval_raw	internal	0.3.3	not documented
+morlet_define_label	experimental	0.3.9	label glossary (#333)
 morlet_disable_notifications	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_distance	stable	0.1.0	documented since SQL 0.1.0 or earlier
 morlet_enable_acquisitions	stable	0.3.0	documented since SQL 0.3.0 or earlier
@@ -108,6 +109,8 @@ morlet_interval_stats_fast	internal	0.3.8	helper (#346)
 morlet_interval_stats_final	internal	0.3.3	helper
 morlet_interval_stats_step	internal	0.3.3	helper
 morlet_invalidate_context_segments	internal	0.3.3	not documented
+morlet_label_definitions	experimental	0.3.9	label glossary (#333)
+morlet_label_glossary_table	internal	0.3.9	creates the glossary table (#333)
 morlet_latest	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_level_track	stable	0.3.1	documented since SQL 0.3.1 or earlier
 morlet_lock_context	internal	0.3.3	not documented

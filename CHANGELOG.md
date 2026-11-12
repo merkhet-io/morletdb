@@ -8,6 +8,16 @@ SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_mor
   that key, numbers numerically, instead of by time. Numbered cuts of a tool, which have no clock time, then get
   a trend and change points named by the order value (`first_change_order`). Without a start time, the error
   now points to `order_by`.
+- **Label glossary (#333).** `morlet_define_label(collection, label, definition, unit, source)` records what a
+  label means; `morlet_label_definitions(collection)` lists the definitions. Context enabled from SQL 0.3.9 on
+  gets the table; existing collections get it with their first definition. `decision_state` returns, for the
+  labels it shows, their definitions (`label_definitions`) and the labels nobody defined (`undefined_labels`),
+  and logged precedents carry them. In a demo session an agent had read `not_sharp` (flank wear above 0.2 mm)
+  as the 0.3 mm replacement limit.
+- **MCP `search_similar`: `exclude="occurrence"` (#384).** On cyclic production, the useful answer is the same cut
+  on earlier parts. `occurrence` drops hits from the query's own part, cycle or run (the occurrence of the
+  context segment that contains it), but keeps the other parts in the same recording, which `exclude=recording`
+  drops as well. Tested on one recording of three parts.
 - **`decision.finish_recordings`: build a cut's channels on several connections (#414).** Context, segments and
   values for several recordings at once, spread over the given autocommit connections (one thread each, each
   recording in its own transaction), with the same results as one by one. On a Raspberry Pi 3B+, 4

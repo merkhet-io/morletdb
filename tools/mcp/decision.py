@@ -106,6 +106,22 @@ def value_rules(conn, collection):
     return conn.execute("SELECT public.morlet_value_rules(%s::regclass)", (collection,)).fetchone()[0]
 
 
+def label_glossary(conn, collection):
+    """The collection's label definitions (morlet_label_definitions, SQL 0.3.9; empty on older servers):
+    {label: {"definition", "unit", "source"}}."""
+    try:
+        per_conn = _RELATIONS.setdefault(conn, {})
+    except TypeError:
+        per_conn = {}
+    if "has_glossary" not in per_conn:
+        per_conn["has_glossary"] = conn.execute(
+            "SELECT to_regproc('public.morlet_label_definitions') IS NOT NULL").fetchone()[0]
+    if not per_conn["has_glossary"]:
+        return {}
+    return {lab: {"definition": d, "unit": u or None, "source": src or None} for lab, d, u, src in conn.execute(
+        "SELECT label, definition, unit, source FROM public.morlet_label_definitions(%s::regclass)", (collection,))}
+
+
 class _History:
     """The history of one segment: its rows and their values as a matrix (NULL as NaN), medians computed once."""
 
@@ -342,6 +358,16 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
                                  f"in this one, can dominate the deviations")
         states.append({"v": STATE_VERSION, "segment": segment, "history": hist_info, "values": vals,
                        "summary": summary, "neighbors": near, **out_extra})
+    glossary = label_glossary(conn, collection)
+    for st in states:                                     # what the labels the state shows mean (#333)
+        shown = sorted({lab for e in st["neighbors"] for lab in e["labels"]}
+                       | {lab["label"] for e in st.get("examples", []) for lab in e["labels"]})
+        shown = [lab for lab in shown if not lab.startswith(DECISION_PREFIX)]
+        if shown:
+            st["label_definitions"] = {lab: glossary.get(lab) for lab in shown}
+            undefined = [lab for lab in shown if glossary.get(lab) is None]
+            if undefined:
+                st["undefined_labels"] = undefined
     return states
 
 
@@ -490,9 +516,11 @@ def precedents(state, k: int = 3) -> dict[str, Any]:
     channel): its examples first (labelled cases from the whole history, #404), else neighbours that carry a label
     other than a logged decision. Nearest first, one entry per interval (#418)."""
     found: dict[str, list] = {"examples": [], "neighbors": []}
+    definitions: dict = {}
 
     def walk(x):
         if isinstance(x, dict):
+            definitions.update(x.get("label_definitions") or {})
             for key in ("examples", "neighbors"):
                 for e in x.get(key) or []:
                     if isinstance(e, dict) and "recording_id" in e:
@@ -517,7 +545,8 @@ def precedents(state, k: int = 3) -> dict[str, Any]:
                 continue
             seen.add(key)
             out.append({"recording_id": e["recording_id"], "start_sample": e.get("start_sample"),
-                        "end_sample": e.get("end_sample"), "distance": e.get("distance"), "labels": labs})
+                        "end_sample": e.get("end_sample"), "distance": e.get("distance"), "labels": labs,
+                        "definitions": {lab: definitions.get(lab) for lab in labs}})
             if len(out) == k:
                 break
         if out:
