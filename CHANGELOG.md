@@ -4,6 +4,11 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Importer: wide plant exports (#388).** For CSV, `--time-column` now sets the start time (ISO 8601) and,
+  without `--rate`, the rate from the median row spacing. The metadata records how far the timestamps depart
+  from the even axis; they are not corrected. `--context-columns program,block` stores controller columns as
+  context on every signal (runs of equal value, empty cells keep the last value) and enables context on the
+  collection if needed.
 - **MCP `trend` per context segment (#385).** `segment_context` (a JSON object such as `{"phase": "cut"}`) takes
   the measurement points only inside current context segments whose context contains it, from each segment's
   start (a segment shorter than `samples_per_point` is measured whole). Without it, `trend` measures from each

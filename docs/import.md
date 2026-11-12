@@ -27,6 +27,8 @@ python tools/ingest/morlet_import.py station/*.mseed --collection public.seismic
 python tools/ingest/morlet_import.py pump/*.wav --collection public.pumps --create
 python tools/ingest/morlet_import.py log.csv --rate 1000 --time-column time --unit g \
     --collection public.rig --create
+python tools/ingest/morlet_import.py plant_export.csv --time-column time --context-columns program,block \
+    --collection public.line3 --create     # wide plant export: rate and start from the time column
 python tools/ingest/morlet_import.py bench/*.tdms --collection public.bench --create
 python tools/ingest/morlet_import.py export.parquet --collection public.copy --create   # exchange file
 ```
@@ -41,7 +43,7 @@ What becomes a recording, and how it is stored:
 | WAV (PCM 32-bit) | channel | counts × 2⁻³¹ (exact) | 2⁻³¹ | `full-scale` |
 | EDF, EDF+C | ordinary signal (annotations skipped) | physical values, as EDF readers compute them | the calibration step | the signal's physical dimension |
 | miniSEED (ObsPy) | contiguous segment (touching records joined, gaps kept) | counts as stored | 1 | `counts` for integer data |
-| CSV with a header row | numeric column | the values as parsed | 10⁻ᵈ for the most decimal places d in the column | `--unit` |
+| CSV with a header row (also wide plant exports) | numeric column, except the time and context columns | the values as parsed | 10⁻ᵈ for the most decimal places d in the column | `--unit` |
 | TDMS (npTDMS) | numeric waveform channel (with `wf_increment`) | scaled (physical) values as npTDMS computes them from the file's scaling; `--tdms-values raw` for the stored values | 1 (values stored exactly either way) | the channel's `unit_string` |
 | MorletDB exchange (Parquet) | recording | the exported samples, checked against the file's SHA-256 per recording | as exported | as exported |
 
@@ -103,5 +105,15 @@ metadata and sample quanta, after every recording's samples match the file's SHA
 
 Float WAV, compressed WAV, BDF, discontinuous EDF+ (EDF+D), ASAM MDF (MF4), TDMS channels without waveform timing
 and timestamps that are not uniformly sampled.
+**Wide plant exports (CSV).** One time column, one column per signal, and controller columns such as program
+and block. `--time-column` names the time column: ISO 8601 times (UTC when no offset is given) also set each
+recording's start time; numbers are read as seconds. Without `--rate`, the rate is the median row spacing,
+rounded to 9 significant digits. The samples are stored on that even time axis. How far the real timestamps
+depart from it is recorded in the metadata (`time_axis`: largest and final offset in seconds, and how often
+time stepped backward or not at all), so block-stamped or drifting clocks (#383, #393) show up, but they are
+not corrected. `--context-columns program,block` stores those columns as context on every signal of the file,
+not as recordings. A run of equal values becomes one context row; an empty cell keeps the last value, as
+controllers often write only on change. Build segments from them with `morlet_build_context_segments`.
+
 CSV files are read into memory. For Parquet sources and other layouts, use
 [`parquet_import.py`](../tools/ingest/README.md), which this importer builds on.
