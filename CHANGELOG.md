@@ -10,6 +10,12 @@ SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_mo
   call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
   refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
   concurrent moves cannot break the rule. Affects all releases with episodic memory.
+- **Envelopes build on after compaction removed the first windows (#441).** `morlet_build_envelopes` read the stride
+  from the first stored window after 0; once level-1 compaction had removed the early windows, a rebuild with the
+  original stride failed (`built with stride 6144, not 2048`), new samples stayed unsearchable and the steward's
+  envelope job could trip its breaker. When that first window does not match, the builder now checks that every
+  stored window lies on the requested grid and every grid position without a window is one it skips itself (out of
+  search, or samples removed); another stride's grid is still refused.
 - **Chunk shipping checks the target before writing (#443, #444).** An existing target recording must have the
   source's parameters (rate, channel, unit, metadata, quantum, window, stride, normalization, extractor); before,
   shipping into an empty recording at another rate succeeded and reported `identical: true`. The target's existing
