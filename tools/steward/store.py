@@ -110,6 +110,72 @@ BEGIN
   UPDATE morlet_steward.plans x SET applied_by=current_user,applied_at=now(),outcome=result WHERE x.plan_id=apply.plan_id;
   RETURN result;
 END $$;
+-- The plan rules hold at the table, for direct SQL as for decide() and apply() (#439): a new plan is undecided and
+-- unapplied, with its author, creation time and 24-hour validity set here; a plan's identity (kind, collection,
+-- payload, evidence, hash, author, validity) never changes; a decision is made once, by an approver who is not the
+-- author, before expiry, and records who decided and the hash approved; an application is made once, by an approver,
+-- of an approved, unchanged, unexpired plan; plans are not deleted. The table's owner (who runs init and could drop
+-- this trigger) is exempt, for maintenance.
+CREATE OR REPLACE FUNCTION morlet_steward.plans_guard()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE owner name;
+BEGIN
+  SELECT pg_get_userbyid(c.relowner) INTO owner FROM pg_class c WHERE c.oid=TG_RELID;
+  IF current_user=owner THEN
+    RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;
+  END IF;
+  IF TG_OP='DELETE' THEN
+    RAISE EXCEPTION 'plans are kept: a plan is never deleted' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF TG_OP='INSERT' THEN
+    IF NEW.decision IS NOT NULL OR NEW.decided_by IS NOT NULL OR NEW.decided_at IS NOT NULL
+       OR NEW.approved_sha256 IS NOT NULL OR NEW.applied_by IS NOT NULL OR NEW.applied_at IS NOT NULL
+       OR NEW.outcome IS NOT NULL THEN
+      RAISE EXCEPTION 'a new plan is undecided and unapplied' USING ERRCODE='insufficient_privilege';
+    END IF;
+    NEW.created_by:=current_user; NEW.created_at:=now(); NEW.valid_until:=now()+interval '24 hours';
+    RETURN NEW;
+  END IF;
+  IF (NEW.plan_id,NEW.kind,NEW.collection,NEW.payload,NEW.evidence,NEW.sha256,NEW.created_by,NEW.created_at,NEW.valid_until)
+     IS DISTINCT FROM (OLD.plan_id,OLD.kind,OLD.collection,OLD.payload,OLD.evidence,OLD.sha256,OLD.created_by,
+                       OLD.created_at,OLD.valid_until) THEN
+    RAISE EXCEPTION 'plan %: its kind, target, payload, evidence, author and validity do not change',OLD.plan_id
+      USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF OLD.decision IS NULL AND NEW.decision IS NOT NULL THEN
+    IF NOT pg_has_role(current_user,'morlet_approver','MEMBER') THEN
+      RAISE EXCEPTION 'deciding plans needs the morlet_approver role' USING ERRCODE='insufficient_privilege';
+    END IF;
+    IF OLD.created_by=current_user THEN
+      RAISE EXCEPTION 'a plan is decided by someone other than its author' USING ERRCODE='insufficient_privilege';
+    END IF;
+    IF NEW.decision='approved' AND now()>OLD.valid_until THEN
+      RAISE EXCEPTION 'plan % expired at %; its evidence is stale',OLD.plan_id,OLD.valid_until;
+    END IF;
+    NEW.decided_by:=current_user; NEW.decided_at:=now();
+    NEW.approved_sha256:=CASE WHEN NEW.decision='approved' THEN OLD.sha256 END;
+  ELSIF (NEW.decision,NEW.decided_by,NEW.decided_at,NEW.approved_sha256)
+        IS DISTINCT FROM (OLD.decision,OLD.decided_by,OLD.decided_at,OLD.approved_sha256) THEN
+    RAISE EXCEPTION 'plan %: a decision is made once',OLD.plan_id USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF OLD.applied_at IS NULL AND NEW.applied_at IS NOT NULL THEN
+    IF NOT pg_has_role(current_user,'morlet_approver','MEMBER') THEN
+      RAISE EXCEPTION 'applying plans needs the morlet_approver role' USING ERRCODE='insufficient_privilege';
+    END IF;
+    IF NEW.decision IS DISTINCT FROM 'approved' OR OLD.sha256 IS DISTINCT FROM NEW.approved_sha256
+       OR now()>OLD.valid_until THEN
+      RAISE EXCEPTION 'plan % is not an approved, unchanged, unexpired plan',OLD.plan_id
+        USING ERRCODE='insufficient_privilege';
+    END IF;
+    NEW.applied_by:=current_user; NEW.applied_at:=now();
+  ELSIF (NEW.applied_by,NEW.applied_at,NEW.outcome) IS DISTINCT FROM (OLD.applied_by,OLD.applied_at,OLD.outcome) THEN
+    RAISE EXCEPTION 'plan %: it is applied once',OLD.plan_id USING ERRCODE='insufficient_privilege';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS plans_guard ON morlet_steward.plans;
+CREATE TRIGGER plans_guard BEFORE INSERT OR UPDATE OR DELETE ON morlet_steward.plans
+  FOR EACH ROW EXECUTE FUNCTION morlet_steward.plans_guard();
 CREATE OR REPLACE VIEW morlet_steward.overall AS
   SELECT coalesce((SELECT level FROM morlet_steward.status
     ORDER BY array_position(ARRAY['normal','attention','action_required'],level) DESC LIMIT 1),'normal') AS level,

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Steward plans: the approval rules hold at the table (#439).** A trigger on `morlet_steward.plans` enforces the
+  plan workflow for every write, not only through `decide()` and `apply()`: a new plan is undecided and unapplied,
+  with its author, creation time and 24-hour validity set by the database; a plan's kind, target, payload, evidence
+  and validity never change; a decision is made once, by an approver other than the author, before expiry; an
+  application is made once, of an approved, unchanged, unexpired plan; plans are not deleted. Existing installations
+  get it by running `steward.py init` again.
 SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
 - **A representative keeps its samples while it represents an episode (#440).** `morlet_set_level` checked the

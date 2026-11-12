@@ -39,7 +39,7 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
 ```sh
 pip install -r tools/steward/requirements.txt
 # once, as the database owner: schema, roles (morlet_steward, morlet_approver), grants
-python tools/steward/steward.py init  --dsn "postgresql://owner@host/db"
+python tools/steward/steward.py init  --dsn "postgresql://owner@host/db"   # again after updating the steward
 python tools/steward/steward.py grant --dsn "postgresql://owner@host/db"      # again after new collections
 psql -c "ALTER ROLE morlet_steward LOGIN PASSWORD '...'"
 # the service
