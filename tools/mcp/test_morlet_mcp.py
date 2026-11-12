@@ -335,6 +335,45 @@ class TimeQualityOnADatabase(unittest.TestCase):
         self.assertIn("16.8 samples", h["time_note"])
 
 
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class TrendOverOrderOnADatabase(unittest.TestCase):
+    """#334: numbered cuts without clock time; trend over the cut number."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("chunks", "segments"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_cuts_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_cuts CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_cuts')")
+            for cut in range(1, 31):
+                rid = f"insert7-cut{cut}"
+                conn.execute("SELECT morlet_start_recording('mcp_cuts',%s,1000,'acc','g',%s,512,256,'zscore','none')",
+                             (rid, json.dumps({"insert": 7, "cut": cut})))
+                level = 100 if cut < 20 else 400                 # wear from cut 20 on
+                conn.execute("SELECT morlet_append_chunks_raw('mcp_cuts',%s,0,morlet_float8_le_bytes(ARRAY("
+                             "SELECT round(%s*sin(i/5.0+%s))::float8 FROM generate_series(0,1999) i)),2000)",
+                             (rid, level, cut))
+        os.environ["DATABASE_URL"] = url
+
+    def test_without_order_by_the_error_points_to_it(self):
+        with self.assertRaisesRegex(Exception, "order_by"):
+            m.trend("public.mcp_cuts", '{"insert": 7}')
+
+    def test_trend_over_the_cut_number(self):
+        res = m.trend("public.mcp_cuts", '{"insert": 7}', samples_per_point=1024, order_by="cut")
+        rows = res["table_csv"].splitlines()
+        self.assertEqual(rows[0].split(",")[0], "order")
+        order = [int(r.split(",")[0]) for r in rows[1:]]
+        self.assertEqual(order, list(range(1, 31)))             # numeric order: 2 before 10
+        self.assertEqual(res["order_by"], "cut")
+        self.assertEqual(res["change_points"]["rms"]["first_change_order"], 20)
+        with self.assertRaises(Exception):
+            m.trend("public.mcp_cuts", '{"insert": 7}', order_by="cut", start_utc="2026-01-01T00:00:00Z")
+
+
 if __name__ == "__main__":
     unittest.main()
 

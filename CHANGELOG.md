@@ -4,6 +4,10 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **MCP `trend` over an order key (#334).** `order_by` (a metadata key such as `cut`) orders the recordings by
+  that key, numbers numerically, instead of by time. Numbered cuts of a tool, which have no clock time, then get
+  a trend and change points named by the order value (`first_change_order`). Without a start time, the error
+  now points to `order_by`.
 - **`decision.finish_recordings`: build a cut's channels on several connections (#414).** Context, segments and
   values for several recordings at once, spread over the given autocommit connections (one thread each, each
   recording in its own transaction), with the same results as one by one. On a Raspberry Pi 3B+, 4
