@@ -27,6 +27,7 @@ import heapq
 import json
 import math
 import uuid
+import weakref
 from typing import Any, Iterable, Mapping
 
 import numpy as np
@@ -58,6 +59,15 @@ def _median_sorted(v):
     return v[lo] if lo == hi else v[lo] + (pos - lo) * (v[hi] - v[lo])
 
 
+IN_CHANNEL_UNITS = ("mean", "std", "rms", "p75", "peak_abs")    # morlet_core::values::IN_CHANNEL_UNITS
+
+
+def _negligible_floors(level, names):
+    """Mirror of morlet_core::values::negligible_floors: 1e-9 x |level| for values in channel units, else 0."""
+    f = abs(level) * 1e-9 if math.isfinite(level) else 0.0
+    return [f if n in IN_CHANNEL_UNITS else 0.0 for n in names]
+
+
 RULES_V1, RULES_V2 = "simple-v1", "simple-v2"
 QUANTISED_STEPS = 2.0          # simple-v2 (study V2, #387): a median within two steps of a quantised history is zero
 
@@ -81,8 +91,17 @@ def quantised_step(values):
 
 
 def value_rules(conn, collection):
-    """The collection's value-comparison rules (morlet_value_rules, SQL 0.3.9); simple-v1 on older servers."""
-    if conn.execute("SELECT to_regproc('public.morlet_value_rules') IS NULL").fetchone()[0]:
+    """The collection's value-comparison rules (morlet_value_rules, SQL 0.3.9); simple-v1 on older servers. Whether
+    the server has the function is looked up once per connection; the rules themselves on every call, since
+    morlet_set_value_rules can change them."""
+    try:
+        per_conn = _RELATIONS.setdefault(conn, {})
+    except TypeError:
+        per_conn = {}
+    if "has_value_rules" not in per_conn:
+        per_conn["has_value_rules"] = conn.execute(
+            "SELECT to_regproc('public.morlet_value_rules') IS NOT NULL").fetchone()[0]
+    if not per_conn["has_value_rules"]:
         return RULES_V1
     return conn.execute("SELECT public.morlet_value_rules(%s::regclass)", (collection,)).fetchone()[0]
 
@@ -153,9 +172,7 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     wanted_ex = None if example_labels is None else set(example_labels)
     wanted = None if values is None else set(values)
     baselines = {int(k): [int(b) for b in v if int(b) != int(k)] for k, v in (baselines or {}).items()}
-    seg_t, vals_t, labels_t, names = conn.execute(
-        "SELECT segments::text, vals::text, labels::text, morlet_simple_value_names() "
-        "FROM morlet_context_relations(%s::regclass)", (collection,)).fetchone()
+    seg_t, vals_t, labels_t, names = _relations(conn, collection)
     rms_i = names.index("rms")
     score_i = [i for i, n in enumerate(names) if n in SUMMARY_VALUES]
 
@@ -217,8 +234,7 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     main = {sid: h.without(exclude_labels) for sid, h in histories(match_keys).items()}
     ex_hist = histories(ex_keys) if examples > 0 else {}
     levels = sorted({h.med(rms_i) for h in [*main.values(), *ex_hist.values()]} - {None})
-    floors_of = {lv: fl for lv, fl in conn.execute(
-        "SELECT x, morlet_simple_value_floors(x) FROM unnest(%s::float8[]) x", (levels,))} if levels else {}
+    floors_of = {lv: _negligible_floors(lv, names) for lv in levels}    # morlet_simple_value_floors, mirrored
     rules = value_rules(conn, collection)
 
     def floors(hist):                                     # the comparison floors under the collection's rules
@@ -376,10 +392,26 @@ def _examples(conn, labels_t, names, ranked, k, wanted):
          "values": {n: _num(v) for n, v in zip(names, h[4])}} for dist, h, lids in picked]}
 
 
+_RELATIONS: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+
+
+def _relations(conn, collection):
+    """The collection's context tables and the simple-v1 value names, looked up once per connection: the names
+    follow from the collection's name, and a System 1 worker asks for them on every cut (#403)."""
+    try:
+        per_conn = _RELATIONS.setdefault(conn, {})
+    except TypeError:                                     # a connection that takes no weak reference: no cache
+        per_conn = {}
+    if collection not in per_conn:
+        per_conn[collection] = tuple(conn.execute(
+            "SELECT segments::text, vals::text, labels::text, morlet_simple_value_names() "
+            "FROM morlet_context_relations(%s::regclass)", (collection,)).fetchone())
+    return per_conn[collection]
+
+
 def segment_at(conn, collection: str, recording_id: str, sample: int) -> int:
     """The id of the narrowest current (not stale) context segment of a recording that contains a sample."""
-    seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
-                             (collection,)).fetchone()[0]
+    seg_table = _relations(conn, collection)[0]
     row = conn.execute(f"SELECT segment_id FROM {seg_table} WHERE recording_id = %s AND start_sample <= %s "
                        f"AND %s < end_sample AND NOT stale ORDER BY end_sample - start_sample, segment_id LIMIT 1",
                        (recording_id, sample, sample)).fetchone()
@@ -392,8 +424,7 @@ def segment_at(conn, collection: str, recording_id: str, sample: int) -> int:
 def segments_at(conn, collection: str, points: Iterable[tuple[str, int]]) -> list[int]:
     """segment_at for several (recording_id, sample) points in one query, for example the channels of one cut."""
     points = [(str(r), int(s)) for r, s in points]
-    seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
-                             (collection,)).fetchone()[0]
+    seg_table = _relations(conn, collection)[0]
     found = {(r, s): sid for r, s, sid in conn.execute(
         f"SELECT p.rid, p.sample, (SELECT g.segment_id FROM {seg_table} g WHERE g.recording_id = p.rid "
         f"AND g.start_sample <= p.sample AND p.sample < g.end_sample AND NOT g.stale "
