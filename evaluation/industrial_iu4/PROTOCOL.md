@@ -102,6 +102,27 @@ build (context, segments, values) is timed beside it.
 **Evidence (H3).** Each C decision: `decision_states(..., examples=3, example_match_keys=['process'])` on the signal
 contributing most to the logit; passes when it cites at least one `worn` or `sharp` precedent from another tool.
 
+## Build record (2026-11-12, after M1, before any value of M2 or M3 is read)
+
+Development on M1 (T1–T3): 1,826 scored runs (runs 11 to end), 473 positives (VB ≥ 100 µm). MorletDB
+`main` 720504c (image `morletdb:main-720504c`, pg_morlet 0.3.9, value rules `simple-v2`). Every M1 run's time
+vectors matched the nominal axis (largest departure 0.01 samples; fitted rate error 0 ppm).
+
+| Arm | A: pair chosen on M1 (pooled AUROC) | B (pooled) | C (pooled, in-sample) |
+|---|---|---:|---:|
+| full | `force_sensor_x|raw|p75` (0.996, direction +1) | 0.867 | 1.000 |
+| controller | `torque_axis_y|raw|rms` (0.993, direction +1) | 0.870 | 1.000 |
+
+- C's development AUROC is in-sample (trained on these runs) and is no estimate of anything.
+- A is already near 1 on M1. If it stays there on M2 and M3, the ceiling rule (fixed in the protocol) applies and
+  H1b decides.
+- **H1b thresholds** (causal quantile, Youden on M1): full: A 0.886, C 0.922; controller: A 0.935, C 0.914.
+- **Reading of H1b's "fewer false alarms than A, counted per tool"**, fixed now: per tool, the runs flagged at
+  VB < 50 µm are counted; C passes when it flags every tool before VB 150 µm and the sum of its per-tool counts
+  is smaller than A's.
+- Models: `results/model_C.json` (one per arm), development figures: `results/dev.json`. The confirmation analysis
+  (`analyze_conf.py`) was committed before this record (5830259).
+
 ## Deviations
 
 1. 2026-11-12, after the freeze, before any signal value was read or any result computed. **B's query windows:** up
