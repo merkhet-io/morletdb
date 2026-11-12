@@ -23,7 +23,6 @@ samples: `segment` names the recording and sample range, each neighbour and exam
 from __future__ import annotations
 
 import hashlib
-import heapq
 import json
 import math
 import uuid
@@ -75,18 +74,19 @@ QUANTISED_STEPS = 2.0          # simple-v2 (study V2, #387): a median within two
 def quantised_step(values):
     """Mirror of morlet_core::values::quantised_step: with at least 3 distinct finite values, the smallest gap between
     neighbouring distinct values if every gap is an integer multiple of it (relative tolerance 1e-6, at most 10^6
-    steps), else None."""
-    u = sorted({float(v) for v in values if math.isfinite(v)})
+    steps), else None. Vectorised with numpy; the same float64 operations as the scalar version, so the same answer."""
+    a = np.asarray(values, dtype=np.float64).ravel()
+    u = np.unique(a[np.isfinite(a)])                      # sorted distinct values (0.0 and -0.0 are one value)
     if len(u) < 3:
         return None
-    gaps = [b - a for a, b in zip(u, u[1:]) if b - a > 0]
-    step = min(gaps) if gaps else 0.0
+    gaps = np.diff(u)
+    gaps = gaps[gaps > 0]
+    step = float(gaps.min()) if len(gaps) else 0.0
     if not (math.isfinite(step) and step > 0):
         return None
-    for g in gaps:
-        m = g / step
-        if m > 1e6 or abs(m - round(m)) > 1e-6 * m:
-            return None
+    m = gaps / step
+    if (m > 1e6).any() or (np.abs(m - np.round(m)) > 1e-6 * m).any():   # np.round, like round(), rounds half to even
+        return None
     return step
 
 
@@ -133,6 +133,7 @@ class _History:
             self.V = np.array([[np.nan if v is None else v for v in r[4]] for r in rows], dtype=np.float64
                               ).reshape(len(rows), width)
         self._med = {}
+        self.floors = None                                # the comparison floors, computed once per history
 
     def med(self, i):
         """PostgreSQL's percentile_cont(0.5) over the non-NULL values of column i."""
@@ -254,15 +255,17 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     rules = value_rules(conn, collection)
 
     def floors(hist):                                     # the comparison floors under the collection's rules
-        base = floors_of.get(hist.med(rms_i)) or [None] * len(names)
-        if rules != RULES_V2 or not hist.rows:
-            return base
-        out = []
-        for i, f in enumerate(base):
-            col = hist.V[:, i]
-            step = quantised_step(col[~np.isnan(col)].tolist())
-            out.append(f if f is None or step is None else max(f, QUANTISED_STEPS * step))
-        return out
+        if hist.floors is None:
+            base = floors_of.get(hist.med(rms_i)) or [None] * len(names)
+            if rules != RULES_V2 or not hist.rows:
+                hist.floors = base
+            else:
+                out = []
+                for i, f in enumerate(base):
+                    step = None if f is None else quantised_step(hist.V[:, i])
+                    out.append(f if f is None or step is None else max(f, QUANTISED_STEPS * step))
+                hist.floors = out
+        return hist.floors
 
     def ranked(q, hist, k=None, keep=None):               # morlet_history_neighbors' distance and order
         fl = floors(hist)
@@ -277,12 +280,22 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
         total = np.zeros(len(hist.rows))
         for j in range(len(use)):                         # summed in value order, as avg() accumulates
             total = total + np.where(valid[:, j], terms[:, j], 0.0)
-        dist = [math.sqrt(t / c) if c else None for t, c in zip(total.tolist(), cnt.tolist())]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            d = np.sqrt(total / cnt)                      # the same IEEE operations as math.sqrt(t / c)
+        none = cnt == 0
         rows = hist.rows
-        js = range(len(dist)) if keep is None else [j for j in range(len(dist)) if keep(rows[j])]
-        key = lambda j: (dist[j] is None, dist[j] or 0.0, rows[j][1], rows[j][2])
-        order = sorted(js, key=key) if k is None else heapq.nsmallest(k, js, key=key)
-        return [(dist[j], rows[j]) for j in order]
+        js = np.arange(len(rows)) if keep is None else np.array([j for j in range(len(rows)) if keep(rows[j])],
+                                                                  dtype=np.int64)
+        if len(js) == 0:
+            return []
+        # order: rows with a distance first, by distance, then recording id, then start (as the SQL ORDER BY)
+        dk = np.where(none, 0.0, d)[js]
+        rk = np.array([rows[j][1] for j in js])
+        sk = np.array([rows[j][2] for j in js], dtype=np.int64)
+        order = js[np.lexsort((sk, rk, dk, none[js]))]
+        if k is not None:
+            order = order[:k]
+        return [(None if none[j] else float(d[j]), rows[j]) for j in order.tolist()]
 
     all_base = sorted({b for bs in baselines.values() for b in bs})
     base_rows = {r[0]: {"vals": r[1], "rate": r[2], "channel": r[3], "unit": r[4]} for r in conn.execute(
