@@ -1,8 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.3.12-alpha.1
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+Python SDK 0.1.0a5 (reads and transfers Grizzbit 2.1 chunks). The default chunk format is unchanged (Grizzbit 1);
+Grizzbit 2.1 is opt-in. Existing collections keep their layout and their value rules (`simple-v1`); new collections
+get `simple-v2`.
 
 - **Lossless chunk shipping from edge to centre (#420).** `morlet_encoded_chunks` returns a recording's stored
   chunks as bytes; `morlet_append_encoded_chunk` appends a chunk that another MorletDB encoded, keeping its bytes,
