@@ -112,10 +112,16 @@ def analyze(a) -> dict:
     host = [r for r in lines(res / "host.jsonl") if inweek(r)]
     gaps = [r for r in lines(spool / "gaps.jsonl") if inweek(r)]
     dist = {d.get("id"): d for d in lines(res / "disturbances.jsonl") if inweek(d)}
+    harness = None
+    if "D1r" in dist:   # amendment 1: D1 by docker kill was a manual stop; D1r is the crash H3 evaluates
+        harness = dist.pop("D1")
+        dist["D1"] = dist.pop("D1r")
     last = max([r["at"] for r in probe + host] or [t0])
     complete = last >= t1 - 2 * 900       # the week has run to its end (within two probe rounds)
     V = Verdicts()
-    S = {"week": {"start": iso(t0), "end": iso(t1), "last_record": iso(last), "complete": complete,
+    S = {"d1_harness": None if harness is None else {"docker_kill": harness, "manual_start_at": iso(1794508020.6),
+                                                     "note": "amendment 1: docker kill is a manual stop; D1r repeats D1"},
+         "week": {"start": iso(t0), "end": iso(t1), "last_record": iso(last), "complete": complete,
                   "probe_rounds": len(probe), "host_records": len(host), "gap_lines": len(gaps)}}
 
     # ---- H1, nothing lost or changed ---------------------------------------------------------------------------
@@ -163,6 +169,9 @@ def analyze(a) -> dict:
                 starts.setdefault(c, []).append(r["at"])
             prev[c] = s
     allowed = {"D1": "collector", "D2": "db"}
+    if harness:         # amendment 1: the manual start after the docker kill is explained by it
+        dist["D1_docker_kill"] = harness
+        allowed["D1_docker_kill"] = "collector"
     unexplained = []
     for c, times in starts.items():
         for t in times:   # a start seen in the first host record after a disturbance (at most 30 min later) is it

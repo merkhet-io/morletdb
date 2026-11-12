@@ -146,3 +146,19 @@ other databases.
   returned on an empty database (collector started 16:02:34Z). The week ends 2026-11-17T16:02:49Z. D1 window:
   2026-11-12T16:02Z .. 2026-11-13T16:02Z; D2 window: 2026-11-14T16:02Z .. 2026-11-15T16:02Z.
 
+
+## Amendment 1 (2026-11-12, after D1, before any analysis)
+
+- **What happened:** D1 ran at 2026-11-12T18:11:00Z (epoch 1794507060) as `docker kill -s KILL soak-s1-collector-1`.
+  Docker records `docker kill` as a manual stop, so the `unless-stopped` policy did not restart the collector: the
+  harness stopped it instead of crashing it. disturb.sh logged D1 with `resume_s` null. The collector stayed down
+  until a manual `docker start` at 18:27:00Z (epoch 1794508020), logged with its reason in
+  `results/operator_notes.jsonl`; it stored again 94 s later and replayed its spool (`gaps.jsonl`).
+- **Change:** D1 is repeated once as a real crash, **D1r**: `disturb.sh D1r <start>` sends SIGKILL to the
+  collector's process on the host (`kill -s KILL <State.Pid>`; the process runs as the box's user), which Docker
+  treats as an unexpected exit, so the restart policy applies. D1r runs in the D1 window (start + 48 h .. start + 72 h),
+  once, and only after a D1 line exists. Nothing else changes: same image, database, compose file, probes and D2.
+- **Analysis:** `analyze.py` evaluates H3 for D1 with D1r when D1r exists; the original D1 line, its 16-minute
+  outage and the manual start are reported (`d1_harness`), not hidden. The manual start counts as one manual action
+  caused by the harness and is reported separately; it is not counted against H2. The collector start it caused
+  is explained by it. The outage's shortfall counts as D1's for H5. H1 covers the outage like any other hour.

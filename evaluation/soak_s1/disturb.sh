@@ -2,6 +2,7 @@
 # Soak S1 planned disturbances (PROTOCOL.md, "Phases" and H3), run by hand once each, on the soak box:
 #   SOAK_DIR=/srv/morlet-soak ./disturb.sh D1 <week start, epoch s>   # day 3: kill the collector (a crash)
 #   SOAK_DIR=/srv/morlet-soak ./disturb.sh D2 <week start, epoch s>   # day 5: restart the database (orderly)
+#   SOAK_DIR=/srv/morlet-soak ./disturb.sh D1r <week start, epoch s>  # amendment 1: D1 again as a real crash
 # Refuses outside its day (D1: start+48 h .. start+72 h; D2: start+96 h .. start+120 h) and if it already ran.
 # Appends one line to $SOAK_DIR/results/disturbances.jsonl, which analyze.py reads:
 #   {"id", "cmd", "at", "done_at", "stored_before", "resumed_at", "resume_s", "stored_after"}
@@ -16,7 +17,13 @@ OUT=$SOAK_DIR/results/disturbances.jsonl; ST=$SOAK_DIR/spool/status.json
 case $id in
   D1) cmd="docker kill -s KILL soak-s1-collector-1"; lo=48; hi=72 ;;
   D2) cmd="docker restart soak-s1-db-1"; lo=96; hi=120 ;;
-  *) echo "D1 or D2" >&2; exit 2 ;;
+  D1r) # amendment 1: docker kill is a manual stop (no restart); SIGKILL to the process is a crash
+    pid=$(docker inspect -f '{{.State.Pid}}' soak-s1-collector-1)
+    [ "${pid:-0}" -gt 0 ] || { echo "collector not running" >&2; exit 2; }
+    cmd="kill -s KILL $pid"; lo=48; hi=72
+    { [ -f "$SOAK_DIR/results/disturbances.jsonl" ] && grep -q '"id": "D1"' "$SOAK_DIR/results/disturbances.jsonl"; } \
+      || { echo "D1r only repeats a D1 that ran" >&2; exit 2; } ;;
+  *) echo "D1, D2 or D1r" >&2; exit 2 ;;
 esac
 now=$(date +%s)
 if [ "$now" -lt $((start + lo * 3600)) ] || [ "$now" -ge $((start + hi * 3600)) ]; then
@@ -33,7 +40,7 @@ resumed=""; after=""
 for _ in $(seq 1 90); do
   sleep 10
   s_at=$(field at); s_started=$(field started); s_stored=$(field stored)
-  if [ "$id" = D1 ]; then
+  if [ "$id" != D2 ]; then
     python3 -c "import sys; sys.exit(0 if float('$s_started') > $at and int('$s_stored') > 0 else 1)" 2>/dev/null && { resumed=$s_at; after=$s_stored; break; }
   else
     python3 -c "import sys; sys.exit(0 if float('$s_at') > $done_at and int('$s_stored') > int('$base') else 1)" 2>/dev/null && { resumed=$s_at; after=$s_stored; break; }
