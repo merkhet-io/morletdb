@@ -255,6 +255,43 @@ class DecisionOnADatabase(unittest.TestCase):
                          {"definition": "test: wear above the limit", "unit": "mm", "source": "test fixture"})
         pre = decision.precedents({"a": st})
         self.assertEqual(pre["precedents"][0]["definitions"]["worn"]["unit"], "mm")
+    def test_finish_recordings_in_parallel_equals_one_by_one(self):
+        """#414: building a cut's channels on several connections gives the same segments and values."""
+        import psycopg
+        c = self.conn
+        for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+            c.execute(f"DROP TABLE IF EXISTS public.fin_{t} CASCADE")
+        c.execute("DROP TABLE IF EXISTS public.fin CASCADE")
+        c.execute("SELECT morlet_create_stream_collection('public','fin'); SELECT morlet_enable_context('fin')")
+        jobs = {"par": [], "seq": []}
+        for mode in jobs:
+            for ch in range(6):
+                rid = f"{mode}-c{ch}"
+                c.execute("SELECT morlet_start_recording('fin',%s,1000,%s,'g','{}',512,256,'zscore','none',1)",
+                          (rid, f"c{ch}"))
+                c.execute("SELECT morlet_append_chunk('fin',%s,0,ARRAY(SELECT (sin(i/(3.0+%s))*(1+%s))::float8 "
+                          "FROM generate_series(0,2999) i))", (rid, ch, ch))
+                ctx = [{"recording_id": rid, "key": k, "value": v, "start_sample": 0, "end_sample": 3000}
+                       for k, v in (("machine", "M"), ("cut", f"{mode}/1"))]
+                jobs[mode].append({"recording_id": rid, "batch_id": f"b-{rid}", "context": ctx,
+                                   "segment_keys": ["machine"], "occurrence_keys": ["cut"]})
+        pool = [psycopg.connect(URL, autocommit=True) for _ in range(3)]
+        try:
+            res = decision.finish_recordings(pool, "public.fin", jobs["par"])
+        finally:
+            for p in pool:
+                p.close()
+        self.assertEqual([r["recording_id"] for r in res], [j["recording_id"] for j in jobs["par"]])
+        self.assertTrue(all(r["segments"] == 1 and r["values"] == 1 for r in res))
+        decision.finish_recordings([c], "public.fin", jobs["seq"])
+        vals = dict(c.execute("SELECT s.recording_id, v.vals FROM fin_ctx_values v JOIN fin_ctx_segments s "
+                              "USING (segment_id)").fetchall())
+        for ch in range(6):
+            self.assertEqual(vals[f"par-c{ch}"], vals[f"seq-c{ch}"])
+        # an identical retry adds no context rows and builds nothing new
+        self.assertEqual(decision.finish_recordings([c], "public.fin", jobs["seq"])[0]["context_rows"], 0)
+        with self.assertRaises(ValueError):
+            decision.finish_recordings([], "public.fin", jobs["seq"])
 
     def test_the_mcp_tools(self):
         os.environ["DATABASE_URL"] = URL

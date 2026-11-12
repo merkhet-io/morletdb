@@ -447,6 +447,50 @@ def segment_at(conn, collection: str, recording_id: str, sample: int) -> int:
     return row[0]
 
 
+def finish_recordings(connections, collection: str, jobs: Iterable[dict]) -> list[dict]:
+    """Context, segments and simple-v1 values for several recordings at once, for example the channels of a cut that
+    has just ended (#414). Each job is {"recording_id", "batch_id", "context": [rows as for morlet_add_context],
+    "segment_keys": [...], "occurrence_keys": [...]}. Jobs are spread over the given connections (one thread per
+    connection, each job in its own transaction on one connection), so a Pi's four cores build four recordings at
+    a time; the values are the same as building them one by one. Returns per job: recording_id, context rows
+    added, segments built, values built, seconds. Raises the first job's error after all jobs ran."""
+    from concurrent.futures import ThreadPoolExecutor
+    import time as _time
+    jobs = list(jobs)
+    conns = list(connections)
+    if not conns:
+        raise ValueError("finish_recordings needs at least one connection")
+    if any(not c.autocommit for c in conns):
+        raise ValueError("finish_recordings needs autocommit connections (each job commits on its own)")
+    results: list = [None] * len(jobs)
+
+    def work(k):
+        conn = conns[k]
+        for i in range(k, len(jobs), len(conns)):        # this connection's share, in order
+            j = jobs[i]
+            t = _time.perf_counter()
+            try:
+                with conn.transaction():
+                    added = conn.execute("SELECT morlet_add_context(%s::regclass, %s, %s::jsonb)",
+                                         (collection, j["batch_id"], json.dumps(j["context"]))).fetchone()[0]
+                    segs = conn.execute("SELECT morlet_build_context_segments(%s::regclass, %s, %s::text[], %s::text[])",
+                                        (collection, j["recording_id"], list(j["segment_keys"]),
+                                         list(j["occurrence_keys"]))).fetchone()[0]
+                    vals = conn.execute("SELECT morlet_build_context_values(%s::regclass, %s)",
+                                        (collection, j["recording_id"])).fetchone()[0]
+                results[i] = {"recording_id": j["recording_id"], "context_rows": added, "segments": segs,
+                              "values": vals, "seconds": round(_time.perf_counter() - t, 4)}
+            except Exception as e:  # noqa: BLE001  reported after all jobs ran
+                results[i] = {"recording_id": j["recording_id"], "error": e}
+
+    with ThreadPoolExecutor(len(conns)) as ex:
+        list(ex.map(work, range(len(conns))))
+    for r in results:
+        if r and "error" in r:
+            raise r["error"]
+    return results
+
+
 def segments_at(conn, collection: str, points: Iterable[tuple[str, int]]) -> list[int]:
     """segment_at for several (recording_id, sample) points in one query, for example the channels of one cut."""
     points = [(str(r), int(s)) for r, s in points]
