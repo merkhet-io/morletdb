@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **A representative keeps its samples while it represents an episode (#440).** `morlet_set_level` checked the
+  representative only when an episode moved to level 2; a later move could take the representative to level 3 or 4,
+  leaving the level-2 episode without a real example. Now, after all moves of a call (stored levels overlaid with the
+  call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
+  refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
+  concurrent moves cannot break the rule. Affects all releases with episodic memory.
 - **S3 import resumes objects that were cut off (#442).** `morlet_s3.py import` treated any recording carrying an
   object's key and ETag as proof that the whole object was imported, but the importer commits in batches, so an
   interrupted object was skipped on the next run and its remaining samples and channels never arrived. Objects are
