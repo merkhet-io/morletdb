@@ -104,4 +104,7 @@ contributing most to the logit; passes when it cites at least one `worn` or `sha
 
 ## Deviations
 
-(none yet)
+1. 2026-11-12, after the freeze, before any signal value was read or any result computed. **B's query windows:** up
+   to 8 windows per signal, evenly spaced over the run (as in IU3), instead of every window. Every window would
+   mean about 156 searches per run for the forces alone, about six hours on the Mac for all machines; the
+   gallery (the tool's first 10 runs) is unchanged. A cost decision; nothing was seen.
