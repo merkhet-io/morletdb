@@ -10,6 +10,8 @@ import time
 import psycopg
 from psycopg import sql
 
+import policy as P
+
 SCHEMA_VERSION = 1
 STEWARD_ROLE, APPROVER_ROLE = "morlet_steward", "morlet_approver"
 
@@ -343,7 +345,9 @@ def verify_step(conn, collection: str, batch: int, timeout_s: float) -> dict:
         conn.execute(f"SET LOCAL statement_timeout = {int(timeout_s * 1000)}")
         rows = conn.execute("SELECT recording_id,cardinality(problems),problems FROM morlet_verify(%s::regclass,%s,%s)",
                             (collection, after, batch)).fetchall()
-    bad = [(r[0], r[2][:5]) for r in rows if r[1]]
+    split = [(r[0], *P.integrity_problems(r[2] or [])) for r in rows]
+    bad = [(rid, damage[:5]) for rid, damage, _pending in split if damage]
+    pending = sum(n for _rid, _damage, n in split)   # summaries not built yet: backlog, not damage
     problems += len(bad)
     finished = len(rows) < batch
     if finished:
@@ -354,7 +358,7 @@ def verify_step(conn, collection: str, batch: int, timeout_s: float) -> dict:
         conn.execute("""INSERT INTO morlet_steward.verify_cursor(collection,after_recording,pass_problems) VALUES (%s,%s,%s)
           ON CONFLICT (collection) DO UPDATE SET after_recording=EXCLUDED.after_recording,
             pass_problems=EXCLUDED.pass_problems""", (collection, rows[-1][0], problems))
-    return {"recordings": len(rows), "with_problems": bad, "pass_finished": finished}
+    return {"recordings": len(rows), "with_problems": bad, "summaries_pending": pending, "pass_finished": finished}
 
 
 def verify_due(conn, collection: str, every_days: float) -> bool:

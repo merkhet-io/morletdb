@@ -54,7 +54,8 @@ python tools/steward/steward.py approve 12 --dsn ...         # another person (m
 python tools/steward/steward.py apply 12 --dsn ...           # and applies it, in one transaction
 ```
 
-- **Load gate:** `--load-per-cpu` sets it (default 0.7). Inside Docker Desktop the steward sees the Linux VM's load,
+- **Load gate:** `--load-per-cpu` sets it (default 0.7). A due verification still gets one batch every
+  `--verify-share-every` seconds (default 900), even while the gate is closed; only disk pressure stops it. Inside Docker Desktop the steward sees the Linux VM's load,
   which is also the database's.
 - **Data path:** `--data-path` is the directory whose filesystem holds the database: the data volume, mounted
   read-only into a sidecar container. Without it the steward uses `SHOW data_directory`. If it cannot read free

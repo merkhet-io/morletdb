@@ -118,6 +118,22 @@ class StewardDatabase(unittest.TestCase):
                 self.conn.execute(q)
         self.assertEqual(self.one("SELECT sum(sample_count) FROM line_chunks"), 2_200_000)
 
+    def test_verification_gets_its_share_while_the_load_gate_stays_closed(self):
+        """Soak S1: on a busy edge device the load never fell below the gate and verification never ran."""
+        envelopes = self.one("SELECT count(*) FROM line_envelopes")         # built by hand in the fixture
+        st = steward.Steward(self.conn, P.Config(load_per_cpu=0.0, verify_share_every_s=0), self.tmp)
+        for _ in range(20):
+            note = st.tick()
+            if self.one("SELECT last_pass_finished_at IS NOT NULL FROM morlet_steward.verify_cursor "
+                        "WHERE collection='public.line'"):
+                break
+        self.assertIn("minimum share for integrity checks", note)
+        self.assertEqual(self.one("SELECT last_pass_problems FROM morlet_steward.verify_cursor "
+                                  "WHERE collection='public.line'"), 0)    # missing summaries are backlog, not damage
+        jobs = {r[0] for r in self.admin.execute("SELECT DISTINCT job FROM morlet_steward.actions")}
+        self.assertEqual(jobs, {"verify"})                                   # the builders still wait for the gate
+        self.assertEqual(self.one("SELECT count(*) FROM line_envelopes"), envelopes)
+
     def test_a_failing_job_opens_its_breaker_and_says_so(self):
         self.admin.execute("REVOKE INSERT ON line_envelopes FROM morlet_steward")
         st = self.steward()

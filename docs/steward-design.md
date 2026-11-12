@@ -83,7 +83,7 @@ destructive functions successfully, so a bug in the steward cannot remove raw da
 | chunk summaries | `morlet_build_chunk_summaries`, batches of chunks | returns 0 |
 | roll-ups | `morlet_build_rollups` | returns 0 |
 | context values | `morlet_build_context_values` for segments without values | returns 0 |
-| verify | `morlet_verify` with a stored cursor, `max_recordings` per batch; a full pass per collection every 7 days by default | a pass completes; problems become status items |
+| verify | `morlet_verify` with a stored cursor, `max_recordings` per batch; a full pass per collection every 7 days by default. A *missing* chunk summary is builder backlog, not a problem; every other finding is damage | a pass completes; problems become status items |
 | analyze | `ANALYZE` of tables that changed by more than 10% since the last one | — |
 | housekeeping | mark memory runs left `running` by a dead process as `failed` (prerequisite in #221); mark `actions` left `started` as `interrupted` | — |
 
@@ -91,6 +91,11 @@ destructive functions successfully, so a bug in the steward cannot remove raw da
 
 - Jobs run only while the 1-minute load average is below 0.7 × CPUs (default) and the disk is not at
   *pause* level.
+- **Minimum share for integrity checks:** a due verification gets one batch at least every 15 minutes
+  (`--verify-share-every`), before the builders and even while the load gate is closed. Only disk pressure stops
+  it. On a busy edge device the load rarely falls below the gate and the builders always have new data, so
+  without this share verification never ran (soak S1, 2026-11-11). A batch has the usual budget (about 2 s),
+  so the share costs well under 1% of the time.
 - Each batch is limited by time, not size: the steward shrinks the batch when one runs over budget.
 
 **Circuit breaker:** after 3 consecutive failures, that job stops. The status shows *Action required* with the
