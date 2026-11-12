@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.23, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.24, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,26 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.24 (tool wear, edge-sized limits, Grizzbit 2.1)
+
+- **Section 10, "Industrial use", adds two studies by S. Maslo**, with protocols, scripts and results in
+  [`evaluation/industrial_iu2/`](../../evaluation/industrial_iu2/) and
+  [`evaluation/industrial_latency/`](../../evaluation/industrial_latency/):
+  - **IU2, tool wear** on 13 end mills run to failure (Piecuch and Żabiński 2025, CC BY): end of life across seven
+    confirmation tools with AUROC 0.639 under bounded lag and 0.580 under zero lag (not significant there; bounded
+    lag better on the development tools), below RMS per window (0.791) and the dataset authors' vibration level
+    (0.831) and spindle current (0.813). Those two come from the authors' feature table, not from MorletDB; the
+    text says so. 4.88 billion samples in 6.47 GB (10.6 bits per sample).
+  - **IU1-E, latency with the database limited to 2 CPUs and 512 MB:** history searches and window statistics as
+    fast as without limits (p95 42 against 43 ms, 1.6 against 1.5 ms); only the search over all 85,042 windows
+    slows down (exact 366 against 212 ms, probes 197 against 173 ms); no out-of-memory event.
+  - The conclusion of the section now reads: bounded lag better than zero lag everywhere, significantly on the
+    Bosch data; level values do as well or better on both datasets. Five ledger rows; limitations and the AI
+    statement name the new studies.
+- **Section 4** adds Grizzbit 2.1 (study B6, opt-in, not yet released): waveforms 12.6% smaller in total and
+  smaller on all six, decode at least 53.1 and encode at least 10.8 M samples/s, identical bytes on four
+  platforms. One ledger row.
 
 ## What changed in 0.23 (second author, industrial use)
 
