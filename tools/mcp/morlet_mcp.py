@@ -154,6 +154,26 @@ def time_quality(meta, rate):
     return q
 
 
+def occurrences_at(conn, collection, points):
+    """The occurrence (e.g. {"part": "P12"}) of the narrowest current context segment containing each
+    (recording_id, sample); points outside every segment, or with an empty occurrence, are left out."""
+    try:
+        seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
+                                 (collection,)).fetchone()[0]
+    except psycopg.Error as e:
+        raise ValueError("exclude=occurrence needs a collection with context (morlet_enable_context)") from e
+    rids, samples = [p[0] for p in points], [int(p[1]) for p in points]
+    out = {}
+    for rid, sample, occ in conn.execute(
+            f"SELECT p.rid, p.sample, (SELECT g.occurrence FROM {seg_table} g WHERE g.recording_id = p.rid "
+            f"AND g.start_sample <= p.sample AND p.sample < g.end_sample AND NOT g.stale "
+            f"ORDER BY g.end_sample - g.start_sample, g.segment_id LIMIT 1) "
+            f"FROM unnest(%s::text[], %s::bigint[]) AS p(rid, sample)", (rids, samples)):
+        if occ:
+            out[(rid, sample)] = json.dumps(occ, sort_keys=True)
+    return out
+
+
 def recording(conn, collection, recording_id):
     row = conn.execute(f"SELECT sample_rate_hz, channel, unit, metadata, (checkpoint->>'end')::bigint "
                        f"FROM {collection} WHERE recording_id = %s", (recording_id,)).fetchone()
@@ -768,14 +788,17 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     (servers with SQL 0.3.3). scope says what was searched: the matching recordings, the stored windows
     searched, and (servers with SQL 0.3.6) the periods that exist but were not searched, with why; report it
     with every negative or thin result.
-    exclude leaves out hits from the query's own context: "recording" drops every hit in the query's
+    exclude leaves out hits from the query's own context: "occurrence" drops hits from the same part, cycle or
+    run (the occurrence of the context segment that contains the query, e.g. other channels or other windows of
+    the same part) but keeps earlier parts in the same recording, the usual question in series production;
+    "recording" drops every hit in the query's
     recording (not only the overlapping windows); "metadata:<key>" drops hits from every recording whose
     metadata <key> equals the query's (e.g. "metadata:part" for the other channels of the same part in
     series production). Up to 100 candidates are fetched so that up to top_k hits remain; the query reports how
     many were left out."""
     top_k = max(1, min(top_k, 100))
-    if exclude and exclude != "recording" and not exclude.startswith("metadata:"):
-        raise ValueError('exclude must be "", "recording" or "metadata:<key>"')
+    if exclude and exclude not in ("recording", "occurrence") and not exclude.startswith("metadata:"):
+        raise ValueError('exclude must be "", "recording", "occurrence" or "metadata:<key>"')
     fetch_k = min(100, top_k * 5 + 20) if exclude else top_k      # the SQL search returns at most 100
     shifts = max(0, min(shifts, 4))
     flt = json.dumps(json.loads(metadata_filter or "{}"))
@@ -825,7 +848,17 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
     hits = merge_hits(runs, recording_id, lo, hi)
     excluded = 0
-    if exclude:
+    if exclude == "occurrence":                       # #384: the same part or cycle, from the context segments
+        with connect() as conn:
+            occ = occurrences_at(conn, c, [(recording_id, start_sample)] + [(h["recording_id"], h["start_sample"])
+                                                                            for h in hits])
+        own = occ.get((recording_id, start_sample))
+        if not own:
+            raise ValueError("the query interval lies in no context segment with an occurrence (part, cycle, run); "
+                             "build context segments with occurrence keys first")
+        keep = [h for h in hits if occ.get((h["recording_id"], h["start_sample"])) != own]
+        excluded, hits = len(hits) - len(keep), keep
+    elif exclude:
         key = exclude.split(":", 1)[1] if exclude.startswith("metadata:") else None
         own = src["metadata"].get(key) if key else None
         if key and own is None:
