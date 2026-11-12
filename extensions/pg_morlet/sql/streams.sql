@@ -1829,6 +1829,7 @@ BEGIN
     label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
     author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
     retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+  PERFORM public.morlet_set_value_rules(collection,'simple-v2');
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
 END $$;
 
@@ -1844,6 +1845,38 @@ BEGIN
     RAISE EXCEPTION 'context is not enabled for this collection (morlet_enable_context)';
   END IF;
   RETURN NEXT;
+END $$;
+
+-- Value-comparison rules of a collection (study V2, #387): 'simple-v2' when the marker constraint
+-- morlet_value_rules_simple_v2 exists on its values table, else 'simple-v1'. Read from the catalog, so any role
+-- that may use the collection can read it. simple-v2 also treats a history median within two steps of a
+-- quantised history as zero; the stored values are the same under both.
+CREATE FUNCTION public.morlet_value_rules(collection regclass)
+RETURNS text LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT CASE WHEN EXISTS(SELECT 1 FROM pg_constraint k JOIN pg_class cl ON cl.oid=k.conrelid
+    WHERE k.conname='morlet_value_rules_simple_v2'
+      AND cl.relnamespace=(SELECT relnamespace FROM pg_class WHERE oid=collection)
+      AND cl.relname=(SELECT relname FROM pg_class WHERE oid=collection)||'_ctx_values')
+  THEN 'simple-v2' ELSE 'simple-v1' END
+$$;
+
+-- Sets a collection's value-comparison rules ('simple-v1' or 'simple-v2'); returns them. Needs the right to
+-- alter the values table (its owner). Collections whose context is enabled from SQL 0.3.9 on start with
+-- simple-v2; earlier ones keep simple-v1 until switched.
+CREATE FUNCTION public.morlet_set_value_rules(collection regclass,rules text)
+RETURNS text LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record;
+BEGIN
+  IF rules NOT IN ('simple-v1','simple-v2') THEN
+    RAISE EXCEPTION 'unknown value rules % (simple-v1 or simple-v2)',rules;
+  END IF;
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF rules='simple-v2' AND public.morlet_value_rules(collection)='simple-v1' THEN
+    EXECUTE format('ALTER TABLE %s ADD CONSTRAINT morlet_value_rules_simple_v2 CHECK (true)',rel.vals);
+  ELSIF rules='simple-v1' THEN
+    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT IF EXISTS morlet_value_rules_simple_v2',rel.vals);
+  END IF;
+  RETURN public.morlet_value_rules(collection);
 END $$;
 
 -- Serializes context writes (additions, revisions, segment builds) per recording, and additions per batch
@@ -2147,14 +2180,15 @@ BEGIN
       k AS (SELECT generate_series(1,cardinality(public.morlet_simple_value_names())) AS ord),
       g AS (SELECT p.context,k.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[k.ord]) AS med,count(*) AS n
         FROM pop p CROSS JOIN k GROUP BY p.context,k.ord HAVING count(*)>=3),
-      lv AS (SELECT p.context,public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM pop p GROUP BY p.context),
+      lv AS (SELECT p.context,CASE WHEN $10=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+        ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT p2.vals[o] FROM pop p2 WHERE p2.context=p.context)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$10) END AS fl FROM pop p GROUP BY p.context),
       r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
         FROM g JOIN lv ON lv.context=g.context JOIN pop p ON p.context=g.context WHERE abs(g.med)>lv.fl[g.ord]
         GROUP BY g.context,g.ord,g.med)
     SELECT array_agg(CASE WHEN m.rel IS NOT NULL THEN greatest(m.rel,$9) END ORDER BY k.ord)
       FROM k CROSS JOIN LATERAL (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) AS rel FROM r WHERE r.ord=k.ord) m'
     INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
-      spread_floor;
+      spread_floor,public.morlet_value_rules(collection);
   RETURN spreads;
 END $$;
 
@@ -2232,7 +2266,8 @@ BEGIN
         percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[q.ord]) AS med,
         count(*) FILTER (WHERE h.vals[q.ord]<q.x) AS below,count(*) FILTER (WHERE h.vals[q.ord]=q.x) AS equal
       FROM q CROSS JOIN budget b LEFT JOIN hist h ON true GROUP BY q.name,q.ord,q.x,b.n),
-    lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
+    lv AS (SELECT CASE WHEN $12=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+      ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT h2.vals[o] FROM hist h2)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$12) END AS fl FROM hist h),
     sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad,
         $11[st.ord] AS spread,(SELECT lv.fl[st.ord] FROM lv) AS fl FROM st)
     SELECT name,x,n,CASE WHEN n>=$10 THEN med END,
@@ -2245,7 +2280,7 @@ BEGIN
         WHEN spread IS NULL THEN ''no_pooled_spread'' ELSE ''ok'' END,$7
     FROM sp ORDER BY ord'
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
-      q.vals,min_history,spreads;
+      q.vals,min_history,spreads,public.morlet_value_rules(collection);
 END $$;
 
 -- One row per segment comparison. score is the maximum relative deviation over
@@ -2305,11 +2340,11 @@ BEGIN
   -- into the plain maximum relative deviation over that set.
   unit_spreads:=ARRAY(SELECT CASE WHEN nm=ANY(score_values) THEN 1.0::float8 END
     FROM unnest(names) WITH ORDINALITY AS t(nm,o) ORDER BY o);
-  res:=public.morlet_calibrated_score(q.vals,flat,width,unit_spreads);
+  res:=public.morlet_calibrated_score_rules(q.vals,flat,width,unit_spreads,public.morlet_value_rules(collection));
   score:=res[1]; score_quantile:=res[2];
   IF res[3]>0 THEN top_value:=names[res[3]::integer]; top_relative_deviation:=score; END IF;
   spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
-  calibrated_score:=(public.morlet_calibrated_score(q.vals,flat,width,spreads))[1];
+  calibrated_score:=(public.morlet_calibrated_score_rules(q.vals,flat,width,spreads,public.morlet_value_rules(collection)))[1];
   status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
   RETURN NEXT;
 END $$;
@@ -2642,7 +2677,8 @@ BEGIN
   END IF;
   RETURN QUERY EXECUTE format('WITH hist AS MATERIALIZED ('||history||'),
       med AS (SELECT o,percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[o]) AS m FROM hist h, unnest($10) o GROUP BY o),
-      lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
+      lv AS (SELECT CASE WHEN $12=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+        ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT h2.vals[o] FROM hist h2)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$12) END AS fl FROM hist h),
       d AS (SELECT h.segment_id,sqrt(avg(((($9)[med.o]-h.vals[med.o])/abs(med.m))^2)) AS dist
         FROM hist h CROSS JOIN med CROSS JOIN lv WHERE abs(med.m)>lv.fl[med.o] GROUP BY h.segment_id)
     SELECT h.segment_id,h.recording_id,h.start_sample,h.end_sample,h.occurrence,d.dist,h.vals,
@@ -2652,7 +2688,7 @@ BEGIN
     FROM hist h JOIN d ON d.segment_id=h.segment_id
     ORDER BY d.dist,h.recording_id,h.start_sample LIMIT $11',rel.labels)
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
-      q.vals,ords,top_k;
+      q.vals,ords,top_k,public.morlet_value_rules(collection);
 END $$;
 
 -- Level track (local-level Kalman filter, model local-level-v1) of one simple-v1 value

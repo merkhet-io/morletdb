@@ -22,6 +22,7 @@ morlet_build_context_values	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_build_envelopes	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_build_rollups	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_calibrated_score	internal	0.2.0	not documented
+morlet_calibrated_score_rules	internal	0.3.9	not documented; morlet_calibrated_score under a value-rules version
 morlet_check_candidates	internal	0.3.3	not documented
 morlet_check_chunk	internal	0.3.5	not documented
 morlet_check_context_overlaps	internal	0.2.0	not documented
@@ -117,6 +118,7 @@ morlet_notify_collect	internal	0.3.6	helper
 morlet_notify_commit	internal	0.3.6	helper
 morlet_ns_to_samples	internal	0.3.8	helper (#343)
 morlet_pin_toast_compression	experimental	0.3.6	documented; new in SQL 0.3.6
+morlet_quantised_step	experimental	0.3.9	value rules simple-v2 (study V2, #387)
 morlet_raise_incomplete	internal	0.3.5	helper
 morlet_rate_ratio	internal	0.3.8	helper (#343)
 morlet_read_acquisition	stable	0.3.0	documented since SQL 0.3.0 or earlier
@@ -154,6 +156,7 @@ morlet_segment_grid	internal	0.1.0	not documented
 morlet_segment_start_ns	internal	0.3.0	not documented
 morlet_set_ingest_hold	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_set_level	experimental	0.3.5	documented; new in SQL 0.3.5
+morlet_set_value_rules	experimental	0.3.9	value rules simple-v2 (study V2, #387)
 morlet_signature	internal	0.1.0	not documented
 morlet_simple_value_floors	stable	0.3.1	documented since SQL 0.3.1 or earlier
 morlet_simple_value_names	stable	0.2.0	documented since SQL 0.2.0 or earlier
@@ -173,6 +176,8 @@ morlet_typed_spec	internal	0.1.0	not documented
 morlet_valid_chunk	internal	0.1.0	not documented
 morlet_valid_encoded_chunk	internal	0.2.0	not documented
 morlet_valid_recording	internal	0.1.0	not documented
+morlet_value_floors	experimental	0.3.9	value rules simple-v2 (study V2, #387)
+morlet_value_rules	experimental	0.3.9	value rules simple-v2 (study V2, #387)
 morlet_value_spreads	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_verify	experimental	0.3.5	documented; new in SQL 0.3.5
 morlet_version	stable	0.1.0	documented since SQL 0.1.0 or earlier
