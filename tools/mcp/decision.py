@@ -68,6 +68,44 @@ def _negligible_floors(level, names):
     return [f if n in IN_CHANNEL_UNITS else 0.0 for n in names]
 
 
+RULES_V1, RULES_V2 = "simple-v1", "simple-v2"
+QUANTISED_STEPS = 2.0          # simple-v2 (study V2, #387): a median within two steps of a quantised history is zero
+
+
+def quantised_step(values):
+    """Mirror of morlet_core::values::quantised_step: with at least 3 distinct finite values, the smallest gap between
+    neighbouring distinct values if every gap is an integer multiple of it (relative tolerance 1e-6, at most 10^6
+    steps), else None."""
+    u = sorted({float(v) for v in values if math.isfinite(v)})
+    if len(u) < 3:
+        return None
+    gaps = [b - a for a, b in zip(u, u[1:]) if b - a > 0]
+    step = min(gaps) if gaps else 0.0
+    if not (math.isfinite(step) and step > 0):
+        return None
+    for g in gaps:
+        m = g / step
+        if m > 1e6 or abs(m - round(m)) > 1e-6 * m:
+            return None
+    return step
+
+
+def value_rules(conn, collection):
+    """The collection's value-comparison rules (morlet_value_rules, SQL 0.3.9); simple-v1 on older servers. Whether
+    the server has the function is looked up once per connection; the rules themselves on every call, since
+    morlet_set_value_rules can change them."""
+    try:
+        per_conn = _RELATIONS.setdefault(conn, {})
+    except TypeError:
+        per_conn = {}
+    if "has_value_rules" not in per_conn:
+        per_conn["has_value_rules"] = conn.execute(
+            "SELECT to_regproc('public.morlet_value_rules') IS NOT NULL").fetchone()[0]
+    if not per_conn["has_value_rules"]:
+        return RULES_V1
+    return conn.execute("SELECT public.morlet_value_rules(%s::regclass)", (collection,)).fetchone()[0]
+
+
 class _History:
     """The history of one segment: its rows and their values as a matrix (NULL as NaN), medians computed once."""
 
@@ -197,9 +235,18 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     ex_hist = histories(ex_keys) if examples > 0 else {}
     levels = sorted({h.med(rms_i) for h in [*main.values(), *ex_hist.values()]} - {None})
     floors_of = {lv: _negligible_floors(lv, names) for lv in levels}    # morlet_simple_value_floors, mirrored
+    rules = value_rules(conn, collection)
 
-    def floors(hist):                                     # morlet_simple_value_floors of the history's median rms
-        return floors_of.get(hist.med(rms_i)) or [None] * len(names)
+    def floors(hist):                                     # the comparison floors under the collection's rules
+        base = floors_of.get(hist.med(rms_i)) or [None] * len(names)
+        if rules != RULES_V2 or not hist.rows:
+            return base
+        out = []
+        for i, f in enumerate(base):
+            col = hist.V[:, i]
+            step = quantised_step(col[~np.isnan(col)].tolist())
+            out.append(f if f is None or step is None else max(f, QUANTISED_STEPS * step))
+        return out
 
     def ranked(q, hist, k=None, keep=None):               # morlet_history_neighbors' distance and order
         fl = floors(hist)
@@ -288,7 +335,7 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
             out_extra.update(_examples(conn, labels_t, names, ranked(q, ex_hist[sid], k=examples, keep=labelled),
                                        examples, wanted_ex))
         hist_info = {"match_keys": match_keys or sorted(q["context"]), "size": n,
-                     "excluded_labels": exclude_list}
+                     "excluded_labels": exclude_list, "value_rules": rules}
         if n < reliable_history:
             hist_info["small"] = True
             hist_info["note"] = (f"only {n} earlier comparable segments: one unusual segment, or a short transient "

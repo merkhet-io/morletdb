@@ -184,6 +184,46 @@ class DecisionOnADatabase(unittest.TestCase):
         with self.assertRaises(ValueError):
             decision.decision_state(self.conn, C, self.seg12, match_keys=["no_such_key"])
 
+
+    def test_value_rules_v2_in_the_decision_state(self):
+        """Study V2 (#387): the decision state follows the collection's value rules, as the SQL functions do."""
+        c = self.conn
+        if c.execute("SELECT to_regproc('public.morlet_value_rules') IS NULL").fetchone()[0]:
+            self.skipTest("server without value rules (SQL 0.3.9)")
+        for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+            c.execute(f"DROP TABLE IF EXISTS public.dq_{t} CASCADE")
+        c.execute("DROP TABLE IF EXISTS public.dq CASCADE")
+        c.execute("SELECT morlet_create_stream_collection('public','dq'); SELECT morlet_enable_context('dq')")
+        kinds = {0: "CASE WHEN i < 300 THEN 0 ELSE -0.0383 END",
+                 1: "CASE WHEN i < 200 THEN 0 WHEN i < 500 THEN -0.0383 ELSE -2 * 0.0383 END",
+                 2: "CASE WHEN i < 100 THEN 0 WHEN i < 200 THEN -0.0383 ELSE -2 * 0.0383 END"}
+        for part, kind in ((1, 0), (2, 1), (3, 2), (4, 0), (5, 1), (6, 0), (7, 0)):
+            rid = f"q{part}"
+            c.execute("SELECT morlet_start_recording('dq',%s,1000,'acc','g','{}',512,256,'zscore','none',1)", (rid,))
+            c.execute(f"SELECT morlet_append_chunk('dq',%s,0,ARRAY(SELECT ({kinds[kind]})::float8 "
+                      f"FROM generate_series(0,999) i))", (rid,))
+            ctx = [{"recording_id": rid, "key": k, "value": v, "start_sample": 0, "end_sample": 1000}
+                   for k, v in (("machine", "M"), ("part", part))]
+            c.execute("SELECT morlet_add_context('dq',%s,%s)", (f"b-{rid}", json.dumps(ctx)))
+            c.execute("SELECT morlet_build_context_segments('dq',%s,ARRAY['machine'],ARRAY['part'])", (rid,))
+            c.execute("SELECT morlet_build_context_values('dq',%s)", (rid,))
+        seg = decision.segment_at(c, "public.dq", "q7", 0)
+        for rules, status, rel in (("simple-v2", "zero_median", None), ("simple-v1", "ok", 1.0)):
+            c.execute("SELECT morlet_set_value_rules('dq',%s)", (rules,))
+            st = decision.decision_state(c, "public.dq", seg, neighbors=5)
+            self.assertEqual(st["history"]["value_rules"], rules)
+            p75 = next(v for v in st["values"] if v["name"] == "p75")
+            self.assertEqual(p75["relative_deviation"], rel)
+            sql = c.execute("SELECT status, relative_deviation FROM morlet_compare_to_history('dq',%s,min_history=>3) "
+                            "WHERE value_name = 'p75'", (seg,)).fetchone()
+            self.assertEqual(sql[1], rel)
+            self.assertEqual(p75["status"], "ok" if sql[0] == "no_pooled_spread" else sql[0])
+            self.assertEqual(p75["status"], status if rules == "simple-v2" else p75["status"])
+            near = c.execute("SELECT recording_id, distance FROM morlet_history_neighbors('dq',%s,top_k=>5)",
+                             (seg,)).fetchall()
+            self.assertEqual([(n["recording_id"], n["distance"]) for n in st["neighbors"]],
+                             [(r, decision._num(d)) for r, d in near])
+
     def test_the_mcp_tools(self):
         os.environ["DATABASE_URL"] = URL
         r = asyncio.run(m.mcp.call_tool("decision_state", {"collection": C, "recording_id": "p12-a", "sample": 100,

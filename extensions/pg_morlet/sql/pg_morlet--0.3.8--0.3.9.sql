@@ -5,3 +5,295 @@
 
 ALTER FUNCTION public.morlet_encode_chunk(double precision[], double precision) STABLE;
 ALTER FUNCTION public.morlet_chunk_batch(jsonb, bigint, bytea, integer, double precision, boolean) STABLE;
+
+-- Value-comparison rules simple-v2 (study V2, #387): a history median within two steps of a quantised
+-- history is treated as zero. Existing collections keep simple-v1; context enabled from now on starts with
+-- simple-v2 (morlet_value_rules, morlet_set_value_rules).
+
+CREATE FUNCTION "morlet_quantised_step"(
+	"values" double precision[]
+) RETURNS double precision
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c
+AS 'MODULE_PATHNAME', 'morlet_quantised_step_wrapper';
+
+CREATE FUNCTION "morlet_value_floors"(
+	"level" double precision,
+	"steps" double precision[],
+	"rules" TEXT
+) RETURNS double precision[]
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c
+AS 'MODULE_PATHNAME', 'morlet_value_floors_wrapper';
+
+CREATE FUNCTION "morlet_calibrated_score_rules"(
+	"query" double precision[],
+	"history" double precision[],
+	"width" INT,
+	"spreads" double precision[],
+	"rules" TEXT
+) RETURNS double precision[]
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c
+AS 'MODULE_PATHNAME', 'morlet_calibrated_score_rules_wrapper';
+
+CREATE OR REPLACE FUNCTION public.morlet_value_rules(collection regclass)
+RETURNS text LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT CASE WHEN EXISTS(SELECT 1 FROM pg_constraint k JOIN pg_class cl ON cl.oid=k.conrelid
+    WHERE k.conname='morlet_value_rules_simple_v2'
+      AND cl.relnamespace=(SELECT relnamespace FROM pg_class WHERE oid=collection)
+      AND cl.relname=(SELECT relname FROM pg_class WHERE oid=collection)||'_ctx_values')
+  THEN 'simple-v2' ELSE 'simple-v1' END
+$$;
+
+CREATE OR REPLACE FUNCTION public.morlet_set_value_rules(collection regclass,rules text)
+RETURNS text LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record;
+BEGIN
+  IF rules NOT IN ('simple-v1','simple-v2') THEN
+    RAISE EXCEPTION 'unknown value rules % (simple-v1 or simple-v2)',rules;
+  END IF;
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF rules='simple-v2' AND public.morlet_value_rules(collection)='simple-v1' THEN
+    EXECUTE format('ALTER TABLE %s ADD CONSTRAINT morlet_value_rules_simple_v2 CHECK (true)',rel.vals);
+  ELSIF rules='simple-v1' THEN
+    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT IF EXISTS morlet_value_rules_simple_v2',rel.vals);
+  END IF;
+  RETURN public.morlet_value_rules(collection);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_enable_context(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    ctx_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    kind text NOT NULL CHECK(kind IN (''interval'',''event'')),
+    key text NOT NULL CHECK(key<>''''),
+    value jsonb NOT NULL,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint CHECK(end_sample>start_sample),
+    batch_id text NOT NULL,
+    supersedes bigint REFERENCES %1$I.%2$I(ctx_id),
+    retracted boolean NOT NULL DEFAULT false,
+    recorded_at timestamptz NOT NULL DEFAULT now(),
+    recorded_by text NOT NULL DEFAULT current_user,
+    CHECK((kind=''event'')=(end_sample IS NULL)))',s,c||'_ctx',c);
+  EXECUTE format('CREATE INDEX ON %I.%I(recording_id,key,start_sample)',s,c||'_ctx');
+  EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_ctx');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    context jsonb NOT NULL, occurrence jsonb NOT NULL, ctx_ids bigint[] NOT NULL, spec jsonb NOT NULL,
+    stale boolean NOT NULL DEFAULT false,
+    UNIQUE(recording_id,start_sample,end_sample,spec))',s,c||'_ctx_segments',c);
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    segment_id bigint NOT NULL REFERENCES %1$I.%3$I(segment_id) ON DELETE CASCADE,
+    representation text NOT NULL, vals float8[] COMPRESSION pglz NOT NULL,
+    PRIMARY KEY(segment_id,representation))',s,c||'_ctx_values',c||'_ctx_segments');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    label_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL CHECK(end_sample>start_sample),
+    label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
+    author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
+    retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+  PERFORM public.morlet_set_value_rules(collection,'simple-v2');
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_value_spreads(collection regclass,segment_id bigint,
+  metadata_filter jsonb DEFAULT '{}'::jsonb,exclude_labels text[] DEFAULT '{}'::text[],max_candidates integer DEFAULT 100000,
+  spread_floor float8 DEFAULT 0.01,cutoff_ns numeric DEFAULT NULL)
+RETURNS float8[] LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; pop text; n bigint; spreads float8[];
+BEGIN
+  IF collection IS NULL OR segment_id IS NULL OR metadata_filter IS NULL OR exclude_labels IS NULL
+    OR max_candidates IS NULL OR spread_floor IS NULL THEN
+    RAISE EXCEPTION 'only cutoff_ns may be NULL';
+  END IF;
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  pop:=public.morlet_history_sql(collection,true,cutoff_ns);
+  EXECUTE 'SELECT count(*) FROM ('||pop||' LIMIT $9) h' INTO n
+    USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'spread population exceeds % segments; narrow the metadata filter',max_candidates;
+  END IF;
+  IF NOT (spread_floor>0) THEN RAISE EXCEPTION 'spread_floor must be positive'; END IF;
+  EXECUTE 'WITH pop AS MATERIALIZED ('||pop||'),
+      k AS (SELECT generate_series(1,cardinality(public.morlet_simple_value_names())) AS ord),
+      g AS (SELECT p.context,k.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[k.ord]) AS med,count(*) AS n
+        FROM pop p CROSS JOIN k GROUP BY p.context,k.ord HAVING count(*)>=3),
+      lv AS (SELECT p.context,CASE WHEN $10=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+        ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT p2.vals[o] FROM pop p2 WHERE p2.context=p.context)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$10) END AS fl FROM pop p GROUP BY p.context),
+      r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
+        FROM g JOIN lv ON lv.context=g.context JOIN pop p ON p.context=g.context WHERE abs(g.med)>lv.fl[g.ord]
+        GROUP BY g.context,g.ord,g.med)
+    SELECT array_agg(CASE WHEN m.rel IS NOT NULL THEN greatest(m.rel,$9) END ORDER BY k.ord)
+      FROM k CROSS JOIN LATERAL (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) AS rel FROM r WHERE r.ord=k.ord) m'
+    INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      spread_floor,public.morlet_value_rules(collection);
+  RETURN spreads;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_compare_to_history(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false)
+RETURNS TABLE(value_name text,value float8,hist_n integer,hist_median float8,relative_deviation float8,
+  robust_z float8,quantile float8,spread float8,calibrated_deviation float8,status text,query_occurrence jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; match jsonb; candidates bigint; history text; spreads float8[]; cutoff numeric;
+BEGIN
+  IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
+  END IF;
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO candidates
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF candidates>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
+  RETURN QUERY EXECUTE 'WITH hist AS MATERIALIZED ('||history||'),
+    budget AS (SELECT count(*)::integer AS n FROM hist),
+    q AS (SELECT name,ord,$9[ord] AS x FROM unnest(public.morlet_simple_value_names()) WITH ORDINALITY AS t(name,ord)),
+    st AS (SELECT q.name,q.ord,q.x,b.n,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[q.ord]) AS med,
+        count(*) FILTER (WHERE h.vals[q.ord]<q.x) AS below,count(*) FILTER (WHERE h.vals[q.ord]=q.x) AS equal
+      FROM q CROSS JOIN budget b LEFT JOIN hist h ON true GROUP BY q.name,q.ord,q.x,b.n),
+    lv AS (SELECT CASE WHEN $12=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+      ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT h2.vals[o] FROM hist h2)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$12) END AS fl FROM hist h),
+    sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad,
+        $11[st.ord] AS spread,(SELECT lv.fl[st.ord] FROM lv) AS fl FROM st)
+    SELECT name,x,n,CASE WHEN n>=$10 THEN med END,
+      CASE WHEN n>=$10 AND abs(med)>fl THEN (x-med)/abs(med) END,
+      CASE WHEN n>=$10 AND mad>0 THEN (x-med)/(1.4826*mad) END,
+      CASE WHEN n>=$10 THEN (below+0.5*equal)::float8/n END,
+      spread,
+      CASE WHEN n>=$10 AND abs(med)>fl AND spread>0 THEN abs(x-med)/abs(med)/spread END,
+      CASE WHEN n<$10 THEN ''insufficient_history'' WHEN abs(med)<=fl THEN ''zero_median''
+        WHEN spread IS NULL THEN ''no_pooled_spread'' ELSE ''ok'' END,$7
+    FROM sp ORDER BY ord'
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      q.vals,min_history,spreads,public.morlet_value_rules(collection);
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_compare_summary(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],min_history integer DEFAULT 5,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false,
+  score_values text[] DEFAULT ARRAY['duration_s','std','crest','kurtosis'])
+RETURNS TABLE(score float8,score_quantile float8,top_value text,top_relative_deviation float8,
+  duration_relative_deviation float8,calibrated_score float8,hist_n integer,status text,query_occurrence jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE q record; qr record; match jsonb; history text; flat float8[]; n integer; spreads float8[]; res float8[]; cutoff numeric;
+  names text[]:=public.morlet_simple_value_names(); width integer; unit_spreads float8[];
+BEGIN
+  IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid min_history, max_candidates or metadata filter';
+  END IF;
+  IF cardinality(score_values)=0 OR NOT score_values <@ names THEN
+    RAISE EXCEPTION 'score_values must be a non-empty subset of %',names;
+  END IF;
+  width:=cardinality(names);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
+  -- Refuse an oversized history before flattening it: count at most max_candidates+1 rows (the function is
+  -- STABLE, so this count and the read below see the same snapshot).
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  EXECUTE 'SELECT coalesce(array_agg(x ORDER BY i,j),''{}''::float8[]) FROM (SELECT row_number() OVER () AS i,h.vals FROM ('
+    ||history||') h) t, LATERAL unnest(t.vals) WITH ORDINALITY u(x,j)' INTO flat
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels;
+  n:=cardinality(flat)/width;
+  query_occurrence:=q.occurrence; hist_n:=n;
+  SELECT c.relative_deviation INTO duration_relative_deviation
+    FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
+      max_candidates,before_only) c WHERE c.value_name='duration_s';
+  IF n<min_history THEN status:='insufficient_history'; RETURN NEXT; RETURN; END IF;
+  -- Spread 1 on the evaluated value set and NULL elsewhere turns the calibrated score
+  -- into the plain maximum relative deviation over that set.
+  unit_spreads:=ARRAY(SELECT CASE WHEN nm=ANY(score_values) THEN 1.0::float8 END
+    FROM unnest(names) WITH ORDINALITY AS t(nm,o) ORDER BY o);
+  res:=public.morlet_calibrated_score_rules(q.vals,flat,width,unit_spreads,public.morlet_value_rules(collection));
+  score:=res[1]; score_quantile:=res[2];
+  IF res[3]>0 THEN top_value:=names[res[3]::integer]; top_relative_deviation:=score; END IF;
+  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
+  calibrated_score:=(public.morlet_calibrated_score_rules(q.vals,flat,width,spreads,public.morlet_value_rules(collection)))[1];
+  status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
+  RETURN NEXT;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_history_neighbors(collection regclass,segment_id bigint,
+  match_keys text[] DEFAULT '{}'::text[],metadata_filter jsonb DEFAULT '{}'::jsonb,
+  exclude_labels text[] DEFAULT '{}'::text[],top_k integer DEFAULT 10,max_candidates integer DEFAULT 10000,
+  before_only boolean DEFAULT false,score_values text[] DEFAULT ARRAY['duration_s','std','crest','kurtosis'])
+RETURNS TABLE(neighbor_segment_id bigint,recording_id text,start_sample bigint,end_sample bigint,occurrence jsonb,
+  distance float8,vals float8[],labels jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; q record; qr record; match jsonb; history text; n bigint; cutoff numeric;
+  names text[]:=public.morlet_simple_value_names(); ords integer[];
+BEGIN
+  IF top_k NOT BETWEEN 1 AND 1000 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
+    RAISE EXCEPTION 'invalid top_k (1..1000), max_candidates or metadata filter';
+  END IF;
+  IF cardinality(score_values)=0 OR NOT score_values <@ names THEN
+    RAISE EXCEPTION 'score_values must be a non-empty subset of %',names;
+  END IF;
+  ords:=ARRAY(SELECT o::integer FROM unnest(names) WITH ORDINALITY AS t(nm,o) WHERE nm=ANY(score_values) ORDER BY o);
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  SELECT * INTO q FROM public.morlet_comparable_segment(collection,segment_id);
+  match:=public.morlet_context_match(q.context,match_keys);
+  EXECUTE format('SELECT sample_rate_hz,channel,unit FROM %s WHERE recording_id=$1',collection) INTO qr USING q.recording_id;
+  cutoff:=CASE WHEN before_only THEN public.morlet_segment_start_ns(collection,q.segment_id) END;
+  IF before_only AND cutoff IS NULL THEN
+    RAISE EXCEPTION 'before_only needs the segment''s recording in an acquisition with origin_utc';
+  END IF;
+  history:=public.morlet_history_sql(collection,false,cutoff);
+  EXECUTE 'SELECT count(*) FROM ('||history||' LIMIT $9) h' INTO n
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      max_candidates::bigint+1;
+  IF n>max_candidates THEN
+    RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
+  END IF;
+  RETURN QUERY EXECUTE format('WITH hist AS MATERIALIZED ('||history||'),
+      med AS (SELECT o,percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[o]) AS m FROM hist h, unnest($10) o GROUP BY o),
+      lv AS (SELECT CASE WHEN $12=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+        ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT h2.vals[o] FROM hist h2)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$12) END AS fl FROM hist h),
+      d AS (SELECT h.segment_id,sqrt(avg(((($9)[med.o]-h.vals[med.o])/abs(med.m))^2)) AS dist
+        FROM hist h CROSS JOIN med CROSS JOIN lv WHERE abs(med.m)>lv.fl[med.o] GROUP BY h.segment_id)
+    SELECT h.segment_id,h.recording_id,h.start_sample,h.end_sample,h.occurrence,d.dist,h.vals,
+      coalesce((SELECT jsonb_agg(jsonb_build_object(''label_id'',l.label_id,''label'',l.label,''note'',l.note) ORDER BY l.label_id)
+        FROM %s l WHERE l.recording_id=h.recording_id AND NOT l.retracted
+          AND l.start_sample<h.end_sample AND h.start_sample<l.end_sample),''[]''::jsonb)
+    FROM hist h JOIN d ON d.segment_id=h.segment_id
+    ORDER BY d.dist,h.recording_id,h.start_sample LIMIT $11',rel.labels)
+    USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
+      q.vals,ords,top_k,public.morlet_value_rules(collection);
+END $$;
