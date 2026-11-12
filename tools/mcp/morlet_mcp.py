@@ -312,6 +312,22 @@ def recordings_in(conn, c, flt):
     return sorted(out, key=lambda r: r["t0"])
 
 
+def ordered_recordings(conn, c, flt, key):
+    """Recordings matching flt that have metadata key, in the order of its value (numbers numerically, then text)
+    (#334): for recordings without a clock time, such as numbered cuts."""
+    rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint FROM {c} "
+                        f"WHERE metadata @> %s::jsonb AND metadata ? %s", (json.dumps(flt), key)).fetchall()
+
+    def sort_key(v):
+        try:
+            return (0, float(v), "")
+        except (TypeError, ValueError):
+            return (1, 0.0, str(v))
+    out = [{"recording_id": rid, "rate": rate, "metadata": meta, "samples": n, "t0": None, "order": meta[key]}
+           for rid, rate, meta, n in rows if n]
+    return sorted(out, key=lambda r: (sort_key(r["order"]), r["recording_id"]))
+
+
 def iso(t):
     return t.isoformat().replace("+00:00", "Z")
 
@@ -450,7 +466,8 @@ def sig(v, digits=4):
 @safe
 def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: str = "", max_points: int = 200,
           samples_per_point: int = 4096, step_seconds: float = 0.0, bands: str = "",
-          min_frequency_hz: float = 0.0, baseline_fraction: float = 0.1, segment_context: str = "") -> dict:
+          min_frequency_hz: float = 0.0, baseline_fraction: float = 0.1, segment_context: str = "",
+          order_by: str = "") -> dict:
     """How a signal's level and spectrum change over time, for the recordings matching metadata_filter (for
     example one sensor or bearing). Takes up to max_points (at most 300) measurement points in time order: one per
     recording for short snapshots, or one every step_seconds within longer recordings, each over
@@ -461,16 +478,22 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
     (bands as in describe_interval; min_frequency_hz high-passes before measuring), returned as one CSV
     table; the number of points is lowered automatically to keep the answer short. change_points gives, per measure, the first point from which three
     in a row lie more than 5 robust standard deviations above the first baseline_fraction of points: a
-    candidate for when something changed, to inspect, not a diagnosis."""
+    candidate for when something changed, to inspect, not a diagnosis. order_by (a metadata key, e.g. "cut") orders
+    the recordings by that key instead of by time, for recordings without a clock time such as numbered cuts of a
+    tool; the table's first column is then "order" and change points name the order value (#334)."""
     flt = json.loads(metadata_filter or "{}")
+    if order_by and (start_utc or end_utc):
+        raise ValueError("start_utc and end_utc need time order; leave them empty with order_by")
     t_lo = datetime.fromisoformat(start_utc.replace("Z", "+00:00")) if start_utc else None
     t_hi = datetime.fromisoformat(end_utc.replace("Z", "+00:00")) if end_utc else None
     max_points = max(10, min(max_points, 300))     # keeps the answer within MCP clients' output limits
     with connect() as conn:
         c = checked(conn, collection)
-        recs = recordings_in(conn, c, flt)
+        recs = ordered_recordings(conn, c, flt, order_by) if order_by else recordings_in(conn, c, flt)
         if not recs:
-            raise ValueError("no recordings with a start time match metadata_filter")
+            raise ValueError(f"no recordings with metadata key {order_by!r} match metadata_filter" if order_by else
+                             "no recordings with a start time match metadata_filter (recordings that are numbered, "
+                             "e.g. cuts, can be ordered with order_by)")
         rates = {r["rate"] for r in recs}
         if len(rates) > 1:
             raise ValueError(f"matching recordings have several sample rates ({sorted(rates)}); narrow the filter")
@@ -502,6 +525,9 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
                 if m < 16:
                     continue
                 for s0 in range(a, max(a + 1, b - m + 1), max(m, step)):
+                    if order_by:
+                        points.append((r["order"], r["recording_id"], s0, m))
+                        continue
                     t = r["t0"] + timedelta(seconds=s0 / rate)
                     if (t_lo and t < t_lo) or (t_hi and t >= t_hi):
                         continue
@@ -521,7 +547,8 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
             if min_frequency_hz > 0:
                 x = bandpass(x, rate, min_frequency_hz, 0.0)
             st = stats(x, rate, edges)
-            cols["utc"].append(iso(t)); cols["recording_id"].append(rid); cols["start_sample"].append(s0)
+            cols["utc"].append(t if order_by else iso(t)); cols["recording_id"].append(rid)
+            cols["start_sample"].append(s0)
             for k in ("rms", "std", "peak_abs", "crest_factor", "kurtosis"):
                 cols[k].append(sig(st.get(k)))
             for k, v in st.get("band_power", {}).items():
@@ -532,13 +559,15 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
         if len(vals) < base_n + 3 or any(v is None for v in vals):
             continue
         i, med, mad = change_point(vals, base_n)
-        changes[name] = {"baseline_median": sig(med), "first_change_utc": cols["utc"][i] if i is not None else None,
+        changes[name] = {"baseline_median": sig(med),
+                         ("first_change_order" if order_by else "first_change_utc"):
+                             cols["utc"][i] if i is not None else None,
                          "point": i, "value_then": vals[i] if i is not None else None}
     names = ["utc", "recording_id", "start_sample", "rms", "std", "peak_abs", "crest_factor", "kurtosis"]
-    header = names + [f"power {k}" for k in band_cols]
+    header = (["order"] + names[1:] if order_by else names) + [f"power {k}" for k in band_cols]
     rows = [",".join("" if v is None else str(v) for v in
                      [cols[k][i] for k in names] + [band_cols[k][i] for k in band_cols]) for i in range(len(points))]
-    out_seg = {"segment_context": seg_flt} if seg_flt else {}
+    out_seg = ({"segment_context": seg_flt} if seg_flt else {}) | ({"order_by": order_by} if order_by else {})
     return {"collection": collection, "metadata_filter": flt, **out_seg, "points": len(points),
             "samples_per_point": n, "sample_rate_hz": rate, "baseline_points": base_n, "change_points": changes,
             "table_csv": "\n".join([",".join(header)] + rows)}

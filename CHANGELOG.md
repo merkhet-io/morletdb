@@ -9,6 +9,10 @@ SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_mor
   sample its time maps to (optionally only on the recordings of the message's machine), with the recording's
   measured time uncertainty (#393) where known. An identical re-import is a no-op. `decision_state` lists the
   events inside its segment (`events`: key, value, sample, offset in seconds).
+- **MCP `trend` over an order key (#334).** `order_by` (a metadata key such as `cut`) orders the recordings by
+  that key, numbers numerically, instead of by time. Numbered cuts of a tool, which have no clock time, then get
+  a trend and change points named by the order value (`first_change_order`). Without a start time, the error
+  now points to `order_by`.
 - **Label glossary (#333).** `morlet_define_label(collection, label, definition, unit, source)` records what a
   label means; `morlet_label_definitions(collection)` lists the definitions. Context enabled from SQL 0.3.9 on
   gets the table; existing collections get it with their first definition. `decision_state` returns, for the
