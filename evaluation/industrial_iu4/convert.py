@@ -43,14 +43,20 @@ def main():
             arrays = {}
             for name in SENSOR:
                 arrays[name] = np.asarray(f["signals_sensor"][name][0], dtype=np.float32).astype(np.float64)
+            fields = {}
             for name in MACHINE:
-                arrays[name] = np.asarray(f["signals_machine"][name][0], dtype=np.float32).astype(np.float64)
+                field = name
+                if name not in f["signals_machine"] and name.startswith("torque_axis_"):
+                    field = "force_axis_" + name[-1]          # deviation 2: M2 and M3 report the feed axes' force
+                arrays[name] = np.asarray(f["signals_machine"][field][0], dtype=np.float32).astype(np.float64)
+                fields[name] = field
             labels = {k: float(np.asarray(f["labels"][k]).ravel()[0]) for k in f["labels"]}
             report[f"M{m}T{t}R{r}"] = {"sensor": axis(f["signals_sensor"]["time_sensor"][0], RATES["sensor"]),
                                        "machine": axis(f["signals_machine"]["time_machine"][0], RATES["machine"])}
         if any(not np.all(np.isfinite(a)) for a in arrays.values()):
             raise ValueError(f"{p.name}: non-finite values")
-        np.savez(out / f"M{m}T{t}R{r}.npz", **arrays, labels=json.dumps(labels), source=p.name)
+        np.savez(out / f"M{m}T{t}R{r}.npz", **arrays, labels=json.dumps(labels), source=p.name,
+                 fields=json.dumps(fields))
         if i % 200 == 0:
             print(f"{i + 1}/{len(files)} {p.name}", flush=True)
     (out / f"time_axis_{machine}.json").write_text(json.dumps(report))

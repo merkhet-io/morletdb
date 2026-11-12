@@ -129,3 +129,12 @@ vectors matched the nominal axis (largest departure 0.01 samples; fitted rate er
    to 8 windows per signal, evenly spaced over the run (as in IU3), instead of every window. Every window would
    mean about 156 searches per run for the forces alone, about six hours on the Mac for all machines; the
    gallery (the tool's first 10 runs) is unchanged. A cost decision; nothing was seen.
+2. 2026-11-12, after the build record, before any M2 or M3 value was used. **Feed-drive signals differ by machine.**
+   M1's files hold the feed axes' torque (`torque_axis_x`, `_y`, `_z`); M2's and M3's hold `force_axis_x`, `_y`, `_z`
+   instead (unit attribute "Nm"), as the dataset description's "feed drive force or torque" allows. The
+   first conversion stopped at the first M2 and M3 file on the missing name; it had loaded that file's sensor
+   forces into memory, stored and showed nothing. On M2 and M3, `force_axis_k` is used as the feed-drive signal in
+   place of `torque_axis_k` (same position in the arms; the source field is kept per recording). C's features
+   and the H1b thresholds are dimensionless (own-baseline deviations, quantiles), and per-tool AUROC does not
+   depend on scale, so model, A's choice and thresholds stay as fixed on M1. This is the kind of difference
+   between machines that the transfer question is about; it is reported with the results.

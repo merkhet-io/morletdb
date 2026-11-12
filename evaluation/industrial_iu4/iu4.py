@@ -60,13 +60,14 @@ def init(c):
     return c.execute("SELECT morlet_version()").fetchone()[0], c.execute("SELECT morlet_value_rules('dk')").fetchone()[0]
 
 
-def store_run(c, machine, tool, run, arrays, gallery):
+def store_run(c, machine, tool, run, arrays, gallery, fields=None):
     """The run's 9 signals as recordings, their context, one segment each, values; envelopes for the gallery."""
     for sig in SIGNALS:
         x = np.ascontiguousarray(arrays[sig], dtype="<f8")
         r = rid(machine, tool, run, sig)
         rate = RATES.get(sig, 500.0)
-        meta = {"machine": machine, "tool": tool, "run": run, "signal": sig, "baseline": run <= N_BASELINE}
+        meta = {"machine": machine, "tool": tool, "run": run, "signal": sig, "baseline": run <= N_BASELINE,
+                "source_field": (fields or {}).get(sig, sig)}
         with c.transaction():
             c.execute("SELECT morlet_start_recording(%s,%s,%s,%s,%s,%s::jsonb,512,256,'zscore','none')",
                       (COLL, r, rate, sig, UNITS[sig], json.dumps(meta)))
@@ -151,7 +152,8 @@ def run(machine, npz_dir, out, model_path=None):
                 labels = json.loads(str(z["labels"]))
                 wear[run_no] = labels["wear"]
                 ts = time.perf_counter()
-                store_run(c, machine, tool, run_no, arrays, gallery=run_no <= N_BASELINE)
+                fields = json.loads(str(z["fields"])) if "fields" in z.files else None
+                store_run(c, machine, tool, run_no, arrays, gallery=run_no <= N_BASELINE, fields=fields)
                 t_store = time.perf_counter() - ts
                 if run_no <= N_BASELINE:
                     continue
