@@ -4,6 +4,11 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **`morlet_add_context` no longer scans the whole context table (#414).** Every call looks its batch up by id
+  (identical retries are no-ops). Without an index that was a sequential scan, growing with the collection: 33
+  of 48 ms per call on a Raspberry Pi 3B+ with 27,000 context rows. Context enabled from SQL 0.3.9 on gets an
+  index on `batch_id`; `morlet_index_context(collection)` adds it to existing collections (once, idempotent).
+  On the Pi, one call dropped from 48 to 24 ms.
 - **Clock drift is detected and reported (#393, first part).** The importer fits the rate a CSV time column
   actually shows (`time_axis.fitted_rate_hz`, `rate_error_ppm`). When the timestamps depart from start + rate by
   more than one sample, it warns per recording and in the report. MCP `locate_time` says per match how the time

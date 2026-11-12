@@ -146,6 +146,10 @@ C3.**
   `std` comes out about 1e-13 of its level, not 0. Before 0.3.1 a frozen sensor's
   history thus had a `std` median of about 1e-15, and any real `std` in the query
   deviated from it by about 1e11. Evaluation C4 found this on 3W.
+- **Collections whose context predates SQL 0.3.9:** run `SELECT morlet_index_context('schema.collection')` once.
+  It adds the index on the context table's `batch_id` that `morlet_add_context` uses on every call; without it,
+  each call scans the whole context table, which grows with every recording (#414). Context enabled from 0.3.9
+  on has it.
 - **Value rules `simple-v2` (study V2, #387):** a converter step is far larger than
   rounding residue. A `p75` history of 0, −1 and −2 steps has a median of half a
   step, and a segment at 0 then deviates by exactly 1.0, which dominates any score.
