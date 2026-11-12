@@ -224,11 +224,16 @@ class ScopeOnADatabase(unittest.TestCase):
         self.assertIn("summarized", scope["note"])
         self.assertEqual([p["state"] for p in scope["not_searched_periods"]], ["summarized"])
         self.assertTrue(all(not (10512 <= h["start_sample"] and h["end_sample"] <= 29488) for h in r["hits"]))
-        m.SCOPE_TIMEOUT_MS = 1
+        exact = m.search_scope_exact
+
+        def slow_exact(conn, *args, **kw):               # longer than the 1 ms limit on any machine: the real
+            conn.execute("SELECT pg_sleep(0.05)")        # statement timeout cancels it, deterministically
+            return exact(conn, *args, **kw)
+        m.SCOPE_TIMEOUT_MS, m.search_scope_exact = 1, slow_exact
         try:
             slow = m.search_similar("public.mcp_scope", "A", 0, 512)
         finally:
-            m.SCOPE_TIMEOUT_MS = 5000
+            m.SCOPE_TIMEOUT_MS, m.search_scope_exact = 5000, exact
         self.assertIsNone(slow["scope"]["complete"])       # unknown, never complete
         self.assertIn("unverified", slow["scope"]["note"])
         self.assertEqual(len(slow["hits"]), len(r["hits"]))
