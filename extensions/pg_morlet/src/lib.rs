@@ -2902,6 +2902,32 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn context_batch_lookup_has_an_index() {
+        // #414: morlet_add_context looks a batch up by its id; without an index every call scans the table.
+        Spi::run("SELECT morlet_create_stream_collection('public','bix')").unwrap();
+        Spi::run("SELECT morlet_enable_context('bix')").unwrap();
+        let indexed = "SELECT count(*) FROM pg_index i JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=i.indkey[0] WHERE i.indrelid='bix_ctx'::regclass AND i.indnatts=1 AND a.attname='batch_id'";
+        assert_eq!(Spi::get_one::<i64>(indexed).unwrap(), Some(1));
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_index_context('bix')").unwrap(),
+            Some(0)
+        );
+        // a collection whose context predates the index: morlet_index_context adds it, once
+        let name = Spi::get_one::<String>("SELECT c.relname::text FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=i.indkey[0] WHERE i.indrelid='bix_ctx'::regclass AND i.indnatts=1 AND a.attname='batch_id'").unwrap().unwrap();
+        Spi::run(&format!("DROP INDEX public.{name}")).unwrap();
+        assert_eq!(Spi::get_one::<i64>(indexed).unwrap(), Some(0));
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_index_context('bix')").unwrap(),
+            Some(1)
+        );
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_index_context('bix')").unwrap(),
+            Some(0)
+        );
+        assert_eq!(Spi::get_one::<i64>(indexed).unwrap(), Some(1));
+    }
+
+    #[pg_test]
     fn context_segments_values_and_compare_to_history() {
         context_fixture();
         // Identical retry is a no-op.

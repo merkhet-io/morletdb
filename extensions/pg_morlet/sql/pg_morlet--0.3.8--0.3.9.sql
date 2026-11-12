@@ -8,7 +8,8 @@ ALTER FUNCTION public.morlet_chunk_batch(jsonb, bigint, bytea, integer, double p
 
 -- Value-comparison rules simple-v2 (study V2, #387): a history median within two steps of a quantised
 -- history is treated as zero. Existing collections keep simple-v1; context enabled from now on starts with
--- simple-v2 (morlet_value_rules, morlet_set_value_rules).
+-- simple-v2 (morlet_value_rules, morlet_set_value_rules). Context enabled from now on also gets an index on
+-- batch_id; morlet_index_context adds it to existing collections (#414).
 
 CREATE FUNCTION "morlet_quantised_step"(
 	"values" double precision[]
@@ -36,6 +37,19 @@ CREATE FUNCTION "morlet_calibrated_score_rules"(
 IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c
 AS 'MODULE_PATHNAME', 'morlet_calibrated_score_rules_wrapper';
+
+CREATE OR REPLACE FUNCTION public.morlet_index_context(collection regclass)
+RETURNS integer LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; n integer:=0;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF NOT EXISTS(SELECT 1 FROM pg_index i JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=i.indkey[0]
+      WHERE i.indrelid=rel.ctx AND i.indnatts=1 AND a.attname='batch_id') THEN
+    EXECUTE format('CREATE INDEX ON %s(batch_id)',rel.ctx);
+    n:=n+1;
+  END IF;
+  RETURN n;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.morlet_value_rules(collection regclass)
 RETURNS text LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -83,6 +97,8 @@ BEGIN
     CHECK((kind=''event'')=(end_sample IS NULL)))',s,c||'_ctx',c);
   EXECUTE format('CREATE INDEX ON %I.%I(recording_id,key,start_sample)',s,c||'_ctx');
   EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_ctx');
+  -- morlet_add_context looks a batch up by its id on every call (#414)
+  EXECUTE format('CREATE INDEX ON %I.%I(batch_id)',s,c||'_ctx');
   EXECUTE format('CREATE TABLE %1$I.%2$I (
     segment_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
