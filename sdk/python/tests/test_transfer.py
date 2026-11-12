@@ -191,6 +191,22 @@ class Transfer(unittest.TestCase):
             st_file = f.stats("pump-7/accel-x", 12_345, 1_400_000)
         self.assertEqual(st_server, st_file)
 
+    def test_export_refuses_a_file_recording_with_other_parameters(self):          # #443
+        self.db.ingest(self.coll, "r", np.arange(4.0), sample_rate_hz=1000, channel="x", unit="",
+                       metadata={"asset": "source"}, search_window=None)
+        self.conn.commit()
+        for kw, what in ((dict(sample_rate_hz=7000, channel="x", unit="", metadata={"asset": "source"}), "sample_rate_hz"),
+                         (dict(sample_rate_hz=1000, channel="wrong", unit="", metadata={"asset": "source"}), "channel"),
+                         (dict(sample_rate_hz=1000, channel="x", unit="V", metadata={"asset": "source"}), "unit"),
+                         (dict(sample_rate_hz=1000, channel="x", unit="", metadata={"asset": "wrong"}), "metadata")):
+            out = Path(self.dir.name) / f"{what}.morlet"
+            with morletdb.open(out) as f:
+                f.ingest_empty("r", **kw)
+            with self.assertRaisesRegex(morletdb.ConflictError, what):
+                self.db.export_file(self.coll, out)
+            with morletdb.open(out) as f:
+                self.assertEqual(f.recording("r").samples, 0)                       # nothing appended
+
     def test_a_diverging_server_recording_is_refused(self):
         src = Path(self.dir.name) / "a.morlet"
         with morletdb.open(src) as f:
