@@ -46,6 +46,36 @@ class DiskLadder(unittest.TestCase):
 
 
 class Gating(unittest.TestCase):
+    def test_due_verification_gets_its_minimum_share_under_load(self):
+        """Soak S1: under continuous load and ingest, verification never ran. Now a due verification gets one batch
+        every verify_share_every_s, before the builders and despite the load gate; disk pressure still stops it."""
+        cfg = P.Config(verify_share_every_s=900)
+        fine = P.disk_state(cfg, P.Disk(100 << 30, 50 << 30, None))
+        self.assertFalse(P.may_work(cfg, 3.05, 2, fine)[0])               # the load gate is closed
+        self.assertTrue(P.verify_turn(cfg, True, None, fine))             # first batch after start
+        self.assertTrue(P.verify_turn(cfg, True, 900, fine))
+        self.assertFalse(P.verify_turn(cfg, True, 899, fine))             # not more often than its share
+        self.assertFalse(P.verify_turn(cfg, False, None, fine))           # nothing due
+        pressed = P.disk_state(cfg, P.Disk(100 << 30, (2 << 30) + (1 << 20), 10 << 30))
+        self.assertTrue(pressed.pause)
+        self.assertFalse(P.verify_turn(cfg, True, None, pressed))         # disk pressure stops it
+        unknown = P.disk_state(cfg, P.Disk(None, None, None))
+        self.assertFalse(P.verify_turn(cfg, True, None, unknown))
+        backlog = {"envelopes": True, "context_values": True}
+        self.assertEqual(P.next_job(backlog, {}, True), "envelopes")      # without its turn, builders first
+        self.assertEqual(P.next_job(backlog, {}, True, verify_first=True), "verify")
+        self.assertEqual(P.next_job(backlog, {"verify": P.Breaker(open=True)}, True, verify_first=True), "envelopes")
+        self.assertEqual(P.next_job({}, {}, False, verify_first=True), None)
+
+    def test_missing_summaries_are_backlog_not_damage(self):
+        damage, pending = P.integrity_problems([
+            "chunk at 0: summary missing", "chunk at 32768: summary missing",
+            "chunk at 65536: CRC-32C mismatch", "chunk at 98304: summary does not match the samples",
+            "gap: samples 10..20 have no chunk", "chunks end at 5, the checkpoint at 7"])
+        self.assertEqual(pending, 2)
+        self.assertEqual(len(damage), 4)
+        self.assertEqual(P.integrity_problems([]), ([], 0))
+
     def test_load_and_disk_gate_work(self):
         ok = disk(50, 1)
         self.assertTrue(P.may_work(CFG, 1.0, 4, ok)[0])

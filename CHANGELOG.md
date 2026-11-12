@@ -4,6 +4,12 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Steward: integrity checks get a minimum share under load (soak S1).** On a busy edge device the 1-minute load
+  stayed above the steward's gate and the builders always had new data, so `morlet_verify` never ran ("public.live
+  verified never"). A due verification now gets one batch at least every 15 minutes (`--verify-share-every`),
+  before the builders and despite the load gate; disk pressure still stops it. A missing chunk summary counts as
+  builder backlog (`summaries_pending`), not as damage: under continuous ingest new chunks lack one for a while,
+  and counting them would have raised a false alarm on every pass.
 - **`morlet_add_context` no longer scans the whole context table (#414).** Every call looks its batch up by id
   (identical retries are no-ops). Without an index that was a sequential scan, growing with the collection: 33
   of 48 ms per call on a Raspberry Pi 3B+ with 27,000 context rows. Context enabled from SQL 0.3.9 on gets an

@@ -40,6 +40,7 @@ class Steward:
                                       "verify": 20}
         self.grids: dict[str, list[tuple[int, int]]] = {}
         self.grids_at = 0.0
+        self.verified_at: float | None = None      # monotonic time of the last verify batch (minimum share)
         self.analyzed: dict[str, float] = {}
         self.stop = False
 
@@ -92,14 +93,20 @@ class Steward:
         load1 = os.getloadavg()[0]
         ok, why = P.may_work(cfg, load1, os.cpu_count() or 1, disk)
         note = why
-        if ok:
-            work = self.backlog(cols)
-            due = [c for c in cols if S.verify_due(conn, c, cfg.verify_every_days)]
-            job = P.next_job({j: bool(v) for j, v in work.items()}, breakers, bool(due))
+        due = [c for c in cols if S.verify_due(conn, c, cfg.verify_every_days)] if not disk.pause else []
+        since = None if self.verified_at is None else time.monotonic() - self.verified_at
+        turn = P.verify_turn(cfg, bool(due), since, disk) and not breakers.get("verify", P.Breaker()).open
+        if ok or turn:
+            work = self.backlog(cols) if ok else {j: [] for j in P.JOBS}
+            job = P.next_job({j: bool(v) for j, v in work.items()}, breakers, bool(due), verify_first=turn)
             if job is None:
                 note = "idle: nothing to do"
             else:
                 note = self.run_job(job, work, due, breakers)
+                if job == "verify":
+                    self.verified_at = time.monotonic()
+                    if not ok:
+                        note += f" (minimum share for integrity checks; {why})"
         self.propose_extension_update()
         open_plans = [(r[0], r[1], r[5]) for r in S.plans(conn) if r[7] is None and r[5] != "rejected"
                       and r[4] is not None and r[4].timestamp() > time.time()]
@@ -261,11 +268,13 @@ def main(argv=None) -> int:
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--tick", type=float, default=30.0)
     ap.add_argument("--load-per-cpu", type=float, default=0.7, help="work only below this 1-minute load per CPU")
+    ap.add_argument("--verify-share-every", type=float, default=900.0,
+                    help="seconds: a due verification gets one batch at least this often, even under load")
     ap.add_argument("--reserve-bytes", type=int, default=2 << 30, help="disk kept free: the larger of this and the share")
     ap.add_argument("--reserve-fraction", type=float, default=0.05)
     a = ap.parse_args(argv)
     cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,
-                   reserve_fraction=a.reserve_fraction)
+                   reserve_fraction=a.reserve_fraction, verify_share_every_s=a.verify_share_every)
     if a.command == "run":
         return cmd_run(a, cfg)
     with connect(a.dsn) as conn:
