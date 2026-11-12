@@ -1141,7 +1141,7 @@ def find_onsets(collection: str, recording_id: str, start_sample: int, end_sampl
 def decision_state(collection: str, recording_id: str, sample: int, match_keys: str = "", exclude_labels: str = "",
                    min_history: int = 3, neighbors: int = 3, include_occurrence: bool = False,
                    reliable_history: int = 10, baseline_recordings: str = "", examples: int = 0,
-                   example_labels: str = "") -> dict:
+                   example_labels: str = "", example_match_keys: str = "") -> dict:
     """What a fast decision model needs to know about the context segment (a cut, a cycle, a part) that contains
     a sample: its context (program, tool, material, ...); per value (rms, std, p75, crest, kurtosis, ...) its
     deviation from the same-context history; a summary score with its quantile in that history; and the nearest
@@ -1155,9 +1155,11 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
     one unusual segment, or a short transient in this one (high kurtosis or crest), can dominate the deviations.
     baseline_recordings: comma-separated recording ids (optionally recording_id@sample) of this asset's own
     reference segments, e.g. a tool's first cuts after a change; own_baseline then shows each value's drift from
-    them, which is how wear often shows. examples: how many nearest labelled earlier cases of the same context to
+    them, which is how wear often shows. examples: how many nearest labelled cases of the same context to
     include, with their labels, notes and values (example_labels: comma-separated labels that count; default any
-    label except logged decisions).
+    label except logged decisions). The whole history is searched; if no labelled case exists, examples is empty
+    and examples_note says so. example_match_keys: comma-separated context keys examples must share (default
+    match_keys); fewer keys widen the search, e.g. "process" to find labelled cuts of other tools.
     This describes how unusual the segment is for its context; it is not a diagnosis. Cite the segment and the
     neighbours by recording and sample range."""
     keys = [k.strip() for k in match_keys.split(",") if k.strip()]
@@ -1170,7 +1172,9 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
             brid, _, bs = item.partition("@")
             base.append(decision.segment_at(conn, c, brid, int(bs) if bs else 0))
         wanted = [x.strip() for x in example_labels.split(",") if x.strip()] or None
+        ex_keys = [k.strip() for k in example_match_keys.split(",") if k.strip()] or None
         return decision.decision_state(conn, c, seg, match_keys=keys, exclude_labels=labels,
+                                       example_match_keys=ex_keys,
                                        min_history=min_history, neighbors=max(0, min(neighbors, 20)),
                                        include_occurrence=include_occurrence,
                                        reliable_history=max(1, reliable_history), baseline=base,
