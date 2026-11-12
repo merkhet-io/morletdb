@@ -12,6 +12,7 @@ for exact search and, with --probes, probe search is enabled.
 import argparse
 import csv
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import json
 import math
 import os
@@ -38,6 +39,7 @@ class Recording:
     quantum: float
     samples: np.ndarray
     metadata: dict = field(default_factory=dict)
+    context: list = field(default_factory=list)          # (key, value, start_sample, end_sample), from CSV columns
 
 
 def extractor_for(rate):
@@ -243,19 +245,86 @@ def decimals(text):
     return len(m.group(1)) if m else 0
 
 
+def parse_times(path, values):
+    """A time column: ISO 8601 times (absolute, UTC when no offset is given) or numbers (seconds, relative).
+    Returns (seconds from the first row, the first row's UTC time or None)."""
+    try:
+        t = np.array([float(v) for v in values], dtype=np.float64)
+        return t - t[0], None
+    except ValueError:
+        pass
+    try:
+        ts = [datetime.fromisoformat(v.strip().replace("Z", "+00:00")) for v in values]
+    except ValueError as exc:
+        raise ValueError(f"{path.name}: time column is neither numbers (seconds) nor ISO 8601 times") from exc
+    ts = [t if t.tzinfo else t.replace(tzinfo=timezone.utc) for t in ts]
+    return np.array([(t - ts[0]).total_seconds() for t in ts], dtype=np.float64), ts[0].astimezone(timezone.utc)
+
+
+def time_axis(path, opts, header, body):
+    """Rate, start time and how far the time column departs from an even axis (#388; block-stamped or drifting
+    clocks, #383 and #393, are reported, not corrected). The rate is --rate, else the median row spacing."""
+    if opts.time_column is None:
+        if not opts.rate:
+            raise ValueError("CSV needs --rate (samples per second), or --time-column to estimate it")
+        return float(opts.rate), {}
+    if opts.time_column not in header:
+        raise ValueError(f"{path.name}: no column {opts.time_column!r}")
+    j = header.index(opts.time_column)
+    t, start = parse_times(path, [r[j] for r in body])
+    dt = np.diff(t)
+    if opts.rate:
+        rate, source = float(opts.rate), "--rate"
+    else:
+        step = float(np.median(dt)) if dt.size else 0.0
+        if not (math.isfinite(step) and step > 0):
+            raise ValueError(f"{path.name}: cannot estimate a rate from the time column (use --rate)")
+        # 9 significant digits: timestamps in decimal seconds make 1/step slightly off (999.9999999999991)
+        rate, source = float(f"{1.0 / step:.9g}"), "median spacing of the time column"
+    offset = t - np.arange(t.size) / rate                 # actual minus even-axis time, seconds
+    meta = {"time_axis": {"column": opts.time_column, "rate_source": source,
+                          "max_offset_s": float(np.max(np.abs(offset))),
+                          "end_offset_s": float(offset[-1]),
+                          "steps_backward": int(np.sum(dt < 0)), "steps_zero": int(np.sum(dt == 0))}}
+    if start is not None:
+        meta["start"] = start.isoformat().replace("+00:00", "Z")
+    return rate, meta
+
+
+def context_runs(path, header, body, columns):
+    """Context rows from controller columns (program, block, ...): runs of equal value; an empty cell keeps the
+    last value (controllers often write only on change). Rows before a column's first value get none."""
+    out = []
+    for name in columns:
+        if name not in header:
+            raise ValueError(f"{path.name}: no context column {name!r}")
+        j = header.index(name)
+        value, start = None, 0
+        for i, r in enumerate(body + [None]):
+            v = None if r is None else (r[j].strip() or value)
+            if v != value or r is None:
+                if value is not None:
+                    out.append((name, value, start, i))
+                value, start = v, i
+    return out
+
+
 def read_csv(path, opts):
-    """CSV with a header row: every numeric column (except --time-column) becomes a recording at --rate.
-    The quantum is 10^-d for the most decimal places d seen in a column (d <= 9), else 1."""
-    if not opts.rate:
-        raise ValueError("CSV needs --rate (samples per second)")
+    """CSV with a header row (a wide plant export): every numeric column except --time-column and the
+    --context-columns becomes a recording. The rate is --rate, else estimated from --time-column; an ISO 8601
+    time column also gives the start time. The quantum is 10^-d for the most decimal places d seen in a column
+    (d <= 9), else 1. Context columns become context rows on every recording of the file."""
     with open(path, newline="") as f:
         rows = list(csv.reader(f))
     if len(rows) < 2:
         raise ValueError(f"{path.name}: no data rows")
     header, body = rows[0], rows[1:]
+    context_cols = [c.strip() for c in (getattr(opts, "context_columns", None) or "").split(",") if c.strip()]
+    rate, time_meta = time_axis(path, opts, header, body)
+    context = context_runs(path, header, body, context_cols)
     out = []
     for j, name in enumerate(header):
-        if name == opts.time_column:
+        if name == opts.time_column or name in context_cols:
             continue
         col = [r[j] for r in body]
         try:
@@ -264,8 +333,9 @@ def read_csv(path, opts):
             continue                        # non-numeric column
         d = max(decimals(v) for v in col)
         label = re.sub(r"\s+", "-", name.strip()) or f"col{j}"
-        out.append(Recording(f"{path.stem}.{label}", float(opts.rate), label, opts.unit or "unknown",
-                             10.0 ** -d if d <= 9 else 1.0, values, {"source": path.name, "format": "csv"}))
+        out.append(Recording(f"{path.stem}.{label}", rate, label, opts.unit or "unknown",
+                             10.0 ** -d if d <= 9 else 1.0, values,
+                             {"source": path.name, "format": "csv", **time_meta}, list(context)))
     if not out:
         raise ValueError(f"{path.name}: no numeric columns")
     return out
@@ -310,6 +380,23 @@ def prepare(conn, collection, create):
     if conn.execute("SELECT to_regclass(%s)", (collection + "_envelopes",)).fetchone()[0] is None:
         conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (collection,))
     conn.commit()
+
+
+def add_context(conn, collection, recs):
+    """Context rows of CSV controller columns, one batch per recording (#388). Enables context if needed."""
+    if conn.execute("SELECT to_regclass(%s)", (collection + "_ctx",)).fetchone()[0] is None:
+        conn.execute("SELECT morlet_enable_context(%s::regclass)", (collection,))
+    n = 0
+    for r in recs:
+        if not r.context:
+            continue
+        rows = [{"recording_id": r.recording_id, "key": k, "value": v, "start_sample": a, "end_sample": b}
+                for k, v, a, b in r.context]
+        conn.execute("SELECT morlet_add_context(%s::regclass, %s, %s::jsonb)",
+                     (collection, f"import-{r.recording_id}", json.dumps(rows)))
+        n += len(rows)
+    conn.commit()
+    return n
 
 
 def build(conn, collection, ids, window, probes):
@@ -362,7 +449,10 @@ def main(argv=None):
     p.add_argument("--dsn", default=os.environ.get("DATABASE_URL", ""))
     p.add_argument("--format", choices=sorted(READERS), help="override detection by file suffix")
     p.add_argument("--rate", type=float, help="CSV: samples per second")
-    p.add_argument("--time-column", help="CSV: column to ignore")
+    p.add_argument("--time-column", help="CSV: time column (ISO 8601 or seconds); gives the start time and, "
+                   "without --rate, the rate from the median row spacing")
+    p.add_argument("--context-columns", help="CSV: comma-separated controller columns (e.g. program,block) stored "
+                   "as context on every signal of the file, not as recordings")
     p.add_argument("--unit", help="override the unit")
     p.add_argument("--tdms-values", choices=["scaled", "raw"], default="scaled",
                    help="TDMS: store scaled (physical) values or the raw stored values")
@@ -378,7 +468,9 @@ def main(argv=None):
         recs = [(f.name, r) for f in opts.files for r in recordings(f, opts)]
         plan = [{"file": f, "recording_id": r.recording_id, "rate_hz": r.rate, "channel": r.channel, "unit": r.unit,
                  "samples": int(r.samples.size), "quantum": r.quantum,
-                 "extractor": opts.extractor or extractor_for(r.rate)} for f, r in recs]
+                 "extractor": opts.extractor or extractor_for(r.rate),
+                 **({"time_axis": r.metadata["time_axis"]} if "time_axis" in r.metadata else {}),
+                 **({"context_rows": len(r.context)} if r.context else {})} for f, r in recs]
         if opts.dry_run:
             print(json.dumps({"status": "dry-run", "recordings": plan}, indent=2))
             return 0
@@ -387,6 +479,9 @@ def main(argv=None):
             prepare(conn, opts.collection, opts.create)
         report = import_files(opts.files, opts.collection, Config(), dsn=opts.dsn, reader=chunk_reader(opts))
         report["recordings"] = plan
+        if any(r.context for _f, r in recs):
+            with psycopg.connect(opts.dsn) as conn:
+                report["context_rows"] = add_context(conn, opts.collection, [r for _f, r in recs])
         with psycopg.connect(opts.dsn) as conn:
             if not opts.no_build:
                 report["envelopes_built"] = build(conn, opts.collection, [r["recording_id"] for r in plan],
