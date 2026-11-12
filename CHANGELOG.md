@@ -4,6 +4,12 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Logged decisions keep their precedents (#418).** `decision.log_decision` stores, beside the state the model
+  saw, its k nearest labelled precedents (default 3): the state's examples (labelled cases from the whole
+  history), else its labelled neighbours, never logged decisions, with recording, sample range, distance and
+  labels. When the state held none, `precedents_note` says so. `decisions` and the MCP tool return them without
+  the full state. History grows and labels change, so the precedents of that moment are part of the evidence.
+  Decision log version 2.
 - **Steward: integrity checks get a minimum share under load (soak S1).** On a busy edge device the 1-minute load
   stayed above the steward's gate and the builders always had new data, so `morlet_verify` never ran ("public.live
   verified never"). A due verification now gets one batch at least every 15 minutes (`--verify-share-every`),
