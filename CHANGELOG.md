@@ -4,6 +4,11 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Clock drift is detected and reported (#393, first part).** The importer fits the rate a CSV time column
+  actually shows (`time_axis.fitted_rate_hz`, `rate_error_ppm`). When the timestamps depart from start + rate by
+  more than one sample, it warns per recording and in the report. MCP `locate_time` says per match how the time
+  is derived (`time_basis`: start + rate) and, when an import measured the departure, the uncertainty in
+  seconds and samples. Time anchors, which would correct the drift, are not implemented yet.
 - **Value rules `simple-v2`: a near-zero median on a quantised history counts as zero (#387, study V2).** A p75
   history of 0, −1 and −2 converter steps had a median of half a step, so a segment at 0 deviated by exactly 1.0
   and dominated every score. Under `simple-v2`, a history whose distinct values (at least 3) lie on multiples of
