@@ -9,7 +9,8 @@ ALTER FUNCTION public.morlet_chunk_batch(jsonb, bigint, bytea, integer, double p
 -- Value-comparison rules simple-v2 (study V2, #387): a history median within two steps of a quantised
 -- history is treated as zero. Existing collections keep simple-v1; context enabled from now on starts with
 -- simple-v2 (morlet_value_rules, morlet_set_value_rules). Context enabled from now on also gets an index on
--- batch_id; morlet_index_context adds it to existing collections (#414).
+-- batch_id; morlet_index_context adds it to existing collections (#414). Label glossary: morlet_define_label,
+-- morlet_label_definitions (#333).
 
 CREATE FUNCTION "morlet_quantised_step"(
 	"values" double precision[]
@@ -49,6 +50,46 @@ BEGIN
     n:=n+1;
   END IF;
   RETURN n;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_label_glossary_table(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t regclass;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  IF t IS NULL THEN
+    EXECUTE format('CREATE TABLE %I.%I (
+      label text PRIMARY KEY CHECK(label<>''''),
+      definition text NOT NULL CHECK(definition<>''''),
+      unit text NOT NULL DEFAULT '''', source text NOT NULL DEFAULT '''',
+      defined_by text NOT NULL DEFAULT current_user, defined_at timestamptz NOT NULL DEFAULT now())',s,c||'_label_definitions');
+    t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  END IF;
+  RETURN t;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_define_label(collection regclass,label text,definition text,unit text DEFAULT '',
+  source text DEFAULT '')
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE t regclass;
+BEGIN
+  PERFORM public.morlet_context_relations(collection);
+  t:=public.morlet_label_glossary_table(collection);
+  EXECUTE format('INSERT INTO %s(label,definition,unit,source) VALUES ($1,$2,$3,$4)
+    ON CONFLICT (label) DO UPDATE SET definition=EXCLUDED.definition,unit=EXCLUDED.unit,source=EXCLUDED.source,
+      defined_by=current_user,defined_at=now()',t) USING label,definition,unit,source;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_label_definitions(collection regclass)
+RETURNS TABLE(label text,definition text,unit text,source text,defined_by text,defined_at timestamptz)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t regclass;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  IF t IS NULL THEN RETURN; END IF;
+  RETURN QUERY EXECUTE format('SELECT label,definition,unit,source,defined_by,defined_at FROM %s ORDER BY label',t);
 END $$;
 
 CREATE OR REPLACE FUNCTION public.morlet_value_rules(collection regclass)
@@ -119,6 +160,7 @@ BEGIN
     label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
     author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
     retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+  PERFORM public.morlet_label_glossary_table(collection);
   PERFORM public.morlet_set_value_rules(collection,'simple-v2');
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
 END $$;

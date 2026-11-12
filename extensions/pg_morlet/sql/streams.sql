@@ -1831,6 +1831,7 @@ BEGIN
     label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
     author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
     retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+  PERFORM public.morlet_label_glossary_table(collection);
   PERFORM public.morlet_set_value_rules(collection,'simple-v2');
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
 END $$;
@@ -2114,6 +2115,51 @@ BEGIN
   EXECUTE format('INSERT INTO %s(recording_id,start_sample,end_sample,label,note) VALUES ($1,$2,$3,$4,$5) RETURNING label_id',
     rel.labels) INTO id USING recording_id,start_sample,end_sample,label,note;
   RETURN id;
+END $$;
+
+-- The label glossary of a collection (#333): what a label means, in which unit and from which source, so that an
+-- agent reading "not_sharp" knows it means flank wear above 0.2 mm, not the replacement limit. One row per label;
+-- a new definition replaces the old one and records who defined it and when. Collections whose context was enabled
+-- before SQL 0.3.9 get the table with their first definition.
+CREATE FUNCTION public.morlet_label_glossary_table(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t regclass;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  IF t IS NULL THEN
+    EXECUTE format('CREATE TABLE %I.%I (
+      label text PRIMARY KEY CHECK(label<>''''),
+      definition text NOT NULL CHECK(definition<>''''),
+      unit text NOT NULL DEFAULT '''', source text NOT NULL DEFAULT '''',
+      defined_by text NOT NULL DEFAULT current_user, defined_at timestamptz NOT NULL DEFAULT now())',s,c||'_label_definitions');
+    t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  END IF;
+  RETURN t;
+END $$;
+
+CREATE FUNCTION public.morlet_define_label(collection regclass,label text,definition text,unit text DEFAULT '',
+  source text DEFAULT '')
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE t regclass;
+BEGIN
+  PERFORM public.morlet_context_relations(collection);
+  t:=public.morlet_label_glossary_table(collection);
+  EXECUTE format('INSERT INTO %s(label,definition,unit,source) VALUES ($1,$2,$3,$4)
+    ON CONFLICT (label) DO UPDATE SET definition=EXCLUDED.definition,unit=EXCLUDED.unit,source=EXCLUDED.source,
+      defined_by=current_user,defined_at=now()',t) USING label,definition,unit,source;
+END $$;
+
+-- The collection's label definitions; no rows when none was ever defined.
+CREATE FUNCTION public.morlet_label_definitions(collection regclass)
+RETURNS TABLE(label text,definition text,unit text,source text,defined_by text,defined_at timestamptz)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t regclass;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  IF t IS NULL THEN RETURN; END IF;
+  RETURN QUERY EXECUTE format('SELECT label,definition,unit,source,defined_by,defined_at FROM %s ORDER BY label',t);
 END $$;
 
 CREATE FUNCTION public.morlet_retract_label(collection regclass,label_id bigint)

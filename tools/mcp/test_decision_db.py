@@ -31,7 +31,7 @@ class DecisionOnADatabase(unittest.TestCase):
         cls.conn = psycopg.connect(URL, autocommit=True)
         c = cls.conn
         c.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
-        for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+        for t in ("label_definitions", "labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
             c.execute(f"DROP TABLE IF EXISTS public.dtest_{t} CASCADE")
         c.execute("DROP TABLE IF EXISTS public.dtest CASCADE")
         c.execute("SELECT morlet_create_stream_collection('public','dtest'); SELECT morlet_enable_context('dtest')")
@@ -240,6 +240,21 @@ class DecisionOnADatabase(unittest.TestCase):
             self.assertEqual([(n["recording_id"], n["distance"]) for n in st["neighbors"]],
                              [(r, decision._num(d)) for r, d in near])
 
+    def test_states_and_precedents_carry_label_definitions(self):
+        """#333: what each label shown means, and which labels nobody defined."""
+        c = self.conn
+        if c.execute("SELECT to_regproc('public.morlet_define_label') IS NULL").fetchone()[0]:
+            self.skipTest("server without the label glossary (SQL 0.3.9)")
+        st = decision.decision_state(c, C, self.seg12, neighbors=0, examples=2)
+        self.assertEqual(st["undefined_labels"], ["worn"])
+        self.assertIsNone(st["label_definitions"]["worn"])
+        c.execute("SELECT morlet_define_label('dtest','worn','test: wear above the limit','mm','test fixture')")
+        st = decision.decision_state(c, C, self.seg12, neighbors=0, examples=2)
+        self.assertNotIn("undefined_labels", st)
+        self.assertEqual(st["label_definitions"]["worn"],
+                         {"definition": "test: wear above the limit", "unit": "mm", "source": "test fixture"})
+        pre = decision.precedents({"a": st})
+        self.assertEqual(pre["precedents"][0]["definitions"]["worn"]["unit"], "mm")
     def test_finish_recordings_in_parallel_equals_one_by_one(self):
         """#414: building a cut's channels on several connections gives the same segments and values."""
         import psycopg

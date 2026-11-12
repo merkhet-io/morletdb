@@ -146,6 +146,11 @@ C3.**
   `std` comes out about 1e-13 of its level, not 0. Before 0.3.1 a frozen sensor's
   history thus had a `std` median of about 1e-15, and any real `std` in the query
   deviated from it by about 1e11. Evaluation C4 found this on 3W.
+- **Label glossary (#333):** `SELECT morlet_define_label('schema.collection', 'not_sharp', 'flank wear VB above
+  0.2', 'mm', 'C1 protocol')` records what a label means; `morlet_label_definitions(collection)` lists them. The
+  decision state returns the definition of every label it shows and lists labels nobody defined, so an agent
+  does not guess (a session once read `not_sharp` as the replacement limit). A new definition replaces the old
+  one and records who and when.
 - **Collections whose context predates SQL 0.3.9:** run `SELECT morlet_index_context('schema.collection')` once.
   It adds the index on the context table's `batch_id` that `morlet_add_context` uses on every call; without it,
   each call scans the whole context table, which grows with every recording (#414). Context enabled from 0.3.9

@@ -1241,6 +1241,8 @@ def decision_state(collection: str, recording_id: str, sample: int, match_keys: 
     label except logged decisions). The whole history is searched; if no labelled case exists, examples is empty
     and examples_note says so. example_match_keys: comma-separated context keys examples must share (default
     match_keys); fewer keys widen the search, e.g. "process" to find labelled cuts of other tools.
+    label_definitions gives what each label shown means (morlet_define_label); undefined_labels lists labels nobody
+    defined: do not guess their meaning (a label like "not_sharp" may not be the limit you assume).
     This describes how unusual the segment is for its context; it is not a diagnosis. Cite the segment and the
     neighbours by recording and sample range."""
     keys = [k.strip() for k in match_keys.split(",") if k.strip()]
