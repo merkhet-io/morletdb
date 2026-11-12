@@ -4,6 +4,12 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **MCP: negative search answers state their scope, checked by a scripted conversation (#379).**
+  `tools/mcp/scope_conversation.py` asks the server, through its own tools, the questions an analyst would ask of
+  a collection with a period out of search, and fails when a search without a hit does not say what it searched
+  and what it did not; the transcript is in `examples/mcp-scope/TRANSCRIPT.md`, and the test runs it. It found
+  one weak answer: a search whose filters matched no recording said "every period of the matching recordings
+  was searchable"; it now says that no recording matched and nothing was searched.
 - **Label glossary (#333).** `morlet_define_label(collection, label, definition, unit, source)` records what a
   label means; `morlet_label_definitions(collection)` lists the definitions. Context enabled from SQL 0.3.9 on
   gets the table; existing collections get it with their first definition. `decision_state` returns, for the

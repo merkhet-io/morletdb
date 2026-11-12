@@ -758,7 +758,9 @@ def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), befo
             f"WHERE e.exempt AND e.start_sample < b.hi AND e.end_sample > b.lo",
             (ids, [bounds[i][0] for i in ids], [bounds[i][1] for i in ids])).fetchone()
         out["event_library"] = {"entries": lib[0] + lib[1], "at_full_level": lib[0], "out_of_search": lib[1]}
-    out["note"] = ("every period of the matching recordings was searchable" if out["complete"] else
+    out["note"] = ("no recording matches the search's filters (metadata, time range), so nothing was searched: "
+                   "a missing match says nothing about other recordings" if not ids else
+                   "every period of the matching recordings was searchable" if out["complete"] else
                    f"{out['not_searched_seconds']:g} s of the matching recordings were not searched "
                    f"({', '.join(k for k in out['seconds'] if k in NOT_SEARCHED)}): a missing match says nothing "
                    f"about those periods")
