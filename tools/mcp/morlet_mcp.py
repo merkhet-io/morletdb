@@ -415,11 +415,14 @@ def sig(v, digits=4):
 @safe
 def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: str = "", max_points: int = 200,
           samples_per_point: int = 4096, step_seconds: float = 0.0, bands: str = "",
-          min_frequency_hz: float = 0.0, baseline_fraction: float = 0.1) -> dict:
+          min_frequency_hz: float = 0.0, baseline_fraction: float = 0.1, segment_context: str = "") -> dict:
     """How a signal's level and spectrum change over time, for the recordings matching metadata_filter (for
     example one sensor or bearing). Takes up to max_points (at most 300) measurement points in time order: one per
     recording for short snapshots, or one every step_seconds within longer recordings, each over
-    samples_per_point samples. Each point gives rms, std, peak, crest factor, kurtosis and power per band
+    samples_per_point samples. segment_context (a JSON object, e.g. '{"phase": "cut"}') measures only inside the
+    context segments whose context contains it, from each segment's start, so that the idle lead-in before a cut
+    is not what the trend describes; a segment shorter than samples_per_point is measured whole (needs a
+    collection with context and built segments). Each point gives rms, std, peak, crest factor, kurtosis and power per band
     (bands as in describe_interval; min_frequency_hz high-passes before measuring), returned as one CSV
     table; the number of points is lowered automatically to keep the answer short. change_points gives, per measure, the first point from which three
     in a row lie more than 5 robust standard deviations above the first baseline_fraction of points: a
@@ -438,14 +441,36 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
             raise ValueError(f"matching recordings have several sample rates ({sorted(rates)}); narrow the filter")
         rate = rates.pop()
         n = max(16, samples_per_point)
+        seg_flt = json.loads(segment_context or "{}")
+        if not isinstance(seg_flt, dict):
+            raise ValueError("segment_context must be a JSON object")
+        spans = {r["recording_id"]: [(0, r["samples"])] for r in recs}
+        if seg_flt:                                       # measure inside matching context segments only (#385)
+            try:
+                seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
+                                         (c,)).fetchone()[0]
+            except psycopg.Error as e:
+                raise ValueError("segment_context needs a collection with context (morlet_enable_context)") from e
+            spans = {rid: [] for rid in spans}
+            for rid, a, b in conn.execute(
+                    f"SELECT recording_id, start_sample, end_sample FROM {seg_table} WHERE NOT stale "
+                    f"AND context @> %s::jsonb AND recording_id = ANY(%s) ORDER BY recording_id, start_sample",
+                    (json.dumps(seg_flt), list(spans))):
+                spans[rid].append((a, b))
+            if not any(spans.values()):
+                raise ValueError(f"no current context segment of the matching recordings has context {seg_flt}")
         points = []
         for r in recs:
             step = int(step_seconds * rate) if step_seconds > 0 else r["samples"]
-            for s0 in range(0, max(1, r["samples"] - n + 1), max(n, step)):
-                t = r["t0"] + timedelta(seconds=s0 / rate)
-                if (t_lo and t < t_lo) or (t_hi and t >= t_hi):
+            for a, b in spans[r["recording_id"]]:
+                m = min(n, b - a)
+                if m < 16:
                     continue
-                points.append((t, r["recording_id"], s0))
+                for s0 in range(a, max(a + 1, b - m + 1), max(m, step)):
+                    t = r["t0"] + timedelta(seconds=s0 / rate)
+                    if (t_lo and t < t_lo) or (t_hi and t >= t_hi):
+                        continue
+                    points.append((t, r["recording_id"], s0, m))
         edges = parse_bands(bands, rate)
         n_bands = len(edges) if edges else 5
         budget = max(10, 30000 // (60 + 9 * (5 + n_bands)))     # keep the table within about 30,000 characters
@@ -456,8 +481,8 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
         cols = {"utc": [], "recording_id": [], "start_sample": [], "rms": [], "std": [], "peak_abs": [],
                 "crest_factor": [], "kurtosis": []}
         band_cols = {}
-        for t, rid, s0 in points:
-            x = read(conn, c, rid, s0, s0 + n)
+        for t, rid, s0, m in points:
+            x = read(conn, c, rid, s0, s0 + m)
             if min_frequency_hz > 0:
                 x = bandpass(x, rate, min_frequency_hz, 0.0)
             st = stats(x, rate, edges)
@@ -478,8 +503,9 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
     header = names + [f"power {k}" for k in band_cols]
     rows = [",".join("" if v is None else str(v) for v in
                      [cols[k][i] for k in names] + [band_cols[k][i] for k in band_cols]) for i in range(len(points))]
-    return {"collection": collection, "metadata_filter": flt, "points": len(points), "samples_per_point": n,
-            "sample_rate_hz": rate, "baseline_points": base_n, "change_points": changes,
+    out_seg = {"segment_context": seg_flt} if seg_flt else {}
+    return {"collection": collection, "metadata_filter": flt, **out_seg, "points": len(points),
+            "samples_per_point": n, "sample_rate_hz": rate, "baseline_points": base_n, "change_points": changes,
             "table_csv": "\n".join([",".join(header)] + rows)}
 
 

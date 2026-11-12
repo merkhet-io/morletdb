@@ -1,5 +1,6 @@
 """morlet_mcp.py without a database: tool registration, read-only annotations, helpers, error reporting."""
 import asyncio
+import json
 from datetime import datetime, timezone
 import os
 import subprocess
@@ -234,6 +235,66 @@ class ScopeOnADatabase(unittest.TestCase):
         cov = m.coverage("public.mcp_scope")["groups"][0]["search_states_s"]
         self.assertGreater(cov["summarized"], 0)
         self.assertGreater(cov["searchable"], 0)
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class TrendPerSegmentOnADatabase(unittest.TestCase):
+    """Machining cuts with an idle lead-in: the trend of the cut phase, not of the lead-in (#385)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_trend_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_trend CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_trend')")
+            conn.execute("SELECT morlet_enable_context('mcp_trend')")
+            for cut in range(4):
+                rid = f"cut{cut}"
+                meta = '{"spindle": "S1", "start": "2026-01-01T00:%02d:00Z"}' % cut
+                conn.execute("SELECT morlet_start_recording('mcp_trend',%s,1000,'acc','g',%s,512,256,'zscore','none')",
+                             (rid, meta))
+                # 1,000 quiet lead-in samples, then 3,000 cut samples whose level grows with the cut number
+                conn.execute("SELECT morlet_append_chunks_raw('mcp_trend',%s,0,morlet_float8_le_bytes(ARRAY("
+                             "SELECT round(CASE WHEN i < 1000 THEN 2 ELSE 100 * (1 + %s) END * sin(i / 5.0))::float8 "
+                             "FROM generate_series(0, 3999) i)),1000)", (rid, cut))
+                ctx = [{"recording_id": rid, "key": "phase", "value": "idle", "start_sample": 0, "end_sample": 1000},
+                       {"recording_id": rid, "key": "phase", "value": "cut", "start_sample": 1000, "end_sample": 4000}]
+                conn.execute("SELECT morlet_add_context('mcp_trend',%s,%s)", (f"b-{rid}", json.dumps(ctx)))
+                conn.execute("SELECT morlet_build_context_segments('mcp_trend',%s,ARRAY['phase'],ARRAY[]::text[])",
+                             (rid,))
+        os.environ["DATABASE_URL"] = url
+
+    @staticmethod
+    def column(res, name):
+        rows = res["table_csv"].splitlines()
+        i = rows[0].split(",").index(name)
+        return [r.split(",")[i] for r in rows[1:]]
+
+    def test_default_trend_measures_the_lead_in(self):
+        res = m.trend("public.mcp_trend", '{"spindle": "S1"}', samples_per_point=512)
+        self.assertEqual(self.column(res, "start_sample"), ["0"] * 4)
+        self.assertNotIn("segment_context", res)
+
+    def test_segment_context_measures_the_cut(self):
+        res = m.trend("public.mcp_trend", '{"spindle": "S1"}', samples_per_point=512,
+                      segment_context='{"phase": "cut"}')
+        self.assertEqual(res["segment_context"], {"phase": "cut"})
+        self.assertEqual(self.column(res, "start_sample"), ["1000"] * 4)
+        rms = [float(x) for x in self.column(res, "rms")]
+        self.assertEqual(rms, sorted(rms))                 # the cut's level grows from cut to cut
+        self.assertGreater(rms[0], 50)                    # the cut, not the quiet lead-in
+
+    def test_segment_context_steps_within_a_segment_and_reports_missing_ones(self):
+        res = m.trend("public.mcp_trend", '{"spindle": "S1"}', samples_per_point=1000, step_seconds=1.0,
+                      segment_context='{"phase": "cut"}')
+        self.assertEqual(self.column(res, "start_sample")[:3], ["1000", "2000", "3000"])
+        with self.assertRaises(Exception):
+            m.trend("public.mcp_trend", '{"spindle": "S1"}', segment_context='{"phase": "retract"}')
+        with self.assertRaises(Exception):
+            m.trend("public.mcp_trend", '{"spindle": "S1"}', segment_context='["cut"]')
 
 
 if __name__ == "__main__":
