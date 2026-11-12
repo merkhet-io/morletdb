@@ -773,6 +773,34 @@ fn morlet_calibrated_score(
     width: i32,
     spreads: Vec<Option<f64>>,
 ) -> Vec<Option<f64>> {
+    calibrated_score(
+        query,
+        history,
+        width,
+        spreads,
+        morlet_core::values::RULES_V1,
+    )
+}
+
+/// morlet_calibrated_score under a value-rules version (simple-v1 or simple-v2, study V2, #387).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_calibrated_score_rules(
+    query: Vec<Option<f64>>,
+    history: Vec<Option<f64>>,
+    width: i32,
+    spreads: Vec<Option<f64>>,
+    rules: &str,
+) -> Vec<Option<f64>> {
+    calibrated_score(query, history, width, spreads, rules)
+}
+
+fn calibrated_score(
+    query: Vec<Option<f64>>,
+    history: Vec<Option<f64>>,
+    width: i32,
+    spreads: Vec<Option<f64>>,
+    rules: &str,
+) -> Vec<Option<f64>> {
     let q = checked_samples(query);
     let flat = checked_samples(history);
     let w = width as usize;
@@ -789,7 +817,15 @@ fn morlet_calibrated_score(
         } else {
             (rms[n / 2 - 1] + rms[n / 2]) / 2.0
         };
-        morlet_core::values::negligible_floors(level).to_vec()
+        let steps: Vec<Option<f64>> = (0..w)
+            .map(|i| {
+                let col: Vec<f64> = rows.iter().map(|r| r[i]).collect();
+                morlet_core::values::quantised_step(&col)
+            })
+            .collect();
+        morlet_core::values::rule_floors(level, &steps, rules)
+            .unwrap_or_else(|e| pgrx::error!("{}", e))
+            .to_vec()
     } else {
         Vec::new()
     };
@@ -823,6 +859,24 @@ fn morlet_simple_value_names() -> Vec<&'static str> {
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_simple_value_floors(level: f64) -> Vec<f64> {
     morlet_core::values::negligible_floors(level).to_vec()
+}
+
+/// The step of a quantised history of one value (study V2, #387): the smallest gap between distinct
+/// values when every gap is an integer multiple of it, else NULL. NULL elements are ignored.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_quantised_step(values: Vec<Option<f64>>) -> Option<f64> {
+    let v: Vec<f64> = values.into_iter().flatten().collect();
+    morlet_core::values::quantised_step(&v)
+}
+
+/// Per simple-v1 value, the largest history median treated as zero under a value-rules version:
+/// simple-v1 as morlet_simple_value_floors; simple-v2 also within two steps of a quantised history
+/// (`steps`, one per value, from morlet_quantised_step; NULL where the history is not quantised).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_value_floors(level: f64, steps: Vec<Option<f64>>, rules: &str) -> Vec<f64> {
+    morlet_core::values::rule_floors(level, &steps, rules)
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+        .to_vec()
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -2778,6 +2832,73 @@ END $$"#).unwrap();
         // One 30000-sample recording at 1 kHz: block N1 twice (amplitude 100 for part A,
         // 150 for part B) and N2 between them; part A covers [0,15000), part B [15000,30000).
         Spi::run("SELECT morlet_create_stream_collection('public','mill'); SELECT morlet_enable_context('mill'); SELECT morlet_start_recording('mill','r1',1000,'spindle','A','{}',512,256,'zscore','none'); SELECT morlet_append_chunk('mill','r1',k*10000,ARRAY(SELECT (CASE k WHEN 0 THEN 100 WHEN 1 THEN 50 ELSE 150 END)*sin(i/3.) FROM generate_series(0,9999) i)) FROM generate_series(0,2) k; SELECT morlet_add_context('mill','b1','[{\"recording_id\":\"r1\",\"key\":\"program\",\"value\":\"P1\",\"start_sample\":0,\"end_sample\":30000},{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N1\",\"start_sample\":0,\"end_sample\":10000},{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N2\",\"start_sample\":10000,\"end_sample\":20000},{\"recording_id\":\"r1\",\"key\":\"block\",\"value\":\"N1\",\"start_sample\":20000,\"end_sample\":30000},{\"recording_id\":\"r1\",\"key\":\"part\",\"value\":\"A\",\"start_sample\":0,\"end_sample\":15000},{\"recording_id\":\"r1\",\"key\":\"part\",\"value\":\"B\",\"start_sample\":15000,\"end_sample\":30000},{\"recording_id\":\"r1\",\"key\":\"tool_change\",\"value\":7,\"start_sample\":15000}]')").unwrap();
+    }
+
+    #[pg_test]
+    fn value_rules_v2_treat_a_quantised_near_zero_median_as_zero() {
+        // Study V2 S1 (#387): p75 histories of 0, -q and -2q steps (median -q/2), a segment at 0.
+        Spi::run("SELECT morlet_create_stream_collection('public','qz')").unwrap();
+        Spi::run("SELECT morlet_enable_context('qz')").unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_value_rules('qz')")
+                .unwrap()
+                .as_deref(),
+            Some("simple-v2")
+        );
+        // kind 0: 30% zeros, rest -q (p75 0); kind 1: 20% 0, 30% -q, 50% -2q (p75 -q); kind 2: p75 -2q
+        for (part, kind) in [(1, 0), (2, 1), (3, 2), (4, 0), (5, 1), (6, 0), (7, 0)] {
+            let rid = format!("p{part}");
+            Spi::run(&format!("SELECT morlet_start_recording('qz','{rid}',1000,'acc','g','{{}}',512,256,'zscore','none',1)")).unwrap();
+            let expr = match kind {
+                0 => "CASE WHEN i < 300 THEN 0 ELSE -0.0383 END",
+                1 => "CASE WHEN i < 200 THEN 0 WHEN i < 500 THEN -0.0383 ELSE -2 * 0.0383 END",
+                _ => "CASE WHEN i < 100 THEN 0 WHEN i < 200 THEN -0.0383 ELSE -2 * 0.0383 END",
+            };
+            Spi::run(&format!("SELECT morlet_append_chunk('qz','{rid}',0,ARRAY(SELECT ({expr})::float8 FROM generate_series(0,999) i))")).unwrap();
+            Spi::run(&format!("SELECT morlet_add_context('qz','b-{rid}','[{{\"recording_id\":\"{rid}\",\"key\":\"machine\",\"value\":\"M\",\"start_sample\":0,\"end_sample\":1000}},{{\"recording_id\":\"{rid}\",\"key\":\"part\",\"value\":{part},\"start_sample\":0,\"end_sample\":1000}}]')")).unwrap();
+            Spi::run(&format!(
+                "SELECT morlet_build_context_segments('qz','{rid}',ARRAY['machine'],ARRAY['part'])"
+            ))
+            .unwrap();
+            Spi::run(&format!("SELECT morlet_build_context_values('qz','{rid}')")).unwrap();
+        }
+        let q = "(SELECT segment_id FROM qz_ctx_segments WHERE recording_id='p7')";
+        let p75 = |col: &str| {
+            Spi::get_one::<String>(&format!("SELECT {col}::text FROM morlet_compare_to_history('qz',{q},min_history=>3) WHERE value_name='p75'")).unwrap()
+        };
+        let others = format!("SELECT string_agg(value_name||'='||coalesce(relative_deviation::text,'-'),',' ORDER BY value_name) FROM morlet_compare_to_history('qz',{q},min_history=>3) WHERE value_name IN ('std','rms','kurtosis','crest')");
+        // simple-v2: the near-zero median is zero
+        assert_eq!(p75("status").as_deref(), Some("zero_median"));
+        assert_eq!(p75("relative_deviation"), None);
+        let v2_others = Spi::get_one::<String>(&others).unwrap();
+        // simple-v1: the same history gives a relative deviation of exactly 1 (the #387 artefact)
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_set_value_rules('qz','simple-v1')")
+                .unwrap()
+                .as_deref(),
+            Some("simple-v1")
+        );
+        assert_eq!(p75("relative_deviation").as_deref(), Some("1"));
+        // V2 S2: values that are not quantised compare exactly as before
+        assert_eq!(Spi::get_one::<String>(&others).unwrap(), v2_others);
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_set_value_rules('qz','simple-v2')")
+                .unwrap()
+                .as_deref(),
+            Some("simple-v2")
+        );
+        assert_eq!(
+            Spi::get_one::<f64>(
+                "SELECT morlet_quantised_step(ARRAY[0,-0.0383,-2*0.0383,0]::float8[])"
+            )
+            .unwrap(),
+            Some(0.0383)
+        );
+        assert_eq!(
+            Spi::get_one::<f64>("SELECT morlet_quantised_step(ARRAY[0.1,0.25,0.31]::float8[])")
+                .unwrap(),
+            None
+        );
     }
 
     #[pg_test]

@@ -146,6 +146,18 @@ C3.**
   `std` comes out about 1e-13 of its level, not 0. Before 0.3.1 a frozen sensor's
   history thus had a `std` median of about 1e-15, and any real `std` in the query
   deviated from it by about 1e11. Evaluation C4 found this on 3W.
+- **Value rules `simple-v2` (study V2, #387):** a converter step is far larger than
+  rounding residue. A `p75` history of 0, −1 and −2 steps has a median of half a
+  step, and a segment at 0 then deviates by exactly 1.0, which dominates any score.
+  Under `simple-v2`, a history whose distinct values (at least 3) all lie on
+  multiples of their smallest gap is *quantised*, and a median within **two steps**
+  of zero counts as zero, as above. Values that are not quantised (`std`, `rms`,
+  `kurtosis` of real signals) compare exactly as under `simple-v1`; the stored
+  values are the same under both. The version belongs to the collection:
+  `morlet_value_rules(collection)` reads it, `morlet_set_value_rules(collection,
+  'simple-v1' | 'simple-v2')` sets it. Context enabled from SQL 0.3.9 on starts with
+  `simple-v2`; collections whose context was enabled earlier keep `simple-v1` until
+  switched, so earlier results stay reproducible.
 - **Cost:** spreads are computed per call over all comparable segments. On the
   milling check this doubled compare latency (p50 23 ms → 46 ms).
 
