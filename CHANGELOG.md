@@ -4,6 +4,11 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Importer: wide plant exports (#388).** For CSV, `--time-column` now sets the start time (ISO 8601) and,
+  without `--rate`, the rate from the median row spacing. The metadata records how far the timestamps depart
+  from the even axis; they are not corrected. `--context-columns program,block` stores controller columns as
+  context on every signal (runs of equal value, empty cells keep the last value) and enables context on the
+  collection if needed.
 - **Decision state about ten times faster, all channels of a cut in one call (#403).** `decision.decision_states`
   returns the states of several segments; `decision_state` is its one-segment form. The history of all segments
   that share a context is read in one query, and medians, quantiles and neighbour distances are computed in Python
