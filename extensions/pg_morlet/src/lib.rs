@@ -4372,6 +4372,60 @@ END $$"#).unwrap();
             2
         );
     }
+    /// #441: level-1 compaction removes the first windows; the builder must still recognise the grid and keep
+    /// building on it, and still refuse another stride.
+    fn compacted_grid() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','grid');
+             SELECT morlet_start_recording('grid','r',1000,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('grid','r',0,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(0,16383) i)),4096);
+             SELECT morlet_enable_envelopes('grid'); SELECT morlet_build_envelopes('grid','r',4096,2048,100000);
+             SELECT morlet_enable_memory('grid');
+             SELECT morlet_add_episodes('grid','[{\"recording_id\":\"r\",\"start_sample\":0,\"end_sample\":8192}]');",
+        )
+        .unwrap();
+        let run = Spi::get_one::<i64>("SELECT morlet_start_memory_run('grid','test','1')")
+            .unwrap()
+            .unwrap();
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('grid',{run},'[{{\"episode_id\":1,\"level\":1}}]')"
+        ))
+        .unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(start_sample::text,',' ORDER BY start_sample) FROM grid_envelopes").unwrap().unwrap(),
+            "6144,8192,10240,12288"
+        );
+    }
+    #[pg_test]
+    fn envelope_grid_survives_compaction() {
+        compacted_grid();
+        // Rebuilding with the original stride builds nothing new and does not fail.
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('grid','r',4096,2048,100000)")
+                .unwrap()
+                .unwrap(),
+            0
+        );
+        // New samples become searchable on the same grid.
+        Spi::run("SELECT morlet_append_chunks_raw('grid','r',16384,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(16384,20479) i)),4096)").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('grid','r',4096,2048,100000)")
+                .unwrap()
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(start_sample::text,',' ORDER BY start_sample) FROM grid_envelopes").unwrap().unwrap(),
+            "6144,8192,10240,12288,14336,16384"
+        );
+    }
+    #[pg_test(
+        error = "envelopes of window 4096 for recording r were built with stride 6144, not 4096"
+    )]
+    fn envelope_grid_after_compaction_still_refuses_another_stride() {
+        compacted_grid();
+        Spi::run("SELECT morlet_build_envelopes('grid','r',4096,4096,100000)").unwrap();
+    }
     /// morlet_coverage (#215): every sample of a recording is in exactly one state, and only stored windows count as
     /// searchable, so a search without a match can be reported with what it did not search.
     #[pg_test]
