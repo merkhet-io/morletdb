@@ -282,10 +282,21 @@ def time_axis(path, opts, header, body):
         # 9 significant digits: timestamps in decimal seconds make 1/step slightly off (999.9999999999991)
         rate, source = float(f"{1.0 / step:.9g}"), "median spacing of the time column"
     offset = t - np.arange(t.size) / rate                 # actual minus even-axis time, seconds
-    meta = {"time_axis": {"column": opts.time_column, "rate_source": source,
-                          "max_offset_s": float(np.max(np.abs(offset))),
-                          "end_offset_s": float(offset[-1]),
-                          "steps_backward": int(np.sum(dt < 0)), "steps_zero": int(np.sum(dt == 0))}}
+    axis = {"column": opts.time_column, "rate_source": source,
+            "max_offset_s": float(np.max(np.abs(offset))),
+            "end_offset_s": float(offset[-1]),
+            "steps_backward": int(np.sum(dt < 0)), "steps_zero": int(np.sum(dt == 0))}
+    if t.size >= 3:                                       # #393 detection: the rate the timestamps actually show
+        slope = float(np.polyfit(np.arange(t.size, dtype=np.float64), t, 1)[0])
+        if math.isfinite(slope) and slope > 0:
+            axis["fitted_rate_hz"] = float(f"{1.0 / slope:.9g}")
+            axis["rate_error_ppm"] = round((rate * slope - 1.0) * 1e6, 1)   # declared vs timestamps
+    axis["max_offset_samples"] = round(axis["max_offset_s"] * rate, 2)
+    if axis["max_offset_samples"] > 1.0:
+        axis["warning"] = (f"the timestamps depart from start + rate by up to {axis['max_offset_s']:.6g} s "
+                           f"({axis['max_offset_samples']:.4g} samples); times derived from start + rate are off by "
+                           f"that much (clock drift or block stamps, #383, #393)")
+    meta = {"time_axis": axis}
     if start is not None:
         meta["start"] = start.isoformat().replace("+00:00", "Z")
     return rate, meta
@@ -382,6 +393,13 @@ def prepare(conn, collection, create):
     conn.commit()
 
 
+def warnings_of(plan):
+    """Recordings whose timestamps depart from start + rate by more than one sample (#393), for the report."""
+    w = [{"recording_id": r["recording_id"], "warning": r["time_axis"]["warning"]}
+         for r in plan if "warning" in r.get("time_axis", {})]
+    return {"warnings": w} if w else {}
+
+
 def add_context(conn, collection, recs):
     """Context rows of CSV controller columns, one batch per recording (#388). Enables context if needed."""
     if conn.execute("SELECT to_regclass(%s)", (collection + "_ctx",)).fetchone()[0] is None:
@@ -472,13 +490,14 @@ def main(argv=None):
                  **({"time_axis": r.metadata["time_axis"]} if "time_axis" in r.metadata else {}),
                  **({"context_rows": len(r.context)} if r.context else {})} for f, r in recs]
         if opts.dry_run:
-            print(json.dumps({"status": "dry-run", "recordings": plan}, indent=2))
+            print(json.dumps({"status": "dry-run", "recordings": plan, **warnings_of(plan)}, indent=2))
             return 0
         import psycopg
         with psycopg.connect(opts.dsn) as conn:
             prepare(conn, opts.collection, opts.create)
         report = import_files(opts.files, opts.collection, Config(), dsn=opts.dsn, reader=chunk_reader(opts))
         report["recordings"] = plan
+        report.update(warnings_of(plan))
         if any(r.context for _f, r in recs):
             with psycopg.connect(opts.dsn) as conn:
                 report["context_rows"] = add_context(conn, opts.collection, [r for _f, r in recs])

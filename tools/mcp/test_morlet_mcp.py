@@ -297,6 +297,44 @@ class TrendPerSegmentOnADatabase(unittest.TestCase):
             m.trend("public.mcp_trend", '{"spindle": "S1"}', segment_context='["cut"]')
 
 
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class TimeQualityOnADatabase(unittest.TestCase):
+    """#393: locate_time says how its time axis is derived and how far off it may be."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("chunks", "segments"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_clock_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_clock CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_clock')")
+            metas = {"steady": {"start": "2026-02-01T10:00:00Z"},
+                     "drifting": {"start": "2026-02-01T11:00:00Z",
+                                  "time_axis": {"max_offset_s": 0.168, "fitted_rate_hz": 99.0}}}
+            for rid, meta in metas.items():
+                conn.execute("SELECT morlet_start_recording('mcp_clock',%s,100,'acc','g',%s,512,256,'zscore','none')",
+                             (rid, json.dumps(meta)))
+                conn.execute("SELECT morlet_append_chunks_raw('mcp_clock',%s,0,morlet_float8_le_bytes(ARRAY("
+                             "SELECT sin(i/5.0)::float8 FROM generate_series(0,999) i)),1000)", (rid,))
+        os.environ["DATABASE_URL"] = url
+
+    def test_steady_recording_has_a_basis_and_no_uncertainty(self):
+        m_ = m.locate_time("public.mcp_clock", "2026-02-01T10:00:02Z")["matches"]
+        self.assertEqual([(h["recording_id"], h["sample"], h["time_basis"]) for h in m_],
+                         [("steady", 200, "start + rate")])
+        self.assertNotIn("time_uncertainty_s", m_[0])
+        self.assertNotIn("time_note", m_[0])
+
+    def test_drifting_recording_carries_its_uncertainty(self):
+        h = m.locate_time("public.mcp_clock", "2026-02-01T11:00:05Z")["matches"][0]
+        self.assertEqual((h["recording_id"], h["sample"]), ("drifting", 500))
+        self.assertEqual((h["time_uncertainty_s"], h["time_uncertainty_samples"], h["fitted_rate_hz"]),
+                         (0.168, 16.8, 99.0))
+        self.assertIn("16.8 samples", h["time_note"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

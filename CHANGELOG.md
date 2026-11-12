@@ -4,6 +4,11 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Clock drift is detected and reported (#393, first part).** The importer fits the rate a CSV time column
+  actually shows (`time_axis.fitted_rate_hz`, `rate_error_ppm`). When the timestamps depart from start + rate by
+  more than one sample, it warns per recording and in the report. MCP `locate_time` says per match how the time
+  is derived (`time_basis`: start + rate) and, when an import measured the departure, the uncertainty in
+  seconds and samples. Time anchors, which would correct the drift, are not implemented yet.
 - **Importer: wide plant exports (#388).** For CSV, `--time-column` now sets the start time (ISO 8601) and,
   without `--rate`, the rate from the median row spacing. The metadata records how far the timestamps depart
   from the even axis; they are not corrected. `--context-columns program,block` stores controller columns as

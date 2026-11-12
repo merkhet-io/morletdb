@@ -111,7 +111,10 @@ recording's start time; numbers are read as seconds. Without `--rate`, the rate 
 rounded to 9 significant digits. The samples are stored on that even time axis. How far the real timestamps
 depart from it is recorded in the metadata (`time_axis`: largest and final offset in seconds, and how often
 time stepped backward or not at all), so block-stamped or drifting clocks (#383, #393) show up, but they are
-not corrected. `--context-columns program,block` stores those columns as context on every signal of the file,
+not corrected. The rate the timestamps actually show is fitted (`fitted_rate_hz`, and `rate_error_ppm` against
+the rate used). When the timestamps depart from start + rate by more than one sample, the recording gets a
+`warning`, and the import report lists it under `warnings`. MCP's `locate_time` then reports that departure as
+the uncertainty of the sample it finds. `--context-columns program,block` stores those columns as context on every signal of the file,
 not as recordings. A run of equal values becomes one context row; an empty cell keeps the last value, as
 controllers often write only on change. Build segments from them with `morlet_build_context_segments`.
 

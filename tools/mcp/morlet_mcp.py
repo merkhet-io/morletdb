@@ -139,6 +139,21 @@ def at(t0, rate, sample):
     return None if t0 is None else (t0 + timedelta(seconds=sample / rate)).isoformat().replace("+00:00", "Z")
 
 
+def time_quality(meta, rate):
+    """How a recording's UTC times are derived, and how far off they may be (#393). Today always start + rate: there
+    are no time anchors yet. When an import measured how the source's own timestamps departed from that axis
+    (metadata time_axis, tools/ingest), that departure is the uncertainty of every derived time."""
+    q = {"time_basis": "start + rate"}
+    ax = meta.get("time_axis") if isinstance(meta, dict) else None
+    off = ax.get("max_offset_s") if isinstance(ax, dict) else None
+    if isinstance(off, (int, float)) and not isinstance(off, bool) and math.isfinite(off):
+        q["time_uncertainty_s"] = off
+        q["time_uncertainty_samples"] = round(off * rate, 2)
+        if isinstance(ax.get("fitted_rate_hz"), (int, float)):
+            q["fitted_rate_hz"] = ax["fitted_rate_hz"]
+    return q
+
+
 def recording(conn, collection, recording_id):
     row = conn.execute(f"SELECT sample_rate_hz, channel, unit, metadata, (checkpoint->>'end')::bigint "
                        f"FROM {collection} WHERE recording_id = %s", (recording_id,)).fetchone()
@@ -551,7 +566,9 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
     """Find which recordings contain a UTC time (ISO 8601, e.g. 2025-03-01T14:02:10Z) and the sample offset
     of that time in each. Needs recordings whose metadata has a start time. When no recording contains the
     time, a note says whether it falls into a gap, before the first or after the last recording, with the
-    nearest recording on each side."""
+    nearest recording on each side. Each match says how its time axis is derived (time_basis: start + rate)
+    and, when the import measured how the source's timestamps departed from it, the uncertainty in seconds and
+    samples: a clock that drifts or stamps blocks puts the located sample off by up to that much."""
     t = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
     flt = json.loads(metadata_filter or "{}")
     with connect() as conn:
@@ -566,7 +583,12 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
         timed += 1
         s = math.floor((t - t0).total_seconds() * rate)
         if 0 <= s < n:
-            hits.append({"recording_id": rid, "sample": s, "metadata": meta})
+            hit = {"recording_id": rid, "sample": s, **time_quality(meta, rate), "metadata": meta}
+            if hit.get("time_uncertainty_samples", 0) > 1:
+                hit["time_note"] = (f"the source's timestamps departed from start + rate by up to "
+                                    f"{hit['time_uncertainty_s']:.3g} s, so this sample may be off by up to "
+                                    f"{hit['time_uncertainty_samples']:.4g} samples (no time anchors yet, #393)")
+            hits.append(hit)
             continue
         t1 = t0 + timedelta(seconds=n / rate)
         if t1 <= t and (before is None or t1 > before[1]):

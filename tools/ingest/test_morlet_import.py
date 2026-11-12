@@ -144,6 +144,26 @@ class Readers(unittest.TestCase):
             q.write_text("t,a\nmonday,1\ntuesday,2\n")
             mi.recordings(q, opts(time_column="t"))
 
+    def test_clock_drift_is_detected_and_reported(self):
+        """#393: timestamps from a clock 1% slower than the declared rate."""
+        p = self.tmp / "drift.csv"
+        rows = ["t,a"] + [f"{i * 0.0101:.6f},{i % 5}" for i in range(1000)]     # true spacing 10.1 ms
+        p.write_text("\n".join(rows) + "\n")
+        r = mi.recordings(p, opts(time_column="t", rate=100))[0]         # declared 100 Hz
+        ax = r.metadata["time_axis"]
+        self.assertAlmostEqual(ax["fitted_rate_hz"], 1 / 0.0101, places=3)
+        self.assertAlmostEqual(ax["rate_error_ppm"], 10000.0, delta=1.0)
+        self.assertAlmostEqual(ax["end_offset_s"], 999 * 0.0001, places=6)
+        self.assertGreater(ax["max_offset_samples"], 1)
+        self.assertIn("warning", ax)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            mi.main([str(p), "--collection", "public.x", "--time-column", "t", "--rate", "100", "--dry-run"])
+        plan = json.loads(out.getvalue())
+        self.assertEqual([w["recording_id"] for w in plan["warnings"]], ["drift.a"])
+        even = mi.recordings(p, opts(time_column="t"))[0]                  # rate from the timestamps: no warning
+        self.assertNotIn("warning", even.metadata["time_axis"])
+
     def test_invalid_samples_and_unknown_format(self):
         p = self.tmp / "big.csv"
         p.write_text("v\n1\n2e9\n")
