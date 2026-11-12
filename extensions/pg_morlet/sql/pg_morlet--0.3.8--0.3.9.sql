@@ -10,7 +10,7 @@ ALTER FUNCTION public.morlet_chunk_batch(jsonb, bigint, bytea, integer, double p
 -- history is treated as zero. Existing collections keep simple-v1; context enabled from now on starts with
 -- simple-v2 (morlet_value_rules, morlet_set_value_rules). Context enabled from now on also gets an index on
 -- batch_id; morlet_index_context adds it to existing collections (#414). Label glossary: morlet_define_label,
--- morlet_label_definitions (#333).
+-- morlet_label_definitions (#333). Chunk shipping: morlet_encoded_chunks, morlet_append_encoded_chunk (#420).
 
 CREATE FUNCTION "morlet_quantised_step"(
 	"values" double precision[]
@@ -38,6 +38,60 @@ CREATE FUNCTION "morlet_calibrated_score_rules"(
 IMMUTABLE STRICT PARALLEL SAFE
 LANGUAGE c
 AS 'MODULE_PATHNAME', 'morlet_calibrated_score_rules_wrapper';
+
+CREATE OR REPLACE FUNCTION public.morlet_encoded_chunks(collection regclass,recording_id text,from_sample bigint DEFAULT 0,
+  max_chunks integer DEFAULT 64)
+RETURNS TABLE(start_sample bigint,sample_count integer,encoded bytea)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record;
+BEGIN
+  IF max_chunks NOT BETWEEN 1 AND 1000 OR from_sample<0 THEN
+    RAISE EXCEPTION 'max_chunks must be 1..1000 and from_sample nonnegative';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk shipping needs a collection with encoded chunks'; END IF;
+  RETURN QUERY EXECUTE format('SELECT c.start_sample,c.sample_count,c.encoded FROM %s c WHERE c.recording_id=$1
+    AND c.start_sample>=$2 ORDER BY c.start_sample LIMIT $3',relations.chunks) USING recording_id,from_sample,max_chunks;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_append_encoded_chunk(collection regclass,recording_id text,start_sample bigint,
+  encoded bytea)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE state jsonb; samples float8[]; previous float8[]; result jsonb; relations record; updated_rows bigint;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk shipping needs a collection with encoded chunks'; END IF;
+  samples:=public.morlet_decode_chunk(encoded);
+  PERFORM public.morlet_valid_chunk(samples);
+  EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1 FOR UPDATE',collection) INTO state USING recording_id;
+  IF state IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  EXECUTE format('SELECT %s FROM %s c WHERE c.recording_id=$1 AND c.start_sample=$2',relations.samples_expr,relations.chunks)
+    INTO previous USING recording_id,start_sample;
+  IF previous IS NOT NULL THEN
+    IF public.morlet_float8_le_bytes(previous) IS DISTINCT FROM public.morlet_float8_le_bytes(samples) THEN
+      RAISE EXCEPTION 'conflicting replay at chunk offset';
+    END IF;
+    RETURN (state->>'end')::bigint;
+  END IF;
+  PERFORM public.morlet_check_ingest_hold();
+  result:=public.morlet_chunk_step(state,start_sample,samples);
+  IF relations.summarized THEN
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded,summary) VALUES ($1,$2,$3,$4,
+      public.morlet_chunk_summary($5))',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),encoded,samples;
+  ELSE
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded) VALUES ($1,$2,$3,$4)',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),encoded;
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,start_sample,features)
+    SELECT $1,(s->>''start_sample'')::bigint,ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8)
+    FROM jsonb_array_elements($2->''segments'') s',relations.segments) USING recording_id,result;
+  EXECUTE format('UPDATE %s SET checkpoint=$2 WHERE recording_id=$1',collection)
+    USING recording_id,result->'checkpoint';
+  GET DIAGNOSTICS updated_rows = ROW_COUNT;
+  IF updated_rows<>1 THEN RAISE EXCEPTION 'checkpoint update was not permitted'; END IF;
+  RETURN (result->'checkpoint'->>'end')::bigint;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.morlet_index_context(collection regclass)
 RETURNS integer LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$

@@ -2956,6 +2956,64 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn chunks_ship_byte_for_byte() {
+        // #420: chunks encoded by one collection are appended to another unchanged.
+        Spi::run("SELECT morlet_create_stream_collection('public','shsrc')").unwrap();
+        Spi::run("SELECT morlet_create_stream_collection('public','shdst')").unwrap();
+        Spi::run("SELECT morlet_enable_chunk_summaries('shdst')").unwrap();
+        Spi::run("SELECT morlet_start_recording('shsrc','r',1000,'acc','g','{}',512,256,'zscore','none',0.001)").unwrap();
+        Spi::run("SELECT morlet_start_recording('shdst','r',1000,'acc','g','{}',512,256,'zscore','none',0.001)").unwrap();
+        Spi::run("SELECT morlet_append_chunks_raw('shsrc','r',0,morlet_float8_le_bytes(ARRAY(SELECT round(sin(i/7.0)*1000)/1000 FROM generate_series(0,9999) i)),4000)").unwrap();
+        let ship = "SELECT max(morlet_append_encoded_chunk('shdst','r',c.start_sample,c.encoded) ORDER BY c.start_sample) FROM morlet_encoded_chunks('shsrc','r',0,100) c";
+        assert_eq!(Spi::get_one::<i64>(ship).unwrap(), Some(10000));
+        let bytes = |c: &str| {
+            Spi::get_one::<String>(&format!("SELECT md5(string_agg(encode(encoded,'hex'),'' ORDER BY start_sample)) FROM {c}_chunks")).unwrap()
+        };
+        assert_eq!(bytes("shdst"), bytes("shsrc"));
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT morlet_read_interval_raw('shdst','r',0,10000)=morlet_read_interval_raw('shsrc','r',0,10000)").unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM shdst_chunks WHERE summary IS NULL").unwrap(),
+            Some(0)
+        );
+        // an identical resend is a no-op; the source's next chunks continue where the target ends
+        assert_eq!(Spi::get_one::<i64>(ship).unwrap(), Some(10000));
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM shdst_chunks").unwrap(),
+            Spi::get_one::<i64>("SELECT count(*) FROM shsrc_chunks").unwrap()
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_encoded_chunks('shsrc','r',4000,100)")
+                .unwrap(),
+            Some(2)
+        );
+    }
+
+    #[pg_test(error = "conflicting replay at chunk offset")]
+    fn shipped_chunk_with_other_samples_is_refused() {
+        Spi::run("SELECT morlet_create_stream_collection('public','shs')").unwrap();
+        Spi::run("SELECT morlet_create_stream_collection('public','shd')").unwrap();
+        Spi::run(
+            "SELECT morlet_start_recording('shs','r',1000,'acc','g','{}',512,256,'zscore','none')",
+        )
+        .unwrap();
+        Spi::run(
+            "SELECT morlet_start_recording('shs','q',1000,'acc','g','{}',512,256,'zscore','none')",
+        )
+        .unwrap();
+        Spi::run(
+            "SELECT morlet_start_recording('shd','r',1000,'acc','g','{}',512,256,'zscore','none')",
+        )
+        .unwrap();
+        Spi::run("SELECT morlet_append_chunk('shs','r',0,ARRAY[1,2,3]::float8[])").unwrap();
+        Spi::run("SELECT morlet_append_chunk('shs','q',0,ARRAY[1,2,4]::float8[])").unwrap();
+        Spi::run("SELECT morlet_append_encoded_chunk('shd','r',0,(SELECT encoded FROM shs_chunks WHERE recording_id='r'))").unwrap();
+        Spi::run("SELECT morlet_append_encoded_chunk('shd','r',0,(SELECT encoded FROM shs_chunks WHERE recording_id='q'))").unwrap();
+    }
+
+    #[pg_test]
     fn context_segments_values_and_compare_to_history() {
         context_fixture();
         // Identical retry is a no-op.

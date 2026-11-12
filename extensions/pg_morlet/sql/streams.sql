@@ -319,6 +319,67 @@ CREATE TYPE public.morlet_input_chunk AS (start_sample bigint,samples float8[]);
 
 -- One recording per batch keeps lock ordering explicit. Every element reuses the
 -- validated durable append path; a later error rolls back the entire statement.
+-- Lossless chunk shipping (#420), source side: a recording's stored chunks from from_sample on, as their encoded
+-- bytes, in order, at most max_chunks (1..1000). Encoded collections only; privileges and row security apply.
+CREATE FUNCTION public.morlet_encoded_chunks(collection regclass,recording_id text,from_sample bigint DEFAULT 0,
+  max_chunks integer DEFAULT 64)
+RETURNS TABLE(start_sample bigint,sample_count integer,encoded bytea)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record;
+BEGIN
+  IF max_chunks NOT BETWEEN 1 AND 1000 OR from_sample<0 THEN
+    RAISE EXCEPTION 'max_chunks must be 1..1000 and from_sample nonnegative';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk shipping needs a collection with encoded chunks'; END IF;
+  RETURN QUERY EXECUTE format('SELECT c.start_sample,c.sample_count,c.encoded FROM %s c WHERE c.recording_id=$1
+    AND c.start_sample>=$2 ORDER BY c.start_sample LIMIT $3',relations.chunks) USING recording_id,from_sample,max_chunks;
+END $$;
+
+-- Lossless chunk shipping (#420), target side: appends a chunk that another MorletDB encoded, keeping its bytes.
+-- The chunk is decoded, and the samples go through the same steps as morlet_append_chunk (offset at the checkpoint,
+-- an identical replay is a no-op, different samples at a stored offset are refused, the ingest hold, the stream
+-- checkpoint, the chunk summary); the stored bytes are the given ones, which the chunk table's CHECK verifies by
+-- decoding them. Returns the recording's new end.
+CREATE FUNCTION public.morlet_append_encoded_chunk(collection regclass,recording_id text,start_sample bigint,
+  encoded bytea)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE state jsonb; samples float8[]; previous float8[]; result jsonb; relations record; updated_rows bigint;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk shipping needs a collection with encoded chunks'; END IF;
+  samples:=public.morlet_decode_chunk(encoded);
+  PERFORM public.morlet_valid_chunk(samples);
+  EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1 FOR UPDATE',collection) INTO state USING recording_id;
+  IF state IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  EXECUTE format('SELECT %s FROM %s c WHERE c.recording_id=$1 AND c.start_sample=$2',relations.samples_expr,relations.chunks)
+    INTO previous USING recording_id,start_sample;
+  IF previous IS NOT NULL THEN
+    IF public.morlet_float8_le_bytes(previous) IS DISTINCT FROM public.morlet_float8_le_bytes(samples) THEN
+      RAISE EXCEPTION 'conflicting replay at chunk offset';
+    END IF;
+    RETURN (state->>'end')::bigint;
+  END IF;
+  PERFORM public.morlet_check_ingest_hold();
+  result:=public.morlet_chunk_step(state,start_sample,samples);
+  IF relations.summarized THEN
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded,summary) VALUES ($1,$2,$3,$4,
+      public.morlet_chunk_summary($5))',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),encoded,samples;
+  ELSE
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded) VALUES ($1,$2,$3,$4)',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),encoded;
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,start_sample,features)
+    SELECT $1,(s->>''start_sample'')::bigint,ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8)
+    FROM jsonb_array_elements($2->''segments'') s',relations.segments) USING recording_id,result;
+  EXECUTE format('UPDATE %s SET checkpoint=$2 WHERE recording_id=$1',collection)
+    USING recording_id,result->'checkpoint';
+  GET DIAGNOSTICS updated_rows = ROW_COUNT;
+  IF updated_rows<>1 THEN RAISE EXCEPTION 'checkpoint update was not permitted'; END IF;
+  RETURN (result->'checkpoint'->>'end')::bigint;
+END $$;
+
 CREATE FUNCTION public.morlet_append_chunks(collection regclass,recording_id text,inputs public.morlet_input_chunk[])
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE item public.morlet_input_chunk; sample_count bigint:=0; received bigint;
