@@ -358,6 +358,20 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
                                  f"in this one, can dominate the deviations")
         states.append({"v": STATE_VERSION, "segment": segment, "history": hist_info, "values": vals,
                        "summary": summary, "neighbors": near, **out_extra})
+    ctx_t = conn.execute("SELECT ctx::text FROM morlet_context_relations(%s::regclass)", (collection,)).fetchone()[0]
+    events: dict[str, list] = {}
+    for rid, key, value, sample in conn.execute(        # point events (alarms, PLC messages) of these recordings (#421)
+            f"SELECT x.recording_id, x.key, x.value, x.start_sample FROM {ctx_t} x WHERE x.kind = 'event' "
+            f"AND NOT x.retracted AND x.recording_id = ANY(%s) "
+            f"AND NOT EXISTS (SELECT 1 FROM {ctx_t} y WHERE y.supersedes = x.ctx_id) ORDER BY x.start_sample, x.ctx_id",
+            (sorted({queries[s]["rid"] for s in ids}),)):
+        events.setdefault(rid, []).append((key, value, sample))
+    for st in states:
+        sg = st["segment"]
+        inside = [{"key": k, "value": v, "sample": smp, "offset_s": _num((smp - sg["start_sample"]) / sg["sample_rate_hz"])}
+                  for k, v, smp in events.get(sg["recording_id"], []) if sg["start_sample"] <= smp < sg["end_sample"]]
+        if inside:
+            st["events"] = inside
     glossary = label_glossary(conn, collection)
     for st in states:                                     # what the labels the state shows mean (#333)
         shown = sorted({lab for e in st["neighbors"] for lab in e["labels"]}

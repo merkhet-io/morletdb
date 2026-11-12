@@ -293,6 +293,19 @@ class DecisionOnADatabase(unittest.TestCase):
         with self.assertRaises(ValueError):
             decision.finish_recordings([], "public.fin", jobs["seq"])
 
+    def test_events_inside_the_segment_are_listed(self):
+        """#421: alarms and PLC messages stored as context events show up in the state of their segment."""
+        c = self.conn
+        rows = [{"recording_id": "p12-a", "key": "alarm", "value": {"code": "2041", "text": "spindle overload"},
+                 "start_sample": 1005},
+                {"recording_id": "p11-a", "key": "alarm", "value": {"code": "17"}, "start_sample": 10}]
+        c.execute("SELECT morlet_add_context('dtest','alarms-test',%s)", (json.dumps(rows),))
+        st = decision.decision_state(c, C, self.seg12, neighbors=0)
+        self.assertEqual([(e["key"], e["value"]["code"], e["sample"]) for e in st["events"]], [("alarm", "2041", 1005)])
+        self.assertAlmostEqual(st["events"][0]["offset_s"], 1.005)
+        other = decision.decision_state(c, C, decision.segment_at(c, C, "p03-a", 0), neighbors=0)
+        self.assertNotIn("events", other)
+
     def test_the_mcp_tools(self):
         os.environ["DATABASE_URL"] = URL
         r = asyncio.run(m.mcp.call_tool("decision_state", {"collection": C, "recording_id": "p12-a", "sample": 100,
