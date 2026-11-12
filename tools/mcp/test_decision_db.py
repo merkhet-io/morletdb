@@ -31,7 +31,7 @@ class DecisionOnADatabase(unittest.TestCase):
         cls.conn = psycopg.connect(URL, autocommit=True)
         c = cls.conn
         c.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
-        for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+        for t in ("label_definitions", "labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
             c.execute(f"DROP TABLE IF EXISTS public.dtest_{t} CASCADE")
         c.execute("DROP TABLE IF EXISTS public.dtest CASCADE")
         c.execute("SELECT morlet_create_stream_collection('public','dtest'); SELECT morlet_enable_context('dtest')")
