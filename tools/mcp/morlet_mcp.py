@@ -1235,8 +1235,10 @@ def decisions(collection: str, recording_prefix: str = "", answer: str = "", lim
               with_state: bool = False) -> dict:
     """Decisions a fast decision model ("System 1") logged on recordings (labels "s1:<answer>"), newest first:
     the answer, model, question, probability, the threshold that turned it into the answer, when and by whom,
-    and the recordings and sample ranges it is about. with_state also returns the exact state the model saw (its
-    sha256 is always returned). To explain a decision, look at those recordings: decision_state shows how the
+    and the recordings and sample ranges it is about, and the nearest labelled precedents the model's state held
+    at that moment (precedents: recording, sample range, distance, labels; precedents_from says whether they were
+    labelled examples or neighbours). with_state also returns the exact state the model saw (its sha256 is always
+    returned). To explain a decision, look at those recordings: decision_state shows how the
     segment deviates from its history now (history may have grown since), describe_interval and read_interval
     show the samples. The model gives a probability, not a reason; the explanation has to come from the data."""
     with connect() as conn:

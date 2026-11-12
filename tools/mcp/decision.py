@@ -438,21 +438,65 @@ def segments_at(conn, collection: str, points: Iterable[tuple[str, int]]) -> lis
 
 
 DECISION_PREFIX = "s1:"     # labels written by the decision log: "s1:<answer>", e.g. "s1:replace_insert"
-LOG_VERSION = 1
+LOG_VERSION = 2              # 2: precedents (#418)
+
+
+def precedents(state, k: int = 3) -> dict[str, Any]:
+    """The k nearest labelled precedents in a state (one decision_state, or any structure of them, such as one per
+    channel): its examples first (labelled cases from the whole history, #404), else neighbours that carry a label
+    other than a logged decision. Nearest first, one entry per interval (#418)."""
+    found: dict[str, list] = {"examples": [], "neighbors": []}
+
+    def walk(x):
+        if isinstance(x, dict):
+            for key in ("examples", "neighbors"):
+                for e in x.get(key) or []:
+                    if isinstance(e, dict) and "recording_id" in e:
+                        found[key].append(e)
+            for v in x.values():
+                if isinstance(v, (dict, list)):
+                    walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+    walk(state)
+
+    def labels_of(e):
+        return sorted({(lab["label"] if isinstance(lab, dict) else lab) for lab in e.get("labels") or []
+                       if not str(lab["label"] if isinstance(lab, dict) else lab).startswith(DECISION_PREFIX)})
+    for source in ("examples", "neighbors"):
+        seen, out = set(), []
+        for e in sorted(found[source], key=lambda e: (e.get("distance") is None, e.get("distance") or 0.0)):
+            key = (e["recording_id"], e.get("start_sample"), e.get("end_sample"))
+            labs = labels_of(e)
+            if not labs or key in seen:
+                continue
+            seen.add(key)
+            out.append({"recording_id": e["recording_id"], "start_sample": e.get("start_sample"),
+                        "end_sample": e.get("end_sample"), "distance": e.get("distance"), "labels": labs})
+            if len(out) == k:
+                break
+        if out:
+            return {"precedents": out, "precedents_from": source}
+    return {"precedents": [], "precedents_from": None,
+            "precedents_note": "the state held no labelled precedent (request examples in decision_state)"}
 
 
 def log_decision(conn, collection: str, segments: Iterable[tuple[str, int, int]], answer: str, *, model: str,
                  question: str, probability: float | None = None, threshold: float | None = None,
-                 state: dict | None = None, extra: dict | None = None) -> list[int]:
+                 state: dict | None = None, extra: dict | None = None, precedent_count: int = 3) -> list[int]:
     """Store one decision as a label "s1:<answer>" on every (recording_id, start_sample, end_sample) it is about,
     for example the channels of one cut. The note holds the model, question, probability, threshold, the state the
     model saw and its hash, so the decision can be explained later from the same recordings; the database adds
-    author and time. Needs a role that may insert labels (the MCP server's role cannot). Returns the label ids."""
+    author and time. It also holds the decision's nearest labelled precedents, taken from that state as they were
+    then (#418): history grows and labels change, so what the model could see is part of the evidence. Needs a
+    role that may insert labels (the MCP server's role cannot). Returns the label ids."""
     if not answer or any(ch.isspace() for ch in answer):
         raise ValueError("answer must be one word, such as replace_insert or continue")
     note = {"v": LOG_VERSION, "decision_id": uuid.uuid4().hex, "model": model, "question": question, "answer": answer,
             "probability": _num(probability), "threshold": _num(threshold),
-            "state_sha256": state_hash(state) if state is not None else None, "state": state, **(extra or {})}
+            "state_sha256": state_hash(state) if state is not None else None, "state": state,
+            **(precedents(state, precedent_count) if state is not None else {}), **(extra or {})}
     text = json.dumps(note, sort_keys=True, separators=(",", ":"))
     return [conn.execute("SELECT morlet_add_label(%s::regclass, %s, %s, %s, %s, %s)",
                          (collection, rid, start, end, DECISION_PREFIX + answer, text)).fetchone()[0]

@@ -102,6 +102,22 @@ class DecisionOnADatabase(unittest.TestCase):
         with self.assertRaises(ValueError):
             decision.log_decision(self.conn, C, [("p12-a", 0, 2048)], "two words", model="m", question="q")
 
+    def test_a_logged_decision_keeps_its_precedents(self):
+        """#418: the nearest labelled precedents of the state, as they were at decision time."""
+        state = {"a": decision.decision_state(self.conn, C, self.seg12, neighbors=3, examples=2)}
+        ids = decision.log_decision(self.conn, C, [("p12-a", 0, 2048)], "inspect", model="m", question="q",
+                                    state=state, extra={"case": "recall"})
+        d = next(x for x in decision.decisions(self.conn, C, recording_prefix="p12", answer="inspect")
+                 if set(x["label_ids"]) == set(ids))
+        self.assertNotIn("state", d)                                  # precedents come without the full state
+        self.assertEqual(d["precedents_from"], "examples")
+        self.assertEqual([p["recording_id"] for p in d["precedents"]], ["p10-a"])
+        self.assertEqual(d["precedents"][0]["labels"], ["worn"])      # decision labels never count
+        self.assertEqual(d["v"], 2)
+        bare = decision.precedents({"a": decision.decision_state(self.conn, C, self.seg12, neighbors=0)})
+        self.assertEqual((bare["precedents"], bare["precedents_from"]), ([], None))
+        self.assertIn("examples", bare["precedents_note"])
+
     def test_own_baseline_is_the_drift_from_the_assets_first_segments(self):
         base = [decision.segment_at(self.conn, C, f"p0{k}-a", 0) for k in (1, 2, 3)]
         st = decision.decision_state(self.conn, C, self.seg12, neighbors=0, baseline=base + [self.seg12])
