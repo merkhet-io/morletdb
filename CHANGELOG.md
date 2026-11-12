@@ -4,6 +4,23 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Decision state about ten times faster, all channels of a cut in one call (#403).** `decision.decision_states`
+  returns the states of several segments; `decision_state` is its one-segment form. The history of all segments
+  that share a context is read in one query, and medians, quantiles and neighbour distances are computed in Python
+  with the SQL functions' rules (checked against `morlet_compare_to_history` and `morlet_history_neighbors` in
+  `tools/mcp/test_decision_db.py`). The SQL path read the collection three times per channel and also computed the
+  pooled spreads, which the state does not use. On a synthetic history shaped like a milling study (3 tools x 315
+  cuts x 7 channels), seven channels took 259 ms on an M-series Mac before and 16 ms after, and on a Raspberry Pi
+  3B+ 3.8 s before and 0.26 s after (median). On the real PHM 2010 milling data on the Pi (3 tools x 315 cuts,
+  100 decisions of c4 and c6 late in life, soft temperature limit active), a cut's 7 states take p50 256 ms and
+  p95 296 ms, from 4.7 s and 5.1 s. `decision.segments_at` looks up several segments in one query. State version 4:
+  a value's status no longer reports `no_pooled_spread` (it is `ok`), since the state carries no calibrated
+  deviation; values, medians, deviations, quantiles and neighbours are unchanged.
+- **Decision-state examples search the whole history and say when there is none (#404).** Examples were the
+  labelled cases among the 50 nearest segments, so late in a tool's life, when the nearest segments were its own
+  unlabelled cuts, a labelled case further away was missed. Now the nearest labelled cases of the whole history are
+  returned, `examples_note` states when none exists, and `example_match_keys` (also an MCP tool argument) lets
+  examples come from a wider context, such as other tools of the same process.
 - **`morlet.chunk_format`: a misspelt value fails, never writes Grizzbit 1 quietly.** PostgreSQL keeps a value set
   before pg_morlet's library loads (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `postgresql.conf`,
   `-c`) and, for an enum setting, only warned about an invalid one and used the default. The setting is now a

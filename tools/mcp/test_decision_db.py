@@ -69,7 +69,7 @@ class DecisionOnADatabase(unittest.TestCase):
 
     def test_small_history_is_flagged(self):
         st = decision.decision_state(self.conn, C, self.seg12, neighbors=0)
-        self.assertEqual(st["v"], 3)
+        self.assertEqual(st["v"], 4)
         self.assertEqual(st["history"]["size"], 11)          # the other 11 parts; its own occurrence is excluded
         self.assertNotIn("small", st["history"])            # default reliable_history 10
         small = decision.decision_state(self.conn, C, self.seg12, neighbors=0, reliable_history=20)
@@ -116,7 +116,7 @@ class DecisionOnADatabase(unittest.TestCase):
         self.assertAlmostEqual(rms["relative_deviation"], (vals[self.seg12][i] - med) / abs(med), places=5)
         self.assertGreater(rms["relative_deviation"], 0)      # the level grows with the part number
         other = decision.segment_at(self.conn, C, "p01-b", 0)
-        self.assertEqual(st["v"], 3)
+        self.assertEqual(st["v"], 4)
         with self.assertRaises(ValueError):                   # another channel is no baseline
             decision.decision_state(self.conn, C, self.seg12, neighbors=0, baseline=[other])
 
@@ -129,6 +129,60 @@ class DecisionOnADatabase(unittest.TestCase):
         self.assertEqual(decision.decision_state(self.conn, C, self.seg12, neighbors=0, examples=3,
                                                  example_labels=["sharp"])["examples"], [])
         self.assertNotIn("examples", decision.decision_state(self.conn, C, self.seg12, neighbors=0))
+
+    def test_values_and_neighbours_equal_the_sql_functions(self):
+        """decision_states computes in Python what morlet_compare_to_history and morlet_history_neighbors compute
+        in SQL (#403); the state must not change because of that."""
+        segs = [decision.segment_at(self.conn, C, rid, 0) for rid in ("p02-a", "p05-b", "p07-a", "p12-a", "p12-b")]
+        for opts in ({}, {"exclude_labels": ["worn"]}, {"match_keys": ["machine"]}, {"min_history": 11}):
+            states = decision.decision_states(self.conn, C, segs, neighbors=20, **opts)
+            for seg, st in zip(segs, states):
+                self.assertEqual(st, decision.decision_state(self.conn, C, seg, neighbors=20, **opts))
+                rows = {r[0]: r for r in self.conn.execute(
+                    "SELECT value_name, value, hist_n, hist_median, relative_deviation, quantile, status "
+                    "FROM morlet_compare_to_history('dtest', %s, %s::text[], exclude_labels => %s::text[], "
+                    "min_history => %s)", (seg, opts.get("match_keys", []), opts.get("exclude_labels", []),
+                                           opts.get("min_history", 3)))}
+                self.assertEqual(len(st["values"]), len(rows))
+                for v in st["values"]:
+                    _n, x, hn, med, rel, qq, status = rows[v["name"]]
+                    self.assertEqual(st["history"]["size"], hn)
+                    self.assertEqual((v["value"], v["history_median"], v["relative_deviation"], v["history_quantile"]),
+                                     tuple(decision._num(y) for y in (x, med, rel, qq)), (seg, opts, v["name"]))
+                    self.assertEqual(v["status"], "ok" if status == "no_pooled_spread" else status)
+                near = self.conn.execute(
+                    "SELECT recording_id, start_sample, distance FROM morlet_history_neighbors('dtest', %s, %s::text[], "
+                    "exclude_labels => %s::text[], top_k => 20)",
+                    (seg, opts.get("match_keys", []), opts.get("exclude_labels", []))).fetchall()
+                self.assertEqual([(n["recording_id"], n["start_sample"], n["distance"]) for n in st["neighbors"]],
+                                 [(r, s0, decision._num(d)) for r, s0, d in near])
+
+    def test_examples_search_the_whole_history_and_say_when_there_is_none(self):
+        """#404: a labelled case is found however far it ranks, and a missing one is stated, not silently empty."""
+        seg = decision.segment_at(self.conn, C, "p02-a", 0)
+        st = decision.decision_state(self.conn, C, seg, neighbors=0, examples=1)
+        self.assertEqual([e["recording_id"] for e in st["examples"]], ["p10-a"])
+        self.assertNotIn("examples_note", st)
+        none = decision.decision_state(self.conn, C, seg, neighbors=0, examples=1, example_labels=["sharp"])
+        self.assertEqual(none["examples"], [])
+        self.assertIn("sharp", none["examples_note"])
+        wide = decision.decision_state(self.conn, C, seg, neighbors=0, examples=1, example_match_keys=["machine"])
+        self.assertEqual(wide["examples"], st["examples"])
+        b = decision.segment_at(self.conn, C, "p02-b", 0)       # channel b has no labelled case at all
+        self.assertIn("examples_note", decision.decision_state(self.conn, C, b, neighbors=0, examples=2))
+
+    def test_segments_at_equals_segment_at(self):
+        pts = [("p03-a", 0), ("p07-b", 100), ("p12-a", 2047)]
+        self.assertEqual(decision.segments_at(self.conn, C, pts),
+                         [decision.segment_at(self.conn, C, r, s) for r, s in pts])
+        with self.assertRaises(ValueError):
+            decision.segments_at(self.conn, C, [("p03-a", 0), ("p03-a", 5000)])
+
+    def test_errors_name_the_segment(self):
+        with self.assertRaises(ValueError):
+            decision.decision_states(self.conn, C, [self.seg12, 10 ** 12])
+        with self.assertRaises(ValueError):
+            decision.decision_state(self.conn, C, self.seg12, match_keys=["no_such_key"])
 
     def test_the_mcp_tools(self):
         os.environ["DATABASE_URL"] = URL
