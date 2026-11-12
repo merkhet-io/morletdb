@@ -9,6 +9,12 @@ SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_mor
   of 48 ms per call on a Raspberry Pi 3B+ with 27,000 context rows. Context enabled from SQL 0.3.9 on gets an
   index on `batch_id`; `morlet_index_context(collection)` adds it to existing collections (once, idempotent).
   On the Pi, one call dropped from 48 to 24 ms.
+- **Segment values faster: p75 by selection, not a full sort (#414).** `simple-v1`'s 75th percentile takes the two
+  order statistics it needs by selection (O(n)) instead of sorting every sample; the values are bit-identical (a
+  test compares with the sort; on a Raspberry Pi 3B+ both builds wrote the same SHA-256 over all values). One
+  220,000-sample segment: 4.75 → 1.44 ms on an M-series Mac. End of a 7-channel cut on the Pi (context,
+  segments, values): p50 1.38 → 1.21 s sequentially, and 0.81 → 0.72 s when the channels are built on 4
+  connections.
 - **Clock drift is detected and reported (#393, first part).** The importer fits the rate a CSV time column
   actually shows (`time_axis.fitted_rate_hz`, `rate_error_ppm`). When the timestamps depart from start + rate by
   more than one sample, it warns per recording and in the report. MCP `locate_time` says per match how the time

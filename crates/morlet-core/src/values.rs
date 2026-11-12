@@ -118,6 +118,21 @@ pub fn rule_floors(level: f64, steps: &[Option<f64>], rules: &str) -> Result<[f6
 /// Longest segment summarized in one call (2^20 samples, about 41 s at 25.6 kHz).
 pub const MAX_SEGMENT_SAMPLES: usize = 1 << 20;
 
+/// The 75th percentile with linear interpolation (numpy's default), from the two order statistics at
+/// floor(0.75 (n-1)) and the next one, found by selection in O(n) instead of a full sort (#414). Both are the
+/// same values a sort under `total_cmp` puts there, so the result is bit-identical to sorting.
+fn p75(samples: &[f64]) -> f64 {
+    let mut v = samples.to_vec();
+    let pos = 0.75 * (v.len() - 1) as f64;
+    let (lo, frac) = (pos.floor() as usize, pos - pos.floor());
+    let (_, a, right) = v.select_nth_unstable_by(lo, f64::total_cmp);
+    let a = *a;
+    match right.iter().copied().min_by(f64::total_cmp) {
+        Some(b) => a + frac * (b - a),
+        None => a,
+    }
+}
+
 pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalError> {
     if samples.is_empty() || samples.len() > MAX_SEGMENT_SAMPLES {
         return Err(SignalError::SegmentLength);
@@ -168,15 +183,7 @@ pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalEr
     } else {
         peak * (samples.iter().map(|v| (v / peak).powi(2)).sum::<f64>() / n).sqrt()
     };
-    let mut sorted = samples.to_vec();
-    sorted.sort_by(f64::total_cmp);
-    let pos = 0.75 * (sorted.len() - 1) as f64;
-    let (lo, frac) = (pos.floor() as usize, pos - pos.floor());
-    let p75 = if lo + 1 < sorted.len() {
-        sorted[lo] + frac * (sorted[lo + 1] - sorted[lo])
-    } else {
-        sorted[lo]
-    };
+    let p75 = p75(samples);
     Ok(vec![
         n / sample_rate_hz,
         mean,
@@ -192,6 +199,59 @@ pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalEr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// p75 by full sort, as before #414: the reference the selection must equal bit for bit.
+    fn p75_sorted(samples: &[f64]) -> f64 {
+        let mut sorted = samples.to_vec();
+        sorted.sort_by(f64::total_cmp);
+        let pos = 0.75 * (sorted.len() - 1) as f64;
+        let (lo, frac) = (pos.floor() as usize, pos - pos.floor());
+        if lo + 1 < sorted.len() {
+            sorted[lo] + frac * (sorted[lo + 1] - sorted[lo])
+        } else {
+            sorted[lo]
+        }
+    }
+
+    #[test]
+    fn p75_by_selection_equals_p75_by_sort_bit_for_bit() {
+        let mut x: u64 = 0x9E37_79B9_7F4A_7C15;
+        let mut next = || {
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            x
+        };
+        for len in [1usize, 2, 3, 4, 5, 7, 8, 100, 1001, 4096, 220_011] {
+            for kind in 0..4 {
+                let v: Vec<f64> = (0..len)
+                    .map(|_| {
+                        let r = next();
+                        match kind {
+                            0 => (r as f64 / u64::MAX as f64) * 2.0 - 1.0, // continuous
+                            1 => ((r % 7) as f64 - 3.0) * 0.0383,          // quantised, many ties
+                            2 => {
+                                if r % 3 == 0 {
+                                    -0.0
+                                } else {
+                                    0.0
+                                }
+                            } // signed zeros only
+                            _ => {
+                                f64::from_bits(r & 0x7FEF_FFFF_FFFF_FFFF)
+                                    * if r % 2 == 0 { 1.0 } else { -1.0 }
+                            }
+                        }
+                    })
+                    .collect();
+                assert_eq!(
+                    p75(&v).to_bits(),
+                    p75_sorted(&v).to_bits(),
+                    "len {len} kind {kind}"
+                );
+            }
+        }
+    }
 
     #[test]
     fn quantised_p75_near_zero_is_zero_under_v2() {
@@ -359,5 +419,25 @@ mod tests {
         )
         .unwrap();
         assert!(v[2] > negligible_floors(v[RMS])[2]);
+    }
+}
+
+#[cfg(test)]
+mod timing {
+    /// cargo test -p morlet-core --release --lib timing -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn simple_values_of_a_cut() {
+        let v: Vec<f64> = (0..220_000)
+            .map(|i| ((i as f64) * 0.37).sin() * 100.0 + (i % 13) as f64)
+            .collect();
+        let t = std::time::Instant::now();
+        for _ in 0..20 {
+            std::hint::black_box(super::simple(&v, 50_000.0).unwrap());
+        }
+        println!(
+            "simple(): {:.2} ms per 220k-sample segment",
+            t.elapsed().as_secs_f64() * 1000.0 / 20.0
+        );
     }
 }
