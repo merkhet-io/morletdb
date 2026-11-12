@@ -980,7 +980,8 @@ BEGIN
   SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
   FOR t IN SELECT cl.relname FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace
       WHERE n.nspname=s AND cl.relkind='r' AND (cl.relname IN (c||'_chunks',c||'_segments',c||'_envelopes',c||'_ctx',
-        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels',c||'_rollups') OR (left(cl.relname,length(c)+8)=c||'_probes_' AND substr(cl.relname,length(c)+9) ~ '^[0-9]+$'))
+        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels',c||'_rollups',
+        c||'_episodes',c||'_ledger',c||'_kept_summaries',c||'_memory_runs') OR (left(cl.relname,length(c)+8)=c||'_probes_' AND substr(cl.relname,length(c)+9) ~ '^[0-9]+$'))
       ORDER BY cl.relname LOOP
     IF t.relname=c||'_ctx_values' THEN
       cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.segment_id=%I.segment_id)',s,c||'_ctx_segments',t.relname);
@@ -993,6 +994,12 @@ BEGIN
       cond:=format('public.morlet_acquisition_has_visible_channel(%L::regclass,%I.acquisition_id)
         OR public.morlet_inserted_by_current_transaction(%I.xmin)',format('%I.%I',s,c||'_acq_channels'),t.relname,t.relname);
       chk:='true';
+    ELSIF t.relname=c||'_memory_runs' THEN
+      -- Episodic memory (#438): a run has no recording of its own and may span several, so it is visible to the
+      -- role that started it; its ledger rows follow their recordings. Older tables get the column here.
+      EXECUTE format('ALTER TABLE %I.%I ADD COLUMN IF NOT EXISTS started_by name NOT NULL DEFAULT current_user',s,t.relname);
+      cond:=format('%I.started_by = current_user',t.relname);
+      chk:=cond;
     ELSIF t.relname=c||'_acq_channels' THEN
       -- a channel row follows its recording; adding or moving one also needs its acquisition to be visible,
       -- so a recording cannot join another tenant's acquisition by naming its ID (a foreign key is not
@@ -3057,7 +3064,8 @@ BEGIN
     run_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     policy text NOT NULL, policy_version text NOT NULL, params jsonb NOT NULL DEFAULT ''{}'',
     dry_run boolean NOT NULL, status text NOT NULL DEFAULT ''running'' CHECK(status IN (''running'',''finished'',''failed'')),
-    summary jsonb, started_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz)',
+    summary jsonb, started_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz,
+    started_by name NOT NULL DEFAULT current_user)',
     schema_name,collection_name||'_memory_runs');
   EXECUTE format('CREATE TABLE %1$I.%2$I (
     ledger_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -3072,6 +3080,8 @@ BEGIN
     start_sample bigint NOT NULL, sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
     summary bytea COMPRESSION pglz NOT NULL CHECK(octet_length(summary)=66), ledger_id bigint NOT NULL,
     PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_kept_summaries',collection_name);
+  -- Collections under morlet_enable_row_security: the new tables follow it at once (#438).
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
 END $$;
 
 -- The memory tables of a collection, or NULLs when episodic memory is not enabled.

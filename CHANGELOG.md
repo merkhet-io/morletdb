@@ -10,6 +10,10 @@ SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_mo
   call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
   refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
   concurrent moves cannot break the rule. Affects all releases with episodic memory.
+- **Episodic memory under row-level security (#438).** `morlet_enable_row_security` now covers the memory tables
+  (episodes, ledger, kept summaries: they follow their recording; memory runs: visible to the role that started
+  them), and `morlet_enable_memory` applies it at once when the collection is already under it. Collections that
+  enabled both before SQL 0.3.10 get it by calling `morlet_enable_row_security` again.
 - **Envelopes build on after compaction removed the first windows (#441).** `morlet_build_envelopes` read the stride
   from the first stored window after 0; once level-1 compaction had removed the early windows, a rebuild with the
   original stride failed (`built with stride 6144, not 2048`), new samples stayed unsearchable and the steward's

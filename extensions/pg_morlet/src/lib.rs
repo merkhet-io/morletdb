@@ -2331,6 +2331,100 @@ mod tests {
         assert_eq!(Spi::get_one::<String>("SELECT string_agg(DISTINCT recording_id,',') FROM morlet_search_envelope_interval('ten','a1',0,2048,'{}',10)").unwrap(), Some("a1".into()));
     }
 
+    /// #438: episodic memory under morlet_enable_row_security. Memory enabled first, then the helper: tenant A sees
+    /// none of B's episodes, ledger rows, kept summaries or the administrator's runs, directly or through the API.
+    #[pg_test]
+    fn row_security_covers_episodic_memory() {
+        tenant_fixture();
+        Spi::run(r#"
+            SELECT morlet_enable_chunk_summaries('ten');
+            SELECT morlet_enable_memory('ten');
+            SELECT morlet_add_episodes('ten','[{"recording_id":"a1","start_sample":0,"end_sample":8192},
+                                               {"recording_id":"b1","start_sample":0,"end_sample":8192}]');
+        "#).unwrap();
+        let run = Spi::get_one::<i64>("SELECT morlet_start_memory_run('ten','test','1')")
+            .unwrap()
+            .unwrap();
+        Spi::run(&format!("SELECT * FROM morlet_set_level('ten',{run},'[{{\"episode_id\":1,\"level\":3}},{{\"episode_id\":2,\"level\":3}}]')")).unwrap();
+        assert!(
+            Spi::get_one::<i32>("SELECT morlet_enable_row_security('ten')")
+                .unwrap()
+                .unwrap()
+                >= 7
+        );
+        Spi::run("GRANT SELECT ON ten, ten_chunks, ten_episodes, ten_ledger, ten_kept_summaries, ten_memory_runs TO morlet_tenant_a; SET LOCAL ROLE morlet_tenant_a").unwrap();
+        for t in ["ten_episodes", "ten_ledger", "ten_kept_summaries"] {
+            assert_eq!(
+                Spi::get_one::<i64>(&format!("SELECT count(*) FROM {t} WHERE recording_id='b1'"))
+                    .unwrap(),
+                Some(0),
+                "{t} leaks the hidden recording"
+            );
+            assert!(
+                Spi::get_one::<i64>(&format!("SELECT count(*) FROM {t} WHERE recording_id='a1'"))
+                    .unwrap()
+                    .unwrap()
+                    > 0,
+                "{t} hides the own recording"
+            );
+        }
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ten_memory_runs").unwrap(),
+            Some(0)
+        ); // the administrator's run
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT sum(episodes)::bigint FROM morlet_memory_status('ten')")
+                .unwrap(),
+            Some(1)
+        );
+    }
+    /// #438: the helper first, memory later: the new tables follow at once; a tenant runs its own maintenance and sees
+    /// its own run, and cannot start a run in another role's name.
+    #[pg_test]
+    fn row_security_applies_to_memory_enabled_later() {
+        tenant_fixture();
+        Spi::run(r#"
+            CREATE POLICY own_write ON ten FOR UPDATE TO morlet_tenant_a USING (metadata->>'tenant'='a');
+            SELECT morlet_enable_chunk_summaries('ten');
+            SELECT morlet_enable_row_security('ten');
+            SELECT morlet_enable_memory('ten');
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ten_episodes, ten_ledger, ten_kept_summaries, ten_memory_runs, ten_chunks, ten_envelopes, ten_segments TO morlet_tenant_a;
+            GRANT SELECT, UPDATE ON ten TO morlet_tenant_a;
+            SET LOCAL ROLE morlet_tenant_a;
+        "#).unwrap();
+        assert!(Spi::get_one::<bool>("SELECT bool_and(relrowsecurity) FROM pg_class WHERE relname IN ('ten_episodes','ten_ledger','ten_kept_summaries','ten_memory_runs')").unwrap().unwrap());
+        Spi::run(r#"SELECT morlet_add_episodes('ten','[{"recording_id":"a1","start_sample":0,"end_sample":4096}]')"#).unwrap();
+        let run = Spi::get_one::<i64>("SELECT morlet_start_memory_run('ten','tenant','1')")
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ten_memory_runs").unwrap(),
+            Some(1)
+        );
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('ten',{run},'[{{\"episode_id\":1,\"level\":1}}]')"
+        ))
+        .unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ten_ledger WHERE recording_id='a1'").unwrap(),
+            Some(1)
+        );
+    }
+    #[pg_test(error = "new row violates row-level security policy for table \"ten_episodes\"")]
+    fn row_security_refuses_episodes_on_hidden_recordings() {
+        tenant_fixture();
+        Spi::run(
+            r#"
+            SELECT morlet_enable_memory('ten');
+            SELECT morlet_enable_row_security('ten');
+            GRANT SELECT ON ten TO morlet_tenant_a;
+            GRANT SELECT, INSERT ON ten_episodes TO morlet_tenant_a;
+            SET LOCAL ROLE morlet_tenant_a;
+            INSERT INTO ten_episodes(recording_id,start_sample,end_sample) VALUES ('b1',0,4096);
+        "#,
+        )
+        .unwrap();
+    }
     #[pg_test(error = "new row violates row-level security policy for table \"ten_envelopes\"")]
     fn row_security_rejects_writes_for_hidden_recordings() {
         tenant_fixture();
