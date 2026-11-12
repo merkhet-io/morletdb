@@ -343,3 +343,69 @@ class DecisionOnADatabase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(URL, "needs MORLET_MCP_TEST_DATABASE_URL")
+class HistoryCacheOnADatabase(unittest.TestCase):
+    """decision_states with a HistoryCache equals decision_states without one, while the data changes between calls."""
+
+    CC = "public.dcache"
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        cls.conn = psycopg.connect(URL, autocommit=True)
+        for t in ("label_definitions", "labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+            cls.conn.execute(f"DROP TABLE IF EXISTS public.dcache_{t} CASCADE")
+        cls.conn.execute("DROP TABLE IF EXISTS public.dcache CASCADE")
+        cls.conn.execute("SELECT morlet_create_stream_collection('public','dcache'); SELECT morlet_enable_context('dcache')")
+        for part in range(1, 9):
+            cls.add(part)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.conn.close()
+
+    @classmethod
+    def add(cls, part, values=True, tool=7):
+        c = cls.conn
+        for ch in ("a", "b"):
+            rid = f"p{part:02d}-{ch}"
+            c.execute("SELECT morlet_start_recording('dcache',%s,1000,%s,'V','{}',512,256,'zscore','none',1)", (rid, ch))
+            c.execute("SELECT morlet_append_chunk('dcache',%s,0,%s::float8[])", (rid, wave(part)))
+            ctx = [{"recording_id": rid, "key": k, "value": v, "start_sample": 0, "end_sample": 2048}
+                   for k, v in (("machine", "M1"), ("tool", tool), ("part", f"P{part}"))]
+            c.execute("SELECT morlet_add_context('dcache',%s,%s)", (f"b-{rid}-{tool}", json.dumps(ctx)))
+            c.execute("SELECT morlet_build_context_segments('dcache',%s,ARRAY['machine','tool'],ARRAY['part'])", (rid,))
+            if values:
+                c.execute("SELECT morlet_build_context_values('dcache',%s)", (rid,))
+
+    def same(self, cache, rids=("p08-a", "p08-b"), **opts):
+        segs = decision.segments_at(self.conn, self.CC, [(r, 5) for r in rids])
+        a = decision.decision_states(self.conn, self.CC, segs, neighbors=3, examples=1, **opts)
+        b = decision.decision_states(self.conn, self.CC, segs, neighbors=3, examples=1, history_cache=cache, **opts)
+        self.assertEqual(json.dumps(a, sort_keys=True, default=str), json.dumps(b, sort_keys=True, default=str))
+        return b
+
+    def test_the_cache_follows_every_change(self):
+        cache = decision.HistoryCache()
+        n0 = self.same(cache)[0]["history"]["size"]
+        self.add(9)                                       # a new cut: fetched alone
+        self.assertEqual(self.same(cache, ("p09-a", "p09-b"))[0]["history"]["size"], n0 + 1)
+        self.add(10, values=False)                        # segments first, values later
+        self.same(cache)
+        self.conn.execute("SELECT morlet_build_context_values('dcache','p10-a')")
+        self.conn.execute("SELECT morlet_build_context_values('dcache','p10-b')")
+        self.same(cache)
+        lid = self.conn.execute("SELECT morlet_add_label('dcache','p03-a',0,2048,'worn','test')").fetchone()[0]
+        self.same(cache)
+        self.same(cache, exclude_labels=["worn"])
+        self.conn.execute("SELECT morlet_retract_label('dcache',%s)", (lid,))
+        self.same(cache, exclude_labels=["worn"])
+        self.conn.execute("SELECT morlet_build_context_segments('dcache','p04-a',ARRAY['machine'],ARRAY['part'])")  # p04-a's segment goes stale
+        self.same(cache)
+        self.conn.execute("DELETE FROM dcache WHERE recording_id = 'p05-b'")          # a recording deleted
+        self.same(cache)
+        self.add(11, tool=8)                              # another tool: not in this history
+        self.same(cache, match_keys=["machine", "tool"])
+        self.same(cache, match_keys=["machine"])
