@@ -1,9 +1,9 @@
-# IU4: does a decision model on MorletDB transfer across tools and machines? (DRAFT, not frozen)
+# IU4: does a decision model on MorletDB transfer across tools and machines?
 
-Status: **DRAFT.** Known when this was written (2026-11-12): the Data in Brief description, the dataset's file list
-(`filelist.csv`: machine, tool, run, cumulated contact time, wear per file) and the structure of one HDF5 file
-(dataset names, shapes, units). **No signal value has been read.** Freezing happens in the commit that changes
-this line, before the first signal value is read.
+Status: **FROZEN** in the commit that adds this line (2026-11-12), before the first signal value was read. Known
+then: the dataset's description (Mendeley Data), its file list (`filelist.csv`: machine, tool, run, cumulated
+contact time, wear per file) and the structure of one HDF5 file (dataset names, shapes, units). Deviations are
+appended at the end, never edited in place.
 
 ## Why
 
@@ -101,3 +101,7 @@ build (context, segments, values) is timed beside it.
 
 **Evidence (H3).** Each C decision: `decision_states(..., examples=3, example_match_keys=['process'])` on the signal
 contributing most to the logit; passes when it cites at least one `worn` or `sharp` precedent from another tool.
+
+## Deviations
+
+(none yet)
