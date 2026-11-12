@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **A representative keeps its samples while it represents an episode (#440).** `morlet_set_level` checked the
+  representative only when an episode moved to level 2; a later move could take the representative to level 3 or 4,
+  leaving the level-2 episode without a real example. Now, after all moves of a call (stored levels overlaid with the
+  call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
+  refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
+  concurrent moves cannot break the rule. Affects all releases with episodic memory.
 - **Decision states from memory: `decision.HistoryCache` (#403).** A process that decides cut after cut passes
   `history_cache=HistoryCache()` to `decision_states` and keeps it: each collection's current segments with values and
   its active labels stay in memory, indexed by rate, channel, unit, spec and context, and each call fetches only new
