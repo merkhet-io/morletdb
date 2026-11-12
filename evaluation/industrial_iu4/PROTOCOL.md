@@ -51,13 +51,53 @@ VB (µm, microscope) and cumulated contact time.
   of a run is reported beside it, without criterion (#414).
 - **H3 evidence:** every C decision on M2/M3 cites at least one labelled precedent from a completed tool
   (decision_state examples across tools, #404, #418); 100% required.
-- **H4 retrieval of precedents (#416):** for C's positive decisions on M2/M3, the share whose 3 cited precedents
-  include a positive (VB ≥ 100) run: abnormality fingerprint against equal-weight value distance; difference
-  interval above 0. Shape search, tiered ranking and abnormality weighting reported without criterion.
-- **Reported without criterion:** Spearman of C's score and of A with VB per tool; context sensitivity of the
+- **Reported without criterion:** the retrieval of precedents (#416): for C's positive decisions on M2/M3, the
+  share whose 3 cited precedents include a positive run, for equal-weight value distance and shape search (the
+  fingerprint, tiered and abnormality-weighted rankings are not implemented yet and get their own frozen test).
+  Also: Spearman of C's score and of A with VB per tool; context sensitivity of the
   neighbours (top-k overlap for match keys machine; machine + tool; #419).
 
 ## Not claimed
 
 Diagnosis of anything but flank wear; other materials, tools or processes; production without a dynamometer is
 covered only by the controller-only arm.
+
+## Implementation (fixed at the freeze)
+
+**Signals (9 per run).** Forces x, y, z (25 kHz); spindle torque; axis torques x, y, z; position control deviation
+x, y (500 Hz). Tool positions are the trajectory, not the process, and are not used. The **controller-only** arm uses
+the 6 controller signals; the **full** arm all 9. Rates are the nominal 25 kHz and 500 Hz; each run's time vectors
+are checked at load and their largest departure from the nominal axis is reported (#393), not corrected.
+
+**Storage.** One recording per run and signal, float32 values widened exactly to float64, in a released-or-main
+MorletDB build recorded at the run. Context per recording: `process` = `denkena2023`, `machine`, `tool`, `run`;
+one segment per run (the whole run), keys `process`, `machine`, `tool`, occurrence `run`. Labels after a tool's
+life: `worn` for VB ≥ 100 µm, `sharp` otherwise, written when the tool's last run is stored.
+
+**Per-run features (C).** For every signal: `decision_states` against the same tool's earlier runs
+(`match_keys` = process, machine, tool; `min_history` 3), with the tool's first 10 runs as own baseline. Features
+per signal and value (std, rms, p75, peak_abs, crest, kurtosis): the own-baseline relative deviation and the
+history quantile; plus the summary score per signal. Missing values (too short a history) are 0. Model: logistic
+regression, L2, C = 1, on standardised features (mean and spread from M1), trained on all M1 runs after each
+tool's first 10. Runs 1–10 of every tool are baseline and never scored.
+
+**A.** Every (signal, value) pair as its raw value and as its own-baseline relative deviation; the one with the
+highest M1 AUROC (pooled over T1–T3, direction chosen on M1) is A. Ties go to the earlier pair in the order above.
+
+**B.** Envelope distance with the product's bounded lag: per run, the median over its windows of the nearest
+distance to windows of the tool's first 10 runs, same signal; windows 4096 / stride 2048 for forces, 512 / 256
+(the product minimum) for controller signals; the run score is the maximum over signals.
+
+**Measures.** Per-tool AUROC on runs 11 to end, positives VB ≥ 100 µm. Intervals: two-level bootstrap (tools, then
+runs within tools), 10,000 resamples, seed 20261112; the unit-only bootstrap is reported too. H1b thresholds: each
+arm's score as its causal quantile among the same tool's earlier scored runs; one threshold per arm chosen on M1
+(Youden); a *flag* is a run at or above it; a *false alarm* a flag at VB < 50 µm.
+
+**Latency (H2).** Pi 3B+ (X2's box) under `e512` (`--cpus 2 --memory 512m --memory-swap 512m`,
+`shared_buffers=64MB`, `max_connections=20`, `maintenance_work_mem=32MB`), loaded with M2 and M3 (labelled as in
+causal order at the end) plus M1 (labelled); timed: `segments_at` + `decision_states` for the 9 signals + the
+prediction, for the last 50 runs of T4 and of T7, after 10 warm-up runs; gate: 5-minute load below 1. The end-of-run
+build (context, segments, values) is timed beside it.
+
+**Evidence (H3).** Each C decision: `decision_states(..., examples=3, example_match_keys=['process'])` on the signal
+contributing most to the logit; passes when it cites at least one `worn` or `sharp` precedent from another tool.
