@@ -93,6 +93,28 @@ pub fn v2_floor(v1_floor: f64, history: &[f64]) -> f64 {
     }
 }
 
+/// Per value, the floor under a rules version: simple-v1's `negligible_floors(level)`, and under
+/// simple-v2 raised to `QUANTISED_STEPS` steps where `steps` (one per value, from `quantised_step`
+/// of that value's history) has one. Unknown rules are an error.
+pub fn rule_floors(level: f64, steps: &[Option<f64>], rules: &str) -> Result<[f64; 8], String> {
+    let base = negligible_floors(level);
+    match rules {
+        RULES_V1 => Ok(base),
+        RULES_V2 => {
+            let mut out = base;
+            for (i, f) in out.iter_mut().enumerate() {
+                if let Some(Some(step)) = steps.get(i) {
+                    *f = f.max(QUANTISED_STEPS * step);
+                }
+            }
+            Ok(out)
+        }
+        other => Err(format!(
+            "unknown value rules {other:?} (simple-v1 or simple-v2)"
+        )),
+    }
+}
+
 /// Longest segment summarized in one call (2^20 samples, about 41 s at 25.6 kHz).
 pub const MAX_SEGMENT_SAMPLES: usize = 1 << 20;
 
