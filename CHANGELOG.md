@@ -4,6 +4,12 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **MCP: negative search answers state their scope, checked by a scripted conversation (#379).**
+  `tools/mcp/scope_conversation.py` asks the server, through its own tools, the questions an analyst would ask of
+  a collection with a period out of search, and fails when a search without a hit does not say what it searched
+  and what it did not; the transcript is in `examples/mcp-scope/TRANSCRIPT.md`, and the test runs it. It found
+  one weak answer: a search whose filters matched no recording said "every period of the matching recordings
+  was searchable"; it now says that no recording matched and nothing was searched.
 - **Alarm and PLC messages as context events (#421).** `tools/ingest/morlet_events.py` places each message of a
   log (CSV: time and message columns) as a context event on the recordings whose time range contains it, at the
   sample its time maps to (optionally only on the recordings of the message's machine), with the recording's

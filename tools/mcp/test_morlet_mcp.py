@@ -426,6 +426,25 @@ class TrendOverOrderOnADatabase(unittest.TestCase):
             m.trend("public.mcp_cuts", '{"insert": 7}', order_by="cut", start_utc="2026-01-01T00:00:00Z")
 
 
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class ScopeConversationOnADatabase(unittest.TestCase):
+    """#379: a scripted conversation; every negative answer states what was searched and what was not."""
+
+    def test_every_negative_answer_states_its_scope(self):
+        import scope_conversation as sc
+        ok, lines = sc.run(os.environ["MORLET_MCP_TEST_DATABASE_URL"])
+        self.assertTrue(ok, "\n".join(lines))
+        self.assertIn("**check: pass** (negative, scope stated)", "\n".join(lines))
+
+    def test_the_check_fails_an_answer_without_scope(self):
+        import scope_conversation as sc
+        self.assertFalse(sc.check({"hits": []})[0])
+        self.assertFalse(sc.check({"hits": [], "scope": {"recordings": 0, "searched_windows": 0, "complete": True,
+                                                         "note": "every period was searchable"}})[0])
+        self.assertTrue(sc.check({"hits": [{"distance": 0.1}]})[0])
+
+
 if __name__ == "__main__":
     unittest.main()
 
