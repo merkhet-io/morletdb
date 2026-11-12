@@ -1,0 +1,20 @@
+{
+ "source": "Mendeley Data doi:10.17632/zpxs87bjt8.3 (CC BY 4.0), archive https://data.mendeley.com/public-api/zip/zpxs87bjt8/download/3",
+ "archive": "zpxs87bjt8-3.zip",
+ "bytes": 9746069628,
+ "sha256": "86b7729f4b618188d6ac4fb9d9545d810b9d192689901078735ab9d94798138a",
+ "h5_files": 6418,
+ "filelist_rows": 6418,
+ "missing_from_archive": 0,
+ "extra_in_archive": 0,
+ "machines": {
+  "1": 1856,
+  "2": 2784,
+  "3": 1778
+ },
+ "downloaded": "2026-11-12",
+ "read_before_freeze": [
+  "filelist.csv",
+  "structure (names, shapes, units) of one M1 file"
+ ]
+}
