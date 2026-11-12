@@ -4,6 +4,12 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Lossless chunk shipping from edge to centre (#420).** `morlet_encoded_chunks` returns a recording's stored
+  chunks as bytes; `morlet_append_encoded_chunk` appends a chunk that another MorletDB encoded, keeping its bytes,
+  after decoding it and running the usual append checks (offset, identical replay a no-op, conflicting samples
+  refused, ingest hold, checkpoint, summary). `tools/ingest/morlet_ship.py` ships recordings with them: it creates
+  the target recording with the source's parameters, resumes at the target's end, and compares the SHA-256 of all
+  chunk bytes at the end (`docs/chunk-shipping.md`).
 - **MCP: negative search answers state their scope, checked by a scripted conversation (#379).**
   `tools/mcp/scope_conversation.py` asks the server, through its own tools, the questions an analyst would ask of
   a collection with a period out of search, and fails when a search without a hit does not say what it searched

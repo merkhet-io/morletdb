@@ -14,6 +14,7 @@ morlet_append_chunk	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_append_chunk_raw	stable	0.3.3	documented since SQL 0.3.3 or earlier
 morlet_append_chunks	stable	0.1.0	documented since SQL 0.1.0 or earlier
 morlet_append_chunks_raw	stable	0.3.4	documented since SQL 0.3.4 or earlier
+morlet_append_encoded_chunk	experimental	0.3.9	lossless chunk shipping (#420)
 morlet_before_ns	internal	0.3.3	not documented
 morlet_build_acquisition_segments	stable	0.3.0	documented since SQL 0.3.0 or earlier
 morlet_build_chunk_summaries	stable	0.3.3	documented since SQL 0.3.3 or earlier
@@ -70,6 +71,7 @@ morlet_enable_typed_segments	internal	0.1.0	not documented
 morlet_encode_chunk	internal	0.2.0	not documented
 morlet_encoded_chunk_kind	internal	0.2.0	not documented
 morlet_encoded_chunk_summary	internal	0.3.3	not documented
+morlet_encoded_chunks	experimental	0.3.9	lossless chunk shipping (#420)
 morlet_ensure_recording	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_envelope	internal	0.2.0	not documented
 morlet_envelope_decode	internal	0.2.0	not documented
