@@ -43,6 +43,56 @@ pub fn negligible_floors(level: f64) -> [f64; 8] {
     IN_CHANNEL_UNITS.map(|scaled| if scaled { floor } else { 0.0 })
 }
 
+/// Value-comparison rules: `simple-v1` treats a history median as zero only at rounding residue
+/// (`negligible_floors`); `simple-v2` also at a few steps of a quantised history (`quantised_step`,
+/// study V2, #387). The stored values are the same under both.
+pub const RULES_V1: &str = "simple-v1";
+pub const RULES_V2: &str = "simple-v2";
+/// simple-v2: a history median within this many steps of zero is treated as zero (V2, frozen).
+pub const QUANTISED_STEPS: f64 = 2.0;
+/// Relative tolerance for a gap to count as an integer multiple of the step (V2, frozen).
+const STEP_TOLERANCE: f64 = 1e-6;
+/// Largest multiple of the step a gap may be (V2, frozen).
+const MAX_MULTIPLE: f64 = 1e6;
+
+/// The step of a quantised history of one value (V2): with at least 3 distinct finite values,
+/// the smallest positive gap between neighbouring distinct values, if every such gap is an integer
+/// multiple of it (relative tolerance 1e-6, at most 10^6 steps); otherwise None, and the value is
+/// compared as in simple-v1.
+pub fn quantised_step(values: &[f64]) -> Option<f64> {
+    let mut u: Vec<f64> = values.iter().copied().filter(|v| v.is_finite()).collect();
+    u.sort_by(|a, b| a.total_cmp(b));
+    u.dedup();
+    if u.len() < 3 {
+        return None;
+    }
+    let gaps: Vec<f64> = u
+        .windows(2)
+        .map(|w| w[1] - w[0])
+        .filter(|g| *g > 0.0)
+        .collect();
+    let step = gaps.iter().copied().fold(f64::INFINITY, f64::min);
+    if !(step.is_finite() && step > 0.0) {
+        return None;
+    }
+    for g in &gaps {
+        let m = g / step;
+        if m > MAX_MULTIPLE || (m - m.round()).abs() > STEP_TOLERANCE * m {
+            return None;
+        }
+    }
+    Some(step)
+}
+
+/// The simple-v2 floor of one value: simple-v1's floor, raised to `QUANTISED_STEPS` steps when the
+/// history is quantised.
+pub fn v2_floor(v1_floor: f64, history: &[f64]) -> f64 {
+    match quantised_step(history) {
+        Some(step) => v1_floor.max(QUANTISED_STEPS * step),
+        None => v1_floor,
+    }
+}
+
 /// Longest segment summarized in one call (2^20 samples, about 41 s at 25.6 kHz).
 pub const MAX_SEGMENT_SAMPLES: usize = 1 << 20;
 
@@ -120,6 +170,45 @@ pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalEr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quantised_p75_near_zero_is_zero_under_v2() {
+        // V2 S1: p75 history alternating between 0 and -1 step (0.0383), and a few other steps.
+        let step = 0.0383;
+        let hist = [0.0, -step, 0.0, -step, -2.0 * step, 0.0, -step, step];
+        assert_eq!(quantised_step(&hist), Some(step));
+        assert_eq!(v2_floor(0.0, &hist), 2.0 * step);
+        // the median of this history is -step/2 or so; it lies within the floor, so it is zero
+        let mut h = hist.to_vec();
+        h.sort_by(|a, b| a.total_cmp(b));
+        let med = (h[3] + h[4]) / 2.0;
+        assert!(med.abs() <= v2_floor(0.0, &hist));
+    }
+
+    #[test]
+    fn continuous_values_have_no_step() {
+        // V2 S2: smooth values keep simple-v1's floor.
+        let hist: Vec<f64> = (0..200)
+            .map(|i| ((i as f64) * 0.7311).sin() * 1.3 + 0.01 * i as f64)
+            .collect();
+        assert_eq!(quantised_step(&hist), None);
+        assert_eq!(v2_floor(1e-9, &hist), 1e-9);
+        assert_eq!(quantised_step(&[1.0, 2.0]), None); // fewer than 3 distinct values
+        assert_eq!(quantised_step(&[0.0, 0.0, 0.0, 0.0]), None);
+        assert_eq!(quantised_step(&[0.0, 1.0, 1.0003]), None); // 1 is not a multiple of 0.0003
+    }
+
+    #[test]
+    fn step_tolerates_float_rounding_of_a_grid() {
+        // calibrated values o + k*s rounded to float: gaps are multiples of s within 1e-6
+        let s = 0.1;
+        let hist: Vec<f64> = [3, 7, 4, 12, 5, 9]
+            .iter()
+            .map(|k| -0.3 + *k as f64 * s)
+            .collect();
+        let st = quantised_step(&hist).unwrap();
+        assert!((st - s).abs() < 1e-12);
+    }
 
     #[test]
     fn known_values() {
