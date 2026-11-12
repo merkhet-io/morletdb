@@ -118,5 +118,18 @@ the uncertainty of the sample it finds. `--context-columns program,block` stores
 not as recordings. A run of equal values becomes one context row; an empty cell keeps the last value, as
 controllers often write only on change. Build segments from them with `morlet_build_context_segments`.
 
+**Alarm, PLC and operator messages (`morlet_events.py`, #421).** A message log (CSV with a time column and the
+columns that describe the message) becomes context events: each message is stored under `--key` (e.g. `alarm`) on
+every recording whose time range contains it, at the sample its time maps to through the recording's start time
+and rate. `--match machine` restricts a message to recordings whose metadata `machine` equals its own column.
+When the recording's import measured how its timestamps departed from start + rate, the event carries that as
+`time_uncertainty_s`. Messages outside every recording are counted, not stored; an identical re-import adds
+nothing. The decision state lists the events inside a segment, with their offset in seconds.
+
+```sh
+python tools/ingest/morlet_events.py alarms.csv --collection public.line3 --time-column time \
+    --key alarm --value-columns code,text --match machine
+```
+
 CSV files are read into memory. For Parquet sources and other layouts, use
 [`parquet_import.py`](../tools/ingest/README.md), which this importer builds on.

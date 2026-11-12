@@ -4,6 +4,11 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Alarm and PLC messages as context events (#421).** `tools/ingest/morlet_events.py` places each message of a
+  log (CSV: time and message columns) as a context event on the recordings whose time range contains it, at the
+  sample its time maps to (optionally only on the recordings of the message's machine), with the recording's
+  measured time uncertainty (#393) where known. An identical re-import is a no-op. `decision_state` lists the
+  events inside its segment (`events`: key, value, sample, offset in seconds).
 - **Label glossary (#333).** `morlet_define_label(collection, label, definition, unit, source)` records what a
   label means; `morlet_label_definitions(collection)` lists the definitions. Context enabled from SQL 0.3.9 on
   gets the table; existing collections get it with their first definition. `decision_state` returns, for the
