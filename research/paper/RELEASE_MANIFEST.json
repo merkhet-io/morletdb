@@ -1,6 +1,6 @@
 {
  "title": "MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL",
- "version": "0.23",
+ "version": "0.24",
  "date": "2026-11-11",
  "type": "technical report / preprint (not peer reviewed)",
  "author": "Zin Nam; Semir Maslo (Sulzer-BDiM)",
@@ -13,12 +13,12 @@
   "code": "Apache-2.0",
   "report_text_and_figures": "CC-BY-4.0 (LICENSE.md)"
  },
- "tag": "paper-v0.23",
- "report_source_commit": "8875aa65597a78f5ac71b5ab3dbd3c639e47b030",
+ "tag": "paper-v0.24",
+ "report_source_commit": "96a63e75fa009c79304fa7de9d452603f689ff70",
  "pdf_sha256": {
-  "research/paper/morletdb.pdf": "31454f1c2ea029a208146d1bcdb7799fd6d61296ea131f44011523cf6dc0b28a",
-  "research/paper/supplement.pdf": "70fb00eb9961044453e13bd8b20f69e6ce133854576aee64cb6bedb63431d7a1",
-  "docs/morletdb.pdf": "31454f1c2ea029a208146d1bcdb7799fd6d61296ea131f44011523cf6dc0b28a",
-  "docs/morletdb-supplement.pdf": "70fb00eb9961044453e13bd8b20f69e6ce133854576aee64cb6bedb63431d7a1"
+  "research/paper/morletdb.pdf": "b2da7def08782532b1d3097322162755433ac79ed545f50ba3b5f12d2ce0a3cd",
+  "research/paper/supplement.pdf": "550e7ab980824dd41e0a2c98884189fb6c46ba863cf98f7718983c2ea342d7d7",
+  "docs/morletdb.pdf": "b2da7def08782532b1d3097322162755433ac79ed545f50ba3b5f12d2ce0a3cd",
+  "docs/morletdb-supplement.pdf": "550e7ab980824dd41e0a2c98884189fb6c46ba863cf98f7718983c2ea342d7d7"
  }
 }
