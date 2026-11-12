@@ -171,6 +171,13 @@ class DecisionOnADatabase(unittest.TestCase):
         b = decision.segment_at(self.conn, C, "p02-b", 0)       # channel b has no labelled case at all
         self.assertIn("examples_note", decision.decision_state(self.conn, C, b, neighbors=0, examples=2))
 
+    def test_segments_at_equals_segment_at(self):
+        pts = [("p03-a", 0), ("p07-b", 100), ("p12-a", 2047)]
+        self.assertEqual(decision.segments_at(self.conn, C, pts),
+                         [decision.segment_at(self.conn, C, r, s) for r, s in pts])
+        with self.assertRaises(ValueError):
+            decision.segments_at(self.conn, C, [("p03-a", 0), ("p03-a", 5000)])
+
     def test_errors_name_the_segment(self):
         with self.assertRaises(ValueError):
             decision.decision_states(self.conn, C, [self.seg12, 10 ** 12])

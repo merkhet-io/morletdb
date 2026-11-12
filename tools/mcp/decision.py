@@ -23,6 +23,7 @@ samples: `segment` names the recording and sample range, each neighbour and exam
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import math
 import uuid
@@ -62,8 +63,11 @@ class _History:
 
     def __init__(self, rows, width):
         self.rows = rows
-        self.V = np.array([[np.nan if v is None else v for v in r[4]] for r in rows], dtype=np.float64
-                          ).reshape(len(rows), width)
+        try:                                              # no NULL value: the fast path
+            self.V = np.array([r[4] for r in rows], dtype=np.float64).reshape(len(rows), width)
+        except (TypeError, ValueError):
+            self.V = np.array([[np.nan if v is None else v for v in r[4]] for r in rows], dtype=np.float64
+                              ).reshape(len(rows), width)
         self._med = {}
 
     def med(self, i):
@@ -158,8 +162,8 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
         out: dict[int, list] = {sid: [] for sid in ids}
         for m, qs in groups.items():
             for row in conn.execute(
-                    f"SELECT q.segment_id, s.segment_id, s.recording_id, s.start_sample, s.end_sample, v.vals "
-                    f"FROM {seg_t} q JOIN {collection} qr ON qr.recording_id = q.recording_id "
+                    f"WITH h AS (SELECT q.segment_id AS qid, s.segment_id, s.recording_id, s.start_sample, "
+                    f"s.end_sample, v.vals FROM {seg_t} q JOIN {collection} qr ON qr.recording_id = q.recording_id "
                     f"JOIN {seg_t} s ON s.context @> %s::jsonb AND NOT s.stale "
                     f"JOIN {collection} r ON r.recording_id = s.recording_id AND r.sample_rate_hz = qr.sample_rate_hz "
                     f"AND r.channel = qr.channel AND r.unit = qr.unit "
@@ -167,20 +171,18 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
                     f"WHERE q.segment_id = ANY(%s) AND s.segment_id <> q.segment_id AND (s.spec = q.spec) IS TRUE "
                     f"AND NOT (s.recording_id = q.recording_id AND s.start_sample < q.end_sample "
                     f"AND q.start_sample < s.end_sample) "
-                    f"AND (q.occurrence = '{{}}'::jsonb OR s.occurrence <> q.occurrence)", (m, qs), binary=True):
-                out[row[0]].append([*row[1:], ()])
-        by_rid: dict[str, list] = {}
-        if any(out.values()):                             # active labels of these channels, once (no index needed)
-            for lid, rid, ls, le, lab in conn.execute(
-                    f"SELECT l.label_id, l.recording_id, l.start_sample, l.end_sample, l.label FROM {labels_t} l "
-                    f"JOIN {collection} r ON r.recording_id = l.recording_id WHERE NOT l.retracted "
-                    f"AND r.channel = ANY(%s) ORDER BY l.label_id",
-                    (sorted({queries[s]["channel"] for s in ids}),)):
-                by_rid.setdefault(rid, []).append((lid, ls, le, lab))
-            for hs in out.values():
-                for h in hs:
-                    if h[1] in by_rid:
-                        h[5] = tuple((lid, lab) for lid, ls, le, lab in by_rid[h[1]] if ls < h[3] and h[2] < le)
+                    f"AND (q.occurrence = '{{}}'::jsonb OR s.occurrence <> q.occurrence)), "
+                    # active labels per recording, hash-joined once (the labels table has no recording index)
+                    f"l AS (SELECT recording_id, array_agg(label_id ORDER BY label_id) AS ids, "
+                    f"array_agg(start_sample ORDER BY label_id) AS starts, array_agg(end_sample ORDER BY label_id) "
+                    f"AS ends, array_agg(label ORDER BY label_id) AS labels FROM {labels_t} "
+                    f"WHERE NOT retracted AND recording_id IN (SELECT recording_id FROM h) GROUP BY recording_id) "
+                    f"SELECT h.*, l.ids, l.starts, l.ends, l.labels FROM h LEFT JOIN l USING (recording_id)",
+                    (m, qs), binary=True):
+                qid, sid_, rid, start, end_, vals, lids, ls, le, labs = row
+                labels = () if lids is None else tuple(
+                    (lid, lab) for lid, a, b, lab in zip(lids, ls, le, labs) if a < end_ and start < b)
+                out[qid].append([sid_, rid, start, end_, vals, labels])
         return {sid: _History(hs, len(names)) for sid, hs in out.items()}
 
     main = {sid: h.without(exclude_labels) for sid, h in histories(match_keys).items()}
@@ -192,7 +194,7 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     def floors(hist):                                     # morlet_simple_value_floors of the history's median rms
         return floors_of.get(hist.med(rms_i)) or [None] * len(names)
 
-    def ranked(q, hist):                                  # morlet_history_neighbors' distance and order
+    def ranked(q, hist, k=None, keep=None):               # morlet_history_neighbors' distance and order
         fl = floors(hist)
         meds = {i: hist.med(i) for i in score_i}
         use = [i for i in score_i if meds[i] is not None and fl[i] is not None and abs(meds[i]) > fl[i]]
@@ -206,9 +208,11 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
         for j in range(len(use)):                         # summed in value order, as avg() accumulates
             total = total + np.where(valid[:, j], terms[:, j], 0.0)
         dist = [math.sqrt(t / c) if c else None for t, c in zip(total.tolist(), cnt.tolist())]
-        order = sorted(range(len(dist)), key=lambda j: (dist[j] is None, dist[j] or 0.0, hist.rows[j][1],
-                                                         hist.rows[j][2]))
-        return [(dist[j], hist.rows[j]) for j in order]
+        rows = hist.rows
+        js = range(len(dist)) if keep is None else [j for j in range(len(dist)) if keep(rows[j])]
+        key = lambda j: (dist[j] is None, dist[j] or 0.0, rows[j][1], rows[j][2])
+        order = sorted(js, key=key) if k is None else heapq.nsmallest(k, js, key=key)
+        return [(dist[j], rows[j]) for j in order]
 
     all_base = sorted({b for bs in baselines.values() for b in bs})
     base_rows = {r[0]: {"vals": r[1], "rate": r[2], "channel": r[3], "unit": r[4]} for r in conn.execute(
@@ -258,7 +262,7 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
 
         near = []
         if neighbors > 0 and n > 0:
-            for dist, h in ranked(q, hist)[:neighbors]:
+            for dist, h in ranked(q, hist, k=neighbors):
                 near.append({"recording_id": h[1], "start_sample": h[2], "end_sample": h[3],
                              "distance": _num(dist), "labels": sorted({lab for _lid, lab in h[5]})})
 
@@ -272,8 +276,10 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
             out_extra["own_baseline"] = _own_baseline(names, q, [base_rows.get(b) for b in baselines[sid]],
                                                       baselines[sid])
         if examples > 0:
-            out_extra.update(_examples(conn, labels_t, names, ranked(q, ex_hist[sid]), examples,
-                                       wanted_ex))
+            labelled = lambda h: any(not lab.startswith(DECISION_PREFIX) and (wanted_ex is None or lab in wanted_ex)
+                                     for _lid, lab in h[5])
+            out_extra.update(_examples(conn, labels_t, names, ranked(q, ex_hist[sid], k=examples, keep=labelled),
+                                       examples, wanted_ex))
         hist_info = {"match_keys": match_keys or sorted(q["context"]), "size": n,
                      "excluded_labels": exclude_list}
         if n < reliable_history:
@@ -343,6 +349,23 @@ def segment_at(conn, collection: str, recording_id: str, sample: int) -> int:
         raise ValueError(f"no context segment of {recording_id!r} contains sample {sample} "
                          f"(segments are built with morlet_build_context_segments)")
     return row[0]
+
+
+def segments_at(conn, collection: str, points: Iterable[tuple[str, int]]) -> list[int]:
+    """segment_at for several (recording_id, sample) points in one query, for example the channels of one cut."""
+    points = [(str(r), int(s)) for r, s in points]
+    seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
+                             (collection,)).fetchone()[0]
+    found = {(r, s): sid for r, s, sid in conn.execute(
+        f"SELECT p.rid, p.sample, (SELECT g.segment_id FROM {seg_table} g WHERE g.recording_id = p.rid "
+        f"AND g.start_sample <= p.sample AND p.sample < g.end_sample AND NOT g.stale "
+        f"ORDER BY g.end_sample - g.start_sample, g.segment_id LIMIT 1) "
+        f"FROM unnest(%s::text[], %s::bigint[]) AS p(rid, sample)", ([r for r, _ in points], [s for _, s in points]))}
+    missing = [p for p in points if found.get(p) is None]
+    if missing:
+        raise ValueError(f"no context segment contains {missing[0][1]} of {missing[0][0]!r} "
+                         f"(segments are built with morlet_build_context_segments)")
+    return [found[p] for p in points]
 
 
 DECISION_PREFIX = "s1:"     # labels written by the decision log: "s1:<answer>", e.g. "s1:replace_insert"

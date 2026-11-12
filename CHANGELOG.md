@@ -11,7 +11,9 @@ SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_mor
   `tools/mcp/test_decision_db.py`). The SQL path read the collection three times per channel and also computed the
   pooled spreads, which the state does not use. On a synthetic history shaped like a milling study (3 tools x 315
   cuts x 7 channels), seven channels took 259 ms on an M-series Mac before and 16 ms after, and on a Raspberry Pi
-  3B+ 3.8 s before and 0.26 s after (median). State version 4:
+  3B+ 3.8 s before and 0.26 s after (median). On the real PHM 2010 milling data on the Pi (3 tools x 315 cuts,
+  100 decisions of c4 and c6 late in life, soft temperature limit active), a cut's 7 states take p50 256 ms and
+  p95 296 ms, from 4.7 s and 5.1 s. `decision.segments_at` looks up several segments in one query. State version 4:
   a value's status no longer reports `no_pooled_spread` (it is `ok`), since the state carries no calibrated
   deviation; values, medians, deviations, quantiles and neighbours are unchanged.
 - **Decision-state examples search the whole history and say when there is none (#404).** Examples were the
