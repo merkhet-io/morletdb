@@ -4,6 +4,10 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **MCP `trend` per context segment (#385).** `segment_context` (a JSON object such as `{"phase": "cut"}`) takes
+  the measurement points only inside current context segments whose context contains it, from each segment's
+  start (a segment shorter than `samples_per_point` is measured whole). Without it, `trend` measures from each
+  recording's start, which on machining data is the idle lead-in before the cut.
 - **Decision state about ten times faster, all channels of a cut in one call (#403).** `decision.decision_states`
   returns the states of several segments; `decision_state` is its one-segment form. The history of all segments
   that share a context is read in one query, and medians, quantiles and neighbour distances are computed in Python
