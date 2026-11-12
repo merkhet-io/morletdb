@@ -4326,22 +4326,33 @@ END $$"#).unwrap();
                {\"recording_id\":\"B\",\"start_sample\":0,\"end_sample\":4}]');",
         )
         .unwrap();
-        Spi::get_one::<i64>(&format!("SELECT morlet_start_memory_run('rep','test','1','{{}}',{dry})"))
-            .unwrap()
-            .unwrap()
+        Spi::get_one::<i64>(&format!(
+            "SELECT morlet_start_memory_run('rep','test','1','{{}}',{dry})"
+        ))
+        .unwrap()
+        .unwrap()
     }
-    #[pg_test(error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3")]
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3"
+    )]
     fn representative_cannot_be_compacted_in_a_later_call() {
         let run = representative_setup(false);
         Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}}]')")).unwrap();
-        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":2,\"level\":3}}]')")).unwrap();
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":2,\"level\":3}}]')"
+        ))
+        .unwrap();
     }
-    #[pg_test(error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 4")]
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 4"
+    )]
     fn representative_cannot_be_compacted_in_the_same_call() {
         let run = representative_setup(false);
         Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}},{{\"episode_id\":2,\"level\":4}}]')")).unwrap();
     }
-    #[pg_test(error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3")]
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3"
+    )]
     fn representative_check_holds_in_a_dry_run() {
         let run = representative_setup(true);
         Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}},{{\"episode_id\":2,\"level\":3}}]',true)")).unwrap();
@@ -4353,7 +4364,11 @@ END $$"#).unwrap();
         // A leaves level 2 in the same call as its representative: no level-2 episode is left without an example.
         Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":3}},{{\"episode_id\":2,\"level\":3}}]')")).unwrap();
         assert_eq!(
-            Spi::get_one::<i64>("SELECT count(*) FROM rep_episodes WHERE level=3 AND representative IS NULL").unwrap().unwrap(),
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM rep_episodes WHERE level=3 AND representative IS NULL"
+            )
+            .unwrap()
+            .unwrap(),
             2
         );
     }
