@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Decision states with long histories faster (#403).** simple-v2's grid check (`quantised_step`) ran in pure
+  Python over every value column of the history; it now uses numpy with the same float64 operations. A history's
+  comparison floors are computed once, and neighbours are ranked with one sort. The states are identical to before;
+  a test compares the grid check with `morlet_quantised_step`. On a Raspberry Pi 3B+ with ~600 earlier segments per
+  signal, these parts took about 0.7 s of each decision; the history query remains the larger cost.
+
 ## 0.3.12-alpha.1
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
