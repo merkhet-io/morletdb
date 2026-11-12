@@ -90,12 +90,12 @@ destructive functions successfully, so a bug in the steward cannot remove raw da
 **Gating:**
 
 - Jobs run only while the 1-minute load average is below 0.7 × CPUs (default) and the disk is not at
+  *pause* level.
 - **Minimum share for integrity checks:** a due verification gets one batch at least every 15 minutes
   (`--verify-share-every`), before the builders and even while the load gate is closed. Only disk pressure stops
   it. On a busy edge device the load rarely falls below the gate and the builders always have new data, so
   without this share verification never ran (soak S1, 2026-11-11). A batch has the usual budget (about 2 s),
   so the share costs well under 1% of the time.
-  *pause* level.
 - Each batch is limited by time, not size: the steward shrinks the batch when one runs over budget.
 
 **Circuit breaker:** after 3 consecutive failures, that job stops. The status shows *Action required* with the
