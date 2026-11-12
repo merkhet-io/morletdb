@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Decision states from memory: `decision.HistoryCache` (#403).** A process that decides cut after cut passes
+  `history_cache=HistoryCache()` to `decision_states` and keeps it: each collection's current segments with values and
+  its active labels stay in memory, indexed by rate, channel, unit, spec and context, and each call fetches only new
+  segments (and values built since for known ones). A fingerprint read in the same snapshot (highest segment and
+  label ids, numbers of current segments and active labels) reloads the pool when a segment went stale or was
+  deleted, and the labels when they changed. The states are identical to the uncached ones (a test changes the data
+  between calls: new cuts, late values, labels added and retracted, segments rebuilt, a recording deleted). On a
+  Raspberry Pi 3B+ with ~57,000 segments, p50 per decision of 9 signals 1.5 s -> 0.68 s; the fingerprint's counts
+  (~0.2 s there) are the next step.
 - **Decision states with long histories faster (#403).** simple-v2's grid check (`quantised_step`) ran in pure
   Python over every value column of the history; it now uses numpy with the same float64 operations. A history's
   comparison floors are computed once, and neighbours are ranked with one sort. The states are identical to before;
