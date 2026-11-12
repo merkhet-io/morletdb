@@ -4,6 +4,12 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Label glossary (#333).** `morlet_define_label(collection, label, definition, unit, source)` records what a
+  label means; `morlet_label_definitions(collection)` lists the definitions. Context enabled from SQL 0.3.9 on
+  gets the table; existing collections get it with their first definition. `decision_state` returns, for the
+  labels it shows, their definitions (`label_definitions`) and the labels nobody defined (`undefined_labels`),
+  and logged precedents carry them. In a demo session an agent had read `not_sharp` (flank wear above 0.2 mm)
+  as the 0.3 mm replacement limit.
 - **Logged decisions keep their precedents (#418).** `decision.log_decision` stores, beside the state the model
   saw, its k nearest labelled precedents (default 3): the state's examples (labelled cases from the whole
   history), else its labelled neighbours, never logged decisions, with recording, sample range, distance and
