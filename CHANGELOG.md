@@ -10,6 +10,13 @@ SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_mo
   call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
   refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
   concurrent moves cannot break the rule. Affects all releases with episodic memory.
+- **Chunk shipping checks the target before writing (#443, #444).** An existing target recording must have the
+  source's parameters (rate, channel, unit, metadata, quantum, window, stride, normalization, extractor); before,
+  shipping into an empty recording at another rate succeeded and reported `identical: true`. The target's existing
+  chunks must equal the source's first chunks byte for byte and on the same boundaries; before, a conflicting
+  prefix was only detected after the source's later chunks had been committed, leaving a mixed recording. A run now
+  ships up to the source end read at its start, so a source that keeps recording no longer fails the final check.
+  The SDK's `export_file` refuses a file recording with other parameters in the same way. Affects 0.3.12-alpha.1.
 - **Decision states from memory: `decision.HistoryCache` (#403).** A process that decides cut after cut passes
   `history_cache=HistoryCache()` to `decision_states` and keeps it: each collection's current segments with values and
   its active labels stay in memory, indexed by rate, channel, unit, spec and context, and each call fetches only new
