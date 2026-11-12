@@ -4,6 +4,10 @@
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **MCP `search_similar`: `exclude="occurrence"` (#384).** On cyclic production, the useful answer is the same cut
+  on earlier parts. `occurrence` drops hits from the query's own part, cycle or run (the occurrence of the
+  context segment that contains it), but keeps the other parts in the same recording, which `exclude=recording`
+  drops as well. Tested on one recording of three parts.
 - **Logged decisions keep their precedents (#418).** `decision.log_decision` stores, beside the state the model
   saw, its k nearest labelled precedents (default 3): the state's examples (labelled cases from the whole
   history), else its labelled neighbours, never logged decisions, with recording, sample range, distance and
