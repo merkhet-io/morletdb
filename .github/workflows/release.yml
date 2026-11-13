@@ -93,6 +93,10 @@ jobs:
           name: sbom-${{ matrix.arch }}
           path: morletdb-${{ steps.version.outputs.value }}-${{ matrix.arch }}.spdx.json
           if-no-files-found: error
+      - name: Memory sizing under small container limits (#466)
+        env:
+          MORLET_IMAGE: morletdb:candidate
+        run: deploy/test_memory_sizing.sh
       - name: Clean-checkout quickstart and restart trial
         env:
           MORLET_IMAGE: morletdb:candidate
