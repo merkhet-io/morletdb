@@ -3264,6 +3264,48 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn history_comparison_without_spreads_matches_compare_to_history() {
+        // #335: morlet_compare_to_history is morlet_history_comparison with the pooled spreads; without them every
+        // column but spread, calibrated_deviation and an ok status is the same, and morlet_compare_summary's
+        // duration deviation (now taken without the spreads) equals morlet_compare_to_history's.
+        cal_fixture();
+        Spi::run("SELECT morlet_add_label('cal','A5',0,2000,'chipped','test')").unwrap();
+        for opts in [
+            "",
+            ",exclude_labels=>ARRAY['chipped']",
+            ",match_keys=>ARRAY['block'],min_history=>3",
+        ] {
+            let q = format!(
+                "WITH a AS (SELECT s.segment_id,c.* FROM cal_ctx_segments s, morlet_compare_to_history('cal',s.segment_id{opts}) c),
+                      b AS (SELECT s.segment_id,c.* FROM cal_ctx_segments s, morlet_history_comparison('cal',s.segment_id,
+                        {args}) c)
+                 SELECT count(*)=96 AND bool_and(
+                   (a.value,a.hist_n,a.hist_median,a.relative_deviation,a.robust_z,a.quantile,a.query_occurrence)
+                     IS NOT DISTINCT FROM (b.value,b.hist_n,b.hist_median,b.relative_deviation,b.robust_z,b.quantile,b.query_occurrence)
+                   AND b.spread IS NULL AND b.calibrated_deviation IS NULL
+                   AND (a.status=b.status OR (a.status='ok' AND b.status='no_pooled_spread')))
+                 FROM a JOIN b USING (segment_id,value_name)",
+                args = match opts {
+                    "" => "'{}','{}','{}',5,10000,false,false",
+                    ",exclude_labels=>ARRAY['chipped']" => "'{}','{}',ARRAY['chipped'],5,10000,false,false",
+                    _ => "ARRAY['block'],'{}','{}',3,10000,false,false",
+                }
+            );
+            assert_eq!(Spi::get_one::<bool>(&q).unwrap(), Some(true), "{opts}");
+            let d = format!(
+                "SELECT bool_and(m.duration_relative_deviation IS NOT DISTINCT FROM c.relative_deviation) AND count(*)=12
+                 FROM cal_ctx_segments s, morlet_compare_summary('cal',s.segment_id{opts}) m,
+                      morlet_compare_to_history('cal',s.segment_id{opts}) c WHERE c.value_name='duration_s'"
+            );
+            assert_eq!(Spi::get_one::<bool>(&d).unwrap(), Some(true), "{opts}");
+        }
+        // With the spreads the wrapper and the body agree on every column.
+        assert_eq!(Spi::get_one::<bool>("SELECT bool_and(a IS NOT DISTINCT FROM b) FROM cal_ctx_segments s,
+            LATERAL (SELECT array_agg(c ORDER BY c.value_name) a FROM morlet_compare_to_history('cal',s.segment_id) c) x,
+            LATERAL (SELECT array_agg(c ORDER BY c.value_name) b FROM morlet_history_comparison('cal',s.segment_id,'{}','{}','{}',5,10000,false,true) c) y").unwrap(), Some(true));
+    }
+
+    #[pg_test]
     fn calibrated_summary_ranks_an_anomalous_part_against_its_context() {
         // Blocks A (amplitude ~100) and B (~10), parts 1..6 each with small variation; part 6
         // of block A has amplitude 160.

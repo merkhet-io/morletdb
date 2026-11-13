@@ -2393,6 +2393,20 @@ CREATE FUNCTION public.morlet_compare_to_history(collection regclass,segment_id 
 RETURNS TABLE(value_name text,value float8,hist_n integer,hist_median float8,relative_deviation float8,
   robust_z float8,quantile float8,spread float8,calibrated_deviation float8,status text,query_occurrence jsonb)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  RETURN QUERY SELECT * FROM public.morlet_history_comparison(collection,segment_id,match_keys,metadata_filter,
+    exclude_labels,min_history,max_candidates,before_only,true);
+END $$;
+
+-- Body of morlet_compare_to_history (internal). Without pooled_spreads the pooled spreads, about two thirds of the
+-- time on a history of a few hundred segments (#335), are not computed: spread and calibrated_deviation are then
+-- NULL and status says no_pooled_spread where it would say ok; every other column is the same.
+CREATE FUNCTION public.morlet_history_comparison(collection regclass,segment_id bigint,match_keys text[],
+  metadata_filter jsonb,exclude_labels text[],min_history integer,max_candidates integer,before_only boolean,
+  pooled_spreads boolean)
+RETURNS TABLE(value_name text,value float8,hist_n integer,hist_median float8,relative_deviation float8,
+  robust_z float8,quantile float8,spread float8,calibrated_deviation float8,status text,query_occurrence jsonb)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE q record; qr record; match jsonb; candidates bigint; history text; spreads float8[]; cutoff numeric;
 BEGIN
   IF min_history<1 OR max_candidates<1 OR jsonb_typeof(metadata_filter)<>'object' THEN
@@ -2412,7 +2426,9 @@ BEGIN
   IF candidates>max_candidates THEN
     RAISE EXCEPTION 'history exceeds % segments; narrow match_keys or the metadata filter',max_candidates;
   END IF;
-  spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
+  IF pooled_spreads THEN
+    spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
+  END IF;
   RETURN QUERY EXECUTE 'WITH hist AS MATERIALIZED ('||history||'),
     budget AS (SELECT count(*)::integer AS n FROM hist),
     q AS (SELECT name,ord,$9[ord] AS x FROM unnest(public.morlet_simple_value_names()) WITH ORDINALITY AS t(name,ord)),
@@ -2487,8 +2503,8 @@ BEGIN
   n:=cardinality(flat)/width;
   query_occurrence:=q.occurrence; hist_n:=n;
   SELECT c.relative_deviation INTO duration_relative_deviation
-    FROM public.morlet_compare_to_history(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
-      max_candidates,before_only) c WHERE c.value_name='duration_s';
+    FROM public.morlet_history_comparison(collection,q.segment_id,match_keys,metadata_filter,exclude_labels,min_history,
+      max_candidates,before_only,false) c WHERE c.value_name='duration_s';   -- relative_deviation needs no spreads (#335)
   IF n<min_history THEN status:='insufficient_history'; RETURN NEXT; RETURN; END IF;
   -- Spread 1 on the evaluated value set and NULL elsewhere turns the calibrated score
   -- into the plain maximum relative deviation over that set.

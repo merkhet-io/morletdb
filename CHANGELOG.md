@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **`morlet_compare_summary` computes the pooled spreads once (#335).** For the duration deviation it called
+  `morlet_compare_to_history`, which computed the pooled spreads only to discard them; it computed them again for
+  `calibrated_score`. The comparison's body is now the internal `morlet_history_comparison`, with the spreads
+  optional: `morlet_compare_to_history` calls it with them (same signature and results), `morlet_compare_summary`
+  without them for the duration deviation. On a 320-segment history `morlet_compare_summary` took 23 ms instead of
+  35 ms (p50), with identical results on every segment. The decision state (`tools/mcp/decision.py`) already
+  compares in Python without the spreads; it calls `morlet_compare_summary` only for the summary quantile.
+
 ## 0.3.13-alpha.1
 
 Security and data-safety release: SQL 0.3.10 (`ALTER EXTENSION pg_morlet UPDATE` from 0.3.9; the update also puts the

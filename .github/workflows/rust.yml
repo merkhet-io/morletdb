@@ -292,6 +292,7 @@ jobs:
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.9-alpha.1:refs/tags/v0.3.9-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.11-alpha.1:refs/tags/v0.3.11-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.12-alpha.1:refs/tags/v0.3.12-alpha.1
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.3.13-alpha.1:refs/tags/v0.3.13-alpha.1
       - name: PostgreSQL 17.11
         id: pg
         uses: ./.github/actions/pgrx-postgres
@@ -330,15 +331,15 @@ jobs:
         with:
           path: ${{ runner.temp }}/upgrade-releases
           key: upgrade-releases-${{ runner.os }}-${{ runner.arch }}-pg17.11-pgrx-${{ steps.pg.outputs.pgrx }}-${{ hashFiles('extensions/pg_morlet/tests/ci_local.sh') }}
-      - name: The 0.3.9 -> 0.3.10 update script is generated from the current sources
-        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.9--0.3.10.sql') != ''
+      - name: The 0.3.10 -> 0.3.11 update script is generated from the current sources
+        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.10--0.3.11.sql') != ''
         working-directory: extensions/pg_morlet
         run: |
-          if grep -q "^default_version = '0.3.10'" pg_morlet.control; then
+          if grep -q "^default_version = '0.3.11'" pg_morlet.control; then
             cargo pgrx schema pg17 --pg-config "$PG_CONFIG" -o "$RUNNER_TEMP/new.sql"
             python3 tests/gen_upgrade.py "$RUNNER_TEMP/new.sql" --check
           fi
-      - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1, v0.3.7-alpha.1, v0.3.8-alpha.1, v0.3.9-alpha.1, v0.3.11-alpha.1 and v0.3.12-alpha.1
+      - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1, v0.3.7-alpha.1, v0.3.8-alpha.1, v0.3.9-alpha.1, v0.3.11-alpha.1, v0.3.12-alpha.1 and v0.3.13-alpha.1
         env:
           MORLET_UPGRADE_CACHE: ${{ runner.temp }}/upgrade-releases
         run: |
