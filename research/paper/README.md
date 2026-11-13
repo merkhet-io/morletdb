@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.24, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.25, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## What we found
@@ -61,6 +61,13 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.25 (related work)
+
+- **Related work** gains two paragraphs and matrix rows: retrieval of similar past events in monitoring (Moirae;
+  Kwon, Xu and Balazinska 2007), which compares scalar contexts of events rather than waveforms, and ModelarDB,
+  model-based compression of high-frequency sensor data across edge and cloud, whose lossless mode keeps values equal
+  in float32 rather than bit-identical samples. No result, number or figure changes.
 
 ## What changed in 0.24 (tool wear, edge-sized limits, Grizzbit 2.1)
 
