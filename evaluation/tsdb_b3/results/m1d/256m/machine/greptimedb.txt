@@ -1,0 +1,13 @@
+2026-11-13T08:22:57
+ 8:22  up 16 days, 17:19, 18 users, load averages: 6.63 4.56 3.14
+ %CPU COMM
+294.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 29.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 27.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 17.4 /Applications/Firefox.app/Contents/MacOS/gpu-helper.app/Contents/MacOS/Firefox GPU Helper
+ 15.4 /Applications/Firefox.app/Contents/MacOS/plugin-container.app/Contents/MacOS/plugin-container
+ 10.6 /Applications/Firefox.app/Contents/MacOS/firefox
+  7.6 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+  3.4 /usr/sbin/coreaudiod
+2026-11-13T08:23:02
+ 8:23  up 16 days, 17:19, 18 users, load averages: 6.10 4.49 3.12
