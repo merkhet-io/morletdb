@@ -2,6 +2,8 @@
 -- morlet_set_level: a level-2 episode keeps a real example; moves that would leave it with a representative
 -- above level 1 are refused as a whole, and the representative is locked while it is assigned (#440).
 -- morlet_build_envelopes: the window grid is recognised after compaction removed its first windows (#441).
+-- morlet_enable_row_security, morlet_enable_memory: episodic memory follows row security (#438); collections
+-- already under morlet_enable_row_security get it by calling it again.
 \echo Use "ALTER EXTENSION pg_morlet UPDATE TO '0.3.10'" to load this file. \quit
 
 CREATE OR REPLACE FUNCTION public.morlet_set_level(collection regclass,run_id bigint,moves jsonb,dry_run boolean DEFAULT false)
@@ -332,4 +334,99 @@ BEGIN
     s:=s+stride;
   END LOOP;
   RETURN written;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_enable_row_security(collection regclass)
+RETURNS integer LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t record; covered integer:=0; cond text; chk text;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  FOR t IN SELECT cl.relname FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace
+      WHERE n.nspname=s AND cl.relkind='r' AND (cl.relname IN (c||'_chunks',c||'_segments',c||'_envelopes',c||'_ctx',
+        c||'_ctx_segments',c||'_ctx_values',c||'_labels',c||'_acq',c||'_acq_channels',c||'_rollups',
+        c||'_episodes',c||'_ledger',c||'_kept_summaries',c||'_memory_runs') OR (left(cl.relname,length(c)+8)=c||'_probes_' AND substr(cl.relname,length(c)+9) ~ '^[0-9]+$'))
+      ORDER BY cl.relname LOOP
+    IF t.relname=c||'_ctx_values' THEN
+      cond:=format('EXISTS(SELECT 1 FROM %I.%I x WHERE x.segment_id=%I.segment_id)',s,c||'_ctx_segments',t.relname);
+      chk:=cond;
+    ELSIF t.relname=c||'_acq' THEN
+      -- visible through a visible channel, and to its creator until it has one (inserting an acquisition
+      -- precedes its channels)
+      -- (the channel lookup runs in a function: the channel policy refers to this table, and a subquery here
+      -- would make the policies recursive)
+      cond:=format('public.morlet_acquisition_has_visible_channel(%L::regclass,%I.acquisition_id)
+        OR public.morlet_inserted_by_current_transaction(%I.xmin)',format('%I.%I',s,c||'_acq_channels'),t.relname,t.relname);
+      chk:='true';
+    ELSIF t.relname=c||'_memory_runs' THEN
+      -- Episodic memory (#438): a run has no recording of its own and may span several, so it is visible to the
+      -- role that started it; its ledger rows follow their recordings. Older tables get the column here.
+      EXECUTE format('ALTER TABLE %I.%I ADD COLUMN IF NOT EXISTS started_by name NOT NULL DEFAULT current_user',s,t.relname);
+      cond:=format('%I.started_by = current_user',t.relname);
+      chk:=cond;
+    ELSIF t.relname=c||'_acq_channels' THEN
+      -- a channel row follows its recording; adding or moving one also needs its acquisition to be visible,
+      -- so a recording cannot join another tenant's acquisition by naming its ID (a foreign key is not
+      -- an authorization check)
+      cond:=format('%I.recording_id = ANY (ARRAY(SELECT x.recording_id FROM %s x))',t.relname,collection);
+      chk:=format('%s AND EXISTS(SELECT 1 FROM %I.%I a WHERE a.acquisition_id=%I.acquisition_id)',
+        cond,s,c||'_acq',t.relname);
+    ELSE
+      -- An uncorrelated ARRAY(...) becomes an InitPlan, which keeps scans parallel; a correlated
+      -- EXISTS compiled to a parallel-restricted SubPlan and made exact search 3x slower.
+      cond:=format('%I.recording_id = ANY (ARRAY(SELECT x.recording_id FROM %s x))',t.relname,collection);
+      chk:=cond;
+    END IF;
+    EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY',s,t.relname);
+    EXECUTE format('DROP POLICY IF EXISTS morlet_follows_recording ON %I.%I',s,t.relname);
+    EXECUTE format('CREATE POLICY morlet_follows_recording ON %I.%I USING (%s) WITH CHECK (%s)',s,t.relname,cond,chk);
+    covered:=covered+1;
+  END LOOP;
+  RETURN covered;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_enable_memory(collection regclass)
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE schema_name text; collection_name text; relations record;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'episodic memory needs a collection with encoded chunks'; END IF;
+  SELECT n.nspname,c.relname INTO schema_name,collection_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=collection;
+  IF to_regclass(format('%I.%I',schema_name,collection_name||'_episodes')) IS NOT NULL THEN RETURN; END IF;
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    episode_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL CHECK(start_sample>=0),
+    end_sample bigint NOT NULL,
+    level smallint NOT NULL DEFAULT 0 CHECK(level BETWEEN 0 AND 4),
+    context jsonb NOT NULL DEFAULT ''{}'' CHECK(jsonb_typeof(context)=''object''),
+    importance float8 NOT NULL DEFAULT 0 CHECK(importance BETWEEN 0 AND 1),
+    exempt boolean NOT NULL DEFAULT false,
+    cluster_id bigint, representative bigint, distance float8,
+    created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(),
+    CHECK(end_sample>start_sample), CHECK(NOT exempt OR level<=1),
+    CHECK((level=2)=(representative IS NOT NULL)))',schema_name,collection_name||'_episodes',collection_name);
+  EXECUTE format('CREATE INDEX ON %I.%I(recording_id,start_sample)',schema_name,collection_name||'_episodes');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    run_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    policy text NOT NULL, policy_version text NOT NULL, params jsonb NOT NULL DEFAULT ''{}'',
+    dry_run boolean NOT NULL, status text NOT NULL DEFAULT ''running'' CHECK(status IN (''running'',''finished'',''failed'')),
+    summary jsonb, started_at timestamptz NOT NULL DEFAULT now(), finished_at timestamptz,
+    started_by name NOT NULL DEFAULT current_user)',
+    schema_name,collection_name||'_memory_runs');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    ledger_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    run_id bigint NOT NULL REFERENCES %1$I.%3$I(run_id),
+    episode_id bigint NOT NULL, recording_id text NOT NULL, start_sample bigint NOT NULL, end_sample bigint NOT NULL,
+    from_level smallint NOT NULL, to_level smallint NOT NULL, reason jsonb NOT NULL DEFAULT ''{}'',
+    chunks_removed bigint NOT NULL, summaries_removed bigint NOT NULL, derived_removed bigint NOT NULL,
+    bytes_freed bigint NOT NULL, removed_md5 text, cold_copy text, at timestamptz NOT NULL DEFAULT now())',
+    schema_name,collection_name||'_ledger',collection_name||'_memory_runs');
+  EXECUTE format('CREATE TABLE %1$I.%2$I (
+    recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
+    start_sample bigint NOT NULL, sample_count integer NOT NULL CHECK(sample_count BETWEEN 1 AND 32768),
+    summary bytea COMPRESSION pglz NOT NULL CHECK(octet_length(summary)=66), ledger_id bigint NOT NULL,
+    PRIMARY KEY(recording_id,start_sample))',schema_name,collection_name||'_kept_summaries',collection_name);
+  -- Collections under morlet_enable_row_security: the new tables follow it at once (#438).
+  IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
 END $$;
