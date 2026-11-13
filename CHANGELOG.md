@@ -1,5 +1,49 @@
 # Changelog
 
+## Unreleased
+
+SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **A representative keeps its samples while it represents an episode (#440).** `morlet_set_level` checked the
+  representative only when an episode moved to level 2; a later move could take the representative to level 3 or 4,
+  leaving the level-2 episode without a real example. Now, after all moves of a call (stored levels overlaid with the
+  call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
+  refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
+  concurrent moves cannot break the rule. Affects all releases with episodic memory.
+- **Envelopes build on after compaction removed the first windows (#441).** `morlet_build_envelopes` read the stride
+  from the first stored window after 0; once level-1 compaction had removed the early windows, a rebuild with the
+  original stride failed (`built with stride 6144, not 2048`), new samples stayed unsearchable and the steward's
+  envelope job could trip its breaker. When that first window does not match, the builder now checks that every
+  stored window lies on the requested grid and every grid position without a window is one it skips itself (out of
+  search, or samples removed); another stride's grid is still refused.
+- **S3 import resumes objects that were cut off (#442).** `morlet_s3.py import` treated any recording carrying an
+  object's key and ETag as proof that the whole object was imported, but the importer commits in batches, so an
+  interrupted object was skipped on the next run and its remaining samples and channels never arrived. Objects are
+  now imported one at a time and recorded as complete in `<collection>_s3_imports` only after the importer finished
+  them; anything else is imported again (identical chunks are no-ops). Collections imported before have no record,
+  so their objects are read once more on the next run.
+- **Chunk shipping checks the target before writing (#443, #444).** An existing target recording must have the
+  source's parameters (rate, channel, unit, metadata, quantum, window, stride, normalization, extractor); before,
+  shipping into an empty recording at another rate succeeded and reported `identical: true`. The target's existing
+  chunks must equal the source's first chunks byte for byte and on the same boundaries; before, a conflicting
+  prefix was only detected after the source's later chunks had been committed, leaving a mixed recording. A run now
+  ships up to the source end read at its start, so a source that keeps recording no longer fails the final check.
+  The SDK's `export_file` refuses a file recording with other parameters in the same way. Affects 0.3.12-alpha.1.
+- **Decision states from memory: `decision.HistoryCache` (#403).** A process that decides cut after cut passes
+  `history_cache=HistoryCache()` to `decision_states` and keeps it: each collection's current segments with values and
+  its active labels stay in memory, indexed by rate, channel, unit, spec and context, and each call fetches only new
+  segments (and values built since for known ones). A fingerprint read in the same snapshot (highest segment and
+  label ids, numbers of current segments and active labels) reloads the pool when a segment went stale or was
+  deleted, and the labels when they changed. The states are identical to the uncached ones (a test changes the data
+  between calls: new cuts, late values, labels added and retracted, segments rebuilt, a recording deleted). On a
+  Raspberry Pi 3B+ with ~57,000 segments, p50 per decision of 9 signals 1.5 s -> 0.68 s; the fingerprint's counts
+  (~0.2 s there) are the next step.
+- **Decision states with long histories faster (#403).** simple-v2's grid check (`quantised_step`) ran in pure
+  Python over every value column of the history; it now uses numpy with the same float64 operations. A history's
+  comparison floors are computed once, and neighbours are ranked with one sort. The states are identical to before;
+  a test compares the grid check with `morlet_quantised_step`. On a Raspberry Pi 3B+ with ~600 earlier segments per
+  signal, these parts took about 0.7 s of each decision; the history query remains the larger cost.
+
 ## 0.3.12-alpha.1
 
 SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.

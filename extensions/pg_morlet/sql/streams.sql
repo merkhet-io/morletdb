@@ -1212,15 +1212,37 @@ BEGIN
   -- The grid starts at 0 and its stride is fixed by the first build: the smallest positive stored start
   -- is the stride in use. Building on with another stride would report completion without the requested
   -- windows, or mix two grids, so it is an error.
+  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
   EXECUTE format('SELECT start_sample FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample>0
     ORDER BY start_sample LIMIT 1',rel) INTO hi USING recording_id,window_size;
   IF hi IS NOT NULL AND hi<>stride THEN
-    RAISE EXCEPTION 'envelopes of window % for recording % were built with stride %, not %',window_size,recording_id,hi,stride
-      USING HINT='Keep the stride, or delete this recording''s envelopes of this window size and build again.';
+    -- Episodic memory removes windows (level 1 and up), the first ones included (#441). The stored windows are
+    -- still this stride's grid when every one of them lies on it and every grid position without a window up to
+    -- the last one is a position the builder itself skips (out of search, or samples removed). Another stride's
+    -- grid always leaves such a position unexplained.
+    sup:=false;
+    IF mem.episodes IS NOT NULL THEN
+      EXECUTE format('WITH w AS (SELECT start_sample AS st,lag(start_sample,1,0::bigint) OVER (ORDER BY start_sample) AS prev
+            FROM %1$s WHERE recording_id=$1 AND window_size=$2),
+          gap AS (SELECT g FROM w,generate_series(w.prev+$3,w.st-$3,$3) g)
+        SELECT bool_and(w.st%%$3=0) AND NOT EXISTS (SELECT 1 FROM gap WHERE NOT (
+            (coalesce(int8range(g,g+$2) <@ (SELECT range_agg(int8range(o.start_sample,o.end_sample)) FROM %2$s o
+               WHERE o.recording_id=$1 AND o.level>=1 AND o.start_sample<g+$2 AND o.end_sample>g),false)
+             AND NOT EXISTS (SELECT 1 FROM %2$s o WHERE o.recording_id=$1 AND o.level=0
+               AND o.start_sample<g+$2 AND o.end_sample>g))
+            OR coalesce((SELECT sum(least(c.start_sample+c.sample_count,g+$2)-greatest(c.start_sample,g)) FROM %3$s c
+               WHERE c.recording_id=$1 AND c.start_sample<g+$2 AND c.start_sample+c.sample_count>g
+                 AND c.start_sample>g-32768),0)<$2))
+        FROM w',rel,mem.episodes,rels.chunks) INTO sup USING recording_id,window_size,stride;
+    END IF;
+    IF NOT coalesce(sup,false) THEN
+      RAISE EXCEPTION 'envelopes of window % for recording % were built with stride %, not %',window_size,recording_id,hi,stride
+        USING HINT='Keep the stride, or delete this recording''s envelopes of this window size and build again.';
+    END IF;
+    sup:=false;
   END IF;
   s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
-  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
-  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
   -- Encoded collections: batches of up to 256 windows from chunks decoded once
   -- (morlet_envelopes_from_chunks); the bytes equal the per-window path below.
   WHILE rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
@@ -3178,7 +3200,9 @@ BEGIN
     IF ep.exempt AND target>1 THEN RAISE EXCEPTION 'episode % is exempt (event library) and stays at level 0 or 1',ep.episode_id; END IF;
     rep_id:=NULL; rep_level:=NULL; rep_cluster:=NULL;
     IF target=2 THEN
-      EXECUTE format('SELECT episode_id,level,cluster_id FROM %s WHERE episode_id=$1',mem.episodes)
+      -- FOR SHARE: a concurrent move of the representative waits for this transaction and then sees its dependent
+      -- (the check after the loop), and this one waits for a concurrent move of it and then sees its level (#440).
+      EXECUTE format('SELECT episode_id,level,cluster_id FROM %s WHERE episode_id=$1 FOR SHARE',mem.episodes)
         INTO rep_id,rep_level,rep_cluster USING (m->>'representative')::bigint;
       IF rep_id IS NULL OR rep_id=ep.episode_id OR rep_level>1 THEN
         RAISE EXCEPTION 'a level-2 move needs another episode at level 0 or 1 as representative';
@@ -3286,6 +3310,22 @@ BEGIN
     summaries_removed:=n_sum; derived_removed:=n_env; bytes_freed:=bytes; ledger_id:=lid;
     RETURN NEXT;
   END LOOP;
+  -- A level-2 episode keeps a real example (#440): after all moves of this call (overlaid on the stored levels, so a
+  -- dry run is checked the same way), no level-2 episode may name a representative above level 1. A failure rolls
+  -- the whole call back.
+  EXECUTE format('WITH mv AS (SELECT DISTINCT ON ((x->>''episode_id'')::bigint) (x->>''episode_id'')::bigint AS id,
+        (x->>''level'')::smallint AS lvl,(x->>''representative'')::bigint AS rep FROM jsonb_array_elements($1) x
+        ORDER BY (x->>''episode_id'')::bigint,(x->>''level'')::smallint DESC),
+      fin AS (SELECT e.episode_id,coalesce(mv.lvl,e.level) AS lvl,
+        CASE WHEN mv.id IS NULL THEN e.representative WHEN mv.lvl=2 THEN mv.rep END AS rep
+        FROM %s e LEFT JOIN mv ON mv.id=e.episode_id)
+    SELECT format(''episode %%s is represented by episode %%s, which would be at level %%s'',d.episode_id,d.rep,r.lvl)
+    FROM fin d JOIN fin r ON r.episode_id=d.rep WHERE d.lvl=2 AND r.lvl>1 ORDER BY d.episode_id LIMIT 1',mem.episodes)
+    INTO rep_cluster_text USING moves;
+  IF rep_cluster_text IS NOT NULL THEN
+    RAISE EXCEPTION 'a level-2 episode would lose its representative: %',rep_cluster_text
+      USING HINT='Move the episodes it represents to level 3 or 4 in the same call, or keep the representative at level 0 or 1.';
+  END IF;
 END $$;
 
 -- Per level: episodes and the samples they span.

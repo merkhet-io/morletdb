@@ -22,8 +22,8 @@ samples: `segment` names the recording and sample range, each neighbour and exam
 """
 from __future__ import annotations
 
+import bisect
 import hashlib
-import heapq
 import json
 import math
 import uuid
@@ -75,18 +75,19 @@ QUANTISED_STEPS = 2.0          # simple-v2 (study V2, #387): a median within two
 def quantised_step(values):
     """Mirror of morlet_core::values::quantised_step: with at least 3 distinct finite values, the smallest gap between
     neighbouring distinct values if every gap is an integer multiple of it (relative tolerance 1e-6, at most 10^6
-    steps), else None."""
-    u = sorted({float(v) for v in values if math.isfinite(v)})
+    steps), else None. Vectorised with numpy; the same float64 operations as the scalar version, so the same answer."""
+    a = np.asarray(values, dtype=np.float64).ravel()
+    u = np.unique(a[np.isfinite(a)])                      # sorted distinct values (0.0 and -0.0 are one value)
     if len(u) < 3:
         return None
-    gaps = [b - a for a, b in zip(u, u[1:]) if b - a > 0]
-    step = min(gaps) if gaps else 0.0
+    gaps = np.diff(u)
+    gaps = gaps[gaps > 0]
+    step = float(gaps.min()) if len(gaps) else 0.0
     if not (math.isfinite(step) and step > 0):
         return None
-    for g in gaps:
-        m = g / step
-        if m > 1e6 or abs(m - round(m)) > 1e-6 * m:
-            return None
+    m = gaps / step
+    if (m > 1e6).any() or (np.abs(m - np.round(m)) > 1e-6 * m).any():   # np.round, like round(), rounds half to even
+        return None
     return step
 
 
@@ -133,6 +134,7 @@ class _History:
             self.V = np.array([[np.nan if v is None else v for v in r[4]] for r in rows], dtype=np.float64
                               ).reshape(len(rows), width)
         self._med = {}
+        self.floors = None                                # the comparison floors, computed once per history
 
     def med(self, i):
         """PostgreSQL's percentile_cont(0.5) over the non-NULL values of column i."""
@@ -147,6 +149,166 @@ class _History:
         return _History([r for r in self.rows if not any(lab in exclude for _lid, lab in r[5])], self.V.shape[1])
 
 
+def _jcanon(v):
+    """A hashable form of a decoded JSON value: equal exactly when jsonb equality holds (numbers compare as numbers,
+    as Python's int and float do; true is not 1; object keys unordered, array order kept)."""
+    if isinstance(v, bool):
+        return ("b", v)
+    if isinstance(v, (int, float)):
+        return ("n", v)
+    if isinstance(v, str):
+        return ("s", v)
+    if v is None:
+        return ("z",)
+    if isinstance(v, list):
+        return ("a", tuple(_jcanon(x) for x in v))
+    return ("o", tuple(sorted((k, _jcanon(x)) for k, x in v.items())))
+
+
+def _jcontains(a, b):
+    """jsonb's a @> b for decoded JSON values below the top level (a scalar never contains an array or object)."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        return all(k in a and _jcontains(a[k], v) for k, v in b.items())
+    if isinstance(a, list) and isinstance(b, list):
+        return all(any(_jcontains(x, y) for x in a) for y in b)
+    return not isinstance(a, (dict, list)) and not isinstance(b, (dict, list)) and _jcanon(a) == _jcanon(b)
+
+
+class _Pool:
+    """One collection's history pool: current segments with simple-v1 values, active labels, and indexes."""
+
+    def __init__(self, sig, rows, labels):
+        self.sig, self.labels = sig, labels
+        self.segs, self.pending, self.valued_elsewhere = {}, set(), 0
+        self.index: dict[tuple, set] = {}                 # (key, canonical scalar value) -> segment ids
+        self.bucket: dict[tuple, set] = {}                # (rate, channel, unit, canonical spec) -> segment ids
+        self.occ, self.memo = {}, {}                      # memo: (bucket, canonical match) -> rows in id order
+        self.add(rows)
+
+    def add(self, rows):
+        """Rows fetched in segment id order; returns False when one of them requires a reload (a known segment
+        went stale)."""
+        for r in rows:
+            sid = r[0]
+            if r[7]:                                      # stale
+                if sid in self.segs:
+                    return False
+                self.pending.discard(sid)
+                self.valued_elsewhere += r[8] is not None
+            elif r[8] is None:
+                self.pending.add(sid)
+            elif sid not in self.segs:
+                self.pending.discard(sid)
+                self.segs[sid] = r
+                bkey = (r[9], r[10], r[11], _jcanon(r[6]))
+                self.bucket.setdefault(bkey, set()).add(sid)
+                for k, v in r[4].items():
+                    if not isinstance(v, (dict, list)):
+                        self.index.setdefault((k, _jcanon(v)), set()).add(sid)
+                self.occ[sid] = _jcanon(r[5])
+                for (mb, mk), (m, rows_) in self.memo.items():
+                    if mb == bkey and _jcontains(r[4], m):
+                        row = self._row(sid)
+                        if rows_ and rows_[-1][0] > sid:  # a late value for an older segment: keep id order
+                            bisect.insort(rows_, row)       # ordered by segment id (unique)
+                        else:
+                            rows_.append(row)
+        return True
+
+    def _row(self, sid):
+        (_, rid, start, end_, _ctx, _occ, _spec, _st, vals, *_r) = self.segs[sid]
+        labels = tuple((lid, lab) for lid, a, b, lab in self.labels.get(rid, ()) if a < end_ and start < b)
+        return (sid, rid, start, end_, vals, labels, self.occ[sid])
+
+    def group(self, bkey, m):
+        mk = _jcanon(m)
+        hit = self.memo.get((bkey, mk))
+        if hit is None:
+            cand = self.bucket.get(bkey, set())
+            for k, v in m.items():
+                if not isinstance(v, (dict, list)):
+                    cand = cand & self.index.get((k, _jcanon(v)), set())
+            nested = {k: v for k, v in m.items() if isinstance(v, (dict, list))}
+            rows = [self._row(sid) for sid in sorted(cand) if not nested or _jcontains(self.segs[sid][4], nested)]
+            hit = self.memo[(bkey, mk)] = (m, rows)
+        return hit[1]
+
+
+class HistoryCache:
+    """Keeps each collection's history pool (current context segments with simple-v1 values, and active labels) in
+    memory between calls of decision_states(..., history_cache=...), for a process that decides cut after cut (#403).
+
+    Every call first reads a fingerprint of the context tables in the same snapshot as the new rows: the highest
+    segment id, the number of current segments, the highest label id and the number of active labels. pg_morlet only
+    inserts values, inserts or marks segments stale, and inserts or retracts labels, so the fingerprint and the
+    segments still waiting for values (fetched by id on every call) show every change made through its functions.
+    New segments, and values built since for segments already seen, are fetched alone and added to the indexes; a segment that went stale or was deleted reloads the pool, and a label change
+    reloads the labels. The states are the same as without the cache; rows are visited in segment id order. Direct
+    UPDATEs of the context tables bypass the fingerprint: call clear() after such maintenance. One cache serves one
+    database; it is not thread-safe."""
+
+    def __init__(self):
+        self._pools: dict[str, _Pool] = {}
+
+    def clear(self):
+        self._pools.clear()
+
+    @staticmethod
+    def _sig(conn, seg_t, labels_t):
+        return tuple(conn.execute(
+            f"SELECT (SELECT coalesce(max(segment_id), 0) FROM {seg_t}), (SELECT count(*) FROM {seg_t} WHERE NOT stale), "
+            f"(SELECT coalesce(max(label_id), 0) FROM {labels_t}), "
+            f"(SELECT count(*) FROM {labels_t} WHERE NOT retracted)").fetchone())
+
+    @staticmethod
+    def _fetch(conn, collection, seg_t, vals_t, after, extra):
+        return conn.execute(
+            f"SELECT s.segment_id, s.recording_id, s.start_sample, s.end_sample, s.context, s.occurrence, s.spec, "
+            f"s.stale, v.vals, r.sample_rate_hz, r.channel, r.unit FROM {seg_t} s "
+            f"JOIN {collection} r ON r.recording_id = s.recording_id "
+            f"LEFT JOIN {vals_t} v ON v.segment_id = s.segment_id AND v.representation = 'simple-v1' "
+            f"WHERE s.segment_id > %s OR s.segment_id = ANY(%s) ORDER BY s.segment_id", (after, list(extra)),
+            binary=True).fetchall()
+
+    @staticmethod
+    def _labels(conn, labels_t):
+        out: dict[str, list] = {}
+        for lid, rid, a, b, lab in conn.execute(f"SELECT label_id, recording_id, start_sample, end_sample, label "
+                                                f"FROM {labels_t} WHERE NOT retracted ORDER BY label_id"):
+            out.setdefault(rid, []).append((lid, a, b, lab))
+        return out
+
+    def pool(self, conn, collection, seg_t, vals_t, labels_t):
+        """The collection's pool, brought up to date in one snapshot."""
+        p = self._pools.get(collection)
+        own_tx = conn.autocommit and not conn.info.transaction_status
+        with conn.transaction():
+            if own_tx:
+                conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            sig = self._sig(conn, seg_t, labels_t)
+            if p is not None and p.sig == sig and not p.pending:
+                return p
+            if p is not None:
+                if sig[2:] != p.sig[2:]:                  # labels changed: reload them; the rows carry them
+                    p.labels, p.memo = self._labels(conn, labels_t), {}
+                if p.add(self._fetch(conn, collection, seg_t, vals_t, p.sig[0], p.pending)) \
+                        and len(p.segs) + len(p.pending) == sig[1]:
+                    p.sig = sig
+                    return p
+            p = _Pool(sig, self._fetch(conn, collection, seg_t, vals_t, 0, ()), self._labels(conn, labels_t))
+            self._pools[collection] = p
+            return p
+
+    @staticmethod
+    def history(p, q, m):
+        """morlet_history_sql's rows for query segment q and context match m, as histories() builds them."""
+        rows = p.group((q["rate"], q["channel"], q["unit"], _jcanon(q["spec"])), m)
+        q_occ = None if q["occ"] == {} else _jcanon(q["occ"])
+        qid, qrid, qs, qe = q["id"], q["rid"], q["start"], q["end"]
+        return [[sid, rid, start, end_, vals, labels] for sid, rid, start, end_, vals, labels, occ in rows
+                if sid != qid and not (q_occ is not None and occ == q_occ)
+                and not (rid == qrid and start < qe and qs < end_)]
+
 def decision_state(conn, collection: str, segment_id: int, *, baseline: Iterable[int] = (),
                    **options) -> dict[str, Any]:
     """The decision state of one segment of `collection` (a regclass name such as 'public.milling').
@@ -159,7 +321,8 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
                     neighbors: int = 3, include_occurrence: bool = False, reliable_history: int = 10,
                     summary_quantile: bool = False, baselines: Mapping[int, Iterable[int]] | None = None,
                     examples: int = 0, example_labels: Iterable[str] | None = None,
-                    example_match_keys: Iterable[str] | None = None) -> list[dict[str, Any]]:
+                    example_match_keys: Iterable[str] | None = None,
+                    history_cache: "HistoryCache | None" = None) -> list[dict[str, Any]]:
     """The decision states of several segments of `collection`, in the order given.
 
     match_keys: context keys the history must share (empty: all of the segment's context keys).
@@ -180,6 +343,8 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     widen the search, for example to other tools of the same process when this tool has no labelled cuts yet.
     summary_quantile: also compute the summary score's quantile within the history (morlet_compare_summary, one
     SQL call per segment; it reads the history again and costs more than the rest of the state).
+    history_cache: a HistoryCache kept by a process that decides cut after cut: the history is then read from memory,
+    with only new segments fetched, instead of one history query per call (#403). Same states.
     """
     ids = [int(s) for s in segment_ids]
     match_keys, exclude_list = list(match_keys), list(dict.fromkeys(exclude_labels))
@@ -193,9 +358,9 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     score_i = [i for i, n in enumerate(names) if n in SUMMARY_VALUES]
 
     queries = {r[0]: dict(zip(("id", "rid", "start", "end", "context", "occ", "stale", "vals", "rate", "channel",
-                               "unit"), r)) for r in conn.execute(
+                               "unit", "spec"), r)) for r in conn.execute(
         f"SELECT s.segment_id, s.recording_id, s.start_sample, s.end_sample, s.context, s.occurrence, s.stale, "
-        f"v.vals, r.sample_rate_hz, r.channel, r.unit FROM {seg_t} s "
+        f"v.vals, r.sample_rate_hz, r.channel, r.unit, s.spec FROM {seg_t} s "
         f"LEFT JOIN {vals_t} v ON v.segment_id = s.segment_id AND v.representation = 'simple-v1' "
         f"JOIN {collection} r ON r.recording_id = s.recording_id WHERE s.segment_id = ANY(%s)", (ids,))}
     for sid in ids:                                       # morlet_comparable_segment's checks
@@ -222,6 +387,11 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
         for sid in ids:
             groups.setdefault(json.dumps(match(queries[sid], keys), sort_keys=True), []).append(sid)
         out: dict[int, list] = {sid: [] for sid in ids}
+        if history_cache is not None:                     # from memory (HistoryCache), same rows
+            pool = history_cache.pool(conn, collection, seg_t, vals_t, labels_t)
+            for sid in ids:
+                out[sid] = HistoryCache.history(pool, queries[sid], match(queries[sid], keys))
+            return {sid: _History(hs, len(names)) for sid, hs in out.items()}
         for m, qs in groups.items():
             for row in conn.execute(
                     f"WITH h AS (SELECT q.segment_id AS qid, s.segment_id, s.recording_id, s.start_sample, "
@@ -254,15 +424,17 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     rules = value_rules(conn, collection)
 
     def floors(hist):                                     # the comparison floors under the collection's rules
-        base = floors_of.get(hist.med(rms_i)) or [None] * len(names)
-        if rules != RULES_V2 or not hist.rows:
-            return base
-        out = []
-        for i, f in enumerate(base):
-            col = hist.V[:, i]
-            step = quantised_step(col[~np.isnan(col)].tolist())
-            out.append(f if f is None or step is None else max(f, QUANTISED_STEPS * step))
-        return out
+        if hist.floors is None:
+            base = floors_of.get(hist.med(rms_i)) or [None] * len(names)
+            if rules != RULES_V2 or not hist.rows:
+                hist.floors = base
+            else:
+                out = []
+                for i, f in enumerate(base):
+                    step = None if f is None else quantised_step(hist.V[:, i])
+                    out.append(f if f is None or step is None else max(f, QUANTISED_STEPS * step))
+                hist.floors = out
+        return hist.floors
 
     def ranked(q, hist, k=None, keep=None):               # morlet_history_neighbors' distance and order
         fl = floors(hist)
@@ -277,12 +449,22 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
         total = np.zeros(len(hist.rows))
         for j in range(len(use)):                         # summed in value order, as avg() accumulates
             total = total + np.where(valid[:, j], terms[:, j], 0.0)
-        dist = [math.sqrt(t / c) if c else None for t, c in zip(total.tolist(), cnt.tolist())]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            d = np.sqrt(total / cnt)                      # the same IEEE operations as math.sqrt(t / c)
+        none = cnt == 0
         rows = hist.rows
-        js = range(len(dist)) if keep is None else [j for j in range(len(dist)) if keep(rows[j])]
-        key = lambda j: (dist[j] is None, dist[j] or 0.0, rows[j][1], rows[j][2])
-        order = sorted(js, key=key) if k is None else heapq.nsmallest(k, js, key=key)
-        return [(dist[j], rows[j]) for j in order]
+        js = np.arange(len(rows)) if keep is None else np.array([j for j in range(len(rows)) if keep(rows[j])],
+                                                                  dtype=np.int64)
+        if len(js) == 0:
+            return []
+        # order: rows with a distance first, by distance, then recording id, then start (as the SQL ORDER BY)
+        dk = np.where(none, 0.0, d)[js]
+        rk = np.array([rows[j][1] for j in js])
+        sk = np.array([rows[j][2] for j in js], dtype=np.int64)
+        order = js[np.lexsort((sk, rk, dk, none[js]))]
+        if k is not None:
+            order = order[:k]
+        return [(None if none[j] else float(d[j]), rows[j]) for j in order.tolist()]
 
     all_base = sorted({b for bs in baselines.values() for b in bs})
     base_rows = {r[0]: {"vals": r[1], "rate": r[2], "channel": r[3], "unit": r[4]} for r in conn.execute(

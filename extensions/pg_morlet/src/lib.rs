@@ -4313,6 +4313,119 @@ END $$"#).unwrap();
             6
         );
     }
+    /// #440: a level-2 episode keeps a real example. Recordings A and B (episodes 1 and 2, one each), A at level 2
+    /// represented by B; then moving B to level 3 or 4 must fail, whether in a later call, the same call or a dry run,
+    /// unless A leaves level 2 in the same call.
+    fn representative_setup(dry: bool) -> i64 {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','rep'); SELECT morlet_enable_chunk_summaries('rep');
+             SELECT morlet_start_recording('rep',r,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B']) r;
+             SELECT morlet_append_chunk('rep',r,0,ARRAY[1,2,3,4]::float8[]) FROM unnest(ARRAY['A','B']) r;
+             SELECT morlet_enable_memory('rep');
+             SELECT morlet_add_episodes('rep','[{\"recording_id\":\"A\",\"start_sample\":0,\"end_sample\":4},
+               {\"recording_id\":\"B\",\"start_sample\":0,\"end_sample\":4}]');",
+        )
+        .unwrap();
+        Spi::get_one::<i64>(&format!(
+            "SELECT morlet_start_memory_run('rep','test','1','{{}}',{dry})"
+        ))
+        .unwrap()
+        .unwrap()
+    }
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3"
+    )]
+    fn representative_cannot_be_compacted_in_a_later_call() {
+        let run = representative_setup(false);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}}]')")).unwrap();
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":2,\"level\":3}}]')"
+        ))
+        .unwrap();
+    }
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 4"
+    )]
+    fn representative_cannot_be_compacted_in_the_same_call() {
+        let run = representative_setup(false);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}},{{\"episode_id\":2,\"level\":4}}]')")).unwrap();
+    }
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3"
+    )]
+    fn representative_check_holds_in_a_dry_run() {
+        let run = representative_setup(true);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}},{{\"episode_id\":2,\"level\":3}}]',true)")).unwrap();
+    }
+    #[pg_test]
+    fn representative_may_go_with_its_dependents() {
+        let run = representative_setup(false);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}}]')")).unwrap();
+        // A leaves level 2 in the same call as its representative: no level-2 episode is left without an example.
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":3}},{{\"episode_id\":2,\"level\":3}}]')")).unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM rep_episodes WHERE level=3 AND representative IS NULL"
+            )
+            .unwrap()
+            .unwrap(),
+            2
+        );
+    }
+    /// #441: level-1 compaction removes the first windows; the builder must still recognise the grid and keep
+    /// building on it, and still refuse another stride.
+    fn compacted_grid() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','grid');
+             SELECT morlet_start_recording('grid','r',1000,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('grid','r',0,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(0,16383) i)),4096);
+             SELECT morlet_enable_envelopes('grid'); SELECT morlet_build_envelopes('grid','r',4096,2048,100000);
+             SELECT morlet_enable_memory('grid');
+             SELECT morlet_add_episodes('grid','[{\"recording_id\":\"r\",\"start_sample\":0,\"end_sample\":8192}]');",
+        )
+        .unwrap();
+        let run = Spi::get_one::<i64>("SELECT morlet_start_memory_run('grid','test','1')")
+            .unwrap()
+            .unwrap();
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('grid',{run},'[{{\"episode_id\":1,\"level\":1}}]')"
+        ))
+        .unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(start_sample::text,',' ORDER BY start_sample) FROM grid_envelopes").unwrap().unwrap(),
+            "6144,8192,10240,12288"
+        );
+    }
+    #[pg_test]
+    fn envelope_grid_survives_compaction() {
+        compacted_grid();
+        // Rebuilding with the original stride builds nothing new and does not fail.
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('grid','r',4096,2048,100000)")
+                .unwrap()
+                .unwrap(),
+            0
+        );
+        // New samples become searchable on the same grid.
+        Spi::run("SELECT morlet_append_chunks_raw('grid','r',16384,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(16384,20479) i)),4096)").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('grid','r',4096,2048,100000)")
+                .unwrap()
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(start_sample::text,',' ORDER BY start_sample) FROM grid_envelopes").unwrap().unwrap(),
+            "6144,8192,10240,12288,14336,16384"
+        );
+    }
+    #[pg_test(
+        error = "envelopes of window 4096 for recording r were built with stride 6144, not 4096"
+    )]
+    fn envelope_grid_after_compaction_still_refuses_another_stride() {
+        compacted_grid();
+        Spi::run("SELECT morlet_build_envelopes('grid','r',4096,4096,100000)").unwrap();
+    }
     /// morlet_coverage (#215): every sample of a recording is in exactly one state, and only stored windows count as
     /// searchable, so a search without a match can be reported with what it did not search.
     #[pg_test]

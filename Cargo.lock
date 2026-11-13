@@ -541,7 +541,7 @@ checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
 
 [[package]]
 name = "grizzbit"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "proptest",
  "serde_json",
@@ -851,7 +851,7 @@ dependencies = [
 
 [[package]]
 name = "morlet-core"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "grizzbit",
  "serde",
@@ -860,14 +860,14 @@ dependencies = [
 
 [[package]]
 name = "morlet-ffi"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "morlet-core",
 ]
 
 [[package]]
 name = "morlet-sqlite"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "morlet-core",
  "rusqlite",
@@ -1041,7 +1041,7 @@ dependencies = [
 
 [[package]]
 name = "pg_morlet"
-version = "0.3.9"
+version = "0.3.10"
 dependencies = [
  "libc",
  "morlet-core",

@@ -1,47 +1,28 @@
-"""Generate sql/pg_morlet--0.3.8--0.3.9.sql. Usage: gen_upgrade.py NEW.sql [--check]
+"""Generate sql/pg_morlet--0.3.9--0.3.10.sql. Usage: gen_upgrade.py NEW.sql [--check]
 (NEW.sql from `cargo pgrx schema pg17 -o NEW.sql`; --check compares instead of writing and fails when the committed
 script is stale)
 
-0.3.8 is released (0.3.10-alpha.1 and 0.3.11-alpha.1). Since Grizzbit 2.1 (#377), what morlet_encode_chunk and
-morlet_chunk_batch write depends on the setting morlet.chunk_format, so they are STABLE, not IMMUTABLE: PostgreSQL
-may fold or cache an IMMUTABLE call with constant arguments and keep bytes encoded under another setting. The
-script changes only their volatility (ALTER FUNCTION keeps OIDs, dependencies and privileges), checked against the
-generated schema, so tests/upgrade.sh and tests/upgrade_from_release.sh find an upgraded catalog equal to a fresh
-0.3.9 installation.
-
-It also adds the value-comparison rules simple-v2 (study V2, #387): a history median within two steps of a quantised
-history is treated as zero. It creates morlet_quantised_step, morlet_value_floors and morlet_calibrated_score_rules
-(Rust), and morlet_value_rules and morlet_set_value_rules, and replaces the functions that compare values or enable
-context, each definition verbatim from the generated schema (CREATE OR REPLACE keeps OIDs, dependencies and
-privileges). Existing collections keep simple-v1 (no marker constraint is added); collections whose context is
-enabled after the update start with simple-v2. It also adds morlet_index_context (#414): morlet_add_context looks a
-batch up by its id on every call, and context enabled from now on gets an index on batch_id; existing collections
-get it from morlet_index_context (the script does not touch user tables). It adds the label glossary (#333):
-morlet_define_label and morlet_label_definitions; context enabled from now on gets the table, existing collections
-with their first definition. It adds lossless chunk shipping (#420): morlet_encoded_chunks and
-morlet_append_encoded_chunk. No table or data changes. The scripts of earlier steps are frozen."""
+0.3.9 is released (0.3.12-alpha.1). 0.3.10 replaces morlet_set_level (#440): a level-2 episode keeps a real example,
+so a call whose moves would leave a level-2 episode with a representative above level 1 is refused as a whole, and a
+representative is locked while it is assigned. It replaces morlet_build_envelopes (#441): after compaction removed
+the first windows of a recording, the builder still recognises the grid (every stored window on it, every missing
+position one it skips) instead of reading the stride from the first surviving window. The definition is taken verbatim from the generated schema (CREATE OR
+REPLACE keeps OIDs, dependencies and privileges), so tests/upgrade.sh and tests/upgrade_from_release.sh find an
+upgraded catalog equal to a fresh 0.3.10 installation. No table or data changes. The scripts of earlier steps are
+frozen."""
 import re
 import sys
 from pathlib import Path
 
 EXT = Path(__file__).resolve().parent.parent
-OUT = EXT / "sql/pg_morlet--0.3.8--0.3.9.sql"
-# name -> argument types, as in the generated schema
-STABLE = {
-    "morlet_encode_chunk": "double precision[], double precision",
-    "morlet_chunk_batch": "jsonb, bigint, bytea, integer, double precision, boolean",
-}
+OUT = EXT / "sql/pg_morlet--0.3.9--0.3.10.sql"
 schema = Path(sys.argv[1]).read_text()
 CHECK = "--check" in sys.argv[2:]
 control = (EXT / "pg_morlet.control").read_text()
-assert "default_version = '0.3.9'" in control, "control file"
+assert "default_version = '0.3.10'" in control, "control file"
 
-C_FUNCTIONS = ("morlet_quantised_step", "morlet_value_floors", "morlet_calibrated_score_rules")   # V2, #387
-FUNCTIONS = ("morlet_encoded_chunks", "morlet_append_encoded_chunk",            # #420: lossless chunk shipping
-             "morlet_index_context",                         # #414: batch_id index for existing collections
-             "morlet_label_glossary_table", "morlet_define_label", "morlet_label_definitions",   # #333
-             "morlet_value_rules", "morlet_set_value_rules", "morlet_enable_context", "morlet_value_spreads",
-             "morlet_compare_to_history", "morlet_compare_summary", "morlet_history_neighbors")
+FUNCTIONS = ("morlet_set_level",                                    # #440: representatives keep their samples
+             "morlet_build_envelopes")                              # #441: the grid survives compaction
 
 
 def definitions(name):
@@ -57,34 +38,16 @@ def definitions(name):
     return out
 
 
-def c_definition(name):
-    """The generated definition of a new Rust (C) function, before the SQL functions that call it."""
-    m = re.search(r'CREATE  FUNCTION "' + name + r'"\(.*?;\n', schema, re.S)
-    assert m, f"{name}: not in the schema"
-    return re.sub(r"\s+/\*.*?\*/", "", m.group(0)).replace("CREATE  FUNCTION", "CREATE FUNCTION").rstrip()
-
-
-for name in STABLE:
-    m = re.search(r'CREATE\s+FUNCTION "' + name + r'"\(.*?\)\s*RETURNS.*?(?:LANGUAGE c)', schema, re.S)
-    assert m, f"{name}: not in the schema"
-    assert re.search(r"\bSTABLE\b", m.group(0)) and "IMMUTABLE" not in m.group(0), f"{name}: not STABLE in the schema"
-
-script = ("-- pg_morlet 0.3.8 -> 0.3.9 (generated by tests/gen_upgrade.py; do not edit).\n"
-          "-- The encoding functions follow morlet.chunk_format (Grizzbit 2.1, #377), so they are STABLE: an IMMUTABLE call\n"
-          "-- with constant arguments could be folded or cached and keep bytes encoded under another setting.\n"
-          "\\echo Use \"ALTER EXTENSION pg_morlet UPDATE TO '0.3.9'\" to load this file. \\quit\n\n"
-          + "".join(f"ALTER FUNCTION public.{name}({args}) STABLE;\n" for name, args in STABLE.items())
-          + "\n-- Value-comparison rules simple-v2 (study V2, #387): a history median within two steps of a quantised\n"
-          "-- history is treated as zero. Existing collections keep simple-v1; context enabled from now on starts with\n"
-          "-- simple-v2 (morlet_value_rules, morlet_set_value_rules). Context enabled from now on also gets an index on\n"
-          "-- batch_id; morlet_index_context adds it to existing collections (#414). Label glossary: morlet_define_label,\n"
-          "-- morlet_label_definitions (#333). Chunk shipping: morlet_encoded_chunks, morlet_append_encoded_chunk (#420).\n\n"
-          + "\n\n".join([c_definition(n) for n in C_FUNCTIONS] + [d for n in FUNCTIONS for d in definitions(n)]) + "\n")
+script = ("-- pg_morlet 0.3.9 -> 0.3.10 (generated by tests/gen_upgrade.py; do not edit).\n"
+          "-- morlet_set_level: a level-2 episode keeps a real example; moves that would leave it with a representative\n"
+          "-- above level 1 are refused as a whole, and the representative is locked while it is assigned (#440).\n"
+          "-- morlet_build_envelopes: the window grid is recognised after compaction removed its first windows (#441).\n"
+          "\\echo Use \"ALTER EXTENSION pg_morlet UPDATE TO '0.3.10'\" to load this file. \\quit\n\n"
+          + "\n\n".join(d for n in FUNCTIONS for d in definitions(n)) + "\n")
 if CHECK:
     if OUT.read_text() != script:
         sys.exit(f"{OUT.name} is stale: run tests/gen_upgrade.py")
     print(f"{OUT.name} up to date")
 else:
     OUT.write_text(script)
-    print(f"wrote {OUT.name}: {len(STABLE)} volatility changes, {len(C_FUNCTIONS)} new Rust functions, "
-          f"{len(FUNCTIONS)} SQL functions")
+    print(f"wrote {OUT.name}: {len(FUNCTIONS)} SQL functions")

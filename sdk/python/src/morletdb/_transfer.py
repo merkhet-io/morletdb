@@ -226,6 +226,15 @@ def export_file(client: "Client", collection: str, path: str | Path,
                 raise InvalidInputError(f"{rid}: a memory level removed raw samples; it cannot be exported losslessly")
             layout = [(s, n) for s, n, _ in layout if s < rec.samples]
             known = {r.recording_id: r for r in local.recordings()}
+            if rid in known:                    # an existing recording must have the server's parameters (#443)
+                k = known[rid]
+                fq = next((float(r[4]) for r in _file_rows(path, [rid])), None)
+                diff = [f"{name} {mine!r} (server {theirs!r})" for name, mine, theirs in (
+                    ("sample_rate_hz", k.sample_rate_hz, rec.sample_rate_hz), ("channel", k.channel, rec.channel),
+                    ("unit", k.unit, rec.unit), ("metadata", k.metadata, rec.metadata),
+                    ("sample_quantum", fq, float(quantum))) if mine != theirs]
+                if diff:
+                    raise ConflictError(f"{rid}: the file's recording has other parameters: {'; '.join(diff)}")
             if rid not in known:
                 local.ingest_empty(rid, sample_rate_hz=rec.sample_rate_hz, channel=rec.channel, unit=rec.unit,
                                    metadata=rec.metadata, sample_quantum=float(quantum))
