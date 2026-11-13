@@ -1,0 +1,19 @@
+{
+ "url": "https://api.typesafe.ai/v1/systemone",
+ "model_requested": "jev-1.14.0",
+ "http_status": 200,
+ "wall_ms": 227.5,
+ "response": {
+  "model": "jev-1.14.0",
+  "answers": {
+   "sky_blue": {
+    "type": "noul",
+    "noul": 0.99
+   }
+  },
+  "usage": {
+   "input_tokens": 287,
+   "output_tokens": 21
+  }
+ }
+}

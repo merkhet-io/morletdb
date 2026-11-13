@@ -1,0 +1,57 @@
+loaded 50 of 967 74 s
+loaded 100 of 967 145 s
+loaded 150 of 967 202 s
+loaded 200 of 967 265 s
+loaded 250 of 967 333 s
+loaded 300 of 967 398 s
+loaded 350 of 967 452 s
+loaded 400 of 967 514 s
+loaded 450 of 967 567 s
+loaded 500 of 967 615 s
+loaded 550 of 967 662 s
+loaded 600 of 967 718 s
+loaded 650 of 967 764 s
+loaded 700 of 967 808 s
+loaded 750 of 967 853 s
+loaded 800 of 967 902 s
+loaded 850 of 967 946 s
+Traceback (most recent call last):
+  File "/w/iu2/iu2.py", line 164, in <module>
+    {"plan": plan, "load": load, "score": score}[sys.argv[1]]()
+  File "/w/iu2/iu2.py", line 101, in load
+    for name, n in ex.map(one, cycles):
+                   ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/w/iu2/iu2.py", line 80, in one
+    t = pc.read_csv(pa.PythonFile(f), convert_options=pc.ConvertOptions(include_columns=list(AXES.values()),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pyarrow/_csv.pyx", line 1260, in pyarrow._csv.read_csv
+  File "pyarrow/_csv.pyx", line 1269, in pyarrow._csv.read_csv
+  File "pyarrow/error.pxi", line 155, in pyarrow.lib.pyarrow_internal_check_status
+  File "pyarrow/error.pxi", line 89, in pyarrow.lib.check_status
+  File "/usr/local/lib/python3.12/zipfile/__init__.py", line 992, in read
+    data = self._read1(n)
+           ^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/zipfile/__init__.py", line 1060, in _read1
+    data += self._read2(n - len(data))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/zipfile/__init__.py", line 1092, in _read2
+    data = self._fileobj.read(n)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/zipfile/__init__.py", line 811, in read
+    data = self._file.read(n)
+           ^^^^^^^^^^^^^^^^^^
+OSError: [Errno 12] Cannot allocate memory

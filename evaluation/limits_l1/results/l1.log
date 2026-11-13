@@ -1,0 +1,193 @@
+== d1-rate-1over60 r1 21:10:09
+{"point": "d1-rate-1over60", "samples": 1048576, "ingest_samples_per_s": 7825194, "bits_per_sample": 11.75, "problems": ["1001 derived times differ"], "refusals": [], "error": null}
+== d1-rate-1over3 r1 21:10:11
+{"point": "d1-rate-1over3", "samples": 1048576, "ingest_samples_per_s": 7436709, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1 r1 21:10:14
+{"point": "d1-rate-1", "samples": 1048576, "ingest_samples_per_s": 7543712, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1000 r1 21:10:16
+{"point": "d1-rate-1000", "samples": 1048576, "ingest_samples_per_s": 7943758, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-44100 r1 21:10:19
+{"point": "d1-rate-44100", "samples": 1048576, "ingest_samples_per_s": 7436709, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-64000 r1 21:10:21
+{"point": "d1-rate-64000", "samples": 1048576, "ingest_samples_per_s": 7653839, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1000000 r1 21:10:24
+{"point": "d1-rate-1000000", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "start_recording", "error": "sample_rate_hz must be finite and in (0,200000]"}], "error": null}
+== d2-len-1e4 r1 21:10:26
+{"point": "d2-len-1e4", "samples": 10000, "ingest_samples_per_s": 526316, "bits_per_sample": 65.536, "problems": [], "refusals": [], "error": null}
+== d2-len-1e6 r1 21:10:28
+{"point": "d2-len-1e6", "samples": 1000000, "ingest_samples_per_s": 7575758, "bits_per_sample": 11.796, "problems": [], "refusals": [], "error": null}
+== d2-len-1e8 r1 21:10:30
+{"point": "d2-len-1e8", "samples": 100000000, "ingest_samples_per_s": 8615491, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d2-len-1e9 r1 21:10:48
+{"point": "d2-len-1e9", "samples": 1000000000, "ingest_samples_per_s": 8388628, "bits_per_sample": 11.14, "problems": [], "refusals": [], "error": null}
+== d4-kind-int-counts r1 21:13:32
+{"point": "d4-kind-int-counts", "samples": 1048576, "ingest_samples_per_s": 7943758, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d4-kind-decimals r1 21:13:34
+{"point": "d4-kind-decimals", "samples": 1048576, "ingest_samples_per_s": 7710118, "bits_per_sample": 12.562, "problems": [], "refusals": [], "error": null}
+== d4-kind-adc r1 21:13:37
+{"point": "d4-kind-adc", "samples": 1048576, "ingest_samples_per_s": 7825194, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d4-kind-random-floats r1 21:13:39
+{"point": "d4-kind-random-floats", "samples": 1048576, "ingest_samples_per_s": 5667978, "bits_per_sample": 67.688, "problems": [], "refusals": [], "error": null}
+== d4-kind-constant r1 21:13:41
+{"point": "d4-kind-constant", "samples": 1048576, "ingest_samples_per_s": 9799776, "bits_per_sample": 0.812, "problems": [], "refusals": [], "error": null}
+== d4-kind-denormals r1 21:13:43
+{"point": "d4-kind-denormals", "samples": 1048576, "ingest_samples_per_s": 7182027, "bits_per_sample": 17.125, "problems": [], "refusals": [], "error": null}
+== d4-kind-extremes r1 21:13:46
+{"point": "d4-kind-extremes", "samples": 1048576, "ingest_samples_per_s": 7543712, "bits_per_sample": 1.188, "problems": [], "refusals": [], "error": null}
+== d4-kind-nan-inf r1 21:13:48
+{"point": "d4-kind-nan-inf", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "samples must be finite and within +/-1e9", "server_answers_after_s": 0.0, "stored_end": 0, "stored_intact": true, "server_restarted": false, "server_log": []}], "error": null}
+== d5-chunk-1 r1 21:13:50
+{"point": "d5-chunk-1", "samples": 65536, "ingest_samples_per_s": 23100, "bits_per_sample": 1332.0, "problems": [], "refusals": [], "error": null}
+== d5-chunk-64 r1 21:13:56
+{"point": "d5-chunk-64", "samples": 1048576, "ingest_samples_per_s": 1015078, "bits_per_sample": 30.312, "problems": [], "refusals": [], "error": null}
+== d5-chunk-4096 r1 21:14:00
+{"point": "d5-chunk-4096", "samples": 1048576, "ingest_samples_per_s": 6026299, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d5-chunk-65536 r1 21:14:02
+{"point": "d5-chunk-65536", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "chunk_size must be 1..32768", "server_answers_after_s": 0.0, "stored_end": 0, "stored_intact": true, "server_restarted": false, "server_log": []}], "error": null}
+== d5-writers-1 r1 21:14:04
+{"point": "d5-writers-1", "samples": 1048576, "ingest_samples_per_s": 6721641, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d5-writers-4 r1 21:14:07
+{"point": "d5-writers-4", "samples": 1048576, "ingest_samples_per_s": 15100277, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d5-writers-16 r1 21:14:09
+{"point": "d5-writers-16", "samples": 1048576, "ingest_samples_per_s": 21022496, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d5-pattern r1 21:14:13
+{"point": "d5-pattern", "samples": 262144, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d7-mem-2g r1 21:14:15
+{"point": "d7-mem-2g", "samples": 100000000, "ingest_samples_per_s": 7123522, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-mem-512m r1 21:14:36
+{"point": "d7-mem-512m", "samples": 100000000, "ingest_samples_per_s": 7079145, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-mem-256m r1 21:14:56
+{"point": "d7-mem-256m", "samples": 100000000, "ingest_samples_per_s": 7060651, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-cpu-1 r1 21:15:16
+{"point": "d7-cpu-1", "samples": 100000000, "ingest_samples_per_s": 5284016, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-disk-full r1 21:15:42
+{"point": "d7-disk-full", "samples": 1000000000, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "could not write to file \"pg_wal/xlogtemp.71\": No space left on device", "after_error": "RuntimeError: server did not come back", "server_log": ["2026-11-08 20:16:04.166 UTC [71] PANIC:  could not write to file \"pg_wal/xlogtemp.71\": No space left on device", "2026-11-08 20:16:04.179 UTC [2275] FATAL:  the database system is in recovery mode", "2026-11-08 20:16:04.365 UTC [2272] FATAL:  could not write to file \"pg_wal/xlogtemp.2272\": No space left on device"]}], "error": null}
+== d1-rate-1over60 r2 21:18:05
+{"point": "d1-rate-1over60", "samples": 1048576, "ingest_samples_per_s": 6808935, "bits_per_sample": 11.75, "problems": ["1001 derived times differ"], "refusals": [], "error": null}
+== d1-rate-1over3 r2 21:18:08
+{"point": "d1-rate-1over3", "samples": 1048576, "ingest_samples_per_s": 6853438, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1 r2 21:18:10
+{"point": "d1-rate-1", "samples": 1048576, "ingest_samples_per_s": 7084973, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1000 r2 21:18:13
+{"point": "d1-rate-1000", "samples": 1048576, "ingest_samples_per_s": 6808935, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-44100 r2 21:18:16
+{"point": "d1-rate-44100", "samples": 1048576, "ingest_samples_per_s": 6944212, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-64000 r2 21:18:18
+{"point": "d1-rate-64000", "samples": 1048576, "ingest_samples_per_s": 6944212, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1000000 r2 21:18:21
+{"point": "d1-rate-1000000", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "start_recording", "error": "sample_rate_hz must be finite and in (0,200000]"}], "error": null}
+== d2-len-1e4 r2 21:18:23
+{"point": "d2-len-1e4", "samples": 10000, "ingest_samples_per_s": 416667, "bits_per_sample": 65.536, "problems": [], "refusals": [], "error": null}
+== d2-len-1e6 r2 21:18:25
+{"point": "d2-len-1e6", "samples": 1000000, "ingest_samples_per_s": 6944444, "bits_per_sample": 11.796, "problems": [], "refusals": [], "error": null}
+== d2-len-1e8 r2 21:18:27
+{"point": "d2-len-1e8", "samples": 100000000, "ingest_samples_per_s": 7084160, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d2-len-1e9 r2 21:18:47
+{"point": "d2-len-1e9", "samples": 1000000000, "ingest_samples_per_s": 7197300, "bits_per_sample": 11.14, "problems": [], "refusals": [], "error": null}
+== d4-kind-int-counts r2 21:21:53
+{"point": "d4-kind-int-counts", "samples": 1048576, "ingest_samples_per_s": 6944212, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d4-kind-decimals r2 21:21:55
+{"point": "d4-kind-decimals", "samples": 1048576, "ingest_samples_per_s": 7182027, "bits_per_sample": 12.562, "problems": [], "refusals": [], "error": null}
+== d4-kind-adc r2 21:21:57
+{"point": "d4-kind-adc", "samples": 1048576, "ingest_samples_per_s": 6808935, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d4-kind-random-floats r2 21:22:00
+{"point": "d4-kind-random-floats", "samples": 1048576, "ingest_samples_per_s": 5698783, "bits_per_sample": 67.688, "problems": [], "refusals": [], "error": null}
+== d4-kind-constant r2 21:22:02
+{"point": "d4-kind-constant", "samples": 1048576, "ingest_samples_per_s": 10591677, "bits_per_sample": 0.812, "problems": [], "refusals": [], "error": null}
+== d4-kind-denormals r2 21:22:04
+{"point": "d4-kind-denormals", "samples": 1048576, "ingest_samples_per_s": 7436709, "bits_per_sample": 17.125, "problems": [], "refusals": [], "error": null}
+== d4-kind-extremes r2 21:22:06
+{"point": "d4-kind-extremes", "samples": 1048576, "ingest_samples_per_s": 7884030, "bits_per_sample": 1.188, "problems": [], "refusals": [], "error": null}
+== d4-kind-nan-inf r2 21:22:09
+{"point": "d4-kind-nan-inf", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "samples must be finite and within +/-1e9", "server_answers_after_s": 0.0, "stored_end": 0, "stored_intact": true, "server_restarted": false, "server_log": []}], "error": null}
+== d5-chunk-1 r2 21:22:11
+{"point": "d5-chunk-1", "samples": 65536, "ingest_samples_per_s": 25129, "bits_per_sample": 1332.0, "problems": [], "refusals": [], "error": null}
+== d5-chunk-64 r2 21:22:17
+{"point": "d5-chunk-64", "samples": 1048576, "ingest_samples_per_s": 1213630, "bits_per_sample": 30.312, "problems": [], "refusals": [], "error": null}
+== d5-chunk-4096 r2 21:22:20
+{"point": "d5-chunk-4096", "samples": 1048576, "ingest_samples_per_s": 6678828, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d5-chunk-65536 r2 21:22:22
+{"point": "d5-chunk-65536", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "chunk_size must be 1..32768", "server_answers_after_s": 0.0, "stored_end": 0, "stored_intact": true, "server_restarted": false, "server_log": []}], "error": null}
+== d5-writers-1 r2 21:22:24
+{"point": "d5-writers-1", "samples": 1048576, "ingest_samples_per_s": 6204592, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d5-writers-4 r2 21:22:26
+{"point": "d5-writers-4", "samples": 1048576, "ingest_samples_per_s": 13597231, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d5-writers-16 r2 21:22:29
+{"point": "d5-writers-16", "samples": 1048576, "ingest_samples_per_s": 22534201, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d5-pattern r2 21:22:33
+{"point": "d5-pattern", "samples": 262144, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d7-mem-2g r2 21:22:35
+{"point": "d7-mem-2g", "samples": 100000000, "ingest_samples_per_s": 7081150, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-mem-512m r2 21:22:56
+{"point": "d7-mem-512m", "samples": 100000000, "ingest_samples_per_s": 7735149, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-mem-256m r2 21:23:16
+{"point": "d7-mem-256m", "samples": 100000000, "ingest_samples_per_s": 6610696, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-cpu-1 r2 21:23:39
+{"point": "d7-cpu-1", "samples": 100000000, "ingest_samples_per_s": 5214036, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-disk-full r2 21:24:05
+{"point": "d7-disk-full", "samples": 1000000000, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "could not write to file \"pg_wal/xlogtemp.71\": No space left on device", "after_error": "RuntimeError: server did not come back", "server_log": ["2026-11-08 20:24:26.844 UTC [71] PANIC:  could not write to file \"pg_wal/xlogtemp.71\": No space left on device", "2026-11-08 20:24:26.857 UTC [2275] FATAL:  the database system is in recovery mode", "2026-11-08 20:24:27.039 UTC [2272] FATAL:  could not write to file \"pg_wal/xlogtemp.2272\": No space left on device"]}], "error": null}
+== d1-rate-1over60 r3 21:26:28
+{"point": "d1-rate-1over60", "samples": 1048576, "ingest_samples_per_s": 6853438, "bits_per_sample": 11.75, "problems": ["1001 derived times differ"], "refusals": [], "error": null}
+== d1-rate-1over3 r3 21:26:30
+{"point": "d1-rate-1over3", "samples": 1048576, "ingest_samples_per_s": 6944212, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1 r3 21:26:33
+{"point": "d1-rate-1", "samples": 1048576, "ingest_samples_per_s": 6432982, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1000 r3 21:26:36
+{"point": "d1-rate-1000", "samples": 1048576, "ingest_samples_per_s": 6678828, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-44100 r3 21:26:38
+{"point": "d1-rate-44100", "samples": 1048576, "ingest_samples_per_s": 7182027, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-64000 r3 21:26:41
+{"point": "d1-rate-64000", "samples": 1048576, "ingest_samples_per_s": 6678828, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d1-rate-1000000 r3 21:26:43
+{"point": "d1-rate-1000000", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "start_recording", "error": "sample_rate_hz must be finite and in (0,200000]"}], "error": null}
+== d2-len-1e4 r3 21:26:45
+{"point": "d2-len-1e4", "samples": 10000, "ingest_samples_per_s": 416667, "bits_per_sample": 65.536, "problems": [], "refusals": [], "error": null}
+== d2-len-1e6 r3 21:26:47
+{"point": "d2-len-1e6", "samples": 1000000, "ingest_samples_per_s": 6711409, "bits_per_sample": 11.796, "problems": [], "refusals": [], "error": null}
+== d2-len-1e8 r3 21:26:50
+{"point": "d2-len-1e8", "samples": 100000000, "ingest_samples_per_s": 7299270, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d2-len-1e9 r3 21:27:09
+{"point": "d2-len-1e9", "samples": 1000000000, "ingest_samples_per_s": 7172521, "bits_per_sample": 11.14, "problems": [], "refusals": [], "error": null}
+== d4-kind-int-counts r3 21:30:13
+{"point": "d4-kind-int-counts", "samples": 1048576, "ingest_samples_per_s": 8004397, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d4-kind-decimals r3 21:30:15
+{"point": "d4-kind-decimals", "samples": 1048576, "ingest_samples_per_s": 7653839, "bits_per_sample": 12.562, "problems": [], "refusals": [], "error": null}
+== d4-kind-adc r3 21:30:17
+{"point": "d4-kind-adc", "samples": 1048576, "ingest_samples_per_s": 7598377, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d4-kind-random-floats r3 21:30:19
+{"point": "d4-kind-random-floats", "samples": 1048576, "ingest_samples_per_s": 6204592, "bits_per_sample": 67.688, "problems": [], "refusals": [], "error": null}
+== d4-kind-constant r3 21:30:22
+{"point": "d4-kind-constant", "samples": 1048576, "ingest_samples_per_s": 11522813, "bits_per_sample": 0.812, "problems": [], "refusals": [], "error": null}
+== d4-kind-denormals r3 21:30:24
+{"point": "d4-kind-denormals", "samples": 1048576, "ingest_samples_per_s": 8192000, "bits_per_sample": 17.125, "problems": [], "refusals": [], "error": null}
+== d4-kind-extremes r3 21:30:26
+{"point": "d4-kind-extremes", "samples": 1048576, "ingest_samples_per_s": 8065969, "bits_per_sample": 1.188, "problems": [], "refusals": [], "error": null}
+== d4-kind-nan-inf r3 21:30:28
+{"point": "d4-kind-nan-inf", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "samples must be finite and within +/-1e9", "server_answers_after_s": 0.0, "stored_end": 0, "stored_intact": true, "server_restarted": false, "server_log": []}], "error": null}
+== d5-chunk-1 r3 21:30:30
+{"point": "d5-chunk-1", "samples": 65536, "ingest_samples_per_s": 26771, "bits_per_sample": 1332.0, "problems": [], "refusals": [], "error": null}
+== d5-chunk-64 r3 21:30:36
+{"point": "d5-chunk-64", "samples": 1048576, "ingest_samples_per_s": 1305823, "bits_per_sample": 30.312, "problems": [], "refusals": [], "error": null}
+== d5-chunk-4096 r3 21:30:39
+{"point": "d5-chunk-4096", "samples": 1048576, "ingest_samples_per_s": 7489829, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d5-chunk-65536 r3 21:30:41
+{"point": "d5-chunk-65536", "samples": 1048576, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "chunk_size must be 1..32768", "server_answers_after_s": 0.0, "stored_end": 0, "stored_intact": true, "server_restarted": false, "server_log": []}], "error": null}
+== d5-writers-1 r3 21:30:43
+{"point": "d5-writers-1", "samples": 1048576, "ingest_samples_per_s": 7943758, "bits_per_sample": 11.75, "problems": [], "refusals": [], "error": null}
+== d5-writers-4 r3 21:30:45
+{"point": "d5-writers-4", "samples": 1048576, "ingest_samples_per_s": 16193224, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d5-writers-16 r3 21:30:48
+{"point": "d5-writers-16", "samples": 1048576, "ingest_samples_per_s": 20884079, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d5-pattern r3 21:30:51
+{"point": "d5-pattern", "samples": 262144, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [], "error": null}
+== d7-mem-2g r3 21:30:53
+{"point": "d7-mem-2g", "samples": 100000000, "ingest_samples_per_s": 8565310, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-mem-512m r3 21:31:11
+{"point": "d7-mem-512m", "samples": 100000000, "ingest_samples_per_s": 8509190, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-mem-256m r3 21:31:29
+{"point": "d7-mem-256m", "samples": 100000000, "ingest_samples_per_s": 7788162, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-cpu-1 r3 21:31:52
+{"point": "d7-cpu-1", "samples": 100000000, "ingest_samples_per_s": 6025911, "bits_per_sample": 11.144, "problems": [], "refusals": [], "error": null}
+== d7-disk-full r3 21:32:15
+{"point": "d7-disk-full", "samples": 1000000000, "ingest_samples_per_s": null, "bits_per_sample": null, "problems": [], "refusals": [{"step": "append", "error_visible": true, "error": "could not write to file \"pg_wal/xlogtemp.71\": No space left on device", "after_error": "RuntimeError: server did not come back", "server_log": ["2026-11-08 20:32:34.005 UTC [71] PANIC:  could not write to file \"pg_wal/xlogtemp.71\": No space left on device", "2026-11-08 20:32:34.018 UTC [2275] FATAL:  the database system is in recovery mode", "2026-11-08 20:32:34.202 UTC [2272] FATAL:  could not write to file \"pg_wal/xlogtemp.2272\": No space left on device"]}], "error": null}
+== L1-beta done 21:34:35

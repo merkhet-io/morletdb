@@ -1,0 +1,1507 @@
+{
+ "points": {
+  "d1-rate-1000000": {
+   "repeats": 3,
+   "failed": [
+    [
+     {
+      "step": "start_recording",
+      "error": "sample_rate_hz must be finite and in (0,200000]"
+     }
+    ],
+    [
+     {
+      "step": "start_recording",
+      "error": "sample_rate_hz must be finite and in (0,200000]"
+     }
+    ],
+    [
+     {
+      "step": "start_recording",
+      "error": "sample_rate_hz must be finite and in (0,200000]"
+     }
+    ]
+   ],
+   "problems": [],
+   "memory_peak_mib": 83.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": null,
+   "read_samples_per_s": null,
+   "read4096_middle_p50": null,
+   "read4096_end_p50": null,
+   "stats1e6_end_p50": null,
+   "overview_whole_p50": null,
+   "bits_per_sample": null,
+   "range": {}
+  },
+  "d1-rate-1000": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.5,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 6808935,
+   "read_samples_per_s": 21845333,
+   "read4096_middle_p50": 0.57,
+   "read4096_end_p50": 0.583,
+   "stats1e6_end_p50": 0.532,
+   "overview_whole_p50": 0.767,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6678828,
+     7943758
+    ],
+    "read_samples_per_s": [
+     21399510,
+     21845333
+    ],
+    "read4096_middle_p50": [
+     0.562,
+     0.601
+    ],
+    "read4096_end_p50": [
+     0.577,
+     0.593
+    ],
+    "stats1e6_end_p50": [
+     0.514,
+     0.547
+    ],
+    "overview_whole_p50": [
+     0.757,
+     0.776
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d1-rate-1": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 94.9,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7084973,
+   "read_samples_per_s": 20971520,
+   "read4096_middle_p50": 0.585,
+   "read4096_end_p50": 0.586,
+   "stats1e6_end_p50": 0.519,
+   "overview_whole_p50": 0.811,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6432982,
+     7543712
+    ],
+    "read_samples_per_s": [
+     20971520,
+     22310128
+    ],
+    "read4096_middle_p50": [
+     0.56,
+     0.621
+    ],
+    "read4096_end_p50": [
+     0.567,
+     0.67
+    ],
+    "stats1e6_end_p50": [
+     0.516,
+     0.607
+    ],
+    "overview_whole_p50": [
+     0.809,
+     0.835
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d1-rate-1over3": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 6944212,
+   "read_samples_per_s": 20560314,
+   "read4096_middle_p50": 0.562,
+   "read4096_end_p50": 0.585,
+   "stats1e6_end_p50": 0.533,
+   "overview_whole_p50": 0.803,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6853438,
+     7436709
+    ],
+    "read_samples_per_s": [
+     20560314,
+     21845333
+    ],
+    "read4096_middle_p50": [
+     0.554,
+     0.659
+    ],
+    "read4096_end_p50": [
+     0.566,
+     0.737
+    ],
+    "stats1e6_end_p50": [
+     0.499,
+     0.706
+    ],
+    "overview_whole_p50": [
+     0.802,
+     0.837
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d1-rate-1over60": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [
+    "1001 derived times differ"
+   ],
+   "memory_peak_mib": 95.7,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 6853438,
+   "read_samples_per_s": 21399510,
+   "read4096_middle_p50": 0.583,
+   "read4096_end_p50": 0.582,
+   "stats1e6_end_p50": 0.525,
+   "overview_whole_p50": 0.781,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6808935,
+     7825194
+    ],
+    "read_samples_per_s": [
+     20971520,
+     21399510
+    ],
+    "read4096_middle_p50": [
+     0.56,
+     0.663
+    ],
+    "read4096_end_p50": [
+     0.579,
+     0.614
+    ],
+    "stats1e6_end_p50": [
+     0.499,
+     0.542
+    ],
+    "overview_whole_p50": [
+     0.752,
+     0.803
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d1-rate-44100": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.2,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7182027,
+   "read_samples_per_s": 23831273,
+   "read4096_middle_p50": 0.591,
+   "read4096_end_p50": 0.596,
+   "stats1e6_end_p50": 0.522,
+   "overview_whole_p50": 0.79,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6944212,
+     7436709
+    ],
+    "read_samples_per_s": [
+     22310128,
+     23831273
+    ],
+    "read4096_middle_p50": [
+     0.586,
+     0.591
+    ],
+    "read4096_end_p50": [
+     0.584,
+     0.617
+    ],
+    "stats1e6_end_p50": [
+     0.518,
+     0.528
+    ],
+    "overview_whole_p50": [
+     0.785,
+     0.821
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d1-rate-64000": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 6944212,
+   "read_samples_per_s": 20971520,
+   "read4096_middle_p50": 0.585,
+   "read4096_end_p50": 0.588,
+   "stats1e6_end_p50": 0.506,
+   "overview_whole_p50": 0.771,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6678828,
+     7653839
+    ],
+    "read_samples_per_s": [
+     19418074,
+     21845333
+    ],
+    "read4096_middle_p50": [
+     0.577,
+     0.599
+    ],
+    "read4096_end_p50": [
+     0.555,
+     0.617
+    ],
+    "stats1e6_end_p50": [
+     0.494,
+     0.517
+    ],
+    "overview_whole_p50": [
+     0.74,
+     0.791
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d2-len-1e4": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 83.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 416667,
+   "read_samples_per_s": 5000000,
+   "read4096_middle_p50": 0.581,
+   "read4096_end_p50": 0.578,
+   "stats1e6_end_p50": 0.598,
+   "overview_whole_p50": 0.602,
+   "bits_per_sample": 65.536,
+   "range": {
+    "ingest_samples_per_s": [
+     416667,
+     526316
+    ],
+    "read_samples_per_s": [
+     5000000,
+     10000000
+    ],
+    "read4096_middle_p50": [
+     0.568,
+     0.599
+    ],
+    "read4096_end_p50": [
+     0.578,
+     0.603
+    ],
+    "stats1e6_end_p50": [
+     0.585,
+     0.62
+    ],
+    "overview_whole_p50": [
+     0.574,
+     0.612
+    ],
+    "bits_per_sample": [
+     65.536,
+     65.536
+    ]
+   }
+  },
+  "d2-len-1e6": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.1,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 6944444,
+   "read_samples_per_s": 21276596,
+   "read4096_middle_p50": 0.626,
+   "read4096_end_p50": 0.593,
+   "stats1e6_end_p50": 0.584,
+   "overview_whole_p50": 0.775,
+   "bits_per_sample": 11.796,
+   "range": {
+    "ingest_samples_per_s": [
+     6711409,
+     7575758
+    ],
+    "read_samples_per_s": [
+     21276596,
+     24390244
+    ],
+    "read4096_middle_p50": [
+     0.625,
+     0.641
+    ],
+    "read4096_end_p50": [
+     0.589,
+     0.604
+    ],
+    "stats1e6_end_p50": [
+     0.581,
+     0.599
+    ],
+    "overview_whole_p50": [
+     0.771,
+     0.796
+    ],
+    "bits_per_sample": [
+     11.796,
+     11.796
+    ]
+   }
+  },
+  "d2-len-1e8": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 470.6,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7299270,
+   "read_samples_per_s": 24618415,
+   "read4096_middle_p50": 0.63,
+   "read4096_end_p50": 0.578,
+   "stats1e6_end_p50": 0.578,
+   "overview_whole_p50": 9.599,
+   "bits_per_sample": 11.144,
+   "range": {
+    "ingest_samples_per_s": [
+     7084160,
+     8615491
+    ],
+    "read_samples_per_s": [
+     23969319,
+     25081515
+    ],
+    "read4096_middle_p50": [
+     0.613,
+     0.646
+    ],
+    "read4096_end_p50": [
+     0.546,
+     0.593
+    ],
+    "stats1e6_end_p50": [
+     0.571,
+     0.588
+    ],
+    "overview_whole_p50": [
+     9.518,
+     9.676
+    ],
+    "bits_per_sample": [
+     11.144,
+     11.144
+    ]
+   }
+  },
+  "d2-len-1e9": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 2701.7,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7197300,
+   "read_samples_per_s": 23862931,
+   "read4096_middle_p50": 0.684,
+   "read4096_end_p50": 0.63,
+   "stats1e6_end_p50": 5.21,
+   "overview_whole_p50": 117.055,
+   "bits_per_sample": 11.14,
+   "range": {
+    "ingest_samples_per_s": [
+     7172521,
+     8388628
+    ],
+    "read_samples_per_s": [
+     23142255,
+     24475610
+    ],
+    "read4096_middle_p50": [
+     0.663,
+     0.689
+    ],
+    "read4096_end_p50": [
+     0.627,
+     0.649
+    ],
+    "stats1e6_end_p50": [
+     5.201,
+     5.492
+    ],
+    "overview_whole_p50": [
+     116.9,
+     121.298
+    ],
+    "bits_per_sample": [
+     11.14,
+     11.14
+    ]
+   }
+  },
+  "d4-kind-adc": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.6,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7598377,
+   "read_samples_per_s": 23831273,
+   "read4096_middle_p50": 0.574,
+   "read4096_end_p50": 0.575,
+   "stats1e6_end_p50": 0.52,
+   "overview_whole_p50": 0.739,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6808935,
+     7825194
+    ],
+    "read_samples_per_s": [
+     22795130,
+     24385488
+    ],
+    "read4096_middle_p50": [
+     0.536,
+     0.577
+    ],
+    "read4096_end_p50": [
+     0.558,
+     0.579
+    ],
+    "stats1e6_end_p50": [
+     0.493,
+     0.545
+    ],
+    "overview_whole_p50": [
+     0.729,
+     0.808
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d4-kind-constant": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 94.1,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 10591677,
+   "read_samples_per_s": 23831273,
+   "read4096_middle_p50": 0.544,
+   "read4096_end_p50": 0.577,
+   "stats1e6_end_p50": 0.526,
+   "overview_whole_p50": 0.741,
+   "bits_per_sample": 0.812,
+   "range": {
+    "ingest_samples_per_s": [
+     9799776,
+     11522813
+    ],
+    "read_samples_per_s": [
+     18078897,
+     24385488
+    ],
+    "read4096_middle_p50": [
+     0.536,
+     0.729
+    ],
+    "read4096_end_p50": [
+     0.527,
+     0.592
+    ],
+    "stats1e6_end_p50": [
+     0.509,
+     0.597
+    ],
+    "overview_whole_p50": [
+     0.686,
+     0.8
+    ],
+    "bits_per_sample": [
+     0.812,
+     0.812
+    ]
+   }
+  },
+  "d4-kind-decimals": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.6,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7653839,
+   "read_samples_per_s": 23831273,
+   "read4096_middle_p50": 0.561,
+   "read4096_end_p50": 0.58,
+   "stats1e6_end_p50": 0.511,
+   "overview_whole_p50": 0.791,
+   "bits_per_sample": 12.562,
+   "range": {
+    "ingest_samples_per_s": [
+     7182027,
+     7710118
+    ],
+    "read_samples_per_s": [
+     22310128,
+     23831273
+    ],
+    "read4096_middle_p50": [
+     0.544,
+     0.595
+    ],
+    "read4096_end_p50": [
+     0.562,
+     0.614
+    ],
+    "stats1e6_end_p50": [
+     0.499,
+     0.538
+    ],
+    "overview_whole_p50": [
+     0.777,
+     0.804
+    ],
+    "bits_per_sample": [
+     12.562,
+     12.562
+    ]
+   }
+  },
+  "d4-kind-denormals": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 98.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7436709,
+   "read_samples_per_s": 21845333,
+   "read4096_middle_p50": 0.565,
+   "read4096_end_p50": 0.568,
+   "stats1e6_end_p50": 0.538,
+   "overview_whole_p50": 0.769,
+   "bits_per_sample": 17.125,
+   "range": {
+    "ingest_samples_per_s": [
+     7182027,
+     8192000
+    ],
+    "read_samples_per_s": [
+     19065018,
+     22310128
+    ],
+    "read4096_middle_p50": [
+     0.522,
+     0.629
+    ],
+    "read4096_end_p50": [
+     0.552,
+     0.64
+    ],
+    "stats1e6_end_p50": [
+     0.512,
+     0.584
+    ],
+    "overview_whole_p50": [
+     0.749,
+     0.826
+    ],
+    "bits_per_sample": [
+     17.125,
+     17.125
+    ]
+   }
+  },
+  "d4-kind-extremes": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.7,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7884030,
+   "read_samples_per_s": 21845333,
+   "read4096_middle_p50": 0.567,
+   "read4096_end_p50": 0.617,
+   "stats1e6_end_p50": 0.592,
+   "overview_whole_p50": 0.783,
+   "bits_per_sample": 1.188,
+   "range": {
+    "ingest_samples_per_s": [
+     7543712,
+     8065969
+    ],
+    "read_samples_per_s": [
+     20971520,
+     23301689
+    ],
+    "read4096_middle_p50": [
+     0.55,
+     0.593
+    ],
+    "read4096_end_p50": [
+     0.577,
+     0.627
+    ],
+    "stats1e6_end_p50": [
+     0.531,
+     0.593
+    ],
+    "overview_whole_p50": [
+     0.757,
+     0.887
+    ],
+    "bits_per_sample": [
+     1.188,
+     1.188
+    ]
+   }
+  },
+  "d4-kind-int-counts": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 96.8,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7943758,
+   "read_samples_per_s": 22310128,
+   "read4096_middle_p50": 0.591,
+   "read4096_end_p50": 0.601,
+   "stats1e6_end_p50": 0.555,
+   "overview_whole_p50": 0.791,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6944212,
+     8004397
+    ],
+    "read_samples_per_s": [
+     20971520,
+     22310128
+    ],
+    "read4096_middle_p50": [
+     0.549,
+     0.614
+    ],
+    "read4096_end_p50": [
+     0.568,
+     0.604
+    ],
+    "stats1e6_end_p50": [
+     0.521,
+     0.557
+    ],
+    "overview_whole_p50": [
+     0.766,
+     0.809
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d4-kind-nan-inf": {
+   "repeats": 3,
+   "failed": [
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "samples must be finite and within +/-1e9",
+      "server_answers_after_s": 0.0,
+      "stored_end": 0,
+      "stored_intact": true,
+      "server_restarted": false,
+      "server_log": []
+     }
+    ],
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "samples must be finite and within +/-1e9",
+      "server_answers_after_s": 0.0,
+      "stored_end": 0,
+      "stored_intact": true,
+      "server_restarted": false,
+      "server_log": []
+     }
+    ],
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "samples must be finite and within +/-1e9",
+      "server_answers_after_s": 0.0,
+      "stored_end": 0,
+      "stored_intact": true,
+      "server_restarted": false,
+      "server_log": []
+     }
+    ]
+   ],
+   "problems": [],
+   "memory_peak_mib": 86.0,
+   "oom_kills": 0,
+   "ingest_samples_per_s": null,
+   "read_samples_per_s": null,
+   "read4096_middle_p50": null,
+   "read4096_end_p50": null,
+   "stats1e6_end_p50": null,
+   "overview_whole_p50": null,
+   "bits_per_sample": null,
+   "range": {}
+  },
+  "d4-kind-random-floats": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 132.0,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 5698783,
+   "read_samples_per_s": 22310128,
+   "read4096_middle_p50": 0.574,
+   "read4096_end_p50": 0.582,
+   "stats1e6_end_p50": 0.529,
+   "overview_whole_p50": 0.786,
+   "bits_per_sample": 67.688,
+   "range": {
+    "ingest_samples_per_s": [
+     5667978,
+     6204592
+    ],
+    "read_samples_per_s": [
+     20560314,
+     23831273
+    ],
+    "read4096_middle_p50": [
+     0.553,
+     0.657
+    ],
+    "read4096_end_p50": [
+     0.57,
+     0.694
+    ],
+    "stats1e6_end_p50": [
+     0.514,
+     0.749
+    ],
+    "overview_whole_p50": [
+     0.781,
+     1.495
+    ],
+    "bits_per_sample": [
+     67.688,
+     67.688
+    ]
+   }
+  },
+  "d5-chunk-1": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 133.1,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 25129,
+   "read_samples_per_s": 2520615,
+   "read4096_middle_p50": 3.822,
+   "read4096_end_p50": 3.686,
+   "stats1e6_end_p50": 4.356,
+   "overview_whole_p50": 27.161,
+   "bits_per_sample": 1332.0,
+   "range": {
+    "ingest_samples_per_s": [
+     23100,
+     26771
+    ],
+    "read_samples_per_s": [
+     2427259,
+     2621440
+    ],
+    "read4096_middle_p50": [
+     3.663,
+     4.035
+    ],
+    "read4096_end_p50": [
+     3.648,
+     3.879
+    ],
+    "stats1e6_end_p50": [
+     4.325,
+     4.548
+    ],
+    "overview_whole_p50": [
+     26.308,
+     27.797
+    ],
+    "bits_per_sample": [
+     1332.0,
+     1332.0
+    ]
+   }
+  },
+  "d5-chunk-4096": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 96.8,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 6678828,
+   "read_samples_per_s": 22310128,
+   "read4096_middle_p50": 0.552,
+   "read4096_end_p50": 0.563,
+   "stats1e6_end_p50": 0.512,
+   "overview_whole_p50": 0.77,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6026299,
+     7489829
+    ],
+    "read_samples_per_s": [
+     18724571,
+     23831273
+    ],
+    "read4096_middle_p50": [
+     0.538,
+     0.635
+    ],
+    "read4096_end_p50": [
+     0.562,
+     0.641
+    ],
+    "stats1e6_end_p50": [
+     0.502,
+     0.588
+    ],
+    "overview_whole_p50": [
+     0.768,
+     0.898
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d5-chunk-64": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 111.6,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 1213630,
+   "read_samples_per_s": 20164923,
+   "read4096_middle_p50": 0.783,
+   "read4096_end_p50": 0.739,
+   "stats1e6_end_p50": 0.635,
+   "overview_whole_p50": 6.929,
+   "bits_per_sample": 30.312,
+   "range": {
+    "ingest_samples_per_s": [
+     1015078,
+     1305823
+    ],
+    "read_samples_per_s": [
+     17189770,
+     20164923
+    ],
+    "read4096_middle_p50": [
+     0.733,
+     0.831
+    ],
+    "read4096_end_p50": [
+     0.71,
+     0.739
+    ],
+    "stats1e6_end_p50": [
+     0.607,
+     0.688
+    ],
+    "overview_whole_p50": [
+     6.679,
+     6.933
+    ],
+    "bits_per_sample": [
+     30.312,
+     30.312
+    ]
+   }
+  },
+  "d5-chunk-65536": {
+   "repeats": 3,
+   "failed": [
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "chunk_size must be 1..32768",
+      "server_answers_after_s": 0.0,
+      "stored_end": 0,
+      "stored_intact": true,
+      "server_restarted": false,
+      "server_log": []
+     }
+    ],
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "chunk_size must be 1..32768",
+      "server_answers_after_s": 0.0,
+      "stored_end": 0,
+      "stored_intact": true,
+      "server_restarted": false,
+      "server_log": []
+     }
+    ],
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "chunk_size must be 1..32768",
+      "server_answers_after_s": 0.0,
+      "stored_end": 0,
+      "stored_intact": true,
+      "server_restarted": false,
+      "server_log": []
+     }
+    ]
+   ],
+   "problems": [],
+   "memory_peak_mib": 83.7,
+   "oom_kills": 0,
+   "ingest_samples_per_s": null,
+   "read_samples_per_s": null,
+   "read4096_middle_p50": null,
+   "read4096_end_p50": null,
+   "stats1e6_end_p50": null,
+   "overview_whole_p50": null,
+   "bits_per_sample": null,
+   "range": {}
+  },
+  "d5-pattern": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 83.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": null,
+   "read_samples_per_s": null,
+   "read4096_middle_p50": null,
+   "read4096_end_p50": null,
+   "stats1e6_end_p50": null,
+   "overview_whole_p50": null,
+   "bits_per_sample": null,
+   "range": {}
+  },
+  "d5-writers-16": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 367.2,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 21022496,
+   "read_samples_per_s": null,
+   "read4096_middle_p50": null,
+   "read4096_end_p50": null,
+   "stats1e6_end_p50": null,
+   "overview_whole_p50": null,
+   "bits_per_sample": null,
+   "range": {
+    "ingest_samples_per_s": [
+     20884079,
+     22534201
+    ]
+   }
+  },
+  "d5-writers-1": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 95.8,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 6721641,
+   "read_samples_per_s": 19418074,
+   "read4096_middle_p50": 0.673,
+   "read4096_end_p50": 0.677,
+   "stats1e6_end_p50": 0.641,
+   "overview_whole_p50": 0.85,
+   "bits_per_sample": 11.75,
+   "range": {
+    "ingest_samples_per_s": [
+     6204592,
+     7943758
+    ],
+    "read_samples_per_s": [
+     17476267,
+     22795130
+    ],
+    "read4096_middle_p50": [
+     0.55,
+     0.696
+    ],
+    "read4096_end_p50": [
+     0.542,
+     0.705
+    ],
+    "stats1e6_end_p50": [
+     0.493,
+     0.666
+    ],
+    "overview_whole_p50": [
+     0.762,
+     0.92
+    ],
+    "bits_per_sample": [
+     11.75,
+     11.75
+    ]
+   }
+  },
+  "d5-writers-4": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 161.8,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 15100277,
+   "read_samples_per_s": null,
+   "read4096_middle_p50": null,
+   "read4096_end_p50": null,
+   "stats1e6_end_p50": null,
+   "overview_whole_p50": null,
+   "bits_per_sample": null,
+   "range": {
+    "ingest_samples_per_s": [
+     13597231,
+     16193224
+    ]
+   }
+  },
+  "d7-cpu-1": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 467.6,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 5284016,
+   "read_samples_per_s": 20686802,
+   "read4096_middle_p50": 0.612,
+   "read4096_end_p50": 0.602,
+   "stats1e6_end_p50": 0.617,
+   "overview_whole_p50": 9.421,
+   "bits_per_sample": 11.144,
+   "range": {
+    "ingest_samples_per_s": [
+     5214036,
+     6025911
+    ],
+    "read_samples_per_s": [
+     20597322,
+     21663778
+    ],
+    "read4096_middle_p50": [
+     0.602,
+     0.625
+    ],
+    "read4096_end_p50": [
+     0.588,
+     0.607
+    ],
+    "stats1e6_end_p50": [
+     0.597,
+     0.637
+    ],
+    "overview_whole_p50": [
+     9.274,
+     9.433
+    ],
+    "bits_per_sample": [
+     11.144,
+     11.144
+    ]
+   }
+  },
+  "d7-disk-full": {
+   "repeats": 3,
+   "failed": [
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+      "after_error": "RuntimeError: server did not come back",
+      "server_log": [
+       "2026-11-08 20:16:04.166 UTC [71] PANIC:  could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+       "2026-11-08 20:16:04.179 UTC [2275] FATAL:  the database system is in recovery mode",
+       "2026-11-08 20:16:04.365 UTC [2272] FATAL:  could not write to file \"pg_wal/xlogtemp.2272\": No space left on device"
+      ]
+     }
+    ],
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+      "after_error": "RuntimeError: server did not come back",
+      "server_log": [
+       "2026-11-08 20:24:26.844 UTC [71] PANIC:  could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+       "2026-11-08 20:24:26.857 UTC [2275] FATAL:  the database system is in recovery mode",
+       "2026-11-08 20:24:27.039 UTC [2272] FATAL:  could not write to file \"pg_wal/xlogtemp.2272\": No space left on device"
+      ]
+     }
+    ],
+    [
+     {
+      "step": "append",
+      "error_visible": true,
+      "error": "could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+      "after_error": "RuntimeError: server did not come back",
+      "server_log": [
+       "2026-11-08 20:32:34.005 UTC [71] PANIC:  could not write to file \"pg_wal/xlogtemp.71\": No space left on device",
+       "2026-11-08 20:32:34.018 UTC [2275] FATAL:  the database system is in recovery mode",
+       "2026-11-08 20:32:34.202 UTC [2272] FATAL:  could not write to file \"pg_wal/xlogtemp.2272\": No space left on device"
+      ]
+     }
+    ]
+   ],
+   "problems": [],
+   "memory_peak_mib": 0,
+   "oom_kills": 0,
+   "ingest_samples_per_s": null,
+   "read_samples_per_s": null,
+   "read4096_middle_p50": null,
+   "read4096_end_p50": null,
+   "stats1e6_end_p50": null,
+   "overview_whole_p50": null,
+   "bits_per_sample": null,
+   "range": {}
+  },
+  "d7-mem-256m": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 256.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7060651,
+   "read_samples_per_s": 16920474,
+   "read4096_middle_p50": 0.637,
+   "read4096_end_p50": 0.59,
+   "stats1e6_end_p50": 0.587,
+   "overview_whole_p50": 9.642,
+   "bits_per_sample": 11.144,
+   "range": {
+    "ingest_samples_per_s": [
+     6610696,
+     7788162
+    ],
+    "read_samples_per_s": [
+     12874984,
+     24642681
+    ],
+    "read4096_middle_p50": [
+     0.627,
+     0.667
+    ],
+    "read4096_end_p50": [
+     0.588,
+     0.617
+    ],
+    "stats1e6_end_p50": [
+     0.583,
+     0.599
+    ],
+    "overview_whole_p50": [
+     9.545,
+     10.059
+    ],
+    "bits_per_sample": [
+     11.144,
+     11.144
+    ]
+   }
+  },
+  "d7-mem-2g": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 471.4,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7123522,
+   "read_samples_per_s": 22276676,
+   "read4096_middle_p50": 0.665,
+   "read4096_end_p50": 0.573,
+   "stats1e6_end_p50": 0.6,
+   "overview_whole_p50": 9.821,
+   "bits_per_sample": 11.144,
+   "range": {
+    "ingest_samples_per_s": [
+     7081150,
+     8565310
+    ],
+    "read_samples_per_s": [
+     20842018,
+     24084778
+    ],
+    "read4096_middle_p50": [
+     0.658,
+     0.675
+    ],
+    "read4096_end_p50": [
+     0.558,
+     0.61
+    ],
+    "stats1e6_end_p50": [
+     0.575,
+     0.697
+    ],
+    "overview_whole_p50": [
+     9.815,
+     10.006
+    ],
+    "bits_per_sample": [
+     11.144,
+     11.144
+    ]
+   }
+  },
+  "d7-mem-512m": {
+   "repeats": 3,
+   "failed": [],
+   "problems": [],
+   "memory_peak_mib": 470.8,
+   "oom_kills": 0,
+   "ingest_samples_per_s": 7735149,
+   "read_samples_per_s": 24666996,
+   "read4096_middle_p50": 0.613,
+   "read4096_end_p50": 0.566,
+   "stats1e6_end_p50": 0.588,
+   "overview_whole_p50": 9.917,
+   "bits_per_sample": 11.144,
+   "range": {
+    "ingest_samples_per_s": [
+     7079145,
+     8509190
+    ],
+    "read_samples_per_s": [
+     21777003,
+     24906600
+    ],
+    "read4096_middle_p50": [
+     0.61,
+     0.702
+    ],
+    "read4096_end_p50": [
+     0.542,
+     0.602
+    ],
+    "stats1e6_end_p50": [
+     0.568,
+     0.621
+    ],
+    "overview_whole_p50": [
+     9.618,
+     9.996
+    ],
+    "bits_per_sample": [
+     11.144,
+     11.144
+    ]
+   }
+  }
+ },
+ "knees": {
+  "d1": [
+   {
+    "point": "d1-rate-1over60",
+    "knee": true,
+    "why": [
+     "error, refusal, problem or out-of-memory"
+    ]
+   },
+   {
+    "point": "d1-rate-1over3",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d1-rate-1",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d1-rate-1000",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d1-rate-44100",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d1-rate-64000",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d1-rate-1000000",
+    "knee": true,
+    "why": [
+     "error, refusal, problem or out-of-memory"
+    ]
+   }
+  ],
+  "d2": [
+   {
+    "point": "d2-len-1e4",
+    "knee": true,
+    "why": [
+     "ingest_samples_per_s 16.7x worse than d2-len-1e6",
+     "read_samples_per_s 4.3x worse than d2-len-1e6"
+    ]
+   },
+   {
+    "point": "d2-len-1e6",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d2-len-1e8",
+    "knee": true,
+    "why": [
+     "overview_whole_p50 12.4x worse than d2-len-1e6"
+    ]
+   },
+   {
+    "point": "d2-len-1e9",
+    "knee": true,
+    "why": [
+     "stats1e6_end_p50 8.9x worse than d2-len-1e6",
+     "overview_whole_p50 151.0x worse than d2-len-1e6"
+    ]
+   }
+  ],
+  "d5-chunk": [
+   {
+    "point": "d5-chunk-4096",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d5-chunk-64",
+    "knee": true,
+    "why": [
+     "ingest_samples_per_s 5.5x worse than d5-chunk-4096",
+     "overview_whole_p50 9.0x worse than d5-chunk-4096"
+    ]
+   },
+   {
+    "point": "d5-chunk-1",
+    "knee": true,
+    "why": [
+     "ingest_samples_per_s 265.8x worse than d5-chunk-4096",
+     "read_samples_per_s 8.9x worse than d5-chunk-4096",
+     "read4096_middle_p50 6.9x worse than d5-chunk-4096",
+     "read4096_end_p50 6.5x worse than d5-chunk-4096",
+     "stats1e6_end_p50 8.5x worse than d5-chunk-4096",
+     "overview_whole_p50 35.3x worse than d5-chunk-4096"
+    ]
+   },
+   {
+    "point": "d5-chunk-65536",
+    "knee": true,
+    "why": [
+     "error, refusal, problem or out-of-memory"
+    ]
+   }
+  ],
+  "d5-writers": [
+   {
+    "point": "d5-writers-1",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d5-writers-4",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d5-writers-16",
+    "knee": false,
+    "why": []
+   }
+  ],
+  "d7": [
+   {
+    "point": "d7-mem-2g",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d7-mem-512m",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d7-mem-256m",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d7-cpu-1",
+    "knee": false,
+    "why": []
+   },
+   {
+    "point": "d7-disk-full",
+    "knee": true,
+    "why": [
+     "error, refusal, problem or out-of-memory"
+    ]
+   }
+  ]
+ }
+}

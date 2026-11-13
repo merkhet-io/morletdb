@@ -25,9 +25,13 @@ Do not put credentials in command lines, files you commit or URLs; the tool neve
   imported with `morlet_import.py`; further importer options (`--probes`, `--prefix`, `--unit`, …) pass through.
 - **Provenance:** every recording's metadata gets `source_object`: bucket, key, ETag, version id (when the bucket
   is versioned), size and the SHA-256 of the downloaded bytes.
-- **Reruns:** objects whose key and ETag are already in the collection are skipped, so an interrupted import can
-  be run again. An object that changed under the same key is imported again into the same recording ids and is
-  refused, because those recordings already exist with other content; nothing is overwritten.
+- **Reruns:** objects are imported one at a time, and an object counts as imported only when the importer has
+  finished it: then a row with its bucket, key, ETag, size, SHA-256 and its recordings' ends is written to
+  `<collection>_s3_imports` (#442). A rerun skips the objects with such a row. An object interrupted part-way (its
+  first chunks committed, the rest not) has none and is imported again: the committed chunks replay as identical
+  no-ops and the rest is appended. An object that changed under the same key is refused, because its recordings
+  already exist with other content; nothing is overwritten. Collections imported before this record existed have
+  no rows, so the next run reads their objects once more (no-ops).
 
 ## Export
 

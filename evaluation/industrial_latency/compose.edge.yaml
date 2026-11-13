@@ -1,0 +1,6 @@
+services:
+  db:
+    cpus: 2
+    mem_limit: 512m
+    memswap_limit: 512m
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=20", "-c", "maintenance_work_mem=32MB"]

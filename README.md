@@ -32,7 +32,9 @@ calibration and its acquisition metadata. MorletDB keeps that unit intact inside
 PostgreSQL, instead of scattering samples over rows or vectors.
 
 - **Lossless and compact.** Raw samples are coded bit-exactly, often several times
-  smaller than general-purpose time-series compression on the same data.
+  smaller than general-purpose time-series compression on the same data. The codec,
+  [Grizzbit](docs/grizzbit.md), stores each chunk on the value grid it detects, with no
+  precision parameter, and is weaker on floats without a grid.
 - **Search that tolerates time shifts.** Two occurrences of the same pattern rarely
   line up with a window grid. MorletDB scores similarity over a bounded range of
   shifts, exactly or through a standard vector index.
@@ -100,6 +102,28 @@ Claude finds when the failing bearing first changed and whether the others show 
    approximate candidates from a vector index followed by exact re-ranking.
 4. **Read back** each match as the original samples, with its recording metadata.
 
+## Grizzbit, the codec
+
+**Grizzbit** is MorletDB's lossless chunk codec: what goes in comes back **bit for bit**. Each chunk of up to
+32,768 float64 samples is stored in the smallest of three exact forms: integer steps on the value grid the
+encoder detects (predicted and Rice-coded as in FLAC, with last-place corrections where needed), the float64 bit
+patterns coded the same way, or plain float64. Every chunk carries a CRC-32C checksum.
+
+- **No precision parameter.** Nothing can be configured to drop detail. Finite values up to ±10⁹ are stored
+  exactly; anything else is refused at write time, never altered.
+- **Checked when written.** With `morlet.verify_appends` on (the default), every append decodes each chunk again
+  and compares it bit for bit before storing it.
+- **Strong on gridded signals, weaker without a grid.** On ADC counts, fixed decimals and calibrated waveforms it
+  is among the smallest codecs measured (B4); on floats without a clean grid it is 1.6–4× larger than the best.
+  Grizzbit 2, an attempt to close that gap, failed study B5 and was not shipped; the gap remains open (#326).
+- **Grizzbit 2.1, opt-in** (`morlet.chunk_format = grizzbit21`): a per-chunk linear predictor and corrections per
+  grid index, kept only where smaller. It passed study B6: waveforms 12.6% smaller in total, never larger
+  ([how to use it](docs/grizzbit.md#using-grizzbit-21)).
+- **Nothing here is novel**, and the docs say so: Grizzbit is a named, specified format built from established
+  lossless techniques (FLAC's fixed predictors and Rice coding, SEED and EDF style gain and offset).
+
+More: [docs/grizzbit.md](docs/grizzbit.md) · [codecs at a glance](docs/grizzbit.md#codecs-at-a-glance) · [format specification](docs/chunk-format.md) · [crates/grizzbit](crates/grizzbit)
+
 ## Install
 
 Full setup and query examples: [installation and query guide](docs/installation-and-queries.md).
@@ -111,7 +135,7 @@ build provenance; no pgvector, so no probe search; choose your own password):
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
-  ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1
+  ghcr.io/merkhet-io/morletdb:0.3.12-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
 ```
 
@@ -236,7 +260,7 @@ source exclusion, overlap suppression and snapshot semantics.
 <td width="62%">
 
 **[MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL](research/paper/morletdb.pdf)**<br>
-Version <span data-version="report">0.21</span>
+Version <span data-version="report">0.24</span>
 
 Bounded-lag cross-correlation is the right score when matches may be shifted in
 time, but standard vector indexes rank by an unshifted metric. Because each lag term
@@ -346,7 +370,8 @@ to that transform, and our evaluations have not shown a general advantage for it
 | Path | What |
 |---|---|
 | [extensions/pg_morlet](extensions/pg_morlet) | the PostgreSQL extension: storage, ingestion, interval reads, search |
-| [crates/morlet-core](crates/morlet-core) | portable Rust core: codec, envelopes, features, checkpoints |
+| [crates/grizzbit](crates/grizzbit) | [Grizzbit](docs/grizzbit.md), the lossless chunk codec ([specification](docs/chunk-format.md)) |
+| [crates/morlet-core](crates/morlet-core) | portable Rust core: envelopes, features, checkpoints; re-exports the codec |
 | [tools](tools) | Parquet import, Python client, recording viewer, independent numerical reference |
 | [examples](examples) | sleep staging, notebooks and other worked examples |
 | [evaluation](evaluation) · [benchmarks](benchmarks) | frozen evaluations and workload benchmarks |

@@ -319,6 +319,67 @@ CREATE TYPE public.morlet_input_chunk AS (start_sample bigint,samples float8[]);
 
 -- One recording per batch keeps lock ordering explicit. Every element reuses the
 -- validated durable append path; a later error rolls back the entire statement.
+-- Lossless chunk shipping (#420), source side: a recording's stored chunks from from_sample on, as their encoded
+-- bytes, in order, at most max_chunks (1..1000). Encoded collections only; privileges and row security apply.
+CREATE FUNCTION public.morlet_encoded_chunks(collection regclass,recording_id text,from_sample bigint DEFAULT 0,
+  max_chunks integer DEFAULT 64)
+RETURNS TABLE(start_sample bigint,sample_count integer,encoded bytea)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE relations record;
+BEGIN
+  IF max_chunks NOT BETWEEN 1 AND 1000 OR from_sample<0 THEN
+    RAISE EXCEPTION 'max_chunks must be 1..1000 and from_sample nonnegative';
+  END IF;
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk shipping needs a collection with encoded chunks'; END IF;
+  RETURN QUERY EXECUTE format('SELECT c.start_sample,c.sample_count,c.encoded FROM %s c WHERE c.recording_id=$1
+    AND c.start_sample>=$2 ORDER BY c.start_sample LIMIT $3',relations.chunks) USING recording_id,from_sample,max_chunks;
+END $$;
+
+-- Lossless chunk shipping (#420), target side: appends a chunk that another MorletDB encoded, keeping its bytes.
+-- The chunk is decoded, and the samples go through the same steps as morlet_append_chunk (offset at the checkpoint,
+-- an identical replay is a no-op, different samples at a stored offset are refused, the ingest hold, the stream
+-- checkpoint, the chunk summary); the stored bytes are the given ones, which the chunk table's CHECK verifies by
+-- decoding them. Returns the recording's new end.
+CREATE FUNCTION public.morlet_append_encoded_chunk(collection regclass,recording_id text,start_sample bigint,
+  encoded bytea)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE state jsonb; samples float8[]; previous float8[]; result jsonb; relations record; updated_rows bigint;
+BEGIN
+  SELECT * INTO relations FROM public.morlet_stream_relations(collection);
+  IF NOT relations.encoded THEN RAISE EXCEPTION 'chunk shipping needs a collection with encoded chunks'; END IF;
+  samples:=public.morlet_decode_chunk(encoded);
+  PERFORM public.morlet_valid_chunk(samples);
+  EXECUTE format('SELECT checkpoint FROM %s WHERE recording_id=$1 FOR UPDATE',collection) INTO state USING recording_id;
+  IF state IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  EXECUTE format('SELECT %s FROM %s c WHERE c.recording_id=$1 AND c.start_sample=$2',relations.samples_expr,relations.chunks)
+    INTO previous USING recording_id,start_sample;
+  IF previous IS NOT NULL THEN
+    IF public.morlet_float8_le_bytes(previous) IS DISTINCT FROM public.morlet_float8_le_bytes(samples) THEN
+      RAISE EXCEPTION 'conflicting replay at chunk offset';
+    END IF;
+    RETURN (state->>'end')::bigint;
+  END IF;
+  PERFORM public.morlet_check_ingest_hold();
+  result:=public.morlet_chunk_step(state,start_sample,samples);
+  IF relations.summarized THEN
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded,summary) VALUES ($1,$2,$3,$4,
+      public.morlet_chunk_summary($5))',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),encoded,samples;
+  ELSE
+    EXECUTE format('INSERT INTO %s(recording_id,start_sample,sample_count,encoded) VALUES ($1,$2,$3,$4)',relations.chunks)
+      USING recording_id,start_sample,cardinality(samples),encoded;
+  END IF;
+  EXECUTE format('INSERT INTO %s(recording_id,start_sample,features)
+    SELECT $1,(s->>''start_sample'')::bigint,ARRAY(SELECT jsonb_array_elements_text(s->''features'')::float8)
+    FROM jsonb_array_elements($2->''segments'') s',relations.segments) USING recording_id,result;
+  EXECUTE format('UPDATE %s SET checkpoint=$2 WHERE recording_id=$1',collection)
+    USING recording_id,result->'checkpoint';
+  GET DIAGNOSTICS updated_rows = ROW_COUNT;
+  IF updated_rows<>1 THEN RAISE EXCEPTION 'checkpoint update was not permitted'; END IF;
+  RETURN (result->'checkpoint'->>'end')::bigint;
+END $$;
+
 CREATE FUNCTION public.morlet_append_chunks(collection regclass,recording_id text,inputs public.morlet_input_chunk[])
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE item public.morlet_input_chunk; sample_count bigint:=0; received bigint;
@@ -539,6 +600,17 @@ RETURNS TABLE(sample_count bigint,min float8,max float8,mean float8,rms float8)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE stats float8[];
 BEGIN
+  -- Fast path (#346): an interval shorter than a level-1 roll-up block (2^20 samples) cannot contain a whole roll-up
+  -- block, and without kept summaries (memory levels) no chunk is compacted, so the statistics are the chunk
+  -- aggregate of morlet_interval_buckets alone: the same rows in the same order, so the same result bit for bit.
+  -- morlet_interval_stats_fast resolves the tables through the system caches and keeps its prepared query per
+  -- session; it returns NULL for anything else (errors, missing or invisible samples, longer intervals, memory
+  -- levels), which takes the general path.
+  stats:=public.morlet_interval_stats_fast(collection::oid,source_recording_id,interval_start,interval_end);
+  IF stats IS NOT NULL THEN
+    RETURN QUERY SELECT stats[1]::bigint,stats[2],stats[3],stats[4],stats[5];
+    RETURN;
+  END IF;
   stats:=public.morlet_interval_buckets(collection,source_recording_id,interval_start,interval_end,1,'statistics');
   RETURN QUERY SELECT stats[3]::bigint,stats[4],stats[5],stats[6],stats[7];
 END $$;
@@ -619,9 +691,12 @@ END $$;
 -- (morlet_enable_rollups, #219), each part of the interval takes the coarsest stored roll-up that lies
 -- inside it and inside one bucket, then finer ones at the edges, then chunks: pieces are merged exactly,
 -- so the result is bitwise the same as from the chunks alone.
+-- jit=off (#340): the chunk query below reads a few hundred rows through the index, but the planner cannot know how
+-- many gaps it gets and estimates rows in proportion to the table, so on long recordings (about 10^9 samples) its
+-- cost crossed jit_above_cost and every call spent about 5 ms compiling a 0.1 ms query.
 CREATE FUNCTION public.morlet_interval_buckets(collection regclass,source_recording_id text,
   interval_start bigint,interval_end bigint,buckets integer,what text)
-RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+RETURNS float8[] LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog SET jit=off AS $$
 DECLARE source record; relations record; stats float8[]; covered float8:=0; i integer; mem record; src text;
   cut bigint; roll regclass; gaps int8multirange; lvl integer; r_start bigint[]:='{}'; r_count bigint[]:='{}';
   r_sum bytea[]:='{}'; picked record;
@@ -1137,15 +1212,37 @@ BEGIN
   -- The grid starts at 0 and its stride is fixed by the first build: the smallest positive stored start
   -- is the stride in use. Building on with another stride would report completion without the requested
   -- windows, or mix two grids, so it is an error.
+  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
   EXECUTE format('SELECT start_sample FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample>0
     ORDER BY start_sample LIMIT 1',rel) INTO hi USING recording_id,window_size;
   IF hi IS NOT NULL AND hi<>stride THEN
-    RAISE EXCEPTION 'envelopes of window % for recording % were built with stride %, not %',window_size,recording_id,hi,stride
-      USING HINT='Keep the stride, or delete this recording''s envelopes of this window size and build again.';
+    -- Episodic memory removes windows (level 1 and up), the first ones included (#441). The stored windows are
+    -- still this stride's grid when every one of them lies on it and every grid position without a window up to
+    -- the last one is a position the builder itself skips (out of search, or samples removed). Another stride's
+    -- grid always leaves such a position unexplained.
+    sup:=false;
+    IF mem.episodes IS NOT NULL THEN
+      EXECUTE format('WITH w AS (SELECT start_sample AS st,lag(start_sample,1,0::bigint) OVER (ORDER BY start_sample) AS prev
+            FROM %1$s WHERE recording_id=$1 AND window_size=$2),
+          gap AS (SELECT g FROM w,generate_series(w.prev+$3,w.st-$3,$3) g)
+        SELECT bool_and(w.st%%$3=0) AND NOT EXISTS (SELECT 1 FROM gap WHERE NOT (
+            (coalesce(int8range(g,g+$2) <@ (SELECT range_agg(int8range(o.start_sample,o.end_sample)) FROM %2$s o
+               WHERE o.recording_id=$1 AND o.level>=1 AND o.start_sample<g+$2 AND o.end_sample>g),false)
+             AND NOT EXISTS (SELECT 1 FROM %2$s o WHERE o.recording_id=$1 AND o.level=0
+               AND o.start_sample<g+$2 AND o.end_sample>g))
+            OR coalesce((SELECT sum(least(c.start_sample+c.sample_count,g+$2)-greatest(c.start_sample,g)) FROM %3$s c
+               WHERE c.recording_id=$1 AND c.start_sample<g+$2 AND c.start_sample+c.sample_count>g
+                 AND c.start_sample>g-32768),0)<$2))
+        FROM w',rel,mem.episodes,rels.chunks) INTO sup USING recording_id,window_size,stride;
+    END IF;
+    IF NOT coalesce(sup,false) THEN
+      RAISE EXCEPTION 'envelopes of window % for recording % were built with stride %, not %',window_size,recording_id,hi,stride
+        USING HINT='Keep the stride, or delete this recording''s envelopes of this window size and build again.';
+    END IF;
+    sup:=false;
   END IF;
   s:=CASE WHEN last IS NULL THEN 0 ELSE (last/stride+1)*stride END;
-  SELECT * INTO rels FROM public.morlet_stream_relations(collection);
-  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
   -- Encoded collections: batches of up to 256 windows from chunks decoded once
   -- (morlet_envelopes_from_chunks); the bytes equal the per-window path below.
   WHILE rels.encoded AND s+window_size<=recording_end AND written<max_windows LOOP
@@ -1259,6 +1356,71 @@ BEGIN
   RETURN NULL;
 END $$;
 
+-- A sample rate as the exact fraction the user meant (#343). Rates are float8, and 1/60 Hz is not exactly a float;
+-- computing with float8::numeric (15 digits: 0.0166666666666667, above 1/60) put a time exactly at a sample instant
+-- on the next sample. The rate's shortest decimal (float8::text) is read as the simplest fraction within 4e-16 of
+-- it whose denominator is at most 10^6 (1/60, 1/7, 2/3), else as that exact decimal (12345.678901234); a decimal
+-- with at most 6 places (25600, 0.5) is read as written without searching.
+CREATE FUNCTION public.morlet_rate_ratio(sample_rate_hz float8,OUT num numeric,OUT den numeric)
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE x numeric; a numeric; q numeric; h0 numeric:=0; h1 numeric:=1; k0 numeric:=1; k1 numeric:=0; t numeric;
+BEGIN
+  IF NOT (sample_rate_hz>0 AND sample_rate_hz<'Infinity') THEN
+    RAISE EXCEPTION 'sample rate must be positive and finite';
+  END IF;
+  x:=sample_rate_hz::text::numeric;
+  IF x=trunc(x) THEN                         -- an integer rate (25600, 64000)
+    num:=trunc(x); den:=1;
+    RETURN;
+  END IF;
+  IF scale(x)<=6 THEN                        -- a short decimal (25600, 44100, 0.5) is its own exact fraction
+    den:=power(10::numeric,scale(x))::numeric(1000,0);
+    num:=(x*den)::numeric(1000,0);
+    RETURN;
+  END IF;
+  a:=x;
+  FOR i IN 1..64 LOOP
+    q:=floor(a);
+    t:=h1; h1:=q*h1+h0; h0:=t;
+    t:=k1; k1:=q*k1+k0; k0:=t;
+    EXIT WHEN k1>1000000;
+    IF abs(h1/k1-x)<=x*0.0000000000000004 THEN
+      num:=h1; den:=k1;
+      RETURN;
+    END IF;
+    EXIT WHEN a=q;
+    a:=1/(a-q);
+  END LOOP;
+  den:=power(10::numeric,scale(x))::numeric(1000,0);
+  num:=(x*den)::numeric(1000,0);
+END $$;
+
+-- The first sample at or after (round_up) or the last sample at or before a time, ns after sample 0: exactly
+-- ceil/floor(ns * num / (den * 1e9)) for the rate's fraction num/den. The quotient is computed in numeric and then
+-- corrected by the exact products, so rounding in the division cannot move a boundary.
+CREATE FUNCTION public.morlet_ns_to_samples(ns numeric,sample_rate_hz float8,round_up boolean)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE r record; a numeric; b numeric; k numeric;
+BEGIN
+  SELECT * INTO r FROM public.morlet_rate_ratio(sample_rate_hz);
+  a:=ns*r.num; b:=r.den*1000000000;
+  IF round_up THEN
+    k:=ceil(a/b);
+    RETURN CASE WHEN (k-1)*b>=a THEN k-1 WHEN k*b<a THEN k+1 ELSE k END;
+  END IF;
+  k:=floor(a/b);
+  RETURN CASE WHEN (k+1)*b<=a THEN k+1 WHEN k*b>a THEN k-1 ELSE k END;
+END $$;
+
+-- The time of a sample in ns after sample 0 (exact for decimal rates and for fractions with a terminating decimal).
+CREATE FUNCTION public.morlet_samples_to_ns(samples numeric,sample_rate_hz float8)
+RETURNS numeric LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE SET search_path=pg_catalog AS $$
+DECLARE r record;
+BEGIN
+  SELECT * INTO r FROM public.morlet_rate_ratio(sample_rate_hz);
+  RETURN samples*1000000000*r.den/r.num;
+END $$;
+
 -- Time filters of the search functions as per-recording window-start bounds: windows of `window_size`
 -- samples of an eligible recording whose whole span lies in [from_ns, to_ns) start in [lo, hi]. Recordings
 -- without a start time (morlet_recording_start_ns) have no row, so time filters exclude them.
@@ -1269,11 +1431,14 @@ LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
   RETURN QUERY EXECUTE format('SELECT x.recording_id,x.lo,x.hi FROM (
       SELECT r.recording_id,
-        CASE WHEN $5 IS NULL THEN 0 ELSE greatest(0,ceil(($5-r.t)*r.sample_rate_hz::numeric/1000000000)) END::bigint AS lo,
+        CASE WHEN $5 IS NULL THEN 0 ELSE greatest(0,CASE WHEN (w.klo-1)*w.b>=w.alo THEN w.klo-1 WHEN w.klo*w.b<w.alo THEN w.klo+1 ELSE w.klo END) END::bigint AS lo,
         CASE WHEN $6 IS NULL THEN 9223372036854775807 ELSE least(9223372036854775807,
-          floor(($6-r.t)*r.sample_rate_hz::numeric/1000000000)-$7) END::bigint AS hi
+          CASE WHEN (w.khi+1)*w.b<=w.ahi THEN w.khi+1 WHEN w.khi*w.b>w.ahi THEN w.khi-1 ELSE w.khi END-$7) END::bigint AS hi
       FROM (SELECT c.recording_id,c.sample_rate_hz,public.morlet_recording_start_ns(c.metadata) AS t FROM %s c
             WHERE c.sample_rate_hz=$1 AND c.channel=$2 AND c.unit=$3 AND c.metadata @> $4) r
+        CROSS JOIN public.morlet_rate_ratio($1) q
+        CROSS JOIN LATERAL (SELECT v.alo,v.ahi,v.b,ceil(v.alo/v.b) AS klo,floor(v.ahi/v.b) AS khi FROM (SELECT
+          ($5-r.t)*q.num AS alo,($6-r.t)*q.num AS ahi,q.den*1000000000 AS b) v) w
       WHERE r.t IS NOT NULL) x WHERE x.hi>=x.lo',collection)
     USING sample_rate_hz,channel,unit,metadata_filter,from_ns,to_ns,window_size;
 END $$;
@@ -1292,7 +1457,7 @@ BEGIN
   IF t IS NULL THEN
     RAISE EXCEPTION 'before_only needs the query recording''s start time (metadata start_ns or start)';
   END IF;
-  RETURN t+interval_start::numeric*1000000000/sample_rate_hz::numeric;
+  RETURN t+public.morlet_samples_to_ns(interval_start,sample_rate_hz);
 END $$;
 
 -- Raises when more windows are eligible than max_candidates; returns the count otherwise.
@@ -1686,8 +1851,8 @@ BEGIN
     distance:=hit.distance; metadata:=hit.metadata;
     EXECUTE format('SELECT sample_rate_hz FROM %s WHERE recording_id=$1',collection) INTO rate USING hit.recording_id;
     t0:=public.morlet_recording_start_ns(hit.metadata);
-    start_utc:=to_timestamp((t0+hit.start_sample::numeric*1000000000/rate::numeric)/1000000000);
-    end_utc:=to_timestamp((t0+hit.end_sample::numeric*1000000000/rate::numeric)/1000000000);
+    start_utc:=to_timestamp((t0+public.morlet_samples_to_ns(hit.start_sample,rate))/1000000000);
+    end_utc:=to_timestamp((t0+public.morlet_samples_to_ns(hit.end_sample,rate))/1000000000);
     sample_count:=NULL; min:=NULL; max:=NULL; mean:=NULL; rms:=NULL; overview:=NULL;
     IF encoded THEN
       b:=public.morlet_interval_buckets(collection,hit.recording_id,hit.start_sample,hit.end_sample,1,'evidence');
@@ -1727,6 +1892,8 @@ BEGIN
     CHECK((kind=''event'')=(end_sample IS NULL)))',s,c||'_ctx',c);
   EXECUTE format('CREATE INDEX ON %I.%I(recording_id,key,start_sample)',s,c||'_ctx');
   EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_ctx');
+  -- morlet_add_context looks a batch up by its id on every call (#414)
+  EXECUTE format('CREATE INDEX ON %I.%I(batch_id)',s,c||'_ctx');
   EXECUTE format('CREATE TABLE %1$I.%2$I (
     segment_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     recording_id text NOT NULL REFERENCES %1$I.%3$I(recording_id) ON DELETE CASCADE,
@@ -1747,6 +1914,8 @@ BEGIN
     label text NOT NULL CHECK(label<>''''), note text NOT NULL DEFAULT '''',
     author text NOT NULL DEFAULT current_user, created_at timestamptz NOT NULL DEFAULT now(),
     retracted boolean NOT NULL DEFAULT false)',s,c||'_labels',c);
+  PERFORM public.morlet_label_glossary_table(collection);
+  PERFORM public.morlet_set_value_rules(collection,'simple-v2');
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
 END $$;
 
@@ -1762,6 +1931,54 @@ BEGIN
     RAISE EXCEPTION 'context is not enabled for this collection (morlet_enable_context)';
   END IF;
   RETURN NEXT;
+END $$;
+
+-- Adds the indexes that collections whose context was enabled before SQL 0.3.9 lack: an index on the context
+-- table's batch_id, which morlet_add_context uses on every call (without it, each call scans the whole context
+-- table; #414). Idempotent; returns the number of indexes created. Needs the right to create indexes on the table.
+CREATE FUNCTION public.morlet_index_context(collection regclass)
+RETURNS integer LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; n integer:=0;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF NOT EXISTS(SELECT 1 FROM pg_index i JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=i.indkey[0]
+      WHERE i.indrelid=rel.ctx AND i.indnatts=1 AND a.attname='batch_id') THEN
+    EXECUTE format('CREATE INDEX ON %s(batch_id)',rel.ctx);
+    n:=n+1;
+  END IF;
+  RETURN n;
+END $$;
+
+-- Value-comparison rules of a collection (study V2, #387): 'simple-v2' when the marker constraint
+-- morlet_value_rules_simple_v2 exists on its values table, else 'simple-v1'. Read from the catalog, so any role
+-- that may use the collection can read it. simple-v2 also treats a history median within two steps of a
+-- quantised history as zero; the stored values are the same under both.
+CREATE FUNCTION public.morlet_value_rules(collection regclass)
+RETURNS text LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT CASE WHEN EXISTS(SELECT 1 FROM pg_constraint k JOIN pg_class cl ON cl.oid=k.conrelid
+    WHERE k.conname='morlet_value_rules_simple_v2'
+      AND cl.relnamespace=(SELECT relnamespace FROM pg_class WHERE oid=collection)
+      AND cl.relname=(SELECT relname FROM pg_class WHERE oid=collection)||'_ctx_values')
+  THEN 'simple-v2' ELSE 'simple-v1' END
+$$;
+
+-- Sets a collection's value-comparison rules ('simple-v1' or 'simple-v2'); returns them. Needs the right to
+-- alter the values table (its owner). Collections whose context is enabled from SQL 0.3.9 on start with
+-- simple-v2; earlier ones keep simple-v1 until switched.
+CREATE FUNCTION public.morlet_set_value_rules(collection regclass,rules text)
+RETURNS text LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record;
+BEGIN
+  IF rules NOT IN ('simple-v1','simple-v2') THEN
+    RAISE EXCEPTION 'unknown value rules % (simple-v1 or simple-v2)',rules;
+  END IF;
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF rules='simple-v2' AND public.morlet_value_rules(collection)='simple-v1' THEN
+    EXECUTE format('ALTER TABLE %s ADD CONSTRAINT morlet_value_rules_simple_v2 CHECK (true)',rel.vals);
+  ELSIF rules='simple-v1' THEN
+    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT IF EXISTS morlet_value_rules_simple_v2',rel.vals);
+  END IF;
+  RETURN public.morlet_value_rules(collection);
 END $$;
 
 -- Serializes context writes (additions, revisions, segment builds) per recording, and additions per batch
@@ -1983,6 +2200,51 @@ BEGIN
   RETURN id;
 END $$;
 
+-- The label glossary of a collection (#333): what a label means, in which unit and from which source, so that an
+-- agent reading "not_sharp" knows it means flank wear above 0.2 mm, not the replacement limit. One row per label;
+-- a new definition replaces the old one and records who defined it and when. Collections whose context was enabled
+-- before SQL 0.3.9 get the table with their first definition.
+CREATE FUNCTION public.morlet_label_glossary_table(collection regclass)
+RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t regclass;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  IF t IS NULL THEN
+    EXECUTE format('CREATE TABLE %I.%I (
+      label text PRIMARY KEY CHECK(label<>''''),
+      definition text NOT NULL CHECK(definition<>''''),
+      unit text NOT NULL DEFAULT '''', source text NOT NULL DEFAULT '''',
+      defined_by text NOT NULL DEFAULT current_user, defined_at timestamptz NOT NULL DEFAULT now())',s,c||'_label_definitions');
+    t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  END IF;
+  RETURN t;
+END $$;
+
+CREATE FUNCTION public.morlet_define_label(collection regclass,label text,definition text,unit text DEFAULT '',
+  source text DEFAULT '')
+RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE t regclass;
+BEGIN
+  PERFORM public.morlet_context_relations(collection);
+  t:=public.morlet_label_glossary_table(collection);
+  EXECUTE format('INSERT INTO %s(label,definition,unit,source) VALUES ($1,$2,$3,$4)
+    ON CONFLICT (label) DO UPDATE SET definition=EXCLUDED.definition,unit=EXCLUDED.unit,source=EXCLUDED.source,
+      defined_by=current_user,defined_at=now()',t) USING label,definition,unit,source;
+END $$;
+
+-- The collection's label definitions; no rows when none was ever defined.
+CREATE FUNCTION public.morlet_label_definitions(collection regclass)
+RETURNS TABLE(label text,definition text,unit text,source text,defined_by text,defined_at timestamptz)
+LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; t regclass;
+BEGIN
+  SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
+  t:=to_regclass(format('%I.%I',s,c||'_label_definitions'));
+  IF t IS NULL THEN RETURN; END IF;
+  RETURN QUERY EXECUTE format('SELECT label,definition,unit,source,defined_by,defined_at FROM %s ORDER BY label',t);
+END $$;
+
 CREATE FUNCTION public.morlet_retract_label(collection regclass,label_id bigint)
 RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel record; n bigint;
@@ -2011,12 +2273,14 @@ BEGIN
   SELECT * INTO rel FROM public.morlet_context_relations(collection);
   IF cutoff_ns IS NOT NULL THEN
     -- Only segments that started before the cutoff on the absolute time axis
-    -- (acquisition origin + channel offset + sample time); others are excluded.
+    -- (acquisition origin + channel offset + sample time); others are excluded. Every history row has the rate $3,
+    -- so its exact fraction is computed once per query.
     SELECT * INTO acq FROM public.morlet_acquisition_relations(collection);
     before:=format(' AND EXISTS(SELECT 1 FROM %s ch JOIN %s a ON a.acquisition_id=ch.acquisition_id
         WHERE ch.recording_id=s.recording_id AND a.origin_utc IS NOT NULL
           AND extract(epoch FROM a.origin_utc)*1000000000+ch.offset_ns
-            +s.start_sample::numeric*1000000000/r.sample_rate_hz::numeric<%s)',acq.channels,acq.acq,cutoff_ns);
+            +s.start_sample::numeric*1000000000*(SELECT q.den FROM public.morlet_rate_ratio($3) q)
+              /(SELECT q.num FROM public.morlet_rate_ratio($3) q)<%s)',acq.channels,acq.acq,cutoff_ns);
   END IF;
   RETURN format('SELECT v.vals,s.segment_id,s.recording_id,s.start_sample,s.end_sample,s.occurrence%5$s FROM %1$s s JOIN %2$s v ON v.segment_id=s.segment_id AND v.representation=''simple-v1''
         JOIN %3$s r ON r.recording_id=s.recording_id JOIN %1$s qs ON qs.segment_id=$1
@@ -2063,14 +2327,15 @@ BEGIN
       k AS (SELECT generate_series(1,cardinality(public.morlet_simple_value_names())) AS ord),
       g AS (SELECT p.context,k.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[k.ord]) AS med,count(*) AS n
         FROM pop p CROSS JOIN k GROUP BY p.context,k.ord HAVING count(*)>=3),
-      lv AS (SELECT p.context,public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM pop p GROUP BY p.context),
+      lv AS (SELECT p.context,CASE WHEN $10=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+        ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT p2.vals[o] FROM pop p2 WHERE p2.context=p.context)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$10) END AS fl FROM pop p GROUP BY p.context),
       r AS (SELECT g.ord,percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(p.vals[g.ord]-g.med))/abs(g.med) AS rel
         FROM g JOIN lv ON lv.context=g.context JOIN pop p ON p.context=g.context WHERE abs(g.med)>lv.fl[g.ord]
         GROUP BY g.context,g.ord,g.med)
     SELECT array_agg(CASE WHEN m.rel IS NOT NULL THEN greatest(m.rel,$9) END ORDER BY k.ord)
       FROM k CROSS JOIN LATERAL (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY r.rel) AS rel FROM r WHERE r.ord=k.ord) m'
     INTO spreads USING q.segment_id,q.context,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
-      spread_floor;
+      spread_floor,public.morlet_value_rules(collection);
   RETURN spreads;
 END $$;
 
@@ -2148,7 +2413,8 @@ BEGIN
         percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[q.ord]) AS med,
         count(*) FILTER (WHERE h.vals[q.ord]<q.x) AS below,count(*) FILTER (WHERE h.vals[q.ord]=q.x) AS equal
       FROM q CROSS JOIN budget b LEFT JOIN hist h ON true GROUP BY q.name,q.ord,q.x,b.n),
-    lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
+    lv AS (SELECT CASE WHEN $12=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+      ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT h2.vals[o] FROM hist h2)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$12) END AS fl FROM hist h),
     sp AS (SELECT st.*,(SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY abs(h.vals[st.ord]-st.med)) FROM hist h) AS mad,
         $11[st.ord] AS spread,(SELECT lv.fl[st.ord] FROM lv) AS fl FROM st)
     SELECT name,x,n,CASE WHEN n>=$10 THEN med END,
@@ -2161,7 +2427,7 @@ BEGIN
         WHEN spread IS NULL THEN ''no_pooled_spread'' ELSE ''ok'' END,$7
     FROM sp ORDER BY ord'
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
-      q.vals,min_history,spreads;
+      q.vals,min_history,spreads,public.morlet_value_rules(collection);
 END $$;
 
 -- One row per segment comparison. score is the maximum relative deviation over
@@ -2221,11 +2487,11 @@ BEGIN
   -- into the plain maximum relative deviation over that set.
   unit_spreads:=ARRAY(SELECT CASE WHEN nm=ANY(score_values) THEN 1.0::float8 END
     FROM unnest(names) WITH ORDINALITY AS t(nm,o) ORDER BY o);
-  res:=public.morlet_calibrated_score(q.vals,flat,width,unit_spreads);
+  res:=public.morlet_calibrated_score_rules(q.vals,flat,width,unit_spreads,public.morlet_value_rules(collection));
   score:=res[1]; score_quantile:=res[2];
   IF res[3]>0 THEN top_value:=names[res[3]::integer]; top_relative_deviation:=score; END IF;
   spreads:=public.morlet_value_spreads(collection,q.segment_id,metadata_filter,exclude_labels,100000,0.01,cutoff);
-  calibrated_score:=(public.morlet_calibrated_score(q.vals,flat,width,spreads))[1];
+  calibrated_score:=(public.morlet_calibrated_score_rules(q.vals,flat,width,spreads,public.morlet_value_rules(collection)))[1];
   status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
   RETURN NEXT;
 END $$;
@@ -2277,18 +2543,25 @@ END $$;
 CREATE FUNCTION public.morlet_time_to_samples(sample_rate_hz float8,offset_ns bigint,t_start_ns bigint,t_end_ns bigint,
   OUT start_sample bigint,OUT end_sample bigint)
 LANGUAGE plpgsql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+DECLARE r record; b numeric; a numeric; k numeric;
 BEGIN
   IF NOT (sample_rate_hz>0 AND sample_rate_hz<'Infinity') OR t_end_ns<t_start_ns THEN
     RAISE EXCEPTION 'sample rate must be positive and t_end_ns >= t_start_ns';
   END IF;
-  start_sample:=greatest(0,ceil((t_start_ns-offset_ns)::numeric*sample_rate_hz::numeric/1000000000))::bigint;
-  end_sample:=greatest(0,ceil((t_end_ns-offset_ns)::numeric*sample_rate_hz::numeric/1000000000))::bigint;
+  SELECT * INTO r FROM public.morlet_rate_ratio(sample_rate_hz);
+  b:=r.den*1000000000;
+  a:=(t_start_ns-offset_ns)::numeric*r.num;
+  k:=ceil(a/b);
+  start_sample:=greatest(0,CASE WHEN (k-1)*b>=a THEN k-1 WHEN k*b<a THEN k+1 ELSE k END)::bigint;
+  a:=(t_end_ns-offset_ns)::numeric*r.num;
+  k:=ceil(a/b);
+  end_sample:=greatest(0,CASE WHEN (k-1)*b>=a THEN k-1 WHEN k*b<a THEN k+1 ELSE k END)::bigint;
 END $$;
 
 -- Acquisition time (ns, exact numeric) of a channel sample.
 CREATE FUNCTION public.morlet_sample_time_ns(sample_rate_hz float8,offset_ns bigint,sample bigint)
 RETURNS numeric LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
-  SELECT offset_ns+sample::numeric*1000000000/sample_rate_hz::numeric
+  SELECT offset_ns+public.morlet_samples_to_ns(sample,sample_rate_hz)
 $$;
 
 -- Creates an acquisition, or verifies that an identical one exists (returns false).
@@ -2501,8 +2774,7 @@ RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path
 DECLARE rel record; ch record; n bigint:=0;
 BEGIN
   SELECT * INTO rel FROM public.morlet_acquisition_relations(collection);
-  FOR ch IN EXECUTE format('SELECT c.recording_id,ceil(coalesce(c.offset_uncertainty_ns,0)::numeric*r.sample_rate_hz::numeric
-      /1000000000)::integer AS trim FROM %s c JOIN %s r ON r.recording_id=c.recording_id WHERE c.acquisition_id=$1
+  FOR ch IN EXECUTE format('SELECT c.recording_id,public.morlet_ns_to_samples(coalesce(c.offset_uncertainty_ns,0)::numeric,r.sample_rate_hz,true)::integer AS trim FROM %s c JOIN %s r ON r.recording_id=c.recording_id WHERE c.acquisition_id=$1
       ORDER BY c.role',rel.channels,collection) USING acquisition_id
   LOOP
     n:=n+public.morlet_build_context_segments(collection,ch.recording_id,keys,occurrence_keys,min_samples,ch.trim);
@@ -2552,7 +2824,8 @@ BEGIN
   END IF;
   RETURN QUERY EXECUTE format('WITH hist AS MATERIALIZED ('||history||'),
       med AS (SELECT o,percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[o]) AS m FROM hist h, unnest($10) o GROUP BY o),
-      lv AS (SELECT public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')])) AS fl FROM hist h),
+      lv AS (SELECT CASE WHEN $12=''simple-v1'' THEN public.morlet_simple_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]))
+        ELSE public.morlet_value_floors(percentile_cont(0.5) WITHIN GROUP (ORDER BY h.vals[array_position(public.morlet_simple_value_names(),''rms'')]),(SELECT array_agg(public.morlet_quantised_step(ARRAY(SELECT h2.vals[o] FROM hist h2)) ORDER BY o) FROM generate_series(1,cardinality(public.morlet_simple_value_names())) o),$12) END AS fl FROM hist h),
       d AS (SELECT h.segment_id,sqrt(avg(((($9)[med.o]-h.vals[med.o])/abs(med.m))^2)) AS dist
         FROM hist h CROSS JOIN med CROSS JOIN lv WHERE abs(med.m)>lv.fl[med.o] GROUP BY h.segment_id)
     SELECT h.segment_id,h.recording_id,h.start_sample,h.end_sample,h.occurrence,d.dist,h.vals,
@@ -2562,7 +2835,7 @@ BEGIN
     FROM hist h JOIN d ON d.segment_id=h.segment_id
     ORDER BY d.dist,h.recording_id,h.start_sample LIMIT $11',rel.labels)
     USING q.segment_id,match,qr.sample_rate_hz,qr.channel,qr.unit,metadata_filter,q.occurrence,exclude_labels,
-      q.vals,ords,top_k;
+      q.vals,ords,top_k,public.morlet_value_rules(collection);
 END $$;
 
 -- Level track (local-level Kalman filter, model local-level-v1) of one simple-v1 value
@@ -2927,7 +3200,9 @@ BEGIN
     IF ep.exempt AND target>1 THEN RAISE EXCEPTION 'episode % is exempt (event library) and stays at level 0 or 1',ep.episode_id; END IF;
     rep_id:=NULL; rep_level:=NULL; rep_cluster:=NULL;
     IF target=2 THEN
-      EXECUTE format('SELECT episode_id,level,cluster_id FROM %s WHERE episode_id=$1',mem.episodes)
+      -- FOR SHARE: a concurrent move of the representative waits for this transaction and then sees its dependent
+      -- (the check after the loop), and this one waits for a concurrent move of it and then sees its level (#440).
+      EXECUTE format('SELECT episode_id,level,cluster_id FROM %s WHERE episode_id=$1 FOR SHARE',mem.episodes)
         INTO rep_id,rep_level,rep_cluster USING (m->>'representative')::bigint;
       IF rep_id IS NULL OR rep_id=ep.episode_id OR rep_level>1 THEN
         RAISE EXCEPTION 'a level-2 move needs another episode at level 0 or 1 as representative';
@@ -3035,6 +3310,22 @@ BEGIN
     summaries_removed:=n_sum; derived_removed:=n_env; bytes_freed:=bytes; ledger_id:=lid;
     RETURN NEXT;
   END LOOP;
+  -- A level-2 episode keeps a real example (#440): after all moves of this call (overlaid on the stored levels, so a
+  -- dry run is checked the same way), no level-2 episode may name a representative above level 1. A failure rolls
+  -- the whole call back.
+  EXECUTE format('WITH mv AS (SELECT DISTINCT ON ((x->>''episode_id'')::bigint) (x->>''episode_id'')::bigint AS id,
+        (x->>''level'')::smallint AS lvl,(x->>''representative'')::bigint AS rep FROM jsonb_array_elements($1) x
+        ORDER BY (x->>''episode_id'')::bigint,(x->>''level'')::smallint DESC),
+      fin AS (SELECT e.episode_id,coalesce(mv.lvl,e.level) AS lvl,
+        CASE WHEN mv.id IS NULL THEN e.representative WHEN mv.lvl=2 THEN mv.rep END AS rep
+        FROM %s e LEFT JOIN mv ON mv.id=e.episode_id)
+    SELECT format(''episode %%s is represented by episode %%s, which would be at level %%s'',d.episode_id,d.rep,r.lvl)
+    FROM fin d JOIN fin r ON r.episode_id=d.rep WHERE d.lvl=2 AND r.lvl>1 ORDER BY d.episode_id LIMIT 1',mem.episodes)
+    INTO rep_cluster_text USING moves;
+  IF rep_cluster_text IS NOT NULL THEN
+    RAISE EXCEPTION 'a level-2 episode would lose its representative: %',rep_cluster_text
+      USING HINT='Move the episodes it represents to level 3 or 4 in the same call, or keep the representative at level 0 or 1.';
+  END IF;
 END $$;
 
 -- Per level: episodes and the samples they span.

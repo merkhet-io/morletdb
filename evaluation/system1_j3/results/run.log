@@ -1,0 +1,33 @@
+ 9:42  up 12 days, 18:38, 19 users, load averages: 2.82 3.31 3.22
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Fetching 5 files:  20%|██        | 1/5 [00:00<00:00,  6.91it/s]Fetching 5 files:  40%|████      | 2/5 [00:00<00:00,  6.79it/s]Fetching 5 files: 100%|██████████| 5/5 [01:12<00:00, 17.38s/it]Fetching 5 files: 100%|██████████| 5/5 [01:12<00:00, 14.59s/it]
+W1109 09:43:35.053000 79226 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+/Users/zin/sophia/morletdb-j3/evaluation/system1_j3/decide.py:99: RuntimeWarning: laya: this checkpoint ships invalid temperatures or values outside [0.5, 5]; using choice:11+=0.10058280825614929 -> 0.5. Treat confidence from the affected entries as uncalibrated.
+  ag = Agent(repo, device="cpu", revision=rev)
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files:  20%|██        | 1/5 [00:00<00:01,  2.22it/s]Fetching 5 files:  40%|████      | 2/5 [00:00<00:01,  2.32it/s]Fetching 5 files:  60%|██████    | 3/5 [00:01<00:00,  3.35it/s]Fetching 5 files:  80%|████████  | 4/5 [00:01<00:00,  3.46it/s]Fetching 5 files: 100%|██████████| 5/5 [01:15<00:00, 26.99s/it]Fetching 5 files: 100%|██████████| 5/5 [01:15<00:00, 15.12s/it]
+{"k": 3, "report": {"3": {"laya": {"room": 410, "max_state_tokens": 399, "fits": true}, "laya-td": {"room": 922, "max_state_tokens": 399, "fits": true}}}}
+wrote results/states.json: 64 states, k=3, max 1219 chars
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files: 100%|██████████| 5/5 [00:00<00:00, 1042.37it/s]
+W1109 09:44:56.186000 79345 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+/Users/zin/sophia/morletdb-j3/evaluation/system1_j3/decide.py:59: RuntimeWarning: laya: this checkpoint ships invalid temperatures or values outside [0.5, 5]; using choice:11+=0.10058280825614929 -> 0.5. Treat confidence from the affected entries as uncalibrated.
+  self.agent = Agent(repo, device="cpu", revision=rev)
+laya control PASS 10 / 12
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files: 100%|██████████| 5/5 [00:00<00:00, 1494.34it/s]
+W1109 09:45:00.054000 79346 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+/Users/zin/sophia/morletdb-j3/evaluation/system1_j3/decide.py:59: RuntimeWarning: laya: this checkpoint ships invalid temperatures or values outside [0.5, 5]; using choice:11+=0.10058280825614929 -> 0.5. Treat confidence from the affected entries as uncalibrated.
+  self.agent = Agent(repo, device="cpu", revision=rev)
+laya-td control PASS 11 / 12
+jev control PASS 12 / 12
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files: 100%|██████████| 5/5 [00:00<00:00, 1417.67it/s]
+W1109 09:45:06.075000 79353 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+/Users/zin/sophia/morletdb-j3/evaluation/system1_j3/decide.py:59: RuntimeWarning: laya: this checkpoint ships invalid temperatures or values outside [0.5, 5]; using choice:11+=0.10058280825614929 -> 0.5. Treat confidence from the affected entries as uncalibrated.
+  self.agent = Agent(repo, device="cpu", revision=rev)
+laya done 64 states; load 1.5 s
+Fetching 5 files:   0%|          | 0/5 [00:00<?, ?it/s]Fetching 5 files: 100%|██████████| 5/5 [00:00<00:00, 1078.01it/s]
+W1109 09:46:01.087000 79400 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+/Users/zin/sophia/morletdb-j3/evaluation/system1_j3/decide.py:59: RuntimeWarning: laya: this checkpoint ships invalid temperatures or values outside [0.5, 5]; using choice:11+=0.10058280825614929 -> 0.5. Treat confidence from the affected entries as uncalibrated.
+  self.agent = Agent(repo, device="cpu", revision=rev)
+laya-td done 64 states; load 2.3 s
+jev done 64 states; load 0.0 s
+ 9:47  up 12 days, 18:43, 19 users, load averages: 3.91 3.58 3.36
+NOT SUPPORTED

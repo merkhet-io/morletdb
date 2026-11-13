@@ -90,8 +90,8 @@ jobs:
             target
           key: core-${{ runner.os }}-rust-1.99.0-${{ hashFiles('Cargo.lock') }}
       - run: cargo fmt --all -- --check
-      - run: cargo test --locked -p morlet-core -p morlet-ffi
-      - run: cargo clippy --locked -p morlet-core -p morlet-ffi --all-targets -- -D warnings
+      - run: cargo test --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite
+      - run: cargo clippy --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite --all-targets -- -D warnings
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -100,6 +100,8 @@ jobs:
       - run: python -m pip install -r evaluation/requirements.txt
       - run: cargo build --locked --release -p morlet-core --example features
       - run: python -m unittest discover -s evaluation -p 'test_*.py'
+      - name: File format 1 reference reader against the corpus (standard library only)
+        run: python reference/python/test_reference.py
       - name: Wave-index candidate recall and temporal-control report
         run: python evaluation/wave_index.py --size 128 --output wave-index-output/report.json
       - uses: actions/upload-artifact@v4
@@ -180,6 +182,7 @@ jobs:
         run: |
           python -m pip install -r tools/mcp/requirements.txt
           python -m unittest discover -s tools/mcp -p 'test_*.py'
+          python tools/check_mcp_docs.py
       - name: Test the memory policy engine (no database)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s tools/memory -p 'test_*.py'
@@ -224,6 +227,11 @@ jobs:
         env:
           MORLET_STEWARD_TEST_DSN: host=localhost port=28817 dbname=postgres user=runner
         run: python -m unittest discover -s tools/steward -p 'test_steward_db.py'
+      - name: Test the MCP server against the database (search scope, decision state and log)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        env:
+          MORLET_MCP_TEST_DATABASE_URL: host=localhost port=28817 dbname=postgres user=runner
+        run: python -m unittest discover -s tools/mcp -p 'test_*.py'
       - name: Run bounded benchmark smoke test
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         env:
@@ -281,6 +289,9 @@ jobs:
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.6-alpha.1:refs/tags/v0.3.6-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.7-alpha.1:refs/tags/v0.3.7-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.8-alpha.1:refs/tags/v0.3.8-alpha.1
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.3.9-alpha.1:refs/tags/v0.3.9-alpha.1
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.3.11-alpha.1:refs/tags/v0.3.11-alpha.1
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.3.12-alpha.1:refs/tags/v0.3.12-alpha.1
       - name: PostgreSQL 17.11
         id: pg
         uses: ./.github/actions/pgrx-postgres
@@ -288,7 +299,7 @@ jobs:
           pg-minor: '17.11'
       # Releases up to 0.3.7-alpha.1 are pgrx 0.16.1 crates (Rust 1.91.1 from their rust-toolchain.toml): they build with
       # the cargo-pgrx of their own Cargo.lock, kept beside this branch's (tests/upgrade_from_release.sh, pgrx_for).
-      # 0.3.8-alpha.1 uses this branch's pgrx.
+      # 0.3.8-alpha.1 and later use this branch's pgrx.
       - name: Rust 1.91.1 for the released versions
         run: rustup toolchain install 1.91.1 --profile minimal
       - name: Restore cargo-pgrx 0.16.1
@@ -319,15 +330,15 @@ jobs:
         with:
           path: ${{ runner.temp }}/upgrade-releases
           key: upgrade-releases-${{ runner.os }}-${{ runner.arch }}-pg17.11-pgrx-${{ steps.pg.outputs.pgrx }}-${{ hashFiles('extensions/pg_morlet/tests/ci_local.sh') }}
-      - name: The 0.3.6 -> 0.3.7 update script is generated from the current sources
-        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.6--0.3.7.sql') != ''
+      - name: The 0.3.9 -> 0.3.10 update script is generated from the current sources
+        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.9--0.3.10.sql') != ''
         working-directory: extensions/pg_morlet
         run: |
-          if grep -q "^default_version = '0.3.7'" pg_morlet.control; then
+          if grep -q "^default_version = '0.3.10'" pg_morlet.control; then
             cargo pgrx schema pg17 --pg-config "$PG_CONFIG" -o "$RUNNER_TEMP/new.sql"
             python3 tests/gen_upgrade.py "$RUNNER_TEMP/new.sql" --check
           fi
-      - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1, v0.3.7-alpha.1 and v0.3.8-alpha.1
+      - name: Upgrade populated databases from v0.1.0-alpha.3, v0.2.0-alpha.1, v0.3.0-alpha.1, v0.3.1-alpha.1, v0.3.3-alpha.1, v0.3.5-alpha.1, v0.3.6-alpha.1, v0.3.7-alpha.1, v0.3.8-alpha.1, v0.3.9-alpha.1, v0.3.11-alpha.1 and v0.3.12-alpha.1
         env:
           MORLET_UPGRADE_CACHE: ${{ runner.temp }}/upgrade-releases
         run: |
@@ -406,8 +417,8 @@ jobs:
         run: |
           cargo pgrx install --release --pg-config "$PG_CONFIG"
           cargo pgrx start pg17
-      - name: Build the native decoder for compressed transfer (crates/morlet-ffi)
-        run: cargo build --locked --release -p morlet-ffi
+      - name: Build the native decoder for compressed transfer (crates/morlet-ffi) and the embedded edition (crates/morlet-sqlite)
+        run: cargo build --locked --release -p morlet-ffi -p morlet-sqlite
       - name: Build and install the SDK wheel
         run: |
           python -m pip install build==1.2.2.post1 matplotlib==3.9.2
@@ -420,11 +431,16 @@ jobs:
           MORLET_SDK_REQUIRE_DB: '1'
           MORLETDB_NATIVE_LIB: ${{ github.workspace }}/target/release/libmorlet_ffi.so
           MORLET_SDK_REQUIRE_NATIVE: '1'
+          MORLETDB_SQLITE_LIB: ${{ github.workspace }}/target/release/libmorlet_sqlite.so
+          MORLET_SDK_REQUIRE_SQLITE: '1'
         run: |
           python -c 'import morletdb, sys; assert "site-packages" in morletdb.__file__, morletdb.__file__'
-          python -m unittest -v test_offline test_native test_integration 2>&1 | tee unittest.log
+          python -m unittest -v test_offline test_native test_integration test_local test_transfer 2>&1 | tee unittest.log
           test "${PIPESTATUS[0]}" -eq 0
-          if grep -q -E "skipped '(set MORLET|server without|native decoder)" unittest.log; then echo "::error::SDK tests were skipped"; exit 1; fi
+          python ../../../reference/python/test_reference.py 2>&1 | tee reference.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "skipped" reference.log; then echo "::error::the reference reader was not checked against the library"; exit 1; fi
+          if grep -q -E "skipped '(set MORLET|server without|native decoder|morlet-sqlite)" unittest.log; then echo "::error::SDK tests were skipped"; exit 1; fi
       - name: Quickstart example
         env:
           DATABASE_URL: postgresql://runner@localhost:28817/postgres

@@ -1,0 +1,10 @@
+{
+ "point (correct)": "🖩 OUTPUT (Estimate: 1)\n⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 1)",
+ "acquisition only (correct)": "🖩 OUTPUT (Estimate: 295'077)\n🗐 TABLESCAN on b3_high (Estimate: 295'077)",
+ "range rows 0-2047 (correct)": "🖩 OUTPUT (Estimate: 46'105)\n⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)",
+ "full range (wrong)": "🖩 OUTPUT (Estimate: 46'105)\n⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)",
+ "full range, t only (wrong)": "🖩 OUTPUT (Estimate: 7'322'628)\n🗐 TABLESCAN on b3_high (Estimate: 7'322'628)",
+ "smallest_range_end_row_that_fails": 256001,
+ "plan_at_last_correct": "🖩 OUTPUT (Estimate: 46'105)\n⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)",
+ "plan_at_first_wrong": "🖩 OUTPUT (Estimate: 46'105)\n⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)"
+}

@@ -1,0 +1,13 @@
+2026-11-10T11:07:46
+11:07  up 13 days, 20:03, 19 users, load averages: 5.49 4.12 3.40
+ %CPU COMM
+141.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 30.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 20.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  4.0 claude
+  3.4 /Library/Application Support/JamfAppInstallers/com.jamf.appinstallers.Slack/Jamf App Installers.app/Contents/MacOS/Jamf App Installers
+2026-11-10T11:08:12
+11:08  up 13 days, 20:04, 19 users, load averages: 4.83 4.06 3.40

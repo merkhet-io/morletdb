@@ -1,0 +1,22 @@
+2026-11-09T06:26:59
+ 6:26  up 12 days, 15:23, 19 users, load averages: 4.21 4.75 3.75
+ %CPU COMM
+155.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 49.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  3.1 claude
+  1.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.9 bash
+  0.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.5 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  0.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-09T06:45:21
+ 6:45  up 12 days, 15:41, 19 users, load averages: 5.85 5.07 3.93
+ %CPU COMM
+140.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.2 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  3.7 /usr/libexec/airportd
+  2.2 /System/Library/CoreServices/powerd.bundle/powerd
+  1.9 /Applications/Docker.app/Contents/MacOS/com.docker.build
+  1.5 /usr/sbin/coreaudiod
+  1.1 /Applications/iTerm.app/Contents/MacOS/iTerm2

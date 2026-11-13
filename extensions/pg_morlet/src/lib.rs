@@ -1,7 +1,102 @@
 use pgrx::prelude::*;
-use pgrx::JsonB;
+use pgrx::{GucContext, GucFlags, GucRegistry, GucSetting, JsonB};
+use std::ffi::{CStr, CString};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pgrx::pg_module_magic!(name, version);
+
+/// `morlet.chunk_format`: the chunk coding every append path writes. `grizzbit1` (the default) writes chunk
+/// format versions 2 and 3, as every release does; `grizzbit21` (Grizzbit 2.1, study B6) keeps a version-5
+/// chunk where it is strictly smaller than the Grizzbit 1 chunk, which is stored otherwise, byte for byte. Reads
+/// decode every version whatever the setting. Registered (unlike `morlet.verify_appends`) so that `SHOW` and
+/// `current_setting` report the coding in use once the library is loaded; the SDK reads it to label the
+/// server's encoder.
+///
+/// A string, not an enum, so that a misspelt value can never quietly become the default: PostgreSQL keeps a
+/// value set before the library loads (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `-c`,
+/// `postgresql.conf`) as a placeholder, and when an enum is defined it only warns about an invalid placeholder
+/// and falls back to the default. A string keeps the value as written. Values set after the library loaded are
+/// refused by the check hook; a value carried over from before is refused by every encode (`chunk_format`), so
+/// the append fails and nothing is written.
+static CHUNK_FORMAT: GucSetting<Option<CString>> =
+    GucSetting::<Option<CString>>::new(Some(c"grizzbit1"));
+
+/// The values `morlet.chunk_format` accepts, for messages.
+const CHUNK_FORMATS: &str = "grizzbit1, grizzbit21";
+
+/// Set once `morlet.chunk_format` is defined; until then its check hook accepts every value, so placeholders
+/// carried over from before the library loaded keep their text (and fail at the first encode if invalid).
+static CHUNK_FORMAT_DEFINED: AtomicBool = AtomicBool::new(false);
+
+fn parse_chunk_format(value: Option<&CStr>) -> Option<morlet_core::rawcodec::Format> {
+    match value.map(CStr::to_bytes) {
+        Some(b"grizzbit1") => Some(morlet_core::rawcodec::Format::Grizzbit1),
+        Some(b"grizzbit21") => Some(morlet_core::rawcodec::Format::Grizzbit21),
+        _ => None,
+    }
+}
+
+/// Check hook of `morlet.chunk_format`: once the setting is defined, a value other than the two names is
+/// refused where it is set (`SET`, `ALTER DATABASE/ROLE/SYSTEM ... SET`, a configuration reload).
+#[pg_guard]
+unsafe extern "C-unwind" fn check_chunk_format(
+    newval: *mut *mut std::ffi::c_char,
+    _extra: *mut *mut std::ffi::c_void,
+    _source: pg_sys::GucSource::Type,
+) -> bool {
+    if !CHUNK_FORMAT_DEFINED.load(Ordering::Relaxed) {
+        return true;
+    }
+    // SAFETY: PostgreSQL passes a valid pointer to the new value, which is NULL or a NUL-terminated string.
+    let value = unsafe {
+        if newval.is_null() || (*newval).is_null() {
+            None
+        } else {
+            Some(CStr::from_ptr(*newval))
+        }
+    };
+    if parse_chunk_format(value).is_some() {
+        return true;
+    }
+    // SAFETY: called as a GUC check hook.
+    unsafe {
+        pgrx::guc::GucCheckError::default()
+            .with_hint(format!("Available values: {CHUNK_FORMATS}."))
+            .apply()
+    };
+    false
+}
+
+#[pg_guard]
+pub extern "C-unwind" fn _PG_init() {
+    // SAFETY: the check hook is guarded and only reads the value it is given.
+    unsafe {
+        GucRegistry::define_string_guc_with_hooks(
+            c"morlet.chunk_format",
+            c"Chunk coding of appends: grizzbit1 (the default) or grizzbit21 (keeps a version-5 chunk where strictly smaller).",
+            c"Reads decode every chunk format version whatever this setting (study B6, Grizzbit 2.1). Any other value makes appends fail.",
+            &CHUNK_FORMAT,
+            GucContext::Userset,
+            GucFlags::default(),
+            Some(check_chunk_format),
+            None,
+            None,
+        );
+    }
+    CHUNK_FORMAT_DEFINED.store(true, Ordering::Relaxed);
+}
+
+/// The chunk coding appends write now (`morlet.chunk_format`). Read in the backend's thread only. An invalid
+/// value (one set before the library loaded) is an error, so a misspelt setting never writes Grizzbit 1 quietly.
+fn chunk_format() -> morlet_core::rawcodec::Format {
+    let value = CHUNK_FORMAT.get();
+    parse_chunk_format(value.as_deref()).unwrap_or_else(|| {
+        pgrx::error!(
+            "invalid value for parameter \"morlet.chunk_format\": \"{}\"; available values: {CHUNK_FORMATS}",
+            value.as_deref().map(|v| v.to_string_lossy()).unwrap_or_default()
+        )
+    })
+}
 
 fn checked_samples(input: Vec<Option<f64>>) -> Vec<f64> {
     input
@@ -248,11 +343,62 @@ fn morlet_valid_chunk(samples: pgrx::Array<'_, f64>) -> bool {
     true
 }
 
-/// Lossless chunk encoding: integer grid + Rice coding, or raw float64 off the grid.
-#[pg_extern(immutable, parallel_safe, strict)]
+/// Lossless chunk encoding: integer grid + Rice coding, or raw float64 off the grid (Grizzbit 1), or, with
+/// `morlet.chunk_format` = grizzbit21, a version-5 chunk where that is strictly smaller. With
+/// `morlet.verify_appends` on (the default) the code is decoded again and compared bit for bit with the input,
+/// as in the batch append, so every append path that encodes through this function (`morlet_append_chunk`)
+/// proves at write time that what it stores decodes to its input.
+#[pg_extern(stable, parallel_safe, strict)]
 fn morlet_encode_chunk(samples: pgrx::Array<'_, f64>, sample_quantum: f64) -> Vec<u8> {
-    morlet_core::rawcodec::encode(&sample_slice(&samples), sample_quantum)
-        .unwrap_or_else(|e| pgrx::error!("{}", e))
+    let samples = sample_slice(&samples);
+    let bytes = encode_checked(&samples, sample_quantum, verify_appends(), chunk_format())
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    if let Ok(n) = i32::try_from(samples.len()) {
+        ENCODED_LAST.with(|last| *last.borrow_mut() = Some((bytes.clone(), n)));
+    }
+    bytes
+}
+
+/// Test only: when set, the next encoding returns the code of a different chunk (its first sample one unit in
+/// the last place away), so tests can show that the write-time check is what refuses it. Cleared when used.
+#[cfg(feature = "pg_test")]
+static WRONG_NEXT_CODE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Encodes one chunk in `format`; with `verify`, decodes the code again and compares it bit for bit with the
+/// input (a mismatch is an error, whichever coding was kept; there is no fallback to the other coding). Shared
+/// by `morlet_encode_chunk` and the batch append's `encode_chunks`.
+fn encode_checked(
+    c: &[f64],
+    quantum: f64,
+    verify: bool,
+    format: morlet_core::rawcodec::Format,
+) -> Result<Vec<u8>, String> {
+    let bytes =
+        morlet_core::rawcodec::encode_with(c, quantum, format).map_err(|e| e.to_string())?;
+    #[cfg(feature = "pg_test")]
+    let bytes = if WRONG_NEXT_CODE.swap(false, std::sync::atomic::Ordering::SeqCst) {
+        let mut other = c.to_vec();
+        other[0] = f64::from_bits(other[0].to_bits() ^ 1);
+        match format {
+            // With Grizzbit 2.1 the wrong code is a version-5 chunk, so the test shows that the check covers it.
+            morlet_core::rawcodec::Format::Grizzbit21 => {
+                morlet_core::rawcodec::encode_version5(&other, quantum)
+                    .map_err(|e| e.to_string())?
+                    .ok_or("no version-5 coding for the test's samples")?
+            }
+            _ => morlet_core::rawcodec::encode_with(&other, quantum, format)
+                .map_err(|e| e.to_string())?,
+        }
+    } else {
+        bytes
+    };
+    if verify {
+        let back = morlet_core::rawcodec::decode(&bytes).map_err(|e| e.to_string())?;
+        if back.len() != c.len() || back.iter().zip(c).any(|(a, b)| a.to_bits() != b.to_bits()) {
+            return Err("encoded chunk does not decode to its input samples".into());
+        }
+    }
+    Ok(bytes)
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -627,6 +773,34 @@ fn morlet_calibrated_score(
     width: i32,
     spreads: Vec<Option<f64>>,
 ) -> Vec<Option<f64>> {
+    calibrated_score(
+        query,
+        history,
+        width,
+        spreads,
+        morlet_core::values::RULES_V1,
+    )
+}
+
+/// morlet_calibrated_score under a value-rules version (simple-v1 or simple-v2, study V2, #387).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_calibrated_score_rules(
+    query: Vec<Option<f64>>,
+    history: Vec<Option<f64>>,
+    width: i32,
+    spreads: Vec<Option<f64>>,
+    rules: &str,
+) -> Vec<Option<f64>> {
+    calibrated_score(query, history, width, spreads, rules)
+}
+
+fn calibrated_score(
+    query: Vec<Option<f64>>,
+    history: Vec<Option<f64>>,
+    width: i32,
+    spreads: Vec<Option<f64>>,
+    rules: &str,
+) -> Vec<Option<f64>> {
     let q = checked_samples(query);
     let flat = checked_samples(history);
     let w = width as usize;
@@ -643,7 +817,15 @@ fn morlet_calibrated_score(
         } else {
             (rms[n / 2 - 1] + rms[n / 2]) / 2.0
         };
-        morlet_core::values::negligible_floors(level).to_vec()
+        let steps: Vec<Option<f64>> = (0..w)
+            .map(|i| {
+                let col: Vec<f64> = rows.iter().map(|r| r[i]).collect();
+                morlet_core::values::quantised_step(&col)
+            })
+            .collect();
+        morlet_core::values::rule_floors(level, &steps, rules)
+            .unwrap_or_else(|e| pgrx::error!("{}", e))
+            .to_vec()
     } else {
         Vec::new()
     };
@@ -679,6 +861,24 @@ fn morlet_simple_value_floors(level: f64) -> Vec<f64> {
     morlet_core::values::negligible_floors(level).to_vec()
 }
 
+/// The step of a quantised history of one value (study V2, #387): the smallest gap between distinct
+/// values when every gap is an integer multiple of it, else NULL. NULL elements are ignored.
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_quantised_step(values: Vec<Option<f64>>) -> Option<f64> {
+    let v: Vec<f64> = values.into_iter().flatten().collect();
+    morlet_core::values::quantised_step(&v)
+}
+
+/// Per simple-v1 value, the largest history median treated as zero under a value-rules version:
+/// simple-v1 as morlet_simple_value_floors; simple-v2 also within two steps of a quantised history
+/// (`steps`, one per value, from morlet_quantised_step; NULL where the history is not quantised).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_value_floors(level: f64, steps: Vec<Option<f64>>, rules: &str) -> Vec<f64> {
+    morlet_core::values::rule_floors(level, &steps, rules)
+        .unwrap_or_else(|e| pgrx::error!("{}", e))
+        .to_vec()
+}
+
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_simple_values_version() -> &'static str {
     morlet_core::values::VALUES_VERSION
@@ -691,6 +891,12 @@ thread_local! {
     /// `morlet.verify_appends` on, already decoded and compared bit for bit with their input. Every other
     /// insert or update is decoded in full. Each entry is used once; the list is replaced by the next batch.
     static ENCODED_HERE: std::cell::RefCell<Vec<(Vec<u8>, i32)>> = const { std::cell::RefCell::new(Vec::new()) };
+    /// The chunk this backend encoded in its latest `morlet_encode_chunk` call, with its sample count: the
+    /// single-chunk append (`morlet_append_chunk`) inserts it in the same statement, so the CHECK constraint can
+    /// skip its decode as for a batch's chunks (#366: with `morlet.verify_appends` on, the chunk was just decoded
+    /// and compared bit for bit, and decoding it a second time cost the single-chunk path about 12% of a load).
+    /// Used once; replaced by the next call.
+    static ENCODED_LAST: std::cell::RefCell<Option<(Vec<u8>, i32)>> = const { std::cell::RefCell::new(None) };
 }
 
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -701,6 +907,14 @@ fn morlet_valid_encoded_chunk(encoded: &[u8], sample_count: i32) -> bool {
             .iter()
             .position(|(bytes, n)| *n == sample_count && bytes.as_slice() == encoded);
         found.map(|i| list.swap_remove(i)).is_some()
+    }) || ENCODED_LAST.with(|last| {
+        let mut last = last.borrow_mut();
+        let hit =
+            matches!(&*last, Some((bytes, n)) if *n == sample_count && bytes.as_slice() == encoded);
+        if hit {
+            *last = None;
+        }
+        hit
     });
     if known {
         return true;
@@ -751,21 +965,23 @@ fn encode_threads() -> usize {
 
 /// `morlet.verify_appends` (on/off, default on): after encoding, decode each chunk of a batch again and
 /// compare it bit for bit with its input samples (I1, #233). Off relies on the codec's tests instead.
+///
+/// Not registered: PostgreSQL keeps it as a placeholder string however it is set (`SET`, `ALTER DATABASE/ROLE ...
+/// SET`, `postgresql.conf`, `-c`), before or after the library loads, and it is read here on every encode. So an
+/// invalid value never falls back to a default: every append fails, naming the value.
 fn verify_appends() -> bool {
     // SAFETY: GetConfigOption returns NULL or a NUL-terminated string valid until the setting changes.
     let raw = unsafe { pg_sys::GetConfigOption(c"morlet.verify_appends".as_ptr(), true, false) };
     if raw.is_null() {
         return true;
     }
-    match unsafe { std::ffi::CStr::from_ptr(raw) }
-        .to_string_lossy()
-        .trim()
-        .to_ascii_lowercase()
-        .as_str()
-    {
+    let text = unsafe { std::ffi::CStr::from_ptr(raw) }.to_string_lossy();
+    match text.trim().to_ascii_lowercase().as_str() {
         "" | "on" | "true" | "yes" | "1" => true,
         "off" | "false" | "no" | "0" => false,
-        _ => pgrx::error!("morlet.verify_appends must be on or off"),
+        _ => pgrx::error!(
+            "invalid value for parameter \"morlet.verify_appends\": \"{text}\"; available values: on, off"
+        ),
     }
 }
 
@@ -777,24 +993,10 @@ type ChunkCode = Option<Result<Vec<u8>, String>>;
 /// workers run only `morlet_core` code (no PostgreSQL calls, no PostgreSQL memory) and are started with every
 /// signal blocked, so PostgreSQL's signal handlers keep running in the backend's own thread.
 fn encode_chunks(chunks: &[&[f64]], quantum: f64, verify: bool) -> Vec<ChunkCode> {
+    let format = chunk_format();
     let one = move |c: &[f64]| -> ChunkCode {
         morlet_core::validate(c).ok()?;
-        Some(
-            morlet_core::rawcodec::encode(c, quantum)
-                .map_err(|e| e.to_string())
-                .and_then(|bytes| {
-                    if verify {
-                        let back =
-                            morlet_core::rawcodec::decode(&bytes).map_err(|e| e.to_string())?;
-                        if back.len() != c.len()
-                            || back.iter().zip(c).any(|(a, b)| a.to_bits() != b.to_bits())
-                        {
-                            return Err("encoded chunk does not decode to its input samples".into());
-                        }
-                    }
-                    Ok(bytes)
-                }),
-        )
+        Some(encode_checked(c, quantum, verify, format))
     };
     on_threads(chunks, encode_threads(), "morlet-encode", |c| one(c))
 }
@@ -883,7 +1085,7 @@ const DECODE_PARALLEL_MIN: usize = 8;
 /// and compared bit for bit with its input. The encoded chunks are remembered for the chunk table's CHECK
 /// constraint, which then skips its own decode for exactly these bytes (`ENCODED_HERE`).
 #[allow(clippy::type_complexity)]
-#[pg_extern(immutable, parallel_safe, strict)]
+#[pg_extern(stable, parallel_safe, strict)]
 fn morlet_chunk_batch(
     checkpoint: JsonB,
     start_sample: i64,
@@ -1513,6 +1715,125 @@ fn morlet_interval_stats_final(mut state: pgrx::Internal) -> Vec<f64> {
     out
 }
 
+/// A prepared interval-statistics query per collection, kept for the backend's lifetime (#346).
+struct StatsPlan {
+    nsp: pg_sys::Oid,
+    relname: String,
+    chunks: pg_sys::Oid,
+    summarized: bool,
+    plan: pgrx::spi::OwnedPreparedStatement,
+}
+
+thread_local! {
+    static STATS_PLANS: std::cell::RefCell<std::collections::HashMap<u32, StatsPlan>> =
+        std::cell::RefCell::new(std::collections::HashMap::new());
+}
+
+/// Statistics `[count, min, max, mean, rms]` of an interval shorter than a level-1 roll-up block (2^20 samples) on a
+/// collection without kept summaries, or NULL when that fast path does not apply (the caller then takes the general
+/// path, which also raises every error). The chunk aggregate of `morlet_interval_buckets` over the same rows in the
+/// same order, so the same result bit for bit; the collection's tables are resolved through the system caches and
+/// the query is prepared once per backend and collection (PostgreSQL re-plans it when a table changes), so a call
+/// costs no catalog query and no planning. Runs as the caller: privileges and row security apply.
+#[pg_extern(stable)]
+fn morlet_interval_stats_fast(
+    collection: pg_sys::Oid,
+    source_recording_id: &str,
+    interval_start: i64,
+    interval_end: i64,
+) -> Option<Vec<f64>> {
+    use std::ffi::{CStr, CString};
+    if interval_start < 0
+        || interval_end <= interval_start
+        || interval_end - interval_start >= 1 << 20
+    {
+        return None;
+    }
+    let (nsp, relname) = unsafe {
+        let name = pg_sys::get_rel_name(collection);
+        if name.is_null() {
+            return None;
+        }
+        (
+            pg_sys::get_rel_namespace(collection),
+            CStr::from_ptr(name).to_string_lossy().into_owned(),
+        )
+    };
+    let relid = |suffix: &str| -> pg_sys::Oid {
+        let n = CString::new(format!("{relname}{suffix}")).unwrap();
+        unsafe { pg_sys::get_relname_relid(n.as_ptr(), nsp) }
+    };
+    let chunks = relid("_chunks");
+    if chunks == pg_sys::InvalidOid || relid("_kept_summaries") != pg_sys::InvalidOid {
+        return None;
+    }
+    let has = |att: &str| -> bool {
+        let a = CString::new(att).unwrap();
+        unsafe { pg_sys::SearchSysCacheExistsAttName(chunks, a.as_ptr()) }
+    };
+    if !has("encoded") {
+        return None;
+    }
+    let summarized = has("summary");
+    let key = collection.to_u32();
+    let row = Spi::connect(|client| {
+        STATS_PLANS.with(|plans| {
+            let mut plans = plans.borrow_mut();
+            // The plan names the tables, so a rename, a re-created chunks table or a new summary column rebuilds it.
+            let stale = plans.get(&key).is_none_or(|p| {
+                p.nsp != nsp || p.relname != relname || p.chunks != chunks || p.summarized != summarized
+            });
+            if stale {
+                let quote = |s: &str| -> String {
+                    let c = CString::new(s).unwrap();
+                    unsafe { CStr::from_ptr(pg_sys::quote_identifier(c.as_ptr())).to_string_lossy().into_owned() }
+                };
+                let schema = unsafe { CStr::from_ptr(pg_sys::get_namespace_name(nsp)).to_string_lossy().into_owned() };
+                let (s, r) = (quote(&schema), quote(&relname));
+                let c = quote(&format!("{relname}_chunks"));
+                let sm = if summarized { "c.summary" } else { "NULL::bytea" };
+                let q = format!(
+                    "SELECT (SELECT (r.checkpoint->>'end')::bigint FROM {s}.{r} r WHERE r.recording_id=$1),
+                       (SELECT public.morlet_interval_stats_agg(
+                          CASE WHEN {sm} IS NULL OR c.start_sample<$2 OR c.start_sample+c.sample_count>$3 THEN c.encoded END,
+                          {sm},c.start_sample,c.sample_count,$2,$3,1 ORDER BY c.start_sample)
+                        FROM {s}.{c} c WHERE c.recording_id=$1 AND c.start_sample<$3 AND c.start_sample>$2-32768
+                          AND c.start_sample+c.sample_count>$2)"
+                );
+                let plan = client
+                    .prepare(
+                        q.as_str(),
+                        &[
+                            PgOid::BuiltIn(PgBuiltInOids::TEXTOID),
+                            PgOid::BuiltIn(PgBuiltInOids::INT8OID),
+                            PgOid::BuiltIn(PgBuiltInOids::INT8OID),
+                        ],
+                    )?
+                    .keep();
+                plans.insert(key, StatsPlan { nsp, relname: relname.clone(), chunks, summarized, plan });
+            }
+            let p = plans.get(&key).unwrap();
+            client
+                .select(
+                    &p.plan,
+                    Some(1),
+                    &[source_recording_id.into(), interval_start.into(), interval_end.into()],
+                )?
+                .first()
+                .get_two::<i64, Vec<f64>>()
+        })
+    })
+    .unwrap_or_else(|e| pgrx::error!("{}", e));
+    let (Some(end), Some(stats)) = row else {
+        return None;
+    };
+    if interval_end > end || stats.len() != 7 || stats[2] != (interval_end - interval_start) as f64
+    {
+        return None;
+    }
+    Some(stats[2..7].to_vec())
+}
+
 /// Exact merge of chunk summaries (version 1) and roll-ups (version 2) into one roll-up (#219), in any order.
 #[pg_extern(immutable, parallel_safe)]
 fn morlet_rollup_step(state: Option<Vec<u8>>, summary: Option<&[u8]>) -> Option<Vec<u8>> {
@@ -1899,7 +2220,41 @@ mod tests {
             SELECT count(*) FROM h a JOIN h b ON a.start_sample<b.start_sample AND b.start_sample<a.end_sample"#).unwrap(), Some(0));
     }
 
-    #[pg_test(error = "sample_rate_hz must be finite and in (0,200000]")]
+    /// #342: recordings without feature extraction accept rates up to 100 MHz, and time conversion stays exact there.
+    #[pg_test]
+    fn raw_only_recordings_accept_mhz_rates() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','mhz');
+             SELECT morlet_start_recording('mhz',r,f,'ae','V','{\"start_ns\": 1767225600000000000}',512,256,'zscore','none')
+               FROM (VALUES ('a',1000000.0),('b',2500000.0),('c',3125000.0),('d',100000000.0)) v(r,f);
+             SELECT morlet_append_chunks_raw('mhz',r,0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(1,100000) i)),4096)
+               FROM unnest(ARRAY['a','b','c','d']) r;",
+        )
+        .unwrap();
+        // sample k of a recording at rate f starts at k * 1e9 / f ns after its start; at 100 MHz that is 10 ns per sample
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT sample_count FROM morlet_interval_stats('mhz','d',0,100000)"
+            )
+            .unwrap(),
+            Some(100000)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT public.morlet_samples_to_ns(99999, 100000000.0)::bigint")
+                .unwrap(),
+            Some(999990)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT public.morlet_samples_to_ns(5, 3125000.0)::bigint")
+                .unwrap(),
+            Some(1600)
+        );
+    }
+    #[pg_test(error = "sample_rate_hz must be finite and in (0,100000000]")]
+    fn raw_only_recordings_refuse_rates_above_100_mhz() {
+        Spi::run("SELECT morlet_create_stream_collection('public','raw_fast'); SELECT morlet_start_recording('raw_fast','A',100000001,'x','g','{}',512,256,'zscore','none')").unwrap();
+    }
+    #[pg_test(error = "sample_rate_hz must be finite and in (0,100000000]")]
     fn raw_only_recordings_validate_rate() {
         Spi::run("SELECT morlet_create_stream_collection('public','raw_only_bad'); SELECT morlet_start_recording('raw_only_bad','A',0,'x','g','{}',512,256,'zscore','none')").unwrap();
     }
@@ -2480,6 +2835,185 @@ END $$"#).unwrap();
     }
 
     #[pg_test]
+    fn value_rules_v2_treat_a_quantised_near_zero_median_as_zero() {
+        // Study V2 S1 (#387): p75 histories of 0, -q and -2q steps (median -q/2), a segment at 0.
+        Spi::run("SELECT morlet_create_stream_collection('public','qz')").unwrap();
+        Spi::run("SELECT morlet_enable_context('qz')").unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_value_rules('qz')")
+                .unwrap()
+                .as_deref(),
+            Some("simple-v2")
+        );
+        // kind 0: 30% zeros, rest -q (p75 0); kind 1: 20% 0, 30% -q, 50% -2q (p75 -q); kind 2: p75 -2q
+        for (part, kind) in [(1, 0), (2, 1), (3, 2), (4, 0), (5, 1), (6, 0), (7, 0)] {
+            let rid = format!("p{part}");
+            Spi::run(&format!("SELECT morlet_start_recording('qz','{rid}',1000,'acc','g','{{}}',512,256,'zscore','none',1)")).unwrap();
+            let expr = match kind {
+                0 => "CASE WHEN i < 300 THEN 0 ELSE -0.0383 END",
+                1 => "CASE WHEN i < 200 THEN 0 WHEN i < 500 THEN -0.0383 ELSE -2 * 0.0383 END",
+                _ => "CASE WHEN i < 100 THEN 0 WHEN i < 200 THEN -0.0383 ELSE -2 * 0.0383 END",
+            };
+            Spi::run(&format!("SELECT morlet_append_chunk('qz','{rid}',0,ARRAY(SELECT ({expr})::float8 FROM generate_series(0,999) i))")).unwrap();
+            Spi::run(&format!("SELECT morlet_add_context('qz','b-{rid}','[{{\"recording_id\":\"{rid}\",\"key\":\"machine\",\"value\":\"M\",\"start_sample\":0,\"end_sample\":1000}},{{\"recording_id\":\"{rid}\",\"key\":\"part\",\"value\":{part},\"start_sample\":0,\"end_sample\":1000}}]')")).unwrap();
+            Spi::run(&format!(
+                "SELECT morlet_build_context_segments('qz','{rid}',ARRAY['machine'],ARRAY['part'])"
+            ))
+            .unwrap();
+            Spi::run(&format!("SELECT morlet_build_context_values('qz','{rid}')")).unwrap();
+        }
+        let q = "(SELECT segment_id FROM qz_ctx_segments WHERE recording_id='p7')";
+        let p75 = |col: &str| {
+            Spi::get_one::<String>(&format!("SELECT {col}::text FROM morlet_compare_to_history('qz',{q},min_history=>3) WHERE value_name='p75'")).unwrap()
+        };
+        let others = format!("SELECT string_agg(value_name||'='||coalesce(relative_deviation::text,'-'),',' ORDER BY value_name) FROM morlet_compare_to_history('qz',{q},min_history=>3) WHERE value_name IN ('std','rms','kurtosis','crest')");
+        // simple-v2: the near-zero median is zero
+        assert_eq!(p75("status").as_deref(), Some("zero_median"));
+        assert_eq!(p75("relative_deviation"), None);
+        let v2_others = Spi::get_one::<String>(&others).unwrap();
+        // simple-v1: the same history gives a relative deviation of exactly 1 (the #387 artefact)
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_set_value_rules('qz','simple-v1')")
+                .unwrap()
+                .as_deref(),
+            Some("simple-v1")
+        );
+        assert_eq!(p75("relative_deviation").as_deref(), Some("1"));
+        // V2 S2: values that are not quantised compare exactly as before
+        assert_eq!(Spi::get_one::<String>(&others).unwrap(), v2_others);
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_set_value_rules('qz','simple-v2')")
+                .unwrap()
+                .as_deref(),
+            Some("simple-v2")
+        );
+        assert_eq!(
+            Spi::get_one::<f64>(
+                "SELECT morlet_quantised_step(ARRAY[0,-0.0383,-2*0.0383,0]::float8[])"
+            )
+            .unwrap(),
+            Some(0.0383)
+        );
+        assert_eq!(
+            Spi::get_one::<f64>("SELECT morlet_quantised_step(ARRAY[0.1,0.25,0.31]::float8[])")
+                .unwrap(),
+            None
+        );
+    }
+
+    #[pg_test]
+    fn context_batch_lookup_has_an_index() {
+        // #414: morlet_add_context looks a batch up by its id; without an index every call scans the table.
+        Spi::run("SELECT morlet_create_stream_collection('public','bix')").unwrap();
+        Spi::run("SELECT morlet_enable_context('bix')").unwrap();
+        let indexed = "SELECT count(*) FROM pg_index i JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=i.indkey[0] WHERE i.indrelid='bix_ctx'::regclass AND i.indnatts=1 AND a.attname='batch_id'";
+        assert_eq!(Spi::get_one::<i64>(indexed).unwrap(), Some(1));
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_index_context('bix')").unwrap(),
+            Some(0)
+        );
+        // a collection whose context predates the index: morlet_index_context adds it, once
+        let name = Spi::get_one::<String>("SELECT c.relname::text FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=i.indkey[0] WHERE i.indrelid='bix_ctx'::regclass AND i.indnatts=1 AND a.attname='batch_id'").unwrap().unwrap();
+        Spi::run(&format!("DROP INDEX public.{name}")).unwrap();
+        assert_eq!(Spi::get_one::<i64>(indexed).unwrap(), Some(0));
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_index_context('bix')").unwrap(),
+            Some(1)
+        );
+        assert_eq!(
+            Spi::get_one::<i32>("SELECT morlet_index_context('bix')").unwrap(),
+            Some(0)
+        );
+        assert_eq!(Spi::get_one::<i64>(indexed).unwrap(), Some(1));
+    }
+
+    #[pg_test]
+    fn label_glossary_defines_replaces_and_reads() {
+        // #333: a label's meaning, unit and source, so an agent does not guess what "not_sharp" means.
+        Spi::run("SELECT morlet_create_stream_collection('public','gl')").unwrap();
+        Spi::run("SELECT morlet_enable_context('gl')").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_label_definitions('gl')").unwrap(),
+            Some(0)
+        );
+        Spi::run("SELECT morlet_define_label('gl','not_sharp','flank wear above the C1 limit','mm','C1 protocol')").unwrap();
+        Spi::run("SELECT morlet_define_label('gl','not_sharp','flank wear VB above 0.2','mm','C1 protocol, section 3')").unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT label||'|'||definition||'|'||unit||'|'||source FROM morlet_label_definitions('gl')").unwrap().as_deref(),
+            Some("not_sharp|flank wear VB above 0.2|mm|C1 protocol, section 3")
+        );
+        // a collection whose context predates the glossary gets the table with its first definition
+        Spi::run("DROP TABLE public.gl_label_definitions").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_label_definitions('gl')").unwrap(),
+            Some(0)
+        );
+        Spi::run("SELECT morlet_define_label('gl','worn','VB at least 100','um')").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_label_definitions('gl')").unwrap(),
+            Some(1)
+        );
+    }
+
+    #[pg_test]
+    fn chunks_ship_byte_for_byte() {
+        // #420: chunks encoded by one collection are appended to another unchanged.
+        Spi::run("SELECT morlet_create_stream_collection('public','shsrc')").unwrap();
+        Spi::run("SELECT morlet_create_stream_collection('public','shdst')").unwrap();
+        Spi::run("SELECT morlet_enable_chunk_summaries('shdst')").unwrap();
+        Spi::run("SELECT morlet_start_recording('shsrc','r',1000,'acc','g','{}',512,256,'zscore','none',0.001)").unwrap();
+        Spi::run("SELECT morlet_start_recording('shdst','r',1000,'acc','g','{}',512,256,'zscore','none',0.001)").unwrap();
+        Spi::run("SELECT morlet_append_chunks_raw('shsrc','r',0,morlet_float8_le_bytes(ARRAY(SELECT round(sin(i/7.0)*1000)/1000 FROM generate_series(0,9999) i)),4000)").unwrap();
+        let ship = "SELECT max(morlet_append_encoded_chunk('shdst','r',c.start_sample,c.encoded) ORDER BY c.start_sample) FROM morlet_encoded_chunks('shsrc','r',0,100) c";
+        assert_eq!(Spi::get_one::<i64>(ship).unwrap(), Some(10000));
+        let bytes = |c: &str| {
+            Spi::get_one::<String>(&format!("SELECT md5(string_agg(encode(encoded,'hex'),'' ORDER BY start_sample)) FROM {c}_chunks")).unwrap()
+        };
+        assert_eq!(bytes("shdst"), bytes("shsrc"));
+        assert_eq!(
+            Spi::get_one::<bool>("SELECT morlet_read_interval_raw('shdst','r',0,10000)=morlet_read_interval_raw('shsrc','r',0,10000)").unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM shdst_chunks WHERE summary IS NULL").unwrap(),
+            Some(0)
+        );
+        // an identical resend is a no-op; the source's next chunks continue where the target ends
+        assert_eq!(Spi::get_one::<i64>(ship).unwrap(), Some(10000));
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM shdst_chunks").unwrap(),
+            Spi::get_one::<i64>("SELECT count(*) FROM shsrc_chunks").unwrap()
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_encoded_chunks('shsrc','r',4000,100)")
+                .unwrap(),
+            Some(2)
+        );
+    }
+
+    #[pg_test(error = "conflicting replay at chunk offset")]
+    fn shipped_chunk_with_other_samples_is_refused() {
+        Spi::run("SELECT morlet_create_stream_collection('public','shs')").unwrap();
+        Spi::run("SELECT morlet_create_stream_collection('public','shd')").unwrap();
+        Spi::run(
+            "SELECT morlet_start_recording('shs','r',1000,'acc','g','{}',512,256,'zscore','none')",
+        )
+        .unwrap();
+        Spi::run(
+            "SELECT morlet_start_recording('shs','q',1000,'acc','g','{}',512,256,'zscore','none')",
+        )
+        .unwrap();
+        Spi::run(
+            "SELECT morlet_start_recording('shd','r',1000,'acc','g','{}',512,256,'zscore','none')",
+        )
+        .unwrap();
+        Spi::run("SELECT morlet_append_chunk('shs','r',0,ARRAY[1,2,3]::float8[])").unwrap();
+        Spi::run("SELECT morlet_append_chunk('shs','q',0,ARRAY[1,2,4]::float8[])").unwrap();
+        Spi::run("SELECT morlet_append_encoded_chunk('shd','r',0,(SELECT encoded FROM shs_chunks WHERE recording_id='r'))").unwrap();
+        Spi::run("SELECT morlet_append_encoded_chunk('shd','r',0,(SELECT encoded FROM shs_chunks WHERE recording_id='q'))").unwrap();
+    }
+
+    #[pg_test]
     fn context_segments_values_and_compare_to_history() {
         context_fixture();
         // Identical retry is a no-op.
@@ -2689,6 +3223,23 @@ END $$"#).unwrap();
                 .unwrap(),
             "true"
         );
+    }
+
+    #[pg_test]
+    fn time_to_samples_is_exact_at_sample_instants_of_slow_rates() {
+        // #343: float8::numeric rounded 1/60 to 0.0166666666666667 (above 1/60), so the time of sample k mapped to
+        // k + 1. Rates whose period is a whole number of seconds: sample k sits exactly at k * period.
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM (VALUES (60::bigint),(7),(6),(3),(1)) p(period_s), generate_series(0,2000) k,
+                   morlet_time_to_samples(1.0::float8/p.period_s, 0, k*p.period_s*1000000000, k*p.period_s*1000000000+1) t
+                 WHERE t.start_sample <> k OR t.end_sample <> k + 1"
+            )
+            .unwrap(),
+            Some(0)
+        );
+        // a time just before a sample instant still maps to that sample
+        assert_eq!(Spi::get_one::<String>("SELECT start_sample||'-'||end_sample FROM morlet_time_to_samples(1.0::float8/60,0,59999999999,60000000000)").unwrap().unwrap(), "1-1");
     }
 
     fn acquisition_fixture() {
@@ -3093,6 +3644,239 @@ END $$"#).unwrap();
         .unwrap()
         .unwrap());
     }
+    /// #366: the single-chunk append stores the same bytes with the write-time check on and off.
+    #[pg_test]
+    fn verify_appends_single_chunk_does_not_change_chunks() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['ver1_on','ver1_off']) c;
+             SELECT morlet_start_recording(c::regclass,'A',4096,'x','g') FROM unnest(ARRAY['ver1_on','ver1_off']) c;
+             SET morlet.verify_appends = on;
+             SELECT morlet_append_chunk('ver1_on','A',0,ARRAY(SELECT CASE WHEN i<500 THEN round(1000*sin(i/7.)) ELSE sin(i/7.) END FROM generate_series(0,999) i)::float8[]);
+             SET morlet.verify_appends = off;
+             SELECT morlet_append_chunk('ver1_off','A',0,ARRAY(SELECT CASE WHEN i<500 THEN round(1000*sin(i/7.)) ELSE sin(i/7.) END FROM generate_series(0,999) i)::float8[]);
+             RESET morlet.verify_appends;",
+        )
+        .unwrap();
+        assert!(Spi::get_one::<bool>(
+            "SELECT (SELECT array_agg(encoded ORDER BY start_sample) FROM ver1_on_chunks)
+                  = (SELECT array_agg(encoded ORDER BY start_sample) FROM ver1_off_chunks)
+                AND (SELECT count(*) FROM ver1_on_chunks) >= 1"
+        )
+        .unwrap()
+        .unwrap());
+    }
+    /// #366: with the check on, a code that does not decode to the input is refused on the single-chunk path.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_single_chunk_refuses_a_wrong_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_bad'); SELECT morlet_start_recording('ver1_bad','A',4096,'x','g'); SET morlet.verify_appends = on").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunk('ver1_bad','A',0,ARRAY[1.5,2.5,3.5,4.5]::float8[])")
+            .unwrap();
+    }
+    /// #366: the same wrong code is stored when the check is off, so the check is what refuses it above.
+    #[pg_test]
+    fn verify_appends_off_lets_a_wrong_code_through() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_off2'); SELECT morlet_start_recording('ver1_off2','A',4096,'x','g'); SET morlet.verify_appends = off").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunk('ver1_off2','A',0,ARRAY[1.5,2.5,3.5,4.5]::float8[]); RESET morlet.verify_appends").unwrap();
+        assert_eq!(
+            Spi::get_one::<f64>("SELECT (morlet_decode_chunk(encoded))[1] FROM ver1_off2_chunks")
+                .unwrap(),
+            Some(f64::from_bits(1.5f64.to_bits() ^ 1))
+        );
+    }
+    /// #366: the batch path refuses the same wrong code.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_batch_refuses_a_wrong_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_bad'); SELECT morlet_start_recording('ver_bad','A',4096,'x','g'); SET morlet.verify_appends = on; SET morlet.encode_threads = 1").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunks_raw('ver_bad','A',0,morlet_float8_le_bytes(ARRAY[1.5,2.5,3.5,4.5]::float8[]),4)").unwrap();
+    }
+    /// B6: with `morlet.chunk_format` = grizzbit21 a chunk is stored as version 5 exactly when that is strictly
+    /// smaller than its Grizzbit 1 chunk, which is stored otherwise, byte for byte as with grizzbit1 (the
+    /// default); both read back bit for bit, on the batch and the single-chunk append paths.
+    #[pg_test]
+    fn grizzbit21_keeps_version5_chunks_only_where_strictly_smaller() {
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('morlet.chunk_format')").unwrap(),
+            Some("grizzbit1".into())
+        );
+        Spi::run(
+            "CREATE TEMP TABLE g21_src AS SELECT i,CASE WHEN i<12288 THEN round(3000*sin(i/7.3)+((i*7919)%7))::float8 WHEN i<16384 THEN (sin(i/37.)*0.37+i*1e-3)::float8 ELSE (round(1000*sin(i/11.)) * 0.0006887817378 * 1.0000007)::float8 END AS v FROM generate_series(0,19999) i;
+             SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['g21_two','g21_one','g21_two1','g21_one1']) c;
+             SELECT morlet_start_recording(c::regclass,'A',4096,'x','g') FROM unnest(ARRAY['g21_two','g21_one','g21_two1','g21_one1']) c;
+             SET morlet.chunk_format = grizzbit21;
+             SELECT morlet_append_chunks_raw('g21_two','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM g21_src ORDER BY i)),4096);
+             SELECT morlet_append_chunk('g21_two1','A',0,ARRAY(SELECT v FROM g21_src WHERE i<3000 ORDER BY i));
+             RESET morlet.chunk_format;
+             SELECT morlet_append_chunks_raw('g21_one','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM g21_src ORDER BY i)),4096);
+             SELECT morlet_append_chunk('g21_one1','A',0,ARRAY(SELECT v FROM g21_src WHERE i<3000 ORDER BY i));",
+        )
+        .unwrap();
+        for (two, one) in [("g21_two", "g21_one"), ("g21_two1", "g21_one1")] {
+            assert!(Spi::get_one::<bool>(&format!(
+                "SELECT bool_and(get_byte(o.encoded,0) IN (2,3))
+                    AND bool_and(t.encoded=o.encoded OR (get_byte(t.encoded,0)=5 AND morlet_encoded_chunk_kind(t.encoded)='grid' AND length(t.encoded)<length(o.encoded)))
+                    AND bool_or(get_byte(t.encoded,0)=5)
+                    AND morlet_read_interval_raw('{two}','A',0,max(t.start_sample+t.sample_count))
+                      = morlet_read_interval_raw('{one}','A',0,max(t.start_sample+t.sample_count))
+                   FROM {two}_chunks t JOIN {one}_chunks o USING (start_sample,sample_count)"
+            ))
+            .unwrap()
+            .unwrap(), "{two}");
+        }
+        // Where version 5 is not smaller (the float part, which has no grid), Grizzbit 1's chunk stays, byte
+        // for byte.
+        assert!(Spi::get_one::<bool>(
+            "SELECT bool_or(t.encoded=o.encoded) FROM g21_two_chunks t JOIN g21_one_chunks o USING (start_sample)"
+        )
+        .unwrap()
+        .unwrap());
+        // morlet_recording_storage (SQL unchanged) counts version-5 chunks, which have the grid kind, as grid chunks.
+        assert!(Spi::get_one::<bool>(
+            "SELECT s.grid_chunks=(SELECT count(*) FROM g21_two_chunks WHERE morlet_encoded_chunk_kind(encoded)='grid')
+               AND s.chunks=s.grid_chunks+s.float_chunks+s.raw_chunks
+               AND s.encoded_bytes=(SELECT sum(length(encoded)) FROM g21_two_chunks)
+               FROM morlet_recording_storage('g21_two','A') s"
+        )
+        .unwrap()
+        .unwrap());
+        assert!(Spi::get_one::<bool>(
+            "SELECT morlet_read_interval_raw('g21_two','A',0,20000)=morlet_float8_le_bytes(ARRAY(SELECT v FROM g21_src ORDER BY i))"
+        )
+        .unwrap()
+        .unwrap());
+    }
+    #[pg_test(error = "invalid value for parameter \"morlet.chunk_format\": \"grizzbit2\"")]
+    fn chunk_format_is_validated() {
+        // Grizzbit 2 (version 4) was never shipped: its name is not a value of the setting.
+        Spi::run("SELECT morlet_version(); SET morlet.chunk_format = grizzbit2").unwrap();
+    }
+    /// A value set before the library loaded (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `-c`) is not
+    /// seen by the check hook. It must not quietly become `grizzbit1`: the first encode refuses it, on the
+    /// single-chunk path. (tests/chunk_format_guard.sh checks the same with real sessions.)
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.chunk_format\": \"grizbit21\"; available values: grizzbit1, grizzbit21"
+    )]
+    fn chunk_format_from_before_loading_fails_a_single_append() {
+        Spi::run("SELECT morlet_create_stream_collection('public','cf_one'); SELECT morlet_start_recording('cf_one','A',4096,'x','g')").unwrap();
+        set_as_if_before_loading("grizbit21");
+        Spi::run("SELECT morlet_append_chunk('cf_one','A',0,ARRAY[1,2,3]::float8[])").unwrap();
+    }
+    /// The same on the batch path (`morlet_append_chunks_raw`, `morlet_chunk_batch`).
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.chunk_format\": \"Grizzbit21\"; available values: grizzbit1, grizzbit21"
+    )]
+    fn chunk_format_from_before_loading_fails_a_batch_append() {
+        Spi::run("SELECT morlet_create_stream_collection('public','cf_batch'); SELECT morlet_start_recording('cf_batch','A',4096,'x','g')").unwrap();
+        set_as_if_before_loading("Grizzbit21");
+        Spi::run("SELECT morlet_append_chunks_raw('cf_batch','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),4)").unwrap();
+    }
+    /// Sets `morlet.chunk_format` as PostgreSQL does for a placeholder value carried over when the library loads:
+    /// without the check hook refusing it.
+    fn set_as_if_before_loading(value: &str) {
+        crate::CHUNK_FORMAT_DEFINED.store(false, std::sync::atomic::Ordering::Relaxed);
+        let set = Spi::run(&format!("SET morlet.chunk_format = '{value}'"));
+        crate::CHUNK_FORMAT_DEFINED.store(true, std::sync::atomic::Ordering::Relaxed);
+        set.unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT current_setting('morlet.chunk_format')").unwrap(),
+            Some(value.into())
+        );
+    }
+    /// Unset means grizzbit1, and a valid value set with the check hook active is taken.
+    #[pg_test]
+    fn chunk_format_unset_is_grizzbit1_and_valid_values_work() {
+        Spi::run("SELECT morlet_create_stream_collection('public','cf_ok'); SELECT morlet_start_recording('cf_ok','A',4096,'x','g'); RESET morlet.chunk_format").unwrap();
+        let data = "ARRAY(SELECT round(3000*sin(i/7.3))::float8 FROM generate_series(0,4095) i)";
+        Spi::run(&format!("SELECT morlet_append_chunk('cf_ok','A',0,{data}); SET morlet.chunk_format = grizzbit21; SELECT morlet_append_chunk('cf_ok','A',4096,{data}); SET morlet.chunk_format = grizzbit1; SELECT morlet_append_chunk('cf_ok','A',8192,{data}); RESET morlet.chunk_format")).unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(get_byte(encoded,0)::text,',' ORDER BY start_sample) FROM cf_ok_chunks").unwrap(),
+            Some("2,5,2".into())
+        );
+    }
+    /// The functions whose output depends on `morlet.chunk_format` are STABLE (SQL 0.3.9), so PostgreSQL never
+    /// folds or caches their result across a change of the setting: a generic plan prepared under grizzbit1 encodes
+    /// with grizzbit21 once that is set. (Declared IMMUTABLE, the call is folded into the plan and keeps returning
+    /// a version-2 chunk.)
+    #[pg_test]
+    fn encoding_functions_are_stable_and_follow_the_setting() {
+        assert_eq!(
+            Spi::get_one::<String>(
+                "SELECT string_agg(proname||'='||provolatile::text,',' ORDER BY proname) FROM pg_proc WHERE proname IN ('morlet_encode_chunk','morlet_chunk_batch')"
+            )
+            .unwrap(),
+            Some("morlet_chunk_batch=s,morlet_encode_chunk=s".into())
+        );
+        let samples: Vec<String> = (0..4096)
+            .map(|i| format!("{}", (3000.0 * (i as f64 / 7.3).sin()).round()))
+            .collect();
+        let literal = format!("'{{{}}}'::float8[]", samples.join(","));
+        // force_generic_plan: the plan is made once, at the first EXECUTE, and reused; changing a custom setting
+        // does not invalidate it. EXECUTE cannot be prepared through SPI; CREATE TABLE AS runs it.
+        let versions = |volatility: &str| -> (i32, i32) {
+            Spi::run(&format!(
+                "ALTER FUNCTION morlet_encode_chunk(float8[], float8) {volatility};
+                 SET plan_cache_mode = force_generic_plan; RESET morlet.chunk_format;
+                 PREPARE cf_enc AS SELECT get_byte(morlet_encode_chunk({literal}, 1), 0) AS v;
+                 CREATE TEMP TABLE cf_before AS EXECUTE cf_enc;
+                 SET morlet.chunk_format = grizzbit21;
+                 CREATE TEMP TABLE cf_after AS EXECUTE cf_enc"
+            ))
+            .unwrap();
+            let before = Spi::get_one::<i32>("SELECT v FROM cf_before")
+                .unwrap()
+                .unwrap();
+            let after = Spi::get_one::<i32>("SELECT v FROM cf_after")
+                .unwrap()
+                .unwrap();
+            Spi::run("DROP TABLE cf_before, cf_after; DEALLOCATE cf_enc; RESET morlet.chunk_format; RESET plan_cache_mode")
+                .unwrap();
+            (before, after)
+        };
+        assert_eq!(versions("STABLE"), (2, 5));
+        // The failure the change prevents (the test's transaction is rolled back, so this ALTER does not last).
+        assert_eq!(versions("IMMUTABLE"), (2, 2));
+    }
+    /// B6 / #366: with Grizzbit 2.1 a wrong version-5 code is refused on the batch path; there is no fallback to
+    /// Grizzbit 1.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_batch_refuses_a_wrong_version5_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_v5'); SELECT morlet_start_recording('ver_v5','A',4096,'x','g'); SET morlet.verify_appends = on; SET morlet.encode_threads = 1; SET morlet.chunk_format = grizzbit21").unwrap();
+        assert!(Spi::get_one::<bool>(
+            "SELECT get_byte(morlet_encode_chunk(ARRAY(SELECT round(3000*sin(i/7.3))::float8 FROM generate_series(0,4095) i),1),0)=5"
+        )
+        .unwrap()
+        .unwrap());
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunks_raw('ver_v5','A',0,morlet_float8_le_bytes(ARRAY(SELECT round(3000*sin(i/7.3))::float8 FROM generate_series(0,4095) i)),4096)").unwrap();
+    }
+    /// B6 / #366: the same on the single-chunk path.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_single_chunk_refuses_a_wrong_version5_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_v5'); SELECT morlet_start_recording('ver1_v5','A',4096,'x','g'); SET morlet.verify_appends = on; SET morlet.chunk_format = grizzbit21").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunk('ver1_v5','A',0,ARRAY(SELECT round(3000*sin(i/7.3))::float8 FROM generate_series(0,4095) i))").unwrap();
+    }
+    /// B6: the wrong version-5 code of the tests above is stored when the check is off, so the check is what
+    /// refuses it; it is a version-5 chunk and decodes to other samples.
+    #[pg_test]
+    fn verify_appends_off_lets_a_wrong_version5_code_through() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_v5_off'); SELECT morlet_start_recording('ver_v5_off','A',4096,'x','g'); SET morlet.verify_appends = off; SET morlet.encode_threads = 1; SET morlet.chunk_format = grizzbit21").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunks_raw('ver_v5_off','A',0,morlet_float8_le_bytes(ARRAY(SELECT round(3000*sin(i/7.3))::float8 FROM generate_series(0,4095) i)),4096); RESET morlet.verify_appends; RESET morlet.chunk_format").unwrap();
+        assert!(Spi::get_one::<bool>(
+            "SELECT get_byte(encoded,0)=5 AND (morlet_decode_chunk(encoded))[1]<>round(3000*sin(0/7.3))::float8 FROM ver_v5_off_chunks"
+        )
+        .unwrap()
+        .unwrap());
+    }
+    /// #366: the single-chunk path's remembered chunk is used once; an identical copy inserted afterwards is
+    /// decoded in full, and a corrupted copy is refused.
+    #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
+    fn check_still_decodes_copies_of_single_appended_chunks() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_copy'); SELECT morlet_start_recording('ver1_copy','A',4096,'x','g'); SELECT morlet_start_recording('ver1_copy','B',4096,'x','g'); SELECT morlet_start_recording('ver1_copy','C',4096,'x','g'); SELECT morlet_append_chunk('ver1_copy','A',0,ARRAY(SELECT i::float8 FROM generate_series(0,999) i)); INSERT INTO ver1_copy_chunks SELECT 'B',start_sample,sample_count,encoded FROM ver1_copy_chunks WHERE recording_id='A'; INSERT INTO ver1_copy_chunks SELECT 'C',start_sample,sample_count,set_byte(encoded,20,get_byte(encoded,20) # 1) FROM ver1_copy_chunks WHERE recording_id='A'").unwrap();
+    }
     #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
     fn check_still_decodes_direct_copies_of_appended_chunks() {
         // The last batch's chunks are remembered; a corrupted copy of one is not identical and is decoded.
@@ -3103,9 +3887,18 @@ END $$"#).unwrap();
         // An identical copy under a different sample_count is not trusted and fails the full check.
         Spi::run("SELECT morlet_create_stream_collection('public','ver_count'); SELECT morlet_start_recording('ver_count','A',4096,'x','g'); SELECT morlet_start_recording('ver_count','B',4096,'x','g'); SET morlet.verify_appends = off; SELECT morlet_append_chunks_raw('ver_count','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,999) i)),500); INSERT INTO ver_count_chunks SELECT 'B',start_sample,sample_count+1,encoded FROM ver_count_chunks WHERE recording_id='A' AND start_sample=0").unwrap();
     }
-    #[pg_test(error = "morlet.verify_appends must be on or off")]
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.verify_appends\": \"maybe\"; available values: on, off"
+    )]
     fn verify_appends_is_validated() {
         Spi::run("SELECT morlet_create_stream_collection('public','ver_guc'); SELECT morlet_start_recording('ver_guc','A',4096,'x','g'); SET morlet.verify_appends = 'maybe'; SELECT morlet_append_chunks_raw('ver_guc','A',0,morlet_float8_le_bytes(ARRAY[1,2,3,4]::float8[]),2)").unwrap();
+    }
+    /// The single-chunk path refuses an invalid `morlet.verify_appends` too, instead of verifying by default.
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.verify_appends\": \"yes please\"; available values: on, off"
+    )]
+    fn verify_appends_is_validated_on_a_single_append() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_guc1'); SELECT morlet_start_recording('ver_guc1','A',4096,'x','g'); SET morlet.verify_appends = 'yes please'; SELECT morlet_append_chunk('ver_guc1','A',0,ARRAY[1,2,3]::float8[])").unwrap();
     }
     /// Long reads decode on worker threads; the samples are identical to decoding in the backend's thread.
     #[pg_test]
@@ -3145,8 +3938,10 @@ END $$"#).unwrap();
     /// decodes come as samples in a raw frame; a corrupt chunk is sent unchanged and fails in the client's decoder.
     #[pg_test]
     fn encoded_reads_decode_to_raw_reads() {
+        // B6: written with Grizzbit 2.1, so the integer part is stored as version-5 chunks (LPC on the tone).
         Spi::run(
-            "CREATE TEMP TABLE enc_src AS SELECT i,CASE WHEN i<60000 THEN round(1000*sin(i/7.))::float8 ELSE sin(i/7.)::float8 END AS v FROM generate_series(0,99999) i;
+            "SET LOCAL morlet.chunk_format = grizzbit21;
+             CREATE TEMP TABLE enc_src AS SELECT i,CASE WHEN i<60000 THEN round(1000*sin(i/7.))::float8 ELSE sin(i/7.)::float8 END AS v FROM generate_series(0,99999) i;
              SELECT morlet_create_stream_collection('public','enc_rd'); SELECT morlet_start_recording('enc_rd','A',4096,'x','g','{}',512,256,'zscore','none');
              SELECT morlet_append_chunks_raw('enc_rd','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM enc_src ORDER BY i)),2048);",
         )
@@ -3172,7 +3967,7 @@ END $$"#).unwrap();
             ))
             .unwrap()
             .unwrap();
-            for version in [3, 2, 1] {
+            for version in [5, 4, 3, 2, 1] {
                 let frame = Spi::get_one::<Vec<u8>>(&format!(
                     "SELECT morlet_read_interval_encoded('enc_rd','A',{a},{b},{version})"
                 ))
@@ -3184,21 +3979,29 @@ END $$"#).unwrap();
                     .unwrap()
                     .unwrap();
                 assert_eq!(&frame[..4] == b"MTR1", newer, "{a}..{b} v{version}");
-                assert_eq!(
-                    newer,
-                    version < 2 || (version == 2 && frame[..4] == *b"MTR1")
-                );
+                // Every chunk is version 2 or above; this build decodes up to version 5 (Grizzbit 2.1).
+                assert!(newer || version >= 2);
+                assert!(!newer || version < 5);
             }
         }
+        // B6: version-5 chunks where they are smaller (the integer part) and Grizzbit 1 chunks elsewhere, so the
+        // version-3 and version-4 clients above got samples for some intervals and the version-5 client chunks.
+        assert!(Spi::get_one::<bool>(
+            "SELECT bool_or(get_byte(encoded,0)=5) AND bool_or(get_byte(encoded,0)<4) FROM enc_rd_chunks"
+        )
+        .unwrap()
+        .unwrap());
+        // A client that decodes version 5 (the SQL default stays 3, so older callers get samples).
         let compressed = Spi::get_one::<i32>(
-            "SELECT length(morlet_read_interval_encoded('enc_rd','A',0,60000))",
+            "SELECT length(morlet_read_interval_encoded('enc_rd','A',0,60000,5))",
         )
         .unwrap()
         .unwrap();
         assert!(compressed < 8 * 60000 / 4, "{compressed} bytes");
         Spi::run("ALTER TABLE enc_rd_chunks DROP CONSTRAINT enc_rd_chunks_check; UPDATE enc_rd_chunks SET encoded=set_byte(encoded,20,get_byte(encoded,20) # 1) WHERE start_sample=4096").unwrap();
+        // A version-5 client gets the corrupt chunk unchanged (it is a version-5 chunk here) and its decoder fails.
         let frame =
-            Spi::get_one::<Vec<u8>>("SELECT morlet_read_interval_encoded('enc_rd','A',0,10000)")
+            Spi::get_one::<Vec<u8>>("SELECT morlet_read_interval_encoded('enc_rd','A',0,10000,5)")
                 .unwrap()
                 .unwrap();
         assert!(matches!(
@@ -3232,6 +4035,99 @@ END $$"#).unwrap();
         assert!(all);
         // Enabling them again is a no-op.
         Spi::run("SELECT morlet_enable_chunk_summaries('sum_dflt')").unwrap();
+    }
+    /// #346: the fast path of morlet_interval_stats returns exactly what the general path returns, for intervals that
+    /// cut chunks, lie inside one, span many, meet chunks without summaries, or end at the recording's end; and
+    /// requests the fast path does not take still raise the general path's errors.
+    #[pg_test]
+    fn interval_stats_fast_path_equals_the_general_path() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','fp'); SELECT morlet_start_recording('fp','A',4096,'x','g');
+             SELECT morlet_append_chunks_raw('fp','A',h*150000,morlet_float8_le_bytes(ARRAY(SELECT (round(1000*sin(i/7.)+37*sin(i/1.3))/64)::float8
+               FROM generate_series(h*150000,h*150000+149999) i)),1000) FROM generate_series(0,1) h;
+             UPDATE fp_chunks SET summary=NULL WHERE (start_sample/1000)%7=3;",
+        )
+        .unwrap();
+        let differ = Spi::get_one::<i64>(
+            "SELECT count(*) FROM (SELECT (k*7919)%299990 AS a, least(300000,(k*7919)%299990+1+(k*104729)%200000) AS b
+               FROM generate_series(0,299) k) iv,
+             LATERAL (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] AS fast FROM morlet_interval_stats('fp','A',iv.a,iv.b) s) f,
+             LATERAL (SELECT (public.morlet_interval_buckets('fp','A',iv.a,iv.b,1,'statistics'))[3:7] AS general) g
+             WHERE f.fast IS DISTINCT FROM g.general",
+        )
+        .unwrap();
+        assert_eq!(differ, Some(0));
+        // the fast path's own edge cases agree too: one sample, a whole chunk, the last sample
+        let edges = Spi::get_one::<i64>(
+            "SELECT count(*) FROM (VALUES (5,6),(1000,2000),(299999,300000),(2999,3001),(0,300000)) iv(a,b),
+             LATERAL (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] AS fast FROM morlet_interval_stats('fp','A',iv.a,iv.b) s) f,
+             LATERAL (SELECT (public.morlet_interval_buckets('fp','A',iv.a,iv.b,1,'statistics'))[3:7] AS general) g
+             WHERE f.fast IS DISTINCT FROM g.general",
+        )
+        .unwrap();
+        assert_eq!(edges, Some(0));
+        // the native function takes these intervals (and none it must not), and its plan, cached per session and
+        // collection, stays right after new samples and after the collection is dropped and created again
+        let taken = "SELECT morlet_interval_stats_fast('fp'::regclass::oid,'A',5,6) IS NOT NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'A',0,300000) IS NOT NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'A',299999,300001) IS NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'B',0,10) IS NULL
+                       AND morlet_interval_stats_fast('fp'::regclass::oid,'A',0,1048576) IS NULL";
+        assert_eq!(Spi::get_one::<bool>(taken).unwrap(), Some(true));
+        let same = |a: i64, b: i64| {
+            Spi::get_one::<bool>(&format!(
+                "SELECT (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] FROM morlet_interval_stats('fp','A',{a},{b}) s)
+                   = (public.morlet_interval_buckets('fp','A',{a},{b},1,'statistics'))[3:7]"
+            ))
+            .unwrap()
+        };
+        Spi::run("SELECT morlet_append_chunks_raw('fp','A',300000,morlet_float8_le_bytes(ARRAY(SELECT (i%97)::float8 FROM generate_series(1,5000) i)),1000)").unwrap();
+        assert_eq!(same(299500, 305000), Some(true));
+        // a second collection: its plan is cached, then its chunk table changes (summaries enabled) and gains rows
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','fq'); SELECT morlet_start_recording('fq','A',4096,'x','g');
+             SELECT morlet_append_chunks_raw('fq','A',0,morlet_float8_le_bytes(ARRAY(SELECT (-i)::float8 FROM generate_series(1,3000) i)),1000)",
+        )
+        .unwrap();
+        let fq = |a: i64, b: i64| {
+            Spi::get_one::<bool>(&format!(
+                "SELECT (SELECT ARRAY[s.sample_count::float8,s.min,s.max,s.mean,s.rms] FROM morlet_interval_stats('fq','A',{a},{b}) s)
+                   = (public.morlet_interval_buckets('fq','A',{a},{b},1,'statistics'))[3:7]
+                   AND morlet_interval_stats_fast('fq'::regclass::oid,'A',{a},{b}) IS NOT NULL"
+            ))
+            .unwrap()
+        };
+        assert_eq!(fq(10, 2990), Some(true));
+        Spi::run(
+            "SELECT morlet_enable_chunk_summaries('fq');
+             SELECT morlet_append_chunks_raw('fq','A',3000,morlet_float8_le_bytes(ARRAY(SELECT (i*i%1009)::float8 FROM generate_series(1,4000) i)),1000)",
+        )
+        .unwrap();
+        assert_eq!(fq(10, 6990), Some(true));
+        assert_eq!(
+            Spi::get_one::<f64>("SELECT min FROM morlet_interval_stats('fq','A',0,7000)").unwrap(),
+            Some(-3000.0)
+        );
+    }
+    /// #340: the general statistics path never JIT-compiles its few-row index queries, whatever the session sets.
+    #[pg_test]
+    fn interval_buckets_runs_without_jit() {
+        let config = Spi::get_one::<Vec<String>>(
+            "SELECT proconfig FROM pg_proc WHERE oid='public.morlet_interval_buckets(regclass,text,bigint,bigint,integer,text)'::regprocedure",
+        )
+        .unwrap()
+        .unwrap();
+        assert!(config.iter().any(|c| c == "jit=off"), "{config:?}");
+        assert!(
+            config.iter().any(|c| c == "search_path=pg_catalog"),
+            "{config:?}"
+        );
+    }
+    #[pg_test(error = "source interval exceeds recording length")]
+    fn interval_stats_fast_path_keeps_the_errors() {
+        Spi::run("SELECT morlet_create_stream_collection('public','fpe'); SELECT morlet_start_recording('fpe','A',4096,'x','g');
+                  SELECT morlet_append_chunks_raw('fpe','A',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 FROM generate_series(0,9999) i)),1000);
+                  SELECT * FROM morlet_interval_stats('fpe','A',9000,10001)").unwrap();
     }
     /// #193: the integrity scrub finds every injected corruption, reports nothing on sound data, never
     /// changes data, and continues in batches.
@@ -3416,6 +4312,119 @@ END $$"#).unwrap();
             one("SELECT sum(episodes)::bigint FROM morlet_memory_status('mem')"),
             6
         );
+    }
+    /// #440: a level-2 episode keeps a real example. Recordings A and B (episodes 1 and 2, one each), A at level 2
+    /// represented by B; then moving B to level 3 or 4 must fail, whether in a later call, the same call or a dry run,
+    /// unless A leaves level 2 in the same call.
+    fn representative_setup(dry: bool) -> i64 {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','rep'); SELECT morlet_enable_chunk_summaries('rep');
+             SELECT morlet_start_recording('rep',r,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['A','B']) r;
+             SELECT morlet_append_chunk('rep',r,0,ARRAY[1,2,3,4]::float8[]) FROM unnest(ARRAY['A','B']) r;
+             SELECT morlet_enable_memory('rep');
+             SELECT morlet_add_episodes('rep','[{\"recording_id\":\"A\",\"start_sample\":0,\"end_sample\":4},
+               {\"recording_id\":\"B\",\"start_sample\":0,\"end_sample\":4}]');",
+        )
+        .unwrap();
+        Spi::get_one::<i64>(&format!(
+            "SELECT morlet_start_memory_run('rep','test','1','{{}}',{dry})"
+        ))
+        .unwrap()
+        .unwrap()
+    }
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3"
+    )]
+    fn representative_cannot_be_compacted_in_a_later_call() {
+        let run = representative_setup(false);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}}]')")).unwrap();
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":2,\"level\":3}}]')"
+        ))
+        .unwrap();
+    }
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 4"
+    )]
+    fn representative_cannot_be_compacted_in_the_same_call() {
+        let run = representative_setup(false);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}},{{\"episode_id\":2,\"level\":4}}]')")).unwrap();
+    }
+    #[pg_test(
+        error = "a level-2 episode would lose its representative: episode 1 is represented by episode 2, which would be at level 3"
+    )]
+    fn representative_check_holds_in_a_dry_run() {
+        let run = representative_setup(true);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}},{{\"episode_id\":2,\"level\":3}}]',true)")).unwrap();
+    }
+    #[pg_test]
+    fn representative_may_go_with_its_dependents() {
+        let run = representative_setup(false);
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":2,\"representative\":2}}]')")).unwrap();
+        // A leaves level 2 in the same call as its representative: no level-2 episode is left without an example.
+        Spi::run(&format!("SELECT * FROM morlet_set_level('rep',{run},'[{{\"episode_id\":1,\"level\":3}},{{\"episode_id\":2,\"level\":3}}]')")).unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM rep_episodes WHERE level=3 AND representative IS NULL"
+            )
+            .unwrap()
+            .unwrap(),
+            2
+        );
+    }
+    /// #441: level-1 compaction removes the first windows; the builder must still recognise the grid and keep
+    /// building on it, and still refuse another stride.
+    fn compacted_grid() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','grid');
+             SELECT morlet_start_recording('grid','r',1000,'x','g','{}',512,256,'zscore','none');
+             SELECT morlet_append_chunks_raw('grid','r',0,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(0,16383) i)),4096);
+             SELECT morlet_enable_envelopes('grid'); SELECT morlet_build_envelopes('grid','r',4096,2048,100000);
+             SELECT morlet_enable_memory('grid');
+             SELECT morlet_add_episodes('grid','[{\"recording_id\":\"r\",\"start_sample\":0,\"end_sample\":8192}]');",
+        )
+        .unwrap();
+        let run = Spi::get_one::<i64>("SELECT morlet_start_memory_run('grid','test','1')")
+            .unwrap()
+            .unwrap();
+        Spi::run(&format!(
+            "SELECT * FROM morlet_set_level('grid',{run},'[{{\"episode_id\":1,\"level\":1}}]')"
+        ))
+        .unwrap();
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(start_sample::text,',' ORDER BY start_sample) FROM grid_envelopes").unwrap().unwrap(),
+            "6144,8192,10240,12288"
+        );
+    }
+    #[pg_test]
+    fn envelope_grid_survives_compaction() {
+        compacted_grid();
+        // Rebuilding with the original stride builds nothing new and does not fail.
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('grid','r',4096,2048,100000)")
+                .unwrap()
+                .unwrap(),
+            0
+        );
+        // New samples become searchable on the same grid.
+        Spi::run("SELECT morlet_append_chunks_raw('grid','r',16384,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(16384,20479) i)),4096)").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_envelopes('grid','r',4096,2048,100000)")
+                .unwrap()
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(start_sample::text,',' ORDER BY start_sample) FROM grid_envelopes").unwrap().unwrap(),
+            "6144,8192,10240,12288,14336,16384"
+        );
+    }
+    #[pg_test(
+        error = "envelopes of window 4096 for recording r were built with stride 6144, not 4096"
+    )]
+    fn envelope_grid_after_compaction_still_refuses_another_stride() {
+        compacted_grid();
+        Spi::run("SELECT morlet_build_envelopes('grid','r',4096,4096,100000)").unwrap();
     }
     /// morlet_coverage (#215): every sample of a recording is in exactly one state, and only stored windows count as
     /// searchable, so a search without a match can be reported with what it did not search.

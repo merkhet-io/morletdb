@@ -1,0 +1,73 @@
+% Draft for morletdb.tex, proposed between "Storage, recall and latency" and "Related work".
+% Draft 2, 2026-11-11. Author: Semir Maslo (Sulzer-BDiM).
+% Public data only (Bosch CNC Machining, CC BY 4.0). Every number comes from the repository:
+%   frozen study IU1:      evaluation/industrial_iu1/results/summary.json
+%   addenda A1, A2 (post hoc): evaluation/industrial_iu1/results/drift_summary.json, leadin_summary.json
+
+\section{Industrial use}\label{sec:industrial}
+Condition monitoring motivated \M{}, but the retrieval results above are seismic. This section reports a first
+study on public machine data.
+
+\textbf{Study.} We used the Bosch CNC milling data~\cite{bosch-cnc} (CC BY 4.0): 1,702 runs of 15 operations on three
+machines, labelled good or bad per run, tri-axial acceleration in integer counts at 2\,kHz, 178.6\,M samples per axis.
+The data give the half-year of a run, not its time. Each run and axis is one recording; envelopes use the product
+defaults (windows of 4,096 samples, stride 2,048, $L$ from \texttt{max\_lag\_fraction} 0.075). Machine M01 served to
+check the harness; M02 and M03 (1,183 runs, 36 bad) are the confirmation data. The protocol, with every decision rule,
+was frozen before loading. Up to eight query windows per run and axis; hits from the query's own run are removed. We
+compare bounded lag (BL) with the same scorer at zero lag (ZL) and with nearest windows by RMS, and decide by a 95\%
+run bootstrap.
+
+\textbf{Scoring runs against a good history.} Scoring every run by its distance to the nearest window of good runs of
+the same machine, operation and axis gave an AUROC for bad against good of 0.925 (95\% interval 0.878--0.967) under BL,
+0.875 under ZL and 0.852 under RMS. BL was better than ZL; against RMS the difference was not significant. Asked for
+the same operation on another machine, BL returned it in 0.503 of the top ten against 0.412 for ZL (chance 0.076). BL
+and ZL shared only 38\% of their hits.
+
+\textbf{Is it drift?} Twenty of the 36 bad runs come from one machine and half-year, so after seeing the results we
+checked, with rules written down first, whether the score measures drift between half-years. It does not: with the
+history restricted to the query's own half-year the AUROC was 0.933 (0.895--0.965), and over pairs of a bad and a good
+run from the same machine and half-year 0.905 (0.853--0.950) under BL against 0.790 under ZL (difference $+0.116$,
+0.047--0.184). Without that machine and half-year it was 0.854 (0.768--0.932), and without each run's first two seconds 0.900
+(0.836--0.954), so the lead-in does not carry it either. Three restrictions follow. A history
+from earlier half-years only did not separate the classes (0.603, 0.419--0.780, 13 bad runs): the signal changes
+between half-years by more than a bad run differs from a good one, so the history must be recent, and the data do not
+allow a causal test at finer resolution. Run length alone separated better than any signal score (0.982 against 0.925;
+inside a machine and half-year 0.988 against 0.905): in these data a bad run is mostly a run of unusual length.
+And retrieval of other bad runs was inflated by the half-year: inside the query's own half-year the top ten held bad
+runs in 0.254 of positions under BL, 0.212 under ZL and 0.377 under RMS, at a chance level of 0.183 (the frozen
+protocol had reported 0.177 against a chance level of 0.026).
+
+\textbf{Time warping.} We stretched query intervals by 1, 2, 5 and 10\% to imitate a feed override and searched for
+the source interval. It stayed in the BL top ten for 0.97, 0.76, 0.51 and 0.20 of 100 queries, against 1.00, 0.79,
+0.20 and 0.07 for ZL. Bounded lag absorbs small offsets, not changes of speed.
+
+\textbf{Probes.} On an unfiltered gallery of 85,042 windows, probe search returned the exact top ten for all 100
+queries, at a p50 of 56\,ms against 141\,ms for exact search and a p95 of 126 against 176\,ms. The frozen rule asked
+for half the exact p95, so the speed claim does not hold at this gallery size; it agrees with Section~\ref{sec:limits}
+that exact search suits galleries below a few hundred thousand windows.
+
+\textbf{What follows for industrial use.} Lag tolerance improves retrieval on machining vibration as it does on
+seismic envelopes: BL beat ZL in every comparison, inside and across half-years. A nearest-neighbour score against a
+recent good history separates bad runs without training, but simpler values do as well or better here: RMS for
+retrieval and run length for scoring. The envelope is normalised and so blind to level and duration; a product should
+offer both next to the shape.
+A changed speed needs alignment or segmentation by NC block before search; at 5\% stretch half of the sources are
+lost. The study covers one public dataset, run-level labels without time stamps, single axes and synthetic stretching
+on one laptop; it makes no claim on diagnosis or on real-time decisions at the machine.
+
+% --- Ledger rows (Claims and evidence) ---
+% history score AUROC 0.925 (BL), 0.875 (ZL), 0.852 (RMS); BL vs RMS n.s. & IU1; E, C & run labels, all half-years as history \\
+% inside machine and half-year: BL 0.905 vs ZL 0.790; without M02 Feb 2019: 0.854 & IU1-A1; E, C & post hoc, rules written first \\
+% earlier half-years only: BL 0.603 (n.s.), 13 bad runs & IU1-A1; E, C & half-year resolution only \\
+% without each run's first 2 s: BL 0.900 & IU1-A2; E, C & query side only, 2 s assumed \\
+% run length alone: AUROC 0.982, better than BL & IU1-A1; E, C & run length from file length \\
+% other bad runs in top 10 inside the half-year: BL 0.254, ZL 0.212, RMS 0.377, chance 0.183 & IU1-A1; E, C & replaces 0.177 vs 0.026 of IU1 \\
+% same operation on other machine 0.503 vs 0.412 & IU1; E, C & axis filter only \\
+% stretch 1/2/5/10\%: source in top 10 0.97/0.76/0.51/0.20 & IU1; E, C & synthetic stretch \\
+% probes recall 1.0, p95 126 vs 176 ms at 85k windows & IU1; P, C & laptop, Docker \\
+
+% --- Bibliography entry ---
+% @article{bosch-cnc, author={Tnani, Mohamed-Ali and Feil, Michael and Diepold, Klaus},
+%   title={Smart Data Collection System for Brownfield {CNC} Milling Machines: A New Benchmark Dataset for
+%   Data-Driven Machine Monitoring}, journal={Procedia CIRP}, volume={107}, pages={131--136}, year={2022},
+%   doi={10.1016/j.procir.2022.04.022}}

@@ -1,0 +1,1286 @@
+{
+ "verdict": {
+  "S1": false,
+  "S2": null,
+  "S3": null,
+  "S4": null,
+  "S5": null,
+  "S6": false,
+  "passes": false
+ },
+ "storage": {
+  "missing": true
+ },
+ "speed": {
+  "missing": true
+ },
+ "b3": {
+  "loads_correct": {
+   "S grizzbit2 D2 r1": true,
+   "S grizzbit2 D2 r2": true,
+   "S grizzbit2 D2 r3": true,
+   "S grizzbit2 D1 r1": true,
+   "S grizzbit2 D1 r2": true,
+   "S grizzbit2 D1 r3": true,
+   "S release D2 r1": true,
+   "S release D2 r2": true,
+   "S release D2 r3": true,
+   "S release D1 r1": true,
+   "S release D1 r2": true,
+   "S release D1 r3": true,
+   "S questdb D2 r1": true,
+   "S questdb D2 r2": true,
+   "S questdb D2 r3": true,
+   "S questdb D1 r1": true,
+   "S questdb D1 r2": true,
+   "S questdb D1 r3": true,
+   "P grizzbit2 D2 r1": true,
+   "P grizzbit2 D2 r2": true,
+   "P grizzbit2 D2 r3": true,
+   "P grizzbit2 D1 r1": true,
+   "P grizzbit2 D1 r2": true,
+   "P grizzbit2 D1 r3": true,
+   "P release D2 r1": true,
+   "P release D2 r2": true,
+   "P release D2 r3": true,
+   "P release D1 r1": true,
+   "P release D1 r2": true,
+   "P release D1 r3": true,
+   "P questdb D2 r1": true,
+   "P questdb D2 r2": true,
+   "P questdb D2 r3": true,
+   "P questdb D1 r1": true,
+   "P questdb D1 r2": true,
+   "P questdb D1 r3": true
+  },
+  "void_or_missing": [],
+  "failed_attempts_kept": [],
+  "read_mismatches_D2r1": {
+   "g2": 0,
+   "rel": 0,
+   "q": 0
+  },
+  "release_vs_questdb": {
+   "ingest_S_D2": {
+    "statement": "faster",
+    "ratio_of_medians": 1.413,
+    "bound": 1.398,
+    "rates": {
+     "rel": [
+      13717982,
+      14266412,
+      13777441
+     ],
+     "q": [
+      8903171,
+      9750512,
+      9811636
+     ]
+    }
+   },
+   "ingest_S_D1": {
+    "statement": "faster",
+    "ratio_of_medians": 1.632,
+    "bound": 1.539,
+    "rates": {
+     "rel": [
+      13378790,
+      13967862,
+      13989705
+     ],
+     "q": [
+      8560645,
+      8694617,
+      7574353
+     ]
+    }
+   },
+   "ingest_P_D2": {
+    "statement": "faster",
+    "ratio_of_medians": 1.612,
+    "bound": 1.588,
+    "rates": {
+     "rel": [
+      23195557,
+      23075963,
+      22773949
+     ],
+     "q": [
+      14341115,
+      14315414,
+      10702888
+     ]
+    }
+   },
+   "ingest_P_D1": {
+    "statement": "faster",
+    "ratio_of_medians": 1.735,
+    "bound": 1.596,
+    "rates": {
+     "rel": [
+      22978215,
+      22810852,
+      21154486
+     ],
+     "q": [
+      13252080,
+      13150529,
+      12322058
+     ]
+    }
+   },
+   "R1": {
+    "statement": "faster",
+    "p50_ratio": 1.322,
+    "p95_ratio": 1.613,
+    "ms": {
+     "rel": [
+      0.63,
+      1.045
+     ],
+     "q": [
+      0.833,
+      1.686
+     ]
+    }
+   },
+   "R2": {
+    "statement": "faster",
+    "p50_ratio": 3.186,
+    "p95_ratio": 4.568,
+    "ms": {
+     "rel": [
+      2.25,
+      3.022
+     ],
+     "q": [
+      7.169,
+      13.806
+     ]
+    }
+   },
+   "R3": {
+    "statement": "faster",
+    "p50_ratio": 3.698,
+    "p95_ratio": 4.241,
+    "ms": {
+     "rel": [
+      2.831,
+      3.718
+     ],
+     "q": [
+      10.468,
+      15.769
+     ]
+    }
+   },
+   "R4_recent": {
+    "statement": "faster",
+    "p50_ratio": 1.15,
+    "p95_ratio": 1.471,
+    "ms": {
+     "rel": [
+      0.627,
+      1.011
+     ],
+     "q": [
+      0.721,
+      1.487
+     ]
+    }
+   },
+   "R4_older": {
+    "statement": "faster",
+    "p50_ratio": 1.252,
+    "p95_ratio": 1.571,
+    "ms": {
+     "rel": [
+      0.603,
+      0.985
+     ],
+     "q": [
+      0.755,
+      1.547
+     ]
+    }
+   },
+   "R5": {
+    "statement": "faster",
+    "qps_ratio": 1.645,
+    "qps": {
+     "rel": 3872.0,
+     "q": 2353.7
+    },
+    "ms": {
+     "rel": [
+      0.916,
+      1.569
+     ],
+     "q": [
+      1.191,
+      3.812
+     ]
+    }
+   },
+   "statistics": {
+    "statement": "faster",
+    "p50_ratio": 5.398,
+    "p95_ratio": 9.486,
+    "ms": {
+     "rel": [
+      0.457,
+      0.508
+     ],
+     "q": [
+      2.467,
+      4.819
+     ]
+    }
+   }
+  },
+  "grizzbit2_vs_questdb": {
+   "ingest_S_D2": {
+    "statement": "faster",
+    "ratio_of_medians": 1.283,
+    "bound": 1.206,
+    "rates": {
+     "g2": [
+      11831695,
+      12511863,
+      12748172
+     ],
+     "q": [
+      8903171,
+      9750512,
+      9811636
+     ]
+    }
+   },
+   "ingest_S_D1": {
+    "statement": "faster",
+    "ratio_of_medians": 1.449,
+    "bound": 1.406,
+    "rates": {
+     "g2": [
+      12401605,
+      12437906,
+      12221861
+     ],
+     "q": [
+      8560645,
+      8694617,
+      7574353
+     ]
+    }
+   },
+   "ingest_P_D2": {
+    "statement": "faster",
+    "ratio_of_medians": 1.48,
+    "bound": 1.444,
+    "rates": {
+     "g2": [
+      21187580,
+      20706484,
+      21431807
+     ],
+     "q": [
+      14341115,
+      14315414,
+      10702888
+     ]
+    }
+   },
+   "ingest_P_D1": {
+    "statement": "faster",
+    "ratio_of_medians": 1.636,
+    "bound": 1.555,
+    "rates": {
+     "g2": [
+      21514392,
+      21557404,
+      20606252
+     ],
+     "q": [
+      13252080,
+      13150529,
+      12322058
+     ]
+    }
+   },
+   "R1": {
+    "statement": "faster",
+    "p50_ratio": 1.28,
+    "p95_ratio": 1.405,
+    "ms": {
+     "g2": [
+      0.651,
+      1.2
+     ],
+     "q": [
+      0.833,
+      1.686
+     ]
+    }
+   },
+   "R2": {
+    "statement": "faster",
+    "p50_ratio": 2.986,
+    "p95_ratio": 4.462,
+    "ms": {
+     "g2": [
+      2.401,
+      3.094
+     ],
+     "q": [
+      7.169,
+      13.806
+     ]
+    }
+   },
+   "R3": {
+    "statement": "faster",
+    "p50_ratio": 3.201,
+    "p95_ratio": 3.439,
+    "ms": {
+     "g2": [
+      3.27,
+      4.586
+     ],
+     "q": [
+      10.468,
+      15.769
+     ]
+    }
+   },
+   "R4_recent": {
+    "statement": "none",
+    "p50_ratio": 1.071,
+    "p95_ratio": 1.277,
+    "ms": {
+     "g2": [
+      0.673,
+      1.164
+     ],
+     "q": [
+      0.721,
+      1.487
+     ]
+    }
+   },
+   "R4_older": {
+    "statement": "faster",
+    "p50_ratio": 1.327,
+    "p95_ratio": 1.577,
+    "ms": {
+     "g2": [
+      0.569,
+      0.981
+     ],
+     "q": [
+      0.755,
+      1.547
+     ]
+    }
+   },
+   "R5": {
+    "statement": "faster",
+    "qps_ratio": 1.719,
+    "qps": {
+     "g2": 4045.2,
+     "q": 2353.7
+    },
+    "ms": {
+     "g2": [
+      0.868,
+      1.547
+     ],
+     "q": [
+      1.191,
+      3.812
+     ]
+    }
+   },
+   "statistics": {
+    "statement": "faster",
+    "p50_ratio": 5.422,
+    "p95_ratio": 8.941,
+    "ms": {
+     "g2": [
+      0.455,
+      0.539
+     ],
+     "q": [
+      2.467,
+      4.819
+     ]
+    }
+   }
+  },
+  "grizzbit2_vs_release": {
+   "ingest_S_D2": {
+    "statement": "none",
+    "ratio_of_medians": 0.908,
+    "bound": null,
+    "rates": {
+     "g2": [
+      11831695,
+      12511863,
+      12748172
+     ],
+     "rel": [
+      13717982,
+      14266412,
+      13777441
+     ]
+    }
+   },
+   "ingest_S_D1": {
+    "statement": "none",
+    "ratio_of_medians": 0.888,
+    "bound": null,
+    "rates": {
+     "g2": [
+      12401605,
+      12437906,
+      12221861
+     ],
+     "rel": [
+      13378790,
+      13967862,
+      13989705
+     ]
+    }
+   },
+   "ingest_P_D2": {
+    "statement": "none",
+    "ratio_of_medians": 0.918,
+    "bound": null,
+    "rates": {
+     "g2": [
+      21187580,
+      20706484,
+      21431807
+     ],
+     "rel": [
+      23195557,
+      23075963,
+      22773949
+     ]
+    }
+   },
+   "ingest_P_D1": {
+    "statement": "none",
+    "ratio_of_medians": 0.943,
+    "bound": null,
+    "rates": {
+     "g2": [
+      21514392,
+      21557404,
+      20606252
+     ],
+     "rel": [
+      22978215,
+      22810852,
+      21154486
+     ]
+    }
+   },
+   "R1": {
+    "statement": "none",
+    "p50_ratio": 0.968,
+    "p95_ratio": 0.871,
+    "ms": {
+     "g2": [
+      0.651,
+      1.2
+     ],
+     "rel": [
+      0.63,
+      1.045
+     ]
+    }
+   },
+   "R2": {
+    "statement": "none",
+    "p50_ratio": 0.937,
+    "p95_ratio": 0.977,
+    "ms": {
+     "g2": [
+      2.401,
+      3.094
+     ],
+     "rel": [
+      2.25,
+      3.022
+     ]
+    }
+   },
+   "R3": {
+    "statement": "slower",
+    "p50_ratio": 0.866,
+    "p95_ratio": 0.811,
+    "ms": {
+     "g2": [
+      3.27,
+      4.586
+     ],
+     "rel": [
+      2.831,
+      3.718
+     ]
+    }
+   },
+   "R4_recent": {
+    "statement": "none",
+    "p50_ratio": 0.932,
+    "p95_ratio": 0.869,
+    "ms": {
+     "g2": [
+      0.673,
+      1.164
+     ],
+     "rel": [
+      0.627,
+      1.011
+     ]
+    }
+   },
+   "R4_older": {
+    "statement": "none",
+    "p50_ratio": 1.06,
+    "p95_ratio": 1.004,
+    "ms": {
+     "g2": [
+      0.569,
+      0.981
+     ],
+     "rel": [
+      0.603,
+      0.985
+     ]
+    }
+   },
+   "R5": {
+    "statement": "none",
+    "qps_ratio": 1.045,
+    "qps": {
+     "g2": 4045.2,
+     "rel": 3872.0
+    },
+    "ms": {
+     "g2": [
+      0.868,
+      1.547
+     ],
+     "rel": [
+      0.916,
+      1.569
+     ]
+    }
+   },
+   "statistics": {
+    "statement": "none",
+    "p50_ratio": 1.004,
+    "p95_ratio": 0.942,
+    "ms": {
+     "g2": [
+      0.455,
+      0.539
+     ],
+     "rel": [
+      0.457,
+      0.508
+     ]
+    }
+   }
+  },
+  "S6a": {
+   "holds": false,
+   "failures": [
+    "R4_recent: release faster, Grizzbit 2 none"
+   ]
+  },
+  "S6b": {
+   "holds": false,
+   "failures": [
+    "R3: Grizzbit 2 slower than the release"
+   ]
+  },
+  "ingestion_grizzbit2_vs_release": {
+   "ingest_S_D2": {
+    "statement": "none",
+    "ratio_of_medians": 0.908,
+    "bound": null,
+    "rates": {
+     "g2": [
+      11831695,
+      12511863,
+      12748172
+     ],
+     "rel": [
+      13717982,
+      14266412,
+      13777441
+     ]
+    }
+   },
+   "ingest_S_D1": {
+    "statement": "none",
+    "ratio_of_medians": 0.888,
+    "bound": null,
+    "rates": {
+     "g2": [
+      12401605,
+      12437906,
+      12221861
+     ],
+     "rel": [
+      13378790,
+      13967862,
+      13989705
+     ]
+    }
+   },
+   "ingest_P_D2": {
+    "statement": "none",
+    "ratio_of_medians": 0.918,
+    "bound": null,
+    "rates": {
+     "g2": [
+      21187580,
+      20706484,
+      21431807
+     ],
+     "rel": [
+      23195557,
+      23075963,
+      22773949
+     ]
+    }
+   },
+   "ingest_P_D1": {
+    "statement": "none",
+    "ratio_of_medians": 0.943,
+    "bound": null,
+    "rates": {
+     "g2": [
+      21514392,
+      21557404,
+      20606252
+     ],
+     "rel": [
+      22978215,
+      22810852,
+      21154486
+     ]
+    }
+   }
+  },
+  "server_per_cell": {
+   "S grizzbit2 D2": [
+    {
+     "rep": 1,
+     "samples_per_s": 11831695,
+     "cpu_mean": 180.7,
+     "mem_peak_mib": 179.1,
+     "kernel_peak_mib": 523.3
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 12511863,
+     "cpu_mean": 165.5,
+     "mem_peak_mib": 176.8,
+     "kernel_peak_mib": 524.2
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 12748172,
+     "cpu_mean": 163.2,
+     "mem_peak_mib": 178.0,
+     "kernel_peak_mib": 523.3
+    }
+   ],
+   "S grizzbit2 D1": [
+    {
+     "rep": 1,
+     "samples_per_s": 12401605,
+     "cpu_mean": 170.7,
+     "mem_peak_mib": 175.2,
+     "kernel_peak_mib": 523.4
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 12437906,
+     "cpu_mean": 165.6,
+     "mem_peak_mib": 176.2,
+     "kernel_peak_mib": 525.1
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 12221861,
+     "cpu_mean": 167.9,
+     "mem_peak_mib": 173.0,
+     "kernel_peak_mib": 522.7
+    }
+   ],
+   "S release D2": [
+    {
+     "rep": 1,
+     "samples_per_s": 13717982,
+     "cpu_mean": 102.4,
+     "mem_peak_mib": 177.6,
+     "kernel_peak_mib": 541.8
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 14266412,
+     "cpu_mean": 120.0,
+     "mem_peak_mib": 178.0,
+     "kernel_peak_mib": 541.9
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 13777441,
+     "cpu_mean": 124.3,
+     "mem_peak_mib": 177.5,
+     "kernel_peak_mib": 542.2
+    }
+   ],
+   "S release D1": [
+    {
+     "rep": 1,
+     "samples_per_s": 13378790,
+     "cpu_mean": 100.9,
+     "mem_peak_mib": 177.7,
+     "kernel_peak_mib": 541.6
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 13967862,
+     "cpu_mean": 117.4,
+     "mem_peak_mib": 178.1,
+     "kernel_peak_mib": 541.4
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 13989705,
+     "cpu_mean": 116.4,
+     "mem_peak_mib": 179.2,
+     "kernel_peak_mib": 541.7
+    }
+   ],
+   "S questdb D2": [
+    {
+     "rep": 1,
+     "samples_per_s": 8903171,
+     "cpu_mean": 303.9,
+     "mem_peak_mib": 2277.4,
+     "kernel_peak_mib": 3255.5
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 9750512,
+     "cpu_mean": 283.8,
+     "mem_peak_mib": 2307.1,
+     "kernel_peak_mib": 3261.9
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 9811636,
+     "cpu_mean": 281.9,
+     "mem_peak_mib": 2308.1,
+     "kernel_peak_mib": 3263.5
+    }
+   ],
+   "S questdb D1": [
+    {
+     "rep": 1,
+     "samples_per_s": 8560645,
+     "cpu_mean": 320.1,
+     "mem_peak_mib": 2214.9,
+     "kernel_peak_mib": 3256.9
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 8694617,
+     "cpu_mean": 333.0,
+     "mem_peak_mib": 2241.5,
+     "kernel_peak_mib": 3261.1
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 7574353,
+     "cpu_mean": 286.1,
+     "mem_peak_mib": 2291.7,
+     "kernel_peak_mib": 3258.3
+    }
+   ],
+   "P grizzbit2 D2": [
+    {
+     "rep": 1,
+     "samples_per_s": 21187580,
+     "cpu_mean": 365.8,
+     "mem_peak_mib": 228.5,
+     "kernel_peak_mib": 601.9
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 20706484,
+     "cpu_mean": 383.0,
+     "mem_peak_mib": 217.6,
+     "kernel_peak_mib": 601.3
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 21431807,
+     "cpu_mean": 361.8,
+     "mem_peak_mib": 231.3,
+     "kernel_peak_mib": 605.8
+    }
+   ],
+   "P grizzbit2 D1": [
+    {
+     "rep": 1,
+     "samples_per_s": 21514392,
+     "cpu_mean": 362.8,
+     "mem_peak_mib": 228.7,
+     "kernel_peak_mib": 600.8
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 21557404,
+     "cpu_mean": 361.3,
+     "mem_peak_mib": 232.7,
+     "kernel_peak_mib": 607.5
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 20606252,
+     "cpu_mean": 406.3,
+     "mem_peak_mib": 231.1,
+     "kernel_peak_mib": 602.9
+    }
+   ],
+   "P release D2": [
+    {
+     "rep": 1,
+     "samples_per_s": 23195557,
+     "cpu_mean": 187.4,
+     "mem_peak_mib": 237.6,
+     "kernel_peak_mib": 605.2
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 23075963,
+     "cpu_mean": 182.3,
+     "mem_peak_mib": 239.9,
+     "kernel_peak_mib": 602.6
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 22773949,
+     "cpu_mean": 193.3,
+     "mem_peak_mib": 237.6,
+     "kernel_peak_mib": 606.4
+    }
+   ],
+   "P release D1": [
+    {
+     "rep": 1,
+     "samples_per_s": 22978215,
+     "cpu_mean": 186.7,
+     "mem_peak_mib": 236.4,
+     "kernel_peak_mib": 605.7
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 22810852,
+     "cpu_mean": 182.9,
+     "mem_peak_mib": 235.7,
+     "kernel_peak_mib": 602.7
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 21154486,
+     "cpu_mean": 248.8,
+     "mem_peak_mib": 230.2,
+     "kernel_peak_mib": 601.1
+    }
+   ],
+   "P questdb D2": [
+    {
+     "rep": 1,
+     "samples_per_s": 14341115,
+     "cpu_mean": 754.5,
+     "mem_peak_mib": 2400.3,
+     "kernel_peak_mib": 3604.7
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 14315414,
+     "cpu_mean": 742.1,
+     "mem_peak_mib": 2482.2,
+     "kernel_peak_mib": 3647.2
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 10702888,
+     "cpu_mean": 701.4,
+     "mem_peak_mib": 2506.8,
+     "kernel_peak_mib": 3540.3
+    }
+   ],
+   "P questdb D1": [
+    {
+     "rep": 1,
+     "samples_per_s": 13252080,
+     "cpu_mean": 673.7,
+     "mem_peak_mib": 2385.9,
+     "kernel_peak_mib": 3569.6
+    },
+    {
+     "rep": 2,
+     "samples_per_s": 13150529,
+     "cpu_mean": 587.3,
+     "mem_peak_mib": 2744.3,
+     "kernel_peak_mib": 3735.8
+    },
+    {
+     "rep": 3,
+     "samples_per_s": 12322058,
+     "cpu_mean": 636.7,
+     "mem_peak_mib": 2613.2,
+     "kernel_peak_mib": 3676.6
+    }
+   ]
+  },
+  "storage_D2r1": {
+   "grizzbit2": {
+    "storage": {
+     "relations": {
+      "b3": {
+       "heap": 630784,
+       "toast": 8192,
+       "indexes": 90112
+      },
+      "b3_chunks": {
+       "heap": 4325376,
+       "toast": 153214976,
+       "indexes": 2088960
+      },
+      "b3_segments": {
+       "heap": 0,
+       "toast": 8192,
+       "indexes": 8192
+      }
+     },
+     "groups": {
+      "high": {
+       "encoded_bytes": 120041410,
+       "samples": 95633376
+      },
+      "mid": {
+       "encoded_bytes": 16217838,
+       "samples": 5952744
+      },
+      "process": {
+       "encoded_bytes": 4123,
+       "samples": 615
+      }
+     },
+     "pg_wal": 167772160,
+     "database": 168520851,
+     "b5_chunk_kinds": {
+      "high": {
+       "v2 grid": {
+        "chunks": 4657,
+        "chunk_bytes": 22149642,
+        "samples": 18684537
+       },
+       "v4 pco": {
+        "chunks": 18869,
+        "chunk_bytes": 97891729,
+        "samples": 76948839
+       },
+       "total": {
+        "chunks": 23526,
+        "chunk_bytes": 120041371,
+        "samples": 95633376
+       }
+      },
+      "mid": {
+       "v2 float": {
+        "chunks": 93,
+        "chunk_bytes": 2238302,
+        "samples": 371374
+       },
+       "v3 grid": {
+        "chunks": 496,
+        "chunk_bytes": 2163790,
+        "samples": 1984248
+       },
+       "v4 pco": {
+        "chunks": 899,
+        "chunk_bytes": 11815746,
+        "samples": 3597122
+       },
+       "total": {
+        "chunks": 1488,
+        "chunk_bytes": 16217838,
+        "samples": 5952744
+       }
+      },
+      "process": {
+       "v2 raw": {
+        "chunks": 1,
+        "chunk_bytes": 47,
+        "samples": 5
+       },
+       "v2 grid": {
+        "chunks": 97,
+        "chunk_bytes": 2897,
+        "samples": 481
+       },
+       "v2 float": {
+        "chunks": 19,
+        "chunk_bytes": 797,
+        "samples": 94
+       },
+       "v3 grid": {
+        "chunks": 7,
+        "chunk_bytes": 258,
+        "samples": 35
+       },
+       "total": {
+        "chunks": 124,
+        "chunk_bytes": 3999,
+        "samples": 615
+       }
+      }
+     },
+     "volume": {
+      "apparent": 359685666,
+      "allocated": 359763968,
+      "pg_wal_allocated": 167772160
+     }
+    },
+    "native_lib": {
+     "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/b5/libmorlet_ffi.dylib",
+     "sha256": "e55b6d38a65282d58c81ff93ec1e880f2f5c66078c5f5459d7991941c7fbcebd"
+    },
+    "image_id": "sha256:2f9d5e33df909778e9c77b1d3fe603b1298482044479d30deafb16b3326e3fa6"
+   },
+   "release": {
+    "storage": {
+     "relations": {
+      "b3": {
+       "heap": 630784,
+       "toast": 8192,
+       "indexes": 90112
+      },
+      "b3_chunks": {
+       "heap": 4325376,
+       "toast": 155983872,
+       "indexes": 2088960
+      },
+      "b3_segments": {
+       "heap": 0,
+       "toast": 8192,
+       "indexes": 8192
+      }
+     },
+     "groups": {
+      "high": {
+       "encoded_bytes": 122148988,
+       "samples": 95633376
+      },
+      "mid": {
+       "encoded_bytes": 16577315,
+       "samples": 5952744
+      },
+      "process": {
+       "encoded_bytes": 4123,
+       "samples": 615
+      }
+     },
+     "pg_wal": 184549376,
+     "database": 171289747,
+     "b5_chunk_kinds": {
+      "high": {
+       "v2 grid": {
+        "chunks": 23526,
+        "chunk_bytes": 122148949,
+        "samples": 95633376
+       },
+       "total": {
+        "chunks": 23526,
+        "chunk_bytes": 122148949,
+        "samples": 95633376
+       }
+      },
+      "mid": {
+       "v2 float": {
+        "chunks": 992,
+        "chunk_bytes": 14413525,
+        "samples": 3968496
+       },
+       "v3 grid": {
+        "chunks": 496,
+        "chunk_bytes": 2163790,
+        "samples": 1984248
+       },
+       "total": {
+        "chunks": 1488,
+        "chunk_bytes": 16577315,
+        "samples": 5952744
+       }
+      },
+      "process": {
+       "v2 raw": {
+        "chunks": 1,
+        "chunk_bytes": 47,
+        "samples": 5
+       },
+       "v2 grid": {
+        "chunks": 97,
+        "chunk_bytes": 2897,
+        "samples": 481
+       },
+       "v2 float": {
+        "chunks": 19,
+        "chunk_bytes": 797,
+        "samples": 94
+       },
+       "v3 grid": {
+        "chunks": 7,
+        "chunk_bytes": 258,
+        "samples": 35
+       },
+       "total": {
+        "chunks": 124,
+        "chunk_bytes": 3999,
+        "samples": 615
+       }
+      }
+     },
+     "volume": {
+      "apparent": 379231778,
+      "allocated": 379305984,
+      "pg_wal_allocated": 184549376
+     }
+    },
+    "native_lib": {
+     "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/release/libmorlet_ffi.dylib",
+     "sha256": "343a8d9fd17d19c3c0ece5aab270d6ec9e7f3eb3591573cf321b49fd68aa42ff"
+    },
+    "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38"
+   },
+   "questdb": {
+    "storage_native": {
+     "tables": {
+      "b3_mid": {
+       "symbols": {
+        "apparent": 24576,
+        "allocated": 24576,
+        "files": 4
+       },
+       "metadata": {
+        "apparent": 16401,
+        "allocated": 20480,
+        "files": 5
+       },
+       "data": {
+        "apparent": 47652864,
+        "allocated": 47652864,
+        "files": 9
+       },
+       "identity": {
+        "apparent": 7942144,
+        "allocated": 7942144,
+        "files": 3
+       },
+       "timestamps": {
+        "apparent": 15884288,
+        "allocated": 15884288,
+        "files": 3
+       },
+       "wal": {
+        "apparent": 4974974,
+        "allocated": 4997120,
+        "files": 18
+       }
+      },
+      "b3_high": {
+       "symbols": {
+        "apparent": 24576,
+        "allocated": 24576,
+        "files": 4
+       },
+       "metadata": {
+        "apparent": 16403,
+        "allocated": 20480,
+        "files": 5
+       },
+       "data": {
+        "apparent": 765087744,
+        "allocated": 765112320,
+        "files": 9
+       },
+       "identity": {
+        "apparent": 127516672,
+        "allocated": 127524864,
+        "files": 3
+       },
+       "timestamps": {
+        "apparent": 255029248,
+        "allocated": 255037440,
+        "files": 3
+       },
+       "wal": {
+        "apparent": 11313880,
+        "allocated": 11345920,
+        "files": 18
+       }
+      },
+      "b3_process": {
+       "symbols": {
+        "apparent": 24576,
+        "allocated": 24576,
+        "files": 4
+       },
+       "metadata": {
+        "apparent": 16409,
+        "allocated": 20480,
+        "files": 5
+       },
+       "identity": {
+        "apparent": 12288,
+        "allocated": 12288,
+        "files": 3
+       },
+       "data": {
+        "apparent": 12288,
+        "allocated": 12288,
+        "files": 3
+       },
+       "timestamps": {
+        "apparent": 12288,
+        "allocated": 12288,
+        "files": 3
+       },
+       "wal": {
+        "apparent": 52901,
+        "allocated": 73728,
+        "files": 12
+       }
+      }
+     },
+     "volume": {
+      "apparent": 1250029585,
+      "allocated": 1250324480
+     }
+    }
+   }
+  }
+ }
+}

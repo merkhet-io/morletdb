@@ -1,0 +1,22 @@
+2026-11-10T18:08:58
+18:08  up 14 days,  3:05, 19 users, load averages: 7.02 5.44 3.53
+ %CPU COMM
+213.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.2 /usr/sbin/coreaudiod
+  3.4 /usr/libexec/spotlightknowledged.updater
+  1.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+  0.9 bash
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-10T18:09:39
+18:09  up 14 days,  3:05, 19 users, load averages: 10.86 6.65 4.06
+ %CPU COMM
+119.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 72.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 29.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.1 /usr/sbin/coreaudiod
+  3.0 /usr/libexec/PerfPowerServices
+  1.6 /System/Library/CoreServices/WindowManager.app/Contents/MacOS/WindowManager
+  1.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.8 /usr/sbin/cfprefsd

@@ -1,0 +1,11 @@
+2026-11-09T07:26:59
+ 7:26  up 12 days, 16:23, 19 users, load averages: 4.82 4.99 3.99
+ %CPU COMM
+274.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 37.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 20.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 11.8 /usr/libexec/coreduetd
+  8.8 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  5.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.7 /usr/libexec/airportd

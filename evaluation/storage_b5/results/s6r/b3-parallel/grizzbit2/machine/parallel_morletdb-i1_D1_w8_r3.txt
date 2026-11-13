@@ -1,0 +1,23 @@
+gate met 2026-11-10T22:22:17 after 73 s, load { 2.99 3.81 6.11 }
+2026-11-10T22:22:17
+22:22  up 14 days,  7:18, 19 users, load averages: 2.99 3.81 6.11
+ %CPU COMM
+ 37.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 20.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.0 claude
+  3.3 claude
+  3.2 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  3.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  3.0 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+2026-11-10T22:22:36
+22:22  up 14 days,  7:18, 19 users, load averages: 4.12 4.02 6.13
+ %CPU COMM
+208.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 79.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 32.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 27.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.5 claude
+  3.8 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  2.8 claude
+  2.0 /Applications/Docker.app/Contents/MacOS/com.docker.build

@@ -1,0 +1,52 @@
+{
+ "system": "morletdb-i1",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 4.905,
+  "samples_per_s": 20708793,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 307.671,
+   "p95_ms": 358.347,
+   "max_ms": 371.626
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "server": {
+   "cpu_percent_mean": 318.6,
+   "cpu_percent_p95": 361.4,
+   "memory_peak_mib": 220.9,
+   "samples": 3,
+   "kernel_memory": {
+    "peak_mib": 568.1,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 455.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 270.3
+   }
+  }
+ },
+ "image": "morletdb:b6",
+ "image_id": "sha256:99ad124df31fef7dee84d041eba537a88e1321da660e9d9edfb3eb82ed0429eb",
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.2
+  }
+ },
+ "correct": true,
+ "b6_chunk_format": {
+  "asked": "grizzbit21"
+ }
+}

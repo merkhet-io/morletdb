@@ -4,12 +4,12 @@
 |---|---|
 | Title | MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL |
 | Type | technical report / preprint (not peer reviewed); the title page shows only the version |
-| Version | 0.21, 2026-11-08 (from `REPORT_VERSION`) |
-| Author | Zin Nam (no affiliation stated) |
+| Version | 0.24, 2026-11-12 (from `REPORT_VERSION`) |
+| Authors | Zin Nam (no affiliation stated); Semir Maslo (Sulzer-BDiM) |
 | Report sources | the commit recorded as `report_source_commit` in [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json); the sources first entered `main` with merge commit cdf8b4b |
 | Measured software | E1 (main retrieval tables) and diagnostics D1–D2: pg_morlet at `main` 68594d7, library SHA-256 `3c786684…`; earlier studies used earlier implementation states, labelled in the report and in [STUDIES.md](STUDIES.md) (see [ARTIFACT.md](ARTIFACT.md)) |
 | Licence | report text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0 (repository `LICENSE`) |
-| Tag | `paper-v0.21`, on the commit that contains this manifest |
+| Tag | `paper-v0.24`, on the commit that contains this manifest |
 | Funding | none |
 | Conflicts of interest | no statement (author's decision) |
 
@@ -17,7 +17,7 @@
 
 | File | What |
 |---|---|
-| `morletdb.pdf` | main report (13 pages) |
+| `morletdb.pdf` | main report (15 pages) |
 | `supplement.pdf` | supplement (8 pages): storage (with grid detection, the 2026 float codecs and comparisons with QuestDB, CrateDB, IoTDB, TDengine and TimescaleDB), chunk summaries, building, access control, recovery and load, small machines, agent access (case studies), study overview, application evidence and negative results |
 | `RELEASE_MANIFEST.json` | version, date, commits, PDF SHA-256 sums, proposed tag; `release_manifest.py --check` verifies it |
 | `STUDIES.md` | every study: question, comparison fixed before measuring (with commits), result, limitation, decision, kind of evidence |
@@ -55,5 +55,5 @@ The same statement appears at the end of the report.
 - licence of text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code stays Apache-2.0;
 - funding: none; no conflict-of-interest statement;
 - AI statement: as printed at the end of the report;
-- publication: GitHub release under tag `paper-v<version>` (0.11–0.13 released; 0.14 frames speed as when exact, when probes; 0.15 adds merged evidence: E5/E5-H, G1, B3, MCP; 0.16 adds E7, screened exact search; 0.17 adds B3.3, B4, chunk summaries, small machines and the acquisition security fix; 0.18 adds CrateDB and IoTDB, B3.4 and B3.5; 0.19 adds TDengine, B3.6; 0.20 corrects speed ratios to same-session pairs (B3.8, B3.9) and adds I1 ingestion (B3.10–B3.12); 0.21 corrects the conclusion, which still compared probes with the pre-screening exact path (5–8.5×), to the 1.6–2.3× against the screened exact path that the abstract, Section 6 and the limitations report);
+- publication: GitHub release under tag `paper-v<version>` (0.11–0.13 released; 0.14 frames speed as when exact, when probes; 0.15 adds merged evidence: E5/E5-H, G1, B3, MCP; 0.16 adds E7, screened exact search; 0.17 adds B3.3, B4, chunk summaries, small machines and the acquisition security fix; 0.18 adds CrateDB and IoTDB, B3.4 and B3.5; 0.19 adds TDengine, B3.6; 0.20 corrects speed ratios to same-session pairs (B3.8, B3.9) and adds I1 ingestion (B3.10–B3.12); 0.21 corrects the conclusion, which still compared probes with the pre-screening exact path (5–8.5×), to the 1.6–2.3× against the screened exact path that the abstract, Section 6 and the limitations report; 0.22 names the chunk codec Grizzbit, with no other change; 0.23 adds Semir Maslo as second author and the section "Industrial use" with the study IU1 on the public Bosch CNC data (`evaluation/industrial_iu1/`, with drift and lead-in addenda A1 and A2), and notes write-time verification on every append path; 0.24 adds S. Maslo's studies IU2 (tool wear, `evaluation/industrial_iu2/`) and IU1-E (latency under 2 CPUs and 512 MB, `evaluation/industrial_latency/`) to Section 10, and Grizzbit 2.1 (B6) to Section 4);
   no preprint server, DOI or journal submission yet.

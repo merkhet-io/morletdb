@@ -1,0 +1,56 @@
+{
+ "system": "questdb",
+ "durability": "D1",
+ "writers": 8,
+ "rep": 1,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 8.646,
+  "samples_per_s": 11749955,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 560.623,
+   "p95_ms": 608.26,
+   "max_ms": 665.177
+  },
+  "queryable_after_last_ack_s": 0.076,
+  "server": {
+   "cpu_percent_mean": 707.0,
+   "cpu_percent_p95": 791.2,
+   "memory_peak_mib": 2423.8,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 3586.8,
+    "anon_mib_at_end": 726.7,
+    "file_mib_at_end": 2727.3,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2435.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.8
+  }
+ },
+ "correct": true,
+ "b6_chunk_format": {
+  "asked": ""
+ }
+}

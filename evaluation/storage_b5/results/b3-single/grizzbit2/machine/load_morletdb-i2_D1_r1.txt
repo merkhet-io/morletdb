@@ -1,0 +1,22 @@
+2026-11-10T20:48:19
+20:48  up 14 days,  5:44, 19 users, load averages: 4.82 6.53 8.94
+ %CPU COMM
+321.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+121.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 39.7 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+ 21.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 13.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  8.2 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  7.9 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  6.7 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+2026-11-10T20:48:36
+20:48  up 14 days,  5:44, 19 users, load averages: 4.73 6.42 8.86
+ %CPU COMM
+201.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 65.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.2 /usr/sbin/coreaudiod
+  2.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  1.9 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha

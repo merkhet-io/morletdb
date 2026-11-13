@@ -1,0 +1,7 @@
+2026-11-10T22:25:17
+22:25  up 14 days,  7:21, 19 users, load averages: 3.58 4.01 5.78
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          161       43        130.7GB   75.7GB (57%)
+Containers      45        9         1.24GB    33.33MB (2%)
+Local Volumes   283       16        31.36GB   27.24GB (86%)
+Build Cache     639       0         66.1GB    6.887GB

@@ -6,11 +6,11 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+grizzbit = { path = "../grizzbit" }
 serde = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 serde_json = { version = "1", features = ["float_roundtrip"] }
-proptest = { version = "1.12", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true

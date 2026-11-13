@@ -13,9 +13,15 @@ average 3–20); treat latencies as indicative until re-measured on the pilot's 
 | Archive | about 960,000 windows (4096 / 2048) in one collection, 4.8 GB database | larger archives are untested |
 | Search | 4 analysts, one query every 2 s, half filtered (exact path), half unfiltered (probe path), plus one unfiltered exact search per minute defaults: filtered p95 167 ms, probe p95 337 ms (recall 0.998), exact p95 9.7 s; configuration below, 111 min: filtered p95 118 ms, probe p95 138 ms (recall 0.993), exact p95 14.5 s on a growing archive |
 | Recovery | backup/restore, aborted appends/builds, worker kills, deletions, online index rebuild, failed upgrade | all checks passed (see below) |
+| Sample rate (L1, #342) | 1/60 Hz to 64 kHz, and 1 to 100 MHz, 1,048,576 samples each | all exact and equally fast (about 7 M samples/s per writer at every rate); recordings without feature extraction take up to 100 MHz, **higher rates are refused**; search by shape covers 1 Hz to 200 kHz; the one-sample time error at rates such as 1/60 and 1/7 Hz is fixed in 0.3.10-alpha.1 (#343) |
+| Recording length (L1) | 10⁴ to 10⁹ samples in one recording | 10⁹: 7.2 M samples/s in, 24 M out, reads of 4,096 samples 0.6–0.7 ms anywhere, flat commit latency; statistics over 10⁶ samples 8.9× slower than on short recordings, a whole-recording overview 117 ms without roll-ups; below about 10⁵ samples per recording fixed overhead dominates |
+| Values (L1) | integer counts, decimals, ADC values, full-entropy floats, constants, denormals, ±1e9 | all exact; NaN, ±Inf and values beyond ±1e9 are refused; full-entropy floats take 6% more than raw float64 |
+| Ingest pattern (L1) | chunks of 1 to 32,768 samples, 1–16 writers, gaps, resends | gaps, altered resends, overlaps and out-of-order ranges are refused, identical replays accepted; use chunks of about 4,096 samples (64-sample chunks: 5.5× slower, 2.6× larger); 16 writers 21 M samples/s |
+| Memory, CPU, disk (L1) | 10⁸ samples within 256 MB; 1 CPU; a full 400 MB disk | 256 MB: no out-of-memory kill, read-back 31% slower; 1 CPU: ingest 28% slower; a full disk loses no acknowledged sample (FD1, 9 runs): a full data file is an ordinary error, a full write-ahead log stops PostgreSQL (PANIC) until space is freed and then recovers exactly; **keep the steward's disk guard on**: at its reserve it refuses new samples before the disk is full and releases the hold by itself once space is freed |
 
-Outside this range — higher rates, larger archives, cold caches, many tenants under load,
-other machines — nothing is claimed.
+The L1 rows come from [study L1-beta](../evaluation/limits_l1/RESULTS.md) and [FD1](../evaluation/full_disk_fd1/RESULTS.md) (one Apple M5 Max, synthetic data,
+no search structures). Outside this range — larger archives, cold caches, many tenants under load, other
+machines — nothing is claimed.
 
 ## Installation
 
@@ -40,6 +46,7 @@ this page are from PostgreSQL 17.
 | `maintenance_work_mem` | 2–4 GB for the session that runs `morlet_enable_envelope_probes` or rebuilds the probe index | with 64 MB the HNSW build for 235 k windows took ~25 min instead of ~1 min; 939 k windows took 4.6 min with 4 GB |
 | `max_parallel_workers_per_gather` | default (2) or higher | exact search runs as one parallel statement |
 | `shared_buffers`, `max_wal_size`, `checkpoint_timeout`, `wal_compression` | tested together: 8 GB, 16 GB, 15 min, on (pglz) | with defaults, 15 min of target ingest wrote 13.8 GB of WAL for 0.76 GB of growth; with these four settings, 1.91 GB for 0.65 GB (15 min) and 11.96 GB for 4.68 GB (111 min). They were changed together, so no single setting is credited |
+| `morlet.chunk_format` | default `grizzbit1`; `grizzbit21` to opt in to Grizzbit 2.1 (chunk format version 5) | study B6: waveforms 12.6% smaller in total and B3's machine channels up to 20% smaller, ingest about 5% slower with more server CPU, decode down to 53 M samples/s per thread. A misspelt value makes appends fail instead of writing Grizzbit 1. Releases up to 0.3.11-alpha.1 cannot read version-5 chunks, so a downgrade needs them re-appended ([how to use it](grizzbit.md#using-grizzbit-21)) |
 | WAL archiving / disk | with the settings above, about 6.5 GB of WAL per hour at the tested rate (about 2.6× the database growth); with defaults, about 55 GB per hour | as above |
 
 ## Ingest and maintenance
@@ -168,6 +175,9 @@ search results; probe recall stayed 1.0. Envelopes, probe tables and indexes are
 can always be rebuilt; recordings, chunks, context and labels cannot. Before a raw-only
 restore, create the extensions in the target database.
 
+For point-in-time restore, a streaming replica and failover, follow the [runbooks](runbooks.md); CI runs each of
+them weekly as a drill.
+
 ## Failure behaviour (tested)
 
 - An append transaction aborted mid-statement or before `COMMIT` (20 trials) leaves no partial
@@ -182,10 +192,10 @@ restore, create the extensions in the target database.
 
 ## Upgrades
 
-`ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from 0.1.0-alpha.3,
-0.2.0 and 0.3.0 with populated data (identical reads and searches; catalog equal to a fresh
-install), and that a **failed** update rolls back completely and leaves the old version
-working. Take a backup before updating anyway.
+`ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from every released SQL
+version with populated data (identical reads, searches, summaries and roll-ups; catalog equal to a
+fresh install), and that a **failed** update rolls back completely and leaves the old version
+working. Take a backup before updating anyway ([api stability](api-stability.md)).
 
 ## Known limits
 

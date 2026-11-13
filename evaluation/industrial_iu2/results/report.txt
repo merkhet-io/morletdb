@@ -1,0 +1,32 @@
+== dev: W1 end of life, tools [2, 3, 7, 8, 101, 102], 50 positive / 412 negative cycles
+   bounded lag      0.652 [0.596, 0.740] 
+   zero lag         0.628 [0.566, 0.691]    BL minus: 0.023 [0.010, 0.054] better
+   RMS window       0.756 [0.693, 0.858]    BL minus: -0.104 [-0.217, -0.024] worse
+   vibration level  0.768 [0.566, 0.903]    BL minus: -0.116 [-0.278, 0.164] no difference
+   spindle current  0.704 [0.612, 0.830]    BL minus: -0.052 [-0.158, 0.040] no difference
+   time in use      0.874 [0.846, 0.960]    BL minus: -0.222 [-0.310, -0.151] worse
+   cycle length     0.538 [0.495, 0.609]    BL minus: 0.114 [0.014, 0.223] better
+   BL detects end of life: True
+   per tool: {'2': {'BL': 0.51, 'ZL': 0.52, 'RMSW': 0.96, 'VIB': 0.98, 'CUR': 0.87, 'TIU': 1.0, 'LEN': 0.55}, '3': {'BL': 0.79, 'ZL': 0.7, 'RMSW': 0.95, 'VIB': 0.95, 'CUR': 0.94, 'TIU': 1.0, 'LEN': 0.88}, '7': {'BL': 0.71, 'ZL': 0.71, 'RMSW': 0.66, 'VIB': 0.94, 'CUR': 0.65, 'TIU': 1.0, 'LEN': 0.47}, '8': {'BL': 0.75, 'ZL': 0.7, 'RMSW': 0.76, 'VIB': 0.89, 'CUR': 0.81, 'TIU': 1.0, 'LEN': 0.58}, '101': {'BL': 0.58, 'ZL': 0.51, 'RMSW': 0.71, 'VIB': 0.85, 'CUR': 0.56, 'TIU': 1.0, 'LEN': 0.58}, '102': {'BL': 0.85, 'ZL': 0.76, 'RMSW': 0.88, 'VIB': 0.29, 'CUR': 0.88, 'TIU': 1.0, 'LEN': 0.47}}
+   W2 trend (Spearman with time in use), median [min, max]: {'bounded lag': (0.59, -0.11, 0.72), 'zero lag': (0.45, -0.08, 0.57), 'RMS window': (0.73, 0.5, 0.88), 'vibration level': (0.51, -0.31, 0.68), 'spindle current': (0.65, 0.2, 0.85), 'cycle length': (0.11, -0.05, 0.25)}
+   W4: {'first_tenth': {'BL': 0.4346055189730631, 'ZL': 0.49445613998764704, 'n': 16}, 'last_tenth': {'BL': 0.49970069278819335, 'ZL': 0.5621911439922724, 'n': 50}, 'share_windows_BL_lower_by_0_01': 0.7827380952380952}
+== conf: W1 end of life, tools [4, 5, 6, 9, 10, 103, 105], 48 positive / 381 negative cycles
+   bounded lag      0.639 [0.539, 0.751] 
+   zero lag         0.580 [0.510, 0.649]    BL minus: 0.059 [-0.004, 0.131] no difference
+   RMS window       0.791 [0.731, 0.849]    BL minus: -0.152 [-0.253, -0.016] worse
+   vibration level  0.831 [0.694, 0.938]    BL minus: -0.192 [-0.305, -0.001] worse
+   spindle current  0.813 [0.705, 0.909]    BL minus: -0.174 [-0.253, -0.082] worse
+   time in use      0.778 [0.721, 0.913]    BL minus: -0.139 [-0.296, -0.075] worse
+   cycle length     0.580 [0.445, 0.689]    BL minus: 0.059 [-0.034, 0.173] no difference
+   BL detects end of life: True
+   per tool: {'4': {'BL': 0.68, 'ZL': 0.56, 'RMSW': 0.85, 'VIB': 0.96, 'CUR': 0.73, 'TIU': 1.0, 'LEN': 0.23}, '5': {'BL': 0.76, 'ZL': 0.73, 'RMSW': 0.91, 'VIB': 0.98, 'CUR': 0.81, 'TIU': 1.0, 'LEN': 0.77}, '6': {'BL': 0.43, 'ZL': 0.64, 'RMSW': 0.75, 'VIB': 0.89, 'CUR': 0.86, 'TIU': 1.0, 'LEN': 0.75}, '9': {'BL': 0.57, 'ZL': 0.57, 'RMSW': 0.81, 'VIB': 0.84, 'CUR': 0.82, 'TIU': 1.0, 'LEN': 0.59}, '10': {'BL': 0.17, 'ZL': 0.0, 'RMSW': 0.83, 'VIB': 0.67, 'CUR': 0.33, 'TIU': 1.0, 'LEN': 0.08}, '103': {'BL': 0.95, 'ZL': 0.75, 'RMSW': 0.74, 'VIB': 0.46, 'CUR': 0.88, 'TIU': 1.0, 'LEN': 0.74}, '105': {'BL': 0.73, 'ZL': 0.59, 'RMSW': 0.89, 'VIB': 0.97, 'CUR': 0.95, 'TIU': 1.0, 'LEN': 0.66}}
+   W2 trend (Spearman with time in use), median [min, max]: {'bounded lag': (0.44, -0.24, 0.68), 'zero lag': (0.26, -0.48, 0.4), 'RMS window': (0.7, 0.07, 0.86), 'vibration level': (0.53, 0.02, 0.91), 'spindle current': (0.65, -0.14, 0.82), 'cycle length': (0.16, -0.48, 0.44)}
+   W4: {'first_tenth': {'BL': 0.44992662919426607, 'ZL': 0.5224943076044822, 'n': 17}, 'last_tenth': {'BL': 0.5002517941233335, 'ZL': 0.5567543506845962, 'n': 48}, 'share_windows_BL_lower_by_0_01': 0.7909867909867909}
+== W3 early warning (threshold from development tools):
+   bounded lag {'threshold': 0.5588188954531993, 'tools_flagged': 2, 'tools': 7, 'median_remaining_life_percent_at_first_flag': 41.25, 'first_half_cycles_flagged': 0.005208333333333333}
+   zero lag {'threshold': 0.6075214769080451, 'tools_flagged': 3, 'tools': 7, 'median_remaining_life_percent_at_first_flag': 46.774193548387096, 'first_half_cycles_flagged': 0.005208333333333333}
+   RMS window {'threshold': 0.6698425744241865, 'tools_flagged': 7, 'tools': 7, 'median_remaining_life_percent_at_first_flag': 53.2258064516129, 'first_half_cycles_flagged': 0.19791666666666666}
+   vibration level {'threshold': 0.25486135886211475, 'tools_flagged': 7, 'tools': 7, 'median_remaining_life_percent_at_first_flag': 77.96610169491525, 'first_half_cycles_flagged': 0.11979166666666667}
+   spindle current {'threshold': 0.15962805571322386, 'tools_flagged': 2, 'tools': 7, 'median_remaining_life_percent_at_first_flag': 28.466659450097424, 'first_half_cycles_flagged': 0.0}
+   cycle length {'threshold': 0.4645151022423419, 'tools_flagged': 2, 'tools': 7, 'median_remaining_life_percent_at_first_flag': 59.89406779661017, 'first_half_cycles_flagged': 0.010416666666666666}
+load {'version': ['0.3.8', 'xc-envelope-f16-v1'], 'cycles': 967, 'seconds': 119.38632035255432, 'storage': {'recordings': '2901', 'samples': '4881567501', 'original_float64_bytes': '39052540008', 'recordings_table_bytes': '2596864', 'chunk_table_bytes': '6473596928', 'segment_table_bytes': '16384', 'envelope_table_bytes': '2365390848', 'total_bytes': '8841601024', 'chunk_table_bits_per_sample': '10.609046256840852', 'total_bits_per_sample': '14.489773659282644'}}

@@ -1,0 +1,22 @@
+2026-11-10T20:51:01
+20:51  up 14 days,  5:47, 19 users, load averages: 7.29 6.55 8.51
+ %CPU COMM
+164.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+113.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 40.1 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+ 21.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 10.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.3 /usr/sbin/coreaudiod
+  3.5 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+  2.8 /usr/libexec/coreduetd
+2026-11-10T20:51:18
+20:51  up 14 days,  5:47, 19 users, load averages: 7.28 6.59 8.48
+ %CPU COMM
+183.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 43.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 21.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.6 claude
+  4.2 /usr/sbin/coreaudiod
+  2.7 /usr/libexec/trustd
+  2.6 /Applications/Tailscale.app/Contents/MacOS/Tailscale

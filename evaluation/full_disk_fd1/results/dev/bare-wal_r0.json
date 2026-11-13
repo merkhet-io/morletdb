@@ -1,0 +1,39 @@
+{
+ "arm": "bare-wal",
+ "rep": 0,
+ "image": "morletdb-fd1:local",
+ "image_id": "sha256:62d6c2025edcb9b271e3e6c4905af15583c0d1eaa6df513ad12936d0677d2a97",
+ "started": "2026-11-08T23:13:47",
+ "disk_at_start": {
+  "total": 601563136,
+  "used": 115343360,
+  "free": 473636864
+ },
+ "acked_end": 129761280,
+ "error": {
+  "sqlstate": "53100",
+  "message": "could not write to file \"pg_wal/xlogtemp.77\": No space left on device"
+ },
+ "write_s": 42.2,
+ "disk_at_error": {
+  "total": 601563136,
+  "used": 587988992,
+  "free": 991232
+ },
+ "server_after_error": "down",
+ "container_after_error": "exited",
+ "log_at_error": [
+  "2026-11-08 22:14:31.499 UTC [77] PANIC:  could not write to file \"pg_wal/xlogtemp.77\": No space left on device",
+  "2026-11-08 22:14:31.756 UTC [5042] FATAL:  could not write to file \"pg_wal/xlogtemp.5042\": No space left on device"
+ ],
+ "recovery_s": 1.1,
+ "disk_after_free": {
+  "total": 601563136,
+  "used": 397139968,
+  "free": 191840256
+ },
+ "stored_end": 129761280,
+ "appends_after": 2,
+ "problems": [],
+ "finished": "2026-11-08T23:15:00"
+}

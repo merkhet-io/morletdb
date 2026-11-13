@@ -1,0 +1,24 @@
+2026-11-08T21:10:16
+21:10  up 12 days,  6:06, 19 users, load averages: 1.90 1.75 1.44
+ %CPU COMM
+140.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 28.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  7.7 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+2026-11-08T21:18:13
+21:18  up 12 days,  6:14, 19 users, load averages: 2.29 3.04 2.40
+ %CPU COMM
+168.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 36.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 32.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 10.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+2026-11-08T21:26:35
+21:26  up 12 days,  6:22, 19 users, load averages: 3.35 3.78 3.15
+ %CPU COMM
+160.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+132.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 28.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.9 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+ 13.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer

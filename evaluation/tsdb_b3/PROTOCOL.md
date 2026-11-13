@@ -897,6 +897,31 @@ everything in B3.15 except what is stated here.
   - B3.15 stays in the results.
   - The other databases keep B3.13's figures.
 
+## Amendment B3.17: parallel writers with the current release (FROZEN before any load of the benchmark set)
+
+Added 2026-11-08 at the owner's request. The website's parallel-writer row still comes from B3.2 (MorletDB's B3.2
+image, before the single-connection work of I1 and B3.10). B3.17 repeats B3.2's track B with the current release.
+Everything common to B3 applies, and so does B3.2's track B except what is stated here.
+
+- **Arms:**
+  - `morletdb-i1`: the released `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (SQL 0.3.7) with B3.10's client path
+    (256 chunks per transaction, one connection per writer process, batched raw appends); image id recorded in
+    every result.
+  - QuestDB 10.1.0 with its B3 configuration.
+- **Runs:** `run_b317.sh`, for r = 1, 2, 3 and (4 writers, D2), (8 writers, D2), (8 writers, D1): MorletDB, then
+  QuestDB. 18 loads with full correctness after each (counts and every channel by SHA-256); results in
+  `results/b317-parallel/`. Ingestion only; reads are B3.16's.
+- **Machine:** B3.16's start and power conditions, enforced by the runner (waits up to 3 hours, else refuses). The
+  owner's other Docker containers that are idle stay up and are listed in `b317.start`.
+- **Statements**, by B3's rule (≥ 10% in all three loads, ratio of medians and the all-loads bound), in either
+  direction, per writer count and durability class. Server CPU and peak memory are reported.
+- **Expectation, written before measuring:** single-connection ingestion rose from about 5.6 M (B3.2) to about
+  13.8 M samples/s (B3.16), so with 8 writers MorletDB should exceed B3.2's 16.5 M, perhaps by less than the
+  single-connection gain because the encoder becomes the limit; not a hypothesis this stage must confirm.
+- **Website, decided now whatever the outcome:** the QuestDB tab's parallel-writer row takes B3.17's 8-writer
+  figures in place of B3.2's (durable figures in brackets), with a loss shown as a loss; B3.2 stays in the
+  results.
+
 ## Study M1: memory caps (FROZEN before any load)
 
 Added 2026-11-06 at the owner's request. B3's memory row reports each system's peak working set in a 16 GB
@@ -936,3 +961,143 @@ workload. Everything common to B3 applies, except what is stated here.
   - The QuestDB table's memory row shows both figures: the smallest caps, and the 16 GB working set labelled as the
     footprint with the documented configuration.
   - Captions say that caps are powers of two, so the ratios are coarse.
+
+## Amendment B3.18: CedarDB and InfluxDB 3 Core beside MorletDB 0.3.9-alpha.1 (FROZEN before any load of the benchmark set)
+
+Added 2026-11-08 at the owner's request: two more systems, measured as B3.13 measured the others. Results stay local
+until the owner decides on publication; CedarDB's Community Edition terms (a PDF linked from its licensing page,
+not reachable on 2026-11-08) must be read before any result is published. Everything common to B3 applies.
+
+- **MorletDB:** `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (SQL 0.3.7; digest recorded per result), arm
+  `morletdb-i1-sum` (B3.13's: B3.10's client path with chunk summaries, which MorletDB enables by default since 0.3.7).
+- **CedarDB** (`cedar_adapter.py`, `run_cedar.py`): image `cedardb/cedardb@sha256:737ce1bf2ef3…` (v2026-11-04,
+  arm64), its defaults, PostgreSQL wire protocol. One table per group (`acquisition TEXT, t BIGINT` nanoseconds, the
+  group's channels as DOUBLE PRECISION, primary key (acquisition, t)), loaded with binary COPY as B3.7 loads
+  TimescaleDB. D1: CedarDB's default commits (`synchronous_commit` on, which it refuses to change); D2: `SET
+  async_commit = on` per session, CedarDB's own setting, whose effect is reported, not assumed. Storage: the data
+  directory on disk, by top-level directory (its relation-size functions return a constant).
+- **InfluxDB 3 Core** (`influx_adapter.py`, `run_influx.py`): image `influxdb@sha256:26875ba5ae6e…` (3.12.2-core,
+  arm64), `influxdb3 serve` with a local file object store and its defaults, no authentication (local only). One
+  table per group, the acquisition as a tag, channels as float fields, nanosecond time. Writes: line protocol over one
+  persistent HTTP connection, at most 50,000 rows per request (the default request limit is 10 MB), floats as their
+  shortest round-trip decimal (Arrow's cast; exact); line building is timed as conversion within the load. D1: the
+  default (acknowledged after the WAL is persisted, flushed every second); D2: `no_sync=true`. Reads: SQL with
+  `format=parquet` (exact float64). Storage: InfluxDB keeps new data in its WAL until a snapshot writes Parquet (by
+  default after 600 WAL files, about 10 minutes of writes; an idle server never snapshots: none after 75 minutes idle
+  in the smoke check). Before measuring storage the runner writes one point per second to a separate `heartbeat`
+  table, as continuous operation would, until Parquet bytes exist and are unchanged over two polls 30 s apart (at
+  most 30 minutes; whether it settled and the heartbeat rows are recorded), then reports the Parquet bytes and the
+  whole volume, which still holds WAL files InfluxDB keeps after a snapshot (by default the last 300).
+- **Correctness** (subset, before the run): both systems passed B3's subset check (3 acquisitions, every channel by
+  SHA-256, exact times). Retries: CedarDB refuses identical and altered retries (primary key), as TimescaleDB does;
+  InfluxDB accepts both and **an altered retry replaces the stored value**, as QuestDB does.
+- **Runs:** `run_b318.sh`: CedarDB's pair, then InfluxDB's; in each, for r = 1, 2, 3 and D2 then D1,
+  `morletdb-i1-sum`, then the system. Storage, reads and statistics on D2 r1 of each arm, reads from a fresh client
+  process. Results in `results/b318-cedardb/` and `results/b318-influxdb3/`; machine snapshots before and after every
+  load; B3.16's start and power conditions.
+- **Smoke check (not a result):** one development-set D2 load of each system and of `morletdb-i1-sum`
+  (`results/dev/b318-smoke/`): all correct. It showed InfluxDB's data still entirely in its WAL right after the load
+  and after 75 idle minutes; with the heartbeat a snapshot came after about 17 minutes: 40 Parquet files, 425 MB,
+  while 2.07 GB of WAL stayed on the volume (hence the wait above) and CedarDB's data directory several times larger than the others' (hence the breakdown).
+- **Reported:** every measure for both pairs, statements by B3's rule (≥ 10% in all loads for ingestion, at both p50
+  and p95 for latencies; otherwise no statement), including every loss. Nothing goes to the website before the owner
+  decides.
+
+## Study M1, amendment M1b: CedarDB (FROZEN before any load)
+
+Added 2026-11-09 at the owner's request: CedarDB's smallest memory cap, with the rules of Study M1 (caps 256 MB, 512 MB,
+1 GB, 2 GB, 4 GB, swap disabled, 8 CPUs, ascending until the first pass; pass = the runner exits 0 within 20 minutes
+with every count and read exact; one load per cell; descriptive only, no speed statements).
+
+- **CedarDB** as in B3.18 (`run_cedar.py load D2 1`). It sizes itself from the container: by default it uses 90% of
+  the cgroup memory limit (`memorysize`, shared by its buffer manager and working memory; its documentation), so no
+  setting changes per cap.
+- **MorletDB** 0.3.9-alpha.1, arm `morletdb-i1-sum` (B3.18's), at 256 MB and at 16 GB, so the multiple compares two
+  releases measured in one session (M1 measured 0.3.7-alpha.1).
+- **References:** both systems at 16 GB first. Then CedarDB at ascending caps until it passes; then MorletDB at 256 MB.
+- **Machine:** M1's start condition; AC power and lid checked before every load. A cell interrupted by the machine
+  (sleep, power) is rerun; cells are independent, so the study may span sessions (recorded).
+- **Reported:** CedarDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at 16 GB
+  the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1.
+
+
+## Study M1, amendment M1c: InfluxDB 3 Core (FROZEN before any load)
+
+Added 2026-11-10 at the owner's request: InfluxDB 3 Core's smallest memory cap, with the rules of Study M1 and M1b
+(caps 256 MB, 512 MB, 1 GB, 2 GB, 4 GB, swap disabled, 8 CPUs, ascending until the first pass; one load per cell;
+descriptive only, no speed statements).
+
+- **InfluxDB 3 Core** exactly as in B3.18 (`run_influx.py load D2 1`: image 3.12.2-core, its defaults, `no_sync`).
+  The load includes B3.18's storage step: a heartbeat of one point per second until a snapshot has written the data
+  as Parquet and the Parquet bytes are stable (at most 30 minutes). Persisting is part of InfluxDB's normal operation
+  and needs memory, so it stays in the cell.
+- **Pass:** the runner exits 0 within **50 minutes** (M1's 20 plus the 30-minute snapshot allowance) and writes a
+  result with every count and every read bit-exact, also after the restart before the reads; the container state is
+  recorded. Whether the snapshot settled is reported per cell.
+- **MorletDB** 0.3.9-alpha.1, arm `morletdb-i1-sum` (B3.18's), at 256 MB and at 16 GB, so the multiple compares two
+  releases measured in one session.
+- **Order:** both systems at 16 GB first, then InfluxDB at ascending caps until it passes, then MorletDB at 256 MB
+  (`run_m1c.sh`, `results/m1c/`, outcomes in `results/m1c/outcomes.tsv`).
+- **Machine:** M1's start condition; AC power and lid checked before every load. A cell interrupted by the machine
+  (sleep, power) is rerun; cells are independent, so the study may span sessions (recorded).
+- **Reported:** InfluxDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at 16 GB
+  the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1.
+## Amendment B3.19: interval statistics against CedarDB with MorletDB 0.3.10-alpha.1 (FROZEN before any load)
+
+Added 2026-11-09 at the owner's request. B3.18's one loss to CedarDB was interval statistics (p50/p95 0.68/0.75 ms
+against 0.51/0.56 ms). Release 0.3.10-alpha.1 computes them natively (one prepared plan per session, #346, #349); a
+development measurement on a busy machine gave about 0.41 ms. This stage asks only: **which system answers B3's
+interval statistics faster, MorletDB 0.3.10-alpha.1 or CedarDB?** Results stay local until the owner decides, as in
+B3.18 (CedarDB's terms are still to be read before any publication).
+
+- **Systems:** MorletDB `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1` (digest recorded per result), arm
+  `morletdb-i1-sum`, unchanged from B3.18; CedarDB exactly as in B3.18 (same image digest, adapter and settings).
+- **Runs** (`run_b319.sh`): three rounds in one session; each round loads D2 r1 into MorletDB, then into CedarDB, each
+  followed by B3.18's storage, reads and analytics from a fresh client process. Results in
+  `results/b319-cedardb-s1..s3/`, machine snapshots before and after every load.
+- **Machine:** B3.16's start and power conditions (quiet: 5-minute load below 3 and no process above 50% CPU besides
+  Docker; AC power, lid open). Started after the B3.18 InfluxDB pair on the night of 2026-11-09, never after 07:00;
+  a round not started by then is not run, and the rounds done are reported as such.
+- **Statement:** interval statistics only. One system is faster if it is faster by ≥ 10% at both p50 and p95 in every
+  completed round, at least two rounds; otherwise no statement. All other measures of these loads (ingestion, storage,
+  R1-R4) are reported descriptively, without statements, since this stage has no D1 loads.
+- **Correctness:** every load must pass B3's full correctness check, as always; a failed load voids its round.
+
+## Amendment B3.20: CedarDB ingestion with parallel writers (FROZEN before any load of the benchmark set)
+
+Added 2026-11-10 at the owner's request. B3.18 loaded CedarDB from one client connection; its server used about 1.3
+cores, so the CedarDB tab says "parallel loading may narrow the gap (not measured)". B3.20 measures it with B3.17's
+parallel-writer track. Everything common to B3 applies, and so does B3.17 except what is stated here.
+
+- **Arms:**
+  - `morletdb-i1`: the released `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1` with B3.10's client path, as B3.17
+    (256 chunks per transaction, one connection per writer process, batched raw appends); image id recorded.
+  - CedarDB v2026-11-04, B3.18's image digest and adapter: one connection per writer process, binary COPY per
+    acquisition and group, `SET async_commit = on` for D2; rows are built by each writer after the start barrier, so
+    conversion is counted, as in B3.18.
+- **Runs:** `run_b320.sh` (`parallel.py`, CedarDB path added for B3.20), for r = 1, 2, 3 and (4 writers, D2),
+  (8 writers, D2), (8 writers, D1): MorletDB, then CedarDB, alternating. 18 loads, each on a fresh volume
+  (`b3-par-<system>-<class>-w<writers>-r<rep>`, which cannot collide with the volumes kept for the CedarDB fault),
+  with full correctness after each (counts, and every channel by SHA-256 with exact times through each adapter's
+  read query). Results in `results/b320-parallel/`. Ingestion only.
+- **Development smoke check before freezing** (development set, `results/dev/b320-smoke/`, 4 writers, D2, one load
+  each): both correct. It showed that a writer failing before the start barrier hung the run; `parallel.py` now times
+  out the barrier (15 min) and each writer's result (60 min), so such a failure becomes a failed load.
+- **A failed correctness check voids that load** and is reported. CedarDB's read-back uses the query that showed the
+  range-scan fault ([CEDARDB_RANGE_SCAN_FAULT.md](CEDARDB_RANGE_SCAN_FAULT.md)); a failed CedarDB load keeps its
+  volume as evidence. Each voided CedarDB load is replaced once, at the end of the session, by a load with rep r+3
+  after a MorletDB load of the same cell (that MorletDB load is reported, not used); a cell whose replacement also
+  fails has no statement.
+- **Machine:** B3.16's start and power conditions, enforced by the runner (1-minute load average below 3, no foreign
+  process above half a core, AC power, lid open or closed without sleep). It waits for them until 07:00 at the
+  latest and starts no load after 07:00; loads done by then are reported as such.
+- **Statements**, by B3's rule (≥ 10% in all three loads, ratio of medians and the all-loads bound), in either
+  direction, per writer count and durability class. Server CPU and peak working set are reported. Against B3.18's
+  single-connection loads (same session for neither system) the scaling is descriptive only.
+- **Expectation, written before measuring:** CedarDB's single-connection load was client-bound (Python rows, about
+  2.5 M samples/s, server 1.3 cores), so 4 and 8 writers should raise it several times, perhaps to 6–10 M samples/s;
+  MorletDB about 22 M as in B3.17. MorletDB is expected to stay faster, by perhaps 2–4×. Not a hypothesis this stage
+  must confirm.
+- **Website, decided now whatever the outcome:** the CedarDB tab gets a row "Ingestion with 8 parallel writers" with
+  B3.20's 8-writer D2 figures (D1 in brackets) and its statement, a loss shown as a loss, and its sentence "parallel
+  loading may narrow the gap (not measured)" is replaced by the result. Published only after the owner approves.

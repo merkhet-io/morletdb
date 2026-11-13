@@ -1,0 +1,145 @@
+only in A: 5, only in B: 17, common: 126
+  only A ./database/db.0_0/0/00000000020FDF00
+  only A ./database/db.0_0/0/000000000214DEB0
+  only A ./database/db.0_0/0/000000000219DE60
+  only A ./database/db.0_0/0/00000000024ADB50
+  only A ./database/db.wal.0000000000000029
+  only B ./database/db.0_0/0/0000000001A2E5D0
+  only B ./database/db.0_0/0/0000000001A7E580
+  only B ./database/db.0_0/0/0000000001ACE530
+  only B ./database/db.0_0/0/0000000001B1E4E0
+  only B ./database/db.0_0/0/0000000001B6E490
+  only B ./database/db.0_0/0/0000000001BBE440
+  only B ./database/db.0_0/0/0000000001C0E3F0
+  only B ./database/db.0_0/0/0000000001C5E3A0
+  only B ./database/db.0_0/0/0000000001CAE350
+  only B ./database/db.0_0/0/0000000001CFE300
+  only B ./database/db.0_0/0/0000000001D4E2B0
+  only B ./database/db.wal.0000000000000023
+  only B ./database/db.wal.0000000000000024
+  only B ./database/db.wal.0000000000000025
+  only B ./database/db.wal.0000000000000026
+  only B ./database/db.wal.0000000000000027
+  only B ./database/db.wal.0000000000000028
+  differs ./database/db size 15540, 211 bytes differ
+  differs ./database/db.0_0/0/0000000000000000 size 3411968, 7 bytes differ
+  differs ./database/db.0_0/0/000000000004FFB0 size 2433024, 12 bytes differ
+  differs ./database/db.0_0/0/000000000009FF60 size 2457600, 11753 bytes differ
+  differs ./database/db.0_0/0/00000000000EFF10 size 2461696, 1202951 bytes differ
+  differs ./database/db.0_0/0/000000000013FEC0 size 2420736, 1277132 bytes differ
+  differs ./database/db.0_0/0/000000000018FE70 size 2420736, 1371880 bytes differ
+  differs ./database/db.0_0/0/00000000001DFE20 size 2437120, 1343004 bytes differ
+  differs ./database/db.0_0/0/000000000022FDD0 size 2433024, 1338322 bytes differ
+  differs ./database/db.0_0/0/000000000027FD80 size 2437120, 1044999 bytes differ
+  differs ./database/db.0_0/0/00000000002CFD30 size 2428928, 1153965 bytes differ
+  differs ./database/db.0_0/0/000000000031FCE0 size 2449408, 1275932 bytes differ
+  differs ./database/db.0_0/0/000000000036FC90 size 2453504, 1290075 bytes differ
+  differs ./database/db.0_0/0/00000000003BFC40 size 2420736, 1248281 bytes differ
+  differs ./database/db.0_0/0/000000000040FBF0 size 1941504, 977779 bytes differ
+  differs ./database/db.0_0/0/000000000044FBB0 size 2416640, 1241587 bytes differ
+  differs ./database/db.0_0/0/000000000049FB60 size 2416640, 1254996 bytes differ
+  differs ./database/db.0_0/0/00000000004EFB10 size 2416640, 1250032 bytes differ
+  differs ./database/db.0_0/0/000000000053FAC0 size 2387968, 1215987 bytes differ
+  differs ./database/db.0_0/0/000000000058FA70 size 2420736, 1246312 bytes differ
+  differs ./database/db.0_0/0/00000000005DFA20 size 2420736, 1260570 bytes differ
+  differs ./database/db.0_0/0/000000000062F9D0 size 2420736, 1221946 bytes differ
+  differs ./database/db.0_0/0/000000000067F980 size 3403776, 1287199 bytes differ
+  differs ./database/db.0_0/0/00000000006CF930 size 2404352 vs 2408448
+  differs ./database/db.0_0/0/000000000071F8E0 size 2461696, 1144988 bytes differ
+  differs ./database/db.0_0/0/000000000076F890 size 2453504, 1354455 bytes differ
+  differs ./database/db.0_0/0/00000000007BF840 size 2424832, 1285303 bytes differ
+  differs ./database/db.0_0/0/000000000080F7F0 size 2449408, 1323206 bytes differ
+  differs ./database/db.0_0/0/000000000085F7A0 size 2007040, 1097859 bytes differ
+  differs ./database/db.0_0/0/000000000089F760 size 2461696, 1357323 bytes differ
+  differs ./database/db.0_0/0/00000000008EF710 size 2437120 vs 2441216
+  differs ./database/db.0_0/0/000000000093F6C0 size 2420736, 1336176 bytes differ
+  differs ./database/db.0_0/0/000000000098F670 size 2453504, 1361673 bytes differ
+  differs ./database/db.0_0/0/00000000009DF620 size 2457600 vs 2461696
+  differs ./database/db.0_0/0/0000000000A2F5D0 size 2441216, 1300339 bytes differ
+  differs ./database/db.0_0/0/0000000000A7F580 size 2437120, 1391919 bytes differ
+  differs ./database/db.0_0/0/0000000000ACF530 size 2461696, 1366148 bytes differ
+  differs ./database/db.0_0/0/0000000000B1F4E0 size 2465792, 1366708 bytes differ
+  differs ./database/db.0_0/0/0000000000B6F490 size 2453504, 1356830 bytes differ
+  differs ./database/db.0_0/0/0000000000BBF440 size 2416640, 1279417 bytes differ
+  differs ./database/db.0_0/0/0000000000C0F3F0 size 2433024, 1337703 bytes differ
+  differs ./database/db.0_0/0/0000000000C5F3A0 size 2433024, 1344561 bytes differ
+  differs ./database/db.0_0/0/0000000000CAF350 size 2764800, 1084142 bytes differ
+  differs ./database/db.0_0/0/0000000000CEF310 size 2408448, 1321796 bytes differ
+  differs ./database/db.0_0/0/0000000000D3F2C0 size 2420736, 1336529 bytes differ
+  differs ./database/db.0_0/0/0000000000D8F270 size 2445312, 1301151 bytes differ
+  differs ./database/db.0_0/0/0000000000DDF220 size 2441216, 1297324 bytes differ
+  differs ./database/db.0_0/0/0000000000E2F1D0 size 2412544, 1278735 bytes differ
+  differs ./database/db.0_0/0/0000000000E7F180 size 2416640, 1259134 bytes differ
+  differs ./database/db.0_0/0/0000000000ECF130 size 2428928, 1333467 bytes differ
+  differs ./database/db.0_0/0/0000000000F1F0E0 size 2433024, 1385486 bytes differ
+  differs ./database/db.0_0/0/0000000000F6F090 size 2424832, 1283767 bytes differ
+  differs ./database/db.0_0/0/0000000000FBF040 size 2428928 vs 2424832
+  differs ./database/db.0_0/0/000000000100EFF0 size 2437120, 1275874 bytes differ
+  differs ./database/db.0_0/0/000000000105EFA0 size 2437120, 1196792 bytes differ
+  differs ./database/db.0_0/0/00000000010AEF50 size 2420736, 1254460 bytes differ
+  differs ./database/db.0_0/0/00000000010FEF00 size 1949696, 1160031 bytes differ
+  differs ./database/db.0_0/0/000000000113EEC0 size 2420736, 1289561 bytes differ
+  differs ./database/db.0_0/0/000000000118EE70 size 2433024, 1081986 bytes differ
+  differs ./database/db.0_0/0/00000000011DEE20 size 2424832, 1323375 bytes differ
+  differs ./database/db.0_0/0/000000000122EDD0 size 2420736, 1376986 bytes differ
+  differs ./database/db.0_0/0/000000000127ED80 size 2465792 vs 2469888
+  differs ./database/db.0_0/0/00000000012CED30 size 2469888, 1383579 bytes differ
+  differs ./database/db.0_0/0/000000000131ECE0 size 2486272, 1347365 bytes differ
+  differs ./database/db.0_0/0/000000000136EC90 size 3346432, 1273894 bytes differ
+  differs ./database/db.0_0/0/00000000013BEC40 size 2392064 vs 2396160
+  differs ./database/db.0_0/0/000000000140EBF0 size 2412544, 1275479 bytes differ
+  differs ./database/db.0_0/0/000000000145EBA0 size 2412544, 1277657 bytes differ
+  differs ./database/db.0_0/0/00000000014AEB50 size 2420736 vs 2424832
+  differs ./database/db.0_0/0/00000000014FEB00 size 2441216, 1349121 bytes differ
+  differs ./database/db.0_0/0/000000000154EAB0 size 1994752, 1097266 bytes differ
+  differs ./database/db.0_0/0/000000000158EA70 size 2453504, 1639055 bytes differ
+  differs ./database/db.0_0/0/00000000015DEA20 size 2449408, 1349907 bytes differ
+  differs ./database/db.0_0/0/000000000162E9D0 size 2453504, 1316634 bytes differ
+  differs ./database/db.0_0/0/000000000167E980 size 2486272, 1341936 bytes differ
+  differs ./database/db.0_0/0/00000000016CE930 size 2486272, 1345610 bytes differ
+  differs ./database/db.0_0/0/000000000171E8E0 size 2486272, 1340997 bytes differ
+  differs ./database/db.0_0/0/000000000176E890 size 2473984, 1338319 bytes differ
+  differs ./database/db.0_0/0/00000000017BE840 size 2506752, 1370455 bytes differ
+  differs ./database/db.0_0/0/000000000180E7F0 size 2514944 vs 2519040
+  differs ./database/db.0_0/0/000000000185E7A0 size 2498560 vs 2494464
+  differs ./database/db.0_0/0/00000000018AE750 size 2396160 vs 2400256
+  differs ./database/db.0_0/0/00000000018FE700 size 2424832, 1375122 bytes differ
+  differs ./database/db.0_0/0/000000000194E6B0 size 2428928 vs 2433024
+  differs ./database/db.0_0/0/000000000199E660 size 2756608, 1026537 bytes differ
+  differs ./database/db.0_0/0/00000000019DE620 size 2441216 vs 2449408
+  differs ./database/db.0_0/0/0000000001E2E1D0 size 2420736, 1377942 bytes differ
+  differs ./database/db.0_0/0/0000000001E7E180 size 2428928, 1333809 bytes differ
+  differs ./database/db.0_0/0/0000000001ECE130 size 2433024, 1291885 bytes differ
+  differs ./database/db.0_0/0/0000000001F1E0E0 size 2416640, 1277549 bytes differ
+  differs ./database/db.0_0/0/0000000001F6E090 size 2416640, 1315407 bytes differ
+  differs ./database/db.0_0/0/0000000001FBE040 size 3407872, 1258007 bytes differ
+  differs ./database/db.0_0/0/000000000200DFF0 size 2441216, 1274802 bytes differ
+  differs ./database/db.0_0/0/000000000205DFA0 size 2412544, 1326225 bytes differ
+  differs ./database/db.0_0/0/00000000020ADF50 size 2428928, 1266344 bytes differ
+  differs ./database/db.0_0/0/000000000227DD80 size 2428928 vs 2437120
+  differs ./database/db.0_0/0/00000000022CDD30 size 2416640, 1159196 bytes differ
+  differs ./database/db.0_0/0/000000000231DCE0 size 2428928, 1278873 bytes differ
+  differs ./database/db.0_0/0/000000000236DC90 size 2445312 vs 2449408
+  differs ./database/db.0_0/0/00000000023BDC40 size 2457600, 1343533 bytes differ
+  differs ./database/db.0_0/0/000000000240DBF0 size 2445312 vs 2453504
+  differs ./database/db.0_0/0/000000000245DBA0 size 2396160, 1263043 bytes differ
+  differs ./database/db.0_0/0/00000000026CD930 size 2428928, 1200401 bytes differ
+  differs ./database/db.0_0/0/000000000271D8E0 size 2416640, 1160593 bytes differ
+  differs ./database/db.0_0/0/000000000276D890 size 2441216, 1072026 bytes differ
+  differs ./database/db.0_0/0/00000000027BD840 size 2441216, 1097340 bytes differ
+  differs ./database/db.0_0/0/000000000280D7F0 size 2093056 vs 2084864
+  differs ./database/db.0_1/0/0000000000000000 size 4915200 vs 4907008
+  differs ./database/db.0_1/0/000000000004FFB0 size 4870144 vs 4890624
+  differs ./database/db.0_1/0/000000000009FF60 size 5324800 vs 5320704
+  differs ./database/db.0_1/0/00000000000EFF10 size 5345280 vs 5337088
+  differs ./database/db.0_1/0/000000000013FEC0 size 5369856 vs 5373952
+  differs ./database/db.0_1/0/000000000018FE70 size 4894720 vs 4902912
+  differs ./database/db.0_1/0/00000000001DFE20 size 5324800 vs 5328896
+  differs ./database/db.0_1/0/000000000022FDD0 size 5423104 vs 5427200
+  differs ./database/db.0_2/0/0000000000000000 size 20480, 5929 bytes differ
+  differs ./database/db.pages size 4020764672 vs 3786735616
+  differs ./database/db.wal size 4096, 10 bytes differ
+  differs ./database/db.wal2 size 4096, 10 bytes differ
+  differs ./database/server.crt size 428, 186 bytes differ
+  differs ./database/server.key size 241, 124 bytes differ
+identical: 5, different: 121

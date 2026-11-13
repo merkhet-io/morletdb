@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-b318/evaluation/tsdb_b3/run_cedar.py", line 242, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-b318/evaluation/tsdb_b3/run_cedar.py", line 206, in load
+    conn = c.start(vol, durability)
+  File "/Users/zin/sophia/morletdb-b318/evaluation/tsdb_b3/cedar_adapter.py", line 30, in start
+    _wait()
+    ~~~~~^^
+  File "/Users/zin/sophia/morletdb-b318/evaluation/tsdb_b3/cedar_adapter.py", line 49, in _wait
+    raise RuntimeError("TimescaleDB did not start")
+RuntimeError: TimescaleDB did not start

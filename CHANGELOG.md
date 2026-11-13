@@ -1,5 +1,294 @@
 # Changelog
 
+## Unreleased
+
+SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **A representative keeps its samples while it represents an episode (#440).** `morlet_set_level` checked the
+  representative only when an episode moved to level 2; a later move could take the representative to level 3 or 4,
+  leaving the level-2 episode without a real example. Now, after all moves of a call (stored levels overlaid with the
+  call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
+  refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
+  concurrent moves cannot break the rule. Affects all releases with episodic memory.
+- **Envelopes build on after compaction removed the first windows (#441).** `morlet_build_envelopes` read the stride
+  from the first stored window after 0; once level-1 compaction had removed the early windows, a rebuild with the
+  original stride failed (`built with stride 6144, not 2048`), new samples stayed unsearchable and the steward's
+  envelope job could trip its breaker. When that first window does not match, the builder now checks that every
+  stored window lies on the requested grid and every grid position without a window is one it skips itself (out of
+  search, or samples removed); another stride's grid is still refused.
+- **S3 import resumes objects that were cut off (#442).** `morlet_s3.py import` treated any recording carrying an
+  object's key and ETag as proof that the whole object was imported, but the importer commits in batches, so an
+  interrupted object was skipped on the next run and its remaining samples and channels never arrived. Objects are
+  now imported one at a time and recorded as complete in `<collection>_s3_imports` only after the importer finished
+  them; anything else is imported again (identical chunks are no-ops). Collections imported before have no record,
+  so their objects are read once more on the next run.
+- **Chunk shipping checks the target before writing (#443, #444).** An existing target recording must have the
+  source's parameters (rate, channel, unit, metadata, quantum, window, stride, normalization, extractor); before,
+  shipping into an empty recording at another rate succeeded and reported `identical: true`. The target's existing
+  chunks must equal the source's first chunks byte for byte and on the same boundaries; before, a conflicting
+  prefix was only detected after the source's later chunks had been committed, leaving a mixed recording. A run now
+  ships up to the source end read at its start, so a source that keeps recording no longer fails the final check.
+  The SDK's `export_file` refuses a file recording with other parameters in the same way. Affects 0.3.12-alpha.1.
+- **Decision states from memory: `decision.HistoryCache` (#403).** A process that decides cut after cut passes
+  `history_cache=HistoryCache()` to `decision_states` and keeps it: each collection's current segments with values and
+  its active labels stay in memory, indexed by rate, channel, unit, spec and context, and each call fetches only new
+  segments (and values built since for known ones). A fingerprint read in the same snapshot (highest segment and
+  label ids, numbers of current segments and active labels) reloads the pool when a segment went stale or was
+  deleted, and the labels when they changed. The states are identical to the uncached ones (a test changes the data
+  between calls: new cuts, late values, labels added and retracted, segments rebuilt, a recording deleted). On a
+  Raspberry Pi 3B+ with ~57,000 segments, p50 per decision of 9 signals 1.5 s -> 0.68 s; the fingerprint's counts
+  (~0.2 s there) are the next step.
+- **Decision states with long histories faster (#403).** simple-v2's grid check (`quantised_step`) ran in pure
+  Python over every value column of the history; it now uses numpy with the same float64 operations. A history's
+  comparison floors are computed once, and neighbours are ranked with one sort. The states are identical to before;
+  a test compares the grid check with `morlet_quantised_step`. On a Raspberry Pi 3B+ with ~600 earlier segments per
+  signal, these parts took about 0.7 s of each decision; the history query remains the larger cost.
+
+## 0.3.12-alpha.1
+
+SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+Python SDK 0.1.0a5 (reads and transfers Grizzbit 2.1 chunks). The default chunk format is unchanged (Grizzbit 1);
+Grizzbit 2.1 is opt-in. Existing collections keep their layout and their value rules (`simple-v1`); new collections
+get `simple-v2`.
+
+- **Lossless chunk shipping from edge to centre (#420).** `morlet_encoded_chunks` returns a recording's stored
+  chunks as bytes; `morlet_append_encoded_chunk` appends a chunk that another MorletDB encoded, keeping its bytes,
+  after decoding it and running the usual append checks (offset, identical replay a no-op, conflicting samples
+  refused, ingest hold, checkpoint, summary). `tools/ingest/morlet_ship.py` ships recordings with them: it creates
+  the target recording with the source's parameters, resumes at the target's end, and compares the SHA-256 of all
+  chunk bytes at the end (`docs/chunk-shipping.md`).
+- **MCP: negative search answers state their scope, checked by a scripted conversation (#379).**
+  `tools/mcp/scope_conversation.py` asks the server, through its own tools, the questions an analyst would ask of
+  a collection with a period out of search, and fails when a search without a hit does not say what it searched
+  and what it did not; the transcript is in `examples/mcp-scope/TRANSCRIPT.md`, and the test runs it. It found
+  one weak answer: a search whose filters matched no recording said "every period of the matching recordings
+  was searchable"; it now says that no recording matched and nothing was searched.
+- **Alarm and PLC messages as context events (#421).** `tools/ingest/morlet_events.py` places each message of a
+  log (CSV: time and message columns) as a context event on the recordings whose time range contains it, at the
+  sample its time maps to (optionally only on the recordings of the message's machine), with the recording's
+  measured time uncertainty (#393) where known. An identical re-import is a no-op. `decision_state` lists the
+  events inside its segment (`events`: key, value, sample, offset in seconds).
+- **MCP `trend` over an order key (#334).** `order_by` (a metadata key such as `cut`) orders the recordings by
+  that key, numbers numerically, instead of by time. Numbered cuts of a tool, which have no clock time, then get
+  a trend and change points named by the order value (`first_change_order`). Without a start time, the error
+  now points to `order_by`.
+- **Label glossary (#333).** `morlet_define_label(collection, label, definition, unit, source)` records what a
+  label means; `morlet_label_definitions(collection)` lists the definitions. Context enabled from SQL 0.3.9 on
+  gets the table; existing collections get it with their first definition. `decision_state` returns, for the
+  labels it shows, their definitions (`label_definitions`) and the labels nobody defined (`undefined_labels`),
+  and logged precedents carry them. In a demo session an agent had read `not_sharp` (flank wear above 0.2 mm)
+  as the 0.3 mm replacement limit.
+- **MCP `search_similar`: `exclude="occurrence"` (#384).** On cyclic production, the useful answer is the same cut
+  on earlier parts. `occurrence` drops hits from the query's own part, cycle or run (the occurrence of the
+  context segment that contains it), but keeps the other parts in the same recording, which `exclude=recording`
+  drops as well. Tested on one recording of three parts.
+- **`decision.finish_recordings`: build a cut's channels on several connections (#414).** Context, segments and
+  values for several recordings at once, spread over the given autocommit connections (one thread each, each
+  recording in its own transaction), with the same results as one by one. On a Raspberry Pi 3B+, 4
+  connections took the end of a 7-channel cut from 1.21 to 0.72 s (p50, with #423); 7 connections were slower.
+- **Logged decisions keep their precedents (#418).** `decision.log_decision` stores, beside the state the model
+  saw, its k nearest labelled precedents (default 3): the state's examples (labelled cases from the whole
+  history), else its labelled neighbours, never logged decisions, with recording, sample range, distance and
+  labels. When the state held none, `precedents_note` says so. `decisions` and the MCP tool return them without
+  the full state. History grows and labels change, so the precedents of that moment are part of the evidence.
+  Decision log version 2.
+- **Steward: integrity checks get a minimum share under load (soak S1).** On a busy edge device the 1-minute load
+  stayed above the steward's gate and the builders always had new data, so `morlet_verify` never ran ("public.live
+  verified never"). A due verification now gets one batch at least every 15 minutes (`--verify-share-every`),
+  before the builders and despite the load gate; disk pressure still stops it. A missing chunk summary counts as
+  builder backlog (`summaries_pending`), not as damage: under continuous ingest new chunks lack one for a while,
+  and counting them would have raised a false alarm on every pass.
+- **`morlet_add_context` no longer scans the whole context table (#414).** Every call looks its batch up by id
+  (identical retries are no-ops). Without an index that was a sequential scan, growing with the collection: 33
+  of 48 ms per call on a Raspberry Pi 3B+ with 27,000 context rows. Context enabled from SQL 0.3.9 on gets an
+  index on `batch_id`; `morlet_index_context(collection)` adds it to existing collections (once, idempotent).
+  On the Pi, one call dropped from 48 to 24 ms.
+- **Segment values faster: p75 by selection, not a full sort (#414).** `simple-v1`'s 75th percentile takes the two
+  order statistics it needs by selection (O(n)) instead of sorting every sample; the values are bit-identical (a
+  test compares with the sort; on a Raspberry Pi 3B+ both builds wrote the same SHA-256 over all values). One
+  220,000-sample segment: 4.75 → 1.44 ms on an M-series Mac. End of a 7-channel cut on the Pi (context,
+  segments, values): p50 1.38 → 1.21 s sequentially, and 0.81 → 0.72 s when the channels are built on 4
+  connections.
+- **Clock drift is detected and reported (#393, first part).** The importer fits the rate a CSV time column
+  actually shows (`time_axis.fitted_rate_hz`, `rate_error_ppm`). When the timestamps depart from start + rate by
+  more than one sample, it warns per recording and in the report. MCP `locate_time` says per match how the time
+  is derived (`time_basis`: start + rate) and, when an import measured the departure, the uncertainty in
+  seconds and samples. Time anchors, which would correct the drift, are not implemented yet.
+- **Value rules `simple-v2`: a near-zero median on a quantised history counts as zero (#387, study V2).** A p75
+  history of 0, −1 and −2 converter steps had a median of half a step, so a segment at 0 deviated by exactly 1.0
+  and dominated every score. Under `simple-v2`, a history whose distinct values (at least 3) lie on multiples of
+  their smallest gap is quantised, and a median within two steps of zero is treated as zero (`zero_median`), in
+  `morlet_compare_to_history`, `morlet_compare_summary`, `morlet_history_neighbors`, `morlet_value_spreads` and
+  the decision state (`history.value_rules`). Values that are not quantised compare exactly as before, and the
+  stored values are unchanged. The rules belong to the collection: `morlet_value_rules` reads them and
+  `morlet_set_value_rules` sets them. Context enabled from SQL 0.3.9 on starts with `simple-v2`; existing
+  collections keep `simple-v1` until switched. Study V2 (`evaluation/values_v2/`, protocol frozen before any
+  run): the artefact disappears, continuous values are unchanged, and C2's and C3's AUROCs are identical under
+  both rules (0 of 37,670 and 0 of 24 history medians affected). New functions: `morlet_quantised_step`,
+  `morlet_value_floors`, `morlet_value_rules`, `morlet_set_value_rules`; the 0.3.8 → 0.3.9 update script adds them.
+- **Importer: wide plant exports (#388).** For CSV, `--time-column` now sets the start time (ISO 8601) and,
+  without `--rate`, the rate from the median row spacing. The metadata records how far the timestamps depart
+  from the even axis; they are not corrected. `--context-columns program,block` stores controller columns as
+  context on every signal (runs of equal value, empty cells keep the last value) and enables context on the
+  collection if needed.
+- **MCP `trend` per context segment (#385).** `segment_context` (a JSON object such as `{"phase": "cut"}`) takes
+  the measurement points only inside current context segments whose context contains it, from each segment's
+  start (a segment shorter than `samples_per_point` is measured whole). Without it, `trend` measures from each
+  recording's start, which on machining data is the idle lead-in before the cut.
+- **Decision state about ten times faster, all channels of a cut in one call (#403).** `decision.decision_states`
+  returns the states of several segments; `decision_state` is its one-segment form. The history of all segments
+  that share a context is read in one query, and medians, quantiles and neighbour distances are computed in Python
+  with the SQL functions' rules (checked against `morlet_compare_to_history` and `morlet_history_neighbors` in
+  `tools/mcp/test_decision_db.py`). The SQL path read the collection three times per channel and also computed the
+  pooled spreads, which the state does not use. On a synthetic history shaped like a milling study (3 tools x 315
+  cuts x 7 channels), seven channels took 259 ms on an M-series Mac before and 16 ms after, and on a Raspberry Pi
+  3B+ 3.8 s before and 0.26 s after (median). On the real PHM 2010 milling data on the Pi (3 tools x 315 cuts,
+  100 decisions of c4 and c6 late in life, soft temperature limit active), a cut's 7 states take p50 256 ms and
+  p95 296 ms, from 4.7 s and 5.1 s. `decision.segments_at` looks up several segments in one query. State version 4:
+  a value's status no longer reports `no_pooled_spread` (it is `ok`), since the state carries no calibrated
+  deviation; values, medians, deviations, quantiles and neighbours are unchanged.
+- **Decision-state examples search the whole history and say when there is none (#404).** Examples were the
+  labelled cases among the 50 nearest segments, so late in a tool's life, when the nearest segments were its own
+  unlabelled cuts, a labelled case further away was missed. Now the nearest labelled cases of the whole history are
+  returned, `examples_note` states when none exists, and `example_match_keys` (also an MCP tool argument) lets
+  examples come from a wider context, such as other tools of the same process.
+- **`morlet.chunk_format`: a misspelt value fails, never writes Grizzbit 1 quietly.** PostgreSQL keeps a value set
+  before pg_morlet's library loads (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `postgresql.conf`,
+  `-c`) and, for an enum setting, only warned about an invalid one and used the default. The setting is now a
+  string checked by pg_morlet: once the library is loaded, `SET` refuses an invalid value; a value from before makes
+  every append fail with `invalid value for parameter "morlet.chunk_format": "..."; available values: grizzbit1,
+  grizzbit21`, storing nothing. Values are exact and lower case (`grizzbit1`, `grizzbit21`). An invalid
+  `morlet.verify_appends`, however it was set, already failed every append; the message now names the value
+  (`invalid value for parameter "morlet.verify_appends": "..."; available values: on, off`). Before a session's
+  first `morlet_*` call, `current_setting` shows only explicitly set values; check with `SHOW` after one.
+- **SQL 0.3.9: `morlet_encode_chunk` and `morlet_chunk_batch` are STABLE, not IMMUTABLE.** Their output depends on
+  `morlet.chunk_format`, so PostgreSQL could fold or cache an IMMUTABLE call (for example in a generic plan) and keep
+  bytes encoded under another setting; the samples were exact either way. Encoding works before the update; the
+  update only changes the two functions' volatility.
+- **Grizzbit 2.1, chunk format version 5, opt-in (#377, study B6):** `SET morlet.chunk_format = grizzbit21` makes
+  every append path keep a version-5 chunk (last-place corrections once per grid index, per-chunk LPC) wherever it
+  is strictly smaller than Grizzbit 1's chunk, which is stored otherwise, byte for byte. The default stays
+  `grizzbit1`; existing chunks are never rewritten.
+  - **Study B6 passed** all six criteria: waveforms 12.6% smaller in total and none larger, decode ≥ 53.1 and
+    encode ≥ 10.8 M samples/s per thread, identical bytes on four platforms, B3 standing kept
+    (evaluation/storage_b6/RESULTS.md).
+  - Write-time verification (#366) covers version 5, with no fallback. Version 4 stays reserved and rejected.
+  - Every reader of this release decodes version 5 whatever the setting. **Readers older than this release cannot
+    read version-5 chunks**; downgrading needs them re-appended with `grizzbit1`.
+  - **Compressed transfer negotiates the version:** the native decoder (`morlet-ffi`) and
+    `transfer::MAX_CHUNK_VERSION` report 5; SQL's `max_chunk_version` default stays 3, so a client that states no
+    version, or a lower one, receives samples.
+  - **File format 1 stays Grizzbit 1:** its writer never writes version 5 and its reader refuses it.
+  - The SDK labels a Grizzbit 2.1 server's encoder. `grizzbit::encode` is unchanged (Grizzbit 1 goldens and
+    `testdata/grizzbit/encoder-equivalence.bin` byte for byte); `grizzbit::encode_with(.., Format::Grizzbit21)`
+    writes version 5.
+  - Specification: docs/chunk-format.md, "Version 5"; overview and limits: docs/grizzbit.md.
+
+## 0.3.11-alpha.1
+
+SQL version 0.3.8, unchanged; Python SDK 0.1.0a4. The chunk format is unchanged; existing collections keep their
+layout.
+
+- **MCP server starts under `python -I` again (#382):** `morlet_mcp.py` loads its sibling `decision.py` by path. In
+  0.3.10-alpha.1 the server fails in isolated mode with `No module named 'decision'`; a test now imports it under `-I`.
+
+- **MCP server, findings from a field evaluation (#384, #386):**
+  - `search_similar` takes `exclude`: `"recording"` drops every hit in the query's recording, and `"metadata:<key>"`
+    drops hits from recordings sharing the query's value of that key (e.g. the other channels of the same part). It
+    fetches up to 100 candidates so that `top_k` hits remain, and reports how many were left out. The SQL option
+    remains open in #384.
+  - `coverage` treats recordings that overlap in time (channels of one acquisition) as one recorded block, so covered
+    time is no longer added up per channel (`covered_fraction` stays at most 1), and snapshots recorded on several
+    channels are recognised as snapshots. New fields: `recorded_blocks`, `recordings_per_block`.
+  - `locate_time` says when a time falls into a gap, or before the first or after the last recording, and names the
+    nearest recording on each side.
+  - `latest` reports a too-small `limit` by that name instead of the SQL argument `max_recordings`.
+- **Docs (#389):** `morlet_read_interval_raw` returns a bare `bytea`, while `morlet_read_interval` returns a table with
+  `samples`; notes for Windows (no `chmod 600` on NTFS, running the tools from a container).
+
+- **The chunk codec is now the `grizzbit` crate (Grizzbit 1 = chunk format versions 2 and 3, unchanged):**
+  `crates/grizzbit` holds the encoder, decoder, CRC-32C, sample limits, unit and property tests, golden-chunk test,
+  Kani proofs and the codec's fuzz targets, with no dependencies. `morlet_core::rawcodec` re-exports it, so every
+  existing path keeps compiling; `morlet_core::MAX_SAMPLES` and `MAX_AMPLITUDE` are the codec's limits.
+  `CodecError::Signal` now carries `grizzbit::SampleError` (same messages; `SignalError: From<SampleError>`). No
+  byte changes: a new frozen vector (testdata/grizzbit), written by the encoder before the move, must be
+  reproduced exactly, and SQL function names and messages are unchanged. The crate is not published.
+
+- **Docs: the chunk codec is named Grizzbit:** [docs/grizzbit.md](docs/grizzbit.md) describes it (what it does, why it
+  is lossless, where it is strong and weak in B4, lineage, versions, the planned Grizzbit 2 of #326);
+  docs/chunk-format.md is retitled "Grizzbit format specification" with its content unchanged (Grizzbit 1 = chunk format
+  versions 2 and 3); the README and report 0.22 (paper Section 4, supplement Section 1) name it. No format or behaviour
+  change.
+
+- **Every append path proves at write time that a chunk decodes to its input (#366):** with
+  `morlet.verify_appends` on (the default), the batch append `morlet_append_chunks_raw` decoded each encoded chunk
+  again and compared it bit for bit with its input, but the single-chunk append `morlet_append_chunk` (and so
+  `morlet_append_chunk_raw`, `morlet_append_chunks`, and the batch append's chunk-by-chunk fallback for retries,
+  overlaps and float8[] collections) stored `morlet_encode_chunk`'s output unchecked. `morlet_encode_chunk` now
+  runs the same check, from one function shared with the batch path, so no SQL function changes. The codec was
+  and is lossless by design and every chunk keeps its CRC-32C; this closes the gap in the write-time proof.
+  Tests: the single-chunk path stores the same bytes with the check on and off, and refuses (single and batch)
+  a code that does not decode to its input, which with the check off is stored, so the check is what refuses it.
+
+- **File and server transfers verify samples, not chunk bytes (#356):** `Client.import_file` and
+  `Client.export_file` compared a hash of the chunk bytes on both sides after every 256 chunks, and to continue a
+  recording. A file whose chunks another encoder version wrote (the same samples as other bytes) would have been
+  refused with "chunks differ after the import", although no sample was lost. They now compare a hash of the
+  decoded float64 samples, every bit (hashed by the server from `morlet_read_interval_raw`), and continue a
+  recording if its samples equal the other side's first samples. The chunk bytes are still compared when both
+  sides report the same encoder version, and reported: `report=[...]` collects a `TransferCheck` per recording.
+  Tests import, verify and continue a file written with other chunk bytes, export server chunks written with
+  other bytes, and refuse a sample changed by one ulp, a changed sign of zero, and a sample changed on the way.
+
+- **Sample rates up to 100 MHz (#342):** recordings without feature extraction (`extractor 'none'`) accept rates up
+  to 100 MHz instead of 200 kHz, so acoustic emission and ultrasound (1–10 MHz) can be stored, read and summarized
+  losslessly. Nothing else depended on the rate. L1's rate points at 1, 2.5, 3.125, 10 and 100 MHz: every derived
+  time exact, every sample read back identical, about 7 M samples/s per writer at every rate
+  (evaluation/limits_l1/results-342). Rates above 100 MHz are refused with a clear message. Search features keep
+  their domains (128 Hz–200 kHz, and 1–128 Hz).
+
+## 0.3.10-alpha.1
+
+SQL version 0.3.8, with an update script from 0.3.7. Python SDK 0.1.0a3. The chunk format is unchanged;
+existing collections keep their layout. New: the embedded edition (experimental) and file format 1.
+
+- **Embedded edition, experimental (#351):** MorletDB in one SQLite file, with no server. Implemented in
+  `crates/morlet-sqlite`, with SQLite included, as a Rust library, a C interface and the `morlet-sqlite` command line.
+  In Python: `morletdb.open("x.morlet")`, which offers ingest, append, read and stats. Chunks and summaries are byte
+  for byte pg_morlet's, so interval statistics are the same bit for bit (cross-checked against pg_morlet). `Client.import_file` and `Client.export_file` move recordings between a file and a server
+  chunk for chunk, checking the chunk bytes on both sides. The SDK's platform wheels carry the library, and the
+  release attaches `morlet-sqlite-<platform>.tar.gz` (the command line, the library and a C header).
+  [docs/embedded-edition.md](docs/embedded-edition.md).
+- **File format 1, a portable format for lossless waveforms (#351):** [docs/file-format.md](docs/file-format.md)
+  specifies the file (tables, meaning, rules) with a compatibility promise. [docs/chunk-format.md](docs/chunk-format.md)
+  now specifies decoding exactly (bit stream, prediction, integer mappings, chunk summaries).
+  `reference/python/morletfile.py` reads the format with the Python standard library alone. CI checks it and the
+  library against a committed corpus covering every chunk kind (`testdata/morlet-file-1`), and against fresh files
+  from the library.
+- **Exact times at slow rates (#343):** converting a time to a sample (`morlet_time_to_samples`) and the time filters,
+  `before_only` cutoffs, hit times of search and acquisition alignment computed with `sample_rate_hz::numeric`,
+  which rounds a float8 to 15 significant digits. At 1/60 Hz (0.0166666666666667, above 1/60) a time exactly at a
+  sample instant mapped to the next sample; about half of all whole-second periods were affected. A rate is now read
+  as the exact fraction it stands for (`morlet_rate_ratio`: 1/60, 1/7, 25600/1, or its exact decimal) and sample
+  boundaries are computed in integer arithmetic. Found by the L1 limits study; a regression test checks 2,001
+  sample instants at periods of 1, 3, 6, 7 and 60 s; checked once over every whole-second period from 1 to 3,600 s.
+  Rates such as 25.6 kHz and 64 kHz map exactly as before. `morlet_time_to_samples` costs about 50 µs per call
+  instead of 22; where it runs per row (time filters, `before_only`) the fraction is computed once per query.
+- **Interval statistics on very long recordings (#340):** on a recording of 10^9 samples, statistics over 10^6
+  samples took 5.4–6.1 ms instead of about 0.6 ms. The query itself took 0.1 ms; the rest was PostgreSQL compiling
+  it (JIT), because the planner's row estimate, and so its cost, grew with the table until it crossed
+  `jit_above_cost`. The general path (`morlet_interval_buckets`, behind `morlet_interval_stats` for long intervals and
+  `morlet_interval_overview`) now runs with `jit=off` and takes 0.6–0.8 ms there. The fast path (#348, #349) already
+  avoided it for intervals below 2^20 samples.
+- **Faster interval statistics (#346):** `morlet_interval_stats` over an interval shorter than a roll-up block
+  (2^20 samples) on a collection without memory levels now runs the chunk aggregate directly, through a new internal
+  Rust function (`morlet_interval_stats_fast`) that resolves the collection's tables through the system caches and
+  keeps its prepared query per session: no catalog query and no planning per call. The same rows in the same order,
+  so the same result bit for bit (tested over 305 intervals against the general path, and after new samples and
+  enabled summaries). Release image, 128,000-sample intervals, alternating rounds on a loaded development machine:
+  server time 113 µs against 302 µs in 0.3.9-alpha.1; end to end p50 0.41 ms against 0.62 ms (a `SELECT 1` round
+  trip was 0.28 ms). Other requests take the general path as before.
+
 ## 0.3.9-alpha.1
 
 SQL version 0.3.7, with an update script from 0.3.6. Python SDK unchanged (0.1.0a2). The chunk format is unchanged;

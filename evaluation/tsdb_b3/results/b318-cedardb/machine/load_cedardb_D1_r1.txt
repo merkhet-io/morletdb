@@ -1,0 +1,22 @@
+2026-11-09T03:25:26
+ 3:25  up 12 days, 12:21, 19 users, load averages: 6.59 4.64 3.22
+ %CPU COMM
+380.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 75.9 /usr/libexec/PerfPowerServices
+ 55.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 42.0 /System/Library/PrivateFrameworks/AppleMediaServicesUI.framework/amsengagementd
+ 37.7 /usr/libexec/triald
+ 37.0 /System/Library/PrivateFrameworks/CoreSuggestions.framework/Versions/A/Support/suggestd
+ 33.3 /usr/libexec/runningboardd
+ 27.3 /usr/libexec/swcd
+2026-11-09T03:56:45
+ 3:56  up 12 days, 12:52, 19 users, load averages: 7.68 5.22 3.53
+ %CPU COMM
+176.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 53.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 46.5 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 24.2 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent
+  8.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  7.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  1.8 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop

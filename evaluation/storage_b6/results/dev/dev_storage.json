@@ -1,0 +1,752 @@
+{
+ "study": "B6 development figures",
+ "chunk": 4096,
+ "quantum": 1.0,
+ "inputs": [
+  {
+   "input": "N09_M07_F10_K001_19.vibration_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 9.4427,
+    "G21": 8.3859
+   },
+   "G21_over_G1": 0.8881,
+   "bytes": {
+    "G1": 302166,
+    "G21": 268350
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 57
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N09_M07_F10_K001_19.phase_current_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.5834,
+    "G21": 8.9183
+   },
+   "G21_over_G1": 0.8427,
+   "bytes": {
+    "G1": 338671,
+    "G21": 285386
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N09_M07_F10_K001_19.phase_current_2",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.7705,
+    "G21": 8.5391
+   },
+   "G21_over_G1": 0.7928,
+   "bytes": {
+    "G1": 344656,
+    "G21": 273252
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N09_M07_F10_K001_19.force",
+   "set": "t1-dev",
+   "samples": 16001,
+   "chunks": 4,
+   "bits_per_sample": {
+    "G1": 8.9254,
+    "G21": 7.721
+   },
+   "G21_over_G1": 0.8651,
+   "bytes": {
+    "G1": 17852,
+    "G21": 15443
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v3 grid": 4
+    },
+    "G21": {
+     "v5 grid": 4
+    }
+   },
+   "version5_paths": {
+    "table": 4,
+    "LPC": 0
+   },
+   "chunks_changed": 4,
+   "exact": true
+  },
+  {
+   "input": "N15_M01_F10_KA01_19.vibration_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 9.5928,
+    "G21": 8.1103
+   },
+   "G21_over_G1": 0.8455,
+   "bytes": {
+    "G1": 306970,
+    "G21": 259531
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M01_F10_KA01_19.phase_current_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.517,
+    "G21": 8.3203
+   },
+   "G21_over_G1": 0.7911,
+   "bytes": {
+    "G1": 336546,
+    "G21": 266251
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M01_F10_KA01_19.phase_current_2",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.6174,
+    "G21": 8.3451
+   },
+   "G21_over_G1": 0.786,
+   "bytes": {
+    "G1": 339757,
+    "G21": 267045
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M01_F10_KA01_19.force",
+   "set": "t1-dev",
+   "samples": 16001,
+   "chunks": 4,
+   "bits_per_sample": {
+    "G1": 8.9194,
+    "G21": 7.7505
+   },
+   "G21_over_G1": 0.8689,
+   "bytes": {
+    "G1": 17840,
+    "G21": 15502
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v3 grid": 4
+    },
+    "G21": {
+     "v5 grid": 4
+    }
+   },
+   "version5_paths": {
+    "table": 4,
+    "LPC": 0
+   },
+   "chunks_changed": 4,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F04_KA09_19.vibration_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 9.3709,
+    "G21": 8.0403
+   },
+   "G21_over_G1": 0.858,
+   "bytes": {
+    "G1": 299869,
+    "G21": 257290
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F04_KA09_19.phase_current_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.57,
+    "G21": 8.7467
+   },
+   "G21_over_G1": 0.8275,
+   "bytes": {
+    "G1": 338242,
+    "G21": 279897
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F04_KA09_19.phase_current_2",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.7488,
+    "G21": 8.756
+   },
+   "G21_over_G1": 0.8146,
+   "bytes": {
+    "G1": 343964,
+    "G21": 280193
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F04_KA09_19.force",
+   "set": "t1-dev",
+   "samples": 16001,
+   "chunks": 4,
+   "bits_per_sample": {
+    "G1": 8.9349,
+    "G21": 7.642
+   },
+   "G21_over_G1": 0.8553,
+   "bytes": {
+    "G1": 17871,
+    "G21": 15285
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v3 grid": 4
+    },
+    "G21": {
+     "v5 grid": 4
+    }
+   },
+   "version5_paths": {
+    "table": 4,
+    "LPC": 0
+   },
+   "chunks_changed": 4,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F10_KB24_19.vibration_1",
+   "set": "t1-dev",
+   "samples": 256106,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.9986,
+    "G21": 9.8151
+   },
+   "G21_over_G1": 0.8924,
+   "bytes": {
+    "G1": 352100,
+    "G21": 314214
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F10_KB24_19.phase_current_1",
+   "set": "t1-dev",
+   "samples": 256106,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.6481,
+    "G21": 8.9808
+   },
+   "G21_over_G1": 0.8434,
+   "bytes": {
+    "G1": 340880,
+    "G21": 287506
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F10_KB24_19.phase_current_2",
+   "set": "t1-dev",
+   "samples": 256106,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.7697,
+    "G21": 8.6439
+   },
+   "G21_over_G1": 0.8026,
+   "bytes": {
+    "G1": 344772,
+    "G21": 276718
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N15_M07_F10_KB24_19.force",
+   "set": "t1-dev",
+   "samples": 16006,
+   "chunks": 4,
+   "bits_per_sample": {
+    "G1": 10.0077,
+    "G21": 9.1126
+   },
+   "G21_over_G1": 0.9106,
+   "bytes": {
+    "G1": 20023,
+    "G21": 18232
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v3 grid": 4
+    },
+    "G21": {
+     "v5 grid": 4
+    }
+   },
+   "version5_paths": {
+    "table": 4,
+    "LPC": 0
+   },
+   "chunks_changed": 4,
+   "exact": true
+  },
+  {
+   "input": "N09_M07_F10_KI08_19.vibration_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 8.8499,
+    "G21": 7.6361
+   },
+   "G21_over_G1": 0.8628,
+   "bytes": {
+    "G1": 283198,
+    "G21": 244355
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 54
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N09_M07_F10_KI08_19.phase_current_1",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.5108,
+    "G21": 8.7105
+   },
+   "G21_over_G1": 0.8287,
+   "bytes": {
+    "G1": 336347,
+    "G21": 278737
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N09_M07_F10_KI08_19.phase_current_2",
+   "set": "t1-dev",
+   "samples": 256001,
+   "chunks": 63,
+   "bits_per_sample": {
+    "G1": 10.766,
+    "G21": 8.8358
+   },
+   "G21_over_G1": 0.8207,
+   "bytes": {
+    "G1": 344512,
+    "G21": 282748
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 63
+    },
+    "G21": {
+     "v5 grid": 63
+    }
+   },
+   "version5_paths": {
+    "table": 63,
+    "LPC": 63
+   },
+   "chunks_changed": 63,
+   "exact": true
+  },
+  {
+   "input": "N09_M07_F10_KI08_19.force",
+   "set": "t1-dev",
+   "samples": 16001,
+   "chunks": 4,
+   "bits_per_sample": {
+    "G1": 8.4145,
+    "G21": 7.279
+   },
+   "G21_over_G1": 0.8651,
+   "bytes": {
+    "G1": 16830,
+    "G21": 14559
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v3 grid": 4
+    },
+    "G21": {
+     "v5 grid": 4
+    }
+   },
+   "version5_paths": {
+    "table": 4,
+    "LPC": 0
+   },
+   "chunks_changed": 4,
+   "exact": true
+  },
+  {
+   "input": "FEMTO Bearing1_1 horizontal",
+   "set": "t1-dev",
+   "samples": 4193280,
+   "chunks": 1024,
+   "bits_per_sample": {
+    "G1": 10.6542,
+    "G21": 10.0917
+   },
+   "G21_over_G1": 0.9472,
+   "bytes": {
+    "G1": 5584507,
+    "G21": 5289643
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G21": {
+     "v5 grid": 1024
+    }
+   },
+   "version5_paths": {
+    "exceptions only": 896,
+    "LPC": 1024,
+    "none": 128
+   },
+   "chunks_changed": 1024,
+   "exact": true
+  },
+  {
+   "input": "Blockchain-tr",
+   "set": "elf-dev",
+   "samples": 99999,
+   "chunks": 25,
+   "bits_per_sample": {
+    "G1": 13.9605,
+    "G21": 13.9605
+   },
+   "G21_over_G1": 1.0,
+   "bytes": {
+    "G1": 174505,
+    "G21": 174505
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 25
+    }
+   },
+   "version5_paths": {},
+   "chunks_changed": 0,
+   "exact": true
+  },
+  {
+   "input": "POI-lat",
+   "set": "elf-dev",
+   "samples": 100001,
+   "chunks": 25,
+   "bits_per_sample": {
+    "G1": 60.8407,
+    "G21": 60.8407
+   },
+   "G21_over_G1": 1.0,
+   "bytes": {
+    "G1": 760516,
+    "G21": 760516
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 25
+    },
+    "G21": {
+     "v2 float": 25
+    }
+   },
+   "version5_paths": {},
+   "chunks_changed": 0,
+   "exact": true
+  },
+  {
+   "input": "Stocks-USA",
+   "set": "elf-dev",
+   "samples": 100002,
+   "chunks": 25,
+   "bits_per_sample": {
+    "G1": 4.5621,
+    "G21": 4.5621
+   },
+   "G21_over_G1": 1.0,
+   "bytes": {
+    "G1": 57027,
+    "G21": 57027
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 25
+    }
+   },
+   "version5_paths": {},
+   "chunks_changed": 0,
+   "exact": true
+  },
+  {
+   "input": "electric_vehicle_charging",
+   "set": "elf-dev",
+   "samples": 3395,
+   "chunks": 1,
+   "bits_per_sample": {
+    "G1": 10.0312,
+    "G21": 9.8003
+   },
+   "G21_over_G1": 0.977,
+   "bytes": {
+    "G1": 4257,
+    "G21": 4159
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1
+    },
+    "G21": {
+     "v5 grid": 1
+    }
+   },
+   "version5_paths": {
+    "none": 1,
+    "LPC": 1
+   },
+   "chunks_changed": 1,
+   "exact": true
+  },
+  {
+   "input": "XJTU-SY Bearing1_1 horizontal",
+   "set": "b5-dev",
+   "samples": 4030464,
+   "chunks": 984,
+   "bits_per_sample": {
+    "G1": 63.6592,
+    "G21": 63.6592
+   },
+   "G21_over_G1": 1.0,
+   "bytes": {
+    "G1": 32072036,
+    "G21": 32072036
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 921,
+     "v2 raw": 63
+    },
+    "G21": {
+     "v2 float": 921,
+     "v2 raw": 63
+    }
+   },
+   "version5_paths": {},
+   "chunks_changed": 0,
+   "exact": true
+  }
+ ]
+}

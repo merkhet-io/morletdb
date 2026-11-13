@@ -4,9 +4,14 @@ alike. Acquisitions are dealt round-robin to the writers; every writer parses it
 barrier (untimed); wall time runs from the barrier to the last acknowledgement, then until everything is
 queryable. Full correctness (counts and every channel by SHA-256) after the load.
 
-  ../../.venv-b3/bin/python parallel.py <questdb|morletdb-032> <D1|D2> <writers> <rep>
+B3.20 adds CedarDB: each writer opens its own connection (B3.18's adapter: binary COPY per acquisition and group,
+`SET async_commit = on` for D2), building its rows after the barrier as in B3.18, so conversion is counted. A CedarDB
+load that fails the read-back keeps its container's volume (CEDARDB_RANGE_SCAN_FAULT.md).
+
+  ../../.venv-b3/bin/python parallel.py <questdb|morletdb-032|morletdb-i1|cedardb> <D1|D2> <writers> <rep>
 """
 import multiprocessing as mp
+import os
 import sys
 import time
 
@@ -22,10 +27,16 @@ def writer(system, durability, ks, barrier, out_q):
         import questdb_adapter as q
         db = q.connect()
         load = lambda a: q.load_one(db, a, data[a["k"]])
+    elif system == "cedardb":
+        import cedar_adapter as c
+        conn = c.connect(durability)
+        load = lambda a: c.load_one(conn, a, data[a["k"]])
     else:
         import morletdb_adapter as mo
         mo.VARIANT.update({"raw_read": True, "native_stats": True, "raw_append": True, "pipeline": True,
                            "one_statement": True})
+        if system == "morletdb-i1":   # B3.17: B3.10's client path (256 chunks per transaction, one connection per
+            mo.VARIANT.update({"commit_chunks": 256, "reuse_connection": True, "rpc_chunks": 0})   # writer, batched)
         load = lambda a: mo.load_one(a, data[a["k"]])
     acks = []
     barrier.wait()
@@ -40,12 +51,19 @@ def main(system, durability, writers, rep):
     writers, rep = int(writers), int(rep)
     m = common.manifest()
     n = len(m["acquisitions"])
-    volume = f"b3-par-{system}-{durability.lower()}-w{writers}-r{rep}"
+    # B5: B3_VOLUME_PREFIX names the volume (fresh b5-* volumes); default b3, as before
+    volume = f"{os.environ.get('B3_VOLUME_PREFIX', 'b3')}-par-{system}-{durability.lower()}-w{writers}-r{rep}"
     if system == "questdb":
         import questdb_adapter as q
         handle = q.start(volume, durability)
         q.create(handle)
         container = q.NAME
+    elif system == "cedardb":
+        import cedar_adapter as c
+        import run_cedar as rc
+        handle = c.start(volume, durability)
+        c.create(handle)
+        container = c.NAME
     else:
         import morletdb_adapter as mo
         handle = mo.start(volume, durability)
@@ -58,16 +76,18 @@ def main(system, durability, writers, rep):
     for p in procs:
         p.start()
     with common.Stats(container) as st:
-        barrier.wait()
+        barrier.wait(timeout=900)   # B3.20: a writer that fails before the start no longer hangs the run
         t0 = time.perf_counter()
         ends, acks = [], []
         for _ in procs:
-            end, a = out_q.get()
+            end, a = out_q.get(timeout=3600)   # B3.20: nor one that fails during the load
             ends.append(end)
             acks += a
         t_last = max(ends)
         if system == "questdb":
             run.q_settle(handle, run.expected_rows(m), timeout=3600)
+        elif system == "cedardb":
+            rc.settle(handle, rc.expected(m, list(range(n))))
         else:
             want = run.total_samples(m)
             while mo.count(handle)[1] != want:
@@ -81,12 +101,27 @@ def main(system, durability, writers, rep):
            "ingest": {"wall_s": round(wall, 3), "samples_per_s": round(run.total_samples(m) / wall),
                       "ack_per_acquisition": common.pcts(acks), "queryable_after_last_ack_s": round(queryable, 3),
                       "server": st.summary()}}
-    if system != "questdb":
+    if system == "cedardb":
+        res["image"] = c.IMAGE
+        res["image_id"] = common.sh(["docker", "image", "inspect", c.IMAGE, "--format", "{{.Id}}"]).strip()
+        res["settings"] = c.server_settings(handle)
+        ks = list(range(n))
+        got, want = c.count(handle), rc.expected(m, ks)
+        t = time.perf_counter()
+        res["correctness"] = {"counts": {"got": got, "want": want, "ok": got == want}, "reads": rc.check_reads(handle, m, ks)}
+        res["correctness"]["reads"]["seconds"] = round(time.perf_counter() - t, 1)
+        handle.close()
+    elif system != "questdb":
         res["image"] = mo.IMAGE
         res["image_id"] = common.sh(["docker", "image", "inspect", mo.IMAGE, "--format", "{{.Id}}"]).strip()
-    res["correctness"] = run.full_counts_and_reads("questdb" if system == "questdb" else "morletdb", handle, m)
+    if system != "cedardb":
+        res["correctness"] = run.full_counts_and_reads("questdb" if system == "questdb" else "morletdb", handle, m)
     res["correct"] = res["correctness"]["counts"]["ok"] and not res["correctness"]["reads"]["mismatches"]
-    common.remove(container, volume)
+    if system == "cedardb" and not res["correct"]:
+        common.stop(container)
+        res["volume_kept"] = volume   # evidence, as for B3.19 round 3
+    else:
+        common.remove(container, volume)
     run.save(f"parallel_{system}_{durability}_w{writers}_r{rep}", res)
 
 

@@ -1,0 +1,4 @@
+# Built or prepared locally for the run (hashes in results/build.json and the inputs manifest), not committed.
+bin/
+work/
+b6codec/target/

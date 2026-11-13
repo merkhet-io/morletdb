@@ -1,0 +1,977 @@
+{
+ "study": "B6 codec speed (PROTOCOL.md section 4A)",
+ "set": "dev",
+ "dryrun": true,
+ "started": "2026-11-11T12:06:17",
+ "passes": 3,
+ "threads": 1,
+ "b6codec": {
+  "path": "/Users/zin/sophia/morletdb-b6/evaluation/storage_b6/bin/b6/b6codec",
+  "sha256": "31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f"
+ },
+ "inputs": [
+  {
+   "input": "pad-c-b6",
+   "set": "waveform",
+   "samples": 4194304,
+   "G1": {
+    "encode_msamples_s": 61.06,
+    "decode_msamples_s": 132.72,
+    "encode_passes": [
+     61.06,
+     58.43,
+     35.75
+    ],
+    "decode_passes": [
+     132.01,
+     130.16,
+     132.72
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 33.41,
+    "decode_msamples_s": 103.68,
+    "encode_passes": [
+     33.2,
+     33.41,
+     21.26
+    ],
+    "decode_passes": [
+     101.79,
+     102.91,
+     103.68
+    ]
+   },
+   "G21_over_G1_encode": 0.5472,
+   "G21_over_G1_decode": 0.7812,
+   "conditions": [
+    {
+     "load1": 3.03,
+     "busy": [
+      "51.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:17",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.03
+    },
+    {
+     "load1": 3.03,
+     "busy": [
+      "55.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:17",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.03
+    },
+    {
+     "load1": 3.03,
+     "busy": [
+      "66.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "65.2 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd"
+     ],
+     "powered": true,
+     "at": "12:06:17",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    }
+   ]
+  },
+  {
+   "input": "pad-p-b6",
+   "set": "waveform",
+   "samples": 4194304,
+   "G1": {
+    "encode_msamples_s": 23.29,
+    "decode_msamples_s": 79.15,
+    "encode_passes": [
+     23.11,
+     18.23,
+     23.29
+    ],
+    "decode_passes": [
+     77.14,
+     78.96,
+     79.15
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 14.15,
+    "decode_msamples_s": 78.29,
+    "encode_passes": [
+     13.82,
+     12.23,
+     14.15
+    ],
+    "decode_passes": [
+     78.29,
+     77.62,
+     77.06
+    ]
+   },
+   "G21_over_G1_encode": 0.6076,
+   "G21_over_G1_decode": 0.9891,
+   "conditions": [
+    {
+     "load1": 3.43,
+     "busy": [
+      "61.7 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd"
+     ],
+     "powered": true,
+     "at": "12:06:18",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    },
+    {
+     "load1": 3.43,
+     "busy": [
+      "62.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "54.6 claude"
+     ],
+     "powered": true,
+     "at": "12:06:19",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    },
+    {
+     "load1": 3.43,
+     "busy": [
+      "50.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:19",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    }
+   ]
+  },
+  {
+   "input": "femto-dev",
+   "set": "waveform",
+   "samples": 4193280,
+   "G1": {
+    "encode_msamples_s": 22.92,
+    "decode_msamples_s": 94.03,
+    "encode_passes": [
+     22.68,
+     22.92,
+     22.6
+    ],
+    "decode_passes": [
+     93.68,
+     92.02,
+     94.03
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 16.41,
+    "decode_msamples_s": 107.01,
+    "encode_passes": [
+     16.41,
+     16.23,
+     16.34
+    ],
+    "decode_passes": [
+     105.91,
+     107.01,
+     106.24
+    ]
+   },
+   "G21_over_G1_encode": 0.716,
+   "G21_over_G1_decode": 1.138,
+   "conditions": [
+    {
+     "load1": 3.43,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:20",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    },
+    {
+     "load1": 3.43,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:21",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    },
+    {
+     "load1": 3.43,
+     "busy": [
+      "58.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:21",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    }
+   ]
+  },
+  {
+   "input": "xjtu-dev",
+   "set": "waveform",
+   "samples": 4030464,
+   "G1": {
+    "encode_msamples_s": 23.59,
+    "decode_msamples_s": 77.95,
+    "encode_passes": [
+     22.9,
+     23.59,
+     23.14
+    ],
+    "decode_passes": [
+     77.71,
+     77.95,
+     76.61
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 24.42,
+    "decode_msamples_s": 78.37,
+    "encode_passes": [
+     22.9,
+     24.42,
+     23.42
+    ],
+    "decode_passes": [
+     75.75,
+     78.08,
+     78.37
+    ]
+   },
+   "G21_over_G1_encode": 1.0352,
+   "G21_over_G1_decode": 1.0054,
+   "conditions": [
+    {
+     "load1": 3.43,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:22",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.43
+    },
+    {
+     "load1": 3.43,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:22",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "101.7 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)"
+     ],
+     "powered": true,
+     "at": "12:06:23",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    }
+   ]
+  },
+  {
+   "input": "Blockchain-tr",
+   "set": "elf",
+   "samples": 99999,
+   "G1": {
+    "encode_msamples_s": 26.21,
+    "decode_msamples_s": 110.1,
+    "encode_passes": [
+     26.19,
+     26.21,
+     25.47
+    ],
+    "decode_passes": [
+     110.1,
+     107.96,
+     109.75
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 21.78,
+    "decode_msamples_s": 112.12,
+    "encode_passes": [
+     21.78,
+     21.52,
+     21.04
+    ],
+    "decode_passes": [
+     112.12,
+     109.99,
+     111.16
+    ]
+   },
+   "G21_over_G1_encode": 0.831,
+   "G21_over_G1_decode": 1.0183,
+   "conditions": [
+    {
+     "load1": 3.23,
+     "busy": [
+      "52.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "52.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    }
+   ]
+  },
+  {
+   "input": "POI-lat",
+   "set": "elf",
+   "samples": 100001,
+   "G1": {
+    "encode_msamples_s": 20.7,
+    "decode_msamples_s": 60.75,
+    "encode_passes": [
+     20.7,
+     19.77,
+     20.14
+    ],
+    "decode_passes": [
+     59.12,
+     60.75,
+     57.41
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 21.19,
+    "decode_msamples_s": 58.0,
+    "encode_passes": [
+     21.19,
+     20.34,
+     20.61
+    ],
+    "decode_passes": [
+     57.94,
+     58.0,
+     57.78
+    ]
+   },
+   "G21_over_G1_encode": 1.0237,
+   "G21_over_G1_decode": 0.9547,
+   "conditions": [
+    {
+     "load1": 3.23,
+     "busy": [
+      "55.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "71.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "71.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores",
+      "50.5 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    }
+   ]
+  },
+  {
+   "input": "Stocks-USA",
+   "set": "elf",
+   "samples": 100002,
+   "G1": {
+    "encode_msamples_s": 30.57,
+    "decode_msamples_s": 119.85,
+    "encode_passes": [
+     24.81,
+     30.57,
+     30.44
+    ],
+    "decode_passes": [
+     108.08,
+     114.54,
+     119.85
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 23.17,
+    "decode_msamples_s": 119.91,
+    "encode_passes": [
+     19.35,
+     23.17,
+     22.9
+    ],
+    "decode_passes": [
+     96.5,
+     119.91,
+     119.75
+    ]
+   },
+   "G21_over_G1_encode": 0.7579,
+   "G21_over_G1_decode": 1.0005,
+   "conditions": [
+    {
+     "load1": 3.23,
+     "busy": [
+      "80.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores",
+      "66.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "70.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "69.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores",
+      "50.2 /System/Cryptexes/App/usr/libexec/com.apple.Safari.History"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "64.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "50.2 /System/Cryptexes/App/usr/libexec/com.apple.Safari.History"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    }
+   ]
+  },
+  {
+   "input": "electric_vehicle_charging",
+   "set": "elf",
+   "samples": 3395,
+   "G1": {
+    "encode_msamples_s": 20.12,
+    "decode_msamples_s": 95.19,
+    "encode_passes": [
+     20.12,
+     14.65,
+     18.03
+    ],
+    "decode_passes": [
+     93.33,
+     70.49,
+     95.19
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 18.78,
+    "decode_msamples_s": 107.21,
+    "encode_passes": [
+     18.78,
+     14.0,
+     17.05
+    ],
+    "decode_passes": [
+     107.21,
+     77.3,
+     98.88
+    ]
+   },
+   "G21_over_G1_encode": 0.9334,
+   "G21_over_G1_decode": 1.1263,
+   "conditions": [
+    {
+     "load1": 3.23,
+     "busy": [
+      "64.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "70.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent",
+      "58.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "52.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent"
+     ],
+     "powered": true,
+     "at": "12:06:24",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    },
+    {
+     "load1": 3.23,
+     "busy": [
+      "143.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent",
+      "106.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent",
+      "61.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:25",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.23
+    }
+   ]
+  },
+  {
+   "input": "b3-vibration_1",
+   "set": "b3",
+   "samples": 26709131,
+   "G1": {
+    "encode_msamples_s": 22.05,
+    "decode_msamples_s": 76.81,
+    "encode_passes": [
+     21.43,
+     22.05,
+     21.4
+    ],
+    "decode_passes": [
+     74.79,
+     76.81,
+     72.11
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 13.53,
+    "decode_msamples_s": 74.47,
+    "encode_passes": [
+     13.26,
+     13.53,
+     13.3
+    ],
+    "decode_passes": [
+     72.94,
+     72.67,
+     74.47
+    ]
+   },
+   "G21_over_G1_encode": 0.6136,
+   "G21_over_G1_decode": 0.9695,
+   "conditions": [
+    {
+     "load1": 3.23,
+     "busy": [
+      "143.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent",
+      "106.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent",
+      "65.8 /System/Cryptexes/App/usr/libexec/com.apple.Safari.History",
+      "61.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:25",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.29
+    },
+    {
+     "load1": 3.29,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:29",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.19
+    },
+    {
+     "load1": 3.19,
+     "busy": [
+      "61.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent",
+      "57.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:33",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.19
+    }
+   ]
+  },
+  {
+   "input": "b3-phase_current_1",
+   "set": "b3",
+   "samples": 26709131,
+   "G1": {
+    "encode_msamples_s": 19.65,
+    "decode_msamples_s": 76.83,
+    "encode_passes": [
+     19.18,
+     19.39,
+     19.65
+    ],
+    "decode_passes": [
+     75.01,
+     76.51,
+     76.83
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 11.43,
+    "decode_msamples_s": 52.75,
+    "encode_passes": [
+     11.12,
+     11.43,
+     11.28
+    ],
+    "decode_passes": [
+     51.49,
+     52.75,
+     52.67
+    ]
+   },
+   "G21_over_G1_encode": 0.5817,
+   "G21_over_G1_decode": 0.6866,
+   "conditions": [
+    {
+     "load1": 3.19,
+     "busy": [
+      "51.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:37",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.1
+    },
+    {
+     "load1": 3.1,
+     "busy": [
+      "58.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:42",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 2.93
+    },
+    {
+     "load1": 2.93,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:47",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 3.09
+    }
+   ]
+  },
+  {
+   "input": "b3-phase_current_2",
+   "set": "b3",
+   "samples": 26709131,
+   "G1": {
+    "encode_msamples_s": 19.77,
+    "decode_msamples_s": 77.65,
+    "encode_passes": [
+     19.7,
+     19.35,
+     19.77
+    ],
+    "decode_passes": [
+     76.87,
+     77.65,
+     76.85
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 11.49,
+    "decode_msamples_s": 52.56,
+    "encode_passes": [
+     11.49,
+     11.42,
+     11.43
+    ],
+    "decode_passes": [
+     51.83,
+     52.55,
+     52.56
+    ]
+   },
+   "G21_over_G1_encode": 0.5812,
+   "G21_over_G1_decode": 0.6769,
+   "conditions": [
+    {
+     "load1": 3.09,
+     "busy": [],
+     "powered": true,
+     "at": "12:06:51",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 2.92
+    },
+    {
+     "load1": 2.92,
+     "busy": [
+      "51.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"
+     ],
+     "powered": true,
+     "at": "12:06:56",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 2.85
+    },
+    {
+     "load1": 2.85,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:01",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 3.02
+    }
+   ]
+  },
+  {
+   "input": "b3-force",
+   "set": "b3",
+   "samples": 1664207,
+   "G1": {
+    "encode_msamples_s": 18.32,
+    "decode_msamples_s": 72.14,
+    "encode_passes": [
+     18.3,
+     18.03,
+     18.32
+    ],
+    "decode_passes": [
+     72.1,
+     72.04,
+     72.14
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 12.28,
+    "decode_msamples_s": 81.6,
+    "encode_passes": [
+     12.28,
+     12.17,
+     12.26
+    ],
+    "decode_passes": [
+     80.86,
+     81.6,
+     81.38
+    ]
+   },
+   "G21_over_G1_encode": 0.6703,
+   "G21_over_G1_decode": 1.1311,
+   "conditions": [
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:05",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    },
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:06",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    },
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:06",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    }
+   ]
+  },
+  {
+   "input": "b3-speed",
+   "set": "b3",
+   "samples": 1664207,
+   "G1": {
+    "encode_msamples_s": 48.38,
+    "decode_msamples_s": 104.97,
+    "encode_passes": [
+     48.38,
+     48.29,
+     47.97
+    ],
+    "decode_passes": [
+     104.97,
+     104.15,
+     104.74
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 49.29,
+    "decode_msamples_s": 104.29,
+    "encode_passes": [
+     49.29,
+     48.98,
+     48.69
+    ],
+    "decode_passes": [
+     104.29,
+     103.94,
+     103.88
+    ]
+   },
+   "G21_over_G1_encode": 1.0188,
+   "G21_over_G1_decode": 0.9935,
+   "conditions": [
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:06",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    },
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:07",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    },
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:07",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    }
+   ]
+  },
+  {
+   "input": "b3-torque",
+   "set": "b3",
+   "samples": 1664207,
+   "G1": {
+    "encode_msamples_s": 24.99,
+    "decode_msamples_s": 86.7,
+    "encode_passes": [
+     24.63,
+     23.47,
+     24.99
+    ],
+    "decode_passes": [
+     84.32,
+     86.7,
+     86.64
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 25.27,
+    "decode_msamples_s": 114.31,
+    "encode_passes": [
+     24.87,
+     24.88,
+     25.27
+    ],
+    "decode_passes": [
+     114.31,
+     85.77,
+     87.22
+    ]
+   },
+   "G21_over_G1_encode": 1.0112,
+   "G21_over_G1_decode": 1.3185,
+   "conditions": [
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:07",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    },
+    {
+     "load1": 3.02,
+     "busy": [
+      "77.1 claude"
+     ],
+     "powered": true,
+     "at": "12:07:07",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    },
+    {
+     "load1": 3.02,
+     "busy": [],
+     "powered": true,
+     "at": "12:07:07",
+     "met": false,
+     "waited_s": 0,
+     "load1_after": 3.02
+    }
+   ]
+  }
+ ],
+ "not_run": [],
+ "finished": "2026-11-11T12:07:08"
+}

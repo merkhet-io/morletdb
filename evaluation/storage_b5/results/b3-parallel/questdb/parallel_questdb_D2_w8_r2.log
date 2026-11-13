@@ -1,0 +1,53 @@
+{
+ "system": "questdb",
+ "durability": "D2",
+ "writers": 8,
+ "rep": 2,
+ "samples": 101586735,
+ "ingest": {
+  "wall_s": 8.613,
+  "samples_per_s": 11794923,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 536.152,
+   "p95_ms": 708.951,
+   "max_ms": 721.966
+  },
+  "queryable_after_last_ack_s": 0.072,
+  "server": {
+   "cpu_percent_mean": 721.0,
+   "cpu_percent_p95": 801.1,
+   "memory_peak_mib": 2593.8,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 3634.7,
+    "anon_mib_at_end": 726.1,
+    "file_mib_at_end": 2787.4,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2596.6
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.7
+  }
+ },
+ "correct": true
+}

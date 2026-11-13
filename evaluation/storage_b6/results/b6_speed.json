@@ -1,0 +1,1936 @@
+{
+ "study": "B6 codec speed (PROTOCOL.md section 4A)",
+ "set": "benchmark",
+ "dryrun": false,
+ "started": "2026-11-11T19:14:12",
+ "passes": 3,
+ "threads": 1,
+ "b6codec": {
+  "path": "/Users/zin/sophia/morletdb-b6/evaluation/storage_b6/bin/b6/b6codec",
+  "sha256": "31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f"
+ },
+ "inputs": [
+  {
+   "input": "cx",
+   "set": "waveform",
+   "samples": 4194304,
+   "G1": {
+    "encode_msamples_s": 64.93,
+    "decode_msamples_s": 122.02,
+    "encode_passes": [
+     64.71,
+     63.8,
+     64.93
+    ],
+    "decode_passes": [
+     121.8,
+     121.7,
+     122.02
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 34.54,
+    "decode_msamples_s": 106.98,
+    "encode_passes": [
+     34.54,
+     34.47,
+     34.35
+    ],
+    "decode_passes": [
+     106.83,
+     106.98,
+     106.79
+    ]
+   },
+   "G21_over_G1_encode": 0.532,
+   "G21_over_G1_decode": 0.8767,
+   "conditions": [
+    {
+     "load1": 2.89,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:12",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.89
+    },
+    {
+     "load1": 2.89,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:12",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.89
+    },
+    {
+     "load1": 2.89,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:13",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.89
+    }
+   ]
+  },
+  {
+   "input": "ims",
+   "set": "waveform",
+   "samples": 4194304,
+   "G1": {
+    "encode_msamples_s": 38.74,
+    "decode_msamples_s": 158.9,
+    "encode_passes": [
+     38.74,
+     38.18,
+     38.68
+    ],
+    "decode_passes": [
+     158.9,
+     158.71,
+     158.61
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 25.1,
+    "decode_msamples_s": 100.52,
+    "encode_passes": [
+     25.1,
+     24.75,
+     25.01
+    ],
+    "decode_passes": [
+     100.52,
+     100.17,
+     100.17
+    ]
+   },
+   "G21_over_G1_encode": 0.6479,
+   "G21_over_G1_decode": 0.6326,
+   "conditions": [
+    {
+     "load1": 2.89,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:13",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.89
+    },
+    {
+     "load1": 2.66,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:19",
+     "met": true,
+     "waited_s": 5,
+     "load1_after": 2.66
+    },
+    {
+     "load1": 2.66,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:19",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.66
+    }
+   ]
+  },
+  {
+   "input": "sleep",
+   "set": "waveform",
+   "samples": 4194304,
+   "G1": {
+    "encode_msamples_s": 17.37,
+    "decode_msamples_s": 71.06,
+    "encode_passes": [
+     14.59,
+     17.17,
+     17.37
+    ],
+    "decode_passes": [
+     70.52,
+     71.03,
+     71.06
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 10.79,
+    "decode_msamples_s": 71.56,
+    "encode_passes": [
+     9.61,
+     10.69,
+     10.79
+    ],
+    "decode_passes": [
+     71.56,
+     71.28,
+     70.88
+    ]
+   },
+   "G21_over_G1_encode": 0.6212,
+   "G21_over_G1_decode": 1.007,
+   "conditions": [
+    {
+     "load1": 2.66,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:20",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    },
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:20",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    },
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:21",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    }
+   ]
+  },
+  {
+   "input": "ecg",
+   "set": "waveform",
+   "samples": 4194000,
+   "G1": {
+    "encode_msamples_s": 19.95,
+    "decode_msamples_s": 116.5,
+    "encode_passes": [
+     19.72,
+     19.82,
+     19.95
+    ],
+    "decode_passes": [
+     115.39,
+     116.23,
+     116.5
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 15.01,
+    "decode_msamples_s": 116.2,
+    "encode_passes": [
+     14.75,
+     14.78,
+     15.01
+    ],
+    "decode_passes": [
+     116.2,
+     115.88,
+     115.74
+    ]
+   },
+   "G21_over_G1_encode": 0.7524,
+   "G21_over_G1_decode": 0.9974,
+   "conditions": [
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:22",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    },
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:23",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    },
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:23",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    }
+   ]
+  },
+  {
+   "input": "pad-c-b6",
+   "set": "waveform",
+   "samples": 4194304,
+   "G1": {
+    "encode_msamples_s": 62.39,
+    "decode_msamples_s": 144.45,
+    "encode_passes": [
+     61.63,
+     62.35,
+     62.39
+    ],
+    "decode_passes": [
+     142.45,
+     144.45,
+     143.55
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 35.15,
+    "decode_msamples_s": 110.0,
+    "encode_passes": [
+     35.15,
+     35.11,
+     34.95
+    ],
+    "decode_passes": [
+     109.7,
+     110.0,
+     109.58
+    ]
+   },
+   "G21_over_G1_encode": 0.5634,
+   "G21_over_G1_decode": 0.7615,
+   "conditions": [
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:24",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    },
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:24",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    },
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:25",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.53
+    }
+   ]
+  },
+  {
+   "input": "pad-p-b6",
+   "set": "waveform",
+   "samples": 4194304,
+   "G1": {
+    "encode_msamples_s": 24.04,
+    "decode_msamples_s": 84.02,
+    "encode_passes": [
+     24.04,
+     23.79,
+     23.95
+    ],
+    "decode_passes": [
+     83.95,
+     84.02,
+     83.92
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 14.78,
+    "decode_msamples_s": 82.04,
+    "encode_passes": [
+     14.78,
+     14.61,
+     14.68
+    ],
+    "decode_passes": [
+     81.57,
+     81.93,
+     82.04
+    ]
+   },
+   "G21_over_G1_encode": 0.6148,
+   "G21_over_G1_decode": 0.9764,
+   "conditions": [
+    {
+     "load1": 2.53,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:25",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:26",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:26",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Air-pressure",
+   "set": "elf",
+   "samples": 95928,
+   "G1": {
+    "encode_msamples_s": 16.16,
+    "decode_msamples_s": 76.1,
+    "encode_passes": [
+     16.16,
+     15.9,
+     16.02
+    ],
+    "decode_passes": [
+     76.1,
+     75.67,
+     75.67
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 8.83,
+    "decode_msamples_s": 32.77,
+    "encode_passes": [
+     8.83,
+     8.76,
+     8.79
+    ],
+    "decode_passes": [
+     32.77,
+     32.74,
+     32.28
+    ]
+   },
+   "G21_over_G1_encode": 0.5464,
+   "G21_over_G1_decode": 0.4306,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Air-sensor",
+   "set": "elf",
+   "samples": 8664,
+   "G1": {
+    "encode_msamples_s": 21.35,
+    "decode_msamples_s": 93.84,
+    "encode_passes": [
+     21.31,
+     21.35,
+     21.13
+    ],
+    "decode_passes": [
+     93.84,
+     93.83,
+     93.24
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 26.45,
+    "decode_msamples_s": 98.78,
+    "encode_passes": [
+     26.02,
+     26.45,
+     26.4
+    ],
+    "decode_passes": [
+     98.64,
+     97.85,
+     98.78
+    ]
+   },
+   "G21_over_G1_encode": 1.2389,
+   "G21_over_G1_decode": 1.0526,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Basel-temp",
+   "set": "elf",
+   "samples": 100001,
+   "G1": {
+    "encode_msamples_s": 21.83,
+    "decode_msamples_s": 78.25,
+    "encode_passes": [
+     21.12,
+     21.83,
+     21.45
+    ],
+    "decode_passes": [
+     77.98,
+     77.15,
+     78.25
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 22.79,
+    "decode_msamples_s": 78.49,
+    "encode_passes": [
+     22.37,
+     22.79,
+     22.57
+    ],
+    "decode_passes": [
+     75.12,
+     78.05,
+     78.49
+    ]
+   },
+   "G21_over_G1_encode": 1.044,
+   "G21_over_G1_decode": 1.0031,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Basel-wind",
+   "set": "elf",
+   "samples": 100000,
+   "G1": {
+    "encode_msamples_s": 23.83,
+    "decode_msamples_s": 81.04,
+    "encode_passes": [
+     23.8,
+     23.23,
+     23.83
+    ],
+    "decode_passes": [
+     79.15,
+     81.04,
+     80.81
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 24.97,
+    "decode_msamples_s": 81.98,
+    "encode_passes": [
+     24.97,
+     24.91,
+     24.92
+    ],
+    "decode_passes": [
+     81.98,
+     81.84,
+     81.41
+    ]
+   },
+   "G21_over_G1_encode": 1.0478,
+   "G21_over_G1_decode": 1.0116,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Bird-migration",
+   "set": "elf",
+   "samples": 89867,
+   "G1": {
+    "encode_msamples_s": 25.61,
+    "decode_msamples_s": 87.01,
+    "encode_passes": [
+     25.33,
+     25.61,
+     25.41
+    ],
+    "decode_passes": [
+     86.07,
+     87.01,
+     85.57
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 26.72,
+    "decode_msamples_s": 88.99,
+    "encode_passes": [
+     26.72,
+     26.02,
+     26.68
+    ],
+    "decode_passes": [
+     88.99,
+     85.65,
+     87.72
+    ]
+   },
+   "G21_over_G1_encode": 1.0433,
+   "G21_over_G1_decode": 1.0228,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Bitcoin-price",
+   "set": "elf",
+   "samples": 7116,
+   "G1": {
+    "encode_msamples_s": 20.73,
+    "decode_msamples_s": 89.14,
+    "encode_passes": [
+     20.53,
+     20.51,
+     20.73
+    ],
+    "decode_passes": [
+     88.4,
+     89.14,
+     81.87
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 26.27,
+    "decode_msamples_s": 90.36,
+    "encode_passes": [
+     26.27,
+     25.9,
+     26.15
+    ],
+    "decode_passes": [
+     90.12,
+     90.36,
+     89.46
+    ]
+   },
+   "G21_over_G1_encode": 1.2672,
+   "G21_over_G1_decode": 1.0137,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "City-lat",
+   "set": "elf",
+   "samples": 41001,
+   "G1": {
+    "encode_msamples_s": 26.52,
+    "decode_msamples_s": 110.06,
+    "encode_passes": [
+     26.52,
+     26.14,
+     26.28
+    ],
+    "decode_passes": [
+     110.06,
+     109.01,
+     107.96
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 19.94,
+    "decode_msamples_s": 105.22,
+    "encode_passes": [
+     19.92,
+     19.62,
+     19.94
+    ],
+    "decode_passes": [
+     105.22,
+     105.16,
+     104.44
+    ]
+   },
+   "G21_over_G1_encode": 0.7519,
+   "G21_over_G1_decode": 0.956,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "City-lon",
+   "set": "elf",
+   "samples": 41001,
+   "G1": {
+    "encode_msamples_s": 26.23,
+    "decode_msamples_s": 159.69,
+    "encode_passes": [
+     26.23,
+     26.14,
+     26.23
+    ],
+    "decode_passes": [
+     159.33,
+     156.64,
+     159.69
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 21.74,
+    "decode_msamples_s": 162.22,
+    "encode_passes": [
+     21.74,
+     21.72,
+     21.7
+    ],
+    "decode_passes": [
+     161.9,
+     162.22,
+     161.79
+    ]
+   },
+   "G21_over_G1_encode": 0.8288,
+   "G21_over_G1_decode": 1.0158,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "City-temp",
+   "set": "elf",
+   "samples": 100001,
+   "G1": {
+    "encode_msamples_s": 32.02,
+    "decode_msamples_s": 120.71,
+    "encode_passes": [
+     31.67,
+     31.91,
+     32.02
+    ],
+    "decode_passes": [
+     120.71,
+     119.95,
+     119.52
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 25.07,
+    "decode_msamples_s": 121.53,
+    "encode_passes": [
+     25.07,
+     25.06,
+     24.75
+    ],
+    "decode_passes": [
+     117.94,
+     121.53,
+     117.61
+    ]
+   },
+   "G21_over_G1_encode": 0.7829,
+   "G21_over_G1_decode": 1.0068,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Dew-point-temp",
+   "set": "elf",
+   "samples": 100001,
+   "G1": {
+    "encode_msamples_s": 26.55,
+    "decode_msamples_s": 121.62,
+    "encode_passes": [
+     26.03,
+     26.51,
+     26.55
+    ],
+    "decode_passes": [
+     120.31,
+     121.62,
+     113.27
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 20.73,
+    "decode_msamples_s": 116.37,
+    "encode_passes": [
+     20.73,
+     20.64,
+     20.43
+    ],
+    "decode_passes": [
+     115.55,
+     116.37,
+     114.03
+    ]
+   },
+   "G21_over_G1_encode": 0.7808,
+   "G21_over_G1_decode": 0.9568,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "Food-price",
+   "set": "elf",
+   "samples": 100001,
+   "G1": {
+    "encode_msamples_s": 24.48,
+    "decode_msamples_s": 95.99,
+    "encode_passes": [
+     24.47,
+     24.31,
+     24.48
+    ],
+    "decode_passes": [
+     94.11,
+     95.99,
+     95.95
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 23.01,
+    "decode_msamples_s": 94.89,
+    "encode_passes": [
+     22.54,
+     22.86,
+     23.01
+    ],
+    "decode_passes": [
+     93.59,
+     94.89,
+     93.82
+    ]
+   },
+   "G21_over_G1_encode": 0.94,
+   "G21_over_G1_decode": 0.9885,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "IR-bio-temp",
+   "set": "elf",
+   "samples": 99602,
+   "G1": {
+    "encode_msamples_s": 24.95,
+    "decode_msamples_s": 104.32,
+    "encode_passes": [
+     24.36,
+     24.4,
+     24.95
+    ],
+    "decode_passes": [
+     97.34,
+     99.96,
+     104.32
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 19.68,
+    "decode_msamples_s": 120.95,
+    "encode_passes": [
+     19.61,
+     19.68,
+     19.56
+    ],
+    "decode_passes": [
+     120.95,
+     120.45,
+     119.83
+    ]
+   },
+   "G21_over_G1_encode": 0.7888,
+   "G21_over_G1_decode": 1.1594,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "PM10-dust",
+   "set": "elf",
+   "samples": 93662,
+   "G1": {
+    "encode_msamples_s": 37.52,
+    "decode_msamples_s": 123.73,
+    "encode_passes": [
+     36.32,
+     36.86,
+     37.52
+    ],
+    "decode_passes": [
+     121.32,
+     123.73,
+     119.35
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 28.58,
+    "decode_msamples_s": 124.34,
+    "encode_passes": [
+     27.53,
+     28.25,
+     28.58
+    ],
+    "decode_passes": [
+     122.62,
+     121.06,
+     124.34
+    ]
+   },
+   "G21_over_G1_encode": 0.7617,
+   "G21_over_G1_decode": 1.0049,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    }
+   ]
+  },
+  {
+   "input": "POI-lon",
+   "set": "elf",
+   "samples": 100001,
+   "G1": {
+    "encode_msamples_s": 22.97,
+    "decode_msamples_s": 190.86,
+    "encode_passes": [
+     22.77,
+     22.97,
+     22.68
+    ],
+    "decode_passes": [
+     189.31,
+     190.86,
+     185.99
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 23.83,
+    "decode_msamples_s": 193.66,
+    "encode_passes": [
+     23.64,
+     23.83,
+     23.76
+    ],
+    "decode_passes": [
+     192.4,
+     193.07,
+     193.66
+    ]
+   },
+   "G21_over_G1_encode": 1.0374,
+   "G21_over_G1_decode": 1.0147,
+   "conditions": [
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.48
+    },
+    {
+     "load1": 2.48,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    }
+   ]
+  },
+  {
+   "input": "SSD-bench",
+   "set": "elf",
+   "samples": 8927,
+   "G1": {
+    "encode_msamples_s": 24.38,
+    "decode_msamples_s": 89.16,
+    "encode_passes": [
+     24.38,
+     24.01,
+     23.56
+    ],
+    "decode_passes": [
+     86.81,
+     89.05,
+     89.16
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 24.3,
+    "decode_msamples_s": 94.97,
+    "encode_passes": [
+     24.3,
+     24.27,
+     23.89
+    ],
+    "decode_passes": [
+     94.97,
+     92.91,
+     91.56
+    ]
+   },
+   "G21_over_G1_encode": 0.9967,
+   "G21_over_G1_decode": 1.0652,
+   "conditions": [
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:30",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    }
+   ]
+  },
+  {
+   "input": "Stocks-DE",
+   "set": "elf",
+   "samples": 100002,
+   "G1": {
+    "encode_msamples_s": 30.68,
+    "decode_msamples_s": 119.49,
+    "encode_passes": [
+     30.68,
+     29.96,
+     30.04
+    ],
+    "decode_passes": [
+     119.04,
+     119.39,
+     119.49
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 24.1,
+    "decode_msamples_s": 120.33,
+    "encode_passes": [
+     24.06,
+     23.7,
+     24.1
+    ],
+    "decode_passes": [
+     120.33,
+     120.03,
+     115.01
+    ]
+   },
+   "G21_over_G1_encode": 0.7855,
+   "G21_over_G1_decode": 1.007,
+   "conditions": [
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    }
+   ]
+  },
+  {
+   "input": "Stocks-UK",
+   "set": "elf",
+   "samples": 100002,
+   "G1": {
+    "encode_msamples_s": 30.63,
+    "decode_msamples_s": 117.78,
+    "encode_passes": [
+     29.91,
+     29.86,
+     30.63
+    ],
+    "decode_passes": [
+     117.78,
+     115.1,
+     115.14
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 23.96,
+    "decode_msamples_s": 121.72,
+    "encode_passes": [
+     23.88,
+     23.64,
+     23.96
+    ],
+    "decode_passes": [
+     119.2,
+     120.45,
+     121.72
+    ]
+   },
+   "G21_over_G1_encode": 0.7822,
+   "G21_over_G1_decode": 1.0335,
+   "conditions": [
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    }
+   ]
+  },
+  {
+   "input": "Wind-Speed",
+   "set": "elf",
+   "samples": 99132,
+   "G1": {
+    "encode_msamples_s": 43.18,
+    "decode_msamples_s": 124.86,
+    "encode_passes": [
+     42.46,
+     43.18,
+     40.85
+    ],
+    "decode_passes": [
+     124.86,
+     123.93,
+     123.48
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 29.06,
+    "decode_msamples_s": 123.17,
+    "encode_passes": [
+     29.06,
+     28.79,
+     27.67
+    ],
+    "decode_passes": [
+     122.56,
+     119.92,
+     123.17
+    ]
+   },
+   "G21_over_G1_encode": 0.673,
+   "G21_over_G1_decode": 0.9865,
+   "conditions": [
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    }
+   ]
+  },
+  {
+   "input": "b3-vibration_1",
+   "set": "b3",
+   "samples": 26744663,
+   "G1": {
+    "encode_msamples_s": 23.0,
+    "decode_msamples_s": 77.7,
+    "encode_passes": [
+     22.65,
+     23.0,
+     22.58
+    ],
+    "decode_passes": [
+     77.53,
+     77.7,
+     77.52
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 13.81,
+    "decode_msamples_s": 74.84,
+    "encode_passes": [
+     13.72,
+     13.81,
+     13.7
+    ],
+    "decode_passes": [
+     74.6,
+     74.72,
+     74.84
+    ]
+   },
+   "G21_over_G1_encode": 0.6004,
+   "G21_over_G1_decode": 0.9632,
+   "conditions": [
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:31",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:35",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.33
+    },
+    {
+     "load1": 2.33,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:39",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.23
+    }
+   ]
+  },
+  {
+   "input": "b3-phase_current_1",
+   "set": "b3",
+   "samples": 26744663,
+   "G1": {
+    "encode_msamples_s": 19.94,
+    "decode_msamples_s": 77.06,
+    "encode_passes": [
+     19.86,
+     19.94,
+     19.76
+    ],
+    "decode_passes": [
+     77.06,
+     76.93,
+     77.06
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 11.66,
+    "decode_msamples_s": 53.13,
+    "encode_passes": [
+     11.61,
+     11.66,
+     11.55
+    ],
+    "decode_passes": [
+     53.06,
+     53.02,
+     53.13
+    ]
+   },
+   "G21_over_G1_encode": 0.5848,
+   "G21_over_G1_decode": 0.6895,
+   "conditions": [
+    {
+     "load1": 2.23,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:43",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.13
+    },
+    {
+     "load1": 2.13,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:48",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.36
+    },
+    {
+     "load1": 2.36,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:53",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.33
+    }
+   ]
+  },
+  {
+   "input": "b3-phase_current_2",
+   "set": "b3",
+   "samples": 26744663,
+   "G1": {
+    "encode_msamples_s": 19.88,
+    "decode_msamples_s": 77.16,
+    "encode_passes": [
+     19.65,
+     19.25,
+     19.88
+    ],
+    "decode_passes": [
+     76.88,
+     77.16,
+     76.88
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 11.65,
+    "decode_msamples_s": 53.07,
+    "encode_passes": [
+     11.53,
+     11.17,
+     11.65
+    ],
+    "decode_passes": [
+     52.97,
+     53.07,
+     53.03
+    ]
+   },
+   "G21_over_G1_encode": 0.586,
+   "G21_over_G1_decode": 0.6878,
+   "conditions": [
+    {
+     "load1": 2.33,
+     "busy": [],
+     "powered": true,
+     "at": "19:14:57",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.54
+    },
+    {
+     "load1": 2.54,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:02",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.9
+    },
+    {
+     "load1": 2.9,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:07",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    }
+   ]
+  },
+  {
+   "input": "b3-force",
+   "set": "b3",
+   "samples": 1664202,
+   "G1": {
+    "encode_msamples_s": 18.46,
+    "decode_msamples_s": 72.11,
+    "encode_passes": [
+     18.23,
+     18.46,
+     18.33
+    ],
+    "decode_passes": [
+     72.11,
+     71.41,
+     72.02
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 12.33,
+    "decode_msamples_s": 81.07,
+    "encode_passes": [
+     12.32,
+     12.33,
+     12.28
+    ],
+    "decode_passes": [
+     81.07,
+     81.02,
+     80.55
+    ]
+   },
+   "G21_over_G1_encode": 0.6679,
+   "G21_over_G1_decode": 1.1243,
+   "conditions": [
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:11",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    },
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:12",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    },
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:12",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    }
+   ]
+  },
+  {
+   "input": "b3-speed",
+   "set": "b3",
+   "samples": 1664202,
+   "G1": {
+    "encode_msamples_s": 48.77,
+    "decode_msamples_s": 104.28,
+    "encode_passes": [
+     47.64,
+     48.77,
+     48.73
+    ],
+    "decode_passes": [
+     104.28,
+     103.84,
+     104.28
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 49.48,
+    "decode_msamples_s": 104.43,
+    "encode_passes": [
+     48.4,
+     49.48,
+     48.77
+    ],
+    "decode_passes": [
+     104.01,
+     104.43,
+     103.56
+    ]
+   },
+   "G21_over_G1_encode": 1.0146,
+   "G21_over_G1_decode": 1.0014,
+   "conditions": [
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:12",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    },
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:13",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    },
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:13",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    }
+   ]
+  },
+  {
+   "input": "b3-torque",
+   "set": "b3",
+   "samples": 1664202,
+   "G1": {
+    "encode_msamples_s": 25.35,
+    "decode_msamples_s": 87.01,
+    "encode_passes": [
+     25.35,
+     25.17,
+     25.27
+    ],
+    "decode_passes": [
+     86.71,
+     86.39,
+     87.01
+    ]
+   },
+   "G21": {
+    "encode_msamples_s": 25.71,
+    "decode_msamples_s": 86.94,
+    "encode_passes": [
+     25.71,
+     25.59,
+     25.61
+    ],
+    "decode_passes": [
+     86.66,
+     86.94,
+     86.9
+    ]
+   },
+   "G21_over_G1_encode": 1.0142,
+   "G21_over_G1_decode": 0.9992,
+   "conditions": [
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:13",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    },
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:13",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    },
+    {
+     "load1": 2.75,
+     "busy": [],
+     "powered": true,
+     "at": "19:15:14",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.75
+    }
+   ]
+  }
+ ],
+ "not_run": [],
+ "finished": "2026-11-11T19:15:14"
+}

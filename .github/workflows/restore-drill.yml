@@ -1,12 +1,14 @@
 name: Restore drill
 # R1 (#192): base backup plus WAL archive, the database removed, then a restore to the latest state and one to a point
-# in time, each checked bit for bit. Against the current release image, natively on both architectures; weekly and
+# in time, each checked bit for bit. R2: a streaming replica checked against the primary, then the primary killed
+# during ingestion and the replica promoted (synchronous: nothing acknowledged lost; asynchronous: loss measured).
+# Against the current release image, natively on both architectures; weekly and
 # when the drill changes.
 on:
   schedule:
     - cron: '17 4 * * 1'
   pull_request:
-    paths: ['evaluation/restore_r1/**', 'evaluation/power_cut_p1/writer.py', '.github/workflows/restore-drill.yml']
+    paths: ['evaluation/restore_r1/**', 'evaluation/replica_r2/**', 'evaluation/power_cut_p1/writer.py', '.github/workflows/restore-drill.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,10 +35,17 @@ jobs:
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY,,}:$(cat VERSION)"
           python evaluation/restore_r1/drill.py --image "$image" --out restore-drill-${{ matrix.arch }}.json
+      - name: Run the replica and failover drill against the current release image
+        if: always()
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}:$(cat VERSION)"
+          python evaluation/replica_r2/drill.py --image "$image" --out replica-drill-${{ matrix.arch }}.json
       - name: Keep the result
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: restore-drill-${{ matrix.arch }}
-          path: restore-drill-${{ matrix.arch }}.json
+          path: |
+            restore-drill-${{ matrix.arch }}.json
+            replica-drill-${{ matrix.arch }}.json
           if-no-files-found: ignore

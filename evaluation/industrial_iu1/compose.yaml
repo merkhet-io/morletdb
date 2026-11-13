@@ -1,0 +1,19 @@
+name: morletdb-spike
+services:
+  db:
+    build: {context: ., dockerfile: Dockerfile.db}
+    environment: {POSTGRES_USER: morlet, POSTGRES_PASSWORD: morlet-demo-only, POSTGRES_DB: morlet}
+    command: ["postgres", "-c", "shared_buffers=1GB", "-c", "max_wal_size=8GB", "-c", "max_parallel_workers_per_gather=4", "-c", "work_mem=64MB"]
+    shm_size: 1g
+    ports: ["127.0.0.1:54329:5432"]
+    volumes: [spike-data:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"], interval: 2s, timeout: 3s, retries: 30}
+  runner:
+    image: morletdb-spike-runner
+    build: {context: ., dockerfile: Dockerfile.runner}
+    working_dir: /spike
+    volumes: ["../data:/data:ro", ".:/spike"]
+    environment: {DATABASE_URL: "postgresql://morlet:morlet-demo-only@db:5432/morlet"}
+    depends_on: {db: {condition: service_healthy}}
+volumes:
+  spike-data:

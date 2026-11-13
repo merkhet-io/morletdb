@@ -1,0 +1,54 @@
+gate met 2026-11-11T12:07:18 after 0 s, load { 3.29 3.27 3.36 }
+-- before
+2026-11-11T12:07:18
+12:07  up 14 days, 21:03, 19 users, load averages: 3.29 3.27 3.36
+Now drawing from 'AC Power'
+ %CPU COMM
+186.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 63.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 20.5 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 19.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 19.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 18.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 12.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.7 /System/Library/DriverExtensions/com.apple.AppleUserHIDDrivers.dext/com.apple.AppleUserHIDDrivers
+-- after (exit 1)
+2026-11-11T12:07:42
+12:07  up 14 days, 21:03, 19 users, load averages: 4.35 3.52 3.45
+Now drawing from 'AC Power'
+ %CPU COMM
+290.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 51.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 17.9 claude
+ 13.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  1.6 claude
+  1.5 /usr/libexec/opendirectoryd
+gate met 2026-11-11T12:41:24 after 0 s, load { 3.80 3.63 2.93 }
+-- before
+2026-11-11T12:41:24
+12:41  up 14 days, 21:37, 19 users, load averages: 3.80 3.63 2.93
+Now drawing from 'AC Power'
+ %CPU COMM
+276.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.5 claude
+  3.7 bash
+  1.8 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  1.8 claude
+  1.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+-- after (exit 0)
+2026-11-11T12:42:22
+12:42  up 14 days, 21:38, 19 users, load averages: 6.53 4.43 3.28
+Now drawing from 'AC Power'
+ %CPU COMM
+290.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 39.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 33.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.5 /sbin/launchd
+  1.2 /usr/sbin/bluetoothd
+  1.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.9 claude

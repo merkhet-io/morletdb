@@ -1,0 +1,138 @@
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 106,
+ "parse_s": 0.20026541699189693,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-10T13:47:30",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 39.419,
+  "samples_per_s": 2577122,
+  "conversion_s": 3.606,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 321.436,
+   "p95_ms": 353.103,
+   "max_ms": 389.236
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.882,
+   "p95_ms": 270.524,
+   "max_ms": 308.331
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 119.5,
+   "cpu_percent_p95": 226.4,
+   "memory_peak_mib": 4677.6,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4689.2,
+    "anon_mib_at_end": 4652.7,
+    "file_mib_at_end": 12.8,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4680.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 106,
+ "parse_s": 0.20026541699189693,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-10T13:47:30",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 39.419,
+  "samples_per_s": 2577122,
+  "conversion_s": 3.606,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 321.436,
+   "p95_ms": 353.103,
+   "max_ms": 389.236
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.882,
+   "p95_ms": 270.524,
+   "max_ms": 308.331
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 119.5,
+   "cpu_percent_p95": 226.4,
+   "memory_peak_mib": 4677.6,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4689.2,
+    "anon_mib_at_end": 4652.7,
+    "file_mib_at_end": 12.8,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4680.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.5
+  }
+ },
+ "correct": true
+}

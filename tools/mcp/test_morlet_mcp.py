@@ -1,7 +1,10 @@
 """morlet_mcp.py without a database: tool registration, read-only annotations, helpers, error reporting."""
 import asyncio
+import json
 from datetime import datetime, timezone
 import os
+import subprocess
+import sys
 import unittest
 
 import numpy as np
@@ -17,7 +20,7 @@ class Server(unittest.TestCase):
 
     def test_tools_are_registered_read_only(self):
         tools = asyncio.run(m.mcp.list_tools())
-        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "describe_interval", "envelope_spectrum",
+        self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "decision_state", "decisions", "describe_interval", "envelope_spectrum",
                                                          "find_onsets", "latest",
                                                          "list_collections", "list_recordings", "locate_time",
                                                          "read_interval", "search_from_time", "search_similar",
@@ -221,11 +224,16 @@ class ScopeOnADatabase(unittest.TestCase):
         self.assertIn("summarized", scope["note"])
         self.assertEqual([p["state"] for p in scope["not_searched_periods"]], ["summarized"])
         self.assertTrue(all(not (10512 <= h["start_sample"] and h["end_sample"] <= 29488) for h in r["hits"]))
-        m.SCOPE_TIMEOUT_MS = 1
+        exact = m.search_scope_exact
+
+        def slow_exact(conn, *args, **kw):               # longer than the 1 ms limit on any machine: the real
+            conn.execute("SELECT pg_sleep(0.05)")        # statement timeout cancels it, deterministically
+            return exact(conn, *args, **kw)
+        m.SCOPE_TIMEOUT_MS, m.search_scope_exact = 1, slow_exact
         try:
             slow = m.search_similar("public.mcp_scope", "A", 0, 512)
         finally:
-            m.SCOPE_TIMEOUT_MS = 5000
+            m.SCOPE_TIMEOUT_MS, m.search_scope_exact = 5000, exact
         self.assertIsNone(slow["scope"]["complete"])       # unknown, never complete
         self.assertIn("unverified", slow["scope"]["note"])
         self.assertEqual(len(slow["hits"]), len(r["hits"]))
@@ -234,5 +242,296 @@ class ScopeOnADatabase(unittest.TestCase):
         self.assertGreater(cov["searchable"], 0)
 
 
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class TrendPerSegmentOnADatabase(unittest.TestCase):
+    """Machining cuts with an idle lead-in: the trend of the cut phase, not of the lead-in (#385)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_trend_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_trend CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_trend')")
+            conn.execute("SELECT morlet_enable_context('mcp_trend')")
+            for cut in range(4):
+                rid = f"cut{cut}"
+                meta = '{"spindle": "S1", "start": "2026-01-01T00:%02d:00Z"}' % cut
+                conn.execute("SELECT morlet_start_recording('mcp_trend',%s,1000,'acc','g',%s,512,256,'zscore','none')",
+                             (rid, meta))
+                # 1,000 quiet lead-in samples, then 3,000 cut samples whose level grows with the cut number
+                conn.execute("SELECT morlet_append_chunks_raw('mcp_trend',%s,0,morlet_float8_le_bytes(ARRAY("
+                             "SELECT round(CASE WHEN i < 1000 THEN 2 ELSE 100 * (1 + %s) END * sin(i / 5.0))::float8 "
+                             "FROM generate_series(0, 3999) i)),1000)", (rid, cut))
+                ctx = [{"recording_id": rid, "key": "phase", "value": "idle", "start_sample": 0, "end_sample": 1000},
+                       {"recording_id": rid, "key": "phase", "value": "cut", "start_sample": 1000, "end_sample": 4000}]
+                conn.execute("SELECT morlet_add_context('mcp_trend',%s,%s)", (f"b-{rid}", json.dumps(ctx)))
+                conn.execute("SELECT morlet_build_context_segments('mcp_trend',%s,ARRAY['phase'],ARRAY[]::text[])",
+                             (rid,))
+        os.environ["DATABASE_URL"] = url
+
+    @staticmethod
+    def column(res, name):
+        rows = res["table_csv"].splitlines()
+        i = rows[0].split(",").index(name)
+        return [r.split(",")[i] for r in rows[1:]]
+
+    def test_default_trend_measures_the_lead_in(self):
+        res = m.trend("public.mcp_trend", '{"spindle": "S1"}', samples_per_point=512)
+        self.assertEqual(self.column(res, "start_sample"), ["0"] * 4)
+        self.assertNotIn("segment_context", res)
+
+    def test_segment_context_measures_the_cut(self):
+        res = m.trend("public.mcp_trend", '{"spindle": "S1"}', samples_per_point=512,
+                      segment_context='{"phase": "cut"}')
+        self.assertEqual(res["segment_context"], {"phase": "cut"})
+        self.assertEqual(self.column(res, "start_sample"), ["1000"] * 4)
+        rms = [float(x) for x in self.column(res, "rms")]
+        self.assertEqual(rms, sorted(rms))                 # the cut's level grows from cut to cut
+        self.assertGreater(rms[0], 50)                    # the cut, not the quiet lead-in
+
+    def test_segment_context_steps_within_a_segment_and_reports_missing_ones(self):
+        res = m.trend("public.mcp_trend", '{"spindle": "S1"}', samples_per_point=1000, step_seconds=1.0,
+                      segment_context='{"phase": "cut"}')
+        self.assertEqual(self.column(res, "start_sample")[:3], ["1000", "2000", "3000"])
+        with self.assertRaises(Exception):
+            m.trend("public.mcp_trend", '{"spindle": "S1"}', segment_context='{"phase": "retract"}')
+        with self.assertRaises(Exception):
+            m.trend("public.mcp_trend", '{"spindle": "S1"}', segment_context='["cut"]')
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class TimeQualityOnADatabase(unittest.TestCase):
+    """#393: locate_time says how its time axis is derived and how far off it may be."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("chunks", "segments"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_clock_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_clock CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_clock')")
+            metas = {"steady": {"start": "2026-02-01T10:00:00Z"},
+                     "drifting": {"start": "2026-02-01T11:00:00Z",
+                                  "time_axis": {"max_offset_s": 0.168, "fitted_rate_hz": 99.0}}}
+            for rid, meta in metas.items():
+                conn.execute("SELECT morlet_start_recording('mcp_clock',%s,100,'acc','g',%s,512,256,'zscore','none')",
+                             (rid, json.dumps(meta)))
+                conn.execute("SELECT morlet_append_chunks_raw('mcp_clock',%s,0,morlet_float8_le_bytes(ARRAY("
+                             "SELECT sin(i/5.0)::float8 FROM generate_series(0,999) i)),1000)", (rid,))
+        os.environ["DATABASE_URL"] = url
+
+    def test_steady_recording_has_a_basis_and_no_uncertainty(self):
+        m_ = m.locate_time("public.mcp_clock", "2026-02-01T10:00:02Z")["matches"]
+        self.assertEqual([(h["recording_id"], h["sample"], h["time_basis"]) for h in m_],
+                         [("steady", 200, "start + rate")])
+        self.assertNotIn("time_uncertainty_s", m_[0])
+        self.assertNotIn("time_note", m_[0])
+
+    def test_drifting_recording_carries_its_uncertainty(self):
+        h = m.locate_time("public.mcp_clock", "2026-02-01T11:00:05Z")["matches"][0]
+        self.assertEqual((h["recording_id"], h["sample"]), ("drifting", 500))
+        self.assertEqual((h["time_uncertainty_s"], h["time_uncertainty_samples"], h["fitted_rate_hz"]),
+                         (0.168, 16.8, 99.0))
+        self.assertIn("16.8 samples", h["time_note"])
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class SeriesProductionOnADatabase(unittest.TestCase):
+    """#384: one recording of three parts machined alike; the same cut on the other parts, not the query's own."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments", "envelopes"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_cyc_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_cyc CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_cyc')")
+            conn.execute("SELECT morlet_enable_context('mcp_cyc')")
+            conn.execute("SELECT morlet_start_recording('mcp_cyc','line',1000,'acc','g',"
+                         "'{\"start\": \"2026-01-01T00:00:00Z\"}',512,256,'zscore','none')")
+            # three parts of 4,000 samples, each the same cut with a little part-specific noise
+            conn.execute("SELECT morlet_append_chunks_raw('mcp_cyc','line',0,morlet_float8_le_bytes(ARRAY("
+                         "SELECT round(100*sin((i%4000)/9.0)*(1+((i%4000)/1500))+((i/4000)+1)*sin(i/1.7))::float8 "
+                         "FROM generate_series(0,11999) i)),4000)")
+            ctx = [{"recording_id": "line", "key": "part", "value": f"P{k + 1}", "start_sample": 4000 * k,
+                    "end_sample": 4000 * (k + 1)} for k in range(3)]
+            ctx.append({"recording_id": "line", "key": "program", "value": "O100", "start_sample": 0,
+                        "end_sample": 12000})
+            ctx += [{"recording_id": "line", "key": "block", "value": blk, "start_sample": 4000 * k + off,
+                     "end_sample": 4000 * k + off + 2000} for k in range(3) for blk, off in (("N10", 0), ("N20", 2000))]
+            conn.execute("SELECT morlet_add_context('mcp_cyc','parts',%s)", (json.dumps(ctx),))
+            conn.execute("SELECT morlet_build_context_segments('mcp_cyc','line',ARRAY['program','block'],"
+                         "ARRAY['part'])")
+            conn.execute("SELECT morlet_enable_envelopes('mcp_cyc')")
+            conn.execute("SELECT morlet_build_envelopes('mcp_cyc','line',512,256,100000)")
+        os.environ["DATABASE_URL"] = url
+
+    def test_exclude_occurrence_keeps_the_same_cut_on_other_parts(self):
+        q = (4000 + 1024, 4000 + 1536)                  # inside part P2
+        plain = m.search_similar("public.mcp_cyc", "line", *q, top_k=5, evidence=False)
+        occ = m.search_similar("public.mcp_cyc", "line", *q, top_k=5, evidence=False, exclude="occurrence")
+        part = lambda s: s // 4000 + 1                   # noqa: E731
+        self.assertTrue(any(part(h["start_sample"]) == 2 for h in plain["hits"]))   # without: its own part shows up
+        self.assertTrue(occ["hits"])
+        self.assertTrue(all(part(h["start_sample"]) != 2 for h in occ["hits"]))
+        self.assertEqual({part(h["start_sample"]) for h in occ["hits"]}, {1, 3})      # the other parts remain
+        self.assertGreater(occ["query"]["excluded_hits"], 0)
+        rec = m.search_similar("public.mcp_cyc", "line", *q, top_k=5, evidence=False, exclude="recording")
+        self.assertEqual(rec["hits"], [])                # "recording" would drop the other parts too
+
+    def test_exclude_occurrence_needs_a_segment(self):
+        with self.assertRaises(Exception):
+            m.search_similar("public.mcp_parts", "p0.x", 0, 512, exclude="occurrence")
+
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class TrendOverOrderOnADatabase(unittest.TestCase):
+    """#334: numbered cuts without clock time; trend over the cut number."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            for t in ("chunks", "segments"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_cuts_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_cuts CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_cuts')")
+            for cut in range(1, 31):
+                rid = f"insert7-cut{cut}"
+                conn.execute("SELECT morlet_start_recording('mcp_cuts',%s,1000,'acc','g',%s,512,256,'zscore','none')",
+                             (rid, json.dumps({"insert": 7, "cut": cut})))
+                level = 100 if cut < 20 else 400                 # wear from cut 20 on
+                conn.execute("SELECT morlet_append_chunks_raw('mcp_cuts',%s,0,morlet_float8_le_bytes(ARRAY("
+                             "SELECT round(%s*sin(i/5.0+%s))::float8 FROM generate_series(0,1999) i)),2000)",
+                             (rid, level, cut))
+        os.environ["DATABASE_URL"] = url
+
+    def test_without_order_by_the_error_points_to_it(self):
+        with self.assertRaisesRegex(Exception, "order_by"):
+            m.trend("public.mcp_cuts", '{"insert": 7}')
+
+    def test_trend_over_the_cut_number(self):
+        res = m.trend("public.mcp_cuts", '{"insert": 7}', samples_per_point=1024, order_by="cut")
+        rows = res["table_csv"].splitlines()
+        self.assertEqual(rows[0].split(",")[0], "order")
+        order = [int(r.split(",")[0]) for r in rows[1:]]
+        self.assertEqual(order, list(range(1, 31)))             # numeric order: 2 before 10
+        self.assertEqual(res["order_by"], "cut")
+        self.assertEqual(res["change_points"]["rms"]["first_change_order"], 20)
+        with self.assertRaises(Exception):
+            m.trend("public.mcp_cuts", '{"insert": 7}', order_by="cut", start_utc="2026-01-01T00:00:00Z")
+
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class ScopeConversationOnADatabase(unittest.TestCase):
+    """#379: a scripted conversation; every negative answer states what was searched and what was not."""
+
+    def test_every_negative_answer_states_its_scope(self):
+        import scope_conversation as sc
+        ok, lines = sc.run(os.environ["MORLET_MCP_TEST_DATABASE_URL"])
+        self.assertTrue(ok, "\n".join(lines))
+        self.assertIn("**check: pass** (negative, scope stated)", "\n".join(lines))
+
+    def test_the_check_fails_an_answer_without_scope(self):
+        import scope_conversation as sc
+        self.assertFalse(sc.check({"hits": []})[0])
+        self.assertFalse(sc.check({"hits": [], "scope": {"recordings": 0, "searched_windows": 0, "complete": True,
+                                                         "note": "every period was searchable"}})[0])
+        self.assertTrue(sc.check({"hits": [{"distance": 0.1}]})[0])
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
+class FieldFindingsOnADatabase(unittest.TestCase):
+    """Snapshot data from series production: 3 parts, 2 channels each, recorded at the same time (#384, #386)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            conn.execute("DROP TABLE IF EXISTS public.mcp_parts CASCADE")
+            for t in ("chunks", "segments", "envelopes"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_parts_{t} CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_parts')")
+            for part in range(3):
+                for ch in ("x", "y"):
+                    rid = f"p{part}.{ch}"
+                    meta = '{"part": %d, "channel": "%s", "start": "2026-01-01T00:%02d:00Z"}' % (part, ch, part)
+                    conn.execute("SELECT morlet_start_recording('mcp_parts',%s,100,'acc','g',%s,512,256,'zscore','none')",
+                                 (rid, meta))
+                    conn.execute("SELECT morlet_append_chunks_raw('mcp_parts',%s,0,morlet_float8_le_bytes(ARRAY("
+                                 "SELECT round(100*sin(i/(7.+%s))*(1+(i%%700)/300.))::float8 "
+                                 "FROM generate_series(0,1999) i)),1000)", (rid, part))
+            conn.execute("SELECT morlet_enable_envelopes('mcp_parts')")
+            for part in range(3):
+                for ch in ("x", "y"):
+                    conn.execute("SELECT morlet_build_envelopes('mcp_parts',%s,512,256,100000)", (f"p{part}.{ch}",))
+        os.environ["DATABASE_URL"] = url
+
+    def test_coverage_counts_simultaneous_channels_once(self):
+        g = m.coverage("public.mcp_parts")["groups"][0]
+        self.assertEqual(g["recordings"], 6)
+        self.assertEqual(g["recorded_blocks"], 3)
+        self.assertEqual(g["recordings_per_block"], 2.0)
+        self.assertEqual(g["schedule"], "snapshots")
+        self.assertAlmostEqual(g["typical_start_interval_s"], 60.0)
+        self.assertLessEqual(g["covered_fraction"], 1.0)
+        self.assertAlmostEqual(g["covered_s"], 60.0)
+
+    def test_locate_time_explains_a_gap(self):
+        r = m.locate_time("public.mcp_parts", "2026-01-01T00:00:30Z")
+        self.assertEqual(r["matches"], [])
+        self.assertIn("gap", r["note"])
+        self.assertEqual(r["previous"]["seconds_before"], 10.0)
+        self.assertEqual(r["next"]["seconds_after"], 30.0)
+        self.assertIn("after the last", m.locate_time("public.mcp_parts", "2026-01-02T00:00:00Z")["note"])
+        self.assertEqual(len(m.locate_time("public.mcp_parts", "2026-01-01T00:01:05Z")["matches"]), 2)
+
+    def test_latest_names_the_limit_the_caller_passed(self):
+        with self.assertRaises(Exception) as cm:
+            m.latest("public.mcp_parts", limit=2)
+        self.assertIn("limit (2)", str(cm.exception))
+        self.assertNotIn("max_recordings", str(cm.exception))
+
+    def test_search_can_exclude_the_query_recording_or_part(self):
+        plain = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20)
+        self.assertNotIn("exclude", plain["query"])
+        r = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20, exclude="recording")
+        self.assertTrue(r["hits"])
+        self.assertTrue(all(h["recording_id"] != "p1.x" for h in r["hits"]))
+        self.assertEqual(r["query"]["excluded_hits"],
+                         sum(h["recording_id"] == "p1.x" for h in
+                             m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=100)["hits"]))
+        r = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20, exclude="metadata:part")
+        self.assertTrue(r["hits"])
+        self.assertTrue(all(not h["recording_id"].startswith("p1.") for h in r["hits"]))
+        with self.assertRaises(Exception):
+            m.search_similar("public.mcp_parts", "p1.x", 512, 1024, exclude="part")
+        with self.assertRaises(Exception):
+            m.search_similar("public.mcp_parts", "p1.x", 512, 1024, exclude="metadata:shift")
+
+
+class IsolatedMode(unittest.TestCase):
+    def test_server_module_imports_under_python_isolated_mode(self):
+        """`python -I` drops the script directory from sys.path; the server must still find decision.py."""
+        here = os.path.dirname(os.path.abspath(__file__))
+        code = ("import importlib.util as u; s = u.spec_from_file_location('m', %r); m = u.module_from_spec(s); "
+                "s.loader.exec_module(m); print(sorted(t.name for t in __import__('asyncio').run(m.mcp.list_tools()))[2])"
+                % os.path.join(here, "morlet_mcp.py"))
+        r = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, cwd="/", timeout=120)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.stdout.strip(), "decision_state")

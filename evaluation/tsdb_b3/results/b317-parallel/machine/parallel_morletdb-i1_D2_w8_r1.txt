@@ -1,0 +1,22 @@
+2026-11-08T18:54:03
+18:54  up 12 days,  3:50, 19 users, load averages: 6.12 5.01 4.73
+ %CPU COMM
+147.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 12.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.2 claude
+  1.9 claude
+  1.2 bash
+  0.6 /usr/sbin/notifyd
+2026-11-08T18:54:22
+18:54  up 12 days,  3:50, 19 users, load averages: 6.72 5.21 4.80
+ %CPU COMM
+173.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+111.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 28.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 11.8 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  9.5 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+  7.6 /System/Library/CoreServices/talagentd
+  7.1 /System/Library/PrivateFrameworks/BiomeStreams.framework/Support/BiomeAgent

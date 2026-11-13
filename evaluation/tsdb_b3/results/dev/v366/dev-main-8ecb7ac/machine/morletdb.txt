@@ -1,0 +1,24 @@
+2026-11-10T18:55:56
+18:55  up 14 days,  3:52, 19 users, load averages: 4.11 4.53 4.69
+ %CPU COMM
+309.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 32.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 30.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.0 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  5.8 claude
+2026-11-10T18:59:54
+18:59  up 14 days,  3:56, 19 users, load averages: 5.95 6.07 5.39
+ %CPU COMM
+239.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 48.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 42.9 /System/Library/ExtensionKit/Extensions/TGOnDeviceInferenceProviderService.appex/Contents/MacOS/TGOnDeviceInferenceProviderService
+ 37.9 /System/Library/PrivateFrameworks/ModelCatalogRuntime.framework/Versions/A/modelcatalogd
+ 33.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+2026-11-10T19:04:06
+19:04  up 14 days, 4 hrs, 19 users, load averages: 6.56 6.14 5.57
+ %CPU COMM
+680.9 /Library/Developer/CommandLineTools/usr/libexec/git-core/git
+239.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 98.5 ./target/release/codec_c1
+ 27.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 24.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend

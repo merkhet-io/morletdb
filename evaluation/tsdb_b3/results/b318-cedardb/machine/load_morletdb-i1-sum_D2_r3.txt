@@ -1,0 +1,22 @@
+2026-11-09T05:23:44
+ 5:23  up 12 days, 14:19, 19 users, load averages: 5.90 5.07 3.73
+ %CPU COMM
+201.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 49.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.7 /usr/libexec/airportd
+  2.3 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  1.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.1 /Applications/Docker.app/Contents/MacOS/com.docker.build
+  1.0 bash
+  0.7 /usr/libexec/logd
+2026-11-09T05:24:03
+ 5:24  up 12 days, 14:20, 19 users, load averages: 5.93 5.13 3.78
+ %CPU COMM
+231.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 86.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.4 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.2 claude
+  0.1 claude

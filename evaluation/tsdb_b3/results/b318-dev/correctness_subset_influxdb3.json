@@ -1,0 +1,37 @@
+{
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"750c9746-5c7b-4339-88d0-fee975397143\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "counts": {
+  "got": {
+   "high": 768917,
+   "mid": 48016,
+   "process": 14
+  },
+  "want": {
+   "high": 768917,
+   "mid": 48016,
+   "process": 14
+  },
+  "ok": true
+ },
+ "reads": {
+  "acquisitions": 3,
+  "channels_checked": 21,
+  "mismatches": []
+ },
+ "identical_retry": {
+  "accepted": true,
+  "counts_unchanged": true,
+  "stored_value_unchanged": true
+ },
+ "altered_retry": {
+  "accepted": true,
+  "counts_unchanged": true,
+  "stored_value_unchanged": false
+ },
+ "ok": true
+}

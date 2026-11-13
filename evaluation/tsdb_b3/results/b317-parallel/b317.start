@@ -1,0 +1,17 @@
+2026-11-08T18:53:28
+18:53  up 12 days,  3:49, 19 users, load averages: 2.63 4.32 4.48
+ %CPU COMM
+ 16.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 14.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 12.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.9 claude
+  1.1 bash
+  0.6 claude
+  0.4 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1

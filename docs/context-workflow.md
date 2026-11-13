@@ -146,6 +146,27 @@ C3.**
   `std` comes out about 1e-13 of its level, not 0. Before 0.3.1 a frozen sensor's
   history thus had a `std` median of about 1e-15, and any real `std` in the query
   deviated from it by about 1e11. Evaluation C4 found this on 3W.
+- **Label glossary (#333):** `SELECT morlet_define_label('schema.collection', 'not_sharp', 'flank wear VB above
+  0.2', 'mm', 'C1 protocol')` records what a label means; `morlet_label_definitions(collection)` lists them. The
+  decision state returns the definition of every label it shows and lists labels nobody defined, so an agent
+  does not guess (a session once read `not_sharp` as the replacement limit). A new definition replaces the old
+  one and records who and when.
+- **Collections whose context predates SQL 0.3.9:** run `SELECT morlet_index_context('schema.collection')` once.
+  It adds the index on the context table's `batch_id` that `morlet_add_context` uses on every call; without it,
+  each call scans the whole context table, which grows with every recording (#414). Context enabled from 0.3.9
+  on has it.
+- **Value rules `simple-v2` (study V2, #387):** a converter step is far larger than
+  rounding residue. A `p75` history of 0, −1 and −2 steps has a median of half a
+  step, and a segment at 0 then deviates by exactly 1.0, which dominates any score.
+  Under `simple-v2`, a history whose distinct values (at least 3) all lie on
+  multiples of their smallest gap is *quantised*, and a median within **two steps**
+  of zero counts as zero, as above. Values that are not quantised (`std`, `rms`,
+  `kurtosis` of real signals) compare exactly as under `simple-v1`; the stored
+  values are the same under both. The version belongs to the collection:
+  `morlet_value_rules(collection)` reads it, `morlet_set_value_rules(collection,
+  'simple-v1' | 'simple-v2')` sets it. Context enabled from SQL 0.3.9 on starts with
+  `simple-v2`; collections whose context was enabled earlier keep `simple-v1` until
+  switched, so earlier results stay reproducible.
 - **Cost:** spreads are computed per call over all comparable segments. On the
   milling check this doubled compare latency (p50 23 ms → 46 ms).
 

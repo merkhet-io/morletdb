@@ -7,16 +7,37 @@ Every tool runs in a read-only transaction with a statement timeout, as the data
 so privileges and row-level security decide what the agent can see. Nothing is written.
 """
 import functools
+import importlib.util
 import json
 import math
 import os
+import sys
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import psycopg
+
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
+
+
+def _sibling(name: str):
+    """Import a module that sits next to this file, by path.
+
+    `python -I` (isolated mode, used by smoke_stdio.py and recommended for MCP clients) leaves the script's
+    directory off sys.path, so a plain `import decision` fails there. Loading by path works in every mode and
+    cannot pick up a same-named module from the current directory or the environment."""
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, os.path.join(os.path.dirname(os.path.abspath(__file__)), f"{name}.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+decision = _sibling("decision")
 
 MAX_READ = 32768                 # samples per morlet_read_interval call
 MAX_SPAN = 2_000_000             # samples per read_interval / describe_interval request
@@ -116,6 +137,41 @@ def start_time(meta):
 
 def at(t0, rate, sample):
     return None if t0 is None else (t0 + timedelta(seconds=sample / rate)).isoformat().replace("+00:00", "Z")
+
+
+def time_quality(meta, rate):
+    """How a recording's UTC times are derived, and how far off they may be (#393). Today always start + rate: there
+    are no time anchors yet. When an import measured how the source's own timestamps departed from that axis
+    (metadata time_axis, tools/ingest), that departure is the uncertainty of every derived time."""
+    q = {"time_basis": "start + rate"}
+    ax = meta.get("time_axis") if isinstance(meta, dict) else None
+    off = ax.get("max_offset_s") if isinstance(ax, dict) else None
+    if isinstance(off, (int, float)) and not isinstance(off, bool) and math.isfinite(off):
+        q["time_uncertainty_s"] = off
+        q["time_uncertainty_samples"] = round(off * rate, 2)
+        if isinstance(ax.get("fitted_rate_hz"), (int, float)):
+            q["fitted_rate_hz"] = ax["fitted_rate_hz"]
+    return q
+
+
+def occurrences_at(conn, collection, points):
+    """The occurrence (e.g. {"part": "P12"}) of the narrowest current context segment containing each
+    (recording_id, sample); points outside every segment, or with an empty occurrence, are left out."""
+    try:
+        seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
+                                 (collection,)).fetchone()[0]
+    except psycopg.Error as e:
+        raise ValueError("exclude=occurrence needs a collection with context (morlet_enable_context)") from e
+    rids, samples = [p[0] for p in points], [int(p[1]) for p in points]
+    out = {}
+    for rid, sample, occ in conn.execute(
+            f"SELECT p.rid, p.sample, (SELECT g.occurrence FROM {seg_table} g WHERE g.recording_id = p.rid "
+            f"AND g.start_sample <= p.sample AND p.sample < g.end_sample AND NOT g.stale "
+            f"ORDER BY g.end_sample - g.start_sample, g.segment_id LIMIT 1) "
+            f"FROM unnest(%s::text[], %s::bigint[]) AS p(rid, sample)", (rids, samples)):
+        if occ:
+            out[(rid, sample)] = json.dumps(occ, sort_keys=True)
+    return out
 
 
 def recording(conn, collection, recording_id):
@@ -256,6 +312,22 @@ def recordings_in(conn, c, flt):
     return sorted(out, key=lambda r: r["t0"])
 
 
+def ordered_recordings(conn, c, flt, key):
+    """Recordings matching flt that have metadata key, in the order of its value (numbers numerically, then text)
+    (#334): for recordings without a clock time, such as numbered cuts."""
+    rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint FROM {c} "
+                        f"WHERE metadata @> %s::jsonb AND metadata ? %s", (json.dumps(flt), key)).fetchall()
+
+    def sort_key(v):
+        try:
+            return (0, float(v), "")
+        except (TypeError, ValueError):
+            return (1, 0.0, str(v))
+    out = [{"recording_id": rid, "rate": rate, "metadata": meta, "samples": n, "t0": None, "order": meta[key]}
+           for rid, rate, meta, n in rows if n]
+    return sorted(out, key=lambda r: (sort_key(r["order"]), r["recording_id"]))
+
+
 def iso(t):
     return t.isoformat().replace("+00:00", "Z")
 
@@ -266,7 +338,8 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
     """Overview of what is recorded, per group of recordings (group_by: a metadata key such as "station" or
     "bearing"; empty for one group): number of recordings, samples, first and last UTC time, the recording
     schedule (typical recording length and time between recording starts), time covered, and the largest
-    gaps. For continuous recording every pause between recordings is a gap; for snapshots (recordings
+    gaps. Recordings that overlap in time (channels of one acquisition) count as one recorded block, so
+    covered time is never counted twice. For continuous recording every pause between blocks is a gap; for snapshots (recordings
     shorter than the usual pause, for example 1 s every 10 min) only pauses longer than 1.5 times the usual
     one are. Needs recordings with a start time. On servers with SQL 0.3.6, search_states_s splits each
     group's recorded time by what search can find: searchable, not_indexed (no search window built yet),
@@ -287,17 +360,28 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
         groups.setdefault(str(r["metadata"].get(group_by, "")) if group_by else "all", []).append(r)
     out = []
     for name, rs in sorted(groups.items()):
-        dur = sorted((r["t1"] - r["t0"]).total_seconds() for r in rs)
-        starts = [(b["t0"] - a["t0"]).total_seconds() for a, b in zip(rs, rs[1:])]
-        pauses = [((b["t0"] - a["t1"]).total_seconds(), a, b) for a, b in zip(rs, rs[1:])]
+        # Recordings that overlap in time (several channels of one acquisition) are one block of recorded time;
+        # adding them up would count the same seconds once per channel.
+        blocks = []
+        for r in rs:                                         # rs is sorted by start time
+            if blocks and r["t0"] < blocks[-1]["t1"]:
+                blocks[-1]["t1"] = max(blocks[-1]["t1"], r["t1"])
+                blocks[-1]["recordings"] += 1
+            else:
+                blocks.append({"t0": r["t0"], "t1": r["t1"], "recordings": 1})
+        dur = sorted((b["t1"] - b["t0"]).total_seconds() for b in blocks)
+        starts = [(b["t0"] - a["t0"]).total_seconds() for a, b in zip(blocks, blocks[1:])]
+        pauses = [((b["t0"] - a["t1"]).total_seconds(), a, b) for a, b in zip(blocks, blocks[1:])]
         usual = float(np.median([p for p, _, _ in pauses])) if pauses else 0.0
         snapshots = bool(pauses) and float(np.median(dur)) < usual     # short recordings on a schedule
         limit = max(1.5 * usual, usual + 1.0) if snapshots else 1.0     # continuous: every pause is a gap
         gaps = sorted((p for p in pauses if p[0] > limit), key=lambda p: -p[0])
-        span = (rs[-1]["t1"] - rs[0]["t0"]).total_seconds()
+        span = (max(b["t1"] for b in blocks) - blocks[0]["t0"]).total_seconds()
         covered = sum(dur)
         out.append({"group": name, "recordings": len(rs), "samples": int(sum(r["samples"] for r in rs)),
-                    "first_utc": iso(rs[0]["t0"]), "last_utc": iso(rs[-1]["t1"]),
+                    "recorded_blocks": len(blocks),
+                    "recordings_per_block": float(np.median([b["recordings"] for b in blocks])),
+                    "first_utc": iso(rs[0]["t0"]), "last_utc": iso(max(b["t1"] for b in blocks)),
                     "schedule": "snapshots" if snapshots else "continuous",
                     "typical_recording_s": float(np.median(dur)),
                     "typical_start_interval_s": float(np.median(starts)) if starts else None,
@@ -330,10 +414,19 @@ def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit
         c = checked(conn, collection)
         if not conn.execute("SELECT to_regproc('public.morlet_latest') IS NOT NULL").fetchone()[0]:
             raise ValueError("latest needs a server with pg_morlet SQL 0.3.6")
-        rows, now = conn.execute(
-            "SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, samples, "
-            "sample_count, min, max, mean, rms, note FROM morlet_latest(%s::regclass, %s, %s::jsonb, %s)",
-            (c, n, flt, limit)).fetchall(), datetime.now(timezone.utc)
+        try:
+            rows, now = conn.execute(
+                "SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, samples, "
+                "sample_count, min, max, mean, rms, note FROM morlet_latest(%s::regclass, %s, %s::jsonb, %s)",
+                (c, n, flt, limit)).fetchall(), datetime.now(timezone.utc)
+        except psycopg.Error as e:
+            # the SQL function names its own argument (max_recordings); the caller of this tool passed limit
+            msg = getattr(getattr(e, "diag", None), "message_primary", None) or str(e)
+            if "max_recordings" in msg:
+                matched = msg.split(" recordings match")[0].strip()
+                raise ValueError(f"{matched} recordings match, more than limit ({limit}). Narrow metadata_filter "
+                                 f"or pass a larger limit (at most 1000).") from None
+            raise
     out = []
     for rid, rate, ch, unit, a, b, end, values, count, lo, hi, mean, rms, note in rows:
         row = {"recording_id": rid, "channel": ch, "unit": unit, "sample_rate_hz": rate, "start_sample": a,
@@ -373,37 +466,72 @@ def sig(v, digits=4):
 @safe
 def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: str = "", max_points: int = 200,
           samples_per_point: int = 4096, step_seconds: float = 0.0, bands: str = "",
-          min_frequency_hz: float = 0.0, baseline_fraction: float = 0.1) -> dict:
+          min_frequency_hz: float = 0.0, baseline_fraction: float = 0.1, segment_context: str = "",
+          order_by: str = "") -> dict:
     """How a signal's level and spectrum change over time, for the recordings matching metadata_filter (for
     example one sensor or bearing). Takes up to max_points (at most 300) measurement points in time order: one per
     recording for short snapshots, or one every step_seconds within longer recordings, each over
-    samples_per_point samples. Each point gives rms, std, peak, crest factor, kurtosis and power per band
+    samples_per_point samples. segment_context (a JSON object, e.g. '{"phase": "cut"}') measures only inside the
+    context segments whose context contains it, from each segment's start, so that the idle lead-in before a cut
+    is not what the trend describes; a segment shorter than samples_per_point is measured whole (needs a
+    collection with context and built segments). Each point gives rms, std, peak, crest factor, kurtosis and power per band
     (bands as in describe_interval; min_frequency_hz high-passes before measuring), returned as one CSV
     table; the number of points is lowered automatically to keep the answer short. change_points gives, per measure, the first point from which three
     in a row lie more than 5 robust standard deviations above the first baseline_fraction of points: a
-    candidate for when something changed, to inspect, not a diagnosis."""
+    candidate for when something changed, to inspect, not a diagnosis. order_by (a metadata key, e.g. "cut") orders
+    the recordings by that key instead of by time, for recordings without a clock time such as numbered cuts of a
+    tool; the table's first column is then "order" and change points name the order value (#334)."""
     flt = json.loads(metadata_filter or "{}")
+    if order_by and (start_utc or end_utc):
+        raise ValueError("start_utc and end_utc need time order; leave them empty with order_by")
     t_lo = datetime.fromisoformat(start_utc.replace("Z", "+00:00")) if start_utc else None
     t_hi = datetime.fromisoformat(end_utc.replace("Z", "+00:00")) if end_utc else None
     max_points = max(10, min(max_points, 300))     # keeps the answer within MCP clients' output limits
     with connect() as conn:
         c = checked(conn, collection)
-        recs = recordings_in(conn, c, flt)
+        recs = ordered_recordings(conn, c, flt, order_by) if order_by else recordings_in(conn, c, flt)
         if not recs:
-            raise ValueError("no recordings with a start time match metadata_filter")
+            raise ValueError(f"no recordings with metadata key {order_by!r} match metadata_filter" if order_by else
+                             "no recordings with a start time match metadata_filter (recordings that are numbered, "
+                             "e.g. cuts, can be ordered with order_by)")
         rates = {r["rate"] for r in recs}
         if len(rates) > 1:
             raise ValueError(f"matching recordings have several sample rates ({sorted(rates)}); narrow the filter")
         rate = rates.pop()
         n = max(16, samples_per_point)
+        seg_flt = json.loads(segment_context or "{}")
+        if not isinstance(seg_flt, dict):
+            raise ValueError("segment_context must be a JSON object")
+        spans = {r["recording_id"]: [(0, r["samples"])] for r in recs}
+        if seg_flt:                                       # measure inside matching context segments only (#385)
+            try:
+                seg_table = conn.execute("SELECT segments::text FROM morlet_context_relations(%s::regclass)",
+                                         (c,)).fetchone()[0]
+            except psycopg.Error as e:
+                raise ValueError("segment_context needs a collection with context (morlet_enable_context)") from e
+            spans = {rid: [] for rid in spans}
+            for rid, a, b in conn.execute(
+                    f"SELECT recording_id, start_sample, end_sample FROM {seg_table} WHERE NOT stale "
+                    f"AND context @> %s::jsonb AND recording_id = ANY(%s) ORDER BY recording_id, start_sample",
+                    (json.dumps(seg_flt), list(spans))):
+                spans[rid].append((a, b))
+            if not any(spans.values()):
+                raise ValueError(f"no current context segment of the matching recordings has context {seg_flt}")
         points = []
         for r in recs:
             step = int(step_seconds * rate) if step_seconds > 0 else r["samples"]
-            for s0 in range(0, max(1, r["samples"] - n + 1), max(n, step)):
-                t = r["t0"] + timedelta(seconds=s0 / rate)
-                if (t_lo and t < t_lo) or (t_hi and t >= t_hi):
+            for a, b in spans[r["recording_id"]]:
+                m = min(n, b - a)
+                if m < 16:
                     continue
-                points.append((t, r["recording_id"], s0))
+                for s0 in range(a, max(a + 1, b - m + 1), max(m, step)):
+                    if order_by:
+                        points.append((r["order"], r["recording_id"], s0, m))
+                        continue
+                    t = r["t0"] + timedelta(seconds=s0 / rate)
+                    if (t_lo and t < t_lo) or (t_hi and t >= t_hi):
+                        continue
+                    points.append((t, r["recording_id"], s0, m))
         edges = parse_bands(bands, rate)
         n_bands = len(edges) if edges else 5
         budget = max(10, 30000 // (60 + 9 * (5 + n_bands)))     # keep the table within about 30,000 characters
@@ -414,12 +542,13 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
         cols = {"utc": [], "recording_id": [], "start_sample": [], "rms": [], "std": [], "peak_abs": [],
                 "crest_factor": [], "kurtosis": []}
         band_cols = {}
-        for t, rid, s0 in points:
-            x = read(conn, c, rid, s0, s0 + n)
+        for t, rid, s0, m in points:
+            x = read(conn, c, rid, s0, s0 + m)
             if min_frequency_hz > 0:
                 x = bandpass(x, rate, min_frequency_hz, 0.0)
             st = stats(x, rate, edges)
-            cols["utc"].append(iso(t)); cols["recording_id"].append(rid); cols["start_sample"].append(s0)
+            cols["utc"].append(t if order_by else iso(t)); cols["recording_id"].append(rid)
+            cols["start_sample"].append(s0)
             for k in ("rms", "std", "peak_abs", "crest_factor", "kurtosis"):
                 cols[k].append(sig(st.get(k)))
             for k, v in st.get("band_power", {}).items():
@@ -430,14 +559,17 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
         if len(vals) < base_n + 3 or any(v is None for v in vals):
             continue
         i, med, mad = change_point(vals, base_n)
-        changes[name] = {"baseline_median": sig(med), "first_change_utc": cols["utc"][i] if i is not None else None,
+        changes[name] = {"baseline_median": sig(med),
+                         ("first_change_order" if order_by else "first_change_utc"):
+                             cols["utc"][i] if i is not None else None,
                          "point": i, "value_then": vals[i] if i is not None else None}
     names = ["utc", "recording_id", "start_sample", "rms", "std", "peak_abs", "crest_factor", "kurtosis"]
-    header = names + [f"power {k}" for k in band_cols]
+    header = (["order"] + names[1:] if order_by else names) + [f"power {k}" for k in band_cols]
     rows = [",".join("" if v is None else str(v) for v in
                      [cols[k][i] for k in names] + [band_cols[k][i] for k in band_cols]) for i in range(len(points))]
-    return {"collection": collection, "metadata_filter": flt, "points": len(points), "samples_per_point": n,
-            "sample_rate_hz": rate, "baseline_points": base_n, "change_points": changes,
+    out_seg = ({"segment_context": seg_flt} if seg_flt else {}) | ({"order_by": order_by} if order_by else {})
+    return {"collection": collection, "metadata_filter": flt, **out_seg, "points": len(points),
+            "samples_per_point": n, "sample_rate_hz": rate, "baseline_points": base_n, "change_points": changes,
             "table_csv": "\n".join([",".join(header)] + rows)}
 
 
@@ -481,22 +613,51 @@ def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 5
 @safe
 def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> dict:
     """Find which recordings contain a UTC time (ISO 8601, e.g. 2025-03-01T14:02:10Z) and the sample offset
-    of that time in each. Needs recordings whose metadata has a start time."""
+    of that time in each. Needs recordings whose metadata has a start time. When no recording contains the
+    time, a note says whether it falls into a gap, before the first or after the last recording, with the
+    nearest recording on each side. Each match says how its time axis is derived (time_basis: start + rate)
+    and, when the import measured how the source's timestamps departed from it, the uncertainty in seconds and
+    samples: a clock that drifts or stamps blocks puts the located sample off by up to that much."""
     t = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
     flt = json.loads(metadata_filter or "{}")
     with connect() as conn:
         c = checked(conn, collection)
         rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint FROM {c} "
                             f"WHERE metadata @> %s::jsonb", (json.dumps(flt),)).fetchall()
-    hits = []
+    hits, before, after, timed = [], None, None, 0
     for rid, rate, meta, n in rows:
         t0 = start_time(meta)
         if t0 is None:
             continue
+        timed += 1
         s = math.floor((t - t0).total_seconds() * rate)
         if 0 <= s < n:
-            hits.append({"recording_id": rid, "sample": s, "metadata": meta})
-    return {"utc_time": utc_time, "matches": sorted(hits, key=lambda h: h["recording_id"])}
+            hit = {"recording_id": rid, "sample": s, **time_quality(meta, rate), "metadata": meta}
+            if hit.get("time_uncertainty_samples", 0) > 1:
+                hit["time_note"] = (f"the source's timestamps departed from start + rate by up to "
+                                    f"{hit['time_uncertainty_s']:.3g} s, so this sample may be off by up to "
+                                    f"{hit['time_uncertainty_samples']:.4g} samples (no time anchors yet, #393)")
+            hits.append(hit)
+            continue
+        t1 = t0 + timedelta(seconds=n / rate)
+        if t1 <= t and (before is None or t1 > before[1]):
+            before = (rid, t1)
+        if t0 > t and (after is None or t0 < after[1]):
+            after = (rid, t0)
+    out = {"utc_time": utc_time, "matches": sorted(hits, key=lambda h: h["recording_id"])}
+    if not hits:
+        if not timed:
+            out["note"] = "no matching recording has a start time, so no time can be located"
+        else:
+            out["note"] = ("the time falls into a gap between recordings" if before and after else
+                           "the time is before the first recording" if after else "the time is after the last recording")
+            if before:
+                out["previous"] = {"recording_id": before[0], "end_utc": iso(before[1]),
+                                   "seconds_before": round((t - before[1]).total_seconds(), 3)}
+            if after:
+                out["next"] = {"recording_id": after[0], "start_utc": iso(after[1]),
+                               "seconds_after": round((after[1] - t).total_seconds(), 3)}
+    return out
 
 
 def query_note(x):
@@ -626,7 +787,9 @@ def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), befo
             f"WHERE e.exempt AND e.start_sample < b.hi AND e.end_sample > b.lo",
             (ids, [bounds[i][0] for i in ids], [bounds[i][1] for i in ids])).fetchone()
         out["event_library"] = {"entries": lib[0] + lib[1], "at_full_level": lib[0], "out_of_search": lib[1]}
-    out["note"] = ("every period of the matching recordings was searchable" if out["complete"] else
+    out["note"] = ("no recording matches the search's filters (metadata, time range), so nothing was searched: "
+                   "a missing match says nothing about other recordings" if not ids else
+                   "every period of the matching recordings was searchable" if out["complete"] else
                    f"{out['not_searched_seconds']:g} s of the matching recordings were not searched "
                    f"({', '.join(k for k in out['seconds'] if k in NOT_SEARCHED)}): a missing match says nothing "
                    f"about those periods")
@@ -637,7 +800,7 @@ def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), befo
 @safe
 def search_similar(collection: str, recording_id: str, start_sample: int, end_sample: int,
                    metadata_filter: str = "{}", top_k: int = 10, shifts: int = 0, before_only: bool = False,
-                   time_from: str = "", time_to: str = "", evidence: bool = True) -> dict:
+                   time_from: str = "", time_to: str = "", evidence: bool = True, exclude: str = "") -> dict:
     """Find the intervals most similar to [start_sample, end_sample) of a recording, tolerant to small time
     shifts (bounded-lag cross-correlation of signal envelopes). The interval must have the stored window
     length (usually 4096 samples; see list_collections). Searches recordings with the same sample rate,
@@ -655,8 +818,19 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     matched interval's rms, min, max and an 8-part min/max sketch, so you can judge it without reading it
     (servers with SQL 0.3.3). scope says what was searched: the matching recordings, the stored windows
     searched, and (servers with SQL 0.3.6) the periods that exist but were not searched, with why; report it
-    with every negative or thin result."""
+    with every negative or thin result.
+    exclude leaves out hits from the query's own context: "occurrence" drops hits from the same part, cycle or
+    run (the occurrence of the context segment that contains the query, e.g. other channels or other windows of
+    the same part) but keeps earlier parts in the same recording, the usual question in series production;
+    "recording" drops every hit in the query's
+    recording (not only the overlapping windows); "metadata:<key>" drops hits from every recording whose
+    metadata <key> equals the query's (e.g. "metadata:part" for the other channels of the same part in
+    series production). Up to 100 candidates are fetched so that up to top_k hits remain; the query reports how
+    many were left out."""
     top_k = max(1, min(top_k, 100))
+    if exclude and exclude not in ("recording", "occurrence") and not exclude.startswith("metadata:"):
+        raise ValueError('exclude must be "", "recording", "occurrence" or "metadata:<key>"')
+    fetch_k = min(100, top_k * 5 + 20) if exclude else top_k      # the SQL search returns at most 100
     shifts = max(0, min(shifts, 4))
     flt = json.dumps(json.loads(metadata_filter or "{}"))
     window = end_sample - start_sample
@@ -682,13 +856,13 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
                 sql, args = ("SELECT recording_id, start_sample, end_sample, distance, metadata, rms, min, max, overview "
                              "FROM morlet_search_similar_evidence(%s::regclass, %s, %s, %s, %s::jsonb, %s, "
                              "time_from => %s, time_to => %s, before_only => %s, overview_buckets => 8)",
-                             (c, recording_id, a, b, flt, top_k, bounds[0], bounds[1], before_only))
+                             (c, recording_id, a, b, flt, fetch_k, bounds[0], bounds[1], before_only))
             elif similar:
                 sql, args = ("SELECT *, NULL, NULL, NULL, NULL FROM morlet_search_similar(%s::regclass, %s, %s, %s, "
-                             "%s::jsonb, %s)", (c, recording_id, a, b, flt, top_k))
+                             "%s::jsonb, %s)", (c, recording_id, a, b, flt, fetch_k))
             else:                                # SQL 0.3.1: exact search with an explicit candidate cap
                 sql, args = ("SELECT *, NULL, NULL, NULL, NULL FROM morlet_search_envelope_interval(%s::regclass, "
-                             "%s, %s, %s, %s::jsonb, %s, 0.075, true, true, 1000000)", (c, recording_id, a, b, flt, top_k))
+                             "%s, %s, %s, %s::jsonb, %s, 0.075, true, true, 1000000)", (c, recording_id, a, b, flt, fetch_k))
             run = []
             for rid, s, e, d, meta, rms, lo, hi, overview in conn.execute(sql, args).fetchall():
                 metas[rid] = meta
@@ -703,12 +877,33 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
         before = q0 + timedelta(seconds=start_sample / src["rate"]) if before_only and q0 else None
         scope = search_scope(conn, c, src, flt, window, bounds, before)
     lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
-    hits = merge_hits(runs, recording_id, lo, hi)[:top_k]
+    hits = merge_hits(runs, recording_id, lo, hi)
+    excluded = 0
+    if exclude == "occurrence":                       # #384: the same part or cycle, from the context segments
+        with connect() as conn:
+            occ = occurrences_at(conn, c, [(recording_id, start_sample)] + [(h["recording_id"], h["start_sample"])
+                                                                            for h in hits])
+        own = occ.get((recording_id, start_sample))
+        if not own:
+            raise ValueError("the query interval lies in no context segment with an occurrence (part, cycle, run); "
+                             "build context segments with occurrence keys first")
+        keep = [h for h in hits if occ.get((h["recording_id"], h["start_sample"])) != own]
+        excluded, hits = len(hits) - len(keep), keep
+    elif exclude:
+        key = exclude.split(":", 1)[1] if exclude.startswith("metadata:") else None
+        own = src["metadata"].get(key) if key else None
+        if key and own is None:
+            raise ValueError(f"the query recording has no metadata key {key!r} to exclude by")
+        keep = [h for h in hits if not (h["recording_id"] == recording_id if key is None
+                                        else (metas.get(h["recording_id"]) or {}).get(key) == own)]
+        excluded, hits = len(hits) - len(keep), keep
+    hits = hits[:top_k]
     t0 = start_time(src["metadata"])
     return {"query": {"collection": collection, "recording_id": recording_id, "start_sample": start_sample,
                       "end_sample": end_sample, "start_utc": at(t0, src["rate"], start_sample),
                       "shifts_samples": used, "before_only": before_only,
                       "time_range": [time_from or None, time_to or None],
+                      **({"exclude": exclude, "excluded_hits": excluded} if exclude else {}),
                       **({"query_note": note} if note else {})},
             "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)",
             "scope": scope, "hits": hits,
@@ -1051,6 +1246,72 @@ def find_onsets(collection: str, recording_id: str, start_sample: int, end_sampl
             "filter_hz": [min_frequency_hz or None, max_frequency_hz or None], "sta_seconds": sta_seconds,
             "lta_seconds": lta_seconds, "threshold": threshold, "onsets": onsets,
             "truncated": len(onsets) >= max(1, min(max_onsets, 200))}
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def decision_state(collection: str, recording_id: str, sample: int, match_keys: str = "", exclude_labels: str = "",
+                   min_history: int = 3, neighbors: int = 3, include_occurrence: bool = False,
+                   reliable_history: int = 10, baseline_recordings: str = "", examples: int = 0,
+                   example_labels: str = "", example_match_keys: str = "") -> dict:
+    """What a fast decision model needs to know about the context segment (a cut, a cycle, a part) that contains
+    a sample: its context (program, tool, material, ...); per value (rms, std, p75, crest, kurtosis, ...) its
+    deviation from the same-context history; a summary score with its quantile in that history; and the nearest
+    earlier cases with their labels. Needs a collection with context (morlet_enable_context) and built segments.
+
+    match_keys: comma-separated context keys the history must share (empty: all of the segment's keys).
+    exclude_labels: comma-separated labels whose segments are left out of the history (e.g. "crash,air_cut").
+    Relative deviation is (value - history median) / |history median|; quantile is the value's position within
+    the history. Occurrence identifiers (run or part numbers) are left out unless include_occurrence is true.
+    With fewer than reliable_history earlier segments, history.small is true and history.note says why that matters:
+    one unusual segment, or a short transient in this one (high kurtosis or crest), can dominate the deviations.
+    baseline_recordings: comma-separated recording ids (optionally recording_id@sample) of this asset's own
+    reference segments, e.g. a tool's first cuts after a change; own_baseline then shows each value's drift from
+    them, which is how wear often shows. examples: how many nearest labelled cases of the same context to
+    include, with their labels, notes and values (example_labels: comma-separated labels that count; default any
+    label except logged decisions). The whole history is searched; if no labelled case exists, examples is empty
+    and examples_note says so. example_match_keys: comma-separated context keys examples must share (default
+    match_keys); fewer keys widen the search, e.g. "process" to find labelled cuts of other tools.
+    label_definitions gives what each label shown means (morlet_define_label); undefined_labels lists labels nobody
+    defined: do not guess their meaning (a label like "not_sharp" may not be the limit you assume).
+    This describes how unusual the segment is for its context; it is not a diagnosis. Cite the segment and the
+    neighbours by recording and sample range."""
+    keys = [k.strip() for k in match_keys.split(",") if k.strip()]
+    labels = [k.strip() for k in exclude_labels.split(",") if k.strip()]
+    with connect() as conn:
+        c = checked(conn, collection)
+        seg = decision.segment_at(conn, c, recording_id, sample)
+        base = []
+        for item in (x.strip() for x in baseline_recordings.split(",") if x.strip()):
+            brid, _, bs = item.partition("@")
+            base.append(decision.segment_at(conn, c, brid, int(bs) if bs else 0))
+        wanted = [x.strip() for x in example_labels.split(",") if x.strip()] or None
+        ex_keys = [k.strip() for k in example_match_keys.split(",") if k.strip()] or None
+        return decision.decision_state(conn, c, seg, match_keys=keys, exclude_labels=labels,
+                                       example_match_keys=ex_keys,
+                                       min_history=min_history, neighbors=max(0, min(neighbors, 20)),
+                                       include_occurrence=include_occurrence,
+                                       reliable_history=max(1, reliable_history), baseline=base,
+                                       examples=max(0, min(examples, 20)), example_labels=wanted)
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def decisions(collection: str, recording_prefix: str = "", answer: str = "", limit: int = 20,
+              with_state: bool = False) -> dict:
+    """Decisions a fast decision model ("System 1") logged on recordings (labels "s1:<answer>"), newest first:
+    the answer, model, question, probability, the threshold that turned it into the answer, when and by whom,
+    and the recordings and sample ranges it is about, and the nearest labelled precedents the model's state held
+    at that moment (precedents: recording, sample range, distance, labels; precedents_from says whether they were
+    labelled examples or neighbours). with_state also returns the exact state the model saw (its sha256 is always
+    returned). To explain a decision, look at those recordings: decision_state shows how the
+    segment deviates from its history now (history may have grown since), describe_interval and read_interval
+    show the samples. The model gives a probability, not a reason; the explanation has to come from the data."""
+    with connect() as conn:
+        c = checked(conn, collection)
+        found = decision.decisions(conn, c, recording_prefix=recording_prefix, answer=answer,
+                                   limit=max(1, min(limit, 200)), with_state=with_state)
+    return {"collection": collection, "decisions": found, "truncated": len(found) >= max(1, min(limit, 200))}
 
 
 if __name__ == "__main__":

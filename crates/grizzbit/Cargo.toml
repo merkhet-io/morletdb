@@ -1,0 +1,24 @@
+[package]
+name = "grizzbit"
+description = "Grizzbit: lossless float64 compression for sampled signals (MorletDB's chunk codec; Grizzbit 1 = chunk format versions 2 and 3)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["compression", "lossless", "float64", "signal", "waveform"]
+categories = ["compression", "encoding"]
+# Not on crates.io yet: publishing needs the owner's approval.
+publish = false
+
+[lib]
+name = "grizzbit"
+
+# No runtime dependencies: the codec, its CRC-32C and its sample limits are all here.
+[dependencies]
+
+[dev-dependencies]
+serde_json = { version = "1", features = ["float_roundtrip"] }
+proptest = { version = "1.12", default-features = false, features = ["std"] }
+
+[lints]
+workspace = true
