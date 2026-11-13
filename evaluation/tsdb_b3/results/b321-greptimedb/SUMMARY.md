@@ -1,4 +1,4 @@
-# B3.21: GreptimeDB 1.3.0 beside MorletDB 0.3.12-alpha.1 — results (UNPUBLISHED, local)
+# B3.21: GreptimeDB 1.3.0 beside MorletDB 0.3.12-alpha.1 — results
 
 Run 2026-11-12 23:52 – 2026-11-13 00:11 under amendment B3.21 (frozen in `11e9483` before any load of the benchmark
 set), benchmark set: 124 Paderborn acquisitions, 101,586,735 samples. Every one of the 12 loads passed the full
