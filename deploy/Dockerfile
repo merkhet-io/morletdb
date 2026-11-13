@@ -25,3 +25,7 @@ COPY --from=builder /src/target/release/pg_morlet-pg17/usr/lib/postgresql/17/lib
 COPY --from=builder /src/target/release/pg_morlet-pg17/usr/share/postgresql/17/extension/ /usr/share/postgresql/17/extension/
 
 COPY LICENSE /usr/share/doc/morletdb/LICENSE
+# Sizes shared_buffers to a container memory limit under 512 MB, then runs the stock entrypoint (#466).
+COPY deploy/morlet-entrypoint.sh /usr/local/bin/morlet-entrypoint.sh
+ENTRYPOINT ["morlet-entrypoint.sh"]
+CMD ["postgres"]

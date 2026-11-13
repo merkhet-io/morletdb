@@ -11,6 +11,13 @@ SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_m
   without them for the duration deviation. On a 320-segment history `morlet_compare_summary` took 23 ms instead of
   35 ms (p50), with identical results on every segment. The decision state (`tools/mcp/decision.py`) already
   compares in Python without the spreads; it calls `morlet_compare_summary` only for the summary quantile.
+- **The image sizes `shared_buffers` to small memory limits (#466).** Under a container memory limit below 512 MB
+  the image starts PostgreSQL with `shared_buffers` at a quarter of the limit (at least 16 MB) instead of the
+  default 128 MB, unless `shared_buffers` is set on the command line, with `ALTER SYSTEM` or in `postgresql.conf`;
+  `MORLET_AUTO_SHARED_BUFFERS=off` turns it off. At 256 MB the default left as little as about 20 MB that the
+  kernel could not reclaim after a bulk load, and a backend was killed once (Study M1d); with 64 MB the peak fell
+  by about 80 MB with no measurable change in speed. Limits of 512 MB and more, and runs without a limit, are
+  unchanged. The release workflow checks every case (`deploy/test_memory_sizing.sh`).
 
 ## 0.3.13-alpha.1
 
