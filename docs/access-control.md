@@ -42,8 +42,9 @@ SELECT morlet_enable_row_security('signals');                 -- every companion
   companion tables. A memory run has no recording of its own and may span several, so a run is visible to the
   role that started it (`started_by`, set by the database; a role cannot start a run in another role's name).
   A tenant sees its own ledger rows of an administrator's run, not the run itself. Collections already under the
-  helper before SQL 0.3.10 get this by calling `morlet_enable_row_security` again (it adds `started_by` to an
-  existing runs table).
+  helper before SQL 0.3.10 get this from `ALTER EXTENSION pg_morlet UPDATE`, which calls the helper again for each
+  of them (it adds `started_by` to an existing runs table; an update by a role that cannot alter one of the tables
+  fails and rolls back). Calling the helper again by hand does the same.
 - **Later tables:** the helper is idempotent. Once used, enabling envelopes, probe search,
   context or acquisitions later applies it to the new table automatically.
 - **Status:** `morlet_row_security_enabled(collection)` reports whether it has been applied.

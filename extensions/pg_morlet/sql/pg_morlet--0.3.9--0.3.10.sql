@@ -2,8 +2,8 @@
 -- morlet_set_level: a level-2 episode keeps a real example; moves that would leave it with a representative
 -- above level 1 are refused as a whole, and the representative is locked while it is assigned (#440).
 -- morlet_build_envelopes: the window grid is recognised after compaction removed its first windows (#441).
--- morlet_enable_row_security, morlet_enable_memory: episodic memory follows row security (#438); collections
--- already under morlet_enable_row_security get it by calling it again.
+-- morlet_enable_row_security, morlet_enable_memory: episodic memory follows row security (#438); the update
+-- applies it to every collection already under morlet_enable_row_security (below).
 \echo Use "ALTER EXTENSION pg_morlet UPDATE TO '0.3.10'" to load this file. \quit
 
 CREATE OR REPLACE FUNCTION public.morlet_set_level(collection regclass,run_id bigint,moves jsonb,dry_run boolean DEFAULT false)
@@ -430,3 +430,14 @@ BEGIN
   -- Collections under morlet_enable_row_security: the new tables follow it at once (#438).
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
 END $$;
+
+DO $morlet_upgrade$
+DECLARE c regclass;
+BEGIN
+  FOR c IN SELECT to_regclass(format('%I.%I',n.nspname,left(cl.relname,-length('_chunks'))))
+    FROM pg_policy p JOIN pg_class cl ON cl.oid=p.polrelid JOIN pg_namespace n ON n.oid=cl.relnamespace
+    WHERE p.polname='morlet_follows_recording' AND right(cl.relname,7)='_chunks' ORDER BY 1
+  LOOP
+    IF c IS NOT NULL THEN PERFORM public.morlet_enable_row_security(c); END IF;
+  END LOOP;
+END $morlet_upgrade$;
