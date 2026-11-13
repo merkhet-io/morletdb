@@ -1143,3 +1143,27 @@ applies.
   close to or below MorletDB's storage on the slow `mid` and `process` channels and above it on the dense `high`
   channels; interval reads through SQL and Arrow should be slower than MorletDB's raw reads. Not a hypothesis this
   stage must confirm.
+
+## Study M1, amendment M1d: GreptimeDB 1.3.0 (FROZEN before any load)
+
+Added 2026-11-13 at the owner's request: GreptimeDB's smallest memory cap, missing from B3.21 and from the website's
+memory row. Rules of Study M1, M1b and M1c (caps 256 MB, 512 MB, 1 GB, 2 GB, 4 GB, swap disabled, 8 CPUs, ascending
+until the first pass; one load per cell; descriptive only, no speed statements).
+
+- **GreptimeDB** exactly as in B3.21 (`run_greptime.py load D2 1`: image 1.3.0 by digest, standalone, its defaults,
+  telemetry off, `wal.sync_write` false). The load includes B3.21's storage step (flush and compaction of every
+  table, then the Parquet bytes polled until stable, at most 30 minutes); compaction is part of normal operation and
+  needs memory, so it stays in the cell.
+- **Pass:** the runner exits 0 within **50 minutes** (as M1c) and writes a result with every count and every read
+  bit-exact, also after the restart before the reads; the container state (OOM kill, running, memory limit) is
+  recorded. Whether the storage step settled is reported per cell.
+- **MorletDB** 0.3.12-alpha.1 (B3.21's release), arm `morletdb-i1-sum`, at 256 MB and at 16 GB, so the multiple
+  compares the two releases of B3.21 measured in one session.
+- **Order:** both systems at 16 GB first, then GreptimeDB at ascending caps until it passes, then MorletDB at 256 MB
+  (`run_m1d.sh`, `results/m1d/`, outcomes in `results/m1d/outcomes.tsv`).
+- **Machine:** M1's start condition; AC power and lid checked before every load. Long-running containers of other
+  work (a langfuse stack, two idle PostgreSQL containers) stay up and are recorded in the machine snapshots. A cell
+  interrupted by the machine is rerun; cells are independent.
+- **Reported:** GreptimeDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at
+  16 GB the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1c.
+
