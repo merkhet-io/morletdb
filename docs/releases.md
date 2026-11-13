@@ -57,6 +57,16 @@ a leading v; GHCR image tags do not.
     (`morletdb.open`), and the release attaches `morlet-sqlite-<platform>.tar.gz` (command line, library, C header).
   - **File format 1:** frozen with a compatibility promise ([file-format.md](file-format.md)).
   - The chunk format is unchanged; existing collections keep their layout.
+- **0.3.13-alpha.1:** SQL version 0.3.10 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a6. Security and
+  data-safety fixes; the chunk format is unchanged.
+  - **Episodic memory under row-level security (#438):** episodes, ledger, kept summaries and memory runs follow row
+    security; the update applies it to existing collections.
+  - **Steward approvals enforced at the table (#439):** run `steward.py init` again on existing installations.
+  - **Episodic memory and envelopes:** a representative keeps its samples while it represents an episode (#440);
+    envelopes build on after compaction removed the first windows (#441).
+  - **Transfers:** S3 import resumes objects that were cut off (#442); chunk shipping checks the target before writing
+    (#443, #444).
+  - **Decision states:** a history cache and a faster grid check (#403).
 - **0.3.12-alpha.1:** SQL version 0.3.9 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a5.
   - **Grizzbit 2.1, chunk format version 5, opt-in (#377):** `SET morlet.chunk_format = grizzbit21`; a misspelt value
     fails. Releases up to 0.3.11-alpha.1 cannot read version-5 chunks.

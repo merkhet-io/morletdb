@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.13-alpha.1
+
+Security and data-safety release: SQL 0.3.10 (`ALTER EXTENSION pg_morlet UPDATE` from 0.3.9; the update also puts the
+episodic-memory tables of collections already under row security under it), Python SDK 0.1.0a6. The chunk format is
+unchanged; existing collections keep their layout. Steward installations run `steward.py init` again.
 
 - **Steward plans: the approval rules hold at the table (#439).** A trigger on `morlet_steward.plans` enforces the
   plan workflow for every write, not only through `decide()` and `apply()`: a new plan is undecided and unapplied,
