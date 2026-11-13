@@ -1167,3 +1167,9 @@ until the first pass; one load per cell; descriptive only, no speed statements).
 - **Reported:** GreptimeDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at
   16 GB the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1c.
 
+
+**M1d deviation (2026-11-13 08:35, after the runs above, before any further load):** MorletDB 0.3.12-alpha.1 failed at
+256 MB: the load finished, then a server process was killed out of memory during the correctness reads (0.3.9-alpha.1
+passed at 256 MB in M1b and M1c). M1's rule for every other system applies to MorletDB from here: one repeat at 256 MB
+(to tell a one-off from a reproducible failure; both outcomes reported), then ascending caps 512 MB, 1 GB until it
+passes. The failure is filed as an issue whatever the repeat shows.
