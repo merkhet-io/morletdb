@@ -1,7 +1,5 @@
 # Study P1a: 300 kernel hard resets on a Raspberry Pi — results
 
-> **DRAFT.** All three parts and the final full verification are complete. Not published until the owner approves.
-
 Protocol: [PROTOCOL.md](PROTOCOL.md), frozen 2026-11-08 (`42b7368`), with two dated amendments for Wi-Fi outages
 (2026-11-09, `6a6defc`; 2026-11-10, `7588106`). Image `ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1` (linux/arm64; the SQL
 extension reports version 0.3.7), Raspberry Pi 3B+ on its SD card, Wi-Fi only. The controller on a second machine
