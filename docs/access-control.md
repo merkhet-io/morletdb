@@ -8,8 +8,9 @@ caller's privileges and row-level security (RLS). That is necessary but not suff
 A collection is several caller-owned tables:
 - the recordings table `<c>`;
 - raw chunks `<c>_chunks`, feature segments `<c>_segments`, envelopes `<c>_envelopes`;
-- probe vectors `<c>_probes_<w>`, context tables `<c>_ctx*`, labels `<c>_labels`, and
-  acquisition tables `<c>_acq*`.
+- probe vectors `<c>_probes_<w>`, context tables `<c>_ctx*`, labels `<c>_labels`,
+  acquisition tables `<c>_acq*`, roll-ups `<c>_rollups`, and the episodic-memory tables `<c>_episodes`,
+  `<c>_ledger`, `<c>_kept_summaries` and `<c>_memory_runs`.
 
 To search, a role needs `SELECT` on the companion tables it reads, and that grant also lets it
 query them **directly**. RLS on the recordings table alone therefore protects the functions'
@@ -37,6 +38,13 @@ SELECT morlet_enable_row_security('signals');                 -- every companion
     the acquisition. A recording cannot be attached to another tenant's acquisition by naming its
     ID (the foreign key alone is not an authorization check). Add an acquisition's first channel in
     the transaction that creates it; afterwards only roles that see one of its channels can add more.
+- **Episodic memory (#438):** episodes, ledger rows and kept summaries follow their recording like the other
+  companion tables. A memory run has no recording of its own and may span several, so a run is visible to the
+  role that started it (`started_by`, set by the database; a role cannot start a run in another role's name).
+  A tenant sees its own ledger rows of an administrator's run, not the run itself. Collections already under the
+  helper before SQL 0.3.10 get this from `ALTER EXTENSION pg_morlet UPDATE`, which calls the helper again for each
+  of them (it adds `started_by` to an existing runs table; an update by a role that cannot alter one of the tables
+  fails and rolls back). Calling the helper again by hand does the same.
 - **Later tables:** the helper is idempotent. Once used, enabling envelopes, probe search,
   context or acquisitions later applies it to the new table automatically.
 - **Status:** `morlet_row_security_enabled(collection)` reports whether it has been applied.

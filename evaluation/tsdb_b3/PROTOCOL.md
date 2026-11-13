@@ -1101,3 +1101,75 @@ parallel-writer track. Everything common to B3 applies, and so does B3.17 except
 - **Website, decided now whatever the outcome:** the CedarDB tab gets a row "Ingestion with 8 parallel writers" with
   B3.20's 8-writer D2 figures (D1 in brackets) and its statement, a loss shown as a loss, and its sentence "parallel
   loading may narrow the gap (not measured)" is replaced by the result. Published only after the owner approves.
+
+## Amendment B3.21: GreptimeDB beside MorletDB 0.3.12-alpha.1 (FROZEN before any load of the benchmark set)
+
+Added 2026-11-12 at the owner's request (#422): GreptimeDB, an edge-capable, Parquet-based time-series store, measured
+as B3.18 measured InfluxDB 3 Core. Results stay local until the owner decides on publication. Everything common to B3
+applies.
+
+- **MorletDB:** `ghcr.io/merkhet-io/morletdb:0.3.12-alpha.1` (SQL 0.3.9; digest recorded per result), arm
+  `morletdb-i1-sum` (B3.13's client path with chunk summaries).
+- **GreptimeDB** (`greptime_adapter.py`, `run_greptime.py`): image
+  `greptime/greptimedb@sha256:d8a199398da2b105e6cb3a168f249ecbbc078893abff5ea668bd59e05f1027df` (1.3.0, arm64),
+  `standalone start` with a local data home, **telemetry switched off** (`enable_telemetry = false`; nothing leaves
+  the machine), defaults otherwise, no authentication (local only). One table per group, created before the load:
+  `ts TIMESTAMP(9) TIME INDEX`, `acquisition STRING PRIMARY KEY` (the tag), the group's channels as `DOUBLE`.
+  - Writes: InfluxDB line protocol over one persistent HTTP connection (`/v1/influxdb/api/v2/write`, precision ns),
+    at most 50,000 rows per request, floats as their shortest round-trip decimal (exact); line building is timed as
+    conversion within the load.
+  - D1: `wal.sync_write = true`; D2: the default (`false`). Both settings are read back from `/config` per load.
+  - Reads: SQL over `/v1/sql` with `format=arrow` (exact float64: checked bit for bit with -0.0, the largest double
+    and a subnormal before freezing).
+  - Settled state for storage: `ADMIN flush_table` then `ADMIN compact_table` for every table, then the Parquet bytes
+    polled until unchanged over two polls 10 s apart (at most 30 minutes); the time and whether it settled are
+    recorded. Storage: the whole volume, its Parquet files, and the WAL directory separately.
+  - The most compact lossless layout #422 asks for is GreptimeDB's default: Parquet SSTs with its default
+    compression; no layout options are tuned (none is documented as lossless and more compact).
+- **Correctness:** B3's subset check on the development set before freezing (`results/dev/b321-smoke/`): counts
+  right, all 21 channels of 3 acquisitions bit for bit with exact times. Retries: GreptimeDB accepts an identical
+  retry without a duplicate and **an altered retry replaces the stored value** (last write wins), as InfluxDB and
+  QuestDB do; MorletDB refuses it. Reported as a semantic difference. Every measured load is followed by the full
+  correctness check; a failed check voids that load and is reported.
+- **Runs:** `run_b321.sh`: for r = 1, 2, 3 and D2 then D1, `morletdb-i1-sum`, then GreptimeDB, each on a fresh
+  volume. Storage, reads and analytics on D2 r1 of each arm, reads from a fresh client process
+  (`B3_READS_FRESH_PROCESS=1`). Results in `results/b321-greptimedb/`; machine snapshots before and after every load.
+- **Machine:** B3.16's start and power conditions as B3.18 (1-minute load average below 3, no foreign process above
+  half a core, AC power), waiting at most 3 hours; no load starts after 07:00.
+- **Reported:** every measure for both systems, statements by B3's rule (≥ 10% in all loads for ingestion, at both
+  p50 and p95 for latencies; otherwise no statement), including every loss.
+- **Expectation, written before measuring:** GreptimeDB's line-protocol path is text-bound in the client like
+  InfluxDB's, so MorletDB should ingest several times faster; GreptimeDB's Parquet with columnar compression may be
+  close to or below MorletDB's storage on the slow `mid` and `process` channels and above it on the dense `high`
+  channels; interval reads through SQL and Arrow should be slower than MorletDB's raw reads. Not a hypothesis this
+  stage must confirm.
+
+## Study M1, amendment M1d: GreptimeDB 1.3.0 (FROZEN before any load)
+
+Added 2026-11-13 at the owner's request: GreptimeDB's smallest memory cap, missing from B3.21 and from the website's
+memory row. Rules of Study M1, M1b and M1c (caps 256 MB, 512 MB, 1 GB, 2 GB, 4 GB, swap disabled, 8 CPUs, ascending
+until the first pass; one load per cell; descriptive only, no speed statements).
+
+- **GreptimeDB** exactly as in B3.21 (`run_greptime.py load D2 1`: image 1.3.0 by digest, standalone, its defaults,
+  telemetry off, `wal.sync_write` false). The load includes B3.21's storage step (flush and compaction of every
+  table, then the Parquet bytes polled until stable, at most 30 minutes); compaction is part of normal operation and
+  needs memory, so it stays in the cell.
+- **Pass:** the runner exits 0 within **50 minutes** (as M1c) and writes a result with every count and every read
+  bit-exact, also after the restart before the reads; the container state (OOM kill, running, memory limit) is
+  recorded. Whether the storage step settled is reported per cell.
+- **MorletDB** 0.3.12-alpha.1 (B3.21's release), arm `morletdb-i1-sum`, at 256 MB and at 16 GB, so the multiple
+  compares the two releases of B3.21 measured in one session.
+- **Order:** both systems at 16 GB first, then GreptimeDB at ascending caps until it passes, then MorletDB at 256 MB
+  (`run_m1d.sh`, `results/m1d/`, outcomes in `results/m1d/outcomes.tsv`).
+- **Machine:** M1's start condition; AC power and lid checked before every load. Long-running containers of other
+  work (a langfuse stack, two idle PostgreSQL containers) stay up and are recorded in the machine snapshots. A cell
+  interrupted by the machine is rerun; cells are independent.
+- **Reported:** GreptimeDB's smallest passing cap or "> 4 GB", the multiple of MorletDB's, and at that cap and at
+  16 GB the ingestion speed, R1, R2 and statistics p50 and the working-set peak, as in M1c.
+
+
+**M1d deviation (2026-11-13 08:35, after the runs above, before any further load):** MorletDB 0.3.12-alpha.1 failed at
+256 MB: the load finished, then a server process was killed out of memory during the correctness reads (0.3.9-alpha.1
+passed at 256 MB in M1b and M1c). M1's rule for every other system applies to MorletDB from here: one repeat at 256 MB
+(to tell a one-off from a reproducible failure; both outcomes reported), then ascending caps 512 MB, 1 GB until it
+passes. The failure is filed as an issue whatever the repeat shows.

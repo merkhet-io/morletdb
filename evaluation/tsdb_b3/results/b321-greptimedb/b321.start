@@ -1,0 +1,23 @@
+2026-11-12T23:52:49
+23:52  up 16 days,  8:48, 18 users, load averages: 2.67 9.47 20.86
+ %CPU COMM
+ 15.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 15.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  6.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.7 claude
+  4.1 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+  3.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.5 claude
+gt-probe
+rc-trust
+t312
+iu4-db
+dec-prof
+morletdb-agent-demo-db-1
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1

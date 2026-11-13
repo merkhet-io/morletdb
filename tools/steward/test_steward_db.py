@@ -269,6 +269,51 @@ class Plans(StewardDatabase):
         self.assertEqual(steward.main(["approve", str(pid2), "--dsn", self.as_("bob")]), 2)
         self.assertEqual(self.one("SELECT string_agg(level::text,',') FROM line_episodes"), "0,0")
 
+    def connect_as(self, who):
+        c = psycopg.connect(self.as_(who), autocommit=True)
+        self.addCleanup(c.close)
+        return c
+
+    def test_a_proposal_cannot_carry_approval_or_another_identity(self):          # #439
+        ins = ("INSERT INTO morlet_steward.plans(kind,collection,payload,sha256{extra}) SELECT 'set_level','line',p,"
+               "encode(sha256(convert_to(p::text,'UTF8')),'hex'){vals} FROM (SELECT '{{\"moves\":[]}}'::jsonb p) x")
+        for extra, vals in ((",decision,decided_by,approved_sha256", ",'approved','bob',encode(sha256(convert_to(p::text,'UTF8')),'hex')"),
+                            (",applied_at,applied_by", ",now(),'bob'"),
+                            (",decided_at", ",now()")):
+            with self.subTest(extra=extra), self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                self.conn.execute(ins.format(extra=extra, vals=vals))            # as the steward
+        pid = self.conn.execute(ins.format(extra=",created_by,created_at,valid_until",
+                                           vals=",'bob',now()-interval '1 day',now()+interval '100 years'") +
+                                " RETURNING plan_id").fetchone()[0]
+        row = self.one("SELECT created_by, valid_until < now() + interval '25 hours', created_at > now() - interval '1 minute' "
+                       "FROM morlet_steward.plans WHERE plan_id=%s", (pid,))
+        self.assertEqual(row, "morlet_steward")                                   # the author is who inserted it
+        self.assertTrue(self.one("SELECT valid_until < now() + interval '25 hours' FROM morlet_steward.plans "
+                                 "WHERE plan_id=%s", (pid,)))
+
+    def test_direct_sql_follows_the_same_rules_as_decide_and_apply(self):         # #439
+        pid = self.propose()                                                      # alice is the author
+        alice, bob = self.connect_as("alice"), self.connect_as("bob")
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):            # self-approval
+            alice.execute("UPDATE morlet_steward.plans SET decision='approved' WHERE plan_id=%s", (pid,))
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):            # applying before approval
+            bob.execute("UPDATE morlet_steward.plans SET applied_at=now(), applied_by='bob' WHERE plan_id=%s", (pid,))
+        bob.execute("UPDATE morlet_steward.plans SET decision='approved', decided_by='carol', approved_sha256='x' "
+                    "WHERE plan_id=%s", (pid,))                                   # recorded as bob, with the real hash
+        self.assertEqual(self.one("SELECT decided_by, approved_sha256 = sha256 FROM morlet_steward.plans WHERE plan_id=%s",
+                                  (pid,)), "bob")
+        self.assertTrue(self.one("SELECT approved_sha256 = sha256 FROM morlet_steward.plans WHERE plan_id=%s", (pid,)))
+        for q in ("UPDATE morlet_steward.plans SET decision='rejected' WHERE plan_id=%s",     # decided once
+                  "UPDATE morlet_steward.plans SET collection='other' WHERE plan_id=%s",     # the target is fixed
+                  "UPDATE morlet_steward.plans SET valid_until=now()+interval '1 year' WHERE plan_id=%s",
+                  "DELETE FROM morlet_steward.plans WHERE plan_id=%s"):
+            with self.subTest(q=q), self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                bob.execute(q, (pid,))
+        self.assertEqual(steward.main(["apply", str(pid), "--dsn", self.as_("bob")]), 0)
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):            # applied once
+            bob.execute("UPDATE morlet_steward.plans SET applied_at=NULL, applied_by=NULL WHERE plan_id=%s", (pid,))
+        self.assertEqual(steward.main(["apply", str(pid), "--dsn", self.as_("bob")]), 2)
+
     def test_a_newer_extension_becomes_one_plan_not_an_update(self):
         installed = self.one("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")
         real = S.extension_versions

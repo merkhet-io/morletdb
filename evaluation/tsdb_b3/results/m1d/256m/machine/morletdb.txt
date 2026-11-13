@@ -1,0 +1,13 @@
+2026-11-13T08:27:53
+ 8:27  up 16 days, 17:24, 18 users, load averages: 6.65 4.76 3.56
+ %CPU COMM
+193.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 15.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 14.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 12.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  1.9 claude
+  1.8 claude
+  1.7 bash
+  1.6 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+2026-11-13T08:28:07
+ 8:28  up 16 days, 17:24, 18 users, load averages: 5.86 4.67 3.55

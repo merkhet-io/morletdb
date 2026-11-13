@@ -104,3 +104,56 @@ that honours flushes (an SSD) to tell the two apart.
 
 Other storage than this SD card (unless a failure requires it), other file systems, power cuts during upgrades or
 backups, the steward's plans.
+
+## Amendments
+
+### 2026-11-09: network outage, study continued in a second part
+
+**What happened.** After the restart from the cut at the end of cycle 239 (09:19), the box came back on Wi-Fi but
+could no longer reach the controller's machine: its ARP requests for that machine went unanswered, while the router
+and the observer's laptop stayed reachable. The database ran normally on the box the whole time. For cycles 240-295 the
+controller could neither reach the database nor trigger a reset, so it recorded "database not reachable 10 minutes
+after power-on" 56 times. None of these cycles had a restart (`restarted` false), so none was counted, as the
+procedure prescribes. Their reset was wrongly marked `reset_confirmed`, because the confirmation only tests that the
+database stops answering; the restart count is unaffected because it relies on PostgreSQL's start time.
+
+**State before the outage (`results/p1a.jsonl`, cycles 0-239):** 240 cycles, 239 confirmed restarts, 0 problems.
+Last acknowledged end before the cut of cycle 239: 21,299,200 samples.
+
+**What was done (2026-11-09 evening, before any further cut):** the controller was stopped. Turning Wi-Fi power saving
+off on the box and pinning the controller's hardware address had no effect, and both were undone by the next step: one
+clean `systemctl reboot` of the box (not a cut, not counted), after which the link worked again. Nothing on the box,
+in the database or in the code was changed.
+
+**Second part.** The controller keeps its counters in memory and cannot resume, so it is started again with the frozen
+code and settings, seed 190, writing to `results/p1a-part2.jsonl`, with `--restarts 61 --cycles 104` (the restarts
+missing to 300, within the original limit of 400 cycles). Its first cycle has no acknowledgement baseline of its own;
+instead it must show a stored end of at least 21,299,200 samples, all checks passing. The study's result is the union
+of cycles 0-239 of part 1 and all cycles of part 2. Cycles 240-295 of part 1 are reported as the outage, not as results.
+
+### 2026-11-10: second outage, the box pinned to the router's 2.4 GHz radio, third part
+
+**What happened.** Part 2 (`results/p1a-part2.jsonl`, started 2026-11-09 evening) confirmed restarts in cycles 1-3.
+Cycle 4 had no restart and no problem. From cycle 5 the box again could not reach the controller's machine, and
+cycles 5-42 (38 cycles) recorded "database not reachable 10 minutes after power-on", none with a restart. The
+controller was stopped on 2026-11-10 at 06:17 UTC. As in part 1, these cycles are reported as the outage, not as
+results. Two clean reboots of the box that morning did not restore the link.
+
+**Cause, as far as it can be seen from outside.** The box and the controller's machine use the same router on
+different radios: the box on 5 GHz (channel 52, about −73 dBm), the controller's machine on 2.4 GHz. Traffic between
+the two was dropped in both directions, even with each other's hardware address entered by hand, while both reached
+the router and the observer's laptop (5 GHz). The likeliest explanation is the router forwarding to the box on a
+radio the box was no longer associated with, after a reset.
+
+**What was changed (2026-11-10, before any further cut).** The box's Wi-Fi connection was pinned to the router's
+2.4 GHz access point (NetworkManager: `802-11-wireless.band bg`, `802-11-wireless.bssid` of that access point). The
+setting persists across resets. After one clean `systemctl reboot` of the box (not a cut, not counted) it rejoined on
+2.4 GHz at about −55 dBm and the controller's machine reached it without loss. The box still uses Wi-Fi only, as the
+study requires. Nothing in the database, the box's other configuration or the code was changed. The network path only
+carries the controller's checks and the reset command; it is not under test.
+
+**Third part.** Started again with the frozen code and settings, seed 190, writing to `results/p1a-part3.jsonl`, with
+`--restarts 58 --cycles 61`: the restarts missing to 300, within what is left of the original limit of 400 cycles
+(part 1: 296 cycles, part 2: 43). Its first cycle must show a stored end of at least 26,705,920 samples (the last
+acknowledged end before part 2's outage), all checks passing. The study's result is the union of cycles 0-239 of part
+1, cycles 0-4 of part 2 and all cycles of part 3.

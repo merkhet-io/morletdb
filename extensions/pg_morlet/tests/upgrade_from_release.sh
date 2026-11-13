@@ -149,6 +149,15 @@ SELECT morlet_build_rollups('roll', 'r1');
 DO $$ BEGIN IF (SELECT count(*) FROM roll_rollups) = 0 THEN RAISE EXCEPTION 'no roll-ups built'; END IF; END $$;
 SQL
 fi
+# Episodic memory under row security, set up by the old release (#438): before 0.3.10 the memory tables had no
+# policy; the update must cover them without a manual call.
+if ver_ge "$OLD_VERSION" 0.3.7 && ! ver_ge "$OLD_VERSION" 0.3.10; then psql -d morlet_upgrade_rel_old <<'SQL'
+SELECT morlet_create_stream_collection('public', 'mem');
+SELECT morlet_enable_memory('mem');
+SELECT morlet_enable_row_security('mem');
+SQL
+MEM_RLS=1
+fi
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$OLD_VERSION"
 snapshot morlet_upgrade_rel_old > "$WORK/before.txt"
 test "$(wc -l < "$WORK/before.txt")" -gt 20
@@ -172,7 +181,7 @@ case "$OLD_VERSION" in
   0.3.6) BLOCKER="" ;;   # 0.3.6 -> 0.3.7 only redefines C functions with a new library path: nothing new to block
   0.3.7) BLOCKER="public.morlet_samples_to_ns(numeric, double precision)" ;;
   0.3.8) BLOCKER="" ;;   # 0.3.8 -> 0.3.9 only changes the volatility of two functions: nothing new to block
-  0.3.9) BLOCKER="" ;;   # 0.3.9 -> 0.3.10 only replaces morlet_set_level and morlet_build_envelopes: nothing new to block
+  0.3.9) BLOCKER="" ;;   # 0.3.9 -> 0.3.10 only replaces existing functions: nothing new to block
   0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
 esac
@@ -203,6 +212,15 @@ pins=$(psql -d morlet_upgrade_rel_old -c "SELECT count(*) FILTER (WHERE a.attcom
 read -r pinned total <<<"$pins"
 [ "$total" -gt 0 ] && [ "$pinned" = "$total" ] || { echo "FAIL: $pinned of $total bulk columns pinned to pglz"; exit 1; }
 echo "ok: all $total bulk columns of the existing collections are pinned to pglz"
+if [ -n "${MEM_RLS:-}" ]; then
+  covered=$(psql -d morlet_upgrade_rel_old -c "SELECT count(*) FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+    WHERE p.polname='morlet_follows_recording' AND c.relname IN ('mem_episodes','mem_ledger','mem_kept_summaries','mem_memory_runs')
+      AND c.relrowsecurity")
+  runs=$(psql -d morlet_upgrade_rel_old -c "SELECT count(*) FROM pg_attribute
+    WHERE attrelid='mem_memory_runs'::regclass AND attname='started_by' AND NOT attisdropped")
+  [ "$covered" = 4 ] && [ "$runs" = 1 ] || { echo "FAIL: after the update $covered of 4 memory tables follow row security, started_by: $runs"; exit 1; }
+  echo "ok: the update put the existing collection's 4 memory tables under row security (#438)"
+fi
 
 psql -d morlet_upgrade_rel_old <<'SQL'
 SELECT morlet_enable_acquisitions('line');

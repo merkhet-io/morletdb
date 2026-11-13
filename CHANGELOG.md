@@ -1,7 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.3.13-alpha.1
 
+Security and data-safety release: SQL 0.3.10 (`ALTER EXTENSION pg_morlet UPDATE` from 0.3.9; the update also puts the
+episodic-memory tables of collections already under row security under it), Python SDK 0.1.0a6. The chunk format is
+unchanged; existing collections keep their layout. Steward installations run `steward.py init` again.
+
+- **Steward plans: the approval rules hold at the table (#439).** A trigger on `morlet_steward.plans` enforces the
+  plan workflow for every write, not only through `decide()` and `apply()`: a new plan is undecided and unapplied,
+  with its author, creation time and 24-hour validity set by the database; a plan's kind, target, payload, evidence
+  and validity never change; a decision is made once, by an approver other than the author, before expiry; an
+  application is made once, of an approved, unchanged, unexpired plan; plans are not deleted. Existing installations
+  get it by running `steward.py init` again.
 SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
 - **A representative keeps its samples while it represents an episode (#440).** `morlet_set_level` checked the
@@ -10,6 +20,11 @@ SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_mo
   call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
   refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
   concurrent moves cannot break the rule. Affects all releases with episodic memory.
+- **Episodic memory under row-level security (#438).** `morlet_enable_row_security` now covers the memory tables
+  (episodes, ledger, kept summaries: they follow their recording; memory runs: visible to the role that started
+  them), and `morlet_enable_memory` applies it at once when the collection is already under it. The update to
+  0.3.10 applies it to every collection already under row security, so existing memory tables are covered without
+  a manual step (an update by a role that cannot alter one of them fails and rolls back).
 - **Envelopes build on after compaction removed the first windows (#441).** `morlet_build_envelopes` read the stride
   from the first stored window after 0; once level-1 compaction had removed the early windows, a rebuild with the
   original stride failed (`built with stride 6144, not 2048`), new samples stayed unsearchable and the steward's

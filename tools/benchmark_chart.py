@@ -6,7 +6,9 @@ the same machine, reads from a fresh client process, never from two sessions (ev
 QuestDB's lane from B3.16, the released 0.3.7-alpha.1 reading with compressed transfer as its SDK does
 (summarize_b316.py), CedarDB's from B3.18 against 0.3.9-alpha.1 with its default chunk summaries (interval statistics
 from B3.19 against 0.3.10-alpha.1, memory cap from Study M1b against 0.3.9-alpha.1), InfluxDB 3 Core's from B3.18
-against 0.3.9-alpha.1 (summarize_b318.py; data on disk is its Parquet after the snapshot; memory cap from Study M1c against 0.3.9-alpha.1), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.16's frozen
+against 0.3.9-alpha.1 (summarize_b318.py; data on disk is its Parquet after the snapshot; memory cap from Study M1c against 0.3.9-alpha.1), GreptimeDB's from B3.21
+against 0.3.12-alpha.1 (results/b321-greptimedb/SUMMARY.md; data on disk is its Parquet after flush and compaction,
+ingestion the median of the three D2 loads; memory cap from Study M1d against 0.3.12-alpha.1), the other databases from B3.13 against 0.3.6-alpha.1 (summarize_b313.py), as B3.16's frozen
 website rule says. Speed: the other system's time over MorletDB's (p50),
 or MorletDB's throughput over the other's, for the system's faster layout per measure. Storage (deterministic, from
 each system's stage) is the other system's data on disk over MorletDB's whole database (0.3.6: 161.5 MiB, B3.13;
@@ -28,25 +30,28 @@ START, END = "<!-- benchmark-chart:start -->", "<!-- benchmark-chart:end -->"
 SYSTEMS = [("QuestDB 10.1", "#3987e5"), ("CrateDB 6.4", "#d95926"), ("IoTDB 2.0", "#199e70"), ("TDengine 3.4", "#c98500"), ("TimescaleDB 2.31", "#d55181"),
            ("CedarDB 2026-11", "#f0c8a0"),   # sixth hue: OKLab dE >= 17.9 to the five under normal, protan, deutan and
                                              # tritan vision (the five's own worst pair is 1.6, deutan); 12.6:1 on paper
-           ("InfluxDB 3.12", "#a8b4fc")]     # seventh hue: OKLab dE >= 14.8 to the six under normal, protan, deutan and
+           ("InfluxDB 3.12", "#a8b4fc"),     # seventh hue: OKLab dE >= 14.8 to the six under normal, protan, deutan and
                                              # tritan vision (18.2 under normal); 9.9:1 on paper
+           ("GreptimeDB 1.3", "#a838a0")]    # eighth hue: OKLab dE >= 10.8 to the seven under normal, protan, deutan and
+                                             # tritan vision (a full sRGB search found no colour above 13.3 that keeps
+                                             # 3:1 on paper); 3.5:1 on paper; its own lane and the legend carry identity
 # measure: [(numerator, denominator) per system, in SYSTEMS order] - the measured values, not rounded ratios
 MEASURES = [
     ("Data on disk", "storage", [(1162.7, 163.3, 232.7, "as Parquet zstd 9"), (1785.6, 161.5), (660.0, 161.5),
                                  (566.7, 161.5), (815.4, 161.5), (4155.7, 163.3),
-                                 (406.7, 163.3)], "MiB"),
+                                 (406.7, 163.3), (198.83, 163.37)], "MiB"),
     ("Ingestion, one connection", "ingest", [(13.80, 8.90), (11.60, 0.68), (13.92, 2.69), (14.28, 4.79),
-                                             (13.84, 0.90), (13.39, 2.66), (13.92, 0.93)], "M samples/s"),
+                                             (13.84, 0.90), (13.39, 2.66), (13.92, 0.93), (14.59, 0.78)], "M samples/s"),
     ("Read 4,096 samples", "short", [(0.86, 0.63), (7.16, 0.65), (8.51, 0.73), (3.65, 0.62), (1.55, 0.65), (2.70, 0.62),
-                                     (9.36, 0.62)],
+                                     (9.36, 0.62), (2.22, 0.65)],
      "ms p50"),
     ("Read 128,000 samples", "long", [(8.28, 2.65), (54.33, 7.97), (42.44, 8.91), (48.75, 6.72),
-                                      (40.54, 8.16), (35.78, 5.75), (25.56, 5.89)], "ms p50"),
+                                      (40.54, 8.16), (35.78, 5.75), (25.56, 5.89), (14.23, 6.19)], "ms p50"),
     ("Interval statistics", "stats", [(2.88, 0.53), (5.06, 3.04), (7.49, 2.63), (3.74, 2.52), (10.16, 2.62), (0.519, 0.481),
-                                      (17.53, 0.68)],
+                                      (17.53, 0.68), (2.312, 0.445)],
      "ms p50"),
     # Study M1: smallest passing memory cap in MB (a "> 4 GB" would be drawn at 4096 as a lower bound; none occurred)
-    ("Smallest memory cap", "memory", [(2048, 256), (1024, 256), (2048, 256), (1024, 256), (2048, 256), (1024, 256), (4096, 256)], "cap"),
+    ("Smallest memory cap", "memory", [(2048, 256), (1024, 256), (2048, 256), (1024, 256), (2048, 256), (1024, 256), (4096, 256), (1024, 256)], "cap"),
 ]
 # a dot that is not the released build's base configuration, and a ring with its own pair: (measure, system) -> ...
 DOT_NOTE = {(k, 0): "0.3.7-alpha.1, compressed transfer, B3.16" for k in ("ingest", "short", "long", "stats")}
@@ -54,8 +59,10 @@ DOT_NOTE.update({("memory", i): "0.3.7-alpha.1, Study M1" for i in range(len(SYS
 DOT_NOTE.update({(k, 5): "0.3.9-alpha.1, B3.18" for k in ("storage", "ingest", "short", "long")})
 DOT_NOTE[("stats", 5)] = "0.3.10-alpha.1, B3.19, mean of its 2 valid rounds; no statement (under 10%)"
 DOT_NOTE.update({(k, 6): "0.3.9-alpha.1, B3.18" for k in ("storage", "ingest", "short", "long", "stats")})
+DOT_NOTE.update({(k, 7): "0.3.12-alpha.1, B3.21" for k in ("storage", "ingest", "short", "long", "stats")})
 DOT_NOTE[("memory", 5)] = "0.3.9-alpha.1, Study M1b"
 DOT_NOTE[("memory", 6)] = "0.3.9-alpha.1, Study M1c"
+DOT_NOTE[("memory", 7)] = "0.3.12-alpha.1, Study M1d"
 DOT_NOTE[("storage", 0)] = "0.3.7-alpha.1, B3.15"
 RING = {}
 LO, HI = 0.4, 50.0
