@@ -66,20 +66,20 @@ ordinary context rows (`<collection>_ctx`), readable and searchable with the cor
   database is unavailable). Readiness (`morlet_coverage` of the window size) and search mode (`exact`/`probes`)
   are reported with every result that got as far as a search.
 
-## Proposed defaults standing in for owner decisions
+## Defaults (decided 2026-11-14)
 
-Each is marked "proposed default, owner decision pending" in the code and in `companion.example.toml`.
+The reasons and the comparison with WinCC OA's own archiver are in [docs/winccoa.md](../../docs/winccoa.md#defaults).
 
-| Decision | Proposed default used | Where |
+| Decision | Default | Where |
 |---|---|---|
 | 1. Option (a) and the schema name | `morlet_winccoa` | `Config.schema` |
-| 2. Heartbeat interval | 10 s (health calls the adapter stale after 3 intervals) | `Clock.heartbeat_interval_s` |
+| 2. Heartbeat interval | 10 s (health calls the adapter stale after 3 intervals, 30 s) | `Clock.heartbeat_interval_s` |
 | 3. Clock bound | 50 ms | `Clock.bound_ms` |
-| 3. Opt-in observed-time basis allowed at all | not allowed (`false`) | `Clock.allow_observed_time_basis` |
-| 5. One login role with two group roles | yes: `winccoa_context`, `winccoa_reader` | `Config.context_role`, `reader_role`, `schema.install` |
-| 6. Phase-A limits | the table of decision 6 | `Limits` |
-| Core change 2: may the policy read `<c>_acq_channels` directly | yes (no core change) | `schema._visible` |
-| Values without quality attributes (open question 2) | no context (`bad_quality`), per datapoint opt-in | `Datapoint.accept_missing_quality` |
+| 3. Opt-in observed-time basis | not allowed (`false`) | `Clock.allow_observed_time_basis` |
+| 5. Roles | one login role with two group roles, `winccoa_context` and `winccoa_reader` | `Config.context_role`, `reader_role`, `schema.install` |
+| 6. Limits | the table of decision 6: starting values, to be checked by a load measurement | `Limits` |
+| Core change 2: the policy reads `<c>_acq_channels` directly | yes (no core change) | `schema._visible` |
+| Values without quality attributes | no context (`bad_quality`); a per-datapoint opt-in | `Datapoint.accept_missing_quality` |
 
 Core change 1 (SDK context methods) was not made: the companion calls the documented SQL functions with
 parameterized SQL. No core change was needed for phase A.

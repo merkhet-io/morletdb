@@ -11,7 +11,7 @@ Idempotent: re-run it after adding a collection to the configuration, so that th
 
 The policy reads the documented companion table `<collection>_acq_channels` (docs/context-workflow.md); it does not
 call the internal `morlet_acquisition_has_visible_channel`. Whether the policy may read that table directly is
-core change 2 of docs/winccoa.md (proposed default, owner decision pending).
+core change 2 of docs/winccoa.md: decided 2026-11-14, yes (docs/winccoa.md, section Defaults).
 """
 from __future__ import annotations
 

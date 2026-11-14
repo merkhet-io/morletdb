@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Configuration of the compose deployment (integrations/winccoa/compose.yaml) with the replay machine. Every value not
-# set here is the default of companion.example.toml; values marked there "proposed default, owner decision pending"
-# are not approved values.
+# set here is the default of companion.example.toml (decided 2026-11-14, docs/winccoa.md section Defaults).
 
 [service]
 listen = "127.0.0.1:8770"

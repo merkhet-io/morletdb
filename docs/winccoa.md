@@ -1,7 +1,8 @@
 # WinCC OA integration (design, phase 0)
 
-**Status:** design proposal for [#474](https://github.com/merkhet-io/morletdb/issues/474), awaiting the owner's
-approval. Nothing here is implemented. Until native acceptance in WinCC OA (phase C) has passed, the deliverable is
+**Status:** design for [#474](https://github.com/merkhet-io/morletdb/issues/474), with the defaults decided on
+2026-11-14. Phase A (the companion and the replay machine) is implemented in `integrations/winccoa/`; the adapter
+(phase B) and native acceptance (phase C) are not. Until native acceptance in WinCC OA (phase C) has passed, the deliverable is
 "an experimental WinCC OA adapter, awaiting validation in WinCC OA". It is community-maintained. There is no Siemens
 certification or partnership, and WinCC OA is installed and licensed separately.
 
@@ -39,9 +40,9 @@ The adapter talks only to the companion, and the companion talks only to Postgre
 
 Shipped context rows hold `recording_id, kind, key, value, start_sample, end_sample, batch_id` plus revision fields
 (`streams.sql:2075-2088`). Context matching compares `value` as JSON (`morlet_context_match`, `streams.sql:2565`;
-segment contexts are `jsonb_object_agg(key, value)`, `streams.sql:2343`). The OPC UA reference collector packs
-status and source time into `value` (`examples/collectors/opcua/collector.py:99-104`). If we did the same, two equal
-states with different timestamps would never match. We do not follow that example.
+segment contexts are `jsonb_object_agg(key, value)`, `streams.sql:2343`). The OPC UA reference collector used to pack
+status and source time into `value`, so two equal states with different timestamps never matched; #480 fixed that.
+The companion keeps that metadata out of `value` too.
 
 **Recommendation:** a schema `morlet_winccoa`, owned by the deploying administrator, with the following tables.
 
@@ -87,7 +88,7 @@ will not cover our schema.
   revisit this once phase C has shown which fields matter.
 - **(c) Metadata in `value`.** Rejected, because it breaks matching (see above).
 
-**Owner decision:** approve (a), and name the schema.
+**Decided (2026-11-14):** option (a), schema `morlet_winccoa` (see [Defaults](#defaults)).
 
 ### 2. From observation to sample range
 
@@ -122,7 +123,7 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
   batches are `<batch>@<acq>/<role>` (`streams.sql:2905`), so re-running the same acquisition batch after a channel
   is added should fill only the new channel. This is read from the code and has no test yet; phase A adds one.
 
-**Owner decision:** the heartbeat interval (proposed 10 s), which bounds how much state is lost at a disconnect.
+**Decided (2026-11-14):** 10 s; the adapter is stale after three missed heartbeats, 30 s (see [Defaults](#defaults)).
 
 ### 3. Time alignment
 
@@ -152,7 +153,7 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
   - A change to bad or unknown quality ends the previous state at that change.
   - Using `observed_ns` as the time basis is opt-in per datapoint, with the observed clock named in the derivation.
 
-**Owner decision:** the default bound (50 ms), and whether the opt-in observed-time basis is allowed at all.
+**Decided (2026-11-14):** a 50 ms bound; the observed-time basis is not allowed (see [Defaults](#defaults)).
 
 ### 4. Adapter–companion protocol
 
@@ -203,7 +204,7 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
   the role could see it.
 - **Remote binding.** Not in phase A or B. It needs explicit configuration and TLS in front, and is a later PR.
 
-**Owner decision:** one login role with two group roles, or two separate services.
+**Decided (2026-11-14):** one login role with two group roles (see [Defaults](#defaults)).
 
 ### 6. Limits
 
@@ -225,7 +226,7 @@ These are initial values, to be measured in phase A and then fixed.
 that stores them (`docs/search-contract.md:100-104`). The companion never reports a source as searchable without
 `morlet_coverage`.
 
-**Owner decision:** approve these numbers as phase-A starting values.
+**Decided (2026-11-14):** these are the starting values, to be checked by a load measurement (see [Defaults](#defaults)).
 
 ### 7. Viewer links
 
@@ -241,7 +242,7 @@ The viewer binds to 127.0.0.1 (`viewer.py:320`) and answers only `Host: 127.0.0.
 **Alternative for a later PR:** the viewer behind an authenticating reverse proxy, with an allowed-host list. That
 changes `host_ok` and the viewer's security model, so it is not part of this work.
 
-**Owner decision:** whether to plan that later PR.
+**Decided (2026-11-14):** not planned now; same-host links only.
 
 ### 8. Target version
 
@@ -291,6 +292,40 @@ C. Until then, quality and source time are optional in the protocol, and missing
 
 **Owner decision:** the target patch and OS for phase C, and who provides the machine and licence.
 
+## Defaults
+
+Decided on 2026-11-14. The comparison is WinCC OA's own archiving, which from 3.21 uses TimescaleDB as its standard
+time-series backend through the NextGen Archiver (NGA). The NGA TimescaleDB backend publishes no parameter defaults
+of its own, so the table uses the documented defaults of the NGA and of the RDB archiver. The jobs differ: the
+archiver stores every value change of every archived datapoint, while the companion stores context for a few
+configured datapoints and answers interactive similarity searches. So the companion bounds what an operator's click
+may cost, where the archiver leaves its queries unbounded by default.
+
+| Setting | Companion | WinCC OA archiving, for comparison | Why this value |
+|---|---|---|---|
+| Heartbeat / stale | 10 s, stale after 30 s | RDB reports a lost connection after 15 s (`lostConnectionReportInterval`); NGA waits up to 30 s for pending writes (`timeoutForEventManReadConsistency`) | Same order as WinCC OA's own detection; the open state at a disconnect is lost for at most about 30 s |
+| Clock bound | 50 ms | WinCC OA only warns at start-up when client and server clocks differ by more than its tolerance | Context is placed on samples, so a large offset puts states on the wrong part of a waveform. NTP on a LAN typically keeps hosts within a few milliseconds; 50 ms leaves margin and refuses a host without time sync |
+| Observations per message | 1,000, body 1 MiB | NGA split size, recommended 200–10,000 records | Inside the recommended range; one message is one transaction |
+| Query timeout | `statement_timeout` 10 s, HTTP deadline 15 s, then `running` and polling | RDB `queryTimeout` 0 (unlimited); RDB `writeTimeout` 15 s | An investigation is started from a panel and must not hold a connection without bound |
+| Concurrent investigations | 4 in total, 1 per slot (a new one supersedes the old) | RDB `maxRequestThreads` 4 | The same number of parallel read connections |
+| Results | `top_k` default 10, maximum 50; response 256 KiB, no samples | RDB `maxRequestLineCount` 0 (unlimited) | A ranked list for a panel; samples are read through the viewer or the SDK |
+| Datapoints per adapter | 500 | none documented | Context datapoints are a few per machine; 500 covers a large cell |
+| Missing quality | no context unless the datapoint opts in | NGA archives the `_online` (or `_original`) values of a datapoint element | Missing evidence is recorded as missing, never invented |
+| Roles and schema | `morlet_winccoa`, `winccoa_context` (writes) and `winccoa_reader` (reads) | no comparable setting | Least privilege; the adapter never gets a role that can write waveforms |
+
+Sources: the WinCC OA documentation for the [NGA config entries][nga-cfg], the [NGA buffering][nga-buf] and
+[backend][nga-ext] settings and the [RDB config entries][rdb-cfg]; [WinCC OA selects TimescaleDB][wincc-tsdb]
+(2026-04-23).
+
+**Not measured yet:** the limits are starting values. A load measurement with the replay machine checks them before
+phase C.
+
+[nga-cfg]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/config_entries/sections/NextGenArch.html
+[nga-buf]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/NGA/topics/nga_cfg_bknd_ext_set_membuf_2.html
+[nga-ext]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/NGA/topics/nga_cfg_bknd_ext_sett.html
+[rdb-cfg]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/RDB/RDB-08_2.html
+[wincc-tsdb]: https://www.winccoa.com/news/detail/wincc-oa-selects-timescaledb-as-its-standard-time-series-database.html
+
 ## Core changes
 
 These changes belong to the core, not to the integration. Each is a separate core PR, and each is
@@ -305,15 +340,14 @@ useful without WinCC OA. None is required to start phase A except possibly item 
    them, the companion calls the documented SQL functions with parameterized SQL, which the boundary allows. With
    them, the open-protocol collectors get the same path.
 
-   **Owner decision:** whether to add them before phase A.
+   **Decided (2026-11-14):** not before phase B; phase A works without them.
 2. **A documented acquisition-visibility function** for the companion's row-level-security policy (section 1). This
    could document `morlet_acquisition_has_visible_channel`, or add a function keyed by collection and acquisition.
    It changes the API inventory and possibly SQL, so it may need a SQL version step and upgrade script.
 
-   **Owner decision:** whether the policy may read the documented `<c>_acq_channels` table directly instead.
-3. **OPC UA reference collector.** It packs status and source time into the context `value` and rounds the sample
-   offset (`examples/collectors/opcua/collector.py:95-104`). This is a separate core issue: store those fields
-   outside `value`, and use `morlet_time_to_samples`. It is not needed for this integration.
+   **Decided (2026-11-14):** the policy reads the documented `<c>_acq_channels` table directly; no core change.
+3. **OPC UA reference collector.** Done in #480: the value is the state alone, and the start sample is computed
+   exactly.
 
 [requirements]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/NodeJS/topics/nodejs_requirements.html
 [operating systems]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/WCCOA_Voraussetzungen/sw_req_operating_systems.html
