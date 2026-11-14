@@ -47,14 +47,14 @@ def tearDownModule():
 
 
 class Service(unittest.TestCase):
-    def start(self, **changes):
+    def start(self, connect=None, **changes):
         cfg = ENV.cfg
         lim = {k: v for k, v in changes.items() if k in {f.name for f in dataclasses.fields(cfgmod.Limits)}}
         rest = {k: v for k, v in changes.items() if k not in lim}
         if lim:
             rest["limits"] = dataclasses.replace(cfg.limits, **lim)
         cfg = cfgmod.with_changes(cfg, **rest) if rest else cfg
-        companion = Companion(cfg)
+        companion = Companion(cfg, connect)
         srv = make_server(companion)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         self.addCleanup(lambda: (srv.shutdown(), srv.server_close(), companion.stop()))
@@ -310,6 +310,53 @@ class Unavailable(Service):
             n = w.execute(f"SELECT count(*) FROM {ENV.cfg.schema}.observation WHERE adapter_session = %s",
                           (ad.session,)).fetchone()[0]
         self.assertEqual(n, 2)
+
+
+class Clock(Service):
+    def test_receive_time_is_taken_on_arrival_not_after_connecting(self):
+        # The clock estimate is |received_ns - observed_ns| + rtt_ns/2 + daq bound. Time spent reading the body or
+        # opening a database connection is the companion's latency, not clock offset: a slow connection must not
+        # push a heartbeat over the bound.
+        delay = 0.2
+
+        def slow_connect():
+            time.sleep(delay)
+            return ENV.connect()
+
+        _, ad = self.start(connect=slow_connect)
+        p = history()[0]
+        hb = ad.heartbeat(p.acquisition_id, "rig-1", rtt_ns=1_000_000)
+        rs = ad.flush()
+        self.assertEqual(rs[-1].status, 200)
+        with ENV.writer() as w:
+            received, observed, rtt = w.execute(
+                f"SELECT received_ns, observed_ns, rtt_ns FROM {ENV.cfg.schema}.observation "
+                "WHERE adapter_session = %s AND seq = %s", (ad.session, hb["seq"])).fetchone()
+        self.assertLess(received - observed, int(delay * 1e9))       # taken before the connection delay
+        estimate = abs(received - observed) + rtt // 2 + int(ENV.cfg.clock.daq_bound_ms * 1e6)
+        self.assertLessEqual(estimate, int(ENV.cfg.clock.bound_ms * 1e6))
+
+    def test_clock_endpoint_needs_the_token_and_no_database(self):
+        calls = []
+
+        def connect():
+            calls.append(1)
+            return ENV.connect()
+
+        _, ad = self.start(connect=connect)
+        c = ad.client
+        self.assertEqual(Client(c.host, c.port, "").request("GET", "/v1/clock").status, 401)
+        self.assertEqual(Client(c.host, c.port, os.urandom(32).hex()).request("GET", "/v1/clock").status, 401)
+        before = time.time_ns()
+        r = c.request("GET", "/v1/clock")
+        after = time.time_ns()
+        self.assertEqual(r.status, 200)
+        self.assertEqual(set(r.body), {"schema", "companion_ns"})
+        self.assertEqual(r.body["schema"], SCHEMA)
+        self.assertRegex(r.body["companion_ns"], r"^[0-9]+$")
+        self.assertTrue(before <= int(r.body["companion_ns"]) <= after)
+        self.assertEqual(calls, [])                                   # no database work
+        self.assertEqual(c.request("POST", "/v1/clock", {"schema": SCHEMA}).status, 404)
 
 
 def _drop_role(role):

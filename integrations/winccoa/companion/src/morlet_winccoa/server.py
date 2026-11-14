@@ -6,6 +6,7 @@
     POST /v1/investigations           start (or retry) an investigation; waits up to the HTTP deadline
     GET  /v1/investigations/{id}      its result, or "running", with its correlation state
     GET  /v1/health                   database, clock, acquisitions, open states and derivation
+    GET  /v1/clock                    the companion's clock, without database work (the adapter's heartbeat RTT)
 
 Every request needs `Authorization: Bearer <token>` and a Host header naming the loopback address and port (a
 defence against DNS rebinding). Every body carries "schema": "morlet-winccoa/1"; another schema gets 400 with the
@@ -149,11 +150,13 @@ class Companion:
         return 200, out
 
     # --- observations ------------------------------------------------------------------------------------------
-    def observations(self, body: Any) -> tuple[int, dict]:
+    def observations(self, body: Any, received_ns: int | None = None) -> tuple[int, dict]:
+        """Store a message. `received_ns` is when the request arrived, before its body was read; the clock estimate
+        compares it with a heartbeat's `observed_ns`, so parse and connection time must not count as offset."""
         session, parsed = obs_mod.parse_message(self.cfg, body)
         try:
             with self.connect() as conn:
-                res = obs_mod.store(conn, self.cfg, session, parsed)
+                res = obs_mod.store(conn, self.cfg, session, parsed, received_ns)
         except psycopg.errors.InsufficientPrivilege as exc:
             return 403, {"error": "permission_denied", "detail": exc.diag.message_primary or str(exc)}
         except psycopg.OperationalError:
@@ -230,11 +233,12 @@ class Handler(BaseHTTPRequestHandler):
         return body
 
     def do_POST(self):
+        received = time.time_ns()     # on arrival: reading, parsing and connecting are not clock offset
         if not self._gate():
             return self._drain()
         try:
             if self.path == "/v1/observations":
-                code, out = self.companion.observations(self._body())
+                code, out = self.companion.observations(self._body(), received)
             elif self.path == "/v1/investigations":
                 code, out = self.companion.investigate(self._body())
             else:
@@ -263,7 +267,10 @@ class Handler(BaseHTTPRequestHandler):
         if not self._gate():
             return
         m = _INVESTIGATION.match(self.path)
-        if self.path == "/v1/health":
+        if self.path == "/v1/clock":
+            # No database work: the adapter measures its heartbeat RTT here, so database latency does not count.
+            code, out = 200, {"schema": SCHEMA_VERSION, "companion_ns": str(time.time_ns())}
+        elif self.path == "/v1/health":
             code, out = self.companion.health()
         elif m:
             r = self.companion.investigations.get(m.group(1))

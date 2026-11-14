@@ -213,10 +213,12 @@ class StoreResult:
     highest_seq: int
 
 
-def store(conn: psycopg.Connection, cfg: Config, session: str, observations: list[Observation]) -> StoreResult:
-    """Store a message in one transaction and commit it. Raises Conflict or UnknownAcquisition (rolled back)."""
+def store(conn: psycopg.Connection, cfg: Config, session: str, observations: list[Observation],
+          received_ns: int | None = None) -> StoreResult:
+    """Store a message in one transaction and commit it. Raises Conflict or UnknownAcquisition (rolled back).
+    `received_ns` is when the message arrived (the server takes it before reading the body); it defaults to now."""
     table = sql.Identifier(cfg.schema, "observation")
-    received = time.time_ns()
+    received = time.time_ns() if received_ns is None else int(received_ns)
     stored = dup = 0
     conflicts = []
     try:

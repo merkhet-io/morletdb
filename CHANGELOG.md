@@ -23,6 +23,18 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
     next to one with unbuilt windows; coverage still `gone`) and the pgrx test
     `compacted_windows_are_neither_written_nor_backlog` (levels 4 and 1, a removed tail, new samples after removal,
     the status with and without envelopes). Both failed before the fix.
+- **WinCC OA: the clock estimate no longer counts the companion's own latency.** The estimate
+  `|received_ns − observed_ns| + rtt_ns/2 + daq_bound` took `received_ns` after the body was parsed and a database
+  connection opened, and the adapter's `rtt_ns` was the round trip of `GET /v1/health`, which queries the database
+  for every asset. With a slow database every heartbeat exceeded the 50 ms bound and all changes were derived as
+  `clock_exceeded`.
+  - The companion now takes `received_ns` when the request arrives.
+  - A new `GET /v1/clock` (authenticated, no database work) returns `{"schema", "companion_ns"}`; the adapter
+    measures its heartbeat RTT there. Against an older companion without it (404) the adapter keeps the health RTT
+    and logs this once. Additive within the unreleased protocol `morlet-winccoa/1`.
+  - Tests: the companion's `Clock` tests (a 200 ms database connection, and `/v1/clock` needing the token and no
+    database) and two adapter tests (RTT from `/v1/clock` with a slow health; the 404 fallback). They failed before
+    the fix.
 - **MCP `labels`: the labels of a collection and what they mean (#333).** A read-only tool lists every active label with
   its glossary definition, unit and source, how many intervals, recordings and samples carry it, when it was first
   and last given, and a few examples; `undefined_labels` names the labels nobody defined. Before, an agent saw

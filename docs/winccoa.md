@@ -142,6 +142,10 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
   - The configured bound defaults to **50 ms**: both hosts are expected on NTP or PTP.
   - The adapter sends its clock in every heartbeat, and the companion estimates `|offset| + RTT/2` against its own
     clock.
+  - The companion takes the receive time when a request arrives, before reading its body or connecting to the
+    database. The adapter measures RTT on `GET /v1/clock`, which does no database work, so database latency is not
+    counted as offset. Against a companion without `/v1/clock` (404) it uses the RTT of `GET /v1/health`, which is
+    larger and so errs on the safe side, and logs this once.
   - When the companion is not on the DAQ host, the operator must declare the companion–DAQ bound, because the
     companion cannot measure it.
   - Segments built for WinCC OA keys use `trim_samples = ceil(bound · rate)` (`streams.sql:2317-2318`). Channel
@@ -161,8 +165,9 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
 
 - **Transport.** HTTP/1.1 with JSON on `127.0.0.1:8770`. The adapter is always the client, so the companion never
   connects into WinCC OA.
-- **Endpoints:** `POST /v1/observations`, `POST /v1/investigations`, `GET /v1/investigations/{request_id}` and
-  `GET /v1/health`.
+- **Endpoints:** `POST /v1/observations`, `POST /v1/investigations`, `GET /v1/investigations/{request_id}`,
+  `GET /v1/health` and `GET /v1/clock`. `clock` returns `{"schema", "companion_ns"}` (the companion's clock as a
+  decimal string) without database work; the adapter measures its heartbeat RTT on it.
 - **Versioning.** Every body carries `"schema": "morlet-winccoa/1"`. An unknown major version returns 400, listing
   the supported versions.
 - **Why not WebSocket.** It would add a long-lived connection with its own reconnect and ordering logic on both
@@ -391,7 +396,7 @@ sent as unreadable or replaced by a gap.
   heartbeat, and the initial values (update type `Answer`) as snapshots, which open at the time of the connect,
   never earlier.
 - **Running.** Changes go out in batches; unacknowledged messages are resent identically. Every 10 s: health, a
-  heartbeat with RTT, the status datapoint.
+  heartbeat with the RTT of `GET /v1/clock`, the status datapoint.
 - **Stop.** On the manager's exit (PMON or `exit()`), the registered exit callback disconnects, sends the backlog
   and a last heartbeat, then a gap for each asset, and sets `state` to `stopped`. `process.exit()` skips this; the
   next start's gap then closes the open states at the last heartbeat.

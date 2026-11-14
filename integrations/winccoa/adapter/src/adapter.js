@@ -15,9 +15,10 @@
 // - Gaps: at start (the adapter was not watching before), when the outgoing queue overflows (then snapshots of the
 //   cached current values follow once the queue has drained), at a clean shutdown, and for a datapoint whose
 //   value cannot be represented or whose subscription reports an error.
-// - Heartbeats every `heartbeat_interval_s` (default 10 s), created just before sending, with the RTT of the health
-//   request of the same tick (an upper bound of the observation request's RTT, so the companion's clock estimate
-//   errs on the safe side).
+// - Heartbeats every `heartbeat_interval_s` (default 10 s), created just before sending, with the RTT of a
+//   GET /v1/clock of the same tick (no database work in the companion, so database latency is not counted as clock
+//   offset). A companion without /v1/clock (404) is older: the RTT of the health request is used instead, which is
+//   larger and so errs on the safe side, and this is logged once.
 
 const crypto = require('node:crypto');
 const { Client, TokenFile, TokenError, SCHEMA, fingerprint } = require('./client');
@@ -68,6 +69,7 @@ class Adapter {
     this.stopped = false;
     this.lastAckSeq = -1;
     this.lastRttNs = null;
+    this.clockEndpoint = null;       // GET /v1/clock: null untried, true answered, false absent (older companion)
     this.lastHeartbeat = '';
     this.health = null;
     this.gaps = 0;
@@ -301,6 +303,7 @@ class Adapter {
       if (!this.tokenFile.token || this.degraded.has('token')) this.readToken();
       const h = await this.client.request('GET', '/v1/health');
       this.onHealth(h);
+      await this.measureRtt();
       await this.flush(true);
       await this.writeStatus();
     } catch (e) {
@@ -362,6 +365,20 @@ class Adapter {
         this.pushGap(name, null);
       }
       this.snapshots(name);
+    }
+  }
+
+  /** The heartbeat RTT from GET /v1/clock; without it (absent or failed), the health request's RTT is kept. */
+  async measureRtt() {
+    if (this.lastRttNs === null || this.clockEndpoint === false) return;
+    const c = await this.client.request('GET', '/v1/clock');
+    if (c.status === 200 && c.body && c.body.schema === SCHEMA && c.rttNs !== null) {
+      this.clockEndpoint = true;
+      this.lastRttNs = c.rttNs;
+    } else if (c.status === 404) {
+      this.clockEndpoint = false;
+      this.log.warn('the companion has no GET /v1/clock (an older version); heartbeat RTT is taken from GET '
+        + '/v1/health, which includes its database time');
     }
   }
 
