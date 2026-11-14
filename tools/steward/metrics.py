@@ -19,11 +19,14 @@ The metrics:
 - morlet_collection_*{collection,window_size}: from morlet_collection_status (recordings, raw samples, unbuilt
   samples, probe backlog, bytes).
 - morlet_table_dead_tuples{table}, morlet_table_autovacuum_age_seconds{table}: the collections' tables, from
-  pg_stat_user_tables.
+  pg_stat_user_tables (each table once).
+- morlet_collection_scrape_error{collection}: 1 when the collection's statistics could not be read (timeout,
+  privilege, dropped meanwhile); its last good values are kept until they can be read again.
 """
 from __future__ import annotations
 
 import http.server
+import socket
 import threading
 import time
 
@@ -50,6 +53,7 @@ HELP = {
     "morlet_verify_last_pass_problems": "problems found by the last completed integrity pass of a collection",
     "morlet_table_dead_tuples": "dead tuples of a collection table",
     "morlet_table_autovacuum_age_seconds": "seconds since a collection table was last vacuumed (auto or manual)",
+    "morlet_collection_scrape_error": "1 when a collection's statistics could not be read in the last refresh",
 }
 for _c in STATUS_COLUMNS:
     HELP[f"morlet_collection_{_c}"] = f"{_c.replace('_', ' ')} (morlet_collection_status)"
@@ -93,7 +97,9 @@ class Collector:
     def __init__(self, dsn: str, collection_every_s: float = 60.0, timeout_ms: int = 5000):
         self.dsn, self.collection_every_s, self.timeout_ms = dsn, collection_every_s, timeout_ms
         self.conn: psycopg.Connection | None = None
-        self.cache: tuple[float, list] = (0.0, [])
+        self.cache_at = float("-inf")
+        self.per_collection: dict[str, list] = {}       # last good samples of each collection
+        self.errors: dict[str, bool] = {}
         self.lock = threading.Lock()
 
     def connect(self) -> psycopg.Connection:
@@ -149,46 +155,68 @@ class Collector:
         if conn.execute("SELECT to_regclass('public.morlet_ingest_hold') IS NOT NULL").fetchone()[0]:
             held = conn.execute("SELECT count(*)>0 FROM public.morlet_ingest_hold").fetchone()[0]
             s.append(("morlet_ingest_hold", {}, int(held)))
-        at, cached = self.cache
-        if time.monotonic() - at > self.collection_every_s or not cached:
-            cached = self.collections(conn)
-            self.cache = (time.monotonic(), cached)
-        return s + cached
+        # refreshed at most every collection_every_s, also when a refresh failed or found nothing
+        if time.monotonic() - self.cache_at > self.collection_every_s:
+            self.refresh(conn)
+            self.cache_at = time.monotonic()
+        seen: set[tuple] = set()
+        for c in sorted(self.per_collection):
+            for name, labels, v in self.per_collection[c]:
+                key = (name, tuple(sorted(labels.items())))
+                if key not in seen:                       # a table shared by two names' siblings is reported once
+                    seen.add(key)
+                    s.append((name, labels, v))
+            s.append(("morlet_collection_scrape_error", {"collection": c}, int(self.errors.get(c, False))))
+        return s
 
-    def collections(self, conn: psycopg.Connection) -> list[tuple[str, dict, float]]:
+    def refresh(self, conn: psycopg.Connection) -> None:
+        """Each collection's statistics on its own: an error (timeout, privilege, dropped meanwhile) marks only that
+        collection and keeps its last good values; the scrape itself still succeeds."""
         import store as S
-        s: list[tuple[str, dict, float]] = []
-        for c in S.collections(conn):
-            if not S.privileged(conn, c):
-                continue
+        names = [c for c in S.collections(conn) if S.privileged(conn, c)]
+        for c in list(self.per_collection):
+            if c not in names:
+                del self.per_collection[c]
+                self.errors.pop(c, None)
+        for c in names:
             try:
                 with conn.transaction():
-                    rows = conn.execute(f"SELECT window_size,{','.join(STATUS_COLUMNS)} "
-                                        f"FROM morlet_collection_status(%s::regclass)", (c,)).fetchall()
-            except psycopg.errors.QueryCanceled:
-                continue                                  # over the timeout: left out of this scrape
-            for row in rows:
-                labels = {"collection": c, "window_size": "" if row[0] is None else str(row[0])}
-                for name, v in zip(STATUS_COLUMNS, row[1:]):
-                    if v is not None:
-                        s.append((f"morlet_collection_{name}", labels, v))
-            # the collection's own tables (as the steward grants them), not other collections with the same prefix
-            tables = [t for t in (S.sibling(conn, c, suffix) for suffix in S.READ) if t]
-            schema, name = S.split(c)
-            tables += [r[0] for r in conn.execute(
-                "SELECT format('%%I.%%I',schemaname,tablename) FROM pg_tables WHERE schemaname=%s AND tablename LIKE %s",
-                (schema, name.replace("_", "\\_") + "\\_probes\\_%"))]
-            for table, dead, age_s in conn.execute(
-                    "SELECT format('%%I.%%I',schemaname,relname),n_dead_tup,"
-                    "extract(epoch FROM now()-greatest(last_autovacuum,last_vacuum)) FROM pg_stat_user_tables "
-                    "WHERE relid=ANY(%s::regclass[]) ORDER BY 1", (tables,)):
-                s.append(("morlet_table_dead_tuples", {"table": table}, dead))
-                if age_s is not None:
-                    s.append(("morlet_table_autovacuum_age_seconds", {"table": table}, float(age_s)))
+                    self.per_collection[c] = self.collection(conn, c)
+                self.errors[c] = False
+            except psycopg.OperationalError:
+                raise                                     # the connection itself: morlet_up 0, reconnect
+            except psycopg.Error:
+                self.errors[c] = True
+                self.per_collection.setdefault(c, [])
+
+    def collection(self, conn: psycopg.Connection, c: str) -> list[tuple[str, dict, float]]:
+        import store as S
+        s: list[tuple[str, dict, float]] = []
+        rows = conn.execute(f"SELECT window_size,{','.join(STATUS_COLUMNS)} "
+                            f"FROM morlet_collection_status(%s::regclass)", (c,)).fetchall()
+        for row in rows:
+            labels = {"collection": c, "window_size": "" if row[0] is None else str(row[0])}
+            for name, v in zip(STATUS_COLUMNS, row[1:]):
+                if v is not None:
+                    s.append((f"morlet_collection_{name}", labels, v))
+        # the collection's tables as the steward grants them; a name such as line_ctx can also be another
+        # collection, so the caller reports each table once
+        tables = [t for t in (S.sibling(conn, c, suffix) for suffix in S.READ) if t]
+        schema, name = S.split(c)
+        tables += [r[0] for r in conn.execute(
+            "SELECT format('%%I.%%I',schemaname,tablename) FROM pg_tables WHERE schemaname=%s AND tablename LIKE %s",
+            (schema, name.replace("_", "\\_") + "\\_probes\\_%"))]
+        for table, dead, age_s in conn.execute(
+                "SELECT format('%%I.%%I',schemaname,relname),n_dead_tup,"
+                "extract(epoch FROM now()-greatest(last_autovacuum,last_vacuum)) FROM pg_stat_user_tables "
+                "WHERE relid=ANY(%s::regclass[]) ORDER BY 1", (tables,)):
+            s.append(("morlet_table_dead_tuples", {"table": table}, dead))
+            if age_s is not None:
+                s.append(("morlet_table_autovacuum_age_seconds", {"table": table}, float(age_s)))
         return s
 
 
-def serve(collector: Collector, host: str, port: int) -> None:
+def serve(collector: Collector, host: str, port: int, ready=None) -> None:
     """GET /metrics until interrupted; any other path is 404."""
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802 (http.server API)
@@ -205,5 +233,18 @@ def serve(collector: Collector, host: str, port: int) -> None:
         def log_message(self, *_):
             pass
 
-    with http.server.ThreadingHTTPServer((host, port), Handler) as httpd:
+    class Server(http.server.ThreadingHTTPServer):
+        address_family = socket.AF_INET6 if ":" in host else socket.AF_INET
+
+    with Server((host, port), Handler) as httpd:
+        if ready:
+            ready()                                       # bound: only now say where it serves
         httpd.serve_forever()
+
+
+def parse_listen(listen: str) -> tuple[str, int]:
+    """host:port, [v6]:port or :port (all IPv4 interfaces)."""
+    host, _, port = listen.rpartition(":")
+    if host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
+    return host or "0.0.0.0", int(port)

@@ -133,6 +133,18 @@ class StewardDatabase(unittest.TestCase):
                            "ON CONFLICT (job) DO UPDATE SET failures=3,open=true")
         self.admin.execute("INSERT INTO morlet_steward.status_items(key,level,cause,consequence,action,who) "
                            "VALUES ('t','action_required','c','q','a','w')")
+        # review of #472: a collection named line_acq is also line's "_acq" sibling; its table is reported once.
+        # A collection the role cannot fully read marks only itself, and the scrape still succeeds.
+        self.admin.execute("""SELECT morlet_create_stream_collection('public','line_acq');
+          SELECT morlet_enable_envelopes('line_acq')""")
+        S.grant(self.admin)
+        self.admin.execute("REVOKE SELECT ON line_acq_envelopes FROM morlet_steward")
+        out = M.Collector(dsn_for(DB, "morlet_steward"), collection_every_s=0).scrape()
+        samples = [x for x in out.splitlines() if not x.startswith("#")]
+        self.assertEqual(len(samples), len(set(x.rsplit(" ", 1)[0] for x in samples)), "duplicate samples")
+        self.assertIn("morlet_up 1", samples)
+        self.assertIn('morlet_collection_scrape_error{collection="public.line_acq"} 1', samples)
+        self.assertIn('morlet_collection_scrape_error{collection="public.line"} 0', samples)
         lines = set(M.Collector(dsn_for(DB, "morlet_steward")).scrape().splitlines())
         for want in ("morlet_ingest_hold 1", 'morlet_steward_breaker_open{job="rollups"} 1',
                      'morlet_steward_breaker_failures{job="rollups"} 3', "morlet_steward_state 2",

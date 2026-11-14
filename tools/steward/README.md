@@ -43,7 +43,9 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
   - dead tuples and vacuum age of each collection's tables.
 
   Per-collection statistics are cached for `--collection-every` seconds (default 60), and every query has a
-  5-second timeout. Run it as `morlet_steward`. When the database cannot be reached, it reports only
+  5-second timeout. A collection whose statistics cannot be read is marked with
+  `morlet_collection_scrape_error` and keeps its last values; the scrape still succeeds. `--listen` takes
+  `host:port` or `[v6]:port`. Run it as `morlet_steward`. When the database cannot be reached, it reports only
   `morlet_up 0`.
 - **Not yet:** dropping derived data under disk pressure by policy, automatic retention proposals, and the multi-week
   soak on the Raspberry Pi, which starts with the home plug study D1.

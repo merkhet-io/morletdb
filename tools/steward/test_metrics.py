@@ -22,6 +22,11 @@ class TextFormat(unittest.TestCase):
         self.assertEqual([M.format_value(v) for v in (0, 3, 2.5, 1e20, float("nan"), float("inf"))],
                          ["0", "3", "2.5", "1e+20", "NaN", "+Inf"])
 
+    def test_listen_addresses(self):
+        self.assertEqual(M.parse_listen("127.0.0.1:9188"), ("127.0.0.1", 9188))
+        self.assertEqual(M.parse_listen("[::1]:9188"), ("::1", 9188))
+        self.assertEqual(M.parse_listen(":9188"), ("0.0.0.0", 9188))
+
     def test_an_unreachable_database_reports_only_morlet_up_0(self):
         c = M.Collector("host=127.0.0.1 port=1 dbname=none connect_timeout=1")
         self.assertEqual(c.scrape(), "# HELP morlet_up 1 when the last scrape reached the database\n"

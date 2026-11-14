@@ -283,10 +283,10 @@ def main(argv=None) -> int:
         return cmd_run(a, cfg)
     if a.command == "metrics":
         import metrics as M
-        host, _, port = a.listen.rpartition(":")
-        print(f"serving http://{a.listen}/metrics", flush=True)
+        host, port = M.parse_listen(a.listen)
+        collector = M.Collector(a.dsn, a.collection_every)
         try:
-            M.serve(M.Collector(a.dsn, a.collection_every), host or "127.0.0.1", int(port))
+            M.serve(collector, host, port, ready=lambda: print(f"serving http://{a.listen}/metrics", flush=True))
         except KeyboardInterrupt:
             pass
         return 0
