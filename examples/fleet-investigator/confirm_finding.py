@@ -30,8 +30,12 @@ import queries  # noqa: E402
 
 LABEL = "finding:resembles"
 EXISTING = "MATCH ()-[r:RESEMBLES {finding_id: $id}]->() RETURN properties(r)"
+# The edge's properties, written in the CREATE itself: `SET r = props` would need UPDATE on the edge table (AGE 1.7.0
+# checks it, apache/age#2309), and the engineer has INSERT only, so a recorded finding cannot be changed afterwards.
+EDGE_KEYS = ("finding_id", "asset", "equipment_id", "failure", "mode", "query", "evidence", "site", "label_id",
+             "episode_id", "confirmed_by", "db_role", "confirmed_at")
 CREATE = ("UNWIND [$props] AS props MATCH (a:PhysicalAsset {id: $asset}), (f:Failure {id: $failure}) "
-          "CREATE (a)-[r:RESEMBLES]->(f) SET r = props RETURN id(r)")
+          "CREATE (a)-[r:RESEMBLES {" + ", ".join(f"{k}: props.{k}" for k in EDGE_KEYS) + "}]->(f) RETURN id(r)")
 ASSET_SITE = "MATCH (a:PhysicalAsset {id: $asset}) RETURN a.site"
 
 
@@ -97,6 +101,8 @@ def write_finding(conn, finding, confirmed_by, fail_before_commit=False):
                  "db_role": conn.execute("SELECT current_user").fetchone()[0],
                  "confirmed_at": conn.execute("SELECT to_char(now() AT TIME ZONE 'UTC', "
                                               "'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')").fetchone()[0]}
+        if set(props) != set(EDGE_KEYS):
+            raise ValueError(f"finding keys {sorted(props)} differ from the edge's {sorted(EDGE_KEYS)}")
         created = fleetdb.cypher(conn, CREATE, {"props": props, "asset": finding["asset"],
                                                 "failure": finding["failure"]})
         if len(created) != 1:
