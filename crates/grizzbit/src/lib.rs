@@ -47,6 +47,8 @@
 use std::fmt;
 
 mod g21;
+#[cfg(test)]
+mod spike_f32;
 #[doc(hidden)]
 pub use g21::layout as grizzbit21_layout;
 #[doc(hidden)]
