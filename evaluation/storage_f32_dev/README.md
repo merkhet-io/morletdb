@@ -1,6 +1,6 @@
 # Float32 chunk coding: development spike (#326)
 
-**DEVELOPMENT ONLY. Not a study, not a statement; local and unpublished (IU4 data, see B7).**
+**DEVELOPMENT ONLY. Not a study, not a statement. The study is [B8](../storage_b8/RESULTS.md).**
 
 Run 2026-11-14 on a development set disjoint from both B7 sets: IU4 runs[5::40] sorted by (machine, tool, run),
 161 runs (force 53.9 M samples, ctrl 2.16 M). B7 read runs[::20] and runs[10::20]; runs[15::20] stay unread for a
