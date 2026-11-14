@@ -351,6 +351,29 @@ class Contract(unittest.TestCase):
         self.assertEqual((one.sample_count, one.min, one.max, one.mean, one.rms),
                          (whole.sample_count, whole.min, whole.max, whole.mean, whole.rms))
 
+    def test_exclude_the_source_recording_when_supported(self):
+        rate = 8000
+        cyc = events(60_000, [8192, 24_576, 40_960], rate, seed=4)     # the same event in three cycles
+        other = events(60_000, [20_000], rate, seed=5)
+        self.db.ingest(self.coll, "cyclic", cyc, sample_rate_hz=rate, channel="accel", unit="g")
+        self.db.ingest(self.coll, "other", other, sample_rate_hz=rate, channel="accel", unit="g")
+        self.conn.commit()
+        try:
+            res = self.db.search(self.coll, "cyclic", 8192, top_k=5, exclude="recording")
+        except morletdb.UnsupportedError:
+            self.skipTest("server without search exclusion (SQL 0.3.11)")
+        self.assertTrue(res.matches)
+        self.assertTrue(all(m.ref.recording_id == "other" for m in res.matches))
+        self.assertTrue(all(m.evidence is None for m in res.matches))
+        window = self.db.search(self.coll, "cyclic", 8192, top_k=5, exclude="window", evidence=True)
+        plain = self.db.search(self.coll, "cyclic", 8192, top_k=5, evidence=True)
+        self.assertEqual([(m.ref, m.distance) for m in window.matches], [(m.ref, m.distance) for m in plain.matches])
+        self.assertEqual(window.matches[0].ref.recording_id, "cyclic")    # the next cycle
+        with self.assertRaises(InvalidInputError):
+            self.db.search(self.coll, "cyclic", 8192, exclude="part")
+        with self.assertRaises(InvalidInputError):
+            self.db.search(self.coll, "cyclic", 8192, exclude="recording", exclude_source=False)
+
     def test_time_filters_and_evidence_when_supported(self):
         t0 = datetime(2026, 3, 1, tzinfo=timezone.utc)
         x = events(40000, [3000, 15000, 30000], 8000)

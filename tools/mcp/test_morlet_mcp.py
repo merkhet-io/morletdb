@@ -382,7 +382,10 @@ class SeriesProductionOnADatabase(unittest.TestCase):
         self.assertTrue(occ["hits"])
         self.assertTrue(all(part(h["start_sample"]) != 2 for h in occ["hits"]))
         self.assertEqual({part(h["start_sample"]) for h in occ["hits"]}, {1, 3})      # the other parts remain
-        self.assertGreater(occ["query"]["excluded_hits"], 0)
+        if "excluded_by" in occ["query"]:                # SQL 0.3.11: left out by the search itself (#384)
+            self.assertEqual(len(occ["hits"]), 5)
+        else:
+            self.assertGreater(occ["query"]["excluded_hits"], 0)
         rec = m.search_similar("public.mcp_cyc", "line", *q, top_k=5, evidence=False, exclude="recording")
         self.assertEqual(rec["hits"], [])                # "recording" would drop the other parts too
 
@@ -513,9 +516,13 @@ class FieldFindingsOnADatabase(unittest.TestCase):
         r = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20, exclude="recording")
         self.assertTrue(r["hits"])
         self.assertTrue(all(h["recording_id"] != "p1.x" for h in r["hits"]))
-        self.assertEqual(r["query"]["excluded_hits"],
-                         sum(h["recording_id"] == "p1.x" for h in
-                             m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=100)["hits"]))
+        if "excluded_by" in r["query"]:                  # SQL 0.3.11: left out by the search itself (#384)
+            self.assertGreaterEqual(len(r["hits"]), min(20, sum(h["recording_id"] != "p1.x" for h in m.search_similar(
+                "public.mcp_parts", "p1.x", 512, 1024, top_k=100)["hits"])))
+        else:
+            self.assertEqual(r["query"]["excluded_hits"],
+                             sum(h["recording_id"] == "p1.x" for h in
+                                 m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=100)["hits"]))
         r = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20, exclude="metadata:part")
         self.assertTrue(r["hits"])
         self.assertTrue(all(not h["recording_id"].startswith("p1.") for h in r["hits"]))

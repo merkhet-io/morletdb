@@ -11,6 +11,15 @@ SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_m
   without them for the duration deviation. On a 320-segment history `morlet_compare_summary` took 23 ms instead of
   35 ms (p50), with identical results on every segment. The decision state (`tools/mcp/decision.py`) already
   compares in Python without the spreads; it calls `morlet_compare_summary` only for the summary quantile.
+- **Search can leave out the same part or the whole source recording (#384).** On cyclic production
+  `morlet_search_similar` returned the next cycles of the query's own recording, because it leaves out only the
+  windows overlapping the query. The new, experimental `morlet_search_similar_excluding` returns the same matches
+  with evidence as `morlet_search_similar_evidence` and takes `exclude`: `'window'` (the default, identical results),
+  `'occurrence'` (every current context segment whose occurrence, e.g. the part, equals the query's, in any
+  recording, as the history comparison excludes the same occurrence), `'recording'` or `'none'`. Probe search takes
+  the exclusion into its index scans, and leaves recordings excluded whole out of the scan. The MCP tool
+  `search_similar` and the Python SDK's `search_similar` take `exclude`. The stable search functions keep their
+  signatures, statements and results; their bodies moved into internal functions that accept excluded ranges.
 - **The image sizes `shared_buffers` to small memory limits (#466).** Under a container memory limit below 512 MB
   the image starts PostgreSQL with `shared_buffers` at a quarter of the limit (at least 16 MB) instead of the
   default 128 MB, unless `shared_buffers` is set on the command line, with `ALTER SYSTEM` or in `postgresql.conf`;
