@@ -7,7 +7,7 @@
 # `ALTER DATABASE/ROLE ... SET`, `-c` (here through PGOPTIONS). Each new psql session below starts without the
 # library, so the setting arrives that way. An invalid value must make the first append fail with a message naming
 # it and nothing may be stored; once the library is loaded, `SET` refuses an invalid value at once. Valid values
-# work through every route, and unset means grizzbit1.
+# work through every route, and unset means grizzbit1. The same holds for morlet.float32_chunks.
 # It drops and recreates the database morlet_chunk_format and the role morlet_cf_role.
 set -euo pipefail
 . "$(dirname "$0")/pg_env.sh"  # PG_CONFIG, PG_MAJOR, PORT, BIN
@@ -21,6 +21,9 @@ CREATE EXTENSION pg_morlet;
 SELECT morlet_create_stream_collection('public','cf');
 SELECT morlet_start_recording('cf','r',4096,'x','g');
 SQL
+# The samples are integers, so float32 values: with morlet.float32_chunks on (the default) a version-6 chunk would
+# replace version 2 wherever it is smaller. This test is about morlet.chunk_format, so it pins float32 codings off.
+psql -d postgres -c "ALTER DATABASE $DB SET morlet.float32_chunks = off"
 
 fail=0
 expect() {  # expect NAME GOT EXPECTED
@@ -76,6 +79,14 @@ expect "verify_appends, -c, invalid: the append fails" "$(PGOPTIONS='-c morlet.v
 psql -d postgres -c "ALTER DATABASE $DB SET morlet.verify_appends = 'yes please'"
 expect "verify_appends, ALTER DATABASE, invalid: the append fails" "$(append)" "$VBAD"
 psql -d postgres -c "ALTER DATABASE $DB RESET morlet.verify_appends"
+# morlet.float32_chunks is not registered either: the same rule.
+FBAD='invalid value for parameter "morlet.float32_chunks": "of"; available values: on, off'
+expect "float32_chunks, SET before the library loads, invalid: the append fails" \
+  "$(append -c "SET morlet.float32_chunks = 'of'")" "$FBAD"
+expect "float32_chunks, -c, invalid: the append fails" "$(PGOPTIONS='-c morlet.float32_chunks=of' append)" "$FBAD"
+psql -d postgres -c "ALTER DATABASE $DB SET morlet.float32_chunks = 'of'"
+expect "float32_chunks, ALTER DATABASE, invalid: the append fails" "$(append)" "$FBAD"
+psql -d postgres -c "ALTER DATABASE $DB SET morlet.float32_chunks = off"
 # Before the first morlet_* call, current_setting shows only what was set (NULL when unset, which means the
 # default); SHOW after a morlet_* call shows morlet.chunk_format as pg_morlet sees it.
 expect "current_setting before loading, unset" \
