@@ -349,3 +349,111 @@ fn spike_f32_signmag() {
         }
     }
 }
+
+/// The real entry point on the development set: sizes per format, kinds, encode and decode speed.
+#[test]
+#[ignore]
+fn dev_version6() {
+    let dir = std::path::PathBuf::from(std::env::var("SPIKE_DIR").expect("SPIKE_DIR"));
+    for g in ["force", "ctrl"] {
+        let raw = std::fs::read(dir.join(format!("{g}.f32"))).unwrap();
+        let lens: Vec<usize> = std::fs::read_to_string(dir.join(format!("{g}.len")))
+            .unwrap()
+            .lines()
+            .map(|l| l.parse().unwrap())
+            .collect();
+        let all: Vec<f64> = raw
+            .chunks_exact(4)
+            .map(|b| f32::from_le_bytes(b.try_into().unwrap()) as f64)
+            .collect();
+        let mut chunks: Vec<&[f64]> = Vec::new();
+        let mut off = 0;
+        for &len in &lens {
+            chunks.extend(all[off..off + len].chunks(4096));
+            off += len;
+        }
+        let n: usize = chunks.iter().map(|c| c.len()).sum();
+        for format in [Format::Grizzbit1, Format::Grizzbit21] {
+            let t = Instant::now();
+            let enc: Vec<Vec<u8>> = chunks
+                .iter()
+                .map(|c| encode_with_float32(c, 1.0, format).unwrap())
+                .collect();
+            let te = t.elapsed().as_secs_f64();
+            let t = Instant::now();
+            let mut ok = true;
+            for (e, c) in enc.iter().zip(&chunks) {
+                let d = decode(e).unwrap();
+                ok &= d
+                    .iter()
+                    .zip(c.iter())
+                    .all(|(a, b)| a.to_bits() == b.to_bits());
+            }
+            let td = t.elapsed().as_secs_f64();
+            let bytes: usize = enc.iter().map(|e| e.len()).sum();
+            let v6g = enc.iter().filter(|e| e[0] == 6 && e[1] == 1).count();
+            let v6s = enc.iter().filter(|e| e[0] == 6 && e[1] == 3).count();
+            println!("{g} {format:?}+6: {:.3} B/sample; v6 grid {v6g}, v6 sign/mag {v6s} of {}; encode {:.1} M/s, decode {:.1} M/s; exact {ok}",
+                     bytes as f64 / n as f64, enc.len(), n as f64 / te / 1e6, n as f64 / td / 1e6);
+        }
+    }
+}
+
+#[test]
+#[ignore]
+fn dev_parts() {
+    let dir = std::path::PathBuf::from(std::env::var("SPIKE_DIR").expect("SPIKE_DIR"));
+    for g in ["force", "ctrl"] {
+        let raw = std::fs::read(dir.join(format!("{g}.f32"))).unwrap();
+        let lens: Vec<usize> = std::fs::read_to_string(dir.join(format!("{g}.len")))
+            .unwrap()
+            .lines()
+            .map(|l| l.parse().unwrap())
+            .collect();
+        let all: Vec<f64> = raw
+            .chunks_exact(4)
+            .map(|b| f32::from_le_bytes(b.try_into().unwrap()) as f64)
+            .collect();
+        let mut chunks: Vec<&[f64]> = Vec::new();
+        let mut off = 0;
+        for &len in &lens {
+            chunks.extend(all[off..off + len].chunks(4096));
+            off += len;
+        }
+        let n: usize = chunks
+            .iter()
+            .map(|c| c.len())
+            .sum::<usize>()
+            .min(20_000_000);
+        let chunks: Vec<&[f64]> = {
+            let mut s = 0;
+            chunks
+                .into_iter()
+                .take_while(|c| {
+                    s += c.len();
+                    s <= n
+                })
+                .collect()
+        };
+        let n: usize = chunks.iter().map(|c| c.len()).sum();
+        let time = |name: &str, f: &dyn Fn(&[f64])| {
+            let t = Instant::now();
+            for c in &chunks {
+                f(c);
+            }
+            println!(
+                "{g} {name}: {:.1} M/s",
+                n as f64 / t.elapsed().as_secs_f64() / 1e6
+            );
+        };
+        time("G1 encode", &|c| {
+            std::hint::black_box(encode(c, 1.0).unwrap());
+        });
+        time("v6 signmag", &|c| {
+            std::hint::black_box(crate::f32k::encode_signmag_pub(c));
+        });
+        time("v6 grid", &|c| {
+            std::hint::black_box(crate::f32k::encode_grid_pub(c));
+        });
+    }
+}
