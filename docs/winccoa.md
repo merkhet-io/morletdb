@@ -6,8 +6,8 @@ approval. Nothing here is implemented. Until native acceptance in WinCC OA (phas
 below). There is no Siemens certification or partnership, and WinCC OA is installed and licensed separately.
 
 **Licence and code boundary.** The integration is part of **MorletDB Enterprise**, not the Apache-2.0 core. This
-follows the rules in `docs/licensing.md` and `enterprise/README.md` on branch `docs/license-split` (PR #473, open,
-not yet on main).
+follows the rules in [licensing.md](licensing.md) and [enterprise/README.md](../enterprise/README.md) (in force since
+#473).
 
 - **Where the code lives.** The adapter and the companion live under `enterprise/winccoa/adapter/` and
   `enterprise/winccoa/companion/`.
@@ -22,13 +22,11 @@ not yet on main).
 - **Core changes.** Anything the design needs in the core is listed under "Core changes (Apache 2.0)" at the end.
   Those changes are made in the core under Apache 2.0, as separate PRs.
 
-**Blockers for phase A (owner actions):**
+**Blocker for phase A (owner action):** the enterprise licence text is version 0.1. A lawyer must review it before
+the first file is placed under it.
 
-1. The enterprise licence text is version 0.1. A lawyer must review it before the first file is placed under it.
-2. The licence split (PR #473) must be merged into main. Until then, `docs/licensing.md` says every file is under
-   Apache 2.0, and `enterprise/` and `tools/license_check.py` do not exist on main.
-
-Checked against main `9ea29d3` (SQL 0.3.11 on main, unreleased; latest release image `0.3.13-alpha.1`). Every SQL
+Checked against main `9ea29d3`; the SQL, SDK, viewer and collectors are unchanged in release 0.3.14-alpha.1 (SQL
+0.3.11). Every SQL
 reference below was read in `extensions/pg_morlet/sql/streams.sql` (cited as `streams.sql:line`). `context-model.md`
 is partly a proposal and is not relied on.
 
