@@ -131,3 +131,38 @@ If any criterion fails, version 6 does not ship as the default; the result is re
 
 Appended here before the benchmark run: build commit, gate results and fuzz hours, development figures, the
 setting's name, and every development decision. If a gate fails, nothing is benchmarked.
+
+### 7.1 Record (2026-11-14, before any benchmark input was read)
+
+**Build commit:** `4ed5e90` on `bench/b8-float32`. Server image `morletdb:b8-4ed5e90`,
+`sha256:7f074a1fa3b0ade75ad99633b4fe6df34608f9b19aa31b898e6b5a7ca5d2a057`.
+**Setting:** `morlet.float32_chunks` (`on`/`off`, default `on`).
+
+**Gates (section 6), all passed on `4ed5e90`:**
+- property tests (256 cases), malformed-chunk tests, 7 `v6-*` golden chunks and the float32 equivalence file
+  (`testdata/grizzbit/float32-equivalence.bin`, 493,900 bytes), both written in this build;
+- Kani: `ord32_is_a_bijection`, `sign_runs_are_checked`;
+- fuzz `decode_v6`: 190 M runs in 7,261 s, no finding (decoder unchanged since);
+  fuzz `roundtrip` (float32 included): 2,770,498 runs in 7,261 s on `4ed5e90`, no finding;
+- pg_morlet on PostgreSQL 17: 188 of 188; workspace tests; Python SDK 38 of 38, none skipped, on the image above;
+- S6: identical bytes on macOS arm64, Linux arm64 and Linux amd64 (`results/dev/platforms_4ed5e90.txt`).
+  Run locally in Docker (`rust:1.99.0-bookworm`, network off), not in CI, because the branch is not pushed.
+
+**Development figures (runs[5::40], 47 runs; `results/dev/`), bytes per sample:**
+
+| input | G1 | G1+6 | G21+6 | table (G1+6) | pcodec 1.0.4 |
+|---|---:|---:|---:|---:|---:|
+| force (53.9 M samples) | 6.584 | 3.022 | 3.018 | 3.363 | 2.874 |
+| ctrl (2.16 M samples) | 6.542 | 2.287 | 2.195 | 3.042 | 1.607 |
+
+All exact; no chunk larger with version 6. Speed (quiet, 1 thread, best of 3), G1+6 encode/decode M samples/s:
+force 22.59 / 89.58, ctrl 12.64 / 67.17. Storage and table figures were measured on `9407a06`; the later commits
+changed only encoder speed, and the stored bytes are identical (checked by the hash and equivalence tests).
+
+**Development decisions:**
+- magnitude and correction streams without LPC (corrections as side streams), for encode speed on ctrl;
+- the grid coding is tried only when 4 · distinct ≤ 3 · samples;
+- for Grizzbit 1, a provable lower bound on the float-kind length skips coding it when version 6 is already smaller;
+- one shared unstable sort of the distinct values for grid detection and version 6.
+
+Nothing here was tuned on runs[15::20] or B6's benchmark inputs.
