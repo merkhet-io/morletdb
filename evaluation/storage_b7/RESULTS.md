@@ -1,6 +1,7 @@
 # Study B7: MorletDB 0.3.13-alpha.1 vs ModelarDB-RS (1b90706): results
 
-**Unpublished draft: not to be pushed or cited until the owner approves.**
+Published 2026-11-14 together with study [B8](../storage_b8/RESULTS.md), which follows up MorletDB's main loss here
+(float32 data stored above float32 size, #326).
 
 Run 2026-11-13 22:54 to 2026-11-14 02:04 under the protocol frozen in `dd756e6` (revision of 2026-11-13, written
 before any load of the benchmark set). Runner: `run_all.sh` (`18f2cb6`). Stress vector once, then three rounds. All

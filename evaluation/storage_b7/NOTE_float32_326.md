@@ -1,4 +1,6 @@
-# Note for #326 (outside the B7 protocol; local, unpublished)
+# Note for #326 (outside the B7 protocol)
+
+Followed up by study [B8](../storage_b8/RESULTS.md) (chunk format version 6), which this estimate motivated.
 
 B7 found that MorletDB stores float32 input above float32 size on the force and ctrl channels. It upcasts to
 float64, and Grizzbit finds no value grid there. A quick estimate of what a float32-aware chunk path could reach:
