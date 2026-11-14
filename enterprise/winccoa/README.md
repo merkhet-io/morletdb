@@ -39,7 +39,7 @@ ordinary context rows (`<collection>_ctx`), readable and searchable with the cor
   `morlet_add_acquisition_context` (the server maps time to samples, ceil rule, exact `numeric`; the companion
   never rounds). Batch IDs are `winccoa:<acquisition>:<key>:<sha256 of [t_start, t_end, value_type, value_text]>`.
   Reasons for no context: `open`, `outside_recording`, `untimed`, `bad_quality`, `clock_exceeded`,
-  `inconsistent_start`, plus `unchanged`, `out_of_order` and `unrepresentable` (see deviations).
+  `inconsistent_start`, plus `unchanged`, `out_of_order`, `unrepresentable` and `rejected` (see deviations).
 - **Protocol** `morlet-winccoa/1` (decision 4) on `127.0.0.1:8770`: `POST /v1/observations`,
   `POST /v1/investigations`, `GET /v1/investigations/{request_id}`, `GET /v1/health`.
 - **Authentication** (decision 5): bearer token from a 0600 file (one or two tokens), `hmac.compare_digest`,
@@ -93,8 +93,11 @@ parameterized SQL. No core change was needed for phase A.
   needs a marker, and acquisitions are immutable. The writer inserts the end in acquisition time
   (`observations.mark_finished`); it is idempotent and refuses a different end.
 - **Additional reasons:** `unchanged` (a repeated value, including an identical snapshot, is not a boundary),
-  `out_of_order` (an observation earlier than the state it would end; stored, not applied) and `unrepresentable`
-  (NaN or an infinity has no JSON form; kept as text, ends the previous state). `inconsistent_start` is stored as
+  `out_of_order` (an observation dated before the key's latest boundary; stored, not applied, so derived intervals
+  of one key never overlap), `unrepresentable` (NaN or an infinity has no JSON form; kept as text, ends the
+  previous state) and `rejected` (the server refused the batch, for example because another writer stored
+  overlapping context for the same key; the server's message is kept in `detail`, and the other batches are still
+  added). `inconsistent_start` is stored as
   a reason, as the design reports it.
 - **Gap end:** the open state ends at the last committed *contact* of the acquisition before the gap: a heartbeat
   or any other observation (the design says the last heartbeat; a later committed observation is a later proof
@@ -152,3 +155,6 @@ The companion and the replay use host networking, so the companion listens on th
 - The synthetic machine shows that the path works and that repeated patterns are found; it says nothing about real
   machines. Labels of matches are annotations of earlier intervals, not a diagnosis.
 - The limits are starting values; they have not been measured under load yet.
+- Derivation recomputes an acquisition from all of its observations on every pass while it has an open state (every
+  `derive_interval_s`, 5 s); an acquisition the writer never finishes stays in that loop. Cost per pass grows with
+  its observations (about 8,640 heartbeats a day at 10 s); not measured yet.

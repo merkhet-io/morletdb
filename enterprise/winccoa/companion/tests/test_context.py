@@ -4,6 +4,7 @@
 quality and value preservation, idempotency, conflicts, out-of-range times, gaps, the clock bound, late channels
 and restarts."""
 import dataclasses
+import json
 import time
 import unittest
 import uuid
@@ -225,6 +226,52 @@ class Values(Base):
             st = w.execute(f"SELECT source_status FROM {self.env.cfg.schema}.observation WHERE kind = 'change' "
                            "ORDER BY seq").fetchall()
         self.assertEqual([r[0] for r in st], ["ok", "missing", "unreadable", "ok"])
+
+
+class Boundaries(Base):
+    def test_a_value_dated_before_a_closed_boundary_is_out_of_order(self):
+        plan, origin = self.acquisition()
+        a = plan.acquisition_id
+        self.adapter.heartbeat(a, "rig-1")
+        self.adapter.change(a, SPEED, "1800", "int", origin, quality=GOOD)
+        self.adapter.change(a, SPEED, "1200", "int", origin + 5_000_000_000, quality={"good": False})
+        self.adapter.change(a, SPEED, "1500", "int", origin + 3_000_000_000, quality=GOOD)      # earlier than 5 s
+        self.adapter.change(a, SPEED, "1500", "int", origin + 7_000_000_000, quality=GOOD)
+        self.send()
+        self.finish(plan)
+        s = self.env.derive(a)
+        self.assertEqual([r[2] for r in self.derivations(plan)], [None, "bad_quality", "out_of_order", None])
+        self.assertEqual(s.mismatches, 0)
+        self.assertEqual([r[3:] for r in self.ctx(plan) if r[0].endswith("-vib")], [(0, 40_960), (57_344, 131_072)])
+
+    def test_a_batch_the_server_refuses_is_recorded_and_others_still_added(self):
+        plan, origin = self.acquisition()
+        a = plan.acquisition_id
+        with self.env.writer() as w:        # another writer already stored speed for [4 s, 6 s) on vib
+            w.execute("SELECT morlet_add_context(%s::regclass, 'other-writer', %s)",
+                      (self.env.collection, json.dumps([{"recording_id": recording_id(plan, "vib"), "key": "speed",
+                                                         "value": 1000, "start_sample": 32_768,
+                                                         "end_sample": 49_152}])))
+            w.commit()
+        self.adapter.heartbeat(a, "rig-1")
+        self.adapter.change(a, SPEED, "1800", "int", origin, quality=GOOD)
+        self.adapter.change(a, SPEED, "1200", "int", origin + 3_000_000_000, quality=GOOD)
+        self.adapter.change(a, LOAD, '"low"', "string", origin, quality=GOOD)
+        self.send()
+        self.finish(plan)
+        self.env.derive(a)
+        d = self.derivations(plan)
+        self.assertEqual([(r[0], r[2]) for r in d], [("speed", None), ("speed", "rejected"), ("load", None)])
+        self.assertIn("overlap", self._detail(d[1][6]))
+        s = self.env.derive(a)              # stays recorded; no retry loop, no error, no mismatch
+        self.assertEqual(s.mismatches, 0)
+        self.assertEqual([r[2] for r in self.derivations(plan)], [None, "rejected", None])
+
+    def _detail(self, seq):
+        with self.env.writer() as w:
+            return w.execute(f"SELECT d.detail FROM {self.env.cfg.schema}.derivation d JOIN "
+                             f"{self.env.cfg.schema}.observation o USING (obs_id) WHERE o.seq = %s",
+                             (seq,)).fetchone()[0]
 
 
 class ObservedBasis(Base):

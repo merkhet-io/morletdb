@@ -23,7 +23,7 @@ from .config import Config
 POLICY = "morlet_winccoa_follows_acquisition"
 TABLES = ("observation", "derivation", "acquisition_end")
 REASONS = ("open", "outside_recording", "untimed", "bad_quality", "clock_exceeded", "inconsistent_start",
-           "unchanged", "out_of_order", "unrepresentable")
+           "unchanged", "out_of_order", "unrepresentable", "rejected")
 # Companion tables of a collection that an analyst reads (docs/access-control.md, "Roles"); probe tables are added
 # by pattern.
 READER_SUFFIXES = ("", "_chunks", "_segments", "_envelopes", "_ctx", "_ctx_segments", "_ctx_values", "_labels",
@@ -81,6 +81,8 @@ CREATE TABLE IF NOT EXISTS {schema}.derivation (
   CHECK ((batch_id IS NULL) <> (reason IS NULL))
 );
 CREATE INDEX IF NOT EXISTS derivation_acquisition ON {schema}.derivation (collection, acquisition_id);
+ALTER TABLE {schema}.derivation DROP CONSTRAINT IF EXISTS derivation_reason_check;
+ALTER TABLE {schema}.derivation ADD CONSTRAINT derivation_reason_check CHECK (reason IN ({reasons}));
 CREATE TABLE IF NOT EXISTS {schema}.acquisition_end (
   collection text NOT NULL,
   acquisition_id text NOT NULL,

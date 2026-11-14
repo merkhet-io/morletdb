@@ -20,6 +20,8 @@ uses `morlet_time_to_samples`, ceil rule in exact numeric); the companion never 
   exceeds the configured bound, or no heartbeat has been seen yet, intervals opened or closed then are not derived
   (`clock_exceeded`). No offset correction is applied.
 - Start time: every channel needs start_ns = origin_ns + offset_ns, or nothing is derived (`inconsistent_start`).
+- A batch the server refuses (for example one that overlaps context another writer stored for the same key) is
+  recorded as `rejected` with the server's message, and the other batches are still added.
 - Late channels: when the acquisition's channels change, existing batches are added again; the server adds them only
   to the new channel (per-channel batches `<batch>@<acquisition>/<role>`).
 """
@@ -120,6 +122,7 @@ def compute(cfg: Config, observations: list[tuple], origin_ns: int, end_ns: int 
     clock_ok = False
     last_contact: int | None = None
     current: dict[str, _State] = {}
+    last_t: dict[str, int] = {}       # the latest boundary of each key: nothing may start before it again
     out: list[Outcome] = []
     basis_of = {d.dpe: d for d in cfg.datapoints}
     end_abs = None if end_ns is None else origin_ns + end_ns
@@ -135,6 +138,7 @@ def compute(cfg: Config, observations: list[tuple], origin_ns: int, end_ns: int 
             if end_abs is not None and end_abs_t > end_abs:
                 end_abs_t = end_abs        # clipped to the end of the finished acquisition
             o.t_end_ns = end_abs_t - origin_ns
+            last_t[key] = max(last_t.get(key, end_abs_t), end_abs_t)
             if not state.clock_ok or (closed_by is not None and not clock_ok):
                 o.reason, o.detail = "clock_exceeded", "clock bound exceeded, or no heartbeat yet, at open or close"
             elif o.t_end_ns <= o.t_start_ns:
@@ -175,17 +179,19 @@ def compute(cfg: Config, observations: list[tuple], origin_ns: int, end_ns: int 
             if st is not None:
                 close(current.pop(key), key, basis, None, obs_id, "untimed", "ended by a value without source time")
             out.append(Outcome(obs_id, key, basis, reason="untimed", detail="no source time"))
-        elif st is not None and t < st.t_abs:
+        elif (st is not None and t < st.t_abs) or t < last_t.get(key, t):
             out.append(Outcome(obs_id, key, basis, reason="out_of_order", t_start_ns=t - origin_ns,
                                detail="earlier than the state it would end"))
         elif not usable_quality:
             if st is not None:
                 close(current.pop(key), key, basis, t, obs_id)
+            last_t[key] = max(last_t.get(key, t), t)
             out.append(Outcome(obs_id, key, basis, reason="bad_quality", t_start_ns=t - origin_ns,
                                detail=f"quality {quality_status}"))
         elif value_null:
             if st is not None:
                 close(current.pop(key), key, basis, t, obs_id)
+            last_t[key] = max(last_t.get(key, t), t)
             out.append(Outcome(obs_id, key, basis, reason="unrepresentable", t_start_ns=t - origin_ns,
                                detail="value has no JSON form (kept as text)"))
         elif st is not None and st.value_type == value_type and st.value_text == value_text:
@@ -194,6 +200,7 @@ def compute(cfg: Config, observations: list[tuple], origin_ns: int, end_ns: int 
             if st is not None:
                 close(current.pop(key), key, basis, t, obs_id)
             current[key] = _State(obs_id, t, value_type, value_text, clock_ok, basis)
+            last_t[key] = max(last_t.get(key, t), t)
         last_contact = observed_ns if last_contact is None else max(last_contact, observed_ns)
     for k in sorted(current):
         close(current[k], k, current[k].basis, end_abs, None)
@@ -217,8 +224,24 @@ def _store_outcome(conn, cfg: Config, collection: str, acquisition_id: str, o: O
                      (o.obs_id, collection, acquisition_id, o.key) + values)
 
 
+class Rejected(Exception):
+    pass
+
+
 def _add(conn, cfg: Config, collection: str, acquisition_id: str, o: Outcome) -> int:
-    """Add the batch of a closed interval, its value read from the stored observation (no client-side conversion)."""
+    """Add the batch of a closed interval, its value read from the stored observation (no client-side conversion).
+    Raises Rejected with the server's message when the server refuses it (for example an interval that overlaps
+    context another writer stored for the same key); the transaction stays usable."""
+    try:
+        with conn.transaction():
+            return _add_sql(conn, cfg, collection, acquisition_id, o)
+    except psycopg.errors.InsufficientPrivilege:
+        raise
+    except psycopg.errors.RaiseException as exc:
+        raise Rejected(exc.diag.message_primary or str(exc)) from None
+
+
+def _add_sql(conn, cfg: Config, collection: str, acquisition_id: str, o: Outcome) -> int:
     return conn.execute(sql.SQL(
         "SELECT morlet_add_acquisition_context(%s::regclass, %s, %s, jsonb_build_array(jsonb_build_object("
         "'key', o.key, 'value', o.value_json, 't_start_ns', %s::bigint, 't_end_ns', %s::bigint))) "
@@ -277,18 +300,30 @@ def derive(conn: psycopg.Connection, cfg: Config, collection: str, acquisition_i
                     o.batch_id, o.reason, o.detail = None, "outside_recording", "maps to no sample of any channel"
             prev = existing.get(o.obs_id)
             if prev is not None and prev[2] != "open":
-                if (prev[1], prev[2]) != (o.batch_id, o.reason):
+                if prev[2] == "rejected" and o.batch_id:
+                    pass                                   # refused by the server before: stays recorded
+                elif (prev[1], prev[2]) != (o.batch_id, o.reason):
                     summary.mismatches += 1
                     log.warning("derivation of observation %s in %s/%s would now be %s; the stored %s stays",
                                 o.obs_id, collection, acquisition_id, o.batch_id or o.reason, prev[1] or prev[2])
                 elif prev[1] is not None and list(prev[3]) != roles:
-                    n = _add(conn, cfg, collection, acquisition_id, o)    # a late channel: only it gets rows
+                    try:
+                        n = _add(conn, cfg, collection, acquisition_id, o)    # a late channel: only it gets rows
+                    except Rejected as exc:
+                        summary.mismatches += 1
+                        log.warning("batch %s refused on a new channel: %s", o.batch_id, exc)
+                        continue
                     _store_outcome(conn, cfg, collection, acquisition_id, o, roles, n, True)
                     summary.rows_added += n
                 continue
             if prev is not None and o.reason == "open":
                 continue
-            n = _add(conn, cfg, collection, acquisition_id, o) if o.batch_id else 0
+            n = 0
+            if o.batch_id:
+                try:
+                    n = _add(conn, cfg, collection, acquisition_id, o)
+                except Rejected as exc:
+                    o.batch_id, o.reason, o.detail = None, "rejected", str(exc)[:500]
             _store_outcome(conn, cfg, collection, acquisition_id, o, roles if o.batch_id else [], n, prev is not None)
             if o.batch_id:
                 summary.added_batches += 1
