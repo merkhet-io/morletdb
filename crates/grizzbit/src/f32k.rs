@@ -194,7 +194,8 @@ fn encode_grid(samples: &[f64]) -> Option<Vec<u8>> {
     let has_fix = fix.iter().any(|&c| c != 0);
     out.push(has_fix as u8);
     if has_fix {
-        encode_stream(&fix, true, &mut out);
+        // Corrections are nearly white: LPC gained nothing in development and costs encode time.
+        encode_stream(&fix, false, &mut out);
     }
     Some(out)
 }

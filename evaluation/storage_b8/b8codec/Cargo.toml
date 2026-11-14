@@ -1,0 +1,17 @@
+[package]
+name = "b8codec"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Study B8 harness (PROTOCOL.md section 4): G1, G1+6, G21 and G21+6 per chunk, through the grizzbit
+# crate of this branch. No other dependency, so it builds offline.
+[dependencies]
+grizzbit = { path = "../../../crates/grizzbit" }
+
+[workspace]
+
+# As the workspace's release profile (the bench example's).
+[profile.release]
+panic = "unwind"
+lto = "thin"
