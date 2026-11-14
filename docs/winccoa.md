@@ -2,8 +2,31 @@
 
 **Status:** design proposal for [#474](https://github.com/merkhet-io/morletdb/issues/474), awaiting the owner's
 approval. Nothing here is implemented. Until native acceptance in WinCC OA (phase C) has passed, the deliverable is
-"an experimental WinCC OA adapter, awaiting validation in WinCC OA". It is community-maintained, and there is no
-Siemens certification or partnership. WinCC OA is installed and licensed separately.
+"an experimental WinCC OA adapter, awaiting validation in WinCC OA". It is part of MorletDB Enterprise (see
+below). There is no Siemens certification or partnership, and WinCC OA is installed and licensed separately.
+
+**Licence and code boundary.** The integration is part of **MorletDB Enterprise**, not the Apache-2.0 core. This
+follows the rules in `docs/licensing.md` and `enterprise/README.md` on branch `docs/license-split` (PR #473, open,
+not yet on main).
+
+- **Where the code lives.** The adapter and the companion live under `enterprise/winccoa/adapter/` and
+  `enterprise/winccoa/companion/`.
+- **Licence.** Every source file there starts with the enterprise header and is under the MorletDB Enterprise
+  License (`LICENSE-ENTERPRISE.md`). Production use is free on up to 3 machines; beyond that it needs a
+  subscription.
+- **Dependency direction.** The core never depends on this code, and no core file imports from `enterprise/`. The
+  integration uses only the public core: the Python SDK and documented SQL functions.
+- **No data is locked in.** The core keeps everything needed to store and read context without WinCC OA: the
+  documented context SQL functions, the SDK and the open-protocol collectors (OPC UA, MQTT). Context written by
+  the integration is ordinary context rows, readable and searchable with the core alone.
+- **Core changes.** Anything the design needs in the core is listed under "Core changes (Apache 2.0)" at the end.
+  Those changes are made in the core under Apache 2.0, as separate PRs.
+
+**Blockers for phase A (owner actions):**
+
+1. The enterprise licence text is version 0.1. A lawyer must review it before the first file is placed under it.
+2. The licence split (PR #473) must be merged into main. Until then, `docs/licensing.md` says every file is under
+   Apache 2.0, and `enterprise/` and `tools/license_check.py` do not exist on main.
 
 Checked against main `9ea29d3` (SQL 0.3.11 on main, unreleased; latest release image `0.3.13-alpha.1`). Every SQL
 reference below was read in `extensions/pg_morlet/sql/streams.sql` (cited as `streams.sql:line`). `context-model.md`
@@ -59,6 +82,9 @@ will not cover our schema.
   (`streams.sql:1003-1009`).
 - We do not call the internal helper `morlet_acquisition_has_visible_channel` (`streams.sql:961`; classified
   `internal`).
+- The policy reads the companion table `<c>_acq_channels`. That table is documented
+  (`docs/context-workflow.md:198`), but it is not a SQL function. If the boundary rule is read as "documented
+  functions only", the core needs a documented visibility function first (core change 2 below).
 - Phase A tests a non-owner role, direct `SELECT` and `INSERT` on both tables, and both enablement orders (companion
   schema before and after `morlet_enable_row_security`).
 
@@ -272,6 +298,30 @@ C. Until then, quality and source time are optional in the protocol, and missing
 (section 3).
 
 **Owner decision:** the target patch and OS for phase C, and who provides the machine and licence.
+
+## Core changes (Apache 2.0)
+
+These changes belong to the core, not to `enterprise/`. Each is a separate core PR under Apache 2.0, and each is
+useful without WinCC OA. None is required to start phase A except possibly item 2.
+
+1. **SDK context methods.** Thin wrappers over documented SQL:
+   - `create_acquisition`, `add_acquisition_channel`;
+   - `add_context`, `add_acquisition_context`, `revise_context`;
+   - `coverage`.
+
+   The SDK has no context, acquisition or coverage methods today (`sdk/python/src/morletdb/_client.py`). Without
+   them, the companion calls the documented SQL functions with parameterized SQL, which the boundary allows. With
+   them, the open-protocol collectors get the same path.
+
+   **Owner decision:** whether to add them before phase A.
+2. **A documented acquisition-visibility function** for the companion's row-level-security policy (section 1). This
+   could document `morlet_acquisition_has_visible_channel`, or add a function keyed by collection and acquisition.
+   It changes the API inventory and possibly SQL, so it may need a SQL version step and upgrade script.
+
+   **Owner decision:** whether the policy may read the documented `<c>_acq_channels` table directly instead.
+3. **OPC UA reference collector.** It packs status and source time into the context `value` and rounds the sample
+   offset (`examples/collectors/opcua/collector.py:95-104`). This is a separate core issue: store those fields
+   outside `value`, and use `morlet_time_to_samples`. It is not needed for this integration.
 
 [requirements]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/NodeJS/topics/nodejs_requirements.html
 [operating systems]: https://www.winccoa.com/documentation/WinCCOA/latest/en_US/WCCOA_Voraussetzungen/sw_req_operating_systems.html
