@@ -1,6 +1,8 @@
 # Study B8 results: float32 codings (chunk format version 6)
 
-**Unpublished.** Uses IU4 data; stays local until the owner approves publication.
+Data: IU4's milling runs (Stiehl, Denkena et al., *Multivariate time series data of milling processes with varying
+tool wear and machine tools*, Data in Brief 2023; Mendeley Data doi:10.17632/zpxs87bjt8.3, CC BY 4.0), force and
+controller channels as float32 values, and B6's inputs.
 
 Protocol: [PROTOCOL.md](PROTOCOL.md), frozen at `4325312`, build record §7.1 (build `4ed5e90`, image
 `morletdb:b8-4ed5e90`, `sha256:7f074a1f…`). Benchmark run 2026-11-14, 11:51–11:57 local, on the inputs no

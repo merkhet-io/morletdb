@@ -183,10 +183,10 @@ it is the specification.
 - **Checksum:** CRC-32C (Castagnoli; reflected polynomial `0x82F63B78`, initial value and final
   XOR `0xFFFFFFFF`) over every byte before it, stored little-endian.
 
-## Version 6 (float32 codings, draft)
+## Version 6 (float32 codings)
 
-**Draft, under study B8.** This section becomes part of the specification only if a release ships version 6.
-Until then a build may change it.
+**Default for float32 samples since the release after 0.3.13-alpha.1** (study
+[B8](../evaluation/storage_b8/RESULTS.md), passed). This layout is now fixed: a change needs a new version.
 
 Version 6 holds samples that are each exactly a float32 value widened to float64. Grizzbit 1 codes such samples as
 float64: the float kind's order-preserving integers then carry 29 low mantissa bits that are always zero, and grid
@@ -283,8 +283,10 @@ the table can write a valid chunk.
 - **Downgrade from version 5:** pg_morlet 0.3.11-alpha.1 and earlier, and decoders of those releases, report a
   version-5 chunk as an unknown format version. A collection that stored version-5 chunks needs them re-appended
   with `grizzbit1` before such a downgrade.
-- **Version 6** (float32 codings, draft above) keeps decoding every earlier version. Readers that do not know it
+- **Version 6** (float32 codings, above) keeps decoding every earlier version. Readers that do not know it
   report it as an unknown format version, so a database with version-6 chunks needs a build that reads version 6;
+  pg_morlet 0.3.13-alpha.1 and earlier do not. Before such a downgrade, re-append those chunks with
+  `morlet.float32_chunks = off`;
   on the wire, older clients receive samples (below). `morlet.float32_chunks = off` writes no version-6 chunk.
 - `float8[]` collections from pg_morlet 0.1.0 are a separate layout, detected
   per collection, and remain supported (see durable-ingestion.md, Upgrading).

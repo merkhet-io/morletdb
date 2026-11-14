@@ -91,7 +91,9 @@ fn main() {
             String::new()
         };
         let f32s = if float32 {
-            format!(",\"float32\":true,\"v6_grid_chunks\":{v6_grid},\"v6_signmag_chunks\":{v6_signmag}")
+            format!(
+                ",\"float32\":true,\"v6_grid_chunks\":{v6_grid},\"v6_signmag_chunks\":{v6_signmag}"
+            )
         } else {
             String::new()
         };

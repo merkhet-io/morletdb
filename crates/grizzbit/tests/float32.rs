@@ -1,4 +1,4 @@
-//! Chunk format version 6 (float32 codings, DRAFT under study B8): round trips through the keep-the-smaller
+//! Chunk format version 6 (float32 codings, study B8): round trips through the keep-the-smaller
 //! encoder and through the version-6 coding alone, edge cases, and the decoder's rejection of malformed
 //! chunks. Gate 1 of evaluation/storage_b8/PROTOCOL.md.
 use grizzbit::{

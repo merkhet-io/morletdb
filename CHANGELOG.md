@@ -4,6 +4,22 @@
 
 SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Float32 samples about half the size: chunk format version 6, on by default (#326, study B8).** Chunks whose
+  samples are all float32 values widened to float64, such as PLC and CNC controller signals, are coded in float32
+  terms, on a float32 grid or as 31-bit magnitudes with sign runs. A version-6 chunk is kept only where it is
+  strictly smaller than the configured format's chunk; every other chunk is written byte for byte as before.
+  - Setting: `morlet.float32_chunks` (`on` by default, `off`), at any level. Reads decode every version whatever
+    the setting. Checked like any chunk with `morlet.verify_appends` on.
+  - Compatibility: pg_morlet 0.3.13-alpha.1 and earlier, and their decoders, cannot read version-6 chunks.
+    Compressed transfer sends samples to clients that do not report version 6; the native decoder now reports 6.
+    Embedded-edition files (file format 1) never contain version 6. Before a downgrade, re-append such chunks
+    with the setting off.
+  - Measured (B8, frozen protocol): on 321 IU4 runs, force 3.02 and controller channels 2.29 bytes per sample
+    instead of 6.60 and 6.52; table level 3.36 and 3.03; no chunk larger on B6's 30 inputs; same bytes on macOS
+    arm64, Linux arm64 and amd64. Encoding integer counts that fit in float32 is slower (about 13–15 instead of
+    62 M samples/s) for a 1–4 % gain ([results](evaluation/storage_b8/RESULTS.md)).
+  - Tests: golden chunks, a cross-platform equivalence file, property and malformed-chunk tests, Kani proofs, a
+    `decode_v6` fuzz target, and database tests for the setting and append verification.
 - **Context values build about 4× faster (#414).** On encoded collections, `morlet_build_context_values` now
   reads a segment in one raw read (`morlet_read_interval_raw`) and computes its values from the bytes with the new
   internal `morlet_simple_values_raw`. Before, it joined 32,768-sample float8[] pieces in PL/pgSQL, and every join

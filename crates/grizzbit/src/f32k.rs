@@ -1,4 +1,4 @@
-//! Chunk format version 6 (DRAFT, under study B8): float32 codings.
+//! Chunk format version 6: float32 codings (study B8, passed).
 //!
 //! A version-6 chunk holds samples that are each exactly a float32 value widened to float64. The encoder
 //! writes one only for a chunk whose every sample equals its float32 rounding, and only where it is strictly

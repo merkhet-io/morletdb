@@ -106,7 +106,7 @@ pub const FORMAT_VERSION: u8 = 3;
 /// chunk kind that failed its frozen study B5); it is never reused and is rejected as unknown.
 /// [`FORMAT_VERSION`] stays 3: it is what [`encode`] writes and what transfer clients are offered.
 pub const GRIZZBIT21_VERSION: u8 = 5;
-/// Float32 codings (DRAFT, under study B8): chunk format version 6, written only by
+/// Float32 codings (study B8, passed): chunk format version 6, written only by
 /// [`encode_with_float32`] for chunks whose every sample is a float32 value, where strictly smaller. Layout
 /// and rules: the `f32k` module (src/f32k.rs).
 pub const FLOAT32_VERSION: u8 = f32k::VERSION;
