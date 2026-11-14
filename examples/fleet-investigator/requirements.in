@@ -1,5 +1,7 @@
 # Direct dependencies of the fleet investigator tools image; requirements.lock pins them with hashes.
+# pyarrow: tools/ingest (the importer) imports it, as pinned in tools/ingest/requirements.txt.
 mcp==2.3.0
 psycopg[binary]==3.2.10
 numpy==2.2.6
+pyarrow==21.0.0
 anthropic==2.3.0

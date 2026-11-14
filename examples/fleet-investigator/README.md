@@ -35,7 +35,8 @@ docker compose run --rm load             # checks 1,564 files against manifest.j
 docker compose run --rm investigate      # the reference investigation, no language model
 ```
 
-On an Apple M5 Max (native arm64, other work running on the machine), a fresh load took about 2.5 minutes:
+On an Apple M5 Max (native arm64, other work running on the machine), a fresh `docker compose run --rm load` took
+119 s (a run from the host, outside compose, 153 s), after building the images:
 6,256 recordings, 128 million samples, 56,304 search windows, 259 graph vertices and 555 edges. Running `load`
 again checks the manifest, finds everything in place and changes nothing.
 
