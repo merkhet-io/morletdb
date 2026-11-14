@@ -36,6 +36,5 @@ Good first contributions include reproducible onboarding fixes, documentation
 examples, importer validation cases and evaluation controls. Discuss new storage
 engines, indexing schemes and extractor changes in an issue first.
 
-Contributions are made under Apache-2.0 and the [Contributor License Agreement](docs/cla.md)
-([licensing](docs/licensing.md)): sign off every commit with `git commit -s`. Be respectful, explain disagreements
+Contributions are made under Apache-2.0 ([licensing](docs/licensing.md)). Be respectful, explain disagreements
 with evidence and protect other people's private data.
