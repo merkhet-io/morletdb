@@ -148,7 +148,7 @@ setting's name, and every development decision. If a gate fails, nothing is benc
 - S6: identical bytes on macOS arm64, Linux arm64 and Linux amd64 (`results/dev/platforms_4ed5e90.txt`).
   Run locally in Docker (`rust:1.99.0-bookworm`, network off), not in CI, because the branch is not pushed.
 
-**Development figures (runs[5::40], 47 runs; `results/dev/`), bytes per sample:**
+**Development figures (runs[5::40], 161 runs; `results/dev/`), bytes per sample:**
 
 | input | G1 | G1+6 | G21+6 | table (G1+6) | pcodec 1.0.4 |
 |---|---:|---:|---:|---:|---:|
