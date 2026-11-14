@@ -2735,6 +2735,174 @@ mod tests {
         }
     }
 
+    // Cyclic production (#384): R1 makes part P1 then P2, the same burst in each cycle; R2 is a second channel of
+    // part P1; R3 makes part P3. The query is R1's first cycle.
+    fn cyclic_fixture() {
+        Spi::run("SELECT morlet_create_stream_collection('public','cyc'); SELECT morlet_enable_envelopes('cyc'); SELECT morlet_enable_context('cyc'); SELECT morlet_start_recording('cyc',r,100,'HHZ','counts','{}',512,256,'zscore','none') FROM unnest(ARRAY['R1','R2','R3']) r; CREATE TEMP TABLE cburst AS SELECT i,round(800*exp(-power((i-300)/40.,2))*sin(i/2.))::float8 AS v FROM generate_series(0,599) i; SELECT morlet_append_chunk('cyc',x.r,0,ARRAY(SELECT (round(20*sin(s.i*1.7+x.off)+((s.i*7919+x.off*13)%23))+coalesce(b.v,0)+coalesce(b2.v,0))::float8 FROM generate_series(0,16383) s(i) LEFT JOIN cburst b ON b.i=s.i-x.at LEFT JOIN cburst b2 ON b2.i=s.i-x.at2 ORDER BY s.i)) FROM (VALUES ('R1',1500,9700,1),('R2',5000,-100000,2),('R3',12000,-100000,3)) x(r,at,at2,off)").unwrap();
+        for (rid, parts) in [
+            ("R1", vec![("P1", 0, 8192), ("P2", 8192, 16384)]),
+            ("R2", vec![("P1", 0, 16384)]),
+            ("R3", vec![("P3", 0, 16384)]),
+        ] {
+            let rows: Vec<String> = parts
+                .iter()
+                .flat_map(|(p, a, b)| {
+                    [
+                        format!(r#"{{"recording_id":"{rid}","key":"phase","value":"cut","start_sample":{a},"end_sample":{b}}}"#),
+                        format!(r#"{{"recording_id":"{rid}","key":"part","value":"{p}","start_sample":{a},"end_sample":{b}}}"#),
+                    ]
+                })
+                .collect();
+            Spi::run(&format!(
+                "SELECT morlet_add_context('cyc','b-{rid}','[{}]')",
+                rows.join(",")
+            ))
+            .unwrap();
+            Spi::run(&format!(
+                "SELECT morlet_build_context_segments('cyc','{rid}',ARRAY['phase'],ARRAY['part'])"
+            ))
+            .unwrap();
+            Spi::run(&format!(
+                "SELECT morlet_build_envelopes('cyc','{rid}',2048,1024)"
+            ))
+            .unwrap();
+        }
+    }
+
+    #[pg_test]
+    fn search_similar_excluding_recording_and_occurrence() {
+        serialize_shared_ddl();
+        cyclic_fixture();
+        let hits = |exclude: &str| {
+            Spi::get_one::<String>(&format!("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY rank) FROM morlet_search_similar_excluding('cyc','R1',1024,3072,'{exclude}',top_k=>20,suppress_overlaps=>false)")).unwrap().unwrap_or_default()
+        };
+        let starts = |exclude: &str| -> Vec<(String, i64)> {
+            hits(exclude)
+                .split(',')
+                .filter(|h| !h.is_empty())
+                .map(|h| {
+                    let f: Vec<&str> = h.split(':').collect();
+                    (f[0].to_string(), f[1].parse().unwrap())
+                })
+                .collect()
+        };
+        // 'window' is morlet_search_similar_evidence
+        assert_eq!(
+            hits("window"),
+            Spi::get_one::<String>("SELECT string_agg(recording_id||':'||start_sample||':'||distance,',' ORDER BY rank) FROM morlet_search_similar_evidence('cyc','R1',1024,3072,top_k=>20,suppress_overlaps=>false)").unwrap().unwrap()
+        );
+        let window = starts("window");
+        // with the source window only excluded, the best match is the same cut of R1's next cycle (P2)
+        assert_eq!(window[0].0, "R1");
+        assert!(window[0].1 >= 8192, "{window:?}");
+        assert!(!window
+            .iter()
+            .any(|(r, s)| r == "R1" && *s < 3072 && *s + 2048 > 1024));
+        // 'none' returns the query window itself first
+        assert_eq!(starts("none")[0], ("R1".to_string(), 1024));
+        // 'recording': nothing of R1
+        let rec = starts("recording");
+        assert_eq!(rec.len(), 20);
+        assert!(rec.iter().all(|(r, _)| r != "R1"), "{rec:?}");
+        // 'occurrence': nothing of part P1 (R1 before 8192, all of R2), but R1's P2 and R3
+        let occ = starts("occurrence");
+        assert!(
+            occ.iter()
+                .all(|(r, s)| r == "R3" || (r == "R1" && *s >= 8192)),
+            "{occ:?}"
+        );
+        assert!(occ.iter().any(|(r, _)| r == "R1") && occ.iter().any(|(r, _)| r == "R3"));
+        // each mode equals the window list without the excluded windows (exact search, same order)
+        let all = starts("none");
+        for (mode, keep) in [
+            (
+                "recording",
+                Box::new(|r: &str, _s: i64| r != "R1") as Box<dyn Fn(&str, i64) -> bool>,
+            ),
+            (
+                "occurrence",
+                Box::new(|r: &str, s: i64| r == "R3" || (r == "R1" && s >= 8192)),
+            ),
+        ] {
+            let want: Vec<(String, i64)> =
+                all.iter().filter(|(r, s)| keep(r, *s)).cloned().collect();
+            let got = starts(mode);
+            assert_eq!(
+                &got[..want.len().min(got.len())],
+                &want[..want.len().min(got.len())],
+                "{mode}"
+            );
+        }
+    }
+
+    #[pg_test]
+    fn search_similar_excluding_leaves_excluded_windows_out_of_the_budget() {
+        // review of #469: windows of an excluded recording were still counted against max_candidates on the exact
+        // path, so a long source recording could make an excluding search fail. 15 windows per recording here.
+        serialize_shared_ddl();
+        cyclic_fixture();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_similar_excluding('cyc','R1',1024,3072,'recording',max_candidates=>30,top_k=>5)").unwrap(),
+            Some(5)
+        );
+        for screen in ["on", "off"] {
+            Spi::run(&format!("SET LOCAL morlet.exact_screen = {screen}")).unwrap();
+            assert_eq!(
+                Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_similar_excluding('cyc','R1',1024,3072,'occurrence',max_candidates=>30,top_k=>5)").unwrap(),
+                Some(5),
+                "screen {screen}"
+            );
+        }
+    }
+
+    #[pg_test(error = "exclude must be 'window', 'occurrence', 'recording' or 'none', not part")]
+    fn search_similar_excluding_rejects_unknown_modes() {
+        serialize_shared_ddl();
+        cyclic_fixture();
+        Spi::run("SELECT * FROM morlet_search_similar_excluding('cyc','R1',1024,3072,'part')")
+            .unwrap();
+    }
+
+    #[pg_test(
+        error = "no current context segment with an occurrence overlaps the query interval of recording A"
+    )]
+    fn search_similar_excluding_occurrence_needs_segments() {
+        serialize_shared_ddl();
+        envelope_fixture();
+        Spi::run("SELECT morlet_enable_context('env'); SELECT morlet_build_envelopes('env',r,2048,1024) FROM unnest(ARRAY['A','B','C']) r").unwrap();
+        Spi::run("SELECT * FROM morlet_search_similar_excluding('env','A',2048,4096,'occurrence')")
+            .unwrap();
+    }
+
+    #[pg_test]
+    fn probe_search_applies_excluded_ranges() {
+        serialize_shared_ddl();
+        if !pgvector_available() {
+            return; // pgvector is optional; CI's pgvector job runs this
+        }
+        Spi::run("CREATE EXTENSION IF NOT EXISTS vector").unwrap();
+        cyclic_fixture();
+        Spi::run("SELECT morlet_enable_envelope_probes('cyc',2048)").unwrap();
+        for mode in ["recording", "occurrence"] {
+            let x = format!(
+                "(SELECT x FROM morlet_search_exclusions('cyc','R1',1024,3072,'{mode}') x)"
+            );
+            // forced onto the probes (threshold 0) and routed to exact search: the same hits
+            let probes = Spi::get_one::<String>(&format!("SELECT string_agg(h.recording_id||':'||h.start_sample,',' ORDER BY h.distance,h.recording_id,h.start_sample) FROM {x} e, morlet_probe_search('cyc','R1',1024,3072,'{{}}',5,0.075,(e.x).exclude_source,true,100,5,0,exclude_ids=>(e.x).ids,exclude_starts=>(e.x).starts,exclude_ends=>(e.x).ends) h")).unwrap();
+            let exact = Spi::get_one::<String>(&format!("SELECT string_agg(h.recording_id||':'||h.start_sample,',' ORDER BY h.distance,h.recording_id,h.start_sample) FROM {x} e, morlet_probe_search('cyc','R1',1024,3072,'{{}}',5,0.075,(e.x).exclude_source,true,100,5,5000,exclude_ids=>(e.x).ids,exclude_starts=>(e.x).starts,exclude_ends=>(e.x).ends) h")).unwrap();
+            assert_eq!(probes, exact, "{mode}");
+            for h in probes.unwrap().split(',') {
+                let f: Vec<&str> = h.split(':').collect();
+                let start: i64 = f[1].parse().unwrap();
+                let excluded = match mode {
+                    "recording" => f[0] == "R1",
+                    _ => f[0] == "R2" || (f[0] == "R1" && start < 8192),
+                };
+                assert!(!excluded, "{mode}: {h}");
+            }
+        }
+    }
+
     #[pg_test]
     fn search_similar_uses_probes_when_enabled() {
         serialize_shared_ddl();

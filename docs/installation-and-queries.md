@@ -168,6 +168,7 @@ Envelopes are opt-in and are not automatically built by append. Call the bounded
 | Build envelopes | `morlet_enable_envelopes`, `morlet_build_envelopes` | Opt-in materialized search representation |
 | Similar-interval search | `morlet_search_similar` | Probe search when enabled for the window size, otherwise exact. Optional `time_from`, `time_to` and `before_only` (windows that end before the query starts) filter by recording time (SQL 0.3.3) |
 | Search with evidence | `morlet_search_similar_evidence` | The same matches with UTC times, statistics and an overview of each matched interval inline (SQL 0.3.3) |
+| Search leaving out the same part or recording | `morlet_search_similar_excluding` | The matches with evidence, choosing what is left out with `exclude`: `'window'` (the default, as above), `'occurrence'` (every context segment of the same part or occurrence, in any recording), `'recording'` (the whole source recording) or `'none'`. For cyclic production, where the useful answer is the same cut on earlier parts rather than the next cycle of the same recording. Experimental (SQL 0.3.11, #384) |
 | Exact envelope search | `morlet_search_envelopes`, `morlet_search_envelope_interval` | Input samples or stored interval; bounded-lag correlation |
 | Indexed envelope search | `morlet_enable_envelope_probes`, `morlet_search_envelope_probes` | Optional pgvector path with exact fallback for small galleries |
 | Inspect progress | `morlet_stream_status`, `morlet_collection_status` | Recording progress, representation coverage and probe backlog |

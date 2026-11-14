@@ -15,6 +15,16 @@ SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_m
   - Measured on an M-series Mac: 7 channels of 220k samples took 82–87 ms instead of 320–346 ms (alternating, same
     session); `simple()` alone takes 1.00 ms instead of 1.40 ms.
   - Collections with float8[] chunks keep the old path.
+- **Prometheus metrics from the steward (#197).** `morlet-steward metrics --listen HOST:PORT` serves `/metrics` in
+  the Prometheus text format, using only the standard library. It reports:
+  - the steward's overall state and items, heartbeat age, breakers, recent actions and waiting plans;
+  - the ingest hold, and disk free, total and database bytes;
+  - the last integrity pass per collection;
+  - `morlet_collection_status` per collection and window size;
+  - dead tuples and vacuum age of each collection's tables.
+
+  A scrape only reads; queries have a 5-second timeout, and per-collection statistics are cached (60 s by default).
+  It is tested offline (text format, an unreachable database) and against a database (`test_steward_db.py`).
 - **`morlet_compare_summary` computes the pooled spreads once (#335).** For the duration deviation it called
   `morlet_compare_to_history`, which computed the pooled spreads only to discard them; it computed them again for
   `calibrated_score`. The comparison's body is now the internal `morlet_history_comparison`, with the spreads
@@ -22,6 +32,16 @@ SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_m
   without them for the duration deviation. On a 320-segment history `morlet_compare_summary` took 23 ms instead of
   35 ms (p50), with identical results on every segment. The decision state (`tools/mcp/decision.py`) already
   compares in Python without the spreads; it calls `morlet_compare_summary` only for the summary quantile.
+- **Search can leave out the same part or the whole source recording (#384).** On cyclic production
+  `morlet_search_similar` returned the next cycles of the query's own recording, because it leaves out only the
+  windows overlapping the query. The new, experimental `morlet_search_similar_excluding` returns the same matches
+  with evidence as `morlet_search_similar_evidence` and takes `exclude`: `'window'` (the default, identical results),
+  `'occurrence'` (every current context segment whose occurrence, e.g. the part, equals the query's, in any
+  recording, as the history comparison excludes the same occurrence), `'recording'` or `'none'`. Excluded windows are
+  left out of the scans and of the `max_candidates` count on both paths; probe search also leaves recordings
+  excluded whole out of its index scans. The MCP tool
+  `search_similar` and the Python SDK's `search_similar` take `exclude`. The stable search functions keep their
+  signatures, statements and results; their bodies moved into internal functions that accept excluded ranges.
 - **The image sizes `shared_buffers` to small memory limits (#466).** Under a container memory limit below 512 MB
   the image starts PostgreSQL with `shared_buffers` at a quarter of the limit (at least 16 MB) instead of the
   default 128 MB, unless `shared_buffers` is set on the command line, with `ALTER SYSTEM` or in `postgresql.conf`;

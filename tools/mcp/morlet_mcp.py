@@ -825,8 +825,9 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     "recording" drops every hit in the query's
     recording (not only the overlapping windows); "metadata:<key>" drops hits from every recording whose
     metadata <key> equals the query's (e.g. "metadata:part" for the other channels of the same part in
-    series production). Up to 100 candidates are fetched so that up to top_k hits remain; the query reports how
-    many were left out."""
+    series production). On servers with SQL 0.3.11 the search itself leaves out "recording", and "occurrence"
+    without shifts, so top_k hits remain whenever enough exist; otherwise up to 100 candidates are fetched so that
+    up to top_k hits remain. The query reports how many were left out."""
     top_k = max(1, min(top_k, 100))
     if exclude and exclude not in ("recording", "occurrence") and not exclude.startswith("metadata:"):
         raise ValueError('exclude must be "", "recording", "occurrence" or "metadata:<key>"')
@@ -841,6 +842,12 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
         note = query_note(read(conn, c, recording_id, start_sample, end_sample)) if 0 < window <= MAX_READ else None
         similar = conn.execute("SELECT to_regproc('public.morlet_search_similar') IS NOT NULL").fetchone()[0]
         v033 = conn.execute("SELECT to_regproc('public.morlet_search_similar_evidence') IS NOT NULL").fetchone()[0]
+        # SQL 0.3.11 (#384): the search leaves out the recording or the occurrence before ranking; with shifts the
+        # shifted windows could lie in other occurrences, so "occurrence" with shifts is filtered here as before.
+        in_sql = (exclude == "recording" or (exclude == "occurrence" and shifts == 0)) and conn.execute(
+            "SELECT to_regproc('public.morlet_search_similar_excluding') IS NOT NULL").fetchone()[0]
+        if in_sql:
+            fetch_k = top_k
         if (before_only or time_from or time_to) and not v033:
             raise ValueError("before_only and time ranges need a server with pg_morlet SQL 0.3.3")
         bounds = [datetime.fromisoformat(t.replace("Z", "+00:00")) if t else None for t in (time_from, time_to)]
@@ -852,7 +859,12 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
             if a < 0 or b > src["samples"]:
                 continue
             used.append(k * step)
-            if v033:
+            if in_sql:
+                sql, args = ("SELECT recording_id, start_sample, end_sample, distance, metadata, rms, min, max, overview "
+                             "FROM morlet_search_similar_excluding(%s::regclass, %s, %s, %s, %s, %s::jsonb, %s, "
+                             "time_from => %s, time_to => %s, before_only => %s, overview_buckets => 8)",
+                             (c, recording_id, a, b, exclude, flt, fetch_k, bounds[0], bounds[1], before_only))
+            elif v033:
                 sql, args = ("SELECT recording_id, start_sample, end_sample, distance, metadata, rms, min, max, overview "
                              "FROM morlet_search_similar_evidence(%s::regclass, %s, %s, %s, %s::jsonb, %s, "
                              "time_from => %s, time_to => %s, before_only => %s, overview_buckets => 8)",
@@ -879,7 +891,9 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
     hits = merge_hits(runs, recording_id, lo, hi)
     excluded = 0
-    if exclude == "occurrence":                       # #384: the same part or cycle, from the context segments
+    if in_sql:
+        pass                                          # the search left them out already (SQL 0.3.11)
+    elif exclude == "occurrence":                     # #384: the same part or cycle, from the context segments
         with connect() as conn:
             occ = occurrences_at(conn, c, [(recording_id, start_sample)] + [(h["recording_id"], h["start_sample"])
                                                                             for h in hits])
@@ -903,7 +917,8 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
                       "end_sample": end_sample, "start_utc": at(t0, src["rate"], start_sample),
                       "shifts_samples": used, "before_only": before_only,
                       "time_range": [time_from or None, time_to or None],
-                      **({"exclude": exclude, "excluded_hits": excluded} if exclude else {}),
+                      **({"exclude": exclude, "excluded_hits": excluded} if exclude and not in_sql else {}),
+                      **({"exclude": exclude, "excluded_by": "search (SQL 0.3.11)"} if in_sql else {}),
                       **({"query_note": note} if note else {})},
             "path": "morlet_search_similar" if similar else "exact (morlet_search_envelope_interval)",
             "scope": scope, "hits": hits,

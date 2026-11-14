@@ -134,6 +134,14 @@ tails), probe rows and `probe_backlog`, whether row security is applied, and byt
 structure. Healthy steady state: `probe_backlog = 0` and `unbuilt_samples` bounded by about one
 stride per recording plus the current ingest delay.
 
+For Prometheus, `morlet-steward metrics` serves the steward's state, these backlogs, the disk, the last integrity
+pass, and dead tuples per collection table on `/metrics` ([steward](../tools/steward/README.md)). Alert on:
+
+- `morlet_up == 0`;
+- `morlet_steward_state == 2`;
+- `morlet_steward_heartbeat_age_seconds` above a few ticks;
+- a growing `morlet_collection_probe_backlog`.
+
 Audit envelopes written by an external process against the raw data with the query in
 [access control](access-control.md#the-worker-write-path).
 
