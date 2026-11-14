@@ -18,7 +18,7 @@ import tomllib
 from pathlib import Path, PurePosixPath
 
 MARKER = "Licensed under the MorletDB Enterprise License"
-SOURCE = {".rs", ".py", ".sh", ".toml", ".sql", ".ts", ".js", ".go", ".c", ".h"}
+SOURCE = {".rs", ".py", ".sh", ".toml", ".sql", ".ts", ".js", ".mjs", ".cjs", ".go", ".c", ".h"}
 HEAD_LINES = 5
 
 

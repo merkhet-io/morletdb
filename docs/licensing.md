@@ -23,8 +23,9 @@ So the core keeps, without exception:
 - **Storage and the lossless promise:** the extension, chunk formats, Grizzbit (codec, specification and the
   independent reference reader), write-time verification, the integrity scrub, backup and restore of a single
   database.
-- **Getting data in and out:** importers, collectors, the SDK (including the native decoder and the embedded
-  edition), compressed transfer, export, and every documented SQL function. No data is ever locked in.
+- **Getting data in and out:** importers, collectors for open protocols (OPC UA, MQTT and the like), the SDK
+  (including the native decoder and the embedded edition), compressed transfer, export, and every documented SQL
+  function, including the context functions. No data is ever locked in.
 - **Finding things:** envelopes, search, context, episodic memory and roll-ups.
 - **Running one machine:** the steward, with its single-node checks, guarded actions, breakers and metrics endpoint;
   the MCP server; the viewer.
@@ -35,10 +36,12 @@ in the core.
 
 ## What enterprise is for
 
-None of this exists yet. These are candidates, in the order they are likely to be needed:
+None of this exists yet. The first planned area is the integration with commercial industrial platforms, starting
+with WinCC OA (#474); the others are candidates, in the order they are likely to be needed:
 
 | Area | Enterprise candidate | What the core keeps |
 |---|---|---|
+| Industrial platforms | Integrations with commercial SCADA and HMI platforms, starting with WinCC OA (#474): operating context from the platform, investigations started from its panels | Open-protocol collectors, the importers, the SDK and the documented context and search functions, so the same context can be stored and searched without the platform |
 | Fleet | One console for many edge machines: inventory, versions, health, rollout of upgrades in waves | The steward on each machine and its metrics endpoint |
 | Automation | Policy-driven remediation across a fleet, with approval workflows | Single-node guarded actions and breakers |
 | Backup | Managed off-site backups for a fleet, with scheduled restore drills and reports | Single-database backup, restore and the restore drill |

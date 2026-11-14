@@ -16,6 +16,7 @@ Layout once there is code:
 enterprise/
   crates/<name>/     Rust crates (fleet console back end, ...), outside the core's default workspace build
   python/<name>/     Python packages (fleet agent, compliance reports, ...)
+  winccoa/           the WinCC OA integration (#474): adapter/ (WinCC OA JavaScript Manager) and companion/ (Python, on the SDK)
 ```
 
 What belongs here and what stays in the core is decided by the rule in
