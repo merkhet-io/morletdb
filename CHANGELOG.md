@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **MCP `labels`: the labels of a collection and what they mean (#333).** A read-only tool lists every active label with
+  its glossary definition, unit and source, how many intervals, recordings and samples carry it, when it was first
+  and last given, and a few examples; `undefined_labels` names the labels nobody defined. Before, an agent saw
+  definitions only for the labels inside one decision state. Row-level security applies as for every companion
+  table; a test checks a restricted role in both enablement orders.
 - **Steward sidecar image serves metrics (#489).** `deploy/steward/Dockerfile` did not copy `metrics.py`, so
   `steward.py metrics` failed in the sidecar with `ModuleNotFoundError`. A test now checks that the image copies every
   module `steward.py` imports.
