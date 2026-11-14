@@ -69,10 +69,15 @@ def _file_encoder(path: str) -> str:
 
 def _server_encoder(client: "Client") -> str:
     """The server's encoder, for example "pg_morlet 0.3.8", with " (Grizzbit 2.1)" when the session's appends write
-    Grizzbit 2.1 (`morlet.chunk_format`, study B6); servers without that setting write Grizzbit 1."""
+    Grizzbit 2.1 (`morlet.chunk_format`, study B6); servers without that setting write Grizzbit 1. " + float32" is
+    added when the session's appends write version-6 chunks for float32 samples (`morlet.float32_chunks`, study B8):
+    asked of the encoder itself, with four float32 samples that a version-6 chunk codes smaller, so a server that
+    cannot write version 6, or has the setting off, is not marked."""
     version = client._one("SELECT morlet_version()")     # loads the library, which defines the setting
     coding = client._one("SELECT current_setting('morlet.chunk_format', true)")
-    return f"pg_morlet {version}" + (" (Grizzbit 2.1)" if coding == "grizzbit21" else "")
+    v6 = client._one("SELECT get_byte(morlet_encode_chunk(ARRAY[1.5,2.5,3.5,4.5]::float8[],1),0)") == 6
+    label = "Grizzbit 2.1" if coding == "grizzbit21" else "Grizzbit 1" if v6 else ""
+    return f"pg_morlet {version}" + (f" ({label}{' + float32' if v6 else ''})" if label else "")
 
 
 def _same_encoder(a: str, b: str) -> bool:

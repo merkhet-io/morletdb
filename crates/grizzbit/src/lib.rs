@@ -46,7 +46,11 @@
 //! was the unshipped Grizzbit 2 and is never reused.
 use std::fmt;
 
+mod f32k;
 mod g21;
+#[cfg(test)]
+mod spike_f32;
+pub use f32k::layout as float32_layout;
 #[doc(hidden)]
 pub use g21::layout as grizzbit21_layout;
 #[doc(hidden)]
@@ -102,9 +106,13 @@ pub const FORMAT_VERSION: u8 = 3;
 /// chunk kind that failed its frozen study B5); it is never reused and is rejected as unknown.
 /// [`FORMAT_VERSION`] stays 3: it is what [`encode`] writes and what transfer clients are offered.
 pub const GRIZZBIT21_VERSION: u8 = 5;
-/// The highest chunk format version [`decode`] reads (study B6 build): versions 2, 3 and 5. Version 4 is
-/// reserved for the unshipped Grizzbit 2 and rejected.
-pub const MAX_VERSION: u8 = GRIZZBIT21_VERSION;
+/// Float32 codings (study B8, passed): chunk format version 6, written only by
+/// [`encode_with_float32`] for chunks whose every sample is a float32 value, where strictly smaller. Layout
+/// and rules: the `f32k` module (src/f32k.rs).
+pub const FLOAT32_VERSION: u8 = f32k::VERSION;
+/// The highest chunk format version [`decode`] reads: versions 2, 3, 5 and 6. Version 4 is reserved for the
+/// unshipped Grizzbit 2 and rejected.
+pub const MAX_VERSION: u8 = FLOAT32_VERSION;
 const BASE_VERSION: u8 = 2;
 const CHECKSUM_BYTES: usize = 4;
 const KIND_RAW: u8 = 0;
@@ -256,6 +264,109 @@ pub fn encode_with(samples: &[f64], quantum: f64, format: Format) -> Result<Vec<
     }
 }
 
+/// [`encode_with`], and for a chunk whose every sample is a float32 value, the version-6 chunk instead when it
+/// has strictly fewer bytes (DRAFT, study B8). Every other chunk is [`encode_with`]'s, byte for byte; on a tie
+/// [`encode_with`]'s chunk is kept. [`decode`] reads both.
+pub fn encode_with_float32(
+    samples: &[f64],
+    quantum: f64,
+    format: Format,
+) -> Result<Vec<u8>, CodecError> {
+    validate(samples).map_err(CodecError::Signal)?;
+    if !f32k::is_float32(samples) {
+        return encode_with(samples, quantum, format);
+    }
+    // Sorted once, for the version-6 grid fit and Grizzbit 1's step detection.
+    let distinct = sorted_distinct(samples);
+    let Some(body) = f32k::encode_body(samples, &distinct) else {
+        return encode_with(samples, quantum, format);
+    };
+    // The sealed version-6 chunk is the body plus the checksum; it is kept only if strictly smaller than the
+    // format's chunk. For Grizzbit 1 a proof that its chunk is larger is enough, without coding all of it.
+    let sealed = body.len() + CHECKSUM_BYTES;
+    if format == Format::Grizzbit1 && grizzbit1_larger_than(samples, &distinct, quantum, sealed)? {
+        return seal(body);
+    }
+    let best = encode_with(samples, quantum, format)?;
+    if sealed < best.len() {
+        seal(body)
+    } else {
+        Ok(best)
+    }
+}
+
+/// Whether the sealed Grizzbit 1 chunk of validated `samples` ([`encode`]) is provably longer than `limit` bytes.
+/// It follows [`encode_body`]'s choices, but for the float kind it uses a lower bound on its length instead of
+/// coding it: a residual `u` costs at least `bitlen(u)` bits in any Rice parameter or escape width, and a stream
+/// at least its 7 header bits. `false` means "not proven" (the caller then encodes in full); `true` is never
+/// returned when the chunk is not longer than `limit`.
+fn grizzbit1_larger_than(
+    samples: &[f64],
+    distinct: &[f64],
+    quantum: f64,
+    limit: usize,
+) -> Result<bool, CodecError> {
+    let grid = Grid::new(quantum)?;
+    if samples.iter().all(|&x| grid.index(x).is_some()) {
+        return Ok(false); // on the declared grid: version 2, small; not worth bounding
+    }
+    let detected = detect_step_in(distinct).and_then(|q| {
+        let g = Grid::new(q).ok()?;
+        match samples
+            .iter()
+            .map(|&x| g.index(x))
+            .collect::<Option<Vec<i64>>>()
+        {
+            Some(ints) => Some(encode_version2(samples, g, ints, None)),
+            None => encode_offset_grid(samples, g, None),
+        }
+    });
+    if let Some(d) = detected
+        .as_ref()
+        .filter(|d| grid_chunk_without_corrections(d) || d.len() <= 4 * samples.len())
+    {
+        return Ok(d.len() + CHECKSUM_BYTES > limit);
+    }
+    let fallback = match encode_offset_grid(samples, grid, None) {
+        Some(f) => f.len(),
+        None => float_kind_lower_bound(samples),
+    };
+    let g1 = detected.map_or(fallback, |d| d.len().min(fallback));
+    Ok(g1 + CHECKSUM_BYTES > limit)
+}
+
+/// A lower bound on the body length (without checksum) that `encode_off_grid` writes: the float kind, or raw
+/// float64 when that is not smaller.
+fn float_kind_lower_bound(samples: &[f64]) -> usize {
+    let n = samples.len();
+    let mut head = vec![BASE_VERSION, KIND_FLOAT];
+    put_varint(&mut head, n as u64);
+    let ordered: Vec<i64> = samples.iter().map(|&x| ordered_bits(x)).collect();
+    let mut r = vec![0u64; n];
+    let mut bits = u128::MAX;
+    for order in 0..=MAX_ORDER {
+        residuals(&ordered, order, &mut r);
+        let b: u128 = r.iter().map(|&u| (64 - u.leading_zeros()) as u128).sum();
+        bits = bits.min(b);
+    }
+    let float = head.len() + (7 + bits).div_ceil(8) as usize;
+    float.min(head.len() + 8 * n)
+}
+
+/// The version-6 chunk for float32-exact samples (sealed), whatever its size against the other formats, or
+/// None when a sample is not a float32 value. For tests, golden chunks and fuzzing: stores use
+/// [`encode_with_float32`], which keeps it only where it is strictly smaller.
+#[doc(hidden)]
+pub fn encode_version6(samples: &[f64]) -> Result<Option<Vec<u8>>, CodecError> {
+    validate(samples).map_err(CodecError::Signal)?;
+    if !f32k::is_float32(samples) {
+        return Ok(None);
+    }
+    f32k::encode_body(samples, &sorted_distinct(samples))
+        .map(seal)
+        .transpose()
+}
+
 /// Which of Grizzbit 2.1's two codings the encoder may use (for development measurements of each alone).
 #[doc(hidden)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -405,9 +516,20 @@ fn grid_chunk_without_corrections(body: &[u8]) -> bool {
 /// shifted grids); the encoder then refines the step and stores last-place corrections, so a rough
 /// estimate costs size, never exactness. None for constant or too-short chunks and noisy floats.
 fn detect_step(samples: &[f64]) -> Option<f64> {
+    detect_step_in(&sorted_distinct(samples))
+}
+
+/// The distinct values of `samples` in increasing order (`total_cmp`), one value per run of equal values (+0 and
+/// -0 count as one, the first in that order kept). Shared by [`detect_step`] and the version-6 grid fit.
+pub(crate) fn sorted_distinct(samples: &[f64]) -> Vec<f64> {
     let mut v: Vec<f64> = samples.to_vec();
-    v.sort_by(|a, b| a.total_cmp(b));
+    v.sort_unstable_by(|a, b| a.total_cmp(b));
     v.dedup_by(|a, b| a.to_bits() == b.to_bits() || *a == *b);
+    v
+}
+
+/// [`detect_step`] on [`sorted_distinct`]'s values.
+fn detect_step_in(v: &[f64]) -> Option<f64> {
     if v.len() < 3 {
         return None;
     }
@@ -640,10 +762,13 @@ fn encode_off_grid(samples: &[f64], out: &mut Vec<u8>) {
 }
 
 /// The checksummed body (version byte through payload) of a version-2 chunk.
-fn verified(encoded: &[u8]) -> Result<&[u8], CodecError> {
+pub(crate) fn verified(encoded: &[u8]) -> Result<&[u8], CodecError> {
     match encoded.first() {
         None => return Err(CodecError::Corrupt("empty")),
-        Some(&BASE_VERSION) | Some(&FORMAT_VERSION) | Some(&GRIZZBIT21_VERSION) => {}
+        Some(&BASE_VERSION)
+        | Some(&FORMAT_VERSION)
+        | Some(&GRIZZBIT21_VERSION)
+        | Some(&f32k::VERSION) => {}
         Some(&v) if v < BASE_VERSION => return Err(CodecError::UnsupportedVersion(v)),
         Some(_) => return Err(CodecError::Corrupt("unknown format version")),
     }
@@ -663,6 +788,7 @@ pub fn kind(encoded: &[u8]) -> Result<Kind, CodecError> {
 }
 fn kind_of(body: &[u8]) -> Result<Kind, CodecError> {
     match (body[0], body[1]) {
+        (f32k::VERSION, _) => f32k::kind_of(body),
         (BASE_VERSION | FORMAT_VERSION | GRIZZBIT21_VERSION, KIND_GRID) => Ok(Kind::Grid),
         (BASE_VERSION, KIND_FLOAT) => Ok(Kind::Float),
         (BASE_VERSION, KIND_RAW) => Ok(Kind::Raw),
@@ -678,6 +804,11 @@ pub fn decode(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
 /// Decodes a body that `verified` accepted: a known version byte and at least three bytes.
 fn decode_verified(encoded: &[u8]) -> Result<Vec<f64>, CodecError> {
     let kind = kind_of(encoded)?;
+    if encoded[0] == f32k::VERSION {
+        let samples = f32k::decode_body(encoded)?;
+        validate(&samples).map_err(CodecError::Signal)?;
+        return Ok(samples);
+    }
     if encoded[0] == GRIZZBIT21_VERSION {
         let samples = g21::decode_body(encoded)?;
         validate(&samples).map_err(CodecError::Signal)?;

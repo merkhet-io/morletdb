@@ -1,0 +1,50 @@
+{
+ "study": "B8 storage (PROTOCOL.md 4.A)",
+ "started": "2026-11-14T07:31:43",
+ "codec_sha256": "d966d24811373356b7433fa188b2cfee08b68803655f9e4f7314d792263c6c91",
+ "inputs": [
+  {
+   "input": "force",
+   "set": "iu4-dev",
+   "samples": 53910450,
+   "exact": true,
+   "keep_smaller": true,
+   "chunks": 13383,
+   "g1_bytes": 354918008,
+   "g1_bytes_per_sample": 6.5835,
+   "g16_bytes": 162915676,
+   "g16_bytes_per_sample": 3.022,
+   "g21_bytes": 353878234,
+   "g21_bytes_per_sample": 6.5642,
+   "g216_bytes": 162724645,
+   "g216_bytes_per_sample": 3.0184,
+   "v6_grid_chunks": 5,
+   "v6_signmag_chunks": 13275,
+   "g216_v6_chunks": 12398,
+   "g16_larger_chunks": 0,
+   "g216_larger_chunks": 0
+  },
+  {
+   "input": "ctrl",
+   "set": "iu4-dev",
+   "samples": 2157342,
+   "exact": true,
+   "keep_smaller": true,
+   "chunks": 966,
+   "g1_bytes": 14113292,
+   "g1_bytes_per_sample": 6.542,
+   "g16_bytes": 4934491,
+   "g16_bytes_per_sample": 2.2873,
+   "g21_bytes": 13519568,
+   "g21_bytes_per_sample": 6.2668,
+   "g216_bytes": 4734911,
+   "g216_bytes_per_sample": 2.1948,
+   "v6_grid_chunks": 513,
+   "v6_signmag_chunks": 446,
+   "g216_v6_chunks": 845,
+   "g16_larger_chunks": 0,
+   "g216_larger_chunks": 0
+  }
+ ],
+ "finished": "2026-11-14T07:32:01"
+}
