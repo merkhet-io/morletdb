@@ -139,7 +139,7 @@ build provenance; no pgvector, so no probe search; choose your own password):
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
-  ghcr.io/merkhet-io/morletdb:0.3.13-alpha.1
+  ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
 ```
 

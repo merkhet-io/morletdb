@@ -22,7 +22,7 @@ sys.path.insert(1, str(HERE.parent / "tsdb_b3"))
 import common  # noqa: E402  (B3: containers with fixed limits, volume files, kernel memory)
 
 sys.path.insert(0, str(HERE.parent.parent / "tools/ingest"))
-MORLET_IMAGE = os.environ.get("B7_MORLET_IMAGE", "ghcr.io/merkhet-io/morletdb:0.3.13-alpha.1")
+MORLET_IMAGE = os.environ.get("B7_MORLET_IMAGE", "ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1")
 MDB_IMAGE = os.environ.get("B7_MDB_IMAGE", "modelardb:1b90706")
 GROUPS = [g for g in os.environ.get("B7_GROUPS", ",".join(wl.MAIN_GROUPS)).split(",") if g]
 PW = "b7-local-only"

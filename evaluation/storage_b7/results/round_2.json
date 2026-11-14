@@ -6,7 +6,7 @@
   "pmid"
  ],
  "images": {
-  "morlet": "ghcr.io/merkhet-io/morletdb:0.3.13-alpha.1",
+  "morlet": "ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1",
   "modelardb": "modelardb:1b90706"
  },
  "arms": {
