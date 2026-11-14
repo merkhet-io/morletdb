@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Fleet investigator database: the MorletDB release image (PostgreSQL 17 with pg_morlet), unchanged, plus Apache AGE
-# 1.6.0 for PostgreSQL 17, built from the ASF release source tarball (SHA-512 checked). Build from the repository root:
+# 1.7.0 for PostgreSQL 17, built from the ASF release source tarball (SHA-512 checked). Build from the repository root:
 #   docker build -f examples/fleet-investigator/Dockerfile -t morletdb-fleet-db:local .
 #
 # AGE needs its parser hook in every session that runs cypher(). `LOAD 'age'` is refused to non-superusers (the
@@ -12,10 +12,11 @@
 ARG MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1@sha256:c9ba44b0d980f2dbaf41ee3ecc6aa7a2cf4771fbe194e6d63cd8cfdec8705b34
 
 FROM ${MORLET_IMAGE} AS age-build
-# AGE 1.6.0 for PG17: https://archive.apache.org/dist/age/PG17/1.6.0/ (.sha512 published beside it; the .asc
-# signature verifies against https://downloads.apache.org/age/KEYS, key 26B6CD9DCD5B0045).
-ARG AGE_URL=https://archive.apache.org/dist/age/PG17/1.6.0/apache-age-1.6.0-src.tar.gz
-ARG AGE_SHA512=b3021cc6bb0d88a209066596a7f31fb848e4281f2ed719c105f301c7e8017969f5b472fc4b55261105b36ab3dae788e00c4bfff2febe1f147b3b13cddcead2aa
+# AGE 1.7.0 for PG17: https://archive.apache.org/dist/age/PG17/1.7.0/ (.sha512 published beside it; the .asc
+# signature verifies against https://downloads.apache.org/age/KEYS, key 26B6CD9DCD5B0045). 1.7.0 includes row-level
+# security for Cypher (apache/age#2309), not yet for variable-length paths (apache/age#2561): CHECKS.md, check 3.
+ARG AGE_URL=https://archive.apache.org/dist/age/PG17/1.7.0/apache-age-1.7.0-src.tar.gz
+ARG AGE_SHA512=301f02088f6828adb8cfa70e7701d9fb541ee9212de97a99f2cf9106e0b0d8bce82f95c20579302bdac5efc3d5ffe35732755b1d093526cec4beba9f30ec82f0
 # Headers of exactly the server's version (PG_VERSION of the base image, 17.6-2.pgdg12+1), which the current pgdg
 # repository no longer carries; the pgdg archive does, signed with the same key.
 RUN apt-get update \
@@ -34,5 +35,5 @@ RUN curl -fsSLo age.tar.gz "${AGE_URL}" \
 FROM ${MORLET_IMAGE}
 COPY --from=age-build /out/usr/lib/postgresql/17/lib/ /usr/lib/postgresql/17/lib/
 COPY --from=age-build /out/usr/share/postgresql/17/extension/ /usr/share/postgresql/17/extension/
-LABEL org.opencontainers.image.title="MorletDB fleet investigator database (pg_morlet + Apache AGE 1.6.0)"
+LABEL org.opencontainers.image.title="MorletDB fleet investigator database (pg_morlet + Apache AGE 1.7.0)"
 CMD ["postgres", "-c", "shared_preload_libraries=age"]
