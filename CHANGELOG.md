@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **WinCC OA integration, phase A (#474), experimental, awaiting validation in WinCC OA.** A Python companion in
+  `integrations/winccoa/` turns WinCC OA observations into ordinary context rows and answers investigations through
+  the shipped search, with a replay machine, a compose setup on the release image and tests against a disposable
+  MorletDB. No WinCC OA is involved yet; the adapter (phase B) and native acceptance (phase C) are not built.
+  Apache 2.0, community-maintained, no Siemens certification or partnership.
 - **Licensing: Apache 2.0 for everything.** The open-core split of #473 is withdrawn: no enterprise licence, no
   `enterprise/` layer, no CLA and no licence-boundary check. Every part of MorletDB, integrations included, is under the
   Apache License 2.0 ([licensing](docs/licensing.md)).

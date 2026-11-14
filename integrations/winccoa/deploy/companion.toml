@@ -1,0 +1,26 @@
+# Copyright 2026 MorletDB contributors. Licensed under the Apache License, Version 2.0 (LICENSE).
+# SPDX-License-Identifier: Apache-2.0
+#
+# Configuration of the compose deployment (integrations/winccoa/compose.yaml) with the replay machine. Every value not
+# set here is the default of companion.example.toml; values marked there "proposed default, owner decision pending"
+# are not approved values.
+
+[service]
+listen = "127.0.0.1:8770"
+token_file = "/run/secrets/winccoa_token"
+dsn = "host=127.0.0.1 port=54340 dbname=morlet user=winccoa_companion"   # password from the passfile (PGPASSFILE)
+
+[[assets]]
+name = "rig-1"
+collection = "plant.rig"
+machine = "rig-1"
+
+[[datapoints]]
+dpe = "System1:Rig1.speed"
+asset = "rig-1"
+key = "speed"
+
+[[datapoints]]
+dpe = "System1:Rig1.load"
+asset = "rig-1"
+key = "load"
