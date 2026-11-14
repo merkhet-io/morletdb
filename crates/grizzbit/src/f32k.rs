@@ -75,14 +75,14 @@ fn grid_value(offset: f64, scale: f64, k: i64) -> f32 {
     (offset + k as f64 * scale) as f32
 }
 
-/// The smallest version-6 body for float32-exact samples (no checksum), or None when the samples are not
-/// float32-exact.
-pub(crate) fn encode_body(samples: &[f64]) -> Option<Vec<u8>> {
+/// The smallest version-6 body for float32-exact samples (no checksum), given their `sorted_distinct` values, or
+/// None when the samples are not float32-exact.
+pub(crate) fn encode_body(samples: &[f64], distinct: &[f64]) -> Option<Vec<u8>> {
     if samples.is_empty() || samples.len() > MAX_SAMPLES || !is_float32(samples) {
         return None;
     }
     let signmag = encode_signmag(samples);
-    Some(match encode_grid(samples) {
+    Some(match encode_grid(samples, distinct) {
         Some(g) if g.len() < signmag.len() => g,
         _ => signmag,
     })
@@ -125,10 +125,7 @@ fn encode_signmag(samples: &[f64]) -> Vec<u8> {
 /// divided by 2..=8), accepted when nearly every distinct value lies near the grid in float32 last places,
 /// then step and offset refitted by least squares over the assigned indices. The fit only affects size:
 /// corrections make every sample exact. None when no grid fits or the coding is not representable.
-fn encode_grid(samples: &[f64]) -> Option<Vec<u8>> {
-    let mut v = samples.to_vec();
-    v.sort_unstable_by(|a, b| a.total_cmp(b));
-    v.dedup_by(|a, b| a.to_bits() == b.to_bits() || *a == *b);
+fn encode_grid(samples: &[f64], v: &[f64]) -> Option<Vec<u8>> {
     // A grid repeats values; a chunk with more distinct values than three quarters of its samples codes smaller by sign
     // and magnitude in nearly every case (development set), so the fit is not tried (it only affects size).
     if v.len() < 3 || 4 * v.len() > 3 * samples.len() {
@@ -365,7 +362,7 @@ pub(crate) fn encode_signmag_pub(x: &[f64]) -> Vec<u8> {
 }
 #[cfg(test)]
 pub(crate) fn encode_grid_pub(x: &[f64]) -> Option<Vec<u8>> {
-    encode_grid(x)
+    encode_grid(x, &crate::sorted_distinct(x))
 }
 
 #[cfg(test)]

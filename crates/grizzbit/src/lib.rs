@@ -273,13 +273,18 @@ pub fn encode_with_float32(
     format: Format,
 ) -> Result<Vec<u8>, CodecError> {
     validate(samples).map_err(CodecError::Signal)?;
-    let Some(body) = f32k::encode_body(samples) else {
+    if !f32k::is_float32(samples) {
+        return encode_with(samples, quantum, format);
+    }
+    // Sorted once, for the version-6 grid fit and Grizzbit 1's step detection.
+    let distinct = sorted_distinct(samples);
+    let Some(body) = f32k::encode_body(samples, &distinct) else {
         return encode_with(samples, quantum, format);
     };
     // The sealed version-6 chunk is the body plus the checksum; it is kept only if strictly smaller than the
     // format's chunk. For Grizzbit 1 a proof that its chunk is larger is enough, without coding all of it.
     let sealed = body.len() + CHECKSUM_BYTES;
-    if format == Format::Grizzbit1 && grizzbit1_larger_than(samples, quantum, sealed)? {
+    if format == Format::Grizzbit1 && grizzbit1_larger_than(samples, &distinct, quantum, sealed)? {
         return seal(body);
     }
     let best = encode_with(samples, quantum, format)?;
@@ -295,12 +300,17 @@ pub fn encode_with_float32(
 /// coding it: a residual `u` costs at least `bitlen(u)` bits in any Rice parameter or escape width, and a stream
 /// at least its 7 header bits. `false` means "not proven" (the caller then encodes in full); `true` is never
 /// returned when the chunk is not longer than `limit`.
-fn grizzbit1_larger_than(samples: &[f64], quantum: f64, limit: usize) -> Result<bool, CodecError> {
+fn grizzbit1_larger_than(
+    samples: &[f64],
+    distinct: &[f64],
+    quantum: f64,
+    limit: usize,
+) -> Result<bool, CodecError> {
     let grid = Grid::new(quantum)?;
     if samples.iter().all(|&x| grid.index(x).is_some()) {
         return Ok(false); // on the declared grid: version 2, small; not worth bounding
     }
-    let detected = detect_step(samples).and_then(|q| {
+    let detected = detect_step_in(distinct).and_then(|q| {
         let g = Grid::new(q).ok()?;
         match samples
             .iter()
@@ -349,7 +359,12 @@ fn float_kind_lower_bound(samples: &[f64]) -> usize {
 #[doc(hidden)]
 pub fn encode_version6(samples: &[f64]) -> Result<Option<Vec<u8>>, CodecError> {
     validate(samples).map_err(CodecError::Signal)?;
-    f32k::encode_body(samples).map(seal).transpose()
+    if !f32k::is_float32(samples) {
+        return Ok(None);
+    }
+    f32k::encode_body(samples, &sorted_distinct(samples))
+        .map(seal)
+        .transpose()
 }
 
 /// Which of Grizzbit 2.1's two codings the encoder may use (for development measurements of each alone).
@@ -501,9 +516,20 @@ fn grid_chunk_without_corrections(body: &[u8]) -> bool {
 /// shifted grids); the encoder then refines the step and stores last-place corrections, so a rough
 /// estimate costs size, never exactness. None for constant or too-short chunks and noisy floats.
 fn detect_step(samples: &[f64]) -> Option<f64> {
+    detect_step_in(&sorted_distinct(samples))
+}
+
+/// The distinct values of `samples` in increasing order (`total_cmp`), one value per run of equal values (+0 and
+/// -0 count as one, the first in that order kept). Shared by [`detect_step`] and the version-6 grid fit.
+pub(crate) fn sorted_distinct(samples: &[f64]) -> Vec<f64> {
     let mut v: Vec<f64> = samples.to_vec();
     v.sort_unstable_by(|a, b| a.total_cmp(b));
     v.dedup_by(|a, b| a.to_bits() == b.to_bits() || *a == *b);
+    v
+}
+
+/// [`detect_step`] on [`sorted_distinct`]'s values.
+fn detect_step_in(v: &[f64]) -> Option<f64> {
     if v.len() < 3 {
         return None;
     }
