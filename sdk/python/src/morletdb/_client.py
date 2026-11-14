@@ -410,7 +410,7 @@ class Client:
                max_lag_fraction: float = 0.075, exclude_source: bool = True, suppress_overlaps: bool = True,
                max_candidates: int = 1_000_000, time_from: datetime | int | None = None,
                time_to: datetime | int | None = None, before_only: bool = False,
-               evidence: bool = False, evidence_parts: int = 16) -> SearchResult:
+               evidence: bool = False, evidence_parts: int = 16, exclude: str | None = None) -> SearchResult:
         """Stored intervals most similar to [start_sample, end_sample) of a recording (`morlet_search_similar`).
 
         The interval must have the length of a built search window (default 4096 samples). Candidates are
@@ -423,6 +423,11 @@ class Client:
         before the query interval starts ("have we seen this before?"). They use recording start times and
         exclude recordings without one. `evidence=True` adds each match's UTC times, statistics and an
         overview in `evidence_parts` equal parts (`Match.evidence`).
+
+        `exclude` (SQL 0.3.11, experimental; #384) chooses what is left out instead of `exclude_source`:
+        "window" (the windows overlapping the query, as `exclude_source=True`), "occurrence" (every context segment
+        of the same part or occurrence, in any recording), "recording" (the whole source recording: on cyclic
+        production, the same cut on earlier parts rather than the next cycle) or "none".
         """
         end = start_sample + SEARCH_WINDOW if end_sample is None else end_sample
         query = IntervalRef(collection, recording_id, int(start_sample), int(end))
@@ -435,6 +440,15 @@ class Client:
                                       "integer,double precision,boolean,boolean,integer,timestamp with time zone,"
                                       "timestamp with time zone,boolean,integer)"):
             raise UnsupportedError("search evidence needs pg_morlet SQL 0.3.3 or later")
+        if exclude is not None:
+            if exclude not in ("window", "occurrence", "recording", "none"):
+                raise InvalidInputError("exclude must be 'window', 'occurrence', 'recording' or 'none'")
+            if not exclude_source:
+                raise InvalidInputError("pass either exclude or exclude_source=False, not both")
+            if not self._has("public.morlet_search_similar_excluding(regclass,text,bigint,bigint,text,jsonb,integer,"
+                             "double precision,boolean,integer,timestamp with time zone,timestamp with time zone,"
+                             "boolean,integer)"):
+                raise UnsupportedError("exclude needs pg_morlet SQL 0.3.11 or later")
         if evidence and not 1 <= int(evidence_parts) <= 1024:
             raise InvalidInputError("evidence_parts must be 1..1024")
         probes = bool(query.length <= 32768
@@ -447,7 +461,16 @@ class Client:
         if filtered or evidence:
             extra = ",%s,%s,%s"
             args += (_timestamp(time_from), _timestamp(time_to), bool(before_only))
-        if evidence:
+        if exclude is not None:
+            rows = self._execute(
+                "SELECT recording_id, start_sample, end_sample, distance, metadata, start_utc, end_utc, sample_count,"
+                " min, max, mean, rms, overview FROM morlet_search_similar_excluding("
+                "%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (collection, recording_id, query.start_sample, query.end_sample, exclude,
+                 Jsonb(dict(metadata_filter or {})), int(top_k), float(max_lag_fraction), bool(suppress_overlaps),
+                 int(max_candidates), _timestamp(time_from), _timestamp(time_to), bool(before_only),
+                 int(evidence_parts) if evidence else 1)).fetchall()
+        elif evidence:
             rows = self._execute(
                 "SELECT recording_id, start_sample, end_sample, distance, metadata, start_utc, end_utc, sample_count,"
                 " min, max, mean, rms, overview FROM morlet_search_similar_evidence("
