@@ -137,6 +137,15 @@ BYPASS_READS = {   # the same question as the last fixed pattern, as a variable-
     "variable-length path, its edges": "MATCH p = (:MaterialLot)-[*2]-(:FailureMode) RETURN relationships(p)",
 }
 FORGED_EDGE = "SELECT ag_catalog.age_startnode(%s::ag_catalog.agtype, %s::ag_catalog.agtype)"
+GRAPH_STATS = "SELECT ag_catalog.age_graph_stats(%s::ag_catalog.agtype)"   # the fixture has 7 vertices, 7 edges
+
+
+def rows_or_error(u, text, params=None):
+    """First column of every row, sorted, or the error's primary message."""
+    try:
+        return sorted(str(r[0]) for r in u.execute(text, params))
+    except psycopg.Error as exc:
+        return "ERROR: " + exc.diag.message_primary
 
 
 def _copy_recording(c, collection, source_id, new_id, site):
@@ -246,6 +255,7 @@ def rls_fixture(db, order):
             seen["vertex_stats"] = error_of(lambda: u.execute(
                 "SELECT ag_catalog.age_vertex_stats(%s::ag_catalog.agtype, "
                 "'{\"id\": 1, \"label\": \"Unit\", \"properties\": {}}::vertex'::ag_catalog.agtype)", (f'"{graph}"',)))
+            seen["graph_stats"] = rows_or_error(u, GRAPH_STATS, (f'"{graph}"',))
             seen["units visible by SQL"] = hidden
             seen["MorletDB tables (rows)"] = {t: u.execute(f"SELECT count(*) FROM {t}").fetchone()[0]
                                               for t in companion_tables(u, collection)}
@@ -276,12 +286,15 @@ def bypass_when_granted(db, graph, ub_edge):
     try:
         with db.connect(fleetdb.CONTRACTOR, autocommit=True) as u:
             for label, q in BYPASS_READS.items():
-                out[label] = sorted(str(r[0]) for r in u.execute(fleetdb.cypher_sql(q, ("r",), False, graph)))
-            out["forged edge into startNode"] = [str(r[0]) for r in u.execute(FORGED_EDGE, (f'"{graph}"', ub_edge))]
+                out[label] = rows_or_error(u, fleetdb.cypher_sql(q, ("r",), False, graph))
+            out["forged edge into startNode"] = rows_or_error(u, FORGED_EDGE, (f'"{graph}"', ub_edge))
+            out["forged edge into endNode"] = rows_or_error(u, FORGED_EDGE.replace("startnode", "endnode"),
+                                                            (f'"{graph}"', ub_edge))
             ub = ub_edge.split('"start_id": ')[1].split(",")[0]
-            out["vertex_stats of the hidden unit"] = [str(r[0]) for r in u.execute(
-                "SELECT ag_catalog.age_vertex_stats(%s::ag_catalog.agtype, %s::ag_catalog.agtype)",
-                (f'"{graph}"', '{"id": %s, "label": "Unit", "properties": {}}::vertex' % ub))]
+            out["vertex_stats of the hidden unit"] = rows_or_error(
+                u, "SELECT ag_catalog.age_vertex_stats(%s::ag_catalog.agtype, %s::ag_catalog.agtype)",
+                (f'"{graph}"', '{"id": %s, "label": "Unit", "properties": {}}::vertex' % ub))
+            out["graph_stats"] = rows_or_error(u, GRAPH_STATS, (f'"{graph}"',))
     finally:
         with db.connect(autocommit=True) as c:
             c.execute("SELECT fleet.restrict_age_functions()")
@@ -423,6 +436,12 @@ def check4(db):
             out["conflicting retry"] = confirm_finding.write_finding(c, changed, "PC-RELENG")
         except confirm_finding.Conflict as exc:
             out["conflicting retry"] = f"refused: {exc}"
+    with db.connect(fleetdb.ENGINEER) as c:   # the engineer may add findings, not change a recorded one
+        fleetdb.set_search_path(c)
+        out["engineer changes the recorded finding (SET)"] = error_of(lambda: fleetdb.cypher(
+            c, "MATCH ()-[r:RESEMBLES {finding_id: $id}]->() SET r.mode = 'FM-IR' RETURN r.mode",
+            {"id": "FND-CHECK-OK"})) or "changed"
+        c.rollback()
     with db.connect(fleetdb.CONTRACTOR) as c:
         try:
             out["contractor writes"] = confirm_finding.write_finding(c, test_finding("CONTRACTOR"), "PC-CONTRACT")

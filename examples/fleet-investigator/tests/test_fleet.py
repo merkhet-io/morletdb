@@ -387,6 +387,7 @@ class Test5Access(unittest.TestCase):
             self.assertIn("permission denied for function age_vle", seen[k])
         self.assertIn("permission denied", seen["forged edge into startNode"])
         self.assertIn("permission denied", seen["vertex_stats"])
+        self.assertIn("permission denied for function age_graph_stats", seen["graph_stats"])
         tables = seen["direct SQL per label table"]
         self.assertEqual(tables[[t for t in tables if t.endswith('"Unit"')][0]], 1)
         self.assertEqual(tables[[t for t in tables if t.endswith('"FAILED_AS"')][0]], 0)
@@ -417,13 +418,23 @@ class Test5Access(unittest.TestCase):
         self.assertEqual(o["contractor_unlabeled_match_before_resecuring"], ['"E"', '"FM"', '"L"', '"SA"', '"UA"'])
 
     def test_age_functions_bypass_rls_when_granted(self):
-        """With AGE's default grants, these functions show the contractor what RLS hides. If this ever fails, AGE
-        changed: update CHECKS.md and security.sql."""
+        """With AGE's default grants, these functions show the contractor what RLS hides (AGE 1.7.0: the global graph
+        behind variable-length paths and the stats functions is loaded without RLS; apache/age#2561 fixes it on
+        master). If this ever fails, AGE changed: update CHECKS.md and security.sql."""
         b = self.r["data_first"]["contractor with the AGE functions granted (AGE's default)"]
         self.assertEqual(b["variable-length path lot -[*2]- failure mode"], ['"FM"'])
         self.assertIn('"site": "B"', b["variable-length path, its edges"][0])
-        self.assertIn('"UB"', b["forged edge into startNode"][0])
-        self.assertIn("out_degree", b["vertex_stats of the hidden unit"][0])
+        self.assertIn('"in_degree": 1, "out_degree": 2', b["vertex_stats of the hidden unit"][0])
+        # 7 vertices and 7 edges in all; the contractor may see 5 and 3
+        self.assertIn('"num_loaded_edges": 7, "num_loaded_vertices": 7', b["graph_stats"][0])
+
+    def test_age_checks_rls_in_startnode_endnode(self):
+        """AGE 1.7.0 (apache/age#2309) checks RLS when startNode/endNode look a vertex up by id; with AGE 1.6.0 the
+        forged edge returned the hidden unit. The functions stay restricted anyway (defence in depth)."""
+        b = self.r["data_first"]["contractor with the AGE functions granted (AGE's default)"]
+        for k in ("forged edge into startNode", "forged edge into endNode"):
+            self.assertIn("denied by row-level security policy", b[k])
+            self.assertNotIn('"UB"', b[k])
 
     def test_no_event_trigger_for_new_labels(self):
         e = self.r["event trigger on new labels"]
@@ -458,6 +469,7 @@ class Test6WriteBack(unittest.TestCase):
                                           "after": {"graph_edges": 1, "labels": 1, "episodes": 1}})
         self.assertEqual(r["identical retry"], "exists")
         self.assertTrue(r["conflicting retry"].startswith("refused"))
+        self.assertEqual(r["engineer changes the recorded finding (SET)"], "permission denied for table RESEMBLES")
         self.assertTrue(r["contractor writes"].startswith("refused: permission denied"))
 
     def test_cli_needs_the_typed_id(self):
