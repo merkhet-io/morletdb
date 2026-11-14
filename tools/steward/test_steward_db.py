@@ -111,6 +111,34 @@ class StewardDatabase(unittest.TestCase):
         self.run_until_idle(self.steward())
         self.assertEqual(self.one("SELECT count(*) FROM fresh_envelopes WHERE window_size=2048"), (100000 - 2048) // 512 + 1)
 
+    def test_metrics_report_state_backlog_and_tables_and_change_nothing(self):
+        import metrics as M
+        self.run_until_idle(self.steward())
+        before = self.one("SELECT count(*) FROM morlet_steward.actions")
+        out = M.Collector(dsn_for(DB, "morlet_steward"), collection_every_s=0).scrape()
+        lines = set(out.splitlines())
+        for want in ("morlet_up 1", "morlet_steward_state 0", 'morlet_steward_status_items{level="normal"} 0',
+                     'morlet_collection_raw_samples{collection="public.line",window_size="4096"} 2200000',
+                     'morlet_collection_recordings{collection="public.line",window_size="4096"} 2',
+                     'morlet_verify_last_pass_problems{collection="public.line"} 0', "morlet_ingest_hold 0",
+                     "morlet_steward_plans_waiting 0"):
+            self.assertIn(want, lines)
+        self.assertTrue(any(x.startswith('morlet_table_dead_tuples{table="public.line_chunks"} ') for x in lines))
+        self.assertTrue(any(x.startswith('morlet_steward_actions_24h{job="envelopes",outcome="done"} ') for x in lines))
+        self.assertTrue(any(x.startswith("morlet_disk_free_bytes ") for x in lines))
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions"), before)      # a scrape only reads
+        # a hold and an open breaker show up; the overall state follows the status view
+        self.admin.execute("SELECT morlet_set_ingest_hold('test')")
+        self.admin.execute("INSERT INTO morlet_steward.breakers VALUES ('rollups',3,true,'boom',now()) "
+                           "ON CONFLICT (job) DO UPDATE SET failures=3,open=true")
+        self.admin.execute("INSERT INTO morlet_steward.status_items(key,level,cause,consequence,action,who) "
+                           "VALUES ('t','action_required','c','q','a','w')")
+        lines = set(M.Collector(dsn_for(DB, "morlet_steward")).scrape().splitlines())
+        for want in ("morlet_ingest_hold 1", 'morlet_steward_breaker_open{job="rollups"} 1',
+                     'morlet_steward_breaker_failures{job="rollups"} 3', "morlet_steward_state 2",
+                     'morlet_steward_status_items{level="action_required"} 1'):
+            self.assertIn(want, lines)
+
     def test_the_steward_cannot_remove_samples(self):
         for q in ("DELETE FROM line_chunks", "UPDATE line_chunks SET encoded=encoded", "TRUNCATE line_chunks",
                   "DROP TABLE line_chunks"):

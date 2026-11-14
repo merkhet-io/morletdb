@@ -4,6 +4,16 @@
 
 SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Prometheus metrics from the steward (#197).** `morlet-steward metrics --listen HOST:PORT` serves `/metrics` in
+  the Prometheus text format, using only the standard library. It reports:
+  - the steward's overall state and items, heartbeat age, breakers, recent actions and waiting plans;
+  - the ingest hold, and disk free, total and database bytes;
+  - the last integrity pass per collection;
+  - `morlet_collection_status` per collection and window size;
+  - dead tuples and vacuum age of each collection's tables.
+
+  A scrape only reads; queries have a 5-second timeout, and per-collection statistics are cached (60 s by default).
+  It is tested offline (text format, an unreachable database) and against a database (`test_steward_db.py`).
 - **`morlet_compare_summary` computes the pooled spreads once (#335).** For the duration deviation it called
   `morlet_compare_to_history`, which computed the pooled spreads only to discard them; it computed them again for
   `calibrated_score`. The comparison's body is now the internal `morlet_history_comparison`, with the spreads

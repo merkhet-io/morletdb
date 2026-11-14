@@ -149,7 +149,7 @@ The status is exposed as:
 - the view `morlet_steward.status`, which an HMI polls;
 - `morlet-steward check` (exit code for container and systemd health checks);
 - a read-only MCP tool;
-- later, the metrics endpoint (#197).
+- the metrics endpoint `morlet-steward metrics` (Prometheus text format, read-only; #197).
 
 ## Plans and approval
 

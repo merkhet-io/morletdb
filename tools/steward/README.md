@@ -33,6 +33,18 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
   - `deploy/steward/compose.yaml` runs the release image with data checksums and small-disk WAL settings, plus a
     one-shot `init` and `grant`, plus the steward with the data volume read-only.
   - `deploy/steward/morlet-steward.service` is a systemd unit for package installs.
+- **Metrics (#197):** `morlet-steward metrics` serves Prometheus metrics on `/metrics` (default
+  `127.0.0.1:9188`), using only the standard library. A scrape only reads. It covers:
+  - the overall state (0 normal, 1 attention, 2 action required) and the items by level;
+  - the heartbeat age, circuit breakers, actions in the last 24 hours, and waiting plans;
+  - the ingest hold, and disk free, total and database bytes;
+  - the last integrity pass per collection;
+  - `morlet_collection_status` per collection and window size (backlogs and bytes);
+  - dead tuples and vacuum age of each collection's tables.
+
+  Per-collection statistics are cached for `--collection-every` seconds (default 60), and every query has a
+  5-second timeout. Run it as `morlet_steward`. When the database cannot be reached, it reports only
+  `morlet_up 0`.
 - **Not yet:** dropping derived data under disk pressure by policy, automatic retention proposals, and the multi-week
   soak on the Raspberry Pi, which starts with the home plug study D1.
 
@@ -52,6 +64,7 @@ python tools/steward/steward.py plans --dsn ...              # proposed plans an
 python tools/steward/steward.py propose-levels public.line moves.json --dsn ...   # a person proposes
 python tools/steward/steward.py approve 12 --dsn ...         # another person (morlet_approver) approves
 python tools/steward/steward.py apply 12 --dsn ...           # and applies it, in one transaction
+python tools/steward/steward.py metrics --dsn ... --listen 0.0.0.0:9188   # Prometheus scrape target (read-only)
 ```
 
 - **Load gate:** `--load-per-cpu` sets it (default 0.7). A due verification still gets one batch every
