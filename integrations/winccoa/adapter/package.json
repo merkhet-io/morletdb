@@ -1,0 +1,16 @@
+{
+  "name": "morlet-winccoa-adapter",
+  "version": "0.1.0-alpha.1",
+  "description": "Experimental WinCC OA adapter for MorletDB (a WinCC OA JavaScript Manager script), awaiting validation in WinCC OA",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "bundle": "node tools/bundle.js"
+  }
+}
