@@ -345,6 +345,15 @@ pub fn layout(encoded: &[u8]) -> Option<(u8, bool, bool)> {
 }
 
 #[cfg(test)]
+pub(crate) fn encode_signmag_pub(x: &[f64]) -> Vec<u8> {
+    encode_signmag(x)
+}
+#[cfg(test)]
+pub(crate) fn encode_grid_pub(x: &[f64]) -> Option<Vec<u8>> {
+    encode_grid(x)
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -373,12 +382,4 @@ mod tests {
         assert!(from_ord32(MAX_MAGNITUDE + 1).is_none());
         assert!(from_ord32(-MAX_MAGNITUDE - 2).is_none());
     }
-}
-#[cfg(test)]
-pub(crate) fn encode_signmag_pub(x: &[f64]) -> Vec<u8> {
-    encode_signmag(x)
-}
-#[cfg(test)]
-pub(crate) fn encode_grid_pub(x: &[f64]) -> Option<Vec<u8>> {
-    encode_grid(x)
 }
