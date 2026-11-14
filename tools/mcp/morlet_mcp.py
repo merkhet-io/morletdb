@@ -891,7 +891,9 @@ def search_similar(collection: str, recording_id: str, start_sample: int, end_sa
     lo, hi = start_sample + min(used) if used else start_sample, end_sample + max(used) if used else end_sample
     hits = merge_hits(runs, recording_id, lo, hi)
     excluded = 0
-    if exclude == "occurrence":                       # #384: the same part or cycle, from the context segments
+    if in_sql:
+        pass                                          # the search left them out already (SQL 0.3.11)
+    elif exclude == "occurrence":                     # #384: the same part or cycle, from the context segments
         with connect() as conn:
             occ = occurrences_at(conn, c, [(recording_id, start_sample)] + [(h["recording_id"], h["start_sample"])
                                                                             for h in hits])

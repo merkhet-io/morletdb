@@ -77,7 +77,7 @@ LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; width integer; query_envelope float8[]; lag integer; candidates bigint; m bigint;
   ids text[]; starts bigint[]; ends bigint[]; dists float8[]; metas jsonb[]; n integer; i integer;
   picked integer[]; idx integer; blocked boolean; screened boolean; kept jsonb;
-  b_ids text[]; b_lo bigint[]; b_hi bigint[]; tjoin text:=''; xclause text:='';
+  b_ids text[]; b_lo bigint[]; b_hi bigint[]; tjoin text:=''; xclause text:=''; whole text[];
 BEGIN
   IF collection IS NULL OR query_samples IS NULL OR query_channel IS NULL OR query_unit IS NULL THEN
     RAISE EXCEPTION 'collection, query samples, channel and unit must not be NULL';
@@ -100,10 +100,19 @@ BEGIN
     tjoin:=' JOIN unnest($%1$s::text[],$%2$s::bigint[],$%3$s::bigint[]) b(rid,lo,hi) ON b.rid=e.recording_id AND e.start_sample BETWEEN b.lo AND b.hi';
   END IF;
   -- Further excluded sample ranges (morlet_search_similar_excluding, #384), only in the statements when given, so
-  -- searches without them run the same statements as before. Excluded windows count against max_candidates, as
-  -- the source exclusion's do.
+  -- searches without them run the same statements as before. They are part of the scan's condition, so excluded
+  -- windows are neither scanned for scoring nor counted against max_candidates, as in probe search's routing.
+  -- Recordings excluded whole are a plain comparison; other ranges are checked per window.
   IF exclude_ids IS NOT NULL THEN
-    xclause:=' AND NOT public.morlet_in_ranges(e.recording_id,e.start_sample,e.start_sample+e.window_size,$%1$s,$%2$s,$%3$s)';
+    whole:=ARRAY(SELECT x.r FROM unnest(exclude_ids,exclude_starts,exclude_ends) x(r,l,h)
+      WHERE x.l<=0 AND x.h=9223372036854775807);
+    SELECT coalesce(array_agg(x.r),'{}'),coalesce(array_agg(x.l),'{}'),coalesce(array_agg(x.h),'{}')
+      INTO exclude_ids,exclude_starts,exclude_ends FROM unnest(exclude_ids,exclude_starts,exclude_ends) x(r,l,h)
+      WHERE NOT (x.l<=0 AND x.h=9223372036854775807);
+    IF cardinality(whole)>0 THEN xclause:=format(' AND e.recording_id<>ALL(%L::text[])',whole); END IF;
+    IF cardinality(exclude_ids)>0 THEN
+      xclause:=xclause||' AND NOT public.morlet_in_ranges(e.recording_id,e.start_sample,e.start_sample+e.window_size,$%1$s,$%2$s,$%3$s)';
+    END IF;
   END IF;
   -- Screened path (default): a parallel aggregate bounds every eligible window's distance in float32 and
   -- keeps each window that could be among the m nearest (morlet_core::envelope_screen); only those are
@@ -116,9 +125,10 @@ BEGIN
     AND public.morlet_envelope_screen_supported(cardinality(query_envelope),lag);
   IF NOT screened THEN
     EXECUTE format('SELECT count(*) FROM %s e JOIN %s r ON r.recording_id=e.recording_id%s
-      WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',rel,collection,
-      format(tjoin,6,7,8))
-      INTO candidates USING width,query_rate_hz,query_channel,query_unit,metadata_filter,b_ids,b_lo,b_hi;
+      WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5%s',rel,collection,
+      format(tjoin,6,7,8),format(xclause,9,10,11))
+      INTO candidates USING width,query_rate_hz,query_channel,query_unit,metadata_filter,b_ids,b_lo,b_hi,
+        exclude_ids,exclude_starts,exclude_ends;
     PERFORM public.morlet_check_candidates(candidates,max_candidates);
   END IF;
   m:=CASE WHEN suppress_overlaps THEN greatest(200,20*top_k) ELSE top_k END;
@@ -128,9 +138,9 @@ BEGIN
       -- budget check never waits for scoring.
       EXECUTE format('SELECT count(*),public.morlet_envelope_screen(e.envelope,e.recording_id,
             e.start_sample,public.morlet_float8_le_bytes($6),$7,$8::integer,$9::bigint)
-            FILTER (WHERE ($10::text IS NULL OR e.recording_id<>$10 OR e.start_sample+e.window_size<=$11 OR e.start_sample>=$12)%4$s)
+            FILTER (WHERE $10::text IS NULL OR e.recording_id<>$10 OR e.start_sample+e.window_size<=$11 OR e.start_sample>=$12)
           FROM %1$s e JOIN %2$s r ON r.recording_id=e.recording_id%3$s
-          WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5',
+          WHERE e.window_size=$1 AND r.sample_rate_hz=$2 AND r.channel=$3 AND r.unit=$4 AND r.metadata @> $5%4$s',
           rel,collection,format(tjoin,13,14,15),format(xclause,16,17,18))
         INTO candidates,kept
         USING width,query_rate_hz,query_channel,query_unit,metadata_filter,query_envelope,lag,m,max_candidates,
@@ -419,7 +429,7 @@ LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel record; occs jsonb[];
 BEGIN
   IF collection IS NULL OR source_recording_id IS NULL OR interval_start IS NULL OR interval_end IS NULL THEN
-    RAISE EXCEPTION 'collection, recording and interval must not be NULL';
+    RAISE EXCEPTION 'only time_from and time_to may be NULL';
   END IF;
   CASE exclude
   WHEN 'window' THEN exclude_source:=true;

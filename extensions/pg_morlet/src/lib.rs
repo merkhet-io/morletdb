@@ -2820,6 +2820,26 @@ mod tests {
         }
     }
 
+    #[pg_test]
+    fn search_similar_excluding_leaves_excluded_windows_out_of_the_budget() {
+        // review of #469: windows of an excluded recording were still counted against max_candidates on the exact
+        // path, so a long source recording could make an excluding search fail. 15 windows per recording here.
+        serialize_shared_ddl();
+        cyclic_fixture();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_similar_excluding('cyc','R1',1024,3072,'recording',max_candidates=>30,top_k=>5)").unwrap(),
+            Some(5)
+        );
+        for screen in ["on", "off"] {
+            Spi::run(&format!("SET LOCAL morlet.exact_screen = {screen}")).unwrap();
+            assert_eq!(
+                Spi::get_one::<i64>("SELECT count(*) FROM morlet_search_similar_excluding('cyc','R1',1024,3072,'occurrence',max_candidates=>30,top_k=>5)").unwrap(),
+                Some(5),
+                "screen {screen}"
+            );
+        }
+    }
+
     #[pg_test(error = "exclude must be 'window', 'occurrence', 'recording' or 'none', not part")]
     fn search_similar_excluding_rejects_unknown_modes() {
         serialize_shared_ddl();

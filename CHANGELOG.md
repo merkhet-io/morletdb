@@ -16,8 +16,9 @@ SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_m
   windows overlapping the query. The new, experimental `morlet_search_similar_excluding` returns the same matches
   with evidence as `morlet_search_similar_evidence` and takes `exclude`: `'window'` (the default, identical results),
   `'occurrence'` (every current context segment whose occurrence, e.g. the part, equals the query's, in any
-  recording, as the history comparison excludes the same occurrence), `'recording'` or `'none'`. Probe search takes
-  the exclusion into its index scans, and leaves recordings excluded whole out of the scan. The MCP tool
+  recording, as the history comparison excludes the same occurrence), `'recording'` or `'none'`. Excluded windows are
+  left out of the scans and of the `max_candidates` count on both paths; probe search also leaves recordings
+  excluded whole out of its index scans. The MCP tool
   `search_similar` and the Python SDK's `search_similar` take `exclude`. The stable search functions keep their
   signatures, statements and results; their bodies moved into internal functions that accept excluded ranges.
 - **The image sizes `shared_buffers` to small memory limits (#466).** Under a container memory limit below 512 MB
