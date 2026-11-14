@@ -185,7 +185,7 @@ it is the specification.
 
 ## Version 6 (float32 codings)
 
-**Default for float32 samples since the release after 0.3.13-alpha.1** (study
+**Default for float32 samples from 0.3.14-alpha.1** (study
 [B8](../evaluation/storage_b8/RESULTS.md), passed). This layout is now fixed: a change needs a new version.
 
 Version 6 holds samples that are each exactly a float32 value widened to float64. Grizzbit 1 codes such samples as

@@ -1,8 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.3.14-alpha.1
 
 SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+Python SDK 0.1.0a7. **Chunk format version 6 is written by default** for float32 samples where it is smaller: releases
+up to 0.3.13-alpha.1 cannot read those chunks, so a downgrade needs them re-appended with
+`morlet.float32_chunks = off` first. Existing chunks keep their format.
 
 - **Float32 samples about half the size: chunk format version 6, on by default (#326, study B8).** Chunks whose
   samples are all float32 values widened to float64, such as PLC and CNC controller signals, are coded in float32
