@@ -404,7 +404,10 @@ mod proofs {
     #[kani::proof]
     fn ord32_is_a_bijection() {
         let bits: u32 = kani::any();
-        assert_eq!(from_ord32(ord32(f32::from_bits(bits))).unwrap().to_bits(), bits);
+        assert_eq!(
+            from_ord32(ord32(f32::from_bits(bits))).unwrap().to_bits(),
+            bits
+        );
         let o: i64 = kani::any();
         match from_ord32(o) {
             Some(x) => assert_eq!(ord32(x), o),
