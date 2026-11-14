@@ -8,10 +8,16 @@
 //! Version 5 (Grizzbit 2.1, development build) chunks are in `cases_v5()`; their `.json` says
 //! `"format": "grizzbit21"`, and `encoder_current` then refers to `encode_with(.., Format::Grizzbit21)`.
 //!
-//! New cases: add them to `cases()` (or `cases_v5()`) and run
+//! Version 6 (float32 codings, study B8) chunks are in `cases_v6()`; their `.json` says `"format": "float32"`,
+//! and `encoder_current` then refers to `encode_with_float32(.., Format::Grizzbit1)`.
+//!
+//! New cases: add them to `cases()` (or `cases_v5()`, `cases_v6()`) and run
 //!   MORLET_WRITE_GOLDEN=1 cargo test -p grizzbit --test codec_golden -- --ignored
 //! which writes missing files only.
-use grizzbit::{decode, encode, encode_with, grizzbit21_layout, kind, Format};
+use grizzbit::{
+    decode, encode, encode_with, encode_with_float32, float32_layout, grizzbit21_layout, kind,
+    Format,
+};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
@@ -356,18 +362,84 @@ fn cases_v5() -> Vec<CaseV5> {
     ]
 }
 
+/// (name, float32 samples, kind byte (1 grid, 3 sign/magnitude), first stream LPC, second stream present)
+type Case6 = (&'static str, Vec<f64>, u8, bool, bool);
+
+fn cases_v6() -> Vec<Case6> {
+    let mut seed = 99u64;
+    let f = |x: f64| x as f32 as f64;
+    let crossing: Vec<f64> = (0..4096)
+        .map(|i| f((i as f64 / 7.3).sin() * 300.0 + (i as f64 * 1.7).cos() * 0.01))
+        .collect();
+    let positive: Vec<f64> = (0..4096)
+        .map(|i| f(50.0 + (i as f64 / 13.0).sin() * 20.0 + ((lcg(&mut seed) % 1000) as f64) * 1e-3))
+        .collect();
+    let zeros: Vec<f64> = (0..600)
+        .map(|i| match i % 5 {
+            0 => 0.0,
+            1 => -0.0,
+            _ => f((i as f64 * 0.37).sin() * 1e-3),
+        })
+        .collect();
+    // Two-digit decimals that jump (a controller value read at a low rate), rounded to float32.
+    let decimals: Vec<f64> = (0..2206)
+        .map(|_| f(((lcg(&mut seed) % 300) as f64 - 150.0) / 100.0 - 0.7))
+        .collect();
+    // A staircase of float32-rounded steps: fixed predictors, every value on the float32 grid.
+    let steps: Vec<f64> = (0..4096)
+        .map(|i| f(0.3 + (i / 16 % 97) as f64 * 0.001))
+        .collect();
+    // An index stream with resonance: LPC beats the fixed predictors.
+    let (mut y1, mut y2) = (0.0f64, 0.0f64);
+    let resonance: Vec<f64> = (0..4096)
+        .map(|_| {
+            let e = (lcg(&mut seed) % 41) as f64 - 20.0;
+            let y = 1.95 * y1 - 0.97 * y2 + e;
+            y2 = y1;
+            y1 = y;
+            f(0.25 + y.round() * 0.0023413)
+        })
+        .collect();
+    let long: Vec<f64> = (0..32768)
+        .map(|i| {
+            f((i as f64 / 61.0).sin() * 120.0 + ((lcg(&mut seed) % 1000) as f64 - 500.0) * 1e-4)
+        })
+        .collect();
+    vec![
+        ("v6-signmag-crossing", crossing, 3, false, true),
+        ("v6-signmag-one-sign", positive, 3, false, false),
+        ("v6-signmag-signed-zeros", zeros, 3, false, true),
+        ("v6-signmag-max-length", long, 3, false, true),
+        ("v6-grid-decimals-corrections", decimals, 1, true, true),
+        ("v6-grid-steps-no-corrections", steps, 1, false, false),
+        ("v6-grid-lpc-corrections", resonance, 1, true, true),
+    ]
+}
+
 fn write_case(name: &str, samples: &[f64], quantum: f64, format: Format) {
+    write_case_with(name, samples, quantum, format, false);
+}
+
+fn write_case_with(name: &str, samples: &[f64], quantum: f64, format: Format, float32: bool) {
     let chunk = dir().join(format!("{name}.chunk"));
     if chunk.exists() {
         return;
     }
-    std::fs::write(&chunk, encode_with(samples, quantum, format).unwrap()).unwrap();
+    let bytes = if float32 {
+        encode_with_float32(samples, quantum, format).unwrap()
+    } else {
+        encode_with(samples, quantum, format).unwrap()
+    };
+    std::fs::write(&chunk, bytes).unwrap();
     let raw: Vec<u8> = samples.iter().flat_map(|x| x.to_le_bytes()).collect();
     std::fs::write(chunk.with_extension("f64"), raw).unwrap();
     let mut v =
         json!({"quantum_bits": format!("{:016x}", quantum.to_bits()), "encoder_current": true});
     if format == Format::Grizzbit21 {
         v["format"] = json!("grizzbit21");
+    }
+    if float32 {
+        v["format"] = json!("float32");
     }
     std::fs::write(
         chunk.with_extension("json"),
@@ -386,6 +458,24 @@ fn write_missing_golden_files() {
     }
     for (name, samples, quantum, ..) in cases_v5() {
         write_case(name, &samples, quantum, Format::Grizzbit21);
+    }
+    for (name, samples, ..) in cases_v6() {
+        write_case_with(name, &samples, 1.0, Format::Grizzbit1, true);
+    }
+}
+
+#[test]
+fn every_version6_case_has_a_frozen_file_of_the_intended_shape() {
+    for (name, samples, kind_byte, lpc, second) in cases_v6() {
+        let chunk = std::fs::read(dir().join(format!("{name}.chunk")))
+            .unwrap_or_else(|_| panic!("{name}: missing golden file"));
+        assert_eq!(chunk[0], 6, "{name}: version");
+        assert_eq!(
+            float32_layout(&chunk),
+            Some((kind_byte, lpc, second)),
+            "{name}: layout"
+        );
+        assert_eq!(decode(&chunk).unwrap().len(), samples.len(), "{name}");
     }
 }
 
@@ -454,6 +544,26 @@ fn frozen_chunks_decode_bit_for_bit() {
                 u64::from_str_radix(meta["quantum_bits"].as_str().unwrap(), 16).unwrap(),
             );
             let samples: Vec<f64> = want.iter().map(|&b| f64::from_bits(b)).collect();
+            let samples_f: Vec<f64> = want.iter().map(|&b| f64::from_bits(b)).collect();
+            if meta["format"].as_str() == Some("float32") {
+                assert_eq!(
+                    encode_with_float32(&samples_f, q, Format::Grizzbit1).unwrap(),
+                    bytes,
+                    "{}: encoder output changed",
+                    chunk.display()
+                );
+                continue;
+            }
+            // Every other frozen chunk: the default server encoder writes it unchanged, or a strictly smaller
+            // version-6 chunk for float32 samples.
+            let with6 = encode_with_float32(&samples_f, q, Format::Grizzbit1).unwrap();
+            if meta["format"].is_null() {
+                assert!(
+                    with6 == bytes || (with6[0] == 6 && with6.len() < bytes.len()),
+                    "{}: keep-the-smaller",
+                    chunk.display()
+                );
+            }
             let format = match meta["format"].as_str() {
                 None => Format::Grizzbit1,
                 Some("grizzbit21") => Format::Grizzbit21,

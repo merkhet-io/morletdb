@@ -344,15 +344,23 @@ fn morlet_valid_chunk(samples: pgrx::Array<'_, f64>) -> bool {
 }
 
 /// Lossless chunk encoding: integer grid + Rice coding, or raw float64 off the grid (Grizzbit 1), or, with
-/// `morlet.chunk_format` = grizzbit21, a version-5 chunk where that is strictly smaller. With
+/// `morlet.chunk_format` = grizzbit21, a version-5 chunk where that is strictly smaller; and with
+/// `morlet.float32_chunks` on (the default), a version-6 chunk for samples that are all float32 values, where
+/// that is strictly smaller (study B8). With
 /// `morlet.verify_appends` on (the default) the code is decoded again and compared bit for bit with the input,
 /// as in the batch append, so every append path that encodes through this function (`morlet_append_chunk`)
 /// proves at write time that what it stores decodes to its input.
 #[pg_extern(stable, parallel_safe, strict)]
 fn morlet_encode_chunk(samples: pgrx::Array<'_, f64>, sample_quantum: f64) -> Vec<u8> {
     let samples = sample_slice(&samples);
-    let bytes = encode_checked(&samples, sample_quantum, verify_appends(), chunk_format())
-        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    let bytes = encode_checked(
+        &samples,
+        sample_quantum,
+        verify_appends(),
+        chunk_format(),
+        float32_chunks(),
+    )
+    .unwrap_or_else(|e| pgrx::error!("{}", e));
     if let Ok(n) = i32::try_from(samples.len()) {
         ENCODED_LAST.with(|last| *last.borrow_mut() = Some((bytes.clone(), n)));
     }
@@ -372,13 +380,30 @@ fn encode_checked(
     quantum: f64,
     verify: bool,
     format: morlet_core::rawcodec::Format,
+    float32: bool,
 ) -> Result<Vec<u8>, String> {
-    let bytes =
-        morlet_core::rawcodec::encode_with(c, quantum, format).map_err(|e| e.to_string())?;
+    let bytes = if float32 {
+        morlet_core::rawcodec::encode_with_float32(c, quantum, format)
+    } else {
+        morlet_core::rawcodec::encode_with(c, quantum, format)
+    }
+    .map_err(|e| e.to_string())?;
     #[cfg(feature = "pg_test")]
     let bytes = if WRONG_NEXT_CODE.swap(false, std::sync::atomic::Ordering::SeqCst) {
         let mut other = c.to_vec();
         other[0] = f64::from_bits(other[0].to_bits() ^ 1);
+        if bytes[0] == morlet_core::rawcodec::FLOAT32_VERSION {
+            // A version-6 chunk: the wrong code is a version-6 chunk too (first sample one float32 last place
+            // away), so the test shows that the check covers it.
+            other[0] = f32::from_bits((c[0] as f32).to_bits() ^ 1) as f64;
+            return finish_check(
+                morlet_core::rawcodec::encode_version6(&other)
+                    .map_err(|e| e.to_string())?
+                    .ok_or("no version-6 coding for the test's samples")?,
+                c,
+                verify,
+            );
+        }
         match format {
             // With Grizzbit 2.1 the wrong code is a version-5 chunk, so the test shows that the check covers it.
             morlet_core::rawcodec::Format::Grizzbit21 => {
@@ -392,6 +417,11 @@ fn encode_checked(
     } else {
         bytes
     };
+    finish_check(bytes, c, verify)
+}
+
+/// With `verify`, decodes `bytes` again and compares it bit for bit with `c`.
+fn finish_check(bytes: Vec<u8>, c: &[f64], verify: bool) -> Result<Vec<u8>, String> {
     if verify {
         let back = morlet_core::rawcodec::decode(&bytes).map_err(|e| e.to_string())?;
         if back.len() != c.len() || back.iter().zip(c).any(|(a, b)| a.to_bits() != b.to_bits()) {
@@ -978,6 +1008,26 @@ fn encode_threads() -> usize {
     }
 }
 
+/// `morlet.float32_chunks` (on/off, default on): a chunk whose every sample is a float32 value is stored as a
+/// version-6 chunk where that is strictly smaller than the chunk `morlet.chunk_format` writes (study B8); off
+/// writes exactly what `morlet.chunk_format` writes. Read like `morlet.verify_appends`: not registered, so an
+/// invalid value never falls back to a default and every append fails, naming the value.
+fn float32_chunks() -> bool {
+    // SAFETY: GetConfigOption returns NULL or a NUL-terminated string valid until the setting changes.
+    let raw = unsafe { pg_sys::GetConfigOption(c"morlet.float32_chunks".as_ptr(), true, false) };
+    if raw.is_null() {
+        return true;
+    }
+    let text = unsafe { std::ffi::CStr::from_ptr(raw) }.to_string_lossy();
+    match text.trim().to_ascii_lowercase().as_str() {
+        "" | "on" | "true" | "yes" | "1" => true,
+        "off" | "false" | "no" | "0" => false,
+        _ => pgrx::error!(
+            "invalid value for parameter \"morlet.float32_chunks\": \"{text}\"; available values: on, off"
+        ),
+    }
+}
+
 /// `morlet.verify_appends` (on/off, default on): after encoding, decode each chunk of a batch again and
 /// compare it bit for bit with its input samples (I1, #233). Off relies on the codec's tests instead.
 ///
@@ -1009,9 +1059,10 @@ type ChunkCode = Option<Result<Vec<u8>, String>>;
 /// signal blocked, so PostgreSQL's signal handlers keep running in the backend's own thread.
 fn encode_chunks(chunks: &[&[f64]], quantum: f64, verify: bool) -> Vec<ChunkCode> {
     let format = chunk_format();
+    let float32 = float32_chunks();
     let one = move |c: &[f64]| -> ChunkCode {
         morlet_core::validate(c).ok()?;
-        Some(encode_checked(c, quantum, verify, format))
+        Some(encode_checked(c, quantum, verify, format, float32))
     };
     on_threads(chunks, encode_threads(), "morlet-encode", |c| one(c))
 }
@@ -4016,9 +4067,10 @@ END $$"#).unwrap();
     /// #366: the same wrong code is stored when the check is off, so the check is what refuses it above.
     #[pg_test]
     fn verify_appends_off_lets_a_wrong_code_through() {
-        Spi::run("SELECT morlet_create_stream_collection('public','ver1_off2'); SELECT morlet_start_recording('ver1_off2','A',4096,'x','g'); SET morlet.verify_appends = off").unwrap();
+        // Grizzbit 1's wrong code: float32 codings off (these samples are float32 values).
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_off2'); SELECT morlet_start_recording('ver1_off2','A',4096,'x','g'); SET morlet.verify_appends = off; SET morlet.float32_chunks = off").unwrap();
         crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
-        Spi::run("SELECT morlet_append_chunk('ver1_off2','A',0,ARRAY[1.5,2.5,3.5,4.5]::float8[]); RESET morlet.verify_appends").unwrap();
+        Spi::run("SELECT morlet_append_chunk('ver1_off2','A',0,ARRAY[1.5,2.5,3.5,4.5]::float8[]); RESET morlet.verify_appends; RESET morlet.float32_chunks").unwrap();
         assert_eq!(
             Spi::get_one::<f64>("SELECT (morlet_decode_chunk(encoded))[1] FROM ver1_off2_chunks")
                 .unwrap(),
@@ -4041,8 +4093,10 @@ END $$"#).unwrap();
             Spi::get_one::<String>("SELECT current_setting('morlet.chunk_format')").unwrap(),
             Some("grizzbit1".into())
         );
+        // Grizzbit 2.1 against Grizzbit 1 alone: float32 codings (B8) off.
         Spi::run(
-            "CREATE TEMP TABLE g21_src AS SELECT i,CASE WHEN i<12288 THEN round(3000*sin(i/7.3)+((i*7919)%7))::float8 WHEN i<16384 THEN (sin(i/37.)*0.37+i*1e-3)::float8 ELSE (round(1000*sin(i/11.)) * 0.0006887817378 * 1.0000007)::float8 END AS v FROM generate_series(0,19999) i;
+            "SET morlet.float32_chunks = off;
+             CREATE TEMP TABLE g21_src AS SELECT i,CASE WHEN i<12288 THEN round(3000*sin(i/7.3)+((i*7919)%7))::float8 WHEN i<16384 THEN (sin(i/37.)*0.37+i*1e-3)::float8 ELSE (round(1000*sin(i/11.)) * 0.0006887817378 * 1.0000007)::float8 END AS v FROM generate_series(0,19999) i;
              SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['g21_two','g21_one','g21_two1','g21_one1']) c;
              SELECT morlet_start_recording(c::regclass,'A',4096,'x','g') FROM unnest(ARRAY['g21_two','g21_one','g21_two1','g21_one1']) c;
              SET morlet.chunk_format = grizzbit21;
@@ -4211,6 +4265,88 @@ END $$"#).unwrap();
         .unwrap()
         .unwrap());
     }
+    /// B8: with `morlet.float32_chunks` on (the default), chunks of float32 values are stored as version 6
+    /// exactly where that is strictly smaller than the chunk written with it off, which is stored otherwise,
+    /// byte for byte; every chunk reads back bit for bit, on the batch and the single-chunk paths, and chunks
+    /// that are not all float32 values never become version 6.
+    #[pg_test]
+    fn float32_chunks_keep_version6_only_where_strictly_smaller() {
+        Spi::run(
+            "CREATE TEMP TABLE f32_src AS SELECT i,CASE WHEN i<8192 THEN (300*sin(i/7.3)+0.01*cos(i*1.7))::float4::float8 WHEN i<12288 THEN round(3000*sin(i/7.3))::float8 ELSE (sin(i/37.)*0.37+i*1e-3)::float8 END AS v FROM generate_series(0,15999) i;
+             SELECT morlet_create_stream_collection('public',c) FROM unnest(ARRAY['f32_on','f32_off','f32_on1','f32_off1']) c;
+             SELECT morlet_start_recording(c::regclass,'A',4096,'x','g') FROM unnest(ARRAY['f32_on','f32_off','f32_on1','f32_off1']) c;
+             SELECT morlet_append_chunks_raw('f32_on','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM f32_src ORDER BY i)),4096);
+             SELECT morlet_append_chunk('f32_on1','A',0,ARRAY(SELECT v FROM f32_src WHERE i<3000 ORDER BY i));
+             SET morlet.float32_chunks = off;
+             SELECT morlet_append_chunks_raw('f32_off','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM f32_src ORDER BY i)),4096);
+             SELECT morlet_append_chunk('f32_off1','A',0,ARRAY(SELECT v FROM f32_src WHERE i<3000 ORDER BY i));
+             RESET morlet.float32_chunks;",
+        )
+        .unwrap();
+        for (on, off) in [("f32_on", "f32_off"), ("f32_on1", "f32_off1")] {
+            assert!(Spi::get_one::<bool>(&format!(
+                "SELECT bool_and(get_byte(o.encoded,0)<>6)
+                    AND bool_and(t.encoded=o.encoded OR (get_byte(t.encoded,0)=6 AND length(t.encoded)<length(o.encoded)))
+                    AND bool_or(get_byte(t.encoded,0)=6)
+                   FROM {on}_chunks t JOIN {off}_chunks o USING (recording_id,start_sample)"
+            ))
+            .unwrap()
+            .unwrap());
+        }
+        // The chunks that are not all float32 values (from sample 12288) are never version 6.
+        assert!(Spi::get_one::<bool>(
+            "SELECT bool_and(get_byte(encoded,0)<>6) FROM f32_on_chunks WHERE start_sample>=12288"
+        )
+        .unwrap()
+        .unwrap());
+        assert!(Spi::get_one::<bool>(
+            "SELECT (SELECT array_agg(float8send(v) ORDER BY o) FROM unnest((SELECT samples FROM morlet_read_interval('f32_on','A',0,16000))) WITH ORDINALITY u(v,o))
+                      = (SELECT array_agg(float8send(v) ORDER BY i) FROM f32_src)
+                AND (SELECT array_agg(float8send(v) ORDER BY o) FROM unnest((SELECT samples FROM morlet_read_interval('f32_on1','A',0,3000))) WITH ORDINALITY u(v,o))
+                      = (SELECT array_agg(float8send(v) ORDER BY i) FROM f32_src WHERE i<3000)"
+        )
+        .unwrap()
+        .unwrap());
+    }
+    /// B8: `morlet.float32_chunks` accepts on/off only; any other value makes the append fail.
+    #[pg_test(
+        error = "invalid value for parameter \"morlet.float32_chunks\": \"of\"; available values: on, off"
+    )]
+    fn float32_chunks_refuses_an_invalid_value() {
+        Spi::run("SELECT morlet_create_stream_collection('public','f32_bad'); SELECT morlet_start_recording('f32_bad','A',4096,'x','g'); SET morlet.float32_chunks = 'of'").unwrap();
+        Spi::run("SELECT morlet_append_chunk('f32_bad','A',0,ARRAY[1.5,2.5]::float8[])").unwrap();
+    }
+    /// B8 / #366: a wrong version-6 code is refused on the batch path; there is no fallback.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_batch_refuses_a_wrong_version6_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_v6'); SELECT morlet_start_recording('ver_v6','A',4096,'x','g'); SET morlet.verify_appends = on; SET morlet.encode_threads = 1").unwrap();
+        assert!(Spi::get_one::<bool>(
+            "SELECT get_byte(morlet_encode_chunk(ARRAY(SELECT (300*sin(i/7.3))::float4::float8 FROM generate_series(0,4095) i),1),0)=6"
+        )
+        .unwrap()
+        .unwrap());
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunks_raw('ver_v6','A',0,morlet_float8_le_bytes(ARRAY(SELECT (300*sin(i/7.3))::float4::float8 FROM generate_series(0,4095) i)),4096)").unwrap();
+    }
+    /// B8 / #366: the same on the single-chunk path.
+    #[pg_test(error = "encoded chunk does not decode to its input samples")]
+    fn verify_appends_single_chunk_refuses_a_wrong_version6_code() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver1_v6'); SELECT morlet_start_recording('ver1_v6','A',4096,'x','g'); SET morlet.verify_appends = on").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunk('ver1_v6','A',0,ARRAY(SELECT (300*sin(i/7.3))::float4::float8 FROM generate_series(0,4095) i))").unwrap();
+    }
+    /// B8: the wrong version-6 code above is stored when the check is off, so the check is what refuses it.
+    #[pg_test]
+    fn verify_appends_off_lets_a_wrong_version6_code_through() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ver_v6_off'); SELECT morlet_start_recording('ver_v6_off','A',4096,'x','g'); SET morlet.verify_appends = off; SET morlet.encode_threads = 1").unwrap();
+        crate::WRONG_NEXT_CODE.store(true, std::sync::atomic::Ordering::SeqCst);
+        Spi::run("SELECT morlet_append_chunks_raw('ver_v6_off','A',0,morlet_float8_le_bytes(ARRAY(SELECT (300*sin(i/7.3))::float4::float8 FROM generate_series(0,4095) i)),4096); RESET morlet.verify_appends").unwrap();
+        assert!(Spi::get_one::<bool>(
+            "SELECT get_byte(encoded,0)=6 AND (morlet_decode_chunk(encoded))[1]<>(300*sin(0/7.3))::float4::float8 FROM ver_v6_off_chunks"
+        )
+        .unwrap()
+        .unwrap());
+    }
     /// #366: the single-chunk path's remembered chunk is used once; an identical copy inserted afterwards is
     /// decoded in full, and a corrupted copy is refused.
     #[pg_test(error = "corrupt encoded chunk: checksum mismatch")]
@@ -4278,10 +4414,11 @@ END $$"#).unwrap();
     /// decodes come as samples in a raw frame; a corrupt chunk is sent unchanged and fails in the client's decoder.
     #[pg_test]
     fn encoded_reads_decode_to_raw_reads() {
-        // B6: written with Grizzbit 2.1, so the integer part is stored as version-5 chunks (LPC on the tone).
+        // B6: written with Grizzbit 2.1, so the integer part is stored as version-5 chunks (LPC on the tone); B8:
+        // float32 values from sample 80000 are stored as version-6 chunks (float32 codings are on by default).
         Spi::run(
             "SET LOCAL morlet.chunk_format = grizzbit21;
-             CREATE TEMP TABLE enc_src AS SELECT i,CASE WHEN i<60000 THEN round(1000*sin(i/7.))::float8 ELSE sin(i/7.)::float8 END AS v FROM generate_series(0,99999) i;
+             CREATE TEMP TABLE enc_src AS SELECT i,CASE WHEN i<60000 THEN round(1000*sin(i/7.))::float8 WHEN i<80000 THEN sin(i/7.)::float8 ELSE (300*sin(i/7.3)+0.01*cos(i*1.7))::float4::float8 END AS v FROM generate_series(0,99999) i;
              SELECT morlet_create_stream_collection('public','enc_rd'); SELECT morlet_start_recording('enc_rd','A',4096,'x','g','{}',512,256,'zscore','none');
              SELECT morlet_append_chunks_raw('enc_rd','A',0,morlet_float8_le_bytes(ARRAY(SELECT v FROM enc_src ORDER BY i)),2048);",
         )
@@ -4307,7 +4444,7 @@ END $$"#).unwrap();
             ))
             .unwrap()
             .unwrap();
-            for version in [5, 4, 3, 2, 1] {
+            for version in [6, 5, 4, 3, 2, 1] {
                 let frame = Spi::get_one::<Vec<u8>>(&format!(
                     "SELECT morlet_read_interval_encoded('enc_rd','A',{a},{b},{version})"
                 ))
@@ -4319,21 +4456,22 @@ END $$"#).unwrap();
                     .unwrap()
                     .unwrap();
                 assert_eq!(&frame[..4] == b"MTR1", newer, "{a}..{b} v{version}");
-                // Every chunk is version 2 or above; this build decodes up to version 5 (Grizzbit 2.1).
+                // Every chunk is version 2 or above; this build decodes up to version 6 (float32 codings, B8).
                 assert!(newer || version >= 2);
-                assert!(!newer || version < 5);
+                assert!(!newer || version < 6);
             }
         }
-        // B6: version-5 chunks where they are smaller (the integer part) and Grizzbit 1 chunks elsewhere, so the
-        // version-3 and version-4 clients above got samples for some intervals and the version-5 client chunks.
+        // B6: version-5 chunks where they are smaller (the integer part) and Grizzbit 1 chunks elsewhere; B8:
+        // version-6 chunks for float32 values where smaller still. So the older clients above got samples for some
+        // intervals and the version-6 client chunks.
         assert!(Spi::get_one::<bool>(
-            "SELECT bool_or(get_byte(encoded,0)=5) AND bool_or(get_byte(encoded,0)<4) FROM enc_rd_chunks"
+            "SELECT bool_or(get_byte(encoded,0)=5) AND bool_or(get_byte(encoded,0)=6) AND bool_or(get_byte(encoded,0)<4) FROM enc_rd_chunks"
         )
         .unwrap()
         .unwrap());
-        // A client that decodes version 5 (the SQL default stays 3, so older callers get samples).
+        // A client that decodes version 6 (the SQL default stays 3, so older callers get samples).
         let compressed = Spi::get_one::<i32>(
-            "SELECT length(morlet_read_interval_encoded('enc_rd','A',0,60000,5))",
+            "SELECT length(morlet_read_interval_encoded('enc_rd','A',0,60000,6))",
         )
         .unwrap()
         .unwrap();

@@ -162,6 +162,6 @@ mod tests {
             )
         };
         assert_eq!(r, ERR_ARGUMENT);
-        assert_eq!(morlet_ffi_max_chunk_version(), 5);
+        assert_eq!(morlet_ffi_max_chunk_version(), 6);
     }
 }

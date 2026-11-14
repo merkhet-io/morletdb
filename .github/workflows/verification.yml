@@ -68,6 +68,7 @@ jobs:
           --harness version5_kind_dispatch --harness version5_checksum_is_checked_first
           --harness keep_smaller_keeps_grizzbit1_unless_strictly_smaller
           --harness lpc_prediction_matches_wide_reference --harness lpc_kernel_restores_reference_residuals
+          --harness ord32_is_a_bijection --harness sign_runs_are_checked
   fuzz:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
@@ -75,11 +76,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [decode_raw, decode_sealed, decode_v5, roundtrip, decode_frame]
+        target: [decode_raw, decode_sealed, decode_v5, decode_v6, roundtrip, decode_frame]
         include:
           - { target: decode_raw, crate: grizzbit }
           - { target: decode_sealed, crate: grizzbit }
           - { target: decode_v5, crate: grizzbit }
+          - { target: decode_v6, crate: grizzbit }
           - { target: roundtrip, crate: grizzbit }
           - { target: decode_frame, crate: morlet-core }
     steps:
@@ -102,6 +104,7 @@ jobs:
               decode_raw) cp "$f" "crates/${{ matrix.crate }}/fuzz/corpus/decode_raw/$(basename "$f")" ;;
               decode_sealed) head -c -4 "$f" > "crates/${{ matrix.crate }}/fuzz/corpus/decode_sealed/$(basename "$f")" ;;
               decode_v5) case "$(basename "$f")" in v5-*) head -c -4 "$f" > "crates/${{ matrix.crate }}/fuzz/corpus/decode_v5/$(basename "$f")" ;; esac ;;
+              decode_v6) case "$(basename "$f")" in v6-*) head -c -4 "$f" > "crates/${{ matrix.crate }}/fuzz/corpus/decode_v6/$(basename "$f")" ;; esac ;;
             esac
           done
       - name: Fuzz for 40 minutes (debug assertions and overflow checks on)

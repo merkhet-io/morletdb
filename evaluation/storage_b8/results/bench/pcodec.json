@@ -1,0 +1,18 @@
+{
+ "study": "B8 pcodec reference (PROTOCOL.md 4.E, no criterion)",
+ "pcodec": "1.0.4",
+ "inputs": [
+  {
+   "input": "force",
+   "samples": 107492700,
+   "bytes": 308892152,
+   "bytes_per_sample": 2.8736
+  },
+  {
+   "input": "ctrl",
+   "samples": 4301484,
+   "bytes": 6800460,
+   "bytes_per_sample": 1.581
+  }
+ ]
+}

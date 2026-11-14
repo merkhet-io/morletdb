@@ -115,7 +115,11 @@ patterns coded the same way, or plain float64. Every chunk carries a CRC-32C che
   and compares it bit for bit before storing it.
 - **Strong on gridded signals, weaker without a grid.** On ADC counts, fixed decimals and calibrated waveforms it
   is among the smallest codecs measured (B4); on floats without a clean grid it is 1.6–4× larger than the best.
-  Grizzbit 2, an attempt to close that gap, failed study B5 and was not shipped; the gap remains open (#326).
+  Grizzbit 2, an attempt to close that gap, failed study B5 and was not shipped (#326).
+- **Float32 codings, on by default** (chunk format version 6): samples that are float32 values, such as PLC and
+  CNC controller signals, are coded in float32 terms where that is smaller. It passed study B8: on IU4 force and
+  controller channels 3.02 and 2.29 bytes per sample instead of 6.60 and 6.52, never a larger chunk
+  ([results](evaluation/storage_b8/RESULTS.md); `SET morlet.float32_chunks = off` turns it off).
 - **Grizzbit 2.1, opt-in** (`morlet.chunk_format = grizzbit21`): a per-chunk linear predictor and corrections per
   grid index, kept only where smaller. It passed study B6: waveforms 12.6% smaller in total, never larger
   ([how to use it](docs/grizzbit.md#using-grizzbit-21)).

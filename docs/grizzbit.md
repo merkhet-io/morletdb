@@ -53,6 +53,7 @@ Every chunk starts with its format version byte; a reader dispatches on it. Deta
 | Grizzbit 1 | 3: offset grid | default | yes | the same, for grids with an offset (`offset + k · scale`), such as EDF calibration | B4 |
 | Grizzbit 2 (pco) | 4 | reserved, rejected | yes | meant for floats off any grid; never shipped | [B5](../evaluation/storage_b5/RESULTS.md) (failed) |
 | Grizzbit 2.1 | 5: grid only | opt-in | yes | grid waveforms with structure a fixed predictor misses: vibration, motor currents, EEG | [B6](../evaluation/storage_b6/RESULTS.md) (passed) |
+| float32 codings | 6: float32 grid and sign/magnitude | default for float32 samples | yes | float32 machine data without a float64 grid: forces, controller torques and positions | [B8](../evaluation/storage_b8/RESULTS.md) (passed) |
 
 - **Version 2:** the encoder detects a value grid per chunk, codes the grid indices with a fixed predictor of
   order 0–4 and partitioned Rice coding, and stores last-place (ULP) corrections where a value is off its grid
@@ -264,6 +265,25 @@ chunks already written stay readable.
 compressor tsz is documented as lossy (it truncates doubles below 10⁻¹⁶); its default and ZSTD layouts are
 lossless, and in B3.6 they returned every sample exactly. Grizzbit has no lossy mode and no precision
 parameter to choose.
+
+## Float32 codings (version 6)
+
+Samples that arrive as float32, such as PLC and CNC controller signals
+(IEC 61131-3 `REAL`, OPC UA `Float`) or forces scaled from ADC counts in a DAQ, are stored today above their raw
+float32 size: Grizzbit 1 codes them as float64, and its grid detection judges fit in float64 last places. Chunk
+format version 6 codes a chunk whose every sample is a float32 value either on a float32 grid
+(`f32(offset + k · scale)` plus corrections in float32 last places) or as 31-bit magnitudes and sign runs, with
+Grizzbit's own integer streams ([specification](chunk-format.md#version-6-float32-codings)).
+
+- **Never larger:** a version-6 chunk is kept only where it is strictly smaller; every other chunk is written as
+  before, byte for byte.
+- **On by default:** `morlet.float32_chunks = off` turns it off (any level: session, role,
+  database, server). Reads decode every version whatever the setting.
+- **Compatibility:** readers that do not know version 6 cannot read such chunks; compressed transfer gives them
+  samples. Embedded-edition files never contain version 6.
+- **Measured (B8):** on IU4 force and ctrl channels, 3.02 and 2.29 bytes per sample instead of 6.60 and 6.52
+  with Grizzbit 1; no chunk larger on B6's 30 inputs. Encoding integer counts that fit in float32 is slower
+  (about 13–15 instead of 62 M samples/s on one core) for a 1–4 % size gain ([results](../evaluation/storage_b8/RESULTS.md)).
 
 ## Lineage and credits
 
