@@ -4,6 +4,7 @@ import sqlite3
 from contextlib import closing
 import tempfile
 import unittest
+import warnings
 from unittest import mock
 import uuid
 from pathlib import Path
@@ -104,9 +105,11 @@ class Transfer(unittest.TestCase):
         self.conn.execute(f"CREATE SCHEMA {self.schema}")
         # These tests compare chunk bytes between a file and a server writing the same coding: the file format 1
         # writer's Grizzbit 1. A server that writes Grizzbit 2.1 (study B6's arm, whose configuration may set it)
-        # is tested in test_grizzbit21_server_and_format1_files.
+        # is tested in test_grizzbit21_server_and_format1_files, and one writing float32 codings (study B8, on by
+        # default) in test_export_with_float32_codings_compares_samples_not_bytes.
         self.conn.execute("SELECT morlet_version()")
         self.conn.execute("SET morlet.chunk_format = grizzbit1")
+        self.conn.execute("SET morlet.float32_chunks = off")
         self.conn.commit()
         self.db = morletdb.Client(self.conn)
         self.coll = f"{self.schema}.signals"
@@ -288,6 +291,26 @@ class Transfer(unittest.TestCase):
         with mock.patch.object(morletdb._transfer, "_append_batch", corrupt):
             with self.assertRaisesRegex(morletdb.DatabaseError, "samples of .* differ after the import"):
                 self.db.import_file(src, self.coll)
+
+    def test_export_with_float32_codings_compares_samples_not_bytes(self):
+        """B8: with `morlet.float32_chunks` on (the default) the server writes version-6 chunks for float32 samples
+        and labels its encoder so; the file's writer keeps Grizzbit 1, so an export verifies samples, not bytes."""
+        self.conn.execute("RESET morlet.float32_chunks")
+        self.conn.commit()
+        x = noisy(50_000, 361).astype(np.float32).astype(np.float64)
+        self.db.ingest(self.coll, "r", x, sample_rate_hz=1000, channel="x", unit="", search_window=None)
+        self.conn.commit()
+        v6 = self.conn.execute(f"SELECT bool_or(get_byte(encoded,0)=6) FROM {self.coll}_chunks").fetchone()[0]
+        out = Path(self.dir.name) / "f32.morlet"
+        report = []
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            [rec] = self.db.export_file(self.coll, out, report=report)
+        self.assertTrue(v6)
+        self.assertTrue(report[0].sender_encoder.endswith(" + float32)"), report[0].sender_encoder)
+        self.assertEqual(report[0].chunk_bytes, "not compared")
+        with morletdb.open(out) as f:
+            self.assertEqual(f.read("r", 0, 50_000).samples.tobytes(), x.tobytes())
 
     def test_export_from_chunks_of_another_encoder_verifies_and_resumes(self):
         x = noisy(300_000, 359)
