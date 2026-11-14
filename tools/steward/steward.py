@@ -10,6 +10,7 @@
   morlet-steward plans --dsn ...             plans the steward or a person proposed, and their state
   morlet-steward approve|reject|apply ID     decide or apply a plan (a person with morlet_approver, not the author)
   morlet-steward propose-levels COLLECTION MOVES.json   a memory-level plan from a policy dry run
+  morlet-steward metrics --dsn ... [--listen 127.0.0.1:9188]   Prometheus metrics over HTTP (#197; read-only)
 
 Phase 1: automatic upkeep (builders, verify, analyze) in one budgeted loop, gated by load and disk; the disk
 ladder in time remaining; an audit row for every action; circuit breakers; the status view. It runs only jobs whose
@@ -259,7 +260,7 @@ def cmd_run(a, cfg: P.Config) -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="morlet-steward")
     ap.add_argument("command", choices=["init", "grant", "run", "status", "check", "reset", "plans", "approve",
-                                        "reject", "apply", "propose-levels"])
+                                        "reject", "apply", "propose-levels", "metrics"])
     ap.add_argument("job", nargs="?", help="job (reset), plan id (approve, reject, apply) or collection (propose-levels)")
     ap.add_argument("moves", nargs="?", help="propose-levels: JSON file with the moves (a memory policy dry run)")
     ap.add_argument("--dsn", default=os.environ.get("MORLET_STEWARD_DSN", ""))
@@ -272,11 +273,23 @@ def main(argv=None) -> int:
                     help="seconds: a due verification gets one batch at least this often, even under load")
     ap.add_argument("--reserve-bytes", type=int, default=2 << 30, help="disk kept free: the larger of this and the share")
     ap.add_argument("--reserve-fraction", type=float, default=0.05)
+    ap.add_argument("--listen", default="127.0.0.1:9188", help="metrics: host:port to serve /metrics on")
+    ap.add_argument("--collection-every", type=float, default=60.0,
+                    help="metrics: seconds per-collection statistics are cached between scrapes")
     a = ap.parse_args(argv)
     cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,
                    reserve_fraction=a.reserve_fraction, verify_share_every_s=a.verify_share_every)
     if a.command == "run":
         return cmd_run(a, cfg)
+    if a.command == "metrics":
+        import metrics as M
+        host, port = M.parse_listen(a.listen)
+        collector = M.Collector(a.dsn, a.collection_every)
+        try:
+            M.serve(collector, host, port, ready=lambda: print(f"serving http://{a.listen}/metrics", flush=True))
+        except KeyboardInterrupt:
+            pass
+        return 0
     with connect(a.dsn) as conn:
         if a.command == "init":
             S.init(conn)
