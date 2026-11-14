@@ -379,7 +379,8 @@ ORDER BY episode;
 
 ## Not yet
 
-- **Clock drift and sync points.** One fixed offset per channel.
+- **Clock drift and sync points.** One fixed offset per channel; a design is proposed in
+  [clock-drift.md](clock-drift.md).
 - **Cross-channel values,** for example coherence between current and vibration.
 - **Representations beyond `simple-v1`:** bands, tooth-passing frequency,
   context-segment envelopes.

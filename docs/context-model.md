@@ -4,7 +4,8 @@ Status: **phases 1 and 2 implemented** ([context workflow](context-workflow.md))
 - **Phase 2 (SQL 0.3.0)** adds acquisitions with per-channel offsets, clock
   sources and uncertainty; context in acquisition time; trimmed segments; aligned
   reads; per-channel comparison; and `before_only`.
-- **Not implemented:** clock drift and sync points. Neighbour search
+- **Not implemented:** correcting clock drift with sync points. Drift is detected and reported
+  (#393, first part); the correction is a [design proposal](clock-drift.md). Neighbour search
   (`morlet_history_neighbors`) shipped in 0.3.0; evaluation C4 found it a browsing
   aid, not a way to label new data (see the workflow guide). Evaluation C1 changed two things, see
 the workflow guide: relative deviation is the recommended score, because robust z
@@ -133,7 +134,8 @@ CREATE TABLE signals_acq_channels (
 - Rate, channel and unit stay on the recording row. A recording without an
   acquisition works exactly as today.
 - Clock drift is not modelled in phase 1. A later option is per-channel sync
-  points (piecewise-linear), fitted on a transient seen on all channels.
+  points (piecewise-linear), fitted on a transient seen on all channels; see the
+  [time-anchor proposal](clock-drift.md).
 - After a gap a new recording starts, with its own `offset_ns`. How several
   recordings share one role is an open question.
 
