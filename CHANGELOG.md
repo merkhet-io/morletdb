@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Operator runbooks (#197).** `docs/runbooks.md` adds disk full, WAL growth (replication slots, a failing archive,
+  long transactions), rebuilding envelopes, probe rows and indexes with coverage before and after, retention and
+  archiving to Parquet and S3 with the existing tools, upgrading with the way back from chunk format version 6, and a
+  first-hour triage. Each was run by hand against the 0.3.14-alpha.1 release image, with the full disk simulated on
+  small Docker filesystems; what was not exercised is marked. Found on the way: after memory level 4,
+  `morlet_build_envelopes` keeps returning skipped windows for that recording, so the steward's envelope job does not
+  move on; and the steward sidecar image lacks `metrics.py`, so `metrics` runs only from a checkout.
 - **WinCC OA integration, phase A (#474), experimental, awaiting validation in WinCC OA.** A Python companion in
   `integrations/winccoa/` turns WinCC OA observations into ordinary context rows and answers investigations through
   the shipped search, with a replay machine, a compose setup on the release image and tests against a disposable
