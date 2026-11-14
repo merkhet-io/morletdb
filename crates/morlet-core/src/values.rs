@@ -137,17 +137,33 @@ pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalEr
     if samples.is_empty() || samples.len() > MAX_SEGMENT_SAMPLES {
         return Err(SignalError::SegmentLength);
     }
-    if samples.iter().any(|v| !v.is_finite() || v.abs() > 1e9) {
+    // Two passes instead of six (#414): the check with the sum, then the centred moments, the peak and the sum
+    // of squares together. Each sum still adds the same terms in the same order from the same start as
+    // Iterator::sum (-0.0), so every value is bit-identical to separate passes (test below).
+    let mut sum = -0.0f64;
+    let mut invalid = false;
+    for &v in samples {
+        invalid |= !v.is_finite() || v.abs() > 1e9;
+        sum += v;
+    }
+    if invalid {
         return Err(SignalError::InvalidSample);
     }
     if !(sample_rate_hz.is_finite() && sample_rate_hz > 0.0) {
         return Err(SignalError::InvalidSampleRate);
     }
     let n = samples.len() as f64;
-    let mean = samples.iter().sum::<f64>() / n;
-    let m2 = samples.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
-    let m4 = samples.iter().map(|v| (v - mean).powi(4)).sum::<f64>() / n;
-    let peak = samples.iter().fold(0.0f64, |a, v| a.max(v.abs()));
+    let mean = sum / n;
+    let (mut s2, mut s4, mut peak, mut sq) = (-0.0f64, -0.0f64, 0.0f64, -0.0f64);
+    for &v in samples {
+        let d = v - mean;
+        s2 += d.powi(2);
+        s4 += d.powi(4);
+        peak = peak.max(v.abs());
+        sq += v * v;
+    }
+    let m2 = s2 / n;
+    let m4 = s4 / n;
     // Tiny amplitudes underflow squares and fourth powers: for [-1e-100, 1e-100],
     // m4 and m2^2 are both 0 and kurtosis would be 0/0. There the moments are taken
     // on values divided by their largest magnitude. Where m2^2 (or peak^2) is a
@@ -179,7 +195,7 @@ pub fn simple(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalEr
         }
     };
     let rms = if peak * peak >= f64::MIN_POSITIVE || peak == 0.0 {
-        (samples.iter().map(|v| v * v).sum::<f64>() / n).sqrt()
+        (sq / n).sqrt()
     } else {
         peak * (samples.iter().map(|v| (v / peak).powi(2)).sum::<f64>() / n).sqrt()
     };
@@ -211,6 +227,116 @@ mod tests {
         } else {
             sorted[lo]
         }
+    }
+
+    /// simple() as before #414 (six passes): the reference the fused passes must equal bit for bit.
+    fn simple_six_passes(samples: &[f64], sample_rate_hz: f64) -> Result<Vec<f64>, SignalError> {
+        if samples.is_empty() || samples.len() > MAX_SEGMENT_SAMPLES {
+            return Err(SignalError::SegmentLength);
+        }
+        if samples.iter().any(|v| !v.is_finite() || v.abs() > 1e9) {
+            return Err(SignalError::InvalidSample);
+        }
+        if !(sample_rate_hz.is_finite() && sample_rate_hz > 0.0) {
+            return Err(SignalError::InvalidSampleRate);
+        }
+        let n = samples.len() as f64;
+        let mean = samples.iter().sum::<f64>() / n;
+        let m2 = samples.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / n;
+        let m4 = samples.iter().map(|v| (v - mean).powi(4)).sum::<f64>() / n;
+        let peak = samples.iter().fold(0.0f64, |a, v| a.max(v.abs()));
+        let (std, kurtosis) = if m2 * m2 >= f64::MIN_POSITIVE {
+            (m2.sqrt(), m4 / (m2 * m2))
+        } else {
+            let s = samples.iter().fold(0.0f64, |a, v| a.max((v - mean).abs()));
+            if s > 0.0 {
+                let c2 = samples
+                    .iter()
+                    .map(|v| ((v - mean) / s).powi(2))
+                    .sum::<f64>()
+                    / n;
+                let c4 = samples
+                    .iter()
+                    .map(|v| ((v - mean) / s).powi(4))
+                    .sum::<f64>()
+                    / n;
+                let std = if m2 >= f64::MIN_POSITIVE {
+                    m2.sqrt()
+                } else {
+                    s * c2.sqrt()
+                };
+                (std, c4 / (c2 * c2))
+            } else {
+                (0.0, 0.0)
+            }
+        };
+        let rms = if peak * peak >= f64::MIN_POSITIVE || peak == 0.0 {
+            (samples.iter().map(|v| v * v).sum::<f64>() / n).sqrt()
+        } else {
+            peak * (samples.iter().map(|v| (v / peak).powi(2)).sum::<f64>() / n).sqrt()
+        };
+        let p75 = p75(samples);
+        Ok(vec![
+            n / sample_rate_hz,
+            mean,
+            std,
+            rms,
+            p75,
+            peak,
+            if rms > 0.0 { peak / rms } else { 0.0 },
+            kurtosis,
+        ])
+    }
+
+    #[test]
+    fn fused_passes_equal_six_passes_bit_for_bit() {
+        let mut x: u64 = 0x2545_F491_4F6C_DD1D;
+        let mut next = || {
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            x
+        };
+        for len in [1usize, 2, 3, 5, 64, 1001, 4096, 220_011] {
+            for kind in 0..6 {
+                let v: Vec<f64> = (0..len)
+                    .map(|_| {
+                        let r = next();
+                        let u = r as f64 / u64::MAX as f64;
+                        match kind {
+                            0 => u * 2.0 - 1.0,                   // continuous
+                            1 => ((r % 7) as f64 - 3.0) * 0.0383, // quantised
+                            2 => {
+                                if r % 3 == 0 {
+                                    -0.0
+                                } else {
+                                    0.0
+                                }
+                            } // signed zeros only
+                            3 => (u - 0.5) * 1e-100,              // tiny: the scaled branches
+                            4 => 1e9 * (u * 2.0 - 1.0),           // the largest allowed
+                            _ => 250.0 + 1e-3 * (u - 0.5),        // DC with small noise
+                        }
+                    })
+                    .collect();
+                let (a, b) = (
+                    simple(&v, 50_000.0).unwrap(),
+                    simple_six_passes(&v, 50_000.0).unwrap(),
+                );
+                let bits = |w: &[f64]| w.iter().map(|f| f.to_bits()).collect::<Vec<_>>();
+                assert_eq!(bits(&a), bits(&b), "len {len} kind {kind}");
+            }
+        }
+        for bad in [vec![f64::NAN], vec![1.0, f64::INFINITY], vec![2e9], vec![]] {
+            assert_eq!(
+                format!("{:?}", simple(&bad, 1.0)),
+                format!("{:?}", simple_six_passes(&bad, 1.0))
+            );
+        }
+        assert_eq!(
+            format!("{:?}", simple(&[1.0], 0.0)),
+            format!("{:?}", simple_six_passes(&[1.0], 0.0))
+        );
     }
 
     #[test]
