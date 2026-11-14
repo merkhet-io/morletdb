@@ -3,8 +3,8 @@
 Five checks of what the fleet investigator claims. They run as [checks.py](checks.py) against a freshly loaded
 demo database; [reference/checks_output.txt](reference/checks_output.txt) is a complete run, and
 [tests/test_fleet.py](tests/test_fleet.py) asserts the same functions on a disposable container. Setup: the demo
-image (MorletDB 0.3.14-alpha.1 release image, PostgreSQL 17.6, pg_morlet SQL 0.3.11, Apache AGE 1.6.0), measured on
-2026-11-14. Roles: `fleet_reader` (all sites, read), `fleet_contractor` (Site A only, read), `fleet_engineer` (all
+image (MorletDB 0.3.14-alpha.1 release image, PostgreSQL 17.6, pg_morlet SQL 0.3.11, Apache AGE 1.7.0 for PostgreSQL 17),
+measured on 2026-11-14. Roles: `fleet_reader` (all sites, read), `fleet_contractor` (Site A only, read), `fleet_engineer` (all
 sites, may record findings); the owner `morlet` is a superuser and bypasses RLS, so no check relies on it as a
 reader.
 
@@ -12,13 +12,13 @@ reader.
 |---|---|---|
 | 1 | Both extensions in one database | **Holds**, with `shared_preload_libraries = 'age'` and `ag_catalog` in `search_path` |
 | 2 | One statement: Cypher joined LATERAL with the waveform search | **Holds** |
-| 3 | RLS on AGE label tables restricts `cypher()` for a non-owner role, both orders | **Holds for fixed-length patterns and direct SQL, in both orders, only with two measures.** AGE's variable-length paths, `startNode`/`endNode` and `vertex_stats` **bypass RLS** with AGE's default grants |
+| 3 | RLS on AGE label tables restricts `cypher()` for a non-owner role, both orders | **Holds for fixed-length patterns and direct SQL, in both orders, only with two measures.** In AGE 1.7.0, variable-length paths, `vertex_stats` and `graph_stats` **bypass RLS** with AGE's default grants; they are withheld from restricted roles |
 | 4 | Atomic write-back to graph and MorletDB | **Holds** |
 | 5 | One REPEATABLE READ snapshot over graph and recordings | **Holds** |
 
 ## 1. AGE and pg_morlet in one database
 
-- `CREATE EXTENSION pg_morlet` and `CREATE EXTENSION age` in the same database: `pg_morlet 0.3.11`, `age 1.6.0`.
+- `CREATE EXTENSION pg_morlet` and `CREATE EXTENSION age` in the same database: `pg_morlet 0.3.11`, `age 1.7.0`.
   Order does not matter (the loader creates pg_morlet first).
 - **Loading AGE.** `LOAD 'age'` works for the superuser but a non-superuser gets `access to library "age" is not
   allowed` (the library is not under `$libdir/plugins`). Without AGE's parser hook in the session, `cypher()`
@@ -56,13 +56,13 @@ resolved to bearing SN-0311-001 and failure FL-2004-02-P102-BRG1 (`FM-OR`); best
 ```
 Sort  (Sort Key: h.distance, h.recording_id, h.start_sample)
   CTE pos
-    ->  Nested Loop ... Seq Scan on "EquipmentModule" m_1
+    ->  Nested Loop ... Seq Scan on "INSTALLED_IN" i_1  Filter: (fleet.graph_site_visible(properties) AND (... "from" <= ...) ...)
+        ->  Materialize -> Seq Scan on "EquipmentModule" m_1
               Filter: (fleet.graph_site_visible(properties) AND (properties @> '{"equipment_id": "P-102.BRG-3"}'::agtype))
-        ->  Seq Scan on "INSTALLED_IN" i_1  Filter: (fleet.graph_site_visible(properties) AND (... "from" <= ...) ...)
         ->  Seq Scan on "PhysicalAsset" a_1  Filter: fleet.graph_site_visible(properties)
   ->  Hash Right Join  (Hash Cond: equipment_id of the install = h.metadata->>'equipment_id'; Join Filter: start in [from, to))
-        ->  Hash Right Join ... Seq Scan on "FailureMode" / "CLASSIFIED_AS" / "Failure" / "OF_ASSET" /
-            "EquipmentModule" / "PhysicalAsset" / "INSTALLED_IN", each  Filter: fleet.graph_site_visible(properties)
+        ->  Hash Left Join ... Seq Scan on "PhysicalAsset" / "INSTALLED_IN" / "EquipmentModule" / "OF_ASSET" /
+            "Failure" / "CLASSIFIED_AS" / "FailureMode", each  Filter: fleet.graph_site_visible(properties)
         ->  Hash
               ->  Nested Loop
                     ->  Limit -> Sort -> Seq Scan on vibration r
@@ -107,32 +107,53 @@ What `fleet_contractor` (Site A) sees, the same in both orders once the graph is
 | `morlet_search_similar` from `ra` | hits in `ra` only | `ra`, `rb` |
 | search from the Site B recording `rb` | `source recording does not exist or is not visible` | ok |
 
-**Where AGE bypasses RLS** (measured with AGE's default grants, which give EXECUTE to PUBLIC):
+**What AGE itself enforces.** AGE 1.7.0 for PG17 includes [apache/age#2309](https://github.com/apache/age/pull/2309)
+(*Add RLS support and fix permission checks*): row-level security and table privileges for Cypher's own scans and
+writes (`CREATE`, `SET`, `DELETE`, `MERGE`), and RLS checks in `startNode()`/`endNode()`. The demo started on AGE
+1.6.0, which predates it; the table below compares both on the same fixture.
 
-- **Variable-length paths.** `MATCH (:MaterialLot)-[*2]-(f:FailureMode) RETURN f.id` returned `FM` to the
-  contractor: the path runs through the hidden Site B unit. `relationships(p)` on that path returned the hidden
-  Site B edges with their properties. The fixed-length version of the same question returns nothing. AGE evaluates
-  variable-length patterns in `age_vle` from its own cached copy of the graph, built by scanning the tables outside
-  the query, so policies never apply.
-- **`startNode()` / `endNode()`.** Given a hand-written edge value whose `start_id` is the hidden unit's id,
-  `age_startnode` (and Cypher `startNode(...)`) returned the hidden vertex with its properties.
-- **`vertex_stats`.** `age_vertex_stats` returned the hidden unit's in- and out-degree.
+**Where AGE bypasses RLS** (measured as the contractor with AGE's default grants, EXECUTE to PUBLIC; the
+`data_first` fixture, which has 7 vertices and 7 edges, of which the contractor may see 5 and 3):
+
+| Read | AGE 1.6.0 | AGE 1.7.0 | With `fleet.restrict_age_functions` |
+|---|---|---|---|
+| `MATCH (:MaterialLot)-[*2]-(f:FailureMode) RETURN f.id` (variable-length path through the hidden Site B unit) | `FM` | `FM`: **still bypasses** | `permission denied for function age_vle` |
+| `relationships(p)` on that path | the hidden Site B edges with their properties | the same: **still bypasses** | `permission denied for function age_vle` |
+| `age_startnode` / `age_endnode` on a hand-written edge whose ends are the hidden unit's id | the hidden vertex with its properties | `access to vertex ... denied by row-level security policy on "Unit"`: **closed by 1.7.0** | `permission denied for function age_startnode` (kept, defence in depth) |
+| `age_vertex_stats` of the hidden unit | its in- and out-degree | `in_degree 1, out_degree 2`: **still bypasses** | `permission denied for function age_vertex_stats` |
+| `age_graph_stats` of the graph | not measured on 1.6.0 (same code) | `num_loaded_vertices 7, num_loaded_edges 7`: counts of hidden elements | `permission denied for function age_graph_stats` |
+
+The fixed-length version of the variable-length question returns nothing to the contractor in every case.
+Variable-length paths and both stats functions read AGE's global graph: a cached copy of the graph's vertices and
+edges, loaded by a direct heap scan outside the query, so policies and table privileges never apply to it. AGE's
+global-graph code is the same in 1.6.0 and 1.7.0 apart from a memory-allocation change, so `graph_stats`, which the
+1.6.0 checks missed, very likely leaked the same counts there (not measured). The 1.6.0 column is the earlier run of
+these checks on the 1.6.0 image. The fix is
+[apache/age#2561](https://github.com/apache/age/pull/2561) (*Add RLS and SELECT privilege enforcement to global
+graph*, merged 2026-09-29), with the follow-ups [apache/age#2592](https://github.com/apache/age/pull/2592) and
+[apache/age#2593](https://github.com/apache/age/pull/2593) (merged 2026-10-12 and 2026-10-13): the global graph is
+then loaded with SELECT privilege checks and, where RLS applies, through the planner (setting
+`age.enforce_rls_in_traversal`, on by default). They are on AGE's
+master branch only; checked on 2026-11-14, no PG17 release or the PG17 branch contains them (the latest PG17 release
+is 1.7.0, 2026-02-11). **Variable-length paths stay withheld from restricted roles until a PG17 release includes
+#2561**, and are then to be measured again before the restriction is lifted.
 
 **Measures, and what then holds:**
 
 1. `fleet.restrict_age_functions()` revokes EXECUTE on `age_vle`, `age_startnode`, `age_endnode`,
-   `age_vertex_stats` and `age_delete_global_graphs` from PUBLIC. The contractor then gets `permission denied for
-   function age_vle` (and likewise for the others); fixed-length patterns keep working. No non-owner role in this
-   demo may use variable-length paths; the graph tools do not need them (each hop is a fixed pattern, and the ISA-95
-   path is walked one `CONTAINS` hop at a time).
-2. **New labels.** AGE creates a table for each new label (`create_vlabel` or a `CREATE` with a new label) without
-   firing event triggers: a `ddl_command_end` trigger recorded an ordinary `CREATE TABLE` (the control) but neither
+   `age_vertex_stats`, `age_graph_stats` and `age_delete_global_graphs` from PUBLIC. The contractor then gets
+   `permission denied for function age_vle` (and likewise for the others); fixed-length patterns keep working. No
+   non-owner role in this demo may use variable-length paths; the graph tools do not need them (each hop is a fixed
+   pattern, and the ISA-95 path is walked one `CONTAINS` hop at a time). `startNode`/`endNode` stay revoked although
+   1.7.0 checks RLS in them: nothing here needs them, and keeping them out costs nothing.
+2. **New labels.** AGE (1.7.0 as 1.6.0) creates a table for each new label (`create_vlabel` or a `CREATE` with a
+   new label) without firing event triggers: a `ddl_command_end` trigger recorded an ordinary `CREATE TABLE` (the control) but neither
    `create_vlabel` nor a Cypher `CREATE` of a new label, so no trigger can secure new labels. A new label table has no policy and no grant until `fleet.secure_graph` runs again. In the rules-first
    fixture, before re-securing, the contractor's `MATCH (u:Unit)` got `permission denied for table Unit` (fails
    closed), and an unlabeled `MATCH (n)` still returned only Site A and shared vertices: when a parent table is
    scanned, its own policy applies to the children's rows.
 3. `fleet.graph_security_gaps(graph)` lists label tables without RLS or without the policy, login roles that may
-   execute a bypass function, and BYPASSRLS roles. The loader refuses to finish while it is not empty. Re-granting
+   execute a restricted AGE function, and BYPASSRLS roles. The loader refuses to finish while it is not empty. Re-granting
    `age_vle` to PUBLIC (as an `ALTER EXTENSION age UPDATE` might) shows up there for every demo role; revoking
    clears it.
 
@@ -141,15 +162,17 @@ recordings, the same 4,816 in chunks, envelopes, segments and context; the LOT-0
 F-212's failure history not visible.
 
 So: **one set of access rules holds as tested** for direct SQL on every table of both stores and for fixed-length
-Cypher, in both enablement orders, given the two measures above. It does not hold for AGE's variable-length paths
-or id-based lookups, which this demo therefore withholds from non-owner roles. These are tested paths, not a proof.
+Cypher, in both enablement orders, given the two measures above. With AGE 1.7.0 it does not hold for variable-length paths or the
+graph statistics functions, which this demo therefore withholds from non-owner roles. These are tested paths, not a proof.
 
 ## 4. Atomic write-back
 
 [confirm_finding.py](confirm_finding.py) `write_finding`, as `fleet_engineer`, in one transaction:
 `morlet_add_label` (label `finding:resembles` on the query interval, note = the evidence),
 `morlet_add_episodes` (exempt episode, kept by compaction), then Cypher
-`CREATE (a:PhysicalAsset)-[:RESEMBLES {finding_id, evidence, label_id, episode_id, ...}]->(f:Failure)`.
+`CREATE (a:PhysicalAsset)-[:RESEMBLES {finding_id, evidence, label_id, episode_id, ...}]->(f:Failure)`. The
+properties are written in the `CREATE` itself: since AGE 1.7.0 a `SET` needs UPDATE on the label table
+([apache/age#2309](https://github.com/apache/age/pull/2309)), and `fleet_engineer` has INSERT only on `RESEMBLES`.
 
 | Case | Result | Graph edges / labels / episodes after |
 |---|---|---|
@@ -158,6 +181,7 @@ or id-based lookups, which this demo therefore withholds from non-owner roles. T
 | normal | written | 1 / 1 / 1 |
 | identical retry | `exists`, nothing written | 1 / 1 / 1 |
 | same finding id, different evidence | refused | unchanged |
+| `fleet_engineer` runs `SET` on the recorded edge | `permission denied for table RESEMBLES` | unchanged |
 | as `fleet_contractor` | `permission denied for table vibration_labels` | nothing |
 
 The CLI writes only after the person types the finding's id; anything else exits with status 2 and writes nothing

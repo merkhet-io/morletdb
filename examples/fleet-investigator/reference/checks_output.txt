@@ -1,7 +1,7 @@
 === check 1
 {
  "extensions": {
-  "age": "1.6.0",
+  "age": "1.7.0",
   "pg_morlet": "0.3.11"
  },
  "server": "17.6 (Debian 17.6-2.pgdg12+1)",
@@ -96,23 +96,24 @@
  ],
  "per_position_explain": [
   "Sort",
-  "  Sort Key: (((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('49160'::oid, m.id), m.properties), '\"equipment_id\"'::agtype])))::text)",
+  "  Sort Key: (((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype])))::text)",
   "  ->  Nested Loop",
   "        ->  Nested Loop",
   "              ->  Sort",
-  "                    Sort Key: (agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('49160'::oid, m.id), m.properties), '\"equipment_id\"'::agtype]))",
+  "                    Sort Key: (agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype]))",
   "                    ->  Nested Loop",
   "                          Join Filter: (_age_default_alias_0.start_id = u.id)",
   "                          ->  Nested Loop",
-  "                                Join Filter: ((_age_default_alias_0.end_id = _age_default_alias_1.id) AND _ag_enforce_edge_uniqueness(_age_default_alias_0.id, _age_default_alias_2.id))",
+  "                                Join Filter: ((_age_default_alias_0.end_id = _age_default_alias_1.id) AND _ag_enforce_edge_uniqueness2(_age_default_alias_0.id, _age_default_alias_2.id))",
   "                                ->  Nested Loop",
   "                                      Join Filter: (_age_default_alias_2.start_id = _age_default_alias_1.id)",
-  "                                      ->  Nested Loop",
-  "                                            Join Filter: (_age_default_alias_2.end_id = m.id)",
+  "                                      ->  Hash Join",
+  "                                            Hash Cond: (m.id = _age_default_alias_2.end_id)",
   "                                            ->  Seq Scan on \"EquipmentModule\" m",
   "                                                  Filter: (fleet.graph_site_visible(properties) AND (properties @> '{\"monitored\": true}'::agtype))",
-  "                                            ->  Seq Scan on \"CONTAINS\" _age_default_alias_2",
-  "                                                  Filter: fleet.graph_site_visible(properties)",
+  "                                            ->  Hash",
+  "                                                  ->  Seq Scan on \"CONTAINS\" _age_default_alias_2",
+  "                                                        Filter: fleet.graph_site_visible(properties)",
   "                                      ->  Seq Scan on \"EquipmentModule\" _age_default_alias_1",
   "                                            Filter: fleet.graph_site_visible(properties)",
   "                                ->  Seq Scan on \"CONTAINS\" _age_default_alias_0",
@@ -123,7 +124,7 @@
   "                    ->  Sort",
   "                          Sort Key: (((r.metadata ->> 'start'::text))::timestamp with time zone) DESC",
   "                          ->  Seq Scan on vibration r",
-  "                                Filter: (fleet.site_visible((metadata ->> 'site'::text)) AND ((metadata ->> 'equipment_id'::text) = ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('49160'::oid, m.id), m.properties), '\"equipment_id\"'::agtype])))::text))",
+  "                                Filter: (fleet.site_visible((metadata ->> 'site'::text)) AND ((metadata ->> 'equipment_id'::text) = ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype])))::text))",
   "        ->  Function Scan on morlet_search_similar s"
  ],
  "similar_failures": [
@@ -177,47 +178,48 @@
   "          Join Filter: (i_1.start_id = a_1.id)",
   "          ->  Nested Loop",
   "                Join Filter: (i_1.end_id = m_1.id)",
-  "                ->  Seq Scan on \"EquipmentModule\" m_1",
-  "                      Filter: (fleet.graph_site_visible(properties) AND (properties @> '{\"equipment_id\": \"P-102.BRG-3\"}'::agtype))",
   "                ->  Seq Scan on \"INSTALLED_IN\" i_1",
   "                      Filter: (fleet.graph_site_visible(properties) AND (agtype_access_operator(VARIADIC ARRAY[properties, '\"from\"'::agtype]) <= '\"2004-04-17T12:00:00Z\"'::agtype) AND ((agtype_access_operator(VARIADIC ARRAY[properties, '\"to\"'::agtype]) IS NULL) OR ('\"2004-04-17T12:00:00Z\"'::agtype < agtype_access_operator(VARIADIC ARRAY[properties, '\"to\"'::agtype]))))",
+  "                ->  Materialize",
+  "                      ->  Seq Scan on \"EquipmentModule\" m_1",
+  "                            Filter: (fleet.graph_site_visible(properties) AND (properties @> '{\"equipment_id\": \"P-102.BRG-3\"}'::agtype))",
   "          ->  Seq Scan on \"PhysicalAsset\" a_1",
   "                Filter: fleet.graph_site_visible(properties)",
   "  ->  Hash Right Join",
-  "        Hash Cond: ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('49160'::oid, m.id), m.properties), '\"equipment_id\"'::agtype]))::text = (h.metadata ->> 'equipment_id'::text))",
-  "        Join Filter: ((((h.metadata ->> 'start'::text))::timestamp with time zone >= ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('49160'::oid, i.id), i.properties), '\"from\"'::agtype]))::text)::timestamp with time zone) AND (((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('49160'::oid, i.id), i.properties), '\"to\"'::agtype]))::text IS NULL) OR (((h.metadata ->> 'start'::text))::timestamp with time zone < ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('49160'::oid, i.id), i.properties), '\"to\"'::agtype]))::text)::timestamp with time zone)))",
-  "        ->  Hash Right Join",
-  "              Hash Cond: (_age_default_alias_1.start_id = (age_id((_agtype_build_vertex(f.id, _label_name('49160'::oid, f.id), f.properties))))::graphid)",
-  "              ->  Hash Join",
-  "                    Hash Cond: (fm.id = _age_default_alias_1.end_id)",
-  "                    ->  Seq Scan on \"FailureMode\" fm",
-  "                          Filter: fleet.graph_site_visible(properties)",
-  "                    ->  Hash",
-  "                          ->  Seq Scan on \"CLASSIFIED_AS\" _age_default_alias_1",
+  "        Hash Cond: ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype]))::text = (h.metadata ->> 'equipment_id'::text))",
+  "        Join Filter: ((((h.metadata ->> 'start'::text))::timestamp with time zone >= ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('48809'::oid, i.id), i.properties), '\"from\"'::agtype]))::text)::timestamp with time zone) AND (((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('48809'::oid, i.id), i.properties), '\"to\"'::agtype]))::text IS NULL) OR (((h.metadata ->> 'start'::text))::timestamp with time zone < ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('48809'::oid, i.id), i.properties), '\"to\"'::agtype]))::text)::timestamp with time zone)))",
+  "        ->  Hash Left Join",
+  "              Hash Cond: ((age_id((_agtype_build_vertex(f.id, _label_name('48809'::oid, f.id), f.properties))))::graphid = _age_default_alias_1.start_id)",
+  "              ->  Hash Left Join",
+  "                    Hash Cond: ((age_id(_agtype_build_vertex(a.id, _label_name('48809'::oid, a.id), a.properties)))::graphid = _age_default_alias_0.end_id)",
+  "                    ->  Hash Join",
+  "                          Hash Cond: (a.id = i.start_id)",
+  "                          ->  Seq Scan on \"PhysicalAsset\" a",
   "                                Filter: fleet.graph_site_visible(properties)",
-  "              ->  Hash",
-  "                    ->  Hash Right Join",
-  "                          Hash Cond: (_age_default_alias_0.end_id = (age_id(_agtype_build_vertex(a.id, _label_name('49160'::oid, a.id), a.properties)))::graphid)",
-  "                          ->  Hash Join",
-  "                                Hash Cond: (f.id = _age_default_alias_0.start_id)",
-  "                                ->  Seq Scan on \"Failure\" f",
-  "                                      Filter: fleet.graph_site_visible(properties)",
-  "                                ->  Hash",
-  "                                      ->  Seq Scan on \"OF_ASSET\" _age_default_alias_0",
-  "                                            Filter: fleet.graph_site_visible(properties)",
   "                          ->  Hash",
   "                                ->  Hash Join",
-  "                                      Hash Cond: (m.id = i.end_id)",
-  "                                      ->  Seq Scan on \"EquipmentModule\" m",
+  "                                      Hash Cond: (i.end_id = m.id)",
+  "                                      ->  Seq Scan on \"INSTALLED_IN\" i",
   "                                            Filter: fleet.graph_site_visible(properties)",
   "                                      ->  Hash",
-  "                                            ->  Hash Join",
-  "                                                  Hash Cond: (a.id = i.start_id)",
-  "                                                  ->  Seq Scan on \"PhysicalAsset\" a",
-  "                                                        Filter: fleet.graph_site_visible(properties)",
-  "                                                  ->  Hash",
-  "                                                        ->  Seq Scan on \"INSTALLED_IN\" i",
-  "                                                              Filter: fleet.graph_site_visible(properties)",
+  "                                            ->  Seq Scan on \"EquipmentModule\" m",
+  "                                                  Filter: fleet.graph_site_visible(properties)",
+  "                    ->  Hash",
+  "                          ->  Hash Join",
+  "                                Hash Cond: (_age_default_alias_0.start_id = f.id)",
+  "                                ->  Seq Scan on \"OF_ASSET\" _age_default_alias_0",
+  "                                      Filter: fleet.graph_site_visible(properties)",
+  "                                ->  Hash",
+  "                                      ->  Seq Scan on \"Failure\" f",
+  "                                            Filter: fleet.graph_site_visible(properties)",
+  "              ->  Hash",
+  "                    ->  Hash Join",
+  "                          Hash Cond: (_age_default_alias_1.end_id = fm.id)",
+  "                          ->  Seq Scan on \"CLASSIFIED_AS\" _age_default_alias_1",
+  "                                Filter: fleet.graph_site_visible(properties)",
+  "                          ->  Hash",
+  "                                ->  Seq Scan on \"FailureMode\" fm",
+  "                                      Filter: fleet.graph_site_visible(properties)",
   "        ->  Hash",
   "              ->  Nested Loop",
   "                    ->  Limit",
@@ -363,6 +365,7 @@
    },
    "forged edge into startNode": "permission denied for function age_startnode",
    "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
    "units visible by SQL": 1,
    "MorletDB tables (rows)": {
     "fleet.rls_rules_first": 1,
@@ -433,6 +436,7 @@
    },
    "forged edge into startNode": "permission denied for function age_startnode",
    "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
    "units visible by SQL": 2,
    "MorletDB tables (rows)": {
     "fleet.rls_rules_first": 2,
@@ -549,11 +553,13 @@
    "variable-length path, its edges": [
     "[{\"id\": 2533274790395906, \"label\": \"FROM_LOT\", \"end_id\": 1688849860263937, \"start_id\": 1407374883553282, \"properties\": {\"site\": \"B\"}}::edge, {\"id\": 2814749767106561, \"label\": \"FAILED_AS\", \"end_id\": 1970324836974593, \"start_id\": 1407374883553282, \"properties\": {\"site\": \"B\"}}::edge]"
    ],
-   "forged edge into startNode": [
-    "{\"id\": 1407374883553282, \"label\": \"Unit\", \"properties\": {\"id\": \"UB\", \"site\": \"B\", \"recording_id\": \"rb\"}}::vertex"
-   ],
+   "forged edge into startNode": "ERROR: access to vertex 1407374883553282 denied by row-level security policy on \"Unit\"",
+   "forged edge into endNode": "ERROR: access to vertex 1407374883553282 denied by row-level security policy on \"Unit\"",
    "vertex_stats of the hidden unit": [
     "{\"id\": 1407374883553282, \"label\": \"Unit\", \"in_degree\": 1, \"out_degree\": 2, \"self_loops\": 0}"
+   ],
+   "graph_stats": [
+    "{\"graph\": \"rls_data_first\", \"num_loaded_edges\": 7, \"num_loaded_vertices\": 7}"
    ]
   },
   "fleet_contractor": {
@@ -593,6 +599,7 @@
    },
    "forged edge into startNode": "permission denied for function age_startnode",
    "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
    "units visible by SQL": 1,
    "MorletDB tables (rows)": {
     "fleet.rls_data_first": 1,
@@ -663,6 +670,7 @@
    },
    "forged edge into startNode": "permission denied for function age_startnode",
    "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
    "units visible by SQL": 2,
    "MorletDB tables (rows)": {
     "fleet.rls_data_first": 2,
@@ -692,15 +700,15 @@
   "gaps_while_granted": [
    [
     "fleet_reader: ag_catalog.age_vle(ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype)",
-    "may execute a function that bypasses row-level security"
+    "may execute a restricted AGE function (CHECKS.md, check 3)"
    ],
    [
     "fleet_contractor: ag_catalog.age_vle(ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype)",
-    "may execute a function that bypasses row-level security"
+    "may execute a restricted AGE function (CHECKS.md, check 3)"
    ],
    [
     "fleet_engineer: ag_catalog.age_vle(ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype)",
-    "may execute a function that bypasses row-level security"
+    "may execute a restricted AGE function (CHECKS.md, check 3)"
    ]
   ],
   "gaps_after_revoking": []
@@ -811,6 +819,7 @@
  },
  "identical retry": "exists",
  "conflicting retry": "refused: FND-CHECK-OK exists with other content; not changed",
+ "engineer changes the recorded finding (SET)": "permission denied for table RESEMBLES",
  "contractor writes": "refused: permission denied for table vibration_labels"
 }
 === check 5
