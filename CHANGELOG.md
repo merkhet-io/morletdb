@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Steward sidecar image serves metrics (#489).** `deploy/steward/Dockerfile` did not copy `metrics.py`, so
+  `steward.py metrics` failed in the sidecar with `ModuleNotFoundError`. A test now checks that the image copies every
+  module `steward.py` imports.
 - **WinCC OA integration, phase A (#474), experimental, awaiting validation in WinCC OA.** A Python companion in
   `integrations/winccoa/` turns WinCC OA observations into ordinary context rows and answers investigations through
   the shipped search, with a replay machine, a compose setup on the release image and tests against a disposable
