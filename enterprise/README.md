@@ -1,8 +1,8 @@
 # MorletDB Enterprise (empty)
 
-**DRAFT layout, no enterprise code yet.** This directory is where enterprise code will live once
-[docs/licensing.md](../docs/licensing.md) takes effect. Until then this README is under the Apache License 2.0
-like every other file.
+**No enterprise code yet.** This directory is where enterprise code will live, under the
+[MorletDB Enterprise License](../LICENSE-ENTERPRISE.md) and the rules of [docs/licensing.md](../docs/licensing.md).
+This README itself is under the Apache License 2.0 like every file without the enterprise header.
 
 Rules, enforced by `tools/license_check.py` in CI:
 - every source file here starts with the MorletDB Enterprise License header;

@@ -1,20 +1,23 @@
-# MorletDB Enterprise License (DRAFT 0.1)
+# MorletDB Enterprise License (version 0.1)
 
-**DRAFT, not in force and not legal advice.** Written as a first version of the terms the owner wants. It must be
-reviewed by a lawyer before any file is placed under it. Until then no file in this repository is under this licence.
+**Version 0.1, to be reviewed by a lawyer before any file is placed under it.** No file in this repository is under
+this licence yet.
 
 This licence applies only to files under the `enterprise/` directory that carry the MorletDB Enterprise License
 header. Every other file is under the Apache License 2.0 ([LICENSE](LICENSE)), and nothing here limits it.
 
 ## 1. Parties and terms
 
-- **Licensor:** Merkhet (placeholder for the legal entity), the copyright holder of the Enterprise Software.
+- **Licensor:** Merkhet, the copyright holder of the Enterprise Software.
 - **Enterprise Software:** the files described above, in source or compiled form, and changes to them.
 - **You:** the person or organisation using the Enterprise Software, and its employees and contractors acting for
   it.
 - **Production Use:** use with data from real machines or processes for operational, business or commercial
   purposes. Running the software in development, testing, continuous integration, evaluation or teaching, with any
   data, is not Production Use.
+- **Machine:** one computer, physical or virtual, that runs the Enterprise Software or is managed by it (for
+  example an edge box registered with a fleet console). Each container or virtual machine counts as one Machine.
+- **Free Tier:** Production Use on up to 3 Machines at any time, for each organisation including its affiliates.
 - **Subscription:** a written agreement with the Licensor that allows Production Use, for a stated scope (for
   example a number of machines) and period.
 
@@ -22,12 +25,13 @@ header. Every other file is under the Apache License 2.0 ([LICENSE](LICENSE)), a
 
 1. Read, copy and change the source of the Enterprise Software.
 2. Build and run it for any purpose that is not Production Use.
-3. Use it in Production Use within the scope of a valid Subscription.
+3. Use it in Production Use within the Free Tier, or within the scope of a valid Subscription.
 4. Share changes you made with the Licensor, for example as a pull request.
 
 ## 3. What you may not do
 
-1. Use the Enterprise Software in Production Use without a valid Subscription, or beyond its scope.
+1. Use the Enterprise Software in Production Use beyond the Free Tier without a valid Subscription, or beyond the
+   Subscription's scope.
 2. Distribute the Enterprise Software, or changed versions of it, to third parties, or offer it as a hosted or
    managed service to third parties, except under a separate written agreement with the Licensor.
 3. Remove, disable or work around licence checks, or remove the licence notices in the files.

@@ -1,16 +1,18 @@
 # Licensing: open core and enterprise
 
-**Status: DRAFT (2026-11-14), not in force.** It takes effect only when the owner approves it and the licence texts
-have been reviewed by a lawyer. Until then every file in this repository is under the Apache License 2.0, as
-[LICENSE](../LICENSE) says.
+**Status:** decided by the owner on 2026-11-14; in force from the day this file is merged into `main`. The
+[Contributor License Agreement](cla.md) applies to contributions from that day. No file is under the enterprise
+licence yet: every file in this repository is under the Apache License 2.0, as [LICENSE](../LICENSE) says, until
+the first enterprise file is added under `enterprise/`. The enterprise licence text is version 0.1 and is reviewed
+by a lawyer before that happens.
 
 MorletDB has two layers:
 - **MorletDB, the open-source core:** Apache License 2.0.
 - **MorletDB Enterprise:** extra features for running many machines in production, under the
   [MorletDB Enterprise License](../LICENSE-ENTERPRISE.md).
 
-The enterprise source is public too, so you can read it, review it and run its tests. Using it in production needs
-a subscription.
+The enterprise source is public too, in this repository, so you can read it, review it and run its tests. Using it
+in production is free on up to 3 machines; beyond that it needs a subscription.
 
 ## The rule for the boundary
 
@@ -61,7 +63,7 @@ The header of an enterprise file:
 
 ```text
 // Copyright 2026 Merkhet. Licensed under the MorletDB Enterprise License (LICENSE-ENTERPRISE.md);
-// not under the Apache License 2.0. Production use requires a subscription.
+// not under the Apache License 2.0. Production use beyond the free tier requires a subscription.
 ```
 
 (`#` instead of `//` in Python, shell and TOML files.)
@@ -69,10 +71,11 @@ The header of an enterprise file:
 ## Contributions
 
 - Contributions to the core are licensed under Apache 2.0, as before.
-- From the date this document takes effect, contributors also sign the
-  [Contributor License Agreement](cla.md). It lets the project use a contribution in both layers. Without it, a
-  contribution can only ever be used in the core.
-- Contributions to `enterprise/` need the agreement in any case.
+- From the day this document takes effect, contributors also agree to the
+  [Contributor License Agreement](cla.md) by signing off every commit (`git commit -s`). It lets the project use a
+  contribution in both layers. A CI check refuses pull requests from outside contributors with commits that are not
+  signed off.
+- Contributions merged before that day can only ever be used in the core.
 
 ## Names, data and the paper
 
@@ -83,11 +86,9 @@ The header of an enterprise file:
   [demo-catalog.md](demo-catalog.md) lists each dataset's terms.
 - **The technical report** stays under CC BY 4.0.
 
-## Open questions for the owner
+## Decisions (owner, 2026-11-14)
 
-1. The licensor's legal name in the headers and the enterprise licence (Merkhet is a placeholder).
-2. Whether enterprise source stays public in this repository (source-available, as above) or moves to a private
-   one.
-3. Whether a free tier allows production use on a small number of machines (for example up to 3), so a single plant
-   can try fleet features.
-4. The date the CLA starts. Contributions merged before it stay usable in the core only.
+1. **Licensor:** Merkhet.
+2. **Enterprise source:** public, in this repository, under `enterprise/`.
+3. **Free tier:** production use of enterprise features on up to 3 machines needs no subscription.
+4. **CLA:** applies to contributions from the day this document is merged.
