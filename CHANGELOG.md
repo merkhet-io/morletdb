@@ -14,6 +14,19 @@
   the shipped search, with a replay machine, a compose setup on the release image and tests against a disposable
   MorletDB. No WinCC OA is involved yet; the adapter (phase B) and native acceptance (phase C) are not built.
   Apache 2.0, community-maintained, no Siemens certification or partnership.
+- **WinCC OA integration, phase B (#474): an experimental WinCC OA adapter, awaiting validation in WinCC OA.** A
+  WinCC OA JavaScript Manager script in `integrations/winccoa/adapter/` (CommonJS, Node.js 22, no dependencies)
+  that reads configured asset datapoints and sends their values, source times and quality to the companion over
+  loopback (`morlet-winccoa/1`, bearer token from a 0600 file). It batches observations per session seq and
+  resends them until acknowledged, stops in an error state on a conflicting retry, sends snapshots after a
+  (re)connect and gaps where evidence is missing, sends heartbeats with RTT, runs investigations from its own slot
+  datapoints and writes results back only for the slot's current request. It writes only to its own namespace;
+  an idempotent bootstrap creates it. `API.md` lists every WinCC OA API element used, with its documentation page;
+  whether the JavaScript API delivers source time and quality attributes is unconfirmed and is a setting, with a
+  fallback to the value alone. Tested on a fake of that documented surface and end to end against the real
+  companion and the release image; it has not run in WinCC OA. CI builds a bundle with a manifest of file hashes;
+  publishing it with releases waits for the owner. Apache 2.0, community-maintained, no Siemens certification or
+  partnership; WinCC OA is installed and licensed separately.
 - **Licensing: Apache 2.0 for everything.** The open-core split of #473 is withdrawn: no enterprise licence, no
   `enterprise/` layer, no CLA and no licence-boundary check. Every part of MorletDB, integrations included, is under the
   Apache License 2.0 ([licensing](docs/licensing.md)).

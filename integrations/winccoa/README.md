@@ -1,10 +1,11 @@
 
-# MorletDB WinCC OA integration: phase A (companion and replay)
+# MorletDB WinCC OA integration: companion, replay and adapter
 
-**Status: experimental, awaiting validation in WinCC OA.** This is phase A of [docs/winccoa.md](../../docs/winccoa.md)
-(#474): the Python companion, a replay machine and their tests. No WinCC OA is involved yet: the adapter (phase B)
-and native acceptance (phase C) are not built. There is no Siemens certification or partnership; WinCC OA is
-installed and licensed separately.
+**Status: experimental WinCC OA adapter, awaiting validation in WinCC OA.** This is phases A and B of
+[docs/winccoa.md](../../docs/winccoa.md) (#474): the Python companion, a replay machine, the adapter that runs as a
+WinCC OA JavaScript Manager, and their tests. No WinCC OA has been involved: the adapter is tested against a fake of
+the documented JavaScript Manager API and against the real companion. Native acceptance in WinCC OA (phase C) is not
+done. There is no Siemens certification or partnership; WinCC OA is installed and licensed separately.
 
 Open source under the Apache License 2.0, like the rest of MorletDB ([docs/licensing.md](../../docs/licensing.md)).
 It is community-maintained.
@@ -18,6 +19,7 @@ ordinary context rows (`<collection>_ctx`), readable and searchable with the cor
 | `companion/tests/` | tests against a disposable MorletDB in Docker (pinned release image) |
 | `companion/companion.example.toml` | every setting, with the design's proposed defaults |
 | `replay/` | the synthetic machine, its waveform writer, a simulated adapter and `replay.py` |
+| `adapter/` | the adapter (phase B): a WinCC OA JavaScript Manager script, its bootstrap, `API.md` (every WinCC OA API element used, with its documentation page, confirmed or not), tests and the bundle tool |
 | `compose.yaml`, `Dockerfile`, `deploy/` | MorletDB (pinned image) and the companion, with the replay |
 
 ## What the companion does
@@ -112,8 +114,8 @@ parameterized SQL. No core change was needed for phase A.
 - **Cancellation:** a superseded request's backend is cancelled with `pg_cancel_backend`, repeated for up to 1 s
   in case it is between statements; its result is `service_failure` with `superseded_by`.
 - **Acquisition identity in observations:** the adapter names the acquisition in every observation; the companion
-  checks that it exists in the asset's collection, is visible, and has the asset's machine. How the real adapter
-  learns it (for example from health, or from a datapoint the writer publishes) is for phase B.
+  checks that it exists in the asset's collection, is visible, and has the asset's machine. The adapter (phase B)
+  takes it from `GET /v1/health` (`current_acquisition` of each asset), polled with every heartbeat.
 - **`no_matches` and `evidence_unavailable`:** a source recording that does not exist and one hidden by row
   security both give `evidence_unavailable` (they cannot be told apart, by design of row security); a missing
   privilege gives `permission_denied`.
@@ -132,6 +134,42 @@ cd integrations/winccoa/companion/tests
 ../../../../.venv/bin/python -m unittest -v test_offline test_machine test_context test_service test_rls
 ```
 
+The adapter (Node.js 22 or later; the end-to-end test also needs the venv above and Docker):
+
+```sh
+(cd integrations/winccoa/adapter && node --test test/*.test.js)    # unit tests on the fake WinCC OA API
+(cd integrations/winccoa/adapter/test/e2e && ../../../../../.venv/bin/python -m unittest -v test_e2e)
+node integrations/winccoa/adapter/tools/bundle.js --out dist        # the bundle, from the committed state
+```
+
+## The adapter (phase B)
+
+`adapter/` is the client side of `morlet-winccoa/1` that `replay/adapter_sim.py` simulates, as a WinCC OA JavaScript
+Manager script (CommonJS, Node.js 22, no dependencies). Installation, configuration, start and stop, the namespace
+datapoints and troubleshooting are in [docs/winccoa.md, The adapter](../../docs/winccoa.md#the-adapter-phase-b).
+
+| Path | What it is |
+|---|---|
+| `adapter/index.js`, `adapter/bootstrap.js` | the manager scripts: the adapter, and the one-time idempotent bootstrap of its namespace |
+| `adapter/src/` | `config`, `client` (HTTP, token file), `outbox` (seq, batching), `subscriptions`, `investigations`, `namespace`, `adapter`, `bootstrap` |
+| `adapter/config/adapter.example.json` | every setting with its default |
+| `adapter/API.md` | every WinCC OA function, type and attribute used, with its documentation page; what is unconfirmed |
+| `adapter/test/` | unit tests on `fake-winccoa.js` (exactly the API.md surface), and `e2e/` against the real companion |
+| `adapter/tools/bundle.js` | the reviewable tarball with a manifest of file hashes |
+
+What it does, matching the simulation: one session per start and a seq per observation; batches of at most 1,000
+observations and 1 MiB, resent identically until acknowledged; a 409 or another refusal stops the flow in an error
+state rather than looping; snapshots (never history) for initial values, after a REDU or DIST refresh, for a new
+acquisition and after a queue overflow; gaps at start, overflow, refresh, unrepresentable values and clean shutdown;
+heartbeats every 10 s with RTT; investigations from its slot datapoints, written back only while their request_id
+is the slot's current one (late results dropped and counted); status and health in its namespace datapoint. It
+reads asset datapoints and writes only to its namespace.
+
+Not confirmed from the documentation, and therefore settings (see `adapter/API.md`): whether `dpConnect` with
+attribute addresses or `dpQueryConnectSingle` delivers source time (`_original.._stime`) and quality
+(`_original.._bad`, `_original.._uncertain`). A refused subscription falls back to the value alone, which the
+companion stores as untimed and derives no context from.
+
 ## Compose (Linux)
 
 ```sh
@@ -145,10 +183,11 @@ docker compose -f integrations/winccoa/compose.yaml run --rm replay      # histo
 
 The companion and the replay use host networking, so the companion listens on the host's 127.0.0.1:8770 only.
 
-## Limits of this phase
+## Limits
 
-- No WinCC OA: the adapter is simulated (`replay/adapter_sim.py`). Source time, quality attributes and reconnect
-  behaviour of the real JavaScript Manager API are open questions of docs/winccoa.md section 8.
+- No WinCC OA: the replay uses the simulated adapter (`replay/adapter_sim.py`), and the real adapter has run only on
+  a fake of the documented API. Source time, quality attributes and reconnect behaviour of the real JavaScript
+  Manager API are open questions of docs/winccoa.md section 8, for phase C.
 - The synthetic machine shows that the path works and that repeated patterns are found; it says nothing about real
   machines. Labels of matches are annotations of earlier intervals, not a diagnosis.
 - The limits are starting values; they have not been measured under load yet.
