@@ -1,0 +1,55 @@
+== stress 2026-11-13T22:54:47
+22:54  up 17 days,  7:50, 18 users, load averages: 2.38 2.58 2.53
+iu4-db
+dec-prof
+morletdb-agent-demo-db-1
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1
+== round 1 2026-11-13T22:54:49
+22:54  up 17 days,  7:50, 18 users, load averages: 2.99 2.71 2.58
+iu4-db
+dec-prof
+morletdb-agent-demo-db-1
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1
+== round 2 2026-11-13T23:58:07
+23:58  up 17 days,  8:54, 18 users, load averages: 3.18 2.59 2.43
+iu4-db
+dec-prof
+morletdb-agent-demo-db-1
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1
+== round 3 2026-11-14T01:00:53
+ 1:00  up 17 days,  9:57, 18 users, load averages: 2.44 2.55 2.19
+iu4-db
+dec-prof
+morletdb-agent-demo-db-1
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1
+== end 2026-11-14T02:04:30
+ 2:04  up 17 days, 11 hrs, 18 users, load averages: 4.38 4.49 4.31
+iu4-db
+dec-prof
+morletdb-agent-demo-db-1
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1
