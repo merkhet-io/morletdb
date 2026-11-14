@@ -502,7 +502,7 @@ fn grid_chunk_without_corrections(body: &[u8]) -> bool {
 /// estimate costs size, never exactness. None for constant or too-short chunks and noisy floats.
 fn detect_step(samples: &[f64]) -> Option<f64> {
     let mut v: Vec<f64> = samples.to_vec();
-    v.sort_by(|a, b| a.total_cmp(b));
+    v.sort_unstable_by(|a, b| a.total_cmp(b));
     v.dedup_by(|a, b| a.to_bits() == b.to_bits() || *a == *b);
     if v.len() < 3 {
         return None;

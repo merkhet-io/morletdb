@@ -26,7 +26,10 @@
 //! (no fused multiply-add), rounded to the nearest float32 (`as f32`). `ord32` maps a float32 to an integer
 //! keeping order: +0 is 0, -0 is -1. A decoder rejects any value or length outside these rules, and every
 //! sample is then validated as for every other version.
-use crate::{decode_stream, encode_stream, get_varint, put_varint, CodecError, Kind, MAX_SAMPLES};
+use crate::{
+    decode_stream, encode_side_stream, encode_stream, get_varint, put_varint, CodecError, Kind,
+    MAX_SAMPLES,
+};
 
 /// Chunk format version 6.
 pub(crate) const VERSION: u8 = 6;
@@ -124,7 +127,7 @@ fn encode_signmag(samples: &[f64]) -> Vec<u8> {
 /// corrections make every sample exact. None when no grid fits or the coding is not representable.
 fn encode_grid(samples: &[f64]) -> Option<Vec<u8>> {
     let mut v = samples.to_vec();
-    v.sort_by(|a, b| a.total_cmp(b));
+    v.sort_unstable_by(|a, b| a.total_cmp(b));
     v.dedup_by(|a, b| a.to_bits() == b.to_bits() || *a == *b);
     // A grid repeats values; a chunk with more distinct values than three quarters of its samples codes smaller by sign
     // and magnitude in nearly every case (development set), so the fit is not tried (it only affects size).
@@ -194,8 +197,9 @@ fn encode_grid(samples: &[f64]) -> Option<Vec<u8>> {
     let has_fix = fix.iter().any(|&c| c != 0);
     out.push(has_fix as u8);
     if has_fix {
-        // Corrections are nearly white: LPC gained nothing in development and costs encode time.
-        encode_stream(&fix, false, &mut out);
+        // Corrections are nearly white: coded like version 5's side streams (fixed predictors 0..=1), which
+        // lost nothing in development and costs less encode time. Any predictor is valid to a decoder.
+        encode_side_stream(&fix, &mut out);
     }
     Some(out)
 }
