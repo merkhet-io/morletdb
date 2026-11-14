@@ -2,7 +2,7 @@
 # at /data so the steward can read free disk space, and pass MORLET_STEWARD_DSN for the morlet_steward role.
 FROM python:3.12.10-slim-bookworm
 RUN pip install --no-cache-dir "psycopg[binary]==3.2.10"
-COPY tools/steward/policy.py tools/steward/store.py tools/steward/steward.py /opt/steward/
+COPY tools/steward/policy.py tools/steward/store.py tools/steward/steward.py tools/steward/metrics.py /opt/steward/
 WORKDIR /opt/steward
 USER nobody
 ENTRYPOINT ["python", "steward.py"]

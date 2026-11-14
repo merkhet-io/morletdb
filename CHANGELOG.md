@@ -23,6 +23,14 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
     next to one with unbuilt windows; coverage still `gone`) and the pgrx test
     `compacted_windows_are_neither_written_nor_backlog` (levels 4 and 1, a removed tail, new samples after removal,
     the status with and without envelopes). Both failed before the fix.
+- **MCP `labels`: the labels of a collection and what they mean (#333).** A read-only tool lists every active label with
+  its glossary definition, unit and source, how many intervals, recordings and samples carry it, when it was first
+  and last given, and a few examples; `undefined_labels` names the labels nobody defined. Before, an agent saw
+  definitions only for the labels inside one decision state. Row-level security applies as for every companion
+  table; a test checks a restricted role in both enablement orders.
+- **Steward sidecar image serves metrics (#489).** `deploy/steward/Dockerfile` did not copy `metrics.py`, so
+  `steward.py metrics` failed in the sidecar with `ModuleNotFoundError`. A test now checks that the image copies every
+  module `steward.py` imports.
 - **Operator runbooks (#197).** `docs/runbooks.md` adds disk full, WAL growth (replication slots, a failing archive,
   long transactions), rebuilding envelopes, probe rows and indexes with coverage before and after, retention and
   archiving to Parquet and S3 with the existing tools, upgrading with the way back from chunk format version 6, and a
@@ -35,6 +43,19 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
   the shipped search, with a replay machine, a compose setup on the release image and tests against a disposable
   MorletDB. No WinCC OA is involved yet; the adapter (phase B) and native acceptance (phase C) are not built.
   Apache 2.0, community-maintained, no Siemens certification or partnership.
+- **WinCC OA integration, phase B (#474): an experimental WinCC OA adapter, awaiting validation in WinCC OA.** A
+  WinCC OA JavaScript Manager script in `integrations/winccoa/adapter/` (CommonJS, Node.js 22, no dependencies)
+  that reads configured asset datapoints and sends their values, source times and quality to the companion over
+  loopback (`morlet-winccoa/1`, bearer token from a 0600 file). It batches observations per session seq and
+  resends them until acknowledged, stops in an error state on a conflicting retry, sends snapshots after a
+  (re)connect and gaps where evidence is missing, sends heartbeats with RTT, runs investigations from its own slot
+  datapoints and writes results back only for the slot's current request. It writes only to its own namespace;
+  an idempotent bootstrap creates it. `API.md` lists every WinCC OA API element used, with its documentation page;
+  whether the JavaScript API delivers source time and quality attributes is unconfirmed and is a setting, with a
+  fallback to the value alone. Tested on a fake of that documented surface and end to end against the real
+  companion and the release image; it has not run in WinCC OA. CI builds a bundle with a manifest of file hashes;
+  publishing it with releases waits for the owner. Apache 2.0, community-maintained, no Siemens certification or
+  partnership; WinCC OA is installed and licensed separately.
 - **Licensing: Apache 2.0 for everything.** The open-core split of #473 is withdrawn: no enterprise licence, no
   `enterprise/` layer, no CLA and no licence-boundary check. Every part of MorletDB, integrations included, is under the
   Apache License 2.0 ([licensing](docs/licensing.md)).

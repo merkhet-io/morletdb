@@ -21,3 +21,6 @@ sdk/python/build/
 sdk/python/src/*.egg-info/
 sdk-dist/
 sdk/python/src/morletdb/_lib/
+
+# WinCC OA adapter bundles (integrations/winccoa/adapter/tools/bundle.js)
+/dist/

@@ -183,6 +183,7 @@ jobs:
           python -m pip install -r tools/mcp/requirements.txt
           python -m unittest discover -s tools/mcp -p 'test_*.py'
           python tools/check_mcp_docs.py
+          python tools/check_sql_docs.py
       - name: Test the memory policy engine (no database)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s tools/memory -p 'test_*.py'
@@ -192,6 +193,7 @@ jobs:
           python -m pip install -r tools/steward/requirements.txt
           python -m unittest discover -s tools/steward -p 'test_policy.py'
           python -m unittest discover -s tools/steward -p 'test_metrics.py'
+          python -m unittest discover -s tools/steward -p 'test_dockerfile.py'
       - name: Test the MQTT collector contract (no broker)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/mqtt -p 'test_*.py'

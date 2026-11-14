@@ -1,10 +1,12 @@
 # WinCC OA integration (design, phase 0)
 
 **Status:** design for [#474](https://github.com/merkhet-io/morletdb/issues/474), with the defaults decided on
-2026-11-14. Phase A (the companion and the replay machine) is implemented in `integrations/winccoa/`; the adapter
-(phase B) and native acceptance (phase C) are not. Until native acceptance in WinCC OA (phase C) has passed, the deliverable is
-"an experimental WinCC OA adapter, awaiting validation in WinCC OA". It is community-maintained. There is no Siemens
-certification or partnership, and WinCC OA is installed and licensed separately.
+2026-11-14. Phase A (the companion and the replay machine) is implemented in `integrations/winccoa/`. Phase B, the
+adapter, is implemented in `integrations/winccoa/adapter/` and tested against a fake of the documented WinCC OA
+JavaScript Manager API and the real companion; it has never run in WinCC OA. Native acceptance (phase C) is not
+done. Until it has passed, the deliverable is "an experimental WinCC OA adapter, awaiting validation in WinCC OA".
+It is community-maintained. There is no Siemens certification or partnership, and WinCC OA is installed and licensed
+separately. Installation and operation: [The adapter](#the-adapter-phase-b).
 
 **Licence and code boundary.** The integration is open source under the Apache License 2.0, like the rest of
 MorletDB ([licensing.md](licensing.md)).
@@ -290,7 +292,158 @@ These are settled in phase B against an installation's installed examples and ty
 C. Until then, quality and source time are optional in the protocol, and missing values are recorded as missing
 (section 3).
 
+**Phase B, from the documentation (2026-11-14).** Every API element the adapter uses, with its page, is listed in
+`integrations/winccoa/adapter/API.md`. What the documentation settles, and what stays open:
+
+- Question 3, in part: `WinccoaTimeFormat` is `Date` (0), `Number` (1, milliseconds) or `Temporal` (2,
+  `Temporal.Instant` with nanosecond precision). The adapter asks for `Temporal` and falls back to `Date` if the
+  installed API refuses it. The precision of the source times WinCC OA actually stores is still not documented.
+- Question 4: `WinccoaVersionDetails` is `{api: {version}, winccoa: {display, major, minor, numeric, numeric_full,
+  patch, platform, revision, version}}`.
+- `WinccoaConnectUpdateType` is `Normal` (0), `Answer` (1, initial values) or `Refresh` (2, after a REDU switch or a
+  DIST connection). The adapter sends `Answer` and `Refresh` values as snapshots, and a `Refresh` as a gap first.
+- Questions 1 and 2 remain open. The attribute names `_original.._value`, `_original.._stime`, `_original.._bad` and
+  `_original.._uncertain` are in the config reference. That `dpConnect` with attribute addresses, or
+  `dpQueryConnectSingle` with a query naming one element, delivers them is not documented. Both modes are settings
+  of the adapter, and a refused subscription falls back to the value alone, which becomes no context.
+- Question 5 remains open: no event for a lost connection to the event manager is documented for JavaScript.
+- Question 6 remains open.
+
 **Owner decision:** the target patch and OS for phase C, and who provides the machine and licence.
+
+## The adapter (phase B)
+
+**Status: experimental WinCC OA adapter, awaiting validation in WinCC OA.** It has been tested against a fake of
+the documented JavaScript Manager API (`test/fake-winccoa.js`) and, end to end, against the real companion and a
+disposable MorletDB. It has not run in WinCC OA. Every WinCC OA function and attribute it uses is listed with its
+documentation page in [`integrations/winccoa/adapter/API.md`](../integrations/winccoa/adapter/API.md), which also
+marks what is unconfirmed.
+
+**Boundary.** WinCC OA is installed and licensed separately; the JavaScript Manager is part of the Server Basic
+licence. The adapter is open source (Apache 2.0) and community-maintained, with no Siemens certification or
+partnership. The repository and the bundle contain no WinCC OA file: `winccoa-manager` comes with the installation
+and is loaded only at run time.
+
+**Scope.**
+
+- The adapter **reads** the configured asset datapoint elements, and its own investigation slots. It **writes**
+  only to its namespace: `<prefix>_Adapter` (status) and `<prefix>_Inv_<slot>` (investigations); every write is
+  checked against it, and a configured datapoint inside the namespace is refused.
+- It talks only to the companion, over loopback HTTP (`http://127.0.0.1:8770`), with the bearer token from a file
+  with mode 0600. It logs the token's fingerprint, never the token. It runs no SQL and has no database access.
+- It has no runtime dependencies (Node's built-in `fetch`). It is CommonJS, like the documented JavaScript template,
+  and targets Node.js 22 LTS, the version installed with WinCC OA.
+
+### Installation
+
+1. Install and configure the companion (`integrations/winccoa/README.md`). Its `[[assets]]` and `[[datapoints]]` are
+   the allow-list: the adapter's asset names and datapoint elements must match them.
+2. Unpack the bundle (see below), or take `integrations/winccoa/adapter/` from a checkout. Copy that directory
+   into the project's JavaScript directory as `morlet-adapter/`. The documentation names this directory in two
+   ways (the project's `nodejs` directory, and `javascript/<modulename>`); use the one your installation shows
+   ([API.md](../integrations/winccoa/adapter/API.md), unconfirmed item 6). There is nothing to `npm install`.
+3. Copy `config/adapter.example.json` to `config/adapter.json` and edit it (see Configuration).
+4. Put a copy of the companion's current token into the file named by `companion.token_file` (default `token`,
+   next to the configuration). It must be owned by the user WinCC OA runs as, with mode 0600; the adapter refuses
+   a file readable by others. On Windows, mode bits say nothing about access: restrict the file's ACL instead.
+5. Run the bootstrap once, as a one-time JavaScript Manager:
+   `-currentproj morlet-adapter/bootstrap.js --config config/adapter.json`.
+6. Add the adapter as a JavaScript Manager (`WCCOAjsManager`) in the console, with the options
+   `-num <n> morlet-adapter/index.js --config config/adapter.json`, start mode as needed.
+
+**Bootstrap.** `bootstrap.js` creates the types `<prefix>Adapter` and `<prefix>Investigation` and the datapoints
+`<prefix>_Adapter` and `<prefix>_Inv_<slot>` with `dpTypeCreate` and `dpCreate`. It is idempotent: what exists with
+the expected structure is left alone, and what exists with another structure is reported as a conflict (exit
+code 1) and not changed. It touches nothing outside the namespace. If the manager's user may not create types,
+create them by hand in the datapoint type editor (PARA) as structs with these elements, then the datapoints:
+
+- `<prefix>Adapter`: `state`, `detail`, `session`, `companion`, `version`, `tokenFingerprint`, `lastHeartbeat`,
+  `health` (string); `lastAckSeq`, `queued`, `dropped`, `gaps`, `lateDropped`, `rttMs` (float).
+- `<prefix>Investigation`: `trigger`, `topK`, `matchCount` (int); `startSample`, `endSample` (long);
+  `collection`, `recordingId`, `requestId`, `state`, `status`, `detail`, `result`, `updated` (string).
+
+Whether `dpTypeCreate` is permitted from a JavaScript Manager depends on the project's rights; unconfirmed.
+
+### Configuration
+
+`config/adapter.example.json` holds every setting with its default; keys beginning with `_` are comments.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `companion.url`, `companion.token_file` | `http://127.0.0.1:8770`, `token` | loopback only; the token file is relative to the configuration |
+| `namespace.prefix`, `namespace.slots` | `Morlet`, `["panel1"]` | the namespace datapoints; one slot per UI panel |
+| `heartbeat_interval_s` | 10 | heartbeats, health polling and status updates |
+| `limits` | 1,000 observations and 1 MiB per message, 500 datapoints, 100,000 queued | the companion's lower limits (from health) win |
+| `retry` | backoff 0.5 s doubling to 30 s; investigations: 3 attempts, poll 1 s, wait 60 s | |
+| `time_format` | `temporal` | `WinccoaTimeFormat.Temporal` (ns); `date` or `number` give milliseconds |
+| `subscription.mode` | `connect` | `connect` (`dpConnect`) or `query` (`dpQueryConnectSingle`) |
+| `subscription.*_attribute`, `quality_attributes`, `good_when` | `_original.._value`, `_original.._stime`, `bad`/`uncertain` false | unconfirmed in JavaScript; verify in phase C |
+| `datapoints[].value_type` | from `dpElementType` | `bool`, `int`, `float`, `string` or `json` |
+
+The current acquisition of each asset is taken from the companion's health report; before one is known, values are
+only cached. Values keep their exact text (signed zero, NaN, 64-bit integers as BigInt); source times are sent as
+integer nanoseconds in decimal strings and never rounded. A time or value that cannot be represented exactly is
+sent as unreadable or replaced by a gap.
+
+### Start and stop
+
+- **Start.** A new session per start. The adapter sends a gap for each asset (it was not watching before), a
+  heartbeat, and the initial values (update type `Answer`) as snapshots, which open at the time of the connect,
+  never earlier.
+- **Running.** Changes go out in batches; unacknowledged messages are resent identically. Every 10 s: health, a
+  heartbeat with RTT, the status datapoint.
+- **Stop.** On the manager's exit (PMON or `exit()`), the registered exit callback disconnects, sends the backlog
+  and a last heartbeat, then a gap for each asset, and sets `state` to `stopped`. `process.exit()` skips this; the
+  next start's gap then closes the open states at the last heartbeat.
+
+### Investigations from a panel
+
+Write `collection`, `recordingId`, `startSample`, `endSample` (one window, 512..32,768 samples) and optionally
+`topK` into `<prefix>_Inv_<slot>`, then change `trigger`. The adapter sets `requestId` and `state = running`, then
+`done` or `failed` with `status`, `detail`, `matchCount` and `result` (the companion's JSON). A newer trigger on the
+same slot supersedes the older request; a result is written only while its `requestId` is the slot's current one,
+and late results are counted in `<prefix>_Adapter.lateDropped`. Labels of matches annotate earlier intervals; they
+are not a diagnosis.
+
+### Troubleshooting
+
+Look at `<prefix>_Adapter.state`, `.companion` and `.detail` first, then the WinCC OA log (lines start with
+`[morlet-adapter]`).
+
+| Symptom | Likely cause and what to do |
+|---|---|
+| `companion = unreachable` | The companion is not running or listens elsewhere. It binds to 127.0.0.1 only, so it must run on the WinCC OA host; check `companion.url` and `GET /v1/health`. Observations are queued and resent; nothing is lost until the queue is full, which is reported as a gap. |
+| `companion = unauthorized` | The token does not match: compare the fingerprint in `.tokenFingerprint` with the companion's log. After 5 failures a minute the companion backs off for 60 s (429). To rotate, add the new token to the companion's file, then replace the adapter's file; it is re-read when it changes. |
+| `companion = token_unreadable` | The token file is missing, shorter than 32 characters, or readable by others (`chmod 600`, owner = the WinCC OA user). |
+| `state = error`, `companion = conflict` | A 409: a seq of this session was stored with another body. The adapter stops sending instead of retrying; restart it (a new session) and report the detail, which names the seqs. |
+| `state = error`, `companion = rejected` | The companion refused a message: 403 for an asset or datapoint not configured there, 422 for an acquisition it does not know. Align the two configurations and restart. |
+| `companion = version_mismatch` | The companion speaks another protocol version than `morlet-winccoa/1`; install matching versions. |
+| `companion = database_unavailable` | The companion cannot reach MorletDB (health 503); see the companion's log. |
+| No context for a datapoint | Values without source time or with unreadable quality become no context. `.detail` names datapoints whose subscription fell back to the value only (`value only (no source time or quality)`): the attribute addresses were refused; try `subscription.mode = "query"` and report the result for phase C. |
+| Status datapoint never changes, log says `status not written` | The namespace datapoints do not exist or the manager may not write them: run the bootstrap, check the manager's user rights. |
+| Investigation `evidence_unavailable` | The source interval is not searchable yet (not inside built search windows) or does not exist for the companion's role; see `detail`. |
+| Investigation `permission_denied` | The companion's database role lacks a grant (docs/access-control.md). |
+| Investigation `busy` or `service_failure` | More than 4 investigations at once, a statement timeout, or the database is down. |
+| `.detail` says `time format temporal refused` | The installed API has no `Temporal` time format; source times are then whole milliseconds. |
+| `asset ... is not configured in the companion` | The adapter's asset name differs from the companion's `[[assets]] name`. |
+
+### Bundle and release
+
+`node integrations/winccoa/adapter/tools/bundle.js --out dist` builds `morlet-winccoa-adapter-<version>.tar.gz`
+from the current commit of a clean checkout (`git archive`, so the working tree cannot leak into it): the adapter
+without its tests, the configuration templates, the bootstrap, this document, the integration README, LICENSE and
+`MANIFEST.json` with the version, the commit and the SHA-256 of every file. CI (`.github/workflows/winccoa.yml`)
+builds it and keeps it as a build artifact. Publishing it with releases is not wired: that waits for the owner.
+
+### Limits of phase B
+
+- Not run in WinCC OA. The open questions of section 8 (source time and quality through the JavaScript API,
+  reconnect behaviour, the installed API version) are settled only in phase C.
+- The fake implements the documented surface; where the documentation is silent, the fake's behaviour is a
+  choice, and the tests cover both outcomes where the adapter depends on it (attributes accepted or refused,
+  `Temporal` available or not).
+- The limits are starting values; no load measurement yet.
+- A 409 or a refused message needs an operator restart; there is no automatic new session.
 
 ## Defaults
 

@@ -1,0 +1,53 @@
+{
+  "_comment": [
+    "MorletDB WinCC OA adapter: example configuration. Copyright 2026 MorletDB contributors. Apache-2.0.",
+    "Experimental, awaiting validation in WinCC OA. Keys beginning with '_' are comments.",
+    "Defaults follow docs/winccoa.md, section Defaults. Relative paths are relative to this file.",
+    "Asset names and datapoint elements must match the companion's [[assets]] and [[datapoints]]."
+  ],
+  "companion": {
+    "url": "http://127.0.0.1:8770",
+    "token_file": "token",
+    "request_timeout_ms": 20000,
+    "_token_file": "mode 0600, owned by the user WinCC OA runs as; a copy of the companion's current token"
+  },
+  "namespace": {
+    "prefix": "Morlet",
+    "slots": ["panel1"],
+    "_what": "datapoints Morlet_Adapter (status) and Morlet_Inv_<slot> (investigations); created by bootstrap.js"
+  },
+  "heartbeat_interval_s": 10,
+  "flush_linger_ms": 200,
+  "time_format": "temporal",
+  "_time_format": "temporal: nanoseconds (WinccoaTimeFormat.Temporal); date or number: milliseconds",
+  "startup_gap": true,
+  "limits": {
+    "observations_per_message": 1000,
+    "body_bytes": 1048576,
+    "datapoints": 500,
+    "max_queued": 100000
+  },
+  "retry": {
+    "initial_ms": 500,
+    "max_ms": 30000,
+    "investigation_attempts": 3,
+    "investigation_poll_ms": 1000,
+    "investigation_wait_ms": 60000
+  },
+  "subscription": {
+    "_unconfirmed": "Which of these attributes the JavaScript API delivers is UNCONFIRMED (API.md); verify in phase C.",
+    "mode": "connect",
+    "value_attribute": "_original.._value",
+    "stime_attribute": "_original.._stime",
+    "quality_attributes": { "bad": "_original.._bad", "uncertain": "_original.._uncertain" },
+    "good_when": { "bad": false, "uncertain": false },
+    "fallback_to_value_only": true
+  },
+  "assets": [
+    { "name": "rig-1" }
+  ],
+  "datapoints": [
+    { "dpe": "System1:Rig1.speed", "asset": "rig-1" },
+    { "dpe": "System1:Rig1.load", "asset": "rig-1" }
+  ]
+}

@@ -1329,5 +1329,65 @@ def decisions(collection: str, recording_prefix: str = "", answer: str = "", lim
     return {"collection": collection, "decisions": found, "truncated": len(found) >= max(1, min(limit, 200))}
 
 
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def labels(collection: str, recording_prefix: str = "", examples: int = 3, include_decisions: bool = False) -> dict:
+    """The labels of a collection and what they mean, before you search or compare with them: for every active
+    label, its definition, unit and source from the label glossary (morlet_define_label; SQL 0.3.9), how many
+    labelled intervals and recordings carry it, how many samples, when it was first and last given, and up to
+    `examples` intervals (recording, sample range, note, author). undefined_labels lists labels nobody defined:
+    do not guess their meaning from the name. unused_definitions lists definitions no active label uses.
+    Retracted labels are counted separately and never shown as active. Decision labels ("s1:<answer>", logged by a
+    System 1 model) are left out unless include_decisions; the decisions tool explains those. recording_prefix
+    limits the counts to recordings whose id starts with it. Needs a collection with context
+    (morlet_enable_context)."""
+    examples = max(0, min(examples, 20))
+    with connect() as conn:
+        c = checked(conn, collection)
+        try:
+            labels_t = conn.execute("SELECT labels::text FROM morlet_context_relations(%s::regclass)",
+                                    (c,)).fetchone()[0]
+        except psycopg.Error as e:
+            raise ValueError("labels needs a collection with context (morlet_enable_context)") from e
+        if labels_t is None:
+            raise ValueError("labels needs a collection with context (morlet_enable_context)")
+        glossary = decision.label_glossary(conn, c)
+        where, args = "true", []
+        if recording_prefix:
+            esc = recording_prefix.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            where, args = "recording_id LIKE %s", [esc + "%"]
+        if not include_decisions:
+            where += " AND label NOT LIKE 's1:%%'"
+        has_glossary = conn.execute("SELECT to_regproc('public.morlet_label_definitions') IS NOT NULL").fetchone()[0]
+        rows = conn.execute(
+            f"SELECT label, count(*) FILTER (WHERE NOT retracted), count(DISTINCT recording_id) FILTER (WHERE NOT "
+            f"retracted), coalesce(sum(end_sample - start_sample) FILTER (WHERE NOT retracted), 0), "
+            f"min(created_at) FILTER (WHERE NOT retracted), max(created_at) FILTER (WHERE NOT retracted), "
+            f"count(*) FILTER (WHERE retracted) FROM {labels_t} WHERE {where} GROUP BY label ORDER BY label",
+            args).fetchall()
+        shown = {}
+        if examples:
+            for lab, rid, a, b, note, author in conn.execute(
+                    f"SELECT label, recording_id, start_sample, end_sample, note, author FROM ("
+                    f"SELECT *, row_number() OVER (PARTITION BY label ORDER BY label_id) AS k FROM {labels_t} "
+                    f"WHERE NOT retracted AND {where}) x WHERE k <= %s ORDER BY label, label_id",
+                    args + [examples]).fetchall():
+                shown.setdefault(lab, []).append({"recording_id": rid, "start_sample": int(a), "end_sample": int(b),
+                                                  "note": note, "author": author})
+    out, active = [], set()
+    for lab, n, nrec, samples, first, last, retracted in rows:
+        if n:
+            active.add(lab)
+        out.append({"label": lab, "definition": glossary.get(lab), "intervals": int(n), "recordings": int(nrec),
+                    "samples": int(samples), "first_given": first.isoformat() if first else None,
+                    "last_given": last.isoformat() if last else None, "retracted": int(retracted),
+                    "examples": shown.get(lab, [])})
+    decision_label = (lambda lab: lab.startswith("s1:")) if not include_decisions else (lambda lab: False)
+    return {"collection": collection, "recording_prefix": recording_prefix or None, "labels": out,
+            "undefined_labels": sorted(lab for lab in active if lab not in glossary),
+            "unused_definitions": sorted(lab for lab in glossary if lab not in active and not decision_label(lab)),
+            "glossary_available": bool(has_glossary)}
+
+
 if __name__ == "__main__":
     mcp.run("stdio")
