@@ -1,0 +1,22 @@
+{
+ "n": 510,
+ "morlet_excluded_nonfinite": 6,
+ "m-g1": {
+  "returned": 504,
+  "bit_differences": [],
+  "examples": []
+ },
+ "mdb-l": {
+  "returned": 510,
+  "bit_differences": [
+   50
+  ],
+  "examples": [
+   [
+    50,
+    "0x80000000",
+    "0x0"
+   ]
+  ]
+ }
+}

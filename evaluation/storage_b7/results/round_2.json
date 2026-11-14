@@ -1,0 +1,4721 @@
+{
+ "round": 2,
+ "groups": [
+  "force",
+  "ctrl",
+  "pmid"
+ ],
+ "images": {
+  "morlet": "ghcr.io/merkhet-io/morletdb:0.3.13-alpha.1",
+  "modelardb": "modelardb:1b90706"
+ },
+ "arms": {
+  "mdb-l": [
+   {
+    "groups": {
+     "force": {
+      "seconds": 11.213024167111143,
+      "conversion_s": 1.8608710037078708
+     },
+     "ctrl": {
+      "seconds": 0.631630124989897,
+      "conversion_s": 0.05992778926156461
+     },
+     "pmid": {
+      "seconds": 1.0243814999703318,
+      "conversion_s": 0.09704016475006938
+     }
+    },
+    "load_seconds": 12.869425459066406,
+    "settle_seconds": 0.8224707499612123,
+    "memory": {
+     "peak_mib": 3693.0,
+     "anon_mib_at_end": 1591.7,
+     "file_mib_at_end": 407.7,
+     "shmem_mib_at_end": 0.0
+    },
+    "volume_bytes": 427368234,
+    "storage": {
+     "force": {
+      "parquet": 392305892,
+      "delta_log": 6906,
+      "all": 392312798
+     },
+     "ctrl": {
+      "parquet": 14065551,
+      "delta_log": 6733,
+      "all": 14072284
+     },
+     "pmid": {
+      "parquet": 13047939,
+      "delta_log": 4827,
+      "all": 13052766
+     },
+     "wal": 7897792,
+     "other": 32594
+    }
+   },
+   {
+    "groups": {
+     "force": {
+      "seconds": 11.093074042117223,
+      "conversion_s": 1.6038702928926796
+     },
+     "ctrl": {
+      "seconds": 0.6223114170134068,
+      "conversion_s": 0.05941717908717692
+     },
+     "pmid": {
+      "seconds": 1.0196430829819292,
+      "conversion_s": 0.09494641493074596
+     }
+    },
+    "load_seconds": 12.735517874825746,
+    "settle_seconds": 0.8135667080059648,
+    "memory": {
+     "peak_mib": 3777.2,
+     "anon_mib_at_end": 1621.8,
+     "file_mib_at_end": 407.7,
+     "shmem_mib_at_end": 0.0
+    },
+    "volume_bytes": 427368234,
+    "storage": {
+     "force": {
+      "parquet": 392305892,
+      "delta_log": 6906,
+      "all": 392312798
+     },
+     "ctrl": {
+      "parquet": 14065551,
+      "delta_log": 6733,
+      "all": 14072284
+     },
+     "pmid": {
+      "parquet": 13047939,
+      "delta_log": 4827,
+      "all": 13052766
+     },
+     "wal": 7897792,
+     "other": 32594
+    }
+   }
+  ],
+  "m-g1": [
+   {
+    "groups": {
+     "force": {
+      "seconds": 25.29437925014645,
+      "conversion_s": 0.13217699248343706
+     },
+     "ctrl": {
+      "seconds": 1.5380713751073927,
+      "conversion_s": 0.007208429276943207
+     },
+     "pmid": {
+      "seconds": 0.4144313340075314,
+      "conversion_s": 0.008248241618275642
+     }
+    },
+    "load_seconds": 27.345607915893197,
+    "settle_seconds": 0.0,
+    "memory": {
+     "peak_mib": 1369.0,
+     "anon_mib_at_end": 12.5,
+     "file_mib_at_end": 1308.6,
+     "shmem_mib_at_end": 140.2
+    },
+    "storage": {
+     "force": {
+      "chunks_total": 558366720,
+      "chunks_indexes": 2334720,
+      "recordings_table": 958464,
+      "encoded_bytes": 708528695
+     },
+     "ctrl": {
+      "chunks_total": 19275776,
+      "chunks_indexes": 188416,
+      "recordings_table": 1835008,
+      "encoded_bytes": 28019111
+     },
+     "pmid": {
+      "chunks_total": 8773632,
+      "chunks_indexes": 147456,
+      "recordings_table": 393216,
+      "encoded_bytes": 7536114
+     },
+     "database": 597929107,
+     "pg_wal": 603979776
+    },
+    "volume_bytes": 1225146320
+   },
+   {
+    "groups": {
+     "force": {
+      "seconds": 25.1208071669098,
+      "conversion_s": 0.08437536656856537
+     },
+     "ctrl": {
+      "seconds": 1.5427780412137508,
+      "conversion_s": 0.005734649952501059
+     },
+     "pmid": {
+      "seconds": 0.42128908284939826,
+      "conversion_s": 0.0055828753393143415
+     }
+    },
+    "load_seconds": 27.158204125007614,
+    "settle_seconds": 0.0,
+    "memory": {
+     "peak_mib": 1369.5,
+     "anon_mib_at_end": 12.5,
+     "file_mib_at_end": 1308.6,
+     "shmem_mib_at_end": 140.2
+    },
+    "storage": {
+     "force": {
+      "chunks_total": 558366720,
+      "chunks_indexes": 2334720,
+      "recordings_table": 958464,
+      "encoded_bytes": 708528695
+     },
+     "ctrl": {
+      "chunks_total": 19275776,
+      "chunks_indexes": 188416,
+      "recordings_table": 1835008,
+      "encoded_bytes": 28019111
+     },
+     "pmid": {
+      "chunks_total": 8773632,
+      "chunks_indexes": 147456,
+      "recordings_table": 393216,
+      "encoded_bytes": 7536114
+     },
+     "database": 597929107,
+     "pg_wal": 603979776
+    },
+    "volume_bytes": 1225146320
+   }
+  ],
+  "m-g21": [
+   {
+    "groups": {
+     "force": {
+      "seconds": 24.783106041839346,
+      "conversion_s": 0.08206431195139885
+     },
+     "ctrl": {
+      "seconds": 1.5266188338864595,
+      "conversion_s": 0.005484893685206771
+     },
+     "pmid": {
+      "seconds": 0.4244488750118762,
+      "conversion_s": 0.005014084046706557
+     }
+    },
+    "load_seconds": 26.811231624800712,
+    "settle_seconds": 0.0,
+    "memory": {
+     "peak_mib": 1365.3,
+     "anon_mib_at_end": 12.5,
+     "file_mib_at_end": 1306.3,
+     "shmem_mib_at_end": 140.2
+    },
+    "storage": {
+     "force": {
+      "chunks_total": 557334528,
+      "chunks_indexes": 2334720,
+      "recordings_table": 958464,
+      "encoded_bytes": 706495426
+     },
+     "ctrl": {
+      "chunks_total": 18669568,
+      "chunks_indexes": 188416,
+      "recordings_table": 1835008,
+      "encoded_bytes": 26801710
+     },
+     "pmid": {
+      "chunks_total": 7979008,
+      "chunks_indexes": 147456,
+      "recordings_table": 393216,
+      "encoded_bytes": 6940003
+     },
+     "database": 595496083,
+     "pg_wal": 603979776
+    },
+    "volume_bytes": 1222713296
+   }
+  ],
+  "mdb-r1": [
+   {
+    "groups": {
+     "force": {
+      "seconds": 10.879273416940123,
+      "conversion_s": 1.6646833790000528
+     },
+     "ctrl": {
+      "seconds": 0.6169586249161512,
+      "conversion_s": 0.05589242186397314
+     },
+     "pmid": {
+      "seconds": 1.0102673328947276,
+      "conversion_s": 0.09533559274859726
+     }
+    },
+    "load_seconds": 12.506994999945164,
+    "settle_seconds": 0.7431388341356069,
+    "memory": {
+     "peak_mib": 2757.5,
+     "anon_mib_at_end": 1055.1,
+     "file_mib_at_end": 171.0,
+     "shmem_mib_at_end": 0.0
+    },
+    "volume_bytes": 179214028,
+    "storage": {
+     "force": {
+      "parquet": 161060058,
+      "delta_log": 6909,
+      "all": 161066967
+     },
+     "ctrl": {
+      "parquet": 6198315,
+      "delta_log": 6731,
+      "all": 6205046
+     },
+     "pmid": {
+      "parquet": 4005957,
+      "delta_log": 4826,
+      "all": 4010783
+     },
+     "wal": 7898432,
+     "other": 32800
+    }
+   }
+  ],
+  "mdb-r5": [
+   {
+    "groups": {
+     "force": {
+      "seconds": 10.921680415980518,
+      "conversion_s": 1.6615930574480444
+     },
+     "ctrl": {
+      "seconds": 0.6684182500466704,
+      "conversion_s": 0.05453632748685777
+     },
+     "pmid": {
+      "seconds": 0.9943106670398265,
+      "conversion_s": 0.09442753437906504
+     }
+    },
+    "load_seconds": 12.58483483409509,
+    "settle_seconds": 1.1608635829761624,
+    "memory": {
+     "peak_mib": 2653.8,
+     "anon_mib_at_end": 1022.0,
+     "file_mib_at_end": 159.1,
+     "shmem_mib_at_end": 0.0
+    },
+    "volume_bytes": 166696572,
+    "storage": {
+     "force": {
+      "parquet": 150991939,
+      "delta_log": 6913,
+      "all": 150998852
+     },
+     "ctrl": {
+      "parquet": 5102025,
+      "delta_log": 6734,
+      "all": 5108759
+     },
+     "pmid": {
+      "parquet": 2652903,
+      "delta_log": 4826,
+      "all": 2657729
+     },
+     "wal": 7898432,
+     "other": 32800
+    }
+   }
+  ]
+ },
+ "check": {
+  "morlet": {
+   "force": {
+    "series_not_exact": 0,
+    "samples": 107495250
+   },
+   "ctrl": {
+    "series_not_exact": 0,
+    "samples": 4301616
+   },
+   "pmid": {
+    "series_not_exact": 0,
+    "samples": 5952744
+   }
+  },
+  "mdb": {
+   "force": {
+    "series_not_exact": 1,
+    "samples": 107495250
+   },
+   "ctrl": {
+    "series_not_exact": 0,
+    "samples": 4301616
+   },
+   "pmid": {
+    "series_not_exact": 0,
+    "samples": 5952744
+   }
+  }
+ },
+ "column_aggregates": {
+  "force.force_sensor_x": {
+   "morlet": {
+    "ms": 10.783375008031726,
+    "min": -1461.0028076171875,
+    "max": 1564.1314697265625,
+    "sum": 9787439227.230589,
+    "count": 35831750
+   },
+   "mdb": {
+    "ms": 1242.761667119339,
+    "min": -1461.0028076171875,
+    "max": 1564.1314697265625,
+    "sum": 9787439227.230589,
+    "count": 35831750
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_force.force_sensor_x), max(b7_force.force_sensor_x), sum(CAST(b7_force.force_sensor_x AS Float64)), count(b7_force.force_sensor_x)]]\n  TableScan: b7_force projection=[force_sensor_x]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_force.force_sensor_x), max(b7_force.force_sensor_x), sum(b7_force.force_sensor_x), count(b7_force.force_sensor_x)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_force.force_sensor_x), max(b7_force.force_sensor_x), sum(b7_force.force_sensor_x), count(b7_force.force_sensor_x)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=2/part-00000-27433ac6-4da2-4bfe-a4eb-e0248c6950e7-c000.zstd.parquet:0..15566714], [field_column=2/part-00000-27433ac6-4da2-4bfe-a4eb-e0248c6950e7-c000.zstd.parquet:15566714..31133428], [field_column=2/part-00000-27433ac6-4da2-4bfe-a4eb-e0248c6950e7-c000.zstd.parquet:31133428..46700142], [field_column=2/part-00000-27433ac6-4da2-4bfe-a4eb-e0248c6950e7-c000.zstd.parquet:46700142..62266856], [field_column=2/part-00000-27433ac6-4da2-4bfe-a4eb-e0248c6950e7-c000.zstd.parquet:62266856..77833570], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "force.force_sensor_y": {
+   "morlet": {
+    "ms": 9.470083052292466,
+    "min": -1016.3410034179688,
+    "max": 1241.834716796875,
+    "sum": 1949864475.995651,
+    "count": 35831750
+   },
+   "mdb": {
+    "ms": 1280.2432079333812,
+    "min": -1016.3410034179688,
+    "max": 1241.834716796875,
+    "sum": 1949864475.9956505,
+    "count": 35831750
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_force.force_sensor_y), max(b7_force.force_sensor_y), sum(CAST(b7_force.force_sensor_y AS Float64)), count(b7_force.force_sensor_y)]]\n  TableScan: b7_force projection=[force_sensor_y]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_force.force_sensor_y), max(b7_force.force_sensor_y), sum(b7_force.force_sensor_y), count(b7_force.force_sensor_y)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_force.force_sensor_y), max(b7_force.force_sensor_y), sum(b7_force.force_sensor_y), count(b7_force.force_sensor_y)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=3/part-00000-964930ab-fe9c-40a3-8c33-12de3fdbe79e-c000.zstd.parquet:0..16551094], [field_column=3/part-00000-964930ab-fe9c-40a3-8c33-12de3fdbe79e-c000.zstd.parquet:16551094..33102188], [field_column=3/part-00000-964930ab-fe9c-40a3-8c33-12de3fdbe79e-c000.zstd.parquet:33102188..49653282], [field_column=3/part-00000-964930ab-fe9c-40a3-8c33-12de3fdbe79e-c000.zstd.parquet:49653282..66204376], [field_column=3/part-00000-964930ab-fe9c-40a3-8c33-12de3fdbe79e-c000.zstd.parquet:66204376..82755470], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "force.force_sensor_z": {
+   "morlet": {
+    "ms": 8.931207936257124,
+    "min": -496.7447204589844,
+    "max": 505.3764343261719,
+    "sum": -219331938.89448294,
+    "count": 35831750
+   },
+   "mdb": {
+    "ms": 1276.930958032608,
+    "min": -496.7447204589844,
+    "max": 505.3764343261719,
+    "sum": -219331938.8944834,
+    "count": 35831750
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_force.force_sensor_z), max(b7_force.force_sensor_z), sum(CAST(b7_force.force_sensor_z AS Float64)), count(b7_force.force_sensor_z)]]\n  TableScan: b7_force projection=[force_sensor_z]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_force.force_sensor_z), max(b7_force.force_sensor_z), sum(b7_force.force_sensor_z), count(b7_force.force_sensor_z)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_force.force_sensor_z), max(b7_force.force_sensor_z), sum(b7_force.force_sensor_z), count(b7_force.force_sensor_z)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=4/part-00000-50896988-9a5c-48d9-a179-facb82d70700-c000.zstd.parquet:0..16920430], [field_column=4/part-00000-50896988-9a5c-48d9-a179-facb82d70700-c000.zstd.parquet:16920430..33840860], [field_column=4/part-00000-50896988-9a5c-48d9-a179-facb82d70700-c000.zstd.parquet:33840860..50761290], [field_column=4/part-00000-50896988-9a5c-48d9-a179-facb82d70700-c000.zstd.parquet:50761290..67681720], [field_column=4/part-00000-50896988-9a5c-48d9-a179-facb82d70700-c000.zstd.parquet:67681720..84602150], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "ctrl.torque_spindle": {
+   "morlet": {
+    "ms": 6.0099579859524965,
+    "min": -2.423095941543579,
+    "max": 2.4978959560394287,
+    "sum": -49629.44366616449,
+    "count": 716936
+   },
+   "mdb": {
+    "ms": 25.43345815502107,
+    "min": -2.423095941543579,
+    "max": 2.4978959560394287,
+    "sum": -49629.44366616456,
+    "count": 716936
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_ctrl.torque_spindle), max(b7_ctrl.torque_spindle), sum(CAST(b7_ctrl.torque_spindle AS Float64)), count(b7_ctrl.torque_spindle)]]\n  TableScan: b7_ctrl projection=[torque_spindle]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_ctrl.torque_spindle), max(b7_ctrl.torque_spindle), sum(b7_ctrl.torque_spindle), count(b7_ctrl.torque_spindle)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_ctrl.torque_spindle), max(b7_ctrl.torque_spindle), sum(b7_ctrl.torque_spindle), count(b7_ctrl.torque_spindle)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=2/part-00000-344ec5e6-76e3-45f3-ae56-5f195c7c2cb3-c000.zstd.parquet:0..320906], [field_column=2/part-00000-344ec5e6-76e3-45f3-ae56-5f195c7c2cb3-c000.zstd.parquet:320906..641812], [field_column=2/part-00000-344ec5e6-76e3-45f3-ae56-5f195c7c2cb3-c000.zstd.parquet:641812..962718], [field_column=2/part-00000-344ec5e6-76e3-45f3-ae56-5f195c7c2cb3-c000.zstd.parquet:962718..1283624], [field_column=2/part-00000-344ec5e6-76e3-45f3-ae56-5f195c7c2cb3-c000.zstd.parquet:1283624..1604530], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "ctrl.torque_axis_x": {
+   "morlet": {
+    "ms": 5.272707901895046,
+    "min": -1126.7564697265625,
+    "max": 481.55548095703125,
+    "sum": -163714190.2371251,
+    "count": 716936
+   },
+   "mdb": {
+    "ms": 23.305792128667235,
+    "min": -1126.7564697265625,
+    "max": 481.55548095703125,
+    "sum": -163714190.23712513,
+    "count": 716936
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_ctrl.torque_axis_x), max(b7_ctrl.torque_axis_x), sum(CAST(b7_ctrl.torque_axis_x AS Float64)), count(b7_ctrl.torque_axis_x)]]\n  TableScan: b7_ctrl projection=[torque_axis_x]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_ctrl.torque_axis_x), max(b7_ctrl.torque_axis_x), sum(b7_ctrl.torque_axis_x), count(b7_ctrl.torque_axis_x)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_ctrl.torque_axis_x), max(b7_ctrl.torque_axis_x), sum(b7_ctrl.torque_axis_x), count(b7_ctrl.torque_axis_x)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=3/part-00000-0e84992d-c882-4aee-ac16-a13ae1311756-c000.zstd.parquet:0..293048], [field_column=3/part-00000-0e84992d-c882-4aee-ac16-a13ae1311756-c000.zstd.parquet:293048..586096], [field_column=3/part-00000-0e84992d-c882-4aee-ac16-a13ae1311756-c000.zstd.parquet:586096..879144], [field_column=3/part-00000-0e84992d-c882-4aee-ac16-a13ae1311756-c000.zstd.parquet:879144..1172192], [field_column=3/part-00000-0e84992d-c882-4aee-ac16-a13ae1311756-c000.zstd.parquet:1172192..1465240], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "ctrl.torque_axis_y": {
+   "morlet": {
+    "ms": 5.380542017519474,
+    "min": -2088.8671875,
+    "max": 708.0078125,
+    "sum": -129597447.39033979,
+    "count": 716936
+   },
+   "mdb": {
+    "ms": 24.373333901166916,
+    "min": -2088.8671875,
+    "max": 708.0078125,
+    "sum": -129597447.39033996,
+    "count": 716936
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_ctrl.torque_axis_y), max(b7_ctrl.torque_axis_y), sum(CAST(b7_ctrl.torque_axis_y AS Float64)), count(b7_ctrl.torque_axis_y)]]\n  TableScan: b7_ctrl projection=[torque_axis_y]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_ctrl.torque_axis_y), max(b7_ctrl.torque_axis_y), sum(b7_ctrl.torque_axis_y), count(b7_ctrl.torque_axis_y)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_ctrl.torque_axis_y), max(b7_ctrl.torque_axis_y), sum(b7_ctrl.torque_axis_y), count(b7_ctrl.torque_axis_y)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=4/part-00000-73c00b1f-bf6f-408d-9f03-acc6725e4c51-c000.zstd.parquet:0..277698], [field_column=4/part-00000-73c00b1f-bf6f-408d-9f03-acc6725e4c51-c000.zstd.parquet:277698..555396], [field_column=4/part-00000-73c00b1f-bf6f-408d-9f03-acc6725e4c51-c000.zstd.parquet:555396..833094], [field_column=4/part-00000-73c00b1f-bf6f-408d-9f03-acc6725e4c51-c000.zstd.parquet:833094..1110792], [field_column=4/part-00000-73c00b1f-bf6f-408d-9f03-acc6725e4c51-c000.zstd.parquet:1110792..1388490], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "ctrl.torque_axis_z": {
+   "morlet": {
+    "ms": 5.330665968358517,
+    "min": -3114.2216796875,
+    "max": 3438.123046875,
+    "sum": -30435964.5125359,
+    "count": 716936
+   },
+   "mdb": {
+    "ms": 23.483125027269125,
+    "min": -3114.2216796875,
+    "max": 3438.123046875,
+    "sum": -30435964.5125359,
+    "count": 716936
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_ctrl.torque_axis_z), max(b7_ctrl.torque_axis_z), sum(CAST(b7_ctrl.torque_axis_z AS Float64)), count(b7_ctrl.torque_axis_z)]]\n  TableScan: b7_ctrl projection=[torque_axis_z]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_ctrl.torque_axis_z), max(b7_ctrl.torque_axis_z), sum(b7_ctrl.torque_axis_z), count(b7_ctrl.torque_axis_z)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_ctrl.torque_axis_z), max(b7_ctrl.torque_axis_z), sum(b7_ctrl.torque_axis_z), count(b7_ctrl.torque_axis_z)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=5/part-00000-f51ce362-8ef4-4628-b61d-5d91c7a4dc91-c000.zstd.parquet:0..297838], [field_column=5/part-00000-f51ce362-8ef4-4628-b61d-5d91c7a4dc91-c000.zstd.parquet:297838..595676], [field_column=5/part-00000-f51ce362-8ef4-4628-b61d-5d91c7a4dc91-c000.zstd.parquet:595676..893514], [field_column=5/part-00000-f51ce362-8ef4-4628-b61d-5d91c7a4dc91-c000.zstd.parquet:893514..1191352], [field_column=5/part-00000-f51ce362-8ef4-4628-b61d-5d91c7a4dc91-c000.zstd.parquet:1191352..1489190], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "ctrl.position_control_deviation_axis_x": {
+   "morlet": {
+    "ms": 5.394791951403022,
+    "min": -0.003920000046491623,
+    "max": 0.004100000020116568,
+    "sum": 1.5154041682641426,
+    "count": 716936
+   },
+   "mdb": {
+    "ms": 22.888333071023226,
+    "min": -0.003920000046491623,
+    "max": 0.004100000020116568,
+    "sum": 1.5154041682641433,
+    "count": 716936
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_ctrl.position_control_deviation_axis_x), max(b7_ctrl.position_control_deviation_axis_x), sum(CAST(b7_ctrl.position_control_deviation_axis_x AS Float64)), count(b7_ctrl.position_control_deviation_axis_x)]]\n  TableScan: b7_ctrl projection=[position_control_deviation_axis_x]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_ctrl.position_control_deviation_axis_x), max(b7_ctrl.position_control_deviation_axis_x), sum(b7_ctrl.position_control_deviation_axis_x), count(b7_ctrl.position_control_deviation_axis_x)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_ctrl.position_control_deviation_axis_x), max(b7_ctrl.position_control_deviation_axis_x), sum(b7_ctrl.position_control_deviation_axis_x), count(b7_ctrl.position_control_deviation_axis_x)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=6/part-00000-630e4a84-3e63-4054-9d7e-2651a187aafd-c000.zstd.parquet:0..276646], [field_column=6/part-00000-630e4a84-3e63-4054-9d7e-2651a187aafd-c000.zstd.parquet:276646..553292], [field_column=6/part-00000-630e4a84-3e63-4054-9d7e-2651a187aafd-c000.zstd.parquet:553292..829938], [field_column=6/part-00000-630e4a84-3e63-4054-9d7e-2651a187aafd-c000.zstd.parquet:829938..1106584], [field_column=6/part-00000-630e4a84-3e63-4054-9d7e-2651a187aafd-c000.zstd.parquet:1106584..1383230], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "ctrl.position_control_deviation_axis_y": {
+   "morlet": {
+    "ms": 5.79870818182826,
+    "min": -0.00774999987334013,
+    "max": 0.006709999870508909,
+    "sum": -6.514292555818473,
+    "count": 716936
+   },
+   "mdb": {
+    "ms": 23.607874987646937,
+    "min": -0.00774999987334013,
+    "max": 0.006709999870508909,
+    "sum": -6.514292555818477,
+    "count": 716936
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_ctrl.position_control_deviation_axis_y), max(b7_ctrl.position_control_deviation_axis_y), sum(CAST(b7_ctrl.position_control_deviation_axis_y AS Float64)), count(b7_ctrl.position_control_deviation_axis_y)]]\n  TableScan: b7_ctrl projection=[position_control_deviation_axis_y]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_ctrl.position_control_deviation_axis_y), max(b7_ctrl.position_control_deviation_axis_y), sum(b7_ctrl.position_control_deviation_axis_y), count(b7_ctrl.position_control_deviation_axis_y)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_ctrl.position_control_deviation_axis_y), max(b7_ctrl.position_control_deviation_axis_y), sum(b7_ctrl.position_control_deviation_axis_y), count(b7_ctrl.position_control_deviation_axis_y)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=7/part-00000-ef5f84b4-d018-4a5c-bab1-e2ae36b76450-c000.zstd.parquet:0..292061], [field_column=7/part-00000-ef5f84b4-d018-4a5c-bab1-e2ae36b76450-c000.zstd.parquet:292061..584122], [field_column=7/part-00000-ef5f84b4-d018-4a5c-bab1-e2ae36b76450-c000.zstd.parquet:584122..876183], [field_column=7/part-00000-ef5f84b4-d018-4a5c-bab1-e2ae36b76450-c000.zstd.parquet:876183..1168244], [field_column=7/part-00000-ef5f84b4-d018-4a5c-bab1-e2ae36b76450-c000.zstd.parquet:1168244..1460305], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "pmid.force": {
+   "morlet": {
+    "ms": 3.040374955162406,
+    "min": 42.558204650878906,
+    "max": 1442.7047119140625,
+    "sum": 1750182005.2659225,
+    "count": 1984248
+   },
+   "mdb": {
+    "ms": 51.051583141088486,
+    "min": 42.558204650878906,
+    "max": 1442.7047119140625,
+    "sum": 1750182005.2659225,
+    "count": 1984248
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_pmid.force), max(b7_pmid.force), sum(CAST(b7_pmid.force AS Float64)), count(b7_pmid.force)]]\n  TableScan: b7_pmid projection=[force]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_pmid.force), max(b7_pmid.force), sum(b7_pmid.force), count(b7_pmid.force)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_pmid.force), max(b7_pmid.force), sum(b7_pmid.force), count(b7_pmid.force)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=2/part-00000-c480c8e2-c4b9-4199-9369-0303a2de11e1-c000.zstd.parquet:0..662280], [field_column=2/part-00000-c480c8e2-c4b9-4199-9369-0303a2de11e1-c000.zstd.parquet:662280..1324560], [field_column=2/part-00000-c480c8e2-c4b9-4199-9369-0303a2de11e1-c000.zstd.parquet:1324560..1986840], [field_column=2/part-00000-c480c8e2-c4b9-4199-9369-0303a2de11e1-c000.zstd.parquet:1986840..2649120], [field_column=2/part-00000-c480c8e2-c4b9-4199-9369-0303a2de11e1-c000.zstd.parquet:2649120..3311400], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "pmid.speed": {
+   "morlet": {
+    "ms": 2.773415995761752,
+    "min": 879.9000244140625,
+    "max": 1516.69091796875,
+    "sum": 2678040384.761902,
+    "count": 1984248
+   },
+   "mdb": {
+    "ms": 36.25866607762873,
+    "min": 879.9000244140625,
+    "max": 1516.69091796875,
+    "sum": 2678040384.761902,
+    "count": 1984248
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_pmid.speed), max(b7_pmid.speed), sum(CAST(b7_pmid.speed AS Float64)), count(b7_pmid.speed)]]\n  TableScan: b7_pmid projection=[speed]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_pmid.speed), max(b7_pmid.speed), sum(b7_pmid.speed), count(b7_pmid.speed)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_pmid.speed), max(b7_pmid.speed), sum(b7_pmid.speed), count(b7_pmid.speed)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=3/part-00000-9ae94f0e-f836-4281-9593-d020bd9a4ee1-c000.zstd.parquet:0..252674], [field_column=3/part-00000-9ae94f0e-f836-4281-9593-d020bd9a4ee1-c000.zstd.parquet:252674..505348], [field_column=3/part-00000-9ae94f0e-f836-4281-9593-d020bd9a4ee1-c000.zstd.parquet:505348..758022], [field_column=3/part-00000-9ae94f0e-f836-4281-9593-d020bd9a4ee1-c000.zstd.parquet:758022..1010696], [field_column=3/part-00000-9ae94f0e-f836-4281-9593-d020bd9a4ee1-c000.zstd.parquet:1010696..1263370], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  },
+  "pmid.torque": {
+   "morlet": {
+    "ms": 2.647167071700096,
+    "min": 0.3302544951438904,
+    "max": 1.566165566444397,
+    "sum": 2164827.4161814153,
+    "count": 1984248
+   },
+   "mdb": {
+    "ms": 47.02062485739589,
+    "min": 0.3302544951438904,
+    "max": 1.566165566444397,
+    "sum": 2164827.4161814153,
+    "count": 1984248
+   },
+   "mdb_plan": "Aggregate: groupBy=[[]], aggr=[[min(b7_pmid.torque), max(b7_pmid.torque), sum(CAST(b7_pmid.torque AS Float64)), count(b7_pmid.torque)]]\n  TableScan: b7_pmid projection=[torque]\nAggregateExec: mode=Final, gby=[], aggr=[min(b7_pmid.torque), max(b7_pmid.torque), sum(b7_pmid.torque), count(b7_pmid.torque)]\n  CoalescePartitionsExec\n    AggregateExec: mode=Partial, gby=[], aggr=[min(b7_pmid.torque), max(b7_pmid.torque), sum(b7_pmid.torque), count(b7_pmid.torque)]\n      RepartitionExec: partitioning=RoundRobinBatch(8), input_partitions=1\n        SortedJoinExec\n          GridExec: limit=None\n            SortPreservingMergeExec: [unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST]\n              DataSourceExec: file_groups={8 groups: [[field_column=4/part-00000-60e8b5de-e435-4593-9fbe-375f48869cc2-c000.zstd.parquet:0..716040], [field_column=4/part-00000-60e8b5de-e435-4593-9fbe-375f48869cc2-c000.zstd.parquet:716040..1432080], [field_column=4/part-00000-60e8b5de-e435-4593-9fbe-375f48869cc2-c000.zstd.parquet:1432080..2148120], [field_column=4/part-00000-60e8b5de-e435-4593-9fbe-375f48869cc2-c000.zstd.parquet:2148120..2864160], [field_column=4/part-00000-60e8b5de-e435-4593-9fbe-375f48869cc2-c000.zstd.parquet:2864160..3580200], ...]}, projection=[model_type_id, start_time, end_time, timestamps, min_value, max_value, values, residuals, error, unit], output_ordering=[unit@9 ASC NULLS LAST, start_time@1 ASC NULLS LAST], file_type=parquet\n"
+  }
+ },
+ "queries": [
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.4187911078333855,
+    "stats_ms": 0.6816249806433916,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1243.586374912411,
+    "stats_ms": 1246.7567920684814,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1300.4022079985589,
+    "stats_ms": 1284.0284591075033,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.352417076006532,
+    "stats_ms": 1.1505410075187683,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 7.304416969418526,
+    "stats_ms": 0.8321658242493868,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1286.629875190556,
+    "stats_ms": 1269.6468748617917,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1242.9391250479966,
+    "stats_ms": 1225.1502079889178,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.2872080337256193,
+    "stats_ms": 0.6991249974817038,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 2.7692909352481365,
+    "stats_ms": 0.6380840204656124,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1242.3682920634747,
+    "stats_ms": 1240.2591661084443,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1271.4831249322742,
+    "stats_ms": 1271.672833012417,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.927124897018075,
+    "stats_ms": 0.9621251374483109,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.7322919815778732,
+    "stats_ms": 1.1275829747319221,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1293.337083188817,
+    "stats_ms": 1280.7627078145742,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1264.7557079326361,
+    "stats_ms": 1343.6064589768648,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 5.290792090818286,
+    "stats_ms": 0.8622079622000456,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.9595419075340033,
+    "stats_ms": 0.7442501373589039,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1264.9466251023114,
+    "stats_ms": 1259.2455830890685,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1257.6070830691606,
+    "stats_ms": 1255.8954590931535,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.3009999897331,
+    "stats_ms": 0.9699580259621143,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.3699171617627144,
+    "stats_ms": 0.861374894157052,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1272.2988328896463,
+    "stats_ms": 1271.8774590175599,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1279.1069999802858,
+    "stats_ms": 1274.953291984275,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.714042017236352,
+    "stats_ms": 0.9390830527991056,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.480750136077404,
+    "stats_ms": 0.8061670232564211,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1264.6799590438604,
+    "stats_ms": 1262.1533749625087,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1264.1969579271972,
+    "stats_ms": 1266.5763748809695,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.375166026875377,
+    "stats_ms": 0.875208992511034,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.6969168577343225,
+    "stats_ms": 0.8605830371379852,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1263.4788749273866,
+    "stats_ms": 1269.1562501713634,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1264.0141248703003,
+    "stats_ms": 1274.4153749663383,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.181249998509884,
+    "stats_ms": 0.9072499815374613,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 2.8863330371677876,
+    "stats_ms": 0.5933339707553387,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1240.9964590333402,
+    "stats_ms": 1256.6485828720033,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1277.787750121206,
+    "stats_ms": 1265.926499851048,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.11595799960196,
+    "stats_ms": 0.980959041044116,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 5.359000060707331,
+    "stats_ms": 1.1675830464810133,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1290.9778750035912,
+    "stats_ms": 1268.430249998346,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1273.1601248960942,
+    "stats_ms": 1282.453958177939,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.018333042040467,
+    "stats_ms": 1.1651250533759594,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.3768340945243835,
+    "stats_ms": 0.7048749830573797,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1275.3652499523014,
+    "stats_ms": 1274.2497092112899,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1240.6760000158101,
+    "stats_ms": 1252.0159590058029,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.629709059372544,
+    "stats_ms": 1.061249990016222,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 5.026333034038544,
+    "stats_ms": 0.7364170160144567,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1248.6855001188815,
+    "stats_ms": 1230.5238749831915,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1266.3047921378165,
+    "stats_ms": 1289.893665816635,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.8734578993171453,
+    "stats_ms": 0.9862091392278671,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.3687909599393606,
+    "stats_ms": 0.7886670064181089,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1285.9220001846552,
+    "stats_ms": 1274.156125029549,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1267.422999953851,
+    "stats_ms": 1268.654625164345,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.4293750543147326,
+    "stats_ms": 1.2011248618364334,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 4.421416902914643,
+    "stats_ms": 0.7900409400463104,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1271.4927908964455,
+    "stats_ms": 1268.9452921040356,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1278.3294580876827,
+    "stats_ms": 1295.6438339315355,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.9125829935073853,
+    "stats_ms": 0.9471250232309103,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 2.908207941800356,
+    "stats_ms": 0.602958956733346,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1228.251582942903,
+    "stats_ms": 1225.7811250165105,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1229.9086670391262,
+    "stats_ms": 1254.3787499889731,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.7642500828951597,
+    "stats_ms": 0.8487089071422815,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 4.551167134195566,
+    "stats_ms": 0.9499159641563892,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1236.1303749494255,
+    "stats_ms": 1254.635666962713,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1328.914290992543,
+    "stats_ms": 1327.6247920002788,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 3.8348340895026922,
+    "stats_ms": 0.9757911320775747,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.358416026458144,
+    "stats_ms": 0.8316249586641788,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1273.7795419525355,
+    "stats_ms": 1278.6452500149608,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1273.5469578765333,
+    "stats_ms": 1274.2215001489967,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.114832961931825,
+    "stats_ms": 1.2517499271780252,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 3.4205419942736626,
+    "stats_ms": 0.8026668801903725,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1280.7780830189586,
+    "stats_ms": 1274.3481670040637,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1278.75329204835,
+    "stats_ms": 1273.9152079448104,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.5485838782042265,
+    "stats_ms": 1.5211659483611584,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 4.356042016297579,
+    "stats_ms": 0.7196660153567791,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1281.394249992445,
+    "stats_ms": 1267.391333123669,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1261.8821249343455,
+    "stats_ms": 1271.6998751275241,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.449874861165881,
+    "stats_ms": 0.8512500207871199,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "morlet": {
+    "read_ms": 5.812666146084666,
+    "stats_ms": 1.0364169720560312,
+    "exact": true,
+    "count": 25000
+   },
+   "mdb": {
+    "read_ms": 1312.1999171562493,
+    "stats_ms": 1310.8549159951508,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "1s",
+   "n": 25000,
+   "mdb": {
+    "read_ms": 1251.6242091078311,
+    "stats_ms": 1246.8551250640303,
+    "exact": true,
+    "count": 25000
+   },
+   "morlet": {
+    "read_ms": 4.509042017161846,
+    "stats_ms": 0.690957996994257,
+    "exact": true,
+    "count": 25000
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 19.333790987730026,
+    "stats_ms": 0.6740421522408724,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1236.5399999544024,
+    "stats_ms": 1230.9381670784205,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1246.7852500267327,
+    "stats_ms": 1243.5815408825874,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 11.450541904196143,
+    "stats_ms": 0.8211659733206034,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 19.956708187237382,
+    "stats_ms": 0.8346668910235167,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1281.5027919132262,
+    "stats_ms": 1271.0607501212507,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "mdb": {
+    "read_ms": 1295.5881669186056,
+    "stats_ms": 1289.2115421127528,
+    "exact": true,
+    "count": 111150
+   },
+   "morlet": {
+    "read_ms": 12.61091697961092,
+    "stats_ms": 0.8267909288406372,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "morlet": {
+    "read_ms": 19.485499942675233,
+    "stats_ms": 0.8045420981943607,
+    "exact": true,
+    "count": 111150
+   },
+   "mdb": {
+    "read_ms": 1344.955958193168,
+    "stats_ms": 1330.2296248730272,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1285.806457977742,
+    "stats_ms": 1271.8291669152677,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 12.464999919757247,
+    "stats_ms": 0.702959019690752,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "morlet": {
+    "read_ms": 17.175332875922322,
+    "stats_ms": 0.5718341562896967,
+    "exact": true,
+    "count": 110250
+   },
+   "mdb": {
+    "read_ms": 1243.2673750445247,
+    "stats_ms": 1254.1947499848902,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1248.8356670364738,
+    "stats_ms": 1236.700207926333,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 13.812500052154064,
+    "stats_ms": 0.646666856482625,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 16.455624951049685,
+    "stats_ms": 0.5299579352140427,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1241.0187090281397,
+    "stats_ms": 1233.3381660282612,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "mdb": {
+    "read_ms": 1275.692791910842,
+    "stats_ms": 1269.1966251004487,
+    "exact": true,
+    "count": 110250
+   },
+   "morlet": {
+    "read_ms": 12.650582939386368,
+    "stats_ms": 0.6467499770224094,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "morlet": {
+    "read_ms": 15.841916901990771,
+    "stats_ms": 0.5183331668376923,
+    "exact": true,
+    "count": 110250
+   },
+   "mdb": {
+    "read_ms": 1275.6465000566095,
+    "stats_ms": 1266.2924998439848,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1273.7326249480247,
+    "stats_ms": 1271.4926248881966,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 19.665125058963895,
+    "stats_ms": 0.6667079869657755,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 12.762916972860694,
+    "stats_ms": 0.6320001557469368,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1276.258375030011,
+    "stats_ms": 1268.7144158408046,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1245.4235828481615,
+    "stats_ms": 1249.908875208348,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 18.096707994118333,
+    "stats_ms": 0.5230000242590904,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 11.656583985313773,
+    "stats_ms": 0.4984999541193247,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1291.2314999848604,
+    "stats_ms": 1377.5786249898374,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1280.1542920060456,
+    "stats_ms": 1269.555291859433,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 19.167207879945636,
+    "stats_ms": 0.6704169791191816,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "morlet": {
+    "read_ms": 11.685832869261503,
+    "stats_ms": 0.5772500298917294,
+    "exact": true,
+    "count": 111150
+   },
+   "mdb": {
+    "read_ms": 1308.0539999064058,
+    "stats_ms": 1289.2030410002917,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1251.1510839685798,
+    "stats_ms": 1256.5442081540823,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 14.81466693803668,
+    "stats_ms": 0.6354160141199827,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "morlet": {
+    "read_ms": 11.698334012180567,
+    "stats_ms": 0.4975409246981144,
+    "exact": true,
+    "count": 110250
+   },
+   "mdb": {
+    "read_ms": 1283.7687500286847,
+    "stats_ms": 1300.9460838511586,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "mdb": {
+    "read_ms": 1285.231249872595,
+    "stats_ms": 1275.1156250014901,
+    "exact": true,
+    "count": 111150
+   },
+   "morlet": {
+    "read_ms": 21.46629197522998,
+    "stats_ms": 0.8648328948765993,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "morlet": {
+    "read_ms": 11.651917127892375,
+    "stats_ms": 0.9689999278634787,
+    "exact": true,
+    "count": 110250
+   },
+   "mdb": {
+    "read_ms": 1281.6924578510225,
+    "stats_ms": 1268.541834084317,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "mdb": {
+    "read_ms": 1279.6556251123548,
+    "stats_ms": 1280.8291669934988,
+    "exact": true,
+    "count": 110250
+   },
+   "morlet": {
+    "read_ms": 20.390042103827,
+    "stats_ms": 0.7514578755944967,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 12.456499971449375,
+    "stats_ms": 0.7278339471668005,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1285.2074999827892,
+    "stats_ms": 1278.0557500664145,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1286.7648340761662,
+    "stats_ms": 1281.2799580860883,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 14.012041967362165,
+    "stats_ms": 1.0388330556452274,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "morlet": {
+    "read_ms": 12.493999907746911,
+    "stats_ms": 0.8515829686075449,
+    "exact": true,
+    "count": 111150
+   },
+   "mdb": {
+    "read_ms": 1333.8454170152545,
+    "stats_ms": 1311.2530410289764,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "mdb": {
+    "read_ms": 1287.2114169877023,
+    "stats_ms": 1271.0712500847876,
+    "exact": true,
+    "count": 110250
+   },
+   "morlet": {
+    "read_ms": 12.967708986252546,
+    "stats_ms": 0.9602501522749662,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 13.622125145047903,
+    "stats_ms": 0.795791856944561,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1296.438875142485,
+    "stats_ms": 1266.4169578347355,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1277.2960420697927,
+    "stats_ms": 1277.5901251006871,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 12.580125126987696,
+    "stats_ms": 0.6686667911708355,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "morlet": {
+    "read_ms": 13.463583076372743,
+    "stats_ms": 0.775249907746911,
+    "exact": true,
+    "count": 112850
+   },
+   "mdb": {
+    "read_ms": 1278.4421658143401,
+    "stats_ms": 1283.2776671275496,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1247.723540989682,
+    "stats_ms": 1237.299249973148,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 16.692375065758824,
+    "stats_ms": 0.7430838886648417,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "morlet": {
+    "read_ms": 10.592833161354065,
+    "stats_ms": 0.7219170220196247,
+    "exact": true,
+    "count": 111150
+   },
+   "mdb": {
+    "read_ms": 1299.6645830571651,
+    "stats_ms": 1271.0942500270903,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1285.9711251221597,
+    "stats_ms": 1280.1037919707596,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 19.00670910254121,
+    "stats_ms": 1.490208087489009,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "morlet": {
+    "read_ms": 11.872417060658336,
+    "stats_ms": 0.8425829000771046,
+    "exact": true,
+    "count": 111150
+   },
+   "mdb": {
+    "read_ms": 1287.8437500912696,
+    "stats_ms": 1289.8926250636578,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "mdb": {
+    "read_ms": 1245.370625052601,
+    "stats_ms": 1233.5091668646783,
+    "exact": true,
+    "count": 110250
+   },
+   "morlet": {
+    "read_ms": 16.662459122017026,
+    "stats_ms": 0.7486250251531601,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "morlet": {
+    "read_ms": 12.00404204428196,
+    "stats_ms": 0.9020830038934946,
+    "exact": true,
+    "count": 111150
+   },
+   "mdb": {
+    "read_ms": 1273.285125149414,
+    "stats_ms": 1284.3275419436395,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1284.0941669419408,
+    "stats_ms": 1270.339332986623,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 18.44695908948779,
+    "stats_ms": 0.8970410563051701,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 111150,
+   "morlet": {
+    "read_ms": 11.027208995074034,
+    "stats_ms": 0.8207501377910376,
+    "exact": true,
+    "count": 111150
+   },
+   "mdb": {
+    "read_ms": 1252.2805000189692,
+    "stats_ms": 1238.6120830196887,
+    "exact": true,
+    "count": 111150
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1258.4597498644143,
+    "stats_ms": 1240.5892920214683,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 17.30783306993544,
+    "stats_ms": 0.8704999927431345,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 110250,
+   "morlet": {
+    "read_ms": 12.625375064089894,
+    "stats_ms": 0.8539159316569567,
+    "exact": true,
+    "count": 110250
+   },
+   "mdb": {
+    "read_ms": 1297.5932080298662,
+    "stats_ms": 1268.2467079721391,
+    "exact": true,
+    "count": 110250
+   }
+  },
+  {
+   "group": "force",
+   "kind": "unit",
+   "n": 112850,
+   "mdb": {
+    "read_ms": 1273.9412079099566,
+    "stats_ms": 1279.1239579673856,
+    "exact": true,
+    "count": 112850
+   },
+   "morlet": {
+    "read_ms": 15.596000012010336,
+    "stats_ms": 0.7387911900877953,
+    "exact": true,
+    "count": 112850
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.8079579565674067,
+    "stats_ms": 0.5792081356048584,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 25.57645784690976,
+    "stats_ms": 25.62908409163356,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.314208956435323,
+    "stats_ms": 23.814083077013493,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.8525000885128975,
+    "stats_ms": 0.5918748211115599,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.6601670756936073,
+    "stats_ms": 0.5160421133041382,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 25.084208929911256,
+    "stats_ms": 25.26900009252131,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.520749924704432,
+    "stats_ms": 25.018416112288833,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.8298340253531933,
+    "stats_ms": 0.843290938064456,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.610999995842576,
+    "stats_ms": 0.46341586858034134,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 24.533916963264346,
+    "stats_ms": 24.98612506315112,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.251791950315237,
+    "stats_ms": 23.245041025802493,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.74945786036551,
+    "stats_ms": 0.48600020818412304,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5498330574482679,
+    "stats_ms": 0.43066684156656265,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.17949989810586,
+    "stats_ms": 23.273542057722807,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.51829193159938,
+    "stats_ms": 24.239666992798448,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7994170300662518,
+    "stats_ms": 0.48979115672409534,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5736248567700386,
+    "stats_ms": 0.45341718941926956,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.338959086686373,
+    "stats_ms": 23.25112489052117,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.540833197534084,
+    "stats_ms": 24.865749990567565,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.863292021676898,
+    "stats_ms": 0.48375013284385204,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.6480421870946884,
+    "stats_ms": 0.4832497797906399,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.129417095333338,
+    "stats_ms": 23.30174995586276,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 22.99462491646409,
+    "stats_ms": 23.783541982993484,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7599580567330122,
+    "stats_ms": 0.4899590276181698,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5620000883936882,
+    "stats_ms": 0.4724168684333563,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.316249949857593,
+    "stats_ms": 23.631250020116568,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 25.118250166997313,
+    "stats_ms": 25.009416975080967,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7849589455872774,
+    "stats_ms": 0.4766660276800394,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.596832949668169,
+    "stats_ms": 0.46137510798871517,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.034667130559683,
+    "stats_ms": 23.073457879945636,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.000292014330626,
+    "stats_ms": 23.3857911080122,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7192080374807119,
+    "stats_ms": 0.4625828005373478,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5989170167595148,
+    "stats_ms": 0.4071248695254326,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.161499993875623,
+    "stats_ms": 23.201917065307498,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.705500109121203,
+    "stats_ms": 24.835582822561264,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.8561660069972277,
+    "stats_ms": 0.48450008034706116,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.608125003054738,
+    "stats_ms": 0.42691687121987343,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.59733311459422,
+    "stats_ms": 23.49879196844995,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.15941685810685,
+    "stats_ms": 23.557916982099414,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.8065840229392052,
+    "stats_ms": 0.49229105934500694,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.6441660225391388,
+    "stats_ms": 0.4704589955508709,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 25.033000158146024,
+    "stats_ms": 25.07162489928305,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.97416688129306,
+    "stats_ms": 24.977875174954534,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7957089692354202,
+    "stats_ms": 0.4661658313125372,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5612920504063368,
+    "stats_ms": 0.4117910284548998,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.273041006177664,
+    "stats_ms": 23.472542176023126,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 25.104416999965906,
+    "stats_ms": 24.794999975711107,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.6942909676581621,
+    "stats_ms": 1.3462919741868973,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5080001428723335,
+    "stats_ms": 0.4225838929414749,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 24.087291909381747,
+    "stats_ms": 24.82604212127626,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.57895881868899,
+    "stats_ms": 23.85691599920392,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.849457923322916,
+    "stats_ms": 0.5079999100416899,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5677919834852219,
+    "stats_ms": 1.5921660233289003,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 24.03066703118384,
+    "stats_ms": 23.34754099138081,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.497709004208446,
+    "stats_ms": 24.43491597659886,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7796250283718109,
+    "stats_ms": 0.47300010919570923,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5660417955368757,
+    "stats_ms": 0.4520411603152752,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.467207793146372,
+    "stats_ms": 23.411875125020742,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.954000022262335,
+    "stats_ms": 25.197916897013783,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.8279159665107727,
+    "stats_ms": 0.4552500322461128,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.6138328462839127,
+    "stats_ms": 0.44179195538163185,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.519041948020458,
+    "stats_ms": 23.733708076179028,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.76775017566979,
+    "stats_ms": 24.531957926228642,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7534578908234835,
+    "stats_ms": 0.46162516809999943,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5958338733762503,
+    "stats_ms": 0.42754109017550945,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.206125013530254,
+    "stats_ms": 23.320083040744066,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.70404195971787,
+    "stats_ms": 23.926957976073027,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7951250299811363,
+    "stats_ms": 0.47675007954239845,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.575666781514883,
+    "stats_ms": 0.4113330505788326,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.241249844431877,
+    "stats_ms": 23.139083059504628,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.3668340370059,
+    "stats_ms": 23.343333043158054,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7784999907016754,
+    "stats_ms": 0.4841249901801348,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.6320420652627945,
+    "stats_ms": 0.48041599802672863,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 22.901250049471855,
+    "stats_ms": 23.077040910720825,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 24.752208031713963,
+    "stats_ms": 25.062625063583255,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7525831460952759,
+    "stats_ms": 0.4665418528020382,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "morlet": {
+    "read_ms": 0.5695000290870667,
+    "stats_ms": 0.42591593228280544,
+    "exact": true,
+    "count": 500
+   },
+   "mdb": {
+    "read_ms": 23.70366593822837,
+    "stats_ms": 23.62558408640325,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "1s",
+   "n": 500,
+   "mdb": {
+    "read_ms": 23.267708020284772,
+    "stats_ms": 23.198625072836876,
+    "exact": true,
+    "count": 500
+   },
+   "morlet": {
+    "read_ms": 0.7487081456929445,
+    "stats_ms": 0.45429193414747715,
+    "exact": true,
+    "count": 500
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "morlet": {
+    "read_ms": 0.7583750411868095,
+    "stats_ms": 0.7634579669684172,
+    "exact": true,
+    "count": 2224
+   },
+   "mdb": {
+    "read_ms": 25.39662504568696,
+    "stats_ms": 25.20654210820794,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 24.446249939501286,
+    "stats_ms": 24.45066603831947,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 0.938457902520895,
+    "stats_ms": 0.46670902520418167,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.7693751249462366,
+    "stats_ms": 0.3921249881386757,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 23.43854191713035,
+    "stats_ms": 23.274125065654516,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 25.137457996606827,
+    "stats_ms": 25.1052079256624,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 0.9315421339124441,
+    "stats_ms": 0.4320829175412655,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.7209170144051313,
+    "stats_ms": 0.3827079199254513,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 22.962750168517232,
+    "stats_ms": 23.16004177555442,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 24.85837507992983,
+    "stats_ms": 24.989624973386526,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 0.9972092229872942,
+    "stats_ms": 0.6107909139245749,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "morlet": {
+    "read_ms": 0.8177501149475574,
+    "stats_ms": 0.5789999850094318,
+    "exact": true,
+    "count": 2258
+   },
+   "mdb": {
+    "read_ms": 24.45479203015566,
+    "stats_ms": 23.794041015207767,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "mdb": {
+    "read_ms": 25.27437498793006,
+    "stats_ms": 25.220375042408705,
+    "exact": true,
+    "count": 2206
+   },
+   "morlet": {
+    "read_ms": 0.9904159232974052,
+    "stats_ms": 0.4276251420378685,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.7689578924328089,
+    "stats_ms": 0.3617920447140932,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 24.960167007520795,
+    "stats_ms": 25.17320797778666,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 23.22070812806487,
+    "stats_ms": 23.33349990658462,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 0.9042501915246248,
+    "stats_ms": 0.42670778930187225,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "morlet": {
+    "read_ms": 0.7471248973160982,
+    "stats_ms": 0.37212506867945194,
+    "exact": true,
+    "count": 2224
+   },
+   "mdb": {
+    "read_ms": 23.553417064249516,
+    "stats_ms": 23.259749868884683,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "mdb": {
+    "read_ms": 23.79316696897149,
+    "stats_ms": 23.603833047673106,
+    "exact": true,
+    "count": 2206
+   },
+   "morlet": {
+    "read_ms": 0.989624997600913,
+    "stats_ms": 0.4787920042872429,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2205,
+   "morlet": {
+    "read_ms": 0.7801658939570189,
+    "stats_ms": 0.42266701348125935,
+    "exact": true,
+    "count": 2205
+   },
+   "mdb": {
+    "read_ms": 24.910249980166554,
+    "stats_ms": 25.20858310163021,
+    "exact": true,
+    "count": 2205
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2257,
+   "mdb": {
+    "read_ms": 23.284874856472015,
+    "stats_ms": 23.331583011895418,
+    "exact": true,
+    "count": 2257
+   },
+   "morlet": {
+    "read_ms": 0.9222920052707195,
+    "stats_ms": 0.4247911274433136,
+    "exact": true,
+    "count": 2257
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "morlet": {
+    "read_ms": 0.7046249229460955,
+    "stats_ms": 0.3767081070691347,
+    "exact": true,
+    "count": 2224
+   },
+   "mdb": {
+    "read_ms": 23.36733299307525,
+    "stats_ms": 23.429749999195337,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 23.82416697219014,
+    "stats_ms": 24.034792091697454,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 1.103959046304226,
+    "stats_ms": 0.4384580533951521,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "morlet": {
+    "read_ms": 0.783165916800499,
+    "stats_ms": 0.40412507951259613,
+    "exact": true,
+    "count": 2224
+   },
+   "mdb": {
+    "read_ms": 23.986417101696134,
+    "stats_ms": 24.13095789961517,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "mdb": {
+    "read_ms": 23.1219579000026,
+    "stats_ms": 22.98220805823803,
+    "exact": true,
+    "count": 2206
+   },
+   "morlet": {
+    "read_ms": 0.8936249651014805,
+    "stats_ms": 0.4394589923322201,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "morlet": {
+    "read_ms": 0.7346251513808966,
+    "stats_ms": 0.40320889092981815,
+    "exact": true,
+    "count": 2258
+   },
+   "mdb": {
+    "read_ms": 23.294208105653524,
+    "stats_ms": 23.578874999657273,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "mdb": {
+    "read_ms": 25.28841607272625,
+    "stats_ms": 25.478417053818703,
+    "exact": true,
+    "count": 2224
+   },
+   "morlet": {
+    "read_ms": 0.9139168541878462,
+    "stats_ms": 0.4138331860303879,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.7265000604093075,
+    "stats_ms": 0.38808397948741913,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 24.332124972715974,
+    "stats_ms": 24.684750009328127,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "mdb": {
+    "read_ms": 23.95004197023809,
+    "stats_ms": 23.839500034227967,
+    "exact": true,
+    "count": 2206
+   },
+   "morlet": {
+    "read_ms": 0.9324159473180771,
+    "stats_ms": 0.4602090921252966,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.724125187844038,
+    "stats_ms": 0.3944588825106621,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 24.422415997833014,
+    "stats_ms": 24.425500072538853,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "mdb": {
+    "read_ms": 23.480125004425645,
+    "stats_ms": 23.518834030255675,
+    "exact": true,
+    "count": 2206
+   },
+   "morlet": {
+    "read_ms": 0.8617090061306953,
+    "stats_ms": 0.4040829371660948,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.687166815623641,
+    "stats_ms": 0.37695816718041897,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 24.76616599597037,
+    "stats_ms": 25.114084128290415,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "mdb": {
+    "read_ms": 24.2015419062227,
+    "stats_ms": 23.72937509790063,
+    "exact": true,
+    "count": 2224
+   },
+   "morlet": {
+    "read_ms": 0.9404998272657394,
+    "stats_ms": 0.40666619315743446,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.7144580595195293,
+    "stats_ms": 0.3877498675137758,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 23.63587520085275,
+    "stats_ms": 23.628209019079804,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "mdb": {
+    "read_ms": 24.331249995157123,
+    "stats_ms": 24.272375041618943,
+    "exact": true,
+    "count": 2224
+   },
+   "morlet": {
+    "read_ms": 0.9435000829398632,
+    "stats_ms": 0.41358289308845997,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "morlet": {
+    "read_ms": 0.7295419927686453,
+    "stats_ms": 0.40179211646318436,
+    "exact": true,
+    "count": 2224
+   },
+   "mdb": {
+    "read_ms": 24.906707927584648,
+    "stats_ms": 24.894292000681162,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "mdb": {
+    "read_ms": 23.268959019333124,
+    "stats_ms": 23.20050005801022,
+    "exact": true,
+    "count": 2224
+   },
+   "morlet": {
+    "read_ms": 0.8961248677223921,
+    "stats_ms": 0.44116703793406487,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "morlet": {
+    "read_ms": 0.72825001552701,
+    "stats_ms": 0.38291700184345245,
+    "exact": true,
+    "count": 2258
+   },
+   "mdb": {
+    "read_ms": 24.127082899212837,
+    "stats_ms": 24.75012489594519,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 23.332291981205344,
+    "stats_ms": 23.247124860063195,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 1.0988749563694,
+    "stats_ms": 0.6613330915570259,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2224,
+   "morlet": {
+    "read_ms": 1.0485828388482332,
+    "stats_ms": 0.6397501565515995,
+    "exact": true,
+    "count": 2224
+   },
+   "mdb": {
+    "read_ms": 24.31062492541969,
+    "stats_ms": 23.98179122246802,
+    "exact": true,
+    "count": 2224
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "mdb": {
+    "read_ms": 23.14816601574421,
+    "stats_ms": 23.11387495137751,
+    "exact": true,
+    "count": 2206
+   },
+   "morlet": {
+    "read_ms": 0.9600839111953974,
+    "stats_ms": 0.4462499637156725,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "morlet": {
+    "read_ms": 0.7792080286890268,
+    "stats_ms": 0.3987089730799198,
+    "exact": true,
+    "count": 2258
+   },
+   "mdb": {
+    "read_ms": 24.89554206840694,
+    "stats_ms": 25.218833005055785,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 23.261541035026312,
+    "stats_ms": 23.19091698154807,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 0.910791801288724,
+    "stats_ms": 0.42379205115139484,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "morlet": {
+    "read_ms": 0.7300418801605701,
+    "stats_ms": 0.37383311428129673,
+    "exact": true,
+    "count": 2258
+   },
+   "mdb": {
+    "read_ms": 23.030709009617567,
+    "stats_ms": 23.35895784199238,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2258,
+   "mdb": {
+    "read_ms": 23.593958001583815,
+    "stats_ms": 23.062333930283785,
+    "exact": true,
+    "count": 2258
+   },
+   "morlet": {
+    "read_ms": 0.9072080720216036,
+    "stats_ms": 0.45570801012218,
+    "exact": true,
+    "count": 2258
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "morlet": {
+    "read_ms": 0.8249168749898672,
+    "stats_ms": 0.40116719901561737,
+    "exact": true,
+    "count": 2206
+   },
+   "mdb": {
+    "read_ms": 23.046208079904318,
+    "stats_ms": 23.039875086396933,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "ctrl",
+   "kind": "unit",
+   "n": 2206,
+   "mdb": {
+    "read_ms": 24.338833056390285,
+    "stats_ms": 24.249000009149313,
+    "exact": true,
+    "count": 2206
+   },
+   "morlet": {
+    "read_ms": 0.973499845713377,
+    "stats_ms": 0.44037518091499805,
+    "exact": true,
+    "count": 2206
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9843329899013042,
+    "stats_ms": 0.47083315439522266,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 50.84379203617573,
+    "stats_ms": 52.42524994537234,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 50.866040866822004,
+    "stats_ms": 51.101542077958584,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1812502052634954,
+    "stats_ms": 0.5413747858256102,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8943330030888319,
+    "stats_ms": 0.5092499777674675,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 46.838958049193025,
+    "stats_ms": 47.56550001911819,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 33.703583059832454,
+    "stats_ms": 32.75679191574454,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1078340467065573,
+    "stats_ms": 0.552833080291748,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9252920281141996,
+    "stats_ms": 0.4939998034387827,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 32.82787511125207,
+    "stats_ms": 32.747832825407386,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 50.5639580078423,
+    "stats_ms": 50.3907089587301,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1145418975502253,
+    "stats_ms": 0.5793329328298569,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8902908302843571,
+    "stats_ms": 0.4912090953439474,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 32.94662502594292,
+    "stats_ms": 32.44229196570814,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 32.32225007377565,
+    "stats_ms": 32.20074996352196,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1695839930325747,
+    "stats_ms": 0.550250057131052,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8345411624759436,
+    "stats_ms": 0.5051668267697096,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 48.27925004065037,
+    "stats_ms": 47.556583071127534,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 50.550166983157396,
+    "stats_ms": 52.075790939852595,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.216040924191475,
+    "stats_ms": 0.5715000443160534,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8524169679731131,
+    "stats_ms": 1.9941250793635845,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 33.23266701772809,
+    "stats_ms": 32.90700004436076,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 32.417000038549304,
+    "stats_ms": 33.19645789451897,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1491670738905668,
+    "stats_ms": 0.5714159924536943,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8756669703871012,
+    "stats_ms": 0.5136660765856504,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 32.567250076681376,
+    "stats_ms": 32.55941695533693,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 50.7102080155164,
+    "stats_ms": 51.530207972973585,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.2413328513503075,
+    "stats_ms": 0.5460001993924379,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9132910054177046,
+    "stats_ms": 0.5093750078231096,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 52.91408393532038,
+    "stats_ms": 50.85033318027854,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 34.092916175723076,
+    "stats_ms": 33.47733383998275,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.2472090311348438,
+    "stats_ms": 0.5699580069631338,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9715829510241747,
+    "stats_ms": 0.5570000503212214,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 49.29374996572733,
+    "stats_ms": 49.103083088994026,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 52.0190829411149,
+    "stats_ms": 53.6720419768244,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.2281250674277544,
+    "stats_ms": 0.5607500206679106,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8760411292314529,
+    "stats_ms": 0.5067088641226292,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 46.4827090036124,
+    "stats_ms": 46.097083017230034,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 50.786125008016825,
+    "stats_ms": 50.74029183015227,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.2498749420046806,
+    "stats_ms": 0.5740420892834663,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9229579009115696,
+    "stats_ms": 0.4700419958680868,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 49.50795811600983,
+    "stats_ms": 45.74066703207791,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 51.23083316721022,
+    "stats_ms": 51.171124912798405,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1914579663425684,
+    "stats_ms": 0.5764169618487358,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9014999959617853,
+    "stats_ms": 0.5199168808758259,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 33.07312494143844,
+    "stats_ms": 32.79475006274879,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 32.45812514796853,
+    "stats_ms": 32.23875002004206,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1528749018907547,
+    "stats_ms": 0.5500831175595522,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9405410382896662,
+    "stats_ms": 0.49737514927983284,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 51.55112501233816,
+    "stats_ms": 51.763624884188175,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 46.46108392626047,
+    "stats_ms": 46.28383298404515,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1720000766217709,
+    "stats_ms": 0.5284580402076244,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8939590770751238,
+    "stats_ms": 0.49237487837672234,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 33.68041687645018,
+    "stats_ms": 32.587707974016666,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 50.95183290541172,
+    "stats_ms": 51.007292000576854,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.2692920863628387,
+    "stats_ms": 0.5698329769074917,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.869374955072999,
+    "stats_ms": 0.4920419305562973,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 33.13116612844169,
+    "stats_ms": 32.894458854570985,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 32.41379209794104,
+    "stats_ms": 33.122124848887324,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1327078100293875,
+    "stats_ms": 0.5168751813471317,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9107079822570086,
+    "stats_ms": 0.5190831143409014,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 49.352207919582725,
+    "stats_ms": 45.96091713756323,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 32.52783394418657,
+    "stats_ms": 32.233583042398095,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1520409025251865,
+    "stats_ms": 0.49379211850464344,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.897624995559454,
+    "stats_ms": 1.0274590458720922,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 50.720624858513474,
+    "stats_ms": 51.68054113164544,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 32.839749939739704,
+    "stats_ms": 33.29750010743737,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.0931252036243677,
+    "stats_ms": 0.5242079496383667,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8876249194145203,
+    "stats_ms": 0.4823331255465746,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 45.985333155840635,
+    "stats_ms": 45.96570902504027,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 46.66558303870261,
+    "stats_ms": 46.270082937553525,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.2597499880939722,
+    "stats_ms": 0.6212498992681503,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.8685002103447914,
+    "stats_ms": 0.5130828358232975,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 46.329000033438206,
+    "stats_ms": 46.1837500333786,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 45.73541600257158,
+    "stats_ms": 45.95191706903279,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.172041054815054,
+    "stats_ms": 0.6699170917272568,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "morlet": {
+    "read_ms": 0.9163750801235437,
+    "stats_ms": 0.6285000126808882,
+    "exact": true,
+    "count": 4000
+   },
+   "mdb": {
+    "read_ms": 55.97037519328296,
+    "stats_ms": 50.9743329603225,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "1s",
+   "n": 4000,
+   "mdb": {
+    "read_ms": 33.288207836449146,
+    "stats_ms": 33.367207972332835,
+    "exact": true,
+    "count": 4000
+   },
+   "morlet": {
+    "read_ms": 1.1388331186026335,
+    "stats_ms": 0.557958846911788,
+    "exact": true,
+    "count": 4000
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 2.041707979515195,
+    "stats_ms": 0.43662521056830883,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 51.91141692921519,
+    "stats_ms": 53.73783293180168,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 48.566124867647886,
+    "stats_ms": 48.30166697502136,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.2528329864144325,
+    "stats_ms": 0.49000000581145287,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.8055830150842667,
+    "stats_ms": 0.5072078201919794,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 52.824582904577255,
+    "stats_ms": 51.9870831631124,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 47.00591694563627,
+    "stats_ms": 45.82208301872015,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 1.7523751594126225,
+    "stats_ms": 0.49954093992710114,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16006,
+   "morlet": {
+    "read_ms": 1.637707930058241,
+    "stats_ms": 0.4533750470727682,
+    "exact": true,
+    "count": 16006
+   },
+   "mdb": {
+    "read_ms": 34.26808305084705,
+    "stats_ms": 32.761374954134226,
+    "exact": true,
+    "count": 16006
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16007,
+   "mdb": {
+    "read_ms": 50.54083396680653,
+    "stats_ms": 51.89441586844623,
+    "exact": true,
+    "count": 16007
+   },
+   "morlet": {
+    "read_ms": 2.6998750399798155,
+    "stats_ms": 0.6973329000174999,
+    "exact": true,
+    "count": 16007
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 2.702041994780302,
+    "stats_ms": 0.6052078679203987,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 34.728707978501916,
+    "stats_ms": 33.01929193548858,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 33.575500128790736,
+    "stats_ms": 33.34945789538324,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.4034578818827868,
+    "stats_ms": 0.49000000581145287,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.9722089637070894,
+    "stats_ms": 0.4350829403847456,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 49.347249791026115,
+    "stats_ms": 52.36270814202726,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 33.2287501078099,
+    "stats_ms": 32.5255838688463,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 1.9826670177280903,
+    "stats_ms": 0.4678328987210989,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.8162501510232687,
+    "stats_ms": 0.5046660080552101,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 33.49679196253419,
+    "stats_ms": 33.17637508735061,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 56.16537504829466,
+    "stats_ms": 51.657416857779026,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.1874590311199427,
+    "stats_ms": 0.50166598521173,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16006,
+   "morlet": {
+    "read_ms": 1.8802499398589134,
+    "stats_ms": 0.4450411070138216,
+    "exact": true,
+    "count": 16006
+   },
+   "mdb": {
+    "read_ms": 51.16887507028878,
+    "stats_ms": 50.817874958738685,
+    "exact": true,
+    "count": 16006
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 47.80399985611439,
+    "stats_ms": 46.8146251514554,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.1227500401437283,
+    "stats_ms": 0.45733293518424034,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.7726658843457699,
+    "stats_ms": 0.436166999861598,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 33.7375421077013,
+    "stats_ms": 32.83912502229214,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 49.31124998256564,
+    "stats_ms": 46.99637508019805,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 4.405250074341893,
+    "stats_ms": 0.4403749480843544,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.7488750163465738,
+    "stats_ms": 0.33045909367501736,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 36.063750041648746,
+    "stats_ms": 35.28829198330641,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16005,
+   "mdb": {
+    "read_ms": 36.4163750782609,
+    "stats_ms": 35.223209066316485,
+    "exact": true,
+    "count": 16005
+   },
+   "morlet": {
+    "read_ms": 2.0553749054670334,
+    "stats_ms": 0.46141608618199825,
+    "exact": true,
+    "count": 16005
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.83329195715487,
+    "stats_ms": 0.41716708801686764,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 33.94829109311104,
+    "stats_ms": 33.348541939631104,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 51.072125090286136,
+    "stats_ms": 50.297708017751575,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.0639589056372643,
+    "stats_ms": 0.4545410629361868,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.8865419551730156,
+    "stats_ms": 0.45895809307694435,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 50.77166692353785,
+    "stats_ms": 50.7615830283612,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 50.140957813709974,
+    "stats_ms": 50.52458308637142,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.167833037674427,
+    "stats_ms": 0.4722920712083578,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.870583975687623,
+    "stats_ms": 0.4189580213278532,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 52.84783407114446,
+    "stats_ms": 50.44608283787966,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 47.42483305744827,
+    "stats_ms": 46.653541969135404,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.440667012706399,
+    "stats_ms": 0.44554099440574646,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16005,
+   "morlet": {
+    "read_ms": 2.282292116433382,
+    "stats_ms": 0.39537507109344006,
+    "exact": true,
+    "count": 16005
+   },
+   "mdb": {
+    "read_ms": 54.05879090540111,
+    "stats_ms": 50.23866705596447,
+    "exact": true,
+    "count": 16005
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 51.33766680955887,
+    "stats_ms": 52.23087500780821,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.4054590612649918,
+    "stats_ms": 0.637332908809185,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 2.7574999257922173,
+    "stats_ms": 0.5823341198265553,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 33.95179193466902,
+    "stats_ms": 33.015500055626035,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 32.85679197870195,
+    "stats_ms": 32.26608317345381,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.062832936644554,
+    "stats_ms": 1.887042075395584,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.9269159529358149,
+    "stats_ms": 0.5090420600026846,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 51.03983310982585,
+    "stats_ms": 50.74395891278982,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 33.19958318024874,
+    "stats_ms": 33.362749963998795,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 1.9204169511795044,
+    "stats_ms": 0.41812495328485966,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16006,
+   "morlet": {
+    "read_ms": 1.7045829445123672,
+    "stats_ms": 0.37225009873509407,
+    "exact": true,
+    "count": 16006
+   },
+   "mdb": {
+    "read_ms": 47.80195886269212,
+    "stats_ms": 47.86779102869332,
+    "exact": true,
+    "count": 16006
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 49.68620790168643,
+    "stats_ms": 48.30075008794665,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.1371671464294195,
+    "stats_ms": 0.496832886710763,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16006,
+   "morlet": {
+    "read_ms": 2.0015838090330362,
+    "stats_ms": 0.43933303095400333,
+    "exact": true,
+    "count": 16006
+   },
+   "mdb": {
+    "read_ms": 46.947832917794585,
+    "stats_ms": 48.86633297428489,
+    "exact": true,
+    "count": 16006
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16007,
+   "mdb": {
+    "read_ms": 51.5372920781374,
+    "stats_ms": 52.274541929364204,
+    "exact": true,
+    "count": 16007
+   },
+   "morlet": {
+    "read_ms": 2.437459072098136,
+    "stats_ms": 0.47341594472527504,
+    "exact": true,
+    "count": 16007
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16006,
+   "morlet": {
+    "read_ms": 1.776999793946743,
+    "stats_ms": 0.5272082053124905,
+    "exact": true,
+    "count": 16006
+   },
+   "mdb": {
+    "read_ms": 47.17404209077358,
+    "stats_ms": 46.83262505568564,
+    "exact": true,
+    "count": 16006
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 47.322959173470736,
+    "stats_ms": 46.30933282896876,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.4913749657571316,
+    "stats_ms": 0.4534169565886259,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 1.8902078736573458,
+    "stats_ms": 0.39479206316173077,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 34.22612487338483,
+    "stats_ms": 33.24162517674267,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 34.08029209822416,
+    "stats_ms": 32.8120409976691,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 3.6485418677330017,
+    "stats_ms": 0.48283301293849945,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "morlet": {
+    "read_ms": 2.90545797906816,
+    "stats_ms": 0.7633748464286327,
+    "exact": true,
+    "count": 16001
+   },
+   "mdb": {
+    "read_ms": 49.08379213884473,
+    "stats_ms": 49.73087483085692,
+    "exact": true,
+    "count": 16001
+   }
+  },
+  {
+   "group": "pmid",
+   "kind": "unit",
+   "n": 16001,
+   "mdb": {
+    "read_ms": 36.98979108594358,
+    "stats_ms": 35.7937088701874,
+    "exact": true,
+    "count": 16001
+   },
+   "morlet": {
+    "read_ms": 2.4291658774018288,
+    "stats_ms": 0.5596671253442764,
+    "exact": true,
+    "count": 16001
+   }
+  }
+ ],
+ "g21_check": {
+  "force": {
+   "series_not_exact": 0,
+   "samples": 107495250
+  },
+  "ctrl": {
+   "series_not_exact": 0,
+   "samples": 4301616
+  },
+  "pmid": {
+   "series_not_exact": 0,
+   "samples": 5952744
+  }
+ },
+ "lossy_check": {
+  "mdb-r1": {
+   "force": {
+    "series_not_exact": 0,
+    "samples": 107495250,
+    "max_abs_error": 86002.17703413963,
+    "max_rel_error": 25286.64495157414,
+    "values_outside_bound": 402824
+   },
+   "ctrl": {
+    "series_not_exact": 0,
+    "samples": 4301616,
+    "max_abs_error": 28.3974609375,
+    "max_rel_error": Infinity,
+    "values_outside_bound": 143
+   },
+   "pmid": {
+    "series_not_exact": 0,
+    "samples": 5952744,
+    "max_abs_error": 39.05706787109375,
+    "max_rel_error": 0.18767785355688366,
+    "values_outside_bound": 1122
+   }
+  },
+  "mdb-r5": {
+   "force": {
+    "series_not_exact": 0,
+    "samples": 107495250,
+    "max_abs_error": 3.3938375476344868e+38,
+    "max_rel_error": 2.8311079142150846e+37,
+    "values_outside_bound": 936120
+   },
+   "ctrl": {
+    "series_not_exact": 0,
+    "samples": 4301616,
+    "max_abs_error": 134.997802734375,
+    "max_rel_error": Infinity,
+    "values_outside_bound": 415
+   },
+   "pmid": {
+    "series_not_exact": 0,
+    "samples": 5952744,
+    "max_abs_error": 66.5743408203125,
+    "max_rel_error": 0.39261876544633223,
+    "values_outside_bound": 89
+   }
+  }
+ }
+}

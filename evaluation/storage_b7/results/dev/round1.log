@@ -1,0 +1,16 @@
+{"round": 1, "arm": "m-g1", "load_s": 27.845406082924455}
+{"round": 1, "arm": "mdb-l", "load_s": 12.930024458095431}
+{"round": 1, "arm": "mdb-l", "load_s": 12.183736708946526}
+{"round": 1, "arm": "m-g1", "load_s": 27.076645374996588}
+{"round": 1, "arm": "m-g21", "load_s": 27.527858457993716}
+/Users/zin/sophia/morletdb-b7/evaluation/storage_b7/b7.py:344: RuntimeWarning: invalid value encountered in multiply
+  maxrel = max(maxrel, float(np.max(np.where(ref == 0, (d > 0) * np.inf, rel))))
+/Users/zin/sophia/morletdb-b7/evaluation/storage_b7/b7.py:341: RuntimeWarning: invalid value encountered in cast
+  d = np.abs(got.astype(np.float64) - ref.astype(np.float64))
+{"round": 1, "arm": "mdb-r1", "load_s": 12.602818582905456}
+/Users/zin/sophia/morletdb-b7/evaluation/storage_b7/b7.py:344: RuntimeWarning: invalid value encountered in multiply
+  maxrel = max(maxrel, float(np.max(np.where(ref == 0, (d > 0) * np.inf, rel))))
+/Users/zin/sophia/morletdb-b7/evaluation/storage_b7/b7.py:341: RuntimeWarning: invalid value encountered in cast
+  d = np.abs(got.astype(np.float64) - ref.astype(np.float64))
+{"round": 1, "arm": "mdb-r5", "load_s": 12.04289274988696}
+wrote /Users/zin/sophia/morletdb-b7/evaluation/storage_b7/results/dev/round_1.json
