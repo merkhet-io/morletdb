@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Steward sidecar image serves metrics (#489).** `deploy/steward/Dockerfile` did not copy `metrics.py`, so
+  `steward.py metrics` failed in the sidecar with `ModuleNotFoundError`. A test now checks that the image copies every
+  module `steward.py` imports.
 - **Operator runbooks (#197).** `docs/runbooks.md` adds disk full, WAL growth (replication slots, a failing archive,
   long transactions), rebuilding envelopes, probe rows and indexes with coverage before and after, retention and
   archiving to Parquet and S3 with the existing tools, upgrading with the way back from chunk format version 6, and a
