@@ -4904,6 +4904,73 @@ END $$"#).unwrap();
         compacted_grid();
         Spi::run("SELECT morlet_build_envelopes('grid','r',4096,4096,100000)").unwrap();
     }
+    /// #488: windows the builder skips under episodic memory are not work. It returned the number of skipped windows
+    /// on a recording compacted to level 4, on every call, so "until it returns 0" never ended; and the status
+    /// counted the removed samples as unbuilt.
+    #[pg_test]
+    fn compacted_windows_are_neither_written_nor_backlog() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','gone');
+             SELECT morlet_start_recording('gone',r,1000,'x','g','{}',512,256,'zscore','none') FROM unnest(ARRAY['p','t','m']) r;
+             SELECT morlet_append_chunks_raw('gone',r,0,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(0,65535) i)),4096)
+               FROM unnest(ARRAY['p','t','m']) r;
+             SELECT morlet_enable_envelopes('gone');
+             SELECT morlet_build_envelopes('gone','p',4096,2048); SELECT morlet_build_envelopes('gone','t',4096,2048,15);
+             SELECT morlet_enable_memory('gone');
+             SELECT morlet_set_level('gone',morlet_start_memory_run('gone','test','1'),
+               jsonb_build_array(jsonb_build_object('episode_id',e,'level',CASE WHEN o=3 THEN 1 ELSE 4 END)))
+             FROM morlet_add_episodes('gone','[{\"recording_id\":\"p\",\"start_sample\":0,\"end_sample\":65536},
+               {\"recording_id\":\"t\",\"start_sample\":32768,\"end_sample\":65536},
+               {\"recording_id\":\"m\",\"start_sample\":0,\"end_sample\":32768}]') WITH ORDINALITY x(e,o);",
+        )
+        .unwrap();
+        let one = |q: &str| Spi::get_one::<i64>(q).unwrap().unwrap();
+        let build = |r: &str, n: i64| {
+            one(&format!(
+                "SELECT morlet_build_envelopes('gone','{r}',4096,2048,{n})"
+            ))
+        };
+        // p: everything removed at level 4; t: removed after its last window (32768); both have nothing to build
+        assert_eq!(build("p", 10000), 0);
+        assert_eq!(build("p", 10000), 0);
+        assert_eq!(build("t", 10000), 0);
+        assert_eq!(one("SELECT count(*) FROM gone_envelopes"), 15);
+        // m: the first windows are out of search (level 1); the call goes past them and writes at most max_windows
+        assert_eq!(build("m", 5), 5);
+        assert_eq!(
+            one("SELECT min(start_sample) FROM gone_envelopes WHERE recording_id='m'"),
+            30720
+        );
+        assert_eq!(build("m", 10000), 11);
+        assert_eq!(build("m", 10000), 0);
+        // no removed or out-of-search sample is backlog; coverage still says what is gone
+        assert_eq!(
+            Spi::get_one::<String>("SELECT (recordings_without_envelopes,unbuilt_samples,raw_samples)::text FROM morlet_collection_status('gone')").unwrap(),
+            Some("(1,0,196608)".into())
+        );
+        assert_eq!(
+            Spi::get_one::<String>("SELECT string_agg(recording_id||':'||start_sample||'..'||end_sample||' '||state,', ' ORDER BY recording_id,start_sample) FROM morlet_coverage('gone','{p,t}')").unwrap(),
+            Some("p:0..65536 gone, t:0..32768 searchable, t:32768..65536 gone".into())
+        );
+        // new samples are backlog until built, and are built on the same grid
+        Spi::run("SELECT morlet_append_chunks_raw('gone','p',65536,morlet_float8_le_bytes(ARRAY(SELECT sin(i/9.)::float8 FROM generate_series(0,8191) i)),4096)").unwrap();
+        assert_eq!(
+            one("SELECT unbuilt_samples FROM morlet_collection_status('gone')"),
+            8192
+        );
+        assert_eq!(build("p", 10000), 3);
+        assert_eq!(
+            one("SELECT unbuilt_samples FROM morlet_collection_status('gone')"),
+            0
+        );
+        // without any envelope (the row with NULL window_size), only level-0 samples are backlog:
+        // p's new 8192, t's first half and m's second half
+        Spi::run("DELETE FROM gone_envelopes").unwrap();
+        assert_eq!(
+            one("SELECT unbuilt_samples FROM morlet_collection_status('gone')"),
+            8192 + 32768 + 32768
+        );
+    }
     /// morlet_coverage (#215): every sample of a recording is in exactly one state, and only stored windows count as
     /// searchable, so a search without a match can be reported with what it did not search.
     #[pg_test]

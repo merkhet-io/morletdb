@@ -293,9 +293,10 @@ filters in search would change documented behaviour, so they need a new argument
 `morlet_enable_row_security` keeps its signature and covers one more table name, a change of the same kind as
 the probe and memory tables.
 
-**SQL version.** The step is SQL 0.3.11 → 0.3.12 (`extensions/pg_morlet/pg_morlet.control`). It needs:
+**SQL version.** The step is the next SQL version after the current one, 0.3.12 → 0.3.13 at the time of writing (0.3.12
+is #488's fix; `extensions/pg_morlet/pg_morlet.control`). It needs:
 
-- `pg_morlet--0.3.11--0.3.12.sql`, which creates the functions and replaces `morlet_enable_row_security`;
+- `pg_morlet--0.3.12--0.3.13.sql`, which creates the functions and replaces `morlet_enable_row_security`;
 - new rows in `api/functions.tsv`;
 - an unchanged `api/stable.txt`;
 - upgrade tests that the upgraded catalog equals a fresh installation.

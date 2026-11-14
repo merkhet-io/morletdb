@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **Envelope building after compaction (#488).** After a recording was compacted at memory level 4,
+  `morlet_build_envelopes` returned the number of windows it skipped there (31 in the runbook's case) on every call
+  and wrote nothing. The steward took that as progress, picked the same recording on every tick and never reached the
+  recordings after it; "build until it returns 0" loops never ended.
+  - `morlet_build_envelopes` now counts only windows it writes, as documented: windows out of search (level 1) or
+    over removed samples (levels 2 to 4) are skipped and not counted, the call goes on past them within
+    `max_windows` written windows, and 0 again means that nothing is left to build. A batch without any stored
+    sample is passed over in one query instead of window by window. Same signature; windows built are unchanged.
+  - `morlet_collection_status`: `unbuilt_samples` counts only samples at memory level 0. Samples out of search or
+    removed are not backlog; `morlet_coverage` reports them as `not_searchable`, `represented`, `summarized` or
+    `gone`, as before. No column was added (the function is stable). A role that may not read the collection's
+    episodes table gets the count as before.
+  - The steward also checks that an envelope build moved the recording's last window; when it did not, it treats the
+    call as "nothing to do". So a steward from this release does not stick on databases still at SQL 0.3.11 or
+    earlier. With those, windows after a removed range longer than one batch are built only after the update.
+  - Tests: the steward's `test_a_recording_compacted_to_level_4_does_not_starve_the_others` (a compacted recording
+    next to one with unbuilt windows; coverage still `gone`) and the pgrx test
+    `compacted_windows_are_neither_written_nor_backlog` (levels 4 and 1, a removed tail, new samples after removal,
+    the status with and without envelopes). Both failed before the fix.
 - **MCP `labels`: the labels of a collection and what they mean (#333).** A read-only tool lists every active label with
   its glossary definition, unit and source, how many intervals, recordings and samples carry it, when it was first
   and last given, and a few examples; `undefined_labels` names the labels nobody defined. Before, an agent saw

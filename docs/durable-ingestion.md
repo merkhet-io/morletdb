@@ -280,7 +280,9 @@ SELECT * FROM morlet_search_envelope_interval('signals', 'pump-7', 81920, 86016)
   sampling. Overlapping windows of one recording are suppressed in rank order.
 - **Building:** `morlet_build_envelopes` covers complete windows on the grid
   `k × stride`, resuming after the last stored window of that size. At most
-  `max_windows` windows are built per call. Appends do not build envelopes
+  `max_windows` windows are built per call. Under episodic memory, windows out of
+  search or over removed samples are skipped and not counted (SQL 0.3.12, #488), so
+  a return of 0 means nothing is left to build. Appends do not build envelopes
   automatically; call it after appending, for example from the ingest job.
   Encoded collections are built in batches of up to 256 windows, each raw chunk decoded
   once: about 0.3 ms of database CPU per 4096-sample window (3,000 windows/s per
@@ -383,8 +385,8 @@ functions themselves.
 
 `SELECT * FROM morlet_collection_status('signals')` summarises one collection:
 - progress of raw data, envelopes and probe rows;
-- backlogs (raw samples not yet covered by an envelope window, and envelopes without a probe
-  row);
+- backlogs (raw samples not yet covered by an envelope window, only those at memory level 0,
+  and envelopes without a probe row);
 - whether row security is applied;
 - bytes per structure.
 

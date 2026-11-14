@@ -51,7 +51,8 @@ stay at L0 or L1, and that a representative is at L0 or L1. After all moves of a
 with a representative above L1, so a representative cannot be compacted while it still represents an episode (in a
 later call, the same call or a dry run); the members must leave L2 in the same call. A representative is locked while
 it is assigned, so concurrent moves cannot break this either (#440). Envelope builds keep their grid after compaction: the builder accepts
-missing windows that it would skip itself, and still refuses another stride (#441). It removes the rows of that level, writes one ledger row
+missing windows that it would skip itself, and still refuses another stride (#441). Windows it skips are not counted
+as built, so it returns 0 on a recording with nothing left to build (#488). It removes the rows of that level, writes one ledger row
 per move with the checksum of what it removed, and returns what it did. With `dry_run` it returns what it would do
 and how many bytes that frees, and changes nothing. Moving up happens only by restoring from a cold copy or by
 rebuilding derived data, both recorded in the ledger.

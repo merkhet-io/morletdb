@@ -875,16 +875,30 @@ END $$;
 -- bytes per structure. One row per stored envelope window size (one row with NULL window_size
 -- when envelopes are not enabled or not built). The envelope stride is not stored, so the
 -- backlog is given in raw samples not yet covered by an envelope window; it includes each
--- recording's partial tail shorter than one stride, which is never built.
+-- recording's partial tail shorter than one stride, which is never built. Under episodic memory
+-- the backlog counts only samples at level 0 (#488): samples out of search or removed (level 1 to 4)
+-- are never built, so they are not backlog; morlet_coverage reports them by state. raw_samples
+-- stays the received count.
 CREATE FUNCTION public.morlet_collection_status(collection regclass)
 RETURNS TABLE(window_size integer,recordings bigint,raw_samples bigint,envelopes bigint,
   recordings_without_envelopes bigint,unbuilt_samples bigint,probe_rows bigint,probe_backlog bigint,
   row_security boolean,recordings_bytes bigint,chunk_bytes bigint,segment_bytes bigint,
   envelope_bytes bigint,probe_table_bytes bigint,probe_index_bytes bigint)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rels record; env regclass; probes regclass; w integer; n_rec bigint; n_samples bigint;
+DECLARE rels record; env regclass; probes regclass; w integer; n_rec bigint; n_samples bigint; mem record;
+  forgotten text;
 BEGIN
   SELECT * INTO rels FROM public.morlet_stream_relations(collection);
+  SELECT * INTO mem FROM public.morlet_memory_relations(collection);
+  -- Samples of a recording in [f, e) out of search at memory level 1 or more: inside an episode at level 1 or
+  -- more and inside none at level 0 (the rule of morlet_coverage); f and e are columns of the queries below. A role
+  -- that may not read the episodes gets the count without them, as before 0.3.12.
+  IF mem.episodes IS NOT NULL AND NOT has_table_privilege(mem.episodes,'SELECT') THEN mem.episodes:=NULL; END IF;
+  forgotten:=CASE WHEN mem.episodes IS NULL THEN '0' ELSE format('coalesce((SELECT sum(upper(x)-lower(x)) FROM unnest((
+      SELECT (coalesce(range_agg(int8range(o.start_sample,o.end_sample)) FILTER (WHERE o.level>=1),''{}'')
+        -coalesce(range_agg(int8range(o.start_sample,o.end_sample)) FILTER (WHERE o.level=0),''{}''))
+        *int8multirange(int8range(least(b.f,b.e),b.e))
+      FROM %s o WHERE o.recording_id=b.recording_id AND o.end_sample>b.f)) x),0)',mem.episodes) END;
   SELECT to_regclass(format('%I.%I',ns.nspname,cl.relname||'_envelopes')) INTO env
     FROM pg_class cl JOIN pg_namespace ns ON ns.oid=cl.relnamespace WHERE cl.oid=collection;
   EXECUTE format('SELECT count(*),coalesce(sum((checkpoint->>''end'')::bigint),0)::bigint FROM %s',collection) INTO n_rec,n_samples;
@@ -898,11 +912,12 @@ BEGIN
       ELSE format('SELECT DISTINCT window_size FROM %s ORDER BY 1',env) END LOOP
     window_size:=w;
     EXECUTE format('SELECT count(*) FROM %s WHERE window_size=$1',env) INTO envelopes USING w;
-    EXECUTE format('WITH last AS (SELECT recording_id,max(start_sample) s FROM %s WHERE window_size=$1 GROUP BY 1)
-      SELECT count(*) FILTER (WHERE l.s IS NULL),
-             coalesce(sum(CASE WHEN l.s IS NULL THEN (r.checkpoint->>''end'')::bigint
-                               ELSE greatest(0,(r.checkpoint->>''end'')::bigint-(l.s+$1)) END),0)::bigint
-      FROM %s r LEFT JOIN last l ON l.recording_id=r.recording_id',env,collection)
+    -- f: the end of a recording's last window (0 without one), e: its end.
+    EXECUTE format('WITH last AS (SELECT recording_id,max(start_sample) s FROM %s WHERE window_size=$1 GROUP BY 1),
+        b AS (SELECT r.recording_id,l.s,coalesce(l.s+$1,0) AS f,coalesce((r.checkpoint->>''end'')::bigint,0) AS e
+          FROM %s r LEFT JOIN last l ON l.recording_id=r.recording_id)
+      SELECT count(*) FILTER (WHERE b.s IS NULL),coalesce(sum(greatest(0,b.e-b.f)-%s),0)::bigint FROM b',
+      env,collection,forgotten)
       INTO recordings_without_envelopes,unbuilt_samples USING w;
     probes:=public.morlet_envelope_probe_relation(collection,w);
     IF probes IS NULL THEN
@@ -917,6 +932,10 @@ BEGIN
   END LOOP;
   IF NOT FOUND THEN
     window_size:=NULL; envelopes:=0; recordings_without_envelopes:=n_rec; unbuilt_samples:=n_samples;
+    IF mem.episodes IS NOT NULL THEN
+      EXECUTE format('WITH b AS (SELECT r.recording_id,0::bigint AS f,coalesce((r.checkpoint->>''end'')::bigint,0) AS e
+        FROM %s r) SELECT coalesce(sum(b.e-%s),0)::bigint FROM b',collection,forgotten) INTO unbuilt_samples;
+    END IF;
     probe_rows:=NULL; probe_backlog:=NULL; probe_table_bytes:=NULL; probe_index_bytes:=NULL;
     RETURN NEXT;
   END IF;
@@ -1189,12 +1208,14 @@ END $$;
 -- Builds envelopes for complete windows on the grid start_sample = k*stride,
 -- resuming after the last stored window of this size. At most max_windows per
 -- call, so long recordings can be built in bounded transactions. Returns the
--- number of rows written; 0 means the recording is up to date.
+-- number of rows written; 0 means the recording is up to date. Windows the builder
+-- skips under episodic memory (out of search, or samples removed) are not written
+-- and not counted (#488): they cannot be built, so they are not work.
 CREATE FUNCTION public.morlet_build_envelopes(collection regclass,recording_id text,
   window_size integer DEFAULT 4096,stride integer DEFAULT 2048,max_windows integer DEFAULT 10000)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; recording_end bigint; s bigint; last bigint; written bigint:=0; probes regclass; vschema text;
-  rels record; n integer; hi bigint; mem record; sup boolean:=false; skip boolean; k integer; w bigint;
+  rels record; n integer; hi bigint; mem record; sup boolean:=false; skip boolean; k integer; w bigint; done bigint;
 BEGIN
   IF window_size NOT IN (512,1024,2048,4096,8192,16384,32768) OR stride NOT BETWEEN 1 AND 32768
     OR max_windows NOT BETWEEN 1 AND 1000000 THEN
@@ -1261,7 +1282,15 @@ BEGIN
       EXECUTE format('SELECT EXISTS (SELECT 1 FROM %s o WHERE o.recording_id=$1 AND o.level>=1
         AND o.start_sample<$3 AND o.end_sample>$2)',mem.episodes) INTO sup USING recording_id,s,hi;
     END IF;
+    -- A batch without any stored sample (removed at level 2 or more, or never stored) has nothing to build.
     IF sup THEN
+      EXECUTE format('SELECT NOT EXISTS (SELECT 1 FROM %s c WHERE c.recording_id=$1 AND c.start_sample<$3
+        AND c.start_sample+c.sample_count>$2 AND c.start_sample>$2-32768)',rels.chunks) INTO skip USING recording_id,s,hi;
+    END IF;
+    done:=0;
+    IF sup AND skip THEN
+      NULL;
+    ELSIF sup THEN
       FOR k IN 0..n-1 LOOP
         w:=s+k::bigint*stride;
         -- Same rule as morlet_set_level: a window is not searchable when episodes at level 1 or more cover it
@@ -1279,6 +1308,7 @@ BEGIN
             SELECT $1,$2,$3,public.morlet_envelope_encode(i.samples)
             FROM public.morlet_read_interval($4,$1,$3,$3+$2) i ON CONFLICT DO NOTHING',rel)
             USING recording_id,window_size,w,collection;
+          done:=done+1;
           IF probes IS NOT NULL THEN
             EXECUTE format('INSERT INTO %s SELECT recording_id,window_size,start_sample,public.morlet_envelope_decode(envelope)::%I.halfvec
               FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample=$3 ON CONFLICT DO NOTHING',probes,vschema,rel)
@@ -1308,8 +1338,9 @@ BEGIN
           FROM %s WHERE recording_id=$1 AND window_size=$2 AND start_sample BETWEEN $3 AND $4 ON CONFLICT DO NOTHING',probes,vschema,rel)
           USING recording_id,window_size,s,s+(n-1)::bigint*stride;
       END IF;
+      done:=n;
     END IF;
-    written:=written+n;
+    written:=written+done;
     s:=s+n::bigint*stride;
   END LOOP;
   -- Legacy float8[] collections: one window at a time.

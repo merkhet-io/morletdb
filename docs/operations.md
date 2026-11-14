@@ -136,7 +136,7 @@ SELECT * FROM morlet_collection_status('signals');
 
 One row per window size: recordings, raw samples, stored envelopes, recordings without
 envelopes, raw samples not yet covered by an envelope (`unbuilt_samples`, includes partial
-tails), probe rows and `probe_backlog`, whether row security is applied, and bytes per
+tails; under episodic memory only samples at level 0, from SQL 0.3.12), probe rows and `probe_backlog`, whether row security is applied, and bytes per
 structure. Healthy steady state: `probe_backlog = 0` and `unbuilt_samples` bounded by about one
 stride per recording plus the current ingest delay.
 
