@@ -2,28 +2,22 @@
 
 **Status:** design proposal for [#474](https://github.com/merkhet-io/morletdb/issues/474), awaiting the owner's
 approval. Nothing here is implemented. Until native acceptance in WinCC OA (phase C) has passed, the deliverable is
-"an experimental WinCC OA adapter, awaiting validation in WinCC OA". It is part of MorletDB Enterprise (see
-below). There is no Siemens certification or partnership, and WinCC OA is installed and licensed separately.
+"an experimental WinCC OA adapter, awaiting validation in WinCC OA". It is community-maintained. There is no Siemens
+certification or partnership, and WinCC OA is installed and licensed separately.
 
-**Licence and code boundary.** The integration is part of **MorletDB Enterprise**, not the Apache-2.0 core. This
-follows the rules in [licensing.md](licensing.md) and [enterprise/README.md](../enterprise/README.md) (in force since
-#473).
+**Licence and code boundary.** The integration is open source under the Apache License 2.0, like the rest of
+MorletDB ([licensing.md](licensing.md)).
 
-- **Where the code lives.** The adapter and the companion live under `enterprise/winccoa/adapter/` and
-  `enterprise/winccoa/companion/`.
-- **Licence.** Every source file there starts with the enterprise header and is under the MorletDB Enterprise
-  License (`LICENSE-ENTERPRISE.md`). Production use is free on up to 3 machines; beyond that it needs a
-  subscription.
-- **Dependency direction.** The core never depends on this code, and no core file imports from `enterprise/`. The
+- **Where the code lives.** The adapter and the companion live under `integrations/winccoa/adapter/` and
+  `integrations/winccoa/companion/`.
+- **Vendor code.** The vendor dependency is confined to the adapter. No proprietary WinCC OA runtime, SDK or file is
+  committed or redistributed.
+- **Dependency direction.** The core never depends on this code, and no core file imports from `integrations/`. The
   integration uses only the public core: the Python SDK and documented SQL functions.
-- **No data is locked in.** The core keeps everything needed to store and read context without WinCC OA: the
-  documented context SQL functions, the SDK and the open-protocol collectors (OPC UA, MQTT). Context written by
-  the integration is ordinary context rows, readable and searchable with the core alone.
-- **Core changes.** Anything the design needs in the core is listed under "Core changes (Apache 2.0)" at the end.
-  Those changes are made in the core under Apache 2.0, as separate PRs.
-
-**Blocker for phase A (owner action):** the enterprise licence text is version 0.1. A lawyer must review it before
-the first file is placed under it.
+- **No data is locked in.** Context written by the integration is ordinary context rows, readable and searchable
+  without WinCC OA: through the documented context SQL functions, the SDK and the open-protocol collectors (OPC UA,
+  MQTT).
+- **Core changes.** Anything the design needs in the core is listed under "Core changes" at the end, as separate PRs.
 
 Checked against main `9ea29d3`; the SQL, SDK, viewer and collectors are unchanged in release 0.3.14-alpha.1 (SQL
 0.3.11). Every SQL
@@ -297,9 +291,9 @@ C. Until then, quality and source time are optional in the protocol, and missing
 
 **Owner decision:** the target patch and OS for phase C, and who provides the machine and licence.
 
-## Core changes (Apache 2.0)
+## Core changes
 
-These changes belong to the core, not to `enterprise/`. Each is a separate core PR under Apache 2.0, and each is
+These changes belong to the core, not to the integration. Each is a separate core PR, and each is
 useful without WinCC OA. None is required to start phase A except possibly item 2.
 
 1. **SDK context methods.** Thin wrappers over documented SQL:
