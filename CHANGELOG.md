@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Licensing: Apache 2.0 for everything.** The open-core split of #473 is withdrawn: no enterprise licence, no
+  `enterprise/` layer, no CLA and no licence-boundary check. Every part of MorletDB, integrations included, is under the
+  Apache License 2.0 ([licensing](docs/licensing.md)).
 - **Reference collectors: context values are the state alone (#480).** The OPC UA and MQTT example collectors stored
   status and timestamps inside each context value. Segment context is built from whole values, so the same state in
   two cycles never matched, and comparisons with history found no earlier segment in the same context. They now
