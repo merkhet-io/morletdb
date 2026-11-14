@@ -272,12 +272,75 @@ pub fn encode_with_float32(
     quantum: f64,
     format: Format,
 ) -> Result<Vec<u8>, CodecError> {
-    let best = encode_with(samples, quantum, format)?;
-    // The sealed version-6 chunk is the body plus the checksum; keep it only if strictly smaller.
-    match f32k::encode_body(samples) {
-        Some(body) if body.len() + CHECKSUM_BYTES < best.len() => seal(body),
-        _ => Ok(best),
+    validate(samples).map_err(CodecError::Signal)?;
+    let Some(body) = f32k::encode_body(samples) else {
+        return encode_with(samples, quantum, format);
+    };
+    // The sealed version-6 chunk is the body plus the checksum; it is kept only if strictly smaller than the
+    // format's chunk. For Grizzbit 1 a proof that its chunk is larger is enough, without coding all of it.
+    let sealed = body.len() + CHECKSUM_BYTES;
+    if format == Format::Grizzbit1 && grizzbit1_larger_than(samples, quantum, sealed)? {
+        return seal(body);
     }
+    let best = encode_with(samples, quantum, format)?;
+    if sealed < best.len() {
+        seal(body)
+    } else {
+        Ok(best)
+    }
+}
+
+/// Whether the sealed Grizzbit 1 chunk of validated `samples` ([`encode`]) is provably longer than `limit` bytes.
+/// It follows [`encode_body`]'s choices, but for the float kind it uses a lower bound on its length instead of
+/// coding it: a residual `u` costs at least `bitlen(u)` bits in any Rice parameter or escape width, and a stream
+/// at least its 7 header bits. `false` means "not proven" (the caller then encodes in full); `true` is never
+/// returned when the chunk is not longer than `limit`.
+fn grizzbit1_larger_than(samples: &[f64], quantum: f64, limit: usize) -> Result<bool, CodecError> {
+    let grid = Grid::new(quantum)?;
+    if samples.iter().all(|&x| grid.index(x).is_some()) {
+        return Ok(false); // on the declared grid: version 2, small; not worth bounding
+    }
+    let detected = detect_step(samples).and_then(|q| {
+        let g = Grid::new(q).ok()?;
+        match samples
+            .iter()
+            .map(|&x| g.index(x))
+            .collect::<Option<Vec<i64>>>()
+        {
+            Some(ints) => Some(encode_version2(samples, g, ints, None)),
+            None => encode_offset_grid(samples, g, None),
+        }
+    });
+    if let Some(d) = detected
+        .as_ref()
+        .filter(|d| grid_chunk_without_corrections(d) || d.len() <= 4 * samples.len())
+    {
+        return Ok(d.len() + CHECKSUM_BYTES > limit);
+    }
+    let fallback = match encode_offset_grid(samples, grid, None) {
+        Some(f) => f.len(),
+        None => float_kind_lower_bound(samples),
+    };
+    let g1 = detected.map_or(fallback, |d| d.len().min(fallback));
+    Ok(g1 + CHECKSUM_BYTES > limit)
+}
+
+/// A lower bound on the body length (without checksum) that `encode_off_grid` writes: the float kind, or raw
+/// float64 when that is not smaller.
+fn float_kind_lower_bound(samples: &[f64]) -> usize {
+    let n = samples.len();
+    let mut head = vec![BASE_VERSION, KIND_FLOAT];
+    put_varint(&mut head, n as u64);
+    let ordered: Vec<i64> = samples.iter().map(|&x| ordered_bits(x)).collect();
+    let mut r = vec![0u64; n];
+    let mut bits = u128::MAX;
+    for order in 0..=MAX_ORDER {
+        residuals(&ordered, order, &mut r);
+        let b: u128 = r.iter().map(|&u| (64 - u.leading_zeros()) as u128).sum();
+        bits = bits.min(b);
+    }
+    let float = head.len() + (7 + bits).div_ceil(8) as usize;
+    float.min(head.len() + 8 * n)
 }
 
 /// The version-6 chunk for float32-exact samples (sealed), whatever its size against the other formats, or

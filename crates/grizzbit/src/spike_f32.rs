@@ -457,3 +457,81 @@ fn dev_parts() {
         });
     }
 }
+
+#[test]
+#[ignore]
+fn dev_g1_steps() {
+    let dir = std::path::PathBuf::from(std::env::var("SPIKE_DIR").expect("SPIKE_DIR"));
+    for g in ["force", "ctrl"] {
+        let raw = std::fs::read(dir.join(format!("{g}.f32"))).unwrap();
+        let lens: Vec<usize> = std::fs::read_to_string(dir.join(format!("{g}.len")))
+            .unwrap()
+            .lines()
+            .map(|l| l.parse().unwrap())
+            .collect();
+        let all: Vec<f64> = raw
+            .chunks_exact(4)
+            .map(|b| f32::from_le_bytes(b.try_into().unwrap()) as f64)
+            .collect();
+        let mut chunks: Vec<&[f64]> = Vec::new();
+        let mut off = 0;
+        for &len in &lens {
+            chunks.extend(all[off..off + len].chunks(4096));
+            off += len;
+        }
+        let chunks: Vec<&[f64]> = {
+            let mut s = 0;
+            chunks
+                .into_iter()
+                .take_while(|c| {
+                    s += c.len();
+                    s <= 20_000_000
+                })
+                .collect()
+        };
+        let n: usize = chunks.iter().map(|c| c.len()).sum();
+        let time = |name: &str, f: &dyn Fn(&[f64])| {
+            let t = Instant::now();
+            for c in &chunks {
+                f(c);
+            }
+            println!(
+                "{g} {name}: {:.1} ns/sample",
+                t.elapsed().as_secs_f64() * 1e9 / n as f64
+            );
+        };
+        time("G1 encode", &|c| {
+            std::hint::black_box(encode(c, 1.0).unwrap());
+        });
+        time("validate", &|c| {
+            std::hint::black_box(validate(c).ok());
+        });
+        time("grid index check (quantum 1)", &|c| {
+            let g = Grid::new(1.0).unwrap();
+            std::hint::black_box(c.iter().map(|&x| g.index(x)).collect::<Option<Vec<i64>>>());
+        });
+        time("detect_step", &|c| {
+            std::hint::black_box(detect_step(c));
+        });
+        time("offset grid (quantum 1)", &|c| {
+            std::hint::black_box(encode_offset_grid(c, Grid::new(1.0).unwrap(), None));
+        });
+        time("float kind", &|c| {
+            let mut o = Vec::new();
+            encode_off_grid(c, &mut o);
+            std::hint::black_box(o);
+        });
+        time("f64 sort+dedup", &|c| {
+            let mut v = c.to_vec();
+            v.sort_by(|a, b| a.total_cmp(b));
+            v.dedup();
+            std::hint::black_box(v);
+        });
+        time("v6 signmag", &|c| {
+            std::hint::black_box(crate::f32k::encode_signmag_pub(c));
+        });
+        time("v6 grid", &|c| {
+            std::hint::black_box(crate::f32k::encode_grid_pub(c));
+        });
+    }
+}
