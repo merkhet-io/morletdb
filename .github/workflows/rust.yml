@@ -200,6 +200,9 @@ jobs:
       - name: Test the MQTT collector contract (no broker)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/mqtt -p 'test_*.py'
+      - name: Test the OPC UA collector's context placement (no server)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        run: python -m unittest discover -s examples/collectors/opcua -p 'test_*.py'
       - name: Test the Shelly collector (no plug)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/shelly -p 'test_*.py'
