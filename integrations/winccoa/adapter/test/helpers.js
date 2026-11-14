@@ -45,8 +45,6 @@ async function fakeCompanion({ token, acquisition = 'acq-1', handler } = {}) {
   c.port = c.server.address().port;
   c.url = `http://127.0.0.1:${c.port}`;
   c.close = () => new Promise((r) => { c.server.closeAllConnections(); c.server.close(r); });
-  c.observations = () => c.requests.filter((x) => x.url === '/v1/observations' && x.status !== 'refused')
-    .flatMap((x) => x.body.observations);
   return c;
 }
 

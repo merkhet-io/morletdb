@@ -174,7 +174,7 @@ function validate(rawIn, baseDir = process.cwd()) {
     for (const k of Object.keys(d)) {
       if (!['dpe', 'asset', 'value_type', 'subscription'].includes(k)) throw new ConfigError(`${where}: unknown setting ${k}`);
     }
-    if (typeof d.dpe !== 'string' || !d.dpe || /[\s'"*?{}\[\]]/.test(d.dpe) || d.dpe.includes(':_')) {
+    if (typeof d.dpe !== 'string' || !d.dpe || /[\s'"*?{}\[\]]/.test(d.dpe) || /\.[^:]*:/.test(d.dpe)) {
       throw new ConfigError(`${where}.dpe must be a plain datapoint element name (no wildcards or attributes)`);
     }
     if (nsPrefix.test(d.dpe)) throw new ConfigError(`${where}: ${d.dpe} lies in the adapter's own namespace; only asset datapoints are read`);

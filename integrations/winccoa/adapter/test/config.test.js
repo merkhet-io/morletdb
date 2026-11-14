@@ -56,6 +56,14 @@ test('refused: remote companion, limits above the protocol, datapoints in the na
   }
 });
 
+test('an internal datapoint name with a system prefix is a plain element, an attribute address is not', () => {
+  const c = base();
+  c.datapoints.push({ dpe: 'System1:_mp_Pump1.state', asset: 'rig-1' });
+  assert.equal(validate(c).datapoints.at(-1).dpe, 'System1:_mp_Pump1.state');
+  c.datapoints.push({ dpe: 'System1:Rig1.x:_online.._value', asset: 'rig-1' });
+  assert.throws(() => validate(c), /no wildcards or attributes/);
+});
+
 test('at most 500 datapoints', () => {
   const c = base();
   c.datapoints = Array.from({ length: 501 }, (_, i) => ({ dpe: `Rig1.x${i}`, asset: 'rig-1' }));
