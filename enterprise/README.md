@@ -1,6 +1,7 @@
-# MorletDB Enterprise (empty)
+# MorletDB Enterprise
 
-**No enterprise code yet.** This directory is where enterprise code will live, under the
+**First code:** phase A of the WinCC OA integration ([winccoa/](winccoa/README.md), #474), experimental. This
+directory is where enterprise code lives, under the
 [MorletDB Enterprise License](../LICENSE-ENTERPRISE.md) and the rules of [docs/licensing.md](../docs/licensing.md).
 This README itself is under the Apache License 2.0 like every file without the enterprise header.
 

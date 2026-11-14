@@ -1,0 +1,71 @@
+# Copyright 2026 Merkhet. Licensed under the MorletDB Enterprise License (LICENSE-ENTERPRISE.md);
+# not under the Apache License 2.0. Production use beyond the free tier requires a subscription.
+#
+# MorletDB (pinned release image) and the WinCC OA companion, with the replay machine. Linux (the phase-C target is
+# Debian 12): the companion and the replay use host networking, so the companion binds the host's loopback address
+# 127.0.0.1:8770 for a WinCC OA adapter on the same host, and nothing listens on other interfaces.
+#
+#   sh enterprise/winccoa/deploy/secrets.sh                 # once
+#   export MORLET_UID=$(id -u) MORLET_GID=$(id -g)
+#   docker compose -f enterprise/winccoa/compose.yaml up -d db
+#   docker compose -f enterprise/winccoa/compose.yaml run --rm setup
+#   docker compose -f enterprise/winccoa/compose.yaml up -d companion
+#   docker compose -f enterprise/winccoa/compose.yaml run --rm replay
+name: morletdb-winccoa
+services:
+  db:
+    image: ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_DB: morlet
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin_password
+    secrets: [db_admin_password]
+    ports:
+      - "127.0.0.1:54340:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+    deploy:
+      resources:
+        limits: {cpus: "2", memory: 1g}
+  setup:
+    build: {context: ../.., dockerfile: enterprise/winccoa/Dockerfile}
+    image: morletdb-winccoa:local
+    network_mode: host
+    user: "${MORLET_UID:-1000}:${MORLET_GID:-1000}"
+    environment: {PGPASSFILE: /run/secrets/pgpass}
+    secrets: [pgpass, companion_password]
+    volumes: ["./deploy/companion.toml:/etc/morlet-winccoa/companion.toml:ro"]
+    depends_on: {db: {condition: service_healthy}}
+    command: ["sh", "/app/enterprise/winccoa/deploy/setup.sh"]
+  companion:
+    image: morletdb-winccoa:local
+    network_mode: host
+    user: "${MORLET_UID:-1000}:${MORLET_GID:-1000}"
+    environment: {PGPASSFILE: /run/secrets/pgpass}
+    secrets: [pgpass, winccoa_token]
+    volumes: ["./deploy/companion.toml:/etc/morlet-winccoa/companion.toml:ro"]
+    depends_on: {db: {condition: service_healthy}}
+    restart: unless-stopped
+  replay:
+    image: morletdb-winccoa:local
+    network_mode: host
+    user: "${MORLET_UID:-1000}:${MORLET_GID:-1000}"
+    environment: {PGPASSFILE: /run/secrets/pgpass}
+    secrets: [pgpass, winccoa_token]
+    depends_on: {db: {condition: service_healthy}}
+    command: ["python", "/app/enterprise/winccoa/replay/replay.py", "--dsn",
+              "host=127.0.0.1 port=54340 dbname=morlet user=morlet", "--companion", "127.0.0.1:8770",
+              "--token-file", "/run/secrets/winccoa_token", "--collection", "plant.rig"]
+secrets:
+  db_admin_password: {file: ./secrets/db_admin_password}
+  companion_password: {file: ./secrets/companion_password}
+  pgpass: {file: ./secrets/pgpass}
+  winccoa_token: {file: ./secrets/winccoa_token}
+volumes:
+  db:
