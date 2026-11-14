@@ -14,7 +14,7 @@ baselines and quality measures (studies E1–E6).
 
 ## Systems (pinned)
 
-- **MorletDB** `ghcr.io/merkhet-io/morletdb:0.3.13-alpha.1` (linux/arm64; PostgreSQL 17.6, pg_morlet SQL 0.3.10),
+- **MorletDB** `ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1` (linux/arm64; PostgreSQL 17.6, pg_morlet SQL 0.3.10),
   image defaults (`synchronous_commit` on).
   - **m-g1:** the release default chunk format (Grizzbit 1).
   - **m-g21:** Grizzbit 2.1, opt-in (`morlet.chunk_format = grizzbit21`), storage arm.

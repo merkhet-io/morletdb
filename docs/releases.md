@@ -57,6 +57,13 @@ a leading v; GHCR image tags do not.
     (`morletdb.open`), and the release attaches `morlet-sqlite-<platform>.tar.gz` (command line, library, C header).
   - **File format 1:** frozen with a compatibility promise ([file-format.md](file-format.md)).
   - The chunk format is unchanged; existing collections keep their layout.
+- **0.3.14-alpha.1:** SQL version 0.3.11 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a7.
+  - **Float32 codings, chunk format version 6, on by default (#326, study B8):** float32 machine data about half the
+    size; `SET morlet.float32_chunks = off` turns it off. Releases up to 0.3.13-alpha.1 cannot read version-6
+    chunks: before a downgrade, re-append them with the setting off.
+  - **Faster context values (#414)** and pooled spreads computed once (#335).
+  - **Search exclusions (#384):** leave out the same part or the whole source recording.
+  - **Steward metrics (#197):** a Prometheus endpoint; **small-memory image settings (#466).**
 - **0.3.13-alpha.1:** SQL version 0.3.10 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a6. Security and
   data-safety fixes; the chunk format is unchanged.
   - **Episodic memory under row-level security (#438):** episodes, ledger, kept summaries and memory runs follow row
