@@ -49,8 +49,10 @@ sample clock restarts.
 - **Gaps:** if the missing batches have not arrived after `--gap-timeout` seconds (or more than `--max-pending`
   batches wait), the missing range is reported and a new recording starts at the first waiting batch. Samples
   are never invented.
-- **Context** is stored as an event of the recording whose samples cover its source time, with value, status and
-  source time; context ahead of the stored samples waits; context inside a gap is reported and not stored.
+- **Context** is stored as an event of the recording whose samples cover its source time, from the first sample at
+  or after it (`context_rows.py`). The context value is the message's `value` alone, so the same state in two
+  cycles has the same segment context (#480); a `status` other than `good` is its own event, `<key>.status`, at the
+  same sample. Context ahead of the stored samples waits; context inside a gap is reported and not stored.
 
 ## Verified
 

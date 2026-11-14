@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **Reference collectors: context values are the state alone (#480).** The OPC UA and MQTT example collectors stored
+  status and timestamps inside each context value. Segment context is built from whole values, so the same state in
+  two cycles never matched, and comparisons with history found no earlier segment in the same context. They now
+  store the value alone; a status other than good becomes its own event, `<key>.status`, at the same sample.
+  - A change holds from the first sample at or after its source time, computed exactly. Before, the offset was
+    rounded to the nearest sample, which could give up to half a sample period to the wrong state.
+  - The OPC UA collector no longer stores the server time as the source time when the source timestamp is missing;
+    such a change is not placed.
+  - Context written by earlier versions of these examples keeps its old shape. A redelivered old message now
+    conflicts with the stored batch, because the batch ids are unchanged.
+  - Tests: `test_context_rows.py` for both collectors (placement on and between samples, rates that are not whole
+    numbers, the same state in two cycles, status events), run in CI without a server or broker.
+
 ## 0.3.14-alpha.1
 
 SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
