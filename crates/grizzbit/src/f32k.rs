@@ -221,6 +221,21 @@ fn prefixed<'a>(b: &'a [u8], pos: &mut usize) -> Result<&'a [u8], CodecError> {
     Ok(s)
 }
 
+/// Sign run lengths are each at least 1 and sum to exactly `n`, without overflow.
+fn check_runs(lengths: &[i64], n: usize) -> Result<(), CodecError> {
+    let mut left = n as u64;
+    for &len in lengths {
+        if len < 1 || len as u64 > left {
+            return Err(CodecError::Corrupt("sign runs"));
+        }
+        left -= len as u64;
+    }
+    if left != 0 {
+        return Err(CodecError::Corrupt("sign runs"));
+    }
+    Ok(())
+}
+
 /// Decodes a checksum-verified version-6 body. Samples are validated by the caller.
 pub(crate) fn decode_body(b: &[u8]) -> Result<Vec<f64>, CodecError> {
     let mut pos = 2;
@@ -285,12 +300,10 @@ pub(crate) fn decode_body(b: &[u8]) -> Result<Vec<f64>, CodecError> {
             } else {
                 return Err(CodecError::Corrupt("trailing data"));
             };
+            check_runs(&lengths, n)?;
             let mut out = Vec::with_capacity(n);
             let mut negative = first == 1;
             for &len in &lengths {
-                if len < 1 || len as u64 > (n - out.len()) as u64 {
-                    return Err(CodecError::Corrupt("sign runs"));
-                }
                 let sign = (negative as u32) << 31;
                 let start = out.len();
                 out.extend(
@@ -299,9 +312,6 @@ pub(crate) fn decode_body(b: &[u8]) -> Result<Vec<f64>, CodecError> {
                         .map(|&m| f32::from_bits(m as u32 | sign) as f64),
                 );
                 negative = !negative;
-            }
-            if out.len() != n {
-                return Err(CodecError::Corrupt("sign runs"));
             }
             Ok(out)
         }
@@ -381,5 +391,42 @@ mod tests {
         assert_eq!(ord32(-0.0), -1);
         assert!(from_ord32(MAX_MAGNITUDE + 1).is_none());
         assert!(from_ord32(-MAX_MAGNITUDE - 2).is_none());
+    }
+}
+
+#[cfg(kani)]
+mod proofs {
+    use super::*;
+
+    /// Every float32 bit pattern maps to an integer and back unchanged; every integer in range maps back to
+    /// itself, and every integer outside it is refused.
+    #[kani::proof]
+    fn ord32_is_a_bijection() {
+        let bits: u32 = kani::any();
+        assert_eq!(from_ord32(ord32(f32::from_bits(bits))).unwrap().to_bits(), bits);
+        let o: i64 = kani::any();
+        match from_ord32(o) {
+            Some(x) => assert_eq!(ord32(x), o),
+            None => assert!(!(-MAX_MAGNITUDE - 1..=MAX_MAGNITUDE).contains(&o)),
+        }
+    }
+
+    /// Accepted sign runs are positive and sum to n; no input panics.
+    #[kani::proof]
+    #[kani::unwind(5)]
+    fn sign_runs_are_checked() {
+        let lengths: [i64; 4] = kani::any();
+        let k: usize = kani::any();
+        kani::assume(k <= 4);
+        let n: usize = kani::any();
+        kani::assume(n <= MAX_SAMPLES);
+        if check_runs(&lengths[..k], n).is_ok() {
+            let mut sum = 0u64;
+            for &l in &lengths[..k] {
+                assert!(l >= 1);
+                sum += l as u64;
+            }
+            assert_eq!(sum, n as u64);
+        }
     }
 }

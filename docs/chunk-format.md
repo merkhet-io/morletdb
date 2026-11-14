@@ -183,6 +183,59 @@ it is the specification.
 - **Checksum:** CRC-32C (Castagnoli; reflected polynomial `0x82F63B78`, initial value and final
   XOR `0xFFFFFFFF`) over every byte before it, stored little-endian.
 
+## Version 6 (float32 codings, draft)
+
+**Draft, under study B8.** This section becomes part of the specification only if a release ships version 6.
+Until then a build may change it.
+
+Version 6 holds samples that are each exactly a float32 value widened to float64. Grizzbit 1 codes such samples as
+float64: the float kind's order-preserving integers then carry 29 low mantissa bits that are always zero, and grid
+detection judges fit in float64 last places, which float32-rounded grid values never meet. Version 6 codes them in
+float32 terms, with the same integer streams.
+
+| Field | Size | Meaning |
+|---|---|---|
+| version | 1 byte | `6` |
+| kind | 1 byte | `1` (float32 grid) or `3` (float32 sign/magnitude) |
+| n | varint | sample count, 1..=32768 |
+| payload | | per kind, below |
+| checksum | 4 bytes | CRC-32C of every byte before it, little-endian |
+
+**Float32 grid (kind 1):**
+- `offset` (float64 LE), `scale` (float64 LE): both finite, `scale` > 0;
+- a varint length `L`, then `L` bytes: the index stream, `n` integers `k`;
+- `has_fix` (1 byte, 0 or 1); with 1, the remaining bytes are the correction stream, `n` integers `c`; with 0,
+  no byte may remain;
+- sample `i` is `from_ord32(ord32(g) + c[i])`, where `g` is `offset + k[i] · scale` computed in float64 (one
+  multiply, one add, no fused multiply-add) and rounded to the nearest float32, and `c[i]` is 0 without
+  corrections. The sum must lie in `ord32`'s range.
+
+**Float32 sign/magnitude (kind 3):**
+- the first sign (1 byte: 0 positive, 1 negative);
+- a varint `R`, the number of sign runs, 1..=n;
+- a varint length `L`, then `L` bytes: the magnitude stream, `n` integers each in 0..=0x7FFFFFFF;
+- with `R` > 1, the remaining bytes are the run stream: `R` integers, each at least 1, summing to `n`; with
+  `R` = 1, no byte may remain;
+- sample `i` is the float32 with bit pattern `m[i] | s(i) << 31`, the signs alternating run by run from the
+  first sign.
+
+**Streams.** Every stream is the integer stream above (predictor header, partitions, Rice codes), and may also
+use version 5's LPC predictor (predictor field 7), except the run stream, which uses fixed predictors only.
+
+**`ord32`** maps a float32 bit pattern `b` to `b` when the sign bit is clear and to `−(b AND 0x7FFFFFFF) − 1`
+when it is set, so +0 is 0 and −0 is −1; its inverse refuses integers outside −2³¹..2³¹−1.
+
+**Encoder.** Only for a chunk whose every sample equals its float32 rounding. It codes the sign/magnitude kind,
+and the grid kind when at most three quarters of the samples are distinct values, and keeps the smaller. The
+version-6 chunk is stored only if it has strictly fewer bytes than the chunk the configured format writes without
+it (Grizzbit 1, or Grizzbit 2.1); on a tie that chunk is kept, byte for byte. The grid fit uses IEEE basic
+operations in a fixed order, and its `offset` and `scale` are stored, so decoding does not depend on it.
+
+**Decoder,** with Grizzbit's rules: the checksum first; every length, count and range above; samples finite and
+within ±1e9.
+
+**Not in file format 1.** Its writer keeps Grizzbit 1 and its reader refuses version 6.
+
 ## Chunk summary (version 1, 66 bytes)
 
 Stored next to a chunk to answer interval statistics without decoding it. Readers may ignore it;
@@ -230,6 +283,9 @@ the table can write a valid chunk.
 - **Downgrade from version 5:** pg_morlet 0.3.11-alpha.1 and earlier, and decoders of those releases, report a
   version-5 chunk as an unknown format version. A collection that stored version-5 chunks needs them re-appended
   with `grizzbit1` before such a downgrade.
+- **Version 6** (float32 codings, draft above) keeps decoding every earlier version. Readers that do not know it
+  report it as an unknown format version, so a database with version-6 chunks needs a build that reads version 6;
+  on the wire, older clients receive samples (below). `morlet.float32_chunks = off` writes no version-6 chunk.
 - `float8[]` collections from pg_morlet 0.1.0 are a separate layout, detected
   per collection, and remain supported (see durable-ingestion.md, Upgrading).
 - **Chunks on the wire (SQL 0.3.5):** `morlet_read_interval_encoded` sends stored

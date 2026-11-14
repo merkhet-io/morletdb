@@ -5,7 +5,8 @@
 use arbitrary::{Arbitrary, Unstructured};
 use libfuzzer_sys::fuzz_target;
 use grizzbit::{
-    decode, encode, encode_version5, encode_with, CodecError, Format, GRIZZBIT21_VERSION,
+    decode, encode, encode_version5, encode_version6, encode_with, encode_with_float32, CodecError, Format,
+    FLOAT32_VERSION, GRIZZBIT21_VERSION,
     MAX_AMPLITUDE, MAX_SAMPLES,
 };
 mod common;
@@ -113,6 +114,27 @@ fuzz_target!(|c: Chunk| {
             assert_eq!(back.len(), c.samples.len());
             for (a, b) in back.iter().zip(&c.samples) {
                 assert_eq!(a.to_bits(), b.to_bits());
+            }
+            // Study B8: the same samples rounded to float32, through the default server encoder (version 6
+            // only where strictly smaller, else the format's own chunk byte for byte) and the version-6 coder
+            // alone, are exact too.
+            let f: Vec<f64> = c.samples.iter().map(|&v| v as f32 as f64).collect();
+            if f.iter().all(|v| v.is_finite() && v.abs() <= MAX_AMPLITUDE) {
+                for format in [Format::Grizzbit1, Format::Grizzbit21] {
+                    let base = encode_with(&f, c.quantum, format).expect("encodes");
+                    let got = encode_with_float32(&f, c.quantum, format).expect("encodes");
+                    if got[0] == FLOAT32_VERSION {
+                        assert!(got.len() < base.len());
+                    } else {
+                        assert_eq!(got, base);
+                    }
+                    let back = decode(&got).expect("decodes");
+                    assert!(back.iter().zip(&f).all(|(a, b)| a.to_bits() == b.to_bits()));
+                }
+                let v6 = encode_version6(&f).expect("encodes").expect("float32 samples");
+                let back = decode(&v6).expect("decodes");
+                assert_eq!(back.len(), f.len());
+                assert!(back.iter().zip(&f).all(|(a, b)| a.to_bits() == b.to_bits()));
             }
             // The version-5 coder alone, kept or not, decodes bit for bit too.
             if let Some(v5) = encode_version5(&c.samples, c.quantum).expect("encodes") {
