@@ -40,7 +40,8 @@ ordinary context rows (`<collection>_ctx`), readable and searchable with the cor
   Reasons for no context: `open`, `outside_recording`, `untimed`, `bad_quality`, `clock_exceeded`,
   `inconsistent_start`, plus `unchanged`, `out_of_order`, `unrepresentable` and `rejected` (see deviations).
 - **Protocol** `morlet-winccoa/1` (decision 4) on `127.0.0.1:8770`: `POST /v1/observations`,
-  `POST /v1/investigations`, `GET /v1/investigations/{request_id}`, `GET /v1/health`.
+  `POST /v1/investigations`, `GET /v1/investigations/{request_id}`, `GET /v1/health`, `GET /v1/clock` (the
+  companion's clock, without database work, for the adapter's heartbeat RTT).
 - **Authentication** (decision 5): bearer token from a 0600 file (one or two tokens), `hmac.compare_digest`,
   fingerprints only in logs, 5 failures a minute then a 60 s back-off.
 - **Limits** (decision 6): all configurable, see `companion.example.toml`.
@@ -106,7 +107,8 @@ parameterized SQL. No core change was needed for phase A.
 - **Clock:** before the first heartbeat of an acquisition there is no estimate, and intervals are not derived
   (`clock_exceeded`). The estimate is `|received_ns − observed_ns| + rtt_ns/2 + daq_bound`, from the latest
   heartbeat before each opening and closing observation, so the adapter must take a heartbeat's `observed_ns` just
-  before sending it. Re-deriving after a clock correction (an explicit operator action in the design) is not
+  before sending it. `received_ns` is taken when the request arrives, before the body is read and the database
+  connection is opened. Re-deriving after a clock correction (an explicit operator action in the design) is not
   implemented in phase A.
 - **Intervals derived before the end:** an interval closed before the acquisition is finished keeps its extent,
   even past the later end (segments use only committed samples); only intervals closed after the end is known are

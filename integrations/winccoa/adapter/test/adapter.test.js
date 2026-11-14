@@ -311,3 +311,36 @@ test('clean shutdown: backlog and a last heartbeat, then a gap; connections clos
   assert.equal(s.ctl.value('Morlet_Adapter.state'), 'stopped');
   assert.equal(s.adapter.timer, null);
 });
+
+// The companion's health does database work, so its RTT includes database latency; heartbeats carry the RTT of
+// GET /v1/clock instead, which does none. A slow health stands in for a loaded database.
+const SLOW_MS = 150;
+const slowHealth = (clock) => async (r) => {
+  if (r.url === '/v1/health') await new Promise((res) => setTimeout(res, SLOW_MS));
+  if (r.url === '/v1/clock' && clock) return clock;
+  return undefined;
+};
+const heartbeatsSent = (c) => sent(c).filter((o) => o.kind === 'heartbeat');
+
+test('heartbeat RTT comes from GET /v1/clock, not from the slower health request', async (t) => {
+  const s = await started(t, { companion: { handler: slowHealth() } });
+  await waitFor(() => idle(s.adapter) && heartbeatsSent(s.companion).length >= 1);
+  const urls = s.companion.requests.map((r) => r.url);
+  assert.ok(urls.indexOf('/v1/clock') > urls.indexOf('/v1/health'));
+  assert.ok(urls.indexOf('/v1/clock') < urls.indexOf('/v1/observations'));
+  const rtt = BigInt(heartbeatsSent(s.companion)[0].rtt_ns);
+  assert.ok(rtt < BigInt(SLOW_MS) * 1_000_000n, `rtt ${rtt} ns includes the health request's delay`);
+  assert.equal(s.adapter.clockEndpoint, true);
+});
+
+test('an older companion without /v1/clock (404): the health RTT is used, logged once', async (t) => {
+  const s = await started(t, { companion: { handler: slowHealth({ status: 404, body: { error: 'not_found' } }) } });
+  await waitFor(() => idle(s.adapter) && heartbeatsSent(s.companion).length >= 1);
+  await s.adapter.tick();
+  await waitFor(() => idle(s.adapter) && heartbeatsSent(s.companion).length >= 2);
+  for (const hb of heartbeatsSent(s.companion)) assert.ok(BigInt(hb.rtt_ns) >= BigInt(SLOW_MS) * 1_000_000n);
+  assert.equal(s.companion.requests.filter((r) => r.url === '/v1/clock').length, 1);
+  assert.equal(s.ctl.logs.filter((l) => /no GET \/v1\/clock/.test(l[1])).length, 1);
+  assert.equal(s.adapter.clockEndpoint, false);
+  assert.equal(s.adapter.state(), 'ok');
+});

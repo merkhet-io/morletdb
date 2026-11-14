@@ -55,6 +55,9 @@ function defaultResponse(r, c, token) {
       assets: [{ asset: 'rig-1', collection: 'plant.rig', current_acquisition: c.acquisition }],
       limits: c.limits || { observations_per_message: 1000, body_bytes: 1048576 } } };
   }
+  if (r.url === '/v1/clock') {
+    return { status: 200, body: { schema: 'morlet-winccoa/1', companion_ns: (BigInt(Date.now()) * 1000000n).toString() } };
+  }
   if (r.url === '/v1/observations') {
     for (const o of r.body.observations) {
       const k = `${r.body.session}/${o.seq}`;
