@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Companion configuration (TOML). Every limit of docs/winccoa.md decision 6 is a setting here.
 
-Values marked "proposed default, owner decision pending" stand in for decisions docs/winccoa.md leaves to the owner;
-they are the design's proposals, not approved values.
+The defaults were decided on 2026-11-14 (docs/winccoa.md, section Defaults), with WinCC OA's own archiver defaults
+as the comparison. The limits are starting values, not yet measured under load.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class ConfigError(ValueError):
 
 @dataclass(frozen=True)
 class Limits:
-    # Decision 6: initial values, to be measured in phase A and then fixed (proposed default, owner decision pending).
+    # Decision 6: starting values, decided 2026-11-14, docs/winccoa.md section Defaults; to be checked by a load measurement.
     observations_per_message: int = 1000
     body_bytes: int = 1 << 20
     datapoints: int = 500
@@ -50,16 +50,15 @@ class Limits:
 
 @dataclass(frozen=True)
 class Clock:
-    # Decision 3: proposed default, owner decision pending (both hosts on NTP or PTP).
+    # Decision 3: decided 2026-11-14, docs/winccoa.md section Defaults (both hosts on NTP or PTP).
     bound_ms: float = 50.0
     # The companion-DAQ bound, declared by the operator when the companion is not on the DAQ host (it cannot be
     # measured by the companion). 0: the companion runs on the DAQ host.
     daq_bound_ms: float = 0.0
-    # Decision 2: proposed default, owner decision pending. Bounds how much state is lost at a disconnect; the health
+    # Decision 2: decided 2026-11-14, docs/winccoa.md section Defaults. Bounds how much state is lost at a disconnect; the health
     # report calls the adapter stale after three intervals without a heartbeat.
     heartbeat_interval_s: float = 10.0
-    # Decision 3: whether the opt-in observed-time basis may be used at all. Proposed default (off), owner decision
-    # pending.
+    # Decision 3: the opt-in observed-time basis is not allowed (decided 2026-11-14, docs/winccoa.md section Defaults).
     allow_observed_time_basis: bool = False
 
 
@@ -78,7 +77,7 @@ class Datapoint:
     time_basis: str = "source"            # "source" (WinCC OA source time) or "observed" (opt-in, see Clock)
     # Whether a value without quality attributes may become context. docs/winccoa.md section 3 stores such values
     # with quality_status 'missing' and derives no context (bad_quality); this keeps that as the default.
-    # Proposed default, owner decision pending (quality attribute names in the JavaScript API are open question 2).
+    # Decided 2026-11-14, docs/winccoa.md section Defaults (quality attribute names in the JavaScript API are open question 2).
     accept_missing_quality: bool = False
 
 
@@ -88,9 +87,9 @@ class Config:
     token_file: str
     listen_host: str = "127.0.0.1"
     listen_port: int = 8770
-    # Decision 1: option (a), schema name proposed default, owner decision pending.
+    # Decision 1: option (a), decided 2026-11-14, docs/winccoa.md section Defaults.
     schema: str = "morlet_winccoa"
-    # Decision 5: one login role with two NOLOGIN group roles. Proposed default, owner decision pending.
+    # Decision 5: one login role with two NOLOGIN group roles, decided 2026-11-14, docs/winccoa.md section Defaults.
     context_role: str = "winccoa_context"
     reader_role: str = "winccoa_reader"
     viewer_base_url: str = ""

@@ -2,24 +2,24 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # MorletDB WinCC OA companion: example configuration (the replay machine of integrations/winccoa/replay).
-# Values marked "proposed default, owner decision pending" are the proposals of docs/winccoa.md, not approved values.
+# The defaults were decided on 2026-11-14 (docs/winccoa.md, section Defaults); the limits are starting values.
 
 [service]
 listen = "127.0.0.1:8770"                 # loopback only (remote binding is not in phases A and B)
 token_file = "/run/morlet-winccoa/token"  # mode 0600, one or two tokens (current and next)
 dsn = "service=morlet_winccoa"            # no password here: use a libpq service file or passfile with mode 0600
-schema = "morlet_winccoa"                 # decision 1, option (a): proposed default, owner decision pending
+schema = "morlet_winccoa"                 # decision 1, option (a): decided 2026-11-14
 context_role = "winccoa_context"          # decision 5: one login role with two group roles:
-reader_role = "winccoa_reader"            #   proposed default, owner decision pending
+reader_role = "winccoa_reader"            #   decided 2026-11-14
 derive_interval_s = 5.0
 
 [clock]
-bound_ms = 50.0                 # decision 3: proposed default, owner decision pending
+bound_ms = 50.0                 # decision 3: decided 2026-11-14
 daq_bound_ms = 0.0              # declare the companion-DAQ bound when the companion is not on the DAQ host
-heartbeat_interval_s = 10.0     # decision 2: proposed default, owner decision pending
-allow_observed_time_basis = false   # decision 3: proposed default, owner decision pending
+heartbeat_interval_s = 10.0     # decision 2: decided 2026-11-14
+allow_observed_time_basis = false   # decision 3: decided 2026-11-14
 
-[limits]                        # decision 6: phase-A starting values; proposed defaults, owner decision pending
+[limits]                        # decision 6: starting values, decided 2026-11-14
 observations_per_message = 1000
 body_bytes = 1048576
 datapoints = 500
@@ -51,7 +51,7 @@ dpe = "System1:Rig1.speed"
 asset = "rig-1"
 key = "speed"
 time_basis = "source"
-accept_missing_quality = false  # proposed default, owner decision pending (quality attributes: open question 2)
+accept_missing_quality = false  # decided 2026-11-14 (quality attributes: open question 2)
 
 [[datapoints]]
 dpe = "System1:Rig1.load"
