@@ -36,5 +36,6 @@ Good first contributions include reproducible onboarding fixes, documentation
 examples, importer validation cases and evaluation controls. Discuss new storage
 engines, indexing schemes and extractor changes in an issue first.
 
-Contributions are made under Apache-2.0. Be respectful, explain disagreements
+Contributions are made under Apache-2.0. A Contributor License Agreement is drafted for a future
+open-core split ([licensing](docs/licensing.md), [CLA](docs/cla.md)); it is not in force yet. Be respectful, explain disagreements
 with evidence and protect other people's private data.

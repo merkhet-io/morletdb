@@ -388,7 +388,8 @@ make pg-test    # needs a pgrx-managed PostgreSQL
 ## License
 
 Copyright 2026 MorletDB contributors. Code, documentation and original brand artwork
-are licensed under the [Apache License, Version 2.0](LICENSE). The technical report's text and
+are licensed under the [Apache License, Version 2.0](LICENSE). A split into an Apache 2.0 core and an enterprise
+layer is drafted in [docs/licensing.md](docs/licensing.md); it is not in force. The technical report's text and
 figures are licensed under [CC BY 4.0](research/paper/LICENSE.md). A
 [Merkhet](https://github.com/merkhet-io) project.
 
