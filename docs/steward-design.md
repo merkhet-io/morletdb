@@ -79,7 +79,7 @@ destructive functions successfully, so a bug in the steward cannot remove raw da
 
 | Job | Runs | Done when |
 |---|---|---|
-| envelopes | `morlet_build_envelopes` per recording with unbuilt windows, small batches | it returns 0 |
+| envelopes | `morlet_build_envelopes` per recording with unbuilt windows, small batches | it returns 0, or its last window did not move (SQL 0.3.11 and earlier counted skipped windows, #488) |
 | chunk summaries | `morlet_build_chunk_summaries`, batches of chunks | returns 0 |
 | roll-ups | `morlet_build_rollups` | returns 0 |
 | context values | `morlet_build_context_values` for segments without values | returns 0 |

@@ -390,8 +390,16 @@ def call_builder(conn, job: str, collection: str, recording_id: str, batch: int,
         conn.execute(f"SET LOCAL statement_timeout = {int(timeout_s * 1000)}")
         if job == "envelopes":
             w, s = grid
-            q, args = "SELECT morlet_build_envelopes(%s::regclass,%s,%s,%s,%s)", (collection, recording_id, w, s, batch)
-        elif job == "chunk_summaries":
+            # Before SQL 0.3.12 the builder also counted the windows it skipped under episodic memory, so on a
+            # recording compacted at its end it never returned 0 (#488). It writes only after its last stored window,
+            # so a call that wrote something moved that window: when it did not move, nothing was written.
+            env = sibling(conn, collection, "_envelopes")
+            last = f"SELECT max(start_sample) FROM {env} WHERE recording_id=%s AND window_size=%s"
+            before = conn.execute(last, (recording_id, w)).fetchone()[0]
+            n = int(conn.execute("SELECT morlet_build_envelopes(%s::regclass,%s,%s,%s,%s)",
+                                 (collection, recording_id, w, s, batch)).fetchone()[0] or 0)
+            return n if n == 0 or conn.execute(last, (recording_id, w)).fetchone()[0] != before else 0
+        if job == "chunk_summaries":
             q, args = "SELECT morlet_build_chunk_summaries(%s::regclass,%s,%s)", (collection, recording_id, batch)
         elif job == "rollups":
             q, args = "SELECT morlet_build_rollups(%s::regclass,%s,%s)", (collection, recording_id, batch)

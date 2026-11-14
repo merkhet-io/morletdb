@@ -326,10 +326,10 @@ search together with what was `not_indexed` ([search contract](search-contract.m
   END $$;
   ```
 
-  Use the window size and stride the collection was built with. The second exit condition is needed: on samples
-  compacted by episodic memory the builder returns the number of windows it skipped, not 0, so "until it returns 0"
-  never ends there. Run it outside an explicit transaction (`COMMIT` inside `DO` needs that). With the steward running,
-  you can instead let its envelope job catch up (but see the known problem in [8](#8-retention-and-archiving-to-parquet-and-s3)).
+  Use the window size and stride the collection was built with. The second exit condition is needed only before SQL
+  0.3.12: there, on samples compacted by episodic memory the builder returns the number of windows it skipped, not 0,
+  so "until it returns 0" never ends (#488, fixed in 0.3.12). Run it outside an explicit transaction (`COMMIT` inside
+  `DO` needs that). With the steward running, you can instead let its envelope job catch up.
 - **A build with the wrong stride, or a change of window grid.** The error's hint is the procedure: delete that
   recording's envelopes of that window size and build again. Deleting envelopes deletes their probe rows too.
 
@@ -511,11 +511,14 @@ SELECT recording_id, chunks, samples, problems FROM morlet_verify('public.line')
 A read of a removed interval fails with `samples of recording p1 in 0..65536 were compacted to level 4 (episode 1,
 ledger 1)`.
 
-**Known problem (found while writing this runbook, 0.3.14-alpha.1):** after level 4, `morlet_build_envelopes` on that
-recording keeps returning the number of skipped windows and writes nothing. The steward's envelope job therefore picks
-the same recording on every tick and never reaches the recordings after it. Until this is fixed, watch
-`morlet_collection_unbuilt_samples` after a retention plan, and build the other recordings with the loop in
-[7](#7-rebuilding-envelopes-probe-rows-and-indexes).
+**Fixed problem (found while writing this runbook, 0.3.14-alpha.1; #488, fixed in SQL 0.3.12):** after level 4,
+`morlet_build_envelopes` on that recording kept returning the number of skipped windows and wrote nothing, so the
+steward's envelope job picked the same recording on every tick and never reached the recordings after it, and
+`morlet_collection_status` counted the removed samples as `unbuilt_samples`. From SQL 0.3.12 the builder returns 0
+there and the status counts only samples at level 0; `morlet_coverage` still reports the removed range as `gone`. A
+steward from the same release also moves on when the database is still at SQL 0.3.11. On 0.3.14-alpha.1 itself (SQL
+0.3.11 and its steward), watch `morlet_collection_unbuilt_samples` after a retention plan and build the other
+recordings with the loop in [7](#7-rebuilding-envelopes-probe-rows-and-indexes).
 
 **How this was checked.** On the collection of runbook 7, with a local SeaweedFS 3.73 S3 server (generated keys) and
 boto3 1.35.36:

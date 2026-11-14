@@ -111,6 +111,40 @@ class StewardDatabase(unittest.TestCase):
         self.run_until_idle(self.steward())
         self.assertEqual(self.one("SELECT count(*) FROM fresh_envelopes WHERE window_size=2048"), (100000 - 2048) // 512 + 1)
 
+    def test_a_recording_compacted_to_level_4_does_not_starve_the_others(self):
+        """#488: after level 4 the envelope builder reported the windows it skipped as written, so the steward picked
+        the compacted recording on every tick and never reached the next one."""
+        a = self.admin
+        a.execute("SELECT morlet_build_envelopes('line','r2',4096,2048,2)")   # the grid survives r1's envelopes
+        a.execute("SELECT morlet_enable_memory('line')")
+        a.execute("DELETE FROM line_episodes")              # Plans' level-0 episodes would keep r1's chunks
+        a.execute("""SELECT morlet_set_level('line',morlet_start_memory_run('line','retention','1'),
+            jsonb_build_array(jsonb_build_object('episode_id',e,'level',4)))
+          FROM morlet_add_episodes('line','[{"recording_id":"r1","start_sample":0,"end_sample":1100000}]') e""")
+        S.grant(a)                                                           # memory added tables
+        self.assertEqual(self.one("SELECT count(*) FROM line_chunks WHERE recording_id='r1'"), 0)
+        self.run_until_idle(self.steward())
+        # the other recording is fully built; the compacted one has nothing to build and is done
+        self.assertEqual(self.one("SELECT count(*) FROM line_envelopes WHERE recording_id='r2' AND window_size=4096"),
+                         (1_100_000 - 4096) // 2048 + 1)
+        self.assertEqual(self.one("SELECT count(*) FROM line_envelopes WHERE recording_id='r1'"), 0)
+        self.assertEqual(self.one("SELECT done_end FROM morlet_steward.progress WHERE job='envelopes:4096:2048' "
+                                  "AND recording_id='r1'"), 1_100_000)
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job='envelopes' "
+                                  "AND recording_id='r1' AND outcome='done'"), 0)
+        # missing evidence stays visible: coverage says gone, and the status counts no removed sample as backlog
+        self.assertEqual(a.execute("SELECT start_sample,end_sample,state FROM morlet_coverage('line','{r1}')")
+                         .fetchall(), [(0, 1_100_000, "gone")])
+        tail = 1_100_000 - ((1_100_000 - 4096) // 2048 * 2048 + 4096)       # r2's partial tail, never built
+        self.assertEqual(a.execute("SELECT recordings_without_envelopes,unbuilt_samples "
+                                   "FROM morlet_collection_status('line') WHERE window_size=4096").fetchone(), (1, tail))
+        # new samples after the removed range are built as usual
+        a.execute("SELECT morlet_append_chunks_raw('line','r1',1100000,morlet_float8_le_bytes(ARRAY(SELECT "
+                  "round(100*sin(i/9.0))::float8 FROM generate_series(0,9999) i)),32768)")
+        self.run_until_idle(self.steward())
+        self.assertEqual(a.execute("SELECT min(start_sample),count(*) FROM line_envelopes WHERE recording_id='r1'")
+                         .fetchone(), (1_101_824, (1_110_000 - 4096 - 1_101_824) // 2048 + 1))
+
     def test_metrics_report_state_backlog_and_tables_and_change_nothing(self):
         import metrics as M
         self.run_until_idle(self.steward())

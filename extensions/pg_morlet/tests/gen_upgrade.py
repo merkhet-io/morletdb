@@ -1,84 +1,53 @@
-"""Generate sql/pg_morlet--0.3.10--0.3.11.sql. Usage: gen_upgrade.py NEW.sql [--check]
+"""Generate sql/pg_morlet--0.3.11--0.3.12.sql. Usage: gen_upgrade.py NEW.sql [--check]
 (NEW.sql from `cargo pgrx schema pg17 -o NEW.sql`; --check compares instead of writing and fails when the committed
 script is stale)
 
-0.3.10 is released (0.3.13-alpha.1). 0.3.11 moves the body of morlet_compare_to_history into the internal
-morlet_history_comparison, which can leave out the pooled spreads (#335); morlet_compare_to_history keeps its
-signature and results and calls it with the spreads, morlet_compare_summary calls it without them for the duration
-deviation (it computed the spreads twice before). The new function is created, the two others replaced (CREATE OR
-REPLACE keeps OIDs, dependencies and privileges), all verbatim from the generated schema, so tests/upgrade.sh and
-tests/upgrade_from_release.sh find an upgraded catalog equal to a fresh 0.3.11 installation. No table changes. The
-scripts of earlier steps are frozen.
-
-Also in 0.3.11 (#384): morlet_search_similar_excluding (new, experimental) leaves out the source window, the same
-occurrence, the whole source recording or nothing. The internal morlet_envelope_ranked gains optional excluded ranges
-(a new signature: the old one is dropped first); the bodies of morlet_search_envelope_probes and
-morlet_search_similar_evidence move into the internal morlet_probe_search and morlet_similar_evidence, which accept
-the ranges, and the two stable functions call them without any (same signatures and results).
-
-Also in 0.3.11 (#414): morlet_build_context_values reads a segment of an encoded collection in one raw read and computes
-its values with the new internal morlet_simple_values_raw (same values)."""
+0.3.11 is released (0.3.14-alpha.1). 0.3.12 replaces morlet_build_envelopes (#488): windows it skips under episodic
+memory (out of search, or samples removed) are no longer counted in its result, so on a recording compacted after its
+last window it returns 0 instead of the number of skipped windows on every call, and a batch without any stored sample
+is passed over in one query. It replaces morlet_collection_status (#488): unbuilt_samples counts only samples at memory
+level 0, not samples out of search or removed. Both keep their signatures (CREATE OR REPLACE keeps OIDs, dependencies
+and privileges) and are taken verbatim from the generated schema, so tests/upgrade.sh and
+tests/upgrade_from_release.sh find an upgraded catalog equal to a fresh 0.3.12 installation. No table changes. The
+scripts of earlier steps are frozen."""
 import re
 import sys
 from pathlib import Path
 
 EXT = Path(__file__).resolve().parent.parent
-OUT = EXT / "sql/pg_morlet--0.3.10--0.3.11.sql"
+OUT = EXT / "sql/pg_morlet--0.3.11--0.3.12.sql"
 schema = Path(sys.argv[1]).read_text()
 CHECK = "--check" in sys.argv[2:]
 control = (EXT / "pg_morlet.control").read_text()
-assert "default_version = '0.3.11'" in control, "control file"
+assert "default_version = '0.3.12'" in control, "control file"
 
-NEW = ("morlet_history_comparison",                                # #335: comparison with optional pooled spreads
-       "morlet_in_ranges", "morlet_envelope_ranked", "morlet_probe_search",  # #384, in dependency order
-       "morlet_similar_evidence", "morlet_similar_route", "morlet_search_exclusions",
-       "morlet_search_similar_excluding")
-NEW_C = ("morlet_simple_values_raw",)                               # #414: values from raw bytes (Rust)
-REPLACED = ("morlet_compare_to_history", "morlet_compare_summary",  # #335: call it
-            "morlet_search_envelope_probes", "morlet_search_similar_evidence",  # #384: call the internal bodies
-            "morlet_build_context_values")                          # #414: one raw read per segment
-# #384: morlet_envelope_ranked's 0.3.10 signature, dropped before the new one is created
-DROPPED = ("DROP FUNCTION public.morlet_envelope_ranked(regclass,float8[],float8,text,text,jsonb,integer,float8,"
-           "boolean,integer,text,bigint,bigint,numeric,numeric);",)
+REPLACED = ("morlet_build_envelopes",      # #488: skipped windows are not written, so not counted
+            "morlet_collection_status")    # #488: removed or out-of-search samples are not backlog
 
 
-def c_definition(name):
-    """The generated definition of a new Rust (C) function, before the SQL functions that call it (as in 0.3.9)."""
-    m = re.search(r'CREATE  FUNCTION "' + name + r'"\(.*?;\n', schema, re.S)
-    assert m, f"{name}: not in the schema"
-    return re.sub(r"\s+/\*.*?\*/", "", m.group(0)).replace("CREATE  FUNCTION", "CREATE FUNCTION").rstrip()
-
-
-def definitions(name, replace):
+def definitions(name):
     """Every CREATE FUNCTION public.<name>(...) statement of the schema (overloads in schema order), each through the
-    end of its dollar-quoted body; CREATE OR REPLACE for an existing function."""
+    end of its dollar-quoted body, as CREATE OR REPLACE."""
     starts = [m.start() for m in re.finditer(r"^CREATE (?:OR REPLACE )?FUNCTION public\." + name + r"\(", schema, re.M)]
     assert starts, f"{name}: not in the schema"
     out = []
     for start in starts:
         body = re.compile(r"\bAS\s+(\$\w*\$)").search(schema, start)
         end = schema.index(";", schema.index(body.group(1), body.end()) + len(body.group(1))) + 1
-        verb = "CREATE OR REPLACE FUNCTION" if replace else "CREATE FUNCTION"
-        out.append(re.sub(r"^CREATE (?:OR REPLACE )?FUNCTION", verb, schema[start:end]))
+        out.append(re.sub(r"^CREATE (?:OR REPLACE )?FUNCTION", "CREATE OR REPLACE FUNCTION", schema[start:end]))
     return out
 
 
-script = ("-- pg_morlet 0.3.10 -> 0.3.11 (generated by tests/gen_upgrade.py; do not edit).\n"
-          "-- morlet_history_comparison (new, internal): morlet_compare_to_history's body, with the pooled spreads\n"
-          "-- optional (#335). morlet_compare_to_history calls it with them (unchanged results); morlet_compare_summary\n"
-          "-- calls it without them for the duration deviation, so it computes the spreads once instead of twice.\n"
-          "-- morlet_search_similar_excluding (new, experimental; #384) chooses what search leaves out; the internal\n"
-          "-- morlet_envelope_ranked (new signature), morlet_probe_search and morlet_similar_evidence take excluded\n"
-          "-- ranges; morlet_search_envelope_probes and morlet_search_similar_evidence call them without any.\n"
-          "-- morlet_simple_values_raw (new, internal; #414): morlet_build_context_values reads a segment of an encoded\n"
-          "-- collection in one raw read and computes its values from the bytes (the same values).\n"
-          "\\echo Use \"ALTER EXTENSION pg_morlet UPDATE TO '0.3.11'\" to load this file. \\quit\n\n"
-          + "\n\n".join(list(DROPPED) + [c_definition(n) for n in NEW_C] + [d for n in NEW for d in definitions(n, False)]
-                        + [d for n in REPLACED for d in definitions(n, True)]) + "\n")
+script = ("-- pg_morlet 0.3.11 -> 0.3.12 (generated by tests/gen_upgrade.py; do not edit).\n"
+          "-- morlet_build_envelopes: windows skipped under episodic memory are not counted as written, so a recording\n"
+          "-- compacted after its last window returns 0 instead of the skipped windows on every call (#488).\n"
+          "-- morlet_collection_status: unbuilt_samples counts only samples at memory level 0 (#488).\n"
+          "\\echo Use \"ALTER EXTENSION pg_morlet UPDATE TO '0.3.12'\" to load this file. \\quit\n\n"
+          + "\n\n".join(d for n in REPLACED for d in definitions(n)) + "\n")
 if CHECK:
     if OUT.read_text() != script:
         sys.exit(f"{OUT.name} is stale: run tests/gen_upgrade.py")
     print(f"{OUT.name} up to date")
 else:
     OUT.write_text(script)
-    print(f"wrote {OUT.name}: {len(NEW) + len(REPLACED)} SQL functions, {len(NEW_C)} Rust, {len(DROPPED)} dropped")
+    print(f"wrote {OUT.name}: {len(REPLACED)} SQL functions")
