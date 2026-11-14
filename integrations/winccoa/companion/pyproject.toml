@@ -1,0 +1,20 @@
+# Copyright 2026 MorletDB contributors. Licensed under the Apache License, Version 2.0 (LICENSE).
+# SPDX-License-Identifier: Apache-2.0
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "morlet-winccoa"
+version = "0.1.0a1"
+description = "MorletDB WinCC OA companion (experimental, awaiting validation in WinCC OA)"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+# The MorletDB Python SDK (sdk/python in this repository; install it first).
+dependencies = ["morletdb>=0.1.0a7", "numpy>=1.24", "psycopg[binary]>=3.2"]
+
+[project.scripts]
+morlet-winccoa = "morlet_winccoa.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

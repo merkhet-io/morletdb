@@ -1,0 +1,25 @@
+name: WinCC OA integration
+# Phase A of #474: the companion and the replay machine against a disposable MorletDB (the pinned release image in
+# Docker, no mocks of MorletDB). No WinCC OA is involved.
+on:
+  pull_request:
+    paths: ['integrations/winccoa/**', 'sdk/python/**', '.github/workflows/winccoa.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  companion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the SDK and the companion
+        run: |
+          pip install ./sdk/python
+          pip install ./integrations/winccoa/companion
+      - name: Test the companion and the replay machine against the release image
+        working-directory: integrations/winccoa/companion/tests
+        run: python -m unittest -v test_offline test_machine test_context test_service test_rls
