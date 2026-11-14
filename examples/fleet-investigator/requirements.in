@@ -1,0 +1,5 @@
+# Direct dependencies of the fleet investigator tools image; requirements.lock pins them with hashes.
+mcp==2.3.0
+psycopg[binary]==3.2.10
+numpy==2.2.6
+anthropic==2.3.0

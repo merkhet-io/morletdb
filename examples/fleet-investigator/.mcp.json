@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "morletdb": {
+      "command": "docker",
+      "args": ["compose", "-f", "compose.yaml", "--progress", "quiet", "run", "--rm", "-i", "-T", "mcp"]
+    },
+    "graph": {
+      "command": "docker",
+      "args": ["compose", "-f", "compose.yaml", "--progress", "quiet", "run", "--rm", "-i", "-T", "graph"]
+    }
+  }
+}
