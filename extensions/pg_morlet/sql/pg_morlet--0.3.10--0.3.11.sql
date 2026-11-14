@@ -2,7 +2,17 @@
 -- morlet_history_comparison (new, internal): morlet_compare_to_history's body, with the pooled spreads
 -- optional (#335). morlet_compare_to_history calls it with them (unchanged results); morlet_compare_summary
 -- calls it without them for the duration deviation, so it computes the spreads once instead of twice.
+-- morlet_simple_values_raw (new, internal; #414): morlet_build_context_values reads a segment of an encoded
+-- collection in one raw read and computes its values from the bytes (the same values).
 \echo Use "ALTER EXTENSION pg_morlet UPDATE TO '0.3.11'" to load this file. \quit
+
+CREATE FUNCTION "morlet_simple_values_raw"(
+	"raw" bytea,
+	"sample_rate_hz" double precision
+) RETURNS double precision[]
+IMMUTABLE STRICT PARALLEL SAFE
+LANGUAGE c
+AS 'MODULE_PATHNAME', 'morlet_simple_values_raw_wrapper';
 
 CREATE FUNCTION public.morlet_history_comparison(collection regclass,segment_id bigint,match_keys text[],
   metadata_filter jsonb,exclude_labels text[],min_history integer,max_candidates integer,before_only boolean,
@@ -122,4 +132,43 @@ BEGIN
   calibrated_score:=(public.morlet_calibrated_score_rules(q.vals,flat,width,spreads,public.morlet_value_rules(collection)))[1];
   status:=CASE WHEN score IS NULL THEN 'no_defined_value' ELSE 'ok' END;
   RETURN NEXT;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.morlet_build_context_values(collection regclass,recording_id text,max_segments integer DEFAULT 1000)
+RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE rel record; seg record; samples float8[]; piece float8[]; s bigint; rate float8; n bigint:=0; encoded boolean;
+BEGIN
+  SELECT * INTO rel FROM public.morlet_context_relations(collection);
+  IF max_segments NOT BETWEEN 1 AND 100000 THEN RAISE EXCEPTION 'max_segments must be 1..100000'; END IF;
+  SELECT r.encoded INTO encoded FROM public.morlet_stream_relations(collection) r;
+  EXECUTE format('SELECT sample_rate_hz FROM %s WHERE recording_id=$1',collection) INTO rate USING recording_id;
+  IF rate IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
+  FOR seg IN EXECUTE format('SELECT s.segment_id,s.start_sample,s.end_sample FROM %s s WHERE s.recording_id=$1 AND NOT s.stale
+      AND NOT EXISTS(SELECT 1 FROM %s v WHERE v.segment_id=s.segment_id AND v.representation=''simple-v1'')
+      ORDER BY s.start_sample LIMIT $2',rel.segments,rel.vals) USING recording_id,max_segments
+  LOOP
+    IF seg.end_sample-seg.start_sample>1048576 THEN
+      RAISE EXCEPTION 'segment % has % samples; simple-v1 supports at most 1048576',seg.segment_id,seg.end_sample-seg.start_sample;
+    END IF;
+    IF encoded THEN
+      -- One raw read of the segment, values computed from its bytes (#414): joining 32,768-sample float8[] pieces
+      -- here copied the growing array for every piece, about half of the time for a 220k-sample segment. The
+      -- samples, and so the values, are the same.
+      EXECUTE format('INSERT INTO %s(segment_id,representation,vals) VALUES ($1,''simple-v1'',
+          public.morlet_simple_values_raw(public.morlet_read_interval_raw($2,$3,$4,$5),$6))',rel.vals)
+        USING seg.segment_id,collection,recording_id,seg.start_sample,seg.end_sample,rate;
+    ELSE
+      samples:=ARRAY[]::float8[];
+      s:=seg.start_sample;
+      WHILE s<seg.end_sample LOOP
+        SELECT i.samples INTO piece FROM public.morlet_read_interval(collection,recording_id,s,least(s+32768,seg.end_sample)) i;
+        samples:=samples||piece;
+        s:=least(s+32768,seg.end_sample);
+      END LOOP;
+      EXECUTE format('INSERT INTO %s(segment_id,representation,vals) VALUES ($1,''simple-v1'',public.morlet_simple_values($2,$3))',
+        rel.vals) USING seg.segment_id,samples,rate;
+    END IF;
+    n:=n+1;
+  END LOOP;
+  RETURN n;
 END $$;

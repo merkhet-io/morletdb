@@ -761,6 +761,21 @@ fn morlet_simple_values(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f
         .unwrap_or_else(|e| pgrx::error!("{}", e))
 }
 
+/// `simple-v1` values of one segment from its samples as little-endian float64 bytes (`morlet_read_interval_raw`),
+/// bit-identical to `morlet_simple_values` of the same samples. `morlet_build_context_values` reads a segment of an
+/// encoded collection in one raw read and computes here, instead of joining float8[] pieces in PL/pgSQL (#414).
+#[pg_extern(immutable, parallel_safe, strict)]
+fn morlet_simple_values_raw(raw: &[u8], sample_rate_hz: f64) -> Vec<f64> {
+    if raw.len() % 8 != 0 {
+        pgrx::error!("raw samples must be a multiple of 8 bytes (little-endian float64)");
+    }
+    let samples: Vec<f64> = raw
+        .chunks_exact(8)
+        .map(|b| f64::from_le_bytes(b.try_into().unwrap()))
+        .collect();
+    morlet_core::values::simple(&samples, sample_rate_hz).unwrap_or_else(|e| pgrx::error!("{}", e))
+}
+
 /// calibrated-v1 summary of one query against history rows (flattened, `width` values
 /// each) with per-value spreads (NULL = undefined): {score, score_quantile, top value index
 /// (1-based, 0 if none), history size}. Elements are NULL when undefined. Rows of simple-v1
@@ -3105,6 +3120,27 @@ END $$"#).unwrap();
         Spi::run("SELECT morlet_append_chunk('shs','q',0,ARRAY[1,2,4]::float8[])").unwrap();
         Spi::run("SELECT morlet_append_encoded_chunk('shd','r',0,(SELECT encoded FROM shs_chunks WHERE recording_id='r'))").unwrap();
         Spi::run("SELECT morlet_append_encoded_chunk('shd','r',0,(SELECT encoded FROM shs_chunks WHERE recording_id='q'))").unwrap();
+    }
+
+    #[pg_test]
+    fn context_values_from_one_raw_read_equal_the_float8_path() {
+        // #414: segments longer than a 32,768-sample piece, not aligned to chunks, built from one raw read; their
+        // values must equal morlet_simple_values over the samples read the old way, bit for bit.
+        Spi::run("SELECT morlet_create_stream_collection('public','rawv'); SELECT morlet_enable_context('rawv'); SELECT morlet_start_recording('rawv','r',50000,'ch','V','{}',512,256,'zscore','none'); SELECT morlet_append_chunks_raw('rawv','r',0,morlet_float8_le_bytes(ARRAY(SELECT (round(1000*sin(i/7.0)+((i*7919)%97))/256 + CASE WHEN i%5000=0 THEN -0.0 ELSE 0 END)::float8 FROM generate_series(0,219999) i)),16384); SELECT morlet_add_context('rawv','b','[{\"recording_id\":\"r\",\"key\":\"phase\",\"value\":\"a\",\"start_sample\":0,\"end_sample\":70001},{\"recording_id\":\"r\",\"key\":\"phase\",\"value\":\"b\",\"start_sample\":70001,\"end_sample\":219999}]'); SELECT morlet_build_context_segments('rawv','r',ARRAY['phase'])").unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT morlet_build_context_values('rawv','r')").unwrap(),
+            Some(2)
+        );
+        let pieces = "(SELECT array_agg(x ORDER BY p, o) FROM generate_series(s.start_sample, s.end_sample - 1, 32768) p, LATERAL (SELECT u.x, u.o FROM morlet_read_interval('rawv','r',p,least(p+32768,s.end_sample)) i, unnest(i.samples) WITH ORDINALITY u(x,o)) q)";
+        assert_eq!(
+            Spi::get_one::<i64>(&format!("SELECT count(*) FROM rawv_ctx_segments s JOIN rawv_ctx_values v USING (segment_id) WHERE v.vals::text = morlet_simple_values({pieces}, 50000)::text")).unwrap(),
+            Some(2)
+        );
+    }
+
+    #[pg_test(error = "raw samples must be a multiple of 8 bytes (little-endian float64)")]
+    fn simple_values_raw_refuses_partial_values() {
+        Spi::run("SELECT morlet_simple_values_raw('\\x0102'::bytea, 1)").unwrap();
     }
 
     #[pg_test]

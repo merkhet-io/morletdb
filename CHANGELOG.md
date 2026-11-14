@@ -4,6 +4,17 @@
 
 SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Context values build about 4× faster (#414).** On encoded collections, `morlet_build_context_values` now
+  reads a segment in one raw read (`morlet_read_interval_raw`) and computes its values from the bytes with the new
+  internal `morlet_simple_values_raw`. Before, it joined 32,768-sample float8[] pieces in PL/pgSQL, and every join
+  copied the growing array: about half of the time for a 220k-sample segment. `simple()` also checks and sums in one
+  pass and takes the moments, peak and sum of squares in a second (it used six). Each sum adds the same terms in the
+  same order from the same start, so every value is bit-identical.
+  - Tests: against the six-pass version on continuous, quantised, signed-zero, tiny, maximal and offset data, and
+    against the float8[] path on segments that span several pieces.
+  - Measured on an M-series Mac: 7 channels of 220k samples took 82–87 ms instead of 320–346 ms (alternating, same
+    session); `simple()` alone takes 1.00 ms instead of 1.40 ms.
+  - Collections with float8[] chunks keep the old path.
 - **`morlet_compare_summary` computes the pooled spreads once (#335).** For the duration deviation it called
   `morlet_compare_to_history`, which computed the pooled spreads only to discard them; it computed them again for
   `calibrated_score`. The comparison's body is now the internal `morlet_history_comparison`, with the spreads

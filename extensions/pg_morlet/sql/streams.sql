@@ -2169,10 +2169,11 @@ END $$;
 -- them, at most max_segments per call. Segments are read in 32768-sample pieces.
 CREATE FUNCTION public.morlet_build_context_values(collection regclass,recording_id text,max_segments integer DEFAULT 1000)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record; seg record; samples float8[]; piece float8[]; s bigint; rate float8; n bigint:=0;
+DECLARE rel record; seg record; samples float8[]; piece float8[]; s bigint; rate float8; n bigint:=0; encoded boolean;
 BEGIN
   SELECT * INTO rel FROM public.morlet_context_relations(collection);
   IF max_segments NOT BETWEEN 1 AND 100000 THEN RAISE EXCEPTION 'max_segments must be 1..100000'; END IF;
+  SELECT r.encoded INTO encoded FROM public.morlet_stream_relations(collection) r;
   EXECUTE format('SELECT sample_rate_hz FROM %s WHERE recording_id=$1',collection) INTO rate USING recording_id;
   IF rate IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
   FOR seg IN EXECUTE format('SELECT s.segment_id,s.start_sample,s.end_sample FROM %s s WHERE s.recording_id=$1 AND NOT s.stale
@@ -2182,15 +2183,24 @@ BEGIN
     IF seg.end_sample-seg.start_sample>1048576 THEN
       RAISE EXCEPTION 'segment % has % samples; simple-v1 supports at most 1048576',seg.segment_id,seg.end_sample-seg.start_sample;
     END IF;
-    samples:=ARRAY[]::float8[];
-    s:=seg.start_sample;
-    WHILE s<seg.end_sample LOOP
-      SELECT i.samples INTO piece FROM public.morlet_read_interval(collection,recording_id,s,least(s+32768,seg.end_sample)) i;
-      samples:=samples||piece;
-      s:=least(s+32768,seg.end_sample);
-    END LOOP;
-    EXECUTE format('INSERT INTO %s(segment_id,representation,vals) VALUES ($1,''simple-v1'',public.morlet_simple_values($2,$3))',
-      rel.vals) USING seg.segment_id,samples,rate;
+    IF encoded THEN
+      -- One raw read of the segment, values computed from its bytes (#414): joining 32,768-sample float8[] pieces
+      -- here copied the growing array for every piece, about half of the time for a 220k-sample segment. The
+      -- samples, and so the values, are the same.
+      EXECUTE format('INSERT INTO %s(segment_id,representation,vals) VALUES ($1,''simple-v1'',
+          public.morlet_simple_values_raw(public.morlet_read_interval_raw($2,$3,$4,$5),$6))',rel.vals)
+        USING seg.segment_id,collection,recording_id,seg.start_sample,seg.end_sample,rate;
+    ELSE
+      samples:=ARRAY[]::float8[];
+      s:=seg.start_sample;
+      WHILE s<seg.end_sample LOOP
+        SELECT i.samples INTO piece FROM public.morlet_read_interval(collection,recording_id,s,least(s+32768,seg.end_sample)) i;
+        samples:=samples||piece;
+        s:=least(s+32768,seg.end_sample);
+      END LOOP;
+      EXECUTE format('INSERT INTO %s(segment_id,representation,vals) VALUES ($1,''simple-v1'',public.morlet_simple_values($2,$3))',
+        rel.vals) USING seg.segment_id,samples,rate;
+    END IF;
     n:=n+1;
   END LOOP;
   RETURN n;
