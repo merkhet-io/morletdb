@@ -14,6 +14,7 @@ changed=$(git diff --name-only "$(git merge-base HEAD origin/main 2>/dev/null ||
 touches() { $ALL || grep -qE "$1" <<< "$changed"; }
 step() { printf '== %s\n' "$*"; }
 
+step "licence boundary"; python3 tools/license_check.py
 if touches '\.rs$|Cargo\.(toml|lock)$|rust-toolchain'; then
   step "cargo fmt"; cargo fmt --all -- --check
   step "clippy (grizzbit, morlet-core, -D warnings)"; cargo clippy --locked -q -p grizzbit -p morlet-core --all-targets -- -D warnings
