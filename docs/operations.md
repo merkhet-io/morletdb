@@ -5,6 +5,12 @@ system makes no automatic decisions. Numbers come from pilot Stage 2
 (`evaluation/pilot/`) on one Apple M5 Max under a concurrent unrelated workload (load
 average 3–20); treat latencies as indicative until re-measured on the pilot's own hardware.
 
+When something goes wrong, use the [runbooks](runbooks.md): [first hour](runbooks.md#10-first-hour-triage),
+[disk full](runbooks.md#5-disk-full-or-nearly-full), [WAL growth](runbooks.md#6-wal-growth),
+[rebuilding search data](runbooks.md#7-rebuilding-envelopes-probe-rows-and-indexes),
+[retention and archiving](runbooks.md#8-retention-and-archiving-to-parquet-and-s3),
+[upgrades](runbooks.md#9-upgrading-the-extension-and-the-image), and backup, restore, replica and failover.
+
 ## Tested operating range
 
 | Dimension | Tested | Notes |
@@ -185,7 +191,8 @@ can always be rebuilt; recordings, chunks, context and labels cannot. Before a r
 restore, create the extensions in the target database.
 
 For point-in-time restore, a streaming replica and failover, follow the [runbooks](runbooks.md); CI runs each of
-them weekly as a drill.
+them weekly as a drill. Disk full, WAL growth, rebuilding search data, retention and upgrades have runbooks there
+too, checked by hand against the release image.
 
 ## Failure behaviour (tested)
 
@@ -204,7 +211,8 @@ them weekly as a drill.
 `ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from every released SQL
 version with populated data (identical reads, searches, summaries and roll-ups; catalog equal to a
 fresh install), and that a **failed** update rolls back completely and leaves the old version
-working. Take a backup before updating anyway ([api stability](api-stability.md)).
+working. Take a backup before updating anyway ([api stability](api-stability.md)). Step by step, including the way back from chunk format
+version 6: [runbook 9](runbooks.md#9-upgrading-the-extension-and-the-image).
 
 ## Known limits
 

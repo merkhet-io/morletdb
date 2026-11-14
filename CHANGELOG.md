@@ -5,11 +5,31 @@
 - **Steward sidecar image serves metrics (#489).** `deploy/steward/Dockerfile` did not copy `metrics.py`, so
   `steward.py metrics` failed in the sidecar with `ModuleNotFoundError`. A test now checks that the image copies every
   module `steward.py` imports.
+- **Operator runbooks (#197).** `docs/runbooks.md` adds disk full, WAL growth (replication slots, a failing archive,
+  long transactions), rebuilding envelopes, probe rows and indexes with coverage before and after, retention and
+  archiving to Parquet and S3 with the existing tools, upgrading with the way back from chunk format version 6, and a
+  first-hour triage. Each was run by hand against the 0.3.14-alpha.1 release image, with the full disk simulated on
+  small Docker filesystems; what was not exercised is marked. Found on the way: after memory level 4,
+  `morlet_build_envelopes` keeps returning skipped windows for that recording, so the steward's envelope job does not
+  move on; and the steward sidecar image lacks `metrics.py`, so `metrics` runs only from a checkout.
 - **WinCC OA integration, phase A (#474), experimental, awaiting validation in WinCC OA.** A Python companion in
   `integrations/winccoa/` turns WinCC OA observations into ordinary context rows and answers investigations through
   the shipped search, with a replay machine, a compose setup on the release image and tests against a disposable
   MorletDB. No WinCC OA is involved yet; the adapter (phase B) and native acceptance (phase C) are not built.
   Apache 2.0, community-maintained, no Siemens certification or partnership.
+- **WinCC OA integration, phase B (#474): an experimental WinCC OA adapter, awaiting validation in WinCC OA.** A
+  WinCC OA JavaScript Manager script in `integrations/winccoa/adapter/` (CommonJS, Node.js 22, no dependencies)
+  that reads configured asset datapoints and sends their values, source times and quality to the companion over
+  loopback (`morlet-winccoa/1`, bearer token from a 0600 file). It batches observations per session seq and
+  resends them until acknowledged, stops in an error state on a conflicting retry, sends snapshots after a
+  (re)connect and gaps where evidence is missing, sends heartbeats with RTT, runs investigations from its own slot
+  datapoints and writes results back only for the slot's current request. It writes only to its own namespace;
+  an idempotent bootstrap creates it. `API.md` lists every WinCC OA API element used, with its documentation page;
+  whether the JavaScript API delivers source time and quality attributes is unconfirmed and is a setting, with a
+  fallback to the value alone. Tested on a fake of that documented surface and end to end against the real
+  companion and the release image; it has not run in WinCC OA. CI builds a bundle with a manifest of file hashes;
+  publishing it with releases waits for the owner. Apache 2.0, community-maintained, no Siemens certification or
+  partnership; WinCC OA is installed and licensed separately.
 - **Licensing: Apache 2.0 for everything.** The open-core split of #473 is withdrawn: no enterprise licence, no
   `enterprise/` layer, no CLA and no licence-boundary check. Every part of MorletDB, integrations included, is under the
   Apache License 2.0 ([licensing](docs/licensing.md)).
