@@ -19,8 +19,10 @@ Waveform:
   the oldest available block; samples are never invented to bridge it.
 
 Context: Speed, Load and State are scalar tags with irregular updates. Each change becomes a context event in the
-current recording's sample coordinates (offset = (source time - recording start) * rate), with the value, its
-status code and its source and server timestamps. They are not resampled into waveforms. The batch id is derived
+current recording's sample coordinates: it holds from the first sample at or after its source time
+(context_rows.py). The value is the tag's value alone, so the same state in two cycles has the same segment context;
+a status other than Good is its own event, "<key>.status", at the same sample. A change without a source timestamp
+is not placed (the server time is not a stand-in). They are not resampled into waveforms. The batch id is derived
 from the node and the change, so a change delivered twice is stored once.
 """
 import argparse
@@ -33,6 +35,8 @@ from datetime import datetime, timezone
 
 import psycopg
 from asyncua import Client, ua
+
+from context_rows import context_rows, first_sample
 
 NAMESPACE = "urn:morletdb:example-machine"
 TAGS = {"Machine.Speed": "speed", "Machine.Load": "load", "Machine.State": "state"}
@@ -87,22 +91,21 @@ class Store:
         return end
 
     def context(self, rec, rate, key, node, dv):
-        src = dv.SourceTimestamp or dv.ServerTimestamp
+        src = dv.SourceTimestamp      # never the server time in its place: without a source time, nothing is placed
         if src is None:
-            return "no timestamp"
+            return "no source timestamp"
         src = src.replace(tzinfo=timezone.utc) if src.tzinfo is None else src
         start = datetime.fromisoformat(rec["start"].replace("Z", "+00:00"))
-        offset = int(round((src - start).total_seconds() * rate))
+        offset = first_sample(src, start, rate)
         if offset < 0:
             return "before the recording"
         value = dv.Value.Value
         status = dv.StatusCode.name if dv.StatusCode else "Good"
-        payload = {"value": value, "status": status, "source_time": src.isoformat().replace("+00:00", "Z"),
-                   "server_time": dv.ServerTimestamp.isoformat() + "Z" if dv.ServerTimestamp else None, "node": node}
-        batch = "opcua:" + hashlib.sha256(json.dumps([rec["rid"], node, payload["source_time"], value, status],
+        source_time = src.isoformat().replace("+00:00", "Z")
+        batch = "opcua:" + hashlib.sha256(json.dumps([rec["rid"], node, source_time, value, status],
                                                      default=str).encode()).hexdigest()[:32]
         self.conn.execute("SELECT morlet_add_context(%s::regclass,%s,%s::jsonb)", (self.c, batch, json.dumps(
-            [{"recording_id": rec["rid"], "key": key, "value": payload, "start_sample": offset}], default=str)))
+            context_rows(rec["rid"], key, value, status, offset), default=str)))
         self.conn.commit()
         return None
 

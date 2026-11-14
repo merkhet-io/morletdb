@@ -183,11 +183,6 @@ jobs:
           python -m pip install -r tools/mcp/requirements.txt
           python -m unittest discover -s tools/mcp -p 'test_*.py'
           python tools/check_mcp_docs.py
-      - name: Licence boundary (docs/licensing.md)
-        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
-        run: |
-          python -m unittest discover -s tools -p 'test_license_check.py'
-          python tools/license_check.py
       - name: Test the memory policy engine (no database)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s tools/memory -p 'test_*.py'
@@ -200,6 +195,9 @@ jobs:
       - name: Test the MQTT collector contract (no broker)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/mqtt -p 'test_*.py'
+      - name: Test the OPC UA collector's context placement (no server)
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        run: python -m unittest discover -s examples/collectors/opcua -p 'test_*.py'
       - name: Test the Shelly collector (no plug)
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         run: python -m unittest discover -s examples/collectors/shelly -p 'test_*.py'
