@@ -161,9 +161,11 @@ is 1.7.0, 2026-02-11). **Variable-length paths stay withheld from restricted rol
 recordings, the same 4,816 in chunks, envelopes, segments and context; the LOT-0402 siblings at Site A only;
 F-212's failure history not visible.
 
-So: **one set of access rules holds as tested** for direct SQL on every table of both stores and for fixed-length
-Cypher, in both enablement orders, given the two measures above. With AGE 1.7.0 it does not hold for variable-length paths or the
-graph statistics functions, which this demo therefore withholds from non-owner roles. These are tested paths, not a proof.
+So, as measured: row-level security held for direct SQL on every table of both stores and for fixed-length
+Cypher, in both enablement orders, given the two measures above. With AGE 1.7.0 it does not hold for variable-length
+paths or the graph statistics functions, which this demo therefore withholds from non-owner roles. These are tested
+paths, not a proof, and the demo makes **no claim of one set of access rules** for graph and recordings until a PG17
+release of AGE includes apache/age#2561 and the checks are run again.
 
 ## 4. Atomic write-back
 

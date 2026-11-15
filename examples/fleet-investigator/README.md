@@ -16,8 +16,13 @@ What being an extension makes possible, and what [CHECKS.md](CHECKS.md) measured
 | One SQL statement joining a Cypher traversal with the waveform search (LATERAL) | holds ([queries.py](queries.py) `SIMILAR_FAILURES`; check 2) |
 | One transaction snapshot over graph and recordings (REPEATABLE READ) | holds, shown with concurrent changes to both (check 5) |
 | Atomic write-back of a confirmed finding to both | holds: graph edge, MorletDB label and episode commit together or not at all (check 4) |
-| One set of access rules (RLS) for both | **holds only with two measures in place**: in AGE 1.7.0, variable-length paths, `vertex_stats` and `graph_stats` bypass row-level security (fixed on AGE master by [apache/age#2561](https://github.com/apache/age/pull/2561), in no PG17 release yet) and are revoked from non-owner roles, and every new graph label must be secured before restricted roles can read it (check 3) |
 | One backup, one connection | follows from one database; not tested separately here |
+
+**Not claimed: one set of access rules for both.** The demo applies row-level security to the recordings and to
+every graph label, and [CHECKS.md](CHECKS.md) (check 3) records what was measured. With Apache AGE 1.7.0, the latest
+PG17 release, some graph functions bypass row-level security (fixed on AGE master by
+[apache/age#2561](https://github.com/apache/age/pull/2561), in no PG17 release yet), so the demo withholds them from
+non-owner roles. The claim waits for a PG17 release of AGE that includes the fix, and a new measurement.
 
 The organisation is fictional ([MODEL.md](MODEL.md)): Aldermere Water, its two works, sixteen pumps and blowers,
 eight bearing lots, two suppliers and every work order are invented. The recordings and the three failures in the
@@ -153,11 +158,11 @@ container is left. Without `MORLET_DATA` or Docker they fail; they are never ski
 - **Similarity is evidence, not diagnosis.** The search compares envelope shapes on a stored window grid. Here the
   closest earlier windows came from a bearing that failed with an outer race defect; confirming the mode needs an
   inspection or, at least, an envelope spectrum at the defect frequencies (the `envelope_spectrum` tool).
-- **Access rules hold as tested, with conditions.** See CHECKS.md, check 3: only fixed-length Cypher patterns are
-  available to non-owner roles (variable-length paths are withheld until a PG17 release of AGE includes
-  [apache/age#2561](https://github.com/apache/age/pull/2561)), every new label needs `fleet.secure_graph`, and an AGE update could restore the
-  default grants (`fleet.graph_security_gaps` reports it). Enterprise-level properties (such as a lot's quantity)
-  are visible to every site.
+- **No access-rule claim yet.** See CHECKS.md, check 3: only fixed-length Cypher patterns are available to
+  non-owner roles (variable-length paths are withheld until a PG17 release of AGE includes
+  [apache/age#2561](https://github.com/apache/age/pull/2561)), every new label needs `fleet.secure_graph`, and an AGE
+  update could restore the default grants (`fleet.graph_security_gaps` reports it). Enterprise-level properties
+  (such as a lot's quantity) are visible to every site.
 - **14 of 16 units are not monitored.** For them the graph is the only evidence; "no recordings" is reported as
   such, never as "no change".
 - **Hourly snapshots.** Every 6th IMS file is loaded; onsets are known to the hour.
