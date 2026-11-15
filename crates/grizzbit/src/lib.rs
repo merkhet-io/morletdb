@@ -48,6 +48,7 @@ use std::fmt;
 
 mod f32k;
 mod g21;
+mod lpc_kernel;
 #[cfg(test)]
 mod spike_f32;
 pub use f32k::layout as float32_layout;

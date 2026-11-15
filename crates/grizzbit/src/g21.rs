@@ -81,6 +81,7 @@
 //! autocorrelation lag summed in sample order. Encoder output is therefore the same bytes on every
 //! platform. CI's golden-file check on Linux reproduces the version-5 goldens written on macOS/aarch64.
 use super::*;
+use crate::lpc_kernel::{self, Isa};
 
 /// Predictor field value for LPC in a version-5 stream.
 pub(crate) const PREDICTOR_LPC: u64 = 7;
@@ -190,10 +191,7 @@ impl Lpc {
             r[i] = zigzag(x[i].wrapping_sub(self.predict(&x[i - p..i])));
         }
         let c = self.padded::<P>();
-        for i in start..n {
-            let h: &[i64; P] = x[i - P..i].try_into().unwrap();
-            r[i] = zigzag(x[i].wrapping_sub(dot_fixed(h, &c) >> self.shift));
-        }
+        lpc_kernel::residuals(Isa::detect(), x, &c, self.shift, r, start);
     }
 
     /// Inverts [`Lpc::residuals`] in place: `x` holds the residuals (unzigzagged) on entry and the
@@ -221,11 +219,7 @@ impl Lpc {
             x[i] = x[i].wrapping_add(pred);
         }
         let c = self.padded::<P>();
-        for i in start..n {
-            let h: &[i64; P] = x[i - P..i].try_into().unwrap();
-            let pred = dot_fixed(h, &c) >> self.shift;
-            x[i] = x[i].wrapping_add(pred);
-        }
+        lpc_kernel::restore(Isa::detect(), x, &c, self.shift, start);
     }
 
     /// The straightforward predictor, as the format defines it (an oracle for the unrolled kernels).
@@ -253,26 +247,6 @@ impl Lpc {
             shift,
         }
     }
-}
-
-/// [`dot`] over a fixed-length window, with four independent wrapping sums (wrapping addition is
-/// associative and commutative, so the result is the same integer).
-#[inline(always)]
-fn dot_fixed<const P: usize>(h: &[i64; P], c: &[i64; P]) -> i64 {
-    sum4::<P>(|j| h[j].wrapping_mul(c[j]))
-}
-
-/// The wrapping sum of `term(0..P)` in four interleaved partial sums.
-#[inline(always)]
-fn sum4<const P: usize>(term: impl Fn(usize) -> i64) -> i64 {
-    let mut acc = [0i64; 4];
-    for j in 0..P {
-        acc[j % 4] = acc[j % 4].wrapping_add(term(j));
-    }
-    acc[0]
-        .wrapping_add(acc[1])
-        .wrapping_add(acc[2])
-        .wrapping_add(acc[3])
 }
 
 /// Wrapping dot product: the same integers on every platform, whatever the evaluation order.
@@ -894,7 +868,8 @@ mod tests {
     }
 
     /// The unrolled kernels (zero-padded windows, four partial sums) give the format's prediction, for
-    /// every order, extreme coefficients and shifts, and values that overflow the sum.
+    /// every order, extreme coefficients and shifts, and values that overflow the sum. These run the kernel
+    /// `Isa::detect` picks for this CPU (the SIMD one where there is one).
     #[test]
     fn unrolled_lpc_matches_the_definition() {
         let mut seed = 77u64;
@@ -1211,6 +1186,8 @@ mod proofs {
     /// nine positions' multiplications. The arithmetic for full 15-bit coefficients is proven by
     /// `lpc_residuals_invert` and `lpc_prediction_matches_wide_reference`, and the kernels for every order
     /// and full coefficients are tested against the definition (`unrolled_lpc_matches_the_definition`).
+    /// Under Kani, `Isa::detect` gives the scalar kernel, so this proves the scalar kernel; the SIMD
+    /// kernels are tested against it and the definition in `lpc_kernel`'s tests.
     #[kani::proof]
     #[kani::unwind(10)]
     fn lpc_kernel_restores_reference_residuals() {
