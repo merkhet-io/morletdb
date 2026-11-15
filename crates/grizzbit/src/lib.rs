@@ -1156,8 +1156,9 @@ fn encode_ints(x: &[i64], out: &mut Vec<u8>) {
     encode_stream(x, false, out);
 }
 
-/// [`encode_ints`], and with `lpc` (version 5 only) also a per-chunk LPC predictor, written instead of
-/// the best fixed predictor only when its size, side information included, is strictly smaller.
+/// [`encode_ints`], and with `lpc` (versions 5 and 6) also a per-chunk LPC predictor, written instead of
+/// the best fixed predictor's stream only when the written LPC stream, side information included, has
+/// strictly fewer bytes (estimates choose the LPC candidate; actual lengths decide, ties keep fixed).
 /// Without `lpc`, or when LPC does not win, the bytes are exactly [`encode_ints`]'s.
 /// Returns the chosen fixed predictor's estimated size in bits (partitions, without the 7 header bits),
 /// whether or not LPC replaced it.
@@ -1175,18 +1176,19 @@ pub(crate) fn encode_stream(x: &[i64], lpc: bool, out: &mut Vec<u8>) -> u128 {
         }
     }
     let (cost, order, porder) = best.expect("at least one candidate");
-    if lpc {
-        if let Some(stream) = g21::lpc_stream(x, cost, g21::LpcSearch::DEFAULT) {
-            out.extend(stream);
-            return cost;
-        }
-    }
     let mut w = BitWriter::default();
     residuals(x, order, &mut r);
     w.put(order as u64, 3);
     w.put(porder as u64, 4);
     write_partitions(&mut w, &r, porder);
-    out.extend(w.finish());
+    let fixed = w.finish();
+    if lpc {
+        if let Some(stream) = g21::lpc_stream(x, cost, fixed.len(), g21::LpcSearch::DEFAULT) {
+            out.extend(stream);
+            return cost;
+        }
+    }
+    out.extend(fixed);
     cost
 }
 

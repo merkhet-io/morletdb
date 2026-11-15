@@ -452,9 +452,24 @@ fn autocorrelation(w: &[f64], pmax: usize) -> Vec<f64> {
     r[..=pmax].to_vec()
 }
 
-/// The LPC stream for `x` if one codes smaller than `fixed_cost` (the best fixed predictor's estimated
-/// size in bits, partitions only) once its side information is charged; None otherwise.
-pub(crate) fn lpc_stream(x: &[i64], fixed_cost: u128, search: LpcSearch) -> Option<Vec<u8>> {
+/// The LPC stream for `x` if one is strictly shorter than `fixed_len`, the byte length of the fixed-predictor
+/// stream it would replace; None otherwise (ties keep the fixed stream).
+///
+/// `fixed_cost` (the best fixed predictor's estimated size in bits, partitions only) only chooses which LPC
+/// candidate is written: estimates are not exact sizes (`best_param` charges `sum >> k` for the Rice
+/// quotients, the real cost is the sum of each `r >> k`, and both streams are padded to whole bytes), so the
+/// written candidate is kept only when its actual length is smaller (#506).
+pub(crate) fn lpc_stream(
+    x: &[i64],
+    fixed_cost: u128,
+    fixed_len: usize,
+    search: LpcSearch,
+) -> Option<Vec<u8>> {
+    lpc_candidate(x, fixed_cost, search).filter(|s| s.len() < fixed_len)
+}
+
+/// The LPC stream the estimates choose for `x` (see [`best_lpc`]), whatever its actual length.
+fn lpc_candidate(x: &[i64], fixed_cost: u128, search: LpcSearch) -> Option<Vec<u8>> {
     let n = x.len();
     let max_porder = max_partition_order(n);
     let mut r = vec![0u64; n];
@@ -648,14 +663,50 @@ fn put_exceptions(out: &mut Vec<u8>, positions: &[usize], fix: &[i64]) {
     }
 }
 
+/// A lower bound of the bytes [`encode_side_stream`] (or any version-5 stream coder) writes for `count >= 1`
+/// values, whatever the values: 2 for up to 3 values, 3 from 4 on.
+///
+/// Proof: a stream is the 3-bit predictor and 4-bit partition order, then per partition a 6-bit Rice
+/// parameter followed by either a 7-bit escape width (its values may then take 0 bits each: a constant
+/// predicted stream) or one Rice code per value, each at least 1 bit (the unary terminator), padded to a
+/// whole byte. With one partition of `count` values that is at least 7 + 6 + min(7, count) bits; with two
+/// or more partitions (each holding at least one value) at least 7 + 2 * (6 + 1) = 21 bits. Prediction
+/// and values do not enter: a nonzero value may predict to a zero residual, so no per-value bound beyond
+/// these holds (#505). 14..=16 bits are 2 bytes, 17 or more at least 3.
+fn min_stream_bytes(count: usize) -> usize {
+    if count >= 4 {
+        3
+    } else {
+        2
+    }
+}
+
+/// The bytes of a varint holding `v`.
+fn varint_len(v: u64) -> usize {
+    (64 - v.max(1).leading_zeros() as usize).div_ceil(7)
+}
+
+/// A lower bound of the bytes [`put_exceptions`] writes for `count` positions: the varint count, then (for
+/// `count >= 1`) two length-prefixed streams of `count` values, each at least [`min_stream_bytes`] plus a
+/// one-byte length.
+fn min_exceptions_bytes(count: usize) -> usize {
+    varint_len(count as u64)
+        + if count == 0 {
+            0
+        } else {
+            2 * (1 + min_stream_bytes(count))
+        }
+}
+
 /// The smallest correction section for `fix`: none, per sample, or (with `sparse`) table plus exceptions
 /// or exceptions only. Per sample wins ties, so a chunk changes only when a new coding is smaller.
 ///
 /// `per_sample` is Grizzbit 1's correction stream for `fix` (empty when every correction is 0). A
-/// variant is skipped, never changing the result, when a lower bound of its size is not smaller: every
-/// value in a stream costs at least one bit and a nonzero one at least two (a Rice code of a value >= 1
-/// with parameter k takes at least k + 1 bits, and at least 2 when k is 0), so `m` exceptions with
-/// nonzero corrections cost at least 3m bits and a table of `d` entries at least d bits.
+/// variant is skipped, never changing the result, only when a proven lower bound of its size is not
+/// smaller than the best so far: [`min_exceptions_bytes`] for exceptions only, and for a table one byte
+/// (the exception count, possibly 0) plus [`min_stream_bytes`] of the table. Earlier builds skipped on
+/// 3 bits per nonzero correction and 1 bit per table entry, which is not a lower bound once the stream is
+/// predicted or a partition is escaped with width 0, and so missed smaller sections (#505).
 fn corrections(ints: &[i64], fix: &[i64], per_sample: &[u8], sparse: bool) -> (u8, Vec<u8>) {
     if per_sample.is_empty() {
         return (FIX_NONE, Vec::new());
@@ -665,7 +716,7 @@ fn corrections(ints: &[i64], fix: &[i64], per_sample: &[u8], sparse: bool) -> (u
         return best;
     }
     let m = fix.iter().filter(|&&c| c != 0).count();
-    if 3 * m < 8 * best.1.len() {
+    if min_exceptions_bytes(m) < best.1.len() {
         let nonzero: Vec<usize> = (0..fix.len()).filter(|&i| fix[i] != 0).collect();
         let mut exceptions = Vec::new();
         put_exceptions(&mut exceptions, &nonzero, fix);
@@ -673,8 +724,12 @@ fn corrections(ints: &[i64], fix: &[i64], per_sample: &[u8], sparse: bool) -> (u
             best = (FIX_EXCEPTIONS, exceptions);
         }
     }
+    // A table has d >= 1 entries; its section is at least the exception count byte and the table stream.
+    if 1 + min_stream_bytes(1) >= best.1.len() {
+        return best;
+    }
     let (slots, d) = first_occurrence_slots(ints);
-    if d >= 8 * best.1.len() {
+    if 1 + min_stream_bytes(d) >= best.1.len() {
         return best;
     }
     let table = majority(&slots, d, fix);
@@ -714,10 +769,17 @@ pub(crate) fn encode_plan(n: usize, plan: &Plan, features: Grizzbit21Features) -
     if let Some(o) = plan.grid.offset {
         out.extend_from_slice(&o.to_le_bytes());
     }
-    // Grizzbit 1's index stream, unless an LPC stream beats its fixed predictor.
+    // Grizzbit 1's index stream, unless an LPC stream is strictly shorter.
     let lpc = features
         .lpc
-        .then(|| lpc_stream(&plan.ints, plan.ints_cost, features.search))
+        .then(|| {
+            lpc_stream(
+                &plan.ints,
+                plan.ints_cost,
+                plan.ints_stream.len(),
+                features.search,
+            )
+        })
         .flatten();
     let stream = lpc.as_deref().unwrap_or(&plan.ints_stream);
     put_varint(&mut out, stream.len() as u64);
@@ -1076,6 +1138,253 @@ mod tests {
         assert_eq!(
             decode_stream(&with_lpc, x.len(), false),
             Err(CodecError::Corrupt("predictor header"))
+        );
+    }
+    /// The correction section with every variant tried, no skip: the oracle for [`corrections`].
+    fn corrections_unpruned(ints: &[i64], fix: &[i64], per_sample: &[u8]) -> (u8, Vec<u8>) {
+        if per_sample.is_empty() {
+            return (FIX_NONE, Vec::new());
+        }
+        let mut best = (FIX_SAMPLES, per_sample.to_vec());
+        let nonzero: Vec<usize> = (0..fix.len()).filter(|&i| fix[i] != 0).collect();
+        let mut exceptions = Vec::new();
+        put_exceptions(&mut exceptions, &nonzero, fix);
+        if exceptions.len() < best.1.len() {
+            best = (FIX_EXCEPTIONS, exceptions);
+        }
+        let (slots, d) = first_occurrence_slots(ints);
+        let table = majority(&slots, d, fix);
+        if table.iter().any(|&c| c != 0) {
+            let off: Vec<usize> = (0..fix.len())
+                .filter(|&i| fix[i] != table[slots[i] as usize])
+                .collect();
+            let mut bytes = Vec::new();
+            put_exceptions(&mut bytes, &off, fix);
+            encode_side_stream(&table, &mut bytes);
+            if bytes.len() < best.1.len() {
+                best = (FIX_TABLE, bytes);
+            }
+        }
+        best
+    }
+
+    /// The stream and exception-block bounds hold for any content; the stream bound is attained by all-zero
+    /// residuals (one escaped partition of width 0, or one Rice bit each).
+    #[test]
+    fn correction_size_bounds_hold_and_are_tight() {
+        let mut seed = 17u64;
+        for count in 1..=300usize {
+            let zeros = vec![0i64; count];
+            let mut s = Vec::new();
+            encode_side_stream(&zeros, &mut s);
+            assert_eq!(s.len(), min_stream_bytes(count), "{count}");
+            let mut f = Vec::new();
+            encode_stream(&zeros, false, &mut f);
+            assert!(f.len() >= min_stream_bytes(count), "{count}");
+            for _ in 0..4 {
+                let v: Vec<i64> = (0..count)
+                    .map(|_| (lcg(&mut seed) % 7) as i64 - 3)
+                    .collect();
+                let mut s = Vec::new();
+                encode_side_stream(&v, &mut s);
+                assert!(s.len() >= min_stream_bytes(count), "{count}");
+            }
+            // exceptions: contiguous or spread positions, constant or varying corrections
+            for stride in [1, 3] {
+                let positions: Vec<usize> = (0..count).map(|i| i * stride).collect();
+                let constant = vec![1i64; count * stride];
+                let varying: Vec<i64> = (0..count * stride)
+                    .map(|_| (lcg(&mut seed) % 5) as i64 + 1)
+                    .collect();
+                for fix in [constant, varying] {
+                    let mut e = Vec::new();
+                    put_exceptions(&mut e, &positions, &fix);
+                    assert!(e.len() >= min_exceptions_bytes(count), "{count}");
+                }
+            }
+        }
+        let mut e = Vec::new();
+        put_exceptions(&mut e, &[], &[]);
+        assert_eq!(e.len(), min_exceptions_bytes(0));
+        assert_eq!(varint_len(127), 1);
+        assert_eq!(varint_len(128), 2);
+        assert_eq!(varint_len(16383), 2);
+        assert_eq!(varint_len(16384), 3);
+    }
+
+    /// #505: [`corrections`] picks exactly what trying every variant picks, over structured correction
+    /// patterns: periodic (the issue's [1, 1, 1, 0]), constant, sparse, dense random, per-index and runs,
+    /// whose predicted or zero-width escaped streams cost far less than a bit per value.
+    #[test]
+    fn corrections_match_an_unpruned_oracle() {
+        let mut seed = 505u64;
+        let mut cases: Vec<(Vec<i64>, Vec<i64>)> = Vec::new();
+        for &n in &[1usize, 2, 3, 4, 5, 8, 17, 64, 255, 512, 1000, 4096] {
+            let ramp: Vec<i64> = (0..n as i64).collect();
+            let few: Vec<i64> = (0..n as i64).map(|i| i % 5).collect();
+            let mut v = 0i64;
+            let walk: Vec<i64> = (0..n)
+                .map(|_| {
+                    v += (lcg(&mut seed) % 5) as i64 - 2;
+                    v
+                })
+                .collect();
+            let patterns: Vec<Vec<i64>> = vec![
+                (0..n).map(|i| i64::from(i % 4 < 3)).collect(),
+                (0..n).map(|i| i64::from(i % 4 == 0)).collect(),
+                vec![1; n],
+                vec![-1; n],
+                (0..n).map(|i| if i % 2 == 0 { 1 } else { -1 }).collect(),
+                (0..n).map(|i| i64::from(i % 97 == 3)).collect(),
+                (0..n).map(|i| i64::from(i >= n / 2)).collect(),
+                (0..n).map(|i| (i / 16 % 3) as i64).collect(),
+                (0..n).map(|_| (lcg(&mut seed) % 3) as i64 - 1).collect(),
+                (0..n)
+                    .map(|_| i64::from(lcg(&mut seed).is_multiple_of(10)))
+                    .collect(),
+                (0..n)
+                    .map(|_| (lcg(&mut seed) % 2001) as i64 - 1000)
+                    .collect(),
+            ];
+            for fix in patterns {
+                for ints in [&ramp, &few, &walk] {
+                    cases.push((ints.clone(), fix.clone()));
+                }
+            }
+            for ints in [&ramp, &few, &walk] {
+                // a correction that is a function of the grid index (a table with no exceptions)
+                let by_index: Vec<i64> = ints.iter().map(|&k| k.rem_euclid(3) - 1).collect();
+                // ... and with one sample off
+                let mut off_one = by_index.clone();
+                off_one[n / 2] += 1;
+                cases.push((ints.clone(), by_index));
+                cases.push((ints.clone(), off_one));
+            }
+        }
+        // Many distinct indices (d >= 8 bytes per byte of the per-sample stream) whose table, in order of
+        // first occurrence, is two runs: a few bytes, though the per-sample stream pays for the revisits.
+        for &(d, n) in &[(3000usize, 4096usize), (1500, 2048), (600, 700)] {
+            let mut ints: Vec<i64> = (0..d as i64).collect();
+            ints.extend((d..n).map(|_| (lcg(&mut seed) % d as u64) as i64));
+            let fix: Vec<i64> = ints
+                .iter()
+                .map(|&k| 1 + i64::from(k >= d as i64 / 2))
+                .collect();
+            cases.push((ints, fix));
+        }
+        let mut wins = [0usize; 4];
+        for (ints, fix) in &cases {
+            let per_sample = if fix.iter().any(|&c| c != 0) {
+                let mut s = Vec::new();
+                encode_ints(fix, &mut s);
+                s
+            } else {
+                Vec::new()
+            };
+            let got = corrections(ints, fix, &per_sample, true);
+            assert_eq!(
+                got,
+                corrections_unpruned(ints, fix, &per_sample),
+                "n = {}",
+                ints.len()
+            );
+            wins[got.0 as usize] += 1;
+        }
+        // every mode wins somewhere, so the comparison covers each branch
+        assert!(wins.iter().all(|&w| w > 0), "{wins:?}");
+    }
+
+    /// The section-level example of #505: per sample 114 bytes, exceptions 105.
+    #[test]
+    fn repeating_one_one_one_zero_takes_exceptions() {
+        let ints: Vec<i64> = (0..512).collect();
+        let fix: Vec<i64> = (0..512).map(|i| i64::from(i % 4 < 3)).collect();
+        let mut per_sample = Vec::new();
+        encode_ints(&fix, &mut per_sample);
+        assert_eq!(per_sample.len(), 114);
+        let (mode, bytes) = corrections(&ints, &fix, &per_sample, true);
+        assert_eq!((mode, bytes.len()), (FIX_EXCEPTIONS, 105));
+    }
+
+    /// #506: the estimated LPC candidate for this stream writes 151 bytes, the fixed predictor 149; the
+    /// fixed stream stays.
+    #[test]
+    fn lpc_is_kept_only_when_its_written_stream_is_shorter() {
+        let x = vec![
+            -19, -23, -13, 2, 12, 11, -7, -15, -7, -14, -23, -22, -23, -20, 3, 19, 26, 18, -4, -31,
+            -42, -45, -16, 1, 18, 39, 30, -1, -18, -39, -28, -3, 10, 6, -7, -31, -44, -59, -70,
+            -41, -13, 21, 54, 48, 33, 21, 13, 3, -18, -40, -45, -38, -4, 18, 34, 24, -8, -48, -59,
+            -60, -30, -11, 8, 18, 34, 44, 41, 32, 9, -21, -44, -46, -19, -2, 15, 31, 42, 20, 2, 4,
+            12, 16, 28, 30, 38, 36, 31, 12, -6, -27, -46, -46, -37, -33, -33, -6, 10, 33, 47, 61,
+            58, 30, -5, -47, -56, -47, -16, -4, -5, -8, -13, -4, -10, 2, 3, -6, -12, -29, -26, 3,
+            10, 12, 22, 31, 19, -11, -28, -50, -41, -10, 21, 40, 56, 48, 13, -11, -36, -56, -54,
+            -33, -12, 15, 33, 30, 32, 16, 15, 23, 31, 30, 11, -8, -19, -20, -11, 7, 18, 24, 38, 19,
+            -13, -36, -57, -44, -16, 26, 64, 88, 83, 35, -1, -33, -47, -53, -26, -6, 29, 30, 12, 3,
+            -19, -37, -39, -32, -19, -21, -4, 18, 38, 41, 37, 19,
+        ];
+        let mut fixed = Vec::new();
+        let cost = encode_stream(&x, false, &mut fixed);
+        assert_eq!(fixed.len(), 149);
+        let candidate = lpc_candidate(&x, cost, LpcSearch::DEFAULT).unwrap();
+        assert_eq!(candidate.len(), 151);
+        assert_eq!(decode_stream(&candidate, x.len(), true).unwrap(), x);
+        assert_eq!(lpc_stream(&x, cost, fixed.len(), LpcSearch::DEFAULT), None);
+        let mut with_lpc = Vec::new();
+        encode_stream(&x, true, &mut with_lpc);
+        assert_eq!(with_lpc, fixed);
+    }
+
+    /// Over resonances whose estimated LPC candidate lands near the fixed stream's size, the stream written
+    /// is the shorter of the two by actual length, fixed on ties, for `encode_stream` (versions 5 and 6)
+    /// and `lpc_stream` (the version-5 index stream).
+    #[test]
+    fn near_equal_lpc_candidates_compare_actual_lengths() {
+        let mut seed = 506u64;
+        let (mut lpc_shorter, mut ties, mut lpc_longer) = (0, 0, 0);
+        for trial in 0..600 {
+            let n = 64 + (lcg(&mut seed) % 400) as usize;
+            let a1 = 1.0 + (trial % 20) as f64 * 0.045;
+            let a2 = -0.3 - (trial % 7) as f64 * 0.09;
+            let noise = 3 + lcg(&mut seed) % 60;
+            let (mut y1, mut y2) = (0.0f64, 0.0f64);
+            let x: Vec<i64> = (0..n)
+                .map(|_| {
+                    let e = (lcg(&mut seed) % (2 * noise + 1)) as f64 - noise as f64;
+                    let y = (a1 * y1 + a2 * y2 + e).clamp(-1e6, 1e6);
+                    y2 = y1;
+                    y1 = y;
+                    y.round() as i64
+                })
+                .collect();
+            let mut fixed = Vec::new();
+            let cost = encode_stream(&x, false, &mut fixed);
+            let mut chosen = Vec::new();
+            encode_stream(&x, true, &mut chosen);
+            assert_eq!(decode_stream(&chosen, n, true).unwrap(), x);
+            let Some(candidate) = lpc_candidate(&x, cost, LpcSearch::DEFAULT) else {
+                assert_eq!(chosen, fixed);
+                continue;
+            };
+            let shorter = candidate.len() < fixed.len();
+            assert_eq!(
+                chosen,
+                if shorter { &candidate } else { &fixed }.clone(),
+                "trial {trial}"
+            );
+            assert_eq!(
+                lpc_stream(&x, cost, fixed.len(), LpcSearch::DEFAULT),
+                shorter.then(|| candidate.clone())
+            );
+            match candidate.len().cmp(&fixed.len()) {
+                std::cmp::Ordering::Less => lpc_shorter += 1,
+                std::cmp::Ordering::Equal => ties += 1,
+                std::cmp::Ordering::Greater => lpc_longer += 1,
+            }
+        }
+        // the inputs reach each side of the comparison
+        assert!(
+            lpc_shorter > 0 && ties > 0 && lpc_longer > 0,
+            "{lpc_shorter} {ties} {lpc_longer}"
         );
     }
 }
