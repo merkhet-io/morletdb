@@ -25,7 +25,7 @@ server, tool, arguments, whether it failed, the time it took and the full result
 | 13 | `graph.spare_stock` | what can replace it |
 | 14–16 | `morletdb.envelope_spectrum`: now, the precedent, and BRG-3's second day | does the defect frequency support the hypothesis |
 
-## The answer, as given in the session
+## The answer given in the session (one claim corrected afterwards: the second-day spectrum)
 
 - **What changed:** all four P-102 positions rose over the last two days, BRG-3 the most. Its latest RMS is 0.145
   against a median of 0.066 in its first days after installation (2.2×), and its 2.5–5 kHz band has been up since
