@@ -177,13 +177,23 @@ def _jcontains(a, b):
 class _Pool:
     """One collection's history pool: current segments with simple-v1 values, active labels, and indexes."""
 
-    def __init__(self, sig, rows, labels):
-        self.sig, self.labels = sig, labels
+    def __init__(self, top, rows, labels):
+        self.top, self.labels = top, labels               # top: the highest segment id seen when last checked
         self.segs, self.pending, self.valued_elsewhere = {}, set(), 0
         self.index: dict[tuple, set] = {}                 # (key, canonical scalar value) -> segment ids
         self.bucket: dict[tuple, set] = {}                # (rate, channel, unit, canonical spec) -> segment ids
         self.occ, self.memo = {}, {}                      # memo: (bucket, canonical match) -> rows in id order
         self.add(rows)
+        self.digest = self.digests()
+
+    def digests(self):
+        """The digests of the rows this pool holds, computed as HistoryCache._visible computes them in SQL: the ids
+        of the current segments in id order, each marked v (with simple-v1 values) or p (still without), and the ids
+        of the active labels in id order."""
+        segs = sorted([(sid, "v") for sid in self.segs] + [(sid, "p") for sid in self.pending])
+        labels = sorted(lid for ls in self.labels.values() for lid, *_ in ls)
+        return (hashlib.sha256(",".join(f"{sid}{f}" for sid, f in segs).encode()).hexdigest(),
+                hashlib.sha256(",".join(map(str, labels)).encode()).hexdigest())
 
     def add(self, rows):
         """Rows fetched in segment id order; returns False when one of them requires a reload (a known segment
@@ -238,27 +248,46 @@ class HistoryCache:
     """Keeps each collection's history pool (current context segments with simple-v1 values, and active labels) in
     memory between calls of decision_states(..., history_cache=...), for a process that decides cut after cut (#403).
 
-    Every call first reads a fingerprint of the context tables in the same snapshot as the new rows: the highest
-    segment id, the number of current segments, the highest label id and the number of active labels. pg_morlet only
-    inserts values, inserts or marks segments stale, and inserts or retracts labels, so the fingerprint and the
-    segments still waiting for values (fetched by id on every call) show every change made through its functions.
-    New segments, and values built since for segments already seen, are fetched alone and added to the indexes; a segment that went stale or was deleted reloads the pool, and a label change
-    reloads the labels. The states are the same as without the cache; rows are visited in segment id order. Direct
-    UPDATEs of the context tables bypass the fingerprint: call clear() after such maintenance. One cache serves one
-    database; it is not thread-safe."""
+    A pool is only ever used for the rows the current caller can read (#494). What a caller can read depends on its
+    role, on row security policies (which may read session settings such as current_setting), and on column
+    privileges, and all of them can change on the same connection between two calls. So every call first reads,
+    under the caller's own privileges and in the same snapshot as any new rows, a digest of exactly the rows the
+    uncached history query would see: the ids of the current segments whose recording is visible, each marked with
+    whether its simple-v1 values are visible, and the ids of the active labels. That query names every column the
+    history query reads, so a caller who may not read one gets the same error as without the cache. The pool is
+    used only if its own digest (of the rows it holds) equals the caller's; otherwise new segments, and values built
+    since for segments still waiting for them, are fetched alone and added, labels are reloaded if theirs differ,
+    and if the digest still differs the pool is reloaded. Row security filters rows but does not change them, and
+    pg_morlet only inserts values, inserts or marks segments stale, and inserts or retracts labels, so equal
+    digests mean the same rows with the same content: the states are the same as without the cache, for every
+    caller; rows are visited in segment id order. Direct UPDATEs of the context tables bypass the digest: call
+    clear() after such maintenance. Pools are kept per database and relation; the cache is not thread-safe."""
 
     def __init__(self):
-        self._pools: dict[str, _Pool] = {}
+        self._pools: dict[tuple, _Pool] = {}
 
     def clear(self):
         self._pools.clear()
 
     @staticmethod
-    def _sig(conn, seg_t, labels_t):
-        return tuple(conn.execute(
-            f"SELECT (SELECT coalesce(max(segment_id), 0) FROM {seg_t}), (SELECT count(*) FROM {seg_t} WHERE NOT stale), "
-            f"(SELECT coalesce(max(label_id), 0) FROM {labels_t}), "
-            f"(SELECT count(*) FROM {labels_t} WHERE NOT retracted)").fetchone())
+    def _visible(conn, collection, seg_t, vals_t, labels_t):
+        """The pool's key, the highest visible segment id, and the digests of the rows the caller can read (as
+        _Pool.digests computes them). The always-true ROW(...) IS NULL OR true terms name the columns the history
+        query reads, so that PostgreSQL checks the caller's privilege on each of them."""
+        hexdigest = "encode(sha256(convert_to(coalesce(string_agg({}, ',' ORDER BY {}), ''), 'UTF8')), 'hex')"
+        seg = "s.segment_id::text || CASE WHEN v.segment_id IS NULL THEN 'p' ELSE 'v' END"
+        row = conn.execute(
+            f"SELECT current_database(), %s::regclass::oid, %s::regclass::oid, %s::regclass::oid, "
+            f"%s::regclass::oid, (SELECT coalesce(max(segment_id), 0) FROM {seg_t}), "
+            f"(SELECT {hexdigest.format(seg, 's.segment_id')} "
+            f"FROM {seg_t} s JOIN {collection} r ON r.recording_id = s.recording_id "
+            f"LEFT JOIN {vals_t} v ON v.segment_id = s.segment_id AND v.representation = 'simple-v1' "
+            f"WHERE NOT s.stale AND (ROW(s.start_sample, s.end_sample, s.context, s.occurrence, s.spec, v.vals, "
+            f"r.sample_rate_hz, r.channel, r.unit) IS NULL OR true)), "
+            f"(SELECT {hexdigest.format('label_id::text', 'label_id')} FROM {labels_t} WHERE NOT retracted "
+            f"AND (ROW(recording_id, start_sample, end_sample, label) IS NULL OR true))",
+            (collection, seg_t, vals_t, labels_t)).fetchone()
+        return tuple(row[:5]), row[5], (row[6], row[7])
 
     @staticmethod
     def _fetch(conn, collection, seg_t, vals_t, after, extra):
@@ -279,24 +308,25 @@ class HistoryCache:
         return out
 
     def pool(self, conn, collection, seg_t, vals_t, labels_t):
-        """The collection's pool, brought up to date in one snapshot."""
-        p = self._pools.get(collection)
+        """The collection's pool as the caller can read it now, brought up to date in one snapshot."""
         own_tx = conn.autocommit and not conn.info.transaction_status
         with conn.transaction():
             if own_tx:
                 conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-            sig = self._sig(conn, seg_t, labels_t)
-            if p is not None and p.sig == sig and not p.pending:
+            key, top, digest = self._visible(conn, collection, seg_t, vals_t, labels_t)
+            p = self._pools.get(key)
+            if p is not None and p.digest == digest:
                 return p
             if p is not None:
-                if sig[2:] != p.sig[2:]:                  # labels changed: reload them; the rows carry them
+                if p.digest[1] != digest[1]:              # labels differ: reload them; the rows carry them
                     p.labels, p.memo = self._labels(conn, labels_t), {}
-                if p.add(self._fetch(conn, collection, seg_t, vals_t, p.sig[0], p.pending)) \
-                        and len(p.segs) + len(p.pending) == sig[1]:
-                    p.sig = sig
-                    return p
-            p = _Pool(sig, self._fetch(conn, collection, seg_t, vals_t, 0, ()), self._labels(conn, labels_t))
-            self._pools[collection] = p
+                if p.add(self._fetch(conn, collection, seg_t, vals_t, p.top, p.pending)):
+                    p.top, p.digest = top, p.digests()
+                    if p.digest == digest:
+                        return p
+            # a new pool, read under the caller's privileges in this call
+            p = self._pools[key] = _Pool(top, self._fetch(conn, collection, seg_t, vals_t, 0, ()),
+                                         self._labels(conn, labels_t))
             return p
 
     @staticmethod
@@ -344,7 +374,9 @@ def decision_states(conn, collection: str, segment_ids: Iterable[int], *, match_
     summary_quantile: also compute the summary score's quantile within the history (morlet_compare_summary, one
     SQL call per segment; it reads the history again and costs more than the rest of the state).
     history_cache: a HistoryCache kept by a process that decides cut after cut: the history is then read from memory,
-    with only new segments fetched, instead of one history query per call (#403). Same states.
+    with only new segments fetched, instead of one history query per call (#403). Same states, also when the
+    caller's role or row security scope changes between calls: the cache is checked against the rows the caller can
+    read on every call (#494).
     """
     ids = [int(s) for s in segment_ids]
     match_keys, exclude_list = list(match_keys), list(dict.fromkeys(exclude_labels))

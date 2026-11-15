@@ -4,6 +4,20 @@
 
 SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Security: `decision.HistoryCache` is bound to what the current caller can read (#494).** A cache kept across
+  calls could serve history rows to a caller whose visibility had changed since the cache was filled (another role
+  on the same connection, or a row security scope that a policy reads from a session setting). Each call now
+  reads, under the caller's own privileges and in the same snapshot, a digest of exactly the rows the uncached
+  history query would see (visible current segment ids with whether their values are visible, and active label
+  ids); the cached pool is used only when its own digest is equal, else it is brought up to date or reloaded. The
+  digest query names every column the history reads, so missing column privileges fail as without the cache. Pools
+  are keyed by database and relation OIDs instead of the collection name. States are unchanged for a caller whose
+  visibility did not change; a process that keeps one role and scope still fetches only new rows. Each call now
+  scans the visible segment and label ids for the digest, where it counted rows before, and a change of scope
+  reloads the pool. Python only; no SQL change.
+  - Tests: `HistoryCacheAcrossAuthorization` in `tools/mcp/test_decision_db.py`, negative tests for role and
+    row-security-scope changes and for a missing column privilege, in both enablement orders. They failed before
+    the fix.
 - **Envelope building after compaction (#488).** After a recording was compacted at memory level 4,
   `morlet_build_envelopes` returned the number of windows it skipped there (31 in the runbook's case) on every call
   and wrote nothing. The steward took that as progress, picked the same recording on every tick and never reached the

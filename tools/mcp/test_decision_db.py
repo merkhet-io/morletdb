@@ -390,6 +390,7 @@ class HistoryCacheOnADatabase(unittest.TestCase):
     def test_the_cache_follows_every_change(self):
         cache = decision.HistoryCache()
         n0 = self.same(cache)[0]["history"]["size"]
+        pool = list(cache._pools.values())
         self.add(9)                                       # a new cut: fetched alone
         self.assertEqual(self.same(cache, ("p09-a", "p09-b"))[0]["history"]["size"], n0 + 1)
         self.add(10, values=False)                        # segments first, values later
@@ -399,6 +400,7 @@ class HistoryCacheOnADatabase(unittest.TestCase):
         self.same(cache)
         lid = self.conn.execute("SELECT morlet_add_label('dcache','p03-a',0,2048,'worn','test')").fetchone()[0]
         self.same(cache)
+        self.assertEqual(list(cache._pools.values()), pool)   # brought up to date, not reloaded
         self.same(cache, exclude_labels=["worn"])
         self.conn.execute("SELECT morlet_retract_label('dcache',%s)", (lid,))
         self.same(cache, exclude_labels=["worn"])
@@ -409,3 +411,138 @@ class HistoryCacheOnADatabase(unittest.TestCase):
         self.add(11, tool=8)                              # another tool: not in this history
         self.same(cache, match_keys=["machine", "tool"])
         self.same(cache, match_keys=["machine"])
+
+
+SCOPE_ROLES = ("dscope_a", "dscope_b", "dscope_c")
+
+
+def recordings_in(state):
+    """Every recording id a decision state names (its segment, neighbours, examples, baselines)."""
+    if isinstance(state, dict):
+        return {v for k, v in state.items() if k == "recording_id"} | {
+            r for v in state.values() for r in recordings_in(v)}
+    if isinstance(state, list):
+        return {r for v in state for r in recordings_in(v)}
+    return set()
+
+
+@unittest.skipUnless(URL, "needs MORLET_MCP_TEST_DATABASE_URL")
+class HistoryCacheAcrossAuthorization(unittest.TestCase):
+    """#494: a HistoryCache reused after the caller's visibility changed (another role on the same connection, or an
+    application-defined row security scope) gives that caller's uncached states and nothing it cannot read. Both
+    enablement orders (row security before and after context)."""
+
+    COLLECTIONS = (("public.dscope1", False), ("public.dscope2", True))
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        cls.conn = psycopg.connect(URL, autocommit=True)
+        c = cls.conn
+        c.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
+        for r in SCOPE_ROLES:
+            if not c.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (r,)).fetchone():
+                c.execute(f"CREATE ROLE {r} NOLOGIN NOSUPERUSER NOBYPASSRLS")
+        for coll, rls_first in cls.COLLECTIONS:
+            cls.make(coll.split(".")[1], rls_first)
+        c.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA public TO {', '.join(SCOPE_ROLES)}")
+        for coll, _ in cls.COLLECTIONS:                   # dscope_c sees dscope_b's rows, not the label column
+            c.execute(f"REVOKE SELECT ON {coll}_labels FROM dscope_c")
+            c.execute(f"GRANT SELECT (label_id, recording_id, start_sample, end_sample, retracted) "
+                      f"ON {coll}_labels TO dscope_c")
+
+    @classmethod
+    def make(cls, name, rls_first):
+        c = cls.conn
+        for t in ("label_definitions", "labels", "ctx_values", "ctx_segments", "ctx", "chunks", "segments"):
+            c.execute(f"DROP TABLE IF EXISTS public.{name}_{t} CASCADE")
+        c.execute(f"DROP TABLE IF EXISTS public.{name} CASCADE")
+        c.execute(f"SELECT morlet_create_stream_collection('public','{name}')")
+        c.execute(f"ALTER TABLE public.{name} ENABLE ROW LEVEL SECURITY")
+        # an application scope: a session setting when set, else one scope per role
+        c.execute(f"CREATE POLICY scope ON public.{name} USING (metadata->>'site' = coalesce("
+                  f"nullif(current_setting('dscope.site', true), ''), CASE current_user WHEN 'dscope_a' THEN 'A' "
+                  f"WHEN 'dscope_b' THEN 'B' WHEN 'dscope_c' THEN 'B' END))")
+        if rls_first:
+            c.execute(f"SELECT morlet_enable_row_security('public.{name}'::regclass)")
+        c.execute(f"SELECT morlet_enable_context('public.{name}')")
+        if not rls_first:
+            c.execute(f"SELECT morlet_enable_row_security('public.{name}'::regclass)")
+        for site, shift in (("B", 0), ("A", 20)):      # two scopes of the same size and context
+            for part in range(1, 7):
+                rid = f"{site}{part:02d}"
+                c.execute(f"SELECT morlet_start_recording('public.{name}',%s,1000,'a','V',%s::jsonb,512,256,"
+                          f"'zscore','none',1)", (rid, json.dumps({"site": site})))
+                c.execute(f"SELECT morlet_append_chunk('public.{name}',%s,0,%s::float8[])", (rid, wave(part + shift)))
+                ctx = [{"recording_id": rid, "key": k, "value": v, "start_sample": 0, "end_sample": 2048}
+                       for k, v in (("machine", "M1"), ("tool", 7), ("part", f"{site}{part}"))]
+                c.execute(f"SELECT morlet_add_context('public.{name}',%s,%s)", (f"b-{rid}", json.dumps(ctx)))
+                c.execute(f"SELECT morlet_build_context_segments('public.{name}',%s,ARRAY['machine','tool'],"
+                          f"ARRAY['part'])", (rid,))
+                c.execute(f"SELECT morlet_build_context_values('public.{name}',%s)", (rid,))
+            c.execute(f"SELECT morlet_add_label('public.{name}',%s,0,2048,'worn','')", (f"{site}02",))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.conn.close()
+
+    def reset(self):
+        self.conn.execute("RESET ROLE")
+        self.conn.execute("RESET dscope.site")
+
+    tearDown = reset
+
+    def states(self, coll, rid, cache=None, examples=1):
+        segs = decision.segments_at(self.conn, coll, [(rid, 5)])
+        return decision.decision_states(self.conn, coll, segs, neighbors=3, examples=examples,
+                                        history_cache=cache)
+
+    def same_as_uncached(self, coll, cache, rid, hidden):
+        a = self.states(coll, rid)
+        b = self.states(coll, rid, cache)
+        self.assertEqual(json.dumps(a, sort_keys=True, default=str), json.dumps(b, sort_keys=True, default=str))
+        self.assertFalse({r for r in recordings_in(b) if r.startswith(hidden)}, "history the caller cannot read")
+        return b
+
+    def test_another_role_on_the_same_connection(self):
+        for coll, _ in self.COLLECTIONS:
+            for warm in ("postgres", "dscope_a"):        # the owner, or a role with another scope
+                with self.subTest(collection=coll, warmed_by=warm):
+                    self.reset()
+                    cache = decision.HistoryCache()
+                    if warm != "postgres":
+                        self.conn.execute(f"SET ROLE {warm}")
+                    self.states(coll, "A06", cache)
+                    self.conn.execute("SET ROLE dscope_b")
+                    st = self.same_as_uncached(coll, cache, "B06", "A")
+                    self.assertEqual(st[0]["history"]["size"], 5)
+
+    def test_a_row_security_scope_set_by_the_session(self):
+        for coll, _ in self.COLLECTIONS:
+            with self.subTest(collection=coll):
+                self.reset()
+                cache = decision.HistoryCache()
+                self.conn.execute("SET ROLE dscope_b")
+                self.conn.execute("SET dscope.site = 'A'")
+                self.same_as_uncached(coll, cache, "A06", "B")
+                pool = list(cache._pools.values())
+                self.same_as_uncached(coll, cache, "A05", "B")   # the same scope: the pool is reused
+                self.assertEqual(list(cache._pools.values()), pool)
+                self.conn.execute("SET dscope.site = 'B'")
+                self.same_as_uncached(coll, cache, "B06", "A")
+                self.conn.execute("SET dscope.site = 'A'")       # and back: still that scope's states
+                self.same_as_uncached(coll, cache, "A06", "B")
+
+    def test_a_column_the_caller_may_not_read(self):
+        import psycopg
+        for coll, _ in self.COLLECTIONS:
+            with self.subTest(collection=coll):
+                self.reset()
+                cache = decision.HistoryCache()
+                self.conn.execute("SET ROLE dscope_b")
+                self.states(coll, "B06", cache, examples=0)
+                self.conn.execute("SET ROLE dscope_c")       # the same rows, without the label column
+                with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                    self.states(coll, "B06", examples=0)
+                with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                    self.states(coll, "B06", cache, examples=0)
