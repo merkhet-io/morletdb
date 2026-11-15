@@ -25,6 +25,17 @@
 //! - [`Isa::Avx2`] (x86_64, detected at run time) and [`Isa::Sse2`] (x86_64 baseline): `pmuludq` gives
 //!   `a_lo · c_lo`, `a_lo · c_hi` and `a_hi · c_lo`, accumulated in 64-bit lanes.
 //!
+//! **Narrow path.** When every coefficient and every history value of a window fits in i32, each product
+//! `h[j] · c[j]` is exact in i64 (`|h · c| <= 2^31 · 2^31 = 2^62`), so a widening signed 32 × 32 → 64-bit
+//! multiply (NEON `vmlal_s32`, AVX2 `vpmuldq`, scalar `smull`/`smaddl`) of the low halves gives the same
+//! product as `wrapping_mul`, and the wrapping sum of the products is then the same integer whatever the
+//! lane grouping. (With the format's coefficients, at most 15 bits, the sum does not even wrap:
+//! `|Σ| <= 32 · 2^14 · 2^31 = 2^50`.) The NEON and AVX2 kernels take this path while it holds: the encoder
+//! ([`residuals`]) when every value of the stream fits in i32, the decoder ([`restore`]) from the start
+//! while the history window fits and up to the first restored value outside i32, after which it continues
+//! with the full 64-bit kernel from the next position (every value it needs is already restored). SSE2
+//! has no signed 32-bit multiply and keeps the full kernel; the scalar kernel is unchanged.
+//!
 //! **Decoder.** In [`restore`] each prediction needs the values just restored. The SIMD kernels take the
 //! newest four lanes (`x[i - 4..i]`) from registers and load only the older ones, so a vector load never
 //! reads a value still in flight from the previous iteration's store.
@@ -84,6 +95,41 @@ const fn check_width<const P: usize>() {
         P.is_multiple_of(4) && P >= 8 && P <= 32,
         "LPC window must be 8, 16, 24 or 32"
     );
+}
+
+/// Whether `v` is an i32 (the narrow path's bound on every coefficient and history value).
+#[inline(always)]
+pub(crate) fn fits_i32(v: i64) -> bool {
+    v as i32 as i64 == v
+}
+
+/// The product of two i32 values as i64: exact (`|a · b| <= 2^62`), hence equal to `a.wrapping_mul(b)`.
+/// One widening multiply (`smull` on aarch64).
+#[cfg(any(
+    all(any(target_arch = "aarch64", target_arch = "x86_64"), not(kani)),
+    kani,
+    test
+))]
+#[inline(always)]
+pub(crate) fn mul_narrow(a: i64, b: i64) -> i64 {
+    (a as i32 as i64) * (b as i32 as i64)
+}
+
+/// The encoder may use the narrow path: every coefficient and every value of `x` is an i32.
+#[cfg(all(any(target_arch = "aarch64", target_arch = "x86_64"), not(kani)))]
+#[inline]
+fn narrow_stream<const P: usize>(x: &[i64], c: &[i64; P]) -> bool {
+    c.iter().all(|&v| fits_i32(v)) && x.iter().all(|&v| fits_i32(v))
+}
+
+/// The decoder may start the narrow path at `from`: every coefficient and the window `x[from - P..from]`
+/// are i32 (and there is something to restore).
+#[cfg(all(any(target_arch = "aarch64", target_arch = "x86_64"), not(kani)))]
+#[inline]
+fn narrow_start<const P: usize>(x: &[i64], c: &[i64; P], from: usize) -> bool {
+    from < x.len()
+        && c.iter().all(|&v| fits_i32(v))
+        && x[from - P..from].iter().all(|&v| fits_i32(v))
 }
 
 /// `r[i] = zigzag(x[i] - (dot(x[i - P..i], c) >> shift))` for `i` in `from..x.len()`; `from >= P`
@@ -164,6 +210,50 @@ pub(crate) fn dot_with<const P: usize>(isa: Isa, h: &[i64; P], c: &[i64; P], hea
     }
 }
 
+/// The narrow kernel's dot product of one window (for the equivalence tests), None where this ISA has
+/// no narrow kernel. The caller ensures every lane of `h` and `c` is an i32.
+#[cfg(test)]
+pub(crate) fn dot_narrow_with<const P: usize>(
+    isa: Isa,
+    h: &[i64; P],
+    c: &[i64; P],
+    head: bool,
+) -> Option<i64> {
+    const { check_width::<P>() };
+    #[allow(unused_variables)]
+    let groups = P / 4 - head as usize;
+    match isa {
+        // SAFETY: as in `residuals`, the kernel's target feature is present.
+        #[cfg(all(target_arch = "aarch64", not(kani)))]
+        Isa::Neon => Some(unsafe { neon::dot_narrow_once(h, c, groups) }),
+        #[cfg(all(target_arch = "x86_64", not(kani)))]
+        Isa::Avx2 => Some(unsafe { x86::dot_narrow_once_avx2(h, c, groups) }),
+        _ => None,
+    }
+}
+
+/// Where the decoder's narrow loop stops (for the tests): the position after the first restored value
+/// outside i32, or `x.len()`; None where this ISA has no narrow kernel or the narrow path cannot start.
+/// Restores `x[from..stop]` in place.
+#[cfg(test)]
+pub(crate) fn restore_narrow_stop<const P: usize>(
+    isa: Isa,
+    x: &mut [i64],
+    c: &[i64; P],
+    shift: u32,
+    from: usize,
+) -> Option<usize> {
+    const { check_width::<P>() };
+    match isa {
+        // SAFETY: as in `residuals`, the kernel's target feature is present.
+        #[cfg(all(target_arch = "aarch64", not(kani)))]
+        Isa::Neon => unsafe { neon::restore_narrow_once(x, c, shift, from) },
+        #[cfg(all(target_arch = "x86_64", not(kani)))]
+        Isa::Avx2 => unsafe { x86::restore_narrow_once_avx2(x, c, shift, from) },
+        _ => None,
+    }
+}
+
 #[inline(always)]
 fn residuals_with<const P: usize>(
     x: &[i64],
@@ -207,6 +297,40 @@ fn restore_with<const P: usize>(
         x[i] = v;
         (h4, h3, h2, h1) = (h3, h2, h1, v);
     }
+}
+
+/// The narrow decoder loop: as [`restore_with`], with `head` a narrow kernel and the newest four products
+/// as widening 32-bit multiplies. The caller ensures ([`narrow_start`]) that the coefficients and the
+/// window `x[from - P..from]` are i32; each restored value is checked, so every window this loop reads is
+/// i32 as well. Returns the position after the first restored value outside i32 (that value is already
+/// correct), or `x.len()`.
+#[cfg(all(any(target_arch = "aarch64", target_arch = "x86_64"), not(kani)))]
+#[inline(always)]
+fn restore_narrow_with<const P: usize>(
+    x: &mut [i64],
+    c: &[i64; P],
+    from: usize,
+    shift: u32,
+    head: impl Fn(&[i64; P]) -> i64,
+) -> usize {
+    let n = x.len();
+    let (c1, c2, c3, c4) = (c[P - 1], c[P - 2], c[P - 3], c[P - 4]);
+    let (mut h1, mut h2, mut h3, mut h4) = (x[from - 1], x[from - 2], x[from - 3], x[from - 4]);
+    for i in from..n {
+        let h: &[i64; P] = x[i - P..i].try_into().unwrap();
+        let s = head(h)
+            .wrapping_add(mul_narrow(c1, h1))
+            .wrapping_add(mul_narrow(c2, h2))
+            .wrapping_add(mul_narrow(c3, h3))
+            .wrapping_add(mul_narrow(c4, h4));
+        let v = x[i].wrapping_add(s >> shift);
+        x[i] = v;
+        if !fits_i32(v) {
+            return i + 1;
+        }
+        (h4, h3, h2, h1) = (h3, h2, h1, v);
+    }
+    n
 }
 
 mod scalar {
@@ -280,6 +404,27 @@ mod neon {
         vaddvq_u64(sum) as i64
     }
 
+    /// The narrow kernel: the wrapping sum of `h[j] · c[j]` over lanes `0..4 · groups`, valid when every
+    /// lane of `h` and `c` is an i32 (each product is then exact as a widening 32-bit multiply of the low
+    /// halves).
+    #[target_feature(enable = "neon")]
+    #[inline]
+    fn dot_narrow<const P: usize>(h: &[i64; P], k: &Coefs, groups: usize) -> i64 {
+        assert!(groups <= P / 4);
+        let p = h.as_ptr();
+        let (mut s0, mut s1) = (vdupq_n_s64(0), vdupq_n_s64(0));
+        for g in 0..groups {
+            // SAFETY: lanes 4g..4g + 4 are inside `h` because g < groups <= P / 4.
+            let (a, b) = unsafe { (vld1q_s64(p.add(4 * g)), vld1q_s64(p.add(4 * g + 2))) };
+            // the low halves of the four lanes, as signed 32-bit values
+            let l = vuzp1q_s32(vreinterpretq_s32_s64(a), vreinterpretq_s32_s64(b));
+            let c = vreinterpretq_s32_u32(k.lo[g]);
+            s0 = vmlal_s32(s0, vget_low_s32(l), vget_low_s32(c));
+            s1 = vmlal_high_s32(s1, l, c);
+        }
+        vaddvq_s64(vaddq_s64(s0, s1))
+    }
+
     #[target_feature(enable = "neon")]
     pub(super) fn residuals<const P: usize>(
         x: &[i64],
@@ -289,13 +434,50 @@ mod neon {
         from: usize,
     ) {
         let k = Coefs::new(c);
-        super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot(h, &k, P / 4))
+        if super::narrow_stream(x, c) {
+            super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot_narrow(h, &k, P / 4))
+        } else {
+            super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot(h, &k, P / 4))
+        }
     }
 
     #[target_feature(enable = "neon")]
     pub(super) fn restore<const P: usize>(x: &mut [i64], c: &[i64; P], shift: u32, from: usize) {
         let k = Coefs::new(c);
+        let from = if super::narrow_start(x, c, from) {
+            super::restore_narrow_with(x, c, from, shift, |h: &[i64; P]| {
+                dot_narrow(h, &k, P / 4 - 1)
+            })
+        } else {
+            from
+        };
         super::restore_with(x, c, from, shift, |h: &[i64; P]| dot(h, &k, P / 4 - 1))
+    }
+
+    #[cfg(test)]
+    #[target_feature(enable = "neon")]
+    pub(super) fn dot_narrow_once<const P: usize>(
+        h: &[i64; P],
+        c: &[i64; P],
+        groups: usize,
+    ) -> i64 {
+        dot_narrow(h, &Coefs::new(c), groups)
+    }
+
+    #[cfg(test)]
+    #[target_feature(enable = "neon")]
+    pub(super) fn restore_narrow_once<const P: usize>(
+        x: &mut [i64],
+        c: &[i64; P],
+        shift: u32,
+        from: usize,
+    ) -> Option<usize> {
+        let k = Coefs::new(c);
+        super::narrow_start(x, c, from).then(|| {
+            super::restore_narrow_with(x, c, from, shift, |h: &[i64; P]| {
+                dot_narrow(h, &k, P / 4 - 1)
+            })
+        })
     }
 
     #[cfg(test)]
@@ -390,6 +572,31 @@ mod x86 {
         ))
     }
 
+    /// The narrow kernel (every lane of `h` and `c` an i32): `vpmuldq` multiplies the signed low halves
+    /// of each 64-bit lane into an exact 64-bit product.
+    #[target_feature(enable = "avx2")]
+    #[inline]
+    fn dot_narrow_avx2<const P: usize>(h: &[i64; P], k: &Coefs, groups: usize) -> i64 {
+        assert!(groups <= P / 4);
+        let (p, pc) = (h.as_ptr(), k.c.as_ptr());
+        let mut acc = _mm256_setzero_si256();
+        for g in 0..groups {
+            // SAFETY: lanes 4g..4g + 4 lie inside `h` (g < groups <= P / 4) and inside `k.c` (32 lanes,
+            // P <= 32); the loads are unaligned.
+            let (a, c) = unsafe {
+                (
+                    _mm256_loadu_si256(p.add(4 * g) as *const __m256i),
+                    _mm256_loadu_si256(pc.add(4 * g) as *const __m256i),
+                )
+            };
+            acc = _mm256_add_epi64(acc, _mm256_mul_epi32(a, c));
+        }
+        hsum128(_mm_add_epi64(
+            _mm256_castsi256_si128(acc),
+            _mm256_extracti128_si256::<1>(acc),
+        ))
+    }
+
     #[target_feature(enable = "sse2")]
     pub(super) fn residuals_sse2<const P: usize>(
         x: &[i64],
@@ -422,7 +629,13 @@ mod x86 {
         from: usize,
     ) {
         let k = Coefs::new(c);
-        super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot_avx2(h, &k, P / 4))
+        if super::narrow_stream(x, c) {
+            super::residuals_with(x, r, from, shift, |h: &[i64; P]| {
+                dot_narrow_avx2(h, &k, P / 4)
+            })
+        } else {
+            super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot_avx2(h, &k, P / 4))
+        }
     }
 
     #[target_feature(enable = "avx2")]
@@ -433,7 +646,40 @@ mod x86 {
         from: usize,
     ) {
         let k = Coefs::new(c);
+        let from = if super::narrow_start(x, c, from) {
+            super::restore_narrow_with(x, c, from, shift, |h: &[i64; P]| {
+                dot_narrow_avx2(h, &k, P / 4 - 1)
+            })
+        } else {
+            from
+        };
         super::restore_with(x, c, from, shift, |h: &[i64; P]| dot_avx2(h, &k, P / 4 - 1))
+    }
+
+    #[cfg(test)]
+    #[target_feature(enable = "avx2")]
+    pub(super) fn dot_narrow_once_avx2<const P: usize>(
+        h: &[i64; P],
+        c: &[i64; P],
+        groups: usize,
+    ) -> i64 {
+        dot_narrow_avx2(h, &Coefs::new(c), groups)
+    }
+
+    #[cfg(test)]
+    #[target_feature(enable = "avx2")]
+    pub(super) fn restore_narrow_once_avx2<const P: usize>(
+        x: &mut [i64],
+        c: &[i64; P],
+        shift: u32,
+        from: usize,
+    ) -> Option<usize> {
+        let k = Coefs::new(c);
+        super::narrow_start(x, c, from).then(|| {
+            super::restore_narrow_with(x, c, from, shift, |h: &[i64; P]| {
+                dot_narrow_avx2(h, &k, P / 4 - 1)
+            })
+        })
     }
 
     #[cfg(test)]
@@ -643,6 +889,192 @@ mod tests {
         streams::<32>(&mut seed, 500);
     }
 
+    /// i32 values for the narrow path's tests: its boundaries and their neighbours, small and random ones.
+    const NARROW_EDGES: [i64; 14] = [
+        0,
+        1,
+        -1,
+        i32::MAX as i64,
+        i32::MIN as i64,
+        i32::MAX as i64 - 1,
+        i32::MIN as i64 + 1,
+        1 << 30,
+        -(1 << 30),
+        (1 << 15) - 1,
+        -(1 << 15),
+        1 << 15,
+        65535,
+        -65536,
+    ];
+
+    fn narrow_value(seed: &mut u64) -> i64 {
+        let r = lcg(seed);
+        match r % 4 {
+            0 => NARROW_EDGES[(r >> 8) as usize % NARROW_EDGES.len()],
+            1 => (r >> 32) as i32 as i64,
+            2 => ((r >> 20) % 65536) as i64 - 32768,
+            _ => ((r >> 33) % 2001) as i64 - 1000,
+        }
+    }
+
+    /// Values just outside i32 (where the decoder leaves the narrow path) and far outside.
+    const WIDE_EDGES: [i64; 6] = [
+        i32::MAX as i64 + 1,
+        i32::MIN as i64 - 1,
+        1 << 32,
+        -(1 << 40),
+        i64::MAX,
+        i64::MIN,
+    ];
+
+    fn check_narrow<const P: usize>(h: &[i64; P], c: &[i64; P], what: &str) {
+        let full = reference(h, c);
+        let head = reference(&h[..P - 4], &c[..P - 4]);
+        for isa in Isa::all_available() {
+            if let Some(v) = dot_narrow_with(isa, h, c, false) {
+                assert_eq!(v, full, "{isa:?} narrow full, {what}");
+            }
+            if let Some(v) = dot_narrow_with(isa, h, c, true) {
+                assert_eq!(v, head, "{isa:?} narrow head, {what}");
+            }
+        }
+    }
+
+    fn check_narrow_order(order: usize, coefs: &[i64], hist: &[i64], what: &str) {
+        match window_for(order) {
+            8 => check_narrow::<8>(hist[..8].try_into().unwrap(), &padded(coefs), what),
+            16 => check_narrow::<16>(hist[..16].try_into().unwrap(), &padded(coefs), what),
+            24 => check_narrow::<24>(hist[..24].try_into().unwrap(), &padded(coefs), what),
+            _ => check_narrow::<32>(hist[..32].try_into().unwrap(), &padded(coefs), what),
+        }
+    }
+
+    /// The narrow kernels (NEON, AVX2) equal the definition on every window of i32 values with i32
+    /// coefficients: all pairs of boundary values, each boundary in a single lane, and random windows
+    /// mixing the format's 15-bit coefficients with full i32 ones (products up to 2^62, sums that wrap).
+    #[test]
+    fn narrow_kernels_match_the_definition() {
+        for order in 1..=32 {
+            for &cv in &NARROW_EDGES {
+                for &hv in &NARROW_EDGES {
+                    check_narrow_order(
+                        order,
+                        &vec![cv; order],
+                        &[hv; 32],
+                        &format!("order {order} c {cv} h {hv}"),
+                    );
+                }
+            }
+            for lane in 0..32 {
+                for &v in &NARROW_EDGES {
+                    let coefs: Vec<i64> = (0..order).map(|j| j as i64 - 7).collect();
+                    let mut hist = [3i64; 32];
+                    hist[lane] = v;
+                    check_narrow_order(order, &coefs, &hist, &format!("order {order} h[{lane}]"));
+                    let mut coefs = vec![1i64; order];
+                    coefs[lane % order] = v;
+                    let hist: Vec<i64> = (0..32)
+                        .map(|j| (j as i64) * 70_000_001 - (1 << 30))
+                        .collect();
+                    check_narrow_order(order, &coefs, &hist, &format!("order {order} c[{lane}]"));
+                }
+            }
+        }
+        let mut seed = 0x6e61_7272_6f77;
+        for case in 0..200_000 {
+            let order = 1 + case % 32;
+            let coefs: Vec<i64> = (0..order)
+                .map(|_| {
+                    if case % 3 != 0 {
+                        crate::g21::sign_extend(lcg(&mut seed) >> 7, 15)
+                    } else {
+                        narrow_value(&mut seed)
+                    }
+                })
+                .collect();
+            let hist: Vec<i64> = (0..32).map(|_| narrow_value(&mut seed)).collect();
+            check_narrow_order(order, &coefs, &hist, &format!("case {case}"));
+        }
+    }
+
+    /// Streams for the narrow path: i32 values (boundaries included), optionally with one value outside
+    /// i32 at `switch` (the decoder leaves the narrow path there) and i32 values after it again.
+    fn narrow_streams<const P: usize>(seed: &mut u64, cases: usize) {
+        for case in 0..cases {
+            let order = 1 + (lcg(seed) as usize) % P.min(32);
+            let order = order.max(if P == 8 { 1 } else { P - 7 });
+            let wide_coef = case % 10 == 9;
+            let coefs: Vec<i64> = (0..order)
+                .map(|j| match (wide_coef && j == 0, case % 3) {
+                    (true, _) => WIDE_EDGES[(lcg(seed) % 2) as usize],
+                    (_, 0) => narrow_value(seed),
+                    _ => crate::g21::sign_extend(lcg(seed) >> 7, 15),
+                })
+                .collect();
+            let c = padded::<P>(&coefs);
+            let shift = (lcg(seed) % 32) as u32;
+            let n = P + (lcg(seed) % 300) as usize;
+            let mut x: Vec<i64> = (0..n).map(|_| narrow_value(seed)).collect();
+            let switch = match case % 4 {
+                0 => None,
+                1 => Some(P + (lcg(seed) as usize) % (n - P + 1).min(4)),
+                _ => Some((lcg(seed) as usize) % (n + 1)),
+            }
+            .filter(|&s| s < n);
+            if let Some(s) = switch {
+                x[s] = WIDE_EDGES[(lcg(seed) as usize) % WIDE_EDGES.len()];
+                if case % 8 == 2 && s + 1 < n {
+                    x[s + 1] = WIDE_EDGES[(lcg(seed) as usize) % WIDE_EDGES.len()];
+                }
+            }
+            let from = P;
+            let mut want = vec![0u64; n];
+            residuals::<P>(Isa::Scalar, &x, &c, shift, &mut want, from);
+            let mut back: Vec<i64> = x.clone();
+            for i in from..n {
+                back[i] = crate::unzigzag(want[i]);
+            }
+            for isa in Isa::all_available() {
+                let what = format!("{isa:?} P {P} case {case} switch {switch:?}");
+                let mut r = vec![0u64; n];
+                residuals::<P>(isa, &x, &c, shift, &mut r, from);
+                assert_eq!(r[from..], want[from..], "residuals {what}");
+                let mut y = back.clone();
+                restore::<P>(isa, &mut y, &c, shift, from);
+                assert_eq!(y, x, "restore {what}");
+                // where the narrow loop alone stops, and that it restored everything up to there
+                let mut z = back.clone();
+                if let Some(stop) = restore_narrow_stop::<P>(isa, &mut z, &c, shift, from) {
+                    assert!(!wide_coef, "{what}");
+                    let expect = match switch {
+                        Some(s) if s >= from => s + 1,
+                        _ => n,
+                    };
+                    assert_eq!(stop, expect, "stop {what}");
+                    assert_eq!(z[..stop], x[..stop], "narrow prefix {what}");
+                } else if from < n && isa != Isa::Scalar {
+                    let window_wide = switch.is_some_and(|s| s < from);
+                    #[cfg(target_arch = "x86_64")]
+                    let window_wide = window_wide || isa == Isa::Sse2;
+                    assert!(wide_coef || window_wide, "narrow path not taken: {what}");
+                }
+            }
+        }
+    }
+
+    /// Whole streams through the narrow path, its switch to the full kernel mid-chunk (at the first
+    /// value outside i32, also at the first position and twice in a row), a window that starts outside
+    /// i32, and coefficients outside i32 (no narrow path): every kernel's residuals equal the scalar
+    /// kernel's and every kernel restores the values.
+    #[test]
+    fn narrow_path_switches_over_mid_chunk() {
+        let mut seed = 31;
+        narrow_streams::<8>(&mut seed, 3000);
+        narrow_streams::<16>(&mut seed, 3000);
+        narrow_streams::<24>(&mut seed, 3000);
+        narrow_streams::<32>(&mut seed, 3000);
+    }
+
     #[test]
     fn detected_kernel_is_available() {
         // (in the test log: which kernels the equivalence tests above compared on this CPU)
@@ -652,5 +1084,48 @@ mod tests {
             Isa::detect()
         );
         assert!(Isa::all_available().contains(&Isa::detect()));
+    }
+}
+
+#[cfg(kani)]
+mod proofs {
+    use super::*;
+
+    /// The narrow path's bound: for i32 operands the widening product (the low halves multiplied as signed
+    /// 32-bit values, as `vmlal_s32`, `vpmuldq` and `smull` do) is exact and equals the wrapping i64
+    /// product the format defines, and it is at most 2^62 in magnitude. So a sum of such products, taken
+    /// modulo 2^64 in any grouping, is the reference dot product.
+    #[kani::proof]
+    fn narrow_product_is_the_wrapping_product() {
+        let a: i64 = kani::any();
+        let b: i64 = kani::any();
+        kani::assume(fits_i32(a) && fits_i32(b));
+        let p = mul_narrow(a, b);
+        assert_eq!(p, a.wrapping_mul(b));
+        assert_eq!(p as i128, a as i128 * b as i128);
+        assert!(p.unsigned_abs() <= 1u64 << 62);
+        // the low 32-bit half of the lane is the value itself
+        assert_eq!(((a as u64) as u32) as i32 as i64, a);
+    }
+
+    /// With the format's coefficients (at most 15 bits: |c| <= 2^14) and i32 history, each product is at
+    /// most 2^45 and the sum of 32 of them at most 2^50: the narrow kernels' i64 accumulation never wraps
+    /// (not needed for equality, which holds modulo 2^64, but it bounds the decoder's sums).
+    #[kani::proof]
+    fn narrow_sum_of_format_coefficients_cannot_wrap() {
+        let c: i64 = kani::any();
+        let h: i64 = kani::any();
+        kani::assume((-(1i64 << 14)..(1i64 << 14)).contains(&c) && fits_i32(h));
+        assert!(mul_narrow(c, h).unsigned_abs() <= 1u64 << 45);
+        let terms: [i64; 32] = kani::any();
+        let mut sum = 0i64;
+        let mut wrapped = 0i64;
+        for &t in &terms {
+            kani::assume(t.unsigned_abs() <= 1u64 << 45);
+            sum = sum.checked_add(t).unwrap();
+            wrapped = wrapped.wrapping_add(t);
+        }
+        assert!(sum.unsigned_abs() <= 1u64 << 50);
+        assert_eq!(sum, wrapped);
     }
 }
