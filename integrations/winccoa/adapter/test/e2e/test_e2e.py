@@ -10,7 +10,9 @@ It checks that
 - the derived context lands on the samples computed independently here (ceil rule, integer arithmetic) on both
   channels, and the clean shutdown closes the open states at the last heartbeat;
 - an investigation started from the slot's datapoints is answered and written back with its request_id;
-- the adapter writes only to its namespace, and the token never appears in its log.
+- the adapter writes only to its namespace, and the token never appears in its log;
+- a heartbeat that does not fit beside a pending gap goes after it, so derivation extends no state across the
+  outage (#496; HeartbeatBeforeGap needs Node.js but no database).
 
     cd integrations/winccoa/adapter/test/e2e && python -m unittest -v test_e2e
 
@@ -32,7 +34,9 @@ sys.path.insert(0, str(HERE.parents[2] / "companion" / "tests"))
 
 import support  # noqa: E402  (puts the companion's src and the replay on the path)
 from machine import CHANNELS, current  # noqa: E402
-from morlet_winccoa.observations import mark_finished  # noqa: E402
+from morlet_winccoa import config as cfgmod  # noqa: E402
+from morlet_winccoa import derive  # noqa: E402
+from morlet_winccoa.observations import mark_finished, parse_message  # noqa: E402
 from replay import write_history  # noqa: E402
 from support import LOAD, SPEED, expected_samples  # noqa: E402
 from writer import recording_id, write_acquisition  # noqa: E402
@@ -138,6 +142,44 @@ class EndToEnd(unittest.TestCase):
         log = "\n".join(out["logs"])
         self.assertNotIn(env.token, log)
         self.assertIn(out["status"]["tokenFingerprint"], log)
+
+
+class HeartbeatBeforeGap(unittest.TestCase):
+    """#496: the observations the real adapter sends when a heartbeat does not fit beside a pending gap, parsed and
+    derived by the real companion code (parse_message, derive.compute; no database needed). A heartbeat sent before
+    the gap counted as contact during the outage and extended the open state across it."""
+
+    def derived(self, bound: str):
+        proc = subprocess.run([NODE, str(HERE.parent / "heartbeat-gap.js"), bound], capture_output=True, text=True,
+                              timeout=60)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        out = json.loads(proc.stdout)
+        cfg = cfgmod.validate(cfgmod.Config(
+            dsn="host=127.0.0.1 dbname=morlet user=wc", token_file="/nonexistent",
+            assets=(cfgmod.Asset("rig-1", "plant.rig", "rig-1"),),
+            datapoints=(cfgmod.Datapoint(SPEED, "rig-1", "speed"),)))
+        rows = []
+        for observations in out["posts"]:                # committed in sending order: obs_id follows it
+            _, parsed = parse_message(cfg, {"schema": "morlet-winccoa/1", "session": "winccoa-496",
+                                            "observations": observations})
+            for o in parsed:
+                rows.append((len(rows) + 1, o.kind, o.asset, o.key, o.dpe, o.value_json is None, o.value_type,
+                             o.value_text, o.source_ns, o.quality_status, o.observed_ns, o.observed_ns, o.rtt_ns))
+        return rows, derive.compute(cfg, rows, 0, None)
+
+    def test_no_context_across_the_disconnect(self):
+        for bound in ("count", "bytes"):
+            with self.subTest(bound=bound):
+                rows, outcomes = self.derived(bound)
+                kinds = [r[1] for r in rows]
+                (speed,) = outcomes
+                # The last contact before the gap is the change itself (observed at 1 s): nothing is known after
+                # it, so the state yields no context (before the fix: a batch [1 s, 10 s) across the outage).
+                self.assertNotEqual(speed.batch_id, "pending", speed)
+                self.assertEqual((speed.t_start_ns, speed.t_end_ns, speed.reason),
+                                 (1_000_000_000, 1_000_000_000, "outside_recording"))
+                self.assertEqual(speed.closed_by, kinds.index("gap") + 1)
+                self.assertEqual(kinds, ["heartbeat", "change", "gap", "heartbeat"])
 
 
 if __name__ == "__main__":

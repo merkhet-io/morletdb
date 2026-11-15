@@ -10,7 +10,9 @@
 //   observed time is the time of sending (the companion's clock estimate needs that). A heartbeat whose message
 //   failed is not resent; its seq is simply never used again (seqs need not be contiguous, only unique).
 // - Heartbeats go after the last gap of a message: a gap ends open states at the last contact before it, and a
-//   heartbeat sent now must not count as contact during the outage the gap reports.
+//   heartbeat sent now must not count as contact during the outage the gap reports. For the same reason no
+//   heartbeat goes into a message before the one holding the last pending gap: while that gap does not fit beside
+//   the heartbeats, messages carry none (#496).
 
 class Outbox {
   constructor({ maxPerMessage, maxBytes, maxQueued }) {
@@ -50,10 +52,25 @@ class Outbox {
 
   /**
    * The next message: a prefix of the pending observations plus `heartbeats` (field objects without seq), within
-   * both limits. Returns {body, sent, count} where `sent` is the number of pending observations included.
+   * both limits. Returns {body, sent, heartbeats} where `sent` is the number of pending observations included and
+   * `heartbeats` the heartbeats actually included.
+   *
+   * The heartbeats go in only when the prefix chosen WITH them (they take room by count and by bytes) still holds
+   * the last pending gap; otherwise the message carries none and their seqs are given back (#496). A heartbeat in an
+   * earlier message than that gap would be committed before it and count as contact during the outage.
    */
   message(session, heartbeats = []) {
-    const hbs = heartbeats.map((h) => ({ seq: this.nextSeq(), ...h }));
+    const lastGap = this.pending.map((p) => p.obs.kind).lastIndexOf('gap');
+    if (heartbeats.length) {
+      const seq0 = this.seq;
+      const m = this.build(session, heartbeats.map((h) => ({ seq: this.nextSeq(), ...h })));
+      if (m.sent > lastGap) return m;
+      this.seq = seq0;               // never sent: the next heartbeats take these seqs
+    }
+    return this.build(session, []);
+  }
+
+  build(session, hbs) {
     const hbBytes = hbs.reduce((n, h) => n + Outbox.size(h) + 1, 0);
     let bytes = envelopeBytes(session) + hbBytes;
     let room = this.maxPerMessage - hbs.length;

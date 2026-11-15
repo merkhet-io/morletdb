@@ -35,6 +35,17 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
   - Tests: the companion's `Clock` tests (a 200 ms database connection, and `/v1/clock` needing the token and no
     database) and two adapter tests (RTT from `/v1/clock` with a slow health; the 404 fallback). They failed before
     the fix.
+- **WinCC OA: a heartbeat no longer lands before a pending gap (#496).** The adapter chose whether the last pending
+  gap fit in a message without heartbeats, then added them. When the heartbeats took the last room (by count or by
+  bytes), the gap moved to the next message and the heartbeat was committed before it. Derivation took that
+  heartbeat as the last contact before the gap and derived context across the disconnect, where evidence is
+  missing. The outbox now chooses the message with the room its heartbeats take: a message that cannot hold the
+  last pending gap beside them carries no heartbeat, and the heartbeats go after the gap. No protocol or schema
+  change; context already derived from such an order is not corrected by this release.
+  - Tests: two adapter tests (count- and byte-bound, the issue's reproduction), an outbox test, and
+    `HeartbeatBeforeGap` in the end-to-end suite, which passes the adapter's messages through the companion's
+    `parse_message` and `derive.compute` and checks that no state extends past the last contact before the gap.
+    They failed before the fix (the end-to-end one with a batch [1 s, 10 s) across the outage).
 - **MCP `labels`: the labels of a collection and what they mean (#333).** A read-only tool lists every active label with
   its glossary definition, unit and source, how many intervals, recordings and samples carry it, when it was first
   and last given, and a few examples; `undefined_labels` names the labels nobody defined. Before, an agent saw
