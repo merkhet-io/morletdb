@@ -27,7 +27,8 @@
 //!
 //! **Narrow path.** When every coefficient and every history value of a window fits in i32, each product
 //! `h[j] · c[j]` is exact in i64 (`|h · c| <= 2^31 · 2^31 = 2^62`), so a widening signed 32 × 32 → 64-bit
-//! multiply (NEON `vmlal_s32`, AVX2 `vpmuldq`, scalar `smull`/`smaddl`) of the low halves gives the same
+//! multiply (NEON `smlal` on an i32 copy of the values, AVX2 `vpmuldq` on the low halves of the i64
+//! lanes, scalar `smull`/`smaddl`) gives the same
 //! product as `wrapping_mul`, and the wrapping sum of the products is then the same integer whatever the
 //! lane grouping. (With the format's coefficients, at most 15 bits, the sum does not even wrap:
 //! `|Σ| <= 32 · 2^14 · 2^31 = 2^50`.) The NEON and AVX2 kernels take this path while it holds: the encoder
@@ -300,11 +301,11 @@ fn restore_with<const P: usize>(
 }
 
 /// The narrow decoder loop: as [`restore_with`], with `head` a narrow kernel and the newest four products
-/// as widening 32-bit multiplies. The caller ensures ([`narrow_start`]) that the coefficients and the
-/// window `x[from - P..from]` are i32; each restored value is checked, so every window this loop reads is
-/// i32 as well. Returns the position after the first restored value outside i32 (that value is already
-/// correct), or `x.len()`.
-#[cfg(all(any(target_arch = "aarch64", target_arch = "x86_64"), not(kani)))]
+/// as widening 32-bit multiplies (the AVX2 kernel; NEON has its own loop over an i32 copy of the values).
+/// The caller ensures ([`narrow_start`]) that the coefficients and the window `x[from - P..from]` are
+/// i32; each restored value is checked, so every window this loop reads is i32 as well. Returns the
+/// position after the first restored value outside i32 (that value is already correct), or `x.len()`.
+#[cfg(all(target_arch = "x86_64", not(kani)))]
 #[inline(always)]
 fn restore_narrow_with<const P: usize>(
     x: &mut [i64],
@@ -404,25 +405,104 @@ mod neon {
         vaddvq_u64(sum) as i64
     }
 
-    /// The narrow kernel: the wrapping sum of `h[j] · c[j]` over lanes `0..4 · groups`, valid when every
-    /// lane of `h` and `c` is an i32 (each product is then exact as a widening 32-bit multiply of the low
-    /// halves).
+    /// The coefficients as i32 lanes in groups of four (the caller checked that they fit).
     #[target_feature(enable = "neon")]
     #[inline]
-    fn dot_narrow<const P: usize>(h: &[i64; P], k: &Coefs, groups: usize) -> i64 {
+    fn narrow_coefs<const P: usize>(c: &[i64; P]) -> [int32x4_t; 8] {
+        let mut lanes = [0i32; 32];
+        for (j, &v) in c.iter().enumerate() {
+            lanes[j] = v as i32;
+        }
+        // SAFETY: each load reads four i32 inside `lanes` (32 elements).
+        std::array::from_fn(|g| unsafe { vld1q_s32(lanes.as_ptr().add(4 * g)) })
+    }
+
+    /// The narrow kernel: the sum of `h[j] · c[j]` over lanes `0..4 · groups`, from an i32 copy of the
+    /// window (each product an exact widening `smlal`). Four accumulators, combined with `addp` (an
+    /// operation the compiler does not reassociate), so the in-order Cortex-A53 runs four short
+    /// multiply-accumulate chains instead of one long one.
+    #[target_feature(enable = "neon")]
+    #[inline]
+    fn dot_narrow<const P: usize>(h: &[i32; P], k: &[int32x4_t; 8], groups: usize) -> i64 {
         assert!(groups <= P / 4);
         let p = h.as_ptr();
-        let (mut s0, mut s1) = (vdupq_n_s64(0), vdupq_n_s64(0));
-        for g in 0..groups {
-            // SAFETY: lanes 4g..4g + 4 are inside `h` because g < groups <= P / 4.
-            let (a, b) = unsafe { (vld1q_s64(p.add(4 * g)), vld1q_s64(p.add(4 * g + 2))) };
-            // the low halves of the four lanes, as signed 32-bit values
-            let l = vuzp1q_s32(vreinterpretq_s32_s64(a), vreinterpretq_s32_s64(b));
-            let c = vreinterpretq_s32_u32(k.lo[g]);
-            s0 = vmlal_s32(s0, vget_low_s32(l), vget_low_s32(c));
-            s1 = vmlal_high_s32(s1, l, c);
+        let z = vdupq_n_s64(0);
+        let (mut a0, mut a1, mut a2, mut a3) = (z, z, z, z);
+        let mut g = 0;
+        while g + 2 <= groups {
+            // SAFETY: lanes 4g..4g + 8 are inside `h` because g + 2 <= groups <= P / 4.
+            let (v0, v1) = unsafe { (vld1q_s32(p.add(4 * g)), vld1q_s32(p.add(4 * g + 4))) };
+            a0 = vmlal_s32(a0, vget_low_s32(v0), vget_low_s32(k[g]));
+            a1 = vmlal_high_s32(a1, v0, k[g]);
+            a2 = vmlal_s32(a2, vget_low_s32(v1), vget_low_s32(k[g + 1]));
+            a3 = vmlal_high_s32(a3, v1, k[g + 1]);
+            g += 2;
         }
-        vaddvq_s64(vaddq_s64(s0, s1))
+        if g < groups {
+            // SAFETY: lanes 4g..4g + 4 are inside `h` because g < groups <= P / 4.
+            let v0 = unsafe { vld1q_s32(p.add(4 * g)) };
+            a0 = vmlal_s32(a0, vget_low_s32(v0), vget_low_s32(k[g]));
+            a1 = vmlal_high_s32(a1, v0, k[g]);
+        }
+        vaddvq_s64(vpaddq_s64(vpaddq_s64(a0, a1), vpaddq_s64(a2, a3)))
+    }
+
+    /// The encoder's narrow loop (every coefficient and value is an i32): an i32 copy of `x`, then the
+    /// residuals as [`super::residuals_with`] computes them.
+    #[target_feature(enable = "neon")]
+    #[inline(never)]
+    fn residuals_narrow<const P: usize>(
+        x: &[i64],
+        c: &[i64; P],
+        shift: u32,
+        r: &mut [u64],
+        from: usize,
+    ) {
+        let k = narrow_coefs(c);
+        let h32: Vec<i32> = x.iter().map(|&v| v as i32).collect();
+        for i in from..x.len() {
+            let h: &[i32; P] = h32[i - P..i].try_into().unwrap();
+            r[i] = crate::zigzag(x[i].wrapping_sub(dot_narrow(h, &k, P / 4) >> shift));
+        }
+    }
+
+    /// The decoder's narrow loop: as [`super::restore_narrow_with`], with the window read from an i32 copy
+    /// of the values restored so far (the newest four lanes from registers, as in the full kernel).
+    /// The caller ensures ([`super::narrow_start`]) that the coefficients and `x[from - P..from]` are
+    /// i32; each restored value is checked before it enters the copy. Returns the position after the
+    /// first restored value outside i32 (that value is already correct), or `x.len()`.
+    #[target_feature(enable = "neon")]
+    #[inline(never)]
+    fn restore_narrow<const P: usize>(
+        x: &mut [i64],
+        c: &[i64; P],
+        shift: u32,
+        from: usize,
+    ) -> usize {
+        let n = x.len();
+        let k = narrow_coefs(c);
+        let mut h32 = vec![0i32; n];
+        for i in from - P..from {
+            h32[i] = x[i] as i32;
+        }
+        let (c1, c2, c3, c4) = (c[P - 1], c[P - 2], c[P - 3], c[P - 4]);
+        let (mut h1, mut h2, mut h3, mut h4) = (x[from - 1], x[from - 2], x[from - 3], x[from - 4]);
+        for i in from..n {
+            let h: &[i32; P] = h32[i - P..i].try_into().unwrap();
+            let s = dot_narrow(h, &k, P / 4 - 1)
+                .wrapping_add(super::mul_narrow(c1, h1))
+                .wrapping_add(super::mul_narrow(c2, h2))
+                .wrapping_add(super::mul_narrow(c3, h3))
+                .wrapping_add(super::mul_narrow(c4, h4));
+            let v = x[i].wrapping_add(s >> shift);
+            x[i] = v;
+            if !super::fits_i32(v) {
+                return i + 1;
+            }
+            h32[i] = v as i32;
+            (h4, h3, h2, h1) = (h3, h2, h1, v);
+        }
+        n
     }
 
     #[target_feature(enable = "neon")]
@@ -433,24 +513,21 @@ mod neon {
         r: &mut [u64],
         from: usize,
     ) {
-        let k = Coefs::new(c);
         if super::narrow_stream(x, c) {
-            super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot_narrow(h, &k, P / 4))
-        } else {
-            super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot(h, &k, P / 4))
+            return residuals_narrow(x, c, shift, r, from);
         }
+        let k = Coefs::new(c);
+        super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot(h, &k, P / 4))
     }
 
     #[target_feature(enable = "neon")]
     pub(super) fn restore<const P: usize>(x: &mut [i64], c: &[i64; P], shift: u32, from: usize) {
-        let k = Coefs::new(c);
         let from = if super::narrow_start(x, c, from) {
-            super::restore_narrow_with(x, c, from, shift, |h: &[i64; P]| {
-                dot_narrow(h, &k, P / 4 - 1)
-            })
+            restore_narrow(x, c, shift, from)
         } else {
             from
         };
+        let k = Coefs::new(c);
         super::restore_with(x, c, from, shift, |h: &[i64; P]| dot(h, &k, P / 4 - 1))
     }
 
@@ -461,7 +538,8 @@ mod neon {
         c: &[i64; P],
         groups: usize,
     ) -> i64 {
-        dot_narrow(h, &Coefs::new(c), groups)
+        let h32: [i32; P] = std::array::from_fn(|j| h[j] as i32);
+        dot_narrow(&h32, &narrow_coefs(c), groups)
     }
 
     #[cfg(test)]
@@ -472,12 +550,7 @@ mod neon {
         shift: u32,
         from: usize,
     ) -> Option<usize> {
-        let k = Coefs::new(c);
-        super::narrow_start(x, c, from).then(|| {
-            super::restore_narrow_with(x, c, from, shift, |h: &[i64; P]| {
-                dot_narrow(h, &k, P / 4 - 1)
-            })
-        })
+        super::narrow_start(x, c, from).then(|| restore_narrow(x, c, shift, from))
     }
 
     #[cfg(test)]
