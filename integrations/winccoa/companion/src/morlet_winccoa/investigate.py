@@ -11,7 +11,10 @@
   privileges and row security apply. Readiness comes only from `morlet_coverage`.
 - Status: `ok`, `no_matches` (the windows searched hold no match; what was not searched is reported),
   `evidence_unavailable` (the source is not searchable yet, or no window of this size is stored),
-  `permission_denied` (the role lacks a privilege) or `service_failure` (database unavailable, timeout, cancelled).
+  `permission_denied` (the role lacks a privilege), `service_failure` (database unavailable, timeout, cancelled) or
+  `response_too_large` (the result does not fit `response_bytes` even without source context and matches).
+- The response, as sent, stays within `response_bytes` (see `_fit`); what was cut is reported in `truncated` and
+  `omitted`.
 - Matches carry recording IDs, half-open sample ranges, distances, UTC times where the recording has a start time,
   overlapping context and labels, and a viewer link when a loopback viewer is configured. No samples.
 
@@ -20,6 +23,7 @@ classify the source.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import logging
@@ -37,11 +41,12 @@ import morletdb
 import psycopg
 from psycopg import sql
 
-from .config import Config, SCHEMA_VERSION
+from .config import SCHEMA_VERSION, Config
 from .observations import ForbiddenName, ProtocolError
 
 log = logging.getLogger("morlet_winccoa.investigate")
-STATUSES = ("ok", "no_matches", "evidence_unavailable", "permission_denied", "service_failure")
+STATUSES = ("ok", "no_matches", "evidence_unavailable", "permission_denied", "service_failure", "response_too_large")
+CONTEXT_VALUE_CHARS = 1024     # a source context value is cut to this many characters when the response is too large
 _FIELDS = {"schema", "request_id", "slot", "collection", "recording_id", "start_sample", "end_sample", "top_k"}
 
 
@@ -154,25 +159,78 @@ def _viewer(cfg: Config, collection: str, recording_id: str, a: int, b: int) -> 
     return cfg.viewer_base_url.rstrip("/") + "/?" + q
 
 
-def _fit(cfg: Config, result: dict) -> dict:
-    """Keep the response within the size limit: drop context, then labels, then overviews, then trailing matches,
-    and say what was dropped in `truncated`."""
+def encode(body: dict) -> bytes:
+    """The HTTP body of a response, exactly as the server sends it."""
+    return json.dumps(body, default=str, separators=(",", ":")).encode()
+
+
+# The largest view metadata a done result is sent with (Investigations.view): a stored result is fitted with it,
+# so it fits however its correlation state changes later.
+_VIEW_MAX = {"state": "done", "current": False, "superseded_by": "00000000-0000-0000-0000-000000000000"}
+_ENVELOPE = ("schema", "request_id", "slot", "state", "current", "superseded_by")
+
+
+def _fit(cfg: Config, result: dict, extra: dict | None = None) -> dict:
+    """The result within `response_bytes`, measured as the body sent: `encode({**result, **extra})`, with the
+    truncation report included. Steps, each only while the body is too large:
+
+    1. source context values longer than CONTEXT_VALUE_CHARS characters are cut to that length (`value_chars`
+       gives the original length);
+    2. match `context`, then `labels`, then `overview` are dropped from every match;
+    3. trailing source context rows (rows are ordered by key, start_sample) are dropped;
+    4. trailing matches (the highest ranks) are dropped.
+
+    `truncated` lists the steps that changed the result, in order; `omitted` counts the source context values cut,
+    the source context rows and the matches dropped. If the result does not fit after all four steps (for example
+    an oversized recording ID or detail), the result is replaced by the bounded error `response_too_large`."""
+    limit, extra = cfg.limits.response_bytes, extra or {}
+
     def size(r):
-        return len(json.dumps(r, default=str).encode())
-    dropped = []
+        return len(encode({**r, **extra}))
+
+    if size(result) <= limit:
+        return result
+    r = copy.deepcopy(result)
+    steps: list[str] = []
+    omitted = {"source_context_values": 0, "source_context": 0, "matches": 0}
+    r["truncated"], r["omitted"] = steps, omitted      # measured from here on, as they are sent
+    source = r.get("source") if isinstance(r.get("source"), dict) else {}
+    ctx = source.get("context") if isinstance(source.get("context"), list) else []
+    matches = r.get("matches") if isinstance(r.get("matches"), list) else []
+
+    for row in ctx:
+        v = row.get("value")
+        if isinstance(v, str) and len(v) > CONTEXT_VALUE_CHARS:
+            row["value"], row["value_chars"] = v[:CONTEXT_VALUE_CHARS], len(v)
+            omitted["source_context_values"] += 1
+    if omitted["source_context_values"]:
+        steps.append("source_context_values")
     for part in ("context", "labels", "overview"):
-        if size(result) <= cfg.limits.response_bytes:
+        if size(r) <= limit or not matches:
             break
-        for m in result.get("matches", []):
+        for m in matches:
             m.pop(part, None)
-        dropped.append(part)
-    while size(result) > cfg.limits.response_bytes and result.get("matches"):
-        result["matches"].pop()
-        if "matches" not in dropped:
-            dropped.append("matches")
-    if dropped:
-        result["truncated"] = dropped
-    return result
+        steps.append(part)
+    for name, items in (("source_context", ctx), ("matches", matches)):
+        over = size(r) - limit
+        if over <= 0 or not items:
+            continue
+        steps.append(name)
+        # Drop enough trailing items at once by their encoded sizes (plus a comma each), then one by one while the
+        # report's own digits still keep the body over the limit.
+        while over > 0 and items:
+            over -= len(encode(items.pop())) + 1
+            omitted[name] += 1
+        while size(r) > limit and items:
+            items.pop()
+            omitted[name] += 1
+    if size(r) <= limit:
+        return r
+    log.warning("investigation %s: %d-byte result does not fit response_bytes %d", result.get("request_id"),
+                size(result), limit)
+    return {**{k: result[k] for k in _ENVELOPE if k in result}, "status": "response_too_large",
+            "result_status": result.get("status"), "response_bytes": limit,
+            "detail": "the result does not fit response_bytes even without source context and matches"}
 
 
 def run_search(conn: psycopg.Connection, cfg: Config, req: dict) -> dict:
@@ -275,7 +333,7 @@ class Investigations:
 
     def _finish(self, r: Request, result: dict) -> None:
         r.result = {"schema": SCHEMA_VERSION, "request_id": r.request_id, "slot": r.slot, **result}
-        r.result = _fit(self.cfg, r.result)
+        r.result = _fit(self.cfg, r.result, _VIEW_MAX)
         with self.lock:
             self.running.discard(r.request_id)
             r.done.set()
@@ -323,9 +381,10 @@ class Investigations:
         with self.lock:
             current = self.current.get(r.slot) == r.request_id
         if not r.done.is_set():
-            return {"schema": SCHEMA_VERSION, "request_id": r.request_id, "slot": r.slot, "state": "running",
-                    "current": current, "superseded_by": r.superseded_by}
-        return {**r.result, "state": "done", "current": current, "superseded_by": r.superseded_by}
+            return _fit(self.cfg, {"schema": SCHEMA_VERSION, "request_id": r.request_id, "slot": r.slot,
+                                   "state": "running", "current": current, "superseded_by": r.superseded_by})
+        # Fitted with the largest view metadata, so this fits; measured again as sent, never assumed.
+        return _fit(self.cfg, {**r.result, "state": "done", "current": current, "superseded_by": r.superseded_by})
 
     def get(self, request_id: str) -> Request | None:
         with self.lock:

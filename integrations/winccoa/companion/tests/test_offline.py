@@ -1,19 +1,25 @@
 # Copyright 2026 MorletDB contributors. Licensed under the Apache License, Version 2.0 (LICENSE).
 # SPDX-License-Identifier: Apache-2.0
-"""Configuration, token files and protocol validation: the parts that need no database."""
+"""Configuration, token files, protocol validation and the response bound: the parts that need no database."""
+import copy
+import dataclasses
+import json
 import logging
 import os
 import secrets
 import shutil
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "replay"))
 
 from morlet_winccoa import config as cfgmod  # noqa: E402
+from morlet_winccoa import investigate as inv  # noqa: E402
 from morlet_winccoa import observations as obs  # noqa: E402
 from morlet_winccoa.auth import Authenticator, TokenFileError, fingerprint, read_tokens  # noqa: E402
 from morlet_winccoa.investigate import parse_request  # noqa: E402
@@ -235,6 +241,189 @@ class ProtocolTests(unittest.TestCase):
                 parse_request(self.cfg, {**ok, **change})
         with self.assertRaises(obs.ForbiddenName):
             parse_request(self.cfg, {**ok, "collection": "other.rig"})
+
+
+def sent_size(body) -> int:
+    """Bytes of a body as the HTTP handler serializes it (server.Handler._send)."""
+    return len(json.dumps(body, default=str, separators=(",", ":")).encode())
+
+
+RID = "8f2b5c1e-34d2-4a8e-9a43-3b8f7c1d2e10"
+OTHER = "0b7e9d4a-1c2f-4e3a-8b5d-6f7a8b9c0d1e"
+
+
+def search_result(context=(), matches=(), recording_id="r1", status=None):
+    """A result shaped like run_search's."""
+    return {"source": {"collection": "plant.rig", "recording_id": recording_id, "start_sample": 0,
+                       "end_sample": 4096, "context": list(context), "start_utc": None},
+            "readiness": {"window": 4096, "source_searchable": True, "source_states": ["searchable"],
+                          "searchable_windows": 96, "searchable_recordings": 4, "not_searched_samples": {}},
+            "search_mode": "exact", "status": status or ("ok" if matches else "no_matches"),
+            "matches": list(matches), "note": "distances are envelope distances"}
+
+
+def match(rank):
+    return {"rank": rank, "recording_id": f"rec-{rank}", "start_sample": 2048 * rank,
+            "end_sample": 2048 * rank + 4096, "distance": 0.01 * rank, "start_utc": None, "end_utc": None,
+            "overview": [[0, 256, -1.0, 1.0, 0.5]] * 16, "context": [],
+            "labels": [{"label": "impact", "start_sample": 0, "end_sample": 4096, "note": None}],
+            "viewer_url": None}
+
+
+def row(key, value, start=0):
+    return {"key": key, "value": value, "start_sample": start, "end_sample": None}
+
+
+class ResponseBoundTests(unittest.TestCase):
+    """#497: response_bytes bounds the body actually sent, source context and metadata included."""
+
+    def finished(self, result, limit=256 * 1024, slot="panel", superseded=False, current=True):
+        cfg = config(limits=dataclasses.replace(cfgmod.Limits(), response_bytes=limit))
+        invs = inv.Investigations(cfg, connect=None)
+        r = inv.Request(RID, slot, "d", {})
+        invs.requests[RID] = r
+        if current:
+            invs.current[slot] = RID
+        if superseded:
+            r.superseded_by = OTHER
+        invs._finish(r, copy.deepcopy(result))
+        return invs.view(r)
+
+    def test_issue_reproduction_source_context_alone(self):
+        v = self.finished(search_result([row("description", "x" * 300_000)]))
+        self.assertLessEqual(sent_size(v), 262_144)
+        self.assertEqual(v["status"], "no_matches")
+        ctx = v["source"]["context"]
+        self.assertEqual(len(ctx), 1)
+        self.assertEqual(ctx[0]["value"], "x" * inv.CONTEXT_VALUE_CHARS)
+        self.assertEqual(ctx[0]["value_chars"], 300_000)
+        self.assertEqual(v["truncated"], ["source_context_values"])
+        self.assertEqual(v["omitted"], {"source_context_values": 1, "source_context": 0, "matches": 0})
+
+    def test_matches_are_kept_over_oversized_source_context(self):
+        # One huge value: cutting it is enough, and the matches keep all their evidence.
+        res = search_result([row("description", "x" * 300_000)], [match(i) for i in range(1, 11)])
+        v = self.finished(res)
+        self.assertLessEqual(sent_size(v), 262_144)
+        self.assertEqual(v["matches"], res["matches"])
+        self.assertEqual(v["truncated"], ["source_context_values"])
+        # Many context rows: the trailing ones (in key, start order) go before any match does.
+        rows = [row(f"k{i:05d}", "v" * 200, i) for i in range(3000)]
+        res = search_result(rows, [match(i) for i in range(1, 11)])
+        v = self.finished(res)
+        self.assertLessEqual(sent_size(v), 262_144)
+        self.assertEqual([m["rank"] for m in v["matches"]], list(range(1, 11)))
+        kept = v["source"]["context"]
+        self.assertGreater(len(kept), 0)
+        self.assertEqual(kept, rows[:len(kept)])
+        self.assertEqual(v["omitted"]["source_context"], 3000 - len(kept))
+        self.assertEqual(v["omitted"]["matches"], 0)
+        self.assertIn("source_context", v["truncated"])
+        self.assertNotIn("matches", v["truncated"])
+        self.assertEqual(self.finished(res), v)                 # deterministic
+
+    def test_final_body_with_view_and_truncation_metadata_fits(self):
+        limit = 4096
+        head = {"schema": "morlet-winccoa/1", "request_id": RID, "slot": "panel"}
+        # Pad a match's context so the stored result alone is just at or below the limit, before the truncation
+        # report and the view metadata (state, current, superseded_by) are added; measured both compact (as sent)
+        # and with json.dumps' default separators.
+        for measure in (sent_size, lambda b: len(json.dumps(b, default=str).encode())):
+            for deficit in range(0, 160, 3):
+                res = search_result([], [{**match(1), "overview": [], "labels": [], "context": [row("pad", "")]}])
+                res["matches"][0]["context"][0]["value"] = "p" * (limit - deficit - measure({**head, **res}))
+                self.assertEqual(measure({**head, **res}), limit - deficit)
+                self.check_just_below(res, limit, deficit)
+        # A result that fits with the largest view metadata is returned unchanged.
+        base = search_result([row("k", "v" * 1000)] * 2, [match(1)])
+        v = self.finished(base, limit=sent_size({**head, **base}) + 200, superseded=True)
+        self.assertNotIn("truncated", v)
+        self.assertEqual(v["matches"], base["matches"])
+
+    def check_just_below(self, res, limit, deficit):
+        for superseded in (False, True):
+            v = self.finished(res, limit=limit, superseded=superseded, current=not superseded)
+            self.assertLessEqual(sent_size(v), limit, (deficit, superseded))
+            self.assertEqual((v["status"], len(v["matches"])), ("ok", 1))
+
+    def test_trailing_matches_go_last(self):
+        res = search_result([row("k", "v" * 3000)], [match(i) for i in range(1, 51)])
+        v = self.finished(res, limit=6000)
+        self.assertLessEqual(sent_size(v), 6000)
+        ranks = [m["rank"] for m in v["matches"]]
+        self.assertEqual(ranks, list(range(1, len(ranks) + 1)))
+        self.assertEqual(v["omitted"]["matches"], 50 - len(ranks))
+        self.assertEqual(v["source"]["context"], [])
+        self.assertEqual(v["truncated"], ["source_context_values", "context", "labels", "overview",
+                                          "source_context", "matches"])
+
+    def test_envelope_that_cannot_fit_is_an_explicit_error(self):
+        v = self.finished(search_result([], [match(1)], recording_id="r" * 10_000), limit=4096)
+        self.assertLessEqual(sent_size(v), 4096)
+        self.assertEqual(v["status"], "response_too_large")
+        self.assertEqual(v["result_status"], "ok")
+        self.assertEqual(v["response_bytes"], 4096)
+        self.assertNotIn("matches", v)
+        self.assertEqual((v["request_id"], v["state"], v["current"]), (RID, "done", True))
+        # The error itself fits the smallest permitted limit, with the longest slot (escaped) and a superseder.
+        v = self.finished(search_result(recording_id="r" * 10_000), limit=cfgmod.MIN_RESPONSE_BYTES,
+                          slot=" " * 100, superseded=True, current=False)
+        self.assertLessEqual(sent_size(v), cfgmod.MIN_RESPONSE_BYTES)
+        self.assertEqual(v["status"], "response_too_large")
+        with self.assertRaises(cfgmod.ConfigError):
+            config(limits=dataclasses.replace(cfgmod.Limits(), response_bytes=cfgmod.MIN_RESPONSE_BYTES - 1))
+
+    def test_final_http_body(self):
+        """POST and GET over the real HTTP handler: the body received is within the limit."""
+        from adapter_sim import Client
+        from morlet_winccoa.server import Companion, make_server
+
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d)
+        token = secrets.token_hex(32)
+        path = os.path.join(d, "token")
+        with open(path, "w") as f:
+            f.write(token + "\n")
+        os.chmod(path, 0o600)
+        limit = 8192
+        cfg = config(token_file=path, listen_port=0,
+                     limits=dataclasses.replace(cfgmod.Limits(), response_bytes=limit))
+
+        class Conn:
+            """A connection that is never queried: run_search is replaced below."""
+            info = type("info", (), {"backend_pid": 1})()
+
+            def execute(self, *a):
+                return self
+
+            def commit(self):
+                pass
+
+            rollback = close = commit
+
+        rows = [row(f"k{i:04d}", "v" * 100, i) for i in range(400)] + [row("zz", "x" * 300_000)]
+        res = search_result(rows, [match(i) for i in range(1, 11)])
+        orig = inv.run_search
+        inv.run_search = lambda conn, cfg, req: copy.deepcopy(res)
+        self.addCleanup(setattr, inv, "run_search", orig)
+        companion = Companion(cfg, connect=Conn)
+        srv = make_server(companion)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(lambda: (srv.shutdown(), srv.server_close()))
+        c = Client("127.0.0.1", srv.server_address[1], token)
+        body = {"schema": "morlet-winccoa/1", "request_id": RID, "slot": "panel", "collection": "plant.rig",
+                "recording_id": "r1", "start_sample": 0, "end_sample": 4096}
+        for r in (c.request("POST", "/v1/investigations", body), c.request("GET", f"/v1/investigations/{RID}")):
+            self.assertEqual(r.status, 200, r.body)
+            self.assertLessEqual(r.size, limit)
+            self.assertEqual(r.body["status"], "ok")
+            self.assertEqual(len(r.body["matches"]), 10)
+            self.assertIn("source_context", r.body["truncated"])
+        # A new request on the slot supersedes the first: its stored result gains view metadata and still fits.
+        c.request("POST", "/v1/investigations", {**body, "request_id": OTHER})
+        r = c.request("GET", f"/v1/investigations/{RID}")
+        self.assertEqual((r.body["superseded_by"], r.body["current"]), (OTHER, False))
+        self.assertLessEqual(r.size, limit)
 
 
 if __name__ == "__main__":

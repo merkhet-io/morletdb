@@ -187,8 +187,28 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
   - **Superseded requests.** The companion cancels a superseded request's query (`pg_cancel_backend` on its
     connection).
   - **Status.** Results carry one of `ok`, `no_matches`, `evidence_unavailable` (not searchable yet, from
-    `morlet_coverage`, `streams.sql:3581`), `permission_denied` or `service_failure`.
+    `morlet_coverage`, `streams.sql:3581`), `permission_denied`, `service_failure` or `response_too_large` (see
+    the response bound).
   - **Search mode and readiness.** Results report the search mode (`exact`/`probes`) and readiness.
+  - **Response bound (#497).** The HTTP body of an investigation response, as sent, is at most `response_bytes`
+    (256 KiB). This includes the status, the truncation report and the correlation fields (`state`, `current`,
+    `superseded_by`). A stored result is fitted with the largest correlation fields, so it is the same whenever
+    it is fetched. The body is also measured again on every response. While the body is too large, the companion
+    applies these steps in order:
+    1. It cuts source context values longer than 1,024 characters to 1,024. `value_chars` gives the original
+       length.
+    2. It drops `context`, then `labels`, then `overview` from every match.
+    3. It drops trailing source context rows (ordered by key, then start sample).
+    4. It drops trailing matches (the highest ranks).
+
+    Matches are kept in preference to source context. `truncated` lists the steps that changed the result, in
+    order. `omitted` counts the source context values cut and the source context rows and matches dropped. Both
+    are absent when nothing was cut. A result can therefore be `ok` with fewer matches than `top_k`, or with
+    none; `omitted.matches` says how many were dropped.
+  - **Response too large.** If the result still does not fit, for example because of an oversized recording ID
+    or error detail, the response is HTTP 200 with status `response_too_large`. It holds only `request_id`,
+    `slot`, the correlation fields, `result_status` (the status that did not fit), `response_bytes` and
+    `detail`. `response_bytes` must be at least 2,048, so this error always fits.
 - **Search.** `morlet_search_similar_evidence` (`streams.sql:1947`; stable). We do not use
   `morlet_search_similar_excluding`, which is experimental and unreleased.
 
@@ -227,7 +247,7 @@ These are initial values, to be measured in phase A and then fixed.
 | Configured datapoints per adapter | 500 | |
 | `top_k` | default 10, max 50 | server maximum 100 (`streams.sql:1505`) |
 | Concurrent investigations | 1 per slot (new supersedes old), 4 overall, then 429 | |
-| Response size | 256 KiB; no samples, overview 16 buckets | |
+| Response size | 256 KiB for the HTTP body as sent (at least 2,048); no samples, overview 16 buckets | Section 4, response bound |
 | Query timeout | `statement_timeout` 10 s, HTTP deadline 15 s | `max_candidates` stays 1,000,000 |
 | Source interval | exactly one built window (512–32,768; default 4,096) | `_client.py:21`, `streams.sql:1199` |
 
@@ -432,6 +452,7 @@ Look at `<prefix>_Adapter.state`, `.companion` and `.detail` first, then the Win
 | Investigation `evidence_unavailable` | The source interval is not searchable yet (not inside built search windows) or does not exist for the companion's role; see `detail`. |
 | Investigation `permission_denied` | The companion's database role lacks a grant (docs/access-control.md). |
 | Investigation `busy` or `service_failure` | More than 4 investigations at once, a statement timeout, or the database is down. |
+| Investigation result has `truncated`, or status `response_too_large` | The result did not fit `response_bytes` (256 KiB): `omitted` counts what was cut (section 4, response bound). Long or many context rows on the source or the matches take the space; `response_too_large` means that even the result without source context and matches did not fit (for example an oversized recording ID). |
 | `.detail` says `time format temporal refused` | The installed API has no `Temporal` time format; source times are then whole milliseconds. |
 | `asset ... is not configured in the companion` | The adapter's asset name differs from the companion's `[[assets]] name`. |
 

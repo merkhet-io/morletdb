@@ -66,8 +66,11 @@ ordinary context rows (`<collection>_ctx`), readable and searchable with the cor
   `current` and `superseded_by`; the adapter writes a result only if its `request_id` is still the slot's current
   one (`replay/adapter_sim.py`, `Adapter.accept`).
 - Status: `ok`, `no_matches`, `evidence_unavailable`, `permission_denied`, `service_failure` (HTTP 503 when the
-  database is unavailable). Readiness (`morlet_coverage` of the window size) and search mode (`exact`/`probes`)
+  database is unavailable), `response_too_large` (HTTP 200; the result does not fit `response_bytes` even without
+  source context and matches). Readiness (`morlet_coverage` of the window size) and search mode (`exact`/`probes`)
   are reported with every result that got as far as a search.
+- The HTTP body of an investigation response is at most `response_bytes` (256 KiB), metadata included. What was
+  cut to fit is listed in `truncated` and counted in `omitted` ([docs/winccoa.md](../../docs/winccoa.md), section 4).
 
 ## Defaults (decided 2026-11-14)
 

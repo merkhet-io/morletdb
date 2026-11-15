@@ -17,6 +17,8 @@ from urllib.parse import urlparse
 
 SCHEMA_VERSION = "morlet-winccoa/1"
 SUPPORTED_SCHEMAS = (SCHEMA_VERSION,)
+# The smallest response_bytes: the bounded error response_too_large, with the longest slot, always fits.
+MIN_RESPONSE_BYTES = 2048
 _IDENT = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
 
@@ -171,6 +173,8 @@ def validate(cfg: Config) -> Config:
         raise ConfigError("limits: overview_buckets must be 1..1024")
     if lim.investigations_total < 1 or lim.observations_per_message < 1:
         raise ConfigError("limits: investigations_total and observations_per_message must be at least 1")
+    if lim.response_bytes < MIN_RESPONSE_BYTES:
+        raise ConfigError(f"limits: response_bytes must be at least {MIN_RESPONSE_BYTES}")
     names = [a.name for a in cfg.assets]
     if len(set(names)) != len(names):
         raise ConfigError("asset names must be unique")

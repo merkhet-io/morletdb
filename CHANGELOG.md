@@ -62,6 +62,22 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
   - Tests: the companion's `Clock` tests (a 200 ms database connection, and `/v1/clock` needing the token and no
     database) and two adapter tests (RTT from `/v1/clock` with a slow health; the 404 fallback). They failed before
     the fix.
+- **WinCC OA: investigation responses stay within `response_bytes` (#497).** Fixed: the 256 KiB limit was checked
+  before the truncation report and the correlation fields (`state`, `current`, `superseded_by`) were added, and the
+  source interval's context was never bounded. One 300,000-character source context value gave a
+  `no_matches` body of over 300,000 bytes, and matches could be dropped while that context stayed.
+  - The bound now applies to the HTTP body as sent (the same encoder), measured with the largest correlation
+    fields and measured again on every response. While the body is too large, the companion cuts source context
+    values to 1,024 characters (`value_chars` gives the original length), then drops match context, labels and
+    overviews, then trailing source context rows, and finally trailing matches.
+  - `truncated` lists the steps that changed the result and the new `omitted` counts what was cut. A result that
+    still does not fit gets the new status `response_too_large` (HTTP 200, with `result_status`), which always
+    fits. `response_bytes` must now be at least 2,048. The adapter writes the status and result unchanged.
+  - Tests: `ResponseBoundTests` in `test_offline.py` (the issue's reproduction; matches kept over oversized source
+    context; results just below the limit before metadata; the body received over HTTP for POST, GET and after
+    supersession; the `response_too_large` envelope at the smallest limit). All six failed before the fix.
+    `test_response_size_limit` now checks the received body with no slack, and an adapter test covers the new
+    fields and status.
 - **WinCC OA: a heartbeat no longer lands before a pending gap (#496).** The adapter chose whether the last pending
   gap fit in a message without heartbeats, then added them. When the heartbeats took the last room (by count or by
   bytes), the gap moved to the next message and the heartbeat was committed before it. Derivation took that

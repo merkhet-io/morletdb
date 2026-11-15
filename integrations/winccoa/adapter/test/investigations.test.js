@@ -92,6 +92,33 @@ test('202 running: polled until done', async (t) => {
   assert.equal(s.ctl.value(`${SLOT}.detail`), 'not searchable yet');
 });
 
+test('a bounded result (#497): truncation reports are kept and response_too_large is written as done', async (t) => {
+  const truncated = { request_id: null, slot: 'panel1', state: 'done', status: 'ok', matches: [{ rank: 1 }],
+    truncated: ['source_context_values'], omitted: { source_context_values: 1, source_context: 0, matches: 0 } };
+  let tooLarge = false;
+  const s = await started(t, { companion: { handler: (r) => {
+    if (r.url !== '/v1/investigations') return undefined;
+    const rid = r.body.request_id;
+    return { status: 200, body: tooLarge
+      ? { request_id: rid, slot: 'panel1', state: 'done', status: 'response_too_large', result_status: 'ok',
+        response_bytes: 262144, detail: 'the result does not fit response_bytes' }
+      : { ...truncated, request_id: rid } };
+  } } });
+  await ask(s);
+  await waitFor(() => done(s));
+  assert.equal(s.ctl.value(`${SLOT}.status`), 'ok');
+  assert.equal(s.ctl.value(`${SLOT}.matchCount`), 1);
+  assert.deepEqual(JSON.parse(s.ctl.value(`${SLOT}.result`)).omitted, truncated.omitted);
+  tooLarge = true;
+  const before = s.ctl.value(`${SLOT}.requestId`);
+  await ask(s);
+  await waitFor(() => s.ctl.value(`${SLOT}.requestId`) !== before && done(s));
+  assert.equal(s.ctl.value(`${SLOT}.state`), 'done');
+  assert.equal(s.ctl.value(`${SLOT}.status`), 'response_too_large');
+  assert.equal(s.ctl.value(`${SLOT}.matchCount`), 0);
+  assert.match(s.ctl.value(`${SLOT}.detail`), /does not fit/);
+});
+
 test('a connection failure is retried with the identical body (same request_id); a 409 fails the slot', async (t) => {
   let n = 0;
   const s = await started(t, { companion: { handler: (r) => {
