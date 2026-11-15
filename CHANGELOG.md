@@ -62,6 +62,9 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
   - Tests: the companion's `Clock` tests (a 200 ms database connection, and `/v1/clock` needing the token and no
     database) and two adapter tests (RTT from `/v1/clock` with a slow health; the 404 fallback). They failed before
     the fix.
+- **WinCC OA: an investigation whose matches are all cut for size is `response_too_large`, not `ok` (#497
+  follow-up).** Before, it arrived as `ok` without matches, which reads as "nothing found"; `detail` now says how
+  many matches were found. No new status.
 - **WinCC OA: investigation responses stay within `response_bytes` (#497).** Fixed: the 256 KiB limit was checked
   before the truncation report and the correlation fields (`state`, `current`, `superseded_by`) were added, and the
   source interval's context was never bounded. One 300,000-character source context value gave a

@@ -357,6 +357,16 @@ class ResponseBoundTests(unittest.TestCase):
         self.assertEqual(v["truncated"], ["source_context_values", "context", "labels", "overview",
                                           "source_context", "matches"])
 
+    def test_no_match_fits_is_not_ok(self):
+        # Every match is larger than the limit: an `ok` without matches would read as "nothing found".
+        big = [{**match(i), "recording_id": f"rec-{i}-" + "m" * 5000} for i in (1, 2)]
+        v = self.finished(search_result([], big), limit=4096)
+        self.assertLessEqual(sent_size(v), 4096)
+        self.assertEqual(v["status"], "response_too_large")
+        self.assertEqual(v["result_status"], "ok")
+        self.assertEqual(v["detail"], "2 matches found, none fits response_bytes")
+        self.assertNotIn("matches", v)
+
     def test_envelope_that_cannot_fit_is_an_explicit_error(self):
         v = self.finished(search_result([], [match(1)], recording_id="r" * 10_000), limit=4096)
         self.assertLessEqual(sent_size(v), 4096)
