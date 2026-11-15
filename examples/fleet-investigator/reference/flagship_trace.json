@@ -1,0 +1,1503 @@
+{
+ "trace": [
+  {
+   "hop": 1,
+   "name": "installed bearing, P-102.BRG-1",
+   "store": "graph",
+   "query": "MATCH (a:PhysicalAsset)-[i:INSTALLED_IN]->(m:EquipmentModule {id: $id}) WHERE i.from <= $at AND (i.to IS NULL OR $at < i.to) RETURN a.id, a.lot, a.status, i.from, i.to, a.collection, a.first_recording_id, a.last_recording_id",
+   "params": {
+    "id": "P-102.BRG-1",
+    "at": "2004-04-17T12:00:00Z"
+   },
+   "result": {
+    "asset": "SN-0402-005",
+    "lot": "LOT-0402",
+    "status": "installed",
+    "installed_from": "2004-03-04T09:00:00Z",
+    "removed": null,
+    "collection": "fleet.vibration",
+    "first_recording_id": "P-102.BRG-1.20040304T092746",
+    "last_recording_id": "P-102.BRG-1.20040417T115255"
+   },
+   "elapsed_ms": 17.7
+  },
+  {
+   "hop": 2,
+   "name": "installed bearing, P-102.BRG-2",
+   "store": "graph",
+   "query": "MATCH (a:PhysicalAsset)-[i:INSTALLED_IN]->(m:EquipmentModule {id: $id}) WHERE i.from <= $at AND (i.to IS NULL OR $at < i.to) RETURN a.id, a.lot, a.status, i.from, i.to, a.collection, a.first_recording_id, a.last_recording_id",
+   "params": {
+    "id": "P-102.BRG-2",
+    "at": "2004-04-17T12:00:00Z"
+   },
+   "result": {
+    "asset": "SN-0402-006",
+    "lot": "LOT-0402",
+    "status": "installed",
+    "installed_from": "2004-03-04T09:00:00Z",
+    "removed": null,
+    "collection": "fleet.vibration",
+    "first_recording_id": "P-102.BRG-2.20040304T092746",
+    "last_recording_id": "P-102.BRG-2.20040417T115255"
+   },
+   "elapsed_ms": 11.1
+  },
+  {
+   "hop": 3,
+   "name": "installed bearing, P-102.BRG-3",
+   "store": "graph",
+   "query": "MATCH (a:PhysicalAsset)-[i:INSTALLED_IN]->(m:EquipmentModule {id: $id}) WHERE i.from <= $at AND (i.to IS NULL OR $at < i.to) RETURN a.id, a.lot, a.status, i.from, i.to, a.collection, a.first_recording_id, a.last_recording_id",
+   "params": {
+    "id": "P-102.BRG-3",
+    "at": "2004-04-17T12:00:00Z"
+   },
+   "result": {
+    "asset": "SN-0402-007",
+    "lot": "LOT-0402",
+    "status": "installed",
+    "installed_from": "2004-03-04T09:00:00Z",
+    "removed": null,
+    "collection": "fleet.vibration",
+    "first_recording_id": "P-102.BRG-3.20040304T092746",
+    "last_recording_id": "P-102.BRG-3.20040417T115255"
+   },
+   "elapsed_ms": 9.7
+  },
+  {
+   "hop": 4,
+   "name": "installed bearing, P-102.BRG-4",
+   "store": "graph",
+   "query": "MATCH (a:PhysicalAsset)-[i:INSTALLED_IN]->(m:EquipmentModule {id: $id}) WHERE i.from <= $at AND (i.to IS NULL OR $at < i.to) RETURN a.id, a.lot, a.status, i.from, i.to, a.collection, a.first_recording_id, a.last_recording_id",
+   "params": {
+    "id": "P-102.BRG-4",
+    "at": "2004-04-17T12:00:00Z"
+   },
+   "result": {
+    "asset": "SN-0402-008",
+    "lot": "LOT-0402",
+    "status": "installed",
+    "installed_from": "2004-03-04T09:00:00Z",
+    "removed": null,
+    "collection": "fleet.vibration",
+    "first_recording_id": "P-102.BRG-4.20040304T092746",
+    "last_recording_id": "P-102.BRG-4.20040417T115255"
+   },
+   "elapsed_ms": 9.5
+  },
+  {
+   "hop": 5,
+   "name": "vibration level, P-102.BRG-1",
+   "store": "morletdb",
+   "query": "WITH since AS (          -- the position's recordings since the current bearing went in\n  SELECT r.recording_id, r.metadata->>'start' AS start_utc, (r.checkpoint->>'end')::bigint AS n,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz) AS k,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz DESC) AS back\n  FROM fleet.vibration r\n  WHERE r.metadata->>'equipment_id' = %(equipment_id)s\n    AND (r.metadata->>'start')::timestamptz >= %(since)s::timestamptz\n    AND (r.metadata->>'start')::timestamptz <= %(at)s::timestamptz\n)\nSELECT s.recording_id, s.start_utc, st.rms, s.k, s.back, (SELECT count(*) FROM since) AS total\nFROM since s, LATERAL morlet_interval_stats('fleet.vibration', s.recording_id, 0, s.n) st\nWHERE s.k <= %(baseline)s OR s.back = 1\nORDER BY s.k",
+   "params": {
+    "equipment_id": "P-102.BRG-1",
+    "since": "2004-03-04T09:00:00Z",
+    "at": "2004-04-17T12:00:00Z",
+    "baseline": 24
+   },
+   "result": {
+    "equipment_id": "P-102.BRG-1",
+    "recordings": 1040,
+    "baseline_rms": 0.08039,
+    "baseline": "median of the first 24 recordings from 2004-03-04T09:27:46Z",
+    "latest_recording": "P-102.BRG-1.20040417T115255",
+    "latest_start": "2004-04-17T11:52:55Z",
+    "latest_rms": 0.09537,
+    "ratio": 1.19,
+    "changed": false
+   },
+   "elapsed_ms": 2159.5
+  },
+  {
+   "hop": 6,
+   "name": "vibration level, P-102.BRG-2",
+   "store": "morletdb",
+   "query": "WITH since AS (          -- the position's recordings since the current bearing went in\n  SELECT r.recording_id, r.metadata->>'start' AS start_utc, (r.checkpoint->>'end')::bigint AS n,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz) AS k,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz DESC) AS back\n  FROM fleet.vibration r\n  WHERE r.metadata->>'equipment_id' = %(equipment_id)s\n    AND (r.metadata->>'start')::timestamptz >= %(since)s::timestamptz\n    AND (r.metadata->>'start')::timestamptz <= %(at)s::timestamptz\n)\nSELECT s.recording_id, s.start_utc, st.rms, s.k, s.back, (SELECT count(*) FROM since) AS total\nFROM since s, LATERAL morlet_interval_stats('fleet.vibration', s.recording_id, 0, s.n) st\nWHERE s.k <= %(baseline)s OR s.back = 1\nORDER BY s.k",
+   "params": {
+    "equipment_id": "P-102.BRG-2",
+    "since": "2004-03-04T09:00:00Z",
+    "at": "2004-04-17T12:00:00Z",
+    "baseline": 24
+   },
+   "result": {
+    "equipment_id": "P-102.BRG-2",
+    "recordings": 1040,
+    "baseline_rms": 0.09163,
+    "baseline": "median of the first 24 recordings from 2004-03-04T09:27:46Z",
+    "latest_recording": "P-102.BRG-2.20040417T115255",
+    "latest_start": "2004-04-17T11:52:55Z",
+    "latest_rms": 0.11589,
+    "ratio": 1.26,
+    "changed": false
+   },
+   "elapsed_ms": 2158.6
+  },
+  {
+   "hop": 7,
+   "name": "vibration level, P-102.BRG-3",
+   "store": "morletdb",
+   "query": "WITH since AS (          -- the position's recordings since the current bearing went in\n  SELECT r.recording_id, r.metadata->>'start' AS start_utc, (r.checkpoint->>'end')::bigint AS n,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz) AS k,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz DESC) AS back\n  FROM fleet.vibration r\n  WHERE r.metadata->>'equipment_id' = %(equipment_id)s\n    AND (r.metadata->>'start')::timestamptz >= %(since)s::timestamptz\n    AND (r.metadata->>'start')::timestamptz <= %(at)s::timestamptz\n)\nSELECT s.recording_id, s.start_utc, st.rms, s.k, s.back, (SELECT count(*) FROM since) AS total\nFROM since s, LATERAL morlet_interval_stats('fleet.vibration', s.recording_id, 0, s.n) st\nWHERE s.k <= %(baseline)s OR s.back = 1\nORDER BY s.k",
+   "params": {
+    "equipment_id": "P-102.BRG-3",
+    "since": "2004-03-04T09:00:00Z",
+    "at": "2004-04-17T12:00:00Z",
+    "baseline": 24
+   },
+   "result": {
+    "equipment_id": "P-102.BRG-3",
+    "recordings": 1040,
+    "baseline_rms": 0.06847,
+    "baseline": "median of the first 24 recordings from 2004-03-04T09:27:46Z",
+    "latest_recording": "P-102.BRG-3.20040417T115255",
+    "latest_start": "2004-04-17T11:52:55Z",
+    "latest_rms": 0.14506,
+    "ratio": 2.12,
+    "changed": true
+   },
+   "elapsed_ms": 2185.9
+  },
+  {
+   "hop": 8,
+   "name": "vibration level, P-102.BRG-4",
+   "store": "morletdb",
+   "query": "WITH since AS (          -- the position's recordings since the current bearing went in\n  SELECT r.recording_id, r.metadata->>'start' AS start_utc, (r.checkpoint->>'end')::bigint AS n,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz) AS k,\n         row_number() OVER (ORDER BY (r.metadata->>'start')::timestamptz DESC) AS back\n  FROM fleet.vibration r\n  WHERE r.metadata->>'equipment_id' = %(equipment_id)s\n    AND (r.metadata->>'start')::timestamptz >= %(since)s::timestamptz\n    AND (r.metadata->>'start')::timestamptz <= %(at)s::timestamptz\n)\nSELECT s.recording_id, s.start_utc, st.rms, s.k, s.back, (SELECT count(*) FROM since) AS total\nFROM since s, LATERAL morlet_interval_stats('fleet.vibration', s.recording_id, 0, s.n) st\nWHERE s.k <= %(baseline)s OR s.back = 1\nORDER BY s.k",
+   "params": {
+    "equipment_id": "P-102.BRG-4",
+    "since": "2004-03-04T09:00:00Z",
+    "at": "2004-04-17T12:00:00Z",
+    "baseline": 24
+   },
+   "result": {
+    "equipment_id": "P-102.BRG-4",
+    "recordings": 1040,
+    "baseline_rms": 0.05494,
+    "baseline": "median of the first 24 recordings from 2004-03-04T09:27:46Z",
+    "latest_recording": "P-102.BRG-4.20040417T115255",
+    "latest_start": "2004-04-17T11:52:55Z",
+    "latest_rms": 0.08368,
+    "ratio": 1.52,
+    "changed": false
+   },
+   "elapsed_ms": 2164.7
+  },
+  {
+   "hop": 9,
+   "name": "ISA-95 path, P-102.BRG-3",
+   "store": "graph",
+   "query": "MATCH (p)-[:CONTAINS]->(c {id: $id}) RETURN label(p), properties(p)",
+   "params": {
+    "id": "P-102.BRG-3"
+   },
+   "result": [
+    {
+     "label": "EquipmentModule",
+     "id": "P-102.BRG-3"
+    },
+    {
+     "label": "EquipmentModule",
+     "id": "P-102.SHAFT"
+    },
+    {
+     "label": "Unit",
+     "id": "P-102"
+    },
+    {
+     "label": "ProcessCell",
+     "id": "AW-N-A1-PS1"
+    },
+    {
+     "label": "Area",
+     "id": "AW-N-A1"
+    },
+    {
+     "label": "Site",
+     "id": "AW-N"
+    },
+    {
+     "label": "Enterprise",
+     "id": "AW"
+    }
+   ],
+   "elapsed_ms": 66.0
+  },
+  {
+   "hop": 10,
+   "name": "similar recordings and the bearings behind them, P-102.BRG-3",
+   "store": "graph+morletdb (one SQL statement)",
+   "query": "WITH pos AS (            -- graph: the bearing in this position at the time, and since when it is installed\n  SELECT * FROM ag_catalog.cypher('plant', $cy$\n    MATCH (a:PhysicalAsset)-[i:INSTALLED_IN]->(m:EquipmentModule {equipment_id: $equipment_id})\n    WHERE i.from <= $at AND (i.to IS NULL OR $at < i.to)\n    RETURN a.id, a.lot, m.collection, i.from\n  $cy$, %(graph_params)s) AS (asset text, lot text, collection text, installed_from text)\n), query AS (            -- MorletDB: the position's latest recording at or before the time\n  SELECT r.recording_id FROM fleet.vibration r, pos\n  WHERE r.metadata->>'equipment_id' = %(equipment_id)s\n    AND (r.metadata->>'start')::timestamptz <= %(at)s::timestamptz\n    AND (r.metadata->>'start')::timestamptz >= pos.installed_from::timestamptz\n  ORDER BY (r.metadata->>'start')::timestamptz DESC LIMIT 1\n), installs AS (         -- graph: every bearing ever installed in a position, with its recorded failure, if any\n  SELECT * FROM ag_catalog.cypher('plant', $cy$\n    MATCH (a:PhysicalAsset)-[i:INSTALLED_IN]->(m:EquipmentModule)\n    OPTIONAL MATCH (f:Failure)-[:OF_ASSET]->(a)\n    OPTIONAL MATCH (f)-[:CLASSIFIED_AS]->(fm:FailureMode)\n    RETURN m.equipment_id, a.id, a.lot, i.from, i.to, f.id, fm.id, fm.name\n  $cy$, %(graph_params)s) AS (equipment_id text, asset text, lot text, installed_from text, removed text,\n                             failure text, mode text, mode_name text)\n)\nSELECT pos.asset AS query_asset, pos.lot AS query_lot, pos.installed_from AS query_installed_from,\n       q.recording_id AS query_recording, h.recording_id, h.start_sample, h.end_sample, h.distance,\n       h.metadata->>'start' AS start_utc, i.equipment_id, i.asset, i.lot, i.failure, i.mode, i.mode_name\nFROM pos\nCROSS JOIN query q\nCROSS JOIN LATERAL public.morlet_search_similar(pos.collection::regclass, q.recording_id, 0, 4096,\n                                                 top_k => %(top_k)s,\n                                                 time_to => pos.installed_from::timestamptz) h\nLEFT JOIN installs i\n  ON i.equipment_id = h.metadata->>'equipment_id'\n AND (h.metadata->>'start')::timestamptz >= i.installed_from::timestamptz\n AND (i.removed IS NULL OR (h.metadata->>'start')::timestamptz < i.removed::timestamptz)\nORDER BY h.distance, h.recording_id, h.start_sample",
+   "params": {
+    "graph_params": "{\"equipment_id\": \"P-102.BRG-3\", \"at\": \"2004-04-17T12:00:00Z\"}",
+    "equipment_id": "P-102.BRG-3",
+    "at": "2004-04-17T12:00:00Z",
+    "top_k": 50
+   },
+   "result": [
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T073239",
+     "start_sample": 4096,
+     "end_sample": 8192,
+     "distance": 0.35618009443594,
+     "start_utc": "2004-02-18T07:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040219T053239",
+     "start_sample": 8192,
+     "end_sample": 12288,
+     "distance": 0.3816054326876712,
+     "start_utc": "2004-02-19T05:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040219T043239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.3820312470232672,
+     "start_utc": "2004-02-19T04:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T073239",
+     "start_sample": 16384,
+     "end_sample": 20480,
+     "distance": 0.3828368914217145,
+     "start_utc": "2004-02-18T07:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T143239",
+     "start_sample": 10240,
+     "end_sample": 14336,
+     "distance": 0.38452109466264217,
+     "start_utc": "2004-02-17T14:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040219T053239",
+     "start_sample": 0,
+     "end_sample": 4096,
+     "distance": 0.39234696428582694,
+     "start_utc": "2004-02-19T05:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T153239",
+     "start_sample": 4096,
+     "end_sample": 8192,
+     "distance": 0.3944487915267211,
+     "start_utc": "2004-02-18T15:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T123239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.3952825184747344,
+     "start_utc": "2004-02-17T12:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040219T043239",
+     "start_sample": 10240,
+     "end_sample": 14336,
+     "distance": 0.3954068417926254,
+     "start_utc": "2004-02-19T04:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T143239",
+     "start_sample": 0,
+     "end_sample": 4096,
+     "distance": 0.39807937064363763,
+     "start_utc": "2004-02-18T14:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T083239",
+     "start_sample": 10240,
+     "end_sample": 14336,
+     "distance": 0.3992484518378181,
+     "start_utc": "2004-02-17T08:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T123239",
+     "start_sample": 4096,
+     "end_sample": 8192,
+     "distance": 0.3995140770084411,
+     "start_utc": "2004-02-18T12:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T093239",
+     "start_sample": 14336,
+     "end_sample": 18432,
+     "distance": 0.40345124953153055,
+     "start_utc": "2004-02-17T09:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T043239",
+     "start_sample": 0,
+     "end_sample": 4096,
+     "distance": 0.4053537505542555,
+     "start_utc": "2004-02-18T04:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T093239",
+     "start_sample": 16384,
+     "end_sample": 20480,
+     "distance": 0.4072690553465639,
+     "start_utc": "2004-02-18T09:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T143239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.4075532892990794,
+     "start_utc": "2004-02-18T14:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T133239",
+     "start_sample": 4096,
+     "end_sample": 8192,
+     "distance": 0.4088668510558847,
+     "start_utc": "2004-02-17T13:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T093239",
+     "start_sample": 8192,
+     "end_sample": 12288,
+     "distance": 0.4108811164578342,
+     "start_utc": "2004-02-18T09:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040219T043239",
+     "start_sample": 2048,
+     "end_sample": 6144,
+     "distance": 0.41120927212309655,
+     "start_utc": "2004-02-19T04:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T073239",
+     "start_sample": 8192,
+     "end_sample": 12288,
+     "distance": 0.41150130252386363,
+     "start_utc": "2004-02-18T07:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T153239",
+     "start_sample": 10240,
+     "end_sample": 14336,
+     "distance": 0.41171765248701275,
+     "start_utc": "2004-02-17T15:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T053239",
+     "start_sample": 10240,
+     "end_sample": 14336,
+     "distance": 0.412915598849534,
+     "start_utc": "2004-02-18T05:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T153239",
+     "start_sample": 0,
+     "end_sample": 4096,
+     "distance": 0.4129183687051675,
+     "start_utc": "2004-02-17T15:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040219T043239",
+     "start_sample": 14336,
+     "end_sample": 18432,
+     "distance": 0.41332907810192543,
+     "start_utc": "2004-02-19T04:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T133239",
+     "start_sample": 12288,
+     "end_sample": 16384,
+     "distance": 0.4142706144845195,
+     "start_utc": "2004-02-17T13:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T083239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.4143310716130423,
+     "start_utc": "2004-02-17T08:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T133239",
+     "start_sample": 14336,
+     "end_sample": 18432,
+     "distance": 0.4148614508735835,
+     "start_utc": "2004-02-18T13:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T103239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.4156639354004714,
+     "start_utc": "2004-02-17T10:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T143239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.41600702917425214,
+     "start_utc": "2004-02-17T14:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T123239",
+     "start_sample": 16384,
+     "end_sample": 20480,
+     "distance": 0.4166040454761242,
+     "start_utc": "2004-02-17T12:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040219T023239",
+     "start_sample": 8192,
+     "end_sample": 12288,
+     "distance": 0.41756394248955875,
+     "start_utc": "2004-02-19T02:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T213239",
+     "start_sample": 12288,
+     "end_sample": 16384,
+     "distance": 0.41830868422021183,
+     "start_utc": "2004-02-18T21:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T113239",
+     "start_sample": 14336,
+     "end_sample": 18432,
+     "distance": 0.41966184565952414,
+     "start_utc": "2004-02-17T11:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T203239",
+     "start_sample": 16384,
+     "end_sample": 20480,
+     "distance": 0.4196805186070882,
+     "start_utc": "2004-02-18T20:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T103239",
+     "start_sample": 12288,
+     "end_sample": 16384,
+     "distance": 0.42227954084944663,
+     "start_utc": "2004-02-18T10:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T193239",
+     "start_sample": 2048,
+     "end_sample": 6144,
+     "distance": 0.4232314781273714,
+     "start_utc": "2004-02-18T19:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T113239",
+     "start_sample": 8192,
+     "end_sample": 12288,
+     "distance": 0.4264975243620923,
+     "start_utc": "2004-02-17T11:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T203239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.42657433550475476,
+     "start_utc": "2004-02-18T20:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T133239",
+     "start_sample": 8192,
+     "end_sample": 12288,
+     "distance": 0.426745932104014,
+     "start_utc": "2004-02-17T13:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T193239",
+     "start_sample": 14336,
+     "end_sample": 18432,
+     "distance": 0.42693224342370306,
+     "start_utc": "2004-02-18T19:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-4.20040219T043239",
+     "start_sample": 6144,
+     "end_sample": 10240,
+     "distance": 0.42756847588421576,
+     "start_utc": "2004-02-19T04:32:39Z",
+     "equipment_id": "P-102.BRG-4",
+     "asset": "SN-0311-004",
+     "lot": "LOT-0311",
+     "failure": null,
+     "mode": null,
+     "mode_name": null
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T063239",
+     "start_sample": 14336,
+     "end_sample": 18432,
+     "distance": 0.4280366789794021,
+     "start_utc": "2004-02-18T06:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T083239",
+     "start_sample": 10240,
+     "end_sample": 14336,
+     "distance": 0.42880888813384566,
+     "start_utc": "2004-02-18T08:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T133239",
+     "start_sample": 0,
+     "end_sample": 4096,
+     "distance": 0.43004103713024744,
+     "start_utc": "2004-02-18T13:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T063239",
+     "start_sample": 8192,
+     "end_sample": 12288,
+     "distance": 0.4317374333099335,
+     "start_utc": "2004-02-18T06:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T223239",
+     "start_sample": 14336,
+     "end_sample": 18432,
+     "distance": 0.43196370377600646,
+     "start_utc": "2004-02-18T22:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T103239",
+     "start_sample": 10240,
+     "end_sample": 14336,
+     "distance": 0.4320800889761903,
+     "start_utc": "2004-02-17T10:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-3.20040219T043239",
+     "start_sample": 2048,
+     "end_sample": 6144,
+     "distance": 0.4322254691138133,
+     "start_utc": "2004-02-19T04:32:39Z",
+     "equipment_id": "P-102.BRG-3",
+     "asset": "SN-0311-003",
+     "lot": "LOT-0311",
+     "failure": null,
+     "mode": null,
+     "mode_name": null
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040217T103239",
+     "start_sample": 0,
+     "end_sample": 4096,
+     "distance": 0.43248965645101456,
+     "start_utc": "2004-02-17T10:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    },
+    {
+     "query_asset": "SN-0402-007",
+     "query_lot": "LOT-0402",
+     "query_installed_from": "2004-03-04T09:00:00Z",
+     "query_recording": "P-102.BRG-3.20040417T115255",
+     "recording_id": "P-102.BRG-1.20040218T083239",
+     "start_sample": 16384,
+     "end_sample": 20480,
+     "distance": 0.43366183525218815,
+     "start_utc": "2004-02-18T08:32:39Z",
+     "equipment_id": "P-102.BRG-1",
+     "asset": "SN-0311-001",
+     "lot": "LOT-0311",
+     "failure": "FL-2004-02-P102-BRG1",
+     "mode": "FM-OR",
+     "mode_name": "Outer race defect"
+    }
+   ],
+   "elapsed_ms": 380.4
+  },
+  {
+   "hop": 11,
+   "name": "failure history, SN-0311-001",
+   "store": "graph",
+   "query": "MATCH (f:Failure)-[:OF_ASSET]->(a:PhysicalAsset {id: $id}) MATCH (f)-[:CLASSIFIED_AS]->(fm:FailureMode)-[:SUBCLASS_OF]->(parent:FailureMode) RETURN properties(f), fm.id, fm.name, parent.name ORDER BY f.detected",
+   "params": {
+    "id": "SN-0311-001"
+   },
+   "result": {
+    "id": "SN-0311-001",
+    "label": "PhysicalAsset",
+    "failures": [
+     {
+      "id": "FL-2004-02-P102-BRG1",
+      "site": "A",
+      "source": "IMS bearing data readme (Readme Document for IMS Bearing Data.pdf, in the NASA archive), set no. 2: outer race failure in bearing 1",
+      "detected": "2004-02-19T06:22:39Z",
+      "collection": "fleet.vibration",
+      "evidence_recording_id": "P-102.BRG-1.20040219T053239",
+      "mode": "FM-OR",
+      "mode_name": "Outer race defect",
+      "mode_class": "Rolling bearing failure",
+      "repair": [
+       {
+        "request": {
+         "id": "MR-2004-0219-01",
+         "site": "A",
+         "reason": "High vibration on bearing position 1; unit stopped",
+         "requested": "2004-02-19T07:00:00Z"
+        },
+        "work_order": {
+         "id": "WO-2004-0219-01",
+         "kind": "corrective",
+         "site": "A",
+         "task": "Replace bearings in all four positions (overhaul); inspect removed bearings",
+         "closed": "2004-03-04T08:30:00Z",
+         "opened": "2004-02-19T07:30:00Z"
+        },
+        "response": {
+         "id": "RSP-2004-0304-01",
+         "site": "A",
+         "outcome": "Returned to service 2004-03-04 with LOT-0402 bearings after waiting for parts",
+         "findings": "Outer race failure on position 1 found on removal",
+         "completed": "2004-03-04T08:30:00Z"
+        },
+        "personnel_class": "Maintenance technician",
+        "consumed": {
+         "lot": "LOT-0402",
+         "quantity": 4
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "elapsed_ms": 10.8
+  },
+  {
+   "hop": 12,
+   "name": "same lot as SN-0402-007",
+   "store": "graph",
+   "query": "MATCH (l:MaterialLot {id: $lot})<-[:FROM_LOT]-(s:PhysicalAsset)-[i:INSTALLED_IN]->(m:EquipmentModule) WHERE i.to IS NULL MATCH (m)<-[:CONTAINS]-(:EquipmentModule)<-[:CONTAINS]-(u:Unit) RETURN s.id, u.id, m.id, m.monitored, i.from, u.site ORDER BY u.id, m.id",
+   "params": {
+    "id": "SN-0402-007"
+   },
+   "result": {
+    "asset": "SN-0402-007",
+    "lot": {
+     "id": "LOT-0402",
+     "site": "*",
+     "quantity": 10,
+     "received": "2004-02-24"
+    },
+    "supplier": "Distributor 2 (fictional)",
+    "material_definition": "Rexnord ZA-2115 double-row bearing",
+    "installed_elsewhere": [
+     {
+      "asset": "SN-0402-002",
+      "unit": "F-113",
+      "equipment_id": "F-113.BRG-1",
+      "monitored": false,
+      "installed_from": "2004-03-22T09:00:00Z",
+      "site": "A"
+     },
+     {
+      "asset": "SN-0402-004",
+      "unit": "F-214",
+      "equipment_id": "F-214.BRG-3",
+      "monitored": false,
+      "installed_from": "2004-04-02T08:30:00Z",
+      "site": "B"
+     },
+     {
+      "asset": "SN-0402-005",
+      "unit": "P-102",
+      "equipment_id": "P-102.BRG-1",
+      "monitored": true,
+      "installed_from": "2004-03-04T09:00:00Z",
+      "site": "A"
+     },
+     {
+      "asset": "SN-0402-006",
+      "unit": "P-102",
+      "equipment_id": "P-102.BRG-2",
+      "monitored": true,
+      "installed_from": "2004-03-04T09:00:00Z",
+      "site": "A"
+     },
+     {
+      "asset": "SN-0402-008",
+      "unit": "P-102",
+      "equipment_id": "P-102.BRG-4",
+      "monitored": true,
+      "installed_from": "2004-03-04T09:00:00Z",
+      "site": "A"
+     },
+     {
+      "asset": "SN-0402-001",
+      "unit": "P-104",
+      "equipment_id": "P-104.BRG-2",
+      "monitored": false,
+      "installed_from": "2004-03-10T10:00:00Z",
+      "site": "A"
+     },
+     {
+      "asset": "SN-0402-003",
+      "unit": "P-203",
+      "equipment_id": "P-203.BRG-4",
+      "monitored": false,
+      "installed_from": "2004-03-15T13:00:00Z",
+      "site": "B"
+     }
+    ],
+    "in_stock": [
+     {
+      "asset": "SN-0402-009",
+      "store": "AW-N-STORE",
+      "site": "A"
+     },
+     {
+      "asset": "SN-0402-010",
+      "store": "AW-N-STORE",
+      "site": "A"
+     }
+    ],
+    "removed": []
+   },
+   "elapsed_ms": 244.8
+  },
+  {
+   "hop": 13,
+   "name": "spare bearings",
+   "store": "graph",
+   "query": "MATCH (sp:SparePart)-[:HELD_AT]->(st:StorageLocation) MATCH (sp)-[:OF_DEFINITION]->(d:MaterialDefinition) RETURN properties(sp), st.id, st.name, d.name ORDER BY sp.id",
+   "params": {},
+   "result": [
+    {
+     "id": "SP-AW-N-ZA2115",
+     "site": "A",
+     "on_hand": 3,
+     "reorder_point": 2,
+     "material_definition": "Rexnord ZA-2115 double-row bearing",
+     "store": "AW-N-STORE",
+     "store_name": "North works stores",
+     "serials": [
+      {
+       "asset": "SN-0301-013",
+       "lot": "LOT-0301"
+      },
+      {
+       "asset": "SN-0402-009",
+       "lot": "LOT-0402"
+      },
+      {
+       "asset": "SN-0402-010",
+       "lot": "LOT-0402"
+      }
+     ]
+    },
+    {
+     "id": "SP-AW-S-ZA2115",
+     "site": "B",
+     "on_hand": 3,
+     "reorder_point": 2,
+     "material_definition": "Rexnord ZA-2115 double-row bearing",
+     "store": "AW-S-STORE",
+     "store_name": "South works stores",
+     "serials": [
+      {
+       "asset": "SN-0405-001",
+       "lot": "LOT-0405"
+      },
+      {
+       "asset": "SN-0405-002",
+       "lot": "LOT-0405"
+      },
+      {
+       "asset": "SN-0405-003",
+       "lot": "LOT-0405"
+      }
+     ]
+    }
+   ],
+   "elapsed_ms": 6.4
+  }
+ ],
+ "answer": {
+  "question": "Pump P-102's vibration changed. Have we seen this before, what was it, which other running assets share the risk (same lot), and what fixed it last time?",
+  "as_of": "2004-04-17T12:00:00Z",
+  "changed": {
+   "equipment_id": "P-102.BRG-3",
+   "asset": "SN-0402-007",
+   "lot": "LOT-0402",
+   "installed_from": "2004-03-04T09:00:00Z",
+   "isa95_path": [
+    "P-102.BRG-3",
+    "P-102.SHAFT",
+    "P-102",
+    "AW-N-A1-PS1",
+    "AW-N-A1",
+    "AW-N",
+    "AW"
+   ],
+   "baseline_rms": 0.06847,
+   "latest_rms": 0.14506,
+   "ratio": 2.12,
+   "latest_recording": "P-102.BRG-3.20040417T115255"
+  },
+  "seen_before": true,
+  "precedents": [
+   {
+    "asset": "SN-0311-001",
+    "equipment_id": "P-102.BRG-1",
+    "lot": "LOT-0311",
+    "failure": "FL-2004-02-P102-BRG1",
+    "mode": "FM-OR",
+    "mode_name": "Outer race defect",
+    "first_rank": 1,
+    "hits": 48,
+    "best_distance": 0.35618009443594,
+    "first_hit": "2004-02-17T08:32:39Z",
+    "last_hit": "2004-02-19T05:32:39Z"
+   },
+   {
+    "asset": "SN-0311-004",
+    "equipment_id": "P-102.BRG-4",
+    "lot": "LOT-0311",
+    "failure": null,
+    "mode": null,
+    "mode_name": null,
+    "first_rank": 41,
+    "hits": 1,
+    "best_distance": 0.42756847588421576,
+    "first_hit": "2004-02-19T04:32:39Z",
+    "last_hit": "2004-02-19T04:32:39Z"
+   },
+   {
+    "asset": "SN-0311-003",
+    "equipment_id": "P-102.BRG-3",
+    "lot": "LOT-0311",
+    "failure": null,
+    "mode": null,
+    "mode_name": null,
+    "first_rank": 48,
+    "hits": 1,
+    "best_distance": 0.4322254691138133,
+    "first_hit": "2004-02-19T04:32:39Z",
+    "last_hit": "2004-02-19T04:32:39Z"
+   }
+  ],
+  "what_it_was": {
+   "failure": "FL-2004-02-P102-BRG1",
+   "mode": "FM-OR",
+   "mode_name": "Outer race defect",
+   "asset": "SN-0311-001",
+   "equipment_id": "P-102.BRG-1",
+   "best_distance": 0.35618009443594,
+   "hits": 48,
+   "of_hits": 50
+  },
+  "same_lot": {
+   "lot": "LOT-0402",
+   "supplier": "Distributor 2 (fictional)",
+   "installed": [
+    {
+     "asset": "SN-0402-002",
+     "unit": "F-113",
+     "equipment_id": "F-113.BRG-1",
+     "monitored": false,
+     "installed_from": "2004-03-22T09:00:00Z",
+     "site": "A",
+     "evidence": "not monitored: no recordings, so no vibration evidence either way"
+    },
+    {
+     "asset": "SN-0402-004",
+     "unit": "F-214",
+     "equipment_id": "F-214.BRG-3",
+     "monitored": false,
+     "installed_from": "2004-04-02T08:30:00Z",
+     "site": "B",
+     "evidence": "not monitored: no recordings, so no vibration evidence either way"
+    },
+    {
+     "asset": "SN-0402-005",
+     "unit": "P-102",
+     "equipment_id": "P-102.BRG-1",
+     "monitored": true,
+     "installed_from": "2004-03-04T09:00:00Z",
+     "site": "A",
+     "evidence": "monitored: RMS 1.19x its first day",
+     "rms_ratio": 1.19
+    },
+    {
+     "asset": "SN-0402-006",
+     "unit": "P-102",
+     "equipment_id": "P-102.BRG-2",
+     "monitored": true,
+     "installed_from": "2004-03-04T09:00:00Z",
+     "site": "A",
+     "evidence": "monitored: RMS 1.26x its first day",
+     "rms_ratio": 1.26
+    },
+    {
+     "asset": "SN-0402-008",
+     "unit": "P-102",
+     "equipment_id": "P-102.BRG-4",
+     "monitored": true,
+     "installed_from": "2004-03-04T09:00:00Z",
+     "site": "A",
+     "evidence": "monitored: RMS 1.52x its first day",
+     "rms_ratio": 1.52
+    },
+    {
+     "asset": "SN-0402-001",
+     "unit": "P-104",
+     "equipment_id": "P-104.BRG-2",
+     "monitored": false,
+     "installed_from": "2004-03-10T10:00:00Z",
+     "site": "A",
+     "evidence": "not monitored: no recordings, so no vibration evidence either way"
+    },
+    {
+     "asset": "SN-0402-003",
+     "unit": "P-203",
+     "equipment_id": "P-203.BRG-4",
+     "monitored": false,
+     "installed_from": "2004-03-15T13:00:00Z",
+     "site": "B",
+     "evidence": "not monitored: no recordings, so no vibration evidence either way"
+    }
+   ],
+   "in_stock": [
+    {
+     "asset": "SN-0402-009",
+     "store": "AW-N-STORE",
+     "site": "A"
+    },
+    {
+     "asset": "SN-0402-010",
+     "store": "AW-N-STORE",
+     "site": "A"
+    }
+   ]
+  },
+  "fixed_last_time": [
+   {
+    "request": {
+     "id": "MR-2004-0219-01",
+     "site": "A",
+     "reason": "High vibration on bearing position 1; unit stopped",
+     "requested": "2004-02-19T07:00:00Z"
+    },
+    "work_order": {
+     "id": "WO-2004-0219-01",
+     "kind": "corrective",
+     "site": "A",
+     "task": "Replace bearings in all four positions (overhaul); inspect removed bearings",
+     "closed": "2004-03-04T08:30:00Z",
+     "opened": "2004-02-19T07:30:00Z"
+    },
+    "response": {
+     "id": "RSP-2004-0304-01",
+     "site": "A",
+     "outcome": "Returned to service 2004-03-04 with LOT-0402 bearings after waiting for parts",
+     "findings": "Outer race failure on position 1 found on removal",
+     "completed": "2004-03-04T08:30:00Z"
+    },
+    "personnel_class": "Maintenance technician",
+    "consumed": {
+     "lot": "LOT-0402",
+     "quantity": 4
+    }
+   }
+  ],
+  "spares": [
+   {
+    "store": "AW-N-STORE",
+    "on_hand": 3,
+    "reorder_point": 2,
+    "from_same_lot": 2
+   },
+   {
+    "store": "AW-S-STORE",
+    "on_hand": 3,
+    "reorder_point": 2,
+    "from_same_lot": 0
+   }
+  ],
+  "caveats": [
+   "Similarity is evidence for a hypothesis, not a diagnosis: the closest earlier recordings came from a bearing that failed with this mode; confirming the mode needs inspection (or an envelope spectrum at the defect frequencies).",
+   "Searched: recordings made before the current bearing was installed, on the stored 4096-sample window grid; not found there is not 'never happened'.",
+   "Same lot is a shared risk factor, not evidence of a defect; unmonitored siblings have no vibration evidence either way.",
+   "The plant, its organisation, lots and work orders are fictional; the recordings and their failures are the IMS bearing data's."
+  ]
+ }
+}

@@ -1,0 +1,59 @@
+# Copyright 2026 MorletDB contributors. Licensed under the Apache License, Version 2.0 (LICENSE).
+# SPDX-License-Identifier: Apache-2.0
+#
+# Fleet investigator: PostgreSQL 17 with pg_morlet and Apache AGE, the loader and two read-only MCP servers.
+#   export MORLET_DATA=/path/to/ims                       # the extracted IMS runs (see README.md)
+#   docker compose build
+#   docker compose run --rm load                          # recordings, context and graph (a few minutes)
+#   docker compose run --rm investigate                   # the reference investigation, no language model
+#   docker compose run --rm -i -T mcp                     # MorletDB MCP server on stdio (read-only)
+#   docker compose run --rm -i -T graph                   # plant graph MCP server on stdio (read-only)
+name: morletdb-fleet
+services:
+  db:
+    build: {context: ../.., dockerfile: examples/fleet-investigator/Dockerfile}
+    image: morletdb-fleet-db:local
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: morlet-demo-only
+      POSTGRES_DB: morlet
+    ports:
+      - "127.0.0.1:54333:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d morlet"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+  load:
+    build: {context: ../.., dockerfile: examples/fleet-investigator/tools.Dockerfile}
+    image: morletdb-fleet-tools:local
+    environment:
+      DATABASE_URL: postgresql://morlet:morlet-demo-only@db:5432/morlet
+      MORLET_DATA: /data
+    volumes:
+      - "${MORLET_DATA:-./data}:/data:ro"
+    depends_on: {db: {condition: service_healthy}}
+    command: ["python", "examples/fleet-investigator/load.py"]
+  investigate:
+    image: morletdb-fleet-tools:local
+    environment:
+      DATABASE_URL: postgresql://fleet_reader:fleet-demo-only@db:5432/morlet
+    depends_on: {db: {condition: service_healthy}}
+    command: ["python", "examples/fleet-investigator/investigate.py"]
+  mcp:
+    image: morletdb-fleet-tools:local
+    environment:
+      DATABASE_URL: postgresql://fleet_reader:fleet-demo-only@db:5432/morlet
+    depends_on: {db: {condition: service_healthy}}
+    command: ["python", "-I", "tools/mcp/morlet_mcp.py"]
+  graph:
+    image: morletdb-fleet-tools:local
+    environment:
+      DATABASE_URL: postgresql://fleet_reader:fleet-demo-only@db:5432/morlet
+    depends_on: {db: {condition: service_healthy}}
+    command: ["python", "-I", "examples/fleet-investigator/graph_mcp.py"]
+volumes:
+  db:

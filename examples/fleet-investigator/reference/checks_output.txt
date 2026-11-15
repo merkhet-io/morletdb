@@ -1,0 +1,894 @@
+=== check 1
+{
+ "extensions": {
+  "age": "1.7.0",
+  "pg_morlet": "0.3.11"
+ },
+ "server": "17.6 (Debian 17.6-2.pgdg12+1)",
+ "shared_preload_libraries": "age",
+ "owner_load_age": "ok",
+ "reader_load_age": "access to library \"age\" is not allowed",
+ "reader_search_path": "ag_catalog, \"$user\", public",
+ "reader_cypher": [
+  [
+   "P-102",
+   2000
+  ]
+ ],
+ "reader_cypher_without_ag_catalog_in_search_path": "operator does not exist: ag_catalog.agtype @> ag_catalog.agtype",
+ "reader_morlet_after_ag_catalog": 1
+}
+=== check 2
+{
+ "per_position": [
+  [
+   "F-212",
+   "F-212.BRG-1",
+   "2000",
+   "F-212.BRG-1.20031125T232956",
+   "F-212.BRG-1.20031031T035946",
+   "10240",
+   "0.3409"
+  ],
+  [
+   "F-212",
+   "F-212.BRG-2",
+   "2000",
+   "F-212.BRG-2.20031125T232956",
+   "F-212.BRG-2.20031125T232956",
+   "16384",
+   "0.3067"
+  ],
+  [
+   "F-212",
+   "F-212.BRG-3",
+   "2000",
+   "F-212.BRG-3.20031125T232956",
+   "F-212.BRG-3.20031023T032413",
+   "0",
+   "0.4683"
+  ],
+  [
+   "F-212",
+   "F-212.BRG-4",
+   "2000",
+   "F-212.BRG-4.20031125T232956",
+   "F-212.BRG-4.20031125T232956",
+   "8192",
+   "0.4808"
+  ],
+  [
+   "P-102",
+   "P-102.BRG-1",
+   "2000",
+   "P-102.BRG-1.20040417T115255",
+   "P-102.BRG-4.20040323T175157",
+   "6144",
+   "0.5289"
+  ],
+  [
+   "P-102",
+   "P-102.BRG-2",
+   "2000",
+   "P-102.BRG-2.20040417T115255",
+   "F-212.BRG-4.20031123T084656",
+   "14336",
+   "0.5131"
+  ],
+  [
+   "P-102",
+   "P-102.BRG-3",
+   "2000",
+   "P-102.BRG-3.20040417T115255",
+   "P-102.BRG-1.20040218T073239",
+   "4096",
+   "0.3562"
+  ],
+  [
+   "P-102",
+   "P-102.BRG-4",
+   "2000",
+   "P-102.BRG-4.20040417T115255",
+   "P-102.BRG-4.20040218T223239",
+   "4096",
+   "0.4872"
+  ]
+ ],
+ "per_position_explain": [
+  "Sort",
+  "  Sort Key: (((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype])))::text)",
+  "  ->  Nested Loop",
+  "        ->  Nested Loop",
+  "              ->  Sort",
+  "                    Sort Key: (agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype]))",
+  "                    ->  Nested Loop",
+  "                          Join Filter: (_age_default_alias_0.start_id = u.id)",
+  "                          ->  Nested Loop",
+  "                                Join Filter: ((_age_default_alias_0.end_id = _age_default_alias_1.id) AND _ag_enforce_edge_uniqueness2(_age_default_alias_0.id, _age_default_alias_2.id))",
+  "                                ->  Nested Loop",
+  "                                      Join Filter: (_age_default_alias_2.start_id = _age_default_alias_1.id)",
+  "                                      ->  Hash Join",
+  "                                            Hash Cond: (m.id = _age_default_alias_2.end_id)",
+  "                                            ->  Seq Scan on \"EquipmentModule\" m",
+  "                                                  Filter: (fleet.graph_site_visible(properties) AND (properties @> '{\"monitored\": true}'::agtype))",
+  "                                            ->  Hash",
+  "                                                  ->  Seq Scan on \"CONTAINS\" _age_default_alias_2",
+  "                                                        Filter: fleet.graph_site_visible(properties)",
+  "                                      ->  Seq Scan on \"EquipmentModule\" _age_default_alias_1",
+  "                                            Filter: fleet.graph_site_visible(properties)",
+  "                                ->  Seq Scan on \"CONTAINS\" _age_default_alias_0",
+  "                                      Filter: fleet.graph_site_visible(properties)",
+  "                          ->  Seq Scan on \"Unit\" u",
+  "                                Filter: fleet.graph_site_visible(properties)",
+  "              ->  Limit",
+  "                    ->  Sort",
+  "                          Sort Key: (((r.metadata ->> 'start'::text))::timestamp with time zone) DESC",
+  "                          ->  Seq Scan on vibration r",
+  "                                Filter: (fleet.site_visible((metadata ->> 'site'::text)) AND ((metadata ->> 'equipment_id'::text) = ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype])))::text))",
+  "        ->  Function Scan on morlet_search_similar s"
+ ],
+ "similar_failures": [
+  {
+   "recording_id": "P-102.BRG-1.20040218T073239",
+   "start_sample": 4096,
+   "distance": 0.3562,
+   "asset": "SN-0311-001",
+   "failure": "FL-2004-02-P102-BRG1",
+   "mode": "FM-OR"
+  },
+  {
+   "recording_id": "P-102.BRG-1.20040219T053239",
+   "start_sample": 8192,
+   "distance": 0.3816,
+   "asset": "SN-0311-001",
+   "failure": "FL-2004-02-P102-BRG1",
+   "mode": "FM-OR"
+  },
+  {
+   "recording_id": "P-102.BRG-1.20040219T043239",
+   "start_sample": 6144,
+   "distance": 0.382,
+   "asset": "SN-0311-001",
+   "failure": "FL-2004-02-P102-BRG1",
+   "mode": "FM-OR"
+  },
+  {
+   "recording_id": "P-102.BRG-1.20040218T073239",
+   "start_sample": 16384,
+   "distance": 0.3828,
+   "asset": "SN-0311-001",
+   "failure": "FL-2004-02-P102-BRG1",
+   "mode": "FM-OR"
+  },
+  {
+   "recording_id": "P-102.BRG-1.20040217T143239",
+   "start_sample": 10240,
+   "distance": 0.3845,
+   "asset": "SN-0311-001",
+   "failure": "FL-2004-02-P102-BRG1",
+   "mode": "FM-OR"
+  }
+ ],
+ "similar_failures_rows": 10,
+ "similar_failures_explain": [
+  "Sort",
+  "  Sort Key: h.distance, h.recording_id, h.start_sample",
+  "  CTE pos",
+  "    ->  Nested Loop",
+  "          Join Filter: (i_1.start_id = a_1.id)",
+  "          ->  Nested Loop",
+  "                Join Filter: (i_1.end_id = m_1.id)",
+  "                ->  Seq Scan on \"INSTALLED_IN\" i_1",
+  "                      Filter: (fleet.graph_site_visible(properties) AND (agtype_access_operator(VARIADIC ARRAY[properties, '\"from\"'::agtype]) <= '\"2004-04-17T12:00:00Z\"'::agtype) AND ((agtype_access_operator(VARIADIC ARRAY[properties, '\"to\"'::agtype]) IS NULL) OR ('\"2004-04-17T12:00:00Z\"'::agtype < agtype_access_operator(VARIADIC ARRAY[properties, '\"to\"'::agtype]))))",
+  "                ->  Materialize",
+  "                      ->  Seq Scan on \"EquipmentModule\" m_1",
+  "                            Filter: (fleet.graph_site_visible(properties) AND (properties @> '{\"equipment_id\": \"P-102.BRG-3\"}'::agtype))",
+  "          ->  Seq Scan on \"PhysicalAsset\" a_1",
+  "                Filter: fleet.graph_site_visible(properties)",
+  "  ->  Hash Right Join",
+  "        Hash Cond: ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_vertex(m.id, _label_name('48809'::oid, m.id), m.properties), '\"equipment_id\"'::agtype]))::text = (h.metadata ->> 'equipment_id'::text))",
+  "        Join Filter: ((((h.metadata ->> 'start'::text))::timestamp with time zone >= ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('48809'::oid, i.id), i.properties), '\"from\"'::agtype]))::text)::timestamp with time zone) AND (((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('48809'::oid, i.id), i.properties), '\"to\"'::agtype]))::text IS NULL) OR (((h.metadata ->> 'start'::text))::timestamp with time zone < ((agtype_access_operator(VARIADIC ARRAY[_agtype_build_edge(i.id, i.start_id, i.end_id, _label_name('48809'::oid, i.id), i.properties), '\"to\"'::agtype]))::text)::timestamp with time zone)))",
+  "        ->  Hash Left Join",
+  "              Hash Cond: ((age_id((_agtype_build_vertex(f.id, _label_name('48809'::oid, f.id), f.properties))))::graphid = _age_default_alias_1.start_id)",
+  "              ->  Hash Left Join",
+  "                    Hash Cond: ((age_id(_agtype_build_vertex(a.id, _label_name('48809'::oid, a.id), a.properties)))::graphid = _age_default_alias_0.end_id)",
+  "                    ->  Hash Join",
+  "                          Hash Cond: (a.id = i.start_id)",
+  "                          ->  Seq Scan on \"PhysicalAsset\" a",
+  "                                Filter: fleet.graph_site_visible(properties)",
+  "                          ->  Hash",
+  "                                ->  Hash Join",
+  "                                      Hash Cond: (i.end_id = m.id)",
+  "                                      ->  Seq Scan on \"INSTALLED_IN\" i",
+  "                                            Filter: fleet.graph_site_visible(properties)",
+  "                                      ->  Hash",
+  "                                            ->  Seq Scan on \"EquipmentModule\" m",
+  "                                                  Filter: fleet.graph_site_visible(properties)",
+  "                    ->  Hash",
+  "                          ->  Hash Join",
+  "                                Hash Cond: (_age_default_alias_0.start_id = f.id)",
+  "                                ->  Seq Scan on \"OF_ASSET\" _age_default_alias_0",
+  "                                      Filter: fleet.graph_site_visible(properties)",
+  "                                ->  Hash",
+  "                                      ->  Seq Scan on \"Failure\" f",
+  "                                            Filter: fleet.graph_site_visible(properties)",
+  "              ->  Hash",
+  "                    ->  Hash Join",
+  "                          Hash Cond: (_age_default_alias_1.end_id = fm.id)",
+  "                          ->  Seq Scan on \"CLASSIFIED_AS\" _age_default_alias_1",
+  "                                Filter: fleet.graph_site_visible(properties)",
+  "                          ->  Hash",
+  "                                ->  Seq Scan on \"FailureMode\" fm",
+  "                                      Filter: fleet.graph_site_visible(properties)",
+  "        ->  Hash",
+  "              ->  Nested Loop",
+  "                    ->  Limit",
+  "                          ->  Sort",
+  "                                Sort Key: (((r.metadata ->> 'start'::text))::timestamp with time zone) DESC",
+  "                                ->  Nested Loop",
+  "                                      Join Filter: (((r.metadata ->> 'start'::text))::timestamp with time zone >= (pos_1.installed_from)::timestamp with time zone)",
+  "                                      ->  CTE Scan on pos pos_1",
+  "                                      ->  Seq Scan on vibration r",
+  "                                            Filter: (fleet.site_visible((metadata ->> 'site'::text)) AND ((metadata ->> 'equipment_id'::text) = 'P-102.BRG-3'::text) AND (((metadata ->> 'start'::text))::timestamp with time zone <= '2004-04-17 12:00:00+00'::timestamp with time zone))",
+  "                    ->  Nested Loop",
+  "                          ->  CTE Scan on pos",
+  "                          ->  Function Scan on morlet_search_similar h"
+ ]
+}
+=== check 3
+{
+ "event trigger on new labels": {
+  "labels created": [
+   "ByCreate",
+   "ByFunction",
+   "_ag_label_edge",
+   "_ag_label_vertex"
+  ],
+  "ddl events seen": [
+   [
+    "CREATE TABLE",
+    "fleet.ddl_control"
+   ]
+  ]
+ },
+ "rules_first": {
+  "order": "rules_first",
+  "gaps_after_data": [
+   [
+    "rls_rules_first.\"Enterprise\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"Site\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"Unit\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"MaterialLot\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"FailureMode\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"CONTAINS\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"FROM_LOT\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"FAILED_AS\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_rules_first.\"Enterprise\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_rules_first.\"Site\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_rules_first.\"Unit\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_rules_first.\"MaterialLot\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_rules_first.\"FailureMode\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_rules_first.\"CONTAINS\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_rules_first.\"FROM_LOT\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_rules_first.\"FAILED_AS\"",
+    "no site_scope policy"
+   ]
+  ],
+  "contractor_on_unsecured_new_label": "permission denied for table Unit",
+  "contractor_unlabeled_match_before_resecuring": [
+   "\"E\"",
+   "\"FM\"",
+   "\"L\"",
+   "\"SA\"",
+   "\"UA\""
+  ],
+  "gaps_after_securing": [],
+  "fleet_contractor": {
+   "labeled MATCH (u:Unit)": [
+    "\"UA\""
+   ],
+   "unlabeled MATCH (n)": [
+    "\"E\"",
+    "\"FM\"",
+    "\"L\"",
+    "\"SA\"",
+    "\"UA\""
+   ],
+   "unlabeled edges": [
+    "\"A\"",
+    "\"A\"",
+    "\"A\""
+   ],
+   "two fixed hops via a shared lot": [],
+   "three fixed hops to a failure mode": [],
+   "count(*)": [
+    "5"
+   ],
+   "variable-length path lot -[*2]- failure mode": "ERROR: permission denied for function age_vle",
+   "variable-length path, its edges": "ERROR: permission denied for function age_vle",
+   "direct SQL per label table": {
+    "rls_rules_first._ag_label_edge": 3,
+    "rls_rules_first._ag_label_vertex": 5,
+    "rls_rules_first.\"CONTAINS\"": 2,
+    "rls_rules_first.\"Enterprise\"": 1,
+    "rls_rules_first.\"FAILED_AS\"": 0,
+    "rls_rules_first.\"FailureMode\"": 1,
+    "rls_rules_first.\"FROM_LOT\"": 1,
+    "rls_rules_first.\"MaterialLot\"": 1,
+    "rls_rules_first.\"Site\"": 1,
+    "rls_rules_first.\"Unit\"": 1
+   },
+   "forged edge into startNode": "permission denied for function age_startnode",
+   "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
+   "units visible by SQL": 1,
+   "MorletDB tables (rows)": {
+    "fleet.rls_rules_first": 1,
+    "fleet.rls_rules_first_chunks": 1,
+    "fleet.rls_rules_first_ctx": 1,
+    "fleet.rls_rules_first_ctx_segments": 0,
+    "fleet.rls_rules_first_envelopes": 9,
+    "fleet.rls_rules_first_episodes": 1,
+    "fleet.rls_rules_first_kept_summaries": 0,
+    "fleet.rls_rules_first_labels": 1,
+    "fleet.rls_rules_first_ledger": 0,
+    "fleet.rls_rules_first_segments": 79
+   },
+   "MorletDB recordings": [
+    "ra"
+   ],
+   "search from ra": [
+    "ra"
+   ],
+   "search from rb": "source recording does not exist or is not visible"
+  },
+  "fleet_reader": {
+   "labeled MATCH (u:Unit)": [
+    "\"UA\"",
+    "\"UB\""
+   ],
+   "unlabeled MATCH (n)": [
+    "\"E\"",
+    "\"FM\"",
+    "\"L\"",
+    "\"SA\"",
+    "\"SB\"",
+    "\"UA\"",
+    "\"UB\""
+   ],
+   "unlabeled edges": [
+    "\"A\"",
+    "\"A\"",
+    "\"A\"",
+    "\"B\"",
+    "\"B\"",
+    "\"B\"",
+    "\"B\""
+   ],
+   "two fixed hops via a shared lot": [
+    "\"UA\"",
+    "\"UB\""
+   ],
+   "three fixed hops to a failure mode": [
+    "\"FM\""
+   ],
+   "count(*)": [
+    "7"
+   ],
+   "variable-length path lot -[*2]- failure mode": "ERROR: permission denied for function age_vle",
+   "variable-length path, its edges": "ERROR: permission denied for function age_vle",
+   "direct SQL per label table": {
+    "rls_rules_first._ag_label_edge": 7,
+    "rls_rules_first._ag_label_vertex": 7,
+    "rls_rules_first.\"CONTAINS\"": 4,
+    "rls_rules_first.\"Enterprise\"": 1,
+    "rls_rules_first.\"FAILED_AS\"": 1,
+    "rls_rules_first.\"FailureMode\"": 1,
+    "rls_rules_first.\"FROM_LOT\"": 2,
+    "rls_rules_first.\"MaterialLot\"": 1,
+    "rls_rules_first.\"Site\"": 2,
+    "rls_rules_first.\"Unit\"": 2
+   },
+   "forged edge into startNode": "permission denied for function age_startnode",
+   "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
+   "units visible by SQL": 2,
+   "MorletDB tables (rows)": {
+    "fleet.rls_rules_first": 2,
+    "fleet.rls_rules_first_chunks": 2,
+    "fleet.rls_rules_first_ctx": 2,
+    "fleet.rls_rules_first_ctx_segments": 0,
+    "fleet.rls_rules_first_envelopes": 18,
+    "fleet.rls_rules_first_episodes": 2,
+    "fleet.rls_rules_first_kept_summaries": 0,
+    "fleet.rls_rules_first_labels": 2,
+    "fleet.rls_rules_first_ledger": 0,
+    "fleet.rls_rules_first_segments": 158
+   },
+   "MorletDB recordings": [
+    "ra",
+    "rb"
+   ],
+   "search from ra": [
+    "ra",
+    "rb"
+   ],
+   "search from rb": "ok"
+  }
+ },
+ "data_first": {
+  "order": "data_first",
+  "gaps_after_data": [
+   [
+    "rls_data_first._ag_label_vertex",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first._ag_label_edge",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"Enterprise\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"Site\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"Unit\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"MaterialLot\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"FailureMode\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"CONTAINS\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"FROM_LOT\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first.\"FAILED_AS\"",
+    "row-level security is not enabled"
+   ],
+   [
+    "rls_data_first._ag_label_vertex",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first._ag_label_edge",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"Enterprise\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"Site\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"Unit\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"MaterialLot\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"FailureMode\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"CONTAINS\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"FROM_LOT\"",
+    "no site_scope policy"
+   ],
+   [
+    "rls_data_first.\"FAILED_AS\"",
+    "no site_scope policy"
+   ]
+  ],
+  "gaps_after_securing": [],
+  "contractor with the AGE functions granted (AGE's default)": {
+   "variable-length path lot -[*2]- failure mode": [
+    "\"FM\""
+   ],
+   "variable-length path, its edges": [
+    "[{\"id\": 2533274790395906, \"label\": \"FROM_LOT\", \"end_id\": 1688849860263937, \"start_id\": 1407374883553282, \"properties\": {\"site\": \"B\"}}::edge, {\"id\": 2814749767106561, \"label\": \"FAILED_AS\", \"end_id\": 1970324836974593, \"start_id\": 1407374883553282, \"properties\": {\"site\": \"B\"}}::edge]"
+   ],
+   "forged edge into startNode": "ERROR: access to vertex 1407374883553282 denied by row-level security policy on \"Unit\"",
+   "forged edge into endNode": "ERROR: access to vertex 1407374883553282 denied by row-level security policy on \"Unit\"",
+   "vertex_stats of the hidden unit": [
+    "{\"id\": 1407374883553282, \"label\": \"Unit\", \"in_degree\": 1, \"out_degree\": 2, \"self_loops\": 0}"
+   ],
+   "graph_stats": [
+    "{\"graph\": \"rls_data_first\", \"num_loaded_edges\": 7, \"num_loaded_vertices\": 7}"
+   ]
+  },
+  "fleet_contractor": {
+   "labeled MATCH (u:Unit)": [
+    "\"UA\""
+   ],
+   "unlabeled MATCH (n)": [
+    "\"E\"",
+    "\"FM\"",
+    "\"L\"",
+    "\"SA\"",
+    "\"UA\""
+   ],
+   "unlabeled edges": [
+    "\"A\"",
+    "\"A\"",
+    "\"A\""
+   ],
+   "two fixed hops via a shared lot": [],
+   "three fixed hops to a failure mode": [],
+   "count(*)": [
+    "5"
+   ],
+   "variable-length path lot -[*2]- failure mode": "ERROR: permission denied for function age_vle",
+   "variable-length path, its edges": "ERROR: permission denied for function age_vle",
+   "direct SQL per label table": {
+    "rls_data_first._ag_label_edge": 3,
+    "rls_data_first._ag_label_vertex": 5,
+    "rls_data_first.\"CONTAINS\"": 2,
+    "rls_data_first.\"Enterprise\"": 1,
+    "rls_data_first.\"FAILED_AS\"": 0,
+    "rls_data_first.\"FailureMode\"": 1,
+    "rls_data_first.\"FROM_LOT\"": 1,
+    "rls_data_first.\"MaterialLot\"": 1,
+    "rls_data_first.\"Site\"": 1,
+    "rls_data_first.\"Unit\"": 1
+   },
+   "forged edge into startNode": "permission denied for function age_startnode",
+   "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
+   "units visible by SQL": 1,
+   "MorletDB tables (rows)": {
+    "fleet.rls_data_first": 1,
+    "fleet.rls_data_first_chunks": 1,
+    "fleet.rls_data_first_ctx": 1,
+    "fleet.rls_data_first_ctx_segments": 0,
+    "fleet.rls_data_first_envelopes": 9,
+    "fleet.rls_data_first_episodes": 1,
+    "fleet.rls_data_first_kept_summaries": 0,
+    "fleet.rls_data_first_labels": 1,
+    "fleet.rls_data_first_ledger": 0,
+    "fleet.rls_data_first_segments": 79
+   },
+   "MorletDB recordings": [
+    "ra"
+   ],
+   "search from ra": [
+    "ra"
+   ],
+   "search from rb": "source recording does not exist or is not visible"
+  },
+  "fleet_reader": {
+   "labeled MATCH (u:Unit)": [
+    "\"UA\"",
+    "\"UB\""
+   ],
+   "unlabeled MATCH (n)": [
+    "\"E\"",
+    "\"FM\"",
+    "\"L\"",
+    "\"SA\"",
+    "\"SB\"",
+    "\"UA\"",
+    "\"UB\""
+   ],
+   "unlabeled edges": [
+    "\"A\"",
+    "\"A\"",
+    "\"A\"",
+    "\"B\"",
+    "\"B\"",
+    "\"B\"",
+    "\"B\""
+   ],
+   "two fixed hops via a shared lot": [
+    "\"UA\"",
+    "\"UB\""
+   ],
+   "three fixed hops to a failure mode": [
+    "\"FM\""
+   ],
+   "count(*)": [
+    "7"
+   ],
+   "variable-length path lot -[*2]- failure mode": "ERROR: permission denied for function age_vle",
+   "variable-length path, its edges": "ERROR: permission denied for function age_vle",
+   "direct SQL per label table": {
+    "rls_data_first._ag_label_edge": 7,
+    "rls_data_first._ag_label_vertex": 7,
+    "rls_data_first.\"CONTAINS\"": 4,
+    "rls_data_first.\"Enterprise\"": 1,
+    "rls_data_first.\"FAILED_AS\"": 1,
+    "rls_data_first.\"FailureMode\"": 1,
+    "rls_data_first.\"FROM_LOT\"": 2,
+    "rls_data_first.\"MaterialLot\"": 1,
+    "rls_data_first.\"Site\"": 2,
+    "rls_data_first.\"Unit\"": 2
+   },
+   "forged edge into startNode": "permission denied for function age_startnode",
+   "vertex_stats": "permission denied for function age_vertex_stats",
+   "graph_stats": "ERROR: permission denied for function age_graph_stats",
+   "units visible by SQL": 2,
+   "MorletDB tables (rows)": {
+    "fleet.rls_data_first": 2,
+    "fleet.rls_data_first_chunks": 2,
+    "fleet.rls_data_first_ctx": 2,
+    "fleet.rls_data_first_ctx_segments": 0,
+    "fleet.rls_data_first_envelopes": 18,
+    "fleet.rls_data_first_episodes": 2,
+    "fleet.rls_data_first_kept_summaries": 0,
+    "fleet.rls_data_first_labels": 2,
+    "fleet.rls_data_first_ledger": 0,
+    "fleet.rls_data_first_segments": 158
+   },
+   "MorletDB recordings": [
+    "ra",
+    "rb"
+   ],
+   "search from ra": [
+    "ra",
+    "rb"
+   ],
+   "search from rb": "ok"
+  }
+ },
+ "regrant": {
+  "function": "ag_catalog.age_vle(ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype)",
+  "gaps_while_granted": [
+   [
+    "fleet_reader: ag_catalog.age_vle(ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype)",
+    "may execute a restricted AGE function (CHECKS.md, check 3)"
+   ],
+   [
+    "fleet_contractor: ag_catalog.age_vle(ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype)",
+    "may execute a restricted AGE function (CHECKS.md, check 3)"
+   ],
+   [
+    "fleet_engineer: ag_catalog.age_vle(ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype,ag_catalog.agtype)",
+    "may execute a restricted AGE function (CHECKS.md, check 3)"
+   ]
+  ],
+  "gaps_after_revoking": []
+ },
+ "demo": {
+  "fleet_contractor": {
+   "graph sites": [
+    "*",
+    "A"
+   ],
+   "units": 8,
+   "units at site B": [],
+   "recordings by site": {
+    "A": 4816
+   },
+   "distinct recordings per table": {
+    "fleet.vibration": 4816,
+    "fleet.vibration_chunks": 4816,
+    "fleet.vibration_ctx": 4816,
+    "fleet.vibration_ctx_segments": 0,
+    "fleet.vibration_envelopes": 4816,
+    "fleet.vibration_episodes": 0,
+    "fleet.vibration_kept_summaries": 0,
+    "fleet.vibration_labels": 0,
+    "fleet.vibration_ledger": 0,
+    "fleet.vibration_segments": 4816
+   },
+   "LOT-0402 installed elsewhere": [
+    "F-113.BRG-1",
+    "P-102.BRG-1",
+    "P-102.BRG-2",
+    "P-102.BRG-4",
+    "P-104.BRG-2"
+   ],
+   "F-212 history": "not visible"
+  },
+  "fleet_reader": {
+   "graph sites": [
+    "*",
+    "A",
+    "B"
+   ],
+   "units": 16,
+   "units at site B": [
+    "F-211",
+    "F-212",
+    "F-213",
+    "F-214",
+    "P-201",
+    "P-202",
+    "P-203",
+    "P-204"
+   ],
+   "recordings by site": {
+    "A": 4816,
+    "B": 1440
+   },
+   "distinct recordings per table": {
+    "fleet.vibration": 6256,
+    "fleet.vibration_chunks": 6256,
+    "fleet.vibration_ctx": 6256,
+    "fleet.vibration_ctx_segments": 0,
+    "fleet.vibration_envelopes": 6256,
+    "fleet.vibration_episodes": 0,
+    "fleet.vibration_kept_summaries": 0,
+    "fleet.vibration_labels": 0,
+    "fleet.vibration_ledger": 0,
+    "fleet.vibration_segments": 6256
+   },
+   "LOT-0402 installed elsewhere": [
+    "F-113.BRG-1",
+    "F-214.BRG-3",
+    "P-102.BRG-1",
+    "P-102.BRG-2",
+    "P-102.BRG-4",
+    "P-104.BRG-2",
+    "P-203.BRG-4"
+   ],
+   "F-212 history": "visible"
+  }
+ }
+}
+=== check 4
+{
+ "injected failure before commit": {
+  "status": "rolled back: fail_before_commit: rolling back",
+  "after": {
+   "graph_edges": 0,
+   "labels": 0,
+   "episodes": 0
+  }
+ },
+ "MorletDB refuses the episode (interval beyond the recording)": {
+  "status": "rolled back: episode interval 0..40960 is outside recording P-102.BRG-4.20040417T115255 (0..20480)",
+  "after": {
+   "graph_edges": 0,
+   "labels": 0,
+   "episodes": 0
+  }
+ },
+ "committed": {
+  "status": "written",
+  "after": {
+   "graph_edges": 1,
+   "labels": 1,
+   "episodes": 1
+  }
+ },
+ "identical retry": "exists",
+ "conflicting retry": "refused: FND-CHECK-OK exists with other content; not changed",
+ "engineer changes the recorded finding (SET)": "permission denied for table RESEMBLES",
+ "contractor writes": "refused: permission denied for table vibration_labels"
+}
+=== check 5
+{
+ "REPEATABLE READ": {
+  "writer committed": true,
+  "before": {
+   "graph_edges": 0,
+   "labels": 0,
+   "episodes": 0,
+   "search_hits": 5
+  },
+  "after the concurrent commit": {
+   "graph_edges": 0,
+   "labels": 0,
+   "episodes": 0,
+   "search_hits": 5
+  },
+  "new transaction": {
+   "graph_edges": 1,
+   "labels": 1,
+   "episodes": 1
+  }
+ },
+ "READ COMMITTED": {
+  "writer committed": true,
+  "before": {
+   "graph_edges": 0,
+   "labels": 0,
+   "episodes": 0,
+   "search_hits": 5
+  },
+  "after the concurrent commit": {
+   "graph_edges": 1,
+   "labels": 1,
+   "episodes": 1,
+   "search_hits": 5
+  },
+  "new transaction": {
+   "graph_edges": 1,
+   "labels": 1,
+   "episodes": 1
+  }
+ },
+ "new recording and its graph vertex": {
+  "before": {
+   "recordings": 2,
+   "unit vertices": 2,
+   "search hits from ra": [
+    "ra",
+    "rb"
+   ]
+  },
+  "after the concurrent commit": {
+   "recordings": 2,
+   "unit vertices": 2,
+   "search hits from ra": [
+    "ra",
+    "rb"
+   ]
+  },
+  "new transaction": {
+   "recordings": 3,
+   "unit vertices": 3,
+   "search hits from ra": [
+    "ra",
+    "rb",
+    "rc"
+   ]
+  }
+ }
+}
