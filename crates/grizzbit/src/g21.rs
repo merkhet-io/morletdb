@@ -81,7 +81,7 @@
 //! autocorrelation lag summed in sample order. Encoder output is therefore the same bytes on every
 //! platform. CI's golden-file check on Linux reproduces the version-5 goldens written on macOS/aarch64.
 use super::*;
-use crate::lpc_kernel::{self, Isa};
+use crate::lpc_kernel::{self, Isa, Values};
 
 /// Predictor field value for LPC in a version-5 stream.
 pub(crate) const PREDICTOR_LPC: u64 = 7;
@@ -160,18 +160,19 @@ impl Lpc {
         dot(hist, &self.rev) >> self.shift
     }
 
-    /// Residuals of `x` under this predictor, zigzag-mapped, into `r`.
-    fn residuals(&self, x: &[i64], r: &mut [u64]) {
+    /// Residuals of `v.x()` under this predictor, zigzag-mapped, into `r`.
+    fn residuals(&self, v: &Values, r: &mut [u64]) {
+        let x = v.x();
         let p = self.order();
         let warm = p.min(x.len());
         for i in 0..warm {
             r[i] = zigzag(x[i].wrapping_sub(predict(x, i, LPC_WARMUP_ORDER)));
         }
         match p {
-            0..=8 => self.residuals_padded::<8>(x, r, warm),
-            9..=16 => self.residuals_padded::<16>(x, r, warm),
-            17..=24 => self.residuals_padded::<24>(x, r, warm),
-            _ => self.residuals_padded::<32>(x, r, warm),
+            0..=8 => self.residuals_padded::<8>(v, r, warm),
+            9..=16 => self.residuals_padded::<16>(v, r, warm),
+            17..=24 => self.residuals_padded::<24>(v, r, warm),
+            _ => self.residuals_padded::<32>(v, r, warm),
         }
     }
 
@@ -183,7 +184,8 @@ impl Lpc {
         c
     }
 
-    fn residuals_padded<const P: usize>(&self, x: &[i64], r: &mut [u64], from: usize) {
+    fn residuals_padded<const P: usize>(&self, v: &Values, r: &mut [u64], from: usize) {
+        let x = v.x();
         let p = self.order();
         let n = x.len();
         let start = P.min(n).max(from);
@@ -191,7 +193,7 @@ impl Lpc {
             r[i] = zigzag(x[i].wrapping_sub(self.predict(&x[i - p..i])));
         }
         let c = self.padded::<P>();
-        lpc_kernel::residuals(Isa::detect(), x, &c, self.shift, r, start);
+        lpc_kernel::residuals(v, &c, self.shift, r, start);
     }
 
     /// Inverts [`Lpc::residuals`] in place: `x` holds the residuals (unzigzagged) on entry and the
@@ -493,11 +495,13 @@ pub(crate) fn best_lpc(
     let mut best: Option<(u128, Lpc, u32)> = None;
     // Whether `r` still holds the best candidate's residuals (it does when that was the last one tried).
     let mut r_is_best = false;
+    // The kernel's view of `x` (the narrow path's check and i32 copy), once for every candidate.
+    let values = Values::new(Isa::detect(), x);
     for p in orders {
         let Some(model) = quantize(&models[p - 1].0, precision) else {
             continue;
         };
-        model.residuals(x, r);
+        model.residuals(&values, r);
         let (cost, porder) = partition_search(r, max_porder, scratch);
         let total = cost + model.side_bits();
         let bar = best.as_ref().map_or(fixed_cost, |b| b.0);
@@ -508,7 +512,7 @@ pub(crate) fn best_lpc(
     }
     let (_, model, porder) = best?;
     if !r_is_best {
-        model.residuals(x, r);
+        model.residuals(&values, r);
     }
     Some((model, porder))
 }
@@ -943,7 +947,7 @@ mod tests {
                 })
                 .collect();
             let mut r = vec![0u64; n];
-            model.residuals(&x, &mut r);
+            model.residuals(&Values::new(Isa::detect(), &x), &mut r);
             for i in 0..n {
                 assert_eq!(
                     unzigzag(r[i]),

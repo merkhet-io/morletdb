@@ -32,7 +32,8 @@
 //! product as `wrapping_mul`, and the wrapping sum of the products is then the same integer whatever the
 //! lane grouping. (With the format's coefficients, at most 15 bits, the sum does not even wrap:
 //! `|Σ| <= 32 · 2^14 · 2^31 = 2^50`.) The NEON and AVX2 kernels take this path while it holds: the encoder
-//! ([`residuals`]) when every value of the stream fits in i32, the decoder ([`restore`]) from the start
+//! ([`residuals`]) when every value of the stream fits in i32 (checked, and for NEON copied to i32,
+//! once per chunk in [`Values`]), the decoder ([`restore`]) from the start
 //! while the history window fits and up to the first restored value outside i32, after which it continues
 //! with the full 64-bit kernel from the next position (every value it needs is already restored). SSE2
 //! has no signed 32-bit multiply and keeps the full kernel; the scalar kernel is unchanged.
@@ -116,11 +117,46 @@ pub(crate) fn mul_narrow(a: i64, b: i64) -> i64 {
     (a as i32 as i64) * (b as i32 as i64)
 }
 
-/// The encoder may use the narrow path: every coefficient and every value of `x` is an i32.
-#[cfg(all(any(target_arch = "aarch64", target_arch = "x86_64"), not(kani)))]
-#[inline]
-fn narrow_stream<const P: usize>(x: &[i64], c: &[i64; P]) -> bool {
-    c.iter().all(|&v| fits_i32(v)) && x.iter().all(|&v| fits_i32(v))
+/// One chunk's values as the encoder's kernel reads them, built once per chunk and shared by every
+/// candidate predictor [`residuals`] tries: the values, the kernel, and whether every value is an i32
+/// (the stream half of the narrow path's condition), with the i32 copy the NEON narrow loop reads.
+pub(crate) struct Values<'a> {
+    isa: Isa,
+    x: &'a [i64],
+    narrow: Narrow,
+}
+
+/// Whether every value of a chunk is an i32, recorded only where `isa` has a narrow kernel.
+enum Narrow {
+    /// Not every value is an i32, or this kernel has no narrow path.
+    No,
+    /// Every value is an i32 (AVX2 multiplies the low halves of the i64 lanes in place).
+    #[cfg(all(target_arch = "x86_64", not(kani)))]
+    Fits,
+    /// Every value is an i32, and this is their i32 copy (NEON loads its windows from it).
+    #[cfg(all(target_arch = "aarch64", not(kani)))]
+    Copy(Vec<i32>),
+}
+
+impl<'a> Values<'a> {
+    pub(crate) fn new(isa: Isa, x: &'a [i64]) -> Self {
+        let fits = || x.iter().all(|&v| fits_i32(v));
+        let narrow = match isa {
+            #[cfg(all(target_arch = "aarch64", not(kani)))]
+            Isa::Neon if fits() => Narrow::Copy(x.iter().map(|&v| v as i32).collect()),
+            #[cfg(all(target_arch = "x86_64", not(kani)))]
+            Isa::Avx2 if fits() => Narrow::Fits,
+            _ => {
+                let _ = fits;
+                Narrow::No
+            }
+        };
+        Self { isa, x, narrow }
+    }
+
+    pub(crate) fn x(&self) -> &'a [i64] {
+        self.x
+    }
 }
 
 /// The decoder may start the narrow path at `from`: every coefficient and the window `x[from - P..from]`
@@ -133,28 +169,28 @@ fn narrow_start<const P: usize>(x: &[i64], c: &[i64; P], from: usize) -> bool {
         && x[from - P..from].iter().all(|&v| fits_i32(v))
 }
 
-/// `r[i] = zigzag(x[i] - (dot(x[i - P..i], c) >> shift))` for `i` in `from..x.len()`; `from >= P`
-/// unless the range is empty.
+/// `r[i] = zigzag(x[i] - (dot(x[i - P..i], c) >> shift))` for `i` in `from..x.len()` (`x` = `v.x()`);
+/// `from >= P` unless the range is empty.
 pub(crate) fn residuals<const P: usize>(
-    isa: Isa,
-    x: &[i64],
+    v: &Values,
     c: &[i64; P],
     shift: u32,
     r: &mut [u64],
     from: usize,
 ) {
     const { check_width::<P>() };
-    match isa {
+    let x = v.x;
+    match v.isa {
         Isa::Scalar => residuals_with(x, r, from, shift, |h: &[i64; P]| scalar::dot(h, c)),
         // SAFETY (all three): the kernel's target feature is present. NEON is part of the aarch64
         // baseline and SSE2 of the x86_64 one; `Isa::Avx2` is only produced by `Isa::detect` and
         // `Isa::all_available` after `is_x86_feature_detected!("avx2")`.
         #[cfg(all(target_arch = "aarch64", not(kani)))]
-        Isa::Neon => unsafe { neon::residuals(x, c, shift, r, from) },
+        Isa::Neon => unsafe { neon::residuals(v, c, shift, r, from) },
         #[cfg(all(target_arch = "x86_64", not(kani)))]
         Isa::Sse2 => unsafe { x86::residuals_sse2(x, c, shift, r, from) },
         #[cfg(all(target_arch = "x86_64", not(kani)))]
-        Isa::Avx2 => unsafe { x86::residuals_avx2(x, c, shift, r, from) },
+        Isa::Avx2 => unsafe { x86::residuals_avx2(v, c, shift, r, from) },
     }
 }
 
@@ -447,19 +483,20 @@ mod neon {
         vaddvq_s64(vpaddq_s64(vpaddq_s64(a0, a1), vpaddq_s64(a2, a3)))
     }
 
-    /// The encoder's narrow loop (every coefficient and value is an i32): an i32 copy of `x`, then the
-    /// residuals as [`super::residuals_with`] computes them.
+    /// The encoder's narrow loop (every coefficient and value is an i32): the residuals as
+    /// [`super::residuals_with`] computes them, with the windows read from `h32`, the i32 copy of `x`.
     #[target_feature(enable = "neon")]
     #[inline(never)]
     fn residuals_narrow<const P: usize>(
         x: &[i64],
+        h32: &[i32],
         c: &[i64; P],
         shift: u32,
         r: &mut [u64],
         from: usize,
     ) {
+        assert_eq!(h32.len(), x.len());
         let k = narrow_coefs(c);
-        let h32: Vec<i32> = x.iter().map(|&v| v as i32).collect();
         for i in from..x.len() {
             let h: &[i32; P] = h32[i - P..i].try_into().unwrap();
             r[i] = crate::zigzag(x[i].wrapping_sub(dot_narrow(h, &k, P / 4) >> shift));
@@ -507,14 +544,17 @@ mod neon {
 
     #[target_feature(enable = "neon")]
     pub(super) fn residuals<const P: usize>(
-        x: &[i64],
+        v: &super::Values,
         c: &[i64; P],
         shift: u32,
         r: &mut [u64],
         from: usize,
     ) {
-        if super::narrow_stream(x, c) {
-            return residuals_narrow(x, c, shift, r, from);
+        let x = v.x;
+        if let super::Narrow::Copy(h32) = &v.narrow {
+            if c.iter().all(|&v| super::fits_i32(v)) {
+                return residuals_narrow(x, h32, c, shift, r, from);
+            }
         }
         let k = Coefs::new(c);
         super::residuals_with(x, r, from, shift, |h: &[i64; P]| dot(h, &k, P / 4))
@@ -695,14 +735,15 @@ mod x86 {
 
     #[target_feature(enable = "avx2")]
     pub(super) fn residuals_avx2<const P: usize>(
-        x: &[i64],
+        v: &super::Values,
         c: &[i64; P],
         shift: u32,
         r: &mut [u64],
         from: usize,
     ) {
+        let x = v.x;
         let k = Coefs::new(c);
-        if super::narrow_stream(x, c) {
+        if matches!(v.narrow, super::Narrow::Fits) && c.iter().all(|&v| super::fits_i32(v)) {
             super::residuals_with(x, r, from, shift, |h: &[i64; P]| {
                 dot_narrow_avx2(h, &k, P / 4)
             })
@@ -931,14 +972,14 @@ mod tests {
             let x: Vec<i64> = (0..n).map(|_| edge_or_random(seed)).collect();
             let from = P.min(n);
             let mut want = vec![0u64; n];
-            residuals::<P>(Isa::Scalar, &x, &c, shift, &mut want, from);
+            residuals::<P>(&Values::new(Isa::Scalar, &x), &c, shift, &mut want, from);
             let mut back: Vec<i64> = x.clone();
             for i in from..n {
                 back[i] = crate::unzigzag(want[i]);
             }
             for isa in Isa::all_available() {
                 let mut r = vec![0u64; n];
-                residuals::<P>(isa, &x, &c, shift, &mut r, from);
+                residuals::<P>(&Values::new(isa, &x), &c, shift, &mut r, from);
                 assert_eq!(
                     r[from..],
                     want[from..],
@@ -1102,7 +1143,7 @@ mod tests {
             }
             let from = P;
             let mut want = vec![0u64; n];
-            residuals::<P>(Isa::Scalar, &x, &c, shift, &mut want, from);
+            residuals::<P>(&Values::new(Isa::Scalar, &x), &c, shift, &mut want, from);
             let mut back: Vec<i64> = x.clone();
             for i in from..n {
                 back[i] = crate::unzigzag(want[i]);
@@ -1110,7 +1151,7 @@ mod tests {
             for isa in Isa::all_available() {
                 let what = format!("{isa:?} P {P} case {case} switch {switch:?}");
                 let mut r = vec![0u64; n];
-                residuals::<P>(isa, &x, &c, shift, &mut r, from);
+                residuals::<P>(&Values::new(isa, &x), &c, shift, &mut r, from);
                 assert_eq!(r[from..], want[from..], "residuals {what}");
                 let mut y = back.clone();
                 restore::<P>(isa, &mut y, &c, shift, from);
