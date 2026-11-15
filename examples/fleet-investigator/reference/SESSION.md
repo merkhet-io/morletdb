@@ -35,7 +35,9 @@ server, tool, arguments, whether it failed, the time it took and the full result
   `top_k` 50.
 - **Outer-race defect?** The evidence points that way; it is not a diagnosis. BRG-3's envelope spectrum shows a
   231 Hz family with harmonics at 463, 694 and 926 Hz (22.7 dB above the median). The failed bearing showed the same
-  family before it failed (36 dB), and BRG-3 had none on its second day. 231 Hz is close to the outer-race defect
+  family before it failed (36 dB). On its second day BRG-3 showed only a weak 231 Hz line (10.1 dB, noise peaks
+  7.2 dB) without the harmonics; the tool chose the demodulation band per recording, so the three spectra are not
+  in exactly the same band. 231 Hz is close to the outer-race defect
   frequency published for this bearing (about 236 Hz). An inspection is needed to confirm it.
 - **What fixed it last time:** WO-2004-0219-01, an overhaul replacing all four bearings. The unit was out of service
   from 02-19 to 03-04 waiting for parts; the replacements came from LOT-0402.
