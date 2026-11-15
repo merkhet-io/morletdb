@@ -344,3 +344,18 @@ test('an older companion without /v1/clock (404): the health RTT is used, logged
   assert.equal(s.adapter.clockEndpoint, false);
   assert.equal(s.adapter.state(), 'ok');
 });
+
+// #496: a heartbeat beside the change and the gap does not fit (by count or by bytes). It used to take the room and
+// push the gap into the next message, after the heartbeat, which the companion then counted as contact during the
+// outage. test/e2e/test_e2e.py feeds the same observations through the companion's derive.compute.
+for (const bound of ['count', 'bytes']) {
+  test(`a heartbeat never precedes a pending gap, also when it would push the gap out of the message (${bound})`, async () => {
+    const { emit } = require('./heartbeat-gap');
+    const { posts, pending } = await emit(bound);
+    assert.equal(pending, 0);
+    const flat = posts.flat();
+    assert.deepEqual(flat.map((o) => o.kind), ['heartbeat', 'change', 'gap', 'heartbeat']);
+    assert.deepEqual(posts.slice(1).map((m) => m.map((o) => o.kind)), [['change', 'gap'], ['heartbeat']]);
+    assert.equal(flat.at(-1).observed_ns, '10000000000');
+  });
+}
