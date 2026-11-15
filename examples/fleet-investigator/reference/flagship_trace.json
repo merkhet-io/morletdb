@@ -1158,7 +1158,7 @@
      "quantity": 10,
      "received": "2004-02-24"
     },
-    "supplier": "Marlow Industrial Parts (fictional)",
+    "supplier": "Distributor 2 (fictional)",
     "material_definition": "Rexnord ZA-2115 double-row bearing",
     "installed_elsewhere": [
      {
@@ -1367,7 +1367,7 @@
   },
   "same_lot": {
    "lot": "LOT-0402",
-   "supplier": "Marlow Industrial Parts (fictional)",
+   "supplier": "Distributor 2 (fictional)",
    "installed": [
     {
      "asset": "SN-0402-002",

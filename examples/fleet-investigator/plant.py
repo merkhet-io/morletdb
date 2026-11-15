@@ -106,8 +106,8 @@ MATERIAL_CLASS = {"id": "MC-RB", "name": "Rolling-element bearings", "site": SHA
 MATERIAL_DEFINITION = {"id": "MD-ZA2115", "name": BEARING_PRODUCT, "site": SHARED,
                        "note": "Product as named in the IMS bearing data readme; the only real product name used"}
 SUPPLIERS = [
-    {"id": "SUP-1", "name": "Fenwick Bearing Supply (fictional)", "site": SHARED},
-    {"id": "SUP-2", "name": "Marlow Industrial Parts (fictional)", "site": SHARED},
+    {"id": "SUP-1", "name": "Distributor 1 (fictional)", "site": SHARED},
+    {"id": "SUP-2", "name": "Distributor 2 (fictional)", "site": SHARED},
 ]
 LOTS = [   # quantity = bearings of the lot in this graph
     {"id": "LOT-0207", "received": "2002-07-15", "supplier": "SUP-2"},
