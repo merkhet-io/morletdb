@@ -514,7 +514,10 @@ pub(crate) fn best_lpc(
 }
 
 /// For each sample, the number of its grid index among the chunk's distinct indices in order of first
-/// occurrence, and the number of distinct indices. Worst case O(n log n) for any input.
+/// occurrence, and the number of distinct indices. The format defines this numbering uniquely, so every
+/// path gives the same slots: a direct map when the index span is small, otherwise an open-addressing hash
+/// table, and the sort-based numbering when the table exceeds its probe budget (crafted colliding
+/// indices). Worst case O(n log n) for any input.
 pub(crate) fn first_occurrence_slots(ints: &[i64]) -> (Vec<u32>, usize) {
     let n = ints.len();
     let (lo, hi) = ints
@@ -537,6 +540,53 @@ pub(crate) fn first_occurrence_slots(ints: &[i64]) -> (Vec<u32>, usize) {
             .collect();
         return (slots, d as usize);
     }
+    hashed_slots(ints, SLOT_PROBE_BUDGET).unwrap_or_else(|| sorted_slots(ints))
+}
+
+/// Probes per sample the hash table may use on average before [`first_occurrence_slots`] falls back to
+/// sorting. With a load factor of at most 1/2 linear probing needs about 1.5 probes per lookup on
+/// average for keys that hash well; only crafted collisions come near this budget.
+const SLOT_PROBE_BUDGET: usize = 8;
+
+/// First-occurrence slots through an open-addressing table (a power of two of at least 2n entries,
+/// linear probing, Fibonacci hashing of the index), or None once more than `budget · n` probes were
+/// needed in total.
+pub(crate) fn hashed_slots(ints: &[i64], budget: usize) -> Option<(Vec<u32>, usize)> {
+    let n = ints.len();
+    let bits = (2 * n).next_power_of_two().trailing_zeros().max(4);
+    let mask = (1usize << bits) - 1;
+    let mut keys = vec![0i64; mask + 1];
+    let mut vals = vec![u32::MAX; mask + 1];
+    let mut probes_left = budget.saturating_mul(n);
+    let mut d = 0u32;
+    let mut slots = Vec::with_capacity(n);
+    for &k in ints {
+        let mut h = ((k as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15) >> (64 - bits)) as usize;
+        let slot = loop {
+            if probes_left == 0 {
+                return None;
+            }
+            probes_left -= 1;
+            let v = vals[h];
+            if v == u32::MAX {
+                keys[h] = k;
+                vals[h] = d;
+                d += 1;
+                break d - 1;
+            }
+            if keys[h] == k {
+                break v;
+            }
+            h = (h + 1) & mask;
+        };
+        slots.push(slot);
+    }
+    Some((slots, d as usize))
+}
+
+/// First-occurrence slots by sorting (indices, then groups by first position): O(n log n) for any input.
+pub(crate) fn sorted_slots(ints: &[i64]) -> (Vec<u32>, usize) {
+    let n = ints.len();
     let mut idx: Vec<u32> = (0..n as u32).collect();
     idx.sort_unstable_by_key(|&i| (ints[i as usize], i));
     // Groups of equal index; each group's first element is its first occurrence.
@@ -976,6 +1026,87 @@ mod tests {
                 slots_reference(&ints),
                 "case {case}"
             );
+        }
+    }
+
+    /// Every slot algorithm (the dispatcher, the hash table with an unlimited and with the real budget,
+    /// the sort) against the definition on `ints`.
+    fn check_slots(ints: &[i64], what: &str) -> bool {
+        let want = slots_reference(ints);
+        assert_eq!(first_occurrence_slots(ints), want, "dispatch {what}");
+        assert_eq!(sorted_slots(ints), want, "sort {what}");
+        assert_eq!(
+            hashed_slots(ints, usize::MAX),
+            Some(want.clone()),
+            "hash {what}"
+        );
+        let budgeted = hashed_slots(ints, SLOT_PROBE_BUDGET);
+        if let Some(b) = &budgeted {
+            assert_eq!(*b, want, "budgeted hash {what}");
+        }
+        budgeted.is_some()
+    }
+
+    /// The modular inverse of the hash multiplier: keys `j · inv` hash to `j · 2^-(64 - bits)`, so the
+    /// first 2^(64 - bits) of them all land in bucket 0 (the worst case for linear probing).
+    fn colliding(j: u64) -> i64 {
+        let g: u64 = 0x9E37_79B9_7F4A_7C15;
+        let mut inv = g;
+        for _ in 0..6 {
+            inv = inv.wrapping_mul(2u64.wrapping_sub(g.wrapping_mul(inv)));
+        }
+        assert_eq!(g.wrapping_mul(inv), 1);
+        j.wrapping_mul(inv) as i64
+    }
+
+    /// The hash-table path (#394) on the inputs that reach it: wide spans of distinct and repeated
+    /// indices, dense indices with a single outlier, i64 extremes, and crafted colliding keys (which must
+    /// exceed the probe budget and fall back to sorting, with the same slots).
+    #[test]
+    fn hashed_slots_follow_first_occurrence() {
+        let mut seed = 394u64;
+        let mut within_budget = 0;
+        for case in 0..2000 {
+            let n = 1 + (lcg(&mut seed) % 4096) as usize;
+            let distinct = 1 + (lcg(&mut seed) as usize) % n;
+            let pool: Vec<i64> = (0..distinct)
+                .map(|_| match case % 5 {
+                    0 => lcg(&mut seed) as i64 ^ ((lcg(&mut seed) as i64) << 43),
+                    1 => ((lcg(&mut seed) % 20_000) as i64 - 10_000) * 1_000_003,
+                    2 => [i64::MIN, i64::MAX, 0, -1, 1][(lcg(&mut seed) % 5) as usize],
+                    _ => (lcg(&mut seed) % 3000) as i64,
+                })
+                .collect();
+            let mut ints: Vec<i64> = (0..n)
+                .map(|_| pool[(lcg(&mut seed) as usize) % distinct])
+                .collect();
+            if case % 5 >= 3 {
+                // one outlier makes the span wide
+                let at = (lcg(&mut seed) as usize) % n;
+                ints[at] = if case % 2 == 0 { i64::MAX } else { i64::MIN };
+            }
+            within_budget += check_slots(&ints, &format!("case {case}")) as usize;
+        }
+        assert!(within_budget > 1900, "{within_budget}");
+        // Crafted collisions: all keys in one bucket, then half in one bucket, repeated keys among them.
+        for n in [64usize, 1000, 4096, 32768] {
+            let all: Vec<i64> = (0..n as u64).map(colliding).collect();
+            assert!(hashed_slots(&all, SLOT_PROBE_BUDGET).is_none(), "n {n}");
+            assert_eq!(first_occurrence_slots(&all), slots_reference(&all), "n {n}");
+            let mixed: Vec<i64> = (0..n as u64)
+                .map(|j| {
+                    if j % 2 == 0 {
+                        colliding(j / 2 % 500)
+                    } else {
+                        (j as i64) << 20
+                    }
+                })
+                .collect();
+            if n <= 4096 {
+                check_slots(&mixed, &format!("mixed n {n}"));
+            } else {
+                assert_eq!(first_occurrence_slots(&mixed), slots_reference(&mixed));
+            }
         }
     }
 
