@@ -12,7 +12,8 @@
 - Status: `ok`, `no_matches` (the windows searched hold no match; what was not searched is reported),
   `evidence_unavailable` (the source is not searchable yet, or no window of this size is stored),
   `permission_denied` (the role lacks a privilege), `service_failure` (database unavailable, timeout, cancelled) or
-  `response_too_large` (the result does not fit `response_bytes` even without source context and matches).
+  `response_too_large` (the result does not fit `response_bytes` even without source context and matches, or no
+  match fits).
 - The response, as sent, stays within `response_bytes` (see `_fit`); what was cut is reported in `truncated` and
   `omitted`.
 - Matches carry recording IDs, half-open sample ranges, distances, UTC times where the recording has a start time,
@@ -182,7 +183,8 @@ def _fit(cfg: Config, result: dict, extra: dict | None = None) -> dict:
 
     `truncated` lists the steps that changed the result, in order; `omitted` counts the source context values cut,
     the source context rows and the matches dropped. If the result does not fit after all four steps (for example
-    an oversized recording ID or detail), the result is replaced by the bounded error `response_too_large`."""
+    an oversized recording ID or detail), or if every match had to be dropped (an `ok` without matches would read
+    as "nothing found"), the result is replaced by the bounded error `response_too_large`."""
     limit, extra = cfg.limits.response_bytes, extra or {}
 
     def size(r):
@@ -224,13 +226,17 @@ def _fit(cfg: Config, result: dict, extra: dict | None = None) -> dict:
         while size(r) > limit and items:
             items.pop()
             omitted[name] += 1
-    if size(r) <= limit:
+    if size(r) <= limit and not (omitted["matches"] and not matches):
         return r
-    log.warning("investigation %s: %d-byte result does not fit response_bytes %d", result.get("request_id"),
-                size(result), limit)
+    if size(r) <= limit:
+        # Every match was cut: an `ok` without matches would read as "nothing found", so this is not a result.
+        detail = f"{omitted['matches']} matches found, none fits response_bytes"
+    else:
+        detail = "the result does not fit response_bytes even without source context and matches"
+    log.warning("investigation %s: %d-byte result does not fit response_bytes %d (%s)", result.get("request_id"),
+                size(result), limit, detail)
     return {**{k: result[k] for k in _ENVELOPE if k in result}, "status": "response_too_large",
-            "result_status": result.get("status"), "response_bytes": limit,
-            "detail": "the result does not fit response_bytes even without source context and matches"}
+            "result_status": result.get("status"), "response_bytes": limit, "detail": detail}
 
 
 def run_search(conn: psycopg.Connection, cfg: Config, req: dict) -> dict:

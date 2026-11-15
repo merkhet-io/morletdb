@@ -203,10 +203,11 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
 
     Matches are kept in preference to source context. `truncated` lists the steps that changed the result, in
     order. `omitted` counts the source context values cut and the source context rows and matches dropped. Both
-    are absent when nothing was cut. A result can therefore be `ok` with fewer matches than `top_k`, or with
-    none; `omitted.matches` says how many were dropped.
+    are absent when nothing was cut. A result can therefore be `ok` with fewer matches than `top_k`;
+    `omitted.matches` says how many were dropped. If every match would have to be dropped, the response is
+    `response_too_large` instead, so that `ok` never arrives without matches.
   - **Response too large.** If the result still does not fit, for example because of an oversized recording ID
-    or error detail, the response is HTTP 200 with status `response_too_large`. It holds only `request_id`,
+    or error detail, or because no match fits, the response is HTTP 200 with status `response_too_large`. It holds only `request_id`,
     `slot`, the correlation fields, `result_status` (the status that did not fit), `response_bytes` and
     `detail`. `response_bytes` must be at least 2,048, so this error always fits.
 - **Search.** `morlet_search_similar_evidence` (`streams.sql:1947`; stable). We do not use
