@@ -34,7 +34,7 @@ from . import derive as derive_mod
 from . import observations as obs_mod
 from .auth import Authenticator
 from .config import SCHEMA_VERSION, SUPPORTED_SCHEMAS, Config
-from .investigate import Busy, Investigations, RequestConflict, parse_request
+from .investigate import Busy, Investigations, RequestConflict, encode, parse_request
 
 log = logging.getLogger("morlet_winccoa.server")
 _INVESTIGATION = re.compile(r"^/v1/investigations/([0-9a-f-]{36})$")
@@ -186,7 +186,7 @@ class Handler(BaseHTTPRequestHandler):
         log.debug("%s %s", self.client_address[0], fmt % args)
 
     def _send(self, code: int, body: dict, headers: dict | None = None) -> None:
-        data = json.dumps(body, default=str, separators=(",", ":")).encode()
+        data = encode(body)     # the serialization the investigation response bound measures
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "no-store")

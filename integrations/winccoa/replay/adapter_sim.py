@@ -22,6 +22,7 @@ SCHEMA = "morlet-winccoa/1"
 class Response:
     status: int
     body: dict
+    size: int = 0          # bytes of the response body as received
 
 
 class Client:
@@ -44,7 +45,7 @@ class Client:
                 parsed = json.loads(payload) if payload else {}
             except ValueError:
                 parsed = {"raw": payload.decode(errors="replace")}
-            return Response(r.status, parsed)
+            return Response(r.status, parsed, len(payload))
         finally:
             conn.close()
 

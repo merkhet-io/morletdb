@@ -3,7 +3,6 @@
 """The HTTP service against a real MorletDB: authentication, malformed requests, investigation statuses, request
 correlation (retries, superseded and late responses, cancellation), limits and an unavailable database."""
 import dataclasses
-import json
 import logging
 import os
 import threading
@@ -206,7 +205,7 @@ class Statuses(Service):
         _, ad = self.start(response_bytes=4000)
         r = ad.send_investigation(self.investigation(ad))
         self.assertEqual(r.body["status"], "ok")
-        self.assertLessEqual(len(json.dumps(r.body).encode()), 4000 + 200)
+        self.assertLessEqual(r.size, 4000)          # the body as received, view and truncation metadata included
         self.assertIn("context", r.body["truncated"])
 
 
