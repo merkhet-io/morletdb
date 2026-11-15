@@ -1253,6 +1253,11 @@ fn decode_ints(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
 
 /// Decodes one stream of `n` integers. With `lpc` (version 5) the predictor field may also be
 /// [`g21::PREDICTOR_LPC`], whose parameters follow the partition order.
+///
+/// The residuals are decoded into a pre-sized buffer, partition by partition, by [`rice_partition`] and
+/// [`fixed_partition`]; the prediction follows in a second pass with the predictor fixed for the chunk.
+/// Results, errors included, are those of the straightforward decoder kept in the tests as an oracle
+/// (`decode_stream_reference`).
 pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64>, CodecError> {
     let mut rd = BitReader::new(bytes);
     let order = rd.get(3)?;
@@ -1268,8 +1273,7 @@ pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64
         None
     };
     let order = order as usize;
-    // Residuals first, then the prediction in a second pass with the predictor fixed for the chunk.
-    let mut x = Vec::with_capacity(n);
+    let mut x = vec![0i64; n];
     for p in 0..(1usize << porder) {
         let (a, b) = partition_bounds(n, porder, p);
         let k = rd.get(6)?;
@@ -1278,13 +1282,9 @@ pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64
             if width > 64 {
                 return Err(CodecError::Corrupt("escape width"));
             }
-            for _ in a..b {
-                x.push(unzigzag(rd.get(width)?));
-            }
+            fixed_partition(&mut rd, width, &mut x[a..b])?;
         } else {
-            for _ in a..b {
-                x.push(unzigzag(rd.get_rice(k as u32)?));
-            }
+            rice_partition(&mut rd, k as u32, &mut x[a..b])?;
         }
     }
     if !rd.rest_is_padding() {
@@ -1294,9 +1294,16 @@ pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64
         model.restore(&mut x);
         return Ok(x);
     }
+    restore_fixed(&mut x, order);
+    Ok(x)
+}
+
+/// Inverts the fixed predictor of `order` in place (`x` holds the residuals on entry).
+fn restore_fixed(x: &mut [i64], order: usize) {
+    let n = x.len();
     let warm = order.min(n);
     for i in 0..warm {
-        x[i] = x[i].wrapping_add(predict(&x, i, order));
+        x[i] = x[i].wrapping_add(predict(x, i, order));
     }
     match order {
         0 => {}
@@ -1332,7 +1339,87 @@ pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64
             }
         }
     }
-    Ok(x)
+}
+
+/// Bits a fast-path read may use: with the 8 bytes at byte `pos / 8` in the slice, the window shifted by
+/// `pos % 8` holds at least 64 - 7 valid bits. [`BitReader::get_rice`] takes the same one-window path
+/// exactly when its code fits in `min(remaining, 57)` bits, and `remaining >= 57` whenever those 8 bytes
+/// exist, so the two paths agree on when a code is read from one window.
+const FAST_BITS: u32 = 57;
+
+/// The `out.len()` Rice codes (parameter `k < ESCAPE`) of one partition, unzigzagged into `out`.
+///
+/// Fast path: the bit position stays in a local, and while the 8 bytes at the current byte are in the
+/// slice a code that fits in [`FAST_BITS`] is read from that one big-endian window. That is exactly the
+/// case in which [`BitReader::get_rice`] takes its own one-window path and gives the same value: the
+/// quotient is `zeros <= 56` and the remainder `k <= 56` bits, so its quotient check cannot fire. Every
+/// other code (near the end of the slice, or longer than one window) goes to `get_rice` itself at the
+/// same position, so values, errors and the final position are the reference reader's.
+#[inline(always)]
+fn rice_partition(rd: &mut BitReader, k: u32, out: &mut [i64]) -> Result<(), CodecError> {
+    let bytes = rd.bytes;
+    let mut pos = rd.pos;
+    for o in out.iter_mut() {
+        if let Some(b) = bytes.get(pos / 8..pos / 8 + 8) {
+            let w = u64::from_be_bytes(b.try_into().unwrap()) << (pos % 8);
+            let zeros = w.leading_zeros();
+            let used = zeros + 1 + k;
+            if used <= FAST_BITS {
+                // The stop bit and the k remainder bits: (1 << k) | r, with 63 - k >= 7.
+                let top = (w << zeros) >> (63 - k);
+                *o = unzigzag(((zeros as u64) << k) | (top ^ (1u64 << k)));
+                pos += used as usize;
+                continue;
+            }
+        }
+        rd.pos = pos;
+        *o = unzigzag(rice_slow(rd, k)?);
+        pos = rd.pos;
+    }
+    rd.pos = pos;
+    Ok(())
+}
+
+/// The `out.len()` fixed-width (`width <= 64`) escape values of one partition, unzigzagged into `out`.
+/// Widths up to [`FAST_BITS`] are read from one window while its 8 bytes are in the slice, which is the
+/// value [`BitReader::get`] returns there (it has at least `width` bits remaining); everything else is
+/// `get` itself at the same position.
+#[inline(always)]
+fn fixed_partition(rd: &mut BitReader, width: u32, out: &mut [i64]) -> Result<(), CodecError> {
+    if width == 0 {
+        // `get(0)` reads nothing and returns 0.
+        out.fill(0);
+        return Ok(());
+    }
+    let bytes = rd.bytes;
+    let mut pos = rd.pos;
+    for o in out.iter_mut() {
+        if width <= FAST_BITS {
+            if let Some(b) = bytes.get(pos / 8..pos / 8 + 8) {
+                let w = u64::from_be_bytes(b.try_into().unwrap()) << (pos % 8);
+                *o = unzigzag(w >> (64 - width));
+                pos += width as usize;
+                continue;
+            }
+        }
+        rd.pos = pos;
+        *o = unzigzag(get_slow(rd, width)?);
+        pos = rd.pos;
+    }
+    rd.pos = pos;
+    Ok(())
+}
+
+#[cold]
+#[inline(never)]
+fn rice_slow(rd: &mut BitReader, k: u32) -> Result<u64, CodecError> {
+    rd.get_rice(k)
+}
+
+#[cold]
+#[inline(never)]
+fn get_slow(rd: &mut BitReader, n: u32) -> Result<u64, CodecError> {
+    rd.get(n)
 }
 
 pub(crate) fn put_varint(out: &mut Vec<u8>, mut v: u64) {
@@ -1816,6 +1903,241 @@ mod tests {
                 previous.len()
             );
         }
+    }
+
+    /// The decoder before #394's loop rewrite, kept as an oracle: decodes one stream of `n` integers. With `lpc` (version 5) the predictor field may also be
+    /// [`g21::PREDICTOR_LPC`], whose parameters follow the partition order.
+    fn decode_stream_reference(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64>, CodecError> {
+        let mut rd = BitReader::new(bytes);
+        let order = rd.get(3)?;
+        let porder = rd.get(4)? as u32;
+        let is_lpc = lpc && order == g21::PREDICTOR_LPC;
+        if (order as usize > MAX_ORDER && !is_lpc)
+            || porder > MAX_PARTITION_ORDER
+            || (n >> porder) == 0
+        {
+            return Err(CodecError::Corrupt("predictor header"));
+        }
+        let model = if is_lpc {
+            Some(g21::Lpc::read(&mut rd)?)
+        } else {
+            None
+        };
+        let order = order as usize;
+        // Residuals first, then the prediction in a second pass with the predictor fixed for the chunk.
+        let mut x = Vec::with_capacity(n);
+        for p in 0..(1usize << porder) {
+            let (a, b) = partition_bounds(n, porder, p);
+            let k = rd.get(6)?;
+            if k == ESCAPE {
+                let width = rd.get(7)? as u32;
+                if width > 64 {
+                    return Err(CodecError::Corrupt("escape width"));
+                }
+                for _ in a..b {
+                    x.push(unzigzag(rd.get(width)?));
+                }
+            } else {
+                for _ in a..b {
+                    x.push(unzigzag(rd.get_rice(k as u32)?));
+                }
+            }
+        }
+        if !rd.rest_is_padding() {
+            return Err(CodecError::Corrupt("trailing data"));
+        }
+        if let Some(model) = model {
+            model.restore(&mut x);
+            return Ok(x);
+        }
+        let warm = order.min(n);
+        for i in 0..warm {
+            x[i] = x[i].wrapping_add(predict(&x, i, order));
+        }
+        match order {
+            0 => {}
+            1 => {
+                for i in warm..n {
+                    x[i] = x[i].wrapping_add(x[i - 1]);
+                }
+            }
+            2 => {
+                for i in warm..n {
+                    x[i] = x[i].wrapping_add(x[i - 1].wrapping_mul(2).wrapping_sub(x[i - 2]));
+                }
+            }
+            3 => {
+                for i in warm..n {
+                    x[i] = x[i].wrapping_add(
+                        x[i - 1]
+                            .wrapping_sub(x[i - 2])
+                            .wrapping_mul(3)
+                            .wrapping_add(x[i - 3]),
+                    );
+                }
+            }
+            _ => {
+                for i in warm..n {
+                    x[i] = x[i].wrapping_add(
+                        x[i - 1]
+                            .wrapping_add(x[i - 3])
+                            .wrapping_mul(4)
+                            .wrapping_sub(x[i - 2].wrapping_mul(6))
+                            .wrapping_sub(x[i - 4]),
+                    );
+                }
+            }
+        }
+        Ok(x)
+    }
+
+    /// A syntactically valid stream of `n` values in which every partition picks its own Rice parameter
+    /// (any of 0..=62) or an escape of any width (0..=64), with quotients from 0 to a few hundred, so the
+    /// one-window paths, their limits (57 bits) and the slow paths are all reached.
+    fn arbitrary_stream(seed: &mut u64, n: usize) -> Vec<u8> {
+        let porder = (lcg(seed) % 9) as u32;
+        let porder = porder.min(usize::BITS - 1 - n.leading_zeros());
+        let mut w = BitWriter::default();
+        w.put(lcg(seed) % 5, 3);
+        w.put(porder as u64, 4);
+        for p in 0..(1usize << porder) {
+            let (a, b) = partition_bounds(n, porder, p);
+            if lcg(seed).is_multiple_of(4) {
+                let width = match lcg(seed) % 4 {
+                    0 => 55 + (lcg(seed) % 10) as u32,
+                    1 => 0,
+                    _ => (lcg(seed) % 65) as u32,
+                };
+                w.put(ESCAPE, 6);
+                w.put(width as u64, 7);
+                for _ in a..b {
+                    w.put(lcg(seed) ^ (lcg(seed) << 40), width);
+                }
+            } else {
+                let k = match lcg(seed) % 4 {
+                    0 => 50 + (lcg(seed) % 13) as u32,
+                    _ => (lcg(seed) % 20) as u32,
+                };
+                w.put(k as u64, 6);
+                for _ in a..b {
+                    let q = match lcg(seed) % 16 {
+                        0 => lcg(seed) % 300,
+                        1 => 50 + lcg(seed) % 10,
+                        _ => lcg(seed) % 4,
+                    };
+                    let q = q.min(u64::MAX >> k);
+                    let r = (lcg(seed) ^ (lcg(seed) << 40)) & ((1u64 << k) - 1);
+                    for _ in 0..q {
+                        w.put(0, 1);
+                    }
+                    w.put(1, 1);
+                    w.put(r, k);
+                }
+            }
+        }
+        w.finish()
+    }
+
+    /// The rewritten decoder (#394) against the previous one: the same `Ok` values and the same errors on
+    /// valid streams (encoder output with and without LPC, side streams, arbitrary partition parameters)
+    /// and on flipped, truncated, extended and random bytes, for both `lpc` settings and other lengths.
+    #[test]
+    fn decode_stream_matches_the_previous_decoder() {
+        let mut seed = 394u64;
+        let mut checked = 0usize;
+        let mut errors = 0usize;
+        let mut check = |bytes: &[u8], n: usize, what: &str, errors: &mut usize| {
+            for lpc in [false, true] {
+                let got = decode_stream(bytes, n, lpc);
+                assert_eq!(
+                    got,
+                    decode_stream_reference(bytes, n, lpc),
+                    "{what} n {n} lpc {lpc}"
+                );
+                *errors += got.is_err() as usize;
+                checked += 1;
+            }
+        };
+        for case in 0..3000 {
+            let n = match case % 5 {
+                0 => 1 + (lcg(&mut seed) % 40) as usize,
+                _ => 1 + (lcg(&mut seed) % 5000) as usize,
+            };
+            let amp = 1i64 << (lcg(&mut seed) % 63);
+            let mut walk = 0i64;
+            let x: Vec<i64> = (0..n)
+                .map(|i| match case % 6 {
+                    0 => (lcg(&mut seed) as i64) % amp,
+                    1 => {
+                        walk = walk.wrapping_add((lcg(&mut seed) % 64) as i64 - 32);
+                        walk
+                    }
+                    2 => ((i as f64 * 0.013).sin() * 30000.0) as i64 + (lcg(&mut seed) % 7) as i64,
+                    3 => lcg(&mut seed) as i64 ^ ((lcg(&mut seed) as i64) << 40),
+                    _ => ((i as f64 * 0.05).sin() * 1e6) as i64,
+                })
+                .collect();
+            let mut streams = Vec::new();
+            let mut enc = Vec::new();
+            encode_stream(&x, true, &mut enc);
+            streams.push(enc);
+            let mut enc = Vec::new();
+            encode_side_stream(&x, &mut enc);
+            streams.push(enc);
+            streams.push(arbitrary_stream(&mut seed, n));
+            for (s, enc) in streams.iter().enumerate() {
+                let what = format!("case {case} stream {s}");
+                check(enc, n, &what, &mut errors);
+                if s < 2 {
+                    assert_eq!(decode_stream(enc, n, true), Ok(x.clone()), "{what}");
+                }
+                for _ in 0..3 {
+                    let mut bad = enc.clone();
+                    let at = (lcg(&mut seed) as usize) % bad.len();
+                    bad[at] ^= 1 << (lcg(&mut seed) % 8);
+                    check(&bad, n, &format!("{what} flip"), &mut errors);
+                    let mut bad = enc.clone();
+                    let at = (lcg(&mut seed) as usize) % bad.len();
+                    for b in bad[at..]
+                        .iter_mut()
+                        .take(1 + (lcg(&mut seed) % 16) as usize)
+                    {
+                        *b = if case % 2 == 0 {
+                            0
+                        } else {
+                            lcg(&mut seed) as u8
+                        };
+                    }
+                    check(&bad, n, &format!("{what} smear"), &mut errors);
+                }
+                let cut = (lcg(&mut seed) as usize) % enc.len();
+                check(&enc[..cut], n, &format!("{what} cut"), &mut errors);
+                check(
+                    &enc[..enc.len() - 1],
+                    n,
+                    &format!("{what} cut1"),
+                    &mut errors,
+                );
+                let mut long = enc.clone();
+                long.push(lcg(&mut seed) as u8 & 1);
+                check(&long, n, &format!("{what} extended"), &mut errors);
+                let m = 1 + (lcg(&mut seed) % 5000) as usize;
+                check(enc, m, &format!("{what} len"), &mut errors);
+            }
+        }
+        for case in 0..20000 {
+            let len = (lcg(&mut seed) % 96) as usize;
+            let mut junk: Vec<u8> = (0..len).map(|_| lcg(&mut seed) as u8).collect();
+            if case % 3 == 0 {
+                for b in junk.iter_mut().skip(1).step_by(2) {
+                    *b = 0; // long unary runs
+                }
+            }
+            let m = 1 + (lcg(&mut seed) % 400) as usize;
+            check(&junk, m, &format!("junk {case}"), &mut errors);
+        }
+        eprintln!("decode_stream differential: {checked} inputs, {errors} rejected");
+        assert!(errors > 10_000 && checked - errors > 10_000);
     }
 
     // The previous decoder (bit-by-bit reader, per-sample prediction) as an oracle.
