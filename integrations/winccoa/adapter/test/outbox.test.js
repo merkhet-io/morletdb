@@ -48,3 +48,40 @@ test('the queue reports full at its limit', () => {
   o.push(change(1));
   assert.equal(o.full(), true);
 });
+
+test('heartbeats that would push the last pending gap out of the message are left out (#496)', () => {
+  const hb = { kind: 'heartbeat', acquisition: 'a', asset: 'r', observed_ns: '3' };
+  const gap = { kind: 'gap', acquisition: 'a', asset: 'r', observed_ns: '2' };
+  const byCount = new Outbox({ maxPerMessage: 2, maxBytes: 1 << 20, maxQueued: 100 });
+  byCount.push(change(0));
+  byCount.push(gap);
+  let m = byCount.message('s', [hb]);
+  assert.deepEqual(m.body.observations.map((x) => x.kind), ['change', 'gap']);
+  assert.deepEqual([m.sent, m.heartbeats.length], [2, 0]);
+  byCount.acknowledge(m.sent);
+  m = byCount.message('s', [hb]);
+  assert.deepEqual(m.body.observations.map((x) => [x.kind, x.seq]), [['heartbeat', 2]]);   // no seq was used up
+
+  const env = Buffer.byteLength(JSON.stringify({ schema: 'morlet-winccoa/1', session: 's', observations: [] }));
+  const byBytes = new Outbox({ maxPerMessage: 1000, maxBytes: 0, maxQueued: 100 });
+  const c = byBytes.push(change(0));
+  const g = byBytes.push(gap);
+  byBytes.maxBytes = env + Outbox.size(c) + 1 + Outbox.size(g) + 1 + 10;
+  m = byBytes.message('s', [hb]);
+  assert.deepEqual(m.body.observations.map((x) => x.kind), ['change', 'gap']);
+  assert.equal(m.heartbeats.length, 0);
+
+  // The gap does not fit even without heartbeats: this message carries none either.
+  const one = new Outbox({ maxPerMessage: 1, maxBytes: 1 << 20, maxQueued: 100 });
+  one.push(change(0));
+  one.push(gap);
+  m = one.message('s', [hb]);
+  assert.deepEqual(m.body.observations.map((x) => x.kind), ['change']);
+
+  // No gap pending: heartbeats take their room as before.
+  const none = new Outbox({ maxPerMessage: 2, maxBytes: 1 << 20, maxQueued: 100 });
+  none.push(change(0));
+  none.push(change(1));
+  m = none.message('s', [hb]);
+  assert.deepEqual(m.body.observations.map((x) => x.kind), ['heartbeat', 'change']);
+});

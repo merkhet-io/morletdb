@@ -119,6 +119,9 @@ rule, exact `numeric`; `streams.sql:2765-2779`). It never rounds itself. The OPC
     `snapshot`.
   - On a disconnect, the open state ends at the last committed `heartbeat` before the outage. The span up to the
     snapshot gets a `gap` observation and no context row, so it reads as missing evidence, not as "no state".
+  - Derivation follows commit order, so the adapter never commits a heartbeat ahead of a gap it has queued: a
+    heartbeat goes after the last pending gap in the same message, and a message that cannot hold that gap beside
+    its heartbeats (by count or by bytes) carries none (#496).
   - The snapshot opens a new state at `max(source_ns, reconnect observed_ns)`.
   - A repeated identical snapshot within a session is a no-op.
 - **Late channels.** `morlet_add_acquisition_context` maps only to channels that exist at call time. Per-channel

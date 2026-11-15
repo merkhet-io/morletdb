@@ -19,7 +19,10 @@ python tools/ingest/morlet_ship.py --source-dsn "postgresql://...@edge/db" --tar
   at the machine) goes on without duplicates.
 - **Checked before writing (#444):** the target's existing chunks must equal the source's first chunks, byte for byte
   and on the same chunk boundaries, and the target must not be longer than the source. Otherwise the recording is
-  refused and the target is left unchanged; no source chunk is appended onto a different prefix.
+  refused and the target is left unchanged; no source chunk is appended onto a different prefix. One chunk more
+  or fewer on either side counts as a difference, for example a final chunk removed by episodic memory on the
+  target or the source (#495). A chunk missing in the source after the target's end stops the run before the batch
+  that would need it is written.
 - **Up to a fixed end:** a run ships up to the source's end as read when it starts, so a source that keeps
   recording meanwhile is shipped by the next run.
 - **Checked at the end:** the SHA-256 over the chunk bytes up to that end must be equal on both sides. The

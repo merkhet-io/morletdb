@@ -428,12 +428,9 @@ class Adapter {
     let hb = wantHeartbeat;
     while (!this.halted && this.session) {
       if (this.retryTimer) return;          // backing off: the retry will send
-      const pending = this.outbox.pending;
       // Heartbeats go only into the message holding the last pending gap (after it), or into any message when no
-      // gap is pending: see outbox.js.
-      const lastGap = pending.map((p) => p.obs.kind).lastIndexOf('gap');
-      let m = this.outbox.message(this.session, []);
-      if (hb && lastGap < m.sent) m = this.outbox.message(this.session, this.heartbeats());
+      // gap is pending; the outbox decides with the room the heartbeats take (see outbox.js, #496).
+      const m = this.outbox.message(this.session, hb ? this.heartbeats() : []);
       if (m.body.observations.length === 0) return;
       const r = await this.client.request('POST', '/v1/observations', m.body);
       if (!this.onObservations(r, m)) return;
