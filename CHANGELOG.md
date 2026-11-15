@@ -23,6 +23,19 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
     next to one with unbuilt windows; coverage still `gone`) and the pgrx test
     `compacted_windows_are_neither_written_nor_backlog` (levels 4 and 1, a removed tail, new samples after removal,
     the status with and without envelopes). Both failed before the fix.
+- **Shipping refuses a prefix with one chunk more or fewer, before writing (#495).** `morlet_ship.py` compared the
+  target's existing chunks with the source's using `zip`, which drops one side's unmatched last chunk. A target whose
+  final chunk had been removed by episodic memory (checkpoint 8, chunks [0]) was accepted, the source's new chunk was
+  appended and the target's end advanced to 12, and only the final digest then failed. The comparison now pairs
+  the chunks with `zip_longest`, so a missing trailing chunk on either side refuses the recording before anything is
+  written. Each batch is also checked to be contiguous from the target's end before its transaction opens, so a gap
+  in the source fails with a clear error instead of a database error. Python only, no SQL change.
+  - Tests: a unit test of the prefix comparison in both directions, and against a database the issue's reproduction
+    (target compacted through `morlet_set_level`), its mirror (source compacted) and a source gap; each asserts the
+    target's chunks and checkpoint are unchanged. The unit test and the reproduction failed before the fix; the gap
+    test raised a database error, though the target was rolled back. CI now runs `test_morlet_ship` and
+    `test_morlet_s3` against the database and fails when they are skipped; before, the importer step ran them
+    without a database and they were skipped.
 - **WinCC OA: the clock estimate no longer counts the companion's own latency.** The estimate
   `|received_ns − observed_ns| + rtt_ns/2 + daq_bound` took `received_ns` after the body was parsed and a database
   connection opened, and the adapter's `rtt_ns` was the round trip of `GET /v1/health`, which queries the database

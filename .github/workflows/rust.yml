@@ -238,6 +238,15 @@ jobs:
         env:
           MORLET_MCP_TEST_DATABASE_URL: host=localhost port=28817 dbname=postgres user=runner
         run: python -m unittest discover -s tools/mcp -p 'test_*.py'
+      - name: Test chunk shipping and the S3 archive against the database
+        if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
+        env:
+          MORLET_MCP_TEST_DATABASE_URL: host=localhost port=28817 dbname=postgres user=runner
+        working-directory: tools/ingest
+        run: |
+          python -m unittest -v test_morlet_ship test_morlet_s3 2>&1 | tee unittest.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "skipped" unittest.log; then echo "::error::shipping or S3 tests were skipped"; exit 1; fi
       - name: Run bounded benchmark smoke test
         if: github.event_name == 'pull_request' && matrix.pg == 17 && matrix.mode == 'without-pgvector'
         env:

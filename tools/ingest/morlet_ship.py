@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import itertools
 import json
 import os
 import sys
@@ -70,12 +71,8 @@ def chunks(conn, coll, rid, start=0, upto=None, page=1000):
 def same_prefix(src, tgt, src_coll, tgt_coll, rid, end):
     """Whether the target's chunks [0, end) equal the source's, byte for byte and on the same boundaries (#444)."""
     a, b = chunks(src, src_coll, rid, 0, end), chunks(tgt, tgt_coll, rid, 0, end)
-    for x, y in zip(a, b):
-        if x != y:
-            return False
-    if next(a, None) is not None or next(b, None) is not None:
-        return False                                      # one side has more chunks below end
-    return True
+    missing = object()                    # zip() would drop a's unmatched last chunk when b ends first (#495)
+    return all(x == y for x, y in itertools.zip_longest(a, b, fillvalue=missing))
 
 
 def digest(conn, coll, rid, upto):
@@ -102,6 +99,11 @@ def ship(src, tgt, src_coll, tgt_coll, flt, batch):
             rows = src.execute("SELECT start_sample, sample_count, encoded FROM morlet_encoded_chunks(%s::regclass,%s,%s,%s)",
                                (src_coll, rid, end, batch)).fetchall()
             rows = [r for r in rows if r[0] < src_end]      # chunks appended to the source since the start wait
+            at = end
+            for s, c, _e in rows:                           # checked before this batch's transaction opens
+                if s != at:
+                    raise ValueError(f"{rid}: the source has no chunk at {at} (a gap in the source?)")
+                at = s + c
             if not rows:
                 raise ValueError(f"{rid}: the source has no chunk at {end} (a gap in the source?)")
             with tgt.transaction():
