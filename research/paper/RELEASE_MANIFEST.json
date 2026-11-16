@@ -14,11 +14,11 @@
   "report_text_and_figures": "CC-BY-4.0 (LICENSE.md)"
  },
  "tag": "paper-v0.26",
- "report_source_commit": "e49977fe6c9111055b2afa9f08e6b3e1913a8857",
+ "report_source_commit": "2f4fe15ab59d9fb551b8348905b112baccb183b0",
  "pdf_sha256": {
-  "research/paper/morletdb.pdf": "72ce7fa6338cde942b1b102ce995e5a77b4c0d7716ef5cedfbb331f064cc7789",
-  "research/paper/supplement.pdf": "5e464a2e940461e319c2c723a7dbb77400b45a9ef117754710f6baea8830d3f9",
-  "docs/morletdb.pdf": "72ce7fa6338cde942b1b102ce995e5a77b4c0d7716ef5cedfbb331f064cc7789",
-  "docs/morletdb-supplement.pdf": "5e464a2e940461e319c2c723a7dbb77400b45a9ef117754710f6baea8830d3f9"
+  "research/paper/morletdb.pdf": "927c120c7044a910917b25edbafbc6a41a157f3798f4480a1ed4906ac5910dbc",
+  "research/paper/supplement.pdf": "4850509f64410c22a76f2cdb8cb0438cfc645731dafdea1de04507330a5dbde3",
+  "docs/morletdb.pdf": "927c120c7044a910917b25edbafbc6a41a157f3798f4480a1ed4906ac5910dbc",
+  "docs/morletdb-supplement.pdf": "4850509f64410c22a76f2cdb8cb0438cfc645731dafdea1de04507330a5dbde3"
  }
 }
