@@ -18,6 +18,20 @@ SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_m
   - Tests: `HistoryCacheAcrossAuthorization` in `tools/mcp/test_decision_db.py`, negative tests for role and
     row-security-scope changes and for a missing column privilege, in both enablement orders. They failed before
     the fix.
+- **Grizzbit: two encoder selection fixes (#505, #506).** Encoder only: no format or decoder change, every existing
+  chunk decodes unchanged, and a chunk can only get smaller or stay the same size. Grizzbit 1 (versions 2 and 3)
+  output is unchanged (`encoder-equivalence.bin`), and so is `float32-equivalence.bin`.
+  - Grizzbit 2.1 (version 5) correction sections: the skips that avoided coding the exception and table sections
+    assumed at least 3 bits per nonzero correction and 1 bit per table entry. Predicted streams and zero-width
+    escaped partitions cost less, so a smaller section was never tried (512 samples whose corrections repeat
+    [1, 1, 1, 0]: Grizzbit 1's 155 bytes kept instead of a 146-byte version-5 chunk). A section is now skipped only
+    on a proven lower bound, 2 bytes per stream (3 from 4 values on).
+  - LPC in versions 5 and 6: the LPC stream chosen by size estimates replaced the fixed-predictor stream whenever
+    its estimate was smaller, even when the written stream was as long or longer (151 bytes against 149). It now
+    replaces it only with strictly fewer bytes; a tie keeps the fixed stream. Two version-6 golden chunks whose LPC
+    stream tied are no longer `encoder_current` (same size); their current encodings are added as new golden files.
+  - Tests: an unpruned oracle for the correction choice over structured patterns, the issue reproducers, and
+    near-equal LPC candidates checked against written lengths. They failed before the fix.
 - **Envelope building after compaction (#488).** After a recording was compacted at memory level 4,
   `morlet_build_envelopes` returned the number of windows it skipped there (31 in the runbook's case) on every call
   and wrote nothing. The steward took that as progress, picked the same recording on every tick and never reached the

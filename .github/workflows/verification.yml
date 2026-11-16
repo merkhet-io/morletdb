@@ -36,9 +36,21 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
+        # The one permitted edit (crates/grizzbit/tests/codec_golden.rs): a rawcodec .json whose only change is
+        # "encoder_current" from true to false, when an encoder change no longer reproduces that chunk.
         run: |
-          changed=$(git diff --name-only --diff-filter=MDRT "$BASE...$HEAD" -- testdata/rawcodec testdata/grizzbit)
-          if [ -n "$changed" ]; then echo "::error::golden chunks changed: $changed"; exit 1; fi
+          bad=""
+          for f in $(git diff --name-only --diff-filter=MDRT "$BASE...$HEAD" -- testdata/rawcodec testdata/grizzbit); do
+            case "$f" in
+              testdata/rawcodec/*.json)
+                if git cat-file -e "$HEAD:$f" 2>/dev/null &&
+                   [ "$(git show "$BASE:$f" | sed 's/"encoder_current":true/"encoder_current":false/')" = "$(git show "$HEAD:$f")" ]; then
+                  echo "encoder_current cleared: $f"; continue
+                fi ;;
+            esac
+            bad="$bad $f"
+          done
+          if [ -n "$bad" ]; then echo "::error::golden chunks changed:$bad"; exit 1; fi
   kani:
     runs-on: ubuntu-24.04
     timeout-minutes: 45

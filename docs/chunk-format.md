@@ -130,7 +130,12 @@ stream, as above, with one addition: predictor `7` means LPC. Predictors 5 and 6
 - A version-5 chunk is stored only if it has strictly fewer bytes. On a tie, Grizzbit 1 is kept, so a Grizzbit 1
   chunk that stays is byte for byte what Grizzbit 1 alone writes.
 - The LPC coefficients come from a Welch-windowed autocorrelation, then Levinson-Durbin, then FLAC-style
-  quantisation with error feedback. Only the order with the best code-length estimate is coded exactly.
+  quantisation with error feedback. Only the order with the best code-length estimate is coded exactly. That
+  LPC stream replaces the fixed-predictor stream only if it has strictly fewer bytes once written; on a tie
+  the fixed stream is kept (#506).
+- Of the correction sections, per sample, exceptions only and table plus exceptions, the one with the fewest
+  bytes is kept; per sample wins ties. A section is skipped without being coded only when a proven lower
+  bound of its size is not smaller: 2 bytes per stream (3 from 4 values on), whatever the values (#505).
 - The encoder uses IEEE basic operations only, in a fixed order: no fused multiply-add and no libm. So it writes
   the same bytes on every platform (B6, S5).
 
@@ -220,7 +225,8 @@ float32 terms, with the same integer streams.
   first sign.
 
 **Streams.** Every stream is the integer stream above (predictor header, partitions, Rice codes), and may also
-use version 5's LPC predictor (predictor field 7), except the run stream, which uses fixed predictors only.
+use version 5's LPC predictor (predictor field 7), except the run stream, which uses fixed predictors only. As in
+version 5, the encoder writes an LPC stream only if it has strictly fewer bytes than the fixed-predictor stream.
 
 **`ord32`** maps a float32 bit pattern `b` to `b` when the sign bit is clear and to `−(b AND 0x7FFFFFFF) − 1`
 when it is set, so +0 is 0 and −0 is −1; its inverse refuses integers outside −2³¹..2³¹−1.

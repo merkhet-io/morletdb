@@ -405,14 +405,43 @@ fn cases_v6() -> Vec<Case6> {
             f((i as f64 / 61.0).sin() * 120.0 + ((lcg(&mut seed) % 1000) as f64 - 500.0) * 1e-4)
         })
         .collect();
+    // A resonance whose LPC stream is strictly shorter than the fixed predictor's.
+    let (mut y1, mut y2) = (0.0f64, 0.0f64);
+    let lpc_shorter: Vec<f64> = (0..4096)
+        .map(|_| {
+            let e = (lcg(&mut seed) % 41) as f64 - 20.0;
+            let y = 1.9 * y1 - 0.95 * y2 + e;
+            y2 = y1;
+            y1 = y;
+            f(0.25 + y.round() * 0.0023413)
+        })
+        .collect();
     vec![
         ("v6-signmag-crossing", crossing, 3, false, true),
         ("v6-signmag-one-sign", positive, 3, false, false),
         ("v6-signmag-signed-zeros", zeros, 3, false, true),
         ("v6-signmag-max-length", long, 3, false, true),
-        ("v6-grid-decimals-corrections", decimals, 1, true, true),
+        (
+            "v6-grid-decimals-corrections",
+            decimals.clone(),
+            1,
+            true,
+            true,
+        ),
         ("v6-grid-steps-no-corrections", steps, 1, false, false),
-        ("v6-grid-lpc-corrections", resonance, 1, true, true),
+        ("v6-grid-lpc-corrections", resonance.clone(), 1, true, true),
+        // v6-grid-decimals-corrections and v6-grid-lpc-corrections with the current encoder (#506): their
+        // LPC streams tie with the fixed predictor's in bytes, and a tie now keeps the fixed stream. Those
+        // two files stay as they are (LPC), no longer encoder_current.
+        (
+            "v6-grid-decimals-corrections-lpc-tie",
+            decimals,
+            1,
+            false,
+            true,
+        ),
+        ("v6-grid-resonance-lpc-tie", resonance, 1, false, true),
+        ("v6-grid-lpc-shorter", lpc_shorter, 1, true, true),
     ]
 }
 

@@ -242,6 +242,24 @@ fn lpc_wins_on_resonant_counts() {
     let _ = FIX_SAMPLES;
 }
 
+/// #505: corrections repeating [1, 1, 1, 0] (384 of 512 nonzero) code smaller as exceptions than per sample,
+/// though more than 3 bits per nonzero correction exceeds the per-sample stream; an unsound skip kept the
+/// 155-byte Grizzbit 1 chunk instead of this 146-byte version-5 one.
+#[test]
+fn predicted_exceptions_are_tried_however_many_corrections_are_nonzero() {
+    let x: Vec<f64> = (0..512)
+        .map(|i| f64::from_bits((i as f64).to_bits() + u64::from(i % 4 < 3)))
+        .collect();
+    let g1 = encode(&x, 1.0).unwrap();
+    assert_eq!(g1.len(), 155);
+    let c = check(&x, 1.0);
+    assert_eq!(c[0], GRIZZBIT21_VERSION);
+    assert!(c.len() <= 146, "{}", c.len());
+    assert_eq!(grizzbit21_layout(&c).map(|l| l.0), Some(FIX_EXCEPTIONS));
+    let back = decode(&c).unwrap();
+    assert!(back.iter().zip(&x).all(|(a, b)| a.to_bits() == b.to_bits()));
+}
+
 #[test]
 fn off_grid_chunks_keep_grizzbit_1() {
     let mut s = 6u64;
