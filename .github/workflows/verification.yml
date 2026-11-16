@@ -81,6 +81,8 @@ jobs:
           --harness keep_smaller_keeps_grizzbit1_unless_strictly_smaller
           --harness lpc_prediction_matches_wide_reference --harness lpc_kernel_restores_reference_residuals
           --harness ord32_is_a_bijection --harness sign_runs_are_checked
+          --harness lpc_kernel::proofs::narrow_product_is_the_wrapping_product
+          --harness lpc_kernel::proofs::narrow_sum_of_format_coefficients_cannot_wrap
   fuzz:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04

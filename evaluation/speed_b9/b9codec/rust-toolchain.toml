@@ -1,0 +1,5 @@
+# The workspace's Rust (1.99.0) without its extra components, so the rust:1.99.0-bookworm containers (which ship
+# exactly this toolchain) build b9codec offline.
+[toolchain]
+channel = "1.99.0"
+profile = "minimal"
