@@ -143,3 +143,8 @@ each other machine, and divides matching hits by ten. Output is `t6_eligible.jso
 original raw measurements are retained. This is a correction to the implementation,
 not a new observed result. Archived T6 is diagnostic only until the database rerun. The amended harness was written after the
 archived T6 results had been seen, so a rerun with it is post hoc and exploratory, not a confirmation of T6.
+
+Note (2026-11-16, written before the database rerun was started): the 200 T6 queries come from 187 source runs.
+`analyze.py` therefore also reports a run-clustered bootstrap of BL minus ZL (resample source runs with
+replacement and keep all of a run's queries; seed 20261111, 10,000 resamples, percentile 95% interval) as a
+sensitivity analysis next to the query-level bootstrap. It changes neither the estimand nor the harness.

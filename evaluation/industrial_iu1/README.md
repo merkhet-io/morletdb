@@ -47,10 +47,15 @@ docker build -t morletdb-spike-db -f /tmp/morlet-iu1-measured/deploy/Dockerfile 
 
 Run the following in `evaluation/industrial_iu1` of a separate rerun checkout so
 the raw output files are not mixed with the committed archive. The base image uses
-PostgreSQL 17.6; the derived image installs pgvector from apt, so record its actual
-version and image digest. A different pgvector version is a new environment, not a
-reproduction of the archived 0.8.7 measurements. These instructions fix the missing
-base-image recipe; a clean end-to-end Docker build has not been validated here.
+PostgreSQL 17.6; the derived image pins pgvector 0.8.7-1.pgdg12+1, because the newer
+build of the same version depends on PostgreSQL 17.12 or later and silently upgraded the
+server. The build fails if the server is not 17.6. Record the image digests. A clean
+end-to-end build (`--no-cache`, then the commands below) was run on 2026-11-16 on an
+Apple M5 Max under Docker Desktop for the T6 rerun; see `results/t6_rerun_environment.json`.
+The full T1–T5 rerun was not repeated there.
+
+If you mount the dataset elsewhere, note that a nested mount below the read-only
+`../data:/data` needs an existing (empty) `../data/bosch` directory as mount point.
 
 ```sh
 docker compose up -d db
