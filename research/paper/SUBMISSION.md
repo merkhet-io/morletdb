@@ -9,9 +9,10 @@ extend the main-text page limit.
 
 ## Authors and scope
 
-Zin Nam: no affiliation (confirmed). Semir Maslo: Sulzer-BDiM (confirmed).
-City, country and contact email details are still unset. Authors must supply/check
-these before upload, approve the scientific claims and confirm that the industrial
+Zin Nam: no institutional affiliation; Freiburg, Germany; zin@posteo.de.
+Semir Maslo: Sulzer-BDiM; Aldenhoven, Germany; semir.maslo@sulzer-bdim.ai.
+Affiliations and contact details supplied by Zin on 16 November 2026.
+Both authors must approve the scientific claims and confirm that the industrial
 requirements accurately describe the collaboration. No customer deployment,
 production diagnostic accuracy or acceptance is claimed.
 
@@ -45,7 +46,7 @@ This automated check cannot replace visual review or scientific author approval.
 
 ## Submission gates
 
-1. Complete author contact/location metadata and obtain both authors' approval.
+1. Obtain both authors' approval of the final manuscript; author contact/location metadata is complete.
 2. Keep the T6 claim withdrawn unless the corrected database experiment is completed,
    checked, and documented as a post-correction rerun. Do not substitute archived
    truncated-list metrics. Examine repeated-query dependence before claiming significance.
@@ -63,7 +64,7 @@ This automated check cannot replace visual review or scientific author approval.
 
 ## Corrections tracked
 
-#509: separate ACM submission and page checks; author fields remain pending.
+#509: separate ACM submission and page checks; author fields completed.
 #510: T6 harness/denominator corrected and claim withdrawn; database rerun pending.
 #511: final-cycle alerts separated from advance warning.
 #512: compressed-input/offline replay fixed, base-image recipe and container mounts
