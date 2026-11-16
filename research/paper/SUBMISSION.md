@@ -47,7 +47,8 @@ This automated check cannot replace visual review or scientific author approval.
 
 ## Submission gates
 
-1. Obtain both authors' approval of the final manuscript; author contact/location metadata is complete.
+1. Obtain both authors' approval of the final manuscript. Author names and affiliations are complete;
+   contact details go into the submission system.
 2. Keep the T6 claim withdrawn unless the corrected database experiment is completed,
    checked, and documented as a post-correction rerun. Do not substitute archived
    truncated-list metrics. Examine repeated-query dependence before claiming significance.
@@ -58,10 +59,12 @@ This automated check cannot replace visual review or scientific author approval.
    but it cannot be fabricated from the existing E1/E7 combination.
 4. Run the offline replay, regression tests, number generation, PDF build and packaging
    checks; inspect every page, especially figures/tables and the main-text/reference boundary.
-5. Keep the negative results and disclose the public-data/deployment limitations. Have
-   Semir verify the concrete engineering requirements and industrial interpretation.
+5. Keep the negative results and disclose the public-data/deployment limitations. Semir Maslo
+   approved the introduction's statement that the collaboration with Sulzer-BDiM motivates the four
+   requirements (2026-11-16, relayed by Zin Nam).
 6. Verify the call again, check no concurrent overlapping submission, and upload only
-   the approved conference PDF. This PR does not submit or create a release tag.
+   the approved conference PDF. The technical report 0.26 is tagged `paper-v0.26` on the merge
+   commit that brings it to `main`; the conference PDF is not uploaded by that tag.
 
 ## Corrections tracked
 

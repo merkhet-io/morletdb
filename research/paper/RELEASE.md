@@ -9,7 +9,7 @@
 | Report sources | the commit recorded as `report_source_commit` in [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json); the sources first entered `main` with merge commit cdf8b4b |
 | Measured software | E1 (main retrieval tables) and diagnostics D1–D2: pg_morlet at `main` 68594d7, library SHA-256 `3c786684…`; earlier studies used earlier implementation states, labelled in the report and in [STUDIES.md](STUDIES.md) (see [ARTIFACT.md](ARTIFACT.md)) |
 | Licence | report text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0 (repository `LICENSE`) |
-| Tag | `paper-v0.26` (proposed; this PR does not publish a tag) |
+| Tag | `paper-v0.26`, on the merge commit that brings this manifest to `main` |
 | Funding | none |
 | Conflicts of interest | no statement (author's decision) |
 
