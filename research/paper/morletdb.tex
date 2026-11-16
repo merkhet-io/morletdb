@@ -23,11 +23,9 @@
 \title{MorletDB: Recordings, Not Rows --- Lag-Tolerant Waveform Retrieval in PostgreSQL}
 \ifdefined\SigmodSubmission\else\subtitle{Version \ReportVersion}\fi
 \author{Zin Nam}
-\affiliation{\institution{}\city{Freiburg}\country{Germany}}% no institutional affiliation
-\email{zin@posteo.de}
+\affiliation{\institution{}\country{Germany}}% no institutional affiliation
 \author{Semir Maslo}
-\affiliation{\institution{Sulzer-BDiM}\city{Aldenhoven}\country{Germany}}
-\email{semir.maslo@sulzer-bdim.ai}
+\affiliation{\institution{Sulzer-BDiM}\country{Germany}}
 
 \begin{abstract}
 Industrial waveform investigations need more than a nearest-neighbour identifier: an engineer must retrieve the original samples, compare like operating conditions and tolerate modest misalignment without losing access-control or transactional semantics. MorletDB implements this workflow as a PostgreSQL extension with bit-exact recording storage, sample-interval results and two search paths under one contract. We describe the integration and its measured trade-offs, including negative results on two public CNC milling datasets. Normalised shape similarity separates labelled bad runs in one dataset, but run duration and signal level often do as well or better; a recent good history matters, and a small change of speed can defeat lag tolerance. These findings motivate serving shape, level and context together rather than treating similarity as a diagnosis.

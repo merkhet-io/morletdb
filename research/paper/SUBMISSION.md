@@ -9,9 +9,10 @@ extend the main-text page limit.
 
 ## Authors and scope
 
-Zin Nam: no institutional affiliation; Freiburg, Germany; zin@posteo.de.
-Semir Maslo: Sulzer-BDiM; Aldenhoven, Germany; semir.maslo@sulzer-bdim.ai.
-Affiliations and contact details supplied by Zin on 16 November 2026.
+Zin Nam: no institutional affiliation; Germany.
+Semir Maslo: Sulzer-BDiM; Germany.
+The call does not require e-mail addresses or cities in the PDF; contact details are
+entered in the submission system only, not in the repository.
 Both authors must approve the scientific claims and confirm that the industrial
 requirements accurately describe the collaboration. No customer deployment,
 production diagnostic accuracy or acceptance is claimed.
