@@ -141,4 +141,5 @@ partner's product, was removed on the repository owner's request. The task and i
 T6 now excludes the source machine before ranking, merges the exact top ten from
 each other machine, and divides matching hits by ten. Output is `t6_eligible.json`;
 original raw measurements are retained. This is a correction to the implementation,
-not a new observed result. Archived T6 is diagnostic only until the database rerun.
+not a new observed result. Archived T6 is diagnostic only until the database rerun. The amended harness was written after the
+archived T6 results had been seen, so a rerun with it is post hoc and exploratory, not a confirmation of T6.

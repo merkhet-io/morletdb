@@ -138,7 +138,7 @@ def t6(eligible=False):
     bl = [precision(r, "BL") for r in rows]; zl = [precision(r, "ZL") for r in rows]; ch = [r["chance"] for r in rows]
     d, lo, hi = boot_mean_diff(bl, zl)
     return dict(BL=float(np.mean(bl)), ZL=float(np.mean(zl)), chance=float(np.mean(ch)),
-                BL_minus_ZL=[d, lo, hi, decide(lo, hi)], queries=len(rows),
+                BL_minus_ZL=[d, lo, hi, decide(lo, hi) if eligible else "not applicable (withdrawn diagnostic)"], queries=len(rows),
                 status=("eligible-gallery rerun; query bootstrap" if eligible else
                         "archived post-filtered lists; eligible-gallery rerun required"),
                 short_results={arm: sum(len(r[arm]) < 10 for r in rows) for arm in ("BL", "ZL")},

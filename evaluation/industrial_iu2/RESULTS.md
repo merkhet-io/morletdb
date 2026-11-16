@@ -43,16 +43,16 @@ Per confirmation tool, BL ranges from 0.17 (tool 10, 8 cycles) to 0.95 (tool 103
 
 ## W3: early warning with a threshold from the development tools
 
-| Score | Tools flagged before breaking | Remaining life at first flag (median) | First-half cycles flagged |
-|---|---|---|---|
-| Bounded lag | 1 of 7 | 83% | 0.5% |
-| Zero lag | 3 of 7 | 47% | 0.5% |
-| RMS per window | 7 of 7 | 53% | 19.8% |
-| Vibration level | 6 of 7 | 82% | 12.0% |
-| Spindle current | 2 of 7 | 28% | 0.0% |
-| Cycle length | 2 of 7 | 60% | 1.0% |
+| Score | Tools flagged before breaking | Remaining life at first flag (median) | First-half cycles flagged | Originally reported (2026-11-11) |
+|---|---|---|---|---|
+| Bounded lag | 1 of 7 | 83% | 0.5% | 2 of 7, 41% |
+| Zero lag | 3 of 7 | 47% | 0.5% | 3 of 7, 47% |
+| RMS per window | 7 of 7 | 53% | 19.8% | 7 of 7, 53% |
+| Vibration level | 6 of 7 | 82% | 12.0% | 7 of 7, 78% |
+| Spindle current | 2 of 7 | 28% | 0.0% | 2 of 7, 28% |
+| Cycle length | 2 of 7 | 60% | 1.0% | 2 of 7, 60% |
 
-A first alert in the final cycle (`ctfn == 0`) is not advance warning. BL and vibration
+The last column keeps the values first reported, which counted a first alert in the final cycle as a warning. A first alert in the final cycle (`ctfn == 0`) is not advance warning. BL and vibration
 each first flag one additional tool in that cycle. Remaining-life medians above are
 conditional on a strictly earlier first alert; the BL median represents just one tool.
 

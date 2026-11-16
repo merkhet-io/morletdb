@@ -18,14 +18,14 @@ a Windows laptop (16 logical CPUs, 7.2 GB for Docker).
 | T3 | Does the lag matter? | BL and ZL top 10 share 38% of hits; BL top-1 distance lower by median 0.030 (p90 0.143); 73% of queries gain more than 0.01 | descriptive |
 | T4 | Probes against exact, unfiltered gallery of 85,042 windows (axis x) | recall@10 1.000 (min 1.0); p50 56 against 141 ms, p95 126 against 176 ms | **probes do not hold** by the frozen rule (p95 ratio 0.72, rule asks for at most 0.5) |
 | T5 | Query stretched by s (feed override); own interval in top 10 | BL: 1.00 / 0.97 / 0.76 / 0.51 / 0.20 at s = 0 / 1 / 2 / 5 / 10%. ZL: 1.00 / 1.00 / 0.79 / 0.20 / 0.07 | descriptive |
-| T6 | Cross-machine operation recognition | Claim withdrawn; eligible-gallery rerun pending | Archived lists excluded the source machine only after ranking and sometimes contained fewer than ten hits |
+| T6 | Cross-machine operation recognition | Originally reported (2026-11-11): BL 0.503, ZL 0.412, chance 0.076. Claim withdrawn 2026-11-16; eligible-gallery rerun pending | Originally: BL better than ZL (+0.091, [0.050, 0.132]). Withdrawn: archived lists excluded the source machine only after ranking and sometimes contained fewer than ten hits |
 
 Development data (M01) agree in direction: T1 BL 0.301, ZL 0.181, RMS 0.281, chance 0.063; T2 AUROC BL 0.912,
 ZL 0.854, RMS 0.893; BL better than ZL in both, no difference against RMS in both.
 
 ## Reading
 
-- **Lag tolerance pays on machine data too.** BL beat ZL on T1 and T2 on development and confirmation data. T6 is withdrawn; ZL also beats BL at 1% and 2% stretch in T5. Only about a third of the top-10 hits are the same; a
+- **Lag tolerance pays on machine data too.** BL beat ZL on T1 and T2 on development and confirmation data. T6 is withdrawn; in T5, ZL recovered slightly more sources at 1% and 2% stretch (1.00 and 0.79 against 0.97 and 0.76; descriptive, no interval). Only about a third of the top-10 hits are the same; a
   window grid does not align repeated machining events.
 - **It does not beat a simple amplitude feature.** RMS retrieved bad runs as well as the envelope scorer (T1) and
   scored runs with an AUROC that is not significantly different (T2). The envelope is z-scored and therefore
