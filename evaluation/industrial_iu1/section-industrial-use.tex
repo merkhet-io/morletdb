@@ -19,8 +19,7 @@ run bootstrap.
 
 \textbf{Scoring runs against a good history.} Scoring every run by its distance to the nearest window of good runs of
 the same machine, operation and axis gave an AUROC for bad against good of 0.925 (95\% interval 0.878--0.967) under BL,
-0.875 under ZL and 0.852 under RMS. BL was better than ZL; against RMS the difference was not significant. Asked for
-the same operation on another machine, BL returned it in 0.503 of the top ten against 0.412 for ZL (chance 0.076). BL
+0.875 under ZL and 0.852 under RMS. BL was better than ZL; against RMS the difference was not significant. The cross-machine operation-recognition claim is withdrawn pending an eligible-gallery rerun. BL
 and ZL shared only 38\% of their hits.
 
 \textbf{Is it drift?} Twenty of the 36 bad runs come from one machine and half-year, so after seeing the results we
@@ -47,7 +46,7 @@ for half the exact p95, so the speed claim does not hold at this gallery size; i
 that exact search suits galleries below a few hundred thousand windows.
 
 \textbf{What follows for industrial use.} Lag tolerance improves retrieval on machining vibration as it does on
-seismic envelopes: BL beat ZL in every comparison, inside and across half-years. A nearest-neighbour score against a
+seismic envelopes: BL beat ZL on the run-label comparisons, but not at 1\% or 2\% stretch. A nearest-neighbour score against a
 recent good history separates bad runs without training, but simpler values do as well or better here: RMS for
 retrieval and run length for scoring. The envelope is normalised and so blind to level and duration; a product should
 offer both next to the shape.
@@ -62,7 +61,7 @@ on one laptop; it makes no claim on diagnosis or on real-time decisions at the m
 % without each run's first 2 s: BL 0.900 & IU1-A2; E, C & query side only, 2 s assumed \\
 % run length alone: AUROC 0.982, better than BL & IU1-A1; E, C & run length from file length \\
 % other bad runs in top 10 inside the half-year: BL 0.254, ZL 0.212, RMS 0.377, chance 0.183 & IU1-A1; E, C & replaces 0.177 vs 0.026 of IU1 \\
-% same operation on other machine 0.503 vs 0.412 & IU1; E, C & axis filter only \\
+% cross-machine recognition withdrawn pending eligible-gallery rerun (IU1 T6).
 % stretch 1/2/5/10\%: source in top 10 0.97/0.76/0.51/0.20 & IU1; E, C & synthetic stretch \\
 % probes recall 1.0, p95 126 vs 176 ms at 85k windows & IU1; P, C & laptop, Docker \\
 

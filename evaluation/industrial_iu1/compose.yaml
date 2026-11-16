@@ -12,7 +12,7 @@ services:
     image: morletdb-spike-runner
     build: {context: ., dockerfile: Dockerfile.runner}
     working_dir: /spike
-    volumes: ["../data:/data:ro", ".:/spike"]
+    volumes: ["../data:/data:ro", ".:/spike", "../analysis_io.py:/analysis_io.py:ro", "../analysis_io.py:/w/analysis_io.py:ro", "../industrial_iu2:/w/iu2", "../data/toollife:/w/data/toollife:ro"]
     environment: {DATABASE_URL: "postgresql://morlet:morlet-demo-only@db:5432/morlet"}
     depends_on: {db: {condition: service_healthy}}
 volumes:

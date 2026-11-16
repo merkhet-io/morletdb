@@ -2,11 +2,14 @@
 import json, collections, statistics as st
 from pathlib import Path
 import numpy as np
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from analysis_io import directories, read_json, write_json, spearman
 
-OUT = Path("/spike/results") if Path("/spike").exists() else Path(__file__).parent / "results"
+OUT, DEST = directories(__file__)
 SEED, B = 20261111, 10000
 P = ["Feb_2019", "Aug_2019", "Feb_2020", "Aug_2020", "Feb_2021", "Aug_2021"]
-D = json.loads((OUT / "drift.json").read_text())
+D = read_json(OUT / "drift.json")
 rows, LEN, META = D["rows"], D["grid_length"], D["meta"]
 
 
@@ -130,7 +133,7 @@ for r, e in runs.items(): hs[(e["m"], e["period"])].append(nhist["same"][r])
 S["4_history_size_same_halfyear"] = {"/".join(g): dict(runs=len(v), median_good_history_runs=st.median(v), min=min(v), max=max(v)) for g, v in sorted(hs.items())}
 good = [r for r in runs if not lab[r] and r in score["all"]["BL"]]
 n_all = np.array([nhist["all"][r] for r in good]); sc_all = np.array([score["all"]["BL"][r] for r in good])
-S["4_good_runs_score_vs_history_size"] = dict(spearman=float(np.corrcoef(n_all.argsort().argsort(), sc_all.argsort().argsort())[0, 1]),
+S["4_good_runs_score_vs_history_size"] = dict(spearman=spearman(n_all, sc_all),
     by_group={"/".join(g): dict(n=len(v), median_score=float(np.median(v))) for g, v in sorted(collections.defaultdict(list, {gg: [score["all"]["BL"][r] for r in good if grp[r] == gg] for gg in set(grp.values())}).items()) if v})
 # 6 T1 inside the half-year
 bad_runs = {r for r in runs if lab[r]}
@@ -154,7 +157,7 @@ pw = S["3_pooled_within"]["same"]
 S["decision"] = dict(
     separates_bad_from_good="stands" if pw["BL"]["auroc"][1] > 0.5 else "does not stand (interval includes 0.5)",
     BL_better_than_ZL="stands" if pw["BL"]["minus_ZL"][1] > 0 else "does not stand")
-(OUT / "drift_summary.json").write_text(json.dumps(S, indent=1))
+write_json(DEST / "drift_summary.json", S)
 f = lambda v: "n/a" if v is None else f"{v[0]:.3f} [{v[1]:.3f}, {v[2]:.3f}]"
 print("1 all runs"); [print(f"  {k:10s}", {a: (x["bad"], x["good"], f(x.get("auroc"))) for a, x in v.items()}, "BL-ZL", f(v["BL"].get("minus_ZL"))) for k, v in S["1_all_runs"].items()]
 print("2 without M02 Feb 2019"); [print(f"  {k}", {a: (x["bad"], x["good"], f(x.get("auroc"))) for a, x in v.items()}, "BL-ZL", f(v["BL"].get("minus_ZL"))) for k, v in S["2_without_M02_Feb2019"].items()]

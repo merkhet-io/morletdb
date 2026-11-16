@@ -4,12 +4,12 @@
 |---|---|
 | Title | MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL |
 | Type | technical report / preprint (not peer reviewed); the title page shows only the version |
-| Version | 0.25, 2026-11-13 (from `REPORT_VERSION`) |
+| Version | 0.26, 2026-11-16 (from `REPORT_VERSION`) |
 | Authors | Zin Nam (no affiliation stated); Semir Maslo (Sulzer-BDiM) |
 | Report sources | the commit recorded as `report_source_commit` in [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json); the sources first entered `main` with merge commit cdf8b4b |
 | Measured software | E1 (main retrieval tables) and diagnostics D1–D2: pg_morlet at `main` 68594d7, library SHA-256 `3c786684…`; earlier studies used earlier implementation states, labelled in the report and in [STUDIES.md](STUDIES.md) (see [ARTIFACT.md](ARTIFACT.md)) |
 | Licence | report text and figures: CC BY 4.0 ([LICENSE.md](LICENSE.md)); code: Apache-2.0 (repository `LICENSE`) |
-| Tag | `paper-v0.25`, on the commit that contains this manifest |
+| Tag | `paper-v0.26` (proposed; this PR does not publish a tag) |
 | Funding | none |
 | Conflicts of interest | no statement (author's decision) |
 
@@ -17,8 +17,9 @@
 
 | File | What |
 |---|---|
-| `morletdb.pdf` | main report (16 pages) |
-| `supplement.pdf` | supplement (8 pages): storage (with grid detection, the 2026 float codecs and comparisons with QuestDB, CrateDB, IoTDB, TDengine and TimescaleDB), chunk summaries, building, access control, recovery and load, small machines, agent access (case studies), study overview, application evidence and negative results |
+| `sigmod.pdf` | SIGMOD Industrial submission variant; readiness and remaining author/benchmark gates in [SUBMISSION.md](SUBMISSION.md) |
+| `morletdb.pdf` | main report with evidence ledger |
+| `supplement.pdf` | supplement: storage (with grid detection, the 2026 float codecs and comparisons with QuestDB, CrateDB, IoTDB, TDengine and TimescaleDB), chunk summaries, building, access control, recovery and load, small machines, agent access (case studies), study overview, application evidence and negative results |
 | `RELEASE_MANIFEST.json` | version, date, commits, PDF SHA-256 sums, proposed tag; `release_manifest.py --check` verifies it |
 | `STUDIES.md` | every study: question, comparison fixed before measuring (with commits), result, limitation, decision, kind of evidence |
 | `ARTIFACT.md` | set-up from a fresh checkout, data with checksums, separate reproduction procedures |

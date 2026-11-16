@@ -1,7 +1,26 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.25, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.26, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
+
+## SIGMOD Industrial submission
+
+[SUBMISSION.md](SUBMISSION.md) records the acceptance-oriented argument, benchmark
+readiness, and remaining gates. [sigmod.pdf](sigmod.pdf) is the conference variant:
+main text within 12 pages, followed only by references, ACM 2.21, named authors.
+The longer report retains the evidence ledger. Build with
+`python research/paper/build_submission.py --all`; check with
+`python research/paper/check_submission.py` (Poppler required).
+
+## What changed in 0.26 (submission corrections)
+
+Industrial requirements and negative results now lead the argument. IU1 T6's
+cross-machine claim is withdrawn pending an eligible-gallery rerun; IU2 W3 counts
+only strictly earlier warnings (BL 1/7, vibration 6/7, RMS 7/7). Average-rank
+Spearman, compressed-input replay and missing-input failures are fixed. E1 and
+later screened-exact results are explicitly separate historical measurements.
+The full-lag top-k lemma now distinguishes finite budgets from suppression,
+sparse grids and approximate search. Original raw measurements are retained.
 
 ## What we found
 
@@ -18,7 +37,7 @@ technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md
 4. **A first relevance check.** With a catalogued earthquake in the query, the bounded-lag top ten held
    catalogued earthquakes in 0.297 of positions against 0.213 for zero lag on development data, and 0.139
    against 0.060 on held-out stations and year (E5, E5-H; exact search, catalogue proxy).
-5. **Not shown:** other signal domains (beyond IU1 on one public machining dataset), diagnostic relevance for machines, cold caches, and stable
+5. **Not shown:** other signal domains (beyond IU1 and IU2 on two public machining datasets), diagnostic relevance for machines, cold caches, and stable
    operation beyond 111 minutes (the planned two-hour run stopped early; paper Section 12).
 
 ## Main numbers

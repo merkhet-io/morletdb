@@ -994,7 +994,7 @@
   }
  },
  "4_good_runs_score_vs_history_size": {
-  "spearman": 0.0011407854801151088,
+  "spearman": -0.0028002330634956667,
   "by_group": {
    "M02/Aug_2019": {
     "n": 269,

@@ -201,16 +201,25 @@
   }
  },
  "t6": {
-  "BL": 0.502640873015873,
+  "BL": 0.47,
   "ZL": 0.41150000000000003,
   "chance": 0.07633998132195138,
   "BL_minus_ZL": [
-   0.09114087301587302,
-   0.05022118055555556,
-   0.13233333333333333,
+   0.058499999999999996,
+   0.017500000000000005,
+   0.09900000000000002,
    "better"
   ],
-  "queries": 200
+  "queries": 200,
+  "status": "archived post-filtered lists; eligible-gallery rerun required",
+  "short_results": {
+   "BL": 47,
+   "ZL": 5
+  },
+  "empty_results": {
+   "BL": 13,
+   "ZL": 1
+  }
  },
  "load": {
   "version": [

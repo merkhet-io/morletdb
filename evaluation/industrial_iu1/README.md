@@ -16,11 +16,41 @@ Evidence for the paper section "Industrial use". Public data only.
 | `figures/` | Figures 1 to 5 |
 | `section-industrial-use.tex` | Draft of the section with ledger rows and the bibliography entry |
 
+## Replay the committed analyses (no database)
+
+From the repository root, install NumPy 2.1.x and run:
+
+```sh
+python research/paper/replay_industrial.py --check --studies iu1 drift leadin
+```
+
+The reader accepts JSON or gzip, fails on missing required inputs, and writes replay
+outputs outside the archive. T6 remains a truncated-list diagnostic pending a database
+rerun; `iu1.py t6` now writes `t6_eligible.json` without replacing historical evidence.
+Analyze that rerun with `python -I analyze.py --eligible-t6`; it writes a separate
+`t6_eligible_summary.json`. Review its gallery and repeated-query dependence before
+restoring any scientific claim.
+
 ## Reproduce
 
 Data: `git clone https://github.com/boschresearch/CNC_Machining` into `../data/bosch` (data CC BY 4.0, Tnani, Feil,
 Diepold 2022). Software: MorletDB main at 088f03b (SQL 0.3.8) built from the repository's `compose.yaml` as image
 `morletdb-spike-db`; `Dockerfile.db` adds pgvector 0.8.7.
+
+Build the previously implicit base image explicitly from the measured commit, using
+a separate checkout (run the first commands from the repository root):
+
+```sh
+git worktree add --detach /tmp/morlet-iu1-measured 088f03b
+docker build -t morletdb-spike-db -f /tmp/morlet-iu1-measured/deploy/Dockerfile /tmp/morlet-iu1-measured
+```
+
+Run the following in `evaluation/industrial_iu1` of a separate rerun checkout so
+the raw output files are not mixed with the committed archive. The base image uses
+PostgreSQL 17.6; the derived image installs pgvector from apt, so record its actual
+version and image digest. A different pgvector version is a new environment, not a
+reproduction of the archived 0.8.7 measurements. These instructions fix the missing
+base-image recipe; a clean end-to-end Docker build has not been validated here.
 
 ```sh
 docker compose up -d db

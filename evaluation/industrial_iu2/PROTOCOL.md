@@ -100,3 +100,10 @@ real-time use. Seven confirmation tools give wide intervals; they are reported a
    computed. The loader was made resumable (a cycle counts as loaded if its three recordings exist with equal
    length and all envelope windows; anything else is appended again, which the database verifies against the
    stored chunks) and reads the CSV in blocks with two threads. Only the missing cycles were loaded again.
+
+## Analysis correction recorded 2026-11-16
+
+W3 counts advance warning only when the first alert has `ctfn > 0`; final-cycle
+alerts are reported separately. Lead-time medians condition on an earlier alert.
+W2 uses average ranks for ties and reports undefined correlation for constants.
+These analysis corrections do not change thresholds, splits, or raw observations.

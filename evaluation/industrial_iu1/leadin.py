@@ -2,9 +2,12 @@
 import json, collections, statistics as st
 from pathlib import Path
 import numpy as np
-OUT = Path("/spike/results"); SEED, B = 20261111, 10000
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from analysis_io import directories, read_json, write_json
+OUT, DEST = directories(__file__); SEED, B = 20261111, 10000
 P = ["Feb_2019", "Aug_2019", "Feb_2020", "Aug_2020", "Feb_2021", "Aug_2021"]
-rows = json.loads((OUT / "drift.json").read_text())["rows"]
+rows = read_json(OUT / "drift.json")["rows"]
 rng = np.random.default_rng(SEED)
 
 def auroc(pos, neg):
@@ -58,7 +61,7 @@ for variant, keep in (("all_windows", lambda r: True), ("without_first", lambda 
                 pw[a] = [est, float(np.quantile(bs, .025)), float(np.quantile(bs, .975))]
             out["pooled_within_same"] = pw
     res[variant] = out
-(OUT / "leadin_summary.json").write_text(json.dumps(res, indent=1))
+write_json(DEST / "leadin_summary.json", res)
 f = lambda v: f"{v[0]:.3f} [{v[1]:.3f}, {v[2]:.3f}]"
 for v, o in res.items():
     print(v)
