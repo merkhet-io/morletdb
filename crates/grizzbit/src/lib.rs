@@ -1254,8 +1254,9 @@ fn decode_ints(bytes: &[u8], n: usize) -> Result<Vec<i64>, CodecError> {
 /// Decodes one stream of `n` integers. With `lpc` (version 5) the predictor field may also be
 /// [`g21::PREDICTOR_LPC`], whose parameters follow the partition order.
 ///
-/// The residuals are decoded into a pre-sized buffer, partition by partition, by [`rice_partition`] and
-/// [`fixed_partition`]; the prediction follows in a second pass with the predictor fixed for the chunk.
+/// The values are decoded into a pre-sized buffer, partition by partition, by [`rice_partition`] and
+/// [`fixed_partition`], which also restore the fixed predictor in the same pass ([`read_partitions`]);
+/// an LPC predictor is restored in a second pass.
 /// Results, errors included, are those of the straightforward decoder kept in the tests as an oracle
 /// (`decode_stream_reference`).
 pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64>, CodecError> {
@@ -1274,71 +1275,88 @@ pub(crate) fn decode_stream(bytes: &[u8], n: usize, lpc: bool) -> Result<Vec<i64
     };
     let order = order as usize;
     let mut x = vec![0i64; n];
-    for p in 0..(1usize << porder) {
-        let (a, b) = partition_bounds(n, porder, p);
-        let k = rd.get(6)?;
-        if k == ESCAPE {
-            let width = rd.get(7)? as u32;
-            if width > 64 {
-                return Err(CodecError::Corrupt("escape width"));
-            }
-            fixed_partition(&mut rd, width, &mut x[a..b])?;
-        } else {
-            rice_partition(&mut rd, k as u32, &mut x[a..b])?;
-        }
+    match (model.is_some(), order) {
+        (true, _) | (false, 0) => read_partitions::<0>(&mut rd, porder, &mut x)?,
+        (false, 1) => read_partitions::<1>(&mut rd, porder, &mut x)?,
+        (false, 2) => read_partitions::<2>(&mut rd, porder, &mut x)?,
+        (false, 3) => read_partitions::<3>(&mut rd, porder, &mut x)?,
+        _ => read_partitions::<4>(&mut rd, porder, &mut x)?,
     }
     if !rd.rest_is_padding() {
         return Err(CodecError::Corrupt("trailing data"));
     }
     if let Some(model) = model {
         model.restore(&mut x);
-        return Ok(x);
     }
-    restore_fixed(&mut x, order);
     Ok(x)
 }
 
-/// Inverts the fixed predictor of `order` in place (`x` holds the residuals on entry).
-fn restore_fixed(x: &mut [i64], order: usize) {
+/// The partitions of a stream of `x.len()` values, each decoded and (fixed predictor of order `O`,
+/// none for `O = 0`) restored in the same pass: the first `O` values (the warm-up, at lower orders) as
+/// `predict` gives them, every later one by [`fixed_step`] from the four values before it, carried in
+/// registers within a partition and reloaded from `x` at each partition's start.
+#[inline(never)]
+fn read_partitions<const O: usize>(
+    rd: &mut BitReader,
+    porder: u32,
+    x: &mut [i64],
+) -> Result<(), CodecError> {
     let n = x.len();
-    let warm = order.min(n);
-    for i in 0..warm {
-        x[i] = x[i].wrapping_add(predict(x, i, order));
-    }
-    match order {
-        0 => {}
-        1 => {
-            for i in warm..n {
-                x[i] = x[i].wrapping_add(x[i - 1]);
+    let warm = O.min(n);
+    for p in 0..(1usize << porder) {
+        let (a, b) = partition_bounds(n, porder, p);
+        let k = rd.get(6)?;
+        let width = if k == ESCAPE {
+            let width = rd.get(7)? as u32;
+            if width > 64 {
+                return Err(CodecError::Corrupt("escape width"));
+            }
+            Some(width)
+        } else {
+            None
+        };
+        // Warm-up values in this partition: residuals first, then the lower-order prediction.
+        let w = warm.clamp(a, b);
+        if a < w {
+            match width {
+                Some(width) => fixed_partition::<0>(rd, width, [0; 4], &mut x[a..w])?,
+                None => rice_partition::<0>(rd, k as u32, [0; 4], &mut x[a..w])?,
+            }
+            for i in a..w {
+                x[i] = x[i].wrapping_add(predict(x, i, O));
             }
         }
-        2 => {
-            for i in warm..n {
-                x[i] = x[i].wrapping_add(x[i - 1].wrapping_mul(2).wrapping_sub(x[i - 2]));
-            }
-        }
-        3 => {
-            for i in warm..n {
-                x[i] = x[i].wrapping_add(
-                    x[i - 1]
-                        .wrapping_sub(x[i - 2])
-                        .wrapping_mul(3)
-                        .wrapping_add(x[i - 3]),
-                );
-            }
-        }
-        _ => {
-            for i in warm..n {
-                x[i] = x[i].wrapping_add(
-                    x[i - 1]
-                        .wrapping_add(x[i - 3])
-                        .wrapping_mul(4)
-                        .wrapping_sub(x[i - 2].wrapping_mul(6))
-                        .wrapping_sub(x[i - 4]),
-                );
+        if w < b {
+            // w >= O here, so the O values before it are restored.
+            let h = std::array::from_fn(|j| if j < O { x[w - 1 - j] } else { 0 });
+            match width {
+                Some(width) => fixed_partition::<O>(rd, width, h, &mut x[w..b])?,
+                None => rice_partition::<O>(rd, k as u32, h, &mut x[w..b])?,
             }
         }
     }
+    Ok(())
+}
+
+/// One value of the fixed predictor of order `O` restored from its residual `r`, with `h[j]` the value
+/// `j + 1` positions back; `h` then moves on by one. The same wrapping arithmetic as `predict` (and as
+/// the encoder's `residuals`), so the same integers. `O = 0` returns `r`.
+#[inline(always)]
+fn fixed_step<const O: usize>(h: &mut [i64; 4], r: i64) -> i64 {
+    let pred = match O {
+        0 => return r,
+        1 => h[0],
+        2 => h[0].wrapping_mul(2).wrapping_sub(h[1]),
+        3 => h[0].wrapping_sub(h[1]).wrapping_mul(3).wrapping_add(h[2]),
+        _ => h[0]
+            .wrapping_add(h[2])
+            .wrapping_mul(4)
+            .wrapping_sub(h[1].wrapping_mul(6))
+            .wrapping_sub(h[3]),
+    };
+    let v = r.wrapping_add(pred);
+    *h = [v, h[0], h[1], h[2]];
+    v
 }
 
 /// Bits a fast-path read may use: with the 8 bytes at byte `pos / 8` in the slice, the window shifted by
@@ -1355,8 +1373,15 @@ const FAST_BITS: u32 = 57;
 /// quotient is `zeros <= 56` and the remainder `k <= 56` bits, so its quotient check cannot fire. Every
 /// other code (near the end of the slice, or longer than one window) goes to `get_rice` itself at the
 /// same position, so values, errors and the final position are the reference reader's.
+///
+/// Each value is restored with [`fixed_step`] of order `O` from the history `h` (none for `O = 0`).
 #[inline(always)]
-fn rice_partition(rd: &mut BitReader, k: u32, out: &mut [i64]) -> Result<(), CodecError> {
+fn rice_partition<const O: usize>(
+    rd: &mut BitReader,
+    k: u32,
+    mut h: [i64; 4],
+    out: &mut [i64],
+) -> Result<(), CodecError> {
     let bytes = rd.bytes;
     let mut pos = rd.pos;
     for o in out.iter_mut() {
@@ -1367,13 +1392,16 @@ fn rice_partition(rd: &mut BitReader, k: u32, out: &mut [i64]) -> Result<(), Cod
             if used <= FAST_BITS {
                 // The stop bit and the k remainder bits: (1 << k) | r, with 63 - k >= 7.
                 let top = (w << zeros) >> (63 - k);
-                *o = unzigzag(((zeros as u64) << k) | (top ^ (1u64 << k)));
+                *o = fixed_step::<O>(
+                    &mut h,
+                    unzigzag(((zeros as u64) << k) | (top ^ (1u64 << k))),
+                );
                 pos += used as usize;
                 continue;
             }
         }
         rd.pos = pos;
-        *o = unzigzag(rice_slow(rd, k)?);
+        *o = fixed_step::<O>(&mut h, unzigzag(rice_slow(rd, k)?));
         pos = rd.pos;
     }
     rd.pos = pos;
@@ -1384,11 +1412,19 @@ fn rice_partition(rd: &mut BitReader, k: u32, out: &mut [i64]) -> Result<(), Cod
 /// Widths up to [`FAST_BITS`] are read from one window while its 8 bytes are in the slice, which is the
 /// value [`BitReader::get`] returns there (it has at least `width` bits remaining); everything else is
 /// `get` itself at the same position.
+/// Each value is restored as in [`rice_partition`].
 #[inline(always)]
-fn fixed_partition(rd: &mut BitReader, width: u32, out: &mut [i64]) -> Result<(), CodecError> {
+fn fixed_partition<const O: usize>(
+    rd: &mut BitReader,
+    width: u32,
+    mut h: [i64; 4],
+    out: &mut [i64],
+) -> Result<(), CodecError> {
     if width == 0 {
         // `get(0)` reads nothing and returns 0.
-        out.fill(0);
+        for o in out.iter_mut() {
+            *o = fixed_step::<O>(&mut h, 0);
+        }
         return Ok(());
     }
     let bytes = rd.bytes;
@@ -1397,13 +1433,13 @@ fn fixed_partition(rd: &mut BitReader, width: u32, out: &mut [i64]) -> Result<()
         if width <= FAST_BITS {
             if let Some(b) = bytes.get(pos / 8..pos / 8 + 8) {
                 let w = u64::from_be_bytes(b.try_into().unwrap()) << (pos % 8);
-                *o = unzigzag(w >> (64 - width));
+                *o = fixed_step::<O>(&mut h, unzigzag(w >> (64 - width)));
                 pos += width as usize;
                 continue;
             }
         }
         rd.pos = pos;
-        *o = unzigzag(get_slow(rd, width)?);
+        *o = fixed_step::<O>(&mut h, unzigzag(get_slow(rd, width)?));
         pos = rd.pos;
     }
     rd.pos = pos;
