@@ -1,6 +1,6 @@
 # C8 results: the choice of `match_keys` changes the nearest past cases
 
-**Descriptive measurement, under the rules frozen in [PROTOCOL.md](PROTOCOL.md) (`00aae8f`).**
+**Descriptive measurement, under the rules frozen in [PROTOCOL.md](PROTOCOL.md) (`491592b`).**
 On both datasets, every pair of context choices gets the verdict **"neighbours change"
 at k = 10**: on average only 47–68% (Bosch) and 55% (PHM 2010) of the top-10 are the
 same under two reasonable choices of `match_keys`. Under the protocol's rule, **the
@@ -8,7 +8,7 @@ context choice matters** on both datasets. A neighbour list is only interpretabl
 together with the context that produced it, so every result should state its
 `match_keys`.
 
-- **Harness:** `452aa6b`, committed before the full run. The full run was executed
+- **Harness:** `ef3b5ab`, committed before the full run. The full run was executed
   once, with no harness fault and no changes after the freeze.
 - **Database:** `ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1` (SQL 0.3.11). The value
   rules are `simple-v2` (the collection default of this release).
