@@ -15,13 +15,17 @@ Evidence for the paper. Public data only (the collections of `industrial_iu1` an
 ## Reproduce
 
 Needs the loaded collections `public.bosch` (IU1, with probes enabled) and `public.toollife` (IU2), and
-`windows.json` from `iu1.py rms`.
+`../industrial_iu1/results/windows.json` from `iu1.py rms`. The compose file mounts it
+read-only, together with IU2 metadata, and supplies `DATABASE_URL`. Build the historical
+base image as described in [IU1](../industrial_iu1/README.md); use an isolated checkout
+and Docker project for reruns. The paths and Compose configuration are checked; the
+full database experiment has not been rerun for the submission correction.
 
 ```sh
 docker compose up -d db                                    # ref
-python -I edge.py ref
+docker compose run --rm runner python -I edge.py ref
 docker compose -f compose.yaml -f compose.edge.yaml up -d db   # e512: same volume, new limits
-python -I edge.py e512
+docker compose -f compose.yaml -f compose.edge.yaml run --rm runner python -I edge.py e512
 docker inspect <db container> --format '{{.State.OOMKilled}} {{.RestartCount}}'
 docker exec <db container> cat /sys/fs/cgroup/memory.events /sys/fs/cgroup/memory.peak
 ```

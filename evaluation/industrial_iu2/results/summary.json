@@ -207,16 +207,16 @@
     }
    },
    "LEN": {
-    "median": 0.10878531420455892,
+    "median": 0.10894762564577376,
     "min": -0.050093808630394004,
-    "max": 0.25101530069385125,
+    "max": 0.25135015145696243,
     "per_tool": {
      "2": 0.09767441860465115,
      "3": -0.050093808630394004,
-     "7": 0.25101530069385125,
-     "8": 0.11989620980446669,
-     "101": 0.12553236237446763,
-     "102": 0.0005405405405405407
+     "7": 0.25135015145696243,
+     "8": 0.12022083268689637,
+     "101": 0.12480610003328696,
+     "102": 0.0018777205618000757
     }
    }
   },
@@ -457,17 +457,17 @@
     }
    },
    "LEN": {
-    "median": 0.16174810514433158,
+    "median": 0.1595935581708011,
     "min": -0.4761904761904762,
     "max": 0.437391304347826,
     "per_tool": {
      "4": -0.3387861545756282,
-     "5": 0.16200277520814063,
+     "5": 0.1617761846242784,
      "6": 0.437391304347826,
-     "9": 0.15548281505728317,
+     "9": 0.15566455398288623,
      "10": -0.4761904761904762,
-     "103": 0.16174810514433158,
-     "105": 0.2813135684521527
+     "103": 0.1595935581708011,
+     "105": 0.28053868987589664
     }
    }
   },
@@ -488,15 +488,19 @@
  "W3": {
   "BL": {
    "threshold": 0.5588188954531993,
-   "tools_flagged": 2,
+   "tools_flagged": 1,
    "tools": 7,
-   "median_remaining_life_percent_at_first_flag": 41.25,
+   "tools_first_flagged_in_failure_cycle": 1,
+   "tools_never_flagged": 5,
+   "median_remaining_life_percent_at_first_flag": 82.5,
    "first_half_cycles_flagged": 0.005208333333333333
   },
   "ZL": {
    "threshold": 0.6075214769080451,
    "tools_flagged": 3,
    "tools": 7,
+   "tools_first_flagged_in_failure_cycle": 0,
+   "tools_never_flagged": 4,
    "median_remaining_life_percent_at_first_flag": 46.774193548387096,
    "first_half_cycles_flagged": 0.005208333333333333
   },
@@ -504,20 +508,26 @@
    "threshold": 0.6698425744241865,
    "tools_flagged": 7,
    "tools": 7,
+   "tools_first_flagged_in_failure_cycle": 0,
+   "tools_never_flagged": 0,
    "median_remaining_life_percent_at_first_flag": 53.2258064516129,
    "first_half_cycles_flagged": 0.19791666666666666
   },
   "VIB": {
    "threshold": 0.25486135886211475,
-   "tools_flagged": 7,
+   "tools_flagged": 6,
    "tools": 7,
-   "median_remaining_life_percent_at_first_flag": 77.96610169491525,
+   "tools_first_flagged_in_failure_cycle": 1,
+   "tools_never_flagged": 0,
+   "median_remaining_life_percent_at_first_flag": 82.0864991233197,
    "first_half_cycles_flagged": 0.11979166666666667
   },
   "CUR": {
    "threshold": 0.15962805571322386,
    "tools_flagged": 2,
    "tools": 7,
+   "tools_first_flagged_in_failure_cycle": 0,
+   "tools_never_flagged": 5,
    "median_remaining_life_percent_at_first_flag": 28.466659450097424,
    "first_half_cycles_flagged": 0.0
   },
@@ -525,6 +535,8 @@
    "threshold": 0.4645151022423419,
    "tools_flagged": 2,
    "tools": 7,
+   "tools_first_flagged_in_failure_cycle": 0,
+   "tools_never_flagged": 5,
    "median_remaining_life_percent_at_first_flag": 59.89406779661017,
    "first_half_cycles_flagged": 0.010416666666666666
   }

@@ -2,8 +2,10 @@
 import json, sys
 from pathlib import Path
 import numpy as np
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from analysis_io import directories, read_json, write_json
 
-OUT = Path("/spike/results") if Path("/spike").exists() else Path(__file__).parent / "results"
+OUT, DEST = directories(__file__)
 SEED, B = 20261111, 10000
 
 
@@ -32,9 +34,7 @@ def auroc(pos, neg):
 
 def t12(name):
     p = OUT / f"t12_{name}.json"
-    if not p.exists():
-        return None
-    D = json.loads(p.read_text())
+    D = read_json(p)
     rows = D["rows"]
     labels = {}
     for r in rows:
@@ -103,9 +103,7 @@ def t12(name):
 
 def t4():
     p = OUT / "t4.json"
-    if not p.exists():
-        return None
-    D = json.loads(p.read_text())
+    D = read_json(p)
     rows = [v for k, v in D["rows"].items() if not k.startswith("load")]
     rec = [len({tuple(x) for x in r["probe"]} & {tuple(x) for x in r["exact"]}) / max(1, len(r["exact"])) for r in rows]
     ex = np.concatenate([r["exact_ms"] for r in rows]); pr = np.concatenate([r["probe_ms"] for r in rows])
@@ -120,9 +118,7 @@ def t4():
 
 def t5():
     p = OUT / "t5.json"
-    if not p.exists():
-        return None
-    rows = json.loads(p.read_text())
+    rows = read_json(p)
     out = {}
     for arm in ("BL", "ZL"):
         for st in (0, 0.01, 0.02, 0.05, 0.10):
@@ -133,21 +129,35 @@ def t5():
     return out
 
 
-def t6():
-    p = OUT / "t6.json"
-    if not p.exists():
-        return None
-    rows = json.loads(p.read_text())
-    bl = [r["BL_same_op"] for r in rows]; zl = [r["ZL_same_op"] for r in rows]; ch = [r["chance"] for r in rows]
+def t6(eligible=False):
+    p = OUT / ("t6_eligible.json" if eligible else "t6.json")
+    rows = read_json(p)
+    # Reanalyse archived, truncated lists; this is NOT a corrected eligible-gallery search.
+    def precision(r, arm):
+        return sum(f"_{r['op']}_" in hit for hit in r[arm]) / 10
+    bl = [precision(r, "BL") for r in rows]; zl = [precision(r, "ZL") for r in rows]; ch = [r["chance"] for r in rows]
     d, lo, hi = boot_mean_diff(bl, zl)
     return dict(BL=float(np.mean(bl)), ZL=float(np.mean(zl)), chance=float(np.mean(ch)),
-                BL_minus_ZL=[d, lo, hi, decide(lo, hi)], queries=len(rows))
+                BL_minus_ZL=[d, lo, hi, decide(lo, hi) if eligible else "not applicable (withdrawn diagnostic)"], queries=len(rows),
+                status=("eligible-gallery rerun; query bootstrap" if eligible else
+                        "archived post-filtered lists; eligible-gallery rerun required"),
+                short_results={arm: sum(len(r[arm]) < 10 for r in rows) for arm in ("BL", "ZL")},
+                empty_results={arm: sum(not r[arm] for r in rows) for arm in ("BL", "ZL")})
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--eligible-t6", action="store_true", help="analyze the separate corrected T6 database rerun")
+    args = parser.parse_args()
+    if args.eligible_t6:
+        result = t6(eligible=True)
+        write_json(DEST / "t6_eligible_summary.json", result)
+        print(json.dumps(result, indent=1))
+        sys.exit(0)
     S = dict(dev=t12("dev"), conf=t12("conf"), t4=t4(), t5=t5(), t6=t6())
     load = OUT / "load.json"
     if load.exists():
         S["load"] = json.loads(load.read_text())
-    (OUT / "summary.json").write_text(json.dumps(S, indent=1))
+    write_json(DEST / "summary.json", S)
     print(json.dumps(S, indent=1))

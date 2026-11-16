@@ -1,9 +1,17 @@
+\ifdefined\SigmodSubmission
+\documentclass[sigconf]{acmart}
+\else
 \documentclass[sigconf,nonacm]{acmart}
-\usepackage{booktabs,tabularx,tikz,listings,xurl,algorithm,algpseudocode}
+\fi
+\usepackage{booktabs,tabularx,longtable,tikz,listings,xurl,algorithm,algpseudocode}
 \usetikzlibrary{positioning,arrows.meta,fit,calc}
 \settopmatter{printacmref=false,printccs=false,printfolios=true}
 \renewcommand\footnotetextcopyrightpermission[1]{}
 \setcopyright{none}
+\ifdefined\SigmodSubmission
+\acmConference[SIGMOD '27]{ACM SIGMOD International Conference on Management of Data}{June 13--18, 2027}{Huntington Beach, CA, USA}
+\acmYear{2027}
+\fi
 \DeclareUrlCommand\code{\urlstyle{tt}}
 \emergencystretch=1.5em
 \newcommand{\M}{MorletDB}
@@ -13,19 +21,23 @@
 
 \begin{document}
 \title{MorletDB: Recordings, Not Rows --- Lag-Tolerant Waveform Retrieval in PostgreSQL}
-\subtitle{Version \ReportVersion}
+\ifdefined\SigmodSubmission\else\subtitle{Version \ReportVersion}\fi
 \author{Zin Nam}
-\affiliation{\institution{}\city{}\country{}}% no affiliation; ends this author's group
+\affiliation{\institution{}\country{Germany}}% no institutional affiliation
 \author{Semir Maslo}
-\affiliation{\institution{Sulzer-BDiM}\city{}\country{}}
+\affiliation{\institution{Sulzer-BDiM}\country{Germany}}
 
 \begin{abstract}
-Analysts of waveform archives search for intervals that resemble a query up to a small time shift, and they need the original samples of every hit. We treat this as top-$k$ search under a bounded-lag cross-correlation scorer inside PostgreSQL. First, we show why standard vector search fails at it: on 235,000 seismic windows, a zero-lag shortlist of 1000 recovered only 74\% of the scorer's top ten, and an exact shortlist lost the same matches as an HNSW one. The candidate metric, not approximate search, loses them. Second, we make the scorer itself searchable. Each lag term is an inner product with a zero-padded, shifted copy of the query, so 13 shifted probes against one unmodified inner-product HNSW index, re-ranked with the unchanged scorer, generate candidates for the scorer actually used, with no training, no per-shift copies of the data and no lower bounds. On held-out stations and year, probe search recovered \EHoPctPR\% of the exact top ten at a p95 latency of \EHoPninetyfivePR\,ms, against \EHoPninetyfiveExact\,ms for in-database exact search; zero-lag candidates from the same index recovered \EHoRecallZsix--\EHoRecallZthousand. Exact candidates on the same sparse grid recovered 99.9\%. Against in-database exact search made 1.6--2.7$\times$ faster by a one-pass scorer and 3.2--3.7$\times$ faster again by a float32 screen with a rigorous error bound, both with identical results, probes stayed 1.6--2.3$\times$ faster at p95 on galleries of up to one million windows. On a proxy task, the scorer returned windows containing catalogued earthquakes more often than zero-lag similarity, on development data (precision at ten 0.297 against 0.213) and on held-out stations and year (0.139 against 0.060). Third, \M{} keeps one search contract on both paths: every hit is a sample interval that reads back the losslessly stored recording bit for bit, and filters and row-level security apply to exact and probe search alike. Probe structures cost 0.97--1.34$\times$ the raw data. Exact search remains the choice for small or selective galleries, and the router sends those to it. An exact scan of a materialized copy outside the database was faster still, without the contract's filters, security and commit-time visibility.
+Industrial waveform investigations need more than a nearest-neighbour identifier: an engineer must retrieve the original samples, compare like operating conditions and tolerate modest misalignment without losing access-control or transactional semantics. MorletDB implements this workflow as a PostgreSQL extension with bit-exact recording storage, sample-interval results and two search paths under one contract. We describe the integration and its measured trade-offs, including negative results on two public CNC milling datasets. Normalised shape similarity separates labelled bad runs in one dataset, but run duration and signal level often do as well or better; a recent good history matters, and a small change of speed can defeat lag tolerance. These findings motivate serving shape, level and context together rather than treating similarity as a diagnosis.
+
+For retrieval, each term of a bounded-lag correlation is an inner product with a zero-padded shifted query. Thirteen such queries into one unmodified HNSW index generate candidates that are re-ranked with the unchanged scorer, without trained embeddings or per-shift data copies. On the historical E1 build, held-out seismic queries recovered \EHoPctPR\% of the exact top ten at p95 \EHoPninetyfivePR\,ms versus \EHoPninetyfiveExact\,ms for exact search. In a separate later study, probes were 1.6--2.3$\times$ faster than screened exact search on development galleries up to one million windows; these are distinct measurements. Probe structures cost 0.97--1.34$\times$ raw storage. Small or selective galleries favour exact search, and a separate in-memory exact scan is faster when database filters, row security and commit-time visibility are unnecessary. The system and artifact expose these choices; public-data experiments and limited-duration load tests do not establish production deployment or diagnostic efficacy.
 \end{abstract}
 \maketitle
 
 \section{Introduction}
 Condition monitoring, seismology and physiology produce archives of long, uniformly sampled recordings; condition monitoring of machines motivated this work. A common investigation starts from one interval and asks where similar behaviour occurred, then inspects the original samples and acquisition context of each candidate. Two practical requirements follow. Similarity must tolerate a small time shift, because a window grid rarely aligns two occurrences of the same event; and a result is useful only if it identifies an interval of a recording that can be read back exactly.
+
+\textbf{Industrial requirements and lessons.} The collaboration with Sulzer-BDiM motivates four requirements: retain the original evidence after a search, restrict comparisons to compatible acquisition context, keep newly built search windows transactionally visible, and provide interactive investigation on constrained machines. These are design requirements, not claims of a customer deployment. Section~\ref{sec:industrial} evaluates the system on public machining data and exposes a consequential limitation: normalising away level and duration can remove the strongest condition information. The engineering contribution is to serve these quantities beside shape, with a common interval and provenance, and to make the storage, latency and recall costs explicit.
 
 A bounded-lag cross-correlation captures the first requirement: two windows are similar if some shift of at most $L$ samples correlates them strongly (Section~\ref{sec:problem}). Exhaustive evaluation is linear in the archive. The obvious acceleration is a vector index, which PostgreSQL users already have through pgvector~\cite{pgvector}; but such indexes rank by a fixed metric between unshifted vectors. This paper asks:
 
@@ -35,12 +47,12 @@ The answer has three parts. Zero-lag vector search asks the index the wrong ques
 
 \textbf{Contributions.}
 \begin{enumerate}
-\item \textbf{A diagnosis.} Zero-lag shortlists fail for a bounded-lag scorer because of their metric, not because of approximate search: exact and HNSW shortlists lose the same matches (Section~\ref{sec:zerolag}).
+\item \textbf{A retrieval diagnosis.} Zero-lag shortlists fail for a bounded-lag scorer because of their metric, not because of approximate search: exact and HNSW shortlists lose the same matches (Section~\ref{sec:zerolag}).
 \item \textbf{A simple method.} One unmodified inner-product HNSW index serves a bounded-lag scorer: query-side, zero-padded shifted probes on a sparse lag grid, the union of their candidates, and re-ranking with the unchanged scorer. It needs no trained embedding, no per-shift copies of the data and no lower bounds (Section~\ref{sec:method}).
 \item \textbf{One contract on both paths.} Exact and probe search share eligibility, metadata filters, row-level security, source exclusion and overlap suppression. Every hit is an interval that reads back the original bits, and windows become searchable at the commit that builds them. A router sends selective filters to exact search (Section~\ref{sec:system}).
-\item \textbf{A controlled evaluation.} Protocols frozen before measurement, held-out stations and year, an ablation that separates grid sparsity, float16 probes and index error, and measured costs of filters, storage and index maintenance (Sections~\ref{sec:zerolag}--\ref{sec:storage}).
+\item \textbf{Evidence and industrial lessons.} Frozen protocols, an ablation separating candidate errors, measured storage and maintenance costs, and two public machining studies that identify where shape retrieval helps and where level, duration and history drift limit it (Sections~\ref{sec:zerolag}--\ref{sec:industrial}).
 \end{enumerate}
-\textbf{Findings in brief.} (1)~\emph{What works:} on held-out data, shifted probes recovered \EHoPctPR\% of the bounded-lag top ten at a p95 latency of \EHoPninetyfivePR\,ms, against \EHoPninetyfiveExact\,ms for in-database exact search (Table~\ref{tab:e1}), and 1.6--2.3 times faster at p95 than an in-database exact path that, with identical results, screens windows under a rigorous error bound and re-scores only possible neighbours. (2)~\emph{Why:} zero-lag candidates miss most matches whose best lag exceeds $\pm5$ values, exactly or with HNSW (Figure~\ref{fig:scaling}); probes on a sparse grid cover all lags (Figure~\ref{fig:probes}, Table~\ref{tab:ablation}). (3)~\emph{Cost:} probe structures of about the size of the raw data, 13 index passes per query, routing for selective filters, and write-ahead logging from index maintenance (Sections~\ref{sec:filters} and~\ref{sec:storage}). (4)~\emph{Relevance proxy:} the bounded-lag top ten contained catalogued earthquakes more often than the zero-lag top ten, by 0.08 in precision at ten on development and on held-out data (Section~\ref{sec:limits}). All retrieval results are for seismic recordings; Section~\ref{sec:limits} states the limits.
+\textbf{Findings in brief.} (1)~\emph{What works:} on held-out data, shifted probes recovered \EHoPctPR\% of the bounded-lag top ten at a p95 latency of \EHoPninetyfivePR\,ms, against \EHoPninetyfiveExact\,ms for in-database exact search (Table~\ref{tab:e1}), and 1.6--2.3 times faster at p95 than an in-database exact path that, with identical results, screens windows under a rigorous error bound and re-scores only possible neighbours. (2)~\emph{Why:} zero-lag candidates miss most matches whose best lag exceeds $\pm5$ values, exactly or with HNSW (Figure~\ref{fig:scaling}); probes on a sparse grid cover all lags (Figure~\ref{fig:probes}, Table~\ref{tab:ablation}). (3)~\emph{Cost:} probe structures of about the size of the raw data, 13 index passes per query, routing for selective filters, and write-ahead logging from index maintenance (Sections~\ref{sec:filters} and~\ref{sec:storage}). (4)~\emph{Relevance proxy:} the bounded-lag top ten contained catalogued earthquakes more often than the zero-lag top ten, by 0.08 in precision at ten on development and on held-out data (Section~\ref{sec:limits}). The main retrieval ablation is seismic; Section~\ref{sec:industrial} adds machining experiments and Section~\ref{sec:limits} states the limits.
 
 Code, frozen protocols and raw results are public~\cite{repo}; a supplement reports storage, recovery and further studies.
 
@@ -80,7 +92,9 @@ The bounded-lag top-$k$ is therefore the top-$k$ of a maximum over $2L{+}1$ inne
 \end{algorithmic}
 \end{algorithm}
 
-Re-ranking uses the full-precision query and the stored envelope, so every returned distance is exact; only the set of windows considered is approximate. Algorithm~\ref{alg:probe} replaces the full lag set by a sparse grid ($|\Lambda|=13$ at spacing 5, chosen on development data) and each exact inner-product top-$c$ by an HNSW search. Three approximations follow, and Section~\ref{sec:ablation} measures each separately: (a) \emph{grid sparsity}: a window whose best lag lies between grid points must rank in the top $c$ of a neighbouring probe, which smooth envelopes favour; (b) \emph{per-probe budget}: a global top-ten window need not be in any single probe's top $c$; (c) \emph{index approximation}: HNSW returns an approximate top-$c$ and compares a float16 copy of the probe with float16 stored vectors. The budget is fixed: if source exclusion or overlap suppression leaves fewer than $k$ windows, the function returns fewer rows, where the exact path fetches more. This never happened in our evaluation.
+Re-ranking uses the full-precision query and the stored envelope, so every returned distance is exact; only candidate selection is approximate. For the full lag set and exact per-lag rankings with identical eligibility and consistent ties, every \emph{unsuppressed} global top-$k$ item occurs in the top-$k$ of a maximizing lag. Otherwise $k$ items would precede it at that lag and also under the maximum score, contradicting its global rank.
+
+That lemma does not guarantee the contract's result after exclusion and overlap suppression. For example, suppose the first $c$ candidates at every lag are overlapping windows of one recording. Suppression can retain only one; a non-overlapping window ranked $c+1$ may be the second contract result yet be absent from every shortlist. Algorithm~\ref{alg:probe} also samples only 13 lags and uses approximate HNSW rankings on float16 probes. Sparse-grid loss, quantisation/index error and finite budgets interacting with exclusion/suppression must therefore be distinguished. The ablation measures the first two effects at the fixed budget; it is not a standalone budget sweep. If suppression leaves fewer than $k$ hits, the probe function returns fewer rows while the exact path fetches more. No such short result occurred in E1.
 
 \section{Integration in PostgreSQL}\label{sec:system}
 \begin{figure}[t]
@@ -120,7 +134,11 @@ Re-ranking uses the full-precision query and the stored envelope, so every retur
 
 \textbf{Name.} The system is named in honour of Jean Morlet, after its starting hypothesis that Morlet-wavelet representations suit search in technical signal archives. Representations are versioned, replaceable extractors; the envelope used here is not a wavelet.
 
-\textbf{Recordings and appends.} A collection is a set of caller-owned tables: recordings with a checkpoint, raw chunks, envelopes and, optionally, a pgvector table of \code{halfvec} rows with an inner-product HNSW index. An append names its global start offset and writes the raw chunk and the checkpoint in one transaction, so a committed checkpoint never refers to uncommitted samples. A repeated identical append is a verified no-op; a gap, overlap or changed retry fails. Raw chunks are coded losslessly by Grizzbit, \M{}'s chunk codec (Grizzbit~1, chunk format versions 2 and 3; supplement), so a result interval reads back the appended float64 bit patterns. From release 0.3.11-alpha.1, every append path also decodes each encoded chunk again before storing it and refuses one that does not reproduce its input bit for bit (\code{morlet.verify_appends}, on by default). The codec rests on one observation: most sensor floats are integers in disguise, an affine image $o+k\,s$ of digitizer counts under floating-point rounding. Given the recording's nominal quantum, or a grid it detects per chunk when none is declared, the encoder recovers the integer indices, codes them with polynomial prediction and Rice codes, and stores last-place corrections where rounding departs from the grid. On calibrated physical values (Paderborn bearing data, Sleep-EDF EEG) it was 1.5--1.6$\times$ smaller than zstd, where the tested ALP implementation fell back to near-raw size, and smaller than ClickHouse 26.5 and TileDB with tuned codec chains (0.62--0.76$\times$); on counts it was within 5\% of FLAC (supplement). Against the 2026 float codecs it remained the smallest on four of six waveform inputs, but Pcodec was 5--8\% smaller on two inputs that lie almost, not exactly, on a grid (IMS decimals and the Paderborn physical values), as was ClickHouse 26.10's PCO codec by 3\% on the latter; every ALP arm was 2.6--7.9$\times$ larger on calibrated values~\cite{b4}. Grizzbit~2.1 (chunk format version 5, opt-in from the next release) adds last-place corrections stored once per grid index and per-chunk linear prediction, and keeps a version-5 chunk only where it is strictly smaller than Grizzbit~1's: on the six waveform inputs it was 12.6\% smaller in total and smaller on all six, below Pcodec on five (not on IMS), decoded at least 53.1 and encoded at least 10.8\,M samples/s per thread, and wrote identical bytes on four platforms~\cite{b6}. Detection without a declared quantum matched the declared-quantum size on all six inputs tested (ratio 0.98--1.00), so the advantage does not depend on the user supplying calibration metadata~\cite{g1}. Against QuestDB 10.1 on 101.6\,M samples of Paderborn bearing data, \M{} stored the sample data in 33\% less space than QuestDB's Parquet zstd 9 arm and 87\% less than its native columns. Loading alternately with QuestDB in one session, the released \M{} (0.3.5-alpha.1) read 4,096-sample intervals 1.6$\times$ / 2.3$\times$ faster (p50 / p95) and three-channel intervals 1.2$\times$ / 1.3$\times$ faster, gave no statement on long reads and interval statistics, and ingested from one client connection about 1.5$\times$ (asynchronous commit) and 1.4$\times$ (durable commit) more slowly; with parallel writers it ingested 1.2--2.0$\times$ faster (B3.2). On data without a value grid it would lose most of the storage advantage (supplement~\cite{b3}). The next release (SQL 0.3.4, not yet released) changes the single-connection result: it ingested 13.65 and 12.99\,M samples/s (asynchronous / durable) against QuestDB's 9.58 and 8.26\,M in one session, 1.4$\times$ and 1.6$\times$ faster and 2.2$\times$ / 2.1$\times$ the released build, with byte-identical stored data and, measured from a fresh client process and inside the server, unchanged reads; it was paired with QuestDB only, on one dataset and machine~\cite{b3}. On the same data and machine, three databases aimed at industrial IoT, CrateDB 6.4, Apache IoTDB 2.0 and TDengine 3.4, needed 10.8$\times$, 4.0$\times$ and 3.4$\times$ \M{}'s space in their most compact lossless layouts, and TimescaleDB 2.31 needed 4.9$\times$ in its columnstore. Loading alternately with the released \M{} in one session, they ingested about 8.5$\times$ (CrateDB arrays), 2.3--2.6$\times$, 1.2$\times$ and 6.5$\times$ more slowly from one connection, and read intervals 6.4--12$\times$, 3.1--10.7$\times$, 3.6--6.8$\times$ and 2.1--5.4$\times$ more slowly. An altered resend was silently ignored (CrateDB) or silently replaced the stored value (IoTDB, TDengine), where \M{} refuses it; TimescaleDB's unique index refused it, and an identical resend too; TDengine's float compressor tsz turned out to be lossy~\cite{b3}. \emph{An append does not build search representations.} Envelopes are written by an explicit call to \code{morlet_build_envelopes}, which also writes their vector rows if probe search was enabled for that window size when the call started. Samples and their representations become visible together only when the caller runs the append and the builder in the same transaction:
+\textbf{Recordings and appends.} A collection contains recordings with a checkpoint, lossless raw chunks, envelopes and, optionally, pgvector \code{halfvec} rows with an inner-product HNSW index. Appends write the chunk and checkpoint atomically at an explicit sample offset. Identical retries are verified no-ops; gaps, overlaps and changed retries fail. Grizzbit stores integer-grid indices with prediction and Rice coding plus last-place corrections, or falls back to float bits; the result preserves the input float64 bits. Write-time decode verification is on by default from release 0.3.11-alpha.1. A result identifies a half-open sample interval, not a reconstructed approximation.
+
+\textbf{Storage evidence and measured versions.} Grizzbit~1 was smallest on four of six waveform inputs against the B4 codec baselines; Pcodec was 5--8\% smaller on the other two~\cite{b4}. The pinned B6 Grizzbit~2.1 build reduced aggregate waveform bytes by 12.6\% relative to Grizzbit~1~\cite{b6}. These are codec measurements, not current end-to-end database throughput. In the paired B3.8 session, MorletDB 0.3.5-alpha.1 used 33\% less sample-data storage than QuestDB's Parquet arm, read short intervals faster and ingested more slowly from one connection; later B3.10--B3.12 measured the SQL~0.3.4 ingestion path separately~\cite{b3}. The supplement retains the database comparisons and their qualifications. Later codec defaults, encoder fixes and releases are not silently substituted for any measured build.
+
+\emph{An append does not build search representations.} The caller explicitly invokes \code{morlet_build_envelopes}, which also writes vector rows when probes are enabled. Samples and representations become visible together only when append and builder run in one transaction:
 \begin{lstlisting}
 BEGIN;
 SELECT morlet_append_chunk('signals', 'pump7', 81920, :x);
@@ -185,7 +203,7 @@ A zero-lag shortlist loses a quarter of the bounded-lag top ten, and approximate
 \label{fig:scaling}
 \end{figure}
 
-With $K{=}1000$, recall@10 fell from 0.977 on the smallest gallery to 0.743 on the largest; with $K{=}100$, from 0.714 to 0.605 (Figure~\ref{fig:scaling}). The HNSW shortlist agreed with the exact one on 98--100\% of candidates on the largest gallery and gave the same recall to within 0.007 at every size (0.744 at $K{=}1000$). Every top-ten item contained in a shortlist survived re-ranking and suppression, so coverage equalled recall. The zero-lag candidate metric causes the loss, not approximate search and not the contract's exclusion rules: a quarter of the bounded-lag top ten lies outside the 1000 windows nearest by zero-lag cosine. The exact zero-lag top ten alone shared 43--47\% of the bounded-lag top ten. E1 reproduced this on the current build: a zero-lag HNSW shortlist of 1000 from the probe index recovered 0.744 on dev and 0.658 on held-out data. The exhaustive scan in Figure~\ref{fig:scaling} is the historic implementation (linear, 12.1--12.8\,\textmu s per window); the current exact path runs as one parallel statement and is the baseline below.
+With $K{=}1000$, recall@10 fell from 0.977 on the smallest gallery to 0.743 on the largest; with $K{=}100$, from 0.714 to 0.605 (Figure~\ref{fig:scaling}). The HNSW shortlist agreed with the exact one on 98--100\% of candidates on the largest gallery and gave the same recall to within 0.007 at every size (0.744 at $K{=}1000$). Every top-ten item contained in a shortlist survived re-ranking and suppression, so coverage equalled recall. The zero-lag candidate metric causes the loss, not approximate search and not the contract's exclusion rules: a quarter of the bounded-lag top ten lies outside the 1000 windows nearest by zero-lag cosine. The exact zero-lag top ten alone shared 43--47\% of the bounded-lag top ten. E1 reproduced this on its pinned build: a zero-lag HNSW shortlist of 1000 from the probe index recovered 0.744 on dev and 0.658 on held-out data. The exhaustive scan in Figure~\ref{fig:scaling} is the historic implementation (linear, 12.1--12.8\,\textmu s per window); the E1 exact path runs as one parallel statement and is the baseline in Table~\ref{tab:e1}; E7 measures the later screened path separately.
 
 \section{Shifted probes: ablation and confirmation}\label{sec:ablation}
 The configuration was chosen on dev data~\cite{bl1}: grids of 7 and 13 probes and budgets of 50 and 100 per probe all met its gate (recall@10 $\ge 0.95$, p95 at most a third of the exhaustive scan and below the fastest exact path, added storage at most $1.5\times$ raw); 13 probes $\times$ 50 was frozen and confirmed once on held-out data. E1 then measured the product functions and all controls on one build~\cite{e1}. Its offline controls use the same stored float16 envelopes and the same re-ranking: \emph{PX-61}, the exact top 50 for each of the 61 lags; \emph{PX-13} and \emph{PX-7}, the same for the 13- and 7-lag grids; \emph{PQ-13}, as PX-13 with each probe rounded to float16, as the index sees it; and \emph{EZ}, an exact zero-lag shortlist with as many candidates as PX-13.
@@ -201,7 +219,7 @@ The configuration was chosen on dev data~\cite{bl1}: grids of 7 and 13 probes an
 
 \textbf{Against a faster exact path.} On the measured build, 97\% of exact search time was spent in the per-row scorer. We rewrote it to build the query's shifted copies once per query and to score each window in one pass across lags, keeping every lag's summation order, so distances stay bitwise identical; the exact lists equalled the measured build's for 100 of 100 queries at each gallery size~\cite{e6}. In-database exact search became 1.6--2.7 times faster at p95. With eight workers its p95 was 277, 575 and 1,551\,ms on dev galleries of 0.23, 0.50 and 1.03\,M windows, against 55, 68 and 238\,ms for probe search: probes stayed 5.1--8.5 times faster, with every bootstrap interval above 1.
 
-\textbf{Against a screened exact path.} Most windows cannot be among the nearest, so the product now screens them first~\cite{e7}. A parallel aggregate over the envelope rows scores every window in float32 against the shifted query and bounds the error rigorously (rounding of the dot products and of the window's mean and spread); only windows whose lower bound is at most the $m$-th smallest upper bound are re-scored with the unchanged float64 scorer, and the contract's selection rules follow as before. The lists equalled the measured build's and the unscreened path's, bit for bit, for 100 of 100 queries at each gallery size. In one session with eight workers, the screened path's p95 was 138, 221 and 540\,ms on 0.23, 0.50 and 1.03\,M windows, against 516, 808 and 1,928\,ms for scoring every window (3.6--3.7 times faster; 3.2--3.6 with the default worker count) and 88, 130 and 237\,ms for probe search: probes stayed 1.6--2.3 times faster at p95 in every configuration, with every bootstrap interval above 1. At 0.23\,M windows the median screened search took 77\,ms against 64\,ms for probes. The machine was busier than in E6, which slowed both paths, so only these within-session ratios are comparisons.
+\textbf{Against a screened exact path.} Most windows cannot be among the nearest, so the E7 product build screens them first~\cite{e7}. A parallel aggregate over the envelope rows scores every window in float32 against the shifted query and bounds the error rigorously (rounding of the dot products and of the window's mean and spread); only windows whose lower bound is at most the $m$-th smallest upper bound are re-scored with the unchanged float64 scorer, and the contract's selection rules follow as before. The lists equalled the measured build's and the unscreened path's, bit for bit, for 100 of 100 queries at each gallery size. In one session with eight workers, the screened path's p95 was 138, 221 and 540\,ms on 0.23, 0.50 and 1.03\,M windows, against 516, 808 and 1,928\,ms for scoring every window (3.6--3.7 times faster; 3.2--3.6 with the default worker count) and 88, 130 and 237\,ms for probe search: probes stayed 1.6--2.3 times faster at p95 in every configuration, with every bootstrap interval above 1. At 0.23\,M windows the median screened search took 77\,ms against 64\,ms for probes. The machine was busier than in E6, which slowed both paths, so only these within-session ratios are comparisons.
 
 \textbf{Against a materialized exact scan.} Outside the database, exact search can be faster still~\cite{e3,e4}. All envelopes are held in memory as a float32 matrix; one matrix product scores all 61 lags, a rigorous rounding bound selects the windows to re-score in float64, and the contract's selection rules are applied in the same order. This scan returned exactly the in-database result for every query. Its p95 was 21, 42 and 80\,ms on galleries of 0.23, 0.50 and 1.03\,M windows, against 68, 108 and 202\,ms for probe search at recall 0.99--0.998; no crossover was measured, and fits place one near 34\,M windows. The scan holds a 5\,GB copy at one million windows, decoded once and scored with the processor's matrix unit, outside the database and without its filters, row-level security or commit-time visibility. Inside that contract, screening brings the same bound into the database, but per-row work remains (reading each row and computing each window's mean and spread at query time): the screened path was 3.5--5.6 times slower than this scan at p95, and probes are the faster path.
 
@@ -260,7 +278,7 @@ Post-filtering lost up to half the top ten (Table~\ref{tab:ss3}). Filter-aware p
 \section{Storage, recall and latency}\label{sec:storage}
 Probe search costs space. In E1, raw chunks took 371\,MB (dev) and 514\,MB (held-out), envelopes 223\,MB (read by both paths for scoring), the probe table 223\,MB and its HNSW index 275\,MB: the probe structures added 1.34$\times$ and 0.97$\times$ the raw data. Rebuilding the index took 39--41\,s with 4\,GB of maintenance memory. Smaller storage and faster search are separate goals: float16 probes did not change recall, and storing fewer bytes need not make search faster. How large envelopes are relative to raw data depends on stride and on how well the raw data compress (supplement).
 
-Float16 storage is not the bottleneck: on 2022 windows that no earlier study had read, float16 envelopes kept recall@10 at 0.9999 against envelopes recomputed from raw samples~\cite{r1b}. The two stored copies hold the same float16 values in 98.3\% of positions. A study of keeping only one~\cite{ss1} found that a single \code{halfvec} table was exact on both databases (identical distances for 9.4\,M pairs) and saved about 250\,MB per 235,000 windows, but made exact scans 23\% slower; an HNSW index on an expression over the envelope table kept exact search unchanged but raised probe p95 by 27--32\%. Both missed their pre-registered latency bounds. The trade-off is three-way: about 1--1.3$\times$ raw storage buys a p95 latency 5--13 times lower than in-database exact search at recall 0.977--0.998; saving about half of that storage costs 20--30\% latency on one path.
+Float16 storage is not the bottleneck: on 2022 windows that no earlier study had read, float16 envelopes kept recall@10 at 0.9999 against envelopes recomputed from raw samples~\cite{r1b}. The two stored copies hold the same float16 values in 98.3\% of positions. A study of keeping only one~\cite{ss1} found that a single \code{halfvec} table was exact on both databases (identical distances for 9.4\,M pairs) and saved about 250\,MB per 235,000 windows, but made exact scans 23\% slower; an HNSW index on an expression over the envelope table kept exact search unchanged but raised probe p95 by 27--32\%. Both missed their pre-registered latency bounds. The historical SS1/E1 trade-off is three-way: probe structures cost about 1--1.3$\times$ raw storage, and eliminating a stored copy increased latency by 20--30\% on one path. Against the later screened exact implementation, the within-session probe advantage was 1.6--2.3$\times$ on development galleries (Section~\ref{sec:ablation}); the older latency ratios are not claims about the current release.
 
 \textbf{Maintenance during ingestion.} Building vector rows at commit makes new windows searchable immediately; the price is HNSW maintenance on every append. In a replay of one day of four channels, appends ran at 53\% of raw-only throughput with every window searchable at its commit~\cite{bl1}. Under sustained load (409,600 samples/s with concurrent searches on 938,768 windows), write-ahead logging was 18 times the database growth with PostgreSQL's defaults and 2.9 times with four settings changed together; a planned two-hour run met its target for 111 minutes and stopped after an unexplained pause~\cite{pilot}. The supplement reports these runs.
 
@@ -280,9 +298,7 @@ run bootstrap.
 
 \textbf{Scoring runs against a good history.} Scoring every run by its distance to the nearest window of good runs of
 the same machine, operation and axis gave an AUROC for bad against good of 0.925 (95\% interval 0.878--0.967) under BL,
-0.875 under ZL and 0.852 under RMS. BL was better than ZL; against RMS the difference was not significant. Asked for
-the same operation on another machine, BL returned it in 0.503 of the top ten against 0.412 for ZL (chance 0.076). BL
-and ZL shared only 38\% of their hits.
+0.875 under ZL and 0.852 under RMS. BL was better than ZL; against RMS the difference was not significant. BL and ZL shared only 38\% of their hits. The cross-machine recognition result is withdrawn pending an eligible-gallery rerun: its harness removed source-machine hits after a fixed shortlist and used a variable denominator. Correcting the denominator alone does not correct the candidate set; we make no cross-machine recognition claim from that run.
 
 \textbf{Is it drift?} Twenty of the 36 bad runs come from one machine and half-year, so after seeing the results we
 checked, with rules written down first, whether the score measures drift between half-years. It does not: with the
@@ -318,8 +334,7 @@ and, from the dataset authors' feature table rather than from \M{}, the vibratio
 0.813; counting cycles gave 0.778. The reason shows in the distances: a new tool's cycles were already 0.45 from their
 own baseline, and wear moved them only to 0.50. Steady milling repeats little envelope structure from cycle to
 cycle; what wear changes is the level, which the normalised envelope removes. With one threshold from the
-development tools, RMS per window and the vibration level flagged every confirmation tool before it broke, but also
-12--20\% of cycles in the first half of life. The 4.88 billion samples took 6.47\,GB of chunks (10.6 bits per
+development tools, RMS per window flagged all seven confirmation tools in a cycle strictly before failure, and vibration level six of seven; vibration level first flagged the seventh in its breaking cycle, which is not advance warning. These scores also flagged 12--20\% of cycles in the first half of life. Bounded lag warned on one tool before failure and first flagged another in its breaking cycle. The 4.88 billion samples took 6.47\,GB of chunks (10.6 bits per
 sample) against 39.1\,GB as float64.
 
 \textbf{Under edge-sized limits.} The same queries ran with the database container unlimited and limited to 2 CPUs
@@ -331,8 +346,7 @@ ran out of memory (peak 404\,MB, mostly page cache). These are laptop cores unde
 hardware, with one client and warm caches.
 
 \textbf{What follows for industrial use.} Lag tolerance improves envelope similarity on machining vibration as it
-does on seismic envelopes: BL was better than ZL everywhere, significantly on the Bosch data, inside and across
-half-years. A nearest-neighbour score against a recent good history separates bad runs without training, but simpler
+does on the tested classification comparisons: BL had higher AUROC than ZL, significantly on the Bosch data but not on the seven confirmation tools of IU2. It was not uniformly better: ZL recovered more sources under 1\% and 2\% synthetic stretching. A nearest-neighbour score against a recent good history separates bad runs without training, but simpler
 values do as well or better on both datasets: RMS for retrieval, run length for scoring bad runs, and level values for
 tool wear. The envelope is normalised and so blind to level and duration; a product should offer both next to the
 shape, and the level values that a decision needs per part take milliseconds where a decision from shape searches
@@ -390,7 +404,7 @@ ColBERT 2020~\cite{colbert} & sum of max inner products & --- & query: one vecto
 
 \textbf{Earlier implementation states.} E1 measured the main comparison on one build. The filtered-search table (SS3), the single-copy study (SS1), the zero-lag scaling study (R2, R2-D) and the load runs were measured on earlier states and on a machine shared with another job; ratios across those studies mix states.
 
-\textbf{Speed relative to exact search.} The speed-up is against in-database exact search with results identical to the product's. Held-out speed-ups (Table~\ref{tab:e1}) are against the measured build; against the current screened exact path, probes were 1.6--2.3$\times$ faster at p95 on dev galleries up to 1.03\,M windows. A materialized exact scan outside the database was 2.5--3.3$\times$ faster than probe search at p95 up to 1.03\,M windows, without the contract.
+\textbf{Speed relative to exact search.} The speed-up is against in-database exact search with results identical to the product's. Held-out speed-ups (Table~\ref{tab:e1}) are against the measured build; against the screened exact path measured in E7, probes were 1.6--2.3$\times$ faster at p95 on dev galleries up to 1.03\,M windows. A materialized exact scan outside the database was 2.5--3.3$\times$ faster than probe search at p95 up to 1.03\,M windows, without the contract.
 
 \textbf{Measurement conditions.} One laptop-class machine, warm caches, one HNSW configuration; only EX2 and the industrial studies ran on other hardware: EX2 measured ingestion, reads and search speed, not retrieval quality, and IU1, IU2 and IU1-E ran on another laptop under Docker, IU1-E also with the container limited to 2 CPUs and 512\,MB. The load tests ran 15 and 111 minutes; the planned two-hour run stopped after an unexplained pause, and we make no claim about longer operation, archives beyond about one million windows, cold caches or several tenants under load.
 
@@ -405,14 +419,17 @@ ColBERT 2020~\cite{colbert} & sum of max inner products & --- & query: one vecto
 \textbf{When to use it.} Exact search for small galleries (a few thousand eligible windows), for selective filters that exclude the query's neighbourhood, and whenever every true neighbour must be found. With screening, exact search took 0.14--0.54\,s at p95 on dev galleries of 0.23--1.03\,M windows, so it is an interactive option up to about a million windows when every true neighbour matters. Probe search for unfiltered or weakly filtered galleries of a quarter of a million windows and more, where it was 1.6--2.3 times faster at p95 than the screened exact path at recall 0.99--0.998 (Section~\ref{sec:ablation}), and for larger archives, since exact search reads every eligible window. When a separate in-memory copy without filters or security is acceptable, a materialized exact scan is faster still. The crossover points measured here hold for these data and this machine.
 
 \section{Conclusion}
-Bounded-lag waveform search can use a standard inner-product index if the index is asked the right question. A zero-lag shortlist asks a different one and loses a quarter of the scorer's top ten, whether it is computed exactly or approximately. Because each lag term is an inner product with a shifted query, thirteen shifted probes into one unmodified HNSW index, re-ranked with the unchanged scorer, recovered 97.7\% of the top ten on held-out seismic stations and year, and stayed 1.6--2.3 times faster at p95 than the fastest in-database exact path, which screens windows under a rigorous error bound and returns identical results. Exact candidates on the sparse grid recovered 99.9\%; float16 probes added no observed loss; approximate candidate selection accounts for the rest. The method is simple: one index, one stored copy of each window, no training and no lower bounds. Inside PostgreSQL it keeps one contract on both paths: hits are sample intervals of losslessly stored recordings, filters and row-level security apply, and windows become searchable at the commit that builds them. Its costs are measured: probe structures of 1.0--1.3$\times$ the raw data, exact search for small and selective galleries, and write-ahead logging from index maintenance (18 times the database growth with default settings, 2.9 times at a tuned operating point). On a catalogued-earthquake proxy task, the bounded-lag scorer found more windows with earthquakes than zero-lag similarity on development and held-out data. On public CNC milling data (Section~\ref{sec:industrial}), \M{} stored the integer counts at 9.93 bits per sample, every chunk verified bit for bit at write time, and bounded lag beat zero lag in every comparison; as a detector of bad runs, level values and run length did as well or better, and the good history had to be recent. Time-resolved labels in a second signal domain are the next step for claims beyond seismic data.
+Bounded-lag waveform search can use a standard inner-product index if the index is asked the right question. A zero-lag shortlist asks a different one and loses a quarter of the scorer's top ten, whether it is computed exactly or approximately. Because each lag term is an inner product with a shifted query, thirteen shifted probes into one unmodified HNSW index, re-ranked with the unchanged scorer, recovered 97.7\% of the top ten on held-out seismic stations and year, in E1. Separately, on E7 development galleries it stayed 1.6--2.3 times faster at p95 than the fastest measured in-database exact path, which screens windows under a rigorous error bound and returns identical results. Exact candidates on the sparse grid recovered 99.9\%; float16 probes added no observed loss; approximate candidate selection accounts for the rest. The method is simple: one index, one stored copy of each window, no training and no lower bounds. Inside PostgreSQL it keeps one contract on both paths: hits are sample intervals of losslessly stored recordings, filters and row-level security apply, and windows become searchable at the commit that builds them. Its costs are measured: probe structures of 1.0--1.3$\times$ the raw data, exact search for small and selective galleries, and write-ahead logging from index maintenance (18 times the database growth with default settings, 2.9 times at a tuned operating point). On a catalogued-earthquake proxy task, the bounded-lag scorer found more windows with earthquakes than zero-lag similarity on development and held-out data. On public CNC milling data (Section~\ref{sec:industrial}), \M{} stored the integer counts at 9.93 bits per sample, every chunk verified bit for bit at write time, and bounded lag improved the tested run-scoring AUROC over zero lag; as a detector of bad runs, level values and run length did as well or better, and the good history had to be recent. Time-resolved labels in a second signal domain are the next step for claims beyond seismic data.
 
 \section*{Use of AI assistance and responsibility}
-Code, experiment harnesses, analyses and text of this report were developed with Claude (Anthropic), an AI assistant, working under the authors' direction; Section~\ref{sec:industrial} and the studies behind it were also written with AI assistance. Where a study had a protocol, it was committed before measurement (Section~\ref{sec:setup}, the supplement and~\cite{iu1,iu2,iu1e}); the authors reviewed the results and are responsible for the content and for any errors, each for the studies and text they contributed.
+Code, experiment harnesses, analyses and text of this report were developed with Claude (Anthropic) and reviewed and revised with Codex (OpenAI), under the authors' direction; Section~\ref{sec:industrial} and the studies behind it were also written with AI assistance. Where a study had a protocol, it was committed before measurement (Section~\ref{sec:setup}, the supplement and~\cite{iu1,iu2,iu1e}); the authors reviewed the results and are responsible for the content and for any errors, each for the studies and text they contributed.
 
+\ifdefined\SigmodSubmission\else
 \section*{Licence}
 \copyright~2026 Zin Nam. The text and figures of this report are licensed under Creative Commons Attribution 4.0 International (CC~BY~4.0, \url{https://creativecommons.org/licenses/by/4.0/}); the MorletDB source code is licensed under Apache-2.0.
 
+\fi
+\label{sec:references}
 \begin{thebibliography}{40}\small
 \bibitem{pgvector} pgvector contributors. pgvector: open-source vector similarity search for Postgres, version 0.8.0. \url{https://github.com/pgvector/pgvector}.
 \bibitem{fast} Clara E. Yoon, Ossian O'Reilly, Karianne J. Bergen, and Gregory C. Beroza. 2015. Earthquake detection through computationally efficient similarity search. \emph{Science Advances} 1, 11, e1501057. doi:10.1126/sciadv.1501057.
@@ -461,7 +478,7 @@ Code, experiment harnesses, analyses and text of this report were developed with
 \bibitem{e6} \M{} contributors. E6: a fast in-database exact scorer against probe search. \code{evaluation/fast_exact/RESULTS.md} in~\cite{repo}.
 \bibitem{e7} \M{} contributors. E7: screened exact envelope search. \code{evaluation/screened_exact/RESULTS.md} in~\cite{repo}.
 \bibitem{e5} \M{} contributors. E5 and E5-H: catalogued earthquakes, bounded-lag against zero-lag search. \code{evaluation/task_relevance/RESULTS.md}, \code{RESULTS_HELDOUT.md} in~\cite{repo}.
-\bibitem{b3} \M{} contributors. B3, B3.1--B3.12: \M{}, QuestDB, CrateDB, Apache IoTDB, TDengine and TimescaleDB on dense waveforms; same-session pairs (B3.8, B3.9) and single-connection ingestion of the next release (B3.10--B3.12). \code{evaluation/tsdb_b3/RESULTS.md} in~\cite{repo}.
+\bibitem{b3} \M{} contributors. B3, B3.1--B3.12: \M{}, QuestDB, CrateDB, Apache IoTDB, TDengine and TimescaleDB on dense waveforms; same-session pairs (B3.8, B3.9) and single-connection ingestion of the SQL 0.3.4 build (B3.10--B3.12). \code{evaluation/tsdb_b3/RESULTS.md} in~\cite{repo}.
 \bibitem{b4} \M{} contributors. B4: the chunk codec against the 2026 float codecs. \code{evaluation/storage_b4/RESULTS.md} in~\cite{repo}.
 \bibitem{cs1} \M{} contributors. CS1 (S1 in the repository): per-chunk summaries. \code{evaluation/chunk_summaries/RESULTS.md} in~\cite{repo}.
 \bibitem{ex1} \M{} contributors. EX1 (X1 in the repository): the full workflow inside edge-sized container limits. \code{evaluation/edge_x1/RESULTS.md} in~\cite{repo}.
@@ -477,15 +494,17 @@ Code, experiment harnesses, analyses and text of this report were developed with
 \bibitem{e4} \M{} contributors. E4: scaling crossover between probe search and materialized exact search. \code{evaluation/scaling_crossover/RESULTS.md} in~\cite{repo}.
 \end{thebibliography}
 
+\ifdefined\SigmodSubmission\else
+\onecolumn
 \appendix
 \section{Claims and evidence}\label{sec:ledger}
 Each claim with the study that supports it, the measurement kind (E: offline experiment control, P: product functions) and data (D: dev, C: held-out), and its main restriction. IU1 and IU2 are the industrial studies of Section~\ref{sec:industrial} and IU1-E their latency under container limits; IU1-A1 (drift) and IU1-A2 (lead-in) are post hoc checks whose rules were written down before they were computed~\cite{iu1,iu2,iu1e}. Protocols, results and commands: \cite{repo}; E1 and diagnostics: \cite{e1}.
 
 \small
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}l>{\raggedright\arraybackslash}X@{}}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}p{0.13\linewidth}>{\raggedright\arraybackslash}p{0.43\linewidth}@{}}
 \toprule
 Claim & Study & Restriction \\
-\midrule
+\midrule\endhead
 zero-lag top 1000 + re-rank: 0.743 (exact), 0.744 (HNSW) & R2-D; E, D & earlier build; two budgets \\
 HNSW and exact shortlists share 98--100\% of candidates & R2-D; E, D & largest gallery \\
 zero-lag HNSW 1000 from probe index: 0.744 / 0.658 & E1; P, D / C & one HNSW configuration \\
@@ -504,20 +523,20 @@ same complete universe on both paths & E1 check & static databases \\
 grid probe keeps $\ge$0.98 correlation (p5), rank $\le$8 (p95) & E1; E, D+C & explains, does not guarantee \\
 no short results; identical lists on the same index & E1; P, D+C & rebuilt index may differ \\
 \bottomrule
-\end{tabularx}
+\end{longtable}
 
 \medskip\noindent
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}l>{\raggedright\arraybackslash}X@{}}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}p{0.13\linewidth}>{\raggedright\arraybackslash}p{0.43\linewidth}@{}}
 \toprule
 Claim & Study & Restriction \\
-\midrule
+\midrule\endhead
 history score AUROC 0.925 (BL), 0.875 (ZL), 0.852 (RMS); BL vs RMS n.s. & IU1; E, C & run labels, all half-years as history \\
 inside machine and half-year: BL 0.905 vs ZL 0.790; without M02 Feb 2019: 0.854 & IU1-A1; E, C & post hoc, rules written first \\
 earlier half-years only: BL 0.603 (n.s.), 13 bad runs & IU1-A1; E, C & half-year resolution only \\
 without each run's first 2 s: BL 0.900 & IU1-A2; E, C & query side only, 2 s assumed \\
 run length alone: AUROC 0.982, better than BL & IU1-A1; E, C & run length from file length \\
 other bad runs in top 10 inside the half-year: BL 0.254, ZL 0.212, RMS 0.377, chance 0.183 & IU1-A1; E, C & replaces 0.177 vs 0.026 of IU1 \\
-same operation on other machine 0.503 vs 0.412 & IU1; E, C & axis filter only \\
+cross-machine recognition claim withdrawn & IU1 T6; E, C & post-filtered, short lists; eligible-gallery rerun pending \\
 stretch 1/2/5/10\%: source in top 10 0.97/0.76/0.51/0.20 & IU1; E, C & synthetic stretch \\
 probes recall 1.0, p95 126 vs 176\,ms at 85k windows & IU1; P, C & laptop, Docker \\
 tool end of life AUROC: BL 0.639, ZL 0.580 (n.s.), RMS per window 0.791 & IU2; E, C & 7 tools; cycles to failure \\
@@ -526,13 +545,13 @@ vibration level 0.831, spindle current 0.813, cycle count 0.778 & IU2; E, C & au
 2 CPUs, 512\,MB: history search p95 42\,ms (43 unlimited), window statistics 1.6\,ms & IU1-E; P, C & laptop cores, warm cache \\
 2 CPUs, 512\,MB: search over 85k windows p95 366\,ms exact, 197\,ms probes; no OOM & IU1-E; P, C & one client, two rounds \\
 \bottomrule
-\end{tabularx}
+\end{longtable}
 
 \medskip\noindent
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}l>{\raggedright\arraybackslash}X@{}}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}p{0.13\linewidth}>{\raggedright\arraybackslash}p{0.43\linewidth}@{}}
 \toprule
 Claim & Study & Restriction \\
-\midrule
+\midrule\endhead
 index statements $\approx$65\% of probe time; 0.7\,ms per probe unresolved & D1; P, D & instrumented copy \\
 correlated filters: recall 0.997--1.0, p95 121--227\,ms & D2; P, D & synthetic filter choice \\
 post-filter 0.515 at 1.8\% eligible; routed 1.0 & SS3; E/P, C & earlier build \\
@@ -547,31 +566,31 @@ companion-table RLS: exact +5\% & Stage 1; P & one tenant layout \\
 calibrated floats: codec 0.62--0.76$\times$ ClickHouse, TileDB & B2; E & six inputs; ClickHouse 26.5 \\
 smallest on 4 of 6 waveforms; Pcodec 5--8\% smaller on 2; ALP 2.6--7.9$\times$ larger on calibrated & B4; E & default settings; one machine \\
 grid detected without metadata: 0.98--1.00$\times$ declared-quantum size & G1; E & six inputs \\
-Grizzbit 2.1: waveforms 0.874$\times$ in total, smaller on 6 of 6; decode $\geq$53.1, encode $\geq$10.8\,M/s & B6; P & opt-in, not yet released \\
+Grizzbit 2.1: waveforms 0.874$\times$ in total, smaller on 6 of 6; decode $\geq$53.1, encode $\geq$10.8\,M/s & B6; P & historical B6 build \\
 \bottomrule
-\end{tabularx}
+\end{longtable}
 
 \medskip\noindent
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}l>{\raggedright\arraybackslash}X@{}}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}p{0.13\linewidth}>{\raggedright\arraybackslash}p{0.43\linewidth}@{}}
 \toprule
 Claim & Study & Restriction \\
-\midrule
+\midrule\endhead
 sample data 33\% / 87\% smaller than QuestDB Parquet zstd 9 / native & B3; P & one dataset; needs a value grid \\
 released \M{}: QuestDB ingests 1.5$\times$ / 1.4$\times$ faster (one connection); \M{} reads 4,096 samples 1.6$\times$ / 2.3$\times$ faster; long reads, statistics no statement & B3.8; P & one machine; 8-CPU containers; same session \\
 \M{} ingests 1.2--2.0$\times$ faster with 4--8 parallel writers & B3.2; P & one machine; 8-CPU containers \\
-next release (SQL 0.3.4, unreleased): ingests 1.4$\times$ / 1.6$\times$ faster than QuestDB (one connection); data identical, reads unchanged & B3.10, B3.12; P & paired with QuestDB only; one dataset, one machine \\
+historical SQL 0.3.4 build: ingests 1.4$\times$ / 1.6$\times$ faster than QuestDB (one connection); data identical, reads unchanged & B3.10, B3.12; P & paired with QuestDB only; one dataset, one machine \\
 CrateDB 6.4: 10.8$\times$ space, ingest about 8.5$\times$ and reads 6.4--12$\times$ slower; altered resend ignored & B3.4, B3.9; P & one connection; single node \\
 IoTDB 2.0: 4.0$\times$ space, ingest about 2.3--2.6$\times$ and reads 3.1--10.7$\times$ slower; altered resend replaces & B3.5, B3.9; P & one connection; Python client decoding included \\
 TDengine 3.4: 3.4$\times$ space, ingest about 1.2$\times$ and reads 3.6--6.8$\times$ slower; tsz lossy & B3.6, B3.9; P & one connection; Python client decoding included \\
 TimescaleDB 2.31: 4.9$\times$ space (columnstore), ingest about 6.5$\times$ and reads 2.1--5.4$\times$ slower; every resend refused & B3.7, B3.9; P & one connection; psycopg row conversion included \\
 \bottomrule
-\end{tabularx}
+\end{longtable}
 
 \medskip\noindent
-\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}l>{\raggedright\arraybackslash}X@{}}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}p{0.13\linewidth}>{\raggedright\arraybackslash}p{0.43\linewidth}@{}}
 \toprule
 Claim & Study & Restriction \\
-\midrule
+\midrule\endhead
 search features at ingest: 3.9$\times$ raw ingest time (was 9.6$\times$) & B3.3; P & one connection, one dataset \\
 seven-channel acquisition reads 32--39\% faster than QuestDB (p50) & B3.3; P & one dataset \\
 summaries: statistics 58$\times$ faster (p95, 60\,s at 64\,kHz), bitwise identical; ingest $-$4.5\%, storage +1.3\% & CS1; P & gain grows with interval length \\
@@ -579,6 +598,7 @@ full workflow at 2 CPUs, 512\,MB, no slowdown & EX1; P & container limits on des
 Raspberry Pi 3B+: 78k / 258k samples/s, search lists identical & EX2; P & one device, no fan; not long-term \\
 bounded lag P@10 0.297 vs 0.213 (dev), 0.139 vs 0.060 (held-out) & E5, E5-H; E, D / C & catalogue proxy; exact search \\
 \bottomrule
-\end{tabularx}
+\end{longtable}
 
+\fi
 \end{document}

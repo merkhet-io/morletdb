@@ -256,15 +256,19 @@ def t6():
         r = dict(run=run, m=m, op=op, ax=ax, s=s, chance=chance)
         with conn() as c:
             for arm, lag in (("BL", BL), ("ZL", ZL)):
-                h = search_interval(c, run, ax, s, {"axis": ax}, lag, top=100)
-                h = [x for x in h if not x[0].startswith(m + "_")][:10]
+                # Each eligible machine is disjoint by recording. Its exact, suppressed top ten
+                # suffices for the global top ten; no source-machine candidates consume the budget.
+                h = []
+                for machine in sorted({w[1] for w in others}):
+                    h.extend(search_interval(c, run, ax, s, {"axis": ax, "machine": machine}, lag, top=10))
+                h = sorted(h, key=lambda x: (x[2], x[0], x[1]))[:10]
                 r[arm] = [x[0] for x in h]
-                r[arm + "_same_op"] = sum(f"_{op}_" in x[0] for x in h) / max(1, len(h))
+                r[arm + "_same_op"] = sum(f"_{op}_" in x[0] for x in h) / 10
         return r
 
     with ThreadPoolExecutor(4) as ex:
         out = list(ex.map(one, qs))
-    (OUT / "t6.json").write_text(json.dumps(out))
+    (OUT / "t6_eligible.json").write_text(json.dumps(out))
     print("t6 done")
 
 
