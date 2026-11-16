@@ -39,7 +39,7 @@ This automated check cannot replace visual review or scientific author approval.
 | E1, 68594d7 | Archived held-out results, environment and generated tables | Historical 97.7% recall, 57 ms probes vs 740 ms exact; not a current-main speedup |
 | E7 screened exact | Archived later development results, within-session comparison | Separate 1.6–2.3× p95 advantage on development galleries; do not combine it with E1's held-out result |
 | IU1 T1/T2, A1/A2, 088f03b | Offline replay from committed compressed per-query observations | Run-label evidence; half-year resolution cannot establish causal online history; duration is a strong baseline |
-| IU1 T6 | Fixed eligibility/denominator harness, separate rerun file, original observations preserved | **Claim withdrawn.** Run the corrected eligible-gallery experiment before reinstating it; archived corrected-denominator values are not that experiment |
+| IU1 T6 | Fixed eligibility/denominator harness, separate rerun file, original observations preserved | Original claim withdrawn. Post hoc eligible-gallery rerun done 2026-11-16 (BL 0.523, ZL 0.412, +0.110 [0.077, 0.145]; run-clustered [0.075, 0.147]); reported as exploratory, not a confirmation |
 | IU2 W1/W2/W3, 088f03b | Offline replay and raw-window/archived-cycle consistency checks | W3 now BL 1/7, vibration 6/7, RMS 7/7 strictly earlier warnings; small seven-tool confirmation set |
 | IU2 external features | Archived per-cycle values are available | Independent regeneration needs the external feature CSV; replay does not prove feature extraction |
 | IU1-E | Historical container-limit measurements | Corrected mounts/commands; no fresh database or timing rerun in this PR; desktop cores are not an industrial edge deployment |
@@ -49,9 +49,9 @@ This automated check cannot replace visual review or scientific author approval.
 
 1. Obtain both authors' approval of the final manuscript. Author names and affiliations are complete;
    contact details go into the submission system.
-2. Keep the T6 claim withdrawn unless the corrected database experiment is completed,
-   checked, and documented as a post-correction rerun. Do not substitute archived
-   truncated-list metrics. Examine repeated-query dependence before claiming significance.
+2. T6: the corrected database experiment was run and documented as a post hoc rerun
+   (2026-11-16), with a run-clustered bootstrap for repeated-query dependence. Report it
+   only as exploratory; do not substitute archived truncated-list metrics.
 3. Choose the performance scope explicitly: this draft reports historical builds.
    A claim about today's system needs a matched fresh run of probes and screened exact,
    including environment, worker settings, query set, filters, recall, latency distribution,
@@ -69,7 +69,7 @@ This automated check cannot replace visual review or scientific author approval.
 ## Corrections tracked
 
 #509: separate ACM submission and page checks; author fields completed.
-#510: T6 harness/denominator corrected and claim withdrawn; post hoc database rerun done 2026-11-16 (exploratory; paper text unchanged pending author review).
+#510: T6 harness/denominator corrected and claim withdrawn; post hoc database rerun done 2026-11-16; reported as exploratory in 0.27.
 #511: final-cycle alerts separated from advance warning.
 #512: compressed-input/offline replay fixed, base-image recipe and container mounts
 made explicit; pgvector build pinned so PostgreSQL stays 17.6; clean `--no-cache` build and T6 rerun executed 2026-11-16 (T1–T5 not rerun).

@@ -241,9 +241,10 @@ The full industrial database reruns remain separate, expensive operations; see
 [IU2](../../evaluation/industrial_iu2/README.md), and
 [IU1-E](../../evaluation/industrial_latency/README.md). Use a separate rerun
 checkout and archive environment versions. The Compose mounts, DSN and base-image
-recipe have been corrected; no fresh container build, waveform ingestion or timing
-experiment is claimed by this PR. T6's corrected harness writes a separate result
-and must actually be rerun before restoring the cross-machine recognition claim.
+recipe have been corrected. A clean `--no-cache` build of 088f03b and the T6
+eligible-gallery rerun were executed on 2026-11-16 (environment in
+`evaluation/industrial_iu1/results/t6_rerun_environment.json`); T1–T5, IU2 and
+IU1-E were not rerun. The T6 rerun is post hoc and reported as exploratory.
 
 For conference formatting use `python research/paper/build_submission.py --all`
 and `python research/paper/check_submission.py`. The helper verifies the official
