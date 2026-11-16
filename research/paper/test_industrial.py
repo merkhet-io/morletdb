@@ -56,6 +56,19 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual(result["empty_results"], {"BL": 13, "ZL": 1})
         self.assertIn("rerun required", result["status"])
 
+    def test_run_clustered_bootstrap(self):
+        m = module("iu1", "evaluation/industrial_iu1/analyze.py")
+        # one cluster: every resample is the full sample, so the interval collapses to the mean
+        self.assertEqual(m.boot_cluster_mean_diff([1, 0, 1], [0, 0, 0], ["r", "r", "r"]), (2 / 3, 2 / 3, 2 / 3))
+        # singleton clusters give the query bootstrap's point estimate
+        d, lo, hi = m.boot_cluster_mean_diff([1, 0, 1, 0], [0, 0, 0, 0], ["a", "b", "c", "d"])
+        self.assertEqual(d, .5)
+        self.assertLessEqual(lo, d); self.assertLessEqual(d, hi)
+        r = m.t6()
+        self.assertEqual(r["source_runs"], 187)
+        self.assertEqual(r["BL_minus_ZL_run_clustered"][0], r["BL_minus_ZL"][0])
+        self.assertIn("not applicable", r["BL_minus_ZL_run_clustered"][3])
+
     def test_failure_cycle_is_not_advance_warning(self):
         m = module("iu2", "evaluation/industrial_iu2/iu2_analyze.py")
         m.S = m.load_scores(cycle_scores=True)

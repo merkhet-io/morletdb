@@ -1,0 +1,28 @@
+{
+ "BL": 0.5225,
+ "ZL": 0.41200000000000003,
+ "chance": 0.07633998132195138,
+ "BL_minus_ZL": [
+  0.11049999999999999,
+  0.0765,
+  0.145,
+  "better"
+ ],
+ "queries": 200,
+ "source_runs": 187,
+ "BL_minus_ZL_run_clustered": [
+  0.11049999999999999,
+  0.07549019607843137,
+  0.14744962378890947,
+  "better"
+ ],
+ "status": "eligible-gallery rerun; query bootstrap",
+ "short_results": {
+  "BL": 0,
+  "ZL": 0
+ },
+ "empty_results": {
+  "BL": 0,
+  "ZL": 0
+ }
+}

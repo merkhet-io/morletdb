@@ -17,6 +17,21 @@ def boot_mean_diff(a, b, seed=SEED):
     return float((a - b).mean()), float(np.quantile(d, 0.025)), float(np.quantile(d, 0.975))
 
 
+def boot_cluster_mean_diff(a, b, clusters, seed=SEED):
+    """Run-clustered bootstrap: resample source runs with replacement and keep all of each run's queries.
+
+    A sensitivity analysis for dependence between queries from the same run (#510); the mean is over queries."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    keys = sorted(set(clusters))
+    members = [np.flatnonzero(np.asarray(clusters) == k) for k in keys]
+    rng = np.random.default_rng(seed)
+    d = np.empty(B)
+    for i in range(B):
+        idx = np.concatenate([members[j] for j in rng.integers(0, len(keys), len(keys))])
+        d[i] = (a[idx] - b[idx]).mean()
+    return float((a - b).mean()), float(np.quantile(d, 0.025)), float(np.quantile(d, 0.975))
+
+
 def decide(lo, hi):
     return "better" if lo > 0 else "worse" if hi < 0 else "no difference"
 
@@ -137,8 +152,12 @@ def t6(eligible=False):
         return sum(f"_{r['op']}_" in hit for hit in r[arm]) / 10
     bl = [precision(r, "BL") for r in rows]; zl = [precision(r, "ZL") for r in rows]; ch = [r["chance"] for r in rows]
     d, lo, hi = boot_mean_diff(bl, zl)
+    runs = [r["run"] for r in rows]
+    cd, clo, chi = boot_cluster_mean_diff(bl, zl, runs)
     return dict(BL=float(np.mean(bl)), ZL=float(np.mean(zl)), chance=float(np.mean(ch)),
                 BL_minus_ZL=[d, lo, hi, decide(lo, hi) if eligible else "not applicable (withdrawn diagnostic)"], queries=len(rows),
+                source_runs=len(set(runs)),
+                BL_minus_ZL_run_clustered=[cd, clo, chi, decide(clo, chi) if eligible else "not applicable (withdrawn diagnostic)"],
                 status=("eligible-gallery rerun; query bootstrap" if eligible else
                         "archived post-filtered lists; eligible-gallery rerun required"),
                 short_results={arm: sum(len(r[arm]) < 10 for r in rows) for arm in ("BL", "ZL")},
