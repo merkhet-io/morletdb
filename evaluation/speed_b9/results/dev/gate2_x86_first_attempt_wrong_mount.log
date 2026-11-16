@@ -1,0 +1,35 @@
+x86_64
+avx2
+== codec_golden-4c5674b2e494da8e
+thread 'frozen_chunks_decode_bit_for_bit' (14) panicked at crates/grizzbit/tests/codec_golden.rs:550:10:
+thread 'every_version6_case_has_a_frozen_file_of_the_intended_shape' (13) panicked at crates/grizzbit/tests/codec_golden.rs:500:33:
+test frozen_chunks_decode_bit_for_bit ... FAILED
+thread 'every_version5_case_has_a_frozen_file_of_the_intended_shape' (12) panicked at crates/grizzbit/tests/codec_golden.rs:515:33:
+test every_version6_case_has_a_frozen_file_of_the_intended_shape ... FAILED
+test every_version5_case_has_a_frozen_file_of_the_intended_shape ... FAILED
+thread 'every_case_has_a_frozen_file_of_the_intended_shape' (11) panicked at crates/grizzbit/tests/codec_golden.rs:533:33:
+test every_case_has_a_frozen_file_of_the_intended_shape ... FAILED
+test result: FAILED. 0 passed; 4 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.20s
+== codec_props-31af371e83baa341
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 48.71s
+== corpus_bytes-79be1be3042acc12
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.51s
+== encoder_equivalence-f5cd5bc6ac2e4719
+thread 'encoder_reproduces_the_frozen_bytes' (31) panicked at crates/grizzbit/tests/encoder_equivalence.rs:168:40:
+test encoder_reproduces_the_frozen_bytes ... FAILED
+test result: FAILED. 0 passed; 1 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.02s
+== float32-213e3be4882ab3e0
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.08s
+== float32_equivalence-52e8f5c256c5745f
+thread 'float32_encoder_reproduces_the_frozen_bytes' (43) panicked at crates/grizzbit/tests/float32_equivalence.rs:153:40:
+test float32_encoder_reproduces_the_frozen_bytes ... FAILED
+test result: FAILED. 0 passed; 1 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.02s
+== grizzbit-fa57d27786ca4b6e
+LPC kernels: [Scalar, Sse2, Avx2], detected Avx2
+test result: ok. 45 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 83.05s
+== grizzbit21-eb83b4655f02dba6
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.98s
+== grizzbit21_edges-19f861946345b84c
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.18s
+overall 1
+exit 0

@@ -1,0 +1,25 @@
+"\377\377\377\377\377\377\377\017" # Uses: 381
+"\001\000\000\000\000\000\000&" # Uses: 245
+"\000\000\000\000\000\000\000\002" # Uses: 229
+"\001\000\000\014" # Uses: 258
+"\377\377\377\377\377\377\377R" # Uses: 176
+###### End of recommended dictionary. ######
+Done 3077645 runs in 7601 second(s)
+     7601.66 real      7037.84 user       426.88 sys
+          1563099136  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+             1800225  page reclaims
+                  43  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                 691  signals received
+                4343  voluntary context switches
+             9460057  involuntary context switches
+           152567481  instructions retired
+            56724909  cycles elapsed
+             2130280  peak memory footprint

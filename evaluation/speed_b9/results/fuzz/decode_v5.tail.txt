@@ -1,0 +1,25 @@
+"\001%" # Uses: 25904
+"\001\000" # Uses: 16382
+"\377\377\377\377\377\377\006\374" # Uses: 9088
+"\001\000\014^" # Uses: 3511
+"\000\000\000\026" # Uses: 2181
+###### End of recommended dictionary. ######
+Done 161302043 runs in 7601 second(s)
+     7601.64 real      7288.65 user       176.33 sys
+           672956416  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+            35162888  page reclaims
+                  26  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                 691  signals received
+                2351  voluntary context switches
+             9510183  involuntary context switches
+           152778485  instructions retired
+            58748918  cycles elapsed
+             2195816  peak memory footprint

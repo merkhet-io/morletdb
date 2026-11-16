@@ -1,0 +1,52 @@
+{
+ "study": "B9 development inputs (DEVELOPMENT DATA)",
+ "chunk": 4096,
+ "quantum": 1.0,
+ "inputs": [
+  {
+   "input": "syn_current",
+   "samples": 1048576,
+   "chunks": 256,
+   "sha256_samples": "e75a5626217b8252ea93f4cd365a20ec7c20fc4db106156774bf64e73808f4a0",
+   "chunk_file": "syn_current.bin",
+   "chunk_file_sha256": "e0085a3c87b73e31c265f613308ecdc4fe16b740a7f5e08e5cd5c6d61dd8bf43",
+   "source": "synthetic: sines + Gaussian noise, random.seed(394), 0.001 grid"
+  },
+  {
+   "input": "syn_resonance",
+   "samples": 1048576,
+   "chunks": 256,
+   "sha256_samples": "11aaf9660cdb691e6ea7ef8ed5562910ff4133e6f27e9a362c1452ee25dec143",
+   "chunk_file": "syn_resonance.bin",
+   "chunk_file_sha256": "e2cbadc21955e1d2de54f765ec00a17f292fac658d410f4f93fe88ff7fde7084",
+   "source": "synthetic: sines + Gaussian noise, random.seed(394), 0.001 grid"
+  },
+  {
+   "input": "apg_wide",
+   "samples": 98304,
+   "chunks": 24,
+   "sha256_samples": "4bdaa14b37e2ada7d76511391f5a774c6591ef2954a2d6c4e084c0e17188b0cc",
+   "chunk_file": "apg_wide.bin",
+   "chunk_file_sha256": "8e74578965ba733ffcfd500075ce81f3cd27253c66ab16995bf4d8b9b3626571",
+   "source": "synthetic: gen_grid.py apg_wide.f64 98304 98.00005 0.0003 5 300 0.9 14 (an Elf-style decimal series' properties as B6 published them; no data read)"
+  },
+  {
+   "input": "ka09",
+   "samples": 256001,
+   "chunks": 63,
+   "sha256_samples": "caf5384e220d78cd1dca098194188eebd1d057d7273bb9538b993dc4d7663ee2",
+   "chunk_file": "ka09.bin",
+   "chunk_file_sha256": "c9e024b0cda89390056208d97a9045bc359f5c38734929c2c4b778381be627f8",
+   "source": "B3 development set, N15_M07_F04_KA09_19 phase_current_1"
+  },
+  {
+   "input": "syn_big",
+   "samples": 26744663,
+   "chunks": 6552,
+   "sha256_samples": "e3eb0a195482f065ba7a62a33c5e6af53353efb11efb12d891e0d274b059c595",
+   "chunk_file": "syn_big.bin",
+   "chunk_file_sha256": "782928b37e24fb514732ef28b2a148806904d8aa7d0dc299134fc5833470d609",
+   "source": "synthetic: 104 acquisitions, 50 Hz at 64 kHz + harmonics + Gaussian noise, random.seed(9), 0.001 grid; no data read"
+  }
+ ]
+}
