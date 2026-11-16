@@ -69,10 +69,10 @@ This automated check cannot replace visual review or scientific author approval.
 ## Corrections tracked
 
 #509: separate ACM submission and page checks; author fields completed.
-#510: T6 harness/denominator corrected and claim withdrawn; database rerun pending.
+#510: T6 harness/denominator corrected and claim withdrawn; post hoc database rerun done 2026-11-16 (exploratory; paper text unchanged pending author review).
 #511: final-cycle alerts separated from advance warning.
 #512: compressed-input/offline replay fixed, base-image recipe and container mounts
-made explicit; fresh end-to-end container execution remains unvalidated.
+made explicit; pgvector build pinned so PostgreSQL stays 17.6; clean `--no-cache` build and T6 rerun executed 2026-11-16 (T1–T5 not rerun).
 #513: historical build boundaries and screened-exact comparison made explicit.
 #514: full-lag top-k lemma corrected; budget effects require the stated interactions.
 #515: average-rank Spearman with undefined constant-series behavior.

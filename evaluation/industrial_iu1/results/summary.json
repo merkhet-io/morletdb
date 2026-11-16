@@ -211,6 +211,13 @@
    "not applicable (withdrawn diagnostic)"
   ],
   "queries": 200,
+  "source_runs": 187,
+  "BL_minus_ZL_run_clustered": [
+   0.058499999999999996,
+   0.01773399014778325,
+   0.10099009900990098,
+   "not applicable (withdrawn diagnostic)"
+  ],
   "status": "archived post-filtered lists; eligible-gallery rerun required",
   "short_results": {
    "BL": 47,
