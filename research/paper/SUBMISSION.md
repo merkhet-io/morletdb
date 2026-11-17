@@ -63,9 +63,9 @@ This automated check cannot replace visual review or scientific author approval.
    approved the introduction's statement that the collaboration with Sulzer-BDiM motivates the four
    requirements (2026-11-16, relayed by Seung-Zin Nam). He approved 0.27 and asked for a clearer
    why/how/what, the advantages in one place and more figures (2026-11-17); 0.28 does this
-   without changing a number or claim. 0.29 changes only the first author name to Seung-Zin Nam (2026-11-17).
+   without changing a number or claim. 0.29 changes only the first author name to Seung-Zin Nam; 0.30 adds the repository link to the abstract (both 2026-11-17).
 6. Verify the call again, check no concurrent overlapping submission, and upload only
-   the approved conference PDF. The technical report 0.29 is tagged `paper-v0.29` on the merge
+   the approved conference PDF. The technical report 0.30 is tagged `paper-v0.30` on the merge
    commit that brings it to `main`; the conference PDF is not uploaded by that tag.
 
 ## Corrections tracked
