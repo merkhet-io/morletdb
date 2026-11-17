@@ -162,3 +162,20 @@ other databases.
   outage and the manual start are reported (`d1_harness`), not hidden. The manual start counts as one manual action
   caused by the harness and is reported separately; it is not counted against H2. The collector start it caused
   is explained by it. The outage's shortfall counts as D1's for H5. H1 covers the outage like any other hour.
+
+## Amendment 2 (2026-11-17, after the test week; exploratory)
+
+- **What happened:** D2 (`docker restart soak-s1-db-1`, due 2026-11-14T16:02Z .. 2026-11-15T16:02Z) was not run:
+  it had to be started by hand, and nobody started it. `results/disturbances.jsonl` has D1 and D1r only, and the
+  database ran the whole week without a restart. The week's analysis is run once, unchanged, before anything in this
+  amendment: there, H3 is evaluated for D1 (with D1r) only, and D2 is reported as not carried out.
+- **Added, exploratory:** an orderly database restart after the week, **D2x**, written after the week's integrity
+  checks (archive comparison and the start of `morlet_verify`) had been seen. It cannot change any verdict of the week
+  and is reported separately, labelled exploratory. `d2x.sh` runs `docker restart soak-s1-db-1` once, after
+  the week's `analyze.py` run, and measures resumption exactly as `disturb.sh` does for D2 (the first collector status
+  written after the restart with stored above its value when the restart returned; polls every 10 s, up to
+  15 minutes). It logs to `$SOAK_DIR/amendment2/disturbances.jsonl`, which the week's analysis does not read.
+- **Checks for D2x:** storing resumes within 5 minutes; no container other than the database restarts and no OOM
+  kill (`docker inspect`); the collector's log has no "spool hole on replay" line; and `verify_fdsn.py` compares the
+  hour starting at D2x on every channel of one seeded station (`--windows 1 --seed 191 --at <D2x>`, run at least
+  30 minutes after that hour ends): 0 samples differ.
