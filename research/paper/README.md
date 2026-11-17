@@ -12,6 +12,13 @@ The longer report retains the evidence ledger. Build with
 `python research/paper/build_submission.py --all`; check with
 `python research/paper/check_submission.py` (Poppler required).
 
+## What changed in 0.27 (T6 rerun)
+
+IU1 T6 now reports the post hoc eligible-gallery rerun (#510, #517): BL 0.523
+against ZL 0.412 (+0.110, [0.077, 0.145]; run-clustered [0.075, 0.147]). The
+corrected search was written after the original results had been seen, so the
+paper labels it exploratory; the originally reported 0.503 stays withdrawn.
+
 ## What changed in 0.26 (submission corrections)
 
 Industrial requirements and negative results now lead the argument. IU1 T6's

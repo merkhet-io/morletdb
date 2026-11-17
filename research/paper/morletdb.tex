@@ -298,7 +298,7 @@ run bootstrap.
 
 \textbf{Scoring runs against a good history.} Scoring every run by its distance to the nearest window of good runs of
 the same machine, operation and axis gave an AUROC for bad against good of 0.925 (95\% interval 0.878--0.967) under BL,
-0.875 under ZL and 0.852 under RMS. BL was better than ZL; against RMS the difference was not significant. BL and ZL shared only 38\% of their hits. The cross-machine recognition result is withdrawn pending an eligible-gallery rerun: its harness removed source-machine hits after a fixed shortlist and used a variable denominator. Correcting the denominator alone does not correct the candidate set; we make no cross-machine recognition claim from that run.
+0.875 under ZL and 0.852 under RMS. BL was better than ZL; against RMS the difference was not significant. BL and ZL shared only 38\% of their hits. The originally reported cross-machine recognition result (0.503 under BL against 0.412 under ZL) is withdrawn: its harness removed source-machine hits after a fixed shortlist and used a variable denominator. A post hoc rerun that excludes the source machine before ranking and divides by ten found the same operation on another machine for 0.523 of the top ten under BL and 0.412 under ZL (chance 0.076; difference 0.110, 95\% interval 0.077--0.145, and 0.075--0.147 when resampling the 187 source runs). The corrected search was written after the original results had been seen, so this is an exploratory result, not a confirmation.
 
 \textbf{Is it drift?} Twenty of the 36 bad runs come from one machine and half-year, so after seeing the results we
 checked, with rules written down first, whether the score measures drift between half-years. It does not: with the
@@ -536,7 +536,7 @@ earlier half-years only: BL 0.603 (n.s.), 13 bad runs & IU1-A1; E, C & half-year
 without each run's first 2 s: BL 0.900 & IU1-A2; E, C & query side only, 2 s assumed \\
 run length alone: AUROC 0.982, better than BL & IU1-A1; E, C & run length from file length \\
 other bad runs in top 10 inside the half-year: BL 0.254, ZL 0.212, RMS 0.377, chance 0.183 & IU1-A1; E, C & replaces 0.177 vs 0.026 of IU1 \\
-cross-machine recognition claim withdrawn & IU1 T6; E, C & post-filtered, short lists; eligible-gallery rerun pending \\
+same operation on another machine, post hoc rerun: BL 0.523, ZL 0.412, chance 0.076 & IU1 T6; E, C & exploratory; original 0.503 withdrawn \\
 stretch 1/2/5/10\%: source in top 10 0.97/0.76/0.51/0.20 & IU1; E, C & synthetic stretch \\
 probes recall 1.0, p95 126 vs 176\,ms at 85k windows & IU1; P, C & laptop, Docker \\
 tool end of life AUROC: BL 0.639, ZL 0.580 (n.s.), RMS per window 0.791 & IU2; E, C & 7 tools; cycles to failure \\
