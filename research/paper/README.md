@@ -16,9 +16,9 @@ The longer report retains the evidence ledger. Build with
 
 The abstract now states three results that were only in the body: the zero-lag
 shortlist loses matches because of its metric, not its approximation (61–66% of the
-shift-tolerant top ten on held-out data: 61% exact, 66% HNSW; Table 1 now says the same); the bounded-lag top ten held more
-than twice as many catalogued earthquakes on held-out data (0.139 against 0.060,
-Section 12); and appends are atomic (twenty writers killed mid-append left no
+shift-tolerant top ten on held-out data: 61% exact, 66% HNSW; Table 1 now says the same); by a catalogue proxy (exact search, held-out data), 0.139 of
+bounded-lag top-ten positions held a catalogued earthquake's arrival against 0.060
+for zero lag (Section 12; Table 1 now names the proxy too); and appends are atomic (twenty writers killed mid-append left no
 partial rows, supplement). The opening is shorter, and the routing clause moved out
 of the abstract (it remains in Table 1 and the body). The CNC sentence is unchanged.
 The exact held-out zero-lag recall (61%, arm EZ in E1) is now also stated in Section 7.
