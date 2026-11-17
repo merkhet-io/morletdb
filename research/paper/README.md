@@ -1,6 +1,6 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.29, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.30, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
 
 ## SIGMOD Industrial submission
@@ -11,6 +11,11 @@ main text within 12 pages, followed only by references, ACM 2.21, named authors.
 The longer report retains the evidence ledger. Build with
 `python research/paper/build_submission.py --all`; check with
 `python research/paper/check_submission.py` (Poppler required).
+
+## What changed in 0.30 (repository link)
+
+The abstract now ends with the repository link (code, frozen protocols and raw
+results), so it is visible on page 1. Nothing else changed.
 
 ## What changed in 0.29 (author name)
 
