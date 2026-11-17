@@ -21,7 +21,7 @@ WATCHED = ["research/paper/morletdb.tex", "research/paper/supplement.tex", "rese
 STATIC = {
     "title": "MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL",
     "version": (ROOT / "research/paper/REPORT_VERSION").read_text().strip(),
-    "date": "2026-11-16",
+    "date": "2026-11-17",
     "type": "technical report / preprint (not peer reviewed)",
     "author": "Seung-Zin Nam; Semir Maslo (Sulzer-BDiM)",
     "measured_commit": "68594d7",
