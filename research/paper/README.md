@@ -21,7 +21,7 @@ than twice as many catalogued earthquakes on held-out data (0.139 against 0.060,
 Section 12); and appends are atomic (twenty writers killed mid-append left no
 partial rows, supplement). The opening is shorter, and the routing clause moved out
 of the abstract (it remains in Table 1 and the body). The CNC sentence is unchanged.
-The exact held-out zero-lag recall (61%, arm EZ in E1) is now also stated in Section 6.
+The exact held-out zero-lag recall (61%, arm EZ in E1) is now also stated in Section 7.
 No measured number, figure or study changed.
 
 ## What changed in 0.30 (repository link)
