@@ -9,9 +9,9 @@
 | Stored result files (`evaluation/**/results/`) | unchanged (repository licence) |
 | Seismic waveforms | not redistributed; CX network data from GEOFON, DOI 10.14470/PK615318, under the data centre's terms |
 
-© 2026 Zin Nam. You may share and adapt the report's text and figures for any purpose, provided you give
+© 2026 Seung-Zin Nam. You may share and adapt the report's text and figures for any purpose, provided you give
 appropriate credit, link to the licence and indicate if changes were made. Suggested credit:
-"Zin Nam and Semir Maslo, *MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL*, version <n>,
+"Seung-Zin Nam and Semir Maslo, *MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL*, version <n>,
 2026, CC BY 4.0."
 
 Figures or text quoted from other works keep their own terms.
