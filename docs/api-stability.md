@@ -22,8 +22,9 @@ Every SQL function and aggregate of the extension is classified in
    `NOTICE` when called) for at least one minor release, with its replacement named, before it changes. From 1.0, a
    breaking change to a stable function needs a new major version.
 2. **Stored data stays readable.** Chunks written by any release from the beta on are readable by every later
-   release of the same major version. The chunk format is versioned; golden chunk files that a change may not alter
-   are checked in CI (`docs/verification.md`). Derived data (chunk summaries, envelopes, probe rows, roll-ups) can
+   release of the same major version. This covers every chunk format a release writes: versions 2 and 3
+   (Grizzbit 1), 5 (Grizzbit 2.1) and 6 (float32 codings). The chunk format is versioned; golden chunk files of
+   each of these versions, which a change may not alter, are checked in CI (`docs/verification.md`). Derived data (chunk summaries, envelopes, probe rows, roll-ups) can
    always be rebuilt from the chunks; when its format changes, the update script or the steward rebuilds it. Until
    then CI checks that derived data written by each release reads back identically after the update: envelopes,
    context segments and values, comparisons, chunk summaries and interval statistics (from SQL 0.3.3), the
