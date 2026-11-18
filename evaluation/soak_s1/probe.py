@@ -6,7 +6,8 @@ Per round, three stations are chosen in a fixed rotation (by round number), one 
 - stats:   morlet_interval_stats over the last hour of that channel's current recording (latency); skipped while the
            recording is shorter than an hour.
 - search:  morlet_search_similar for the 2,048-sample window that ended an hour ago, over the same station and
-           channel (latency, hits, or the error); skipped while the recording is shorter than 70 minutes.
+           channel (latency, hits, or the error, and the searched history: that channel's stored samples); skipped
+           while the recording is shorter than 70 minutes.
 Archive totals: recordings, stored samples, database size, and searchable coverage (stored samples covered by
 envelopes). Latencies are wall-clock seconds measured here, including the round trip to the database.
 """
@@ -57,6 +58,10 @@ def round_(conn, c: str, k: int) -> dict:
                 dt, rows, err = timed(conn, "SELECT * FROM morlet_search_similar(%s::regclass,%s,%s,%s,%s::jsonb,10)",
                                       (c, rid, q0, q0 + 2048, json.dumps({"station": sta, "channel": cha})))
                 chk["search"] = {"s": round(dt, 4), "hits": len(rows), "error": err}
+                # H4 (shakedown change 4): the searched history, i.e. the stored samples of this station and channel
+                chk["search"]["history"] = int(conn.execute(
+                    f"SELECT coalesce(sum((checkpoint->>'end')::bigint),0) FROM {c} WHERE metadata @> %s::jsonb",
+                    (flt,)).fetchone()[0])
         out["checks"].append(chk)
     tot = conn.execute(f"SELECT count(*), coalesce(sum((checkpoint->>'end')::bigint),0) FROM {c}").fetchone()
     out["recordings"], out["stored_samples"] = int(tot[0]), int(tot[1])

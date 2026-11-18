@@ -1,0 +1,22 @@
+{
+ "total": {
+  "recordings": 1,
+  "compared": 360000,
+  "equal": 360000,
+  "different": 0,
+  "not_in_archive": 0,
+  "errors": 0
+ },
+ "recordings": [
+  {
+   "recording": "GE.RUE..HHE.20261113T000004",
+   "first_sample": 6516803,
+   "samples": 360000,
+   "start": "2026-11-13T18:06:12.210000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  }
+ ]
+}

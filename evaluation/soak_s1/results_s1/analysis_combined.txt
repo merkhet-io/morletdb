@@ -1,0 +1,99 @@
+Soak S1, week 2026-11-10 16:02 UTC .. 2026-11-17 16:02 UTC (last record 2026-11-17 16:00 UTC, complete: True)
+
+| Hypothesis | Check | Verdict | Numbers |
+|---|---|---|---|
+| H1 | verify_fdsn: 0 samples differ from the archive | PASS | {"compared": 35640000, "different": 0, "not_in_archive": 0, "errors": 0, "recordings": 99} |
+| H1 | morlet_verify at the end: 0 problems | PASS | {"recordings": 396, "chunks": 1027023, "samples": 2236461010, "recordings_with_problems": 0} |
+| H1 | no 'spool hole on replay' in the collector's gaps.jsonl | PASS | {"holes": 0} |
+| H2 | no manual action besides D1 and D2 | PASS | {"manual_actions": 0} |
+| H2 | no container restart besides D1 and D2, no OOM kill | PASS | {"unexplained_starts": [], "oom": [], "docker_restart_counts": {"collector": 1, "db": 0, "probe": 0, "steward": 0}} |
+| H2 | steward never ACTION REQUIRED > 1 h, never sets the ingest hold | PASS | {"status_records": {"NORMAL": 462, "ATTENTION": 201, "ACTION REQUIRED": 9}, "unreadable": 0, "longest_action_required_h": 0.25, "hold_seen": []} |
+| H3 | D1 (collector kill): storing resumes within 5 min | PASS | {"at": "2026-11-12 19:29 UTC", "resume_s": 96.0, "stored_before": 13112672, "stored_after": 154714} |
+| H3 | D2 (database restart): storing resumes within 5 min | FAIL | "missing from disturbances.jsonl" |
+| H3 | D1: the spool is replayed with no hole | PASS | {"replay_lines": 1, "holes": 0} |
+| H4 | p95 of latest: last window at most 2.0x the first | FAIL | {"first": 0.2534, "last": 9.1976, "ratio": 36.297, "n": [288, 279]} |
+| H4 | p95 of interval statistics: last window at most 2.0x the first | FAIL | {"first": 0.0638, "last": 1.2176, "ratio": 19.085, "n": [264, 255]} |
+| H4 | p95 of search latency per searched sample: last window at most 2.0x the first | FAIL | {"first": 5.747633331168358e-07, "last": 2.8437258017305065e-06, "ratio": 4.948, "n": [261, 252], "absolute_p95_s": [4.5486, 162.1516]} |
+| H4 | db peak process memory (anon + shmem): last window at most 1.25x the first | FAIL | {"first_mib": 155.6, "last_mib": 196.3, "ratio": 1.262, "page_cache_peak_mib_reported": [978.4, 979.8], "docker_figure_peak_mib_reported": [621.8, 575.3]} |
+| H4 | collector peak memory: last window at most 1.25x the first | FAIL | {"first_mib": 67.29, "last_mib": 142.9, "ratio": 2.124} |
+| H5 | collector backlog never above 10,000 packets | PASS | {"max_packets": 27, "at": "2026-11-16 12:45 UTC", "snapshots": 672} |
+| H5 | at the end, >= 99% of samples older than 1 h searchable | FAIL | {"searchable_fraction_of_older": 0.97672, "unsearchable_h_of_feed": 4.845, "at": "2026-11-17 15:52 UTC"} |
+| H5 | stored >= 97% of the nominal 3,600 samples/s (shortfall explained) | PASS | {"stored_per_s": 3564.0, "share_of_nominal": 0.99, "gap_causes": {"reconnect": 2, "new UTC day": 252, "collector restart: spool replayed": 2, "gap": 36}, "note": ""} |
+
+H1: PASS  H2: PASS  H3: FAIL  H4: FAIL  H5: FAIL
+
+{
+ "d1_harness": {
+  "docker_kill": {
+   "id": "D1",
+   "cmd": "docker kill -s KILL soak-s1-collector-1",
+   "at": 1794507060.5493093,
+   "done_at": 1794507069.569702,
+   "stored_before": 649587689,
+   "resumed_at": null,
+   "resume_s": null,
+   "stored_after": null
+  },
+  "manual_start_at": "2026-11-12 18:27 UTC",
+  "note": "amendment 1: docker kill is a manual stop; D1r repeats D1"
+ },
+ "week": {
+  "start": "2026-11-10 16:02 UTC",
+  "end": "2026-11-17 16:02 UTC",
+  "last_record": "2026-11-17 16:00 UTC",
+  "complete": true,
+  "probe_rounds": 668,
+  "host_records": 672,
+  "gap_lines": 292
+ },
+ "h4_windows": {
+  "first": [
+   "2026-11-10 16:02 UTC",
+   "2026-11-11 16:02 UTC"
+  ],
+  "last": [
+   "2026-11-16 16:02 UTC",
+   "2026-11-17 16:02 UTC"
+  ],
+  "overlap": false
+ },
+ "stop_rule_household": {
+  "unhealthy_snapshots": 0,
+  "longest_unhealthy_min": 0,
+  "services": []
+ },
+ "probe_errors": {
+  "failed_rounds": 0,
+  "check_errors": 0
+ },
+ "unsearchable_backlog_h": {
+  "max": 7.455,
+  "last": 4.845,
+  "max_second_half": 7.455
+ },
+ "database": {
+  "stored_samples": 2153159468,
+  "recordings": 396,
+  "db_gib": 5.745
+ },
+ "soak_fs_used_gib": {
+  "first": 2.14,
+  "last": 8.35
+ },
+ "host_load_5min": {
+  "median": 2.92,
+  "max": 5.3
+ },
+ "memory_peak_mib": {
+  "collector": 142.9,
+  "db": 672.3,
+  "probe": 23.16,
+  "steward": 68.14
+ },
+ "process_memory_peak_mib": {
+  "collector": 55.8,
+  "db": 196.9,
+  "probe": 20.8,
+  "steward": 42.0
+ }
+}

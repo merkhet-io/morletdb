@@ -1,7 +1,7 @@
 # S1: a week of live seismic data on a small x86 box, without a person (soak, #191)
 
-Status: **DRAFT until the shakedown ends.** It is frozen, with the image digest and commit filled in, in a commit made
-before the test week starts. Changes after that are dated amendments at the end of this file.
+Status: **FROZEN 2026-11-10** (section "Frozen" below), before the test week started. Changes after that are dated
+amendments at the end of this file.
 
 ## Question
 
@@ -53,6 +53,34 @@ If the test week passes, it may continue towards 30 days without a restart; the 
    never got its first. Fixed in the steward (it also reads the grid the recordings declare), with a regression test;
    the soak runs the fixed steward. Found by the shakedown, not by the existing tests, which built one envelope by
    hand in their setup.
+3. **Load gate 1.5 per CPU** (2026-11-09, after 33 hours with change 1): the soak's load stayed at about 2.0, mostly
+   processes waiting on the hard disk, so the steward paused about 90 times an hour at a gate of 2.0. Envelopes fell
+   behind steadily (unsearchable backlog 1.0 h after 4 hours, 3.2 h after 33 hours) and the steward's verification
+   never ran (its status: "last verified never"). H5 would have failed from the gate alone. Changed to
+   `--load-per-cpu 1.5` (3.0); the database container keeps its 1-CPU cap and low disk priority. The rest of the
+   shakedown runs with this gate and must show a bounded backlog before freezing.
+4. **H4 for search normalised by the searched history** (2026-11-09): the probe's search covers the channel's whole
+   stored history, so its work grows with the archive (the slowest check went from 0.1 s to 2.2 s while the archive
+   grew from 0 to 1.2 GB). A fixed 2x bound would test data growth, not drift. H4 now bounds search latency per
+   searched sample; absolute latencies are reported. `latest` and `stats` do a fixed amount of work and keep the
+   plain bound.
+5. **Steward status recorded** (2026-11-09): `host.jsonl` had no record of the steward's status, which H2 needs. The
+   host probe now records `steward.py status` (status, findings, any ingest hold) and each container's health.
+6. **Release and fresh start** (2026-11-09): the first 33 hours ran 0.3.8-alpha.1. From change 3 on, the shakedown runs
+   the current release 0.3.10-alpha.1 on a fresh database; the test week starts on another fresh database with the
+   same image. The first 33 hours' data and results are kept aside (`shakedown-1/`), not evaluated.
+7. **H4 bounds the database's process memory, not its page cache** (2026-11-10, after 19 hours of the second
+   shakedown). `analyze.py` run on the shakedown showed the database container's memory as Docker reports it (usage
+   minus inactive file cache) growing from 155 to 649 MiB. Its cgroup's `memory.stat` at that point: anon 11 MB, shmem
+   143 MB (shared buffers), active_file 484 MB, inactive_file 349 MB. The growth is the kernel's page cache of a
+   growing archive, which the 1 GB limit lets it fill and reclaim; a 1.25x bound on it would test the archive's size,
+   not a leak. `host_probe.sh` now records each container's `memory.stat` anon, shmem and file, and H4 bounds the
+   database's anon + shmem; its page cache and Docker's figure are reported, not bounded. The collector's bound is
+   unchanged (Docker's figure; it holds little cache: 54-58 MiB).
+   *Watched, not changed:* in the same run, with 6-hour windows instead of the protocol's 24 hours (a cold, empty
+   database in the first), `latest` p95 rose 1.82x (0.155 to 0.282 s) and interval statistics p95 3.6x (8 to 29 ms,
+   at most 61 ms), varying through the day with the hard disk's load. The protocol's 24-hour windows each span a full
+   daily recording; the bounds stay.
 
 ## Hypotheses (all must hold; each is reported with its numbers)
 
@@ -68,8 +96,11 @@ If the test week passes, it may continue towards 30 days without a restart; the 
 - **H3, recovery.** After D1 and after D2, storing resumes within 5 minutes (stored sample counts in `probe.jsonl` and
   the collector's `status.json`), and every sample spooled before D1 is stored (replay lines in `gaps.jsonl`).
 - **H4, steady.** Comparing the last 24 hours of the test week with the first 24 hours:
-  - the p95 latency of each probe check (latest, interval statistics, similarity search) is at most 2× as high;
-  - the database container's peak memory is at most 1.25× as high, and the collector's as well.
+  - the p95 latency of `latest` and of interval statistics is at most 2× as high;
+  - for similarity search, the p95 of latency divided by the searched history (the stored samples of the probed
+    station and channel at the time of the query) is at most 2× as high; absolute latencies are reported;
+  - the database container's peak process memory (`memory.stat` anon + shmem, shakedown change 7) is at most 1.25× as
+    high, and the collector's peak memory (as Docker reports it) as well; the database's page cache is reported.
 - **H5, keeps up.**
   - The collector's backlog never exceeds 10,000 packets.
   - At the end, at least 99% of the stored samples older than one hour are searchable (`morlet_coverage`).
@@ -93,3 +124,58 @@ only), `gaps.jsonl`, the verification report and RESULTS.md. No waveforms (the a
 
 Power loss (#190, on the Raspberry Pi), several weeks (an extension at most), other feeds or rates, comparison with
 other databases.
+
+## Frozen (2026-11-10)
+
+- **Image:** `ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1@sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38`.
+- **Commit:** the commit that adds this section, on branch `soak/seedlink-collector`; the box runs that checkout
+  (`compose.yaml`, `probe.py`, `host_probe.sh` from cron every 15 minutes, the steward and collector built from it).
+  Shakedown changes 1-7 are in force.
+- **Analysis:** `analyze.py` of this commit, run once at the end:
+  `python3 analyze.py $SOAK_DIR/results --start <start> --verify-fdsn <reports> --morlet-verify <output>
+  --manual-actions <n> --json analysis.json`, with
+  `verify_fdsn.py --windows 60 --seed 191 --from <start> --to <end> --out ...` (and `--at` the hour after D1 and
+  after D2 on every channel of one station drawn with seed 191) and
+  `tools/verify/morlet_verify.py public.live --json`, both after the week.
+- **Disturbances:** `disturb.sh` of this commit, run by hand once each from a shell on the box (it refuses outside
+  its day and a second run): D1 between start + 48 h and start + 72 h, D2 between start + 96 h and start + 120 h,
+  each at a time the owner or the operator chooses in that window. No scheduler is installed for them.
+- **Fresh start:** the second shakedown's database, spool and results are kept aside in `shakedown-2/`, not
+  evaluated; the test week starts on an empty database.
+- **Test-week start:** 2026-11-10T16:02:49Z (epoch 1794326569), when `docker compose up` of commit `b7abed4`
+  returned on an empty database (collector started 16:02:34Z). The week ends 2026-11-17T16:02:49Z. D1 window:
+  2026-11-12T16:02Z .. 2026-11-13T16:02Z; D2 window: 2026-11-14T16:02Z .. 2026-11-15T16:02Z.
+
+
+## Amendment 1 (2026-11-12, after D1, before any analysis)
+
+- **What happened:** D1 ran at 2026-11-12T18:11:00Z (epoch 1794507060) as `docker kill -s KILL soak-s1-collector-1`.
+  Docker records `docker kill` as a manual stop, so the `unless-stopped` policy did not restart the collector: the
+  harness stopped it instead of crashing it. disturb.sh logged D1 with `resume_s` null. The collector stayed down
+  until a manual `docker start` at 18:27:00Z (epoch 1794508020), logged with its reason in
+  `results/operator_notes.jsonl`; it stored again 94 s later and replayed its spool (`gaps.jsonl`).
+- **Change:** D1 is repeated once as a real crash, **D1r**: `disturb.sh D1r <start>` sends SIGKILL to the
+  collector's process on the host (`kill -s KILL <State.Pid>`; the process runs as the box's user), which Docker
+  treats as an unexpected exit, so the restart policy applies. D1r runs in the D1 window (start + 48 h .. start + 72 h),
+  once, and only after a D1 line exists. Nothing else changes: same image, database, compose file, probes and D2.
+- **Analysis:** `analyze.py` evaluates H3 for D1 with D1r when D1r exists; the original D1 line, its 16-minute
+  outage and the manual start are reported (`d1_harness`), not hidden. The manual start counts as one manual action
+  caused by the harness and is reported separately; it is not counted against H2. The collector start it caused
+  is explained by it. The outage's shortfall counts as D1's for H5. H1 covers the outage like any other hour.
+
+## Amendment 2 (2026-11-17, after the test week; exploratory)
+
+- **What happened:** D2 (`docker restart soak-s1-db-1`, due 2026-11-14T16:02Z .. 2026-11-15T16:02Z) was not run:
+  it had to be started by hand, and nobody started it. `results/disturbances.jsonl` has D1 and D1r only, and the
+  database ran the whole week without a restart. The week's analysis is run once, unchanged, before anything in this
+  amendment: there, H3 is evaluated for D1 (with D1r) only, and D2 is reported as not carried out.
+- **Added, exploratory:** an orderly database restart after the week, **D2x**, written after the week's integrity
+  checks (archive comparison and the start of `morlet_verify`) had been seen. It cannot change any verdict of the week
+  and is reported separately, labelled exploratory. `d2x.sh` runs `docker restart soak-s1-db-1` once, after
+  the week's `analyze.py` run, and measures resumption exactly as `disturb.sh` does for D2 (the first collector status
+  written after the restart with stored above its value when the restart returned; polls every 10 s, up to
+  15 minutes). It logs to `$SOAK_DIR/amendment2/disturbances.jsonl`, which the week's analysis does not read.
+- **Checks for D2x:** storing resumes within 5 minutes; no container other than the database restarts and no OOM
+  kill (`docker inspect`); the collector's log has no "spool hole on replay" line; and `verify_fdsn.py` compares the
+  hour starting at D2x on every channel of one seeded station (`--windows 1 --seed 191 --at <D2x>`, run at least
+  30 minutes after that hour ends): 0 samples differ.
