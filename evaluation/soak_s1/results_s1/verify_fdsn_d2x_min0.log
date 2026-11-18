@@ -1,0 +1,8 @@
+{"recording": "GE.RUE..HHE.20261113T000004", "first_sample": 6516803, "samples": 360000, "start": "2026-11-13T18:06:12.210000Z", "compared": 360000, "equal": 360000, "different": 0, "not_in_archive": 0}
+{"recording": "GE.PSZ..HHE.20261117T235912", "first_sample": 0, "samples": 5141, "start": "2026-11-17T23:59:12.880000Z", "compared": 5141, "equal": 5141, "different": 0, "not_in_archive": 0}
+{"recording": "GE.PSZ..HHE.20261118T000004", "first_sample": 0, "samples": 360000, "start": "2026-11-18T00:00:04.290000Z", "compared": 360000, "equal": 360000, "different": 0, "not_in_archive": 0}
+{"recording": "GE.PSZ..HHN.20261117T235916", "first_sample": 0, "samples": 4457, "start": "2026-11-17T23:59:16.680000Z", "compared": 4457, "equal": 4457, "different": 0, "not_in_archive": 0}
+{"recording": "GE.PSZ..HHN.20261118T000001", "first_sample": 0, "samples": 360000, "start": "2026-11-18T00:00:01.250000Z", "compared": 360000, "equal": 360000, "different": 0, "not_in_archive": 0}
+{"recording": "GE.PSZ..HHZ.20261117T235915", "first_sample": 0, "samples": 4754, "start": "2026-11-17T23:59:15.820000Z", "compared": 4754, "equal": 4754, "different": 0, "not_in_archive": 0}
+{"recording": "GE.PSZ..HHZ.20261118T000003", "first_sample": 0, "samples": 360000, "start": "2026-11-18T00:00:03.360000Z", "compared": 360000, "equal": 360000, "different": 0, "not_in_archive": 0}
+{"total": {"recordings": 7, "compared": 1454352, "equal": 1454352, "different": 0, "not_in_archive": 0, "errors": 0}}

@@ -84,7 +84,7 @@ Not part of the week's verdict. `d2x.sh` ran `docker restart soak-s1-db-1` at 20
 | storing resumes within 5 min | **not shown**: `d2x.sh` logged `resume_s: null` (see below) |
 | no other container restarts, no OOM | **FAIL**: the collector restarted once (restart count 1 to 2); no OOM; probe and steward untouched |
 | no "spool hole on replay" | PASS: after D2x, 1 "collector restart: spool replayed", 0 holes |
-| archive comparison of the hour from D2x | **not done yet**: the run at 01:30Z compared no sample of that hour (below) |
+| archive comparison of the hour from D2x | PASS: after the soak was stopped, 3 channels of GE.PSZ, 1,080,000 samples from 00:00 UTC, 0 differ; with `--min-minutes 0` also the spool-replay recordings from 23:59, 0 differ |
 
 **What happened.** When the database shut down, the collector's write failed with `psycopg.OperationalError: the
 connection is closed` (after `AdminShutdown`), and the collector exited; Docker's restart policy started it again at
@@ -102,14 +102,27 @@ rule would have failed the same way. Storing did resume (above), but the time to
 random window (GE.RUE..HHE, 2026-11-13 18:06 UTC), not the D2x hour. The script skips every recording whose stored
 data ends less than 30 minutes before the run (`--settle-min 30`), and the D2x hour lies in recordings still being
 written (the collector's new UTC-day recordings), or in spans shorter than its `--min-minutes 10` (the one-minute
-recordings the restarted collector replayed its spool into at 23:59). The comparison is to be repeated with the same
-command at least 30 minutes after the soak is stopped, when those recordings have ended; the one-minute replay
-recordings are covered only by an additional run with `--min-minutes 0`, reported separately.
+recordings the restarted collector replayed its spool into at 23:59). The comparison was repeated with the same command at
+06:30Z, 32 minutes after the soak was stopped (`verify_fdsn_d2x_after_stop.json`): 4 recording-hours, 1,440,000
+samples, 0 different, 0 not in the archive: the random window again, and the seeded station GE.PSZ's three channels
+from the start of their 2026-11-18 recordings (00:00:01-00:00:04 UTC) for one hour. That run still skips the one-minute
+replay recordings (`--min-minutes 10`). An additional run with `--min-minutes 0`, reported separately
+(`verify_fdsn_d2x_min0.json`), adds GE.PSZ's three replay recordings from 23:59:12-23:59:16 UTC (14,352 samples): 7
+recordings, 1,454,352 samples, 0 different. The seconds between D2x (23:57:59) and the start of the replay
+recordings lie in the collector's pre-restart recordings, which ended before 23:57:59, and were not compared.
 
 **Finding.** The collector does not survive an orderly database restart: it exits on a closed connection and relies on
 the container's restart policy, which a database restart alone does not exercise as the protocol expected. No data
 was lost (spool replayed, no hole). Reconnecting inside the collector, and measuring resumption from the database's
 stored counts rather than a per-process counter, are follow-ups.
+
+## Stopping the soak
+
+The soak was stopped at 2026-11-18T05:57:56Z with one `docker stop` of all four containers (owner's approval,
+`results_s1/operator_notes.jsonl`). Docker stops them concurrently, so the database shut down while the collector was
+still flushing; the collector exited on `AdminShutdown`, and the samples still in its spool at that moment were not
+stored. This is after the week and D2x and changes no verdict. The database was then started alone for the archive
+comparison, and the host probe's cron line disabled.
 
 ## What the week shows
 

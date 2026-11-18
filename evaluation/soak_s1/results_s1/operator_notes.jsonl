@@ -1,0 +1,3 @@
+{"at": 1794508020.6, "event": "manual docker start of soak-s1-collector-1 after D1", "reason": "docker kill counts as a manual stop, so restart: unless-stopped did not restart the collector; it stayed down from 1794507061 (D1 kill) to 1794508020", "stored_resumed_after_start_s": 94, "by": "Claude for the owner, 2026-11-12"}
+{"at": "2026-11-18T05:57:56Z", "action": "soak stopped (docker stop collector, probe, steward, db)", "reason": "end of S1 after the test week and D2x; owner approved 2026-11-18"}
+{"at": "2026-11-18T05:58:12Z", "action": "database started alone for the D2x archive comparison; host probe cron disabled"}

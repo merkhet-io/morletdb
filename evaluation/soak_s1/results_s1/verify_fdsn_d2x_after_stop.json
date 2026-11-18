@@ -1,0 +1,52 @@
+{
+ "total": {
+  "recordings": 4,
+  "compared": 1440000,
+  "equal": 1440000,
+  "different": 0,
+  "not_in_archive": 0,
+  "errors": 0
+ },
+ "recordings": [
+  {
+   "recording": "GE.RUE..HHE.20261113T000004",
+   "first_sample": 6516803,
+   "samples": 360000,
+   "start": "2026-11-13T18:06:12.210000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHE.20261118T000004",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-18T00:00:04.290000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHN.20261118T000001",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-18T00:00:01.250000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHZ.20261118T000003",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-18T00:00:03.360000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  }
+ ]
+}
