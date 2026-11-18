@@ -3,8 +3,8 @@
 ## 0.4.0-beta.1
 
 **The first beta.** From this release the [API and on-disk promises](docs/api-stability.md) apply: stable SQL
-functions change only after a deprecation cycle, chunks written from now on stay readable by later releases, and every
-SQL version updates in place. SQL version 0.3.12, with an update script from 0.3.11: run
+functions change only after a deprecation cycle, chunks written from now on stay readable by later releases of the same major
+version, and every SQL version updates in place (tested on PostgreSQL 17). SQL version 0.3.12, with an update script from 0.3.11: run
 `ALTER EXTENSION pg_morlet UPDATE` after installing. Python SDK 0.1.0b1. The chunk format is unchanged from
 0.3.14-alpha.1.
 
@@ -25,7 +25,8 @@ a stream (#527), search slowed, and envelope building and verification fell behi
 - **Steward: envelope grids by index lookups (#531).** The hourly query that finds each window size's stride sorted
   the whole envelope table; on the soak box (4.4 million envelopes, a hard disk) it took more than 10 minutes, during
   which the steward wrote no heartbeat. It now reads the first envelopes of each recording through the table's key
-  (12.8 s cold, 0.5 s warm there), with the stride as the gcd of their gaps.
+  (12.8 s cold, 0.5 s warm there), with each recording's stride as the gcd of the gaps between its first 16 envelopes and the window
+  size's stride as the most common of those (ties to the smaller).
 - **Docs for the beta (#530).** `morlet_latest` returns one row for every matching recording; promise 2 names the
   chunk formats it covers (2, 3, 5 and 6); the S1 row in the tested operating range.
 - **Release workflow** accepts beta versions (`-beta.N`); `SUPPORT.md` describes the beta's boundaries.
