@@ -18,7 +18,12 @@ How it stores the data:
   or --flush-s seconds (morlet_append_chunks_raw). After a crash or power cut the collector replays the spool and
   appends what the database does not have yet: nothing is stored twice, and at most the last second of received
   packets can be lost. A spool file is deleted once every sample in it is stored.
-- **Evidence:** gaps.jsonl has one line per segment end (stream, cause, sample count) and per reconnect; status.json
+- **Database restarts:** if the connection is lost, the statement is retried on a new connection with backoff (1 s to
+  30 s) for up to --db-retry-s seconds (default 600). Every packet is spooled before any database work, and on exit
+  (SIGTERM, or a database still unreachable after --db-retry-s) the packets still queued are spooled too, so the
+  replay after a restart stores them. Retrying is safe because an identical append is a no-op.
+- **Evidence:** gaps.jsonl has one line per segment end (stream, cause, sample count), per reconnect and per database
+  reconnect; status.json
   is rewritten every minute (packets, samples, stored, backlog, reconnects, last packet per stream).
 """
 from __future__ import annotations
@@ -142,9 +147,15 @@ def read_spool(path: Path):
 class Store:
     """MorletDB side: one recording per segment, chunked appends of the buffered samples."""
 
-    def __init__(self, dsn: str, collection: str, create: bool, window: int, stride: int, extractor: str):
-        import psycopg
-        self.conn = psycopg.connect(dsn, autocommit=True, application_name="morlet-seedlink")
+    def __init__(self, dsn: str, collection: str, create: bool, window: int, stride: int, extractor: str,
+                 retry_s: float = 600.0, connect=None, retry_on: tuple = (), sleep=time.sleep):
+        if connect is None:
+            import psycopg
+            connect = lambda: psycopg.connect(dsn, autocommit=True, application_name="morlet-seedlink")  # noqa: E731
+            retry_on = retry_on or (psycopg.OperationalError,)
+        self._connect, self.retry_on, self.retry_s, self.sleep = connect, retry_on, retry_s, sleep
+        self.on_reconnect = None        # called with (error, seconds waited) after the database is reachable again
+        self.conn = connect()
         self.c = collection
         self.window, self.stride, self.extractor = window, stride, extractor
         self.known: set[str] = set()
@@ -157,24 +168,53 @@ class Store:
                     self.conn.execute("SELECT morlet_enable_envelopes(%s::regclass)", (collection,))
                     self.conn.execute("SELECT morlet_enable_rollups(%s::regclass)", (collection,))
 
+    def execute(self, sql: str, args: tuple):
+        """Runs one statement; if the connection is lost (a database restart, for example), reconnects with backoff
+        (1 s to 30 s) for up to retry_s seconds and runs the statement again, then gives up by raising. Every statement
+        here may be repeated: an append that was committed before the connection broke is an identical retry, which
+        MorletDB treats as a no-op, and ensure and the checkpoint read change nothing when repeated."""
+        waited, delay, first = 0.0, 1.0, None
+        while True:
+            try:
+                cur = self.conn.execute(sql, args)
+                if first is not None and self.on_reconnect:
+                    self.on_reconnect(first, waited)
+                return cur
+            except self.retry_on as exc:
+                first = first or f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"
+                if waited >= self.retry_s:
+                    raise
+                pause = min(delay, self.retry_s - waited)
+                self.sleep(pause)
+                waited += pause
+                delay = min(delay * 2, 30.0)
+                try:
+                    self.conn.close()
+                except Exception:  # noqa: BLE001 - the old connection is already broken
+                    pass
+                try:
+                    self.conn = self._connect()
+                except self.retry_on:
+                    pass                # still down: the next execute fails on the closed connection and waits again
+
     def ensure(self, rid: str, sid: str, rate: float, start_ns: int, server: str) -> None:
         if rid in self.known:
             return
         net, sta, loc, cha = sid.split(".")
         meta = {"network": net, "station": sta, "location": loc, "channel": cha, "start_ns": str(start_ns),
                 "source": f"seedlink://{server}"}
-        self.conn.execute("SELECT morlet_ensure_recording(%s::regclass,%s,%s,%s,'counts',%s::jsonb,%s,%s,'zscore',%s)",
+        self.execute("SELECT morlet_ensure_recording(%s::regclass,%s,%s,%s,'counts',%s::jsonb,%s,%s,'zscore',%s)",
                           (self.c, rid, rate, cha, json.dumps(meta), self.window, self.stride, self.extractor))
         self.known.add(rid)
 
     def stored_end(self, rid: str) -> int:
-        r = self.conn.execute(f"SELECT (checkpoint->>'end')::bigint FROM {self.c} WHERE recording_id=%s",
+        r = self.execute(f"SELECT (checkpoint->>'end')::bigint FROM {self.c} WHERE recording_id=%s",
                               (rid,)).fetchone()
         return int(r[0]) if r and r[0] is not None else 0
 
     def append(self, rid: str, off: int, values: list[int], chunk: int) -> None:
         raw = struct.pack(f"<{len(values)}d", *values)
-        self.conn.execute("SELECT morlet_append_chunks_raw(%s::regclass,%s,%s,%b,%s)", (self.c, rid, off, raw, chunk))
+        self.execute("SELECT morlet_append_chunks_raw(%s::regclass,%s,%s,%b,%s)", (self.c, rid, off, raw, chunk))
 
 
 class Collector:
@@ -193,6 +233,13 @@ class Collector:
         self.stats = {"packets": 0, "samples": 0, "stored": 0, "duplicates": 0, "segments": 0, "reconnects": 0,
                       "started": clock()}
         self.last_seen: dict[str, float] = {}
+        self.stats["db_reconnects"] = 0
+        if store is not None and hasattr(store, "on_reconnect"):
+            store.on_reconnect = self.db_reconnected
+
+    def db_reconnected(self, error: str, waited: float) -> None:
+        self.stats["db_reconnects"] += 1
+        self.log(cause="database reconnect", error=error, waited_s=round(waited, 1))
 
     def log(self, **kw) -> None:
         self.gaps.write(json.dumps({"at": self.clock(), **kw}) + "\n")
@@ -231,10 +278,27 @@ class Collector:
                 del self.file_need[name]
 
     # -- packets -----------------------------------------------------------------------------------------------
-    def handle(self, p: Packet) -> None:
+    def handle(self, p: Packet, db: bool = True) -> None:
+        """Spools the packet's new samples first, then does the database work (new recordings, buffered appends).
+        With db=False only the spool is written: used when the database stays unreachable, so that every received
+        packet is in the spool before the collector exits."""
         self.stats["packets"] += 1
         self.last_seen[p.sid] = self.clock()
-        for e in self.seg.feed(p):
+        events = self.seg.feed(p)
+        for e in events:                # nothing below may run before the samples are in the spool
+            if e[0] == "samples":
+                self.spool_write(e[1], e[2], e[3])
+        self.sync()
+        if not db:                      # spool only; still record where segments ended
+            for e in events:
+                if e[0] == "end":
+                    self.log(stream=e[1].sid, recording=e[1].rid, samples=e[1].n, cause=e[2])
+                elif e[0] == "start":
+                    self.stats["segments"] += 1
+                elif e[0] == "samples":
+                    self.stats["samples"] += len(e[3])
+            return
+        for e in events:
             if e[0] == "end":
                 self.flush(e[1])
                 self.log(stream=e[1].sid, recording=e[1].rid, samples=e[1].n, cause=e[2])
@@ -243,15 +307,29 @@ class Collector:
                 if self.store:
                     self.store.ensure(e[1].rid, e[1].sid, e[1].rate, e[1].start_ns, self.a.server)
             else:
-                seg, off, values = e[1], e[2], e[3]
+                seg, values = e[1], e[3]
                 self.stats["samples"] += len(values)
-                self.spool_write(seg, off, values)
                 if not seg.buffer:
                     seg.buffer_since = self.clock()
                 seg.buffer.extend(values)
                 if len(seg.buffer) >= self.a.chunk:
                     self.flush(seg)
-        self.sync()
+
+    def spool_rest(self, q: "queue.Queue") -> int:
+        """Spools every packet still queued, without the database (shutdown or a database that stays down)."""
+        n = 0
+        while True:
+            try:
+                item = q.get_nowait()
+            except queue.Empty:
+                break
+            if isinstance(item, Packet):
+                self.handle(item, db=False)
+                n += 1
+            elif isinstance(item, tuple):
+                self.log(cause="reconnect", error=item[1])
+        self.sync(force=True)
+        return n
 
     def flush(self, seg: Segment) -> None:
         if not seg.buffer:
@@ -347,13 +425,15 @@ def main(argv=None) -> int:
     ap.add_argument("--stride", type=int, default=512)
     ap.add_argument("--extractor", default="morlet-energy-lowrate-v1")
     ap.add_argument("--create", action="store_true", help="create and configure the collection if missing")
+    ap.add_argument("--db-retry-s", dest="db_retry_s", type=float, default=600.0,
+                    help="when the database connection is lost, reconnect for up to this many seconds before exiting")
     ap.add_argument("--setup-only", action="store_true", help="with --create: create the collection, then exit")
     a = ap.parse_args(argv)
     dsn = os.environ.get("DATABASE_URL")
     if not dsn:
         print("set DATABASE_URL", file=sys.stderr)
         return 2
-    store = Store(dsn, a.collection, a.create, a.window, a.stride, a.extractor)
+    store = Store(dsn, a.collection, a.create, a.window, a.stride, a.extractor, retry_s=a.db_retry_s)
     if a.setup_only:
         return 0
     col = Collector(a, store)
@@ -366,6 +446,7 @@ def main(argv=None) -> int:
     stop = threading.Event()
     threading.Thread(target=seedlink_thread, args=(a, q, col.stats, stop), daemon=True).start()
     last_status = 0.0
+    code = 0
     try:
         while True:
             try:
@@ -383,12 +464,20 @@ def main(argv=None) -> int:
                 last_status = time.time()
     except KeyboardInterrupt:
         pass
+    except store.retry_on as exc:   # the database stayed unreachable for --db-retry-s: spool everything, then exit
+        col.log(cause="database unreachable, exiting", error=f"{type(exc).__name__}: {exc}"[:300])
+        code = 1
     finally:
         stop.set()
-        for seg in col.seg.segs.values():
-            col.flush(seg)
+        col.log(cause="shutdown: queued packets spooled", packets=col.spool_rest(q))
+        store.retry_s = 0               # one attempt each: what is not stored now is in the spool for the replay
+        try:
+            for seg in col.seg.segs.values():
+                col.flush(seg)
+        except store.retry_on:
+            code = 1
         col.close()
-    return 0
+    return code
 
 
 if __name__ == "__main__":
