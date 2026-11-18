@@ -75,9 +75,10 @@ class StewardDatabase(unittest.TestCase):
     def one(self, q, args=()):
         return self.admin.execute(q, args).fetchone()[0]
 
-    def test_envelope_grids_are_found_by_index_lookups(self):
-        """Each window size of a collection's envelopes with its stride, without sorting the envelope table (soak S1:
-        that sort took more than 10 minutes at 4.4 million envelopes and ran every hour)."""
+    def test_envelope_grids_from_the_first_envelopes_of_each_recording(self):
+        """Each window size of a collection's envelopes with its stride, from index lookups (functional check only: on
+        this small fixture a full-table sort would give the same answer; the speed was measured on soak S1's database,
+        4.4 million envelopes, 12 s instead of more than 10 minutes)."""
         a = self.admin
         a.execute("SELECT morlet_build_envelopes('line','r2',1024,256,5)")      # a second grid, several windows
         a.execute("SELECT morlet_build_envelopes('line','r2',8192,8192,1)")     # one window only: stride unknown
