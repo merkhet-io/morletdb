@@ -4,6 +4,12 @@
 
 SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
 
+- **Steward: verification no longer stops on slow boxes (soak S1, #425 check).** `morlet_verify` reads whole
+  recordings, and a verify batch of 20 daily recordings (about 2,700 chunks each) exceeded the 50 s statement
+  timeout on soak S1's box; the same batch was retried until the breaker opened, so verification stopped despite
+  its minimum share. A verify batch that times out is now halved without counting as a failure, and a batch of one
+  recording gets `--verify-timeout` (default 600 s). Python only.
+  - Tests: `VerifyTimeout` in `tools/steward/test_policy.py`.
 - **Security: `decision.HistoryCache` is bound to what the current caller can read (#494).** A cache kept across
   calls could serve history rows to a caller whose visibility had changed since the cache was filled (another role
   on the same connection, or a row security scope that a policy reads from a session setting). Each call now

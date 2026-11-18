@@ -95,7 +95,12 @@ destructive functions successfully, so a bug in the steward cannot remove raw da
   (`--verify-share-every`), before the builders and even while the load gate is closed. Only disk pressure stops
   it. On a busy edge device the load rarely falls below the gate and the builders always have new data, so
   without this share verification never ran (soak S1, 2026-11-11). A batch has the usual budget (about 2 s),
-  so the share costs well under 1% of the time.
+  so the share typically costs well under 1% of the time. The exception is a recording too large for the budget, which
+  may hold the steward for up to `--verify-timeout` (600 s) once per share. `morlet_verify` reads whole recordings, so a verify batch that
+  hits its statement timeout (the builders' 50 s) is halved without counting against the breaker, and a batch
+  of one recording may take up to `--verify-timeout` (default 600 s); only a single recording that times out
+  then is a failure. On soak S1's box after the week, a batch of 20 daily recordings timed out three times and
+  the breaker stopped verification again (2026-11-18).
 - Each batch is limited by time, not size: the steward shrinks the batch when one runs over budget.
 
 **Circuit breaker:** after 3 consecutive failures, that job stops. The status shows *Action required* with the
