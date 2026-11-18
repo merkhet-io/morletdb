@@ -291,19 +291,49 @@ def privileged(conn: psycopg.Connection, collection: str) -> bool:
     return bool(conn.execute("SELECT has_table_privilege(%s::regclass,'SELECT')", (collection,)).fetchone()[0])
 
 
+def envelope_strides(firsts) -> list[tuple[int, int]]:
+    """(window, stride) from each recording's first envelope starts per window size: a recording's stride is the
+    greatest common divisor of its gaps, so windows skipped by an episode-aware build (gaps that are multiples of the
+    stride) do not make it coarser; the window's stride is the most common one among its recordings, ties to the
+    smaller, and half the window when no recording has two envelopes of that size."""
+    from collections import Counter
+    from math import gcd
+    per: dict[int, Counter] = {}
+    for w, starts in firsts:
+        c = per.setdefault(int(w), Counter())
+        g = 0
+        for a, b in zip(starts, starts[1:]):
+            if b > a:
+                g = gcd(g, int(b - a))
+        if g:
+            c[g] += 1
+    return [(w, (min(c, key=lambda x: (-c[x], x)) if c else w // 2)) for w, c in sorted(per.items())]
+
+
 def envelope_grids(conn: psycopg.Connection, collection: str) -> list[tuple[int, int]]:
     """(window, stride) pairs the collection maintains: every window size present in its envelopes, with its most
-    common stride (half the window when no recording has two windows yet), and the window and stride the recordings
+    common stride between a recording's first envelopes of that size (half the window when no recording has two
+    windows yet), and the window and stride the recordings
     declare in their checkpoints (recordings with extractor 'none' declare no envelopes). The checkpoints are what a
     new collection has before its first envelope: without them the steward would never start building (soak S1)."""
     env = sibling(conn, collection, "_envelopes")
     if not env:
         return []
-    rows = conn.execute(f"""
-      SELECT w, coalesce(mode() WITHIN GROUP (ORDER BY d), w/2) FROM (
-        SELECT window_size w, start_sample-lag(start_sample) OVER (PARTITION BY recording_id,window_size
-          ORDER BY start_sample) d FROM {env}) x
-      WHERE d IS NULL OR d>0 GROUP BY w ORDER BY w""").fetchall()
+    # Index lookups only (the key is recording_id, window_size, start_sample): per recording, its window sizes by a
+    # skip scan, and per size its first 16 envelope starts. Sorting the whole envelope table instead took more than
+    # 10 minutes on soak S1's box at 4.4 million rows, and the steward repeats this every hour.
+    firsts = conn.execute(f"""
+      WITH RECURSIVE ws AS (
+        SELECT r.recording_id rid,
+               (SELECT min(e.window_size) FROM {env} e WHERE e.recording_id=r.recording_id) w
+        FROM {collection} r
+        UNION ALL
+        SELECT ws.rid, (SELECT min(e.window_size) FROM {env} e WHERE e.recording_id=ws.rid AND e.window_size>ws.w)
+        FROM ws WHERE ws.w IS NOT NULL)
+      SELECT ws.w, ARRAY(SELECT e.start_sample FROM {env} e WHERE e.recording_id=ws.rid AND e.window_size=ws.w
+                         ORDER BY e.start_sample LIMIT 16)
+      FROM ws WHERE ws.w IS NOT NULL""").fetchall()
+    rows = envelope_strides(firsts)
     grids = {int(w): int(s) for w, s in rows}
     declared = conn.execute(f"""
       SELECT DISTINCT (checkpoint->>'window')::int, (checkpoint->>'stride')::int FROM {collection}

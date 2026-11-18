@@ -124,5 +124,22 @@ class Status(unittest.TestCase):
         self.assertIn("refused", hold.cause)
 
 
+class EnvelopeStrides(unittest.TestCase):
+    """store.envelope_strides: a window's stride from each recording's first envelope starts (review of #531)."""
+
+    def test_skipped_windows_do_not_make_the_grid_coarser(self):
+        import store as S
+        regular = [0, 256, 512, 768, 1024]
+        skipped = [0, 512, 768, 1536, 1792]         # an episode-aware build left out windows: gaps 512, 256, 768, 256
+        self.assertEqual(S.envelope_strides([(1024, regular), (1024, skipped)]), [(1024, 256)])
+        self.assertEqual(S.envelope_strides([(1024, skipped)]), [(1024, 256)])
+
+    def test_one_envelope_falls_back_to_half_the_window_and_ties_go_to_the_smaller_stride(self):
+        import store as S
+        self.assertEqual(S.envelope_strides([(8192, [0]), (8192, [])]), [(8192, 4096)])
+        self.assertEqual(S.envelope_strides([(4096, [0, 2048, 4096]), (4096, [0, 1024, 2048])]), [(4096, 1024)])
+        self.assertEqual(S.envelope_strides([(2048, [0, 512]), (4096, [0, 2048, 4096])]), [(2048, 512), (4096, 2048)])
+
+
 if __name__ == "__main__":
     unittest.main()
