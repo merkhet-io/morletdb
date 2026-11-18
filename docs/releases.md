@@ -1,6 +1,6 @@
-# Alpha releases
+# Releases
 
-The current package identifier is in VERSION (`0.3.11-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.4.0-beta.1`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -57,6 +57,17 @@ a leading v; GHCR image tags do not.
     (`morletdb.open`), and the release attaches `morlet-sqlite-<platform>.tar.gz` (command line, library, C header).
   - **File format 1:** frozen with a compatibility promise ([file-format.md](file-format.md)).
   - The chunk format is unchanged; existing collections keep their layout.
+- **0.4.0-beta.1, the first beta:** SQL version 0.3.12 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b1.
+  The chunk format is unchanged.
+  - **The API and on-disk promises apply** ([api-stability.md](api-stability.md)); [support boundaries](../SUPPORT.md).
+  - **Known limits from soak S1:** integrity held for an unattended week on a 2-core box with a hard disk, but it did
+    not stay steady: `morlet_latest` grows with the number of daily recordings (#527), and envelope building and
+    verification fall behind there (#528).
+  - **Fixes:** envelope building after compaction (#488); shipping refuses a prefix with a chunk more or fewer (#495);
+    the MCP history cache follows the caller's visibility (#494); two Grizzbit encoder selection fixes (#505, #506);
+    the steward no longer stops verifying on slow boxes (#532) and finds envelope grids by index (#531); the SeedLink
+    collector survives a database restart (#525); WinCC OA fixes (#496, #497).
+  - **New:** the MCP `labels` tool (#333); operator runbooks (#197); the experimental WinCC OA integration (#474).
 - **0.3.14-alpha.1:** SQL version 0.3.11 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a7.
   - **Float32 codings, chunk format version 6, on by default (#326, study B8):** float32 machine data about half the
     size; `SET morlet.float32_chunks = off` turns it off. Releases up to 0.3.13-alpha.1 cannot read version-6
@@ -114,7 +125,7 @@ commit. `0.1.0-alpha.3` is the first image built from the rewritten history;
 
 ## Release process
 
-A reviewed change to VERSION on main triggers Alpha release. The workflow builds
+A reviewed change to VERSION on main triggers the Release workflow. The workflow builds
 one candidate image, runs import/search/inspection/replay and restart in a fresh
 Compose project, and pushes that same image to
 `ghcr.io/merkhet-io/morletdb:<VERSION>`. It then pulls the registry digest,

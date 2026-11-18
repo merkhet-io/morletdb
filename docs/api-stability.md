@@ -1,7 +1,7 @@
-# API and on-disk stability (freeze candidate, #195)
+# API and on-disk stability (#195)
 
-What you can rely on when you build on pg_morlet, and how CI holds us to it. This is the **freeze candidate** for
-the beta: from the first beta release the promises below apply; from 1.0 they apply under semantic versioning.
+What you can rely on when you build on pg_morlet, and how CI holds us to it. The promises below apply from the first
+beta release, 0.4.0-beta.1; from 1.0 they apply under semantic versioning.
 
 ## Function classes
 

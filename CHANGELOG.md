@@ -1,15 +1,42 @@
 # Changelog
 
-## Unreleased
+## 0.4.0-beta.1
 
-SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+**The first beta.** From this release the [API and on-disk promises](docs/api-stability.md) apply: stable SQL
+functions change only after a deprecation cycle, chunks written from now on stay readable by later releases, and every
+SQL version updates in place. SQL version 0.3.12, with an update script from 0.3.11: run
+`ALTER EXTENSION pg_morlet UPDATE` after installing. Python SDK 0.1.0b1. The chunk format is unchanged from
+0.3.14-alpha.1.
+
+**Known limits** ([support boundaries](SUPPORT.md)), from soak S1, an unattended week on a 2-core box with a hard
+disk: nothing was lost or changed, but the system did not stay steady. `morlet_latest` reads every daily recording of
+a stream (#527), search slowed, and envelope building and verification fell behind (#528).
+
+- **Soak S1 results (#191).** A week of live seismic ingest (36 channels, 3,600 samples/s) on a 2-core Celeron with a
+  hard disk, unattended, with the steward. H1 (nothing lost or changed) and H2 (unattended) pass: 35.6 million
+  samples compared with the archive, 0 differ; `morlet_verify` over 2.24 billion samples, 0 problems. H3 (recovery)
+  fails because the database restart was not run in the week; H4 (steady) and H5 (searchable) fail. Results,
+  deviations and the exploratory restart afterwards are in `evaluation/soak_s1/RESULTS.md`; the operating range in
+  `docs/operations.md` has an S1 row.
+- **SeedLink collector: a database restart no longer stops it (#525).** The collector retried nothing when its
+  connection was lost and exited. It now reconnects with backoff for up to `--db-retry-s` seconds (default 600),
+  writes every sample to its spool before the database, and logs each reconnect in `gaps.jsonl`; if the database
+  stays down longer, it exits as before and replays its spool when restarted.
+- **Steward: envelope grids by index lookups (#531).** The hourly query that finds each window size's stride sorted
+  the whole envelope table; on the soak box (4.4 million envelopes, a hard disk) it took more than 10 minutes, during
+  which the steward wrote no heartbeat. It now reads the first envelopes of each recording through the table's key
+  (12.8 s cold, 0.5 s warm there), with the stride as the gcd of their gaps.
+- **Docs for the beta (#530).** `morlet_latest` returns one row for every matching recording; promise 2 names the
+  chunk formats it covers (2, 3, 5 and 6); the S1 row in the tested operating range.
+- **Release workflow** accepts beta versions (`-beta.N`); `SUPPORT.md` describes the beta's boundaries.
 
 - **Steward: verification no longer stops on slow boxes (soak S1, #425 check).** `morlet_verify` reads whole
   recordings, and a verify batch of 20 daily recordings (about 2,700 chunks each) exceeded the 50 s statement
   timeout on soak S1's box; the same batch was retried until the breaker opened, so verification stopped despite
   its minimum share. A verify batch that times out is now halved without counting as a failure, and a batch of one
   recording gets `--verify-timeout` (default 600 s). Python only.
-  - Tests: `VerifyTimeout` in `tools/steward/test_policy.py`.
+  - Tests: `VerifyTimeout` in `tools/steward/test_policy.py`. Confirmed on soak S1's box: batches of 20, 10, 5 and 2 recordings
+    timed out and were halved without a breaker failure, and one recording verified in 21.4 s (#532).
 - **Security: `decision.HistoryCache` is bound to what the current caller can read (#494).** A cache kept across
   calls could serve history rows to a caller whose visibility had changed since the cache was filled (another role
   on the same connection, or a row security scope that a policy reads from a session setting). Each call now

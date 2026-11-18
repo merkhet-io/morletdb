@@ -47,7 +47,7 @@ RUN set -eu; \
       "Priority: optional" \
       "Homepage: https://github.com/merkhet-io/morletdb" \
       "Description: MorletDB waveform recordings and similarity search for PostgreSQL ${PG_MAJOR}" \
-      " The pg_morlet extension (developer alpha): lossless storage of uniformly sampled" \
+      " The pg_morlet extension (beta): lossless storage of uniformly sampled" \
       " recordings, exact interval reads, interval statistics and bounded-lag similarity search." \
       " Probe search additionally needs pgvector 0.8 or later." \
       > "$root/DEBIAN/control"; \

@@ -11,7 +11,7 @@ and a sample interval you can read back, for an engineer or for an AI agent.
 <a href="https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml"><img alt="Rust & Postgres checks" src="https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml/badge.svg"></a>
 <img alt="PostgreSQL 17 | 18" src="https://img.shields.io/badge/PostgreSQL-17_|_18-a8df73?labelColor=090c0d&logo=postgresql&logoColor=e4e8e6">
 <img alt="Rust + pgrx" src="https://img.shields.io/badge/Rust-pgrx_0.16-a8df73?labelColor=090c0d&logo=rust&logoColor=e4e8e6">
-<img alt="Status: developer alpha" src="https://img.shields.io/badge/status-developer_alpha-24302e?labelColor=090c0d">
+<img alt="Status: beta" src="https://img.shields.io/badge/status-beta-24302e?labelColor=090c0d">
 </p>
 
 <p align="center">
@@ -134,7 +134,7 @@ build provenance; no pgvector, so no probe search; choose your own password):
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
-  ghcr.io/merkhet-io/morletdb:0.3.14-alpha.1
+  ghcr.io/merkhet-io/morletdb:0.4.0-beta.1
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
 ```
 
@@ -164,7 +164,7 @@ CREATE EXTENSION vector;   -- optional: only for probe search (pgvector 0.8 or l
 ```
 
 **Use it from Python**: ingest a NumPy waveform, read exact intervals and search similar ones with the
-[Python SDK](docs/python-sdk.md) (`sdk/python`, alpha), starting with a [runnable quickstart](examples/python/quickstart.py).
+[Python SDK](docs/python-sdk.md) (`sdk/python`, beta), starting with a [runnable quickstart](examples/python/quickstart.py).
 
 **Let an AI agent investigate your recordings** through a read-only MCP server (Claude Code,
 Claude Desktop and other MCP clients): [MorletDB for AI agents](docs/mcp.md).
@@ -356,8 +356,8 @@ Every evaluation with its data, baselines, confidence intervals and verdict:
 
 Append-only recordings; 1–32,768 samples per chunk; explicit channel and unit; no
 resampling, gap interpolation, background extraction worker or cross-channel search.
-Exact search scans eligible windows; probe search is approximate and opt-in. Alpha:
-no stable API or schema guarantee yet. Details: [support boundaries](SUPPORT.md) ·
+Exact search scans eligible windows; probe search is approximate and opt-in. Beta: the
+[API and on-disk promises](docs/api-stability.md) apply; semantic versioning starts at 1.0. Details: [support boundaries](SUPPORT.md) ·
 [compatibility](docs/compatibility.md) · [numerical contract](docs/morlet-extractor.md).
 
 **The name.** MorletDB honours Jean Morlet and the project's starting hypothesis that

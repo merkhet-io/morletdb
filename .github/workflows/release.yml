@@ -1,4 +1,4 @@
-name: Alpha release
+name: Release
 on:
   push:
     branches: [main]
@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           version=$(cat VERSION)
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-alpha\.[0-9]+$ ]]
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta)\.[0-9]+$ ]]
           echo "value=$version" >> "$GITHUB_OUTPUT"
       - name: Decide whether this run publishes
         id: publish
