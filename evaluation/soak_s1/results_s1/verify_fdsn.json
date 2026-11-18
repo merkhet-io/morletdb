@@ -1,0 +1,1002 @@
+{
+ "total": {
+  "recordings": 99,
+  "compared": 35640000,
+  "equal": 35640000,
+  "different": 0,
+  "not_in_archive": 0,
+  "errors": 0
+ },
+ "recordings": [
+  {
+   "recording": "GE.RUE..HHE.20261112T000000",
+   "first_sample": 4868471,
+   "samples": 360000,
+   "start": "2026-11-12T13:31:24.960000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.STU..HHN.20261113T000000",
+   "first_sample": 4250290,
+   "samples": 360000,
+   "start": "2026-11-13T11:48:23.770000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB02..HHZ.20261112T000002",
+   "first_sample": 2493137,
+   "samples": 360000,
+   "start": "2026-11-12T06:55:33.598393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHZ.20261110T160316",
+   "first_sample": 1198414,
+   "samples": 360000,
+   "start": "2026-11-10T19:23:01.079999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHN.20261111T000003",
+   "first_sample": 7453782,
+   "samples": 360000,
+   "start": "2026-11-11T20:42:20.969999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB08..HHZ.20261114T000004",
+   "first_sample": 3025810,
+   "samples": 360000,
+   "start": "2026-11-14T08:24:23.048393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB08..HHN.20261112T000005",
+   "first_sample": 4487614,
+   "samples": 360000,
+   "start": "2026-11-12T12:28:02.058393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHN.20261114T000001",
+   "first_sample": 6877993,
+   "samples": 360000,
+   "start": "2026-11-14T19:06:21.079999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB01..HHE.20261116T000004",
+   "first_sample": 2814685,
+   "samples": 360000,
+   "start": "2026-11-16T07:49:11.048393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.RUE..HHN.20261116T000003",
+   "first_sample": 4780425,
+   "samples": 360000,
+   "start": "2026-11-16T13:16:48.220000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB06..HHN.20261114T000001",
+   "first_sample": 3039037,
+   "samples": 360000,
+   "start": "2026-11-14T08:26:32.328393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.STU..HHE.20261112T192935",
+   "first_sample": 33394,
+   "samples": 360000,
+   "start": "2026-11-12T19:35:09.800000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.RUE..HHE.20261115T000004",
+   "first_sample": 6587899,
+   "samples": 360000,
+   "start": "2026-11-15T18:18:03.360000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHE.20261111T000002",
+   "first_sample": 7287667,
+   "samples": 360000,
+   "start": "2026-11-11T20:14:39.210000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261111T000002",
+   "first_sample": 5237876,
+   "samples": 360000,
+   "start": "2026-11-11T14:33:01.708393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.WLF..HHZ.20261113T000005",
+   "first_sample": 4009535,
+   "samples": 360000,
+   "start": "2026-11-13T11:08:20.729998Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261116T173950",
+   "first_sample": 766409,
+   "samples": 360000,
+   "start": "2026-11-16T19:47:34.998394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB08..HHZ.20261115T000002",
+   "first_sample": 3959129,
+   "samples": 360000,
+   "start": "2026-11-15T10:59:53.308393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.RUE..HHZ.20261110T160312",
+   "first_sample": 132268,
+   "samples": 360000,
+   "start": "2026-11-10T16:25:15.640000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB01..HHZ.20261115T000001",
+   "first_sample": 1885613,
+   "samples": 360000,
+   "start": "2026-11-15T05:14:17.338394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261116T000003",
+   "first_sample": 1601162,
+   "samples": 360000,
+   "start": "2026-11-16T04:26:55.388393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261113T000000",
+   "first_sample": 1382138,
+   "samples": 360000,
+   "start": "2026-11-13T03:50:21.738391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHE.20261110T160310",
+   "first_sample": 2394138,
+   "samples": 360000,
+   "start": "2026-11-10T22:42:11.510000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHE.20261112T000001",
+   "first_sample": 4207280,
+   "samples": 360000,
+   "start": "2026-11-12T11:41:14.340000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.RUE..HHE.20261114T000002",
+   "first_sample": 6331529,
+   "samples": 360000,
+   "start": "2026-11-14T17:35:18.220000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.IBBN..HHZ.20261116T000001",
+   "first_sample": 5335544,
+   "samples": 360000,
+   "start": "2026-11-16T14:49:17.390000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHE.20261112T000001",
+   "first_sample": 929828,
+   "samples": 360000,
+   "start": "2026-11-12T02:34:59.820000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.STU..HHE.20261111T000004",
+   "first_sample": 791534,
+   "samples": 360000,
+   "start": "2026-11-11T02:11:59.360000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHZ.20261115T000002",
+   "first_sample": 7330043,
+   "samples": 360000,
+   "start": "2026-11-15T20:21:43.389999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB08..HHZ.20261114T000004",
+   "first_sample": 3889021,
+   "samples": 360000,
+   "start": "2026-11-14T10:48:15.158393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.WLF..HHN.20261114T000001",
+   "first_sample": 869821,
+   "samples": 360000,
+   "start": "2026-11-14T02:24:59.779998Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB09..HHE.20261114T000004",
+   "first_sample": 1753437,
+   "samples": 360000,
+   "start": "2026-11-14T04:52:18.800000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB08..HHE.20261115T000000",
+   "first_sample": 1965637,
+   "samples": 360000,
+   "start": "2026-11-15T05:27:37.118393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHE.20261112T000002",
+   "first_sample": 2547390,
+   "samples": 360000,
+   "start": "2026-11-12T07:04:36.189999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHE.20261114T000001",
+   "first_sample": 6061247,
+   "samples": 360000,
+   "start": "2026-11-14T16:50:13.979999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.WLF..HHZ.20261113T000005",
+   "first_sample": 3232723,
+   "samples": 360000,
+   "start": "2026-11-13T08:58:52.609998Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHE.20261116T173945",
+   "first_sample": 1793081,
+   "samples": 360000,
+   "start": "2026-11-16T22:38:36.320000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHN.20261111T000003",
+   "first_sample": 5751222,
+   "samples": 360000,
+   "start": "2026-11-11T15:58:35.369999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.IBBN..HHN.20261111T000004",
+   "first_sample": 2589665,
+   "samples": 360000,
+   "start": "2026-11-11T07:11:40.780000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB01..HHZ.20261115T000001",
+   "first_sample": 7038412,
+   "samples": 360000,
+   "start": "2026-11-15T19:33:05.328394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.WLF..HHN.20261116T173950",
+   "first_sample": 1404663,
+   "samples": 360000,
+   "start": "2026-11-16T21:33:57.500000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.STU..HHE.20261110T160313",
+   "first_sample": 2407059,
+   "samples": 360000,
+   "start": "2026-11-10T22:44:23.940000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.IBBN..HHZ.20261113T000002",
+   "first_sample": 6391662,
+   "samples": 360000,
+   "start": "2026-11-13T17:45:18.820000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.STU..HHZ.20261116T000001",
+   "first_sample": 2626719,
+   "samples": 360000,
+   "start": "2026-11-16T07:17:48.900000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.RUE..HHZ.20261113T000004",
+   "first_sample": 190040,
+   "samples": 360000,
+   "start": "2026-11-13T00:31:44.970000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB06..HHE.20261111T000005",
+   "first_sample": 4550488,
+   "samples": 360000,
+   "start": "2026-11-11T12:38:30.148391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHE.20261111T000002",
+   "first_sample": 1326299,
+   "samples": 360000,
+   "start": "2026-11-11T03:41:05.530000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHN.20261114T000000",
+   "first_sample": 3022503,
+   "samples": 360000,
+   "start": "2026-11-14T08:23:45.630000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHZ.20261112T182740",
+   "first_sample": 3781,
+   "samples": 360000,
+   "start": "2026-11-12T18:28:18.050000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB01..HHE.20261111T000002",
+   "first_sample": 144539,
+   "samples": 360000,
+   "start": "2026-11-11T00:24:08.318393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.PSZ..HHZ.20261110T160312",
+   "first_sample": 482071,
+   "samples": 360000,
+   "start": "2026-11-10T17:23:33.370000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261111T000002",
+   "first_sample": 7635657,
+   "samples": 360000,
+   "start": "2026-11-11T21:12:39.518393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.RUE..HHZ.20261112T182739",
+   "first_sample": 705,
+   "samples": 360000,
+   "start": "2026-11-12T18:27:46.540000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHE.20261113T000002",
+   "first_sample": 7351121,
+   "samples": 360000,
+   "start": "2026-11-13T20:25:13.649999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB09..HHZ.20261110T160311",
+   "first_sample": 578618,
+   "samples": 360000,
+   "start": "2026-11-10T17:39:38.160000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.MORC..HHN.20261113T000002",
+   "first_sample": 2940642,
+   "samples": 360000,
+   "start": "2026-11-13T08:10:08.879999Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "GE.WLF..HHZ.20261113T000005",
+   "first_sample": 4103418,
+   "samples": 360000,
+   "start": "2026-11-13T11:23:59.559998Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB09..HHN.20261111T000000",
+   "first_sample": 1961198,
+   "samples": 360000,
+   "start": "2026-11-11T05:26:52.110000Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB01..HHN.20261116T000001",
+   "first_sample": 158481,
+   "samples": 360000,
+   "start": "2026-11-16T00:26:25.908393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB02..HHN.20261113T000000",
+   "first_sample": 2267893,
+   "samples": 360000,
+   "start": "2026-11-13T06:17:59.148393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261112T182741",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T18:27:41.168393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261112T192940",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T19:29:40.198393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261113T000000",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-13T00:00:00.358391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261114T000004",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-14T00:00:04.968393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261115T000001",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-15T00:00:01.718393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261116T000003",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T00:00:03.768393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261116T173948",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T17:39:48.508393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261112T182743",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T18:27:43.258394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261112T192939",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T19:29:39.518394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261113T000000",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-13T00:00:00.148391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261114T000002",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-14T00:00:02.228393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261115T000001",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-15T00:00:01.718393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261116T000003",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T00:00:03.678393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261116T173949",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T17:39:49.408394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261112T182741",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T18:27:41.818393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261112T192940",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T19:29:40.408393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261113T000004",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-13T00:00:04.968393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261114T000002",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-14T00:00:02.148393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261115T000001",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-15T00:00:01.688393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261116T000000",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T00:00:00.208391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261116T173950",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T17:39:50.908394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261112T192940",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T19:29:40.198393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261113T000000",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-13T00:00:00.358391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261114T000004",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-14T00:00:04.968393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261115T000001",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-15T00:00:01.718393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261116T000003",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T00:00:03.768393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHE.20261116T173948",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T17:39:48.508393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261112T192939",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T19:29:39.518394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261113T000000",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-13T00:00:00.148391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261114T000002",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-14T00:00:02.228393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261115T000001",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-15T00:00:01.718393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261116T000003",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T00:00:03.678393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHN.20261116T173949",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T17:39:49.408394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261112T192940",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-12T19:29:40.408393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261113T000004",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-13T00:00:04.968393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261114T000002",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-14T00:00:02.148393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261115T000001",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-15T00:00:01.688393Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261116T000000",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T00:00:00.208391Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  },
+  {
+   "recording": "CX.PB03..HHZ.20261116T173950",
+   "first_sample": 0,
+   "samples": 360000,
+   "start": "2026-11-16T17:39:50.908394Z",
+   "compared": 360000,
+   "equal": 360000,
+   "different": 0,
+   "not_in_archive": 0
+  }
+ ]
+}
