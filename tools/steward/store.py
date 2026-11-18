@@ -293,16 +293,29 @@ def privileged(conn: psycopg.Connection, collection: str) -> bool:
 
 def envelope_grids(conn: psycopg.Connection, collection: str) -> list[tuple[int, int]]:
     """(window, stride) pairs the collection maintains: every window size present in its envelopes, with its most
-    common stride (half the window when no recording has two windows yet), and the window and stride the recordings
+    common stride between a recording's first envelopes of that size (half the window when no recording has two
+    windows yet), and the window and stride the recordings
     declare in their checkpoints (recordings with extractor 'none' declare no envelopes). The checkpoints are what a
     new collection has before its first envelope: without them the steward would never start building (soak S1)."""
     env = sibling(conn, collection, "_envelopes")
     if not env:
         return []
+    # Index lookups only (the key is recording_id, window_size, start_sample): per recording, its window sizes by a
+    # skip scan, and per size the stride from its first three envelopes. Sorting the whole envelope table instead took
+    # more than 10 minutes on soak S1's box at 4.4 million rows, and the steward repeats this every hour.
     rows = conn.execute(f"""
+      WITH RECURSIVE ws AS (
+        SELECT r.recording_id rid,
+               (SELECT min(e.window_size) FROM {env} e WHERE e.recording_id=r.recording_id) w
+        FROM {collection} r
+        UNION ALL
+        SELECT ws.rid, (SELECT min(e.window_size) FROM {env} e WHERE e.recording_id=ws.rid AND e.window_size>ws.w)
+        FROM ws WHERE ws.w IS NOT NULL)
       SELECT w, coalesce(mode() WITHIN GROUP (ORDER BY d), w/2) FROM (
-        SELECT window_size w, start_sample-lag(start_sample) OVER (PARTITION BY recording_id,window_size
-          ORDER BY start_sample) d FROM {env}) x
+        SELECT ws.w, f.start_sample-lag(f.start_sample) OVER (PARTITION BY ws.rid, ws.w ORDER BY f.start_sample) d
+        FROM ws CROSS JOIN LATERAL (SELECT e.start_sample FROM {env} e
+          WHERE e.recording_id=ws.rid AND e.window_size=ws.w ORDER BY e.start_sample LIMIT 3) f
+        WHERE ws.w IS NOT NULL) x
       WHERE d IS NULL OR d>0 GROUP BY w ORDER BY w""").fetchall()
     grids = {int(w): int(s) for w, s in rows}
     declared = conn.execute(f"""

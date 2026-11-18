@@ -75,6 +75,14 @@ class StewardDatabase(unittest.TestCase):
     def one(self, q, args=()):
         return self.admin.execute(q, args).fetchone()[0]
 
+    def test_envelope_grids_are_found_by_index_lookups(self):
+        """Each window size of a collection's envelopes with its stride, without sorting the envelope table (soak S1:
+        that sort took more than 10 minutes at 4.4 million envelopes and ran every hour)."""
+        a = self.admin
+        a.execute("SELECT morlet_build_envelopes('line','r2',1024,256,5)")      # a second grid, several windows
+        a.execute("SELECT morlet_build_envelopes('line','r2',8192,8192,1)")     # one window only: stride unknown
+        self.assertEqual(S.envelope_grids(self.conn, "public.line"), [(1024, 256), (4096, 2048), (8192, 4096)])
+
     def test_backlogs_return_to_zero_with_an_audit_row_for_every_action(self):
         st = self.steward()
         self.run_until_idle(st)
