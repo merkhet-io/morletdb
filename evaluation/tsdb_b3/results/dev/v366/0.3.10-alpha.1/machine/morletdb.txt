@@ -1,0 +1,24 @@
+2026-11-10T18:54:56
+18:54  up 14 days,  3:51, 19 users, load averages: 2.60 4.49 4.70
+ %CPU COMM
+ 31.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 26.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 20.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 12.5 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  8.5 /System/Library/PrivateFrameworks/CoreParsec.framework/parsecd
+2026-11-10T18:58:54
+18:58  up 14 days,  3:55, 19 users, load averages: 7.90 6.41 5.46
+ %CPU COMM
+231.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 83.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 68.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.7 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+ 12.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-10T19:03:01
+19:03  up 14 days,  3:59, 19 users, load averages: 7.93 6.38 5.61
+ %CPU COMM
+184.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 47.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 24.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 10.4 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha

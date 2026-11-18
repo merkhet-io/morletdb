@@ -1,0 +1,22 @@
+2026-11-10T20:42:49
+20:42  up 14 days,  5:38, 19 users, load averages: 9.62 10.77 11.19
+ %CPU COMM
+171.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 18.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 16.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  7.2 claude
+  4.0 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  4.0 /usr/sbin/coreaudiod
+  1.0 /Applications/Warp.app/Contents/MacOS/stable
+2026-11-10T20:43:08
+20:43  up 14 days,  5:39, 19 users, load averages: 9.04 10.56 11.10
+ %CPU COMM
+146.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+106.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.2 /usr/sbin/coreaudiod
+  3.4 claude
+  3.3 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop

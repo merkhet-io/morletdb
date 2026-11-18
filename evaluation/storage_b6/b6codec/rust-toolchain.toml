@@ -1,0 +1,5 @@
+# The workspace's Rust (1.99.0) without its extra components, so the platform containers of section 4B (which ship
+# exactly this toolchain) build b6codec offline.
+[toolchain]
+channel = "1.99.0"
+profile = "minimal"

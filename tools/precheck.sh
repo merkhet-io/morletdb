@@ -16,17 +16,19 @@ step() { printf '== %s\n' "$*"; }
 
 if touches '\.rs$|Cargo\.(toml|lock)$|rust-toolchain'; then
   step "cargo fmt"; cargo fmt --all -- --check
-  step "clippy (morlet-core, -D warnings)"; cargo clippy --locked -q -p morlet-core --all-targets -- -D warnings
-  step "morlet-core tests"; cargo test --locked -q -p morlet-core 2>&1 | grep -E "^test result|FAILED|panicked" || true
+  step "clippy (grizzbit, morlet-core, -D warnings)"; cargo clippy --locked -q -p grizzbit -p morlet-core --all-targets -- -D warnings
+  step "grizzbit and morlet-core tests"; cargo test --locked -q -p grizzbit -p morlet-core 2>&1 | grep -E "^test result|FAILED|panicked" || true
 fi
 if touches '^extensions/pg_morlet/(src|sql)/|gen_upgrade\.py$'; then
-  pgc=${PG_CONFIG:-$HOME/.pgrx/17.11/pgrx-install/bin/pg_config}
-  if command -v cargo-pgrx >/dev/null && [ -x "$pgc" ] && grep -q "^default_version = '0.3.7'" extensions/pg_morlet/pg_morlet.control; then
-    step "update script 0.3.6 -> 0.3.7 is current"
+  pgc=${PG_CONFIG:-${PGRX_HOME:-$HOME/.pgrx}/17.11/pgrx-install/bin/pg_config}
+  # gen_upgrade.py generates the update script to the current SQL version and asserts that version itself
+  ver=$(sed -n "s/^default_version = '\(.*\)'/\1/p" extensions/pg_morlet/pg_morlet.control)
+  if command -v cargo-pgrx >/dev/null && [ -x "$pgc" ] && grep -q "default_version = '$ver'" extensions/pg_morlet/tests/gen_upgrade.py; then
+    step "update script to $ver is current"
     tmp=$(mktemp); trap 'rm -f "$tmp"' EXIT
     (cd extensions/pg_morlet && cargo pgrx schema pg17 --pg-config "$pgc" -o "$tmp" >/dev/null 2>&1 && python3 tests/gen_upgrade.py "$tmp" --check)
   else
-    step "update script check skipped (needs cargo-pgrx, $pgc, and the 0.3.7 generator)"
+    step "update script check skipped (needs cargo-pgrx, $pgc, and tests/gen_upgrade.py for SQL $ver)"
   fi
 fi
 if touches '^(research/paper|docs)/|^README\.md$|^VERSION$'; then
@@ -36,6 +38,7 @@ if touches '^(research/paper|docs)/|^README\.md$|^VERSION$'; then
   python3 research/paper/release_manifest.py --check
   python3 tools/site_versions.py --check
   python3 tools/highlight_site.py --check
+  python3 tools/check_sql_docs.py && python3 tools/check_mcp_docs.py
   python3 tools/benchmark_chart.py --check
 fi
 if touches '^\.github/workflows/' && command -v actionlint >/dev/null; then

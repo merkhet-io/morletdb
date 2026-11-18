@@ -74,6 +74,19 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 pub mod ffi;
 
+/// Decodes one stored chunk. File format 1 holds chunk format versions 2 and 3 only (docs/file-format.md), so a
+/// chunk of a later version (version 5, Grizzbit 2.1 under study B6) is refused although the codec could decode
+/// it: this library writes Grizzbit 1 (`rawcodec::encode`) into format-1 files, and a format-1 reader never has
+/// to meet a later version.
+fn decode_chunk(enc: &[u8]) -> Result<Vec<f64>> {
+    if let Some(&v) = enc.first().filter(|&&v| v > rawcodec::FORMAT_VERSION) {
+        return invalid(format!(
+            "chunk format version {v} is not allowed in file format 1"
+        ));
+    }
+    rawcodec::decode(enc).map_err(|e| Error::Invalid(e.to_string()))
+}
+
 fn invalid<T>(m: impl Into<String>) -> Result<T> {
     Err(Error::Invalid(m.into()))
 }
@@ -313,7 +326,7 @@ impl Store {
                 at += len;
                 let encoded =
                     rawcodec::encode(chunk, quantum).map_err(|e| Error::Invalid(e.to_string()))?;
-                let back = rawcodec::decode(&encoded).map_err(|e| Error::Invalid(e.to_string()))?;
+                let back = decode_chunk(&encoded)?;
                 if back.len() != chunk.len()
                     || back
                         .iter()
@@ -373,7 +386,7 @@ impl Store {
                 s
             } else {
                 let enc: Vec<u8> = r.get(2)?;
-                let samples = rawcodec::decode(&enc).map_err(|e| Error::Invalid(e.to_string()))?;
+                let samples = decode_chunk(&enc)?;
                 if samples.len() != count as usize {
                     return invalid("encoded chunk does not match its sample count");
                 }
@@ -474,7 +487,7 @@ fn read_in(conn: &Connection, recording_id: &str, a: i64, b: i64) -> Result<Vec<
     while let Some(r) = rows.next()? {
         let (start, count): (i64, i64) = (r.get(0)?, r.get(1)?);
         let enc = r.get_ref(2)?.as_blob().map_err(rusqlite::Error::from)?;
-        let samples = rawcodec::decode(enc).map_err(|e| Error::Invalid(e.to_string()))?;
+        let samples = decode_chunk(enc)?;
         if samples.len() != count as usize {
             return invalid("encoded chunk does not match its sample count");
         }

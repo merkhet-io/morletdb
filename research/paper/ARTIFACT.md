@@ -210,3 +210,46 @@ an E1 smoke run, list comparisons and the preserved-index check. It did **not** 
 `cargo pgrx init` of PostgreSQL and pgvector, a fetch of the data from GEOFON, a rebuild of the development
 database, the Python environment set-up of section 2.1 from scratch, the pgvector build commands as written
 in section 2.3, or latency.
+
+
+## Industrial analyses and submission corrections (2026-11-16)
+
+The scientific measurements remain historical: E1 is 68594d7; IU1/IU2/IU1-E are
+088f03b. The correction branch changes analysis and presentation, not the recorded
+runtime or database build. Do not label these measurements as current-main performance.
+See [SUBMISSION.md](SUBMISSION.md) for the benchmark readiness matrix.
+
+From a fresh checkout, replay the committed industrial results without a database
+or the original waveform archives:
+
+```sh
+python3 -m venv /tmp/morlet-paper-replay
+/tmp/morlet-paper-replay/bin/pip install numpy==2.1.3
+/tmp/morlet-paper-replay/bin/python research/paper/replay_industrial.py --check
+/tmp/morlet-paper-replay/bin/python -m unittest discover -s research/paper -p test_industrial.py -v
+```
+
+`--check` writes into a temporary directory and compares derived outputs; use
+`--output /tmp/industrial-replay` to retain them. The reader handles committed
+`.json.gz` inputs directly and stops on missing required files before replacing
+summaries. IU2 explicitly uses the archived per-cycle feature values and checks
+BL/ZL/RMS medians against raw per-window scores. Independently rebuilding the
+vibration/current features requires the external CSV and `--features PATH`.
+
+The full industrial database reruns remain separate, expensive operations; see
+[IU1](../../evaluation/industrial_iu1/README.md),
+[IU2](../../evaluation/industrial_iu2/README.md), and
+[IU1-E](../../evaluation/industrial_latency/README.md). Use a separate rerun
+checkout and archive environment versions. The Compose mounts, DSN and base-image
+recipe have been corrected. A clean `--no-cache` build of 088f03b and the T6
+eligible-gallery rerun were executed on 2026-11-16 (environment in
+`evaluation/industrial_iu1/results/t6_rerun_environment.json`); T1–T5, IU2 and
+IU1-E were not rerun. The T6 rerun is post hoc and reported as exploratory.
+
+For conference formatting use `python research/paper/build_submission.py --all`
+and `python research/paper/check_submission.py`. The helper verifies the official
+ACM 2.21 source archive and TeX docstrip archive by SHA-256, generates the unchanged
+class, then invokes Tectonic. TeX package downloads are still supplied by Tectonic's
+bundle; this is not a content-addressed environment for every dependency. A mutable
+upstream archive changing causes a checksum failure rather than silently changing
+the template. Report, supplement and SIGMOD PDFs were built with that same class.

@@ -1,0 +1,838 @@
+{
+ "study": "B8 speed (PROTOCOL.md 4.C)",
+ "dryrun": false,
+ "started": "2026-11-14T11:54:05",
+ "codec_sha256": "e7ac93d656525fdcd72fb3ca7e9ca628dac5623d8319d59fc2932c69f3bbeeab",
+ "passes": 3,
+ "threads": 1,
+ "inputs": [
+  {
+   "input": "force",
+   "set": "iu4-bench",
+   "samples": 107492700,
+   "conditions": [
+    {
+     "load1": 2.92,
+     "busy": [],
+     "at": "11:54:56",
+     "met": true,
+     "waited_s": 51,
+     "load1_after": 3.06
+    },
+    {
+     "load1": 2.9,
+     "busy": [],
+     "at": "11:55:14",
+     "met": true,
+     "waited_s": 5,
+     "load1_after": 2.75
+    },
+    {
+     "load1": 2.75,
+     "busy": [],
+     "at": "11:55:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.51
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 23.55,
+    "decode_msamples_s": 62.95,
+    "encode_passes": [
+     23.3,
+     22.69,
+     23.55
+    ],
+    "decode_passes": [
+     62.95,
+     62.42,
+     62.41
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 22.56,
+    "decode_msamples_s": 89.92,
+    "encode_passes": [
+     22.5,
+     22.56,
+     22.5
+    ],
+    "decode_passes": [
+     89.63,
+     88.38,
+     89.92
+    ]
+   }
+  },
+  {
+   "input": "ctrl",
+   "set": "iu4-bench",
+   "samples": 4301484,
+   "conditions": [
+    {
+     "load1": 2.51,
+     "busy": [],
+     "at": "11:55:40",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.51
+    },
+    {
+     "load1": 2.51,
+     "busy": [],
+     "at": "11:55:41",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.51
+    },
+    {
+     "load1": 2.51,
+     "busy": [],
+     "at": "11:55:42",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.51
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 21.2,
+    "decode_msamples_s": 74.54,
+    "encode_passes": [
+     21.08,
+     20.91,
+     21.2
+    ],
+    "decode_passes": [
+     74.54,
+     73.91,
+     73.75
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 13.01,
+    "decode_msamples_s": 69.04,
+    "encode_passes": [
+     13.0,
+     13.01,
+     12.84
+    ],
+    "decode_passes": [
+     68.96,
+     68.93,
+     69.04
+    ]
+   }
+  },
+  {
+   "input": "cx",
+   "set": "b6-waveform",
+   "samples": 4194304,
+   "conditions": [
+    {
+     "load1": 2.51,
+     "busy": [],
+     "at": "11:55:42",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    },
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:43",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    },
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:43",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 63.82,
+    "decode_msamples_s": 121.23,
+    "encode_passes": [
+     63.15,
+     63.82,
+     62.42
+    ],
+    "decode_passes": [
+     121.23,
+     120.95,
+     121.23
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 14.53,
+    "decode_msamples_s": 104.4,
+    "encode_passes": [
+     14.53,
+     14.12,
+     14.47
+    ],
+    "decode_passes": [
+     104.4,
+     104.06,
+     104.0
+    ]
+   }
+  },
+  {
+   "input": "ims",
+   "set": "b6-waveform",
+   "samples": 4194304,
+   "conditions": [
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:44",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    },
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:44",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    },
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:45",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 39.54,
+    "decode_msamples_s": 156.01,
+    "encode_passes": [
+     39.01,
+     27.38,
+     39.54
+    ],
+    "decode_passes": [
+     156.01,
+     155.5,
+     155.72
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 39.88,
+    "decode_msamples_s": 157.42,
+    "encode_passes": [
+     39.4,
+     27.14,
+     39.88
+    ],
+    "decode_passes": [
+     157.42,
+     155.62,
+     156.52
+    ]
+   }
+  },
+  {
+   "input": "sleep",
+   "set": "b6-waveform",
+   "samples": 4194304,
+   "conditions": [
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:45",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    },
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:46",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    },
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:46",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 17.83,
+    "decode_msamples_s": 70.28,
+    "encode_passes": [
+     16.83,
+     14.78,
+     17.83
+    ],
+    "decode_passes": [
+     70.28,
+     69.47,
+     69.87
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 17.89,
+    "decode_msamples_s": 70.93,
+    "encode_passes": [
+     17.14,
+     14.73,
+     17.89
+    ],
+    "decode_passes": [
+     70.03,
+     70.93,
+     70.92
+    ]
+   }
+  },
+  {
+   "input": "ecg",
+   "set": "b6-waveform",
+   "samples": 4194000,
+   "conditions": [
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:47",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.39
+    },
+    {
+     "load1": 2.39,
+     "busy": [],
+     "at": "11:55:48",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    },
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:48",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 20.59,
+    "decode_msamples_s": 115.84,
+    "encode_passes": [
+     20.51,
+     20.59,
+     20.21
+    ],
+    "decode_passes": [
+     115.84,
+     115.08,
+     115.58
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 20.42,
+    "decode_msamples_s": 116.33,
+    "encode_passes": [
+     20.32,
+     20.41,
+     20.42
+    ],
+    "decode_passes": [
+     115.71,
+     116.33,
+     112.08
+    ]
+   }
+  },
+  {
+   "input": "pad-c-b6",
+   "set": "b6-waveform",
+   "samples": 4194304,
+   "conditions": [
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:49",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    },
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:49",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    },
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:50",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 61.67,
+    "decode_msamples_s": 142.23,
+    "encode_passes": [
+     59.99,
+     60.93,
+     61.67
+    ],
+    "decode_passes": [
+     141.51,
+     142.23,
+     140.99
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 12.68,
+    "decode_msamples_s": 120.5,
+    "encode_passes": [
+     12.62,
+     12.68,
+     12.47
+    ],
+    "decode_passes": [
+     119.46,
+     119.56,
+     120.5
+    ]
+   }
+  },
+  {
+   "input": "pad-p-b6",
+   "set": "b6-waveform",
+   "samples": 4194304,
+   "conditions": [
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:50",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    },
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:51",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    },
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:51",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.28
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 24.29,
+    "decode_msamples_s": 83.72,
+    "encode_passes": [
+     23.39,
+     24.29,
+     24.23
+    ],
+    "decode_passes": [
+     83.03,
+     83.3,
+     83.72
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 24.49,
+    "decode_msamples_s": 83.19,
+    "encode_passes": [
+     23.38,
+     24.49,
+     24.31
+    ],
+    "decode_passes": [
+     82.75,
+     83.19,
+     82.17
+    ]
+   }
+  },
+  {
+   "input": "b3-vibration_1",
+   "set": "b6-b3",
+   "samples": 26744663,
+   "conditions": [
+    {
+     "load1": 2.28,
+     "busy": [],
+     "at": "11:55:52",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.42
+    },
+    {
+     "load1": 2.42,
+     "busy": [],
+     "at": "11:55:55",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.54
+    },
+    {
+     "load1": 2.54,
+     "busy": [],
+     "at": "11:55:58",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.54
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 23.72,
+    "decode_msamples_s": 76.57,
+    "encode_passes": [
+     23.72,
+     23.39,
+     23.51
+    ],
+    "decode_passes": [
+     76.42,
+     76.57,
+     75.97
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 23.64,
+    "decode_msamples_s": 77.49,
+    "encode_passes": [
+     23.64,
+     23.59,
+     23.49
+    ],
+    "decode_passes": [
+     77.49,
+     77.37,
+     77.29
+    ]
+   }
+  },
+  {
+   "input": "b3-phase_current_1",
+   "set": "b6-b3",
+   "samples": 26744663,
+   "conditions": [
+    {
+     "load1": 2.54,
+     "busy": [],
+     "at": "11:56:01",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.5
+    },
+    {
+     "load1": 2.3,
+     "busy": [],
+     "at": "11:56:10",
+     "met": true,
+     "waited_s": 5,
+     "load1_after": 2.19
+    },
+    {
+     "load1": 2.19,
+     "busy": [],
+     "at": "11:56:14",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.19
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 20.26,
+    "decode_msamples_s": 76.43,
+    "encode_passes": [
+     19.77,
+     19.83,
+     20.26
+    ],
+    "decode_passes": [
+     76.02,
+     76.43,
+     75.44
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 20.23,
+    "decode_msamples_s": 76.81,
+    "encode_passes": [
+     19.79,
+     19.74,
+     20.23
+    ],
+    "decode_passes": [
+     76.76,
+     76.81,
+     76.72
+    ]
+   }
+  },
+  {
+   "input": "b3-phase_current_2",
+   "set": "b6-b3",
+   "samples": 26744663,
+   "conditions": [
+    {
+     "load1": 2.19,
+     "busy": [],
+     "at": "11:56:17",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.26
+    },
+    {
+     "load1": 2.26,
+     "busy": [],
+     "at": "11:56:20",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.16
+    },
+    {
+     "load1": 2.16,
+     "busy": [],
+     "at": "11:56:24",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.16
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 20.35,
+    "decode_msamples_s": 76.33,
+    "encode_passes": [
+     20.35,
+     20.32,
+     19.61
+    ],
+    "decode_passes": [
+     76.11,
+     76.33,
+     75.88
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 20.38,
+    "decode_msamples_s": 76.75,
+    "encode_passes": [
+     20.35,
+     20.38,
+     19.67
+    ],
+    "decode_passes": [
+     76.55,
+     76.71,
+     76.75
+    ]
+   }
+  },
+  {
+   "input": "b3-force",
+   "set": "b6-b3",
+   "samples": 1664202,
+   "conditions": [
+    {
+     "load1": 2.16,
+     "busy": [],
+     "at": "11:56:27",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.16
+    },
+    {
+     "load1": 2.16,
+     "busy": [],
+     "at": "11:56:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    },
+    {
+     "load1": 2.14,
+     "busy": [],
+     "at": "11:56:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 18.92,
+    "decode_msamples_s": 71.94,
+    "encode_passes": [
+     18.92,
+     18.77,
+     18.79
+    ],
+    "decode_passes": [
+     71.3,
+     71.87,
+     71.94
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 18.98,
+    "decode_msamples_s": 72.12,
+    "encode_passes": [
+     18.98,
+     18.79,
+     18.72
+    ],
+    "decode_passes": [
+     71.88,
+     71.65,
+     72.12
+    ]
+   }
+  },
+  {
+   "input": "b3-speed",
+   "set": "b6-b3",
+   "samples": 1664202,
+   "conditions": [
+    {
+     "load1": 2.14,
+     "busy": [],
+     "at": "11:56:28",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    },
+    {
+     "load1": 2.14,
+     "busy": [],
+     "at": "11:56:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    },
+    {
+     "load1": 2.14,
+     "busy": [],
+     "at": "11:56:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 36.3,
+    "decode_msamples_s": 104.42,
+    "encode_passes": [
+     35.68,
+     35.74,
+     36.3
+    ],
+    "decode_passes": [
+     103.59,
+     104.03,
+     104.42
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 36.2,
+    "decode_msamples_s": 104.11,
+    "encode_passes": [
+     36.14,
+     35.99,
+     36.2
+    ],
+    "decode_passes": [
+     104.11,
+     103.37,
+     103.49
+    ]
+   }
+  },
+  {
+   "input": "b3-torque",
+   "set": "b6-b3",
+   "samples": 1664202,
+   "conditions": [
+    {
+     "load1": 2.14,
+     "busy": [],
+     "at": "11:56:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    },
+    {
+     "load1": 2.14,
+     "busy": [],
+     "at": "11:56:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    },
+    {
+     "load1": 2.14,
+     "busy": [],
+     "at": "11:56:29",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.14
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 26.39,
+    "decode_msamples_s": 85.8,
+    "encode_passes": [
+     26.0,
+     26.39,
+     26.24
+    ],
+    "decode_passes": [
+     85.8,
+     85.53,
+     85.13
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 26.49,
+    "decode_msamples_s": 86.73,
+    "encode_passes": [
+     25.86,
+     26.25,
+     26.49
+    ],
+    "decode_passes": [
+     86.31,
+     86.73,
+     85.87
+    ]
+   }
+  }
+ ],
+ "not_run": [],
+ "finished": "2026-11-14T11:56:30"
+}

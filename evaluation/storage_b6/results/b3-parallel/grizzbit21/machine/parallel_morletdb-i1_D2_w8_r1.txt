@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:35:50 after 21 s, load { 2.82 3.72 4.04 }
+-- before
+2026-11-11T19:35:50
+19:35  up 15 days,  4:31, 19 users, load averages: 2.82 3.72 4.04
+Now drawing from 'AC Power'
+ %CPU COMM
+ 26.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  5.7 claude
+  4.8 claude
+  3.6 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  2.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.0 /Applications/Warp.app/Contents/MacOS/stable
+  1.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+-- after (exit 0)
+2026-11-11T19:36:09
+19:36  up 15 days,  4:32, 19 users, load averages: 4.07 3.96 4.12
+Now drawing from 'AC Power'
+ %CPU COMM
+191.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+103.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 41.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 14.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.3 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.8 claude
+  1.5 /Library/Application Support/JamfAppInstallers/com.jamf.appinstallers.Tailscale/Jamf App Installers.app/Contents/MacOS/Jamf App Installers
+  1.1 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow

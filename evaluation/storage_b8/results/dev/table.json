@@ -1,0 +1,79 @@
+{
+ "study": "B8 table level (PROTOCOL.md 4.B)",
+ "set": "dev",
+ "image": "morletdb:b8-9407a06",
+ "started": "2026-11-14T07:38:35",
+ "load": {
+  "groups": {
+   "force": {
+    "seconds": 4.61440720804967,
+    "conversion_s": 0.024345311103388667
+   },
+   "ctrl": {
+    "seconds": 0.6664309590123594,
+    "conversion_s": 0.002001215238124132
+   }
+  },
+  "load_seconds": 5.439808749826625,
+  "settle_seconds": 0.0,
+  "memory": {
+   "peak_mib": 572.6,
+   "anon_mib_at_end": 11.8,
+   "file_mib_at_end": 541.3,
+   "shmem_mib_at_end": 140.2
+  },
+  "storage": {
+   "force": {
+    "chunks_total": 180797440,
+    "chunks_indexes": 1130496,
+    "recordings_table": 516096,
+    "encoded_bytes": 162915676
+   },
+   "ctrl": {
+    "chunks_total": 5619712,
+    "chunks_indexes": 81920,
+    "recordings_table": 942080,
+    "encoded_bytes": 4934491
+   },
+   "database": 196037779,
+   "pg_wal": 201326592
+  },
+  "volume_bytes": 420599838
+ },
+ "check": {
+  "force": {
+   "series_not_exact": 0,
+   "samples": 53910450
+  },
+  "ctrl": {
+   "series_not_exact": 0,
+   "samples": 2157342
+  }
+ },
+ "versions": {
+  "force": {
+   "2": 103,
+   "6": 13280
+  },
+  "ctrl": {
+   "2": 7,
+   "6": 959
+  }
+ },
+ "setting": null,
+ "per_group": {
+  "force": {
+   "samples": 53910450,
+   "table_bytes": 181313536,
+   "table_bytes_per_sample": 3.3632,
+   "encoded_bytes_per_sample": 3.022
+  },
+  "ctrl": {
+   "samples": 2157342,
+   "table_bytes": 6561792,
+   "table_bytes_per_sample": 3.0416,
+   "encoded_bytes_per_sample": 2.2873
+  }
+ },
+ "finished": "2026-11-14T07:38:53"
+}

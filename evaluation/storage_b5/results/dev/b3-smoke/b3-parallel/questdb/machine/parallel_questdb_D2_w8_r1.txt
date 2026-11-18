@@ -1,0 +1,22 @@
+2026-11-10T20:42:32
+20:42  up 14 days,  5:38, 19 users, load averages: 8.43 10.62 11.15
+ %CPU COMM
+215.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 76.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.7 claude
+  4.2 /usr/sbin/coreaudiod
+  2.6 claude
+  1.1 /usr/libexec/opendirectoryd
+2026-11-10T20:42:49
+20:42  up 14 days,  5:38, 19 users, load averages: 9.62 10.77 11.19
+ %CPU COMM
+238.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 24.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  9.8 claude
+  6.4 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  4.0 /usr/sbin/coreaudiod
+  1.1 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder

@@ -1,0 +1,22 @@
+2026-11-13T00:08:38
+ 0:08  up 16 days,  9:04, 18 users, load averages: 3.77 3.94 9.49
+ %CPU COMM
+144.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 59.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.2 bash
+  1.0 /Applications/Warp.app/Contents/MacOS/stable
+  0.9 /usr/libexec/opendirectoryd
+  0.8 /usr/sbin/notifyd
+  0.6 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+2026-11-13T00:11:01
+ 0:11  up 16 days,  9:07, 18 users, load averages: 3.29 3.62 8.48
+ %CPU COMM
+203.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 61.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  6.1 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+  1.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  1.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.9 /Applications/Warp.app/Contents/MacOS/stable
+  0.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.3 claude

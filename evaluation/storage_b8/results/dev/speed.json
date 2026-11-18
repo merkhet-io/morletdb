@@ -1,0 +1,130 @@
+{
+ "study": "B8 speed (PROTOCOL.md 4.C)",
+ "dryrun": false,
+ "started": "2026-11-14T09:47:23",
+ "codec_sha256": "e7ac93d656525fdcd72fb3ca7e9ca628dac5623d8319d59fc2932c69f3bbeeab",
+ "passes": 3,
+ "threads": 1,
+ "inputs": [
+  {
+   "input": "force",
+   "set": "iu4-dev",
+   "samples": 53910450,
+   "conditions": [
+    {
+     "load1": 2.96,
+     "busy": [],
+     "at": "09:47:49",
+     "met": true,
+     "waited_s": 25,
+     "load1_after": 2.8
+    },
+    {
+     "load1": 2.8,
+     "busy": [],
+     "at": "09:47:56",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.66
+    },
+    {
+     "load1": 2.76,
+     "busy": [],
+     "at": "09:48:07",
+     "met": true,
+     "waited_s": 5,
+     "load1_after": 2.78
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 23.5,
+    "decode_msamples_s": 62.58,
+    "encode_passes": [
+     23.5,
+     23.34,
+     22.56
+    ],
+    "decode_passes": [
+     62.29,
+     62.58,
+     61.5
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 22.59,
+    "decode_msamples_s": 89.58,
+    "encode_passes": [
+     22.37,
+     22.59,
+     21.84
+    ],
+    "decode_passes": [
+     89.58,
+     88.8,
+     86.4
+    ]
+   }
+  },
+  {
+   "input": "ctrl",
+   "set": "iu4-dev",
+   "samples": 2157342,
+   "conditions": [
+    {
+     "load1": 2.78,
+     "busy": [],
+     "at": "09:48:14",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 3.04
+    },
+    {
+     "load1": 2.96,
+     "busy": [],
+     "at": "09:48:19",
+     "met": true,
+     "waited_s": 5,
+     "load1_after": 2.96
+    },
+    {
+     "load1": 2.96,
+     "busy": [],
+     "at": "09:48:20",
+     "met": true,
+     "waited_s": 0,
+     "load1_after": 2.96
+    }
+   ],
+   "G1": {
+    "encode_msamples_s": 20.81,
+    "decode_msamples_s": 74.16,
+    "encode_passes": [
+     20.45,
+     20.81,
+     20.26
+    ],
+    "decode_passes": [
+     73.76,
+     74.16,
+     72.52
+    ]
+   },
+   "G16": {
+    "encode_msamples_s": 12.64,
+    "decode_msamples_s": 67.17,
+    "encode_passes": [
+     12.47,
+     12.64,
+     12.62
+    ],
+    "decode_passes": [
+     65.67,
+     67.11,
+     67.17
+    ]
+   }
+  }
+ ],
+ "not_run": [],
+ "finished": "2026-11-14T09:48:20"
+}

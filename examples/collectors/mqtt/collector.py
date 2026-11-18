@@ -16,8 +16,9 @@ Samples: the batch is appended at its start_sample to the recording <acquisition
 - A batch after the end waits (unacknowledged) for the missing ones. If they have not arrived after
   --gap-timeout seconds, or more than --max-pending batches wait, the missing range is reported as a gap and a
   new recording starts at the first waiting batch. Samples are never invented.
-Context: each message becomes a context event of the recording whose samples cover its source time (sample =
-(source time - acquisition start_time) * rate), with value, status and source time. Context ahead of the stored
+Context: each message becomes a context event of the recording whose samples cover its source time, from the first
+sample at or after it (context_rows.py). The value is the message's value alone, so the same state in two cycles has
+the same segment context; a status other than good is its own event, "<key>.status", at the same sample. Context ahead of the stored
 samples waits, unacknowledged, until they arrive; context in a gap is reported and not stored.
 """
 import argparse
@@ -32,6 +33,7 @@ import psycopg
 import paho.mqtt.client as mqtt
 
 import contract
+from context_rows import context_rows, first_sample
 
 
 def log(**kw):
@@ -161,7 +163,7 @@ class Collector:
             return "wait"
         t0 = datetime.fromisoformat(segs[0]["start_time"].replace("Z", "+00:00"))
         t = datetime.fromisoformat(p["source_time"].replace("Z", "+00:00"))
-        sample = round((t - t0).total_seconds() * segs[0]["rate"])            # absolute sample of the acquisition
+        sample = first_sample(t, t0, segs[0]["rate"])                       # absolute sample of the acquisition
         if sample < 0:
             return "before the acquisition"
         seg = next((s for s in segs if s["start"] <= sample < s["end"]), None)
@@ -169,11 +171,10 @@ class Collector:
             if sample >= max(s["end"] for s in segs):
                 return "wait"                                               # samples not stored yet
             return "in a gap between recordings"
-        value = {"value": p["value"], "status": p.get("status", "good"), "source_time": p["source_time"]}
         batch = f"mqtt:{p['acquisition']}:{p['key']}:{p['source_time']}"
+        rows = context_rows(seg["rid"], p["key"], p["value"], p.get("status"), sample - seg["start"], good="good")
         try:
-            self.conn.execute("SELECT morlet_add_context(%s::regclass,%s,%s::jsonb)", (self.c, batch, json.dumps(
-                [{"recording_id": seg["rid"], "key": p["key"], "value": value, "start_sample": sample - seg["start"]}])))
+            self.conn.execute("SELECT morlet_add_context(%s::regclass,%s,%s::jsonb)", (self.c, batch, json.dumps(rows)))
             self.conn.commit()
             return "stored"
         except psycopg.Error as exc:

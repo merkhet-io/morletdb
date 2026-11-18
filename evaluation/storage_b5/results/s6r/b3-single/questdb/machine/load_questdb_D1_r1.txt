@@ -1,0 +1,23 @@
+gate met 2026-11-10T21:22:49 after 0 s, load { 2.78 5.01 6.24 }
+2026-11-10T21:22:49
+21:22  up 14 days,  6:18, 19 users, load averages: 2.78 5.01 6.24
+ %CPU COMM
+ 89.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 24.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 19.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  8.7 claude
+  4.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.7 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  2.4 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  2.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+2026-11-10T21:23:10
+21:23  up 14 days,  6:19, 19 users, load averages: 3.89 5.13 6.26
+ %CPU COMM
+233.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 62.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.9 claude
+  3.6 claude
+  1.7 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop

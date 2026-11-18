@@ -1,0 +1,22 @@
+{
+ "date": "2026-11-16",
+ "purpose": "#510 T6 eligible-gallery rerun and #512 clean-build check (post hoc, exploratory)",
+ "host": "Apple M5 Max (arm64), Docker Desktop, 12 CPUs",
+ "measured_commit": "088f03b",
+ "harness_commit": "1d305b1",
+ "postgres": "17.6 (Debian 17.6-2.pgdg12+1)",
+ "pg_morlet": "0.3.8",
+ "envelope": "xc-envelope-f16-v1",
+ "pgvector": "0.8.7-1.pgdg12+1",
+ "db_image_id": "sha256:759a9755ed4d424eaebd787191d7bb2823eb303a2668a2b957c6caa6742305f4",
+ "runner_image_id": "sha256:b283739cc73f82b70043b29f01d120eb981d04c3fbcaa676764171e5a62b38a8",
+ "data": "boschresearch/CNC_Machining d60581d6a3ab6015dcc5488c3d76112bb8e1bcb1, 1702 files SHA-256 verified",
+ "build": "docker build --no-cache --pull of deploy/Dockerfile at 088f03b, then docker compose build --no-cache; only the digest-pinned base images came from cache",
+ "reproduction_check": {
+  "same_200_queries_in_order": true,
+  "chance_identical": true,
+  "archived_full_ZL_lists_identical": "195/195",
+  "archived_full_BL_lists_identical": "153/153",
+  "storage_bytes": "sample counts identical; table byte counts differ slightly (total 958447616 vs 949952512), page layout, not used by T6"
+ }
+}

@@ -46,8 +46,12 @@ deterministic function of the block index (`signal_model.py`), which lets `check
 - **Gaps.** Blocks the server no longer holds (below `OldestBlock`) are reported with their range, and a new
   recording starts at the oldest available block. Samples are never invented to bridge a gap.
 - **Scalar tags → context, not waveforms.** Each change of Speed, Load or State becomes a context event in the
-  current recording's sample coordinates, offset = (source time − recording start) × rate, with the value, the
-  status code (Good, Uncertain, …) and the source time. No sample rate is invented for them. The batch id is
+  current recording's sample coordinates. It holds from the first sample at or after its source time
+  (`context_rows.py`, exact, never rounded to the nearest sample). The context value is the tag's value alone, so
+  the same state in two cycles has the same segment context and can be compared with history (#480); a status
+  other than Good (Uncertain, …) is stored as its own event, `<key>.status`, at the same sample. A change without
+  a source timestamp is not placed; the server time is not used in its place. No sample rate is invented for
+  them. The batch id is
   derived from the change, so a change delivered twice is stored once. Changes stamped before the recording
   starts are not stored and are reported.
 
@@ -63,7 +67,7 @@ pg_morlet 0.3.3-alpha.1):
 | collector stopped 16 s (longer than the ring) | gap reported with its range (19 blocks), new recording at the oldest available block |
 | server restarted while collecting | disconnect, reconnect, same recording continued |
 | block delivered twice | identical: accepted, nothing changed; altered: refused (`conflicting replay at chunk offset`) |
-| context | value, status and source time stored; an Uncertain Speed value kept its status |
+| context | value, status and source time stored; an Uncertain Speed value kept its status (verified before #480 with status inside the value; since #480 the status is a `<key>.status` event, checked by `test_context_rows.py`, not rerun against the server) |
 
 ## Limits
 

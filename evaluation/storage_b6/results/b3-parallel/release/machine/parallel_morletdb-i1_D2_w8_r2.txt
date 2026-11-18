@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:46:46 after 129 s, load { 2.78 3.50 3.81 }
+-- before
+2026-11-11T19:46:46
+19:46  up 15 days,  4:42, 19 users, load averages: 2.78 3.50 3.81
+Now drawing from 'AC Power'
+ %CPU COMM
+ 36.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 26.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  1.7 bash
+  1.2 /usr/libexec/xprotectd
+  0.8 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  0.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+-- after (exit 0)
+2026-11-11T19:47:06
+19:47  up 15 days,  4:43, 19 users, load averages: 3.50 3.62 3.85
+Now drawing from 'AC Power'
+ %CPU COMM
+238.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 61.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 53.2 /opt/homebrew/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/Resources/Python.app/Contents/MacOS/Python
+ 42.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.3 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  6.4 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+  5.9 /usr/libexec/runningboardd
+  4.4 /System/Library/CoreServices/launchservicesd

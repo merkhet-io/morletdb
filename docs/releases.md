@@ -1,6 +1,6 @@
 # Alpha releases
 
-The current package identifier is in VERSION (`0.3.10-alpha.1`). GitHub tags use
+The current package identifier is in VERSION (`0.3.11-alpha.1`). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -56,6 +56,45 @@ a leading v; GHCR image tags do not.
   - **Embedded edition (experimental, #351):** MorletDB in one SQLite file. The SDK's platform wheels carry it
     (`morletdb.open`), and the release attaches `morlet-sqlite-<platform>.tar.gz` (command line, library, C header).
   - **File format 1:** frozen with a compatibility promise ([file-format.md](file-format.md)).
+  - The chunk format is unchanged; existing collections keep their layout.
+- **0.3.14-alpha.1:** SQL version 0.3.11 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a7.
+  - **Float32 codings, chunk format version 6, on by default (#326, study B8):** float32 machine data about half the
+    size; `SET morlet.float32_chunks = off` turns it off. Releases up to 0.3.13-alpha.1 cannot read version-6
+    chunks: before a downgrade, re-append them with the setting off.
+  - **Faster context values (#414)** and pooled spreads computed once (#335).
+  - **Search exclusions (#384):** leave out the same part or the whole source recording.
+  - **Steward metrics (#197):** a Prometheus endpoint; **small-memory image settings (#466).**
+- **0.3.13-alpha.1:** SQL version 0.3.10 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a6. Security and
+  data-safety fixes; the chunk format is unchanged.
+  - **Episodic memory under row-level security (#438):** episodes, ledger, kept summaries and memory runs follow row
+    security; the update applies it to existing collections.
+  - **Steward approvals enforced at the table (#439):** run `steward.py init` again on existing installations.
+  - **Episodic memory and envelopes:** a representative keeps its samples while it represents an episode (#440);
+    envelopes build on after compaction removed the first windows (#441).
+  - **Transfers:** S3 import resumes objects that were cut off (#442); chunk shipping checks the target before writing
+    (#443, #444).
+  - **Decision states:** a history cache and a faster grid check (#403).
+- **0.3.12-alpha.1:** SQL version 0.3.9 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0a5.
+  - **Grizzbit 2.1, chunk format version 5, opt-in (#377):** `SET morlet.chunk_format = grizzbit21`; a misspelt value
+    fails. Releases up to 0.3.11-alpha.1 cannot read version-5 chunks.
+  - **Lossless chunk shipping from edge to centre (#420):** `morlet_encoded_chunks`, `morlet_append_encoded_chunk` and
+    `tools/ingest/morlet_ship.py` (resumable, SHA-256 compared at the end).
+  - **Decision states:** about ten times faster and all channels of a cut in one call (#403, #414); precedents in
+    logged decisions (#418); a label glossary (#333); alarm and PLC events inside a segment (#421); value rules
+    `simple-v2` for new collections (#387; existing collections keep `simple-v1` until `morlet_set_value_rules`).
+  - **Steward:** integrity checks get a minimum share under constant load; missing summaries are backlog, not damage.
+  - **Importer:** wide plant exports with a time column (#388), clock drift fitted and reported (#393).
+  - **MCP server:** `trend` per context segment and over an order key (#385, #334), `search_similar`
+    `exclude="occurrence"` (#384), negative answers state their scope (#379).
+- **0.3.11-alpha.1:** SQL version 0.3.8, unchanged (no `ALTER EXTENSION` needed); Python SDK 0.1.0a4.
+  - **Write-time proof on every append path (#366):** with `morlet.verify_appends` on (the default), every chunk is
+    decoded again and compared bit for bit with its input before it is stored.
+  - **Transfers verify samples, not chunk bytes (#356):** file and server transfers compare decoded samples.
+  - **Sample rates up to 100 MHz (#342)** for recordings without feature extraction.
+  - **MCP server:** starts under `python -I` again (#382; 0.3.10-alpha.1's server fails there with
+    `No module named 'decision'`). `search_similar` can leave out the query's own recording or part (`exclude`,
+    #384), and `coverage`, `locate_time` and `latest` give clearer answers on snapshot data (#386).
+  - **The chunk codec is the `grizzbit` crate** (Grizzbit 1 = chunk format versions 2 and 3); no byte changed.
   - The chunk format is unchanged; existing collections keep their layout.
 
 Releases target PostgreSQL 17 on Linux. From 0.3.3-alpha.1, the image is published for

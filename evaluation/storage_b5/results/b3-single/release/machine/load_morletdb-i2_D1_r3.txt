@@ -1,0 +1,22 @@
+2026-11-10T20:53:58
+20:53  up 14 days,  5:50, 19 users, load averages: 8.47 6.82 8.20
+ %CPU COMM
+206.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  7.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.0 /usr/sbin/coreaudiod
+  2.5 claude
+  2.0 claude
+2026-11-10T20:54:15
+20:54  up 14 days,  5:50, 19 users, load averages: 6.97 6.57 8.09
+ %CPU COMM
+192.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 54.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 20.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.2 claude
+  4.0 /usr/sbin/coreaudiod
+  2.2 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  1.5 claude

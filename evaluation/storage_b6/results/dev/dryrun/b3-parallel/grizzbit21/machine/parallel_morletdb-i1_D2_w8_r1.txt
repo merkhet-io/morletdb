@@ -1,0 +1,41 @@
+gate met 2026-11-11T12:07:50 after 0 s, load { 4.43 3.57 3.47 }
+-- before
+2026-11-11T12:07:50
+12:07  up 14 days, 21:03, 19 users, load averages: 4.43 3.57 3.47
+Now drawing from 'AC Power'
+ %CPU COMM
+221.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 53.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 24.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 17.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.9 claude
+  3.3 claude
+  3.1 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+  3.0 bash
+gate met 2026-11-11T12:39:12 after 0 s, load { 5.17 3.26 2.68 }
+-- before
+2026-11-11T12:39:12
+12:39  up 14 days, 21:35, 19 users, load averages: 5.17 3.26 2.68
+Now drawing from 'AC Power'
+ %CPU COMM
+235.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 30.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 22.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.2 bash
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.9 /Applications/Warp.app/Contents/MacOS/stable
+  0.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.7 /usr/sbin/notifyd
+-- after (exit 0)
+2026-11-11T12:39:32
+12:39  up 14 days, 21:35, 19 users, load averages: 5.12 3.37 2.74
+Now drawing from 'AC Power'
+ %CPU COMM
+277.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 79.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.7 claude
+  1.4 /Applications/Warp.app/Contents/MacOS/stable
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.7 /sbin/launchd

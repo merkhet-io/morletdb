@@ -1,0 +1,24 @@
+2026-11-10T18:56:56
+18:56  up 14 days,  3:53, 19 users, load averages: 4.74 4.64 4.72
+ %CPU COMM
+320.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+121.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 40.7 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+ 27.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 15.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+2026-11-10T19:00:58
+19:00  up 14 days,  3:57, 19 users, load averages: 5.42 5.91 5.38
+ %CPU COMM
+226.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 98.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 59.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.3 /Applications/Slack.app/Contents/Frameworks/Slack Helper (Renderer).app/Contents/MacOS/Slack Helper (Renderer)
+2026-11-10T19:05:15
+19:05  up 14 days,  4:01, 19 users, load averages: 10.02 6.99 5.92
+ %CPU COMM
+632.9 /Library/Developer/CommandLineTools/usr/libexec/git-core/git
+225.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 96.0 /Users/zin/sophia/morletdb/.claude/worktrees/agent-a765221c739dfa17a/target/debug/deps/morlet_core-ada91f60ae8165ed
+ 59.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 17.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend

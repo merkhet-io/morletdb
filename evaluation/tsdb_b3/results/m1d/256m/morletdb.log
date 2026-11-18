@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/run.py", line 450, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/run.py", line 249, in load
+    res["correctness"] = full_counts_and_reads("questdb" if system == "questdb" else "morletdb", handle, m)
+                         ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/run.py", line 112, in full_counts_and_reads
+    out["reads"] = cr.check_reads(system, handle, m, ks)
+                   ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/correctness.py", line 24, in check_reads
+    vals = mo.read(handle, a, spec["channels"], 0, n)
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/morletdb_adapter.py", line 188, in read
+    rows = conn.execute(
+           ~~~~~~~~~~~~^
+        "SELECT morlet_read_interval_raw(%s::regclass, r.id, %s, %s) FROM unnest(%s::text[]) WITH ORDINALITY r(id, o) "
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        "ORDER BY r.o", (COLLECTION, offset, offset + length, [rid(acq, c) for c in channels]),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        binary=True, prepare=True).fetchall()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb/.venv-b3/lib/python3.13/site-packages/psycopg/connection.py", line 269, in execute
+    raise ex.with_traceback(None)
+psycopg.OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.

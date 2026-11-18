@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-b6/evaluation/storage_b6/b6_b3.py", line 99, in <module>
+    run.load(*args)
+    ~~~~~~~~^^^^^^^
+  File "/Users/zin/sophia/morletdb-b6/evaluation/tsdb_b3/run.py", line 211, in load
+    r, t_last = ingest(system, handle, m, data, search)
+                ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-b6/evaluation/tsdb_b3/run.py", line 130, in ingest
+    c, _, rep = mo.load_one(a, data[a["k"]], search=search)
+                ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-b6/evaluation/tsdb_b3/morletdb_adapter.py", line 130, in load_one
+    rep = import_files([path], COLLECTION, Config(rpc_chunks=VARIANT["rpc_chunks"], chunk_size=VARIANT["chunk_size"],
+                                                          raw_append=VARIANT["raw_append"],
+    ...<2 lines>...
+                       reader=reader_for(acq, data, search, timer),
+                       conn=writer() if VARIANT["reuse_connection"] else None)
+TypeError: import_files() got an unexpected keyword argument 'conn'

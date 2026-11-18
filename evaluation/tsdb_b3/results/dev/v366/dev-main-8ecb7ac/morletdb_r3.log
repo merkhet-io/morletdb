@@ -1,0 +1,106 @@
+{
+ "system": "morletdb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.43761254206765443,
+ "samples": 101453304,
+ "started": "2026-11-10T18:59:55",
+ "image": "morletdb:dev-main-8ecb7ac",
+ "image_id": "sha256:0ab1eda08ef93a80e67fb7e20309c0099d0881167fa9dd4640e8ebedbbd54251",
+ "ingest": {
+  "wall_s": 47.212,
+  "samples_per_s": 2148881,
+  "conversion_s": 0.044,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 359.36,
+   "p95_ms": 441.888,
+   "max_ms": 1240.403
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.661,
+  "server": {
+   "cpu_percent_mean": 50.0,
+   "cpu_percent_p95": 52.2,
+   "memory_peak_mib": 169.4,
+   "samples": 24,
+   "kernel_memory": {
+    "peak_mib": 535.5,
+    "anon_mib_at_end": 9.1,
+    "file_mib_at_end": 504.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 171.1
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.43761254206765443,
+ "samples": 101453304,
+ "started": "2026-11-10T18:59:55",
+ "image": "morletdb:dev-main-8ecb7ac",
+ "image_id": "sha256:0ab1eda08ef93a80e67fb7e20309c0099d0881167fa9dd4640e8ebedbbd54251",
+ "ingest": {
+  "wall_s": 47.212,
+  "samples_per_s": 2148881,
+  "conversion_s": 0.044,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 359.36,
+   "p95_ms": 441.888,
+   "max_ms": 1240.403
+  },
+  "queryable_after_last_ack_s": 0.003,
+  "failures": [],
+  "excluded_preflight_s": 0.661,
+  "server": {
+   "cpu_percent_mean": 50.0,
+   "cpu_percent_p95": 52.2,
+   "memory_peak_mib": 169.4,
+   "samples": 24,
+   "kernel_memory": {
+    "peak_mib": 535.5,
+    "anon_mib_at_end": 9.1,
+    "file_mib_at_end": 504.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 171.1
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.5
+  }
+ },
+ "correct": true
+}

@@ -1,0 +1,22 @@
+2026-11-10T20:51:18
+20:51  up 14 days,  5:47, 19 users, load averages: 7.28 6.59 8.48
+ %CPU COMM
+184.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 30.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.6 claude
+  4.0 /usr/sbin/coreaudiod
+  1.6 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.6 /usr/libexec/trustd
+2026-11-10T20:51:35
+20:51  up 14 days,  5:47, 19 users, load averages: 6.63 6.48 8.40
+ %CPU COMM
+289.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 56.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.1 /usr/sbin/coreaudiod
+  2.5 claude
+  2.1 claude
+  1.2 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores

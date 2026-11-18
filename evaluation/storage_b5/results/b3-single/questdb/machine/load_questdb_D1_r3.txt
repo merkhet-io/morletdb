@@ -1,0 +1,22 @@
+2026-11-10T20:53:32
+20:53  up 14 days,  5:49, 19 users, load averages: 8.32 6.65 8.19
+ %CPU COMM
+146.9 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 83.5 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 81.8 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 75.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 60.3 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 56.5 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 26.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 25.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+2026-11-10T20:53:58
+20:53  up 14 days,  5:50, 19 users, load averages: 8.47 6.82 8.20
+ %CPU COMM
+206.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  6.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.1 /usr/sbin/coreaudiod
+  2.9 claude
+  2.1 claude

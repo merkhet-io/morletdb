@@ -1,0 +1,35 @@
+mode smoke
+2026-11-11T12:41:21
+12:41  up 14 days, 21:37, 19 users, load averages: 3.80 3.63 2.93
+Now drawing from 'AC Power'
+ %CPU COMM
+ 44.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 35.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 16.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+  7.4 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  6.8 /System/Library/Frameworks/AppKit.framework/Versions/C/XPCServices/DocumentPopoverViewService.xpc/Contents/MacOS/DocumentPopoverViewService
+  5.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  3.4 claude
+  2.7 /usr/libexec/syspolicyd
+acczt-acc-1
+acczt-gateway-1
+morletdb-agent-demo-mcp-run-5f5170bca231
+morletdb-agent-demo-db-1
+morletdb-agent-demo-seismo-run-945c0f83fc29
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          163       45        138.5GB   84.26GB (60%)
+Containers      47        11        1.313GB   33.33MB (2%)
+Local Volumes   292       18        31.55GB   27.33GB (86%)
+Build Cache     781       0         75.48GB   15.88GB
+morletdb:b6 sha256:99ad124df31fef7dee84d041eba537a88e1321da660e9d9edfb3eb82ed0429eb
+ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1 sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38
+questdb/questdb:10.1.0 sha256:3b11dc5f77aa299c7c9191b10cf50124c9e97663ce93bc50df5040374e87efc9
+decoder g21 /Users/zin/sophia/morletdb-b6/evaluation/storage_b6/bin/b6/libmorlet_ffi.dylib 4cd33b93261f48b1edc5d49daf85d170b1458b8be0cadb6dd78023bbf49fc0ba
+decoder rel /Users/zin/sophia/morletdb-b6/evaluation/storage_b6/bin/release/libmorlet_ffi.dylib 343a8d9fd17d19c3c0ece5aab270d6ec9e7f3eb3591573cf321b49fd68aa42ff
+session ends by 15:41:21, no load after 2026-11-12T07:00

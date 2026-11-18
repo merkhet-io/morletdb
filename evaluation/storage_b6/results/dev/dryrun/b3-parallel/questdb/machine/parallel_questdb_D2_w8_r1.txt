@@ -1,0 +1,27 @@
+gate met 2026-11-11T12:39:32 after 0 s, load { 5.12 3.37 2.74 }
+-- before
+2026-11-11T12:39:32
+12:39  up 14 days, 21:35, 19 users, load averages: 5.12 3.37 2.74
+Now drawing from 'AC Power'
+ %CPU COMM
+166.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 34.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 32.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.0 /sbin/launchd
+  4.6 /usr/libexec/opendirectoryd
+  3.0 claude
+  3.0 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+  2.6 claude
+-- after (exit 0)
+2026-11-11T12:39:49
+12:39  up 14 days, 21:35, 19 users, load averages: 7.18 3.92 2.94
+Now drawing from 'AC Power'
+ %CPU COMM
+203.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 31.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.5 sleep
+  0.4 claude
+  0.3 /bin/zsh

@@ -1,0 +1,10 @@
+{
+ "text_rows": 256001,
+ "text_has_missing": false,
+ "text_has_extra": true,
+ "server_side_counts_in_range": {
+  "missing_t": 0,
+  "extra_t": 1,
+  "all": 256001
+ }
+}

@@ -1,0 +1,54 @@
+gate met 2026-11-11T12:07:43 after 0 s, load { 4.65 3.59 3.48 }
+-- before
+2026-11-11T12:07:43
+12:07  up 14 days, 21:03, 19 users, load averages: 4.65 3.59 3.48
+Now drawing from 'AC Power'
+ %CPU COMM
+201.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 51.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 35.6 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 17.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  9.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.2 claude
+  3.5 claude
+  2.5 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+-- after (exit 1)
+2026-11-11T12:07:49
+12:07  up 14 days, 21:03, 19 users, load averages: 4.43 3.57 3.47
+Now drawing from 'AC Power'
+ %CPU COMM
+317.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 53.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 14.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  9.6 claude
+  8.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  3.5 claude
+  1.9 claude
+  1.5 /usr/sbin/coreaudiod
+gate met 2026-11-11T12:38:19 after 0 s, load { 3.47 2.53 2.40 }
+-- before
+2026-11-11T12:38:19
+12:38  up 14 days, 21:34, 19 users, load averages: 3.47 2.53 2.40
+Now drawing from 'AC Power'
+ %CPU COMM
+291.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 34.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 31.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.4 claude
+  3.0 bash
+  1.7 /Library/SystemExtensions/62F82548-2D70-47AF-AB86-8995E38E3943/io.tailscale.ipn.macsys.network-extension.systemextension/Contents/MacOS/io.tailscale.ipn.macsys.network-extension
+  1.4 /Applications/Warp.app/Contents/MacOS/stable
+  1.4 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+-- after (exit 0)
+2026-11-11T12:39:12
+12:39  up 14 days, 21:35, 19 users, load averages: 5.17 3.26 2.68
+Now drawing from 'AC Power'
+ %CPU COMM
+302.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 44.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 33.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.5 /Applications/Warp.app/Contents/MacOS/stable
+  1.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking

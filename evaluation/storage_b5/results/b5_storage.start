@@ -1,0 +1,13 @@
+start condition met 2026-11-10T20:44:49
+20:44  up 14 days,  5:40, 19 users, load averages: 2.98 8.00 10.04
+Now drawing from 'AC Power'
+ %CPU COMM
+ 91.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 21.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 14.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.6 claude
+  3.4 /usr/sbin/coreaudiod
+  2.1 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.5 claude
+  1.2 /Applications/Warp.app/Contents/MacOS/stable
+budget ends 2026-11-10T22:44:49

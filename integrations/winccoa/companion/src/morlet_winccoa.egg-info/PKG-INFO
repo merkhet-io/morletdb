@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: morlet-winccoa
+Version: 0.1.0a1
+Summary: MorletDB WinCC OA companion (experimental, awaiting validation in WinCC OA)
+License-Expression: Apache-2.0
+Requires-Python: >=3.11
+Requires-Dist: morletdb>=0.1.0a7
+Requires-Dist: numpy>=1.24
+Requires-Dist: psycopg[binary]>=3.2

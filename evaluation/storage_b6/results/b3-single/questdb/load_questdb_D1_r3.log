@@ -1,0 +1,126 @@
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.18815920897759497,
+ "samples": 101586735,
+ "started": "2026-11-11T19:32:56",
+ "ingest": {
+  "wall_s": 12.385,
+  "samples_per_s": 8202135,
+  "conversion_s": 2.208,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 97.418,
+   "p95_ms": 113.817,
+   "max_ms": 166.392
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 309.7,
+   "cpu_percent_p95": 370.1,
+   "memory_peak_mib": 2305.0,
+   "samples": 7,
+   "kernel_memory": {
+    "peak_mib": 3260.4,
+    "anon_mib_at_end": 535.7,
+    "file_mib_at_end": 2636.2,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2306.7
+   }
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 11.105,
+   "p95_ms": 71.634,
+   "max_ms": 100.168
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.4
+  }
+ },
+ "correct": true
+}
+{
+ "system": "questdb",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.18815920897759497,
+ "samples": 101586735,
+ "started": "2026-11-11T19:32:56",
+ "ingest": {
+  "wall_s": 12.385,
+  "samples_per_s": 8202135,
+  "conversion_s": 2.208,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 97.418,
+   "p95_ms": 113.817,
+   "max_ms": 166.392
+  },
+  "queryable_after_last_ack_s": 0.009,
+  "failures": [],
+  "excluded_preflight_s": 0.0,
+  "server": {
+   "cpu_percent_mean": 309.7,
+   "cpu_percent_p95": 370.1,
+   "memory_peak_mib": 2305.0,
+   "samples": 7,
+   "kernel_memory": {
+    "peak_mib": 3260.4,
+    "anon_mib_at_end": 535.7,
+    "file_mib_at_end": 2636.2,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 2306.7
+   }
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 11.105,
+   "p95_ms": 71.634,
+   "max_ms": 100.168
+  }
+ },
+ "correctness": {
+  "counts": {
+   "rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "expected_rows": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.4
+  }
+ },
+ "correct": true
+}

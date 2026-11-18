@@ -1,0 +1,805 @@
+{
+ "label": "DEVELOPMENT DRY RUN: not results",
+ "verdict": {
+  "S1": true,
+  "S2": false,
+  "S3": false,
+  "S4": false,
+  "S5": true,
+  "S6": null,
+  "passes": false
+ },
+ "storage": {
+  "set": "dev",
+  "stopped": null,
+  "inputs_measured": 14,
+  "S1_storage_exact": true,
+  "G1_matches_references": {
+   "Blockchain-tr": {
+    "B4": true,
+    "B5": true
+   },
+   "POI-lat": {
+    "B4": true,
+    "B5": true
+   },
+   "Stocks-USA": {
+    "B4": true,
+    "B5": true
+   },
+   "electric_vehicle_charging": {
+    "B4": true,
+    "B5": true
+   }
+  },
+  "S2": {
+   "waveforms": 4,
+   "G1_bytes": 46534975,
+   "G21_bytes": 45395433,
+   "G21_over_G1_total": 0.9755,
+   "smaller_on": [
+    "pad-c-b6",
+    "pad-p-b6",
+    "femto-dev"
+   ],
+   "holds": false
+  },
+  "S3": {
+   "inputs": 14,
+   "per_input": {
+    "pad-c-b6": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 1014,
+     "of": 1024
+    },
+    "pad-p-b6": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 1024,
+     "of": 1024
+    },
+    "femto-dev": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 1024,
+     "of": 1024
+    },
+    "xjtu-dev": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 0,
+     "of": 984
+    },
+    "Blockchain-tr": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 0,
+     "of": 25
+    },
+    "POI-lat": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 0,
+     "of": 25
+    },
+    "Stocks-USA": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 0,
+     "of": 25
+    },
+    "electric_vehicle_charging": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 1,
+     "of": 1
+    },
+    "b3-vibration_1": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 6570,
+     "of": 6570
+    },
+    "b3-phase_current_1": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 6570,
+     "of": 6570
+    },
+    "b3-phase_current_2": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 6570,
+     "of": 6570
+    },
+    "b3-force": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 416,
+     "of": 416
+    },
+    "b3-speed": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 0,
+     "of": 416
+    },
+    "b3-torque": {
+     "violations": 0,
+     "G21_le_G1": true,
+     "changed": 0,
+     "of": 416
+    }
+   },
+   "failing": [],
+   "holds": false
+  },
+  "table": [
+   {
+    "input": "pad-c-b6",
+    "set": "waveform",
+    "development": false,
+    "samples": 4194304,
+    "chunks": 1024,
+    "G1": 7.8192,
+    "G21": 7.5868,
+    "G21_over_G1": 0.970283,
+    "changed": 1014,
+    "kinds_G21": {
+     "v2 grid": 10,
+     "v5 grid": 1014
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 1014,
+     "LPC": 1014
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "pad-p-b6",
+    "set": "waveform",
+    "development": false,
+    "samples": 4194304,
+    "chunks": 1024,
+    "G1": 9.1151,
+    "G21": 7.7364,
+    "G21_over_G1": 0.848742,
+    "changed": 1024,
+    "kinds_G21": {
+     "v5 grid": 1024
+    },
+    "version5_paths": {
+     "table": 1024,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 1017
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "femto-dev",
+    "set": "waveform",
+    "development": false,
+    "samples": 4193280,
+    "chunks": 1024,
+    "G1": 10.6542,
+    "G21": 10.0917,
+    "G21_over_G1": 0.9472,
+    "changed": 1024,
+    "kinds_G21": {
+     "v5 grid": 1024
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 896,
+     "per sample": 0,
+     "none": 128,
+     "LPC": 1024
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "xjtu-dev",
+    "set": "waveform",
+    "development": false,
+    "samples": 4030464,
+    "chunks": 984,
+    "G1": 63.6592,
+    "G21": 63.6592,
+    "G21_over_G1": 1.0,
+    "changed": 0,
+    "kinds_G21": {
+     "v2 float": 921,
+     "v2 raw": 63
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 0
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "Blockchain-tr",
+    "set": "elf",
+    "development": false,
+    "samples": 99999,
+    "chunks": 25,
+    "G1": 13.9605,
+    "G21": 13.9605,
+    "G21_over_G1": 1.0,
+    "changed": 0,
+    "kinds_G21": {
+     "v2 grid": 25
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 0
+    },
+    "CH_best": 13.1639,
+    "CH_best_arm": "CH-PCO",
+    "PCO": 12.3672,
+    "G2_B5": 13.2567
+   },
+   {
+    "input": "POI-lat",
+    "set": "elf",
+    "development": false,
+    "samples": 100001,
+    "chunks": 25,
+    "G1": 60.8407,
+    "G21": 60.8407,
+    "G21_over_G1": 1.0,
+    "changed": 0,
+    "kinds_G21": {
+     "v2 float": 25
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 0
+    },
+    "CH_best": 53.5099,
+    "CH_best_arm": "CH-PCO",
+    "PCO": 53.3024,
+    "G2_B5": 53.5847
+   },
+   {
+    "input": "Stocks-USA",
+    "set": "elf",
+    "development": false,
+    "samples": 100002,
+    "chunks": 25,
+    "G1": 4.5621,
+    "G21": 4.5621,
+    "G21_over_G1": 1.0,
+    "changed": 0,
+    "kinds_G21": {
+     "v2 grid": 25
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 0
+    },
+    "CH_best": 5.1989,
+    "CH_best_arm": "CH-PCO",
+    "PCO": 5.2321,
+    "G2_B5": 4.5621
+   },
+   {
+    "input": "electric_vehicle_charging",
+    "set": "elf",
+    "development": false,
+    "samples": 3395,
+    "chunks": 1,
+    "G1": 10.0312,
+    "G21": 9.8003,
+    "G21_over_G1": 0.976979,
+    "changed": 1,
+    "kinds_G21": {
+     "v5 grid": 1
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 1,
+     "LPC": 1
+    },
+    "CH_best": 10.4554,
+    "CH_best_arm": "CH-PCO",
+    "PCO": 10.3918,
+    "G2_B5": 10.0312
+   },
+   {
+    "input": "b3-vibration_1",
+    "set": "b3",
+    "development": false,
+    "samples": 26709131,
+    "chunks": 6570,
+    "G1": 9.2736,
+    "G21": 7.8214,
+    "G21_over_G1": 0.843401,
+    "changed": 6570,
+    "kinds_G21": {
+     "v5 grid": 6570
+    },
+    "version5_paths": {
+     "table": 6570,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 6072
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "b3-phase_current_1",
+    "set": "b3",
+    "development": false,
+    "samples": 26709131,
+    "chunks": 6570,
+    "G1": 10.5541,
+    "G21": 8.6265,
+    "G21_over_G1": 0.81736,
+    "changed": 6570,
+    "kinds_G21": {
+     "v5 grid": 6570
+    },
+    "version5_paths": {
+     "table": 6570,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 6570
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "b3-phase_current_2",
+    "set": "b3",
+    "development": false,
+    "samples": 26709131,
+    "chunks": 6570,
+    "G1": 10.7446,
+    "G21": 8.6066,
+    "G21_over_G1": 0.801011,
+    "changed": 6570,
+    "kinds_G21": {
+     "v5 grid": 6570
+    },
+    "version5_paths": {
+     "table": 6570,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 6570
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "b3-force",
+    "set": "b3",
+    "development": false,
+    "samples": 1664207,
+    "chunks": 416,
+    "G1": 8.6697,
+    "G21": 7.4678,
+    "G21_over_G1": 0.861372,
+    "changed": 416,
+    "kinds_G21": {
+     "v5 grid": 416
+    },
+    "version5_paths": {
+     "table": 416,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 118
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "b3-speed",
+    "set": "b3",
+    "development": false,
+    "samples": 1664207,
+    "chunks": 416,
+    "G1": 9.1899,
+    "G21": 9.1899,
+    "G21_over_G1": 1.0,
+    "changed": 0,
+    "kinds_G21": {
+     "v2 float": 416
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 0
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   },
+   {
+    "input": "b3-torque",
+    "set": "b3",
+    "development": false,
+    "samples": 1664207,
+    "chunks": 416,
+    "G1": 48.93,
+    "G21": 48.93,
+    "G21_over_G1": 1.0,
+    "changed": 0,
+    "kinds_G21": {
+     "v2 float": 416
+    },
+    "version5_paths": {
+     "table": 0,
+     "exceptions only": 0,
+     "per sample": 0,
+     "none": 0,
+     "LPC": 0
+    },
+    "CH_best": null,
+    "CH_best_arm": null,
+    "PCO": null,
+    "G2_B5": null
+   }
+  ]
+ },
+ "speed": {
+  "set": "dev",
+  "dryrun": true,
+  "stopped": null,
+  "not_run": [],
+  "S4": {
+   "inputs": 10,
+   "per_input": {
+    "pad-c-b6": {
+     "decode": 103.68,
+     "encode": 33.41
+    },
+    "pad-p-b6": {
+     "decode": 78.29,
+     "encode": 14.15
+    },
+    "femto-dev": {
+     "decode": 107.01,
+     "encode": 16.41
+    },
+    "xjtu-dev": {
+     "decode": 78.37,
+     "encode": 24.42
+    },
+    "b3-vibration_1": {
+     "decode": 74.47,
+     "encode": 13.53
+    },
+    "b3-phase_current_1": {
+     "decode": 52.75,
+     "encode": 11.43
+    },
+    "b3-phase_current_2": {
+     "decode": 52.56,
+     "encode": 11.49
+    },
+    "b3-force": {
+     "decode": 81.6,
+     "encode": 12.28
+    },
+    "b3-speed": {
+     "decode": 104.29,
+     "encode": 49.29
+    },
+    "b3-torque": {
+     "decode": 114.31,
+     "encode": 25.27
+    }
+   },
+   "failing": {},
+   "holds": false
+  },
+  "table": [
+   {
+    "input": "pad-c-b6",
+    "set": "waveform",
+    "G1_enc": 61.06,
+    "G1_dec": 132.72,
+    "G21_enc": 33.41,
+    "G21_dec": 103.68,
+    "enc_ratio": 0.5472,
+    "dec_ratio": 0.7812,
+    "load1": [
+     3.03,
+     3.03,
+     3.03
+    ]
+   },
+   {
+    "input": "pad-p-b6",
+    "set": "waveform",
+    "G1_enc": 23.29,
+    "G1_dec": 79.15,
+    "G21_enc": 14.15,
+    "G21_dec": 78.29,
+    "enc_ratio": 0.6076,
+    "dec_ratio": 0.9891,
+    "load1": [
+     3.43,
+     3.43,
+     3.43
+    ]
+   },
+   {
+    "input": "femto-dev",
+    "set": "waveform",
+    "G1_enc": 22.92,
+    "G1_dec": 94.03,
+    "G21_enc": 16.41,
+    "G21_dec": 107.01,
+    "enc_ratio": 0.716,
+    "dec_ratio": 1.138,
+    "load1": [
+     3.43,
+     3.43,
+     3.43
+    ]
+   },
+   {
+    "input": "xjtu-dev",
+    "set": "waveform",
+    "G1_enc": 23.59,
+    "G1_dec": 77.95,
+    "G21_enc": 24.42,
+    "G21_dec": 78.37,
+    "enc_ratio": 1.0352,
+    "dec_ratio": 1.0054,
+    "load1": [
+     3.43,
+     3.43,
+     3.23
+    ]
+   },
+   {
+    "input": "Blockchain-tr",
+    "set": "elf",
+    "G1_enc": 26.21,
+    "G1_dec": 110.1,
+    "G21_enc": 21.78,
+    "G21_dec": 112.12,
+    "enc_ratio": 0.831,
+    "dec_ratio": 1.0183,
+    "load1": [
+     3.23,
+     3.23,
+     3.23
+    ]
+   },
+   {
+    "input": "POI-lat",
+    "set": "elf",
+    "G1_enc": 20.7,
+    "G1_dec": 60.75,
+    "G21_enc": 21.19,
+    "G21_dec": 58.0,
+    "enc_ratio": 1.0237,
+    "dec_ratio": 0.9547,
+    "load1": [
+     3.23,
+     3.23,
+     3.23
+    ]
+   },
+   {
+    "input": "Stocks-USA",
+    "set": "elf",
+    "G1_enc": 30.57,
+    "G1_dec": 119.85,
+    "G21_enc": 23.17,
+    "G21_dec": 119.91,
+    "enc_ratio": 0.7579,
+    "dec_ratio": 1.0005,
+    "load1": [
+     3.23,
+     3.23,
+     3.23
+    ]
+   },
+   {
+    "input": "electric_vehicle_charging",
+    "set": "elf",
+    "G1_enc": 20.12,
+    "G1_dec": 95.19,
+    "G21_enc": 18.78,
+    "G21_dec": 107.21,
+    "enc_ratio": 0.9334,
+    "dec_ratio": 1.1263,
+    "load1": [
+     3.23,
+     3.23,
+     3.23
+    ]
+   },
+   {
+    "input": "b3-vibration_1",
+    "set": "b3",
+    "G1_enc": 22.05,
+    "G1_dec": 76.81,
+    "G21_enc": 13.53,
+    "G21_dec": 74.47,
+    "enc_ratio": 0.6136,
+    "dec_ratio": 0.9695,
+    "load1": [
+     3.23,
+     3.29,
+     3.19
+    ]
+   },
+   {
+    "input": "b3-phase_current_1",
+    "set": "b3",
+    "G1_enc": 19.65,
+    "G1_dec": 76.83,
+    "G21_enc": 11.43,
+    "G21_dec": 52.75,
+    "enc_ratio": 0.5817,
+    "dec_ratio": 0.6866,
+    "load1": [
+     3.19,
+     3.1,
+     2.93
+    ]
+   },
+   {
+    "input": "b3-phase_current_2",
+    "set": "b3",
+    "G1_enc": 19.77,
+    "G1_dec": 77.65,
+    "G21_enc": 11.49,
+    "G21_dec": 52.56,
+    "enc_ratio": 0.5812,
+    "dec_ratio": 0.6769,
+    "load1": [
+     3.09,
+     2.92,
+     2.85
+    ]
+   },
+   {
+    "input": "b3-force",
+    "set": "b3",
+    "G1_enc": 18.32,
+    "G1_dec": 72.14,
+    "G21_enc": 12.28,
+    "G21_dec": 81.6,
+    "enc_ratio": 0.6703,
+    "dec_ratio": 1.1311,
+    "load1": [
+     3.02,
+     3.02,
+     3.02
+    ]
+   },
+   {
+    "input": "b3-speed",
+    "set": "b3",
+    "G1_enc": 48.38,
+    "G1_dec": 104.97,
+    "G21_enc": 49.29,
+    "G21_dec": 104.29,
+    "enc_ratio": 1.0188,
+    "dec_ratio": 0.9935,
+    "load1": [
+     3.02,
+     3.02,
+     3.02
+    ]
+   },
+   {
+    "input": "b3-torque",
+    "set": "b3",
+    "G1_enc": 24.99,
+    "G1_dec": 86.7,
+    "G21_enc": 25.27,
+    "G21_dec": 114.31,
+    "enc_ratio": 1.0112,
+    "dec_ratio": 1.3185,
+    "load1": [
+     3.02,
+     3.02,
+     3.02
+    ]
+   }
+  ]
+ },
+ "platforms": {
+  "platforms": [
+   "linux-amd64",
+   "linux-arm64",
+   "macos-arm64"
+  ],
+  "platform_status": {
+   "linux-amd64": "ok: 14 inputs, rust:1.99.0-bookworm sha256:b36c246742b4d323472588f789601be34eb4af053255e2af53969078ee8dcec7, b6codec 92629626af343fe3c10b7ea91b16f7b8bc9837d078088e0b4375bc564c68136d",
+   "linux-arm64": "ok: 14 inputs, rust:1.99.0-bookworm sha256:e393e07b3c3c39f238de676b0eb60c03dc7aefe5d6e37be6d29c686bf4d7e256, b6codec b773dc8d3c38dd5b0cc318f10bc52cec53b107ee72311455ec143c943ca0a67d",
+   "macos-arm64": "ok: 14 inputs, b6codec 31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f, Darwin arm64"
+  },
+  "incomplete": {},
+  "differing_inputs": [],
+  "S5": {
+   "required_missing": [],
+   "holds": true
+  },
+  "edge_speeds": {}
+ },
+ "b3": {
+  "loads_correct": {
+   "S grizzbit21 D2 r1": true,
+   "S release D2 r1": true,
+   "S questdb D2 r1": true,
+   "P grizzbit21 D2 r1": true,
+   "P release D2 r1": true,
+   "P questdb D2 r1": true
+  },
+  "void_or_missing": [],
+  "read_mismatches_D2r1": {
+   "g21": 0,
+   "rel": 0,
+   "q": 0
+  },
+  "grizzbit21_chunk_format": {
+   "S load_morletdb-i2_D2_r1": {
+    "asked": "grizzbit21",
+    "server": "grizzbit21"
+   },
+   "P parallel_morletdb-i1_D2_w8_r1": {
+    "asked": "grizzbit21"
+   }
+  },
+  "failed_attempts_kept": [
+   "b3-single/questdb/load_questdb_D2_r1.failed-124124.json"
+  ]
+ }
+}

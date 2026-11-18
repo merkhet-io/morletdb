@@ -1,0 +1,53 @@
+== A cedardb D2 r101 13:40:51 { 3.56 3.21 3.91 }
+   pass
+== A cedardb D2 r102 13:42:12 { 4.29 3.45 3.93 }
+   pass
+== A cedardb D2 r103 13:43:31 { 5.18 3.80 4.01 }
+   pass
+== A cedardb D2 r104 13:44:50 { 4.60 4.01 4.08 }
+   pass
+== A cedardb D2 r105 13:46:10 { 4.88 4.28 4.17 }
+   pass
+== A cedardb D2 r106 13:47:30 { 6.35 4.68 4.32 }
+   pass
+== A cedardb D2 r107 13:48:51 { 6.36 5.00 4.47 }
+   pass
+== A cedardb D2 r108 13:50:15 { 7.11 5.61 4.75 }
+   pass
+== A cedardb D2 r109 13:51:37 { 8.04 6.29 5.09 }
+   pass
+== A cedardb D2 r110 13:52:58 { 6.71 6.36 5.22 }
+   pass
+== B cedardb D2 r111 13:54:22 { 8.93 7.03 5.58 }
+   pass
+== B cedardb D2 r112 13:56:05 { 10.10 8.02 6.12 }
+   pass
+== B cedardb D2 r113 13:57:46 { 11.70 9.67 7.02 }
+   pass
+== B cedardb D2 r114 13:59:38 { 12.08 10.46 7.65 }
+   pass
+== B cedardb D2 r115 14:01:21 { 9.37 10.02 7.80 }
+   pass
+== B cedardb D2 r116 14:03:14 { 13.38 11.33 8.59 }
+   pass
+== B cedardb D2 r117 14:05:05 { 10.34 10.99 8.79 }
+   pass
+== B cedardb D2 r118 14:06:52 { 10.86 11.03 9.08 }
+   pass
+== B cedardb D2 r119 14:08:41 { 12.96 11.71 9.58 }
+   pass
+== B cedardb D2 r120 14:10:28 { 14.05 12.07 9.95 }
+   pass
+== done 14:11:51
+./run_b319_repro2.sh: line 28: 89524 Terminated: 15          ( while :; do
+    :;
+done )
+./run_b319_repro2.sh: line 28: 89525 Terminated: 15          ( while :; do
+    :;
+done )
+./run_b319_repro2.sh: line 28: 89526 Terminated: 15          ( while :; do
+    :;
+done )
+./run_b319_repro2.sh: line 28: 89527 Terminated: 15          ( while :; do
+    :;
+done )

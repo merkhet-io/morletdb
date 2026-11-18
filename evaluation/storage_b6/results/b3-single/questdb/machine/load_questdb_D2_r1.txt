@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:16:29 after 16 s, load { 2.83 4.83 4.78 }
+-- before
+2026-11-11T19:16:29
+19:16  up 15 days,  4:12, 19 users, load averages: 2.83 4.83 4.78
+Now drawing from 'AC Power'
+ %CPU COMM
+ 30.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 24.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.0 claude
+  4.6 claude
+  3.7 /usr/libexec/ApplicationFirewall/socketfilterfw
+  2.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.1 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  1.0 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+-- after (exit 0)
+2026-11-11T19:17:27
+19:17  up 15 days,  4:13, 19 users, load averages: 7.31 5.60 5.06
+Now drawing from 'AC Power'
+ %CPU COMM
+294.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 21.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.0 claude
+  2.5 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.9 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  0.8 /Applications/Warp.app/Contents/MacOS/stable

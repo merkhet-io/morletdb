@@ -27,6 +27,33 @@ z-scored envelopes (representation `xc-envelope-f16-v1`).
 - Values fall in about [0, 2]: 0 is a perfect match at some allowed shift. It is not a metric.
 - Distances are comparable only within one window size and one representation version.
 
+## What "exact" means here (#156)
+
+"Exact" has three meanings in MorletDB. Only the first is about samples.
+
+| | What is exact | What it does not promise |
+|---|---|---|
+| **Raw read** (`morlet_read_interval`, `morlet_read_interval_raw`) | every stored sample, bit for bit | nothing about similarity |
+| **Exact envelope search** (the exhaustive path) | the distance of every eligible **stored window**, computed from its stored float16 envelope, with no candidate left out | windows that were never stored: it is not a search over every sample offset |
+| **Probe search** | the distance of every row it returns (re-scored exactly) | which windows it considers: candidates come from an index, so a nearer window can be missed (recall above) |
+
+Stored windows lie on a grid: windows of `window_size` samples starting every `stride` samples, from 0 (default
+4096 and 2048). The lag tolerance shifts the comparison by at most `L` envelope steps of 10 samples. At 4096
+samples and the default `max_lag_fraction` 0.075, that is ±30 steps, about ±300 raw samples.
+
+- **An event can fall between grid positions.** An event whose best alignment lies more than about 300 samples
+  from every stored window start can only match at a reduced score. At the default stride the nearest window start
+  is up to 1,024 samples away, so the score of a match depends on where the event falls on the grid.
+- **Lag tolerance does not cover the whole stride.** It reduces the effect of placement; it does not remove it.
+- **Covering every offset.** Every offset is within the tolerance when `stride` ≤ 2 × the tolerance in samples:
+  about 600 at 4096 with the default lag. The cost is about 3.4× the windows of the default stride, and so the
+  envelope storage and the exact search time.
+- **Querying from several placements** instead: the MCP tool `search_similar` with `shifts`, or
+  `search_from_time`. This narrows the gap without changing storage.
+
+The recall of each choice by offset, event duration and signal domain has not been measured yet (#156). Until
+then, treat a missing match at the default stride as "not found on the stored grid", not as "does not exist".
+
 ## Eligibility
 
 A stored window is a candidate when its recording has the query's sample rate, channel and

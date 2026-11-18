@@ -13,33 +13,13 @@ libfuzzer-sys = "=0.4.13"
 arbitrary = { version = "=1.5.0", features = ["derive"] }
 morlet-core = { path = ".." }
 
-# Not part of the main workspace: built only by cargo-fuzz on nightly.
+# Not part of the main workspace: built only by cargo-fuzz on nightly. The chunk codec's own targets
+# (decode_raw, decode_sealed, roundtrip) are in crates/grizzbit/fuzz.
 [workspace]
 members = ["."]
 
 [profile.release]
 debug = 1
-
-[[bin]]
-name = "decode_raw"
-path = "fuzz_targets/decode_raw.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "decode_sealed"
-path = "fuzz_targets/decode_sealed.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "roundtrip"
-path = "fuzz_targets/roundtrip.rs"
-test = false
-doc = false
-bench = false
 
 [[bin]]
 name = "decode_frame"

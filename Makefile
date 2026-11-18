@@ -7,7 +7,7 @@ test-reference:
 	cd tools/reference-go && $(GO) test -race ./... && $(GO) vet ./...
 
 test-rust:
-	cargo test --locked -p morlet-core
+	cargo test --locked -p grizzbit -p morlet-core
 	cargo fmt --all -- --check
 
 pg-test:

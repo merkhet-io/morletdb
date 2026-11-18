@@ -1,0 +1,59 @@
+{
+ "point_missing_row": [
+  [
+   1767228120015984375,
+   0.1647949217660928,
+   -2.233030394032081,
+   -0.1480880736326025
+  ]
+ ],
+ "sent_missing_row": {
+  "vibration_1": 0.1647949217660928,
+  "phase_current_1": -2.233030394032081,
+  "phase_current_2": -0.1480880736326025
+ },
+ "variants": {
+  "full_range_order": {
+   "rows": 256001,
+   "has_missing": false,
+   "has_extra": true
+  },
+  "full_range_no_order": {
+   "rows": 256001,
+   "has_missing": false,
+   "has_extra": true
+  },
+  "acq_only_no_range": {
+   "rows": 256001,
+   "has_missing": true,
+   "has_extra": false
+  },
+  "small_range_0_2048": {
+   "rows": 2048,
+   "has_missing": true,
+   "has_extra": false
+  },
+  "range_1000_1100": {
+   "rows": 100,
+   "has_missing": true,
+   "has_extra": false
+  },
+  "range_12600_12700": {
+   "rows": 100,
+   "has_missing": false,
+   "has_extra": false
+  },
+  "t_only_no_acq": {
+   "rows": 256001,
+   "has_missing": false,
+   "has_extra": true
+  }
+ },
+ "extra_point": [],
+ "extra_t_minus_missing_t": 181378277,
+ "xor_bits": "0b11111110100111010010100101011",
+ "point_row_matches_sent": true,
+ "explain": [
+  "\ud83d\udda9 OUTPUT (Estimate: 46'105)\n\u25b2 SORT (In-Memory) (Estimate: 46'105)\n\ud83d\uddd0 TABLESCAN on b3_high (Estimate: 46'105)"
+ ]
+}

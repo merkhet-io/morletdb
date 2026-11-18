@@ -1,0 +1,22 @@
+2026-11-13T00:05:38
+ 0:05  up 16 days,  9:01, 18 users, load averages: 4.70 4.34 10.93
+ %CPU COMM
+146.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 47.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.9 bash
+  0.8 /usr/sbin/notifyd
+  0.8 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.7 /usr/libexec/opendirectoryd
+  0.6 /usr/libexec/xprotectd
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-13T00:05:57
+ 0:05  up 16 days,  9:02, 18 users, load averages: 4.51 4.32 10.77
+ %CPU COMM
+213.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 69.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.3 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.6 /Applications/Warp.app/Contents/MacOS/stable
+  0.5 claude
+  0.5 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.4 /sbin/launchd

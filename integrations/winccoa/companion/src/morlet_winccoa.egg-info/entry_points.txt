@@ -1,0 +1,2 @@
+[console_scripts]
+morlet-winccoa = morlet_winccoa.__main__:main

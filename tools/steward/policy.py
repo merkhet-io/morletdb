@@ -23,6 +23,7 @@ class Config:
     pause_days: float = 3.0
     drop_days: float = 1.0
     verify_every_days: float = 7.0
+    verify_share_every_s: float = 900.0   # a due verification gets a batch at least this often, even under load
     breaker_failures: int = 3
 
 
@@ -100,6 +101,25 @@ def may_work(cfg: Config, load1: float, cpus: int, disk: DiskState) -> tuple[boo
     return True, ""
 
 
+def verify_turn(cfg: Config, verify_due: bool, since_verify_s: float | None, disk: DiskState) -> bool:
+    """Whether a due verification takes its minimum share now: one batch when none ran for verify_share_every_s
+    (or none since the steward started), regardless of the load gate and of builder backlogs. On a busy edge device
+    the load rarely drops below the gate and builders always have new data, so without this share verification
+    never ran (soak S1, 2026-11-11). Disk pressure still stops it, as it stops everything."""
+    if not verify_due or disk.unknown or disk.pause:
+        return False
+    return since_verify_s is None or since_verify_s >= cfg.verify_share_every_s
+
+
+def integrity_problems(problems: list[str]) -> tuple[list[str], int]:
+    """Split morlet_verify's problems of one recording into damage and backlog. A chunk whose summary is *missing*
+    is derived data not built yet (the steward builds it); under continuous ingest new chunks always lack one for
+    a while, so counting it as a problem would raise a false alarm on every pass. Everything else (a chunk that
+    does not decode, a wrong summary, a gap or overlap, chunks that do not end at the checkpoint) is damage."""
+    damage = [p for p in problems if not p.endswith(": summary missing")]
+    return damage, len(problems) - len(damage)
+
+
 @dataclass
 class Breaker:
     failures: int = 0
@@ -116,8 +136,12 @@ class Breaker:
             self.open = True
 
 
-def next_job(backlog: dict[str, bool], breakers: dict[str, Breaker], verify_due: bool) -> str | None:
-    """The highest-priority job with work and a closed breaker. verify runs when due; analyze when it has work."""
+def next_job(backlog: dict[str, bool], breakers: dict[str, Breaker], verify_due: bool,
+             verify_first: bool = False) -> str | None:
+    """The highest-priority job with work and a closed breaker. verify runs when due; analyze when it has work.
+    verify_first (its minimum share, verify_turn) puts a due verification before the builders."""
+    if verify_first and verify_due and not breakers.get("verify", Breaker()).open:
+        return "verify"
     for job in JOBS:
         if breakers.get(job, Breaker()).open:
             continue

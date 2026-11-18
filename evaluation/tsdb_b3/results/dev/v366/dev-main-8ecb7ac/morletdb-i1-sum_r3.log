@@ -1,0 +1,114 @@
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.27132666599936783,
+ "samples": 101453304,
+ "started": "2026-11-10T19:02:21",
+ "image": "morletdb:dev-main-8ecb7ac",
+ "image_id": "sha256:0ab1eda08ef93a80e67fb7e20309c0099d0881167fa9dd4640e8ebedbbd54251",
+ "ingest": {
+  "wall_s": 7.36,
+  "samples_per_s": 13785161,
+  "conversion_s": 0.009,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.681,
+   "p95_ms": 64.435,
+   "max_ms": 91.502
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.701,
+  "server": {
+   "cpu_percent_mean": 125.1,
+   "cpu_percent_p95": 128.4,
+   "memory_peak_mib": 178.5,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.4,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.2,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.7
+   }
+  },
+  "chunks": {
+   "count": 25102,
+   "md5": "95f03c75bbfb285182dcbe881cf32822"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.3
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.27132666599936783,
+ "samples": 101453304,
+ "started": "2026-11-10T19:02:21",
+ "image": "morletdb:dev-main-8ecb7ac",
+ "image_id": "sha256:0ab1eda08ef93a80e67fb7e20309c0099d0881167fa9dd4640e8ebedbbd54251",
+ "ingest": {
+  "wall_s": 7.36,
+  "samples_per_s": 13785161,
+  "conversion_s": 0.009,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.681,
+   "p95_ms": 64.435,
+   "max_ms": 91.502
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.701,
+  "server": {
+   "cpu_percent_mean": 125.1,
+   "cpu_percent_p95": 128.4,
+   "memory_peak_mib": 178.5,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.4,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.2,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.7
+   }
+  },
+  "chunks": {
+   "count": 25102,
+   "md5": "95f03c75bbfb285182dcbe881cf32822"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101453304,
+   "expected_samples": 101453304,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 5.3
+  }
+ },
+ "correct": true
+}

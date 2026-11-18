@@ -1,0 +1,23 @@
+{
+ "version": [
+  "0.3.8",
+  "xc-envelope-f16-v1"
+ ],
+ "runs": 1702,
+ "samples_per_axis": 178601240,
+ "seconds": 177.89159727096558,
+ "storage": [
+  {
+   "recordings": "5106",
+   "samples": "535803720",
+   "original_float64_bytes": "4286429760",
+   "recordings_table_bytes": "3145728",
+   "chunk_table_bytes": "664920064",
+   "segment_table_bytes": "16384",
+   "envelope_table_bytes": "281870336",
+   "total_bytes": "949952512",
+   "chunk_table_bits_per_sample": "9.9278155664914",
+   "total_bits_per_sample": "14.183589647343247"
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+greptimedb	16g	0	233	
+missing
+morletdb	16g	0	67	
+missing
+greptimedb	256m	1	5	true false 0 268435456
+greptimedb	512m	1	69	true false 0 536870912
+greptimedb	1g	0	222	
+missing
+morletdb	256m	1	14	true true 0 268435456
+morletdb	256m-repeat	0	67	
+missing
+morletdb	512m	0	66	
+missing

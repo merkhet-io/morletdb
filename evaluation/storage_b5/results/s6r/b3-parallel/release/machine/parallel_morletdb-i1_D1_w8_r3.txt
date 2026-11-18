@@ -1,0 +1,23 @@
+gate met 2026-11-10T22:24:57 after 82 s, load { 2.88 3.93 5.79 }
+2026-11-10T22:24:57
+22:24  up 14 days,  7:21, 19 users, load averages: 2.88 3.93 5.79
+ %CPU COMM
+ 22.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 21.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 20.8 claude
+ 12.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  5.4 claude
+  2.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.9 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  0.9 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+2026-11-10T22:25:17
+22:25  up 14 days,  7:21, 19 users, load averages: 3.58 4.01 5.78
+ %CPU COMM
+175.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+100.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 36.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 32.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.6 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  5.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.5 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  3.7 /Applications/Tailscale.app/Contents/MacOS/Tailscale

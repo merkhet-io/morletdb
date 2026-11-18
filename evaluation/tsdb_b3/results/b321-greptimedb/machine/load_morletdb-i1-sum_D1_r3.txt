@@ -1,0 +1,22 @@
+2026-11-13T00:08:18
+ 0:08  up 16 days,  9:04, 18 users, load averages: 2.81 3.79 9.58
+ %CPU COMM
+176.6 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 50.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.9 bash
+  0.9 claude
+  0.3 claude
+  0.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-13T00:08:37
+ 0:08  up 16 days,  9:04, 18 users, load averages: 3.77 3.94 9.49
+ %CPU COMM
+222.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 67.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.0 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  0.6 claude
+  0.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  0.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.3 claude

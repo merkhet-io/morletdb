@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:28:10 after 78 s, load { 2.89 3.84 4.27 }
+-- before
+2026-11-11T19:28:10
+19:28  up 15 days,  4:24, 19 users, load averages: 2.89 3.84 4.27
+Now drawing from 'AC Power'
+ %CPU COMM
+ 48.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 23.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.5 claude
+  2.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.1 claude
+  1.6 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  1.4 bash
+  0.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+-- after (exit 0)
+2026-11-11T19:28:31
+19:28  up 15 days,  4:24, 19 users, load averages: 4.20 4.06 4.34
+Now drawing from 'AC Power'
+ %CPU COMM
+213.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 40.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 22.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.8 claude
+  2.2 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  2.2 /usr/libexec/dasd
+  1.9 /usr/sbin/notifyd
+  1.9 claude

@@ -1,0 +1,23 @@
+gate met 2026-11-10T22:01:46 after 10 s, load { 2.88 6.22 13.35 }
+2026-11-10T22:01:46
+22:01  up 14 days,  6:57, 19 users, load averages: 2.88 6.22 13.35
+ %CPU COMM
+ 16.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  5.2 claude
+  2.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.9 /usr/libexec/signpost_reporter
+  1.2 claude
+  0.8 claude
+  0.7 bash
+2026-11-10T22:02:06
+22:02  up 14 days,  6:58, 19 users, load averages: 6.49 6.78 13.38
+ %CPU COMM
+228.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 27.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.1 /usr/libexec/signpost_reporter
+  2.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.5 claude
+  1.9 claude
+  1.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.5 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha

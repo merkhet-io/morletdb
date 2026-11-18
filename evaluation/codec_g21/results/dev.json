@@ -1,0 +1,3411 @@
+{
+ "chunk": 4096,
+ "reps": 3,
+ "strategies": false,
+ "rows": [
+  {
+   "name": "N09_M07_F10_K001_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 302166,
+    "bits_per_sample": 9.4427,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.61,
+    "dec_msps": 91.9
+   },
+   "corr": {
+    "bytes": 268580,
+    "bits_per_sample": 8.3931,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.63,
+    "dec_msps": 108.61
+   },
+   "lpc": {
+    "bytes": 301906,
+    "bits_per_sample": 9.4345,
+    "v5_chunks": 45,
+    "v5_samples": 184320,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 45,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 45,
+    "enc_msps": 24.35,
+    "dec_msps": 76.63
+   },
+   "g21": {
+    "bytes": 268350,
+    "bits_per_sample": 8.3859,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 57,
+    "enc_msps": 18.18,
+    "dec_msps": 84.84
+   },
+   "view": "as stored",
+   "group": "vibration"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 262050,
+    "bits_per_sample": 8.189,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.24,
+    "dec_msps": 174.25
+   },
+   "corr": {
+    "bytes": 262050,
+    "bits_per_sample": 8.189,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.64,
+    "dec_msps": 173.66
+   },
+   "lpc": {
+    "bytes": 261790,
+    "bits_per_sample": 8.1809,
+    "v5_chunks": 45,
+    "v5_samples": 184320,
+    "fix_mode": {
+     "none": 45,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 45,
+    "enc_msps": 31.71,
+    "dec_msps": 127.95
+   },
+   "g21": {
+    "bytes": 261790,
+    "bits_per_sample": 8.1809,
+    "v5_chunks": 45,
+    "v5_samples": 184320,
+    "fix_mode": {
+     "none": 45,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 45,
+    "enc_msps": 31.79,
+    "dec_msps": 128.3
+   },
+   "view": "on k*q",
+   "group": "vibration"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 338671,
+    "bits_per_sample": 10.5834,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.3,
+    "dec_msps": 77.31
+   },
+   "corr": {
+    "bytes": 327218,
+    "bits_per_sample": 10.2255,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.16,
+    "dec_msps": 63.96
+   },
+   "lpc": {
+    "bytes": 296839,
+    "bits_per_sample": 9.2762,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.74,
+    "dec_msps": 60.91
+   },
+   "g21": {
+    "bytes": 285386,
+    "bits_per_sample": 8.9183,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.26,
+    "dec_msps": 53.49
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 295242,
+    "bits_per_sample": 9.2263,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.97,
+    "dec_msps": 125.11
+   },
+   "corr": {
+    "bytes": 295242,
+    "bits_per_sample": 9.2263,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.03,
+    "dec_msps": 125.18
+   },
+   "lpc": {
+    "bytes": 253410,
+    "bits_per_sample": 7.919,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.71,
+    "dec_msps": 89.83
+   },
+   "g21": {
+    "bytes": 253410,
+    "bits_per_sample": 7.919,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.65,
+    "dec_msps": 90.07
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 344656,
+    "bits_per_sample": 10.7705,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.45,
+    "dec_msps": 77.55
+   },
+   "corr": {
+    "bytes": 333078,
+    "bits_per_sample": 10.4086,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.22,
+    "dec_msps": 63.96
+   },
+   "lpc": {
+    "bytes": 284830,
+    "bits_per_sample": 8.9009,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.85,
+    "dec_msps": 61.23
+   },
+   "g21": {
+    "bytes": 273252,
+    "bits_per_sample": 8.5391,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.31,
+    "dec_msps": 53.21
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 301144,
+    "bits_per_sample": 9.4107,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 47.56,
+    "dec_msps": 126.46
+   },
+   "corr": {
+    "bytes": 301144,
+    "bits_per_sample": 9.4107,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 46.52,
+    "dec_msps": 125.71
+   },
+   "lpc": {
+    "bytes": 241318,
+    "bits_per_sample": 7.5412,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.58,
+    "dec_msps": 90.28
+   },
+   "g21": {
+    "bytes": 241318,
+    "bits_per_sample": 7.5412,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.73,
+    "dec_msps": 90.57
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17852,
+    "bits_per_sample": 8.9254,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 19.63,
+    "dec_msps": 68.9
+   },
+   "corr": {
+    "bytes": 15443,
+    "bits_per_sample": 7.721,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 15.37,
+    "dec_msps": 81.93
+   },
+   "lpc": {
+    "bytes": 17852,
+    "bits_per_sample": 8.9254,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 17.16,
+    "dec_msps": 68.81
+   },
+   "g21": {
+    "bytes": 15443,
+    "bits_per_sample": 7.721,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 14.13,
+    "dec_msps": 83.47
+   },
+   "view": "as stored",
+   "group": "force"
+  },
+  {
+   "name": "N09_M07_F10_K001_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.68,
+    "dec_msps": 120.42
+   },
+   "corr": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.27,
+    "dec_msps": 120.65
+   },
+   "lpc": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.5,
+    "dec_msps": 119.41
+   },
+   "g21": {
+    "bytes": 14752,
+    "bits_per_sample": 7.3755,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 34.49,
+    "dec_msps": 115.95
+   },
+   "view": "on k*q",
+   "group": "force"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 306970,
+    "bits_per_sample": 9.5928,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.84,
+    "dec_msps": 75.24
+   },
+   "corr": {
+    "bytes": 271563,
+    "bits_per_sample": 8.4863,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 21.82,
+    "dec_msps": 85.15
+   },
+   "lpc": {
+    "bytes": 294938,
+    "bits_per_sample": 9.2168,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.44,
+    "dec_msps": 61.43
+   },
+   "g21": {
+    "bytes": 259531,
+    "bits_per_sample": 8.1103,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 16.25,
+    "dec_msps": 67.43
+   },
+   "view": "as stored",
+   "group": "vibration"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 263388,
+    "bits_per_sample": 8.2308,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.08,
+    "dec_msps": 122.96
+   },
+   "corr": {
+    "bytes": 263388,
+    "bits_per_sample": 8.2308,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.31,
+    "dec_msps": 123.32
+   },
+   "lpc": {
+    "bytes": 251356,
+    "bits_per_sample": 7.8548,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.64,
+    "dec_msps": 91.38
+   },
+   "g21": {
+    "bytes": 251356,
+    "bits_per_sample": 7.8548,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.71,
+    "dec_msps": 91.08
+   },
+   "view": "on k*q",
+   "group": "vibration"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 336546,
+    "bits_per_sample": 10.517,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.01,
+    "dec_msps": 78.39
+   },
+   "corr": {
+    "bytes": 319810,
+    "bits_per_sample": 9.994,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 19.87,
+    "dec_msps": 64.74
+   },
+   "lpc": {
+    "bytes": 282987,
+    "bits_per_sample": 8.8433,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.72,
+    "dec_msps": 61.3
+   },
+   "g21": {
+    "bytes": 266251,
+    "bits_per_sample": 8.3203,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.11,
+    "dec_msps": 53.84
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 293313,
+    "bits_per_sample": 9.166,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.26,
+    "dec_msps": 127.25
+   },
+   "corr": {
+    "bytes": 293313,
+    "bits_per_sample": 9.166,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.21,
+    "dec_msps": 126.64
+   },
+   "lpc": {
+    "bytes": 239754,
+    "bits_per_sample": 7.4923,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.48,
+    "dec_msps": 90.08
+   },
+   "g21": {
+    "bytes": 239754,
+    "bits_per_sample": 7.4923,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.51,
+    "dec_msps": 90.45
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 339757,
+    "bits_per_sample": 10.6174,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.92,
+    "dec_msps": 77.75
+   },
+   "corr": {
+    "bytes": 323145,
+    "bits_per_sample": 10.0982,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 19.73,
+    "dec_msps": 64.03
+   },
+   "lpc": {
+    "bytes": 283657,
+    "bits_per_sample": 8.8642,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.63,
+    "dec_msps": 61.04
+   },
+   "g21": {
+    "bytes": 267045,
+    "bits_per_sample": 8.3451,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.04,
+    "dec_msps": 53.19
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 296386,
+    "bits_per_sample": 9.262,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.2,
+    "dec_msps": 125.96
+   },
+   "corr": {
+    "bytes": 296386,
+    "bits_per_sample": 9.262,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.03,
+    "dec_msps": 126.08
+   },
+   "lpc": {
+    "bytes": 240286,
+    "bits_per_sample": 7.5089,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.33,
+    "dec_msps": 90.53
+   },
+   "g21": {
+    "bytes": 240286,
+    "bits_per_sample": 7.5089,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.41,
+    "dec_msps": 90.12
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17840,
+    "bits_per_sample": 8.9194,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 18.96,
+    "dec_msps": 73.46
+   },
+   "corr": {
+    "bytes": 15502,
+    "bits_per_sample": 7.7505,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 15.33,
+    "dec_msps": 84.11
+   },
+   "lpc": {
+    "bytes": 17840,
+    "bits_per_sample": 8.9194,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 16.11,
+    "dec_msps": 73.23
+   },
+   "g21": {
+    "bytes": 15502,
+    "bits_per_sample": 7.7505,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 13.18,
+    "dec_msps": 85.32
+   },
+   "view": "as stored",
+   "group": "force"
+  },
+  {
+   "name": "N15_M01_F10_KA01_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 46.69,
+    "dec_msps": 117.84
+   },
+   "corr": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 46.78,
+    "dec_msps": 117.73
+   },
+   "lpc": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.27,
+    "dec_msps": 118.71
+   },
+   "g21": {
+    "bytes": 15032,
+    "bits_per_sample": 7.5155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.77,
+    "dec_msps": 120.84
+   },
+   "view": "on k*q",
+   "group": "force"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 299869,
+    "bits_per_sample": 9.3709,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.69,
+    "dec_msps": 76.42
+   },
+   "corr": {
+    "bytes": 262430,
+    "bits_per_sample": 8.2009,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.6,
+    "dec_msps": 89.91
+   },
+   "lpc": {
+    "bytes": 294729,
+    "bits_per_sample": 9.2102,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 22.32,
+    "dec_msps": 64.74
+   },
+   "g21": {
+    "bytes": 257290,
+    "bits_per_sample": 8.0403,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 17.07,
+    "dec_msps": 75.43
+   },
+   "view": "as stored",
+   "group": "vibration"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 257439,
+    "bits_per_sample": 8.0449,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.8,
+    "dec_msps": 122.28
+   },
+   "corr": {
+    "bytes": 257439,
+    "bits_per_sample": 8.0449,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.31,
+    "dec_msps": 121.68
+   },
+   "lpc": {
+    "bytes": 252299,
+    "bits_per_sample": 7.8843,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 28.34,
+    "dec_msps": 97.77
+   },
+   "g21": {
+    "bytes": 252299,
+    "bits_per_sample": 7.8843,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 28.27,
+    "dec_msps": 97.0
+   },
+   "view": "on k*q",
+   "group": "vibration"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 338242,
+    "bits_per_sample": 10.57,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.6,
+    "dec_msps": 76.78
+   },
+   "corr": {
+    "bytes": 327114,
+    "bits_per_sample": 10.2223,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 19.94,
+    "dec_msps": 63.59
+   },
+   "lpc": {
+    "bytes": 291025,
+    "bits_per_sample": 9.0945,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.52,
+    "dec_msps": 60.47
+   },
+   "g21": {
+    "bytes": 279897,
+    "bits_per_sample": 8.7467,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.09,
+    "dec_msps": 52.82
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 294918,
+    "bits_per_sample": 9.2162,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.2,
+    "dec_msps": 124.82
+   },
+   "corr": {
+    "bytes": 294918,
+    "bits_per_sample": 9.2162,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 47.66,
+    "dec_msps": 125.34
+   },
+   "lpc": {
+    "bytes": 247701,
+    "bits_per_sample": 7.7406,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.12,
+    "dec_msps": 88.77
+   },
+   "g21": {
+    "bytes": 247701,
+    "bits_per_sample": 7.7406,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 26.97,
+    "dec_msps": 88.81
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 343964,
+    "bits_per_sample": 10.7488,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.38,
+    "dec_msps": 76.99
+   },
+   "corr": {
+    "bytes": 332694,
+    "bits_per_sample": 10.3966,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 19.95,
+    "dec_msps": 63.22
+   },
+   "lpc": {
+    "bytes": 291463,
+    "bits_per_sample": 9.1082,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.48,
+    "dec_msps": 60.82
+   },
+   "g21": {
+    "bytes": 280193,
+    "bits_per_sample": 8.756,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.25,
+    "dec_msps": 53.03
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 300540,
+    "bits_per_sample": 9.3918,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 47.78,
+    "dec_msps": 124.46
+   },
+   "corr": {
+    "bytes": 300540,
+    "bits_per_sample": 9.3918,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.18,
+    "dec_msps": 124.84
+   },
+   "lpc": {
+    "bytes": 248039,
+    "bits_per_sample": 7.7512,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.39,
+    "dec_msps": 89.5
+   },
+   "g21": {
+    "bytes": 248039,
+    "bits_per_sample": 7.7512,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.43,
+    "dec_msps": 89.25
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.30517578104820586,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17871,
+    "bits_per_sample": 8.9349,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.03,
+    "dec_msps": 75.23
+   },
+   "corr": {
+    "bytes": 15285,
+    "bits_per_sample": 7.642,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 16.01,
+    "dec_msps": 85.89
+   },
+   "lpc": {
+    "bytes": 17871,
+    "bits_per_sample": 8.9349,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 17.48,
+    "dec_msps": 73.23
+   },
+   "g21": {
+    "bytes": 15285,
+    "bits_per_sample": 7.642,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 14.34,
+    "dec_msps": 86.84
+   },
+   "view": "as stored",
+   "group": "force"
+  },
+  {
+   "name": "N15_M07_F04_KA09_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.30517578104820586,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 47.6,
+    "dec_msps": 119.93
+   },
+   "corr": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.54,
+    "dec_msps": 119.97
+   },
+   "lpc": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.37,
+    "dec_msps": 119.97
+   },
+   "g21": {
+    "bytes": 14832,
+    "bits_per_sample": 7.4155,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 34.04,
+    "dec_msps": 120.01
+   },
+   "view": "on k*q",
+   "group": "force"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.vibration_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 352100,
+    "bits_per_sample": 10.9986,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.3,
+    "dec_msps": 76.24
+   },
+   "corr": {
+    "bytes": 320385,
+    "bits_per_sample": 10.0079,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.97,
+    "dec_msps": 75.58
+   },
+   "lpc": {
+    "bytes": 345929,
+    "bits_per_sample": 10.8058,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 22.03,
+    "dec_msps": 62.36
+   },
+   "g21": {
+    "bytes": 314214,
+    "bits_per_sample": 9.8151,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.85,
+    "dec_msps": 63.42
+   },
+   "view": "as stored",
+   "group": "vibration"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.vibration_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 307016,
+    "bits_per_sample": 9.5903,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.19,
+    "dec_msps": 121.44
+   },
+   "corr": {
+    "bytes": 307016,
+    "bits_per_sample": 9.5903,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 49.15,
+    "dec_msps": 121.66
+   },
+   "lpc": {
+    "bytes": 300845,
+    "bits_per_sample": 9.3975,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.98,
+    "dec_msps": 92.6
+   },
+   "g21": {
+    "bytes": 300845,
+    "bits_per_sample": 9.3975,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 28.04,
+    "dec_msps": 92.76
+   },
+   "view": "on k*q",
+   "group": "vibration"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 340880,
+    "bits_per_sample": 10.6481,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.55,
+    "dec_msps": 76.52
+   },
+   "corr": {
+    "bytes": 329608,
+    "bits_per_sample": 10.296,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.09,
+    "dec_msps": 63.18
+   },
+   "lpc": {
+    "bytes": 298778,
+    "bits_per_sample": 9.3329,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.67,
+    "dec_msps": 60.47
+   },
+   "g21": {
+    "bytes": 287506,
+    "bits_per_sample": 8.9808,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.25,
+    "dec_msps": 53.01
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_1",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 297453,
+    "bits_per_sample": 9.2916,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.51,
+    "dec_msps": 122.42
+   },
+   "corr": {
+    "bytes": 297453,
+    "bits_per_sample": 9.2916,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.26,
+    "dec_msps": 121.38
+   },
+   "lpc": {
+    "bytes": 255351,
+    "bits_per_sample": 7.9764,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.55,
+    "dec_msps": 88.99
+   },
+   "g21": {
+    "bytes": 255351,
+    "bits_per_sample": 7.9764,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.6,
+    "dec_msps": 89.06
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_2",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 344772,
+    "bits_per_sample": 10.7697,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.95,
+    "dec_msps": 76.92
+   },
+   "corr": {
+    "bytes": 333518,
+    "bits_per_sample": 10.4181,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.13,
+    "dec_msps": 63.71
+   },
+   "lpc": {
+    "bytes": 287972,
+    "bits_per_sample": 8.9954,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.74,
+    "dec_msps": 60.99
+   },
+   "g21": {
+    "bytes": 276718,
+    "bits_per_sample": 8.6439,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.23,
+    "dec_msps": 53.0
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.phase_current_2",
+   "n": 256106,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 301253,
+    "bits_per_sample": 9.4103,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.28,
+    "dec_msps": 123.65
+   },
+   "corr": {
+    "bytes": 301253,
+    "bits_per_sample": 9.4103,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.21,
+    "dec_msps": 123.89
+   },
+   "lpc": {
+    "bytes": 244453,
+    "bits_per_sample": 7.636,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.45,
+    "dec_msps": 89.53
+   },
+   "g21": {
+    "bytes": 244453,
+    "bits_per_sample": 7.636,
+    "v5_chunks": 63,
+    "v5_samples": 256106,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.52,
+    "dec_msps": 89.25
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.force",
+   "n": 16006,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 20023,
+    "bits_per_sample": 10.0077,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 18.83,
+    "dec_msps": 74.56
+   },
+   "corr": {
+    "bytes": 18232,
+    "bits_per_sample": 9.1126,
+    "v5_chunks": 4,
+    "v5_samples": 16006,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 15.11,
+    "dec_msps": 76.13
+   },
+   "lpc": {
+    "bytes": 20023,
+    "bits_per_sample": 10.0077,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 16.46,
+    "dec_msps": 74.52
+   },
+   "g21": {
+    "bytes": 18232,
+    "bits_per_sample": 9.1126,
+    "v5_chunks": 4,
+    "v5_samples": 16006,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 13.74,
+    "dec_msps": 76.95
+   },
+   "view": "as stored",
+   "group": "force"
+  },
+  {
+   "name": "N15_M07_F10_KB24_19.force",
+   "n": 16006,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 47.11,
+    "dec_msps": 120.35
+   },
+   "corr": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 47.65,
+    "dec_msps": 120.46
+   },
+   "lpc": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.64,
+    "dec_msps": 120.19
+   },
+   "g21": {
+    "bytes": 17275,
+    "bits_per_sample": 8.6343,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.17,
+    "dec_msps": 120.23
+   },
+   "view": "on k*q",
+   "group": "force"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 283198,
+    "bits_per_sample": 8.8499,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.07,
+    "dec_msps": 76.48
+   },
+   "corr": {
+    "bytes": 247025,
+    "bits_per_sample": 7.7195,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.87,
+    "dec_msps": 92.1
+   },
+   "lpc": {
+    "bytes": 280527,
+    "bits_per_sample": 8.7664,
+    "v5_chunks": 53,
+    "v5_samples": 215041,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 53,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 53,
+    "enc_msps": 23.89,
+    "dec_msps": 72.01
+   },
+   "g21": {
+    "bytes": 244355,
+    "bits_per_sample": 7.6361,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 54,
+    "enc_msps": 18.12,
+    "dec_msps": 87.26
+   },
+   "view": "as stored",
+   "group": "vibration"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.vibration_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0030517578125,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 242949,
+    "bits_per_sample": 7.5921,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.57,
+    "dec_msps": 123.72
+   },
+   "corr": {
+    "bytes": 242949,
+    "bits_per_sample": 7.5921,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.88,
+    "dec_msps": 123.76
+   },
+   "lpc": {
+    "bytes": 240278,
+    "bits_per_sample": 7.5087,
+    "v5_chunks": 53,
+    "v5_samples": 215041,
+    "fix_mode": {
+     "none": 53,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 53,
+    "enc_msps": 31.29,
+    "dec_msps": 115.12
+   },
+   "g21": {
+    "bytes": 240278,
+    "bits_per_sample": 7.5087,
+    "v5_chunks": 53,
+    "v5_samples": 215041,
+    "fix_mode": {
+     "none": 53,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 53,
+    "enc_msps": 31.35,
+    "dec_msps": 115.08
+   },
+   "view": "on k*q",
+   "group": "vibration"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 336347,
+    "bits_per_sample": 10.5108,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.14,
+    "dec_msps": 78.46
+   },
+   "corr": {
+    "bytes": 325086,
+    "bits_per_sample": 10.1589,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.27,
+    "dec_msps": 64.52
+   },
+   "lpc": {
+    "bytes": 289998,
+    "bits_per_sample": 9.0624,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.74,
+    "dec_msps": 61.2
+   },
+   "g21": {
+    "bytes": 278737,
+    "bits_per_sample": 8.7105,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.29,
+    "dec_msps": 53.45
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_1",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 293063,
+    "bits_per_sample": 9.1582,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.04,
+    "dec_msps": 126.6
+   },
+   "corr": {
+    "bytes": 293063,
+    "bits_per_sample": 9.1582,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 47.93,
+    "dec_msps": 126.06
+   },
+   "lpc": {
+    "bytes": 246714,
+    "bits_per_sample": 7.7098,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.21,
+    "dec_msps": 90.05
+   },
+   "g21": {
+    "bytes": 246714,
+    "bits_per_sample": 7.7098,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.27,
+    "dec_msps": 89.68
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 344512,
+    "bits_per_sample": 10.766,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.72,
+    "dec_msps": 76.68
+   },
+   "corr": {
+    "bytes": 333226,
+    "bits_per_sample": 10.4133,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 20.16,
+    "dec_msps": 63.9
+   },
+   "lpc": {
+    "bytes": 294034,
+    "bits_per_sample": 9.1885,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 63,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 21.71,
+    "dec_msps": 60.36
+   },
+   "g21": {
+    "bytes": 282748,
+    "bits_per_sample": 8.8358,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 63,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 15.2,
+    "dec_msps": 53.39
+   },
+   "view": "as stored",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.phase_current_2",
+   "n": 256001,
+   "chunk": 4096,
+   "chunks": 63,
+   "quantum": 0.0006887817378,
+   "g1_kinds": {
+    "grid": 63,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 301050,
+    "bits_per_sample": 9.4078,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.4,
+    "dec_msps": 124.16
+   },
+   "corr": {
+    "bytes": 301050,
+    "bits_per_sample": 9.4078,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 48.01,
+    "dec_msps": 124.94
+   },
+   "lpc": {
+    "bytes": 250572,
+    "bits_per_sample": 7.8303,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.33,
+    "dec_msps": 90.45
+   },
+   "g21": {
+    "bytes": 250572,
+    "bits_per_sample": 7.8303,
+    "v5_chunks": 63,
+    "v5_samples": 256001,
+    "fix_mode": {
+     "none": 63,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 63,
+    "enc_msps": 27.4,
+    "dec_msps": 90.58
+   },
+   "view": "on k*q",
+   "group": "phase currents"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 16830,
+    "bits_per_sample": 8.4145,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 19.89,
+    "dec_msps": 67.81
+   },
+   "corr": {
+    "bytes": 14559,
+    "bits_per_sample": 7.279,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 16.76,
+    "dec_msps": 89.02
+   },
+   "lpc": {
+    "bytes": 16830,
+    "bits_per_sample": 8.4145,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 17.5,
+    "dec_msps": 67.16
+   },
+   "g21": {
+    "bytes": 14559,
+    "bits_per_sample": 7.279,
+    "v5_chunks": 4,
+    "v5_samples": 16001,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 4,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 14.83,
+    "dec_msps": 89.45
+   },
+   "view": "as stored",
+   "group": "force"
+  },
+  {
+   "name": "N09_M07_F10_KI08_19.force",
+   "n": 16001,
+   "chunk": 4096,
+   "chunks": 4,
+   "quantum": 0.3051757810480922,
+   "g1_kinds": {
+    "grid": 4,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 46.18,
+    "dec_msps": 119.3
+   },
+   "corr": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 46.57,
+    "dec_msps": 119.48
+   },
+   "lpc": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 32.97,
+    "dec_msps": 119.45
+   },
+   "g21": {
+    "bytes": 14171,
+    "bits_per_sample": 7.0851,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 33.47,
+    "dec_msps": 119.71
+   },
+   "view": "on k*q",
+   "group": "force"
+  },
+  {
+   "name": "FEMTO.B1_1.horiz",
+   "n": 4193280,
+   "chunk": 4096,
+   "chunks": 1024,
+   "quantum": 0.001,
+   "g1_kinds": {
+    "grid": 1024,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 5584507,
+    "bits_per_sample": 10.6542,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 42.53,
+    "dec_msps": 94.1
+   },
+   "corr": {
+    "bytes": 5516358,
+    "bits_per_sample": 10.5242,
+    "v5_chunks": 896,
+    "v5_samples": 3668992,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 896
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 37.16,
+    "dec_msps": 119.61
+   },
+   "lpc": {
+    "bytes": 5357792,
+    "bits_per_sample": 10.2217,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 128,
+     "per_sample": 896,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 27.25,
+    "dec_msps": 87.02
+   },
+   "g21": {
+    "bytes": 5289643,
+    "bits_per_sample": 10.0917,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 128,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 896
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 24.61,
+    "dec_msps": 108.4
+   },
+   "view": "as stored",
+   "group": "femto"
+  },
+  {
+   "name": "FEMTO.B1_1.horiz",
+   "n": 4193280,
+   "chunk": 4096,
+   "chunks": 1024,
+   "quantum": 0.001,
+   "g1_kinds": {
+    "grid": 1024,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 5506161,
+    "bits_per_sample": 10.5047,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 62.14,
+    "dec_msps": 118.56
+   },
+   "corr": {
+    "bytes": 5506161,
+    "bits_per_sample": 10.5047,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 62.91,
+    "dec_msps": 119.62
+   },
+   "lpc": {
+    "bytes": 5279446,
+    "bits_per_sample": 10.0722,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 1024,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 34.32,
+    "dec_msps": 108.76
+   },
+   "g21": {
+    "bytes": 5279446,
+    "bits_per_sample": 10.0722,
+    "v5_chunks": 1024,
+    "v5_samples": 4193280,
+    "fix_mode": {
+     "none": 1024,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1024,
+    "enc_msps": 34.35,
+    "dec_msps": 108.72
+   },
+   "view": "on k*q",
+   "group": "femto"
+  },
+  {
+   "name": "Blockchain-tr",
+   "n": 99999,
+   "chunk": 4096,
+   "chunks": 25,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 25,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 28.68,
+    "dec_msps": 111.95
+   },
+   "corr": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 29.37,
+    "dec_msps": 109.81
+   },
+   "lpc": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.52,
+    "dec_msps": 110.39
+   },
+   "g21": {
+    "bytes": 174505,
+    "bits_per_sample": 13.9605,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.29,
+    "dec_msps": 109.54
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)"
+  },
+  {
+   "name": "POI-lat",
+   "n": 100001,
+   "chunk": 4096,
+   "chunks": 25,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 0,
+    "float": 25,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.16,
+    "dec_msps": 58.93
+   },
+   "corr": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.57,
+    "dec_msps": 58.76
+   },
+   "lpc": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.64,
+    "dec_msps": 58.61
+   },
+   "g21": {
+    "bytes": 760516,
+    "bits_per_sample": 60.8407,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 22.71,
+    "dec_msps": 58.72
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)"
+  },
+  {
+   "name": "Stocks-USA",
+   "n": 100002,
+   "chunk": 4096,
+   "chunks": 25,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 25,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 34.01,
+    "dec_msps": 121.36
+   },
+   "corr": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 35.22,
+    "dec_msps": 121.4
+   },
+   "lpc": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 26.27,
+    "dec_msps": 121.52
+   },
+   "g21": {
+    "bytes": 57027,
+    "bits_per_sample": 4.5621,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 26.37,
+    "dec_msps": 121.31
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)"
+  },
+  {
+   "name": "electric_vehicle_charging",
+   "n": 3395,
+   "chunk": 4096,
+   "chunks": 1,
+   "quantum": 1.0,
+   "g1_kinds": {
+    "grid": 1,
+    "float": 0,
+    "raw": 0
+   },
+   "g1": {
+    "bytes": 4257,
+    "bits_per_sample": 10.0312,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 35.89,
+    "dec_msps": 119.29
+   },
+   "corr": {
+    "bytes": 4257,
+    "bits_per_sample": 10.0312,
+    "v5_chunks": 0,
+    "v5_samples": 0,
+    "fix_mode": {
+     "none": 0,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 0,
+    "enc_msps": 36.75,
+    "dec_msps": 119.3
+   },
+   "lpc": {
+    "bytes": 4159,
+    "bits_per_sample": 9.8003,
+    "v5_chunks": 1,
+    "v5_samples": 3395,
+    "fix_mode": {
+     "none": 1,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1,
+    "enc_msps": 25.28,
+    "dec_msps": 117.07
+   },
+   "g21": {
+    "bytes": 4159,
+    "bits_per_sample": 9.8003,
+    "v5_chunks": 1,
+    "v5_samples": 3395,
+    "fix_mode": {
+     "none": 1,
+     "per_sample": 0,
+     "table": 0,
+     "exceptions": 0
+    },
+    "lpc_chunks": 1,
+    "enc_msps": 25.55,
+    "dec_msps": 116.57
+   },
+   "view": "as stored",
+   "group": "elf (B4 dev)"
+  }
+ ]
+}

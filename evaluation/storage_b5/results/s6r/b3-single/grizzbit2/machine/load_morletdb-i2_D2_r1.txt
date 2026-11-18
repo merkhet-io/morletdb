@@ -1,0 +1,23 @@
+gate met 2026-11-10T21:06:48 after 0 s, load { 2.94 6.27 7.81 }
+2026-11-10T21:06:48
+21:06  up 14 days,  6:02, 19 users, load averages: 2.94 6.27 7.81
+ %CPU COMM
+ 65.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 25.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 18.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  8.2 /System/Library/PrivateFrameworks/TextInputUIMacHelper.framework/Versions/A/XPCServices/CursorUIViewService.xpc/Contents/MacOS/CursorUIViewService
+  6.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.3 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+  5.1 claude
+  4.0 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+2026-11-10T21:07:41
+21:07  up 14 days,  6:03, 19 users, load averages: 3.29 5.88 7.58
+ %CPU COMM
+356.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+121.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 97.7 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 94.7 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 49.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 20.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.8 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  5.7 claude

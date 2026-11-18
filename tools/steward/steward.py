@@ -10,6 +10,7 @@
   morlet-steward plans --dsn ...             plans the steward or a person proposed, and their state
   morlet-steward approve|reject|apply ID     decide or apply a plan (a person with morlet_approver, not the author)
   morlet-steward propose-levels COLLECTION MOVES.json   a memory-level plan from a policy dry run
+  morlet-steward metrics --dsn ... [--listen 127.0.0.1:9188]   Prometheus metrics over HTTP (#197; read-only)
 
 Phase 1: automatic upkeep (builders, verify, analyze) in one budgeted loop, gated by load and disk; the disk
 ladder in time remaining; an audit row for every action; circuit breakers; the status view. It runs only jobs whose
@@ -40,6 +41,7 @@ class Steward:
                                       "verify": 20}
         self.grids: dict[str, list[tuple[int, int]]] = {}
         self.grids_at = 0.0
+        self.verified_at: float | None = None      # monotonic time of the last verify batch (minimum share)
         self.analyzed: dict[str, float] = {}
         self.stop = False
 
@@ -92,14 +94,20 @@ class Steward:
         load1 = os.getloadavg()[0]
         ok, why = P.may_work(cfg, load1, os.cpu_count() or 1, disk)
         note = why
-        if ok:
-            work = self.backlog(cols)
-            due = [c for c in cols if S.verify_due(conn, c, cfg.verify_every_days)]
-            job = P.next_job({j: bool(v) for j, v in work.items()}, breakers, bool(due))
+        due = [c for c in cols if S.verify_due(conn, c, cfg.verify_every_days)] if not disk.pause else []
+        since = None if self.verified_at is None else time.monotonic() - self.verified_at
+        turn = P.verify_turn(cfg, bool(due), since, disk) and not breakers.get("verify", P.Breaker()).open
+        if ok or turn:
+            work = self.backlog(cols) if ok else {j: [] for j in P.JOBS}
+            job = P.next_job({j: bool(v) for j, v in work.items()}, breakers, bool(due), verify_first=turn)
             if job is None:
                 note = "idle: nothing to do"
             else:
                 note = self.run_job(job, work, due, breakers)
+                if job == "verify":
+                    self.verified_at = time.monotonic()
+                    if not ok:
+                        note += f" (minimum share for integrity checks; {why})"
         self.propose_extension_update()
         open_plans = [(r[0], r[1], r[5]) for r in S.plans(conn) if r[7] is None and r[5] != "rejected"
                       and r[4] is not None and r[4].timestamp() > time.time()]
@@ -252,7 +260,7 @@ def cmd_run(a, cfg: P.Config) -> int:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="morlet-steward")
     ap.add_argument("command", choices=["init", "grant", "run", "status", "check", "reset", "plans", "approve",
-                                        "reject", "apply", "propose-levels"])
+                                        "reject", "apply", "propose-levels", "metrics"])
     ap.add_argument("job", nargs="?", help="job (reset), plan id (approve, reject, apply) or collection (propose-levels)")
     ap.add_argument("moves", nargs="?", help="propose-levels: JSON file with the moves (a memory policy dry run)")
     ap.add_argument("--dsn", default=os.environ.get("MORLET_STEWARD_DSN", ""))
@@ -261,13 +269,27 @@ def main(argv=None) -> int:
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--tick", type=float, default=30.0)
     ap.add_argument("--load-per-cpu", type=float, default=0.7, help="work only below this 1-minute load per CPU")
+    ap.add_argument("--verify-share-every", type=float, default=900.0,
+                    help="seconds: a due verification gets one batch at least this often, even under load")
     ap.add_argument("--reserve-bytes", type=int, default=2 << 30, help="disk kept free: the larger of this and the share")
     ap.add_argument("--reserve-fraction", type=float, default=0.05)
+    ap.add_argument("--listen", default="127.0.0.1:9188", help="metrics: host:port to serve /metrics on")
+    ap.add_argument("--collection-every", type=float, default=60.0,
+                    help="metrics: seconds per-collection statistics are cached between scrapes")
     a = ap.parse_args(argv)
     cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,
-                   reserve_fraction=a.reserve_fraction)
+                   reserve_fraction=a.reserve_fraction, verify_share_every_s=a.verify_share_every)
     if a.command == "run":
         return cmd_run(a, cfg)
+    if a.command == "metrics":
+        import metrics as M
+        host, port = M.parse_listen(a.listen)
+        collector = M.Collector(a.dsn, a.collection_every)
+        try:
+            M.serve(collector, host, port, ready=lambda: print(f"serving http://{a.listen}/metrics", flush=True))
+        except KeyboardInterrupt:
+            pass
+        return 0
     with connect(a.dsn) as conn:
         if a.command == "init":
             S.init(conn)

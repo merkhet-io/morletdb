@@ -1,0 +1,11 @@
+2026-11-13T08:28:54
+ 8:28  up 16 days, 17:25, 18 users, load averages: 3.29 4.14 3.42
+ %CPU COMM
+ 22.3 claude
+ 21.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 18.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 14.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  5.0 /usr/libexec/xprotectd
+  4.0 /usr/libexec/trustd
+  3.7 /usr/libexec/syspolicyd
+  1.7 bash

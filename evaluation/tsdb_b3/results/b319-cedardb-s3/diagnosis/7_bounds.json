@@ -1,0 +1,50 @@
+{
+ "t >= first AND t < last+1 period (the benchmark's read)": {
+  "row_1023_present": true,
+  "rows": 256001
+ },
+ "t >= first AND t <= last": {
+  "row_1023_present": true,
+  "rows": 256001
+ },
+ "t >= first AND t < last (excludes last row)": {
+  "row_1023_present": true,
+  "rows": 256000
+ },
+ "t >= first only": {
+  "row_1023_present": true,
+  "rows": 256001
+ },
+ "t <= last only": {
+  "row_1023_present": true,
+  "rows": 256001
+ },
+ "t < last only": {
+  "row_1023_present": true,
+  "rows": 256000
+ },
+ "t > first (excludes first row) AND t <= last": {
+  "row_1023_present": true,
+  "rows": 256000
+ },
+ "t >= first-1s AND t <= last+1s (wider than the acquisition)": {
+  "row_1023_present": true,
+  "rows": 256001
+ },
+ "t >= row 1000 AND t <= last": {
+  "row_1023_present": true,
+  "rows": 255001
+ },
+ "t >= row 1024 AND t <= last (excludes row 1023)": {
+  "row_1023_present": false,
+  "rows": 254977
+ },
+ "t BETWEEN first AND last": {
+  "row_1023_present": true,
+  "rows": 256001
+ },
+ "no t predicate": {
+  "row_1023_present": true,
+  "rows": 256001
+ }
+}

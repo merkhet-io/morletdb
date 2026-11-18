@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:54:41 after 31 s, load { 2.93 3.41 3.67 }
+-- before
+2026-11-11T19:54:41
+19:54  up 15 days,  4:50, 19 users, load averages: 2.93 3.41 3.67
+Now drawing from 'AC Power'
+ %CPU COMM
+ 27.9 /System/Library/Services/AppleSpell.service/Contents/MacOS/AppleSpell
+ 26.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 25.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  9.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  5.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  4.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  2.7 bash
+  2.7 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+-- after (exit 0)
+2026-11-11T19:54:59
+19:55  up 15 days,  4:51, 19 users, load averages: 4.99 3.86 3.82
+Now drawing from 'AC Power'
+ %CPU COMM
+239.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 68.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 27.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.5 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  3.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.0 claude
+  1.5 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  1.0 claude

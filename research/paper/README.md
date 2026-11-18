@@ -1,7 +1,66 @@
 # MorletDB research manuscript
 
-**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.21, a
+**MorletDB: Recordings, Not Rows — Lag-Tolerant Waveform Retrieval in PostgreSQL**, version 0.31, a
 technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md](RELEASE.md). Journal plan: [JOURNAL_DECISION.md](JOURNAL_DECISION.md).
+
+## SIGMOD Industrial submission
+
+[SUBMISSION.md](SUBMISSION.md) records the acceptance-oriented argument, benchmark
+readiness, and remaining gates. [sigmod.pdf](sigmod.pdf) is the conference variant:
+main text within 12 pages, followed only by references, ACM 2.21, named authors.
+The longer report retains the evidence ledger. Build with
+`python research/paper/build_submission.py --all`; check with
+`python research/paper/check_submission.py` (Poppler required).
+
+## What changed in 0.31 (abstract)
+
+The abstract now states three results that were only in the body: the zero-lag
+shortlist loses matches because of its metric, not its approximation (61–66% of the
+shift-tolerant top ten on held-out data: 61% exact, 66% HNSW; Table 1 now says the same); by a catalogue proxy (exact search, held-out data), 0.139 of
+bounded-lag top-ten positions held a catalogued earthquake's arrival against 0.060
+for zero lag (Section 12; Table 1 now names the proxy too); and appends are atomic (twenty writers killed mid-append left no
+partial rows, supplement). The opening is shorter, and the routing clause moved out
+of the abstract (it remains in Table 1 and the body). The CNC sentence is unchanged.
+The exact held-out zero-lag recall (61%, arm EZ in E1) is now also stated in Section 7.
+No measured number, figure or study changed.
+
+## What changed in 0.30 (repository link)
+
+The abstract now ends with the repository link (code, frozen protocols and raw
+results), so it is visible on page 1. Nothing else changed.
+
+## What changed in 0.29 (author name)
+
+The first author is now named Seung-Zin Nam (previously Zin Nam) in the report,
+supplement, SIGMOD variant, licence and release manifest. Nothing else changed.
+
+## What changed in 0.28 (Why, How, What)
+
+Presentation only, after co-author review (Semir Maslo, 2026-11-17): the abstract,
+introduction and conclusion now lead with why the problem matters, then how
+MorletDB solves it and what was measured. A new Table 1 ("MorletDB at a glance")
+collects each advantage with its measured result, comparison and section. Three
+figures join the main text: codec bits per sample (B1, previously supplement only),
+E7 p95 latency by gallery size, and the IU1/IU2 AUROCs with intervals. To stay
+within 12 pages, the SIGMOD variant shortens five detail paragraphs; the report
+keeps them in full. No number, claim or study changed.
+
+## What changed in 0.27 (T6 rerun)
+
+IU1 T6 now reports the post hoc eligible-gallery rerun (#510, #517): BL 0.523
+against ZL 0.412 (+0.110, [0.077, 0.145]; run-clustered [0.075, 0.147]). The
+corrected search was written after the original results had been seen, so the
+paper labels it exploratory; the originally reported 0.503 stays withdrawn.
+
+## What changed in 0.26 (submission corrections)
+
+Industrial requirements and negative results now lead the argument. IU1 T6's
+cross-machine claim is withdrawn pending an eligible-gallery rerun; IU2 W3 counts
+only strictly earlier warnings (BL 1/7, vibration 6/7, RMS 7/7). Average-rank
+Spearman, compressed-input replay and missing-input failures are fixed. E1 and
+later screened-exact results are explicitly separate historical measurements.
+The full-lag top-k lemma now distinguishes finite budgets from suppression,
+sparse grids and approximate search. Original raw measurements are retained.
 
 ## What we found
 
@@ -18,7 +77,7 @@ technical report / preprint (ACM `sigconf` layout). Release package: [RELEASE.md
 4. **A first relevance check.** With a catalogued earthquake in the query, the bounded-lag top ten held
    catalogued earthquakes in 0.297 of positions against 0.213 for zero lag on development data, and 0.139
    against 0.060 on held-out stations and year (E5, E5-H; exact search, catalogue proxy).
-5. **Not shown:** other signal domains, diagnostic relevance for machines, cold caches, and stable
+5. **Not shown:** other signal domains (beyond IU1 and IU2 on two public machining datasets), diagnostic relevance for machines, cold caches, and stable
    operation beyond 111 minutes (the planned two-hour run stopped early; paper Section 12).
 
 ## Main numbers
@@ -61,6 +120,57 @@ cd research/paper && tectonic -X compile supplement.tex
 `figures.py` reads only committed results (`evaluation/storage_baselines/results/b1.json`,
 `evaluation/retrieval_scaling/results/{load,bench}.json`). The figure PDFs are committed so
 the paper builds without Python. Tectonic fetches the TeX packages it needs on first use.
+
+## What changed in 0.25 (related work)
+
+- **Related work** gains two paragraphs and matrix rows: retrieval of similar past events in monitoring (Moirae;
+  Kwon, Xu and Balazinska 2007), which compares scalar contexts of events rather than waveforms, and ModelarDB,
+  model-based compression of high-frequency sensor data across edge and cloud, whose lossless mode keeps values equal
+  in float32 rather than bit-identical samples. No result, number or figure changes.
+
+## What changed in 0.24 (tool wear, edge-sized limits, Grizzbit 2.1)
+
+- **Section 10, "Industrial use", adds two studies by S. Maslo**, with protocols, scripts and results in
+  [`evaluation/industrial_iu2/`](../../evaluation/industrial_iu2/) and
+  [`evaluation/industrial_latency/`](../../evaluation/industrial_latency/):
+  - **IU2, tool wear** on 13 end mills run to failure (Piecuch and Żabiński 2025, CC BY): end of life across seven
+    confirmation tools with AUROC 0.639 under bounded lag and 0.580 under zero lag (not significant there; bounded
+    lag better on the development tools), below RMS per window (0.791) and the dataset authors' vibration level
+    (0.831) and spindle current (0.813). Those two come from the authors' feature table, not from MorletDB; the
+    text says so. 4.88 billion samples in 6.47 GB (10.6 bits per sample).
+  - **IU1-E, latency with the database limited to 2 CPUs and 512 MB:** history searches and window statistics as
+    fast as without limits (p95 42 against 43 ms, 1.6 against 1.5 ms); only the search over all 85,042 windows
+    slows down (exact 366 against 212 ms, probes 197 against 173 ms); no out-of-memory event.
+  - The conclusion of the section now reads: bounded lag better than zero lag everywhere, significantly on the
+    Bosch data; level values do as well or better on both datasets. Five ledger rows; limitations and the AI
+    statement name the new studies.
+- **Section 4** adds Grizzbit 2.1 (study B6, opt-in, not yet released): waveforms 12.6% smaller in total and
+  smaller on all six, decode at least 53.1 and encode at least 10.8 M samples/s, identical bytes on four
+  platforms. One ledger row.
+
+## What changed in 0.23 (second author, industrial use)
+
+- **Second author:** Semir Maslo (Sulzer-BDiM).
+- **New Section 10, "Industrial use":** IU1, a study by S. Maslo on the public Bosch CNC milling data (CC BY 4.0),
+  with protocol, scripts and results in [`evaluation/industrial_iu1/`](../../evaluation/industrial_iu1/): a
+  nearest-neighbour score against a good history (AUROC 0.925 bounded lag, 0.875 zero lag, 0.852 RMS), the same
+  operation on another machine, synthetic time stretching, and probe search on 85,042 windows. Post hoc addenda
+  with rules written first: A1 (drift between half-years) and A2 (lead-in). The separation holds inside a machine
+  and half-year (0.905 against 0.790 for zero lag) and without the lead-in (0.900), but run length alone separates
+  better (0.982), a history from earlier half-years only does not separate (0.603), and retrieval of other bad
+  runs was inflated by the half-year (0.254 against chance 0.183, replacing 0.177 against 0.026). Nine ledger rows.
+  Its numbers are literal text in the manuscript, not generated.
+- **Limitations and conclusion:** storage holds and bounded lag beats zero lag on these data; as a detector, level
+  values and run length do as well or better; the history must be recent, and the data allow no causal test at
+  finer than half-year resolution.
+- **Section 4** notes that from release 0.3.11-alpha.1 every append path decodes each encoded chunk again before
+  storing it and refuses one that does not reproduce its input (#366).
+
+## What changed in 0.22 (naming, no new measurement)
+
+The chunk codec is named: Section 4 and supplement Section 1 call it Grizzbit, MorletDB's lossless chunk codec
+(Grizzbit 1 is chunk format versions 2 and 3; [docs/grizzbit.md](../../docs/grizzbit.md)). No number, claim or
+technique changed.
 
 ## What changed in 0.21 (correction, no new measurement)
 

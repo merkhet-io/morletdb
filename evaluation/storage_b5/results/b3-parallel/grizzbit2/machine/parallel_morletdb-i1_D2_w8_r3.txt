@@ -1,0 +1,22 @@
+2026-11-10T20:58:06
+20:58  up 14 days,  5:54, 19 users, load averages: 8.55 7.56 8.15
+ %CPU COMM
+202.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 41.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 24.4 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/cargo
+ 19.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 12.0 (rustc)
+ 10.9 (rustc)
+ 10.7 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 10.4 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+2026-11-10T20:58:49
+20:58  up 14 days,  5:54, 19 users, load averages: 16.71 9.99 9.01
+ %CPU COMM
+203.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 70.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 28.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.3 /private/tmp/claude-502/cp-pr94/target/debug/counterplay
+  8.7 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  5.4 claude
+  5.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  4.0 /usr/sbin/coreaudiod

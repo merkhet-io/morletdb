@@ -1,0 +1,250 @@
+{
+ "study": "B5 storage (PROTOCOL.md section 3)",
+ "set": "dev",
+ "started": "2026-11-10T20:35:19",
+ "chunk": 4096,
+ "quantum": 1.0,
+ "bench": {
+  "path": "/private/tmp/claude-502/-Users-zin-sophia-morletdb/b9124922-fe68-4e87-a54d-94a8303730c0/scratchpad/b5src/target/release/examples/rawcodec_bench",
+  "sha256": "44778582c4e3095b90c1e66d9062b2ac7b75bb7a2450cce3573f83a6c17dd3cc"
+ },
+ "b5codec": {
+  "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/b5codec/target/release/b5codec",
+  "sha256": "791a6db9e71bf29afe6b566b13a1f3f0eb7b7e0f41443341d0ea465f9861dcaa"
+ },
+ "inputs": [
+  {
+   "input": "Blockchain-tr",
+   "set": "elf-dev",
+   "samples": 99999,
+   "sha256": "aff61b95f53c3f8102b136a54a033163df963058810ccdde9e74874ad0b3f728",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1695": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 174505,
+    "G2": 165707
+   },
+   "bits_per_sample": {
+    "G1": 13.9605,
+    "G2": 13.2567
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G2": {
+     "v2 grid": 10,
+     "v4 pco": 15
+    }
+   },
+   "chunks_changed": 15,
+   "changed_by_G1_kind": {
+    "v2 grid": 15
+   },
+   "s4_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 99999,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 174505,
+    "M_auto_bits": 13.9605,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 13.1639,
+    "CH_arms_bits": {
+     "CH-ALP": 20.3808,
+     "CH-ALP-zstd9": 15.6106,
+     "CH-PCO": 13.1639,
+     "CH-zstd9": 18.6319
+    },
+    "PCO_bits": 12.3672,
+    "PCO_exact": true
+   },
+   "ratios": {
+    "G2_over_CH_best": 1.007,
+    "G1_over_CH_best": 1.0605,
+    "G2_over_PCO": 1.0719,
+    "G2_over_G1": 0.9496
+   },
+   "seconds": 0.5
+  },
+  {
+   "input": "POI-lat",
+   "set": "elf-dev",
+   "samples": 100001,
+   "sha256": "0b046bf3c574c049c0917cf90ca3c604db4b1b3d50d1d16bdfb943b0d68156bc",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1697": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 760516,
+    "G2": 669815
+   },
+   "bits_per_sample": {
+    "G1": 60.8407,
+    "G2": 53.5847
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 25
+    },
+    "G2": {
+     "v4 pco": 25
+    }
+   },
+   "chunks_changed": 25,
+   "changed_by_G1_kind": {
+    "v2 float": 25
+   },
+   "s4_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 760516,
+    "M_auto_bits": 60.8407,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 53.5099,
+    "CH_arms_bits": {
+     "CH-ALP": 62.3975,
+     "CH-ALP-zstd9": 59.2769,
+     "CH-PCO": 53.5099,
+     "CH-zstd9": 56.0448
+    },
+    "PCO_bits": 53.3024,
+    "PCO_exact": true
+   },
+   "ratios": {
+    "G2_over_CH_best": 1.0014,
+    "G1_over_CH_best": 1.137,
+    "G2_over_PCO": 1.0053,
+    "G2_over_G1": 0.8807
+   },
+   "seconds": 0.1
+  },
+  {
+   "input": "Stocks-USA",
+   "set": "elf-dev",
+   "samples": 100002,
+   "sha256": "4c90325d1eac6242fbc45baf6b4b42ce4aa32b1e9e9c68194c9f286534bba579",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1698": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 57027,
+    "G2": 57027
+   },
+   "bits_per_sample": {
+    "G1": 4.5621,
+    "G2": 4.5621
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G2": {
+     "v2 grid": 25
+    }
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s4_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100002,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 57027,
+    "M_auto_bits": 4.5621,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 5.1989,
+    "CH_arms_bits": {
+     "CH-ALP": 9.1124,
+     "CH-ALP-zstd9": 8.9009,
+     "CH-PCO": 5.1989,
+     "CH-zstd9": 11.7322
+    },
+    "PCO_bits": 5.2321,
+    "PCO_exact": true
+   },
+   "ratios": {
+    "G2_over_CH_best": 0.8775,
+    "G1_over_CH_best": 0.8775,
+    "G2_over_PCO": 0.8719,
+    "G2_over_G1": 1.0
+   },
+   "seconds": 0.1
+  },
+  {
+   "input": "electric_vehicle_charging",
+   "set": "elf-dev",
+   "samples": 3395,
+   "sha256": "eb02a65a9c5ccd71d8c14a23289f5f3de4865e0abaf9dd6fa9e596f346cfebc5",
+   "chunks": 1,
+   "chunk_lengths": {
+    "3395": 1
+   },
+   "bytes": {
+    "G1": 4257,
+    "G2": 4257
+   },
+   "bits_per_sample": {
+    "G1": 10.0312,
+    "G2": 10.0312
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1
+    },
+    "G2": {
+     "v2 grid": 1
+    }
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s4_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 3395,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 4257,
+    "M_auto_bits": 10.0312,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 10.4554,
+    "CH_arms_bits": {
+     "CH-ALP": 13.4622,
+     "CH-ALP-zstd9": 11.3225,
+     "CH-PCO": 10.4554,
+     "CH-zstd9": 17.3856
+    },
+    "PCO_bits": 10.3918,
+    "PCO_exact": true
+   },
+   "ratios": {
+    "G2_over_CH_best": 0.9594,
+    "G1_over_CH_best": 0.9594,
+    "G2_over_PCO": 0.9653,
+    "G2_over_G1": 1.0
+   },
+   "seconds": 0.0
+  }
+ ],
+ "finished": "2026-11-10T20:35:19"
+}

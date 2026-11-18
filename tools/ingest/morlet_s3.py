@@ -9,10 +9,14 @@ Credentials and the endpoint come from boto3's usual sources (environment, share
 set AWS_ENDPOINT_URL for a non-AWS service. Nothing here prints, logs or stores credentials.
 
 import: every object under the prefix with a supported suffix (WAV, EDF, miniSEED, TDMS, CSV, exchange Parquet)
-is downloaded to a temporary directory and imported with morlet_import.py. Each recording's metadata gets
-"source_object" (bucket, key, ETag, version id, size, SHA-256 of the downloaded bytes). Objects whose key and
-ETag are already in the collection are skipped, so an interrupted import can be rerun; an object that changed
-under the same key re-imports into the same recording ids, and the importer refuses conflicting samples.
+is downloaded to a temporary directory and imported with morlet_import.py, one object at a time. Each recording's
+metadata gets "source_object" (bucket, key, ETag, version id, size, SHA-256 of the downloaded bytes). Only when the
+importer has finished an object (all its recordings committed, context added, envelopes built unless --no-build)
+is a row written to <collection>_s3_imports, with the object's identity and its recordings' ends (#442). Objects
+with such a row are skipped on the next run; an object that was interrupted part-way has none, so it is imported
+again: its committed chunks replay as identical no-ops and the rest is appended. An object that changed under the
+same key re-imports into the same recording ids, and the importer refuses conflicting samples. Collections imported
+before this record existed have no rows, so their objects are read once more on the next run (no-ops).
 
 export: morlet_export.py writes an exchange file locally, which is uploaded with its format, its SHA-256 and a
 content SHA-256 (the recordings and their sample checksums, without the export time) in the object's metadata.
@@ -20,7 +24,9 @@ If the object already has that content SHA-256, the upload is skipped. After upl
 size and metadata are read back and compared.
 """
 import argparse
+import contextlib
 import hashlib
+import io
 import json
 import os
 import sys
@@ -57,15 +63,43 @@ def sha256(path):
     return h.hexdigest()
 
 
+def completions_table(collection):
+    schema, name = collection.split(".", 1) if "." in collection else ("public", collection)
+    return f'"{schema}"."{name}_s3_imports"'
+
+
 def already_imported(dsn, collection, bucket):
-    """(key, etag) pairs already in the collection, from recordings' source_object metadata."""
+    """(key, etag) pairs whose import finished (#442): rows of <collection>_s3_imports, not recording metadata,
+    which an interrupted import also leaves behind."""
     import psycopg
     with psycopg.connect(dsn) as conn:
-        if conn.execute("SELECT to_regclass(%s)", (collection,)).fetchone()[0] is None:
+        schema, name = collection.split(".", 1) if "." in collection else ("public", collection)
+        if conn.execute("SELECT to_regclass(%s)", (f"{schema}.{name}_s3_imports",)).fetchone()[0] is None:
             return set()
-        rows = conn.execute(f"SELECT DISTINCT metadata->'source_object'->>'key', metadata->'source_object'->>'etag' "
-                            f"FROM {collection} WHERE metadata->'source_object'->>'bucket' = %s", (bucket,)).fetchall()
+        rows = conn.execute(f"SELECT key, etag FROM {completions_table(collection)} WHERE bucket = %s",
+                            (bucket,)).fetchall()
     return {(k, e) for k, e in rows}
+
+
+def record_completion(dsn, collection, prov):
+    """After the importer finished an object: its identity and the ends of the recordings that came from it."""
+    import psycopg
+    with psycopg.connect(dsn) as conn:
+        conn.execute(f"CREATE TABLE IF NOT EXISTS {completions_table(collection)} (bucket text NOT NULL, key text NOT NULL, "
+                     "etag text NOT NULL, version_id text, size bigint NOT NULL, sha256 text NOT NULL, "
+                     "recordings jsonb NOT NULL, completed_at timestamptz NOT NULL DEFAULT now(), "
+                     "PRIMARY KEY (bucket, key, etag))")
+        recs = {rid: int(end) for rid, end in conn.execute(
+            f"SELECT recording_id, checkpoint->>'end' FROM {collection} WHERE metadata->'source_object' @> %s::jsonb "
+            "ORDER BY recording_id", (json.dumps({k: prov[k] for k in ("bucket", "key", "etag")}),))}
+        if not recs:
+            raise ValueError(f"s3://{prov['bucket']}/{prov['key']}: the importer reported success but stored no recording")
+        conn.execute(f"INSERT INTO {completions_table(collection)} (bucket, key, etag, version_id, size, sha256, recordings) "
+                     "VALUES (%s,%s,%s,%s,%s,%s,%s::jsonb) ON CONFLICT (bucket, key, etag) DO UPDATE SET "
+                     "sha256 = EXCLUDED.sha256, recordings = EXCLUDED.recordings, completed_at = now()",
+                     (prov["bucket"], prov["key"], prov["etag"], prov.get("version_id"), prov["size"], prov["sha256"],
+                      json.dumps(recs)))
+    return recs
 
 
 def import_prefix(url, collection, dsn, passthrough):
@@ -79,39 +113,46 @@ def import_prefix(url, collection, dsn, passthrough):
     done = already_imported(dsn, collection, bucket)
     todo = [o for o in objects if (o["Key"], o["ETag"].strip('"')) not in done]
     report = {"bucket": bucket, "prefix": prefix, "objects": len(objects), "skipped_already_imported":
-              len(objects) - len(todo), "imported": []}
-    if not todo:
-        return report, 0
-    with tempfile.TemporaryDirectory(prefix="morlet-s3-") as tmp:
-        files, provenance = [], {}
-        for i, o in enumerate(sorted(todo, key=lambda o: o["Key"])):
-            local = Path(tmp) / f"{i:06d}" / Path(o["Key"]).name      # keeps the file name, which ids use
-            local.parent.mkdir()
-            head = s3.head_object(Bucket=bucket, Key=o["Key"])
-            s3.download_file(bucket, o["Key"], str(local))
-            if local.stat().st_size != head["ContentLength"]:
-                raise ValueError(f"s3://{bucket}/{o['Key']}: downloaded size differs from the object's")
-            provenance[str(local)] = {"bucket": bucket, "key": o["Key"], "etag": head["ETag"].strip('"'),
-                                      "version_id": head.get("VersionId"), "size": head["ContentLength"],
-                                      "sha256": sha256(local)}
-            files.append(local)
-        readers = dict(mi.READERS)
+              len(objects) - len(todo), "imported": [], "failed": []}
+    readers = dict(mi.READERS)
+    provenance = {}
 
-        def with_provenance(fmt):
-            def read(path, opts):
-                recs = readers[fmt](path, opts)
-                for r in recs:
-                    r.metadata = {**r.metadata, "source_object": provenance[str(path)]}
-                return recs
-            return read
+    def with_provenance(fmt):
+        def read(path, opts):
+            recs = readers[fmt](path, opts)
+            for r in recs:
+                r.metadata = {**r.metadata, "source_object": provenance[str(path)]}
+            return recs
+        return read
+    code = 0
+    with tempfile.TemporaryDirectory(prefix="morlet-s3-") as tmp:
         for fmt in readers:
             mi.READERS[fmt] = with_provenance(fmt)
         try:
-            code = mi.main([*map(str, files), "--collection", collection, "--dsn", dsn, *passthrough])
+            for i, o in enumerate(sorted(todo, key=lambda o: o["Key"])):
+                local = Path(tmp) / f"{i:06d}" / Path(o["Key"]).name      # keeps the file name, which ids use
+                local.parent.mkdir()
+                head = s3.head_object(Bucket=bucket, Key=o["Key"])
+                s3.download_file(bucket, o["Key"], str(local))
+                if local.stat().st_size != head["ContentLength"]:
+                    raise ValueError(f"s3://{bucket}/{o['Key']}: downloaded size differs from the object's")
+                prov = provenance[str(local)] = {"bucket": bucket, "key": o["Key"], "etag": head["ETag"].strip('"'),
+                                                 "version_id": head.get("VersionId"), "size": head["ContentLength"],
+                                                 "sha256": sha256(local)}
+                out = io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    rc = mi.main([str(local), "--collection", collection, "--dsn", dsn, *passthrough])
+                if rc != 0:                                # not recorded: the next run imports it again
+                    code = rc
+                    report["failed"].append({"key": prov["key"], "etag": prov["etag"]})
+                    continue
+                recs = record_completion(dsn, collection, prov)
+                report["imported"].append({"key": prov["key"], "etag": prov["etag"], "sha256": prov["sha256"],
+                                           "recordings": recs})
+                local.unlink()
         finally:
             mi.READERS.update(readers)
-        report["imported"] = [{"key": p["key"], "etag": p["etag"], "sha256": p["sha256"]} for p in provenance.values()]
-        return report, code
+    return report, code
 
 
 def export_object(url, collection, dsn, flt):

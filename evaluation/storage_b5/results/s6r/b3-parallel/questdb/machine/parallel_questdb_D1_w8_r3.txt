@@ -1,0 +1,23 @@
+gate met 2026-11-10T22:23:17 after 41 s, load { 2.91 3.72 5.92 }
+2026-11-10T22:23:17
+22:23  up 14 days,  7:19, 19 users, load averages: 2.91 3.72 5.92
+ %CPU COMM
+ 95.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 15.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  5.2 claude
+  4.3 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  3.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  3.1 claude
+  2.1 claude
+2026-11-10T22:23:35
+22:23  up 14 days,  7:19, 19 users, load averages: 7.87 4.76 6.25
+ %CPU COMM
+216.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 61.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.5 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  6.3 /System/Library/Frameworks/AppKit.framework/Versions/C/XPCServices/DocumentPopoverViewService.xpc/Contents/MacOS/DocumentPopoverViewService
+  3.1 claude
+  1.5 claude

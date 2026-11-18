@@ -1,0 +1,22 @@
+2026-11-10T20:55:48
+20:55  up 14 days,  5:51, 19 users, load averages: 8.12 7.02 8.10
+ %CPU COMM
+317.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 49.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 16.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 16.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 16.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 15.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+ 15.4 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mdworker_shared
+2026-11-10T20:56:07
+20:56  up 14 days,  5:52, 19 users, load averages: 7.41 6.94 8.04
+ %CPU COMM
+184.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 96.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 17.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.9 /usr/sbin/coreaudiod
+  2.1 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  0.8 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking

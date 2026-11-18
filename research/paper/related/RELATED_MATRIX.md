@@ -96,3 +96,26 @@ a sparse grid of query-side shifted probes into one stock inner-product ANN inde
 Searches beyond the notes: image retrieval with rotated query copies; "cross-correlation as maximum inner
 product search with shifted queries"; cryo-EM rotational nearest neighbours (Zhao & Singer use
 data-side invariant features and align candidates afterwards).
+
+## Addendum 2026-11-12 (report 0.25, #419): similar past events in monitoring
+
+| Work | Read | What is compared | Shift | Retrieval | Data | Evaluation |
+|---|---|---|---|---|---|---|
+| Balazinska, Kwon, Kuchta, Lee: Moirae, CIDR 2007 | P (abstract, introduction, challenges) | a newly detected event's *context* (state of the monitored objects around it) against past events' contexts, with IR techniques | none | top-k most similar past events; approximate results first, refined incrementally; history partitioned, recent partitions first | stream engine (Borealis) + PostgreSQL as the historical log; scalar monitoring attributes | design paper |
+| Kwon, Xu, Balazinska: Identifying Similar Past Events in a Continuous Monitoring System, UW-CSE-07-05-01, 2007 | F | Context Distance Measure (CDM): events most alike when the same monitored objects show similar abnormal values | none | ranking of past events | PlanetLab monitoring data, scalar snapshots | CDM ranks better than Jaccard, Earth Mover's Distance and Match-and-Compare |
+
+**Overlap with MorletDB.** The premise that context decides which past cases are comparable is shared by the decision
+state (match keys) and the industrial studies. **Difference:** no waveforms, no time-shift tolerance, no exact
+read-back of the evidence. The "What is new" claim (bounded lag on an unmodified inner-product index) is not affected.
+
+
+## Addendum 2026-11-12 (report 0.25): model-based compression of sensor time series
+
+| Work | Read | Data and values | Compression | Fidelity | Access and deployment | Evaluation |
+|---|---|---|---|---|---|---|
+| Jensen, Godiksen, Thomsen, Pedersen: Demonstration of ModelarDB, PVLDB 18(12) 2025; Abduvakhobov, Jensen, Pedersen, Thomsen: ModelarDB on wind turbine data, PVLDB 17(13) 2024; code `ModelarData/ModelarDB-RS` @ `1b90706` | F (2025 demo), P (2024), code read | univariate or multivariate time series tables: microsecond timestamps, string tags, **float32** fields | per column, the cheaper of a constant (PMC-Mean) and a linear (Swing) model per sub-sequence; uncovered points as residuals (Gorilla-style codec); Parquet with ZSTD in Delta Lake | per-column error bound: 0 (lossless as **value equality**: `v1 == v2` or both NaN, not bit identity), absolute or relative | Rust; Arrow Flight and DataFusion SQL; edge nodes ship compressed segments to object storage; some aggregates computed from the models (single column, no filter) | wind turbine data at 2 s and 150 ms sampling; 2025 demo: storage and transfer time against Parquet; 2024: the earlier JVM version |
+
+**Overlap with MorletDB:** high-frequency sensor data, specialised compression, SQL, edge. **Difference:** float32 and
+value-equal lossless versus float64 bit-exact recordings in PostgreSQL; aggregates over compressed segments and object
+storage versus similar-interval retrieval returning the original samples with acquisition context. Status: the project
+calls itself alpha, with no releases (checked 2026-11-12). The "What is new" claim is not affected.

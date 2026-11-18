@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:36:41 after 31 s, load { 2.95 3.70 4.02 }
+-- before
+2026-11-11T19:36:41
+19:36  up 15 days,  4:32, 19 users, load averages: 2.95 3.70 4.02
+Now drawing from 'AC Power'
+ %CPU COMM
+ 67.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 22.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  7.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.6 /sbin/launchd
+  3.7 claude
+  2.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.4 claude
+  1.6 claude
+-- after (exit 0)
+2026-11-11T19:36:58
+19:36  up 15 days,  4:33, 19 users, load averages: 4.40 4.00 4.12
+Now drawing from 'AC Power'
+ %CPU COMM
+244.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 28.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 20.4 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 13.8 /usr/local/bin/orbit
+ 10.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.2 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  1.9 claude
+  1.2 claude

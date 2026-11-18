@@ -238,6 +238,50 @@ class Contract(unittest.TestCase):
             else:
                 os.environ["MORLETDB_TRANSFER"] = old
 
+    def test_compressed_transfer_of_version5_chunks(self):
+        """Study B6: chunks written with Grizzbit 2.1 (version 5) come to a client whose native decoder reads version
+        5 as chunks, and decode to the raw reads' samples bit for bit."""
+        from morletdb import _native
+        lib = _native.native()
+        if lib is None:
+            self.skipTest("native decoder library not available")
+        if lib.max_chunk_version < 5:
+            self.skipTest(f"native decoder reads chunk versions up to {lib.max_chunk_version}")
+        self.conn.execute("SELECT morlet_version()")              # loads the library, which defines the setting
+        if self.conn.execute("SELECT current_setting('morlet.chunk_format', true)").fetchone()[0] is None:
+            self.skipTest("server without morlet.chunk_format")
+        self.conn.execute("SET morlet.chunk_format = grizzbit21")
+        rng = np.random.default_rng(7)
+        e = rng.integers(-20, 21, 40_000)
+        y = np.zeros(40_000)
+        for i in range(2, 40_000):
+            y[i] = round(1.95 * y[i - 1] - 0.97 * y[i - 2] + e[i])
+        old = os.environ.get("MORLETDB_TRANSFER")
+        try:
+            self.db.ingest(self.coll, "v5", y, sample_rate_hz=1000, channel="c", unit="u")
+            versions = {r[0] for r in self.conn.execute(
+                f"SELECT get_byte(encoded,0) FROM {self.coll}_chunks WHERE recording_id='v5'").fetchall()}
+            self.assertIn(5, versions)
+            for a, b in [(0, 40000), (1, 2), (4095, 4097), (1234, 38765)]:
+                got = {}
+                for mode in ("raw", "encoded"):
+                    os.environ["MORLETDB_TRANSFER"] = mode
+                    got[mode] = self.db.read(self.coll, "v5", a, b).samples
+                np.testing.assert_array_equal(got["encoded"].view("<u8"), got["raw"].view("<u8"))
+                np.testing.assert_array_equal(got["encoded"].view("<u8"), y[a:b].view("<u8"))
+            frame = self.conn.execute(
+                "SELECT morlet_read_interval_encoded(%s::regclass,'v5',0,40000,%s)",
+                (self.coll, lib.max_chunk_version)).fetchone()[0]
+            self.assertEqual(bytes(frame[:4]), b"MTX1")      # chunks, not samples
+        finally:
+            self.conn.rollback()
+            self.conn.execute("RESET morlet.chunk_format")
+            self.conn.commit()
+            if old is None:
+                os.environ.pop("MORLETDB_TRANSFER", None)
+            else:
+                os.environ["MORLETDB_TRANSFER"] = old
+
     def test_latest_when_supported(self):
         x = events(20000, [100, 9000], 8000)
         self.db.ingest(self.coll, "lt", x, sample_rate_hz=8000, channel="c", unit="u",
@@ -306,6 +350,29 @@ class Contract(unittest.TestCase):
         one = self.db.overview(self.coll, "ov", 0, 20000, buckets=1)[0]
         self.assertEqual((one.sample_count, one.min, one.max, one.mean, one.rms),
                          (whole.sample_count, whole.min, whole.max, whole.mean, whole.rms))
+
+    def test_exclude_the_source_recording_when_supported(self):
+        rate = 8000
+        cyc = events(60_000, [8192, 24_576, 40_960], rate, seed=4)     # the same event in three cycles
+        other = events(60_000, [20_000], rate, seed=5)
+        self.db.ingest(self.coll, "cyclic", cyc, sample_rate_hz=rate, channel="accel", unit="g")
+        self.db.ingest(self.coll, "other", other, sample_rate_hz=rate, channel="accel", unit="g")
+        self.conn.commit()
+        try:
+            res = self.db.search(self.coll, "cyclic", 8192, top_k=5, exclude="recording")
+        except morletdb.UnsupportedError:
+            self.skipTest("server without search exclusion (SQL 0.3.11)")
+        self.assertTrue(res.matches)
+        self.assertTrue(all(m.ref.recording_id == "other" for m in res.matches))
+        self.assertTrue(all(m.evidence is None for m in res.matches))
+        window = self.db.search(self.coll, "cyclic", 8192, top_k=5, exclude="window", evidence=True)
+        plain = self.db.search(self.coll, "cyclic", 8192, top_k=5, evidence=True)
+        self.assertEqual([(m.ref, m.distance) for m in window.matches], [(m.ref, m.distance) for m in plain.matches])
+        self.assertEqual(window.matches[0].ref.recording_id, "cyclic")    # the next cycle
+        with self.assertRaises(InvalidInputError):
+            self.db.search(self.coll, "cyclic", 8192, exclude="part")
+        with self.assertRaises(InvalidInputError):
+            self.db.search(self.coll, "cyclic", 8192, exclude="recording", exclude_source=False)
 
     def test_time_filters_and_evidence_when_supported(self):
         t0 = datetime(2026, 3, 1, tzinfo=timezone.utc)

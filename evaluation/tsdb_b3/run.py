@@ -155,7 +155,8 @@ def load(system, durability, rep):
     m = common.manifest()
     data, parse_s = preload(m, range(len(m["acquisitions"])))
     name = f"load_{system}_{durability}_r{rep}"
-    volume = f"b3-{system}-{durability.lower()}-r{rep}"
+    # B5: B3_VOLUME_PREFIX names the volume (fresh b5-* volumes); default b3, as before
+    volume = f"{os.environ.get('B3_VOLUME_PREFIX', 'b3')}-{system}-{durability.lower()}-r{rep}"
     res = {"system": system, "durability": durability, "rep": rep, "parse_s": parse_s,
            "samples": total_samples(m), "started": time.strftime("%Y-%m-%dT%H:%M:%S")}
     if system != "questdb":

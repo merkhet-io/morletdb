@@ -1,0 +1,61 @@
+{
+ "system": "morletdb-i2",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.20176170789636672,
+ "samples": 101586735,
+ "started": "2026-11-10T21:22:32",
+ "image": "morletdb:b5",
+ "image_id": "sha256:2f9d5e33df909778e9c77b1d3fe603b1298482044479d30deafb16b3326e3fa6",
+ "native_lib": {
+  "path": "/Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/b5/libmorlet_ffi.dylib",
+  "sha256": "e55b6d38a65282d58c81ff93ec1e880f2f5c66078c5f5459d7991941c7fbcebd"
+ },
+ "ingest": {
+  "wall_s": 8.191,
+  "samples_per_s": 12401605,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 64.769,
+   "p95_ms": 76.115,
+   "max_ms": 86.692
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.76,
+  "server": {
+   "cpu_percent_mean": 170.7,
+   "cpu_percent_p95": 179.8,
+   "memory_peak_mib": 175.2,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 523.4,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 482.7,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.3
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "69f3c54cbc6c2601958d229aae9f6576"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 2.0
+  }
+ },
+ "correct": true
+}

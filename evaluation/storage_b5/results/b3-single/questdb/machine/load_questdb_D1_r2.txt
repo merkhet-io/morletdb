@@ -1,0 +1,22 @@
+2026-11-10T20:51:36
+20:51  up 14 days,  5:47, 19 users, load averages: 6.63 6.48 8.40
+ %CPU COMM
+229.8 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 36.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.0 /usr/sbin/coreaudiod
+  3.2 claude
+  1.5 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+2026-11-10T20:51:56
+20:51  up 14 days,  5:48, 19 users, load averages: 5.97 6.35 8.31
+ %CPU COMM
+327.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 60.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 18.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  4.3 /usr/sbin/coreaudiod
+  2.0 claude
+  1.7 /Library/Developer/CommandLineTools/usr/bin/git
+  1.4 /System/Library/CoreServices/WindowManager.app/Contents/MacOS/WindowManager

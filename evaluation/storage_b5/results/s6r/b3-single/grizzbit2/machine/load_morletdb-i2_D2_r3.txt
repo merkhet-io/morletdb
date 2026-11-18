@@ -1,0 +1,23 @@
+gate met 2026-11-10T22:01:18 after 10 s, load { 2.90 6.58 13.73 }
+2026-11-10T22:01:18
+22:01  up 14 days,  6:57, 19 users, load averages: 2.90 6.58 13.73
+ %CPU COMM
+ 28.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  5.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  5.9 /usr/libexec/signpost_reporter
+  3.2 claude
+  1.7 claude
+  1.4 claude
+  1.2 bash
+  1.1 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-10T22:01:36
+22:01  up 14 days,  6:57, 19 users, load averages: 3.23 6.40 13.50
+ %CPU COMM
+205.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 47.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 14.3 /usr/libexec/signpost_reporter
+  4.9 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.4 claude
+  3.1 claude
+  1.1 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.0 claude

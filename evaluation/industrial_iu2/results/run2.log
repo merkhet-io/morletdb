@@ -1,0 +1,18 @@
+already complete 902 to load 65
+loaded 10 of 65 18 s
+loaded 20 of 65 37 s
+loaded 30 of 65 55 s
+loaded 40 of 65 67 s
+loaded 50 of 65 84 s
+loaded 60 of 65 104 s
+LOADDONE 119 s {'recordings': '2901', 'samples': '4881567501', 'original_float64_bytes': '39052540008', 'recordings_table_bytes': '2596864', 'chunk_table_bytes': '6473596928', 'segment_table_bytes': '16384', 'envelope_table_bytes': '2365390848', 'total_bytes': '8841601024', 'chunk_table_bits_per_sample': '10.609046256840852', 'total_bits_per_sample': '14.489773659282644'}
+scored 100 of 891 41 s
+scored 200 of 891 74 s
+scored 300 of 891 125 s
+scored 400 of 891 164 s
+scored 500 of 891 200 s
+scored 600 of 891 239 s
+scored 700 of 891 276 s
+scored 800 of 891 306 s
+SCOREDONE 891 339 s
+ALLDONE

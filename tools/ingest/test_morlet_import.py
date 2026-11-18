@@ -14,7 +14,7 @@ import morlet_import as mi
 
 
 def opts(**kw):
-    base = dict(format=None, rate=None, time_column=None, unit=None, prefix="", extractor=None)
+    base = dict(format=None, rate=None, time_column=None, unit=None, prefix="", extractor=None, context_columns=None)
     base.update(kw)
     return argparse.Namespace(**base)
 
@@ -103,6 +103,66 @@ class Readers(unittest.TestCase):
         self.assertEqual(recs[0].samples.tolist(), [0.125, -0.25, 1.0])
         with self.assertRaisesRegex(ValueError, "--rate"):
             mi.recordings(p, opts())
+
+    def test_wide_export_with_time_and_controller_columns(self):
+        """#388: one time column, signals, and a controller column written only on change."""
+        p = self.tmp / "plant.csv"
+        lines = ["time,program,block,spindle_current,vib"]
+        for i in range(10):
+            t = f"2026-03-01T08:00:00.{i * 100:03d}Z" if i < 9 else "2026-03-01T08:00:00.950Z"   # last row late
+            prog = "P100" if i == 0 else ""
+            block = {0: "N10", 4: "N20"}.get(i, "")
+            lines.append(f"{t},{prog},{block},{1.5 + i / 10:.2f},{(-1) ** i * 0.25:.3f}")
+        p.write_text("\n".join(lines) + "\n")
+        recs = mi.recordings(p, opts(time_column="time", context_columns="program,block"))
+        self.assertEqual([r.recording_id for r in recs], ["plant.spindle_current", "plant.vib"])
+        r = recs[0]
+        self.assertEqual(r.rate, 10.0)                             # median spacing 0.1 s, to 9 digits
+        self.assertEqual(r.metadata["start"], "2026-03-01T08:00:00Z")
+        ax = r.metadata["time_axis"]
+        self.assertEqual(ax["rate_source"], "median spacing of the time column")
+        self.assertAlmostEqual(ax["max_offset_s"], 0.05)           # the late last row is reported, not hidden
+        self.assertEqual((ax["steps_backward"], ax["steps_zero"]), (0, 0))
+        self.assertEqual(sorted(r.context), [("block", "N10", 0, 4), ("block", "N20", 4, 10),
+                                             ("program", "P100", 0, 10)])
+        self.assertEqual(recs[1].context, r.context)
+        with_rate = mi.recordings(p, opts(time_column="time", rate=10, context_columns="block"))
+        self.assertEqual(with_rate[0].metadata["time_axis"]["rate_source"], "--rate")
+        self.assertEqual([x.recording_id for x in with_rate], ["plant.spindle_current", "plant.vib"])
+        with self.assertRaisesRegex(ValueError, "no context column"):
+            mi.recordings(p, opts(time_column="time", context_columns="tool"))
+
+    def test_seconds_time_column_and_backward_steps(self):
+        p = self.tmp / "rel.csv"
+        p.write_text("t,a\n0,1\n0.5,2\n1.0,3\n0.9,4\n2.0,5\n")
+        r = mi.recordings(p, opts(time_column="t"))[0]
+        self.assertAlmostEqual(r.rate, 2.0)
+        self.assertNotIn("start", r.metadata)                     # relative seconds give no start time
+        self.assertEqual(r.metadata["time_axis"]["steps_backward"], 1)
+        with self.assertRaisesRegex(ValueError, "neither numbers"):
+            q = self.tmp / "bad.csv"
+            q.write_text("t,a\nmonday,1\ntuesday,2\n")
+            mi.recordings(q, opts(time_column="t"))
+
+    def test_clock_drift_is_detected_and_reported(self):
+        """#393: timestamps from a clock 1% slower than the declared rate."""
+        p = self.tmp / "drift.csv"
+        rows = ["t,a"] + [f"{i * 0.0101:.6f},{i % 5}" for i in range(1000)]     # true spacing 10.1 ms
+        p.write_text("\n".join(rows) + "\n")
+        r = mi.recordings(p, opts(time_column="t", rate=100))[0]         # declared 100 Hz
+        ax = r.metadata["time_axis"]
+        self.assertAlmostEqual(ax["fitted_rate_hz"], 1 / 0.0101, places=3)
+        self.assertAlmostEqual(ax["rate_error_ppm"], 10000.0, delta=1.0)
+        self.assertAlmostEqual(ax["end_offset_s"], 999 * 0.0001, places=6)
+        self.assertGreater(ax["max_offset_samples"], 1)
+        self.assertIn("warning", ax)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            mi.main([str(p), "--collection", "public.x", "--time-column", "t", "--rate", "100", "--dry-run"])
+        plan = json.loads(out.getvalue())
+        self.assertEqual([w["recording_id"] for w in plan["warnings"]], ["drift.a"])
+        even = mi.recordings(p, opts(time_column="t"))[0]                  # rate from the timestamps: no warning
+        self.assertNotIn("warning", even.metadata["time_axis"])
 
     def test_invalid_samples_and_unknown_format(self):
         p = self.tmp / "big.csv"

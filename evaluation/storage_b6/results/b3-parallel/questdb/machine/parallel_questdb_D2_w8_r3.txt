@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:51:44 after 62 s, load { 2.92 3.48 3.73 }
+-- before
+2026-11-11T19:51:44
+19:51  up 15 days,  4:47, 19 users, load averages: 2.92 3.48 3.73
+Now drawing from 'AC Power'
+ %CPU COMM
+ 44.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 41.4 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 19.3 claude
+ 16.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  2.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  2.1 /System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter
+  1.8 /Applications/Warp.app/Contents/MacOS/stable
+  1.0 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+-- after (exit 0)
+2026-11-11T19:52:03
+19:52  up 15 days,  4:48, 19 users, load averages: 4.96 3.92 3.88
+Now drawing from 'AC Power'
+ %CPU COMM
+235.5 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 26.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 22.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  2.9 claude
+  1.0 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.0 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  1.0 /usr/libexec/duetexpertd
+  0.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

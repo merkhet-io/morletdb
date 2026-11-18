@@ -1,0 +1,24 @@
+2026-11-10T18:58:35
+18:58  up 14 days,  3:54, 19 users, load averages: 8.56 6.42 5.44
+ %CPU COMM
+174.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 52.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 24.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.2 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  9.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+2026-11-10T19:02:40
+19:02  up 14 days,  3:58, 19 users, load averages: 6.42 6.02 5.47
+ %CPU COMM
+201.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 54.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 27.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 20.4 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 10.2 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+2026-11-10T19:07:11
+19:07  up 14 days,  4:03, 19 users, load averages: 15.42 9.38 6.96
+ %CPU COMM
+219.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 98.3 /Users/zin/sophia/morletdb/.claude/worktrees/agent-a765221c739dfa17a/target/debug/build/pgrx-pg-sys-869da57335563091/build-script-bindgen
+ 77.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 23.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 10.7 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha

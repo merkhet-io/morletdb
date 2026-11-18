@@ -1,0 +1,48 @@
+{
+ "period_ns": 15625,
+ "channels": [
+  "vibration_1",
+  "phase_current_1",
+  "phase_current_2"
+ ],
+ "missing": [
+  [
+   1767228120015984375,
+   1023.0
+  ]
+ ],
+ "extra": [
+  [
+   1767228120197362652,
+   12631.209728
+  ]
+ ],
+ "value_mismatches_on_matching_times": {
+  "vibration_1": 0,
+  "phase_current_1": 0,
+  "phase_current_2": 0
+ },
+ "extra_rows": [
+  {
+   "vibration_1": 0.0122070312419328,
+   "phase_current_1": -2.3280822738520768,
+   "phase_current_2": -0.10125091546043055
+  }
+ ],
+ "missing_rows_sent": [
+  {
+   "vibration_1": 0.1647949217660928,
+   "phase_current_1": -2.233030394032081,
+   "phase_current_2": -0.1480880736326025
+  }
+ ],
+ "rows_with_time_any_acq": {
+  "1767228120197362652": [],
+  "1767228120015984375": [
+   [
+    "N15_M07_F04_KA06_1",
+    1
+   ]
+  ]
+ }
+}

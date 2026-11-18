@@ -1,0 +1,55 @@
+name: WinCC OA integration
+# #474. Phase A: the companion and the replay machine against a disposable MorletDB (the pinned release image in
+# Docker, no mocks of MorletDB). Phase B: the adapter's unit tests on a fake of the documented WinCC OA JavaScript
+# Manager API, an end-to-end test of the adapter against the real companion, and the reviewable bundle. No WinCC OA
+# is involved: the adapter is experimental, awaiting validation in WinCC OA. Release wiring waits for the owner.
+on:
+  pull_request:
+    paths: ['integrations/winccoa/**', 'sdk/python/**', 'docs/winccoa.md', '.github/workflows/winccoa.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  companion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the SDK and the companion
+        run: |
+          pip install ./sdk/python
+          pip install ./integrations/winccoa/companion
+      - name: Test the companion and the replay machine against the release image
+        working-directory: integrations/winccoa/companion/tests
+        run: python -m unittest -v test_offline test_machine test_context test_service test_rls
+  adapter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests of the adapter (fake WinCC OA API, no dependencies)
+        working-directory: integrations/winccoa/adapter
+        run: node --test test/*.test.js
+      - name: Install the SDK and the companion
+        run: |
+          pip install ./sdk/python
+          pip install ./integrations/winccoa/companion
+      - name: End-to-end test of the adapter against the real companion and the release image
+        working-directory: integrations/winccoa/adapter/test/e2e
+        run: python -m unittest -v test_e2e
+      - name: Build the bundle from the checked-out commit
+        run: node integrations/winccoa/adapter/tools/bundle.js --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: morlet-winccoa-adapter
+          path: dist/
+          if-no-files-found: error

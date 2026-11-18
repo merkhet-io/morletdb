@@ -1,0 +1,2131 @@
+{
+ "study": "B6 storage (PROTOCOL.md section 3)",
+ "set": "benchmark",
+ "started": "2026-11-11T19:13:36",
+ "chunk": 4096,
+ "quantum": 1.0,
+ "inputs_manifest_sha256": "f4e158f23dfdc9f12afebde737d2f030660cab2cc254874e98d4a794ce6ae8da",
+ "bench": {
+  "path": "/Users/zin/sophia/morletdb-b6/evaluation/storage_b6/bin/b6/rawcodec_bench",
+  "sha256": "574314a639b3326c67ff87e6b694f6b8c799e8267df06fc8564bfd2f8c0d5254"
+ },
+ "b6codec": {
+  "path": "/Users/zin/sophia/morletdb-b6/evaluation/storage_b6/bin/b6/b6codec",
+  "sha256": "31ac6d8adf2c1c42e504df3af5fac1353762836071996063bdcc6842a25f6e7f"
+ },
+ "inputs": [
+  {
+   "input": "cx",
+   "set": "waveform",
+   "samples": 4194304,
+   "sha256": "6a5b66761bdf6580f98a0ddcd792c2efcb2d7d0fee434a98ddb58cddf6a9be98",
+   "chunks": 1024,
+   "chunk_lengths": {
+    "4096": 1024
+   },
+   "bytes": {
+    "G1": 2417280,
+    "G21": 2312039
+   },
+   "bits_per_sample": {
+    "G1": 4.6106,
+    "G21": 4.4099
+   },
+   "G21_over_G1": 0.956463,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G21": {
+     "v2 grid": 29,
+     "v5 grid": 995
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 995,
+    "LPC": 995
+   },
+   "chunks_changed": 995,
+   "changed_by_G1_kind": {
+    "v2 grid": 995
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 4194304,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 2417280,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 5.3293,
+    "PCO_bits": 5.2311,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 2417280,
+    "G1_matches": true,
+    "G2_bytes": 2417136,
+    "G2_bits": 4.6103
+   },
+   "seconds": 0.6
+  },
+  {
+   "input": "ims",
+   "set": "waveform",
+   "samples": 4194304,
+   "sha256": "212d3e1d9d53573a282f72b1c04f429023f80376e267a81993693a5aa3ea6cd2",
+   "chunks": 1024,
+   "chunk_lengths": {
+    "4096": 1024
+   },
+   "bytes": {
+    "G1": 4618374,
+    "G21": 4397296
+   },
+   "bits_per_sample": {
+    "G1": 8.8088,
+    "G21": 8.3872
+   },
+   "G21_over_G1": 0.952131,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G21": {
+     "v5 grid": 1024
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 1024,
+    "LPC": 1024
+   },
+   "chunks_changed": 1024,
+   "changed_by_G1_kind": {
+    "v2 grid": 1024
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 4194304,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 4618374,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 9.1921,
+    "PCO_bits": 8.1206,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 4618374,
+    "G1_matches": true,
+    "G2_bytes": 4618374,
+    "G2_bits": 8.8088
+   },
+   "seconds": 0.8
+  },
+  {
+   "input": "sleep",
+   "set": "waveform",
+   "samples": 4194304,
+   "sha256": "7ba6cdd38ec0e905b7f01d040215f92a0e6e6252d23db37b867a6a9d6f8ad550",
+   "chunks": 1024,
+   "chunk_lengths": {
+    "4096": 1024
+   },
+   "bytes": {
+    "G1": 7685182,
+    "G21": 5302788
+   },
+   "bits_per_sample": {
+    "G1": 14.6583,
+    "G21": 10.1143
+   },
+   "G21_over_G1": 0.690002,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 32,
+     "v3 grid": 992
+    },
+    "G21": {
+     "v5 grid": 1024
+    }
+   },
+   "version5_paths": {
+    "table": 1024,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 993
+   },
+   "chunks_changed": 1024,
+   "changed_by_G1_kind": {
+    "v2 grid": 32,
+    "v3 grid": 992
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 4194304,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 7685182,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 18.3268,
+    "PCO_bits": 20.2748,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 7685182,
+    "G1_matches": true,
+    "G2_bytes": 7666974,
+    "G2_bits": 14.6236
+   },
+   "seconds": 1.6
+  },
+  {
+   "input": "ecg",
+   "set": "waveform",
+   "samples": 4194000,
+   "sha256": "2b202eceaf44c66c69f4c25d817dd9ce0d988087f58feefcd3f7323587ee35ae",
+   "chunks": 4194,
+   "chunk_lengths": {
+    "1000": 4194
+   },
+   "bytes": {
+    "G1": 3880583,
+    "G21": 3865048
+   },
+   "bits_per_sample": {
+    "G1": 7.4022,
+    "G21": 7.3725
+   },
+   "G21_over_G1": 0.995997,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 4194
+    },
+    "G21": {
+     "v2 grid": 3329,
+     "v5 grid": 865
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 865,
+    "LPC": 865
+   },
+   "chunks_changed": 865,
+   "changed_by_G1_kind": {
+    "v2 grid": 865
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 4194000,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 3880583,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 8.0795,
+    "PCO_bits": 7.8444,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 3880583,
+    "G1_matches": true,
+    "G2_bytes": 3880583,
+    "G2_bits": 7.4022
+   },
+   "seconds": 1.2
+  },
+  {
+   "input": "pad-c-b6",
+   "set": "waveform",
+   "samples": 4194304,
+   "sha256": "e7e1bad4d60ddac3259c1b2ccf7d7c1edfb093360b7749a04815c81553bee438",
+   "chunks": 1024,
+   "chunk_lengths": {
+    "4096": 1024
+   },
+   "bytes": {
+    "G1": 4132933,
+    "G21": 4061566
+   },
+   "bits_per_sample": {
+    "G1": 7.8829,
+    "G21": 7.7468
+   },
+   "G21_over_G1": 0.982732,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G21": {
+     "v2 grid": 44,
+     "v5 grid": 980
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 980,
+    "LPC": 980
+   },
+   "chunks_changed": 980,
+   "changed_by_G1_kind": {
+    "v2 grid": 980
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 0.6
+  },
+  {
+   "input": "pad-p-b6",
+   "set": "waveform",
+   "samples": 4194304,
+   "sha256": "77fb932c15e5295918f37e177858890d58160784b26491beb4ee8f7805547025",
+   "chunks": 1024,
+   "chunk_lengths": {
+    "4096": 1024
+   },
+   "bytes": {
+    "G1": 4806153,
+    "G21": 4143664
+   },
+   "bits_per_sample": {
+    "G1": 9.167,
+    "G21": 7.9034
+   },
+   "G21_over_G1": 0.862158,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G21": {
+     "v5 grid": 1024
+    }
+   },
+   "version5_paths": {
+    "table": 1024,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 1010
+   },
+   "chunks_changed": 1024,
+   "changed_by_G1_kind": {
+    "v2 grid": 1024
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 1.2
+  },
+  {
+   "input": "Air-pressure",
+   "set": "elf",
+   "samples": 95928,
+   "sha256": "4111f88a81272afa0bcd113cc9b33452b443cd0f4645a9898e2e0d5ee1c2288a",
+   "chunks": 24,
+   "chunk_lengths": {
+    "1720": 1,
+    "4096": 23
+   },
+   "bytes": {
+    "G1": 137260,
+    "G21": 131338
+   },
+   "bits_per_sample": {
+    "G1": 11.4469,
+    "G21": 10.953
+   },
+   "G21_over_G1": 0.956856,
+   "chunk_kinds": {
+    "G1": {
+     "v3 grid": 24
+    },
+    "G21": {
+     "v5 grid": 24
+    }
+   },
+   "version5_paths": {
+    "table": 17,
+    "exceptions only": 7,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 15
+   },
+   "chunks_changed": 24,
+   "changed_by_G1_kind": {
+    "v3 grid": 24
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 95928,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 137260,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 10.7701,
+    "PCO_bits": 8.7329,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 137260,
+    "G1_matches": true,
+    "G2_bytes": 121760,
+    "G2_bits": 10.1543
+   },
+   "seconds": 0.1
+  },
+  {
+   "input": "Air-sensor",
+   "set": "elf",
+   "samples": 8664,
+   "sha256": "ad3e0c59af84cd4b10f8c2c5469daa4c037692d8291c00d21b98c43fab07b3d4",
+   "chunks": 3,
+   "chunk_lengths": {
+    "472": 1,
+    "4096": 2
+   },
+   "bytes": {
+    "G1": 49926,
+    "G21": 49926
+   },
+   "bits_per_sample": {
+    "G1": 46.0997,
+    "G21": 46.0997
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 3
+    },
+    "G21": {
+     "v2 float": 3
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 8664,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 49926,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 46.6325,
+    "PCO_bits": 46.5743,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 49926,
+    "G1_matches": true,
+    "G2_bytes": 49736,
+    "G2_bits": 45.9243
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Basel-temp",
+   "set": "elf",
+   "samples": 100001,
+   "sha256": "26e83c4cca557d5748c751022cbb38689f6e724701fdb513b24ab806d33521a2",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1697": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 654705,
+    "G21": 654705
+   },
+   "bits_per_sample": {
+    "G1": 52.3759,
+    "G21": 52.3759
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 25
+    },
+    "G21": {
+     "v2 float": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 654705,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-zstd9",
+    "CH_best_bits": 21.0712,
+    "PCO_bits": 15.2663,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 654705,
+    "G1_matches": true,
+    "G2_bytes": 411116,
+    "G2_bits": 32.889
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Basel-wind",
+   "set": "elf",
+   "samples": 100000,
+   "sha256": "e310bba4a5e63bac6b71964a67d9533957d24f6c4c13fd17988ca25818ad1d01",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1696": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 668101,
+    "G21": 668101
+   },
+   "bits_per_sample": {
+    "G1": 53.4481,
+    "G21": 53.4481
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 25
+    },
+    "G21": {
+     "v2 float": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100000,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 668101,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 21.7866,
+    "PCO_bits": 14.2884,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 668101,
+    "G1_matches": true,
+    "G2_bytes": 375327,
+    "G2_bits": 30.0262
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Bird-migration",
+   "set": "elf",
+   "samples": 89867,
+   "sha256": "644020d97d77e685c088cd275133b85f6ec06e56b4a1fbbdef26254d1d31e440",
+   "chunks": 22,
+   "chunk_lengths": {
+    "3851": 1,
+    "4096": 21
+   },
+   "bytes": {
+    "G1": 515656,
+    "G21": 515656
+   },
+   "bits_per_sample": {
+    "G1": 45.9039,
+    "G21": 45.9039
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 22
+    },
+    "G21": {
+     "v2 float": 22
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 89867,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 515656,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 16.9947,
+    "PCO_bits": 15.0514,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 515656,
+    "G1_matches": true,
+    "G2_bytes": 199326,
+    "G2_bits": 17.7441
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Bitcoin-price",
+   "set": "elf",
+   "samples": 7116,
+   "sha256": "cf7a8173d042b348ca21ca91d28d9c314ae8049b7226ca77f19cf130c5189e32",
+   "chunks": 2,
+   "chunk_lengths": {
+    "3020": 1,
+    "4096": 1
+   },
+   "bytes": {
+    "G1": 41013,
+    "G21": 41013
+   },
+   "bits_per_sample": {
+    "G1": 46.1079,
+    "G21": 46.1079
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 2
+    },
+    "G21": {
+     "v2 float": 2
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 7116,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 41013,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-ALP-zstd9",
+    "CH_best_bits": 28.7993,
+    "PCO_bits": 46.1979,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 41013,
+    "G1_matches": true,
+    "G2_bytes": 41013,
+    "G2_bits": 46.1079
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "City-lat",
+   "set": "elf",
+   "samples": 41001,
+   "sha256": "85399be3c5f5b3df583d6ad8cbb3a7b0314d56c0cb285f57b74eed71660426fe",
+   "chunks": 11,
+   "chunk_lengths": {
+    "41": 1,
+    "4096": 10
+   },
+   "bytes": {
+    "G1": 104870,
+    "G21": 102801
+   },
+   "bits_per_sample": {
+    "G1": 20.4619,
+    "G21": 20.0582
+   },
+   "G21_over_G1": 0.980271,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 1,
+     "v2 grid": 10
+    },
+    "G21": {
+     "v2 float": 1,
+     "v5 grid": 10
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 10,
+    "LPC": 10
+   },
+   "chunks_changed": 10,
+   "changed_by_G1_kind": {
+    "v2 grid": 10
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 41001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 104870,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 20.6348,
+    "PCO_bits": 20.5398,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 104870,
+    "G1_matches": true,
+    "G2_bytes": 104720,
+    "G2_bits": 20.4327
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "City-lon",
+   "set": "elf",
+   "samples": 41001,
+   "sha256": "568701b94e989fe29c8708550ea02f6979e93963d9b79fe9a66f0fb60d3533af",
+   "chunks": 11,
+   "chunk_lengths": {
+    "41": 1,
+    "4096": 10
+   },
+   "bytes": {
+    "G1": 110959,
+    "G21": 110959
+   },
+   "bits_per_sample": {
+    "G1": 21.65,
+    "G21": 21.65
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 1,
+     "v2 grid": 10
+    },
+    "G21": {
+     "v2 float": 1,
+     "v2 grid": 10
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 41001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 110959,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 22.2646,
+    "PCO_bits": 22.1355,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 110959,
+    "G1_matches": true,
+    "G2_bytes": 110797,
+    "G2_bits": 21.6184
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "City-temp",
+   "set": "elf",
+   "samples": 100001,
+   "sha256": "d06dafc1475bc3da35cc12b80769638f59f2911573f6b8872676a65e5bba701d",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1697": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 93724,
+    "G21": 93641
+   },
+   "bits_per_sample": {
+    "G1": 7.4978,
+    "G21": 7.4912
+   },
+   "G21_over_G1": 0.999114,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 24,
+     "v5 grid": 1
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 1,
+    "LPC": 1
+   },
+   "chunks_changed": 1,
+   "changed_by_G1_kind": {
+    "v2 grid": 1
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 93724,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 7.7288,
+    "PCO_bits": 7.7187,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 93724,
+    "G1_matches": true,
+    "G2_bytes": 90017,
+    "G2_bits": 7.2013
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Dew-point-temp",
+   "set": "elf",
+   "samples": 100001,
+   "sha256": "3b0a819a45a93f3cd8b60d8c2cec11aa8d5b3fcbe0baf0a710a11ef92d6565da",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1697": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 102411,
+    "G21": 101697
+   },
+   "bits_per_sample": {
+    "G1": 8.1928,
+    "G21": 8.1357
+   },
+   "G21_over_G1": 0.993028,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 3,
+     "v5 grid": 22
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 22,
+    "LPC": 22
+   },
+   "chunks_changed": 22,
+   "changed_by_G1_kind": {
+    "v2 grid": 22
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 102411,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 9.0881,
+    "PCO_bits": 8.983,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 102411,
+    "G1_matches": true,
+    "G2_bytes": 102411,
+    "G2_bits": 8.1928
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Food-price",
+   "set": "elf",
+   "samples": 100001,
+   "sha256": "146a89401d548c16980bdb6ee7c35fae096b1459a756abcd2d24b920151d59e2",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1697": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 401801,
+    "G21": 401801
+   },
+   "bits_per_sample": {
+    "G1": 32.1438,
+    "G21": 32.1438
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 13,
+     "v2 grid": 12
+    },
+    "G21": {
+     "v2 float": 13,
+     "v2 grid": 12
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 401801,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-ALP-zstd9",
+    "CH_best_bits": 14.7526,
+    "PCO_bits": 11.8396,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 401801,
+    "G1_matches": true,
+    "G2_bytes": 141204,
+    "G2_bits": 11.2962
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "IR-bio-temp",
+   "set": "elf",
+   "samples": 99602,
+   "sha256": "1203b45cfcfade7e7b03ac68842595c9af011f8204598fd9984b255f24da13b1",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1298": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 44844,
+    "G21": 44014
+   },
+   "bits_per_sample": {
+    "G1": 3.6019,
+    "G21": 3.5352
+   },
+   "G21_over_G1": 0.981491,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 10,
+     "v5 grid": 15
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 13,
+    "per sample": 0,
+    "none": 2,
+    "LPC": 4
+   },
+   "chunks_changed": 15,
+   "changed_by_G1_kind": {
+    "v2 grid": 15
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 99602,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 44844,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 4.4059,
+    "PCO_bits": 4.2851,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 44844,
+    "G1_matches": true,
+    "G2_bytes": 44844,
+    "G2_bits": 3.6019
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "PM10-dust",
+   "set": "elf",
+   "samples": 93662,
+   "sha256": "eef64f5eaac4e4ad913737e175d10cd5441ff4343d5f56e4c8dd361e3c235efe",
+   "chunks": 23,
+   "chunk_lengths": {
+    "3550": 1,
+    "4096": 22
+   },
+   "bytes": {
+    "G1": 46666,
+    "G21": 46666
+   },
+   "bits_per_sample": {
+    "G1": 3.9859,
+    "G21": 3.9859
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 23
+    },
+    "G21": {
+     "v2 grid": 23
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 93662,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 46666,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 4.284,
+    "PCO_bits": 4.4463,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 46666,
+    "G1_matches": true,
+    "G2_bytes": 44674,
+    "G2_bits": 3.8158
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "POI-lon",
+   "set": "elf",
+   "samples": 100001,
+   "sha256": "ec47eea315598c6b22bc2cd3d917665eb7b99f18012a0112acf53616b2eab7bf",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1697": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 800208,
+    "G21": 800208
+   },
+   "bits_per_sample": {
+    "G1": 64.016,
+    "G21": 64.016
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 raw": 25
+    },
+    "G21": {
+     "v2 raw": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 800208,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 54.8062,
+    "PCO_bits": 54.5453,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 800208,
+    "G1_matches": true,
+    "G2_bytes": 686666,
+    "G2_bits": 54.9327
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "SSD-bench",
+   "set": "elf",
+   "samples": 8927,
+   "sha256": "e40d2d293fe67674fad16e8c31516334acb2ee9e17ae3cc305c3020387fa5162",
+   "chunks": 3,
+   "chunk_lengths": {
+    "735": 1,
+    "4096": 2
+   },
+   "bytes": {
+    "G1": 35037,
+    "G21": 35037
+   },
+   "bits_per_sample": {
+    "G1": 31.3987,
+    "G21": 31.3987
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 1,
+     "v2 grid": 2
+    },
+    "G21": {
+     "v2 float": 1,
+     "v2 grid": 2
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 8927,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 35037,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 7.879,
+    "PCO_bits": 7.5878,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 35037,
+    "G1_matches": true,
+    "G2_bytes": 8837,
+    "G2_bits": 7.9193
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Stocks-DE",
+   "set": "elf",
+   "samples": 100002,
+   "sha256": "fadc6513edc72673b79f619b1127df2e8a939f740cfa05f4f906555caa7c05fc",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1698": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 69000,
+    "G21": 69000
+   },
+   "bits_per_sample": {
+    "G1": 5.5199,
+    "G21": 5.5199
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100002,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 69000,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 6.1358,
+    "PCO_bits": 6.5775,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 69000,
+    "G1_matches": true,
+    "G2_bytes": 66974,
+    "G2_bits": 5.3578
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Stocks-UK",
+   "set": "elf",
+   "samples": 100002,
+   "sha256": "78cbb1981d9e2bfcdd3a17d464a8a00f015b68be085cbcdba4b545548f44a67f",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1698": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 66227,
+    "G21": 66227
+   },
+   "bits_per_sample": {
+    "G1": 5.2981,
+    "G21": 5.2981
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100002,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 66227,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 5.9637,
+    "PCO_bits": 8.584,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 66227,
+    "G1_matches": true,
+    "G2_bytes": 65733,
+    "G2_bits": 5.2585
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Wind-Speed",
+   "set": "elf",
+   "samples": 99132,
+   "sha256": "2676aed36f8f02aacffb79def89d22621c9b33eee2a761d3797aef46a7b0cffc",
+   "chunks": 25,
+   "chunk_lengths": {
+    "828": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 62954,
+    "G21": 60454
+   },
+   "bits_per_sample": {
+    "G1": 5.0804,
+    "G21": 4.8787
+   },
+   "G21_over_G1": 0.960288,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v5 grid": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 25,
+    "LPC": 25
+   },
+   "chunks_changed": 25,
+   "changed_by_G1_kind": {
+    "v2 grid": 25
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 99132,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 62954,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 5.8506,
+    "PCO_bits": 5.3952,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 62954,
+    "G1_matches": true,
+    "G2_bytes": 62954,
+    "G2_bits": 5.0804
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "b3-vibration_1",
+   "set": "b3",
+   "samples": 26744663,
+   "sha256": "c749aca51b04a1309d1bc8ba13e41e0fbeabc2d543116a74c75b8ff5eb6ffa76",
+   "chunks": 6579,
+   "chunk_lengths": {
+    "47": 1,
+    "449": 1,
+    "1278": 1,
+    "2048": 12,
+    "2049": 45,
+    "2050": 5,
+    "2051": 4,
+    "2052": 4,
+    "2053": 1,
+    "2055": 1,
+    "2120": 1,
+    "2128": 1,
+    "2129": 1,
+    "2130": 1,
+    "2131": 2,
+    "2133": 2,
+    "2134": 2,
+    "2135": 2,
+    "2139": 1,
+    "2141": 1,
+    "2142": 1,
+    "2293": 1,
+    "2380": 1,
+    "2435": 1,
+    "2523": 1,
+    "2569": 1,
+    "2780": 1,
+    "2851": 1,
+    "2967": 1,
+    "3028": 1,
+    "3217": 1,
+    "3371": 1,
+    "3607": 1,
+    "3666": 1,
+    "4056": 1,
+    "4096": 6475
+   },
+   "bytes": {
+    "G1": 30988424,
+    "G21": 26130601
+   },
+   "bits_per_sample": {
+    "G1": 9.2694,
+    "G21": 7.8163
+   },
+   "G21_over_G1": 0.843237,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 6579
+    },
+    "G21": {
+     "v2 grid": 1,
+     "v5 grid": 6578
+    }
+   },
+   "version5_paths": {
+    "table": 6578,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 6172
+   },
+   "chunks_changed": 6578,
+   "changed_by_G1_kind": {
+    "v2 grid": 6578
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 8.0
+  },
+  {
+   "input": "b3-phase_current_1",
+   "set": "b3",
+   "samples": 26744663,
+   "sha256": "cb06f60d357825a3277e86d47bca371a26b9326522651a299c4b9c8a819a31b0",
+   "chunks": 6579,
+   "chunk_lengths": {
+    "47": 1,
+    "449": 1,
+    "1278": 1,
+    "2048": 12,
+    "2049": 45,
+    "2050": 5,
+    "2051": 4,
+    "2052": 4,
+    "2053": 1,
+    "2055": 1,
+    "2120": 1,
+    "2128": 1,
+    "2129": 1,
+    "2130": 1,
+    "2131": 2,
+    "2133": 2,
+    "2134": 2,
+    "2135": 2,
+    "2139": 1,
+    "2141": 1,
+    "2142": 1,
+    "2293": 1,
+    "2380": 1,
+    "2435": 1,
+    "2523": 1,
+    "2569": 1,
+    "2780": 1,
+    "2851": 1,
+    "2967": 1,
+    "3028": 1,
+    "3217": 1,
+    "3371": 1,
+    "3607": 1,
+    "3666": 1,
+    "4056": 1,
+    "4096": 6475
+   },
+   "bytes": {
+    "G1": 35296936,
+    "G21": 28849675
+   },
+   "bits_per_sample": {
+    "G1": 10.5582,
+    "G21": 8.6297
+   },
+   "G21_over_G1": 0.817342,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 6579
+    },
+    "G21": {
+     "v2 grid": 1,
+     "v5 grid": 6578
+    }
+   },
+   "version5_paths": {
+    "table": 6578,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 6578
+   },
+   "chunks_changed": 6578,
+   "changed_by_G1_kind": {
+    "v2 grid": 6578
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 9.3
+  },
+  {
+   "input": "b3-phase_current_2",
+   "set": "b3",
+   "samples": 26744663,
+   "sha256": "8040c8bc720bdddefe0be70d6e884334154fad24fae132c162759b9731fb503b",
+   "chunks": 6579,
+   "chunk_lengths": {
+    "47": 1,
+    "449": 1,
+    "1278": 1,
+    "2048": 12,
+    "2049": 45,
+    "2050": 5,
+    "2051": 4,
+    "2052": 4,
+    "2053": 1,
+    "2055": 1,
+    "2120": 1,
+    "2128": 1,
+    "2129": 1,
+    "2130": 1,
+    "2131": 2,
+    "2133": 2,
+    "2134": 2,
+    "2135": 2,
+    "2139": 1,
+    "2141": 1,
+    "2142": 1,
+    "2293": 1,
+    "2380": 1,
+    "2435": 1,
+    "2523": 1,
+    "2569": 1,
+    "2780": 1,
+    "2851": 1,
+    "2967": 1,
+    "3028": 1,
+    "3217": 1,
+    "3371": 1,
+    "3607": 1,
+    "3666": 1,
+    "4056": 1,
+    "4096": 6475
+   },
+   "bytes": {
+    "G1": 35913262,
+    "G21": 28778275
+   },
+   "bits_per_sample": {
+    "G1": 10.7426,
+    "G21": 8.6083
+   },
+   "G21_over_G1": 0.801327,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 6579
+    },
+    "G21": {
+     "v2 grid": 1,
+     "v5 grid": 6578
+    }
+   },
+   "version5_paths": {
+    "table": 6578,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 6578
+   },
+   "chunks_changed": 6578,
+   "changed_by_G1_kind": {
+    "v2 grid": 6578
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 9.3
+  },
+  {
+   "input": "b3-force",
+   "set": "b3",
+   "samples": 1664202,
+   "sha256": "e7504b71f86a96f3a10d9776861b1ea2b6b08861c75f1f5eb7b8ae7affaa8a00",
+   "chunks": 416,
+   "chunk_lengths": {
+    "3713": 84,
+    "3717": 5,
+    "3718": 12,
+    "3719": 3,
+    "4096": 312
+   },
+   "bytes": {
+    "G1": 1801740,
+    "G21": 1549569
+   },
+   "bits_per_sample": {
+    "G1": 8.6612,
+    "G21": 7.4489
+   },
+   "G21_over_G1": 0.86004,
+   "chunk_kinds": {
+    "G1": {
+     "v3 grid": 416
+    },
+    "G21": {
+     "v5 grid": 416
+    }
+   },
+   "version5_paths": {
+    "table": 415,
+    "exceptions only": 1,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 127
+   },
+   "chunks_changed": 416,
+   "changed_by_G1_kind": {
+    "v3 grid": 416
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 0.6
+  },
+  {
+   "input": "b3-speed",
+   "set": "b3",
+   "samples": 1664202,
+   "sha256": "799581a25e2799c433d3a710d7171fbc069cbaac8d14a890756e95194637da17",
+   "chunks": 416,
+   "chunk_lengths": {
+    "3713": 84,
+    "3717": 5,
+    "3718": 12,
+    "3719": 3,
+    "4096": 312
+   },
+   "bytes": {
+    "G1": 1911638,
+    "G21": 1911638
+   },
+   "bits_per_sample": {
+    "G1": 9.1895,
+    "G21": 9.1895
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 416
+    },
+    "G21": {
+     "v2 float": 416
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 0.2
+  },
+  {
+   "input": "b3-torque",
+   "set": "b3",
+   "samples": 1664202,
+   "sha256": "674584dff3923a3b2e5ae05ec7f0fcbe1ea58ccfdac4074917163aa38018d566",
+   "chunks": 416,
+   "chunk_lengths": {
+    "3713": 84,
+    "3717": 5,
+    "3718": 12,
+    "3719": 3,
+    "4096": 312
+   },
+   "bytes": {
+    "G1": 10171885,
+    "G21": 10171885
+   },
+   "bits_per_sample": {
+    "G1": 48.8974,
+    "G21": 48.8974
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 416
+    },
+    "G21": {
+     "v2 float": 416
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "seconds": 0.4
+  },
+  {
+   "input": "Blockchain-tr",
+   "set": "elf-dev",
+   "samples": 99999,
+   "sha256": "aff61b95f53c3f8102b136a54a033163df963058810ccdde9e74874ad0b3f728",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1695": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 174505,
+    "G21": 174505
+   },
+   "bits_per_sample": {
+    "G1": 13.9605,
+    "G21": 13.9605
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 99999,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 174505,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 13.1639,
+    "PCO_bits": 12.3672,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 174505,
+    "G1_matches": true,
+    "G2_bytes": 165707,
+    "G2_bits": 13.2567
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "POI-lat",
+   "set": "elf-dev",
+   "samples": 100001,
+   "sha256": "0b046bf3c574c049c0917cf90ca3c604db4b1b3d50d1d16bdfb943b0d68156bc",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1697": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 760516,
+    "G21": 760516
+   },
+   "bits_per_sample": {
+    "G1": 60.8407,
+    "G21": 60.8407
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 25
+    },
+    "G21": {
+     "v2 float": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100001,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 760516,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 53.5099,
+    "PCO_bits": 53.3024,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 760516,
+    "G1_matches": true,
+    "G2_bytes": 669815,
+    "G2_bits": 53.5847
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "Stocks-USA",
+   "set": "elf-dev",
+   "samples": 100002,
+   "sha256": "4c90325d1eac6242fbc45baf6b4b42ce4aa32b1e9e9c68194c9f286534bba579",
+   "chunks": 25,
+   "chunk_lengths": {
+    "1698": 1,
+    "4096": 24
+   },
+   "bytes": {
+    "G1": 57027,
+    "G21": 57027
+   },
+   "bits_per_sample": {
+    "G1": 4.5621,
+    "G21": 4.5621
+   },
+   "G21_over_G1": 1.0,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G21": {
+     "v2 grid": 25
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 0
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 100002,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 57027,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 5.1989,
+    "PCO_bits": 5.2321,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 57027,
+    "G1_matches": true,
+    "G2_bytes": 57027,
+    "G2_bits": 4.5621
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "electric_vehicle_charging",
+   "set": "elf-dev",
+   "samples": 3395,
+   "sha256": "eb02a65a9c5ccd71d8c14a23289f5f3de4865e0abaf9dd6fa9e596f346cfebc5",
+   "chunks": 1,
+   "chunk_lengths": {
+    "3395": 1
+   },
+   "bytes": {
+    "G1": 4257,
+    "G21": 4159
+   },
+   "bits_per_sample": {
+    "G1": 10.0312,
+    "G21": 9.8003
+   },
+   "G21_over_G1": 0.976979,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1
+    },
+    "G21": {
+     "v5 grid": 1
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 1,
+    "LPC": 1
+   },
+   "chunks_changed": 1,
+   "changed_by_G1_kind": {
+    "v2 grid": 1
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 3395,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 4257,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 10.4554,
+    "PCO_bits": 10.3918,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 4257,
+    "G1_matches": true,
+    "G2_bytes": 4257,
+    "G2_bits": 10.0312
+   },
+   "seconds": 0.0
+  },
+  {
+   "input": "pad-c",
+   "set": "waveform-b4",
+   "samples": 4194304,
+   "sha256": "e7e1bad4d60ddac3259c1b2ccf7d7c1edfb093360b7749a04815c81553bee438",
+   "chunks": 1024,
+   "chunk_lengths": {
+    "4096": 1024
+   },
+   "bytes": {
+    "G1": 4132933,
+    "G21": 4061566
+   },
+   "bits_per_sample": {
+    "G1": 7.8829,
+    "G21": 7.7468
+   },
+   "G21_over_G1": 0.982732,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G21": {
+     "v2 grid": 44,
+     "v5 grid": 980
+    }
+   },
+   "version5_paths": {
+    "table": 0,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 980,
+    "LPC": 980
+   },
+   "chunks_changed": 980,
+   "changed_by_G1_kind": {
+    "v2 grid": 980
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 4194304,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 4132933,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 8.4692,
+    "PCO_bits": 8.311,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 4132933,
+    "G1_matches": true,
+    "G2_bytes": 4132933,
+    "G2_bits": 7.8829
+   },
+   "seconds": 0.7
+  },
+  {
+   "input": "pad-p",
+   "set": "waveform-b4",
+   "samples": 4194304,
+   "sha256": "77fb932c15e5295918f37e177858890d58160784b26491beb4ee8f7805547025",
+   "chunks": 1024,
+   "chunk_lengths": {
+    "4096": 1024
+   },
+   "bytes": {
+    "G1": 4806153,
+    "G21": 4143664
+   },
+   "bits_per_sample": {
+    "G1": 9.167,
+    "G21": 7.9034
+   },
+   "G21_over_G1": 0.862158,
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G21": {
+     "v5 grid": 1024
+    }
+   },
+   "version5_paths": {
+    "table": 1024,
+    "exceptions only": 0,
+    "per sample": 0,
+    "none": 0,
+    "LPC": 1010
+   },
+   "chunks_changed": 1024,
+   "changed_by_G1_kind": {
+    "v2 grid": 1024
+   },
+   "s3_violations": [],
+   "exact": true,
+   "bench_example_agrees": true,
+   "b4": {
+    "samples": 4194304,
+    "sha256_matches": true,
+    "samples_match": true,
+    "M_auto_bytes": 4806153,
+    "G1_matches_M_auto": true,
+    "CH_best_arm": "CH-PCO",
+    "CH_best_bits": 8.9198,
+    "PCO_bits": 8.6839,
+    "PCO_exact": true
+   },
+   "b5": {
+    "G1_bytes": 4806153,
+    "G1_matches": true,
+    "G2_bytes": 4732684,
+    "G2_bits": 9.0269
+   },
+   "seconds": 1.2
+  }
+ ],
+ "finished": "2026-11-11T19:14:12"
+}

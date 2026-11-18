@@ -1,0 +1,39 @@
+{
+ "C2": {
+  "v1": {
+   "auroc_machine_operation": 0.8101249349297241,
+   "auroc_context_free": 0.6370380010411244
+  },
+  "v2": {
+   "auroc_machine_operation": 0.8101249349297241,
+   "auroc_context_free": 0.6370380010411244
+  },
+  "difference": {
+   "auroc_machine_operation": 0.0,
+   "auroc_context_free": 0.0
+  },
+  "medians": 37670,
+  "zero_under_v2": 0
+ },
+ "C3": {
+  "v1": {
+   "A_c2_score": 0.8843740881237234,
+   "B_calibrated": 0.844908082871316,
+   "Bprime_calibrated_c2_set": 0.8532243945141523
+  },
+  "v2": {
+   "A_c2_score": 0.8843740881237234,
+   "B_calibrated": 0.844908082871316,
+   "Bprime_calibrated_c2_set": 0.8532243945141523
+  },
+  "difference": {
+   "A_c2_score": 0.0,
+   "B_calibrated": 0.0,
+   "Bprime_calibrated_c2_set": 0.0
+  },
+  "medians": 24,
+  "zero_under_v2": 0
+ },
+ "criterion": "each summary AUROC within 0.01 of v1 or higher (C2 auroc_machine_operation, C3 A_c2_score)",
+ "S3": "holds"
+}

@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:56:17 after 77 s, load { 2.80 3.46 3.68 }
+-- before
+2026-11-11T19:56:17
+19:56  up 15 days,  4:52, 19 users, load averages: 2.80 3.46 3.68
+Now drawing from 'AC Power'
+ %CPU COMM
+ 42.4 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 37.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 26.1 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 15.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  5.7 /System/Library/CoreServices/talagentd
+  5.4 claude
+  5.3 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+  4.0 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+-- after (exit 0)
+2026-11-11T19:56:36
+19:56  up 15 days,  4:52, 19 users, load averages: 4.05 3.71 3.76
+Now drawing from 'AC Power'
+ %CPU COMM
+184.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 97.9 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 38.3 claude
+ 33.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 19.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.4 /usr/libexec/xprotectd
+  2.3 /System/Library/CoreServices/MenuBarAgent.app/Contents/MacOS/MenuBarAgent
+  1.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent

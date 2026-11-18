@@ -111,12 +111,102 @@ class StewardDatabase(unittest.TestCase):
         self.run_until_idle(self.steward())
         self.assertEqual(self.one("SELECT count(*) FROM fresh_envelopes WHERE window_size=2048"), (100000 - 2048) // 512 + 1)
 
+    def test_a_recording_compacted_to_level_4_does_not_starve_the_others(self):
+        """#488: after level 4 the envelope builder reported the windows it skipped as written, so the steward picked
+        the compacted recording on every tick and never reached the next one."""
+        a = self.admin
+        a.execute("SELECT morlet_build_envelopes('line','r2',4096,2048,2)")   # the grid survives r1's envelopes
+        a.execute("SELECT morlet_enable_memory('line')")
+        a.execute("DELETE FROM line_episodes")              # Plans' level-0 episodes would keep r1's chunks
+        a.execute("""SELECT morlet_set_level('line',morlet_start_memory_run('line','retention','1'),
+            jsonb_build_array(jsonb_build_object('episode_id',e,'level',4)))
+          FROM morlet_add_episodes('line','[{"recording_id":"r1","start_sample":0,"end_sample":1100000}]') e""")
+        S.grant(a)                                                           # memory added tables
+        self.assertEqual(self.one("SELECT count(*) FROM line_chunks WHERE recording_id='r1'"), 0)
+        self.run_until_idle(self.steward())
+        # the other recording is fully built; the compacted one has nothing to build and is done
+        self.assertEqual(self.one("SELECT count(*) FROM line_envelopes WHERE recording_id='r2' AND window_size=4096"),
+                         (1_100_000 - 4096) // 2048 + 1)
+        self.assertEqual(self.one("SELECT count(*) FROM line_envelopes WHERE recording_id='r1'"), 0)
+        self.assertEqual(self.one("SELECT done_end FROM morlet_steward.progress WHERE job='envelopes:4096:2048' "
+                                  "AND recording_id='r1'"), 1_100_000)
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job='envelopes' "
+                                  "AND recording_id='r1' AND outcome='done'"), 0)
+        # missing evidence stays visible: coverage says gone, and the status counts no removed sample as backlog
+        self.assertEqual(a.execute("SELECT start_sample,end_sample,state FROM morlet_coverage('line','{r1}')")
+                         .fetchall(), [(0, 1_100_000, "gone")])
+        tail = 1_100_000 - ((1_100_000 - 4096) // 2048 * 2048 + 4096)       # r2's partial tail, never built
+        self.assertEqual(a.execute("SELECT recordings_without_envelopes,unbuilt_samples "
+                                   "FROM morlet_collection_status('line') WHERE window_size=4096").fetchone(), (1, tail))
+        # new samples after the removed range are built as usual
+        a.execute("SELECT morlet_append_chunks_raw('line','r1',1100000,morlet_float8_le_bytes(ARRAY(SELECT "
+                  "round(100*sin(i/9.0))::float8 FROM generate_series(0,9999) i)),32768)")
+        self.run_until_idle(self.steward())
+        self.assertEqual(a.execute("SELECT min(start_sample),count(*) FROM line_envelopes WHERE recording_id='r1'")
+                         .fetchone(), (1_101_824, (1_110_000 - 4096 - 1_101_824) // 2048 + 1))
+
+    def test_metrics_report_state_backlog_and_tables_and_change_nothing(self):
+        import metrics as M
+        self.run_until_idle(self.steward())
+        before = self.one("SELECT count(*) FROM morlet_steward.actions")
+        out = M.Collector(dsn_for(DB, "morlet_steward"), collection_every_s=0).scrape()
+        lines = set(out.splitlines())
+        for want in ("morlet_up 1", "morlet_steward_state 0", 'morlet_steward_status_items{level="normal"} 0',
+                     'morlet_collection_raw_samples{collection="public.line",window_size="4096"} 2200000',
+                     'morlet_collection_recordings{collection="public.line",window_size="4096"} 2',
+                     'morlet_verify_last_pass_problems{collection="public.line"} 0', "morlet_ingest_hold 0",
+                     "morlet_steward_plans_waiting 0"):
+            self.assertIn(want, lines)
+        self.assertTrue(any(x.startswith('morlet_table_dead_tuples{table="public.line_chunks"} ') for x in lines))
+        self.assertTrue(any(x.startswith('morlet_steward_actions_24h{job="envelopes",outcome="done"} ') for x in lines))
+        self.assertTrue(any(x.startswith("morlet_disk_free_bytes ") for x in lines))
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions"), before)      # a scrape only reads
+        # a hold and an open breaker show up; the overall state follows the status view
+        self.admin.execute("SELECT morlet_set_ingest_hold('test')")
+        self.admin.execute("INSERT INTO morlet_steward.breakers VALUES ('rollups',3,true,'boom',now()) "
+                           "ON CONFLICT (job) DO UPDATE SET failures=3,open=true")
+        self.admin.execute("INSERT INTO morlet_steward.status_items(key,level,cause,consequence,action,who) "
+                           "VALUES ('t','action_required','c','q','a','w')")
+        # review of #472: a collection named line_acq is also line's "_acq" sibling; its table is reported once.
+        # A collection the role cannot fully read marks only itself, and the scrape still succeeds.
+        self.admin.execute("""SELECT morlet_create_stream_collection('public','line_acq');
+          SELECT morlet_enable_envelopes('line_acq')""")
+        S.grant(self.admin)
+        self.admin.execute("REVOKE SELECT ON line_acq_envelopes FROM morlet_steward")
+        out = M.Collector(dsn_for(DB, "morlet_steward"), collection_every_s=0).scrape()
+        samples = [x for x in out.splitlines() if not x.startswith("#")]
+        self.assertEqual(len(samples), len(set(x.rsplit(" ", 1)[0] for x in samples)), "duplicate samples")
+        self.assertIn("morlet_up 1", samples)
+        self.assertIn('morlet_collection_scrape_error{collection="public.line_acq"} 1', samples)
+        self.assertIn('morlet_collection_scrape_error{collection="public.line"} 0', samples)
+        lines = set(M.Collector(dsn_for(DB, "morlet_steward")).scrape().splitlines())
+        for want in ("morlet_ingest_hold 1", 'morlet_steward_breaker_open{job="rollups"} 1',
+                     'morlet_steward_breaker_failures{job="rollups"} 3', "morlet_steward_state 2",
+                     'morlet_steward_status_items{level="action_required"} 1'):
+            self.assertIn(want, lines)
+
     def test_the_steward_cannot_remove_samples(self):
         for q in ("DELETE FROM line_chunks", "UPDATE line_chunks SET encoded=encoded", "TRUNCATE line_chunks",
                   "DROP TABLE line_chunks"):
             with self.subTest(q=q), self.assertRaises(psycopg.errors.InsufficientPrivilege):
                 self.conn.execute(q)
         self.assertEqual(self.one("SELECT sum(sample_count) FROM line_chunks"), 2_200_000)
+
+    def test_verification_gets_its_share_while_the_load_gate_stays_closed(self):
+        """Soak S1: on a busy edge device the load never fell below the gate and verification never ran."""
+        envelopes = self.one("SELECT count(*) FROM line_envelopes")         # built by hand in the fixture
+        st = steward.Steward(self.conn, P.Config(load_per_cpu=0.0, verify_share_every_s=0), self.tmp)
+        for _ in range(20):
+            note = st.tick()
+            if self.one("SELECT last_pass_finished_at IS NOT NULL FROM morlet_steward.verify_cursor "
+                        "WHERE collection='public.line'"):
+                break
+        self.assertIn("minimum share for integrity checks", note)
+        self.assertEqual(self.one("SELECT last_pass_problems FROM morlet_steward.verify_cursor "
+                                  "WHERE collection='public.line'"), 0)    # missing summaries are backlog, not damage
+        jobs = {r[0] for r in self.admin.execute("SELECT DISTINCT job FROM morlet_steward.actions")}
+        self.assertEqual(jobs, {"verify"})                                   # the builders still wait for the gate
+        self.assertEqual(self.one("SELECT count(*) FROM line_envelopes"), envelopes)
 
     def test_a_failing_job_opens_its_breaker_and_says_so(self):
         self.admin.execute("REVOKE INSERT ON line_envelopes FROM morlet_steward")
@@ -252,6 +342,51 @@ class Plans(StewardDatabase):
         self.admin.execute("UPDATE morlet_steward.plans SET valid_until=now()-interval '1 s' WHERE plan_id=%s", (pid2,))
         self.assertEqual(steward.main(["approve", str(pid2), "--dsn", self.as_("bob")]), 2)
         self.assertEqual(self.one("SELECT string_agg(level::text,',') FROM line_episodes"), "0,0")
+
+    def connect_as(self, who):
+        c = psycopg.connect(self.as_(who), autocommit=True)
+        self.addCleanup(c.close)
+        return c
+
+    def test_a_proposal_cannot_carry_approval_or_another_identity(self):          # #439
+        ins = ("INSERT INTO morlet_steward.plans(kind,collection,payload,sha256{extra}) SELECT 'set_level','line',p,"
+               "encode(sha256(convert_to(p::text,'UTF8')),'hex'){vals} FROM (SELECT '{{\"moves\":[]}}'::jsonb p) x")
+        for extra, vals in ((",decision,decided_by,approved_sha256", ",'approved','bob',encode(sha256(convert_to(p::text,'UTF8')),'hex')"),
+                            (",applied_at,applied_by", ",now(),'bob'"),
+                            (",decided_at", ",now()")):
+            with self.subTest(extra=extra), self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                self.conn.execute(ins.format(extra=extra, vals=vals))            # as the steward
+        pid = self.conn.execute(ins.format(extra=",created_by,created_at,valid_until",
+                                           vals=",'bob',now()-interval '1 day',now()+interval '100 years'") +
+                                " RETURNING plan_id").fetchone()[0]
+        row = self.one("SELECT created_by, valid_until < now() + interval '25 hours', created_at > now() - interval '1 minute' "
+                       "FROM morlet_steward.plans WHERE plan_id=%s", (pid,))
+        self.assertEqual(row, "morlet_steward")                                   # the author is who inserted it
+        self.assertTrue(self.one("SELECT valid_until < now() + interval '25 hours' FROM morlet_steward.plans "
+                                 "WHERE plan_id=%s", (pid,)))
+
+    def test_direct_sql_follows_the_same_rules_as_decide_and_apply(self):         # #439
+        pid = self.propose()                                                      # alice is the author
+        alice, bob = self.connect_as("alice"), self.connect_as("bob")
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):            # self-approval
+            alice.execute("UPDATE morlet_steward.plans SET decision='approved' WHERE plan_id=%s", (pid,))
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):            # applying before approval
+            bob.execute("UPDATE morlet_steward.plans SET applied_at=now(), applied_by='bob' WHERE plan_id=%s", (pid,))
+        bob.execute("UPDATE morlet_steward.plans SET decision='approved', decided_by='carol', approved_sha256='x' "
+                    "WHERE plan_id=%s", (pid,))                                   # recorded as bob, with the real hash
+        self.assertEqual(self.one("SELECT decided_by, approved_sha256 = sha256 FROM morlet_steward.plans WHERE plan_id=%s",
+                                  (pid,)), "bob")
+        self.assertTrue(self.one("SELECT approved_sha256 = sha256 FROM morlet_steward.plans WHERE plan_id=%s", (pid,)))
+        for q in ("UPDATE morlet_steward.plans SET decision='rejected' WHERE plan_id=%s",     # decided once
+                  "UPDATE morlet_steward.plans SET collection='other' WHERE plan_id=%s",     # the target is fixed
+                  "UPDATE morlet_steward.plans SET valid_until=now()+interval '1 year' WHERE plan_id=%s",
+                  "DELETE FROM morlet_steward.plans WHERE plan_id=%s"):
+            with self.subTest(q=q), self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                bob.execute(q, (pid,))
+        self.assertEqual(steward.main(["apply", str(pid), "--dsn", self.as_("bob")]), 0)
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):            # applied once
+            bob.execute("UPDATE morlet_steward.plans SET applied_at=NULL, applied_by=NULL WHERE plan_id=%s", (pid,))
+        self.assertEqual(steward.main(["apply", str(pid), "--dsn", self.as_("bob")]), 2)
 
     def test_a_newer_extension_becomes_one_plan_not_an_update(self):
         installed = self.one("SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")

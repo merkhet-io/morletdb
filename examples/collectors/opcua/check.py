@@ -36,9 +36,9 @@ def main():
                                                        (a.collection, rid, s, min(s + 32768, n))).fetchone()[0])
                                   for s in range(0, n, 32768)]) if n else np.zeros(0)
             ok = n % sm.BLOCK == 0 and np.array_equal(got, want)
-            ctx = c.execute(f"SELECT key, count(*), count(*) FILTER (WHERE value->>'status' <> 'Good'), "
-                            f"min(start_sample), max(start_sample) FROM {a.collection}_ctx WHERE recording_id=%s "
-                            f"GROUP BY key ORDER BY key", (rid,)).fetchall()
+            ctx = c.execute(f"SELECT split_part(key, '.status', 1), count(*) FILTER (WHERE key NOT LIKE '%%.status'), "
+                            f"count(*) FILTER (WHERE key LIKE '%%.status'), min(start_sample), max(start_sample) "
+                            f"FROM {a.collection}_ctx WHERE recording_id=%s GROUP BY 1 ORDER BY 1", (rid,)).fetchall()
             in_range = all(lo >= 0 and hi < n + rate for _, _, _, lo, hi in ctx)
             if not ok or not in_range:
                 bad.append(rid)

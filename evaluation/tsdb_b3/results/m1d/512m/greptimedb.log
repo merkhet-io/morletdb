@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/run_greptime.py", line 242, in <module>
+    {"subset": subset, "load": load, "reads-child": reads_child}[sys.argv[1]](*sys.argv[2:])
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/run_greptime.py", line 214, in load
+    cv, per_call = c.load_one(conn, a, data[a["k"]])
+                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/greptime_adapter.py", line 148, in load_one
+    status, resp = conn.request("POST", f"/v1/influxdb/api/v2/write?{q}", body, {"Content-Type": "text/plain"})
+                   ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/sophia/morletdb-m1d/evaluation/tsdb_b3/greptime_adapter.py", line 43, in request
+    self.http.request(method, path, body=body, headers=headers or {})
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 1358, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 1404, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 1353, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 1152, in _send_output
+    self.send(chunk)
+    ~~~~~~~~~^^^^^^^
+  File "/Users/zin/.local/share/uv/python/cpython-3.13.13-macos-aarch64-none/lib/python3.13/http/client.py", line 1077, in send
+    self.sock.sendall(data)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe

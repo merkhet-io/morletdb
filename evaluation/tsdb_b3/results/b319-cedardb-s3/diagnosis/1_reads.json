@@ -1,0 +1,226 @@
+{
+ "server": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "counts": {
+  "high": 31877792,
+  "mid": 1984248,
+  "process": 615
+ },
+ "high": {
+  "n": 256001,
+  "read0": {
+   "rows": 256001,
+   "times_ok": false,
+   "first_bad": 1023,
+   "last_bad": 12631,
+   "n_bad": 11609,
+   "sorted": true,
+   "unique": 256001,
+   "sample": [
+    [
+     1023,
+     1767228120016000000,
+     1767228120015984375
+    ],
+    [
+     1024,
+     1767228120016015625,
+     1767228120016000000
+    ],
+    [
+     1025,
+     1767228120016031250,
+     1767228120016015625
+    ],
+    [
+     1026,
+     1767228120016046875,
+     1767228120016031250
+    ],
+    [
+     1027,
+     1767228120016062500,
+     1767228120016046875
+    ]
+   ],
+   "vibration_1": {
+    "n_bad": 11525,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   },
+   "phase_current_1": {
+    "n_bad": 11581,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   },
+   "phase_current_2": {
+    "n_bad": 11581,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   }
+  },
+  "read1": {
+   "rows": 256001,
+   "times_ok": false,
+   "first_bad": 1023,
+   "last_bad": 12631,
+   "n_bad": 11609,
+   "sorted": true,
+   "unique": 256001,
+   "sample": [
+    [
+     1023,
+     1767228120016000000,
+     1767228120015984375
+    ],
+    [
+     1024,
+     1767228120016015625,
+     1767228120016000000
+    ],
+    [
+     1025,
+     1767228120016031250,
+     1767228120016015625
+    ],
+    [
+     1026,
+     1767228120016046875,
+     1767228120016031250
+    ],
+    [
+     1027,
+     1767228120016062500,
+     1767228120016046875
+    ]
+   ],
+   "vibration_1": {
+    "n_bad": 11525,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   },
+   "phase_current_1": {
+    "n_bad": 11581,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   },
+   "phase_current_2": {
+    "n_bad": 11581,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   }
+  },
+  "read2": {
+   "rows": 256001,
+   "times_ok": false,
+   "first_bad": 1023,
+   "last_bad": 12631,
+   "n_bad": 11609,
+   "sorted": true,
+   "unique": 256001,
+   "sample": [
+    [
+     1023,
+     1767228120016000000,
+     1767228120015984375
+    ],
+    [
+     1024,
+     1767228120016015625,
+     1767228120016000000
+    ],
+    [
+     1025,
+     1767228120016031250,
+     1767228120016015625
+    ],
+    [
+     1026,
+     1767228120016046875,
+     1767228120016031250
+    ],
+    [
+     1027,
+     1767228120016062500,
+     1767228120016046875
+    ]
+   ],
+   "vibration_1": {
+    "n_bad": 11525,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   },
+   "phase_current_1": {
+    "n_bad": 11581,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   },
+   "phase_current_2": {
+    "n_bad": 11581,
+    "first_bad": 1023,
+    "last_bad": 12631,
+    "same_multiset": false
+   }
+  },
+  "sql": {
+   "count": 256001,
+   "distinct_t": 256001,
+   "min_ok": true,
+   "max_ok": true
+  }
+ },
+ "mid": {
+  "n": 16001,
+  "read0": {
+   "rows": 16001,
+   "times_ok": true
+  },
+  "read1": {
+   "rows": 16001,
+   "times_ok": true
+  },
+  "read2": {
+   "rows": 16001,
+   "times_ok": true
+  },
+  "sql": {
+   "count": 16001,
+   "distinct_t": 16001,
+   "min_ok": true,
+   "max_ok": true
+  }
+ },
+ "process": {
+  "n": 5,
+  "read0": {
+   "rows": 5,
+   "times_ok": true
+  },
+  "read1": {
+   "rows": 5,
+   "times_ok": true
+  },
+  "read2": {
+   "rows": 5,
+   "times_ok": true
+  },
+  "sql": {
+   "count": 5,
+   "distinct_t": 5,
+   "min_ok": true,
+   "max_ok": true
+  }
+ }
+}

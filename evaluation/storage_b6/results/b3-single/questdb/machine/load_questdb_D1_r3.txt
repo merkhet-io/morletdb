@@ -1,0 +1,27 @@
+gate met 2026-11-11T19:32:56 after 11 s, load { 2.95 3.47 3.99 }
+-- before
+2026-11-11T19:32:56
+19:32  up 15 days,  4:29, 19 users, load averages: 2.95 3.47 3.99
+Now drawing from 'AC Power'
+ %CPU COMM
+ 63.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 46.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+ 36.2 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 13.3 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+ 10.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  5.3 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  3.7 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking
+  3.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+-- after (exit 0)
+2026-11-11T19:33:18
+19:33  up 15 days,  4:29, 19 users, load averages: 4.78 3.85 4.11
+Now drawing from 'AC Power'
+ %CPU COMM
+276.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 50.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 34.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  8.2 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+  4.4 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.4 /Applications/Tailscale.app/Contents/MacOS/Tailscale
+  1.6 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+  1.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.Networking.xpc/Contents/MacOS/com.apple.WebKit.Networking

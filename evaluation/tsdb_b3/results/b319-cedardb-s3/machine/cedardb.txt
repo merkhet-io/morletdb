@@ -1,0 +1,22 @@
+2026-11-10T01:39:07
+ 1:39  up 13 days, 10:35, 19 users, load averages: 4.49 4.33 3.10
+ %CPU COMM
+261.9 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 27.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  9.9 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  4.3 /usr/sbin/coreaudiod
+  1.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  0.9 bash
+  0.7 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-10T01:40:07
+ 1:40  up 13 days, 10:36, 19 users, load averages: 5.85 4.71 3.32
+ %CPU COMM
+152.7 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 95.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+  4.0 /usr/sbin/coreaudiod
+  1.8 /System/Library/CoreServices/Finder.app/Contents/MacOS/Finder
+  1.1 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.GPU.xpc/Contents/MacOS/com.apple.WebKit.GPU
+  0.7 bash
+  0.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  0.4 claude

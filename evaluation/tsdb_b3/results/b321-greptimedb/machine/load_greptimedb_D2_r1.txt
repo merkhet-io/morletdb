@@ -1,0 +1,22 @@
+2026-11-12T23:53:54
+23:53  up 16 days,  8:50, 18 users, load averages: 5.14 8.85 19.73
+ %CPU COMM
+312.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 34.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 11.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.7 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.3 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+  1.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.4 claude
+  0.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+2026-11-12T23:57:42
+23:57  up 16 days,  8:53, 18 users, load averages: 8.35 7.77 16.66
+ %CPU COMM
+208.2 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+142.3 /System/Library/PrivateFrameworks/MediaAnalysis.framework/Versions/A/mediaanalysisd
+ 22.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.4 /usr/libexec/spotlightknowledged.updater
+  3.6 claude
+  1.5 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/corespotlightd
+  1.2 claude
+  1.2 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop

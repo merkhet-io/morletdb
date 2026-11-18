@@ -1,0 +1,22 @@
+2026-11-10T20:59:30
+20:59  up 14 days,  5:55, 19 users, load averages: 13.37 9.99 9.06
+ %CPU COMM
+218.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 57.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 15.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 11.1 claude
+  4.2 /usr/sbin/coreaudiod
+  4.2 /System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent.xpc/Contents/MacOS/com.apple.WebKit.WebContent
+  3.8 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  3.5 /usr/libexec/syspolicyd
+2026-11-10T20:59:55
+20:59  up 14 days,  5:56, 19 users, load averages: 12.94 10.12 9.13
+ %CPU COMM
+263.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 64.4 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 60.3 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 57.9 /System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app/Contents/MacOS/Safari
+ 56.0 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+ 49.1 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 38.6 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc
+ 35.8 /Users/zin/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin/rustc

@@ -1,0 +1,72 @@
+{
+ "system": "greptimedb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.205226541031152,
+ "samples": 101586735,
+ "image": "greptime/greptimedb@sha256:d8a199398da2b105e6cb3a168f249ecbbc078893abff5ea668bd59e05f1027df",
+ "image_id": "sha256:d8a199398da2b105e6cb3a168f249ecbbc078893abff5ea668bd59e05f1027df",
+ "started": "2026-11-13T00:05:58",
+ "settings": {
+  "version": "1.3.0",
+  "durability": "D2",
+  "config": [
+   "enable_telemetry = false",
+   "sync_write = false"
+  ],
+  "command": "standalone start --http-addr 0.0.0.0:4000 --data-home /greptimedb_data"
+ },
+ "ingest": {
+  "wall_s": 130.327,
+  "samples_per_s": 779477,
+  "conversion_s": 24.544,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 1049.168,
+   "p95_ms": 1116.905,
+   "max_ms": 1192.453
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 151.34,
+   "p95_ms": 164.772,
+   "max_ms": 190.098
+  },
+  "queryable_after_last_ack_s": 0.041,
+  "server": {
+   "cpu_percent_mean": 82.2,
+   "cpu_percent_p95": 132.6,
+   "memory_peak_mib": 987.8,
+   "samples": 64,
+   "kernel_memory": {
+    "peak_mib": 2156.1,
+    "anon_mib_at_end": 722.6,
+    "file_mib_at_end": 1049.9,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 1048.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 8.7
+  }
+ },
+ "correct": true
+}

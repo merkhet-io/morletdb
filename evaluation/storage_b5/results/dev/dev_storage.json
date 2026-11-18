@@ -1,0 +1,210 @@
+{
+ "study": "B5 development figures",
+ "chunk": 4096,
+ "quantum": 1.0,
+ "pco": "1.0.4",
+ "level": 8,
+ "inputs": [
+  {
+   "input": "Blockchain-tr",
+   "set": "elf-dev",
+   "samples": 99999,
+   "chunks": 25,
+   "bits_per_sample": {
+    "G1": 13.9605,
+    "G2": 13.2567
+   },
+   "G2_over_G1": 0.9496,
+   "bytes": {
+    "G1": 174505,
+    "G2": 165707
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G2": {
+     "v4 pco": 15,
+     "v2 grid": 10
+    }
+   },
+   "chunks_changed": 15,
+   "changed_by_G1_kind": {
+    "v2 grid": 15
+   },
+   "exact": true,
+   "msamples_s_uncontrolled": {
+    "G1_encode": 10.2,
+    "G1_decode": 83.2,
+    "G2_encode": 5.5,
+    "G2_decode": 95.3
+   }
+  },
+  {
+   "input": "POI-lat",
+   "set": "elf-dev",
+   "samples": 100001,
+   "chunks": 25,
+   "bits_per_sample": {
+    "G1": 60.8407,
+    "G2": 53.5847
+   },
+   "G2_over_G1": 0.8807,
+   "bytes": {
+    "G1": 760516,
+    "G2": 669815
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 25
+    },
+    "G2": {
+     "v4 pco": 25
+    }
+   },
+   "chunks_changed": 25,
+   "changed_by_G1_kind": {
+    "v2 float": 25
+   },
+   "exact": true,
+   "msamples_s_uncontrolled": {
+    "G1_encode": 4.8,
+    "G1_decode": 46.3,
+    "G2_encode": 3.2,
+    "G2_decode": 94.5
+   }
+  },
+  {
+   "input": "Stocks-USA",
+   "set": "elf-dev",
+   "samples": 100002,
+   "chunks": 25,
+   "bits_per_sample": {
+    "G1": 4.5621,
+    "G2": 4.5621
+   },
+   "G2_over_G1": 1.0,
+   "bytes": {
+    "G1": 57027,
+    "G2": 57027
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 25
+    },
+    "G2": {
+     "v2 grid": 25
+    }
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "exact": true,
+   "msamples_s_uncontrolled": {
+    "G1_encode": 14.2,
+    "G1_decode": 96.5,
+    "G2_encode": 9.3,
+    "G2_decode": 90.3
+   }
+  },
+  {
+   "input": "electric_vehicle_charging",
+   "set": "elf-dev",
+   "samples": 3395,
+   "chunks": 1,
+   "bits_per_sample": {
+    "G1": 10.0312,
+    "G2": 10.0312
+   },
+   "G2_over_G1": 1.0,
+   "bytes": {
+    "G1": 4257,
+    "G2": 4257
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1
+    },
+    "G2": {
+     "v2 grid": 1
+    }
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "exact": true,
+   "msamples_s_uncontrolled": {
+    "G1_encode": 11.0,
+    "G1_decode": 75.3,
+    "G2_encode": 4.7,
+    "G2_decode": 74.5
+   }
+  },
+  {
+   "input": "XJTU-SY Bearing1_1 horizontal",
+   "set": "wave-dev",
+   "samples": 4030464,
+   "chunks": 984,
+   "bits_per_sample": {
+    "G1": 63.6592,
+    "G2": 29.7864
+   },
+   "G2_over_G1": 0.4679,
+   "bytes": {
+    "G1": 32072036,
+    "G2": 15006612
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 float": 921,
+     "v2 raw": 63
+    },
+    "G2": {
+     "v4 pco": 984
+    }
+   },
+   "chunks_changed": 984,
+   "changed_by_G1_kind": {
+    "v2 float": 921,
+    "v2 raw": 63
+   },
+   "exact": true,
+   "msamples_s_uncontrolled": {
+    "G1_encode": 5.8,
+    "G1_decode": 60.2,
+    "G2_encode": 3.6,
+    "G2_decode": 131.1
+   }
+  },
+  {
+   "input": "FEMTO Bearing1_1 horizontal",
+   "set": "wave-dev",
+   "samples": 4193280,
+   "chunks": 1024,
+   "bits_per_sample": {
+    "G1": 10.6542,
+    "G2": 10.6542
+   },
+   "G2_over_G1": 1.0,
+   "bytes": {
+    "G1": 5584507,
+    "G2": 5584507
+   },
+   "chunk_kinds": {
+    "G1": {
+     "v2 grid": 1024
+    },
+    "G2": {
+     "v2 grid": 1024
+    }
+   },
+   "chunks_changed": 0,
+   "changed_by_G1_kind": {},
+   "exact": true,
+   "msamples_s_uncontrolled": {
+    "G1_encode": 11.0,
+    "G1_decode": 76.4,
+    "G2_encode": 5.2,
+    "G2_decode": 73.5
+   }
+  }
+ ]
+}

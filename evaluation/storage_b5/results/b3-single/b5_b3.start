@@ -1,0 +1,33 @@
+mode session
+2026-11-10T20:45:31
+20:45  up 14 days,  5:41, 19 users, load averages: 2.75 7.33 9.70
+Now drawing from 'AC Power'
+ %CPU COMM
+ 28.3 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 23.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 14.3 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  4.2 /usr/sbin/coreaudiod
+  3.6 claude
+  3.4 claude
+  2.6 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  1.3 /Applications/Warp.app/Contents/MacOS/stable
+morletdb-agent-demo-mcp-run-5f5170bca231
+morletdb-agent-demo-db-1
+morletdb-agent-demo-seismo-run-945c0f83fc29
+langfuse-langfuse-web-1
+langfuse-langfuse-worker-1
+langfuse-langfuse-postgres-1
+langfuse-langfuse-redis-1
+langfuse-langfuse-clickhouse-1
+langfuse-langfuse-minio-1
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          160       43        129.3GB   75.03GB (58%)
+Containers      45        9         1.23GB    33.33MB (2%)
+Local Volumes   283       16        31.39GB   27.24GB (86%)
+Build Cache     623       0         65.25GB   6.811GB
+morletdb:b5 sha256:2f9d5e33df909778e9c77b1d3fe603b1298482044479d30deafb16b3326e3fa6
+ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1 sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38
+questdb/questdb:10.1.0 sha256:3b11dc5f77aa299c7c9191b10cf50124c9e97663ce93bc50df5040374e87efc9
+decoder g2 /Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/b5/libmorlet_ffi.dylib e55b6d38a65282d58c81ff93ec1e880f2f5c66078c5f5459d7991941c7fbcebd
+decoder rel /Users/zin/sophia/morletdb/.claude/worktrees/agent-a1d960bb74c5e0089/evaluation/storage_b5/bin/release/libmorlet_ffi.dylib 343a8d9fd17d19c3c0ece5aab270d6ec9e7f3eb3591573cf321b49fd68aa42ff
+session ends by 23:45:31, no load after 2026-11-11T07:00

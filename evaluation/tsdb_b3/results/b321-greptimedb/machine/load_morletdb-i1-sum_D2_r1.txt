@@ -1,0 +1,22 @@
+2026-11-12T23:52:49
+23:52  up 16 days,  8:48, 18 users, load averages: 2.67 9.47 20.86
+ %CPU COMM
+ 45.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 15.5 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  9.2 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  7.8 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  4.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+  4.4 claude
+  3.8 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+  1.8 bash
+2026-11-12T23:53:54
+23:53  up 16 days,  8:50, 18 users, load averages: 5.14 8.85 19.73
+ %CPU COMM
+312.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 34.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 11.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+  6.7 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+  2.4 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+  1.7 /Applications/Docker.app/Contents/MacOS/Docker Desktop.app/Contents/MacOS/Docker Desktop
+  1.4 claude
+  0.8 /Applications/Docker.app/Contents/MacOS/com.docker.backend

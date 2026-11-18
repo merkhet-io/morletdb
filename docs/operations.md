@@ -5,6 +5,12 @@ system makes no automatic decisions. Numbers come from pilot Stage 2
 (`evaluation/pilot/`) on one Apple M5 Max under a concurrent unrelated workload (load
 average 3–20); treat latencies as indicative until re-measured on the pilot's own hardware.
 
+When something goes wrong, use the [runbooks](runbooks.md): [first hour](runbooks.md#10-first-hour-triage),
+[disk full](runbooks.md#5-disk-full-or-nearly-full), [WAL growth](runbooks.md#6-wal-growth),
+[rebuilding search data](runbooks.md#7-rebuilding-envelopes-probe-rows-and-indexes),
+[retention and archiving](runbooks.md#8-retention-and-archiving-to-parquet-and-s3),
+[upgrades](runbooks.md#9-upgrading-the-extension-and-the-image), and backup, restore, replica and failover.
+
 ## Tested operating range
 
 | Dimension | Tested | Notes |
@@ -17,7 +23,7 @@ average 3–20); treat latencies as indicative until re-measured on the pilot's 
 | Recording length (L1) | 10⁴ to 10⁹ samples in one recording | 10⁹: 7.2 M samples/s in, 24 M out, reads of 4,096 samples 0.6–0.7 ms anywhere, flat commit latency; statistics over 10⁶ samples 8.9× slower than on short recordings, a whole-recording overview 117 ms without roll-ups; below about 10⁵ samples per recording fixed overhead dominates |
 | Values (L1) | integer counts, decimals, ADC values, full-entropy floats, constants, denormals, ±1e9 | all exact; NaN, ±Inf and values beyond ±1e9 are refused; full-entropy floats take 6% more than raw float64 |
 | Ingest pattern (L1) | chunks of 1 to 32,768 samples, 1–16 writers, gaps, resends | gaps, altered resends, overlaps and out-of-order ranges are refused, identical replays accepted; use chunks of about 4,096 samples (64-sample chunks: 5.5× slower, 2.6× larger); 16 writers 21 M samples/s |
-| Memory, CPU, disk (L1) | 10⁸ samples within 256 MB; 1 CPU; a full 400 MB disk | 256 MB: no out-of-memory kill, read-back 31% slower; 1 CPU: ingest 28% slower; a full disk loses no acknowledged sample (FD1, 9 runs): a full data file is an ordinary error, a full write-ahead log stops PostgreSQL (PANIC) until space is freed and then recovers exactly; **keep the steward's disk guard on**: at its reserve it refuses new samples before the disk is full and releases the hold by itself once space is freed |
+| Memory, CPU, disk (L1) | 10⁸ samples within 256 MB; 1 CPU; a full 400 MB disk | 256 MB: read-back 31% slower; with PostgreSQL's default `shared_buffers` (128 MB) a backend could be killed out of memory after a bulk load (1 of 13 runs, #466), so the image sizes `shared_buffers` to small limits (see Configuration); 1 CPU: ingest 28% slower; a full disk loses no acknowledged sample (FD1, 9 runs): a full data file is an ordinary error, a full write-ahead log stops PostgreSQL (PANIC) until space is freed and then recovers exactly; **keep the steward's disk guard on**: at its reserve it refuses new samples before the disk is full and releases the hold by itself once space is freed |
 
 The L1 rows come from [study L1-beta](../evaluation/limits_l1/RESULTS.md) and [FD1](../evaluation/full_disk_fd1/RESULTS.md) (one Apple M5 Max, synthetic data,
 no search structures). Outside this range — larger archives, cold caches, many tenants under load, other
@@ -45,7 +51,9 @@ this page are from PostgreSQL 17.
 |---|---|---|
 | `maintenance_work_mem` | 2–4 GB for the session that runs `morlet_enable_envelope_probes` or rebuilds the probe index | with 64 MB the HNSW build for 235 k windows took ~25 min instead of ~1 min; 939 k windows took 4.6 min with 4 GB |
 | `max_parallel_workers_per_gather` | default (2) or higher | exact search runs as one parallel statement |
+| `shared_buffers` on small machines | about a quarter of the memory; the image does this by itself under a container memory limit below 512 MB (a quarter, at least 16 MB) unless you set it (command line, `ALTER SYSTEM` or `postgresql.conf`); `MORLET_AUTO_SHARED_BUFFERS=off` turns it off | #466: under a 256 MB limit the default 128 MB plus dirty page cache after a bulk load left as little as about 20 MB of memory the kernel could not reclaim, and one of 13 runs lost a backend to the out-of-memory killer; with 64 MB the peak fell from 174–225 MB to 120–145 MB (5 runs each) with no measurable change in ingest or statistics reads. Outside a container, set it yourself |
 | `shared_buffers`, `max_wal_size`, `checkpoint_timeout`, `wal_compression` | tested together: 8 GB, 16 GB, 15 min, on (pglz) | with defaults, 15 min of target ingest wrote 13.8 GB of WAL for 0.76 GB of growth; with these four settings, 1.91 GB for 0.65 GB (15 min) and 11.96 GB for 4.68 GB (111 min). They were changed together, so no single setting is credited |
+| `morlet.chunk_format` | default `grizzbit1`; `grizzbit21` to opt in to Grizzbit 2.1 (chunk format version 5) | study B6: waveforms 12.6% smaller in total and B3's machine channels up to 20% smaller, ingest about 5% slower with more server CPU, decode down to 53 M samples/s per thread. A misspelt value makes appends fail instead of writing Grizzbit 1. Releases up to 0.3.11-alpha.1 cannot read version-5 chunks, so a downgrade needs them re-appended ([how to use it](grizzbit.md#using-grizzbit-21)) |
 | WAL archiving / disk | with the settings above, about 6.5 GB of WAL per hour at the tested rate (about 2.6× the database growth); with defaults, about 55 GB per hour | as above |
 
 ## Ingest and maintenance
@@ -128,9 +136,17 @@ SELECT * FROM morlet_collection_status('signals');
 
 One row per window size: recordings, raw samples, stored envelopes, recordings without
 envelopes, raw samples not yet covered by an envelope (`unbuilt_samples`, includes partial
-tails), probe rows and `probe_backlog`, whether row security is applied, and bytes per
+tails; under episodic memory only samples at level 0, from SQL 0.3.12), probe rows and `probe_backlog`, whether row security is applied, and bytes per
 structure. Healthy steady state: `probe_backlog = 0` and `unbuilt_samples` bounded by about one
 stride per recording plus the current ingest delay.
+
+For Prometheus, `morlet-steward metrics` serves the steward's state, these backlogs, the disk, the last integrity
+pass, and dead tuples per collection table on `/metrics` ([steward](../tools/steward/README.md)). Alert on:
+
+- `morlet_up == 0`;
+- `morlet_steward_state == 2`;
+- `morlet_steward_heartbeat_age_seconds` above a few ticks;
+- a growing `morlet_collection_probe_backlog`.
 
 Audit envelopes written by an external process against the raw data with the query in
 [access control](access-control.md#the-worker-write-path).
@@ -175,7 +191,8 @@ can always be rebuilt; recordings, chunks, context and labels cannot. Before a r
 restore, create the extensions in the target database.
 
 For point-in-time restore, a streaming replica and failover, follow the [runbooks](runbooks.md); CI runs each of
-them weekly as a drill.
+them weekly as a drill. Disk full, WAL growth, rebuilding search data, retention and upgrades have runbooks there
+too, checked by hand against the release image.
 
 ## Failure behaviour (tested)
 
@@ -194,7 +211,8 @@ them weekly as a drill.
 `ALTER EXTENSION pg_morlet UPDATE` is transactional. CI tests updates from every released SQL
 version with populated data (identical reads, searches, summaries and roll-ups; catalog equal to a
 fresh install), and that a **failed** update rolls back completely and leaves the old version
-working. Take a backup before updating anyway ([api stability](api-stability.md)).
+working. Take a backup before updating anyway ([api stability](api-stability.md)). Step by step, including the way back from chunk format
+version 6: [runbook 9](runbooks.md#9-upgrading-the-extension-and-the-image).
 
 ## Known limits
 

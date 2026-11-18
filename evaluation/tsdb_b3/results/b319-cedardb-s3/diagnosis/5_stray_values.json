@@ -1,0 +1,14 @@
+{
+ "stray_values": {
+  "vibration_1": 0.0122070312419328,
+  "phase_current_1": -2.3280822738520768,
+  "phase_current_2": -0.10125091546043055
+ },
+ "full_matches": [
+  {
+   "acquisition": "N15_M07_F04_KA06_1",
+   "row": 1020,
+   "t": 1767228120015937500
+  }
+ ]
+}

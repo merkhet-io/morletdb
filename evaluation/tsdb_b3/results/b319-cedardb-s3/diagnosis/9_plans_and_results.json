@@ -1,0 +1,61 @@
+{
+ "A t, vibration_1, range, ORDER BY t": {
+  "wrong": true,
+  "has_1023": false,
+  "has_stray": true,
+  "plan": "OUTPUT (Estimate: 46'105) | ▲ SORT (In-Memory) (Estimate: 46'105) | 🗐 TABLESCAN on b3_high (Estimate: 46'105)"
+ },
+ "B t, 3 channels, range, ORDER BY t (the benchmark)": {
+  "wrong": true,
+  "has_1023": false,
+  "has_stray": true,
+  "plan": "OUTPUT (Estimate: 46'105) | ▲ SORT (In-Memory) (Estimate: 46'105) | 🗐 TABLESCAN on b3_high (Estimate: 46'105)"
+ },
+ "C t, vibration_1, range": {
+  "wrong": true,
+  "has_1023": false,
+  "has_stray": true,
+  "plan": "OUTPUT (Estimate: 46'105) | 🗐 TABLESCAN on b3_high (Estimate: 46'105)"
+ },
+ "D t, range": {
+  "wrong": false,
+  "has_1023": true,
+  "has_stray": false,
+  "plan": "OUTPUT (Estimate: 46'105) | ⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)"
+ },
+ "E t, range, ORDER BY t": {
+  "wrong": false,
+  "has_1023": true,
+  "has_stray": false,
+  "plan": "OUTPUT (Estimate: 46'105) | ⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)"
+ },
+ "F t, vibration_1, no range": {
+  "wrong": false,
+  "has_1023": true,
+  "has_stray": false,
+  "plan": "OUTPUT (Estimate: 295'077) | 🗐 TABLESCAN on b3_high (Estimate: 295'077)"
+ },
+ "G t, vibration_1, t range only": {
+  "wrong": true,
+  "has_1023": false,
+  "has_stray": true,
+  "plan": "OUTPUT (Estimate: 7'322'628) | 🗐 TABLESCAN on b3_high (Estimate: 7'322'628)"
+ },
+ "H 2 filtered counts, range": {
+  "wrong": false,
+  "result": [
+   1,
+   0
+  ],
+  "plan": "OUTPUT (Estimate: 1) | 𝚪 GROUP BY (In-Memory) (Estimate: 1) | ⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)"
+ },
+ "I 2 filtered counts + count(*), range": {
+  "wrong": false,
+  "result": [
+   1,
+   0,
+   256001
+  ],
+  "plan": "OUTPUT (Estimate: 1) | 𝚪 GROUP BY (In-Memory) (Estimate: 1) | ⌕ INDEXSCAN using b3_high_pkey on table b3_high (Estimate: 46'105)"
+ }
+}

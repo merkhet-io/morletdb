@@ -2,6 +2,483 @@
 
 ## Unreleased
 
+SQL version 0.3.12, with an update script from 0.3.11: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **Security: `decision.HistoryCache` is bound to what the current caller can read (#494).** A cache kept across
+  calls could serve history rows to a caller whose visibility had changed since the cache was filled (another role
+  on the same connection, or a row security scope that a policy reads from a session setting). Each call now
+  reads, under the caller's own privileges and in the same snapshot, a digest of exactly the rows the uncached
+  history query would see (visible current segment ids with whether their values are visible, and active label
+  ids); the cached pool is used only when its own digest is equal, else it is brought up to date or reloaded. The
+  digest query names every column the history reads, so missing column privileges fail as without the cache. Pools
+  are keyed by database and relation OIDs instead of the collection name. States are unchanged for a caller whose
+  visibility did not change; a process that keeps one role and scope still fetches only new rows. Each call now
+  scans the visible segment and label ids for the digest, where it counted rows before, and a change of scope
+  reloads the pool. Python only; no SQL change.
+  - Tests: `HistoryCacheAcrossAuthorization` in `tools/mcp/test_decision_db.py`, negative tests for role and
+    row-security-scope changes and for a missing column privilege, in both enablement orders. They failed before
+    the fix.
+- **Grizzbit: two encoder selection fixes (#505, #506).** Encoder only: no format or decoder change, every existing
+  chunk decodes unchanged, and a chunk can only get smaller or stay the same size. Grizzbit 1 (versions 2 and 3)
+  output is unchanged (`encoder-equivalence.bin`), and so is `float32-equivalence.bin`.
+  - Grizzbit 2.1 (version 5) correction sections: the skips that avoided coding the exception and table sections
+    assumed at least 3 bits per nonzero correction and 1 bit per table entry. Predicted streams and zero-width
+    escaped partitions cost less, so a smaller section was never tried (512 samples whose corrections repeat
+    [1, 1, 1, 0]: Grizzbit 1's 155 bytes kept instead of a 146-byte version-5 chunk). A section is now skipped only
+    on a proven lower bound, 2 bytes per stream (3 from 4 values on).
+  - LPC in versions 5 and 6: the LPC stream chosen by size estimates replaced the fixed-predictor stream whenever
+    its estimate was smaller, even when the written stream was as long or longer (151 bytes against 149). It now
+    replaces it only with strictly fewer bytes; a tie keeps the fixed stream. Two version-6 golden chunks whose LPC
+    stream tied are no longer `encoder_current` (same size); their current encodings are added as new golden files.
+  - Tests: an unpruned oracle for the correction choice over structured patterns, the issue reproducers, and
+    near-equal LPC candidates checked against written lengths. They failed before the fix.
+- **Envelope building after compaction (#488).** After a recording was compacted at memory level 4,
+  `morlet_build_envelopes` returned the number of windows it skipped there (31 in the runbook's case) on every call
+  and wrote nothing. The steward took that as progress, picked the same recording on every tick and never reached the
+  recordings after it; "build until it returns 0" loops never ended.
+  - `morlet_build_envelopes` now counts only windows it writes, as documented: windows out of search (level 1) or
+    over removed samples (levels 2 to 4) are skipped and not counted, the call goes on past them within
+    `max_windows` written windows, and 0 again means that nothing is left to build. A batch without any stored
+    sample is passed over in one query instead of window by window. Same signature; windows built are unchanged.
+  - `morlet_collection_status`: `unbuilt_samples` counts only samples at memory level 0. Samples out of search or
+    removed are not backlog; `morlet_coverage` reports them as `not_searchable`, `represented`, `summarized` or
+    `gone`, as before. No column was added (the function is stable). A role that may not read the collection's
+    episodes table gets the count as before.
+  - The steward also checks that an envelope build moved the recording's last window; when it did not, it treats the
+    call as "nothing to do". So a steward from this release does not stick on databases still at SQL 0.3.11 or
+    earlier. With those, windows after a removed range longer than one batch are built only after the update.
+  - Tests: the steward's `test_a_recording_compacted_to_level_4_does_not_starve_the_others` (a compacted recording
+    next to one with unbuilt windows; coverage still `gone`) and the pgrx test
+    `compacted_windows_are_neither_written_nor_backlog` (levels 4 and 1, a removed tail, new samples after removal,
+    the status with and without envelopes). Both failed before the fix.
+- **Shipping refuses a prefix with one chunk more or fewer, before writing (#495).** `morlet_ship.py` compared the
+  target's existing chunks with the source's using `zip`, which drops one side's unmatched last chunk. A target whose
+  final chunk had been removed by episodic memory (checkpoint 8, chunks [0]) was accepted, the source's new chunk was
+  appended and the target's end advanced to 12, and only the final digest then failed. The comparison now pairs
+  the chunks with `zip_longest`, so a missing trailing chunk on either side refuses the recording before anything is
+  written. Each batch is also checked to be contiguous from the target's end before its transaction opens, so a gap
+  in the source fails with a clear error instead of a database error. Python only, no SQL change.
+  - Tests: a unit test of the prefix comparison in both directions, and against a database the issue's reproduction
+    (target compacted through `morlet_set_level`), its mirror (source compacted) and a source gap; each asserts the
+    target's chunks and checkpoint are unchanged. The unit test and the reproduction failed before the fix; the gap
+    test raised a database error, though the target was rolled back. CI now runs `test_morlet_ship` and
+    `test_morlet_s3` against the database and fails when they are skipped; before, the importer step ran them
+    without a database and they were skipped.
+- **WinCC OA: the clock estimate no longer counts the companion's own latency.** The estimate
+  `|received_ns − observed_ns| + rtt_ns/2 + daq_bound` took `received_ns` after the body was parsed and a database
+  connection opened, and the adapter's `rtt_ns` was the round trip of `GET /v1/health`, which queries the database
+  for every asset. With a slow database every heartbeat exceeded the 50 ms bound and all changes were derived as
+  `clock_exceeded`.
+  - The companion now takes `received_ns` when the request arrives.
+  - A new `GET /v1/clock` (authenticated, no database work) returns `{"schema", "companion_ns"}`; the adapter
+    measures its heartbeat RTT there. Against an older companion without it (404) the adapter keeps the health RTT
+    and logs this once. Additive within the unreleased protocol `morlet-winccoa/1`.
+  - Tests: the companion's `Clock` tests (a 200 ms database connection, and `/v1/clock` needing the token and no
+    database) and two adapter tests (RTT from `/v1/clock` with a slow health; the 404 fallback). They failed before
+    the fix.
+- **WinCC OA: an investigation whose matches are all cut for size is `response_too_large`, not `ok` (#497
+  follow-up).** Before, it arrived as `ok` without matches, which reads as "nothing found"; `detail` now says how
+  many matches were found. No new status.
+- **WinCC OA: investigation responses stay within `response_bytes` (#497).** Fixed: the 256 KiB limit was checked
+  before the truncation report and the correlation fields (`state`, `current`, `superseded_by`) were added, and the
+  source interval's context was never bounded. One 300,000-character source context value gave a
+  `no_matches` body of over 300,000 bytes, and matches could be dropped while that context stayed.
+  - The bound now applies to the HTTP body as sent (the same encoder), measured with the largest correlation
+    fields and measured again on every response. While the body is too large, the companion cuts source context
+    values to 1,024 characters (`value_chars` gives the original length), then drops match context, labels and
+    overviews, then trailing source context rows, and finally trailing matches.
+  - `truncated` lists the steps that changed the result and the new `omitted` counts what was cut. A result that
+    still does not fit gets the new status `response_too_large` (HTTP 200, with `result_status`), which always
+    fits. `response_bytes` must now be at least 2,048. The adapter writes the status and result unchanged.
+  - Tests: `ResponseBoundTests` in `test_offline.py` (the issue's reproduction; matches kept over oversized source
+    context; results just below the limit before metadata; the body received over HTTP for POST, GET and after
+    supersession; the `response_too_large` envelope at the smallest limit). All six failed before the fix.
+    `test_response_size_limit` now checks the received body with no slack, and an adapter test covers the new
+    fields and status.
+- **WinCC OA: a heartbeat no longer lands before a pending gap (#496).** The adapter chose whether the last pending
+  gap fit in a message without heartbeats, then added them. When the heartbeats took the last room (by count or by
+  bytes), the gap moved to the next message and the heartbeat was committed before it. Derivation took that
+  heartbeat as the last contact before the gap and derived context across the disconnect, where evidence is
+  missing. The outbox now chooses the message with the room its heartbeats take: a message that cannot hold the
+  last pending gap beside them carries no heartbeat, and the heartbeats go after the gap. No protocol or schema
+  change; context already derived from such an order is not corrected by this release.
+  - Tests: two adapter tests (count- and byte-bound, the issue's reproduction), an outbox test, and
+    `HeartbeatBeforeGap` in the end-to-end suite, which passes the adapter's messages through the companion's
+    `parse_message` and `derive.compute` and checks that no state extends past the last contact before the gap.
+    They failed before the fix (the end-to-end one with a batch [1 s, 10 s) across the outage).
+- **MCP `labels`: the labels of a collection and what they mean (#333).** A read-only tool lists every active label with
+  its glossary definition, unit and source, how many intervals, recordings and samples carry it, when it was first
+  and last given, and a few examples; `undefined_labels` names the labels nobody defined. Before, an agent saw
+  definitions only for the labels inside one decision state. Row-level security applies as for every companion
+  table; a test checks a restricted role in both enablement orders.
+- **Steward sidecar image serves metrics (#489).** `deploy/steward/Dockerfile` did not copy `metrics.py`, so
+  `steward.py metrics` failed in the sidecar with `ModuleNotFoundError`. A test now checks that the image copies every
+  module `steward.py` imports.
+- **Operator runbooks (#197).** `docs/runbooks.md` adds disk full, WAL growth (replication slots, a failing archive,
+  long transactions), rebuilding envelopes, probe rows and indexes with coverage before and after, retention and
+  archiving to Parquet and S3 with the existing tools, upgrading with the way back from chunk format version 6, and a
+  first-hour triage. Each was run by hand against the 0.3.14-alpha.1 release image, with the full disk simulated on
+  small Docker filesystems; what was not exercised is marked. Found on the way: after memory level 4,
+  `morlet_build_envelopes` keeps returning skipped windows for that recording, so the steward's envelope job does not
+  move on; and the steward sidecar image lacks `metrics.py`, so `metrics` runs only from a checkout.
+- **WinCC OA integration, phase A (#474), experimental, awaiting validation in WinCC OA.** A Python companion in
+  `integrations/winccoa/` turns WinCC OA observations into ordinary context rows and answers investigations through
+  the shipped search, with a replay machine, a compose setup on the release image and tests against a disposable
+  MorletDB. No WinCC OA is involved yet; the adapter (phase B) and native acceptance (phase C) are not built.
+  Apache 2.0, community-maintained, no Siemens certification or partnership.
+- **WinCC OA integration, phase B (#474): an experimental WinCC OA adapter, awaiting validation in WinCC OA.** A
+  WinCC OA JavaScript Manager script in `integrations/winccoa/adapter/` (CommonJS, Node.js 22, no dependencies)
+  that reads configured asset datapoints and sends their values, source times and quality to the companion over
+  loopback (`morlet-winccoa/1`, bearer token from a 0600 file). It batches observations per session seq and
+  resends them until acknowledged, stops in an error state on a conflicting retry, sends snapshots after a
+  (re)connect and gaps where evidence is missing, sends heartbeats with RTT, runs investigations from its own slot
+  datapoints and writes results back only for the slot's current request. It writes only to its own namespace;
+  an idempotent bootstrap creates it. `API.md` lists every WinCC OA API element used, with its documentation page;
+  whether the JavaScript API delivers source time and quality attributes is unconfirmed and is a setting, with a
+  fallback to the value alone. Tested on a fake of that documented surface and end to end against the real
+  companion and the release image; it has not run in WinCC OA. CI builds a bundle with a manifest of file hashes;
+  publishing it with releases waits for the owner. Apache 2.0, community-maintained, no Siemens certification or
+  partnership; WinCC OA is installed and licensed separately.
+- **Licensing: Apache 2.0 for everything.** The open-core split of #473 is withdrawn: no enterprise licence, no
+  `enterprise/` layer, no CLA and no licence-boundary check. Every part of MorletDB, integrations included, is under the
+  Apache License 2.0 ([licensing](docs/licensing.md)).
+- **Reference collectors: context values are the state alone (#480).** The OPC UA and MQTT example collectors stored
+  status and timestamps inside each context value. Segment context is built from whole values, so the same state in
+  two cycles never matched, and comparisons with history found no earlier segment in the same context. They now
+  store the value alone; a status other than good becomes its own event, `<key>.status`, at the same sample.
+  - A change holds from the first sample at or after its source time, computed exactly. Before, the offset was
+    rounded to the nearest sample, which could give up to half a sample period to the wrong state.
+  - The OPC UA collector no longer stores the server time as the source time when the source timestamp is missing;
+    such a change is not placed.
+  - Context written by earlier versions of these examples keeps its old shape. A redelivered old message now
+    conflicts with the stored batch, because the batch ids are unchanged.
+  - Tests: `test_context_rows.py` for both collectors (placement on and between samples, rates that are not whole
+    numbers, the same state in two cycles, status events), run in CI without a server or broker.
+
+## 0.3.14-alpha.1
+
+SQL version 0.3.11, with an update script from 0.3.10: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+Python SDK 0.1.0a7. **Chunk format version 6 is written by default** for float32 samples where it is smaller: releases
+up to 0.3.13-alpha.1 cannot read those chunks, so a downgrade needs them re-appended with
+`morlet.float32_chunks = off` first. Existing chunks keep their format.
+
+- **Float32 samples about half the size: chunk format version 6, on by default (#326, study B8).** Chunks whose
+  samples are all float32 values widened to float64, such as PLC and CNC controller signals, are coded in float32
+  terms, on a float32 grid or as 31-bit magnitudes with sign runs. A version-6 chunk is kept only where it is
+  strictly smaller than the configured format's chunk; every other chunk is written byte for byte as before.
+  - Setting: `morlet.float32_chunks` (`on` by default, `off`), at any level. Reads decode every version whatever
+    the setting. Checked like any chunk with `morlet.verify_appends` on.
+  - Compatibility: pg_morlet 0.3.13-alpha.1 and earlier, and their decoders, cannot read version-6 chunks.
+    Compressed transfer sends samples to clients that do not report version 6; the native decoder now reports 6.
+    Embedded-edition files (file format 1) never contain version 6. Before a downgrade, re-append such chunks
+    with the setting off.
+  - Measured (B8, frozen protocol): on 321 IU4 runs, force 3.02 and controller channels 2.29 bytes per sample
+    instead of 6.60 and 6.52; table level 3.36 and 3.03; no chunk larger on B6's 30 inputs; same bytes on macOS
+    arm64, Linux arm64 and amd64. Encoding integer counts that fit in float32 is slower (about 13–15 instead of
+    62 M samples/s) for a 1–4 % gain ([results](evaluation/storage_b8/RESULTS.md)).
+  - Tests: golden chunks, a cross-platform equivalence file, property and malformed-chunk tests, Kani proofs, a
+    `decode_v6` fuzz target, and database tests for the setting and append verification.
+- **Context values build about 4× faster (#414).** On encoded collections, `morlet_build_context_values` now
+  reads a segment in one raw read (`morlet_read_interval_raw`) and computes its values from the bytes with the new
+  internal `morlet_simple_values_raw`. Before, it joined 32,768-sample float8[] pieces in PL/pgSQL, and every join
+  copied the growing array: about half of the time for a 220k-sample segment. `simple()` also checks and sums in one
+  pass and takes the moments, peak and sum of squares in a second (it used six). Each sum adds the same terms in the
+  same order from the same start, so every value is bit-identical.
+  - Tests: against the six-pass version on continuous, quantised, signed-zero, tiny, maximal and offset data, and
+    against the float8[] path on segments that span several pieces.
+  - Measured on an M-series Mac: 7 channels of 220k samples took 82–87 ms instead of 320–346 ms (alternating, same
+    session); `simple()` alone takes 1.00 ms instead of 1.40 ms.
+  - Collections with float8[] chunks keep the old path.
+- **Prometheus metrics from the steward (#197).** `morlet-steward metrics --listen HOST:PORT` serves `/metrics` in
+  the Prometheus text format, using only the standard library. It reports:
+  - the steward's overall state and items, heartbeat age, breakers, recent actions and waiting plans;
+  - the ingest hold, and disk free, total and database bytes;
+  - the last integrity pass per collection;
+  - `morlet_collection_status` per collection and window size;
+  - dead tuples and vacuum age of each collection's tables.
+
+  A scrape only reads; queries have a 5-second timeout, and per-collection statistics are cached (60 s by default).
+  It is tested offline (text format, an unreachable database) and against a database (`test_steward_db.py`).
+- **`morlet_compare_summary` computes the pooled spreads once (#335).** For the duration deviation it called
+  `morlet_compare_to_history`, which computed the pooled spreads only to discard them; it computed them again for
+  `calibrated_score`. The comparison's body is now the internal `morlet_history_comparison`, with the spreads
+  optional: `morlet_compare_to_history` calls it with them (same signature and results), `morlet_compare_summary`
+  without them for the duration deviation. On a 320-segment history `morlet_compare_summary` took 23 ms instead of
+  35 ms (p50), with identical results on every segment. The decision state (`tools/mcp/decision.py`) already
+  compares in Python without the spreads; it calls `morlet_compare_summary` only for the summary quantile.
+- **Search can leave out the same part or the whole source recording (#384).** On cyclic production
+  `morlet_search_similar` returned the next cycles of the query's own recording, because it leaves out only the
+  windows overlapping the query. The new, experimental `morlet_search_similar_excluding` returns the same matches
+  with evidence as `morlet_search_similar_evidence` and takes `exclude`: `'window'` (the default, identical results),
+  `'occurrence'` (every current context segment whose occurrence, e.g. the part, equals the query's, in any
+  recording, as the history comparison excludes the same occurrence), `'recording'` or `'none'`. Excluded windows are
+  left out of the scans and of the `max_candidates` count on both paths; probe search also leaves recordings
+  excluded whole out of its index scans. The MCP tool
+  `search_similar` and the Python SDK's `search_similar` take `exclude`. The stable search functions keep their
+  signatures, statements and results; their bodies moved into internal functions that accept excluded ranges.
+- **The image sizes `shared_buffers` to small memory limits (#466).** Under a container memory limit below 512 MB
+  the image starts PostgreSQL with `shared_buffers` at a quarter of the limit (at least 16 MB) instead of the
+  default 128 MB, unless `shared_buffers` is set on the command line, with `ALTER SYSTEM` or in `postgresql.conf`;
+  `MORLET_AUTO_SHARED_BUFFERS=off` turns it off. At 256 MB the default left as little as about 20 MB that the
+  kernel could not reclaim after a bulk load, and a backend was killed once (Study M1d); with 64 MB the peak fell
+  by about 80 MB with no measurable change in speed. Limits of 512 MB and more, and runs without a limit, are
+  unchanged. The release workflow checks every case (`deploy/test_memory_sizing.sh`).
+
+## 0.3.13-alpha.1
+
+Security and data-safety release: SQL 0.3.10 (`ALTER EXTENSION pg_morlet UPDATE` from 0.3.9; the update also puts the
+episodic-memory tables of collections already under row security under it), Python SDK 0.1.0a6. The chunk format is
+unchanged; existing collections keep their layout. Steward installations run `steward.py init` again.
+
+- **Steward plans: the approval rules hold at the table (#439).** A trigger on `morlet_steward.plans` enforces the
+  plan workflow for every write, not only through `decide()` and `apply()`: a new plan is undecided and unapplied,
+  with its author, creation time and 24-hour validity set by the database; a plan's kind, target, payload, evidence
+  and validity never change; a decision is made once, by an approver other than the author, before expiry; an
+  application is made once, of an approved, unchanged, unexpired plan; plans are not deleted. Existing installations
+  get it by running `steward.py init` again.
+SQL version 0.3.10, with an update script from 0.3.9: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+
+- **A representative keeps its samples while it represents an episode (#440).** `morlet_set_level` checked the
+  representative only when an episode moved to level 2; a later move could take the representative to level 3 or 4,
+  leaving the level-2 episode without a real example. Now, after all moves of a call (stored levels overlaid with the
+  call's moves, so dry runs too), no level-2 episode may name a representative above level 1, or the whole call is
+  refused; the members can leave level 2 in the same call. The representative row is locked while it is assigned, so
+  concurrent moves cannot break the rule. Affects all releases with episodic memory.
+- **Episodic memory under row-level security (#438).** `morlet_enable_row_security` now covers the memory tables
+  (episodes, ledger, kept summaries: they follow their recording; memory runs: visible to the role that started
+  them), and `morlet_enable_memory` applies it at once when the collection is already under it. The update to
+  0.3.10 applies it to every collection already under row security, so existing memory tables are covered without
+  a manual step (an update by a role that cannot alter one of them fails and rolls back).
+- **Envelopes build on after compaction removed the first windows (#441).** `morlet_build_envelopes` read the stride
+  from the first stored window after 0; once level-1 compaction had removed the early windows, a rebuild with the
+  original stride failed (`built with stride 6144, not 2048`), new samples stayed unsearchable and the steward's
+  envelope job could trip its breaker. When that first window does not match, the builder now checks that every
+  stored window lies on the requested grid and every grid position without a window is one it skips itself (out of
+  search, or samples removed); another stride's grid is still refused.
+- **S3 import resumes objects that were cut off (#442).** `morlet_s3.py import` treated any recording carrying an
+  object's key and ETag as proof that the whole object was imported, but the importer commits in batches, so an
+  interrupted object was skipped on the next run and its remaining samples and channels never arrived. Objects are
+  now imported one at a time and recorded as complete in `<collection>_s3_imports` only after the importer finished
+  them; anything else is imported again (identical chunks are no-ops). Collections imported before have no record,
+  so their objects are read once more on the next run.
+- **Chunk shipping checks the target before writing (#443, #444).** An existing target recording must have the
+  source's parameters (rate, channel, unit, metadata, quantum, window, stride, normalization, extractor); before,
+  shipping into an empty recording at another rate succeeded and reported `identical: true`. The target's existing
+  chunks must equal the source's first chunks byte for byte and on the same boundaries; before, a conflicting
+  prefix was only detected after the source's later chunks had been committed, leaving a mixed recording. A run now
+  ships up to the source end read at its start, so a source that keeps recording no longer fails the final check.
+  The SDK's `export_file` refuses a file recording with other parameters in the same way. Affects 0.3.12-alpha.1.
+- **Decision states from memory: `decision.HistoryCache` (#403).** A process that decides cut after cut passes
+  `history_cache=HistoryCache()` to `decision_states` and keeps it: each collection's current segments with values and
+  its active labels stay in memory, indexed by rate, channel, unit, spec and context, and each call fetches only new
+  segments (and values built since for known ones). A fingerprint read in the same snapshot (highest segment and
+  label ids, numbers of current segments and active labels) reloads the pool when a segment went stale or was
+  deleted, and the labels when they changed. The states are identical to the uncached ones (a test changes the data
+  between calls: new cuts, late values, labels added and retracted, segments rebuilt, a recording deleted). On a
+  Raspberry Pi 3B+ with ~57,000 segments, p50 per decision of 9 signals 1.5 s -> 0.68 s; the fingerprint's counts
+  (~0.2 s there) are the next step.
+- **Decision states with long histories faster (#403).** simple-v2's grid check (`quantised_step`) ran in pure
+  Python over every value column of the history; it now uses numpy with the same float64 operations. A history's
+  comparison floors are computed once, and neighbours are ranked with one sort. The states are identical to before;
+  a test compares the grid check with `morlet_quantised_step`. On a Raspberry Pi 3B+ with ~600 earlier segments per
+  signal, these parts took about 0.7 s of each decision; the history query remains the larger cost.
+
+## 0.3.12-alpha.1
+
+SQL version 0.3.9, with an update script from 0.3.8: run `ALTER EXTENSION pg_morlet UPDATE` after installing.
+Python SDK 0.1.0a5 (reads and transfers Grizzbit 2.1 chunks). The default chunk format is unchanged (Grizzbit 1);
+Grizzbit 2.1 is opt-in. Existing collections keep their layout and their value rules (`simple-v1`); new collections
+get `simple-v2`.
+
+- **Lossless chunk shipping from edge to centre (#420).** `morlet_encoded_chunks` returns a recording's stored
+  chunks as bytes; `morlet_append_encoded_chunk` appends a chunk that another MorletDB encoded, keeping its bytes,
+  after decoding it and running the usual append checks (offset, identical replay a no-op, conflicting samples
+  refused, ingest hold, checkpoint, summary). `tools/ingest/morlet_ship.py` ships recordings with them: it creates
+  the target recording with the source's parameters, resumes at the target's end, and compares the SHA-256 of all
+  chunk bytes at the end (`docs/chunk-shipping.md`).
+- **MCP: negative search answers state their scope, checked by a scripted conversation (#379).**
+  `tools/mcp/scope_conversation.py` asks the server, through its own tools, the questions an analyst would ask of
+  a collection with a period out of search, and fails when a search without a hit does not say what it searched
+  and what it did not; the transcript is in `examples/mcp-scope/TRANSCRIPT.md`, and the test runs it. It found
+  one weak answer: a search whose filters matched no recording said "every period of the matching recordings
+  was searchable"; it now says that no recording matched and nothing was searched.
+- **Alarm and PLC messages as context events (#421).** `tools/ingest/morlet_events.py` places each message of a
+  log (CSV: time and message columns) as a context event on the recordings whose time range contains it, at the
+  sample its time maps to (optionally only on the recordings of the message's machine), with the recording's
+  measured time uncertainty (#393) where known. An identical re-import is a no-op. `decision_state` lists the
+  events inside its segment (`events`: key, value, sample, offset in seconds).
+- **MCP `trend` over an order key (#334).** `order_by` (a metadata key such as `cut`) orders the recordings by
+  that key, numbers numerically, instead of by time. Numbered cuts of a tool, which have no clock time, then get
+  a trend and change points named by the order value (`first_change_order`). Without a start time, the error
+  now points to `order_by`.
+- **Label glossary (#333).** `morlet_define_label(collection, label, definition, unit, source)` records what a
+  label means; `morlet_label_definitions(collection)` lists the definitions. Context enabled from SQL 0.3.9 on
+  gets the table; existing collections get it with their first definition. `decision_state` returns, for the
+  labels it shows, their definitions (`label_definitions`) and the labels nobody defined (`undefined_labels`),
+  and logged precedents carry them. In a demo session an agent had read `not_sharp` (flank wear above 0.2 mm)
+  as the 0.3 mm replacement limit.
+- **MCP `search_similar`: `exclude="occurrence"` (#384).** On cyclic production, the useful answer is the same cut
+  on earlier parts. `occurrence` drops hits from the query's own part, cycle or run (the occurrence of the
+  context segment that contains it), but keeps the other parts in the same recording, which `exclude=recording`
+  drops as well. Tested on one recording of three parts.
+- **`decision.finish_recordings`: build a cut's channels on several connections (#414).** Context, segments and
+  values for several recordings at once, spread over the given autocommit connections (one thread each, each
+  recording in its own transaction), with the same results as one by one. On a Raspberry Pi 3B+, 4
+  connections took the end of a 7-channel cut from 1.21 to 0.72 s (p50, with #423); 7 connections were slower.
+- **Logged decisions keep their precedents (#418).** `decision.log_decision` stores, beside the state the model
+  saw, its k nearest labelled precedents (default 3): the state's examples (labelled cases from the whole
+  history), else its labelled neighbours, never logged decisions, with recording, sample range, distance and
+  labels. When the state held none, `precedents_note` says so. `decisions` and the MCP tool return them without
+  the full state. History grows and labels change, so the precedents of that moment are part of the evidence.
+  Decision log version 2.
+- **Steward: integrity checks get a minimum share under load (soak S1).** On a busy edge device the 1-minute load
+  stayed above the steward's gate and the builders always had new data, so `morlet_verify` never ran ("public.live
+  verified never"). A due verification now gets one batch at least every 15 minutes (`--verify-share-every`),
+  before the builders and despite the load gate; disk pressure still stops it. A missing chunk summary counts as
+  builder backlog (`summaries_pending`), not as damage: under continuous ingest new chunks lack one for a while,
+  and counting them would have raised a false alarm on every pass.
+- **`morlet_add_context` no longer scans the whole context table (#414).** Every call looks its batch up by id
+  (identical retries are no-ops). Without an index that was a sequential scan, growing with the collection: 33
+  of 48 ms per call on a Raspberry Pi 3B+ with 27,000 context rows. Context enabled from SQL 0.3.9 on gets an
+  index on `batch_id`; `morlet_index_context(collection)` adds it to existing collections (once, idempotent).
+  On the Pi, one call dropped from 48 to 24 ms.
+- **Segment values faster: p75 by selection, not a full sort (#414).** `simple-v1`'s 75th percentile takes the two
+  order statistics it needs by selection (O(n)) instead of sorting every sample; the values are bit-identical (a
+  test compares with the sort; on a Raspberry Pi 3B+ both builds wrote the same SHA-256 over all values). One
+  220,000-sample segment: 4.75 → 1.44 ms on an M-series Mac. End of a 7-channel cut on the Pi (context,
+  segments, values): p50 1.38 → 1.21 s sequentially, and 0.81 → 0.72 s when the channels are built on 4
+  connections.
+- **Clock drift is detected and reported (#393, first part).** The importer fits the rate a CSV time column
+  actually shows (`time_axis.fitted_rate_hz`, `rate_error_ppm`). When the timestamps depart from start + rate by
+  more than one sample, it warns per recording and in the report. MCP `locate_time` says per match how the time
+  is derived (`time_basis`: start + rate) and, when an import measured the departure, the uncertainty in
+  seconds and samples. Time anchors, which would correct the drift, are not implemented yet.
+- **Value rules `simple-v2`: a near-zero median on a quantised history counts as zero (#387, study V2).** A p75
+  history of 0, −1 and −2 converter steps had a median of half a step, so a segment at 0 deviated by exactly 1.0
+  and dominated every score. Under `simple-v2`, a history whose distinct values (at least 3) lie on multiples of
+  their smallest gap is quantised, and a median within two steps of zero is treated as zero (`zero_median`), in
+  `morlet_compare_to_history`, `morlet_compare_summary`, `morlet_history_neighbors`, `morlet_value_spreads` and
+  the decision state (`history.value_rules`). Values that are not quantised compare exactly as before, and the
+  stored values are unchanged. The rules belong to the collection: `morlet_value_rules` reads them and
+  `morlet_set_value_rules` sets them. Context enabled from SQL 0.3.9 on starts with `simple-v2`; existing
+  collections keep `simple-v1` until switched. Study V2 (`evaluation/values_v2/`, protocol frozen before any
+  run): the artefact disappears, continuous values are unchanged, and C2's and C3's AUROCs are identical under
+  both rules (0 of 37,670 and 0 of 24 history medians affected). New functions: `morlet_quantised_step`,
+  `morlet_value_floors`, `morlet_value_rules`, `morlet_set_value_rules`; the 0.3.8 → 0.3.9 update script adds them.
+- **Importer: wide plant exports (#388).** For CSV, `--time-column` now sets the start time (ISO 8601) and,
+  without `--rate`, the rate from the median row spacing. The metadata records how far the timestamps depart
+  from the even axis; they are not corrected. `--context-columns program,block` stores controller columns as
+  context on every signal (runs of equal value, empty cells keep the last value) and enables context on the
+  collection if needed.
+- **MCP `trend` per context segment (#385).** `segment_context` (a JSON object such as `{"phase": "cut"}`) takes
+  the measurement points only inside current context segments whose context contains it, from each segment's
+  start (a segment shorter than `samples_per_point` is measured whole). Without it, `trend` measures from each
+  recording's start, which on machining data is the idle lead-in before the cut.
+- **Decision state about ten times faster, all channels of a cut in one call (#403).** `decision.decision_states`
+  returns the states of several segments; `decision_state` is its one-segment form. The history of all segments
+  that share a context is read in one query, and medians, quantiles and neighbour distances are computed in Python
+  with the SQL functions' rules (checked against `morlet_compare_to_history` and `morlet_history_neighbors` in
+  `tools/mcp/test_decision_db.py`). The SQL path read the collection three times per channel and also computed the
+  pooled spreads, which the state does not use. On a synthetic history shaped like a milling study (3 tools x 315
+  cuts x 7 channels), seven channels took 259 ms on an M-series Mac before and 16 ms after, and on a Raspberry Pi
+  3B+ 3.8 s before and 0.26 s after (median). On the real PHM 2010 milling data on the Pi (3 tools x 315 cuts,
+  100 decisions of c4 and c6 late in life, soft temperature limit active), a cut's 7 states take p50 256 ms and
+  p95 296 ms, from 4.7 s and 5.1 s. `decision.segments_at` looks up several segments in one query. State version 4:
+  a value's status no longer reports `no_pooled_spread` (it is `ok`), since the state carries no calibrated
+  deviation; values, medians, deviations, quantiles and neighbours are unchanged.
+- **Decision-state examples search the whole history and say when there is none (#404).** Examples were the
+  labelled cases among the 50 nearest segments, so late in a tool's life, when the nearest segments were its own
+  unlabelled cuts, a labelled case further away was missed. Now the nearest labelled cases of the whole history are
+  returned, `examples_note` states when none exists, and `example_match_keys` (also an MCP tool argument) lets
+  examples come from a wider context, such as other tools of the same process.
+- **`morlet.chunk_format`: a misspelt value fails, never writes Grizzbit 1 quietly.** PostgreSQL keeps a value set
+  before pg_morlet's library loads (`SET` early in a session, `ALTER DATABASE/ROLE ... SET`, `postgresql.conf`,
+  `-c`) and, for an enum setting, only warned about an invalid one and used the default. The setting is now a
+  string checked by pg_morlet: once the library is loaded, `SET` refuses an invalid value; a value from before makes
+  every append fail with `invalid value for parameter "morlet.chunk_format": "..."; available values: grizzbit1,
+  grizzbit21`, storing nothing. Values are exact and lower case (`grizzbit1`, `grizzbit21`). An invalid
+  `morlet.verify_appends`, however it was set, already failed every append; the message now names the value
+  (`invalid value for parameter "morlet.verify_appends": "..."; available values: on, off`). Before a session's
+  first `morlet_*` call, `current_setting` shows only explicitly set values; check with `SHOW` after one.
+- **SQL 0.3.9: `morlet_encode_chunk` and `morlet_chunk_batch` are STABLE, not IMMUTABLE.** Their output depends on
+  `morlet.chunk_format`, so PostgreSQL could fold or cache an IMMUTABLE call (for example in a generic plan) and keep
+  bytes encoded under another setting; the samples were exact either way. Encoding works before the update; the
+  update only changes the two functions' volatility.
+- **Grizzbit 2.1, chunk format version 5, opt-in (#377, study B6):** `SET morlet.chunk_format = grizzbit21` makes
+  every append path keep a version-5 chunk (last-place corrections once per grid index, per-chunk LPC) wherever it
+  is strictly smaller than Grizzbit 1's chunk, which is stored otherwise, byte for byte. The default stays
+  `grizzbit1`; existing chunks are never rewritten.
+  - **Study B6 passed** all six criteria: waveforms 12.6% smaller in total and none larger, decode ≥ 53.1 and
+    encode ≥ 10.8 M samples/s per thread, identical bytes on four platforms, B3 standing kept
+    (evaluation/storage_b6/RESULTS.md).
+  - Write-time verification (#366) covers version 5, with no fallback. Version 4 stays reserved and rejected.
+  - Every reader of this release decodes version 5 whatever the setting. **Readers older than this release cannot
+    read version-5 chunks**; downgrading needs them re-appended with `grizzbit1`.
+  - **Compressed transfer negotiates the version:** the native decoder (`morlet-ffi`) and
+    `transfer::MAX_CHUNK_VERSION` report 5; SQL's `max_chunk_version` default stays 3, so a client that states no
+    version, or a lower one, receives samples.
+  - **File format 1 stays Grizzbit 1:** its writer never writes version 5 and its reader refuses it.
+  - The SDK labels a Grizzbit 2.1 server's encoder. `grizzbit::encode` is unchanged (Grizzbit 1 goldens and
+    `testdata/grizzbit/encoder-equivalence.bin` byte for byte); `grizzbit::encode_with(.., Format::Grizzbit21)`
+    writes version 5.
+  - Specification: docs/chunk-format.md, "Version 5"; overview and limits: docs/grizzbit.md.
+
+## 0.3.11-alpha.1
+
+SQL version 0.3.8, unchanged; Python SDK 0.1.0a4. The chunk format is unchanged; existing collections keep their
+layout.
+
+- **MCP server starts under `python -I` again (#382):** `morlet_mcp.py` loads its sibling `decision.py` by path. In
+  0.3.10-alpha.1 the server fails in isolated mode with `No module named 'decision'`; a test now imports it under `-I`.
+
+- **MCP server, findings from a field evaluation (#384, #386):**
+  - `search_similar` takes `exclude`: `"recording"` drops every hit in the query's recording, and `"metadata:<key>"`
+    drops hits from recordings sharing the query's value of that key (e.g. the other channels of the same part). It
+    fetches up to 100 candidates so that `top_k` hits remain, and reports how many were left out. The SQL option
+    remains open in #384.
+  - `coverage` treats recordings that overlap in time (channels of one acquisition) as one recorded block, so covered
+    time is no longer added up per channel (`covered_fraction` stays at most 1), and snapshots recorded on several
+    channels are recognised as snapshots. New fields: `recorded_blocks`, `recordings_per_block`.
+  - `locate_time` says when a time falls into a gap, or before the first or after the last recording, and names the
+    nearest recording on each side.
+  - `latest` reports a too-small `limit` by that name instead of the SQL argument `max_recordings`.
+- **Docs (#389):** `morlet_read_interval_raw` returns a bare `bytea`, while `morlet_read_interval` returns a table with
+  `samples`; notes for Windows (no `chmod 600` on NTFS, running the tools from a container).
+
+- **The chunk codec is now the `grizzbit` crate (Grizzbit 1 = chunk format versions 2 and 3, unchanged):**
+  `crates/grizzbit` holds the encoder, decoder, CRC-32C, sample limits, unit and property tests, golden-chunk test,
+  Kani proofs and the codec's fuzz targets, with no dependencies. `morlet_core::rawcodec` re-exports it, so every
+  existing path keeps compiling; `morlet_core::MAX_SAMPLES` and `MAX_AMPLITUDE` are the codec's limits.
+  `CodecError::Signal` now carries `grizzbit::SampleError` (same messages; `SignalError: From<SampleError>`). No
+  byte changes: a new frozen vector (testdata/grizzbit), written by the encoder before the move, must be
+  reproduced exactly, and SQL function names and messages are unchanged. The crate is not published.
+
+- **Docs: the chunk codec is named Grizzbit:** [docs/grizzbit.md](docs/grizzbit.md) describes it (what it does, why it
+  is lossless, where it is strong and weak in B4, lineage, versions, the planned Grizzbit 2 of #326);
+  docs/chunk-format.md is retitled "Grizzbit format specification" with its content unchanged (Grizzbit 1 = chunk format
+  versions 2 and 3); the README and report 0.22 (paper Section 4, supplement Section 1) name it. No format or behaviour
+  change.
+
+- **Every append path proves at write time that a chunk decodes to its input (#366):** with
+  `morlet.verify_appends` on (the default), the batch append `morlet_append_chunks_raw` decoded each encoded chunk
+  again and compared it bit for bit with its input, but the single-chunk append `morlet_append_chunk` (and so
+  `morlet_append_chunk_raw`, `morlet_append_chunks`, and the batch append's chunk-by-chunk fallback for retries,
+  overlaps and float8[] collections) stored `morlet_encode_chunk`'s output unchecked. `morlet_encode_chunk` now
+  runs the same check, from one function shared with the batch path, so no SQL function changes. The codec was
+  and is lossless by design and every chunk keeps its CRC-32C; this closes the gap in the write-time proof.
+  Tests: the single-chunk path stores the same bytes with the check on and off, and refuses (single and batch)
+  a code that does not decode to its input, which with the check off is stored, so the check is what refuses it.
+
+- **File and server transfers verify samples, not chunk bytes (#356):** `Client.import_file` and
+  `Client.export_file` compared a hash of the chunk bytes on both sides after every 256 chunks, and to continue a
+  recording. A file whose chunks another encoder version wrote (the same samples as other bytes) would have been
+  refused with "chunks differ after the import", although no sample was lost. They now compare a hash of the
+  decoded float64 samples, every bit (hashed by the server from `morlet_read_interval_raw`), and continue a
+  recording if its samples equal the other side's first samples. The chunk bytes are still compared when both
+  sides report the same encoder version, and reported: `report=[...]` collects a `TransferCheck` per recording.
+  Tests import, verify and continue a file written with other chunk bytes, export server chunks written with
+  other bytes, and refuse a sample changed by one ulp, a changed sign of zero, and a sample changed on the way.
+
 - **Sample rates up to 100 MHz (#342):** recordings without feature extraction (`extractor 'none'`) accept rates up
   to 100 MHz instead of 200 kHz, so acoustic emission and ultrasound (1–10 MHz) can be stored, read and summarized
   losslessly. Nothing else depended on the rate. L1's rate points at 1, 2.5, 3.125, 10 and 100 MHz: every derived

@@ -1,0 +1,5212 @@
+== b318-cedardb load_morletdb-i1-sum_D2_r1 02:53:31
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.2583527920069173,
+ "samples": 101586735,
+ "started": "2026-11-09T02:53:31",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.588,
+  "samples_per_s": 13387679,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 56.974,
+   "p95_ms": 68.893,
+   "max_ms": 399.949
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.756,
+  "server": {
+   "cpu_percent_mean": 108.5,
+   "cpu_percent_p95": 153.1,
+   "memory_peak_mib": 177.4,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 541.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.9
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.3
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.2583527920069173,
+ "samples": 101586735,
+ "started": "2026-11-09T02:53:31",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.588,
+  "samples_per_s": 13387679,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 56.974,
+   "p95_ms": 68.893,
+   "max_ms": 399.949
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.756,
+  "server": {
+   "cpu_percent_mean": 108.5,
+   "cpu_percent_p95": 153.1,
+   "memory_peak_mib": 177.4,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 541.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.9
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.3
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4325376,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 171281555,
+  "volume": {
+   "apparent": 379223980,
+   "allocated": 379297792,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.619,
+   "p95_ms": 1.01,
+   "max_ms": 2.049,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 5.753,
+   "p95_ms": 6.971,
+   "max_ms": 9.4,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.245,
+   "p95_ms": 8.992,
+   "max_ms": 11.328,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.624,
+   "p95_ms": 0.961,
+   "max_ms": 2.376,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.605,
+   "p95_ms": 0.994,
+   "max_ms": 2.708,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.811,
+   "p95_ms": 1.561,
+   "max_ms": 6.698,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4209.7
+  },
+  "encoded_read": false
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 0.682,
+  "p95_ms": 0.751,
+  "max_ms": 1.513,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 174.0,
+   "rounds_us": [
+    176.9,
+    173.1,
+    173.8,
+    174.0,
+    174.1
+   ]
+  },
+  "R2": {
+   "us_per_read": 898.9,
+   "rounds_us": [
+    898.9,
+    910.8,
+    893.8,
+    916.4,
+    897.1
+   ]
+  },
+  "R3": {
+   "us_per_read": 1734.8,
+   "rounds_us": [
+    1736.7,
+    1742.8,
+    1734.4,
+    1734.1,
+    1734.8
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 180.1,
+   "rounds_us": [
+    179.1,
+    180.8,
+    180.3,
+    180.0,
+    180.1
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 158.1,
+   "rounds_us": [
+    158.1,
+    157.7,
+    158.5,
+    157.3,
+    160.1
+   ]
+  },
+  "R5": {
+   "us_per_read": 177.3,
+   "rounds_us": [
+    176.3,
+    178.0,
+    176.9,
+    177.3,
+    178.3
+   ]
+  }
+ }
+}
+== b318-cedardb load_cedardb_D2_r1 03:06:54
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.18570358399301767,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T03:06:54",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.173,
+  "samples_per_s": 2661199,
+  "conversion_s": 3.201,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 312.97,
+   "p95_ms": 336.346,
+   "max_ms": 354.168
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.21,
+   "p95_ms": 267.268,
+   "max_ms": 297.662
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 126.5,
+   "cpu_percent_p95": 245.9,
+   "memory_peak_mib": 4652.0,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4683.5,
+    "anon_mib_at_end": 4647.3,
+    "file_mib_at_end": 12.6,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4673.4
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.6
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.18570358399301767,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T03:06:54",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.173,
+  "samples_per_s": 2661199,
+  "conversion_s": 3.201,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 312.97,
+   "p95_ms": 336.346,
+   "max_ms": 354.168
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.21,
+   "p95_ms": 267.268,
+   "max_ms": 297.662
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 126.5,
+   "cpu_percent_p95": 245.9,
+   "memory_peak_mib": 4652.0,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4683.5,
+    "anon_mib_at_end": 4647.3,
+    "file_mib_at_end": 12.6,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4673.4
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.6
+  }
+ },
+ "correct": true,
+ "volume_db": {
+  "apparent": 4357602163,
+  "allocated": 5699809280,
+  "by_directory": {
+   "database": {
+    "apparent": 4357602163,
+    "allocated": 5699809280,
+    "files": 134
+   }
+  }
+ },
+ "correct_db": true,
+ "reads_db": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 2.7,
+   "p95_ms": 3.514,
+   "max_ms": 10.375,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 35.776,
+   "p95_ms": 37.991,
+   "max_ms": 55.222,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 29.619,
+   "p95_ms": 32.223,
+   "max_ms": 47.264,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 2.614,
+   "p95_ms": 3.366,
+   "max_ms": 8.249,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 2.86,
+   "p95_ms": 3.444,
+   "max_ms": 11.737,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 3.355,
+   "p95_ms": 4.097,
+   "max_ms": 11.952,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 1126.3
+  }
+ },
+ "analytics_db": {
+  "n": 400,
+  "p50_ms": 0.505,
+  "p95_ms": 0.56,
+  "max_ms": 15.672,
+  "max_relative_difference": 1.881395295753901e-14,
+  "within_1e-12": "True",
+  "computed": "database"
+ }
+}
+== b318-cedardb load_morletdb-i1-sum_D1_r1 03:09:38
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.1874445000430569,
+ "samples": 101586735,
+ "started": "2026-11-09T03:09:39",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.167,
+  "samples_per_s": 14174945,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.074,
+   "p95_ms": 66.113,
+   "max_ms": 72.344
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.865,
+  "server": {
+   "cpu_percent_mean": 118.9,
+   "cpu_percent_p95": 120.5,
+   "memory_peak_mib": 178.2,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.6,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.6
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.1874445000430569,
+ "samples": 101586735,
+ "started": "2026-11-09T03:09:39",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.167,
+  "samples_per_s": 14174945,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.074,
+   "p95_ms": 66.113,
+   "max_ms": 72.344
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.865,
+  "server": {
+   "cpu_percent_mean": 118.9,
+   "cpu_percent_p95": 120.5,
+   "memory_peak_mib": 178.2,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.6,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.6
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.8
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_cedardb_D1_r1 03:25:26
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.19532958301715553,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T03:25:27",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.445,
+  "samples_per_s": 2642410,
+  "conversion_s": 3.15,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 314.049,
+   "p95_ms": 344.358,
+   "max_ms": 374.754
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.727,
+   "p95_ms": 266.614,
+   "max_ms": 312.095
+  },
+  "queryable_after_last_ack_s": 0.012,
+  "server": {
+   "cpu_percent_mean": 116.3,
+   "cpu_percent_p95": 170.5,
+   "memory_peak_mib": 4584.4,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4654.9,
+    "anon_mib_at_end": 4619.4,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4645.2
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.4
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.19532958301715553,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T03:25:27",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.445,
+  "samples_per_s": 2642410,
+  "conversion_s": 3.15,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 314.049,
+   "p95_ms": 344.358,
+   "max_ms": 374.754
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.727,
+   "p95_ms": 266.614,
+   "max_ms": 312.095
+  },
+  "queryable_after_last_ack_s": 0.012,
+  "server": {
+   "cpu_percent_mean": 116.3,
+   "cpu_percent_p95": 170.5,
+   "memory_peak_mib": 4584.4,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4654.9,
+    "anon_mib_at_end": 4619.4,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4645.2
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 19.4
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_morletdb-i1-sum_D2_r2 03:56:45
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.19829295889940113,
+ "samples": 101586735,
+ "started": "2026-11-09T03:56:45",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.607,
+  "samples_per_s": 13354199,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.759,
+   "p95_ms": 65.463,
+   "max_ms": 398.787
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.783,
+  "server": {
+   "cpu_percent_mean": 95.9,
+   "cpu_percent_p95": 126.2,
+   "memory_peak_mib": 178.4,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 542.4,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.6,
+    "shmem_mib_at_end": 140.2,
+    "working_set_peak_mib_50ms": 180.1
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.19829295889940113,
+ "samples": 101586735,
+ "started": "2026-11-09T03:56:45",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.607,
+  "samples_per_s": 13354199,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.759,
+   "p95_ms": 65.463,
+   "max_ms": 398.787
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.783,
+  "server": {
+   "cpu_percent_mean": 95.9,
+   "cpu_percent_p95": 126.2,
+   "memory_peak_mib": 178.4,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 542.4,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.6,
+    "shmem_mib_at_end": 140.2,
+    "working_set_peak_mib_50ms": 180.1
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_cedardb_D2_r2 04:07:12
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.24650137510616332,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T04:22:55",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.124,
+  "samples_per_s": 2664663,
+  "conversion_s": 3.151,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 312.098,
+   "p95_ms": 340.059,
+   "max_ms": 366.772
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.081,
+   "p95_ms": 268.066,
+   "max_ms": 288.839
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 118.0,
+   "cpu_percent_p95": 191.2,
+   "memory_peak_mib": 4613.1,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4642.4,
+    "anon_mib_at_end": 4609.9,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4635.2
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.9
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.24650137510616332,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T04:22:55",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.124,
+  "samples_per_s": 2664663,
+  "conversion_s": 3.151,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 312.098,
+   "p95_ms": 340.059,
+   "max_ms": 366.772
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.081,
+   "p95_ms": 268.066,
+   "max_ms": 288.839
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 118.0,
+   "cpu_percent_p95": 191.2,
+   "memory_peak_mib": 4613.1,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4642.4,
+    "anon_mib_at_end": 4609.9,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4635.2
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.9
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_morletdb-i1-sum_D1_r2 04:23:52
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.19183662510477006,
+ "samples": 101586735,
+ "started": "2026-11-09T04:23:53",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.299,
+  "samples_per_s": 13918526,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.763,
+   "p95_ms": 66.788,
+   "max_ms": 75.458
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.776,
+  "server": {
+   "cpu_percent_mean": 117.7,
+   "cpu_percent_p95": 120.3,
+   "memory_peak_mib": 178.5,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.3,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.6
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.19183662510477006,
+ "samples": 101586735,
+ "started": "2026-11-09T04:23:53",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.299,
+  "samples_per_s": 13918526,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.763,
+   "p95_ms": 66.788,
+   "max_ms": 75.458
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.776,
+  "server": {
+   "cpu_percent_mean": 117.7,
+   "cpu_percent_p95": 120.3,
+   "memory_peak_mib": 178.5,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.3,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.6
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_cedardb_D1_r2 04:24:11
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.18965441605541855,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T04:24:11",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 40.568,
+  "samples_per_s": 2504124,
+  "conversion_s": 3.27,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 316.571,
+   "p95_ms": 375.837,
+   "max_ms": 1297.881
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.686,
+   "p95_ms": 269.7,
+   "max_ms": 1205.505
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 119.5,
+   "cpu_percent_p95": 215.9,
+   "memory_peak_mib": 4704.3,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4733.0,
+    "anon_mib_at_end": 4701.4,
+    "file_mib_at_end": 11.7,
+    "shmem_mib_at_end": 11.5,
+    "working_set_peak_mib_50ms": 4726.3
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.7
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.18965441605541855,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T04:24:11",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 40.568,
+  "samples_per_s": 2504124,
+  "conversion_s": 3.27,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 316.571,
+   "p95_ms": 375.837,
+   "max_ms": 1297.881
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.686,
+   "p95_ms": 269.7,
+   "max_ms": 1205.505
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 119.5,
+   "cpu_percent_p95": 215.9,
+   "memory_peak_mib": 4704.3,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4733.0,
+    "anon_mib_at_end": 4701.4,
+    "file_mib_at_end": 11.7,
+    "shmem_mib_at_end": 11.5,
+    "working_set_peak_mib_50ms": 4726.3
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.7
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_morletdb-i1-sum_D2_r3 05:23:44
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.18833245895802975,
+ "samples": 101586735,
+ "started": "2026-11-09T05:23:45",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.116,
+  "samples_per_s": 14275355,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.049,
+   "p95_ms": 61.197,
+   "max_ms": 75.261
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.833,
+  "server": {
+   "cpu_percent_mean": 119.3,
+   "cpu_percent_p95": 121.7,
+   "memory_peak_mib": 179.1,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 542.0,
+    "anon_mib_at_end": 8.7,
+    "file_mib_at_end": 501.5,
+    "shmem_mib_at_end": 140.1,
+    "working_set_peak_mib_50ms": 180.2
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.18833245895802975,
+ "samples": 101586735,
+ "started": "2026-11-09T05:23:45",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.116,
+  "samples_per_s": 14275355,
+  "conversion_s": 0.007,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.049,
+   "p95_ms": 61.197,
+   "max_ms": 75.261
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.833,
+  "server": {
+   "cpu_percent_mean": 119.3,
+   "cpu_percent_p95": 121.7,
+   "memory_peak_mib": 179.1,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 542.0,
+    "anon_mib_at_end": 8.7,
+    "file_mib_at_end": 501.5,
+    "shmem_mib_at_end": 140.1,
+    "working_set_peak_mib_50ms": 180.2
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_cedardb_D2_r3 05:24:03
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.19512074999511242,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T05:24:03",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 39.293,
+  "samples_per_s": 2585392,
+  "conversion_s": 3.199,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 316.154,
+   "p95_ms": 347.975,
+   "max_ms": 672.523
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.619,
+   "p95_ms": 268.362,
+   "max_ms": 608.576
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 119.0,
+   "cpu_percent_p95": 214.4,
+   "memory_peak_mib": 4725.8,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4733.2,
+    "anon_mib_at_end": 4700.2,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4727.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.4
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.19512074999511242,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T05:24:03",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 39.293,
+  "samples_per_s": 2585392,
+  "conversion_s": 3.199,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 316.154,
+   "p95_ms": 347.975,
+   "max_ms": 672.523
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 21.619,
+   "p95_ms": 268.362,
+   "max_ms": 608.576
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 119.0,
+   "cpu_percent_p95": 214.4,
+   "memory_peak_mib": 4725.8,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4733.2,
+    "anon_mib_at_end": 4700.2,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4727.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.4
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_morletdb-i1-sum_D1_r3 06:09:11
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.19064799998886883,
+ "samples": 101586735,
+ "started": "2026-11-09T06:09:12",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.299,
+  "samples_per_s": 13917834,
+  "conversion_s": 0.008,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.201,
+   "p95_ms": 67.896,
+   "max_ms": 87.472
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.773,
+  "server": {
+   "cpu_percent_mean": 117.2,
+   "cpu_percent_p95": 119.3,
+   "memory_peak_mib": 181.9,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 545.8,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 183.9
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.19064799998886883,
+ "samples": 101586735,
+ "started": "2026-11-09T06:09:12",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.299,
+  "samples_per_s": 13917834,
+  "conversion_s": 0.008,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.201,
+   "p95_ms": 67.896,
+   "max_ms": 87.472
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.773,
+  "server": {
+   "cpu_percent_mean": 117.2,
+   "cpu_percent_p95": 119.3,
+   "memory_peak_mib": 181.9,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 545.8,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 183.9
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.2
+  }
+ },
+ "correct": true
+}
+== b318-cedardb load_cedardb_D1_r3 06:26:59
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.19045520795043558,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T06:26:59",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.099,
+  "samples_per_s": 2666356,
+  "conversion_s": 3.199,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 314.568,
+   "p95_ms": 335.452,
+   "max_ms": 356.802
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 20.881,
+   "p95_ms": 266.012,
+   "max_ms": 283.218
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 123.1,
+   "cpu_percent_p95": 232.6,
+   "memory_peak_mib": 4638.7,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4671.6,
+    "anon_mib_at_end": 4639.9,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4665.1
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.2
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.19045520795043558,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-09T06:26:59",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "default",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 38.099,
+  "samples_per_s": 2666356,
+  "conversion_s": 3.199,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 314.568,
+   "p95_ms": 335.452,
+   "max_ms": 356.802
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 20.881,
+   "p95_ms": 266.012,
+   "max_ms": 283.218
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 123.1,
+   "cpu_percent_p95": 232.6,
+   "memory_peak_mib": 4638.7,
+   "samples": 19,
+   "kernel_memory": {
+    "peak_mib": 4671.6,
+    "anon_mib_at_end": 4639.9,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4665.1
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.2
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_morletdb-i1-sum_D2_r1 06:45:21
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.19161762506701052,
+ "samples": 101586735,
+ "started": "2026-11-09T06:45:22",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.066,
+  "samples_per_s": 14376042,
+  "conversion_s": 0.008,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 56.898,
+   "p95_ms": 60.45,
+   "max_ms": 71.853
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.778,
+  "server": {
+   "cpu_percent_mean": 122.5,
+   "cpu_percent_p95": 122.9,
+   "memory_peak_mib": 177.9,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.6,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.7
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.19161762506701052,
+ "samples": 101586735,
+ "started": "2026-11-09T06:45:22",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.066,
+  "samples_per_s": 14376042,
+  "conversion_s": 0.008,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 56.898,
+   "p95_ms": 60.45,
+   "max_ms": 71.853
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 0.778,
+  "server": {
+   "cpu_percent_mean": 122.5,
+   "cpu_percent_p95": 122.9,
+   "memory_peak_mib": 177.9,
+   "samples": 4,
+   "kernel_memory": {
+    "peak_mib": 541.6,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.7
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4325376,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 171281555,
+  "volume": {
+   "apparent": 379223980,
+   "allocated": 379297792,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.612,
+   "p95_ms": 0.999,
+   "max_ms": 2.26,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 5.896,
+   "p95_ms": 8.111,
+   "max_ms": 340.347,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.153,
+   "p95_ms": 8.932,
+   "max_ms": 10.998,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.621,
+   "p95_ms": 0.971,
+   "max_ms": 2.112,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.602,
+   "p95_ms": 0.986,
+   "max_ms": 2.105,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.816,
+   "p95_ms": 1.741,
+   "max_ms": 308.971,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 3577.1
+  },
+  "encoded_read": false
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 0.788,
+  "p95_ms": 1.16,
+  "max_ms": 3.066,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 173.2,
+   "rounds_us": [
+    174.3,
+    177.9,
+    173.2,
+    172.9,
+    172.6
+   ]
+  },
+  "R2": {
+   "us_per_read": 899.7,
+   "rounds_us": [
+    899.7,
+    894.2,
+    898.9,
+    901.1,
+    902.6
+   ]
+  },
+  "R3": {
+   "us_per_read": 1736.4,
+   "rounds_us": [
+    1734.7,
+    1735.7,
+    1746.3,
+    1737.8,
+    1736.4
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 178.9,
+   "rounds_us": [
+    178.7,
+    180.8,
+    178.9,
+    178.2,
+    181.3
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 157.4,
+   "rounds_us": [
+    159.1,
+    156.9,
+    158.8,
+    156.8,
+    157.4
+   ]
+  },
+  "R5": {
+   "us_per_read": 176.6,
+   "rounds_us": [
+    175.0,
+    176.1,
+    177.4,
+    176.6,
+    178.0
+   ]
+  }
+ }
+}
+== b318-influxdb3 load_influxdb3_D2_r1 07:26:59
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.1933249169960618,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-09T07:26:59",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"20504e11-ee5c-4f83-b7d6-5e04e2b71198\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 109.019,
+  "samples_per_s": 931823,
+  "conversion_s": 24.303,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 864.464,
+   "p95_ms": 920.201,
+   "max_ms": 1508.33
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 121.198,
+   "p95_ms": 127.931,
+   "max_ms": 616.72
+  },
+  "queryable_after_last_ack_s": 2.239,
+  "server": {
+   "cpu_percent_mean": 82.7,
+   "cpu_percent_p95": 84.9,
+   "memory_peak_mib": 5374.0,
+   "samples": 55,
+   "kernel_memory": {
+    "peak_mib": 7608.8,
+    "anon_mib_at_end": 3877.1,
+    "file_mib_at_end": 1989.9,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5571.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.8
+  }
+ },
+ "correct": true
+}
+== stopped 07:50:23: owner closes the laptop; the InfluxDB pair is rerun in one session later
+== 2026-11-09T21:42:07 rerun of the InfluxDB pair scheduled for 00:00 (caffeinate -ims; CedarDB pair complete and skipped)
+== 2026-11-09T22:10:09 B3.19 (aea30f7) scheduled after the InfluxDB pair, not after 07:00
+== start 2026-11-10T00:00:00  0:00  up 13 days,  8:56, 19 users, load averages: 0.93 1.05 0.97
+skip b318-cedardb load_morletdb-i1-sum_D2_r1
+skip b318-cedardb load_cedardb_D2_r1
+skip b318-cedardb load_morletdb-i1-sum_D1_r1
+skip b318-cedardb load_cedardb_D1_r1
+skip b318-cedardb load_morletdb-i1-sum_D2_r2
+skip b318-cedardb load_cedardb_D2_r2
+skip b318-cedardb load_morletdb-i1-sum_D1_r2
+skip b318-cedardb load_cedardb_D1_r2
+skip b318-cedardb load_morletdb-i1-sum_D2_r3
+skip b318-cedardb load_cedardb_D2_r3
+skip b318-cedardb load_morletdb-i1-sum_D1_r3
+skip b318-cedardb load_cedardb_D1_r3
+== b318-influxdb3 load_morletdb-i1-sum_D2_r1 00:00:16
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.49528883397579193,
+ "samples": 101586735,
+ "started": "2026-11-10T00:00:17",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.325,
+  "samples_per_s": 13867811,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.647,
+   "p95_ms": 64.545,
+   "max_ms": 101.559
+  },
+  "queryable_after_last_ack_s": 0.006,
+  "failures": [],
+  "excluded_preflight_s": 1.192,
+  "server": {
+   "cpu_percent_mean": 98.1,
+   "cpu_percent_p95": 115.4,
+   "memory_peak_mib": 177.7,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 542.2,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.1
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.4
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.49528883397579193,
+ "samples": 101586735,
+ "started": "2026-11-10T00:00:17",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.325,
+  "samples_per_s": 13867811,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.647,
+   "p95_ms": 64.545,
+   "max_ms": 101.559
+  },
+  "queryable_after_last_ack_s": 0.006,
+  "failures": [],
+  "excluded_preflight_s": 1.192,
+  "server": {
+   "cpu_percent_mean": 98.1,
+   "cpu_percent_p95": 115.4,
+   "memory_peak_mib": 177.7,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 542.2,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.1
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.4
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4325376,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 171281555,
+  "volume": {
+   "apparent": 379223980,
+   "allocated": 379293696,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.622,
+   "p95_ms": 0.994,
+   "max_ms": 2.216,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 5.892,
+   "p95_ms": 7.571,
+   "max_ms": 9.654,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.443,
+   "p95_ms": 9.797,
+   "max_ms": 13.317,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.637,
+   "p95_ms": 0.962,
+   "max_ms": 2.326,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.612,
+   "p95_ms": 0.965,
+   "max_ms": 2.095,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.789,
+   "p95_ms": 1.521,
+   "max_ms": 4.142,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4297.8
+  },
+  "encoded_read": false
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 0.68,
+  "p95_ms": 0.736,
+  "max_ms": 1.353,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 175.6,
+   "rounds_us": [
+    176.2,
+    175.4,
+    176.3,
+    175.6,
+    175.1
+   ]
+  },
+  "R2": {
+   "us_per_read": 905.3,
+   "rounds_us": [
+    904.3,
+    905.3,
+    903.1,
+    915.8,
+    907.7
+   ]
+  },
+  "R3": {
+   "us_per_read": 1757.9,
+   "rounds_us": [
+    1757.9,
+    1760.4,
+    1757.9,
+    1756.2,
+    1760.3
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 180.0,
+   "rounds_us": [
+    180.7,
+    181.9,
+    179.0,
+    180.0,
+    179.2
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 158.7,
+   "rounds_us": [
+    158.8,
+    157.3,
+    158.7,
+    159.1,
+    158.1
+   ]
+  },
+  "R5": {
+   "us_per_read": 178.0,
+   "rounds_us": [
+    178.7,
+    178.0,
+    178.5,
+    177.0,
+    178.0
+   ]
+  }
+ }
+}
+== b318-influxdb3 load_influxdb3_D2_r1 00:01:22
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20908487495034933,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:01:22",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"734aeb04-9df1-4635-8d84-ea68bb104d39\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 109.724,
+  "samples_per_s": 925835,
+  "conversion_s": 25.924,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 877.871,
+   "p95_ms": 925.941,
+   "max_ms": 1061.891
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 120.972,
+   "p95_ms": 128.13,
+   "max_ms": 266.637
+  },
+  "queryable_after_last_ack_s": 2.678,
+  "server": {
+   "cpu_percent_mean": 79.9,
+   "cpu_percent_p95": 79.1,
+   "memory_peak_mib": 5060.6,
+   "samples": 55,
+   "kernel_memory": {
+    "peak_mib": 7501.9,
+    "anon_mib_at_end": 3779.2,
+    "file_mib_at_end": 1993.9,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5447.3
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 12.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20908487495034933,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:01:22",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"734aeb04-9df1-4635-8d84-ea68bb104d39\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 109.724,
+  "samples_per_s": 925835,
+  "conversion_s": 25.924,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 877.871,
+   "p95_ms": 925.941,
+   "max_ms": 1061.891
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 120.972,
+   "p95_ms": 128.13,
+   "max_ms": 266.637
+  },
+  "queryable_after_last_ack_s": 2.678,
+  "server": {
+   "cpu_percent_mean": 79.9,
+   "cpu_percent_p95": 79.1,
+   "memory_peak_mib": 5060.6,
+   "samples": 55,
+   "kernel_memory": {
+    "peak_mib": 7501.9,
+    "anon_mib_at_end": 3779.2,
+    "file_mib_at_end": 1993.9,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5447.3
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 12.5
+  }
+ },
+ "correct": true,
+ "persist_db": {
+  "waited_s": 1650,
+  "settled": true,
+  "heartbeat_rows": 826
+ },
+ "volume_db": {
+  "apparent": 426460633,
+  "allocated": 429072384,
+  "wal_apparent": 85337,
+  "wal_allocated": 2588672,
+  "parquet_apparent": 426358573,
+  "parquet_allocated": 426426368,
+  "files": 684
+ },
+ "correct_db": true,
+ "reads_db": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 9.357,
+   "p95_ms": 10.454,
+   "max_ms": 18.795,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 25.561,
+   "p95_ms": 27.741,
+   "max_ms": 34.544,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 22.064,
+   "p95_ms": 24.045,
+   "max_ms": 28.22,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 5.561,
+   "p95_ms": 8.392,
+   "max_ms": 9.537,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 9.359,
+   "p95_ms": 10.33,
+   "max_ms": 13.716,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 10.209,
+   "p95_ms": 11.787,
+   "max_ms": 15.081,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 382.5
+  }
+ },
+ "analytics_db": {
+  "n": 400,
+  "p50_ms": 17.532,
+  "p95_ms": 20.505,
+  "max_ms": 22.128,
+  "max_relative_difference": 1.9595037357996163e-15,
+  
+== b318-influxdb3 load_morletdb-i1-sum_D1_r1 00:33:03
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.2728522919351235,
+ "samples": 101586735,
+ "started": "2026-11-10T00:33:04",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.47,
+  "samples_per_s": 13598710,
+  "conversion_s": 0.013,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.929,
+   "p95_ms": 68.653,
+   "max_ms": 92.236
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.195,
+  "server": {
+   "cpu_percent_mean": 99.2,
+   "cpu_percent_p95": 112.8,
+   "memory_peak_mib": 177.7,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 541.7,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.4,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.8
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.6
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.2728522919351235,
+ "samples": 101586735,
+ "started": "2026-11-10T00:33:04",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.47,
+  "samples_per_s": 13598710,
+  "conversion_s": 0.013,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.929,
+   "p95_ms": 68.653,
+   "max_ms": 92.236
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.195,
+  "server": {
+   "cpu_percent_mean": 99.2,
+   "cpu_percent_p95": 112.8,
+   "memory_peak_mib": 177.7,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 541.7,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.4,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.8
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.6
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_influxdb3_D1_r1 00:33:23
+{
+ "system": "influxdb3",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.20273112505674362,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:33:24",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"0c910ede-d1ca-48cb-a0b0-1a6af6821230\"}",
+  "durability": "D1",
+  "no_sync": false,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 992.355,
+  "samples_per_s": 102369,
+  "conversion_s": 26.371,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 8000.102,
+   "p95_ms": 8002.072,
+   "max_ms": 8358.235
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 996.292,
+   "p95_ms": 1011.396,
+   "max_ms": 1040.323
+  },
+  "queryable_after_last_ack_s": 0.454,
+  "server": {
+   "cpu_percent_mean": 14.0,
+   "cpu_percent_p95": 17.9,
+   "memory_peak_mib": 3162.1,
+   "samples": 478,
+   "kernel_memory": {
+    "peak_mib": 4781.9,
+    "anon_mib_at_end": 1736.3,
+    "file_mib_at_end": 1104.7,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 3165.9
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "influxdb3",
+ "durability": "D1",
+ "rep": 1,
+ "parse_s": 0.20273112505674362,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:33:24",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"0c910ede-d1ca-48cb-a0b0-1a6af6821230\"}",
+  "durability": "D1",
+  "no_sync": false,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 992.355,
+  "samples_per_s": 102369,
+  "conversion_s": 26.371,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 8000.102,
+   "p95_ms": 8002.072,
+   "max_ms": 8358.235
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 996.292,
+   "p95_ms": 1011.396,
+   "max_ms": 1040.323
+  },
+  "queryable_after_last_ack_s": 0.454,
+  "server": {
+   "cpu_percent_mean": 14.0,
+   "cpu_percent_p95": 17.9,
+   "memory_peak_mib": 3162.1,
+   "samples": 478,
+   "kernel_memory": {
+    "peak_mib": 4781.9,
+    "anon_mib_at_end": 1736.3,
+    "file_mib_at_end": 1104.7,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 3165.9
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.8
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_morletdb-i1-sum_D2_r2 00:50:11
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.36077320808544755,
+ "samples": 101586735,
+ "started": "2026-11-10T00:50:12",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.295,
+  "samples_per_s": 13924659,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.9,
+   "p95_ms": 66.186,
+   "max_ms": 95.619
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.184,
+  "server": {
+   "cpu_percent_mean": 97.9,
+   "cpu_percent_p95": 116.3,
+   "memory_peak_mib": 177.7,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 539.1,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.2
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.36077320808544755,
+ "samples": 101586735,
+ "started": "2026-11-10T00:50:12",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.295,
+  "samples_per_s": 13924659,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.9,
+   "p95_ms": 66.186,
+   "max_ms": 95.619
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.184,
+  "server": {
+   "cpu_percent_mean": 97.9,
+   "cpu_percent_p95": 116.3,
+   "memory_peak_mib": 177.7,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 539.1,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.2
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_influxdb3_D2_r2 00:50:31
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.20573345909360796,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:50:32",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"3bbee176-4e69-4037-aee8-bd87eec22c85\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 109.03,
+  "samples_per_s": 931734,
+  "conversion_s": 25.651,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 872.996,
+   "p95_ms": 919.602,
+   "max_ms": 1038.788
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 120.292,
+   "p95_ms": 127.694,
+   "max_ms": 295.677
+  },
+  "queryable_after_last_ack_s": 2.309,
+  "server": {
+   "cpu_percent_mean": 76.9,
+   "cpu_percent_p95": 74.4,
+   "memory_peak_mib": 5391.4,
+   "samples": 54,
+   "kernel_memory": {
+    "peak_mib": 7490.7,
+    "anon_mib_at_end": 3774.1,
+    "file_mib_at_end": 1993.1,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5391.8
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 10.6
+  }
+ },
+ "correct": true
+}
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 2,
+ "parse_s": 0.20573345909360796,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:50:32",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"3bbee176-4e69-4037-aee8-bd87eec22c85\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 109.03,
+  "samples_per_s": 931734,
+  "conversion_s": 25.651,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 872.996,
+   "p95_ms": 919.602,
+   "max_ms": 1038.788
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 120.292,
+   "p95_ms": 127.694,
+   "max_ms": 295.677
+  },
+  "queryable_after_last_ack_s": 2.309,
+  "server": {
+   "cpu_percent_mean": 76.9,
+   "cpu_percent_p95": 74.4,
+   "memory_peak_mib": 5391.4,
+   "samples": 54,
+   "kernel_memory": {
+    "peak_mib": 7490.7,
+    "anon_mib_at_end": 3774.1,
+    "file_mib_at_end": 1993.1,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5391.8
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 10.6
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_morletdb-i1-sum_D1_r2 00:52:38
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.4122584169963375,
+ "samples": 101586735,
+ "started": "2026-11-10T00:52:39",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.382,
+  "samples_per_s": 13761301,
+  "conversion_s": 0.012,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.451,
+   "p95_ms": 67.771,
+   "max_ms": 89.348
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.22,
+  "server": {
+   "cpu_percent_mean": 98.3,
+   "cpu_percent_p95": 113.8,
+   "memory_peak_mib": 177.9,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 541.7,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.2
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.4122584169963375,
+ "samples": 101586735,
+ "started": "2026-11-10T00:52:39",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.382,
+  "samples_per_s": 13761301,
+  "conversion_s": 0.012,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.451,
+   "p95_ms": 67.771,
+   "max_ms": 89.348
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.22,
+  "server": {
+   "cpu_percent_mean": 98.3,
+   "cpu_percent_p95": 113.8,
+   "memory_peak_mib": 177.9,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 541.7,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.2
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_influxdb3_D1_r2 00:52:58
+{
+ "system": "influxdb3",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.2024353330489248,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:52:59",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"e282d980-c830-4a7d-8923-ea00db461b98\"}",
+  "durability": "D1",
+  "no_sync": false,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 992.354,
+  "samples_per_s": 102369,
+  "conversion_s": 26.338,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 8000.143,
+   "p95_ms": 8002.115,
+   "max_ms": 8352.574
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 996.641,
+   "p95_ms": 1011.411,
+   "max_ms": 1049.317
+  },
+  "queryable_after_last_ack_s": 0.448,
+  "server": {
+   "cpu_percent_mean": 14.2,
+   "cpu_percent_p95": 17.6,
+   "memory_peak_mib": 3132.4,
+   "samples": 478,
+   "kernel_memory": {
+    "peak_mib": 4757.2,
+    "anon_mib_at_end": 1762.2,
+    "file_mib_at_end": 1104.7,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 3142.6
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "influxdb3",
+ "durability": "D1",
+ "rep": 2,
+ "parse_s": 0.2024353330489248,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T00:52:59",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"e282d980-c830-4a7d-8923-ea00db461b98\"}",
+  "durability": "D1",
+  "no_sync": false,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 992.354,
+  "samples_per_s": 102369,
+  "conversion_s": 26.338,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 8000.143,
+   "p95_ms": 8002.115,
+   "max_ms": 8352.574
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 996.641,
+   "p95_ms": 1011.411,
+   "max_ms": 1049.317
+  },
+  "queryable_after_last_ack_s": 0.448,
+  "server": {
+   "cpu_percent_mean": 14.2,
+   "cpu_percent_p95": 17.6,
+   "memory_peak_mib": 3132.4,
+   "samples": 478,
+   "kernel_memory": {
+    "peak_mib": 4757.2,
+    "anon_mib_at_end": 1762.2,
+    "file_mib_at_end": 1104.7,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 3142.6
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.8
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_morletdb-i1-sum_D2_r3 01:09:46
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.4155617910437286,
+ "samples": 101586735,
+ "started": "2026-11-10T01:09:47",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.26,
+  "samples_per_s": 13992738,
+  "conversion_s": 0.012,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.855,
+   "p95_ms": 63.059,
+   "max_ms": 88.889
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.18,
+  "server": {
+   "cpu_percent_mean": 98.0,
+   "cpu_percent_p95": 117.9,
+   "memory_peak_mib": 176.9,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 537.3,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.3
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.4155617910437286,
+ "samples": 101586735,
+ "started": "2026-11-10T01:09:47",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.26,
+  "samples_per_s": 13992738,
+  "conversion_s": 0.012,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.855,
+   "p95_ms": 63.059,
+   "max_ms": 88.889
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.18,
+  "server": {
+   "cpu_percent_mean": 98.0,
+   "cpu_percent_p95": 117.9,
+   "memory_peak_mib": 176.9,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 537.3,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.3
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_influxdb3_D2_r3 01:10:06
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.2043071249499917,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T01:10:07",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"e06d3c2a-7903-45e8-9d6b-d403080e3e46\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 108.719,
+  "samples_per_s": 934396,
+  "conversion_s": 25.702,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 871.752,
+   "p95_ms": 904.788,
+   "max_ms": 1025.697
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 120.475,
+   "p95_ms": 127.923,
+   "max_ms": 159.307
+  },
+  "queryable_after_last_ack_s": 2.158,
+  "server": {
+   "cpu_percent_mean": 76.9,
+   "cpu_percent_p95": 74.9,
+   "memory_peak_mib": 5397.5,
+   "samples": 54,
+   "kernel_memory": {
+    "peak_mib": 7465.6,
+    "anon_mib_at_end": 3794.5,
+    "file_mib_at_end": 1985.5,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5411.2
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 10.6
+  }
+ },
+ "correct": true
+}
+{
+ "system": "influxdb3",
+ "durability": "D2",
+ "rep": 3,
+ "parse_s": 0.2043071249499917,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T01:10:07",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"e06d3c2a-7903-45e8-9d6b-d403080e3e46\"}",
+  "durability": "D2",
+  "no_sync": true,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 108.719,
+  "samples_per_s": 934396,
+  "conversion_s": 25.702,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 871.752,
+   "p95_ms": 904.788,
+   "max_ms": 1025.697
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 120.475,
+   "p95_ms": 127.923,
+   "max_ms": 159.307
+  },
+  "queryable_after_last_ack_s": 2.158,
+  "server": {
+   "cpu_percent_mean": 76.9,
+   "cpu_percent_p95": 74.9,
+   "memory_peak_mib": 5397.5,
+   "samples": 54,
+   "kernel_memory": {
+    "peak_mib": 7465.6,
+    "anon_mib_at_end": 3794.5,
+    "file_mib_at_end": 1985.5,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 5411.2
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 10.6
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_morletdb-i1-sum_D1_r3 01:12:12
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.4384949170053005,
+ "samples": 101586735,
+ "started": "2026-11-10T01:12:13",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.521,
+  "samples_per_s": 13507369,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.538,
+   "p95_ms": 70.036,
+   "max_ms": 89.418
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.215,
+  "server": {
+   "cpu_percent_mean": 100.7,
+   "cpu_percent_p95": 113.4,
+   "memory_peak_mib": 181.0,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 545.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 183.8
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.4384949170053005,
+ "samples": 101586735,
+ "started": "2026-11-10T01:12:13",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.9-alpha.1",
+ "image_id": "sha256:6b1184f48164d5bf4af2ff654ea6bfe1666f804cf5282bdac97203d38654fd6b",
+ "ingest": {
+  "wall_s": 7.521,
+  "samples_per_s": 13507369,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 59.538,
+   "p95_ms": 70.036,
+   "max_ms": 89.418
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.215,
+  "server": {
+   "cpu_percent_mean": 100.7,
+   "cpu_percent_p95": 113.4,
+   "memory_peak_mib": 181.0,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 545.5,
+    "anon_mib_at_end": 8.8,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 183.8
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.5
+  }
+ },
+ "correct": true
+}
+== b318-influxdb3 load_influxdb3_D1_r3 01:12:33
+{
+ "system": "influxdb3",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.20751104096416384,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T01:12:33",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"ad8e8be4-892f-4d01-895a-472544b47151\"}",
+  "durability": "D1",
+  "no_sync": false,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 992.364,
+  "samples_per_s": 102368,
+  "conversion_s": 26.556,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 8000.018,
+   "p95_ms": 8001.991,
+   "max_ms": 8362.446
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 996.324,
+   "p95_ms": 1013.636,
+   "max_ms": 1052.449
+  },
+  "queryable_after_last_ack_s": 0.445,
+  "server": {
+   "cpu_percent_mean": 14.1,
+   "cpu_percent_p95": 17.5,
+   "memory_peak_mib": 3167.2,
+   "samples": 478,
+   "kernel_memory": {
+    "peak_mib": 4787.1,
+    "anon_mib_at_end": 1737.7,
+    "file_mib_at_end": 1104.7,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 3172.6
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "influxdb3",
+ "durability": "D1",
+ "rep": 3,
+ "parse_s": 0.20751104096416384,
+ "samples": 101586735,
+ "image": "influxdb@sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "image_id": "sha256:26875ba5ae6e843fdbd208b1ac4a55fa1d2ec3aa7faf2d0d1b5035cb1f998990",
+ "started": "2026-11-10T01:12:33",
+ "settings": {
+  "ping": "{\"product_name\":\"InfluxDB 3 Core\",\"version\":\"3.12.2\",\"revision\":\"cc9769917a\",\"process_id\":\"ad8e8be4-892f-4d01-895a-472544b47151\"}",
+  "durability": "D1",
+  "no_sync": false,
+  "command": "influxdb3 serve --node-id b3 --object-store file --data-dir /var/lib/influxdb3/data --without-auth"
+ },
+ "ingest": {
+  "wall_s": 992.364,
+  "samples_per_s": 102368,
+  "conversion_s": 26.556,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 8000.018,
+   "p95_ms": 8001.991,
+   "max_ms": 8362.446
+  },
+  "ack_per_call": {
+   "n": 992,
+   "p50_ms": 996.324,
+   "p95_ms": 1013.636,
+   "max_ms": 1052.449
+  },
+  "queryable_after_last_ack_s": 0.445,
+  "server": {
+   "cpu_percent_mean": 14.1,
+   "cpu_percent_p95": 17.5,
+   "memory_peak_mib": 3167.2,
+   "samples": 478,
+   "kernel_memory": {
+    "peak_mib": 4787.1,
+    "anon_mib_at_end": 1737.7,
+    "file_mib_at_end": 1104.7,
+    "shmem_mib_at_end": 0.0,
+    "working_set_peak_mib_50ms": 3172.6
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 9.8
+  }
+ },
+ "correct": true
+}
+== B3.18 done 01:29:20
+== start B3.19 2026-11-10T01:30:12  1:30  up 13 days, 10:26, 19 users, load averages: 0.67 1.14 1.39
+== b319-cedardb-s1 morletdb 01:30:12
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.38463783299084753,
+ "samples": 101586735,
+ "started": "2026-11-10T01:30:13",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 7.32,
+  "samples_per_s": 13878252,
+  "conversion_s": 0.011,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.379,
+   "p95_ms": 65.045,
+   "max_ms": 87.87
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.218,
+  "server": {
+   "cpu_percent_mean": 99.7,
+   "cpu_percent_p95": 117.1,
+   "memory_peak_mib": 177.2,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 540.2,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.3
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.6
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.38463783299084753,
+ "samples": 101586735,
+ "started": "2026-11-10T01:30:13",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 7.32,
+  "samples_per_s": 13878252,
+  "conversion_s": 0.011,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.379,
+   "p95_ms": 65.045,
+   "max_ms": 87.87
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.218,
+  "server": {
+   "cpu_percent_mean": 99.7,
+   "cpu_percent_p95": 117.1,
+   "memory_peak_mib": 177.2,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 540.2,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 180.3
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.6
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4325376,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 171289747,
+  "volume": {
+   "apparent": 379231778,
+   "allocated": 379305984,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.63,
+   "p95_ms": 0.987,
+   "max_ms": 2.148,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 5.948,
+   "p95_ms": 8.277,
+   "max_ms": 10.138,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.326,
+   "p95_ms": 10.352,
+   "max_ms": 12.132,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.636,
+   "p95_ms": 0.988,
+   "max_ms": 1.968,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.609,
+   "p95_ms": 0.969,
+   "max_ms": 2.114,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.797,
+   "p95_ms": 1.529,
+   "max_ms": 2.846,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4266.1
+  },
+  "encoded_read": false
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 0.484,
+  "p95_ms": 0.523,
+  "max_ms": 1.475,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 172.8,
+   "rounds_us": [
+    173.8,
+    172.8,
+    172.8,
+    172.3,
+    172.9
+   ]
+  },
+  "R2": {
+   "us_per_read": 905.8,
+   "rounds_us": [
+    905.8,
+    904.9,
+    904.6,
+    908.2,
+    909.6
+   ]
+  },
+  "R3": {
+   "us_per_read": 1747.5,
+   "rounds_us": [
+    1758.2,
+    1747.5,
+    1757.5,
+    1745.9,
+    1744.2
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 179.5,
+   "rounds_us": [
+    179.5,
+    181.9,
+    178.5,
+    179.9,
+    178.9
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 158.2,
+   "rounds_us": [
+    158.2,
+    158.2,
+    160.8,
+    157.4,
+    157.3
+   ]
+  },
+  "R5": {
+   "us_per_read": 176.8,
+   "rounds_us": [
+    177.7,
+    176.8,
+    176.8,
+    176.2,
+    176.8
+   ]
+  }
+ }
+}
+== b319-cedardb-s1 cedardb 01:31:18
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21142516692634672,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-10T01:31:19",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 40.332,
+  "samples_per_s": 2518746,
+  "conversion_s": 3.67,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 328.985,
+   "p95_ms": 358.679,
+   "max_ms": 370.154
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 23.137,
+   "p95_ms": 267.188,
+   "max_ms": 300.742
+  },
+  "queryable_after_last_ack_s": 0.015,
+  "server": {
+   "cpu_percent_mean": 108.6,
+   "cpu_percent_p95": 171.8,
+   "memory_peak_mib": 4654.1,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4687.1,
+    "anon_mib_at_end": 4650.8,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4676.4
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.0
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21142516692634672,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-10T01:31:19",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 40.332,
+  "samples_per_s": 2518746,
+  "conversion_s": 3.67,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 328.985,
+   "p95_ms": 358.679,
+   "max_ms": 370.154
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 23.137,
+   "p95_ms": 267.188,
+   "max_ms": 300.742
+  },
+  "queryable_after_last_ack_s": 0.015,
+  "server": {
+   "cpu_percent_mean": 108.6,
+   "cpu_percent_p95": 171.8,
+   "memory_peak_mib": 4654.1,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4687.1,
+    "anon_mib_at_end": 4650.8,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4676.4
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 17.0
+  }
+ },
+ "correct": true,
+ "volume_db": {
+  "apparent": 4418730867,
+  "allocated": 5760937984,
+  "by_directory": {
+   "database": {
+    "apparent": 4418730867,
+    "allocated": 5760937984,
+    "files": 136
+   }
+  }
+ },
+ "correct_db": true,
+ "reads_db": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 3.036,
+   "p95_ms": 3.418,
+   "max_ms": 11.377,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 36.402,
+   "p95_ms": 39.173,
+   "max_ms": 54.688,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 30.224,
+   "p95_ms": 32.841,
+   "max_ms": 49.212,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 3.041,
+   "p95_ms": 3.411,
+   "max_ms": 8.803,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 3.267,
+   "p95_ms": 3.565,
+   "max_ms": 15.684,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 3.288,
+   "p95_ms": 3.911,
+   "max_ms": 12.759,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 1153.1
+  }
+ },
+ "analytics_db": {
+  "n": 400,
+  "p50_ms": 0.518,
+  "p95_ms": 0.583,
+  "max_ms": 15.853,
+  "max_relative_difference": 1.9276591145019474e-14,
+  "within_1e-12": "True",
+  "computed": "database"
+ }
+}
+== b319-cedardb-s2 morletdb 01:34:08
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.2211776659823954,
+ "samples": 101586735,
+ "started": "2026-11-10T01:34:09",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 7.341,
+  "samples_per_s": 13838082,
+  "conversion_s": 0.013,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.105,
+   "p95_ms": 64.083,
+   "max_ms": 92.639
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.186,
+  "server": {
+   "cpu_percent_mean": 98.6,
+   "cpu_percent_p95": 115.5,
+   "memory_peak_mib": 178.0,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 537.7,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.5
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.2211776659823954,
+ "samples": 101586735,
+ "started": "2026-11-10T01:34:09",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 7.341,
+  "samples_per_s": 13838082,
+  "conversion_s": 0.013,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 58.105,
+   "p95_ms": 64.083,
+   "max_ms": 92.639
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.186,
+  "server": {
+   "cpu_percent_mean": 98.6,
+   "cpu_percent_p95": 115.5,
+   "memory_peak_mib": 178.0,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 537.7,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.5
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.7
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4325376,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 171289747,
+  "volume": {
+   "apparent": 379231778,
+   "allocated": 379314176,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.625,
+   "p95_ms": 0.99,
+   "max_ms": 2.015,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 5.812,
+   "p95_ms": 8.323,
+   "max_ms": 10.23,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.283,
+   "p95_ms": 10.25,
+   "max_ms": 12.903,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.642,
+   "p95_ms": 1.013,
+   "max_ms": 2.061,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.616,
+   "p95_ms": 0.901,
+   "max_ms": 1.944,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.801,
+   "p95_ms": 1.509,
+   "max_ms": 2.843,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4258.4
+  },
+  "encoded_read": false
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 0.478,
+  "p95_ms": 0.527,
+  "max_ms": 1.995,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 176.1,
+   "rounds_us": [
+    175.2,
+    174.3,
+    176.4,
+    176.1,
+    177.3
+   ]
+  },
+  "R2": {
+   "us_per_read": 911.3,
+   "rounds_us": [
+    913.9,
+    909.5,
+    908.2,
+    911.6,
+    911.3
+   ]
+  },
+  "R3": {
+   "us_per_read": 1757.7,
+   "rounds_us": [
+    1766.4,
+    1760.8,
+    1753.8,
+    1757.7,
+    1748.4
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 180.4,
+   "rounds_us": [
+    180.5,
+    179.0,
+    180.4,
+    180.2,
+    180.5
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 159.6,
+   "rounds_us": [
+    159.3,
+    159.5,
+    159.6,
+    160.1,
+    160.5
+   ]
+  },
+  "R5": {
+   "us_per_read": 176.9,
+   "rounds_us": [
+    176.9,
+    177.0,
+    177.1,
+    176.5,
+    176.2
+   ]
+  }
+ }
+}
+== b319-cedardb-s2 cedardb 01:35:14
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21626362507231534,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-10T01:35:14",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 40.196,
+  "samples_per_s": 2527315,
+  "conversion_s": 3.689,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 328.449,
+   "p95_ms": 355.267,
+   "max_ms": 364.617
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 22.348,
+   "p95_ms": 269.246,
+   "max_ms": 289.489
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 113.5,
+   "cpu_percent_p95": 172.1,
+   "memory_peak_mib": 4572.2,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4601.3,
+    "anon_mib_at_end": 4565.7,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4591.9
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.8
+  }
+ },
+ "correct": true
+}
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.21626362507231534,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-10T01:35:14",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 40.196,
+  "samples_per_s": 2527315,
+  "conversion_s": 3.689,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 328.449,
+   "p95_ms": 355.267,
+   "max_ms": 364.617
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 22.348,
+   "p95_ms": 269.246,
+   "max_ms": 289.489
+  },
+  "queryable_after_last_ack_s": 0.013,
+  "server": {
+   "cpu_percent_mean": 113.5,
+   "cpu_percent_p95": 172.1,
+   "memory_peak_mib": 4572.2,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4601.3,
+    "anon_mib_at_end": 4565.7,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4591.9
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 16.8
+  }
+ },
+ "correct": true,
+ "volume_db": {
+  "apparent": 4309240691,
+  "allocated": 5651443712,
+  "by_directory": {
+   "database": {
+    "apparent": 4309240691,
+    "allocated": 5651443712,
+    "files": 136
+   }
+  }
+ },
+ "correct_db": true,
+ "reads_db": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 3.074,
+   "p95_ms": 3.44,
+   "max_ms": 10.809,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 36.141,
+   "p95_ms": 38.887,
+   "max_ms": 53.904,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 30.114,
+   "p95_ms": 32.807,
+   "max_ms": 47.587,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 3.069,
+   "p95_ms": 3.399,
+   "max_ms": 8.517,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 3.316,
+   "p95_ms": 3.609,
+   "max_ms": 15.893,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 3.282,
+   "p95_ms": 3.93,
+   "max_ms": 11.728,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 1153.9
+  }
+ },
+ "analytics_db": {
+  "n": 400,
+  "p50_ms": 0.52,
+  "p95_ms": 0.578,
+  "max_ms": 15.913,
+  "max_relative_difference": 1.9430803874179632e-14,
+  "within_1e-12": "True",
+  "computed": "database"
+ }
+}
+== b319-cedardb-s3 morletdb 01:38:02
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20272079203277826,
+ "samples": 101586735,
+ "started": "2026-11-10T01:38:03",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 7.237,
+  "samples_per_s": 14036921,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.945,
+   "p95_ms": 63.543,
+   "max_ms": 87.675
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.249,
+  "server": {
+   "cpu_percent_mean": 99.7,
+   "cpu_percent_p95": 116.7,
+   "memory_peak_mib": 177.5,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 536.6,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.8
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.6
+  }
+ },
+ "correct": true
+}
+{
+ "system": "morletdb-i1-sum",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20272079203277826,
+ "samples": 101586735,
+ "started": "2026-11-10T01:38:03",
+ "image": "ghcr.io/merkhet-io/morletdb:0.3.10-alpha.1",
+ "image_id": "sha256:03ed3cc2abc82a27fa8456fa70a0cdd93cbf8b2d9f845d47b414024c38fa2c38",
+ "ingest": {
+  "wall_s": 7.237,
+  "samples_per_s": 14036921,
+  "conversion_s": 0.014,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 57.945,
+   "p95_ms": 63.543,
+   "max_ms": 87.675
+  },
+  "queryable_after_last_ack_s": 0.002,
+  "failures": [],
+  "excluded_preflight_s": 1.249,
+  "server": {
+   "cpu_percent_mean": 99.7,
+   "cpu_percent_p95": 116.7,
+   "memory_peak_mib": 177.5,
+   "samples": 5,
+   "kernel_memory": {
+    "peak_mib": 536.6,
+    "anon_mib_at_end": 8.9,
+    "file_mib_at_end": 501.3,
+    "shmem_mib_at_end": 139.9,
+    "working_set_peak_mib_50ms": 179.8
+   }
+  },
+  "chunks": {
+   "count": 25138,
+   "md5": "bd6cd3a453ebadcb39dfa0cf699588ff"
+  }
+ },
+ "correctness": {
+  "counts": {
+   "recordings": 868,
+   "expected_recordings": 868,
+   "samples": 101586735,
+   "expected_samples": 101586735,
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [],
+   "seconds": 4.6
+  }
+ },
+ "correct": true,
+ "storage": {
+  "relations": {
+   "b3": {
+    "heap": 630784,
+    "toast": 8192,
+    "indexes": 90112
+   },
+   "b3_chunks": {
+    "heap": 4325376,
+    "toast": 155983872,
+    "indexes": 2088960
+   },
+   "b3_segments": {
+    "heap": 0,
+    "toast": 8192,
+    "indexes": 8192
+   }
+  },
+  "groups": {
+   "high": {
+    "encoded_bytes": 122148988,
+    "samples": 95633376
+   },
+   "mid": {
+    "encoded_bytes": 16577315,
+    "samples": 5952744
+   },
+   "process": {
+    "encoded_bytes": 4123,
+    "samples": 615
+   }
+  },
+  "pg_wal": 184549376,
+  "database": 171289747,
+  "volume": {
+   "apparent": 379231778,
+   "allocated": 379305984,
+   "pg_wal_allocated": 184549376
+  }
+ },
+ "reads": {
+  "R1": {
+   "n": 1000,
+   "p50_ms": 0.629,
+   "p95_ms": 1.009,
+   "max_ms": 1.906,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R2": {
+   "n": 1000,
+   "p50_ms": 6.062,
+   "p95_ms": 8.362,
+   "max_ms": 11.507,
+   "samples_per_query": 128000,
+   "mismatches": 0
+  },
+  "R3": {
+   "n": 1000,
+   "p50_ms": 7.283,
+   "p95_ms": 9.91,
+   "max_ms": 11.924,
+   "samples_per_query": 192000,
+   "mismatches": 0
+  },
+  "R4_recent": {
+   "n": 1000,
+   "p50_ms": 0.637,
+   "p95_ms": 0.963,
+   "max_ms": 2.038,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R4_older": {
+   "n": 1000,
+   "p50_ms": 0.611,
+   "p95_ms": 0.928,
+   "max_ms": 1.545,
+   "samples_per_query": 4096,
+   "mismatches": 0
+  },
+  "R5": {
+   "n": 10000,
+   "p50_ms": 0.81,
+   "p95_ms": 1.53,
+   "max_ms": 3.85,
+   "threads": 4,
+   "queries": 10000,
+   "queries_per_s": 4232.2
+  },
+  "encoded_read": false
+ },
+ "analytics": {
+  "n": 400,
+  "p50_ms": 0.475,
+  "p95_ms": 0.508,
+  "max_ms": 1.222,
+  "max_relative_difference": 3.4965478208282003e-16,
+  "within_1e-12": "True"
+ },
+ "server_reads": {
+  "R1": {
+   "us_per_read": 175.1,
+   "rounds_us": [
+    174.2,
+    175.1,
+    174.3,
+    175.8,
+    175.1
+   ]
+  },
+  "R2": {
+   "us_per_read": 907.1,
+   "rounds_us": [
+    901.5,
+    901.8,
+    912.9,
+    907.1,
+    910.4
+   ]
+  },
+  "R3": {
+   "us_per_read": 1756.7,
+   "rounds_us": [
+    1754.6,
+    1756.7,
+    1759.0,
+    1756.2,
+    1758.4
+   ]
+  },
+  "R4_recent": {
+   "us_per_read": 179.1,
+   "rounds_us": [
+    179.1,
+    180.0,
+    179.2,
+    178.2,
+    178.0
+   ]
+  },
+  "R4_older": {
+   "us_per_read": 156.8,
+   "rounds_us": [
+    156.4,
+    156.8,
+    157.2,
+    157.0,
+    156.7
+   ]
+  },
+  "R5": {
+   "us_per_read": 176.0,
+   "rounds_us": [
+    176.6,
+    175.8,
+    176.0,
+    176.7,
+    175.5
+   ]
+  }
+ }
+}
+== b319-cedardb-s3 cedardb 01:39:07
+{
+ "system": "cedardb",
+ "durability": "D2",
+ "rep": 1,
+ "parse_s": 0.20442458300385624,
+ "samples": 101586735,
+ "image": "cedardb/cedardb@sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "image_id": "sha256:737ce1bf2ef3c9f2ba7e599ae4b2a0ae0399125e3f63a417a51141976a40518e",
+ "started": "2026-11-10T01:39:08",
+ "settings": {
+  "version": "PostgreSQL 16.3 compatible CedarDB v2026-11-04, compiled on 2026-11-04, arm64 build",
+  "synchronous_commit": "on",
+  "async_commit": "on",
+  "fsync": "on"
+ },
+ "ingest": {
+  "wall_s": 39.87,
+  "samples_per_s": 2547980,
+  "conversion_s": 3.677,
+  "ack_per_acquisition": {
+   "n": 124,
+   "p50_ms": 325.486,
+   "p95_ms": 354.866,
+   "max_ms": 366.217
+  },
+  "ack_per_call": {
+   "n": 372,
+   "p50_ms": 22.979,
+   "p95_ms": 267.489,
+   "max_ms": 294.049
+  },
+  "queryable_after_last_ack_s": 0.014,
+  "server": {
+   "cpu_percent_mean": 114.4,
+   "cpu_percent_p95": 238.0,
+   "memory_peak_mib": 4640.8,
+   "samples": 20,
+   "kernel_memory": {
+    "peak_mib": 4650.0,
+    "anon_mib_at_end": 4616.7,
+    "file_mib_at_end": 12.2,
+    "shmem_mib_at_end": 12.0,
+    "working_set_peak_mib_50ms": 4644.5
+   }
+  }
+ },
+ "correctness": {
+  "counts": {
+   "got": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "want": {
+    "high": 31877792,
+    "mid": 1984248,
+    "process": 615
+   },
+   "ok": true
+  },
+  "reads": {
+   "acquisitions": 124,
+   "channels_checked": 868,
+   "mismatches": [
+    "N15_M07_F04_KA06_1 high: times",
+    "N15_M07_F04_KA06_1 vibration_1: samples",
+    "N15_M07_F04_KA06_1 phase_current_1: samples",
+    "N15_M07_F04_KA06_1 phase_current_2: samples"
+   ],
+   "seconds": 17.2
+  }
+ },
+ "correct": false
+}
+correctness failed
+FAILED b319-cedardb-s3 cedardb
+== B3.19 done 01:40:07

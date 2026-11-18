@@ -1,0 +1,22 @@
+2026-11-10T20:41:18
+20:41  up 14 days,  5:37, 19 users, load averages: 13.65 11.76 11.56
+ %CPU COMM
+314.1 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 22.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 21.9 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds
+ 21.3 /Applications/iTerm.app/Contents/MacOS/iTerm2
+ 17.5 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 14.7 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/Metadata.framework/Versions/A/Support/mds_stores
+  7.9 /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/FSEvents.framework/Versions/A/Support/fseventsd
+  5.6 /usr/sbin/coreaudiod
+2026-11-10T20:42:12
+20:42  up 14 days,  5:38, 19 users, load averages: 9.24 10.92 11.26
+ %CPU COMM
+292.7 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 26.3 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+ 19.1 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 15.6 /Applications/iTerm.app/Contents/MacOS/iTerm2
+  6.4 /private/tmp/claude-502/omnigent-run/.venv/bin/python
+  6.2 /usr/sbin/cfprefsd
+  4.2 /usr/sbin/coreaudiod
+  4.1 /usr/sbin/bluetoothd
