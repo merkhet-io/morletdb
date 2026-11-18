@@ -153,6 +153,12 @@ class VerifyTimeout(unittest.TestCase):
         cfg = P.Config(budget_s=2.0, verify_timeout_s=600.0)
         self.assertEqual(P.verify_timeout(cfg, 20), 50.0)
         self.assertEqual(P.verify_timeout(cfg, 1), 600.0)
+        with self.assertRaises(ValueError):
+            P.verify_timeout(P.Config(verify_timeout_s=0.0), 1)
+
+    def test_only_the_statement_timeout_counts_as_a_timeout(self):
+        self.assertTrue(P.is_statement_timeout("canceling statement due to statement timeout"))
+        self.assertFalse(P.is_statement_timeout("canceling statement due to user request"))
 
     def test_twenty_recordings_reach_one_after_four_timeouts_and_never_trip_the_breaker(self):
         cfg, b, batch, failures = P.Config(), P.Breaker(), 20, 0

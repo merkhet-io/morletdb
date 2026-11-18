@@ -164,6 +164,8 @@ class Steward:
             try:
                 res = S.verify_step(conn, c, self.batch[job], P.verify_timeout(cfg, self.batch[job]))
             except psycopg.errors.QueryCanceled as e:
+                if not P.is_statement_timeout(e.diag.message_primary or str(e)):
+                    return self.failed(job, aid, b, e)          # cancelled by someone: a plain failure
                 batch, failure = P.after_verify_timeout(self.batch[job])
                 if failure:
                     return self.failed(job, aid, b, e)
@@ -286,6 +288,8 @@ def main(argv=None) -> int:
     ap.add_argument("--collection-every", type=float, default=60.0,
                     help="metrics: seconds per-collection statistics are cached between scrapes")
     a = ap.parse_args(argv)
+    if a.verify_timeout < 0.001:
+        ap.error("--verify-timeout must be at least 0.001 seconds (0 would disable the statement timeout)")
     cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,
                    reserve_fraction=a.reserve_fraction, verify_share_every_s=a.verify_share_every,
                    verify_timeout_s=a.verify_timeout)

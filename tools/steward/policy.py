@@ -116,7 +116,15 @@ def verify_timeout(cfg: Config, batch: int) -> float:
     """Statement timeout of a verify batch. morlet_verify reads whole recordings, so one large recording on a slow box
     can take minutes (soak S1's box: about 26 s per daily recording with nothing else running). A batch of several
     recordings keeps the builders' timeout and shrinks when it is exceeded; a single recording gets verify_timeout_s."""
+    if cfg.verify_timeout_s < 0.001:
+        raise ValueError("verify_timeout_s below 1 ms would become statement_timeout = 0, which disables the limit")
     return cfg.verify_timeout_s if batch <= 1 else 10 * cfg.budget_s + 30
+
+
+def is_statement_timeout(message: str) -> bool:
+    """QueryCanceled is also raised for a cancel request (pg_cancel_backend, a person); only the statement timeout
+    shrinks a verify batch."""
+    return "statement timeout" in message
 
 
 def after_verify_timeout(batch: int) -> tuple[int, bool]:

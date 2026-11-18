@@ -113,6 +113,28 @@ class StewardDatabase(unittest.TestCase):
         self.assertIsNotNone(self.one("SELECT last_pass_finished_at FROM morlet_steward.verify_cursor "
                                       "WHERE collection='public.line'"))
 
+    def test_a_single_recording_timeout_or_a_cancel_request_is_a_failure(self):
+        """The halving stops at one recording: a timeout there counts against the breaker, and so does a cancel
+        request (QueryCanceled without a statement timeout), whatever the batch."""
+        st = self.steward()
+        real = S.verify_step
+        S.verify_step = lambda conn, c, batch, timeout_s: (_ for _ in ()).throw(
+            psycopg.errors.QueryCanceled("canceling statement due to statement timeout"))
+        try:
+            breakers = {"verify": P.Breaker()}
+            st.batch["verify"] = 1
+            st.run_job("verify", {}, ["public.line"], breakers)
+            self.assertEqual(breakers["verify"].failures, 1)
+            self.assertEqual(st.batch["verify"], 1)
+            S.verify_step = lambda conn, c, batch, timeout_s: (_ for _ in ()).throw(
+                psycopg.errors.QueryCanceled("canceling statement due to user request"))
+            st.batch["verify"] = 20
+            st.run_job("verify", {}, ["public.line"], breakers)
+            self.assertEqual(breakers["verify"].failures, 2)
+            self.assertEqual(st.batch["verify"], 20)          # not halved: it was not a timeout
+        finally:
+            S.verify_step = real
+
     def test_backlogs_return_to_zero_with_an_audit_row_for_every_action(self):
         st = self.steward()
         self.run_until_idle(st)
