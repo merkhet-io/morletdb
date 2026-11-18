@@ -1,8 +1,20 @@
 # S1 results: a week of live seismic data on a small x86 box (soak, #191)
 
-Status: **unpublished draft, local only**, until the owner approves. Protocol: `PROTOCOL.md` (frozen 2026-11-10,
-amendments 1 and 2). Test week: 2026-11-10T16:02:49Z .. 2026-11-17T16:02:49Z, complete (last record 16:00 UTC).
-Raw outputs of the end-of-week checks: `results_s1/`.
+Protocol: `PROTOCOL.md` (frozen 2026-11-10, amendments 1 and 2). Test week: 2026-11-10T16:02:49Z ..
+2026-11-17T16:02:49Z, complete (last record 16:00 UTC). Data: `results_s1/` (below).
+
+## Data and how to reproduce
+
+`results_s1/` holds what the protocol publishes: `probe.jsonl`, `host.jsonl`, `gaps.jsonl` (the collector's, from
+its spool directory), `disturbances.jsonl`, `operator_notes.jsonl`, the archive comparison (`verify_fdsn.json`),
+`morlet_verify`'s output, both analysis runs, and the D2x files. No waveforms (GEOFON's archive has them).
+In `host.jsonl` the household services on the box are named `household-1` .. `household-6` instead of their container
+names, with their status unchanged; `analyze.py` does not use the names. From `results_s1/`:
+
+    python3 ../analyze.py . --spool . --start 1794326569 --verify-fdsn verify_fdsn.json \
+        --morlet-verify morlet_verify_full.jsonl --manual-actions 0 --json analysis.json
+
+reproduces `analysis_combined.txt` and `analysis_combined.json` exactly (checked 2026-11-18).
 
 ## Verdict
 
