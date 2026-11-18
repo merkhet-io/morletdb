@@ -19,8 +19,9 @@ How it stores the data:
   appends what the database does not have yet: nothing is stored twice, and at most the last second of received
   packets can be lost. A spool file is deleted once every sample in it is stored.
 - **Database restarts:** if the connection is lost, the statement is retried on a new connection with backoff (1 s to
-  30 s) for up to --db-retry-s seconds (default 600), meanwhile packets wait in memory; only then does the collector
-  exit (and replay its spool when restarted). Retrying is safe because an identical append is a no-op.
+  30 s) for up to --db-retry-s seconds (default 600). Every packet is spooled before any database work, and on exit
+  (SIGTERM, or a database still unreachable after --db-retry-s) the packets still queued are spooled too, so the
+  replay after a restart stores them. Retrying is safe because an identical append is a no-op.
 - **Evidence:** gaps.jsonl has one line per segment end (stream, cause, sample count), per reconnect and per database
   reconnect; status.json
   is rewritten every minute (packets, samples, stored, backlog, reconnects, last packet per stream).
@@ -183,8 +184,9 @@ class Store:
                 first = first or f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}"
                 if waited >= self.retry_s:
                     raise
-                self.sleep(delay)
-                waited += delay
+                pause = min(delay, self.retry_s - waited)
+                self.sleep(pause)
+                waited += pause
                 delay = min(delay * 2, 30.0)
                 try:
                     self.conn.close()
@@ -276,10 +278,20 @@ class Collector:
                 del self.file_need[name]
 
     # -- packets -----------------------------------------------------------------------------------------------
-    def handle(self, p: Packet) -> None:
+    def handle(self, p: Packet, db: bool = True) -> None:
+        """Spools the packet's new samples first, then does the database work (new recordings, buffered appends).
+        With db=False only the spool is written: used when the database stays unreachable, so that every received
+        packet is in the spool before the collector exits."""
         self.stats["packets"] += 1
         self.last_seen[p.sid] = self.clock()
-        for e in self.seg.feed(p):
+        events = self.seg.feed(p)
+        for e in events:                # nothing below may run before the samples are in the spool
+            if e[0] == "samples":
+                self.spool_write(e[1], e[2], e[3])
+        self.sync()
+        if not db:
+            return
+        for e in events:
             if e[0] == "end":
                 self.flush(e[1])
                 self.log(stream=e[1].sid, recording=e[1].rid, samples=e[1].n, cause=e[2])
@@ -288,15 +300,27 @@ class Collector:
                 if self.store:
                     self.store.ensure(e[1].rid, e[1].sid, e[1].rate, e[1].start_ns, self.a.server)
             else:
-                seg, off, values = e[1], e[2], e[3]
+                seg, values = e[1], e[3]
                 self.stats["samples"] += len(values)
-                self.spool_write(seg, off, values)
                 if not seg.buffer:
                     seg.buffer_since = self.clock()
                 seg.buffer.extend(values)
                 if len(seg.buffer) >= self.a.chunk:
                     self.flush(seg)
-        self.sync()
+
+    def spool_rest(self, q: "queue.Queue") -> int:
+        """Spools every packet still queued, without the database (shutdown or a database that stays down)."""
+        n = 0
+        while True:
+            try:
+                item = q.get_nowait()
+            except queue.Empty:
+                break
+            if isinstance(item, Packet):
+                self.handle(item, db=False)
+                n += 1
+        self.sync(force=True)
+        return n
 
     def flush(self, seg: Segment) -> None:
         if not seg.buffer:
@@ -413,6 +437,7 @@ def main(argv=None) -> int:
     stop = threading.Event()
     threading.Thread(target=seedlink_thread, args=(a, q, col.stats, stop), daemon=True).start()
     last_status = 0.0
+    code = 0
     try:
         while True:
             try:
@@ -430,12 +455,20 @@ def main(argv=None) -> int:
                 last_status = time.time()
     except KeyboardInterrupt:
         pass
+    except store.retry_on as exc:   # the database stayed unreachable for --db-retry-s: spool everything, then exit
+        col.log(cause="database unreachable, exiting", error=f"{type(exc).__name__}: {exc}"[:300])
+        code = 1
     finally:
         stop.set()
-        for seg in col.seg.segs.values():
-            col.flush(seg)
+        col.log(cause="shutdown: queued packets spooled", packets=col.spool_rest(q))
+        store.retry_s = 0               # one attempt each: what is not stored now is in the spool for the replay
+        try:
+            for seg in col.seg.segs.values():
+                col.flush(seg)
+        except store.retry_on:
+            code = 1
         col.close()
-    return 0
+    return code
 
 
 if __name__ == "__main__":

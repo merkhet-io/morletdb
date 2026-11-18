@@ -142,9 +142,6 @@ class CollectorTest(unittest.TestCase):
             self.assertEqual([(h["off"], h["n"]) for h, _ in recs], [(0, 100)])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class Lost(Exception):
     """Stands in for psycopg.OperationalError (connection closed, AdminShutdown)."""
@@ -261,3 +258,43 @@ class StoreReconnectTest(unittest.TestCase):
             self.assertEqual([x["cause"] for x in lines], ["database reconnect"])
             self.assertEqual(col.stats["db_reconnects"], 1)
             self.assertEqual(len(db.data["A.B..HHZ.20261108T120000"]), 400)
+
+
+    def test_the_retry_budget_is_not_exceeded(self):
+        db, sleeps = FakeDb(), []
+        st = self.store(db, sleeps)
+        st.ensure("R", "A.B..HHZ", 100.0, T0, "test")
+        db.up = False
+        with self.assertRaises(Lost):
+            st.append("R", 0, [1], 4096)
+        self.assertEqual(sum(sleeps), 600.0)
+
+    def test_packets_received_while_the_database_stays_down_are_all_in_the_spool(self):
+        """Review of #525: a new segment's packet waited in ensure, and queued packets were only in memory."""
+        import queue as q_
+        with tempfile.TemporaryDirectory() as d:
+            db, sleeps = FakeDb(), []
+            st = Store("", "public.live", False, 2048, 512, "x", retry_s=5.0, connect=db.connect, retry_on=(Lost,),
+                       sleep=sleeps.append)
+            col = Collector(args(d), st, clock=Clock())
+            col.handle(pkt("A.B..HHZ", 0, 400))
+            db.up = False
+            with self.assertRaises(Lost):
+                col.handle(pkt("A.B..HHN", 0, 400))       # a new recording: ensure fails after the retries
+            queued = q_.Queue()
+            for k in range(1, 4):
+                queued.put(pkt("A.B..HHZ", 400 * k, 400))
+                queued.put(pkt("A.B..HHN", 400 * k, 400))
+            self.assertEqual(col.spool_rest(queued), 6)
+            col.close()
+            replayed = FakeStore()
+            again = Collector(args(d), replayed, clock=Clock())
+            again.replay()
+            again.close()
+            rid = "A.B..{}.20261108T120000"
+            self.assertEqual(replayed.data[rid.format("HHZ")], list(range(0, 1600)))
+            self.assertEqual(replayed.data[rid.format("HHN")], list(range(0, 1600)))
+
+
+if __name__ == "__main__":
+    unittest.main()
