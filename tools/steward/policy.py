@@ -24,6 +24,7 @@ class Config:
     drop_days: float = 1.0
     verify_every_days: float = 7.0
     verify_share_every_s: float = 900.0   # a due verification gets a batch at least this often, even under load
+    verify_timeout_s: float = 600.0   # statement timeout of a verify batch of one recording (a whole recording is read)
     breaker_failures: int = 3
 
 
@@ -109,6 +110,21 @@ def verify_turn(cfg: Config, verify_due: bool, since_verify_s: float | None, dis
     if not verify_due or disk.unknown or disk.pause:
         return False
     return since_verify_s is None or since_verify_s >= cfg.verify_share_every_s
+
+
+def verify_timeout(cfg: Config, batch: int) -> float:
+    """Statement timeout of a verify batch. morlet_verify reads whole recordings, so one large recording on a slow box
+    can take minutes (soak S1's box: about 26 s per daily recording with nothing else running). A batch of several
+    recordings keeps the builders' timeout and shrinks when it is exceeded; a single recording gets verify_timeout_s."""
+    return cfg.verify_timeout_s if batch <= 1 else 10 * cfg.budget_s + 30
+
+
+def after_verify_timeout(batch: int) -> tuple[int, bool]:
+    """(next batch, whether it counts as a failure) after a verify batch hit its statement timeout: a batch of several
+    recordings is halved and retried without counting against the breaker; only a single recording that times out at
+    verify_timeout_s is a failure. Before, the same 20 recordings timed out three times and the breaker stopped
+    verification (soak S1's box, 2026-11-18)."""
+    return (max(1, batch // 2), False) if batch > 1 else (1, True)
 
 
 def integrity_problems(problems: list[str]) -> tuple[list[str], int]:

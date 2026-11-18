@@ -162,7 +162,14 @@ class Steward:
             aid = S.start_action(conn, job, c, None, {"batch": self.batch[job]})
             t = time.time()
             try:
-                res = S.verify_step(conn, c, self.batch[job], 10 * cfg.budget_s + 30)
+                res = S.verify_step(conn, c, self.batch[job], P.verify_timeout(cfg, self.batch[job]))
+            except psycopg.errors.QueryCanceled as e:
+                batch, failure = P.after_verify_timeout(self.batch[job])
+                if failure:
+                    return self.failed(job, aid, b, e)
+                S.finish_action(conn, aid, "failed", error=f"statement timeout; batch {self.batch[job]} -> {batch}")
+                self.batch[job] = batch
+                return f"verify {c}: timeout, batch now {batch}"
             except psycopg.Error as e:
                 return self.failed(job, aid, b, e)
             self.batch[job] = P.next_batch(cfg, self.batch[job], time.time() - t, 1, 1000)
@@ -271,6 +278,8 @@ def main(argv=None) -> int:
     ap.add_argument("--load-per-cpu", type=float, default=0.7, help="work only below this 1-minute load per CPU")
     ap.add_argument("--verify-share-every", type=float, default=900.0,
                     help="seconds: a due verification gets one batch at least this often, even under load")
+    ap.add_argument("--verify-timeout", type=float, default=600.0,
+                    help="seconds: statement timeout of a verify batch of one recording")
     ap.add_argument("--reserve-bytes", type=int, default=2 << 30, help="disk kept free: the larger of this and the share")
     ap.add_argument("--reserve-fraction", type=float, default=0.05)
     ap.add_argument("--listen", default="127.0.0.1:9188", help="metrics: host:port to serve /metrics on")
@@ -278,7 +287,8 @@ def main(argv=None) -> int:
                     help="metrics: seconds per-collection statistics are cached between scrapes")
     a = ap.parse_args(argv)
     cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,
-                   reserve_fraction=a.reserve_fraction, verify_share_every_s=a.verify_share_every)
+                   reserve_fraction=a.reserve_fraction, verify_share_every_s=a.verify_share_every,
+                   verify_timeout_s=a.verify_timeout)
     if a.command == "run":
         return cmd_run(a, cfg)
     if a.command == "metrics":

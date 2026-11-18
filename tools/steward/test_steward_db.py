@@ -84,6 +84,35 @@ class StewardDatabase(unittest.TestCase):
         a.execute("SELECT morlet_build_envelopes('line','r2',8192,8192,1)")     # one window only: stride unknown
         self.assertEqual(S.envelope_grids(self.conn, "public.line"), [(1024, 256), (4096, 2048), (8192, 4096)])
 
+    def test_a_verify_timeout_halves_the_batch_and_does_not_open_the_breaker(self):
+        """Soak S1's box: 20 daily recordings per verify batch exceeded the statement timeout three times and the
+        breaker stopped verification. A timeout now halves the batch; only one recording timing out is a failure."""
+        st = self.steward()
+        real = S.verify_step
+        timeouts = []
+
+        def slow(conn, c, batch, timeout_s):
+            timeouts.append((batch, timeout_s))
+            if batch > 1:
+                raise psycopg.errors.QueryCanceled("canceling statement due to statement timeout")
+            return real(conn, c, batch, timeout_s)
+        S.verify_step = slow
+        try:
+            breakers = {"verify": P.Breaker()}
+            for _ in range(20):
+                st.run_job("verify", {}, ["public.line"], breakers)
+                if self.one("SELECT EXISTS(SELECT 1 FROM morlet_steward.verify_cursor "
+                            "WHERE collection='public.line' AND last_pass_finished_at IS NOT NULL)"):
+                    break
+        finally:
+            S.verify_step = real
+        self.assertEqual([b for b, _ in timeouts[:5]], [20, 10, 5, 2, 1])
+        self.assertEqual([t for _, t in timeouts[:5]], [50.0, 50.0, 50.0, 50.0, 600.0])
+        self.assertFalse(breakers["verify"].open)
+        self.assertEqual(breakers["verify"].failures, 0)
+        self.assertIsNotNone(self.one("SELECT last_pass_finished_at FROM morlet_steward.verify_cursor "
+                                      "WHERE collection='public.line'"))
+
     def test_backlogs_return_to_zero_with_an_audit_row_for_every_action(self):
         st = self.steward()
         self.run_until_idle(st)

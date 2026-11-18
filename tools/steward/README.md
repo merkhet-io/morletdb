@@ -70,7 +70,9 @@ python tools/steward/steward.py metrics --dsn ... --listen 0.0.0.0:9188   # Prom
 ```
 
 - **Load gate:** `--load-per-cpu` sets it (default 0.7). A due verification still gets one batch every
-  `--verify-share-every` seconds (default 900), even while the gate is closed; only disk pressure stops it. Inside Docker Desktop the steward sees the Linux VM's load,
+  `--verify-share-every` seconds (default 900), even while the gate is closed; only disk pressure stops it. A verify
+  batch that runs into its statement timeout is halved; a batch of one recording may take up to `--verify-timeout`
+  seconds (default 600), because `morlet_verify` reads a whole recording. Inside Docker Desktop the steward sees the Linux VM's load,
   which is also the database's.
 - **Data path:** `--data-path` is the directory whose filesystem holds the database: the data volume, mounted
   read-only into a sidecar container. Without it the steward uses `SHOW data_directory`. If it cannot read free
