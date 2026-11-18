@@ -285,8 +285,13 @@ class StoreReconnectTest(unittest.TestCase):
             for k in range(1, 4):
                 queued.put(pkt("A.B..HHZ", 400 * k, 400))
                 queued.put(pkt("A.B..HHN", 400 * k, 400))
-            self.assertEqual(col.spool_rest(queued), 6)
+            queued.put(("reconnect", "connection ended"))
+            queued.put(pkt("A.B..HHZ", 2000, 400))          # a gap: ends the HHZ segment, starts another
+            self.assertEqual(col.spool_rest(queued), 7)
             col.close()
+            causes = [json.loads(x)["cause"] for x in (Path(d) / "gaps.jsonl").read_text().splitlines()]
+            self.assertIn("reconnect", causes)
+            self.assertIn("gap", causes)
             replayed = FakeStore()
             again = Collector(args(d), replayed, clock=Clock())
             again.replay()

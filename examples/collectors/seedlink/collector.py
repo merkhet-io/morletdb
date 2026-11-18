@@ -289,7 +289,14 @@ class Collector:
             if e[0] == "samples":
                 self.spool_write(e[1], e[2], e[3])
         self.sync()
-        if not db:
+        if not db:                      # spool only; still record where segments ended
+            for e in events:
+                if e[0] == "end":
+                    self.log(stream=e[1].sid, recording=e[1].rid, samples=e[1].n, cause=e[2])
+                elif e[0] == "start":
+                    self.stats["segments"] += 1
+                elif e[0] == "samples":
+                    self.stats["samples"] += len(e[3])
             return
         for e in events:
             if e[0] == "end":
@@ -319,6 +326,8 @@ class Collector:
             if isinstance(item, Packet):
                 self.handle(item, db=False)
                 n += 1
+            elif isinstance(item, tuple):
+                self.log(cause="reconnect", error=item[1])
         self.sync(force=True)
         return n
 
