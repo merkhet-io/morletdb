@@ -10,7 +10,7 @@ A collection is several caller-owned tables:
 - raw chunks `<c>_chunks`, feature segments `<c>_segments`, envelopes `<c>_envelopes`;
 - probe vectors `<c>_probes_<w>`, context tables `<c>_ctx*`, labels `<c>_labels`,
   acquisition tables `<c>_acq*`, roll-ups `<c>_rollups`, and the episodic-memory tables `<c>_episodes`,
-  `<c>_ledger`, `<c>_kept_summaries` and `<c>_memory_runs`.
+  `<c>_ledger`, `<c>_kept_summaries` and `<c>_memory_runs`, and time anchors `<c>_time_anchors` (SQL 0.3.13).
 
 To search, a role needs `SELECT` on the companion tables it reads, and that grant also lets it
 query them **directly**. RLS on the recordings table alone therefore protects the functions'
