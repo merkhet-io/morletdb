@@ -13,6 +13,8 @@ import argparse
 import csv
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 import json
 import math
 import os
@@ -40,6 +42,7 @@ class Recording:
     samples: np.ndarray
     metadata: dict = field(default_factory=dict)
     context: list = field(default_factory=list)          # (key, value, start_sample, end_sample), from CSV columns
+    anchors: list = field(default_factory=list)          # (sample, utc_ns, uncertainty_ns, break_before), #393/#383
 
 
 def extractor_for(rate):
@@ -261,6 +264,81 @@ def parse_times(path, values):
     return np.array([(t - ts[0]).total_seconds() for t in ts], dtype=np.float64), ts[0].astimezone(timezone.utc)
 
 
+def parse_times_ns(path, values, origin_ns=None):
+    """A time column as exact integers: (UTC ns of every row, resolution in ns), or None when the column has no
+    absolute time (relative seconds and no origin). ISO 8601 times are UTC when no offset is given; numbers are
+    seconds after origin_ns (--time-origin). The resolution is one unit of the finest digit seen."""
+    try:
+        dec = [Decimal(v.strip()) for v in values]
+    except InvalidOperation:
+        dec = None
+    if dec is not None:
+        if origin_ns is None:
+            return None
+        places = max(max(0, -d.as_tuple().exponent) for d in dec)
+        return [origin_ns + int((d * 1_000_000_000).to_integral_value()) for d in dec], 10 ** max(0, 9 - places)
+    out, places = [], 0
+    for v in values:
+        text = v.strip().replace("Z", "+00:00")
+        t = datetime.fromisoformat(text)
+        t = t if t.tzinfo else t.replace(tzinfo=timezone.utc)
+        m = re.search(r"[T ]\d{2}:\d{2}:\d{2}\.(\d+)", text)
+        places = max(places, len(m.group(1)) if m else 0)
+        out.append((t - EPOCH) // ONE_US * 1000)
+    return out, 10 ** max(0, 9 - min(places, 6))
+
+
+EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+ONE_US = datetime(1970, 1, 1, 0, 0, 0, 1, tzinfo=timezone.utc) - EPOCH
+
+
+def _split(rel, lo, hi, tol, keep):
+    """Anchors (indices) within [lo, hi] so that the line through consecutive anchors is within tol of every
+    timestamp in between (iterative Douglas-Peucker). rel: times in ns relative to the first row (float64 exact
+    below 2^53 ns, about 104 days)."""
+    stack = [(lo, hi)]
+    while stack:
+        a, b = stack.pop()
+        if b - a < 2:
+            continue
+        n = np.arange(a, b + 1)
+        line = rel[a] + (n - a) * (rel[b] - rel[a]) / (b - a)
+        dev = np.abs(rel[a:b + 1] - line)
+        k = int(np.argmax(dev))
+        if dev[k] > tol:
+            keep.add(a + k)
+            stack += [(a, a + k), (a + k, b)]
+
+
+def time_anchors(t_ns, rate, tol_ns=None):
+    """Time anchors from per-row timestamps (#393, #383): (sample, utc_ns, break_before) per anchor.
+
+    A new block starts where the step between two rows departs from the declared period by more than tol_ns
+    (default: half a period); every block start after the first is an anchor with break_before, so a backward,
+    zero or jumping step is never interpolated across. Inside a block, one anchor suffices when start + declared
+    rate stays within tol_ns of every row; otherwise anchors are added until the piecewise-linear line through them
+    does (the block's last row included). Every anchor is a row's own timestamp, so lookups at it are exact."""
+    t = np.asarray(t_ns, dtype=np.int64)
+    if t.size == 0:
+        return []
+    period = float(Fraction(1_000_000_000) / Fraction(repr(float(rate))))
+    tol = period / 2 if tol_ns is None else float(tol_ns)
+    rel = (t - t[0]).astype(np.float64)
+    if rel.size and np.max(np.abs(rel)) >= 2.0 ** 53:
+        raise ValueError("time column spans more than about 104 days; split the file")
+    steps = np.diff(rel)
+    starts = [0] + [int(i) + 1 for i in np.flatnonzero(np.abs(steps - period) > tol)] + [t.size]
+    out = []
+    for a, b in zip(starts[:-1], starts[1:]):
+        n = np.arange(a, b)
+        keep = {a}
+        if np.max(np.abs(rel[a:b] - (rel[a] + (n - a) * period))) > tol:
+            keep.add(b - 1)
+            _split(rel, a, b - 1, tol, keep)
+        out += [(int(k), int(t[k]), k == a and a > 0) for k in sorted(keep)]
+    return out
+
+
 def time_axis(path, opts, header, body):
     """Rate, start time and how far the time column departs from an even axis (#388; block-stamped or drifting
     clocks, #383 and #393, are reported, not corrected). The rate is --rate, else the median row spacing."""
@@ -302,6 +380,25 @@ def time_axis(path, opts, header, body):
     return rate, meta
 
 
+def csv_anchors(path, opts, header, body, rate):
+    """Time anchors from the time column (#393, #383), or [] without an absolute time. Each anchor:
+    (sample, utc_ns, uncertainty_ns, break_before); the uncertainty is the column's resolution."""
+    if opts.time_column is None or getattr(opts, "no_anchors", False):
+        return []
+    origin = getattr(opts, "time_origin", None)
+    origin_ns = None
+    if origin:
+        o = datetime.fromisoformat(origin.replace("Z", "+00:00"))
+        origin_ns = ((o if o.tzinfo else o.replace(tzinfo=timezone.utc)) - EPOCH) // ONE_US * 1000
+    j = header.index(opts.time_column)
+    parsed = parse_times_ns(path, [r[j] for r in body], origin_ns)
+    if parsed is None:
+        return []
+    t, resolution = parsed
+    tol = getattr(opts, "anchor_tolerance_s", None)
+    return [(n, tn, resolution, br) for n, tn, br in time_anchors(t, rate, None if tol is None else tol * 1e9)]
+
+
 def context_runs(path, header, body, columns):
     """Context rows from controller columns (program, block, ...): runs of equal value; an empty cell keeps the
     last value (controllers often write only on change). Rows before a column's first value get none."""
@@ -332,6 +429,10 @@ def read_csv(path, opts):
     header, body = rows[0], rows[1:]
     context_cols = [c.strip() for c in (getattr(opts, "context_columns", None) or "").split(",") if c.strip()]
     rate, time_meta = time_axis(path, opts, header, body)
+    anchors = csv_anchors(path, opts, header, body, rate)
+    if anchors:
+        time_meta["time_axis"]["anchors"] = len(anchors)
+        time_meta["time_axis"]["blocks"] = 1 + sum(1 for a in anchors if a[3])
     context = context_runs(path, header, body, context_cols)
     out = []
     for j, name in enumerate(header):
@@ -346,7 +447,7 @@ def read_csv(path, opts):
         label = re.sub(r"\s+", "-", name.strip()) or f"col{j}"
         out.append(Recording(f"{path.stem}.{label}", rate, label, opts.unit or "unknown",
                              10.0 ** -d if d <= 9 else 1.0, values,
-                             {"source": path.name, "format": "csv", **time_meta}, list(context)))
+                             {"source": path.name, "format": "csv", **time_meta}, list(context), list(anchors)))
     if not out:
         raise ValueError(f"{path.name}: no numeric columns")
     return out
@@ -417,6 +518,26 @@ def add_context(conn, collection, recs):
     return n
 
 
+def add_time_anchors(conn, collection, recs, source, batch_rows=10000):
+    """Time anchors of each recording (#393, #383), in batches of batch_rows; a rerun repeats identical batches (no-ops).
+    Enables anchors if needed. Returns the number written, or None when the server has no time anchors (SQL < 0.3.13)."""
+    if conn.execute("SELECT to_regproc('public.morlet_add_time_anchors') IS NULL").fetchone()[0]:
+        return None
+    if conn.execute("SELECT to_regclass(%s)", (collection + "_time_anchors",)).fetchone()[0] is None:
+        conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (collection,))
+    n = 0
+    for r in recs:
+        for k in range(0, len(r.anchors), batch_rows):
+            rows = [{"recording_id": r.recording_id, "sample_offset": s, "utc_ns": str(t), "uncertainty_ns": u,
+                     "source": f"import:{source[r.recording_id]}", "break_before": bool(b)}
+                    for s, t, u, b in r.anchors[k:k + batch_rows]]
+            n += conn.execute("SELECT morlet_add_time_anchors(%s::regclass, %s, %s::jsonb)",
+                              (collection, f"import-anchors-{r.recording_id}-{k // batch_rows}",
+                               json.dumps(rows))).fetchone()[0]
+    conn.commit()
+    return n
+
+
 def build(conn, collection, ids, window, probes):
     built = {}
     if probes:
@@ -469,6 +590,12 @@ def main(argv=None):
     p.add_argument("--rate", type=float, help="CSV: samples per second")
     p.add_argument("--time-column", help="CSV: time column (ISO 8601 or seconds); gives the start time and, "
                    "without --rate, the rate from the median row spacing")
+    p.add_argument("--time-origin", help="CSV: UTC time (ISO 8601) of 0 in a time column of seconds; with it, "
+                   "relative times give time anchors too")
+    p.add_argument("--anchor-tolerance-s", type=float, help="CSV: largest departure of a timestamp from the anchor "
+                   "line before a new anchor is added, and the step departure that starts a new block "
+                   "(default: half a sample period)")
+    p.add_argument("--no-anchors", action="store_true", help="CSV: do not write time anchors from the time column")
     p.add_argument("--context-columns", help="CSV: comma-separated controller columns (e.g. program,block) stored "
                    "as context on every signal of the file, not as recordings")
     p.add_argument("--unit", help="override the unit")
@@ -501,6 +628,12 @@ def main(argv=None):
         if any(r.context for _f, r in recs):
             with psycopg.connect(opts.dsn) as conn:
                 report["context_rows"] = add_context(conn, opts.collection, [r for _f, r in recs])
+        if any(r.anchors for _f, r in recs):
+            with psycopg.connect(opts.dsn) as conn:
+                written = add_time_anchors(conn, opts.collection, [r for _f, r in recs],
+                                           {r.recording_id: f for f, r in recs})
+            report["time_anchors"] = ("not written: the server has no time anchors (SQL 0.3.13 or later needed)"
+                                      if written is None else written)
         with psycopg.connect(opts.dsn) as conn:
             if not opts.no_build:
                 report["envelopes_built"] = build(conn, opts.collection, [r["recording_id"] for r in plan],

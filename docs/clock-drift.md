@@ -3,7 +3,7 @@
 Status: **proposal, decisions taken 2026-11-19** for [#393](https://github.com/merkhet-io/morletdb/issues/393) and
 [#383](https://github.com/merkhet-io/morletdb/issues/383); section 8 records them. Step 1 of section 8's order
 (the anchor table, batches, revisions, the mapping with segments and breaks, row security) has shipped in SQL 0.3.13;
-`morlet_check_time_axis` moves to step 2, with the importer that produces its evidence. The SDK and file formats are
+Step 2 (the importer writes anchors from a time column, with block detection) follows; `morlet_check_time_axis` comes with the clients in step 3. Mapping calls are linear in a recording's anchors (#546). The SDK and file formats are
 unchanged so far. SQL is illustrative: names, types and limits are subject to
 implementation review. The first part of #393 has shipped, and section 1 describes it. Behaviour claims about
 existing code cite `extensions/pg_morlet/sql/streams.sql` as `streams.sql:line`, and other files by their path

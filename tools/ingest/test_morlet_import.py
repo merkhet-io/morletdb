@@ -3,6 +3,7 @@ import argparse
 import json
 import io
 import contextlib
+from fractions import Fraction
 from pathlib import Path
 import tempfile
 import unittest
@@ -14,7 +15,8 @@ import morlet_import as mi
 
 
 def opts(**kw):
-    base = dict(format=None, rate=None, time_column=None, unit=None, prefix="", extractor=None, context_columns=None)
+    base = dict(format=None, rate=None, time_column=None, unit=None, prefix="", extractor=None, context_columns=None,
+                time_origin=None, anchor_tolerance_s=None, no_anchors=False)
     base.update(kw)
     return argparse.Namespace(**base)
 
@@ -163,6 +165,54 @@ class Readers(unittest.TestCase):
         self.assertEqual([w["recording_id"] for w in plan["warnings"]], ["drift.a"])
         even = mi.recordings(p, opts(time_column="t"))[0]                  # rate from the timestamps: no warning
         self.assertNotIn("warning", even.metadata["time_axis"])
+
+    def block_csv(self, name="blocks.csv"):
+        """#383: 3 blocks of 100 rows at a declared 1 kHz, stamped per block: block 1 starts 13 ms late, block 2 starts
+        5 ms before block 1 ends (a backward step). Times in ISO 8601 with microseconds."""
+        p = self.tmp / name
+        starts_ms = [0, 113, 208]
+        rows = ["time,a"]
+        for b, s in enumerate(starts_ms):
+            for k in range(100):
+                us = (s + k) * 1000
+                rows.append(f"2026-03-01T08:00:{us // 1_000_000:02d}.{us % 1_000_000:06d}Z,{(b * 100 + k) % 7}")
+        p.write_text("\n".join(rows) + "\n")
+        return p, starts_ms
+
+    def test_block_stamps_give_one_anchor_with_a_break_per_block(self):
+        p, starts_ms = self.block_csv()
+        r = mi.recordings(p, opts(time_column="time", rate=1000))[0]
+        base = 1_772_352_000_000_000_000                                  # 2026-03-01T08:00:00Z in ns
+        self.assertEqual(r.anchors, [(100 * b, base + s * 1_000_000, 1000, b > 0) for b, s in enumerate(starts_ms)])
+        self.assertEqual((r.metadata["time_axis"]["anchors"], r.metadata["time_axis"]["blocks"]), (3, 3))
+        self.assertEqual(r.metadata["time_axis"]["steps_backward"], 1)
+
+    def test_drifting_clock_gets_anchors_within_the_tolerance(self):
+        """#393: a clock 1% slow, seconds after --time-origin. Checked independently: every row's time lies within
+        half a period of the line through the anchors around it (exact fractions)."""
+        p = self.tmp / "drift_abs.csv"
+        p.write_text("t,a\n" + "".join(f"{i * 0.0101:.6f},{i % 5}\n" for i in range(1000)))
+        o = opts(time_column="t", rate=100, time_origin="2026-03-01T08:00:00Z")
+        r = mi.recordings(p, o)[0]
+        base = 1_772_352_000_000_000_000
+        times = [base + round(i * 10_100_000) for i in range(1000)]
+        self.assertEqual(r.anchors[0], (0, base, 1000, False))
+        self.assertFalse(any(a[3] for a in r.anchors))                      # one segment: drift is not a block
+        self.assertLess(len(r.anchors), 10)
+        anchors = [(a[0], a[1]) for a in r.anchors]
+        for n, t in enumerate(times):
+            lo = max(a for a in anchors if a[0] <= n)
+            hi = min((a for a in anchors if a[0] >= n), default=lo)
+            line = Fraction(lo[1]) if hi == lo else lo[1] + Fraction((n - lo[0]) * (hi[1] - lo[1]), hi[0] - lo[0])
+            self.assertLessEqual(abs(t - line), 5_000_000, n)              # half of 10 ms
+        self.assertEqual(mi.recordings(p, opts(time_column="t", rate=100))[0].anchors, [])   # no origin, no anchors
+        self.assertEqual(mi.recordings(p, opts(time_column="t", rate=100, time_origin="2026-03-01T08:00:00Z",
+                                               no_anchors=True))[0].anchors, [])
+
+    def test_an_even_clock_needs_one_anchor(self):
+        p = self.tmp / "even.csv"
+        p.write_text("t,a\n" + "".join(f"2026-03-01T08:00:00.{i * 10:03d}Z,{i}\n" for i in range(100)))
+        self.assertEqual(len(mi.recordings(p, opts(time_column="t"))[0].anchors), 1)
 
     def test_invalid_samples_and_unknown_format(self):
         p = self.tmp / "big.csv"

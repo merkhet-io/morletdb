@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **The importer writes time anchors (#393, #383).** With a CSV time column and an absolute time (ISO 8601, or
+  seconds with `--time-origin`), `morlet_import.py` stores the real timestamps as time anchors on a server with SQL
+  0.3.13: one anchor with `break_before` at every block start (a step that departs from the declared period by more
+  than half a period: jumps, backward and zero steps), and, inside a block, as few anchors as keep the line through
+  them within that tolerance of every timestamp. A lookup at every block start is exact, which is #383's done-when,
+  tested against a database. A rerun writes nothing new. `--anchor-tolerance-s` and `--no-anchors` control it;
+  samples are never moved ([import](docs/import.md)).
 - **Time anchors (SQL 0.3.13, experimental; #393, #383).** A recording can carry sync points: "sample n was at UTC
   time T, give or take u, according to source". `morlet_enable_time_anchors` adds the opt-in table
   `<collection>_time_anchors`; `morlet_add_time_anchors` writes idempotent batches (an identical retry returns 0, a
@@ -14,7 +21,8 @@
   a time that a backward step puts into two blocks returns both samples, marked `ambiguous`. A backward or zero step
   without a break is refused. Recordings without anchors keep start + declared rate, and no stable function
   changes. Samples are never resampled or changed. Row security covers the new table in both enablement orders.
-  The importer, MCP `locate_time`, the collectors and the SDK use the anchors in the next steps
+  Each mapping call reads all of a recording's anchors (fine for drift and files of minutes; an indexed lookup is
+  #546). MCP `locate_time`, the collectors and the SDK use the anchors in the next steps
   ([design](docs/clock-drift.md), section 8). Update script 0.3.12 → 0.3.13; the upgrade tests now start from
   v0.4.0-beta.1 as well.
 - **Release image on PostgreSQL 17.12** (was 17.6). The image's base moves to `postgres:17.12-bookworm`, the
