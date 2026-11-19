@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Release image on PostgreSQL 17.12** (was 17.6). The image's base moves to `postgres:17.12-bookworm`, the
+  November 2026 minor release, which brings the security and bug fixes of 17.7–17.12 (CVE-2026-6460 among them). The
+  build stage already used 17.12's server headers from apt; now build and runtime match. A minor release keeps the
+  data directory format, so an existing volume starts unchanged with the new image (runbook 9). pg_morlet's SQL and
+  chunk format are unchanged.
 - **PostgreSQL 19.0.** PostgreSQL 19 is supported from its first release, 19.0 (2026-11-19), and no longer at its
   release candidate. CI builds 19.0 from its pinned source tarball (pgrx 0.19.3 downloads only 19beta4) and runs
   every test with and without pgvector 0.8.7. Debian packages and an extension-only image for PostgreSQL 19 follow
@@ -14,7 +19,7 @@
 - **PostgreSQL 19 in the runbooks and on the website.** Runbook 8 shows how to give the space of removed recordings
   back to the disk with `REPACK (CONCURRENTLY)` while ingest continues (checked on 19.0; `evaluation/pg19_features`).
   Runbook 3 shows read-your-writes on a replica with `WAIT FOR LSN`, and runbook 5 says not to repack on a full
-  disk. The website's install page names the PostgreSQL 19 packages and extension image and lists what 19 adds.
+  disk. The website's install page says when PostgreSQL 19 packages follow and lists what 19 adds.
   A steward action for the repack is proposed in #535.
 
 ## 0.4.0-beta.1
