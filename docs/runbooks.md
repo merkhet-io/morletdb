@@ -531,8 +531,16 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
      every query that holds the table, and while it waits, every new read and append on that table queues behind it.
      One long report can therefore stop all readers and writers for as long as the report runs. Writers also stop
      while the last changes are applied: seconds on a fast disk and a small table, minutes on a large table on a slow
-     disk (third-party measurements below). Collectors spool and catch up afterwards; nothing is lost, but check
-     that their spool has room. Set `lock_timeout` as above: if the lock is not granted in time, `REPACK` fails and
+     disk (third-party measurements below). What a blocked append costs depends on the writer:
+     - collectors that write to a local spool first (the SeedLink and Shelly reference collectors) catch up
+       afterwards and lose nothing, provided the spool has room;
+     - collectors without a spool lose samples their source no longer holds: the OPC UA reference collector reads
+       from a server ring of 64 blocks (12.8 s at 5,120 samples/s) and records a longer stall as a gap. With such a
+       collector running, accept a reported gap or do not repack;
+     - other writers (the SDK, your own programs) must keep their samples and retry the append; an identical retry is
+       a no-op.
+
+     Set `lock_timeout` as above: if the lock is not granted in time, `REPACK` fails and
      discards the whole rewrite, so retry at a quieter time rather than raising the timeout without limit. Schema
      changes on the table (enabling a feature) during the repack also make it fail; retry it.
    - **It delays cleanup in every database of the server.** Its replication slot holds back `VACUUM` cluster-wide
