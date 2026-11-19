@@ -4,9 +4,10 @@
 
 - **The importer writes time anchors (#393, #383).** With a CSV time column and an absolute time (ISO 8601, or
   seconds with `--time-origin`), `morlet_import.py` stores the real timestamps as time anchors on a server with SQL
-  0.3.13: one anchor with `break_before` at every block start (a step that departs from the declared period by more
-  than half a period: jumps, backward and zero steps), and, inside a block, as few anchors as keep the line through
-  them within that tolerance of every timestamp. A lookup at every block start is exact, which is #383's done-when,
+  0.3.13: one anchor at every block start, with `break_before` from the second block on (a block starts where a
+  step departs from the declared period by more than half a period, and at every backward or zero step), and,
+  inside a block, further anchors added until the line through them is within that tolerance of every timestamp.
+  ISO times keep their nanoseconds. A lookup at every block start is exact, which is #383's done-when,
   tested against a database. A rerun writes nothing new. `--anchor-tolerance-s` and `--no-anchors` control it;
   samples are never moved ([import](docs/import.md)).
 - **Time anchors (SQL 0.3.13, experimental; #393, #383).** A recording can carry sync points: "sample n was at UTC
