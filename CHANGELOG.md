@@ -32,6 +32,8 @@
   a time that a backward step puts into two blocks returns both samples, marked `ambiguous`. A backward or zero step
   without a break is refused. Recordings without anchors keep start + declared rate, and no stable function
   changes. Samples are never resampled or changed. Row security covers the new table in both enablement orders.
+  Direct SQL on the table is held to the same rules (a statement trigger checks inserts; rows are append-only),
+  and anchor writes need READ COMMITTED.
   Each mapping call reads all of a recording's anchors (fine for drift and files of minutes; an indexed lookup is
   #546). MCP `locate_time`, the collectors and the SDK use the anchors in the next steps
   ([design](docs/clock-drift.md), section 8). Update script 0.3.12 → 0.3.13; the upgrade tests now start from
