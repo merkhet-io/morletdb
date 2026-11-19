@@ -209,6 +209,22 @@ class Readers(unittest.TestCase):
         self.assertEqual(mi.recordings(p, opts(time_column="t", rate=100, time_origin="2026-03-01T08:00:00Z",
                                                no_anchors=True))[0].anchors, [])
 
+    def test_anchor_times_keep_nanoseconds_and_zero_steps_always_break(self):
+        """Review: ISO fractions beyond microseconds are kept; a zero step breaks even with a wide tolerance; a
+        tolerance must be positive."""
+        p = self.tmp / "ns.csv"
+        p.write_text("time,a\n2026-03-01T08:00:00.000000001Z,1\n2026-03-01T08:00:00.001000001Z,2\n"
+                     "2026-03-01T08:00:00.001000001Z,3\n2026-03-01T08:00:00.002000001Z,4\n")
+        base = 1_772_352_000_000_000_000
+        r = mi.recordings(p, opts(time_column="time", rate=1000, anchor_tolerance_s=0.01))[0]
+        self.assertEqual(r.anchors, [(0, base + 1, 1, False), (2, base + 1_000_001, 1, True)])
+        for bad in (-0.001, 0.0, float("nan"), float("inf")):
+            with self.assertRaisesRegex(ValueError, "positive"):
+                mi.recordings(p, opts(time_column="time", rate=1000, anchor_tolerance_s=bad))
+        self.assertEqual(mi.iso_ns("2026-03-01T08:00:00.123456789+01:00"), (base - 3_600_000_000_000 + 123_456_789, 9))
+        with self.assertRaisesRegex(ValueError, "9 fraction digits"):
+            mi.iso_ns("2026-03-01T08:00:00.1234567891Z")
+
     def test_an_even_clock_needs_one_anchor(self):
         p = self.tmp / "even.csv"
         p.write_text("t,a\n" + "".join(f"2026-03-01T08:00:00.{i * 10:03d}Z,{i}\n" for i in range(100)))

@@ -61,7 +61,8 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
   start time and rate (the server's `morlet_time_to_samples`), and `basis="anchors"` requires anchors. A range
   that a backward step of the source's clock maps to several disjoint sample ranges raises `InvalidInputError`:
   `time_ranges(rec, t0_ns, t1_ns)` returns every range as a `TimeRange` with its basis, `ambiguous`,
-  `extrapolated` and the bound on the time error at its first and last sample. `Interval.time_offsets_s()` gives float64 seconds since
+  `extrapolated` and the time error at its first and last sample: a bound, unless `assumes_linear_clock` (estimated
+  anchors without a clock bound). Without anchors and without a start time, both raise `InvalidInputError`. `Interval.time_offsets_s()` gives float64 seconds since
   sample 0, rounded in the last digits.
 - **Newest data.** `latest(c, n=1, metadata_filter)` returns, for every matching recording, its last `n`
   samples (up to 32,768) with their statistics, or with `n = 0` the statistics of its newest stored chunk, and

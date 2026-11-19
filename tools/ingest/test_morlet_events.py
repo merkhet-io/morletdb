@@ -57,7 +57,7 @@ class Events(unittest.TestCase):
         (ev,) = per_rec["m1.spindle"]
         self.assertEqual((ev["start_sample"], ev["value"]["time_basis"], ev["value"]["time_uncertainty_s"],
                           ev["value"]["time_candidate_samples"]), (1990, "anchors", 1e-6, [1990, 2003]))
-        self.assertEqual([c[0] for c in calls], ["m1.spindle"])
+        self.assertEqual(calls, [("m1.spindle", datetime(2026, 3, 1, 8, 0, 2, tzinfo=timezone.utc), 10000)])
         self.assertEqual(outside, 0)
 
     def test_bad_logs_are_refused(self):

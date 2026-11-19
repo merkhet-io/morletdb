@@ -68,30 +68,55 @@ def read_messages(path: Path, time_column: str, value_columns: list[str], match:
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
+RESERVED_VALUE_KEYS = {"time_utc", "time_basis", "time_uncertainty_s", "time_candidate_samples"}
+
+
 def utc_ns(t: datetime) -> int:
     return (t - EPOCH) // timedelta(microseconds=1) * 1000
 
 
-def anchor_locator(conn, collection: str):
-    """For recordings with time anchors (SQL 0.3.13, #393): locate(recording_id, time) -> (sample, uncertainty_s,
-    candidates), the sample whose period contains the time by the server's exact mapping, or None outside the
-    recording. Returns (set of anchored recording ids, locate)."""
-    if conn.execute("SELECT to_regproc('public.morlet_utc_to_sample') IS NULL").fetchone()[0] or \
-            conn.execute("SELECT to_regclass(%s)", (collection + "_time_anchors",)).fetchone()[0] is None:
+def anchor_locator(conn, collection: str, times: list[datetime]):
+    """For recordings with time anchors (SQL 0.3.13, #393): (set of anchored recording ids, locate), where
+    locate(recording_id, time, end) -> (sample, uncertainty_s, candidates) is the sample whose period contains the
+    time by the server's exact mapping, or None outside the recording. All message times of a recording are mapped
+    in one query, on its first use."""
+    if conn.execute("SELECT to_regproc('public.morlet_utc_to_sample') IS NULL").fetchone()[0]:
+        return set(), None
+    rel = conn.execute("SELECT to_regclass(format('%%I.%%I', n.nspname, c.relname || '_time_anchors'))::text "
+                       "FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.oid = %s::regclass",
+                       (collection,)).fetchone()[0]
+    if rel is None:
         return set(), None
     anchored = {r[0] for r in conn.execute(
-        f"SELECT DISTINCT x.recording_id FROM {collection}_time_anchors x WHERE NOT x.retracted AND NOT EXISTS "
-        f"(SELECT 1 FROM {collection}_time_anchors y WHERE y.supersedes = x.anchor_id)").fetchall()}
+        f"SELECT DISTINCT x.recording_id FROM {rel} x WHERE NOT x.retracted AND NOT EXISTS "
+        f"(SELECT 1 FROM {rel} y WHERE y.supersedes = x.anchor_id)").fetchall()}
+    wanted = sorted({utc_ns(t) for t in times})
+    cache: dict[str, dict] = {}
+
+    def mapped(rid: str) -> dict:
+        """time ns -> [(sample, uncertainty_s)] for the period containing it, every candidate."""
+        if rid not in cache:
+            rows = conn.execute(
+                "SELECT t.ns, s.sample, s.utc_ns, s.gap, s.before_start FROM unnest(%s::numeric[]) t(ns), "
+                "LATERAL morlet_utc_to_sample(%s::regclass, %s, t.ns) s ORDER BY t.ns, s.sample",
+                (wanted, collection, rid)).fetchall()
+            # the period containing the time: the last sample at or before it (also inside a clock jump)
+            picks = [(int(tn), sample if utc == tn else sample - 1) for tn, sample, utc, _gap, before in rows
+                     if not before]
+            samples = sorted({n for _, n in picks if n >= 0})
+            unc = dict(conn.execute("SELECT n, s.uncertainty_ns FROM unnest(%s::bigint[]) n, "
+                                    "LATERAL morlet_sample_utc(%s::regclass, %s, n) s",
+                                    (samples, collection, rid)).fetchall()) if samples else {}
+            out: dict[int, list] = {}
+            for tn, n in picks:
+                if n >= 0:
+                    u = unc.get(n)
+                    out.setdefault(tn, []).append((n, None if u is None else float(u) / 1e9))
+            cache[rid] = out
+        return cache[rid]
 
     def locate(rid: str, t: datetime, end: int):
-        tn = utc_ns(t)
-        found = []
-        for sample, utc, gap, before, unc in conn.execute(
-                "SELECT sample, utc_ns, gap, before_start, uncertainty_ns FROM morlet_utc_to_sample(%s::regclass,%s,%s)",
-                (collection, rid, tn)).fetchall():
-            n = sample if gap or int(utc) == tn else sample - 1
-            if not before and 0 <= n < end:
-                found.append((n, None if unc is None else float(unc) / 1e9))
+        found = [(n, u) for n, u in mapped(rid).get(utc_ns(t), []) if n < end]
         if not found:
             return None
         return found[0][0], found[0][1], [f[0] for f in found]
@@ -151,6 +176,10 @@ def main(argv=None):
     a = p.parse_args(argv)
     try:
         cols = [c.strip() for c in a.value_columns.split(",") if c.strip()]
+        reserved = sorted(set(cols) & RESERVED_VALUE_KEYS)
+        if reserved:
+            raise ValueError(f"value columns {', '.join(reserved)} are reserved for the event's time information; "
+                             "rename them")
         msgs = read_messages(a.file, a.time_column, cols, a.match)
         import psycopg
         with psycopg.connect(a.dsn, autocommit=True) as conn:
@@ -160,7 +189,7 @@ def main(argv=None):
             rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint "
                                 f"FROM {coll} WHERE metadata @> %s::jsonb",
                                 (json.dumps(json.loads(a.metadata_filter)),)).fetchall()
-            anchored, locate = anchor_locator(conn, coll)
+            anchored, locate = anchor_locator(conn, coll, [m["time"] for m in msgs])
             recs = [{"recording_id": rid, "rate": rate, "metadata": meta, "samples": n or 0, "t0": start_time(meta or {}),
                      "anchored": rid in anchored} for rid, rate, meta, n in rows]
             recs = [r for r in recs if (r["t0"] is not None or r["anchored"]) and r["samples"] > 0]

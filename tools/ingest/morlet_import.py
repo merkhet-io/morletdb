@@ -12,7 +12,7 @@ for exact search and, with --probes, probe search is enabled.
 import argparse
 import csv
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 import json
@@ -279,17 +279,29 @@ def parse_times_ns(path, values, origin_ns=None):
         return [origin_ns + int((d * 1_000_000_000).to_integral_value()) for d in dec], 10 ** max(0, 9 - places)
     out, places = [], 0
     for v in values:
-        text = v.strip().replace("Z", "+00:00")
-        t = datetime.fromisoformat(text)
-        t = t if t.tzinfo else t.replace(tzinfo=timezone.utc)
-        m = re.search(r"[T ]\d{2}:\d{2}:\d{2}\.(\d+)", text)
-        places = max(places, len(m.group(1)) if m else 0)
-        out.append((t - EPOCH) // ONE_US * 1000)
-    return out, 10 ** max(0, 9 - min(places, 6))
+        ns, digits = iso_ns(v)
+        out.append(ns)
+        places = max(places, digits)
+    return out, 10 ** max(0, 9 - places)
 
 
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
-ONE_US = datetime(1970, 1, 1, 0, 0, 0, 1, tzinfo=timezone.utc) - EPOCH
+ISO_FRACTION = re.compile(r"^(.*?[T ]\d{2}:\d{2}:\d{2})[.,](\d+)(.*)$")
+
+
+def iso_ns(text):
+    """(UTC nanoseconds, fraction digits) of an ISO 8601 time, exact to the nanosecond: datetime keeps only
+    microseconds, so the fraction is read separately. UTC when no offset is given; more than 9 digits is an error."""
+    t = text.strip().replace("Z", "+00:00")
+    m = ISO_FRACTION.match(t)
+    frac = ""
+    if m:
+        t, frac = m.group(1) + m.group(3), m.group(2)
+    if len(frac) > 9:
+        raise ValueError(f"time {text.strip()!r} has more than 9 fraction digits")
+    d = datetime.fromisoformat(t)
+    d = d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    return (d - EPOCH) // timedelta(seconds=1) * 1_000_000_000 + int(frac.ljust(9, "0") or 0), len(frac)
 
 
 def _split(rel, lo, hi, tol, keep):
@@ -327,7 +339,9 @@ def time_anchors(t_ns, rate, tol_ns=None):
     if rel.size and np.max(np.abs(rel)) >= 2.0 ** 53:
         raise ValueError("time column spans more than about 104 days; split the file")
     steps = np.diff(rel)
-    starts = [0] + [int(i) + 1 for i in np.flatnonzero(np.abs(steps - period) > tol)] + [t.size]
+    # a step that departs from the period by more than tol starts a block, and so does any step that does not move
+    # forward, whatever the tolerance: a zero or backward step is never interpolated across
+    starts = [0] + [int(i) + 1 for i in np.flatnonzero((np.abs(steps - period) > tol) | (steps <= 0))] + [t.size]
     out = []
     for a, b in zip(starts[:-1], starts[1:]):
         n = np.arange(a, b)
@@ -386,16 +400,15 @@ def csv_anchors(path, opts, header, body, rate):
     if opts.time_column is None or getattr(opts, "no_anchors", False):
         return []
     origin = getattr(opts, "time_origin", None)
-    origin_ns = None
-    if origin:
-        o = datetime.fromisoformat(origin.replace("Z", "+00:00"))
-        origin_ns = ((o if o.tzinfo else o.replace(tzinfo=timezone.utc)) - EPOCH) // ONE_US * 1000
+    origin_ns = iso_ns(origin)[0] if origin else None
+    tol = getattr(opts, "anchor_tolerance_s", None)
+    if tol is not None and not (math.isfinite(tol) and tol > 0):
+        raise ValueError("--anchor-tolerance-s must be a positive number of seconds")
     j = header.index(opts.time_column)
     parsed = parse_times_ns(path, [r[j] for r in body], origin_ns)
     if parsed is None:
         return []
     t, resolution = parsed
-    tol = getattr(opts, "anchor_tolerance_s", None)
     return [(n, tn, resolution, br) for n, tn, br in time_anchors(t, rate, None if tol is None else tol * 1e9)]
 
 

@@ -196,6 +196,7 @@ morlet_sync_guard	internal	0.3.6	helper
 morlet_time_anchor_relation	internal	0.3.13	not documented
 morlet_time_anchors_append_only	internal	0.3.13	not documented
 morlet_time_anchors_inserted	internal	0.3.13	not documented
+morlet_time_anchors_lock	internal	0.3.13	not documented
 morlet_time_axis_version	experimental	0.3.13	documented; new in SQL 0.3.13
 morlet_time_bounds	internal	0.3.3	not documented
 morlet_time_ns	internal	0.3.3	not documented

@@ -356,9 +356,10 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
                 conn.execute(f"DROP TABLE IF EXISTS public.mcp_anchor_{t} CASCADE")
             conn.execute("DROP TABLE IF EXISTS public.mcp_anchor CASCADE")
             conn.execute("SELECT morlet_create_stream_collection('public','mcp_anchor')")
-            for rid in ("blocks", "plain"):
+            for rid, meta in (("blocks", {"start_utc": "as recorded", "start_sample": 0}),   # anchors only, no start
+                              ("plain", {"start": "2026-02-01T12:00:00Z"})):
                 conn.execute("SELECT morlet_start_recording('mcp_anchor',%s,1000,'acc','g',%s,512,256,'zscore','none')",
-                             (rid, json.dumps({"start": "2026-02-01T12:00:00Z"})))
+                             (rid, json.dumps(meta)))
                 conn.execute("SELECT morlet_append_chunks_raw('mcp_anchor',%s,0,morlet_float8_le_bytes(ARRAY("
                              "SELECT sin(i/5.0)::float8 FROM generate_series(0,299) i)),300)", (rid,))
             base = 1769947200000000000                                          # 2026-02-01T12:00:00Z
@@ -383,7 +384,7 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
 
     def test_a_jump_and_a_backward_step_are_explained(self):
         gap = self.match("2026-02-01T12:00:00.105Z")["blocks"]
-        self.assertEqual(gap["sample"], 100)
+        self.assertEqual((gap["sample"], gap["first_sample_after_jump"]), (99, 100))
         self.assertIn("jump", gap["time_note"])
         twice = self.match("2026-02-01T12:00:00.208Z")["blocks"]
         self.assertEqual((twice["sample"], twice["candidate_samples"]), (195, [195, 200]))
@@ -400,6 +401,18 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
         self.assertEqual((recs["blocks"]["start_utc"], recs["blocks"]["end_utc"]),
                          ("2026-02-01T12:00:00Z", "2026-02-01T12:00:00.308000Z"))   # block 2: 208 ms + 100 samples
         self.assertEqual(recs["plain"]["end_utc"], "2026-02-01T12:00:00.300000Z")
+        # metadata is returned as stored, even when it has keys that look like reported times
+        meta = m.list_recordings("public.mcp_anchor", include_metadata=True)["recordings"]
+        self.assertEqual({x["recording_id"]: x.get("metadata") for x in meta}["blocks"],
+                         {"start_utc": "as recorded", "start_sample": 0})
+
+    def test_nanoseconds_and_the_gap_note_for_an_anchored_recording(self):
+        # nanoseconds count: 1 ns before block 1's start the last sample at or before it is still 99, at the start 100
+        self.assertEqual(self.match("2026-02-01T12:00:00.112999999Z")["blocks"]["sample"], 99)
+        self.assertEqual(self.match("2026-02-01T12:00:00.113000000Z")["blocks"]["sample"], 100)
+        # after both recordings: the anchored one ends last (block 2 runs to .308), so it is the previous recording
+        r = m.locate_time("public.mcp_anchor", "2026-02-01T12:00:00.400Z")
+        self.assertEqual((r["note"], r["previous"]["recording_id"]), ("the time is after the last recording", "blocks"))
 
 
 @unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")

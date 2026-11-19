@@ -115,15 +115,17 @@ are never moved or resampled. **Time anchors** (SQL 0.3.13 or later): the import
 as [time anchors](clock-drift.md), so `morlet_utc_to_sample` and `morlet_sample_utc` map between UTC and samples
 by them instead of by start + rate:
 - A new **block** starts where the step between two rows departs from the declared period by more than half a period
-  (`--anchor-tolerance-s` changes it), for example after a jump, a backward or a zero step. Every block start is
+  (`--anchor-tolerance-s` changes it; it must be positive), for example after a jump; a backward or zero step
+  always starts one, whatever the tolerance. Every block start is
   an anchor with `break_before`, so a lookup at a block's timestamp returns its first sample exactly, and a time
   that a backward step puts into two blocks returns both, marked `ambiguous`.
 - Inside a block, one anchor suffices while start + declared rate stays within the tolerance of every row. A
   drifting clock gets more anchors, until the line through them is within the tolerance of every timestamp.
 - Each anchor's uncertainty is the time column's resolution (1 µs for ISO times with microseconds), and its source
   is `import:<file>`. A rerun writes nothing new (identical batches).
-- Anchors need an absolute time: ISO 8601 times, or a column of seconds with `--time-origin <ISO time>`. Without
-  one, or with `--no-anchors`, only the `time_axis` summary is stored. On a server older than SQL 0.3.13 the
+- Anchors need an absolute time: ISO 8601 times (fractions up to nanoseconds are kept exactly), or a column of
+  seconds with `--time-origin <ISO time>`. Without one, or with `--no-anchors`, no anchors are written; the
+  `time_axis` summary and, for ISO times, the start time are stored as before. On a server older than SQL 0.3.13 the
   report says the anchors were not written.
 - Each mapping call reads all of a recording's anchors. On the development machine (M5 Max, single runs, not a
   benchmark) a lookup took about 18 ms at 1,000 anchors, 0.1 s at 10,000 and 1.3 s at 100,000. That suits drift

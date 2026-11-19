@@ -5,21 +5,25 @@
 - **Clients use time anchors (#393, #383).** On recordings with time anchors (SQL 0.3.13):
   - MCP `locate_time` locates a UTC time by them (`time_basis: anchors`): exact at every anchor, with the error bound,
     a note for a time in a clock jump or outside a block's anchors, and `candidate_samples` when a backward clock step
-    makes the time occur twice. Anchored recordings need no start time. A time without an offset is read as UTC.
+    makes the time occur twice. Anchored recordings need no start time. A time without an offset is read as UTC, and
+    fractions are read to the nanosecond.
   - `morlet_events.py` places messages by the anchors, with `time_basis`, the error bound and
     `time_candidate_samples` in the event's value (the event goes on the first candidate).
   - Python SDK (unreleased): `samples_for_time` uses the anchors by default (`basis="auto"`; `"start+rate"` keeps the previous
     mapping) and refuses a range that a backward step makes ambiguous; the new `time_ranges` returns every range as
-    a `TimeRange` with its basis and error bounds.
-  - The UTC times other MCP tools report (search hits, reads, descriptions, comparisons, onsets, recording lists)
-    come from the anchors for anchored recordings, with `time_basis: anchors` and `time_uncertainty_s`.
+    a `TimeRange` with its basis and error (a bound unless `assumes_linear_clock`). Both raise when a recording has
+    neither anchors nor a start time.
+  - The UTC times other MCP tools report (search hits, reads, descriptions, comparisons, onsets, recording lists,
+    `latest`) come from the anchors for anchored recordings, with `time_basis: anchors` and `time_uncertainty_s`;
+    `coverage`'s first, last and gap times still use start + rate.
   Recordings without anchors are located and timed as before. The SQL search functions' own UTC evidence (stable)
   still uses start + rate.
 - **The importer writes time anchors (#393, #383).** With a CSV time column and an absolute time (ISO 8601, or
   seconds with `--time-origin`), `morlet_import.py` stores the real timestamps as time anchors on a server with SQL
-  0.3.13: one anchor with `break_before` at every block start (a step that departs from the declared period by more
-  than half a period: jumps, backward and zero steps), and, inside a block, as few anchors as keep the line through
-  them within that tolerance of every timestamp. A lookup at every block start is exact, which is #383's done-when,
+  0.3.13: one anchor at every block start, with `break_before` from the second block on (a block starts where a
+  step departs from the declared period by more than half a period, and at every backward or zero step), and,
+  inside a block, further anchors added until the line through them is within that tolerance of every timestamp.
+  ISO times keep their nanoseconds. A lookup at every block start is exact, which is #383's done-when,
   tested against a database. A rerun writes nothing new. `--anchor-tolerance-s` and `--no-anchors` control it;
   samples are never moved ([import](docs/import.md)).
 - **Time anchors (SQL 0.3.13, experimental; #393, #383).** A recording can carry sync points: "sample n was at UTC
@@ -28,8 +32,9 @@
   different one under the same id fails) and `morlet_revise_time_anchor` revises or retracts an anchor, keeping the
   old row. `morlet_sample_utc`, `morlet_utc_to_samples` and `morlet_utc_to_sample` map between samples and UTC
   exactly at every anchor and piecewise linearly between them, in integer arithmetic, with an error bound from the
-  anchors' uncertainties and a clock bound ρ (default 1e-4 for measured sources, none for estimates; override per
-  call or with `time_axis.rho` in the recording metadata). For block-stamped sources, an anchor with `break_before`
+  anchors' uncertainties and a clock bound ρ (default 1e-4 for measured sources; override per call or with
+  `time_axis.rho` in the recording metadata). For estimated anchors no ρ is assumed, and the result is marked
+  `assumes_linear_clock`: its uncertainty is then not a bound. For block-stamped sources, an anchor with `break_before`
   starts a new segment: a time in the jump between two blocks maps to the first sample of the later one (`gap`), and
   a time that a backward step puts into two blocks returns both samples, marked `ambiguous`. A backward or zero step
   without a break is refused. Recordings without anchors keep start + declared rate, and no stable function
