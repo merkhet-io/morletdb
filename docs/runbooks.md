@@ -510,22 +510,34 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
    probe index ([7](#7-rebuilding-envelopes-probe-rows-and-indexes)).
 
    **To give the space back to the disk on PostgreSQL 19**, rewrite the collection's tables with
-   `REPACK (CONCURRENTLY)`, one at a time, largest first. Appends, reads and searches continue meanwhile:
+   `REPACK (CONCURRENTLY)`, one at a time, largest first, at a quiet time. Appends, reads and searches continue for
+   most of the run, but not during the swap at its end (below):
 
    ```sql
    SELECT c.oid::regclass, pg_size_pretty(pg_total_relation_size(c.oid)) FROM pg_class c
     WHERE c.relname LIKE 'line\_%' AND c.relkind = 'r' ORDER BY pg_total_relation_size(c.oid) DESC;
+   SET lock_timeout = '10s';                            -- give up rather than block everyone (see below)
    REPACK (CONCURRENTLY, VERBOSE) line_chunks;          -- then line_envelopes, line_probes_<n>, ...
    ```
 
-   - **Space first:** each rewrite needs free disk of about the table's size plus its indexes until it finishes, and
-     returns the difference afterwards. Run it with the disk above the reserve, never on a full disk
+   - **Space first:** each rewrite needs free disk for a full copy of the kept data and its indexes, plus the WAL it
+     writes (about the table's size again until a checkpoint recycles it), until it finishes; it returns the
+     difference afterwards. Run it with the disk above the reserve plus that, never on a full disk
      ([5](#5-disk-full-or-nearly-full)).
    - **Requirements:** the `MAINTAIN` privilege on the table, outside a transaction block, and a free slot in
      `max_repack_replication_slots` (default 5). It uses logical decoding internally, which PostgreSQL 19 turns on by
      itself with the default `wal_level = replica`. Every MorletDB table has the primary key `CONCURRENTLY` needs.
-   - **Brief lock at the end:** an `ACCESS EXCLUSIVE` lock swaps the files. Schema changes on the table (enabling a
-     feature) during the repack make it fail; retry it.
+   - **The swap at the end stops everyone for a while.** An `ACCESS EXCLUSIVE` lock swaps the files. It waits for
+     every query that holds the table, and while it waits, every new read and append on that table queues behind it.
+     One long report can therefore stop all readers and writers for as long as the report runs. Writers also stop
+     while the last changes are applied: seconds on a fast disk and a small table, minutes on a large table on a slow
+     disk (third-party measurements below). Collectors spool and catch up afterwards; nothing is lost, but check
+     that their spool has room. Set `lock_timeout` as above: if the lock is not granted in time, `REPACK` fails and
+     discards the whole rewrite, so retry at a quieter time rather than raising the timeout without limit. Schema
+     changes on the table (enabling a feature) during the repack also make it fail; retry it.
+   - **It delays cleanup in every database of the server.** Its replication slot holds back `VACUUM` cluster-wide
+     while it runs, so dead rows accumulate in other databases on the same server (another application's too).
+     Prefer the shortest rewrite: one table at a time, soon after the removal.
    - **Readers with an older snapshot can see an empty table.** `REPACK (CONCURRENTLY)` is not MVCC-safe: once it
      commits, a transaction whose snapshot was taken before it started sees the repacked table as empty if it reads the
      table only then. A single query is safe. A `REPEATABLE READ` transaction of several statements is not: the search
@@ -541,7 +553,17 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
      Writers that append one transaction at a time (collectors, the SDK) may continue.
    - **Checked** on 19.0 (`evaluation/pg19_features`, one development run): after half of a collection was deleted,
      `REPACK (CONCURRENTLY)` reduced `_chunks` from 5.6 MB to 3.1 MB while appends continued, every kept chunk stayed
-     byte for byte the same, and `morlet_verify` found no problems. Run `morlet_verify` afterwards as well.
+     byte for byte the same, and `morlet_verify` found no problems. Run `morlet_verify` afterwards as well. Its costs
+     at size were not measured here. A third-party measurement on 19beta4
+     ([boringsql](https://boringsql.com/posts/repack-concurrently-costs/), not MorletDB data) found:
+     - writers stopped for 7 s at the swap on local NVMe (28 GB table, 3,000 updates/s), and on a 4-vCPU cloud VM
+       for 13 s (28 GB) and 231 s (100 GB);
+     - a 20 s report holding the table stopped all lookups for 18 s;
+     - about 1× the kept data in extra disk and about 1× the table in WAL;
+     - `VACUUM` held back in all databases.
+
+     On a Pi with an SD card or a hard disk, expect longer stalls; measure on your own hardware before relying on
+     it.
    - On PostgreSQL 17 and 18, `VACUUM FULL` gives the space back, but it locks the table for the whole rewrite. Stop
      the writers for it, or leave the space for new samples to reuse.
 
