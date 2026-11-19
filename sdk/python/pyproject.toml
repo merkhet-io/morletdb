@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "morletdb"
-version = "0.1.0a7"
+version = "0.1.0b1"
 description = "Python client for MorletDB: store waveform recordings losslessly, read exact intervals, search similar intervals"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.24", "psycopg[binary]>=3.2"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
   "Topic :: Database",
   "Topic :: Scientific/Engineering",

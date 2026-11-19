@@ -1,6 +1,6 @@
 # Security policy
 
-MorletDB is an experimental PostgreSQL extension. Only the newest alpha is a
+MorletDB is an experimental PostgreSQL extension. Only the newest release is a
 candidate for fixes; there is no security maintenance SLA or supported production
 release. See [support boundaries](SUPPORT.md).
 
