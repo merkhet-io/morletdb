@@ -189,3 +189,11 @@ measured with pglz) stay valid (#280):
   upgrade tests (every bulk column of the upgraded collections).
 
 Measurement on PostgreSQL 19rc1 and 17.11: [evaluation/toast_compression](../evaluation/toast_compression/RESULTS.md).
+
+## What PostgreSQL 19 adds for MorletDB
+
+A development review of the 19.0 release notes against pg_morlet ([evaluation/pg19_features](../evaluation/pg19_features/README.md)):
+the most useful addition is `REPACK (CONCURRENTLY)`, which gives the space of removed recordings back to the disk
+while appends continue (checked on 19.0: kept chunks byte for byte unchanged, `morlet_verify` clean). Selective
+`NOTIFY` wakeups help commit notifications, `WAIT FOR LSN` gives read-your-writes on standbys, and new statistics views
+help the steward. Using them is optional; pg_morlet's SQL stays the same on 17, 18 and 19.
