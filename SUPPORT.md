@@ -8,7 +8,7 @@ starts at 1.0.
 
 | Area | Beta boundary |
 |---|---|
-| Servers | PostgreSQL 17 (reference), 18 and 19 (from 19.0, source builds; packages for 19 from the next release); release image, Debian packages and an extension-only image ([compatibility](docs/compatibility.md)) |
+| Servers | PostgreSQL 17 (reference), 18 and 19 (from 19.0, source builds; packages for 19 once the official `postgres:19` image is published (#XPR)); release image, Debian packages and an extension-only image ([compatibility](docs/compatibility.md)) |
 | Platforms | Linux amd64 and arm64, including a Raspberry Pi 3B+; macOS for development; native Windows is unverified |
 | Data | One uniformly sampled channel per recording; explicit rate, unit and sample offsets; append-only |
 | Updates | `ALTER EXTENSION pg_morlet UPDATE` from every earlier release, tested in CI on populated PostgreSQL 17 databases; updates on PostgreSQL 18 and 19 are untested ([runbook 9](docs/runbooks.md#9-upgrading-the-extension-and-the-image)) |

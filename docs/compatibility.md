@@ -7,9 +7,9 @@ pg_morlet is a pgrx 0.19.3 extension (Rust 1.99.0). One build targets one Postgr
 
 | PostgreSQL | Build checked | Functional tests checked | pgvector mode | Known limits |
 |---|---|---|---|---|
-| **17** (17.12), reference | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test, upgrades from v0.1.0-alpha.3, v0.2.0-alpha.1 and v0.3.0-alpha.1, seismic example | without; with pgvector 0.8.0 | release images are built for 17 only (amd64 and arm64); Debian packages for 17 and 18 (and 19 from the first release after 0.4.0-beta.1) |
+| **17** (17.12), reference | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test, upgrades from v0.1.0-alpha.3, v0.2.0-alpha.1 and v0.3.0-alpha.1, seismic example | without; with pgvector 0.8.0 | release images are built for 17 only (amd64 and arm64); Debian packages for 17 and 18 |
 | **18** (18.7) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | no upgrade path tested (earlier releases were never built for 18; install fresh), no release image (Debian packages for amd64 and arm64 from 0.3.5-alpha.1), no measurements |
-| **19** (19.0) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | built from the pinned 19.0 source tarball (pgrx 0.19.3 downloads only 19beta4); no upgrade path tested (earlier releases were never built for 19; install fresh), no release image; Debian packages and an extension-only image from the first release after 0.4.0-beta.1; storage checked (below), no speed measurements |
+| **19** (19.0) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | built from the pinned 19.0 source tarball (pgrx 0.19.3 downloads only 19beta4); no upgrade path tested (earlier releases were never built for 19; install fresh), no release image; Debian packages and an extension-only image once the official `postgres:19` image is published (#XPR); storage checked (below), no speed measurements |
 | 13–16 | no | no | — | not supported; pgrx 0.19.3 could build them, but no user need is documented |
 
 A version is listed as supported only while its CI jobs pass (`compat` in
@@ -125,7 +125,7 @@ The scripts in `extensions/pg_morlet/tests` find `pg_config` through `PG_CONFIG`
 - Release images (`deploy/Dockerfile`, `postgres:17.6-bookworm`) target PostgreSQL 17 on Linux, for amd64
   and, from 0.3.3-alpha.1, arm64. From 0.3.5-alpha.1, Debian packages (`deploy/Dockerfile.deb`) are built for
   PostgreSQL 17 and 18 on amd64 and arm64, against the PostgreSQL project's packages on Debian bookworm, and
-  trialed only there; for PostgreSQL 19 too from the first release after 0.4.0-beta.1.
+  trialed only there; for PostgreSQL 19 once the official `postgres:19` image is published (#XPR).
 - Some evaluation scripts (`evaluation/pilot/*.py`, `evaluation/compression/extension/read_bench.py`)
   default to `~/.pgrx/17.11` paths; they belong to frozen protocols and are not part of this matrix.
 - PostgreSQL 16 or older would need a Cargo feature and matrix entries; it is not offered without a
@@ -153,8 +153,8 @@ and run `CREATE EXTENSION pg_morlet`. No `shared_preload_libraries` entry is nee
 load the library from `$libdir` until `ALTER EXTENSION pg_morlet UPDATE`.
 
 **Ready-made image.** From 0.3.9-alpha.1, each release publishes an extension-only image for
-PostgreSQL 18, `ghcr.io/merkhet-io/pg_morlet:<version>-pg18`, and from the first release after 0.4.0-beta.1 one
-for PostgreSQL 19, `<version>-pg19` (linux/amd64 and linux/arm64, built against Debian
+PostgreSQL 18, `ghcr.io/merkhet-io/pg_morlet:<version>-pg18` (one for PostgreSQL 19, `<version>-pg19`, is planned
+once the official `postgres:19` image is published (#XPR)) (linux/amd64 and linux/arm64, built against Debian
 bookworm's glibc like the official postgres images). It holds only `/share/extension/pg_morlet*`, `/lib/pg_morlet.so`
 and the licence. Mount it at `/extensions/pg_morlet`, for example as a Kubernetes image volume, and use the two
 settings above with `<dir>` = `/extensions/pg_morlet`. Without image volumes, copy the files out:
