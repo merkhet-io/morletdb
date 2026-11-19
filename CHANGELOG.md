@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **PostgreSQL 19.0.** PostgreSQL 19 is supported from its first release, 19.0 (2026-11-19), and no longer at its
+  release candidate. CI builds 19.0 from its pinned source tarball (pgrx 0.19.3 downloads only 19beta4) and runs
+  every test with and without pgvector 0.8.7. The release workflow builds and trials Debian packages for PostgreSQL 19
+  (amd64, arm64) and an extension-only image `<version>-pg19`, beside 17 and 18, from the next release on.
+  Updates on 19 are not tested (no earlier release was built for it); install fresh. TOAST compression stays
+  pinned to pglz on 19 (#280).
+- **CI on the November 2026 minor releases:** PostgreSQL 17.12 and 18.7 (previously 17.11 and 18.6). pgrx stays at
+  0.19.3: pgrx 0.19.4's fix for CVE-2026-6460 concerns composite datums, which pg_morlet does not read, and
+  extensions built with it do not load on earlier minor releases ([compatibility](docs/compatibility.md#known-limits)).
+
 ## 0.4.0-beta.1
 
 **The first beta.** From this release the [API and on-disk promises](docs/api-stability.md) apply: stable SQL

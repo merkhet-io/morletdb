@@ -9,8 +9,8 @@ and a sample interval you can read back, for an engineer or for an AI agent.
 <p align="center">
 <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/license-Apache_2.0-a8df73?labelColor=090c0d"></a>
 <a href="https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml"><img alt="Rust & Postgres checks" src="https://github.com/merkhet-io/morletdb/actions/workflows/rust.yml/badge.svg"></a>
-<img alt="PostgreSQL 17 | 18" src="https://img.shields.io/badge/PostgreSQL-17_|_18-a8df73?labelColor=090c0d&logo=postgresql&logoColor=e4e8e6">
-<img alt="Rust + pgrx" src="https://img.shields.io/badge/Rust-pgrx_0.16-a8df73?labelColor=090c0d&logo=rust&logoColor=e4e8e6">
+<img alt="PostgreSQL 17 | 18 | 19" src="https://img.shields.io/badge/PostgreSQL-17_|_18_|_19-a8df73?labelColor=090c0d&logo=postgresql&logoColor=e4e8e6">
+<img alt="Rust + pgrx" src="https://img.shields.io/badge/Rust-pgrx_0.19-a8df73?labelColor=090c0d&logo=rust&logoColor=e4e8e6">
 <img alt="Status: beta" src="https://img.shields.io/badge/status-beta-24302e?labelColor=090c0d">
 </p>
 

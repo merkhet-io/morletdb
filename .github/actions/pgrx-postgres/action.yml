@@ -7,11 +7,12 @@ description: >
 inputs:
   pg-minor:
     description: >
-      PostgreSQL version that cargo pgrx init must resolve to, e.g. 17.11. A pre-release (e.g. 19rc1) is
-      built from the PostgreSQL source tarball instead, checked against pg-sha256.
+      PostgreSQL version that cargo pgrx init must resolve to, e.g. 17.12. With pg-sha256, the version
+      (e.g. 19.0, which the pinned pgrx does not download) is built from the PostgreSQL source tarball
+      instead, checked against that hash.
     required: true
   pg-sha256:
-    description: SHA-256 of postgresql-<pg-minor>.tar.bz2 (pre-releases only)
+    description: SHA-256 of postgresql-<pg-minor>.tar.bz2, to build it from source
     default: ''
   pgvector:
     description: pgvector release tag to build into it (e.g. v0.8.0), or none
@@ -76,16 +77,16 @@ runs:
       shell: bash
       run: sudo apt-get install -y --no-install-recommends liblz4-dev
     - name: Build PostgreSQL with cargo pgrx init
-      if: steps.postgres.outputs.cache-hit != 'true' && !contains(inputs.pg-minor, 'beta') && !contains(inputs.pg-minor, 'rc')
+      if: steps.postgres.outputs.cache-hit != 'true' && inputs.pg-sha256 == ''
       shell: bash
       run: |
         cargo pgrx init --pg${{ steps.versions.outputs.major }} download \
           --configure-flag=--without-icu --configure-flag=--without-readline --configure-flag=--without-zlib \
           --configure-flag=--with-lz4
-    # cargo pgrx init --pgNN download fetches the newest pre-release pgrx knows about, which may be older than the
-    # current one; a pre-release is built from the official tarball with the same flags pgrx uses.
+    # cargo pgrx init --pgNN download fetches the version the pinned pgrx knows about for a new major (pgrx 0.19.3:
+    # 19beta4), not the current one; such a version is built from the official tarball with the same flags pgrx uses.
     - name: Build PostgreSQL ${{ inputs.pg-minor }} from source
-      if: steps.postgres.outputs.cache-hit != 'true' && (contains(inputs.pg-minor, 'beta') || contains(inputs.pg-minor, 'rc'))
+      if: steps.postgres.outputs.cache-hit != 'true' && inputs.pg-sha256 != ''
       shell: bash
       env:
         PG_MINOR: ${{ inputs.pg-minor }}
@@ -108,7 +109,7 @@ runs:
         pg_config=$(sed -n "s/^pg${{ steps.versions.outputs.major }} *= *\"\(.*\)\"/\1/p" "$HOME/.pgrx/config.toml")
         got=$("$pg_config" --version)
         # cargo pgrx init downloads the latest minor release; a new one needs an explicit pin bump.
-        # (A pre-release is built from its pinned tarball, so the check only confirms the build.)
+        # (A version built from its pinned tarball only confirms the build here.)
         if [ "$got" != "PostgreSQL ${{ inputs.pg-minor }}" ]; then
           echo "::error::expected PostgreSQL ${{ inputs.pg-minor }}, got '$got': update pg-minor in .github/workflows/rust.yml and docs/compatibility.md"
           exit 1
