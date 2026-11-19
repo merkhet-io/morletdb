@@ -18,8 +18,9 @@
 - **The importer writes time anchors (#393, #383).** With a CSV time column and an absolute time (ISO 8601, or
   seconds with `--time-origin`), `morlet_import.py` stores the real timestamps as time anchors on a server with SQL
   0.3.13: one anchor at every block start, with `break_before` from the second block on (a block starts where a
-  step departs from the declared period by more than half a period, and at every backward or zero step), and,
-  inside a block, further anchors added until the line through them is within that tolerance of every timestamp.
+  step departs from the declared period by more than a tolerance, half a period by default, and at every backward or
+  zero step), and,
+  inside a block, further anchors added until the line through them is within the tolerance of every timestamp.
   ISO times keep their nanoseconds. A lookup at every block start is exact, which is #383's done-when,
   tested against a database. A rerun writes nothing new. `--anchor-tolerance-s` and `--no-anchors` control it;
   samples are never moved ([import](docs/import.md)).
@@ -30,8 +31,9 @@
   old row. `morlet_sample_utc`, `morlet_utc_to_samples` and `morlet_utc_to_sample` map between samples and UTC
   exactly at every anchor and piecewise linearly between them, in integer arithmetic, with an error bound from the
   anchors' uncertainties and a clock bound ρ (default 1e-4 for measured sources; override per call or with
-  `time_axis.rho` in the recording metadata). For estimated anchors no ρ is assumed, and the result is marked
-  `assumes_linear_clock`: its uncertainty is then not a bound. For block-stamped sources, an anchor with `break_before`
+  `time_axis.rho` in the recording metadata). By default no ρ is assumed for estimated anchors, and the result is
+  marked `assumes_linear_clock`: its uncertainty is then not a bound (a ρ given per call or in the metadata applies to
+  them too). For block-stamped sources, an anchor with `break_before`
   starts a new segment: a time in the jump between two blocks maps to the first sample of the later one (`gap`), and
   a time that a backward step puts into two blocks returns both samples, marked `ambiguous`. A backward or zero step
   without a break is refused. Recordings without anchors keep start + declared rate, and no stable function

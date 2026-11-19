@@ -105,7 +105,10 @@ END $$;
 CREATE FUNCTION public.morlet_time_anchors_lock()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
-  PERFORM public.morlet_lock_time_anchors(TG_ARGV[0]::oid::regclass,NULL,ARRAY[NEW.recording_id]);
+  IF current_setting('transaction_isolation')<>'read committed' THEN
+    RAISE EXCEPTION 'time anchors are written under READ COMMITTED (this transaction is %)',current_setting('transaction_isolation');
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-anchor-coll/'||TG_ARGV[0],0));
   RETURN NEW;
 END $$;
 
@@ -335,9 +338,11 @@ BEGIN
     nonempty AS (SELECT r.*,lag(r.b) OVER (ORDER BY r.a) AS prev_b,
         r.t_ref+(r.a-r.n_ref)*r.dt/r.dn AS tf,r.t_ref+(r.b-1-r.n_ref)*r.dt/r.dn AS tl FROM r WHERE r.a<r.b),
     -- ambiguous: two segments contribute samples whose times overlap, so some time in the range occurs twice (even
-    -- when their sample ranges are adjacent and merge into one)
-    amb AS (SELECT EXISTS(SELECT 1 FROM nonempty x JOIN nonempty y ON x.segment<y.segment
-      WHERE x.tf<=y.tl AND y.tf<=x.tl) AS v),
+    -- when their sample ranges are adjacent and merge into one). Pieces of one segment never overlap in time, so a
+    -- sweep in time order finds it: a piece that starts at or before the latest end of the pieces before it.
+    sweep AS (SELECT nonempty.tf,max(nonempty.tl) OVER (ORDER BY nonempty.tf,nonempty.a
+        ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prev_tl FROM nonempty),
+    amb AS (SELECT coalesce(bool_or(sweep.tf<=sweep.prev_tl),false) AS v FROM sweep),
     grp AS (SELECT nonempty.*,sum(CASE WHEN nonempty.prev_b=nonempty.a THEN 0 ELSE 1 END) OVER (ORDER BY nonempty.a) AS g
       FROM nonempty),
     ranges AS (SELECT min(grp.a) AS a,max(grp.b) AS b,
