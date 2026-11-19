@@ -8,10 +8,10 @@ starts at 1.0.
 
 | Area | Beta boundary |
 |---|---|
-| Servers | PostgreSQL 17 (reference) and 18; release image, Debian packages and an extension-only image ([compatibility](docs/compatibility.md)) |
+| Servers | PostgreSQL 17 (reference), 18 and 19 (from 19.0, source builds; packages for 19 once the official `postgres:19` image is published (#537)); release image, Debian packages and an extension-only image ([compatibility](docs/compatibility.md)) |
 | Platforms | Linux amd64 and arm64, including a Raspberry Pi 3B+; macOS for development; native Windows is unverified |
 | Data | One uniformly sampled channel per recording; explicit rate, unit and sample offsets; append-only |
-| Updates | `ALTER EXTENSION pg_morlet UPDATE` from every earlier release, tested in CI on populated PostgreSQL 17 databases; updates on PostgreSQL 18 are untested ([runbook 9](docs/runbooks.md#9-upgrading-the-extension-and-the-image)) |
+| Updates | `ALTER EXTENSION pg_morlet UPDATE` from every earlier release, tested in CI on populated PostgreSQL 17 databases; updates on PostgreSQL 18 and 19 are untested ([runbook 9](docs/runbooks.md#9-upgrading-the-extension-and-the-image)) |
 | Operations | The steward for unattended upkeep; runbooks for backup, restore, replicas, disk and WAL ([runbooks](docs/runbooks.md)); no HA certification |
 | Tested range | Only what [operations](docs/operations.md#tested-operating-range) lists; outside it, measure on your own hardware |
 

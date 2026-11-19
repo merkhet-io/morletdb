@@ -124,13 +124,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {pg: 17, pg-minor: '17.11', mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
-          - {pg: 17, pg-minor: '17.11', mode: with-pgvector, pgvector: v0.8.0, pgvector-commit: 2627c5ff775ae6d7aef0c430121ccf857842d2f2, experimental: false}
-          - {pg: 18, pg-minor: '18.6', mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
-          - {pg: 18, pg-minor: '18.6', mode: with-pgvector, pgvector: v0.8.7, pgvector-commit: f37c13f68b57d2c3472b2214fbcff699d6d34876, experimental: false}
-          # PostgreSQL 19 is a release candidate: built from the pinned tarball until 19.0 ships (then 19.0 via cargo pgrx init)
-          - {pg: 19, pg-minor: '19rc1', pg-sha256: af105fc8e960fc836a09fc2cd7f582b49fd17675d9d36631abe3a565bfd7d701, mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
-          - {pg: 19, pg-minor: '19rc1', pg-sha256: af105fc8e960fc836a09fc2cd7f582b49fd17675d9d36631abe3a565bfd7d701, mode: with-pgvector, pgvector: v0.8.7, pgvector-commit: f37c13f68b57d2c3472b2214fbcff699d6d34876, experimental: false}
+          - {pg: 17, pg-minor: '17.12', mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
+          - {pg: 17, pg-minor: '17.12', mode: with-pgvector, pgvector: v0.8.0, pgvector-commit: 2627c5ff775ae6d7aef0c430121ccf857842d2f2, experimental: false}
+          - {pg: 18, pg-minor: '18.7', mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
+          - {pg: 18, pg-minor: '18.7', mode: with-pgvector, pgvector: v0.8.7, pgvector-commit: f37c13f68b57d2c3472b2214fbcff699d6d34876, experimental: false}
+          # PostgreSQL 19.0: built from the pinned tarball, because pgrx 0.19.3 downloads 19beta4 for 19
+          - {pg: 19, pg-minor: '19.0', pg-sha256: a89fd70efbad6a08c7dbed8d4872e3af30170d9e5ca9dc7906523be95b4e692d, mode: without-pgvector, pgvector: none, pgvector-commit: '', experimental: false}
+          - {pg: 19, pg-minor: '19.0', pg-sha256: a89fd70efbad6a08c7dbed8d4872e3af30170d9e5ca9dc7906523be95b4e692d, mode: with-pgvector, pgvector: v0.8.7, pgvector-commit: f37c13f68b57d2c3472b2214fbcff699d6d34876, experimental: false}
     steps:
       - uses: actions/checkout@v4
       - name: Verify runner build tools
@@ -309,11 +309,11 @@ jobs:
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.12-alpha.1:refs/tags/v0.3.12-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.13-alpha.1:refs/tags/v0.3.13-alpha.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.3.14-alpha.1:refs/tags/v0.3.14-alpha.1
-      - name: PostgreSQL 17.11
+      - name: PostgreSQL 17.12
         id: pg
         uses: ./.github/actions/pgrx-postgres
         with:
-          pg-minor: '17.11'
+          pg-minor: '17.12'
       # Releases up to 0.3.7-alpha.1 are pgrx 0.16.1 crates (Rust 1.91.1 from their rust-toolchain.toml): they build with
       # the cargo-pgrx of their own Cargo.lock, kept beside this branch's (tests/upgrade_from_release.sh, pgrx_for).
       # 0.3.8-alpha.1 and later use this branch's pgrx.
@@ -346,7 +346,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/upgrade-releases
-          key: upgrade-releases-${{ runner.os }}-${{ runner.arch }}-pg17.11-pgrx-${{ steps.pg.outputs.pgrx }}-${{ hashFiles('extensions/pg_morlet/tests/ci_local.sh') }}
+          key: upgrade-releases-${{ runner.os }}-${{ runner.arch }}-pg17.12-pgrx-${{ steps.pg.outputs.pgrx }}-${{ hashFiles('extensions/pg_morlet/tests/ci_local.sh') }}
       - name: The 0.3.11 -> 0.3.12 update script is generated from the current sources
         if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.11--0.3.12.sql') != ''
         working-directory: extensions/pg_morlet
@@ -370,10 +370,10 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: PostgreSQL 17.11
+      - name: PostgreSQL 17.12
         uses: ./.github/actions/pgrx-postgres
         with:
-          pg-minor: '17.11'
+          pg-minor: '17.12'
       - name: Cache Rust build inputs and artifacts
         uses: actions/cache@v4
         with:
@@ -414,10 +414,10 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: PostgreSQL 17.11
+      - name: PostgreSQL 17.12
         uses: ./.github/actions/pgrx-postgres
         with:
-          pg-minor: '17.11'
+          pg-minor: '17.12'
       - name: Cache Rust build inputs and artifacts
         uses: actions/cache@v4
         with:
