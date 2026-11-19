@@ -122,7 +122,7 @@ The scripts in `extensions/pg_morlet/tests` find `pg_config` through `PG_CONFIG`
 - The functional CI covers Linux x86_64 (ubuntu-24.04). The release workflow builds and trials the
   release image natively on Linux x86_64 and arm64 (ubuntu-24.04-arm); macOS (development and the
   evaluation machine) is not tested in CI.
-- Release images (`deploy/Dockerfile`, `postgres:17.6-bookworm`) target PostgreSQL 17 on Linux, for amd64
+- Release images (`deploy/Dockerfile`, `postgres:17.12-bookworm`) target PostgreSQL 17 on Linux, for amd64
   and, from 0.3.3-alpha.1, arm64. From 0.3.5-alpha.1, Debian packages (`deploy/Dockerfile.deb`) are built for
   PostgreSQL 17 and 18 on amd64 and arm64, against the PostgreSQL project's packages on Debian bookworm, and
   trialed only there.

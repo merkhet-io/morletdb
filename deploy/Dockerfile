@@ -1,6 +1,6 @@
 # Patch versions are fixed; image tags are not content-addressed. Record digests
 # in a release manifest before claiming bit-for-bit reproducible release builds.
-FROM postgres:17.6-bookworm AS postgres
+FROM postgres:17.12-bookworm AS postgres
 # The runtime image omits server headers; obtain matching-major development
 # headers in this build-only stage. Apt inputs are intentionally documented.
 RUN apt-get update && apt-get install -y --no-install-recommends postgresql-server-dev-17 && rm -rf /var/lib/apt/lists/*
@@ -20,7 +20,7 @@ COPY testdata testdata
 WORKDIR /src/extensions/pg_morlet
 RUN cargo pgrx package --pg-config /usr/lib/postgresql/17/bin/pg_config
 
-FROM postgres:17.6-bookworm
+FROM postgres:17.12-bookworm
 COPY --from=builder /src/target/release/pg_morlet-pg17/usr/lib/postgresql/17/lib/ /usr/lib/postgresql/17/lib/
 COPY --from=builder /src/target/release/pg_morlet-pg17/usr/share/postgresql/17/extension/ /usr/share/postgresql/17/extension/
 
