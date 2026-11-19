@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator, Mapping
 
@@ -403,11 +404,16 @@ class Client:
         the range. `rho` overrides the clock bound used for the uncertainties."""
         if not self._has("public.morlet_utc_to_samples(regclass,text,numeric,numeric,double precision)"):
             raise UnsupportedError("time anchors need pg_morlet SQL 0.3.13 or later")
+        if recording.start_ns is None and not self._one("SELECT morlet_time_axis_version(%s::regclass,%s)",
+                                                        (recording.collection, recording.recording_id)).startswith("anchors"):
+            raise InvalidInputError(f"{recording.recording_id} has neither time anchors nor a start time")
         rows = self._execute("SELECT * FROM morlet_utc_to_samples(%s::regclass,%s,%s,%s,%s)",
                              (recording.collection, recording.recording_id, int(t_start_ns), int(t_end_ns),
                               rho)).fetchall()
+        # bounds round up to whole nanoseconds, so they never understate the server's
         return tuple(TimeRange(int(r[0]), int(r[1]), r[2], bool(r[3]), bool(r[4]),
-                               None if r[5] is None else int(r[5]), None if r[6] is None else int(r[6]), bool(r[7]))
+                               None if r[5] is None else math.ceil(r[5]), None if r[6] is None else math.ceil(r[6]),
+                               bool(r[7]))
                      for r in rows)
 
     def samples_for_time(self, recording: Recording, t_start_ns: int, t_end_ns: int, *,

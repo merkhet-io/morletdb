@@ -110,8 +110,9 @@ class TimeRange:
     `basis` says how the times are derived: "anchors" (the recording's time anchors, the source's own timestamps)
     or "start+rate" (start time plus declared rate). `ambiguous` is true when the time range maps to more than one
     disjoint sample range because the source's clock stepped back; every range is then returned. `extrapolated`:
-    some sample lies outside its block's anchors. The uncertainties bound the time error at the first and last
-    sample in ns (None for start+rate: unknown); `assumes_linear_clock` means no clock bound was known for them."""
+    some sample lies outside its block's anchors. The uncertainties are the time error at the first and last sample
+    in whole ns, rounded up (None for start+rate: unknown). They are bounds only when `assumes_linear_clock` is
+    false; when it is true (estimated anchors without a clock bound), they assume a linear clock and are not bounds."""
     start_sample: int
     end_sample: int
     basis: str
