@@ -17,7 +17,7 @@ This describes the current source and CI configuration, not a promise that every
 
 ## Fastest start: the release image
 
-Each release publishes a prebuilt image, `ghcr.io/merkhet-io/morletdb:<version>`: PostgreSQL 17.6 (Debian
+Each release publishes a prebuilt image, `ghcr.io/merkhet-io/morletdb:<version>`: PostgreSQL 17 (17.6 up to 0.4.0-beta.1, 17.12 from the next release; Debian
 bookworm) with pg_morlet installed, for Linux amd64 and arm64, with an SBOM per architecture and build
 provenance ([releases](releases.md)). Nothing is compiled. Choose your own password; the port is bound to
 localhost and the data is kept in the named volume `morletdb-data`.

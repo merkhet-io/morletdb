@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **Release image on PostgreSQL 17.12** (was 17.6). The image's base moves to `postgres:17.12-bookworm`, the
+  November 2026 minor release, which brings the security and bug fixes of 17.7–17.12 (CVE-2026-6460 among them). The
+  build stage already used 17.12's server headers from apt; now build and runtime match. A minor release keeps the
+  data directory format, so an existing volume starts unchanged with the new image (runbook 9). pg_morlet's SQL and
+  chunk format are unchanged.
+
 ## 0.4.0-beta.1
 
 **The first beta.** From this release the [API and on-disk promises](docs/api-stability.md) apply: stable SQL
