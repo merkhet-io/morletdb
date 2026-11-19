@@ -3,7 +3,7 @@
 Status: **proposal, decisions taken 2026-11-19** for [#393](https://github.com/merkhet-io/morletdb/issues/393) and
 [#383](https://github.com/merkhet-io/morletdb/issues/383); section 8 records them. Step 1 of section 8's order
 (the anchor table, batches, revisions, the mapping with segments and breaks, row security) has shipped in SQL 0.3.13;
-`morlet_check_time_axis` moves to step 2, with the importer that produces its evidence. The SDK and file formats are
+`morlet_check_time_axis` moves to step 3, with the clients. The SDK and file formats are
 unchanged so far. SQL is illustrative: names, types and limits are subject to
 implementation review. The first part of #393 has shipped, and section 1 describes it. Behaviour claims about
 existing code cite `extensions/pg_morlet/sql/streams.sql` as `streams.sql:line`, and other files by their path
@@ -320,15 +320,16 @@ which grows with the duration.
 
 ## 6. Compatibility and API
 
-**New, all experimental:**
+**New in SQL 0.3.13, all experimental:**
 
 - `morlet_enable_time_anchors`;
 - `morlet_add_time_anchors`;
 - `morlet_revise_time_anchor`;
-- `morlet_utc_to_samples`;
+- `morlet_utc_to_samples` (time range to sample ranges) and `morlet_utc_to_sample` (one time to its candidates);
 - `morlet_sample_utc`, which returns the time, the uncertainty and the basis;
-- `morlet_check_time_axis`;
 - `morlet_time_axis_version`.
+
+**Planned:** `morlet_check_time_axis` (section 4), with the clients (section 8, step 3).
 
 **Stable functions do not change.** No stable signature or documented behaviour changes
 (`docs/api-stability.md`): `morlet_time_to_samples`, `morlet_sample_time_ns`, `morlet_add_context`,
@@ -421,10 +422,11 @@ implementation.
 
 **Order of work:**
 1. SQL: the anchor table with breaks, `morlet_enable_time_anchors`, `morlet_add_time_anchors`,
-   `morlet_revise_time_anchor`, `morlet_utc_to_samples`, `morlet_sample_utc`, `morlet_check_time_axis`,
-   `morlet_time_axis_version`, row security, upgrade script.
+   `morlet_revise_time_anchor`, `morlet_utc_to_samples`, `morlet_utc_to_sample`, `morlet_sample_utc`,
+   `morlet_time_axis_version`, row security, upgrade script (shipped in SQL 0.3.13).
 2. The importer writes anchors from a time column, with block detection; #383's done-when on synthetic block
    data.
-3. MCP `locate_time`, the event importer, the collectors and the SDK call the server mapping.
+3. MCP `locate_time`, the event importer, the collectors and the SDK call the server mapping;
+   `morlet_check_time_axis`.
 4. The mapping in `crates/morlet-core`, with shared test vectors; anchor-aware search (decision 4); the exchange
    format 2 and file format 2.
