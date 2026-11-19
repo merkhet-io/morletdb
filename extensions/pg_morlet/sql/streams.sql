@@ -2848,10 +2848,14 @@ BEGIN
     rel:=format('%I.%I',s,c||'_time_anchors')::regclass;
     -- The rules hold for direct SQL too: every insert is checked per statement, and rows are never changed or
     -- removed (revisions and retractions are new rows), except when their recording is deleted.
+    EXECUTE format('CREATE TRIGGER morlet_time_anchors_lock BEFORE INSERT ON %s
+      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_lock(%L)',rel,collection::oid);
     EXECUTE format('CREATE TRIGGER morlet_time_anchors_check AFTER INSERT ON %s REFERENCING NEW TABLE AS morlet_new_anchors
       FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_time_anchors_inserted()',rel);
     EXECUTE format('CREATE TRIGGER morlet_time_anchors_append_only BEFORE UPDATE OR DELETE ON %s
-      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_append_only()',rel);
+      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_append_only(%L)',rel,collection::oid);
+    EXECUTE format('CREATE TRIGGER morlet_time_anchors_no_truncate BEFORE TRUNCATE ON %s
+      FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_time_anchors_append_only(%L)',rel,collection::oid);
   END IF;
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
   RETURN rel;
@@ -2932,12 +2936,28 @@ BEGIN
   RETURN NULL;
 END $$;
 
--- Row trigger of every <c>_time_anchors table: anchors are append-only. A delete is allowed only as the cascade of
--- deleting their recording (it runs from the foreign key's own trigger).
-CREATE FUNCTION public.morlet_time_anchors_append_only()
+-- Row trigger (before insert) of every <c>_time_anchors table: direct inserts follow the same discipline as
+-- morlet_add_time_anchors, READ COMMITTED and the per-recording lock, so the statement check below sees every anchor
+-- committed before it. TG_ARGV[0]: the collection's oid.
+CREATE FUNCTION public.morlet_time_anchors_lock()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
-  IF TG_OP='DELETE' AND pg_trigger_depth()>1 THEN RETURN OLD; END IF;
+  PERFORM public.morlet_lock_time_anchors(TG_ARGV[0]::oid::regclass,NULL,ARRAY[NEW.recording_id]);
+  RETURN NEW;
+END $$;
+
+-- Row and truncate trigger of every <c>_time_anchors table: anchors are append-only. A delete is allowed only as the
+-- cascade of deleting their recording: from another trigger (the foreign key's), with the recording gone.
+-- TG_ARGV[0]: the collection's oid.
+CREATE FUNCTION public.morlet_time_anchors_append_only()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE parent boolean;
+BEGIN
+  IF TG_OP='DELETE' AND pg_trigger_depth()>1 THEN
+    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE recording_id=$1)',TG_ARGV[0]::oid::regclass)
+      INTO parent USING OLD.recording_id;
+    IF NOT parent THEN RETURN OLD; END IF;
+  END IF;
   RAISE EXCEPTION 'time anchors are append-only: revise or retract with morlet_revise_time_anchor';
 END $$;
 
@@ -3156,8 +3176,8 @@ BEGIN
 END $$;
 
 -- The samples whose UTC time lies in [t_start_ns, t_end_ns), as one row per maximal contiguous range. With anchors
--- that step backwards (break_before), a time interval can map to several disjoint ranges: every one is returned and
--- marked ambiguous, never one picked silently. Each range carries its basis and the error bounds at its first and
+-- that step backwards (break_before), some times in the interval occur twice, and the interval can map to several
+-- disjoint ranges: every one is returned, and all are marked ambiguous, never one picked silently. Each range carries its basis and the error bounds at its first and
 -- last sample. No rows when no sample's time lies in the interval, or when the recording has neither anchors nor a
 -- start time.
 CREATE FUNCTION public.morlet_utc_to_samples(collection regclass,recording_id text,t_start_ns numeric,t_end_ns numeric,
@@ -3175,14 +3195,20 @@ BEGIN
         CASE WHEN p.hi IS NULL THEN public.morlet_piece_ceil(t_end_ns,p.n_ref,p.t_ref,p.dn,p.dt)
           ELSE least(p.hi,public.morlet_piece_ceil(t_end_ns,p.n_ref,p.t_ref,p.dn,p.dt)) END::bigint AS b
       FROM p),
-    nonempty AS (SELECT r.*,lag(r.b) OVER (ORDER BY r.a) AS prev_b FROM r WHERE r.a<r.b),
+    nonempty AS (SELECT r.*,lag(r.b) OVER (ORDER BY r.a) AS prev_b,
+        r.t_ref+(r.a-r.n_ref)*r.dt/r.dn AS tf,r.t_ref+(r.b-1-r.n_ref)*r.dt/r.dn AS tl FROM r WHERE r.a<r.b),
+    -- ambiguous: two segments contribute samples whose times overlap, so some time in the range occurs twice (even
+    -- when their sample ranges are adjacent and merge into one)
+    amb AS (SELECT EXISTS(SELECT 1 FROM nonempty x JOIN nonempty y ON x.segment<y.segment
+      WHERE x.tf<=y.tl AND y.tf<=x.tl) AS v),
     grp AS (SELECT nonempty.*,sum(CASE WHEN nonempty.prev_b=nonempty.a THEN 0 ELSE 1 END) OVER (ORDER BY nonempty.a) AS g
       FROM nonempty),
     ranges AS (SELECT min(grp.a) AS a,max(grp.b) AS b,
         bool_or(grp.kind IN ('before','after') AND NOT (grp.a=grp.n_ref AND grp.b=grp.n_ref+1)) AS ext,
         bool_or(grp.kind<>'start+rate' AND grp.rho_used IS NULL) AS lin,bool_and(grp.kind='start+rate') AS sr
       FROM grp GROUP BY grp.g)
-  SELECT ranges.a,ranges.b,CASE WHEN ranges.sr THEN 'start+rate' ELSE 'anchors' END,count(*) OVER ()>1,ranges.ext,
+  SELECT ranges.a,ranges.b,CASE WHEN ranges.sr THEN 'start+rate' ELSE 'anchors' END,
+    (SELECT amb.v FROM amb) OR count(*) OVER ()>1,ranges.ext,
     (SELECT s.uncertainty_ns FROM public.morlet_sample_utc(collection,recording_id,ranges.a,rho) s),
     (SELECT s.uncertainty_ns FROM public.morlet_sample_utc(collection,recording_id,ranges.b-1,rho) s),ranges.lin
   FROM ranges ORDER BY ranges.a;
