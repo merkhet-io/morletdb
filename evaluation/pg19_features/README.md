@@ -23,7 +23,7 @@ not a benchmark. No speed claim is made, and nothing here is a measured result.
 
 1. **`REPACK (CONCURRENTLY)`: disk space back without stopping ingest.** Today, removing recordings or moving
    episodes to memory level 4 frees space only inside the table files: "the files do not shrink, so the disk's free
-   space does not grow" (`docs/runbooks.md`, runbook 10). `VACUUM FULL` would give the space back, but it locks the
+   space does not grow" (`docs/runbooks.md`, runbook 8). `VACUUM FULL` would give the space back, but it locks the
    collection and needs free space the size of the table. On a full edge disk, that is the one moment it cannot run.
    `repack_check.sh`, on 19.0 with default settings (`wal_level = replica`; 19 enables logical decoding by itself
    when needed, and `max_repack_replication_slots` defaults to 5):
@@ -37,7 +37,7 @@ not a benchmark. No speed claim is made, and nothing here is a measured result.
    the size of the kept data. The space comes back sooner after a smaller rewrite, so it suits a regular steward task
    (repack after a memory move) better than an emergency one. **Proposal:** a steward action, with approval like the
    others, that repacks a collection's tables after removals on PostgreSQL 19 (and says "needs 19" elsewhere). Progress
-   comes from `pg_stat_progress_repack`. Runbook 10 gains the step.
+   comes from `pg_stat_progress_repack`. Runbook 8 documents the manual step (step 4).
 2. **Selective `NOTIFY` wakeups.** Commit notifications (#205) send one `pg_notify` per appending transaction. Up to
    18, every `NOTIFY` woke most backends; 19 wakes only the listeners of that channel. It comes free with many
    connections (collectors, steward, MCP, dashboards). Not measured.

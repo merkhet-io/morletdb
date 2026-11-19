@@ -11,6 +11,11 @@
 - **CI on the November 2026 minor releases:** PostgreSQL 17.12 and 18.7 (previously 17.11 and 18.6). pgrx stays at
   0.19.3: pgrx 0.19.4's fix for CVE-2026-6460 concerns composite datums, which pg_morlet does not read, and
   extensions built with it do not load on earlier minor releases ([compatibility](docs/compatibility.md#known-limits)).
+- **PostgreSQL 19 in the runbooks and on the website.** Runbook 8 shows how to give the space of removed recordings
+  back to the disk with `REPACK (CONCURRENTLY)` while ingest continues (checked on 19.0; `evaluation/pg19_features`).
+  Runbook 3 shows read-your-writes on a replica with `WAIT FOR LSN`, and runbook 5 says not to repack on a full
+  disk. The website's install page names the PostgreSQL 19 packages and extension image and lists what 19 adds.
+  A steward action for the repack is proposed in #535.
 
 ## 0.4.0-beta.1
 
