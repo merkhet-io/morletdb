@@ -154,6 +154,57 @@ def time_quality(meta, rate):
     return q
 
 
+def anchored_recordings(conn, collection):
+    """Recordings of a collection with active time anchors (SQL 0.3.13, #393), or an empty set when the server or the
+    collection has none."""
+    if conn.execute("SELECT to_regproc('public.morlet_utc_to_sample') IS NULL").fetchone()[0]:
+        return set()
+    rel = conn.execute("SELECT to_regclass(%s)", (collection + "_time_anchors",)).fetchone()[0]
+    if rel is None:
+        return set()
+    return {r[0] for r in conn.execute(
+        f"SELECT DISTINCT x.recording_id FROM {collection}_time_anchors x WHERE NOT x.retracted "
+        f"AND NOT EXISTS (SELECT 1 FROM {collection}_time_anchors y WHERE y.supersedes = x.anchor_id)").fetchall()}
+
+
+def locate_by_anchors(conn, collection, rid, rate, t_ns, end):
+    """locate_time for a recording with time anchors: the sample whose period contains t_ns, from the server's
+    exact mapping (morlet_utc_to_sample gives the first sample at or after t_ns per segment). None outside the
+    recording. After a backward clock step a time can lie in two blocks: every candidate is listed."""
+    rows = conn.execute("SELECT sample, utc_ns, ambiguous, gap, before_start, extrapolated, uncertainty_ns, "
+                        "assumes_linear_clock FROM morlet_utc_to_sample(%s::regclass, %s, %s)",
+                        (collection, rid, t_ns)).fetchall()
+    found = []
+    for sample, utc, _amb, gap, before, extrap, unc, linear in rows:
+        if before:
+            continue
+        n = sample if gap or int(utc) == t_ns else sample - 1      # the period containing t, or the first after a jump
+        if 0 <= n < end:
+            found.append((n, gap, extrap, unc, linear))
+    if not found:
+        return None
+    n, gap, extrap, unc, linear = found[0]
+    hit = {"sample": n, "time_basis": "anchors"}
+    if unc is not None:
+        hit["time_uncertainty_s"] = float(unc) / 1e9
+        hit["time_uncertainty_samples"] = round(float(unc) / 1e9 * rate, 2)
+    notes = []
+    if len(found) > 1:
+        hit["candidate_samples"] = [f[0] for f in found]
+        notes.append("the source's clock stepped back, so this time occurs twice in the recording; every "
+                     "candidate is listed in candidate_samples")
+    if gap:
+        notes.append("the time falls into a jump of the source's clock between two blocks; this is the first "
+                     "sample after it")
+    if extrap:
+        notes.append("the sample lies outside the anchors of its block, so its time is extrapolated")
+    if linear:
+        notes.append("the anchors are estimates without a clock bound, so the uncertainty assumes a linear clock")
+    if notes:
+        hit["time_note"] = "; ".join(notes)
+    return hit
+
+
 def occurrences_at(conn, collection, points):
     """The occurrence (e.g. {"part": "P12"}) of the narrowest current context segment containing each
     (recording_id, sample); points outside every segment, or with an empty occurrence, are left out."""
@@ -617,15 +668,30 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
     time, a note says whether it falls into a gap, before the first or after the last recording, with the
     nearest recording on each side. Each match says how its time axis is derived (time_basis: start + rate)
     and, when the import measured how the source's timestamps departed from it, the uncertainty in seconds and
-    samples: a clock that drifts or stamps blocks puts the located sample off by up to that much."""
-    t = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
+    samples: a clock that drifts or stamps blocks puts the located sample off by up to that much. Recordings with
+    time anchors (the source's own timestamps, stored by the importer) are located by them instead (time_basis:
+    anchors), exactly at every anchor, with the bound on the error; a time that a clock step puts into two blocks
+    lists both samples."""
+    t = datetime.fromisoformat(utc_time.replace("Z", "+00:00"))
+    t = (t if t.tzinfo else t.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
+    t_ns = (t - datetime(1970, 1, 1, tzinfo=timezone.utc)) // timedelta(microseconds=1) * 1000
     flt = json.loads(metadata_filter or "{}")
+    anchored_hits = {}
     with connect() as conn:
         c = checked(conn, collection)
         rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint FROM {c} "
                             f"WHERE metadata @> %s::jsonb", (json.dumps(flt),)).fetchall()
+        anchored = anchored_recordings(conn, c)
+        for rid, rate, _meta, n in rows:
+            if rid in anchored:
+                anchored_hits[rid] = locate_by_anchors(conn, c, rid, rate, t_ns, n)
     hits, before, after, timed = [], None, None, 0
     for rid, rate, meta, n in rows:
+        if rid in anchored:
+            timed += 1
+            if anchored_hits[rid] is not None:
+                hits.append({"recording_id": rid, **anchored_hits[rid], "metadata": meta})
+            continue
         t0 = start_time(meta)
         if t0 is None:
             continue

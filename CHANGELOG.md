@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Clients use time anchors (#393, #383).** On recordings with time anchors (SQL 0.3.13):
+  - MCP `locate_time` locates a UTC time by them (`time_basis: anchors`): exact at every anchor, with the error bound,
+    a note for a time in a clock jump or outside a block's anchors, and `candidate_samples` when a backward clock step
+    makes the time occur twice. Anchored recordings need no start time. A time without an offset is read as UTC.
+  - `morlet_events.py` places messages by the anchors, with `time_basis`, the error bound and
+    `time_candidate_samples` in the event's value (the event goes on the first candidate).
+  - Python SDK (unreleased): `samples_for_time` uses the anchors by default (`basis="auto"`; `"start+rate"` keeps the previous
+    mapping) and refuses a range that a backward step makes ambiguous; the new `time_ranges` returns every range as
+    a `TimeRange` with its basis and error bounds.
+  Recordings without anchors are located as before. UTC times attached to search results and reads still come from
+  start + rate.
 - **The importer writes time anchors (#393, #383).** With a CSV time column and an absolute time (ISO 8601, or
   seconds with `--time-origin`), `morlet_import.py` stores the real timestamps as time anchors on a server with SQL
   0.3.13: one anchor with `break_before` at every block start (a step that departs from the declared period by more

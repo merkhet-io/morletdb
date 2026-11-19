@@ -9,7 +9,10 @@ describe the message. Every message becomes one context event (kind 'event': a s
 recording whose time range contains it, at the sample its time maps to through the recording's start time and rate.
 --match <field> restricts a message to recordings whose metadata <field> equals the message's column <field>
 (e.g. the machine). When the recording's import measured how its own timestamps departed from start + rate
-(metadata time_axis, #393), the event carries that as its time uncertainty. Messages outside every recording are
+(metadata time_axis, #393), the event carries that as its time uncertainty. Recordings with time anchors (SQL
+0.3.13; the importer writes them from the source's timestamps) are placed by the anchors instead, exactly at every
+anchor, with time_basis "anchors", the bound on the error, and the candidate samples when a clock step makes the
+time occur twice (the event goes on the first). Messages outside every recording are
 counted, not stored. One batch per recording and file: an identical re-import is a no-op.
 """
 from __future__ import annotations
@@ -62,8 +65,43 @@ def read_messages(path: Path, time_column: str, value_columns: list[str], match:
     return out
 
 
-def place(messages: list[dict], recordings: list[dict], key: str, match: str | None) -> tuple[dict, int]:
-    """Context event rows per recording, and the number of messages that fell into no recording."""
+EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def utc_ns(t: datetime) -> int:
+    return (t - EPOCH) // timedelta(microseconds=1) * 1000
+
+
+def anchor_locator(conn, collection: str):
+    """For recordings with time anchors (SQL 0.3.13, #393): locate(recording_id, time) -> (sample, uncertainty_s,
+    candidates), the sample whose period contains the time by the server's exact mapping, or None outside the
+    recording. Returns (set of anchored recording ids, locate)."""
+    if conn.execute("SELECT to_regproc('public.morlet_utc_to_sample') IS NULL").fetchone()[0] or \
+            conn.execute("SELECT to_regclass(%s)", (collection + "_time_anchors",)).fetchone()[0] is None:
+        return set(), None
+    anchored = {r[0] for r in conn.execute(
+        f"SELECT DISTINCT x.recording_id FROM {collection}_time_anchors x WHERE NOT x.retracted AND NOT EXISTS "
+        f"(SELECT 1 FROM {collection}_time_anchors y WHERE y.supersedes = x.anchor_id)").fetchall()}
+
+    def locate(rid: str, t: datetime, end: int):
+        tn = utc_ns(t)
+        found = []
+        for sample, utc, gap, before, unc in conn.execute(
+                "SELECT sample, utc_ns, gap, before_start, uncertainty_ns FROM morlet_utc_to_sample(%s::regclass,%s,%s)",
+                (collection, rid, tn)).fetchall():
+            n = sample if gap or int(utc) == tn else sample - 1
+            if not before and 0 <= n < end:
+                found.append((n, None if unc is None else float(unc) / 1e9))
+        if not found:
+            return None
+        return found[0][0], found[0][1], [f[0] for f in found]
+    return anchored, locate
+
+
+def place(messages: list[dict], recordings: list[dict], key: str, match: str | None,
+          locate=None) -> tuple[dict, int]:
+    """Context event rows per recording, and the number of messages that fell into no recording. Recordings with
+    "anchored": True are placed by locate (anchor_locator); the others by start + rate."""
     per_rec: dict[str, list] = {}
     outside = 0
     for msg in messages:
@@ -71,14 +109,27 @@ def place(messages: list[dict], recordings: list[dict], key: str, match: str | N
         for r in recordings:
             if match and str((r["metadata"] or {}).get(match)) != str(msg["match"]):
                 continue
-            dt = (msg["time"] - r["t0"]).total_seconds()
-            sample = math.floor(dt * r["rate"])
+            extra = {}
+            if r.get("anchored"):
+                found = locate(r["recording_id"], msg["time"], r["samples"])
+                if found is None:
+                    continue
+                sample, unc, candidates = found
+                extra["time_basis"] = "anchors"
+                if unc is not None:
+                    extra["time_uncertainty_s"] = unc
+                if len(candidates) > 1:
+                    extra["time_candidate_samples"] = candidates      # the clock stepped back: the time occurs twice
+            else:
+                dt = (msg["time"] - r["t0"]).total_seconds()
+                sample = math.floor(dt * r["rate"])
+                ax = (r["metadata"] or {}).get("time_axis") or {}
+                if isinstance(ax.get("max_offset_s"), (int, float)):
+                    extra["time_uncertainty_s"] = ax["max_offset_s"]
             if 0 <= sample < r["samples"]:
                 value = dict(msg["value"])
                 value["time_utc"] = msg["time"].isoformat().replace("+00:00", "Z")
-                ax = (r["metadata"] or {}).get("time_axis") or {}
-                if isinstance(ax.get("max_offset_s"), (int, float)):
-                    value["time_uncertainty_s"] = ax["max_offset_s"]
+                value.update(extra)
                 per_rec.setdefault(r["recording_id"], []).append(
                     {"recording_id": r["recording_id"], "key": key, "value": value, "start_sample": sample})
                 hit = True
@@ -109,10 +160,11 @@ def main(argv=None):
             rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint "
                                 f"FROM {coll} WHERE metadata @> %s::jsonb",
                                 (json.dumps(json.loads(a.metadata_filter)),)).fetchall()
-            recs = [{"recording_id": rid, "rate": rate, "metadata": meta, "samples": n or 0, "t0": start_time(meta or {})}
-                    for rid, rate, meta, n in rows]
-            recs = [r for r in recs if r["t0"] is not None and r["samples"] > 0]
-            per_rec, outside = place(msgs, recs, a.key, a.match)
+            anchored, locate = anchor_locator(conn, coll)
+            recs = [{"recording_id": rid, "rate": rate, "metadata": meta, "samples": n or 0, "t0": start_time(meta or {}),
+                     "anchored": rid in anchored} for rid, rate, meta, n in rows]
+            recs = [r for r in recs if (r["t0"] is not None or r["anchored"]) and r["samples"] > 0]
+            per_rec, outside = place(msgs, recs, a.key, a.match, locate)
             digest = hashlib.sha256(a.file.read_bytes()).hexdigest()[:16]
             report = {"messages": len(msgs), "recordings_with_events": len(per_rec),
                       "events": sum(len(v) for v in per_rec.values()), "messages_outside_recordings": outside}

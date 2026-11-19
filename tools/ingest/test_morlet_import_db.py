@@ -63,5 +63,21 @@ class Anchors(unittest.TestCase):
         self.assertEqual(self.c.execute("SELECT count(*) FROM imp_anchor_time_anchors").fetchone()[0], 3)
 
 
+    def test_events_on_an_anchored_recording_land_by_the_anchors(self):
+        """#393: morlet_events.py places a message by the anchors: block 1's start time is sample 100, not 113."""
+        import morlet_events as me
+        p, _ = tmi.Readers.block_csv(self)
+        self.run_import(p)
+        log = self.tmp / "alarms.csv"
+        log.write_text("time,code\n2026-03-01T08:00:00.113Z,7\n2026-03-01T08:00:00.2085Z,8\n")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(me.main([str(log), "--collection", "public.imp_anchor", "--dsn", URL, "--time-column",
+                                      "time", "--key", "alarm", "--value-columns", "code"]), 0)
+        rows = self.c.execute("SELECT start_sample, value FROM imp_anchor_ctx WHERE key='alarm' ORDER BY start_sample").fetchall()
+        self.assertEqual([r[0] for r in rows], [100, 195])
+        self.assertEqual(rows[0][1]["time_basis"], "anchors")
+        self.assertEqual(rows[1][1]["time_candidate_samples"], [195, 200])
+
 if __name__ == "__main__":
     unittest.main()
