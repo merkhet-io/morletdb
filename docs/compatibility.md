@@ -7,7 +7,7 @@ pg_morlet is a pgrx 0.19.3 extension (Rust 1.99.0). One build targets one Postgr
 
 | PostgreSQL | Build checked | Functional tests checked | pgvector mode | Known limits |
 |---|---|---|---|---|
-| **17** (17.12), reference | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test, upgrades from v0.1.0-alpha.3, v0.2.0-alpha.1 and v0.3.0-alpha.1, seismic example | without; with pgvector 0.8.0 | release images are built for 17 only (amd64 and arm64); Debian packages for 17, 18 and 19 |
+| **17** (17.12), reference | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test, upgrades from v0.1.0-alpha.3, v0.2.0-alpha.1 and v0.3.0-alpha.1, seismic example | without; with pgvector 0.8.0 | release images are built for 17 only (amd64 and arm64); Debian packages for 17 and 18 (and 19 from the first release after 0.4.0-beta.1) |
 | **18** (18.7) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | no upgrade path tested (earlier releases were never built for 18; install fresh), no release image (Debian packages for amd64 and arm64 from 0.3.5-alpha.1), no measurements |
 | **19** (19.0) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | built from the pinned 19.0 source tarball (pgrx 0.19.3 downloads only 19beta4); no upgrade path tested (earlier releases were never built for 19; install fresh), no release image; Debian packages and an extension-only image from the first release after 0.4.0-beta.1; storage checked (below), no speed measurements |
 | 13–16 | no | no | — | not supported; pgrx 0.19.3 could build them, but no user need is documented |

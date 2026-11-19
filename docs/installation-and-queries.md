@@ -75,7 +75,7 @@ cd extensions/pg_morlet
 cargo pgrx run pg17
 ```
 
-For PostgreSQL 18, initialize with cargo pgrx init --pg18 download and run cargo pgrx run pg18 --no-default-features --features pg18. Build only one PostgreSQL feature at a time. Probe search on 18 needs pgvector 0.8.1 or later (CI uses 0.8.7). PostgreSQL 19 (release candidate 19rc1) works the same way with pg19: register a 19rc1 build with cargo pgrx init --pg19 /path/to/pg_config, since cargo pgrx init --pg19 download fetches 19beta4. PostgreSQL 16 and older are not supported. See the compatibility matrix.
+For PostgreSQL 18, initialize with cargo pgrx init --pg18 download and run cargo pgrx run pg18 --no-default-features --features pg18. Build only one PostgreSQL feature at a time. Probe search on 18 needs pgvector 0.8.1 or later (CI uses 0.8.7). PostgreSQL 19 works the same way with pg19: build 19.0 from the PostgreSQL source tarball and register it with cargo pgrx init --pg19 /path/to/19.0/bin/pg_config, since cargo pgrx init --pg19 download (pgrx 0.19.3) fetches 19beta4. PostgreSQL 16 and older are not supported. See the compatibility matrix.
 
 This builds a user-owned PostgreSQL 17 installation and opens psql. In the selected database:
 

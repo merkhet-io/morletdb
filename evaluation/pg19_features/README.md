@@ -2,7 +2,9 @@
 
 **Development review, 2026-11-19, PostgreSQL 19.0 (released that day).** It reads the 19.0 release notes against
 pg_morlet's code and operations, and runs one development check (`repack_check.sh`). It is not a frozen protocol and
-not a benchmark. No speed claim is made, and nothing here is a measured result.
+not a benchmark. The sizes, counts and times below are observations from single development runs on one machine
+(Apple M5 Max, macOS); they show that something works, not how fast or how well it works elsewhere. No speed claim
+is made.
 
 ## Compatibility
 
@@ -25,8 +27,9 @@ not a benchmark. No speed claim is made, and nothing here is a measured result.
    episodes to memory level 4 frees space only inside the table files: "the files do not shrink, so the disk's free
    space does not grow" (`docs/runbooks.md`, runbook 8). `VACUUM FULL` would give the space back, but it locks the
    collection and needs free space the size of the table. On a full edge disk, that is the one moment it cannot run.
-   `repack_check.sh`, on 19.0 with default settings (`wal_level = replica`; 19 enables logical decoding by itself
-   when needed, and `max_repack_replication_slots` defaults to 5):
+   One development run of `repack_check.sh` (it exits non-zero if any check fails), on 19.0 with default settings
+   (`wal_level = replica`; 19 enables logical decoding by itself when needed, and `max_repack_replication_slots`
+   defaults to 5), observed:
    - 40 recordings × 32 chunks; half the recordings deleted, then `VACUUM`: `rp_chunks` stays at 5.63 MB;
    - `REPACK (CONCURRENTLY) rp_chunks`, while another session appended 160 chunks: 3.06 MB afterwards;
    - every kept chunk is byte for byte the same (md5 of `encoded`), all 800 chunks are there, `morlet_verify`
@@ -38,6 +41,20 @@ not a benchmark. No speed claim is made, and nothing here is a measured result.
    (repack after a memory move) better than an emergency one. **Proposal:** a steward action, with approval like the
    others, that repacks a collection's tables after removals on PostgreSQL 19 (and says "needs 19" elsewhere). Progress
    comes from `pg_stat_progress_repack`. Runbook 8 documents the manual step (step 4).
+
+   **Not MVCC-safe, and this matters for MorletDB's readers.** After the repack commits, a transaction whose snapshot
+   was taken before the repack started can see the repacked table as empty. A single statement is safe: it holds its
+   lock on the table until it ends, and the final swap waits for that lock. The risk is a multi-statement
+   `REPEATABLE READ` transaction that takes its snapshot first and reads the table later: the search contract
+   recommends that for a single snapshot (`docs/search-contract.md`), and the MCP decision tool does it
+   (`tools/mcp/decision.py`). Such a reader could get no rows and report "no match" instead of missing evidence. Guard,
+   for runbook 8 now and for the steward action before it is built (#535):
+   - start the repack only when no other transaction in the database is open (`pg_stat_activity`: no `xact_start`
+     other than the repacking session's, or only idle sessions outside transactions), and pause the steward's own
+     readers and the MCP server for its duration;
+   - afterwards, check with `morlet_verify` and a count of the collection's chunks that nothing looks empty;
+   - the steward action should refuse to start while such a transaction is open and say so, as it does for the disk
+     reserve.
 2. **Selective `NOTIFY` wakeups.** Commit notifications (#205) send one `pg_notify` per appending transaction. Up to
    18, every `NOTIFY` woke most backends; 19 wakes only the listeners of that channel. It comes free with many
    connections (collectors, steward, MCP, dashboards). Not measured.

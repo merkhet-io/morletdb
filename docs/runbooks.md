@@ -524,10 +524,22 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
    - **Requirements:** the `MAINTAIN` privilege on the table, outside a transaction block, and a free slot in
      `max_repack_replication_slots` (default 5). It uses logical decoding internally, which PostgreSQL 19 turns on by
      itself with the default `wal_level = replica`. Every MorletDB table has the primary key `CONCURRENTLY` needs.
-   - **Brief lock at the end:** an `ACCESS EXCLUSIVE` lock swaps the files. A transaction whose snapshot predates the
-     repack may see the table as empty afterwards, so do not run long reports across it. Schema changes on the table
-     (enabling a feature) during the repack make it fail; retry it.
-   - **Checked** on 19.0 (`evaluation/pg19_features`, a development check): after half of a collection was deleted,
+   - **Brief lock at the end:** an `ACCESS EXCLUSIVE` lock swaps the files. Schema changes on the table (enabling a
+     feature) during the repack make it fail; retry it.
+   - **Readers with an older snapshot can see an empty table.** `REPACK (CONCURRENTLY)` is not MVCC-safe: once it
+     commits, a transaction whose snapshot was taken before it started sees the repacked table as empty if it reads the
+     table only then. A single query is safe. A `REPEATABLE READ` transaction of several statements is not: the search
+     contract suggests one for a single snapshot, and the MCP decision tool uses one. Such a reader could report "no
+     match" where data exists. So start the repack only when no other transaction is open, and stop the MCP server,
+     the steward and other multi-statement readers until it has finished:
+
+     ```sql
+     SELECT pid, application_name, xact_start FROM pg_stat_activity
+      WHERE datname = current_database() AND pid <> pg_backend_pid() AND xact_start IS NOT NULL;   -- must be empty
+     ```
+
+     Writers that append one transaction at a time (collectors, the SDK) may continue.
+   - **Checked** on 19.0 (`evaluation/pg19_features`, one development run): after half of a collection was deleted,
      `REPACK (CONCURRENTLY)` reduced `_chunks` from 5.6 MB to 3.1 MB while appends continued, every kept chunk stayed
      byte for byte the same, and `morlet_verify` found no problems. Run `morlet_verify` afterwards as well.
    - On PostgreSQL 17 and 18, `VACUUM FULL` gives the space back, but it locks the table for the whole rewrite. Stop
