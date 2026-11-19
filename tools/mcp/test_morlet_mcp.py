@@ -389,6 +389,18 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
         self.assertEqual((twice["sample"], twice["candidate_samples"]), (195, [195, 200]))
         self.assertIn("twice", twice["time_note"])
 
+    def test_reported_utc_times_follow_the_anchors(self):
+        r = m.read_interval("public.mcp_anchor", "blocks", 200, 210)
+        self.assertEqual((r["start_utc"], r["time_basis"]), ("2026-02-01T12:00:00.208000Z", "anchors"))
+        self.assertAlmostEqual(r["time_uncertainty_s"], 1e-6)
+        plain = m.read_interval("public.mcp_anchor", "plain", 200, 210)
+        self.assertEqual(plain["start_utc"], "2026-02-01T12:00:00.200000Z")
+        self.assertNotIn("time_basis", plain)
+        recs = {x["recording_id"]: x for x in m.list_recordings("public.mcp_anchor")["recordings"]}
+        self.assertEqual((recs["blocks"]["start_utc"], recs["blocks"]["end_utc"]),
+                         ("2026-02-01T12:00:00Z", "2026-02-01T12:00:00.308000Z"))   # block 2: 208 ms + 100 samples
+        self.assertEqual(recs["plain"]["end_utc"], "2026-02-01T12:00:00.300000Z")
+
 
 @unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
 class SeriesProductionOnADatabase(unittest.TestCase):

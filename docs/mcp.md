@@ -188,3 +188,8 @@ This starts the server over stdio as an MCP client would, lists its tools and ru
   otherwise; `list_collections` shows it.
 - **Scope:** the server reads only. Importing, labelling and building search structures stay with the
   operator.
+- **UTC times:** every `*_utc` a tool reports is derived from the sample offset. For recordings with
+  [time anchors](clock-drift.md) (SQL 0.3.13; the importer writes them from a source's own timestamps) it comes from
+  the anchors, and the result says `time_basis: anchors` with `time_uncertainty_s`, the largest error bound of its
+  times. Otherwise it is start + declared rate. The server remembers for 60 s that a collection has no anchor
+  table, so anchors enabled meanwhile show up within a minute.
