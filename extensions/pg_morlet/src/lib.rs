@@ -4044,6 +4044,81 @@ END $$"#).unwrap();
         }
     }
 
+    /// Review findings on the first version: a slope change inside a segment is not a gap; the anchor's own sample
+    /// is not extrapolated; direct SQL keeps the rules (order checked, rows append-only, the cascade allowed); a
+    /// malformed clock bound in the metadata is an error, not a silent default; revision batch ids are reserved.
+    #[pg_test]
+    fn time_anchors_hold_their_rules_beyond_the_happy_path() {
+        anchor_fixture();
+        let err = |q: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT pg_temp.ta_err2({})",
+                pgrx::spi::quote_literal(q)
+            ))
+            .unwrap()
+            .unwrap()
+        };
+        Spi::run(
+            "CREATE FUNCTION pg_temp.ta_err2(q text) RETURNS text LANGUAGE plpgsql AS $$
+            BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLERRM; END $$",
+        )
+        .unwrap();
+        // the slope drops from 10 to 2 ns per sample at sample 10: time 95 ns is sample 10, inside the segment
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','s1','{}')",
+            anchor_rows(&[
+                ("plain", 0, ANCHOR_S, 0, "pps", false),
+                ("plain", 10, ANCHOR_S + 100, 0, "pps", false),
+                ("plain", 20, ANCHOR_S + 120, 0, "pps", false)
+            ])
+        ))
+        .unwrap();
+        assert!(yes(&format!(
+            "SELECT sample=10 AND NOT gap FROM morlet_utc_to_sample('ta','plain',{})",
+            ANCHOR_S + 95
+        )));
+        assert!(yes(
+            "SELECT NOT extrapolated FROM morlet_sample_utc('ta','plain',20)"
+        )); // the last anchor itself
+        assert!(yes(
+            "SELECT extrapolated FROM morlet_sample_utc('ta','plain',21)"
+        ));
+        // direct SQL
+        assert_eq!(err(&format!("INSERT INTO ta_time_anchors(recording_id,sample_offset,utc_ns,uncertainty_ns,source,batch_id) VALUES ('plain',30,{},0,'pps','x')", ANCHOR_S + 50)),
+            format!("recording plain: time anchor at sample 30 ({} ns) does not follow the one at sample 20 ({} ns) in time; mark a clock step with break_before", ANCHOR_S + 50, ANCHOR_S + 120));
+        assert_eq!(
+            err("UPDATE ta_time_anchors SET utc_ns=utc_ns+1"),
+            "time anchors are append-only: revise or retract with morlet_revise_time_anchor"
+        );
+        assert_eq!(
+            err("DELETE FROM ta_time_anchors"),
+            "time anchors are append-only: revise or retract with morlet_revise_time_anchor"
+        );
+        Spi::run("DELETE FROM ta WHERE recording_id='plain'").unwrap(); // the cascade is allowed
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ta_time_anchors").unwrap(),
+            Some(0)
+        );
+        // a malformed clock bound in the metadata
+        Spi::run("SELECT morlet_start_recording('ta','badrho',1000,'x','g','{\"start_ns\":\"1700000000000000000\",\"time_axis\":{\"rho\":-0.5}}')").unwrap();
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','s2','{}')",
+            anchor_rows(&[("badrho", 0, ANCHOR_S, 0, "pps", false)])
+        ))
+        .unwrap();
+        assert_eq!(
+            err("SELECT * FROM morlet_sample_utc('ta','badrho',5)"),
+            "recording badrho: metadata time_axis.rho must be a number in [0, 1)"
+        );
+        // reserved batch ids, and JSON types
+        assert!(err(&format!(
+            "SELECT morlet_add_time_anchors('ta','revision:1','{}')",
+            anchor_rows(&[("drift", 0, ANCHOR_S, 0, "pps", false)])
+        ))
+        .contains("reserved for revisions"));
+        assert!(err(r#"SELECT morlet_add_time_anchors('ta','n1','[{"recording_id":7,"sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"pps"}]')"#).starts_with("every time anchor needs"));
+    }
+
     #[pg_test(
         error = "recording blocks: time anchor at sample 200 (1700000000208000000 ns) does not follow the one at sample 100 (1700000000213000000 ns) in time; mark a clock step with break_before"
     )]

@@ -22,7 +22,8 @@ control = (EXT / "pg_morlet.control").read_text()
 assert "default_version = '0.3.13'" in control, "control file"
 
 NEW = ("morlet_enable_time_anchors", "morlet_time_anchor_relation",  # in dependency order
-       "morlet_lock_time_anchors", "morlet_json_bigint", "morlet_check_time_anchors", "morlet_add_time_anchors",
+       "morlet_lock_time_anchors", "morlet_json_bigint", "morlet_check_time_anchors", "morlet_time_anchors_inserted",
+       "morlet_time_anchors_append_only", "morlet_add_time_anchors",
        "morlet_revise_time_anchor", "morlet_default_clock_rho", "morlet_time_pieces", "morlet_piece_uncertainty",
        "morlet_sample_utc", "morlet_piece_ceil", "morlet_utc_to_samples", "morlet_utc_to_sample",
        "morlet_time_axis_version")

@@ -2846,6 +2846,12 @@ BEGIN
     EXECUTE format('CREATE INDEX ON %I.%I(batch_id)',s,c||'_time_anchors');
     EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_time_anchors');
     rel:=format('%I.%I',s,c||'_time_anchors')::regclass;
+    -- The rules hold for direct SQL too: every insert is checked per statement, and rows are never changed or
+    -- removed (revisions and retractions are new rows), except when their recording is deleted.
+    EXECUTE format('CREATE TRIGGER morlet_time_anchors_check AFTER INSERT ON %s REFERENCING NEW TABLE AS morlet_new_anchors
+      FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_time_anchors_inserted()',rel);
+    EXECUTE format('CREATE TRIGGER morlet_time_anchors_append_only BEFORE UPDATE OR DELETE ON %s
+      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_append_only()',rel);
   END IF;
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
   RETURN rel;
@@ -2862,11 +2868,16 @@ BEGIN
   RETURN rel;
 END $$;
 
--- Serializes anchor writes per batch and per recording (transaction-scoped advisory locks).
+-- Serializes anchor writes per batch and per recording (transaction-scoped advisory locks). The checks after the
+-- lock read rows committed by the transaction that held it, which needs READ COMMITTED: under REPEATABLE READ or
+-- SERIALIZABLE the snapshot predates the lock, so the write is refused instead of risking two active anchors.
 CREATE FUNCTION public.morlet_lock_time_anchors(collection regclass,batch_id text,recording_ids text[])
 RETURNS void LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE r text;
 BEGIN
+  IF current_setting('transaction_isolation')<>'read committed' THEN
+    RAISE EXCEPTION 'time anchors are written under READ COMMITTED (this transaction is %)',current_setting('transaction_isolation');
+  END IF;
   IF batch_id IS NOT NULL THEN
     PERFORM pg_advisory_xact_lock(hashtextextended('morlet-anchor-batch/'||collection::oid||'/'||batch_id,0));
   END IF;
@@ -2913,18 +2924,39 @@ BEGIN
     bad.recording_id,bad.sample_offset,bad.utc_ns,bad.prev_sample,bad.prev_utc;
 END $$;
 
+-- Statement trigger of every <c>_time_anchors table: checks the recordings the statement inserted anchors for.
+CREATE FUNCTION public.morlet_time_anchors_inserted()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  PERFORM public.morlet_check_time_anchors(TG_RELID::regclass,ARRAY(SELECT DISTINCT recording_id FROM morlet_new_anchors));
+  RETURN NULL;
+END $$;
+
+-- Row trigger of every <c>_time_anchors table: anchors are append-only. A delete is allowed only as the cascade of
+-- deleting their recording (it runs from the foreign key's own trigger).
+CREATE FUNCTION public.morlet_time_anchors_append_only()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+BEGIN
+  IF TG_OP='DELETE' AND pg_trigger_depth()>1 THEN RETURN OLD; END IF;
+  RAISE EXCEPTION 'time anchors are append-only: revise or retract with morlet_revise_time_anchor';
+END $$;
+
 -- rows: JSON array of {"recording_id","sample_offset","utc_ns","uncertainty_ns","source"[,"break_before"]};
 -- utc_ns is nanoseconds since 1970 (a number or a string of digits). An identical retry of batch_id returns 0; a
--- different batch under the same id is an error. Returns the number of anchors written.
+-- different batch under the same id is an error (batch identity covers the rows the caller can see: under row
+-- security another tenant may use the same id). Returns the number of anchors written. The ordering rules are
+-- checked by the table's statement trigger.
 CREATE FUNCTION public.morlet_add_time_anchors(collection regclass,batch_id text,rows jsonb)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; existing jsonb; incoming jsonb; n bigint; missing text;
 BEGIN
   rel:=public.morlet_time_anchor_relation(collection);
-  IF jsonb_typeof(rows)<>'array' OR jsonb_array_length(rows)=0 OR batch_id='' THEN
-    RAISE EXCEPTION 'time anchor rows must be a non-empty JSON array and batch_id non-empty';
+  IF jsonb_typeof(rows)<>'array' OR jsonb_array_length(rows)=0 OR batch_id='' OR batch_id LIKE 'revision:%' THEN
+    RAISE EXCEPTION 'time anchor rows must be a non-empty JSON array, and batch_id non-empty and not starting with revision: (reserved for revisions)';
   END IF;
-  IF EXISTS(SELECT 1 FROM jsonb_array_elements(rows) r WHERE jsonb_typeof(r)<>'object' OR r->>'recording_id' IS NULL
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(rows) r WHERE jsonb_typeof(r)<>'object'
+      OR jsonb_typeof(r->'recording_id') IS DISTINCT FROM 'string' OR jsonb_typeof(r->'source') IS DISTINCT FROM 'string'
+      OR r->>'recording_id' IS NULL
       OR r->'sample_offset' IS NULL OR r->'utc_ns' IS NULL OR r->'uncertainty_ns' IS NULL OR coalesce(r->>'source','')=''
       OR (r ? 'break_before' AND jsonb_typeof(r->'break_before')<>'boolean')
       OR EXISTS(SELECT 1 FROM jsonb_object_keys(r) k
@@ -2959,12 +2991,12 @@ BEGIN
     SELECT r->>''recording_id'',(r->>''sample_offset'')::bigint,(r->>''utc_ns'')::bigint,(r->>''uncertainty_ns'')::bigint,
       r->>''source'',(r->>''break_before'')::boolean,$2 FROM jsonb_array_elements($1) r',rel) USING incoming,batch_id;
   GET DIAGNOSTICS n = ROW_COUNT;
-  PERFORM public.morlet_check_time_anchors(rel,ARRAY(SELECT DISTINCT r->>'recording_id' FROM jsonb_array_elements(incoming) r));
   RETURN n;
 END $$;
 
 -- Appends a revision of an active anchor (changes may set sample_offset, utc_ns, uncertainty_ns, source,
--- break_before) or a retraction. The old row is kept. Returns the new row's id.
+-- break_before) or a retraction. The old row is kept. Returns the new row's id. Not idempotent: a retry after a
+-- commit finds the anchor superseded and fails; a retraction is undone by adding the anchor again.
 CREATE FUNCTION public.morlet_revise_time_anchor(collection regclass,anchor_id bigint,changes jsonb DEFAULT '{}'::jsonb,
   retract boolean DEFAULT false)
 RETURNS bigint LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -2990,7 +3022,6 @@ BEGIN
       coalesce(public.morlet_json_bigint(changes->'uncertainty_ns','uncertainty_ns'),old.uncertainty_ns),
       coalesce(changes->>'source',old.source),coalesce((changes->>'break_before')::boolean,old.break_before),
       'revision:'||old.anchor_id,old.revision+1,old.anchor_id,retract;
-  PERFORM public.morlet_check_time_anchors(rel,ARRAY[old.recording_id]);
   RETURN new_id;
 END $$;
 
@@ -3021,7 +3052,13 @@ BEGIN
   IF rec.sample_rate_hz IS NULL THEN RAISE EXCEPTION 'recording % does not exist or is not visible',recording_id; END IF;
   SELECT x.num,x.den INTO num,den FROM public.morlet_rate_ratio(rec.sample_rate_hz) x;
   period_ns:=den*1000000000/num;
-  IF pg_input_is_valid(rec.metadata#>>'{time_axis,rho}','float8') THEN rho_rec:=(rec.metadata#>>'{time_axis,rho}')::float8; END IF;
+  IF rec.metadata#>'{time_axis,rho}' IS NOT NULL THEN
+    IF jsonb_typeof(rec.metadata#>'{time_axis,rho}')<>'number' OR NOT ((rec.metadata#>>'{time_axis,rho}')::float8>=0
+        AND (rec.metadata#>>'{time_axis,rho}')::float8<1) THEN
+      RAISE EXCEPTION 'recording %: metadata time_axis.rho must be a number in [0, 1)',recording_id;
+    END IF;
+    rho_rec:=(rec.metadata#>>'{time_axis,rho}')::float8;
+  END IF;
   SELECT to_regclass(format('%I.%I',n.nspname,cl.relname||'_time_anchors')) INTO rel
     FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
   IF rel IS NOT NULL THEN
@@ -3104,7 +3141,7 @@ BEGIN
   RETURN QUERY SELECT p.t_ref+(sample-p.n_ref)*p.dt/p.dn,
       public.morlet_piece_uncertainty(p.kind,sample,p.n_ref,p.u_ref,p.na,p.nb,p.ua,p.ub,p.rho_used,p.period_ns),
       CASE WHEN p.kind='start+rate' THEN 'start+rate' ELSE 'anchors' END,
-      p.kind<>'start+rate' AND p.rho_used IS NULL,p.kind IN ('before','after'),p.segment
+      p.kind<>'start+rate' AND p.rho_used IS NULL,p.kind IN ('before','after') AND sample<>p.n_ref,p.segment
     FROM public.morlet_time_pieces(collection,recording_id,rho) p
     WHERE p.lo<=sample AND (p.hi IS NULL OR sample<p.hi);
 END $$;
@@ -3141,7 +3178,8 @@ BEGIN
     nonempty AS (SELECT r.*,lag(r.b) OVER (ORDER BY r.a) AS prev_b FROM r WHERE r.a<r.b),
     grp AS (SELECT nonempty.*,sum(CASE WHEN nonempty.prev_b=nonempty.a THEN 0 ELSE 1 END) OVER (ORDER BY nonempty.a) AS g
       FROM nonempty),
-    ranges AS (SELECT min(grp.a) AS a,max(grp.b) AS b,bool_or(grp.kind IN ('before','after')) AS ext,
+    ranges AS (SELECT min(grp.a) AS a,max(grp.b) AS b,
+        bool_or(grp.kind IN ('before','after') AND NOT (grp.a=grp.n_ref AND grp.b=grp.n_ref+1)) AS ext,
         bool_or(grp.kind<>'start+rate' AND grp.rho_used IS NULL) AS lin,bool_and(grp.kind='start+rate') AS sr
       FROM grp GROUP BY grp.g)
   SELECT ranges.a,ranges.b,CASE WHEN ranges.sr THEN 'start+rate' ELSE 'anchors' END,count(*) OVER ()>1,ranges.ext,
@@ -3153,8 +3191,9 @@ END $$;
 -- The sample at or after a UTC time: in each piece of the time axis (morlet_time_pieces) whose span reaches t_ns,
 -- the first sample with T(n) >= t_ns, so exactly one on a time axis that never steps back, and the anchor's own
 -- sample at an anchor's time. After a backward or zero step (break_before) a time can lie in several segments;
--- every candidate is returned, marked ambiguous. gap: t_ns falls between two segments after a forward jump, and the
--- sample is the first of the later segment. before_start: t_ns is before the time of sample 0.
+-- every candidate is returned, marked ambiguous. gap: after a forward jump between two segments, t_ns lies after the
+-- earlier segment's last sample and more than one sample period (on the later segment's own line) before the later
+-- segment's first sample, which is returned. before_start: t_ns is before the time of sample 0.
 -- No row when the recording has neither anchors nor a start time.
 CREATE FUNCTION public.morlet_utc_to_sample(collection regclass,recording_id text,t_ns numeric,rho float8 DEFAULT NULL)
 RETURNS TABLE(sample bigint,utc_ns numeric,basis text,ambiguous boolean,gap boolean,before_start boolean,
@@ -3163,14 +3202,20 @@ LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
   IF t_ns IS NULL THEN RAISE EXCEPTION 't_ns is required'; END IF;
   RETURN QUERY
-  WITH p AS (SELECT x.*,lag(x.t_ref+(x.hi-1-x.n_ref)*x.dt/x.dn) OVER (ORDER BY x.lo) AS t_prev_last
-      FROM public.morlet_time_pieces(collection,recording_id,rho) x),
+  WITH p AS (SELECT x.*,
+        -- whether the previous piece's last sample is before t_ns, exactly: its first sample at or after t_ns lies
+        -- beyond it
+        public.morlet_piece_ceil(t_ns,lag(x.n_ref) OVER o,lag(x.t_ref) OVER o,lag(x.dn) OVER o,lag(x.dt) OVER o)>=x.lo AS prev_before,
+        x.segment<>lag(x.segment) OVER o AS starts_segment
+      FROM public.morlet_time_pieces(collection,recording_id,rho) x WINDOW o AS (ORDER BY x.lo)),
     c AS (SELECT p.*,public.morlet_piece_ceil(t_ns,p.n_ref,p.t_ref,p.dn,p.dt) AS k FROM p),
     hit AS (SELECT c.*,greatest(c.lo,c.k)::bigint AS n FROM c
-      -- within a piece's own span, or in the gap before it (after a forward jump), or before sample 0
-      WHERE (c.k>=c.lo AND (c.hi IS NULL OR c.k<c.hi)) OR (c.k<c.lo AND (c.lo=0 OR c.t_prev_last<t_ns)))
+      -- within a piece's own span, or before it but after the previous piece's last sample (a forward jump, or a
+      -- slope change inside a segment), or before sample 0
+      WHERE (c.k>=c.lo AND (c.hi IS NULL OR c.k<c.hi)) OR (c.k<c.lo AND (c.lo=0 OR c.prev_before)))
   SELECT hit.n,hit.t_ref+(hit.n-hit.n_ref)*hit.dt/hit.dn,CASE WHEN hit.kind='start+rate' THEN 'start+rate' ELSE 'anchors' END,
-    count(*) OVER ()>1,hit.k<hit.lo AND hit.lo>0,hit.k<hit.lo AND hit.lo=0,hit.kind IN ('before','after'),
+    count(*) OVER ()>1,hit.k<hit.lo AND hit.lo>0 AND coalesce(hit.starts_segment,false),hit.k<hit.lo AND hit.lo=0,
+    hit.kind IN ('before','after') AND hit.n<>hit.n_ref,
     public.morlet_piece_uncertainty(hit.kind,hit.n,hit.n_ref,hit.u_ref,hit.na,hit.nb,hit.ua,hit.ub,hit.rho_used,hit.period_ns),
     hit.kind<>'start+rate' AND hit.rho_used IS NULL
   FROM hit ORDER BY hit.n;
@@ -3187,8 +3232,8 @@ BEGIN
   SELECT to_regclass(format('%I.%I',n.nspname,cl.relname||'_time_anchors')) INTO rel
     FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
   IF rel IS NULL THEN RETURN 'start+rate'; END IF;
-  EXECUTE format('SELECT ''anchors:''||md5(string_agg(x.sample_offset||'',''||x.utc_ns||'',''||x.uncertainty_ns||'',''||x.break_before
-      ||'',''||x.source,'';'' ORDER BY x.sample_offset)) FROM %1$s x WHERE x.recording_id=$1 AND NOT x.retracted
+  EXECUTE format('SELECT ''anchors:''||md5(jsonb_agg(jsonb_build_array(x.sample_offset,x.utc_ns,x.uncertainty_ns,
+      x.break_before,x.source) ORDER BY x.sample_offset)::text) FROM %1$s x WHERE x.recording_id=$1 AND NOT x.retracted
       AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.anchor_id)',rel) INTO d USING recording_id;
   RETURN coalesce(d,'start+rate');
 END $$;
