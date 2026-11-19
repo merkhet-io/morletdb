@@ -112,7 +112,9 @@ D9 answers how far one node scales and where the current search design stops wor
 smallest scale at which a fixed criterion fails in all three repeats:
 
 1. **Memory:** probe search p95 more than 2× its in-memory value, or recall@10 below 0.95, as the HNSW index
-   exceeds the container's memory (measured at 16 GB and 64 GB, so the curve can be scaled to other machines).
+   exceeds the container's memory (measured at 16 GB and 64 GB, so the curve can be scaled to other machines). The criterion uses
+   the mean recall@10 over the query set; the per-query minimum is reported alongside it but does not decide a
+   tipping point.
 2. **Interactive exact search:** screened exact search p95 above 1 s, unfiltered and per filter selectivity.
 3. **Catalogue:** listing or filtering recordings by metadata above 100 ms p95, or ingest of a new recording
    slowed more than 2× by the catalogue's size.
