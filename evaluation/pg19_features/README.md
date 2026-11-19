@@ -37,10 +37,15 @@ is made.
 
    Limits: a small collection (5.6 MB), so the repack took under a second and overlapped the appends only briefly.
    It was not tried with a full disk, on the Pi, or with probe tables. The rewrite still needs temporary space about
-   the size of the kept data. The space comes back sooner after a smaller rewrite, so it suits a regular steward task
-   (repack after a memory move) better than an emergency one. **Proposal:** a steward action, with approval like the
-   others, that repacks a collection's tables after removals on PostgreSQL 19 (and says "needs 19" elsewhere). Progress
-   comes from `pg_stat_progress_repack`. Runbook 8 documents the manual step (step 4).
+   the size of the kept data, so it cannot rescue a disk that is already full.
+
+   **Decision (2026-11-19): a manual tool, not a steward action for now.** Collections are append-only, so space freed
+   by retention is reused by new samples. Giving it back to the operating system matters only for other users of the
+   disk, or after a large one-off removal. Against that stand the swap stall, the snapshot behaviour, the extra disk,
+   and cleanup held back cluster-wide (third-party measurements below). Runbook 8 step 4 documents the manual use with
+   its guards. #535 keeps a steward action conditional on a frozen measurement on the Pi with a slow disk. The gap
+   that matters on every PostgreSQL version is the steward's space accounting: it counts only filesystem free space,
+   so a retention plan cannot lift the ingest hold at the reserve (#538).
 
    **Not MVCC-safe, and this matters for MorletDB's readers.** After the repack commits, a transaction whose snapshot
    was taken before the repack started can see the repacked table as empty. A single statement is safe: it holds its
