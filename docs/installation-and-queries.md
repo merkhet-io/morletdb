@@ -8,7 +8,7 @@ MorletDB is a PostgreSQL extension in beta. The SQL extension is named `pg_morle
 | --- | --- |
 | PostgreSQL 17 | Reference version; functional CI with and without pgvector; upgrades and release images target 17 |
 | PostgreSQL 18 | Supported for fresh source installations; functional CI with and without pgvector; Debian packages (amd64, arm64) from 0.3.5-alpha.1; no release image or measured performance |
-| PostgreSQL 19 | Supported from 19.0 for fresh source installations; functional CI with and without pgvector; TOAST compression pinned to pglz, so storage matches 17 and 18 ([compatibility](compatibility.md#toast-compression-postgresql-19)); Debian packages and an extension-only image once the official `postgres:19` image is published (#XPR); no release image or measured performance |
+| PostgreSQL 19 | Supported from 19.0 for fresh source installations; functional CI with and without pgvector; TOAST compression pinned to pglz, so storage matches 17 and 18 ([compatibility](compatibility.md#toast-compression-postgresql-19)); Debian packages and an extension-only image once the official `postgres:19` image is published (#537); no release image or measured performance |
 | Rust / pgrx | Repository-pinned Rust 1.99.0; pgrx and cargo-pgrx 0.19.3 |
 | Container | Linux amd64; Linux arm64 from 0.3.3-alpha.1 (built and trialled natively in the release workflow) |
 | pgvector | Optional. Probe search requires 0.8 or later; CI exercises 0.8.0 (PostgreSQL 17) and 0.8.7 (18 and 19). **Use 0.8.4 or later in production:** probe search uses HNSW indexes, and pgvector 0.8.2–0.8.4 fixed a buffer overflow in parallel HNSW builds and possible index corruption and errors during HNSW vacuuming |

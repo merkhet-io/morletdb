@@ -5,7 +5,7 @@
 - **PostgreSQL 19.0.** PostgreSQL 19 is supported from its first release, 19.0 (2026-11-19), and no longer at its
   release candidate. CI builds 19.0 from its pinned source tarball (pgrx 0.19.3 downloads only 19beta4) and runs
   every test with and without pgvector 0.8.7. Debian packages and an extension-only image for PostgreSQL 19 follow
-  once the official `postgres:19` image is published (#XPR).
+  once the official `postgres:19` image is published (#537).
   Updates on 19 are not tested (no earlier release was built for it); install fresh. TOAST compression stays
   pinned to pglz on 19 (#280).
 - **CI on the November 2026 minor releases:** PostgreSQL 17.12 and 18.7 (previously 17.11 and 18.6). pgrx stays at
