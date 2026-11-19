@@ -2936,18 +2936,23 @@ BEGIN
   RETURN NULL;
 END $$;
 
--- Row trigger (before insert) of every <c>_time_anchors table: direct inserts follow the same discipline as
--- morlet_add_time_anchors, READ COMMITTED and the per-recording lock, so the statement check below sees every anchor
--- committed before it. TG_ARGV[0]: the collection's oid.
+-- Row trigger (before insert) of every <c>_time_anchors table: every insert, direct or through the functions, runs
+-- under READ COMMITTED and holds the collection's anchor-write lock until it commits, so the statement check below
+-- sees every anchor committed before it. One lock per collection (not per recording in row order) cannot deadlock
+-- between multi-recording inserts; anchor writes are rare. TG_ARGV[0]: the collection's oid.
 CREATE FUNCTION public.morlet_time_anchors_lock()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
-  PERFORM public.morlet_lock_time_anchors(TG_ARGV[0]::oid::regclass,NULL,ARRAY[NEW.recording_id]);
+  IF current_setting('transaction_isolation')<>'read committed' THEN
+    RAISE EXCEPTION 'time anchors are written under READ COMMITTED (this transaction is %)',current_setting('transaction_isolation');
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-anchor-coll/'||TG_ARGV[0],0));
   RETURN NEW;
 END $$;
 
 -- Row and truncate trigger of every <c>_time_anchors table: anchors are append-only. A delete is allowed only as the
--- cascade of deleting their recording: from another trigger (the foreign key's), with the recording gone.
+-- cascade of deleting their recording: from another trigger (the foreign key's), with the recording gone. The check
+-- reads the collection as the deleting role, which a DELETE with a WHERE clause needs anyway (SELECT on its columns).
 -- TG_ARGV[0]: the collection's oid.
 CREATE FUNCTION public.morlet_time_anchors_append_only()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
@@ -3198,9 +3203,11 @@ BEGIN
     nonempty AS (SELECT r.*,lag(r.b) OVER (ORDER BY r.a) AS prev_b,
         r.t_ref+(r.a-r.n_ref)*r.dt/r.dn AS tf,r.t_ref+(r.b-1-r.n_ref)*r.dt/r.dn AS tl FROM r WHERE r.a<r.b),
     -- ambiguous: two segments contribute samples whose times overlap, so some time in the range occurs twice (even
-    -- when their sample ranges are adjacent and merge into one)
-    amb AS (SELECT EXISTS(SELECT 1 FROM nonempty x JOIN nonempty y ON x.segment<y.segment
-      WHERE x.tf<=y.tl AND y.tf<=x.tl) AS v),
+    -- when their sample ranges are adjacent and merge into one). Pieces of one segment never overlap in time, so a
+    -- sweep in time order finds it: a piece that starts at or before the latest end of the pieces before it.
+    sweep AS (SELECT nonempty.tf,max(nonempty.tl) OVER (ORDER BY nonempty.tf,nonempty.a
+        ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prev_tl FROM nonempty),
+    amb AS (SELECT coalesce(bool_or(sweep.tf<=sweep.prev_tl),false) AS v FROM sweep),
     grp AS (SELECT nonempty.*,sum(CASE WHEN nonempty.prev_b=nonempty.a THEN 0 ELSE 1 END) OVER (ORDER BY nonempty.a) AS g
       FROM nonempty),
     ranges AS (SELECT min(grp.a) AS a,max(grp.b) AS b,
