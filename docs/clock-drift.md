@@ -227,8 +227,9 @@ source never had. An anchor with `break_before = true` therefore starts a new **
 - **At every anchor**, `n(T_i) = n_i` still holds when `T_i` is unambiguous, which is #383's done-when
   criterion ("exact time lookup at every block start"). When an overlap makes `T_i` ambiguous, `n_i` is among
   the returned candidates.
-- **Uncertainty** within a block-stamped segment grows one-sided from its anchor:
-  `u(n) = u_i + ρ·(n − n_i)/rate`, with ρ as in section 8, decision 2.
+- **Uncertainty** within a block-stamped segment grows with the distance from its anchor, on either side (samples
+  before a recording's first anchor belong to its first segment): `u(n) = u_i + ρ·|n − n_i|/rate`, with ρ as in
+  section 8, decision 2.
 
 The importer writes such anchors from a time column (section 4): a new block starts where the step between two
 timestamps departs from the declared period by more than a tolerance (half a period by default), and every
@@ -321,15 +322,16 @@ which grows with the duration.
 
 ## 6. Compatibility and API
 
-**New, all experimental:**
+**New in SQL 0.3.13, all experimental:**
 
 - `morlet_enable_time_anchors`;
 - `morlet_add_time_anchors`;
 - `morlet_revise_time_anchor`;
-- `morlet_utc_to_samples`;
+- `morlet_utc_to_samples` (time range to sample ranges) and `morlet_utc_to_sample` (one time to its candidates);
 - `morlet_sample_utc`, which returns the time, the uncertainty and the basis;
-- `morlet_check_time_axis`;
 - `morlet_time_axis_version`.
+
+**Planned:** `morlet_check_time_axis` (section 4), with the clients (section 8, step 3).
 
 **Stable functions do not change.** No stable signature or documented behaviour changes
 (`docs/api-stability.md`): `morlet_time_to_samples`, `morlet_sample_time_ns`, `morlet_add_context`,
@@ -361,7 +363,9 @@ Anchors are drawn at known true times, with noise within ±u. The expected value
 implementation in Python `fractions`, which shares no code with the SQL. Golden expected values are never
 regenerated to make a test pass. The tests check that:
 
-1. at every anchor, `morlet_utc_to_samples(T_i)` returns `n_i`, and `morlet_sample_utc(n_i)` returns `T_i`;
+1. at every anchor, `morlet_sample_utc(n_i)` returns `T_i`, and the time-to-sample lookup at `T_i` returns `n_i`:
+   as its only result when `T_i` is unambiguous, and among the candidates when an overlap (section 3.1) makes it
+   ambiguous;
 2. for every sample, the true time lies within the reported uncertainty when ρ is declared;
 3. the fitted rate is within `(u_1 + u_k)/(T_k − T_1)` of the true rate, a tolerance derived beforehand, not
    tuned;
@@ -420,10 +424,11 @@ implementation.
 
 **Order of work:**
 1. SQL: the anchor table with breaks, `morlet_enable_time_anchors`, `morlet_add_time_anchors`,
-   `morlet_revise_time_anchor`, `morlet_utc_to_samples`, `morlet_sample_utc`, `morlet_check_time_axis`,
-   `morlet_time_axis_version`, row security, upgrade script.
+   `morlet_revise_time_anchor`, `morlet_utc_to_samples`, `morlet_utc_to_sample`, `morlet_sample_utc`,
+   `morlet_time_axis_version`, row security, upgrade script (shipped in SQL 0.3.13).
 2. The importer writes anchors from a time column, with block detection; #383's done-when on synthetic block
    data.
-3. MCP `locate_time`, the event importer, the collectors and the SDK call the server mapping.
+3. MCP `locate_time`, the event importer, the collectors and the SDK call the server mapping;
+   `morlet_check_time_axis`.
 4. The mapping in `crates/morlet-core`, with shared test vectors; anchor-aware search (decision 4); the exchange
    format 2 and file format 2.

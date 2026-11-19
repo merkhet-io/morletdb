@@ -3938,6 +3938,17 @@ END $$"#).unwrap();
             ANCHOR_S + 208 * MS,
             ANCHOR_S + 210 * MS
         )));
+        // adjacent sample ranges from two blocks whose times overlap still mark the range ambiguous (review)
+        assert_eq!(
+            Spi::get_one::<String>(&format!(
+                "SELECT string_agg(start_sample||'-'||end_sample||':'||ambiguous,',') FROM morlet_utc_to_samples('ta','blocks',{},{})",
+                ANCHOR_S + 205 * MS,
+                ANCHOR_S + 213 * MS
+            ))
+            .unwrap()
+            .as_deref(),
+            Some("192-205:true")
+        );
         for (a, b) in [
             (208 * MS, 210 * MS),
             (0, 400 * MS),
@@ -3984,11 +3995,16 @@ END $$"#).unwrap();
             let (mut n, mut t) = (next(40) as i64, ANCHOR_S + next(1000) as i128 * 1000);
             let mut rows = vec![];
             for k in 0..15 {
-                let brk = k > 0 && next(10) < 3;
+                // anchors 4 and 8 are always a zero and a backward step; others break at random
+                let brk = k == 4 || k == 8 || (k > 0 && next(10) < 3);
                 if k > 0 {
                     let step = 5 + next(60) as i64;
                     let nominal = step as i128 * MS;
-                    if brk {
+                    if k == 4 {
+                        // the stamp stands still: the block starts at the previous anchor's time
+                    } else if k == 8 {
+                        t -= 7 * MS; // the stamp steps back 7 ms below the previous anchor's time
+                    } else if brk {
                         // a block start: anywhere from 20 ms early (backward) to 20 ms late, zero steps included
                         t = t + nominal - 20 * MS + next(41) as i128 * MS;
                     } else {
@@ -4092,6 +4108,10 @@ END $$"#).unwrap();
         );
         assert_eq!(
             err("DELETE FROM ta_time_anchors"),
+            "time anchors are append-only: revise or retract with morlet_revise_time_anchor"
+        );
+        assert_eq!(
+            err("TRUNCATE ta_time_anchors"),
             "time anchors are append-only: revise or retract with morlet_revise_time_anchor"
         );
         Spi::run("DELETE FROM ta WHERE recording_id='plain'").unwrap(); // the cascade is allowed
