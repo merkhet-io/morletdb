@@ -215,8 +215,9 @@ source never had. An anchor with `break_before = true` therefore starts a new **
 - **At every anchor**, `n(T_i) = n_i` still holds when `T_i` is unambiguous, which is #383's done-when
   criterion ("exact time lookup at every block start"). When an overlap makes `T_i` ambiguous, `n_i` is among
   the returned candidates.
-- **Uncertainty** within a block-stamped segment grows one-sided from its anchor:
-  `u(n) = u_i + ρ·(n − n_i)/rate`, with ρ as in section 8, decision 2.
+- **Uncertainty** within a block-stamped segment grows with the distance from its anchor, on either side (samples
+  before a recording's first anchor belong to its first segment): `u(n) = u_i + ρ·|n − n_i|/rate`, with ρ as in
+  section 8, decision 2.
 
 The importer writes such anchors from a time column (section 4): a new block starts where the step between two
 timestamps departs from the declared period by more than a tolerance (half a period by default), and every
@@ -349,7 +350,9 @@ Anchors are drawn at known true times, with noise within ±u. The expected value
 implementation in Python `fractions`, which shares no code with the SQL. Golden expected values are never
 regenerated to make a test pass. The tests check that:
 
-1. at every anchor, `morlet_utc_to_samples(T_i)` returns `n_i`, and `morlet_sample_utc(n_i)` returns `T_i`;
+1. at every anchor, `morlet_sample_utc(n_i)` returns `T_i`, and the time-to-sample lookup at `T_i` returns `n_i`:
+   as its only result when `T_i` is unambiguous, and among the candidates when an overlap (section 3.1) makes it
+   ambiguous;
 2. for every sample, the true time lies within the reported uncertainty when ρ is declared;
 3. the fitted rate is within `(u_1 + u_k)/(T_k − T_1)` of the true rate, a tolerance derived beforehand, not
    tuned;
