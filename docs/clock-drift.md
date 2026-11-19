@@ -99,6 +99,12 @@ The rules mirror context:
   segment (section 3.1), they must also be strictly increasing in `utc_ns`. A clock that steps backwards or
   stands still is the block-stamp case of #383: the writer marks it with `break_before`, and it is never
   accepted implicitly. Without a break, a backward or zero step is an error.
+- **Direct SQL too (SQL 0.3.13).** A statement trigger checks these rules after every insert into the table, so a
+  direct `INSERT` that breaks them fails like a call of the functions. A row trigger refuses `UPDATE` and `DELETE`:
+  anchors are append-only, and only deleting their recording removes them (the foreign key's cascade). Writes need
+  READ COMMITTED: under REPEATABLE READ or SERIALIZABLE the snapshot predates the per-recording lock, so two
+  sessions could each add an anchor at the same sample; the functions refuse instead. Batch ids starting with
+  `revision:` are reserved for revisions.
 - **Provenance.** `source`, `batch_id`, `recorded_by` and the revision chain say where each anchor came from.
   An estimate (for example #208's cross-correlation) is labelled as such in `source` and is never presented
   as a measurement.
@@ -209,8 +215,10 @@ source never had. An anchor with `break_before = true` therefore starts a new **
   source, every block start is an anchor with a break, so each block maps as `T_i + (n − n_i)/rate`, exactly
   what the source states.
 - **Sample to time** stays a function: every sample belongs to exactly one segment.
-- **Time to sample** may not be. After a forward jump, a time can fall between two segments (a **gap**): it maps
-  to the first sample of the next segment, the first sample at or after it, and the result is marked `gap`.
+- **Time to sample** may not be. After a forward jump, a time can fall between two segments (a **gap**): after
+  the earlier segment's last sample and more than one sample period, on the later segment's own line, before the
+  later segment's first sample. It maps to that first sample, the first sample at or after it, and the result is
+  marked `gap`. A time within one period before a segment's first sample is that sample's own period, not a gap.
   After a backward or zero step, a time can fall in several segments (an **overlap**): every candidate is
   returned, and the result is marked `ambiguous`. A function that returns one sample returns the lowest
   candidate and says so; it never picks silently.
