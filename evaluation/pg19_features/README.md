@@ -57,7 +57,9 @@ is made.
      reserve.
 2. **Selective `NOTIFY` wakeups.** Commit notifications (#205) send one `pg_notify` per appending transaction. Up to
    18, every `NOTIFY` woke most backends; 19 wakes only the listeners of that channel. It comes free with many
-   connections (collectors, steward, MCP, dashboards). Not measured.
+   connections (collectors, steward, MCP, dashboards). Not measured by us. A third-party test on 19rc1 (below) found
+   the same commit throughput as 18 and much less wake-up work: it saves database work but does not let more
+   notifying appends commit per second, because the commit-time lock for notifications remains.
 3. **`WAIT FOR LSN` on standbys: read-your-writes on a replica.** After an append on the primary, a reader on a
    standby can wait until that commit is replayed before reading. That suits the replica runbook and a central read
    replica of edge boxes. It needs `pg_current_wal_lsn()` from the writer; the SDK could offer it later.
@@ -73,6 +75,24 @@ is made.
 Not useful for MorletDB now: `INSERT ... ON CONFLICT DO SELECT` (appends must stay identical on 17 and 18),
 `CREATE AGGREGATE ... SUPPORT` and negative `aggtransspace` (the aggregates keep bounded state), `COPY TO` JSON,
 `pg_plan_advice`, parallel autovacuum (small machines), server-side SNI and OAuth changes.
+
+## Third-party performance claims (not MorletDB data)
+
+There are no official PostgreSQL 19 benchmarks. The claims found on 2026-11-19 are single-author blog posts, almost all
+on betas or release candidates, on hardware unlike an edge box. They are listed so that nobody repeats them as
+MorletDB results.
+
+| Claim | Source, build | Relevance for MorletDB |
+|---|---|---|
+| `REPACK (CONCURRENTLY)`: writers stopped 7 s at the swap (NVMe, 28 GB, 3,000 updates/s), 13 s and 231 s on a 4-vCPU VM (28 and 100 GB); a 20 s report held all lookups at 0 for 18 s; with `lock_timeout = 3s` the run is discarded; about 1× the kept data in extra disk and 1× the table in WAL; `VACUUM` held back in all databases; a pre-swap `REPEATABLE READ` reader saw 0 rows | [boringsql](https://boringsql.com/posts/repack-concurrently-costs/), 19beta4 | High: these are the costs of runbook 8 step 4 and the steward action (#535); the runbook now names them |
+| `NOTIFY`: commit throughput within 3% of 18.6 with 64 clients; the database does about 1/25 of the wake-up work | [DEV](https://dev.to/desty2k/listennotify-performance-in-postgresql-3a82), 19rc1; [DBOS](https://www.dbos.dev/blog/postgres-listen-notify-scalability) on the remaining commit lock | Medium: less load from commit notifications, no faster commits |
+| Inserts 25–30% faster, about 3% overall, updates flat to slightly slower (OLTP, cloud VMs, noisy) | Kaarel Moppel, via [iMasters](https://imasters.com/banco-de-dados/postgres-19-beta-shows-inserts-up-to-30-faster-in-independent-oltp-benchmark), 19beta3/4 vs 18.6 | Low to medium: MorletDB's append cost is mostly chunk encoding in Rust and a few large rows |
+| Write-heavy steps 15% and 9% faster, slightly more CPU; read-only tests flat except one count query about 2.5× (new plan) | [Small Datum](https://smalldatum.blogspot.com/2026/06/the-insert-benchmark-on-small-server-io.html), [sysbench](https://smalldatum.blogspot.com/2026/06/cpu-bound-sysbench-on-large-server.html), 19beta1 vs 17.10 | Low: small server, but row-oriented workloads |
+| Tuple deformation 21% faster on average, up to 44% | [pgsql-hackers](https://www.postgresql.org/message-id/CAApHDvpoFjaj3+w_jD5uPnGazaw41A71tVJokLDJg2zfcigpMQ@mail.gmail.com), micro-benchmarks | Low: MorletDB reads few, large rows |
+| Aggregation before joins over 5× faster | [Cybertec](https://www.cybertec-postgresql.com/en/super-fast-aggregations-in-postgresql-19/), one laptop run | None: MorletDB's aggregates run over one table |
+
+Whether PostgreSQL 19 is faster or slower for MorletDB needs a same-session comparison of 17 and 19 on MorletDB's own
+read, append and search tasks, and a REPACK check on the Pi with a slow disk. Neither has been run.
 
 ## Reproduce
 
