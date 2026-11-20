@@ -54,9 +54,10 @@
   chunk format are unchanged.
 - **PostgreSQL 19.0.** PostgreSQL 19 is supported from its first release, 19.0 (2026-11-19), and no longer at its
   release candidate. CI builds 19.0 from its pinned source tarball (pgrx 0.19.3 downloads only 19beta4) and runs
-  every test with and without pgvector 0.8.7. The release workflow builds and trials Debian packages for PostgreSQL 19 (amd64, arm64),
-  installed with apt into a clean official `postgres:19-bookworm` image, and an extension-only image `<version>-pg19`,
-  beside 17 and 18. The release's checksum step now requires one package per PostgreSQL major and architecture (six).
+  every test with and without pgvector 0.8.7. The release workflow builds and trials Debian packages for PostgreSQL 19
+  (amd64, arm64) beside 17 and 18, installed with apt into a clean official `postgres:19-bookworm` image, and an
+  extension-only image `<version>-pg19` beside `<version>-pg18`. The release's checksum step now requires one package
+  per PostgreSQL major and architecture (six).
   Updates on 19 are not tested (no earlier release was built for it); install fresh. TOAST compression stays
   pinned to pglz on 19 (#280).
 - **CI on the November 2026 minor releases:** PostgreSQL 17.12 and 18.7 (previously 17.11 and 18.6). pgrx stays at
