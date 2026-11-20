@@ -1,0 +1,247 @@
+{
+ "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+ "runs": [
+  {
+   "round": 1,
+   "load_avg": [
+    3.7265625,
+    2.97265625,
+    3.13623046875
+   ],
+   "arm": "delete_vacuum",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 140811186176,
+   "fs_free_after": 140810788864,
+   "steps": {
+    "delete_s": 0.20441195904277265,
+    "vacuum_s": 0.008847000077366829
+   },
+   "removal_s": 0.21329354192130268,
+   "wal_bytes": 78737136,
+   "fs_free_after_checkpoint": 140879667200,
+   "size_after": 147578880,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 3332366,
+   "inserts": {
+    "total": 84,
+    "failures": [],
+    "during_removal": 3,
+    "p50_ms_before": 1.1296665761619806,
+    "p50_ms_during": 3.461875021457672,
+    "max_ms_during": 7.791750133037567,
+    "longest_gap_ms": 105.06262513808906
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    3.19482421875,
+    2.8916015625,
+    3.10400390625
+   ],
+   "arm": "delete_vacuum",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 141044649984,
+   "fs_free_after": 141022593024,
+   "steps": {
+    "delete_s": 0.2869932921603322,
+    "vacuum_s": 0.0048162920866161585
+   },
+   "removal_s": 0.2920133750885725,
+   "wal_bytes": 80823496,
+   "fs_free_after_checkpoint": 141106491392,
+   "size_after": 152961024,
+   "old_snapshot_sees": {
+    "part1": 1748,
+    "part2": 1748
+   },
+   "inserted_bytes": 7161805,
+   "inserts": {
+    "total": 182,
+    "failures": [],
+    "during_removal": 3,
+    "p50_ms_before": 1.0618754895403981,
+    "p50_ms_during": 6.112458882853389,
+    "max_ms_during": 9.88562498241663,
+    "longest_gap_ms": 110.48587481491268
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    2.63134765625,
+    2.78564453125,
+    3.05908203125
+   ],
+   "arm": "delete_vacuum_repack",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 141267247104,
+   "fs_free_after": 141347147776,
+   "steps": {
+    "delete_s": 0.12010891712270677,
+    "vacuum_s": 0.01006312482059002,
+    "repack_s": 0.35904625011608005
+   },
+   "removal_s": 0.48925054213032126,
+   "wal_bytes": 155215096,
+   "fs_free_after_checkpoint": 141470814208,
+   "size_after": 76374016,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 3409540,
+   "inserts": {
+    "total": 86,
+    "failures": [],
+    "during_removal": 5,
+    "p50_ms_before": 0.9456041734665632,
+    "p50_ms_during": 4.090500064194202,
+    "max_ms_during": 6.569582968950272,
+    "longest_gap_ms": 102.09029098041356
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    3.125,
+    2.87890625,
+    3.0869140625
+   ],
+   "arm": "delete_vacuum_repack",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 141635719168,
+   "fs_free_after": 141712199680,
+   "steps": {
+    "delete_s": 0.13569775014184415,
+    "vacuum_s": 0.005415957886725664,
+    "repack_s": 0.36802650010213256
+   },
+   "removal_s": 0.5093575841747224,
+   "wal_bytes": 159971392,
+   "fs_free_after_checkpoint": 141629546496,
+   "size_after": 80355328,
+   "old_snapshot_sees": {
+    "part1": 0,
+    "part2": 0
+   },
+   "inserted_bytes": 7161805,
+   "inserts": {
+    "total": 182,
+    "failures": [],
+    "during_removal": 6,
+    "p50_ms_before": 0.9670619620010257,
+    "p50_ms_during": 4.1861869394779205,
+    "max_ms_during": 23.8647919613868,
+    "longest_gap_ms": 112.35524993389845
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    4.693359375,
+    3.25732421875,
+    3.21728515625
+   ],
+   "arm": "detach_drop",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145457152,
+   "fs_free_before": 141790404608,
+   "fs_free_after": 141323034624,
+   "steps": {
+    "detach_s": 0.0008832078892737627,
+    "drop_s": 0.004584042122587562
+   },
+   "removal_s": 0.005500833969563246,
+   "wal_bytes": 3591672,
+   "fs_free_after_checkpoint": 141337886720,
+   "size_after": 76226560,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 3235307,
+   "inserts": {
+    "total": 82,
+    "failures": [],
+    "during_removal": 1,
+    "p50_ms_before": 0.834146048873663,
+    "p50_ms_during": 0.6645829416811466,
+    "max_ms_during": 0.6645829416811466,
+    "longest_gap_ms": 4.451541928574443
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    4.32373046875,
+    3.244140625,
+    3.212890625
+   ],
+   "arm": "detach_drop",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145457152,
+   "fs_free_before": 141147291648,
+   "fs_free_after": 141216231424,
+   "steps": {
+    "detach_s": 0.0010642500128597021,
+    "drop_s": 0.004622124833986163
+   },
+   "removal_s": 0.005802582949399948,
+   "wal_bytes": 7817960,
+   "fs_free_after_checkpoint": 141210419200,
+   "size_after": 80429056,
+   "old_snapshot_sees": {
+    "part1": 0,
+    "part2": 1748
+   },
+   "inserted_bytes": 7161805,
+   "inserts": {
+    "total": 182,
+    "failures": [],
+    "during_removal": 1,
+    "p50_ms_before": 1.3743749586865306,
+    "p50_ms_during": 0.9827911853790283,
+    "max_ms_during": 0.9827911853790283,
+    "longest_gap_ms": 3.122833091765642
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  }
+ ],
+ "version": "19.0",
+ "settings": {
+  "shared_buffers": "1GB",
+  "max_wal_size": "8GB",
+  "wal_level": "replica",
+  "data_checksums": "on"
+ },
+ "source_chunks": 1748,
+ "source_bytes": 72835072
+}
