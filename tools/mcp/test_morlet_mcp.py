@@ -356,7 +356,8 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
                 conn.execute(f"DROP TABLE IF EXISTS public.mcp_anchor_{t} CASCADE")
             conn.execute("DROP TABLE IF EXISTS public.mcp_anchor CASCADE")
             conn.execute("SELECT morlet_create_stream_collection('public','mcp_anchor')")
-            for rid, meta in (("blocks", {}), ("plain", {"start": "2026-02-01T12:00:00Z"})):  # blocks: anchors only
+            for rid, meta in (("blocks", {"start_utc": "as recorded", "start_sample": 0}),   # anchors only, no start
+                              ("plain", {"start": "2026-02-01T12:00:00Z"})):
                 conn.execute("SELECT morlet_start_recording('mcp_anchor',%s,1000,'acc','g',%s,512,256,'zscore','none')",
                              (rid, json.dumps(meta)))
                 conn.execute("SELECT morlet_append_chunks_raw('mcp_anchor',%s,0,morlet_float8_le_bytes(ARRAY("
@@ -388,6 +389,22 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
         twice = self.match("2026-02-01T12:00:00.208Z")["blocks"]
         self.assertEqual((twice["sample"], twice["candidate_samples"]), (195, [195, 200]))
         self.assertIn("twice", twice["time_note"])
+
+    def test_reported_utc_times_follow_the_anchors(self):
+        r = m.read_interval("public.mcp_anchor", "blocks", 200, 210)
+        self.assertEqual((r["start_utc"], r["time_basis"]), ("2026-02-01T12:00:00.208000Z", "anchors"))
+        self.assertAlmostEqual(r["time_uncertainty_s"], 1e-6)
+        plain = m.read_interval("public.mcp_anchor", "plain", 200, 210)
+        self.assertEqual(plain["start_utc"], "2026-02-01T12:00:00.200000Z")
+        self.assertNotIn("time_basis", plain)
+        recs = {x["recording_id"]: x for x in m.list_recordings("public.mcp_anchor")["recordings"]}
+        self.assertEqual((recs["blocks"]["start_utc"], recs["blocks"]["end_utc"]),
+                         ("2026-02-01T12:00:00Z", "2026-02-01T12:00:00.308000Z"))   # block 2: 208 ms + 100 samples
+        self.assertEqual(recs["plain"]["end_utc"], "2026-02-01T12:00:00.300000Z")
+        # metadata is returned as stored, even when it has keys that look like reported times
+        meta = m.list_recordings("public.mcp_anchor", include_metadata=True)["recordings"]
+        self.assertEqual({x["recording_id"]: x.get("metadata") for x in meta}["blocks"],
+                         {"start_utc": "as recorded", "start_sample": 0})
 
     def test_nanoseconds_and_the_gap_note_for_an_anchored_recording(self):
         # nanoseconds count: 1 ns before block 1's start the last sample at or before it is still 99, at the start 100

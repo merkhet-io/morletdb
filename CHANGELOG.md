@@ -13,8 +13,11 @@
     mapping) and refuses a range that a backward step makes ambiguous; the new `time_ranges` returns every range as
     a `TimeRange` with its basis and error (a bound unless `assumes_linear_clock`). Both raise when a recording has
     neither anchors nor a start time.
-  Recordings without anchors are located as before. UTC times attached to search results and reads still come from
-  start + rate.
+  - The UTC times other MCP tools report (search hits, reads, descriptions, comparisons, onsets, recording lists,
+    `latest`) come from the anchors for anchored recordings, with `time_basis: anchors` and `time_uncertainty_s`;
+    `coverage`'s first, last and gap times still use start + rate.
+  Recordings without anchors are located and timed as before. The SQL search functions' own UTC evidence (stable)
+  still uses start + rate.
 - **The importer writes time anchors (#393, #383).** With a CSV time column and an absolute time (ISO 8601, or
   seconds with `--time-origin`), `morlet_import.py` stores the real timestamps as time anchors on a server with SQL
   0.3.13: one anchor at every block start, with `break_before` from the second block on (a block starts where a

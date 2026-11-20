@@ -4,7 +4,7 @@ Status: **proposal, decisions taken 2026-11-19** for [#393](https://github.com/m
 [#383](https://github.com/merkhet-io/morletdb/issues/383); section 8 records them. Shipped so far: step 1 of
 section 8's order (SQL 0.3.13: the anchor table, batches, revisions, the mapping with segments and breaks, row
 security), step 2 (the importer writes anchors from a time column, with block detection) and the first part of
-step 3 (MCP `locate_time`, the event importer, and the SDK's `samples_for_time` and `time_ranges` use the anchors).
+step 3 (MCP `locate_time`, the event importer, and the SDK's `samples_for_time` and `time_ranges` use the anchors), and the MCP tools report the UTC times of anchored recordings by the anchors.
 Still open: the collectors, `morlet_check_time_axis` and step 4; the file formats are unchanged. Mapping calls are
 linear in a recording's anchors (#546). SQL is illustrative: names, types and limits are subject to
 implementation review. The first part of #393 has shipped, and section 1 describes it. Behaviour claims about

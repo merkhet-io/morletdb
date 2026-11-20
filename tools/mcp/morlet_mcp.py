@@ -13,6 +13,7 @@ import math
 import os
 import re
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -238,6 +239,88 @@ def locate_by_anchors(conn, collection, rid, rate, t_ns, end):
     return hit
 
 
+UTC_FIELDS = {"start_utc": "start_sample", "end_utc": "end_sample", "trigger_utc": "trigger_sample",
+              "from_utc": "from_sample", "to_utc": "to_sample"}
+
+
+def utc_from_ns(ns):
+    return (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=int(ns) // 1000)) \
+        .isoformat().replace("+00:00", "Z")
+
+
+def anchor_times(fn):
+    """Recompute the UTC times a tool reports for recordings with time anchors (#393): every *_utc field next to its
+    sample field (start_utc/start_sample, end_utc/end_sample, ...; in list_recordings sample 0 and the length) of a
+    dict whose recording_id (its own or an enclosing dict's) has anchors comes from morlet_sample_utc instead of
+    start + rate, and the dict gets time_basis "anchors" and the largest error of those times. Metadata is never
+    touched. All times of a result are mapped in one query. Results without anchored recordings are returned
+    unchanged. coverage's group times have no sample offsets and stay start + rate."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        out = fn(*args, **kwargs)
+        collection = kwargs.get("collection", args[0] if args else None)
+        if not isinstance(out, dict) or not isinstance(collection, str):
+            return out
+        if NO_ANCHORS.get(collection, 0.0) > time.monotonic():
+            return out
+        with connect() as conn:
+            c = checked(conn, collection)
+            anchored = anchored_recordings(conn, c)
+            if anchored:
+                slots = []
+                collect_times(anchored, out, out.get("recording_id"), slots)
+                fill_times(conn, c, slots)
+            elif anchor_table(conn, c) is None:
+                NO_ANCHORS[collection] = time.monotonic() + NO_ANCHORS_TTL_S
+        return out
+    return wrapper
+
+
+NO_ANCHORS: dict[str, float] = {}   # collections without an anchor table, until when (monotonic seconds)
+NO_ANCHORS_TTL_S = 60.0             # a newly enabled anchor table is seen within this time
+
+
+def collect_times(anchored, node, rid, slots):
+    """(dict, utc key, recording, sample) for every *_utc field of an anchored recording in a tool result."""
+    if isinstance(node, list):
+        for x in node:
+            collect_times(anchored, x, rid, slots)
+        return
+    if not isinstance(node, dict):
+        return
+    rid = node.get("recording_id", rid)
+    if rid in anchored:
+        for utc_key, sample_key in UTC_FIELDS.items():
+            if utc_key not in node:
+                continue
+            sample = node.get(sample_key)
+            if sample is None and "samples" in node and "start_sample" not in node:   # list_recordings
+                sample = 0 if utc_key == "start_utc" else node["samples"] if utc_key == "end_utc" else None
+            if isinstance(sample, int) and not isinstance(sample, bool) and sample >= 0:
+                slots.append((node, utc_key, rid, sample))
+    for k, v in node.items():
+        if k != "metadata" and isinstance(v, (dict, list)):
+            collect_times(anchored, v, rid, slots)
+
+
+def fill_times(conn, c, slots):
+    if not slots:
+        return
+    pairs = sorted({(rid, sample) for _, _, rid, sample in slots})
+    rows = conn.execute("SELECT p.rid, p.n, s.utc_ns, s.uncertainty_ns FROM unnest(%s::text[], %s::bigint[]) p(rid, n), "
+                        "LATERAL morlet_sample_utc(%s::regclass, p.rid, p.n) s",
+                        ([p[0] for p in pairs], [p[1] for p in pairs], c)).fetchall()
+    found = {(rid, int(n)): (utc, unc) for rid, n, utc, unc in rows}
+    for node, utc_key, rid, sample in slots:
+        if (rid, sample) not in found:
+            continue
+        utc, unc = found[(rid, sample)]
+        node[utc_key] = utc_from_ns(utc)
+        node["time_basis"] = "anchors"
+        if unc is not None:
+            node["time_uncertainty_s"] = max(node.get("time_uncertainty_s", 0.0), float(unc) / 1e9)
+
+
 def occurrences_at(conn, collection, points):
     """The occurrence (e.g. {"part": "P12"}) of the narrowest current context segment containing each
     (recording_id, sample); points outside every segment, or with an empty occurrence, are left out."""
@@ -418,6 +501,7 @@ def iso(t):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", max_gaps: int = 10) -> dict:
     """Overview of what is recorded, per group of recordings (group_by: a metadata key such as "station" or
     "bearing"; empty for one group): number of recordings, samples, first and last UTC time, the recording
@@ -482,6 +566,7 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit: int = 100) -> dict:
     """The newest data of every recording whose metadata contains metadata_filter: "what is the current value
     of each sensor?". samples=1 (default) gives each recording's last value; up to 1000 gives its last values
@@ -659,6 +744,7 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 50, offset: int = 0,
                     include_metadata: bool = False) -> dict:
     """List recordings in a collection: id, length and (when the metadata has a start time) UTC start and
@@ -912,6 +998,7 @@ def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), befo
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def search_similar(collection: str, recording_id: str, start_sample: int, end_sample: int,
                    metadata_filter: str = "{}", top_k: int = 10, shifts: int = 0, before_only: bool = False,
                    time_from: str = "", time_to: str = "", evidence: bool = True, exclude: str = "") -> dict:
@@ -1055,6 +1142,7 @@ def frame_window(onset, rate, window):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}", search_filter: str = "{}",
                      top_k: int = 10, min_frequency_hz: float = 0.0, look_seconds: float = 30.0,
                      before_only: bool = False) -> dict:
@@ -1125,6 +1213,7 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def read_interval(collection: str, recording_id: str, start_sample: int, end_sample: int,
                   max_points: int = 1000) -> dict:
     """Read the original samples of [start_sample, end_sample). Up to max_points values are returned as is;
@@ -1149,6 +1238,7 @@ def read_interval(collection: str, recording_id: str, start_sample: int, end_sam
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def describe_interval(collection: str, recording_id: str, start_sample: int, end_sample: int,
                       bands: str = "", min_frequency_hz: float = 0.0) -> dict:
     """Characterise [start_sample, end_sample) of a recording: level (mean, std, rms, min, max, peak),
@@ -1186,6 +1276,7 @@ def background(x_before, x_after, n, rate, edges):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def compare_intervals(collection: str, recording_id: str, start_sample: int, end_sample: int,
                       reference_start_sample: int = -1, reference_end_sample: int = -1,
                       reference_recording_id: str = "", bands: str = "", background_minutes: float = 10.0) -> dict:
@@ -1268,6 +1359,7 @@ def envelope(x, rate, lo, hi):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def envelope_spectrum(collection: str, recording_id: str, start_sample: int, end_sample: int, band: str = "",
                       max_frequency_hz: float = 600.0, check_frequencies: str = "", harmonics: int = 3,
                       tolerance_percent: float = 3.0, top_peaks: int = 8) -> dict:
@@ -1335,6 +1427,7 @@ def envelope_spectrum(collection: str, recording_id: str, start_sample: int, end
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def find_onsets(collection: str, recording_id: str, start_sample: int, end_sample: int,
                 min_frequency_hz: float = 0.0, max_frequency_hz: float = 0.0, sta_seconds: float = 1.0,
                 lta_seconds: float = 30.0, threshold: float = 4.0, max_onsets: int = 20) -> dict:
