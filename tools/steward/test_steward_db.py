@@ -377,6 +377,22 @@ class StewardDatabase(unittest.TestCase):
         self.tick(st, free)
         self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
 
+    def test_a_collection_keeps_counting_however_long_a_hold_lasts_and_gaps_never_look_recent(self):
+        a, c, day = self.admin, self.conn, 86400.0
+        cols = ["public.line"]
+        S.receiving(c, cols, 7, at=1000.0)                       # first observation: no insert time yet
+        self.assertEqual(S.receiving(c, cols, 7, at=1030.0), [])
+        self.noise("line", "r1", 1_100_000, 32_768)
+        self.assertEqual(S.receiving(c, cols, 7, at=1060.0), cols)   # dated at the previous observation (1030)
+        # a hold from 1100 on stops all inserts: ages are measured at the start of the hold
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 30 * day, held_since=1100.0), cols)
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 30 * day), [])          # without a hold: too old
+        # the steward was stopped for 30 days; an increase seen afterwards is dated at the last observation
+        self.noise("line", "r1", 1_132_768, 32_768)
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 60 * day), [])
+        self.noise("line", "r1", 1_165_536, 32_768)
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 60 * day + 30), cols)  # ingest goes on: counts again
+
     def test_without_pg_freespacemap_only_the_filesystem_counts_and_status_says_so(self):
         self.admin.execute("DROP EXTENSION pg_freespacemap")
         st = self.steward(reserve_bytes=1 << 30, reserve_fraction=0.0)

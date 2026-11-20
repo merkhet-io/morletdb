@@ -40,6 +40,7 @@ class Disk:
     free_bytes: int | None
     growth_per_day: float | None
     reusable_bytes: int | None = None
+    freespacemap_missing: bool = False   # why reusable_bytes is None: the extension is absent (else: map unreadable)
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,7 @@ class DiskState:
     unknown: bool
     cause: str
     reusable_bytes: int | None = None  # as measured (None: not measurable)
+    freespacemap_missing: bool = False
     borrowing: bool = False            # free disk is below the reserve, and space inside the tables takes new chunks
 
 
@@ -67,7 +69,8 @@ def disk_state(cfg: Config, d: Disk) -> DiskState:
     res = reserve(cfg, d.total_bytes)
     reusable = max(0, d.reusable_bytes or 0)
     usable = d.free_bytes + reusable - res
-    extra = dict(reusable_bytes=d.reusable_bytes, borrowing=d.free_bytes <= res and usable > 0)
+    extra = dict(reusable_bytes=d.reusable_bytes, freespacemap_missing=d.freespacemap_missing,
+                 borrowing=d.free_bytes <= res and usable > 0)
     if usable <= 0:
         return DiskState(ACTION, 0.0, True, True, True, False,
                          "the disk reserve is reached: new recordings are refused until space is freed", **extra)
@@ -240,9 +243,12 @@ def status_items(cfg: Config, o: Observed) -> list[Item]:
                           "check that the data volume is mounted and readable by the steward", "controls engineer"))
     elif d.hold_ingest:
         action = "free space: approve a retention plan or add storage"
-        if d.reusable_bytes is None:
-            action += ("; space freed inside the database is not counted (pg_freespacemap is not installed, or its "
-                       "map could not be read; morlet-steward init as a superuser installs it)")
+        if d.reusable_bytes is None and d.freespacemap_missing:
+            action += ("; space freed inside the database is not counted because pg_freespacemap is not installed "
+                       "(morlet-steward init as a superuser installs it)")
+        elif d.reusable_bytes is None:
+            action += ("; space freed inside the database could not be measured this time (the free space map was "
+                       "not read in time); the steward tries again within 10 minutes")
         elif d.reusable_bytes > 0:
             action += (f"; {fmt_bytes(d.reusable_bytes)} freed inside the database already count toward the "
                        "reserve")

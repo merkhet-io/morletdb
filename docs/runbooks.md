@@ -507,8 +507,10 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
    exercised here).
 4. **Space:** the removed rows become free space inside the tables after `VACUUM` (autovacuum does it). The files do
    not shrink, so the disk's free space does not grow; new samples reuse the space. The steward counts that space
-   toward its disk reserve (with `pg_freespacemap`; #538), so a retention plan applied at the reserve releases its
-   ingest hold once the removal is vacuumed. After many removals, rebuild the
+   toward its disk reserve (with `pg_freespacemap`; #538): it releases an ingest hold it set once the removal is
+   vacuumed, free plus reusable space is above the reserve, and the filesystem's own free space is above half the
+   reserve. If the filesystem is below half the reserve, retention alone does not release the hold: add storage, or
+   give space back to the disk as below. A hold set by a person stays until a person releases it. After many removals, rebuild the
    probe index ([7](#7-rebuilding-envelopes-probe-rows-and-indexes)).
 
    **To give the space back to the disk on PostgreSQL 19**, rewrite the collection's tables with

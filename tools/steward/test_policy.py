@@ -201,7 +201,10 @@ class ReusableSpace(unittest.TestCase):
         self.assertEqual(reuse.level, P.ATTENTION)
         self.assertIn("2.0 GB freed inside the database", reuse.cause)
         self.assertNotIn("disk-reuse", o(self.at(50, 2)))
-        self.assertIn("pg_freespacemap", o(self.at(4, None))["disk"].action)
+        missing = P.disk_state(CFG, P.Disk(100 * GB, 4 * GB, None, None, True))
+        self.assertIn("pg_freespacemap is not installed", o(missing)["disk"].action)
+        self.assertIn("could not be measured", o(self.at(4, None))["disk"].action)   # installed, map not read
+        self.assertNotIn("init", o(self.at(4, None))["disk"].action)
         self.assertIn("already count", o(self.at(2, 1))["disk"].action)
 
 

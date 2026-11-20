@@ -19,10 +19,12 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
   releases it.
 - **Space freed inside the database (#538):** near the reserve, space freed by retention or removed recordings
   counts too, once vacuumed: the free space map of the chunk tables of collections that received chunks in the last
-  7 days, in whole tuples. So an applied retention plan lifts the hold, although the files do not shrink. A hard
-  floor (half the reserve of real free disk) holds ingest whatever is reusable. Needs the `pg_freespacemap`
-  extension, which `init` creates when run as a superuser; without it only the filesystem counts, and the status
-  says so. Metric: `morlet_disk_reusable_bytes`.
+  7 days (or before the hold started), in whole tuples. The steward releases a hold *it* set once free plus
+  reusable space is above the reserve and the filesystem's own free space is above a hard floor (half the reserve),
+  so an applied and vacuumed retention plan that frees enough lifts it, although the files do not shrink. A hold
+  set by a person stays. Needs the `pg_freespacemap` extension, which `init` creates when run as a superuser;
+  without it only the filesystem counts, and the status says so while ingest is held. Metric:
+  `morlet_disk_reusable_bytes`.
 - **Plans (P3):** anything that removes or changes stored samples, or updates the extension, is a plan.
   - The steward proposes extension updates on its own when the server has a newer pg_morlet. A person proposes
     memory-level changes from a policy dry run (`propose-levels COLLECTION MOVES.json`; the evidence is the dry

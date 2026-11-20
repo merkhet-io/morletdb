@@ -120,7 +120,7 @@ error. An approver resets it.
     observed every tick from the insert counters and kept across restarts and holds;
   - per page in whole tuples (2 kB in TOAST, 1 kB in the chunk table), so fragments do not count.
   Without `pg_freespacemap` (it is not a trusted extension: `init` creates it when run as a superuser), only the
-  filesystem counts, as before, and the status says so.
+  filesystem counts, as before; the status says so when ingest is held.
 - **Time remaining:** free space plus reusable space, minus a reserve (default 5% or 2 GB, whichever is larger),
   divided by the growth rate.
 - **Hard floor:** whatever is reusable, the ingest hold is set when the filesystem's free space falls below half the
@@ -135,9 +135,10 @@ error. An approver resets it.
 | reserve reached | Action required | sets the **ingest hold**: appends fail with a typed error, and the collector logs and buffers |
 
 - **Unknown disk state** (statvfs fails, a size query fails): automatic work pauses and the status says so.
-- **Released hold:** when space is freed, the hold is released and work resumes, with no person needed. This
-  includes space freed inside the database: after an approved retention plan is applied and vacuumed, the hold is
-  released once free plus reusable space is above the reserve and free space above the hard floor. While new
+- **Released hold:** when space is freed, the steward releases the hold *it* set and work resumes, with no person
+  needed; a hold set by a person stays. This includes space freed inside the database: after an approved retention
+  plan is applied and vacuumed, the steward's hold is released once free plus reusable space is above the reserve and
+  the filesystem's free space is above the hard floor. While new
   samples use reused space below the reserve, the status says so (attention, `disk-reuse`).
 - **Emergency removal of raw chunks** exists only as a policy written beforehand. It applies only to recordings with
   a checksum-verified copy elsewhere, and still goes through a plan.

@@ -45,6 +45,7 @@ class Steward:
         self.analyzed: dict[str, float] = {}
         # (monotonic time, bytes) of the last measurement; None before the first tick, False far from the reserve
         self.reusable: tuple[float, int | None] | bool | None = None
+        self.reusable_missing = False                 # pg_freespacemap is not installed
         self.stop = False
 
     # -- observation ---------------------------------------------------------------------------------------------
@@ -62,14 +63,15 @@ class Steward:
             reusable = self.reusable_space(free, total)
         except psycopg.Error:
             return P.disk_state(self.cfg, P.Disk(None, None, None))
-        return P.disk_state(self.cfg, P.Disk(total, free, growth, reusable))
+        return P.disk_state(self.cfg, P.Disk(total, free, growth, reusable, self.reusable_missing))
 
     def reusable_space(self, free: int | None, total: int | None, every_s: float = 600.0) -> int | None:
         """Free space inside the chunk tables of collections that still receive chunks (#538). Which collections
         receive chunks is observed every tick; the free space map is read only near the reserve (free disk below
         twice the reserve) or while the steward's own ingest hold stands, at most every every_s seconds."""
         cols = [c for c in S.collections(self.conn) if S.privileged(self.conn, c)]
-        active = S.receiving(self.conn, cols, self.cfg.active_days)
+        active = S.receiving(self.conn, cols, self.cfg.active_days, held_since=S.hold_since(self.conn))
+        self.reusable_missing = S.freespace_function(self.conn) is None
         if free is None or total is None or total <= 0:
             return None
         held = (S.hold(self.conn) or (None, None))[1] == S.STEWARD_ROLE
