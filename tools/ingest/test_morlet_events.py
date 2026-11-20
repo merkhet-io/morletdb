@@ -42,6 +42,24 @@ class Events(unittest.TestCase):
         per_rec, outside = me.place(me.read_messages(p, "t", ["msg"], None), self.recs(), "plc", None)
         self.assertEqual((sorted(per_rec), outside), (["m1.spindle", "m2.spindle"], 0))
 
+    def test_anchored_recordings_are_placed_by_their_anchors(self):
+        """#393: a recording with time anchors is placed by the locator, not by start + rate."""
+        p = self.tmp / "anchored.csv"
+        p.write_text("time,machine,code\n2026-03-01T08:00:02Z,M1,7\n")
+        recs = self.recs()
+        recs[0]["anchored"] = True
+        calls = []
+
+        def locate(rid, t, end):
+            calls.append((rid, t, end))
+            return 1990, 1e-6, [1990, 2003]
+        per_rec, outside = me.place(me.read_messages(p, "time", ["code"], "machine"), recs, "alarm", "machine", locate)
+        (ev,) = per_rec["m1.spindle"]
+        self.assertEqual((ev["start_sample"], ev["value"]["time_basis"], ev["value"]["time_uncertainty_s"],
+                          ev["value"]["time_candidate_samples"]), (1990, "anchors", 1e-6, [1990, 2003]))
+        self.assertEqual(calls, [("m1.spindle", datetime(2026, 3, 1, 8, 0, 2, tzinfo=timezone.utc), 10000)])
+        self.assertEqual(outside, 0)
+
     def test_bad_logs_are_refused(self):
         p = self.tmp / "bad.csv"
         p.write_text("t,msg\nyesterday,x\n")

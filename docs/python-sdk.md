@@ -56,7 +56,15 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
   (ISO 8601, UTC, nanoseconds), so the MCP server and other tools read it too. Sample *n* is at
   `start + n / sample_rate_hz`. `Recording.start_time` is a `datetime` (microseconds, as `datetime` allows;
   `start_ns` is exact). `samples_for_time(rec, t0_ns, t1_ns)` maps a time range to the samples at or after
-  each time (the server's `morlet_time_to_samples`). `Interval.time_offsets_s()` gives float64 seconds since
+  each time. When the recording has [time anchors](clock-drift.md) (SQL 0.3.13; the importer writes them from a
+  source's own timestamps), it uses them by default (`basis="auto"`); `basis="start+rate"` keeps the mapping by
+  start time and rate (the server's `morlet_time_to_samples`), and `basis="anchors"` requires anchors. A range
+  that a backward step of the source's clock maps to several disjoint sample ranges raises `InvalidInputError`:
+  `time_ranges(rec, t0_ns, t1_ns)` returns every range as a `TimeRange` with its basis, `ambiguous`,
+  `extrapolated` and the time error at its first and last sample when one is known: a bound, unless
+  `assumes_linear_clock` (estimated anchors without a clock bound), and `None` for `start+rate`. Like
+  `samples_for_time`, ranges are offsets on the recording's time axis and are not clipped to the samples stored
+  (`Recording.samples`): a range after the last anchor is marked `extrapolated`. Without anchors and without a start time, both raise `InvalidInputError`. `Interval.time_offsets_s()` gives float64 seconds since
   sample 0, rounded in the last digits.
 - **Newest data.** `latest(c, n=1, metadata_filter)` returns, for every matching recording, its last `n`
   samples (up to 32,768) with their statistics, or with `n = 0` the statistics of its newest stored chunk, and
