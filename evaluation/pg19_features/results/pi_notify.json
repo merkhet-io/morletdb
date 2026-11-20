@@ -1,0 +1,258 @@
+{
+ "host": "Linux-6.1.21-v8+-aarch64-with-glibc2.31",
+ "cpus": 4,
+ "runs": [
+  {
+   "round": 1,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_avg": [
+    1.57,
+    2.12,
+    2.49
+   ],
+   "listeners": 0,
+   "appends": 1000,
+   "elapsed_s": 15.965148823917843,
+   "commits_per_s": 62.63643458818696,
+   "latency_ms": {
+    "p50": 14.565638499334455,
+    "p99": 26.479541829321523,
+    "max": 558.0856839660555
+   },
+   "postgres_cpu_s": 11.0,
+   "notifications": 1000
+  },
+  {
+   "round": 1,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_avg": [
+    1.59,
+    2.1,
+    2.48
+   ],
+   "listeners": 50,
+   "appends": 1000,
+   "elapsed_s": 18.500455323955975,
+   "commits_per_s": 54.052723702703375,
+   "latency_ms": {
+    "p50": 18.4551274869591,
+    "p99": 22.947064753388986,
+    "max": 42.333117104135454
+   },
+   "postgres_cpu_s": 12.0,
+   "notifications": 1000
+  },
+  {
+   "round": 1,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_avg": [
+    2.17,
+    2.17,
+    2.49
+   ],
+   "listeners": 0,
+   "appends": 1000,
+   "elapsed_s": 13.45299886201974,
+   "commits_per_s": 74.33286884630472,
+   "latency_ms": {
+    "p50": 12.84718798706308,
+    "p99": 18.4264863084536,
+    "max": 270.6514250021428
+   },
+   "postgres_cpu_s": 9.0,
+   "notifications": 1000
+  },
+  {
+   "round": 1,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_avg": [
+    2.14,
+    2.16,
+    2.48
+   ],
+   "listeners": 50,
+   "appends": 1000,
+   "elapsed_s": 14.46675135300029,
+   "commits_per_s": 69.12401931844967,
+   "latency_ms": {
+    "p50": 12.939117499627173,
+    "p99": 22.53435292514041,
+    "max": 686.3213810138404
+   },
+   "postgres_cpu_s": 9.0,
+   "notifications": 1000
+  },
+  {
+   "round": 2,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_avg": [
+    1.81,
+    2.09,
+    2.45
+   ],
+   "listeners": 50,
+   "appends": 1000,
+   "elapsed_s": 13.267856815014966,
+   "commits_per_s": 75.37012299291021,
+   "latency_ms": {
+    "p50": 13.008520938456059,
+    "p99": 18.110136133618653,
+    "max": 65.25093398522586
+   },
+   "postgres_cpu_s": 9.0,
+   "notifications": 1000
+  },
+  {
+   "round": 2,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_avg": [
+    1.63,
+    2.03,
+    2.42
+   ],
+   "listeners": 0,
+   "appends": 1000,
+   "elapsed_s": 13.712601529899985,
+   "commits_per_s": 72.92562230584218,
+   "latency_ms": {
+    "p50": 13.226359558757395,
+    "p99": 20.98529890878125,
+    "max": 131.1522169271484
+   },
+   "postgres_cpu_s": 9.0,
+   "notifications": 1000
+  },
+  {
+   "round": 2,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_avg": [
+    1.45,
+    1.96,
+    2.39
+   ],
+   "listeners": 50,
+   "appends": 1000,
+   "elapsed_s": 18.36820370494388,
+   "commits_per_s": 54.44190493874182,
+   "latency_ms": {
+    "p50": 17.91873195907101,
+    "p99": 26.75837388844229,
+    "max": 77.60764099657536
+   },
+   "postgres_cpu_s": 12.0,
+   "notifications": 1000
+  },
+  {
+   "round": 2,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_avg": [
+    1.32,
+    1.9,
+    2.36
+   ],
+   "listeners": 0,
+   "appends": 1000,
+   "elapsed_s": 15.725142878014594,
+   "commits_per_s": 63.5924269659963,
+   "latency_ms": {
+    "p50": 14.634885534178466,
+    "p99": 21.702071428298943,
+    "max": 691.8921190081164
+   },
+   "postgres_cpu_s": 11.0,
+   "notifications": 1000
+  },
+  {
+   "round": 3,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_avg": [
+    1.27,
+    1.84,
+    2.33
+   ],
+   "listeners": 0,
+   "appends": 1000,
+   "elapsed_s": 15.153990468010306,
+   "commits_per_s": 65.98921928260249,
+   "latency_ms": {
+    "p50": 14.62705247104168,
+    "p99": 22.983216732973233,
+    "max": 81.05715399142355
+   },
+   "postgres_cpu_s": 11.0,
+   "notifications": 1000
+  },
+  {
+   "round": 3,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_avg": [
+    1.49,
+    1.87,
+    2.33
+   ],
+   "listeners": 50,
+   "appends": 1000,
+   "elapsed_s": 19.215082195936702,
+   "commits_per_s": 52.04245237168249,
+   "latency_ms": {
+    "p50": 17.95629848493263,
+    "p99": 27.038197949295856,
+    "max": 773.558815009892
+   },
+   "postgres_cpu_s": 12.0,
+   "notifications": 1000
+  },
+  {
+   "round": 3,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_avg": [
+    1.46,
+    1.83,
+    2.3
+   ],
+   "listeners": 0,
+   "appends": 1000,
+   "elapsed_s": 13.715257570962422,
+   "commits_per_s": 72.91149982608955,
+   "latency_ms": {
+    "p50": 13.05010449141264,
+    "p99": 20.95097442506812,
+    "max": 193.22974607348442
+   },
+   "postgres_cpu_s": 9.0,
+   "notifications": 1000
+  },
+  {
+   "round": 3,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_avg": [
+    1.51,
+    1.82,
+    2.29
+   ],
+   "listeners": 50,
+   "appends": 1000,
+   "elapsed_s": 14.175014690030366,
+   "commits_per_s": 70.54666410351761,
+   "latency_ms": {
+    "p50": 12.960734020452946,
+    "p99": 20.980858152033758,
+    "max": 607.8529299702495
+   },
+   "postgres_cpu_s": 9.0,
+   "notifications": 1000
+  }
+ ]
+}

@@ -198,3 +198,9 @@ the most useful addition is `REPACK (CONCURRENTLY)`, which gives the space of re
 while appends continue (checked on 19.0: kept chunks byte for byte unchanged, `morlet_verify` clean). Selective
 `NOTIFY` wakeups help commit notifications, `WAIT FOR LSN` gives read-your-writes on standbys, and new statistics views
 help the steward. Using them is optional; pg_morlet's SQL stays the same on 17, 18 and 19.
+
+Measured 2026-11-20 on MorletDB's own tasks, same session, on a desktop and a Raspberry Pi (development runs):
+19.0 stores byte-identical chunks and envelopes and returns identical search results; reading every sample is 7%
+faster, other tasks are within ±3%; commit notifications keep their rate with many idle listeners, where 17 loses
+up to half; `pg_upgrade` from 17 works once the new cluster is created without data checksums (or the old one gets
+them). See the [measurements](../evaluation/pg19_features/README.md#measured-on-morletdbs-own-tasks-2026-11-20).

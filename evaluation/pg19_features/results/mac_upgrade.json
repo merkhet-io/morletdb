@@ -1,0 +1,133 @@
+{
+ "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+ "data": {
+  "every": 40,
+  "samples": 50853629,
+  "samples_sha256": "90ad0e5220b65d9010284a4f21aecc5de47d1bfe1ff42b511673853f5bb490a3"
+ },
+ "before": {
+  "extension": "0.3.13",
+  "chunks": "83e83f72cb5a52cd820fbf30bc38d4ce",
+  "envelopes": "13a2823c393971c4481a26392f069f00",
+  "anchors": "55c058a1e524a3ea276e20566db8ce8b",
+  "row_security": true,
+  "notifications": 1,
+  "recordings": 434,
+  "search": "9a7e7c95f511eca66f200c7c3419d742",
+  "anchor_times": "a099ce21f358241dc1baf700ade4b6b4",
+  "verify_problems": 0,
+  "chunk_stats_rows": 5
+ },
+ "old_version": "17.11",
+ "old_cluster_bytes": 240620744,
+ "default_initdb_check": {
+  "returncode": 1,
+  "message": [
+   "old cluster does not use data checksums but the new one does"
+  ]
+ },
+ "modes": {
+  "copy": {
+   "check_returncode": 0,
+   "returncode": 0,
+   "upgrade_s": 2.0476574588101357,
+   "new_version": "19.0",
+   "after": {
+    "extension": "0.3.13",
+    "chunks": "83e83f72cb5a52cd820fbf30bc38d4ce",
+    "envelopes": "13a2823c393971c4481a26392f069f00",
+    "anchors": "55c058a1e524a3ea276e20566db8ce8b",
+    "row_security": true,
+    "notifications": 1,
+    "recordings": 434,
+    "search": "9a7e7c95f511eca66f200c7c3419d742",
+    "anchor_times": "a099ce21f358241dc1baf700ade4b6b4",
+    "verify_problems": 0,
+    "chunk_stats_rows": 5
+   },
+   "after_update_extension": "0.3.13",
+   "identical": {
+    "extension": true,
+    "chunks": true,
+    "envelopes": true,
+    "anchors": true,
+    "row_security": true,
+    "notifications": true,
+    "recordings": true,
+    "search": true,
+    "anchor_times": true,
+    "verify_problems": true
+   },
+   "all_identical": true,
+   "analyze_s": 0.0901592499576509
+  },
+  "clone": {
+   "check_returncode": 0,
+   "returncode": 0,
+   "upgrade_s": 2.0078039159998298,
+   "new_version": "19.0",
+   "after": {
+    "extension": "0.3.13",
+    "chunks": "83e83f72cb5a52cd820fbf30bc38d4ce",
+    "envelopes": "13a2823c393971c4481a26392f069f00",
+    "anchors": "55c058a1e524a3ea276e20566db8ce8b",
+    "row_security": true,
+    "notifications": 1,
+    "recordings": 434,
+    "search": "9a7e7c95f511eca66f200c7c3419d742",
+    "anchor_times": "a099ce21f358241dc1baf700ade4b6b4",
+    "verify_problems": 0,
+    "chunk_stats_rows": 5
+   },
+   "after_update_extension": "0.3.13",
+   "identical": {
+    "extension": true,
+    "chunks": true,
+    "envelopes": true,
+    "anchors": true,
+    "row_security": true,
+    "notifications": true,
+    "recordings": true,
+    "search": true,
+    "anchor_times": true,
+    "verify_problems": true
+   },
+   "all_identical": true,
+   "analyze_s": 0.09012837498448789
+  },
+  "link": {
+   "check_returncode": 0,
+   "returncode": 0,
+   "upgrade_s": 2.0263651669956744,
+   "new_version": "19.0",
+   "after": {
+    "extension": "0.3.13",
+    "chunks": "83e83f72cb5a52cd820fbf30bc38d4ce",
+    "envelopes": "13a2823c393971c4481a26392f069f00",
+    "anchors": "55c058a1e524a3ea276e20566db8ce8b",
+    "row_security": true,
+    "notifications": 1,
+    "recordings": 434,
+    "search": "9a7e7c95f511eca66f200c7c3419d742",
+    "anchor_times": "a099ce21f358241dc1baf700ade4b6b4",
+    "verify_problems": 0,
+    "chunk_stats_rows": 5
+   },
+   "after_update_extension": "0.3.13",
+   "identical": {
+    "extension": true,
+    "chunks": true,
+    "envelopes": true,
+    "anchors": true,
+    "row_security": true,
+    "notifications": true,
+    "recordings": true,
+    "search": true,
+    "anchor_times": true,
+    "verify_problems": true
+   },
+   "all_identical": true,
+   "analyze_s": 0.09135191608220339
+  }
+ }
+}
