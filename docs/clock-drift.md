@@ -19,7 +19,7 @@ Related: [context model](context-model.md) (which lists clock drift as not imple
 ## 1. The problem
 
 A recording is one uniformly sampled channel. Its wall-clock time comes from one start time and the declared
-rate. The start time is `start_ns` in the recording metadata, or else `start`, `starttime` or `start_time`
+rate (this section describes the time axis before time anchors; it is still what a recording without anchors, and the stable SQL functions, use). The start time is `start_ns` in the recording metadata, or else `start`, `starttime` or `start_time`
 (`streams.sql:1351-1364`). Sample *n* is at `start + n/rate`. In an acquisition, sample *n* is at
 `origin_utc + offset_ns + n·1e9/rate` (`streams.sql:2726-2745`, `streams.sql:2783-2787`). Every time-to-sample
 conversion assumes that the acquisition clock runs at exactly the declared rate:
@@ -28,8 +28,8 @@ conversion assumes that the acquisition clock runs at exactly the declared rate:
 - the search time filters (`morlet_time_bounds`, `streams.sql:1431-1449`);
 - `before_only` (`morlet_before_ns`, `streams.sql:1459-1468`, and the acquisition cutoff, `streams.sql:2481-2490`);
 - the UTC times of search evidence (`streams.sql:1924-1926`) and the end time of `morlet_latest` (`streams.sql:656`);
-- the SDK's `samples_for_time` (`sdk/python/src/morletdb/_client.py:398-405`);
-- the MCP tools (`tools/mcp/morlet_mcp.py:138-139`, `:614-660`).
+- the SDK's `samples_for_time` and the MCP tools, before anchors: since SQL 0.3.13 they use a recording's
+  anchors when it has any (the status at the top, and section 8), and start + rate otherwise.
 
 **What stays exact.** The samples themselves stay exact, and so do sample offsets. Channels on the same DAQ
 sample clock also stay aligned, because they share the clock and therefore its error. A synchronous group
@@ -53,8 +53,9 @@ declared nominal rate that the hardware does not run at, or from how the source 
 than from oscillator drift. This design does not depend on the cause, but the cause decides whether one
 corrected rate would do (section 8, decision 1).
 
-**Shipped so far (#393, first part; CHANGELOG 0.3.12-alpha.1).** This is detection and reporting only, with
-no correction:
+**Shipped first (#393, first part; CHANGELOG 0.3.12-alpha.1).** This was detection and reporting only, with
+no correction, and it is still what a recording without anchors gets; with anchors, `locate_time` and the event
+importer use them instead (section 8):
 
 - **The importer.** When a CSV has a time column, the importer fits the rate the timestamps actually show
   (`tools/ingest/morlet_import.py:264-302`). It stores `time_axis` in the recording metadata: `fitted_rate_hz`,
