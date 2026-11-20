@@ -54,14 +54,52 @@ def wait_ready(dsn, timeout=120):
             time.sleep(1)
 
 
-def fresh_schema(c):
-    """Drop and recreate the scripts' own schema; nothing outside it is touched."""
-    c.execute(f"DROP SCHEMA IF EXISTS {SCHEMA} CASCADE")
-    c.execute(f"CREATE SCHEMA {SCHEMA}")
+MARK = "created by evaluation/pg19_features; dropped and recreated by its scripts"
+
+# objects outside the schema that depend on objects inside it (DROP ... CASCADE would remove them too)
+EXTERNAL_DEPENDENTS = """
+SELECT count(*) FROM pg_depend d
+  JOIN pg_class r ON d.refclassid = 'pg_class'::regclass AND r.oid = d.refobjid
+  JOIN pg_namespace n ON n.oid = r.relnamespace AND n.nspname = %(s)s
+ WHERE d.deptype IN ('n', 'a')
+   AND CASE d.classid
+         WHEN 'pg_class'::regclass THEN (SELECT relnamespace FROM pg_class WHERE oid = d.objid)
+         WHEN 'pg_rewrite'::regclass THEN (SELECT c.relnamespace FROM pg_rewrite w JOIN pg_class c ON c.oid = w.ev_class
+                                            WHERE w.oid = d.objid)
+         WHEN 'pg_constraint'::regclass THEN (SELECT c.relnamespace FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid
+                                               WHERE k.oid = d.objid)
+         WHEN 'pg_trigger'::regclass THEN (SELECT c.relnamespace FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+                                            WHERE t.oid = d.objid)
+         WHEN 'pg_proc'::regclass THEN (SELECT pronamespace FROM pg_proc WHERE oid = d.objid)
+         WHEN 'pg_attrdef'::regclass THEN (SELECT c.relnamespace FROM pg_attrdef a JOIN pg_class c ON c.oid = a.adrelid
+                                            WHERE a.oid = d.objid)
+         WHEN 'pg_policy'::regclass THEN (SELECT c.relnamespace FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+                                           WHERE p.oid = d.objid)
+         WHEN 'pg_statistic_ext'::regclass THEN (SELECT stxnamespace FROM pg_statistic_ext WHERE oid = d.objid)
+         WHEN 'pg_type'::regclass THEN (SELECT typnamespace FROM pg_type WHERE oid = d.objid)
+         ELSE NULL END IS DISTINCT FROM n.oid           -- any other kind of dependent counts as outside
+"""
 
 
 def drop_schema(c):
-    c.execute(f"DROP SCHEMA IF EXISTS {SCHEMA} CASCADE")
+    """Drop the scripts' own schema: only if it carries their mark and nothing outside it depends on it."""
+    row = c.execute("SELECT obj_description(oid, 'pg_namespace') FROM pg_namespace WHERE nspname = %s",
+                    (SCHEMA,)).fetchone()
+    if row is None:
+        return
+    if row[0] != MARK:
+        raise SystemExit(f"schema {SCHEMA} exists and was not created by these scripts: drop or rename it yourself")
+    n = c.execute(EXTERNAL_DEPENDENTS, {"s": SCHEMA}).fetchone()[0]
+    if n:
+        raise SystemExit(f"{n} object(s) outside schema {SCHEMA} depend on it: remove them before running")
+    c.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+
+
+def fresh_schema(c):
+    """Drop (see drop_schema) and recreate the scripts' own schema; nothing outside it is touched."""
+    drop_schema(c)
+    c.execute(f"CREATE SCHEMA {SCHEMA}")
+    c.execute(f"COMMENT ON SCHEMA {SCHEMA} IS '{MARK}'")
 
 
 def settings(c):

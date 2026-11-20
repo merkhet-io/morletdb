@@ -233,12 +233,19 @@ python evaluation/pg19_features/same_session.py --data /tmp/b3-20 --servers serv
 python evaluation/pg19_features/notify_check.py --servers servers.json --listeners 0,200 --out notify.json
 python evaluation/pg19_features/repack_stall.py --server pg19 --servers servers.json --data /tmp/b3-20 --mode repack --out r.json
 python evaluation/pg19_features/load_io.py --data /tmp/b3-20 --servers servers.json --rounds 3 --out io.json
+# the Pi runs: the 1/40 set, 3 rounds, 50 idle listeners and 1,000 appends, 5 load rounds
+python evaluation/pg19_features/same_session.py --data /tmp/b3-40 --servers servers.json --rounds 3 --out pi_same.json
+python evaluation/pg19_features/notify_check.py --servers servers.json --listeners 0,50 --appends 1000 --out pi_notify.json
+python evaluation/pg19_features/repack_stall.py --server pg19 --servers servers.json --data /tmp/b3-40 --mode repack --out pi_r.json
+python evaluation/pg19_features/load_io.py --data /tmp/b3-40 --servers servers.json --rounds 5 --out pi_io.json
 python evaluation/pg19_features/upgrade_check.py --bin17 <17/bin> --bin19 <19/bin> --data /tmp/b3-40 --work /tmp/upg --out upg.json
 python evaluation/pg19_features/summarize.py same.json notify.json
 ```
 
-Every script works only in the schema `morlet_pg19exp`, which it drops and recreates, and `upgrade_check.py` refuses
-a work directory it did not create. These safeguards, input checks in `prepare_data.py`, and stricter pass
+The scripts that use a running server (`same_session.py`, `notify_check.py`, `repack_stall.py`, `load_io.py`) work
+only in the schema `morlet_pg19exp`: they drop it only if it carries their own comment and nothing outside it depends
+on it, and recreate it. `upgrade_check.py` creates its own clusters in a work directory and refuses one it did not
+create; `prepare_data.py` and `summarize.py` do not use a database. These safeguards, input checks in `prepare_data.py`, and stricter pass
 conditions (failed appends in `repack_stall.py`, zero `morlet_verify` problems after an upgrade, both servers
 compared in `same_session.py`) were added after the runs above, from review; the measured statements are unchanged,
 and every script was run again once afterwards with the same outcomes.
