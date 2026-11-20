@@ -23,14 +23,19 @@ Everything lives in the schema morlet_retention_check, which the script creates 
 """
 import argparse
 import json
+import math
 import os
 import platform
+import sys
 import threading
 import time
 from pathlib import Path
 
 import numpy as np
 import psycopg
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pg19_features"))
+from same_session import EXTERNAL_DEPENDENTS  # noqa: E402  (objects outside a schema that depend on it)
 
 SCHEMA = "morlet_retention_check"
 MARK = "created by evaluation/partition_retention; dropped and recreated by its script"
@@ -42,12 +47,21 @@ def q1(c, sql, args=None):
     return c.execute(sql, args).fetchone()[0]
 
 
-def fresh_schema(c):
+def drop_schema(c):
+    """Drop the script's schema: only if it carries the script's mark and nothing outside it depends on it."""
     row = c.execute("SELECT obj_description(oid,'pg_namespace') FROM pg_namespace WHERE nspname=%s", (SCHEMA,)).fetchone()
-    if row is not None:
-        if row[0] != MARK:
-            raise SystemExit(f"schema {SCHEMA} exists and was not created by this script")
-        c.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+    if row is None:
+        return
+    if row[0] != MARK:
+        raise SystemExit(f"schema {SCHEMA} exists and was not created by this script")
+    n = q1(c, EXTERNAL_DEPENDENTS, {"s": SCHEMA})
+    if n:
+        raise SystemExit(f"{n} object(s) outside schema {SCHEMA} depend on it: remove them before running")
+    c.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+
+
+def fresh_schema(c):
+    drop_schema(c)
     c.execute(f"CREATE SCHEMA {SCHEMA}")
     c.execute(f"COMMENT ON SCHEMA {SCHEMA} IS '{MARK}'")
 
@@ -101,7 +115,7 @@ def run_arm(dsn, arm, fs_path, rate, reader_on):
         c.execute(f"DROP TABLE IF EXISTS {SCHEMA}.t CASCADE")
         t = make_table(c, arm)
         res["rows_per_part"] = q1(c, f"SELECT count(*) FROM {t} WHERE part=1")
-        part2_sig = (f"SELECT md5(string_agg(recording_id||':'||start_sample||':'||md5(encoded),',' "
+        part2_sig = (f"SELECT md5(string_agg(recording_id||':'||start_sample||':'||sample_count||':'||md5(encoded),',' "
                      f"ORDER BY recording_id,start_sample)) FROM {t} WHERE part=2")
         sig0 = q1(c, part2_sig)
         payloads = [r[0] for r in c.execute(f"SELECT encoded FROM {SRC}_chunks ORDER BY recording_id, start_sample "
@@ -208,8 +222,11 @@ def run_arm(dsn, arm, fs_path, rate, reader_on):
             "longest_gap_ms": float(np.diff(edges).max() * 1e3),
         }
         res["part2_unchanged"] = q1(c, part2_sig) == sig0
-        res["all_inserts_stored"] = (not failures and q1(c, f"SELECT count(*) FROM {t} WHERE part=3") == len(log))
+        res["all_inserts_stored"] = (not failures and len(log) > 0
+                                     and q1(c, f"SELECT count(*) FROM {t} WHERE part=3") == len(log))
         res["part1_left"] = q1(c, f"SELECT count(*) FROM {t} WHERE part=1")
+        res["ok"] = (res.get("error") is None and res["part1_left"] == 0 and res["part2_unchanged"]
+                     and res["all_inserts_stored"])
         c.execute(f"DROP TABLE {t} CASCADE")
         c.execute(f"DROP TABLE IF EXISTS {t}_1")
     return res
@@ -224,6 +241,8 @@ def main():
     ap.add_argument("--rate", type=float, default=10.0, help="chunks inserted per second during the removal")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
+    if not (math.isfinite(a.rate) and a.rate > 0):
+        ap.error("--rate must be a positive number")
     out = {"host": platform.platform(), "runs": []}
     with psycopg.connect(a.dsn, autocommit=True) as c:
         c.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
@@ -244,10 +263,10 @@ def main():
                                  {"fs_gain": r["fs_free_after_checkpoint"] - r["fs_free_before"],
                                   "size_change": r["size_after"] - r["size_before"],
                                   "max_ms": r["inserts"]["max_ms_during"], "snap": r["old_snapshot_sees"],
-                                  "ok": r["part2_unchanged"] and r["all_inserts_stored"]}), flush=True)
+                                  "ok": r["ok"]}), flush=True)
                 Path(a.out).write_text(json.dumps(out, indent=1) + "\n")
     with psycopg.connect(a.dsn, autocommit=True) as c:
-        c.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+        drop_schema(c)
 
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ Ranges over the four runs of each arm (two rounds × two passes):
 | WAL written | 80–89 MB | 165–180 MB | **3.6–8.0 MB** |
 | Longest wait for one append | 1.7–10.5 s | 5.3–8.4 s | **18–72 ms** |
 | Median append during the removal (14–19 ms before) | 83–427 ms | 58–230 ms | 16–18 ms |
-| Part 2 byte for byte unchanged, every append stored | yes | yes | yes |
+| Part 2 unchanged (recording, start and encoded bytes of every chunk), every append stored | yes | yes | yes |
 
 - **Dropping a partition** gave the whole month back to the filesystem in a quarter of a second, wrote a tenth of
   the WAL of a `DELETE` or less, and appends did not notice it (median 16–18 ms, as before).
@@ -105,4 +105,8 @@ python evaluation/partition_retention/retention_check.py --data /tmp/b3-40 \
 ```
 
 It needs PostgreSQL 19 with pg_morlet, and works only in the schema `morlet_retention_check`, which it creates and
-drops (and refuses to drop if it did not create it).
+drops (and refuses to drop if it did not create it or if anything outside it depends on it).
+
+After the runs above, from review: the part-2 check also compares `sample_count`, a run counts as `ok` only if the
+removal raised no error, left nothing of part 1, and the writer stored at least one append, and `--rate` must be
+positive. The recorded runs had no removal error, no part-1 rows left, and 83 to 471 appends each.
