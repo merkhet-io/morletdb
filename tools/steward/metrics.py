@@ -15,6 +15,8 @@ The metrics:
 - morlet_steward_actions_24h{job,outcome}, morlet_steward_plans_waiting.
 - morlet_ingest_hold: 1 while appends of new samples are held.
 - morlet_disk_free_bytes, morlet_disk_total_bytes, morlet_database_bytes: the steward's latest disk sample.
+- morlet_disk_reusable_bytes: free space inside the chunk tables of collections that still receive chunks, which new
+  chunks take first (#538); measured by the steward near the disk reserve, absent when not measured.
 - morlet_verify_last_pass_age_seconds{collection}, morlet_verify_last_pass_problems{collection}.
 - morlet_collection_*{collection,window_size}: from morlet_collection_status (recordings, raw samples, unbuilt
   samples, probe backlog, bytes).
@@ -49,6 +51,8 @@ HELP = {
     "morlet_disk_free_bytes": "free bytes on the database's filesystem (steward's latest sample)",
     "morlet_disk_total_bytes": "size of the database's filesystem (steward's latest sample)",
     "morlet_database_bytes": "database size plus WAL (steward's latest sample)",
+    "morlet_disk_reusable_bytes": "free space inside the chunk tables that new chunks take first (steward's last "
+                                  "measurement near the reserve)",
     "morlet_verify_last_pass_age_seconds": "seconds since the last completed integrity pass of a collection",
     "morlet_verify_last_pass_problems": "problems found by the last completed integrity pass of a collection",
     "morlet_table_dead_tuples": "dead tuples of a collection table",
@@ -147,6 +151,10 @@ class Collector:
                 for name, v in zip(("morlet_disk_free_bytes", "morlet_disk_total_bytes", "morlet_database_bytes"), disk):
                     if v is not None:
                         s.append((name, {}, v))
+            reusable = conn.execute("SELECT (value->>'bytes')::bigint FROM morlet_steward.meta "
+                                    "WHERE key='reusable'").fetchone()
+            if reusable and reusable[0] is not None:
+                s.append(("morlet_disk_reusable_bytes", {}, reusable[0]))
             for coll, problems, age_s in conn.execute(
                     "SELECT collection,last_pass_problems,extract(epoch FROM now()-last_pass_finished_at) "
                     "FROM morlet_steward.verify_cursor WHERE last_pass_finished_at IS NOT NULL ORDER BY collection"):

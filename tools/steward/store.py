@@ -206,7 +206,14 @@ def init(conn: psycopg.Connection) -> None:
                      f"TO {APPROVER_ROLE}")
         conn.execute(f"GRANT UPDATE ON morlet_steward.breakers TO {APPROVER_ROLE}")
         conn.execute("GRANT SELECT ON morlet_steward.status, morlet_steward.overall TO PUBLIC")
-        conn.execute(f"GRANT pg_monitor TO {STEWARD_ROLE}")   # database and WAL sizes
+        conn.execute(f"GRANT pg_monitor TO {STEWARD_ROLE}")   # database and WAL sizes; pg_stat_scan_tables (FSM)
+        # free space inside tables (#538): pg_freespacemap is a standard contrib module but not a trusted one, so
+        # only a superuser can create it; without it the steward counts only the filesystem's free space
+        try:
+            with conn.transaction():
+                conn.execute("CREATE EXTENSION IF NOT EXISTS pg_freespacemap")
+        except psycopg.Error:
+            pass
         if conn.execute("SELECT to_regclass('public.morlet_ingest_hold')").fetchone()[0]:
             conn.execute(f"GRANT INSERT, UPDATE, DELETE ON public.morlet_ingest_hold TO {STEWARD_ROLE}")
 
@@ -509,6 +516,14 @@ def extension_versions(conn) -> tuple[str, str] | None:
 
 # ---- ingest hold (#287, P2) ---------------------------------------------------------------------------------------
 
+def hold_since(conn) -> float | None:
+    """Start of the current ingest hold (any holder) as a Unix time, or None."""
+    if not conn.execute("SELECT to_regclass('public.morlet_ingest_hold')").fetchone()[0]:
+        return None
+    r = conn.execute("SELECT extract(epoch FROM since) FROM public.morlet_ingest_hold").fetchone()
+    return float(r[0]) if r else None
+
+
 def hold(conn) -> tuple[str, str] | None:
     """(reason, set_by) of the current ingest hold, or None; None also when the extension has no hold yet."""
     if not conn.execute("SELECT to_regclass('public.morlet_ingest_hold')").fetchone()[0]:
@@ -547,6 +562,97 @@ def record_disk(conn, db: int, free: int | None, total: int | None, every_s: flo
 def disk_history(conn) -> list[tuple[float, int]]:
     return [(float(r[0]), int(r[1])) for r in conn.execute(
         "SELECT extract(epoch FROM at),db_bytes FROM morlet_steward.disk_samples ORDER BY at").fetchall()]
+
+
+# ---- space freed inside the tables (#538) ----------------------------------------------------------------------------
+
+TOAST_TUPLE = 2048   # a TOAST tuple (at most about 2,032 bytes with its line pointer) fits in this much free space
+HEAP_TUPLE = 1024    # a chunk row without its TOASTed samples fits in this much
+
+
+def freespace_function(conn) -> str | None:
+    """The qualified pg_freespace(regclass) of pg_freespacemap, or None when the extension is not installed."""
+    r = conn.execute("SELECT format('%I.pg_freespace', n.nspname) FROM pg_extension e JOIN pg_namespace n "
+                     "ON n.oid=e.extnamespace WHERE e.extname='pg_freespacemap'").fetchone()
+    return r[0] if r else None
+
+
+def receiving(conn, collections_: list[str], active_days: float, at: float | None = None,
+              held_since: float | None = None) -> list[str]:
+    """The collections whose chunk table received rows in the last active_days, from the cumulative insert counter
+    (pg_stat_all_tables.n_tup_ins), observed by the steward and kept in morlet_steward.meta (counter, insert time,
+    observation time) so that it survives restarts.
+    - An increase is dated at the previous observation, the earliest the insert can have happened, so a gap in
+      observation (the steward was stopped) never makes old inserts look recent.
+    - While an ingest hold stands (held_since), no chunks can arrive, so ages are measured at the start of the hold:
+      a collection that received chunks before the hold keeps counting however long the hold lasts.
+    - A collection first seen now has no known insert time and does not count (undercount rather than overcount); a
+      counter that went down (statistics reset) restarts its baseline."""
+    at = time.time() if at is None else at
+    ref = min(at, held_since) if held_since is not None else at
+    row = conn.execute("SELECT value FROM morlet_steward.meta WHERE key='chunk_inserts'").fetchone()
+    seen = dict(row[0]) if row else {}
+    before = json.dumps(seen, sort_keys=True)
+    out = []
+    for c in collections_:
+        chunks = sibling(conn, c, "_chunks")
+        if chunks is None:
+            continue
+        n = conn.execute("SELECT n_tup_ins FROM pg_stat_all_tables WHERE relid=%s::regclass", (chunks,)).fetchone()
+        n = int(n[0]) if n and n[0] is not None else None
+        prev_n, last, observed = (list(seen.get(c, [])) + [None, None, None])[:3]
+        if n is not None and prev_n is not None and n > prev_n:
+            last = observed                          # None for an entry without an observation time: unknown
+        seen[c] = [n, last, at]
+        if last is not None and ref - last <= active_days * 86400:
+            out.append(c)
+    if json.dumps(seen, sort_keys=True) != before:
+        conn.execute("INSERT INTO morlet_steward.meta VALUES ('chunk_inserts',%s) ON CONFLICT (key) DO UPDATE "
+                     "SET value=EXCLUDED.value", (json.dumps(seen),))
+    return out
+
+
+def reusable_bytes(conn, collections_: list[str], timeout_s: float = 60.0) -> int | None:
+    """Free space that new chunks of these collections can take: what the free space map records in each chunk
+    table and its TOAST table, counted per page in whole tuples (TOAST_TUPLE, HEAP_TUPLE), so fragments too small
+    for a tuple do not count. The map is updated by VACUUM (and autovacuum), so space is counted after the removal
+    was vacuumed. None when pg_freespacemap is not installed or the map cannot be read within timeout_s (one
+    deadline for the whole measurement)."""
+    fn = freespace_function(conn)
+    if fn is None:
+        return None
+    total = 0
+    deadline = time.monotonic() + timeout_s
+
+    def limit():
+        left = deadline - time.monotonic()
+        if left <= 0:
+            raise TimeoutError
+        conn.execute(f"SET LOCAL statement_timeout = {max(1, int(left * 1000))}")
+
+    try:
+        with conn.transaction():
+            for c in collections_:
+                chunks = sibling(conn, c, "_chunks")
+                if chunks is None:
+                    continue
+                # by OID: the steward may not look names up in pg_toast
+                oids = conn.execute("SELECT oid, nullif(reltoastrelid,0) FROM pg_class WHERE oid=%s::regclass",
+                                    (chunks,)).fetchone()
+                for oid, unit in ((oids[0], HEAP_TUPLE), (oids[1], TOAST_TUPLE)):
+                    if oid is not None:
+                        limit()
+                        total += int(conn.execute(f"SELECT coalesce(sum(avail / %s * %s), 0) FROM {fn}(%s::oid::regclass)",
+                                                  (unit, unit, oid)).fetchone()[0])
+    except (psycopg.Error, TimeoutError):
+        return None
+    return total
+
+
+def record_reusable(conn, n: int | None) -> None:
+    """The last measurement, for metrics and status (morlet_steward.meta, key 'reusable')."""
+    conn.execute("INSERT INTO morlet_steward.meta VALUES ('reusable',%s) ON CONFLICT (key) DO UPDATE "
+                 "SET value=EXCLUDED.value", (json.dumps({"bytes": n, "at": time.time()}),))
 
 
 def load_breakers(conn, policy) -> dict:

@@ -506,7 +506,14 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
    `morlet_finish_memory_run` yourself ([memory design](memory-design.md#moving-episodes-one-primitive); not
    exercised here).
 4. **Space:** the removed rows become free space inside the tables after `VACUUM` (autovacuum does it). The files do
-   not shrink, so the disk's free space does not grow; new samples reuse the space. After many removals, rebuild the
+   not shrink, so the disk's free space does not grow; new samples reuse the space. The steward counts that space
+   toward its disk reserve (with `pg_freespacemap`; #538), but only in the chunk tables of collections that received
+   chunks in the last 7 days (or before the current hold began): removals in a collection that receives nothing do
+   not count. It releases an ingest hold it set once the removal is vacuumed, free plus reusable space is above the
+   reserve, and the filesystem's own free space is above half the reserve. If the filesystem is below half the
+   reserve, retention alone does not release the hold: add storage. The rewrite below is not an option there, since
+   it needs free disk about the size of the kept data plus its WAL. A hold set by a person stays until a person
+   releases it. After many removals, rebuild the
    probe index ([7](#7-rebuilding-envelopes-probe-rows-and-indexes)).
 
    **To give the space back to the disk on PostgreSQL 19**, rewrite the collection's tables with
@@ -548,7 +555,9 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
      Prefer the shortest rewrite: one table at a time, soon after the removal.
    - **Readers with an older snapshot can see an empty table.** `REPACK (CONCURRENTLY)` is not MVCC-safe: once it
      commits, a transaction whose snapshot was taken before it started sees the repacked table as empty if it reads the
-     table only then. A single query is safe. A `REPEATABLE READ` transaction of several statements is not: the search
+     table only then. (Reproduced on 19.0 with a MorletDB collection: such a transaction counted 0 of 1,744
+     chunks; in a separate run that rewrote the table with `VACUUM FULL` instead, it counted all 1,744;
+     [measurements](../evaluation/pg19_features/README.md).) A single query is safe. A `REPEATABLE READ` transaction of several statements is not: the search
      contract suggests one for a single snapshot, and the MCP decision tool uses one. Such a reader could report "no
      match" where data exists. So start the repack only when no other transaction is open, and stop the MCP server,
      the steward and other multi-statement readers until it has finished:

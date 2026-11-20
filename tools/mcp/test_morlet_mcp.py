@@ -340,6 +340,81 @@ class TimeQualityOnADatabase(unittest.TestCase):
         self.assertIn("16.8 samples", h["time_note"])
 
 
+@unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.13)")
+class TimeAnchorsOnADatabase(unittest.TestCase):
+    """#393, #383: locate_time by time anchors. Blocks of 100 samples at 1 kHz from 2026-02-01T12:00:00Z: block 1
+    starts 13 ms late, block 2 starts 5 ms before block 1 ends. start + rate would be off by 13 and 8 samples."""
+
+    @classmethod
+    def setUpClass(cls):
+        import psycopg
+        url = os.environ["MORLET_MCP_TEST_DATABASE_URL"]
+        with psycopg.connect(url, autocommit=True) as conn:
+            if conn.execute("SELECT to_regproc('public.morlet_add_time_anchors') IS NULL").fetchone()[0]:
+                raise unittest.SkipTest("server without time anchors (SQL 0.3.13)")
+            for t in ("time_anchors", "chunks", "segments"):
+                conn.execute(f"DROP TABLE IF EXISTS public.mcp_anchor_{t} CASCADE")
+            conn.execute("DROP TABLE IF EXISTS public.mcp_anchor CASCADE")
+            conn.execute("SELECT morlet_create_stream_collection('public','mcp_anchor')")
+            for rid, meta in (("blocks", {"start_utc": "as recorded", "start_sample": 0}),   # anchors only, no start
+                              ("plain", {"start": "2026-02-01T12:00:00Z"})):
+                conn.execute("SELECT morlet_start_recording('mcp_anchor',%s,1000,'acc','g',%s,512,256,'zscore','none')",
+                             (rid, json.dumps(meta)))
+                conn.execute("SELECT morlet_append_chunks_raw('mcp_anchor',%s,0,morlet_float8_le_bytes(ARRAY("
+                             "SELECT sin(i/5.0)::float8 FROM generate_series(0,299) i)),300)", (rid,))
+            base = 1769947200000000000                                          # 2026-02-01T12:00:00Z
+            rows = [{"recording_id": "blocks", "sample_offset": n, "utc_ns": str(base + ms * 1000000),
+                     "uncertainty_ns": 1000, "source": "daq-timestamps", "break_before": n > 0}
+                    for n, ms in ((0, 0), (100, 113), (200, 208))]
+            conn.execute("SELECT morlet_enable_time_anchors('mcp_anchor')")
+            conn.execute("SELECT morlet_add_time_anchors('mcp_anchor','b1',%s)", (json.dumps(rows),))
+        os.environ["DATABASE_URL"] = url
+
+    def match(self, utc):
+        return {h["recording_id"]: h for h in m.locate_time("public.mcp_anchor", utc)["matches"]}
+
+    def test_block_starts_are_exact(self):
+        h = self.match("2026-02-01T12:00:00.113Z")
+        self.assertEqual((h["blocks"]["sample"], h["blocks"]["time_basis"]), (100, "anchors"))
+        self.assertEqual((h["plain"]["sample"], h["plain"]["time_basis"]), (113, "start + rate"))
+        self.assertAlmostEqual(h["blocks"]["time_uncertainty_s"], 1e-6)
+
+    def test_inside_a_block_the_period_containing_the_time(self):
+        self.assertEqual(self.match("2026-02-01T12:00:00.150500Z")["blocks"]["sample"], 137)
+
+    def test_a_jump_and_a_backward_step_are_explained(self):
+        gap = self.match("2026-02-01T12:00:00.105Z")["blocks"]
+        self.assertEqual((gap["sample"], gap["first_sample_after_jump"]), (99, 100))
+        self.assertIn("jump", gap["time_note"])
+        twice = self.match("2026-02-01T12:00:00.208Z")["blocks"]
+        self.assertEqual((twice["sample"], twice["candidate_samples"]), (195, [195, 200]))
+        self.assertIn("twice", twice["time_note"])
+
+    def test_reported_utc_times_follow_the_anchors(self):
+        r = m.read_interval("public.mcp_anchor", "blocks", 200, 210)
+        self.assertEqual((r["start_utc"], r["time_basis"]), ("2026-02-01T12:00:00.208000Z", "anchors"))
+        self.assertAlmostEqual(r["time_uncertainty_s"], 1e-6)
+        plain = m.read_interval("public.mcp_anchor", "plain", 200, 210)
+        self.assertEqual(plain["start_utc"], "2026-02-01T12:00:00.200000Z")
+        self.assertNotIn("time_basis", plain)
+        recs = {x["recording_id"]: x for x in m.list_recordings("public.mcp_anchor")["recordings"]}
+        self.assertEqual((recs["blocks"]["start_utc"], recs["blocks"]["end_utc"]),
+                         ("2026-02-01T12:00:00Z", "2026-02-01T12:00:00.308000Z"))   # block 2: 208 ms + 100 samples
+        self.assertEqual(recs["plain"]["end_utc"], "2026-02-01T12:00:00.300000Z")
+        # metadata is returned as stored, even when it has keys that look like reported times
+        meta = m.list_recordings("public.mcp_anchor", include_metadata=True)["recordings"]
+        self.assertEqual({x["recording_id"]: x.get("metadata") for x in meta}["blocks"],
+                         {"start_utc": "as recorded", "start_sample": 0})
+
+    def test_nanoseconds_and_the_gap_note_for_an_anchored_recording(self):
+        # nanoseconds count: 1 ns before block 1's start the last sample at or before it is still 99, at the start 100
+        self.assertEqual(self.match("2026-02-01T12:00:00.112999999Z")["blocks"]["sample"], 99)
+        self.assertEqual(self.match("2026-02-01T12:00:00.113000000Z")["blocks"]["sample"], 100)
+        # after both recordings: the anchored one ends last (block 2 runs to .308), so it is the previous recording
+        r = m.locate_time("public.mcp_anchor", "2026-02-01T12:00:00.400Z")
+        self.assertEqual((r["note"], r["previous"]["recording_id"]), ("the time is after the last recording", "blocks"))
+
+
 @unittest.skipUnless(os.environ.get("MORLET_MCP_TEST_DATABASE_URL"), "needs MORLET_MCP_TEST_DATABASE_URL (SQL 0.3.6)")
 class SeriesProductionOnADatabase(unittest.TestCase):
     """#384: one recording of three parts machined alike; the same cut on the other parts, not the query's own."""

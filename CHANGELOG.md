@@ -2,6 +2,51 @@
 
 ## Unreleased
 
+- **Clients use time anchors (#393, #383).** On recordings with time anchors (SQL 0.3.13):
+  - MCP `locate_time` locates a UTC time by them (`time_basis: anchors`): exact at every anchor, with the error bound,
+    a note for a time in a clock jump or outside a block's anchors, and `candidate_samples` when a backward clock step
+    makes the time occur twice. Anchored recordings need no start time. A time without an offset is read as UTC, and
+    fractions are read to the nanosecond.
+  - `morlet_events.py` places messages by the anchors, with `time_basis`, the error bound and
+    `time_candidate_samples` in the event's value (the event goes on the first candidate).
+  - Python SDK (unreleased): `samples_for_time` uses the anchors by default (`basis="auto"`; `"start+rate"` keeps the previous
+    mapping) and refuses a range that a backward step makes ambiguous; the new `time_ranges` returns every range as
+    a `TimeRange` with its basis and error (a bound unless `assumes_linear_clock`). Both raise when a recording has
+    neither anchors nor a start time.
+  - The UTC times other MCP tools report (search hits, reads, descriptions, comparisons, onsets, recording lists,
+    `latest`) come from the anchors for anchored recordings, with `time_basis: anchors` and `time_uncertainty_s`;
+    `coverage`'s first, last and gap times still use start + rate.
+  Recordings without anchors are located and timed as before. The SQL search functions' own UTC evidence (stable)
+  still uses start + rate.
+- **The importer writes time anchors (#393, #383).** With a CSV time column and an absolute time (ISO 8601, or
+  seconds with `--time-origin`), `morlet_import.py` stores the real timestamps as time anchors on a server with SQL
+  0.3.13: one anchor at every block start, with `break_before` from the second block on (a block starts where a
+  step departs from the declared period by more than a tolerance, half a period by default, and at every backward or
+  zero step), and,
+  inside a block, further anchors added until the line through them is within the tolerance of every timestamp.
+  ISO times keep their nanoseconds. A lookup at every block start is exact, which is #383's done-when,
+  tested against a database. A rerun writes nothing new. `--anchor-tolerance-s` and `--no-anchors` control it;
+  samples are never moved ([import](docs/import.md)).
+- **Time anchors (SQL 0.3.13, experimental; #393, #383).** A recording can carry sync points: "sample n was at UTC
+  time T, give or take u, according to source". `morlet_enable_time_anchors` adds the opt-in table
+  `<collection>_time_anchors`; `morlet_add_time_anchors` writes idempotent batches (an identical retry returns 0, a
+  different one under the same id fails) and `morlet_revise_time_anchor` revises or retracts an anchor, keeping the
+  old row. `morlet_sample_utc`, `morlet_utc_to_samples` and `morlet_utc_to_sample` map between samples and UTC
+  exactly at every anchor and piecewise linearly between them, in integer arithmetic, with an error bound from the
+  anchors' uncertainties and a clock bound ρ (default 1e-4 for measured sources; override per call or with
+  `time_axis.rho` in the recording metadata). By default no ρ is assumed for estimated anchors, and the result is
+  marked `assumes_linear_clock`: its uncertainty is then not a bound (a ρ given per call or in the metadata applies to
+  them too). For block-stamped sources, an anchor with `break_before`
+  starts a new segment: a time in the jump between two blocks maps to the first sample of the later one (`gap`), and
+  a time that a backward step puts into two blocks returns both samples, marked `ambiguous`. A backward or zero step
+  without a break is refused. Recordings without anchors keep start + declared rate, and no stable function
+  changes. Samples are never resampled or changed. Row security covers the new table in both enablement orders.
+  Direct SQL on the table is held to the same rules (a statement trigger checks inserts; rows are append-only),
+  and anchor writes need READ COMMITTED.
+  Each mapping call reads all of a recording's anchors (fine for drift and files of minutes; an indexed lookup is
+  #546). MCP `locate_time`, the collectors and the SDK use the anchors in the next steps
+  ([design](docs/clock-drift.md), section 8). Update script 0.3.12 → 0.3.13; the upgrade tests now start from
+  v0.4.0-beta.1 as well.
 - **Release image on PostgreSQL 17.12** (was 17.6). The image's base moves to `postgres:17.12-bookworm`, the
   November 2026 minor release, which brings the security and bug fixes of 17.7–17.12 (CVE-2026-6460 among them). The
   build stage already used 17.12's server headers from apt; now build and runtime match. A minor release keeps the
@@ -21,7 +66,7 @@
   back to the disk with `REPACK (CONCURRENTLY)` while ingest continues (checked on 19.0; `evaluation/pg19_features`).
   Runbook 3 shows read-your-writes on a replica with `WAIT FOR LSN`, and runbook 5 says not to repack on a full
   disk. The website's install page says when PostgreSQL 19 packages follow and lists what 19 adds.
-  A steward action for the repack is proposed in #535.
+  The repack stays a manual tool (#535); the steward's space accounting comes first (#538).
 
 ## 0.4.0-beta.1
 

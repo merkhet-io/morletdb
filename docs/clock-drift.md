@@ -1,7 +1,12 @@
 # Design proposal: clock drift within a recording (time anchors)
 
-Status: **proposal** for [#393](https://github.com/merkhet-io/morletdb/issues/393). Nothing in this document
-changes the SQL API, the SDK or a file format yet. SQL is illustrative: names, types and limits are subject to
+Status: **proposal, decisions taken 2026-11-19** for [#393](https://github.com/merkhet-io/morletdb/issues/393) and
+[#383](https://github.com/merkhet-io/morletdb/issues/383); section 8 records them. Shipped so far: step 1 of
+section 8's order (SQL 0.3.13: the anchor table, batches, revisions, the mapping with segments and breaks, row
+security), step 2 (the importer writes anchors from a time column, with block detection) and the first part of
+step 3 (MCP `locate_time`, the event importer, and the SDK's `samples_for_time` and `time_ranges` use the anchors), and the MCP tools report the UTC times of anchored recordings by the anchors.
+Still open: the collectors, `morlet_check_time_axis` and step 4; the file formats are unchanged. Mapping calls are
+linear in a recording's anchors (#546). SQL is illustrative: names, types and limits are subject to
 implementation review. The first part of #393 has shipped, and section 1 describes it. Behaviour claims about
 existing code cite `extensions/pg_morlet/sql/streams.sql` as `streams.sql:line`, and other files by their path
 from the repository root. No result in this document is measured. Section 7 says what would be measured, and how.
@@ -14,7 +19,7 @@ Related: [context model](context-model.md) (which lists clock drift as not imple
 ## 1. The problem
 
 A recording is one uniformly sampled channel. Its wall-clock time comes from one start time and the declared
-rate. The start time is `start_ns` in the recording metadata, or else `start`, `starttime` or `start_time`
+rate (this section describes the time axis before time anchors; it is still what a recording without anchors, and the stable SQL functions, use). The start time is `start_ns` in the recording metadata, or else `start`, `starttime` or `start_time`
 (`streams.sql:1351-1364`). Sample *n* is at `start + n/rate`. In an acquisition, sample *n* is at
 `origin_utc + offset_ns + n·1e9/rate` (`streams.sql:2726-2745`, `streams.sql:2783-2787`). Every time-to-sample
 conversion assumes that the acquisition clock runs at exactly the declared rate:
@@ -23,8 +28,8 @@ conversion assumes that the acquisition clock runs at exactly the declared rate:
 - the search time filters (`morlet_time_bounds`, `streams.sql:1431-1449`);
 - `before_only` (`morlet_before_ns`, `streams.sql:1459-1468`, and the acquisition cutoff, `streams.sql:2481-2490`);
 - the UTC times of search evidence (`streams.sql:1924-1926`) and the end time of `morlet_latest` (`streams.sql:656`);
-- the SDK's `samples_for_time` (`sdk/python/src/morletdb/_client.py:398-405`);
-- the MCP tools (`tools/mcp/morlet_mcp.py:138-139`, `:614-660`).
+- the SDK's `samples_for_time` and the MCP tools, before anchors: since SQL 0.3.13 they use a recording's
+  anchors when it has any (the status at the top, and section 8), and start + rate otherwise.
 
 **What stays exact.** The samples themselves stay exact, and so do sample offsets. Channels on the same DAQ
 sample clock also stay aligned, because they share the clock and therefore its error. A synchronous group
@@ -46,10 +51,11 @@ At a declared 10 kHz, for example, 168 ms is 1,680 samples. A rate error of 0.2�
 far more than a typical crystal oscillator's tolerance of tens of ppm. Such an error may come from a
 declared nominal rate that the hardware does not run at, or from how the source stamps its data, rather
 than from oscillator drift. This design does not depend on the cause, but the cause decides whether one
-corrected rate would do (open question 1).
+corrected rate would do (section 8, decision 1).
 
-**Shipped so far (#393, first part; CHANGELOG 0.3.12-alpha.1).** This is detection and reporting only, with
-no correction:
+**Shipped first (#393, first part; CHANGELOG 0.3.12-alpha.1).** This was detection and reporting only, with
+no correction, and it is still what a recording without anchors gets; with anchors, `locate_time` and the event
+importer use them instead (section 8):
 
 - **The importer.** When a CSV has a time column, the importer fits the rate the timestamps actually show
   (`tools/ingest/morlet_import.py:264-302`). It stores `time_axis` in the recording metadata: `fitted_rate_hz`,
@@ -78,6 +84,7 @@ CREATE TABLE <c>_time_anchors (
   revision       integer NOT NULL DEFAULT 1,
   supersedes     bigint REFERENCES <c>_time_anchors(anchor_id),
   retracted      boolean NOT NULL DEFAULT false,
+  break_before   boolean NOT NULL DEFAULT false,      -- starts a new segment: no interpolation across it (3.1)
   recorded_at    timestamptz NOT NULL DEFAULT now(),
   recorded_by    text NOT NULL DEFAULT current_user
 );
@@ -91,9 +98,16 @@ The rules mirror context:
 - **Corrections are revisions.** A correction supersedes or retracts an anchor and keeps the old row, as
   `morlet_revise_context` does (`streams.sql:2280`). Nothing is overwritten.
 - **No silent overwrite.** A second active anchor at the same sample with a different time is an error.
-- **Monotonic.** Active anchors of a recording must be strictly increasing in both `sample_offset` and
-  `utc_ns`. A clock that steps backwards or stands still is the block-stamp case of #383; this proposal
-  rejects it, and does not handle it implicitly.
+- **Monotonic within a segment.** Active anchors must be strictly increasing in `sample_offset`. Within a
+  segment (section 3.1), they must also be strictly increasing in `utc_ns`. A clock that steps backwards or
+  stands still is the block-stamp case of #383: the writer marks it with `break_before`, and it is never
+  accepted implicitly. Without a break, a backward or zero step is an error.
+- **Direct SQL too (SQL 0.3.13).** A statement trigger checks these rules after every insert into the table, so a
+  direct `INSERT` that breaks them fails like a call of the functions. A row trigger refuses `UPDATE` and `DELETE`:
+  anchors are append-only, and only deleting their recording removes them (the foreign key's cascade). Writes need
+  READ COMMITTED: under REPEATABLE READ or SERIALIZABLE the snapshot predates the per-recording lock, so two
+  sessions could each add an anchor at the same sample; the functions refuse instead. Batch ids starting with
+  `revision:` are reserved for revisions.
 - **Provenance.** `source`, `batch_id`, `recorded_by` and the revision chain say where each anchor came from.
   An estimate (for example #208's cross-correlation) is labelled as such in `source` and is never presented
   as a measurement.
@@ -132,7 +146,7 @@ shipped: that summary is a fact about the import, fixed when the recording is cr
 **Acquisitions.** Anchors belong to recordings. For a synchronous group, sample offsets coincide on every
 member, so `morlet_add_time_anchors` can copy an anchor to every member exactly. For other acquisition
 members, an anchor on one channel does not give an integer sample on another, so they get their own anchors
-(open question 3).
+(section 8, decision 3).
 
 ## 3. The time model with anchors
 
@@ -189,6 +203,39 @@ and it is never presented as a bound.
 **What never changes.** Samples are never resampled or interpolated, and calibration is never changed.
 Anchors change only the mapping between sample offsets and wall-clock time. Raw chunks are never rewritten,
 and the samples stay authoritative. Retracting every anchor restores today's mapping exactly.
+
+### 3.1 Segments and breaks (block-stamped sources, #383)
+
+Some acquisition systems stamp samples per block: spacing is constant inside a block, and between blocks the
+stamp jumps, sometimes backwards or by zero. Interpolating across such a jump would invent a rate that the
+source never had. An anchor with `break_before = true` therefore starts a new **segment**:
+
+- **Segments.** The active anchors split into segments at every break. A segment covers the samples from its
+  first anchor up to the next segment's first anchor (the last segment: up to the end of the recording).
+  Samples before the first anchor belong to the first segment.
+- **Inside a segment**, the rules above apply: interpolation between its anchors, extrapolation with the slope
+  of its nearest anchor interval, or the declared rate when the segment has one anchor. For a block-stamped
+  source, every block start is an anchor with a break, so each block maps as `T_i + (n − n_i)/rate`, exactly
+  what the source states.
+- **Sample to time** stays a function: every sample belongs to exactly one segment.
+- **Time to sample** may not be. After a forward jump, a time can fall between two segments (a **gap**): after
+  the earlier segment's last sample and more than one sample period, on the later segment's own line, before the
+  later segment's first sample. It maps to that first sample, the first sample at or after it, and the result is
+  marked `gap`. A time within one period before a segment's first sample is that sample's own period, not a gap.
+  After a backward or zero step, a time can fall in several segments (an **overlap**): every candidate is
+  returned, and the result is marked `ambiguous`. A function that returns one sample returns the lowest
+  candidate and says so; it never picks silently.
+- **At every anchor**, `n(T_i) = n_i` still holds when `T_i` is unambiguous, which is #383's done-when
+  criterion ("exact time lookup at every block start"). When an overlap makes `T_i` ambiguous, `n_i` is among
+  the returned candidates.
+- **Uncertainty** within a block-stamped segment grows with the distance from its anchor, on either side (samples
+  before a recording's first anchor belong to its first segment): `u(n) = u_i + ρ·|n − n_i|/rate`, with ρ as in
+  section 8, decision 2.
+
+The importer writes such anchors from a time column (section 4): a new block starts where the step between two
+timestamps departs from the declared period by more than a tolerance (half a period by default), and every
+block's first sample gets an anchor with `break_before`. Recordings whose time column shows no such steps get
+the drift anchors of section 4 instead, without breaks.
 
 ## 4. Detection and reporting
 
@@ -256,7 +303,7 @@ which grows with the duration.
 - **Search results.** Ranking, ties and budgets work on samples and do not change (`docs/search-contract.md`).
   - The UTC times attached to matches (`streams.sql:1924-1926`; MCP `at()`, `tools/mcp/morlet_mcp.py:138-139`)
     gain a basis and an uncertainty.
-  - The time filters and `before_only` keep start + rate in the stable functions for now (open question 4).
+  - The time filters and `before_only` keep start + rate in the stable functions for now (section 8, decision 4).
     Near their boundaries, a drifting recording can be included or excluded by up to the reported error.
   - A conservative `before_only` would subtract the uncertainty, so that history never includes the future.
 - **The viewer** (`tools/viewer`) shows the basis, and the uncertainty band where it exceeds one sample. It
@@ -276,15 +323,16 @@ which grows with the duration.
 
 ## 6. Compatibility and API
 
-**New, all experimental:**
+**New in SQL 0.3.13, all experimental:**
 
 - `morlet_enable_time_anchors`;
 - `morlet_add_time_anchors`;
 - `morlet_revise_time_anchor`;
-- `morlet_utc_to_samples`;
+- `morlet_utc_to_samples` (time range to sample ranges) and `morlet_utc_to_sample` (one time to its candidates);
 - `morlet_sample_utc`, which returns the time, the uncertainty and the basis;
-- `morlet_check_time_axis`;
 - `morlet_time_axis_version`.
+
+**Planned:** `morlet_check_time_axis` (section 4), with the clients (section 8, step 3).
 
 **Stable functions do not change.** No stable signature or documented behaviour changes
 (`docs/api-stability.md`): `morlet_time_to_samples`, `morlet_sample_time_ns`, `morlet_add_context`,
@@ -316,7 +364,9 @@ Anchors are drawn at known true times, with noise within ±u. The expected value
 implementation in Python `fractions`, which shares no code with the SQL. Golden expected values are never
 regenerated to make a test pass. The tests check that:
 
-1. at every anchor, `morlet_utc_to_samples(T_i)` returns `n_i`, and `morlet_sample_utc(n_i)` returns `T_i`;
+1. at every anchor, `morlet_sample_utc(n_i)` returns `T_i`, and the time-to-sample lookup at `T_i` returns `n_i`:
+   as its only result when `T_i` is unambiguous, and among the candidates when an overlap (section 3.1) makes it
+   ambiguous;
 2. for every sample, the true time lies within the reported uncertainty when ρ is declared;
 3. the fitted rate is within `(u_1 + u_k)/(T_k − T_1)` of the true rate, a tolerance derived beforehand, not
    tuned;
@@ -346,13 +396,40 @@ A run then counts as a pass when:
 Results are reported for the workload measured and are not generalized beyond it. A failure is published
 like a pass.
 
-## 8. Open questions for the owner
+## 8. Decisions (2026-11-19)
 
-1. Is the 0.2–1.6% in the issue's data a stable wrong rate, which a declared rate correction would fix, or
-   a drift that varies within a recording? This decides how many anchors are needed. Can that data be used
-   for the frozen confirmation, under its terms?
-2. Should ρ be required for a bound, or should a default per clock source be documented?
-3. Acquisitions: anchors per recording only, or also per acquisition in acquisition time?
-4. Should the search time filters and `before_only` become anchor-aware, as a new option?
-5. Should #383's backward and zero steps get breaks in the anchor list, or stay a separate design?
-6. Should the SDK's `samples_for_time` switch its default to anchors when they exist?
+The owner decided the open questions as follows. Question 1 needs the data owner and does not block the
+implementation.
+
+1. **Stable wrong rate or varying drift, and the confirmation data.** Open; asked of the data owner. The design
+   handles both: a stable wrong rate needs few anchors, a varying drift needs more. Development and the frozen
+   confirmation run on synthetic data with known truth (section 7), and on a public dataset with real block
+   timestamps if one exists (named and approved before the freeze). The closed production data is used only
+   with its owner's consent; until then, the docs say that the anchor model is not confirmed on production data.
+2. **ρ: a documented default per clock source, overridable.** The defaults are conservative and not measured:
+   1e-4 (100 ppm) for measured sources (`pps`, `ptp-log`, `daq-timestamps`, `controller-event`, `import:*`,
+   `start`), and none for `estimate:*`, whose mapping is reported as `assumes_linear_clock`. A caller passes
+   its own ρ per call, or a recording declares it in its metadata as `time_axis.rho`. The defaults may change
+   only with development evidence, recorded in the changelog.
+3. **Anchors per recording.** Per acquisition in acquisition time is deferred. For a synchronous group,
+   `morlet_add_time_anchors` copies an anchor to every member exactly (section 2).
+4. **Anchor-aware search time filters and `before_only`: yes, as an opt-in.** A new argument or function with
+   the anchor basis; the stable functions keep start + rate, so no existing result changes. The anchor-aware
+   `before_only` subtracts the uncertainty, so that history never includes the future. It follows the first
+   SQL step.
+5. **#383's backward and zero steps: breaks in the anchor list, one design** (section 3.1).
+6. **The SDK's `samples_for_time` uses anchors by default when they exist,** and every result states its basis
+   (`anchors` or `start + rate`), its uncertainty and whether it is `extrapolated`, `gap` or `ambiguous`. A
+   mapping known to be wrong is not the default. `basis="start+rate"` keeps the old behaviour. The SDK is
+   alpha, so this is a documented change in its changelog.
+
+**Order of work:**
+1. SQL: the anchor table with breaks, `morlet_enable_time_anchors`, `morlet_add_time_anchors`,
+   `morlet_revise_time_anchor`, `morlet_utc_to_samples`, `morlet_utc_to_sample`, `morlet_sample_utc`,
+   `morlet_time_axis_version`, row security, upgrade script (shipped in SQL 0.3.13).
+2. The importer writes anchors from a time column, with block detection; #383's done-when on synthetic block
+   data.
+3. MCP `locate_time`, the event importer, the collectors and the SDK call the server mapping;
+   `morlet_check_time_axis`.
+4. The mapping in `crates/morlet-core`, with shared test vectors; anchor-aware search (decision 4); the exchange
+   format 2 and file format 2.

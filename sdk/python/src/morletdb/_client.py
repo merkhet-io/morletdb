@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator, Mapping
 
@@ -13,7 +14,7 @@ from psycopg.types.json import Jsonb
 from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
 from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
-                     OverviewBucket, Recording, SearchResult)
+                     OverviewBucket, Recording, SearchResult, TimeRange)
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
 READ_PIECE = 32768           # morlet_read_interval's per-call limit (servers without the raw read)
@@ -395,9 +396,57 @@ class Client:
         finally:
             self._execute(sql.SQL("UNLISTEN {}").format(sql.Identifier(row[0])))
 
-    def samples_for_time(self, recording: Recording, t_start_ns: int, t_end_ns: int) -> tuple[int, int]:
+    def time_ranges(self, recording: Recording, t_start_ns: int, t_end_ns: int, *,
+                    rho: float | None = None) -> tuple[TimeRange, ...]:
+        """The samples whose UTC time lies in [t_start_ns, t_end_ns) (integer nanoseconds), by the recording's time
+        anchors when it has any, else by start + rate (`morlet_utc_to_samples`, SQL 0.3.13). Usually one range;
+        several, each marked ambiguous, when the source's clock stepped back; none when no sample's time lies in
+        the range. Ranges are offsets on the time axis, not clipped to the samples stored (Recording.samples), as in
+        samples_for_time; one beyond the last anchor is marked extrapolated. The error bounds are None for start + rate.
+        `rho` overrides the clock bound used for the uncertainties."""
+        if not self._has("public.morlet_utc_to_samples(regclass,text,numeric,numeric,double precision)"):
+            raise UnsupportedError("time anchors need pg_morlet SQL 0.3.13 or later")
+        if recording.start_ns is None and not self._one("SELECT morlet_time_axis_version(%s::regclass,%s)",
+                                                        (recording.collection, recording.recording_id)).startswith("anchors"):
+            raise InvalidInputError(f"{recording.recording_id} has neither time anchors nor a start time")
+        rows = self._execute("SELECT * FROM morlet_utc_to_samples(%s::regclass,%s,%s,%s,%s)",
+                             (recording.collection, recording.recording_id, int(t_start_ns), int(t_end_ns),
+                              rho)).fetchall()
+        # bounds round up to whole nanoseconds, so they never understate the server's
+        return tuple(TimeRange(int(r[0]), int(r[1]), r[2], bool(r[3]), bool(r[4]),
+                               None if r[5] is None else math.ceil(r[5]), None if r[6] is None else math.ceil(r[6]),
+                               bool(r[7]))
+                     for r in rows)
+
+    def samples_for_time(self, recording: Recording, t_start_ns: int, t_end_ns: int, *,
+                         basis: str = "auto") -> tuple[int, int]:
         """The half-open sample range covering UTC times [t_start_ns, t_end_ns) (integer nanoseconds), by
-        the server's rule: the first sample at or after each time (ceil). Needs the recording's start time."""
+        the server's rule: the first sample at or after each time (ceil).
+
+        basis "auto" (default) uses the recording's time anchors when it has any (SQL 0.3.13), else start + rate;
+        "anchors" requires anchors; "start+rate" ignores them (the behaviour before anchors). With anchors, a time
+        range that a backward clock step maps to several disjoint ranges raises InvalidInputError: use time_ranges,
+        which returns them all with their basis and error bounds. Without anchors it needs the start time."""
+        if basis not in ("auto", "anchors", "start+rate"):
+            raise InvalidInputError("basis must be 'auto', 'anchors' or 'start+rate'")
+        anchored = False
+        if basis != "start+rate" and self._has("public.morlet_time_axis_version(regclass,text)"):
+            anchored = self._one("SELECT morlet_time_axis_version(%s::regclass,%s)",
+                                 (recording.collection, recording.recording_id)).startswith("anchors")
+        if basis == "anchors" and not anchored:
+            raise InvalidInputError(f"{recording.recording_id} has no time anchors")
+        if anchored:
+            ranges = self.time_ranges(recording, t_start_ns, t_end_ns)
+            if len(ranges) > 1:
+                raise InvalidInputError(
+                    f"[{t_start_ns}, {t_end_ns}) maps to {len(ranges)} disjoint sample ranges of "
+                    f"{recording.recording_id} because its clock stepped back; use time_ranges")
+            if ranges:
+                return ranges[0].start_sample, ranges[0].end_sample
+            row = self._execute("SELECT min(sample) FROM morlet_utc_to_sample(%s::regclass,%s,%s)",
+                                (recording.collection, recording.recording_id, int(t_start_ns))).fetchone()
+            first = int(row[0]) if row and row[0] is not None else 0
+            return first, first
         if recording.start_ns is None:
             raise InvalidInputError(f"{recording.recording_id} has no start time")
         row = self._execute("SELECT * FROM morlet_time_to_samples(%s,%s,%s,%s)",

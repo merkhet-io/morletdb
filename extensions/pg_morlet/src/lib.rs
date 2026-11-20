@@ -3736,6 +3736,529 @@ END $$"#).unwrap();
         Spi::run("SELECT morlet_add_context('mill','b1','[{\"recording_id\":\"r1\",\"key\":\"program\",\"value\":\"P2\",\"start_sample\":0,\"end_sample\":30000}]')").unwrap();
     }
 
+    // Time anchors (#393, #383). Expected values come from integer arithmetic here (i128, brute force over samples),
+    // not from the SQL under test.
+    const ANCHOR_S: i128 = 1_700_000_000_000_000_000; // start_ns of the fixture recordings
+    const MS: i128 = 1_000_000;
+
+    fn anchor_fixture() {
+        Spi::run("SELECT morlet_create_stream_collection('public','ta');
+            SELECT morlet_start_recording('ta',r,1000,'x','g',jsonb_build_object('start_ns','1700000000000000000'))
+              FROM unnest(ARRAY['drift','blocks','plain']) r;
+            SELECT morlet_enable_time_anchors('ta');").unwrap();
+    }
+
+    fn anchor_rows(rows: &[(&str, i64, i128, i64, &str, bool)]) -> String {
+        let items: Vec<String> = rows.iter().map(|(r, n, t, u, s, b)| format!(
+            "{{\"recording_id\":\"{r}\",\"sample_offset\":{n},\"utc_ns\":\"{t}\",\"uncertainty_ns\":{u},\"source\":\"{s}\",\"break_before\":{b}}}")).collect();
+        format!("[{}]", items.join(","))
+    }
+
+    fn yes(sql: &str) -> bool {
+        Spi::get_one::<bool>(sql).unwrap().unwrap_or(false)
+    }
+
+    /// The samples n in 0..limit whose time t(n) lies in [a, b), as maximal contiguous ranges (brute force).
+    fn ranges_by_brute_force(t: impl Fn(i128) -> i128, a: i128, b: i128, limit: i128) -> String {
+        let mut out = vec![];
+        let mut cur: Option<(i128, i128)> = None;
+        for n in 0..limit {
+            let inside = t(n) >= a && t(n) < b;
+            match (inside, cur) {
+                (true, Some((s, e))) if e == n => cur = Some((s, n + 1)),
+                (true, Some(c)) => {
+                    out.push(c);
+                    cur = Some((n, n + 1));
+                }
+                (true, None) => cur = Some((n, n + 1)),
+                (false, _) => {}
+            }
+        }
+        out.extend(cur);
+        out.iter()
+            .map(|(s, e)| format!("{s}-{e}"))
+            .collect::<Vec<_>>()
+            .join(",")
+    }
+
+    fn sql_ranges(rid: &str, a: i128, b: i128) -> String {
+        Spi::get_one::<String>(&format!("SELECT coalesce(string_agg(start_sample||'-'||end_sample,',' ORDER BY start_sample),'')
+            FROM morlet_utc_to_samples('ta','{rid}',{a},{b})")).unwrap().unwrap()
+    }
+
+    #[pg_test]
+    fn time_anchors_map_a_drifting_clock_exactly() {
+        anchor_fixture();
+        // the clock runs 1.6% slow: 10000 samples at a declared 1 kHz take 10.016 s
+        let rows = anchor_rows(&[
+            ("drift", 0, ANCHOR_S, 0, "pps", false),
+            ("drift", 10000, ANCHOR_S + 10_016 * MS, 0, "pps", false),
+        ]);
+        assert_eq!(
+            Spi::get_one::<i64>(&format!(
+                "SELECT morlet_add_time_anchors('ta','d1','{rows}')"
+            ))
+            .unwrap(),
+            Some(2)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>(&format!(
+                "SELECT morlet_add_time_anchors('ta','d1','{rows}')"
+            ))
+            .unwrap(),
+            Some(0)
+        );
+        let t = |n: i128| ANCHOR_S + n * 10_016 * MS / 10_000; // exact for every integer n
+                                                               // sample to time, between the anchors and extrapolated after them
+        assert!(yes(&format!("SELECT utc_ns={} AND basis='anchors' AND NOT extrapolated AND uncertainty_ns=1000000 AND NOT assumes_linear_clock
+            FROM morlet_sample_utc('ta','drift',5000)", t(5000)))); // 2·1e-4·5000 samples·1 ms
+        assert!(yes(&format!(
+            "SELECT utc_ns={} AND extrapolated FROM morlet_sample_utc('ta','drift',12000)",
+            t(12000)
+        )));
+        // time to sample: the first sample at or after t, exact at the anchors and one ns either side of a sample
+        for off in [
+            0,
+            1,
+            5_008 * MS,
+            5_008 * MS + 1,
+            5_008 * MS - 1,
+            3_333_333_333,
+            10_016 * MS,
+            11_000 * MS + 7,
+        ] {
+            let tt = ANCHOR_S + off;
+            let expected = (0..20_000).find(|&n| t(n) >= tt).unwrap();
+            assert_eq!(
+                Spi::get_one::<i64>(&format!(
+                    "SELECT sample FROM morlet_utc_to_sample('ta','drift',{tt})"
+                ))
+                .unwrap(),
+                Some(expected as i64),
+                "offset {off}"
+            );
+        }
+        for (a, b) in [
+            (0, 100 * MS),
+            (1_234_567, 9_876_543_210),
+            (5_008 * MS, 5_008 * MS),
+            (10_000 * MS, 11_000 * MS),
+        ] {
+            assert_eq!(
+                sql_ranges("drift", ANCHOR_S + a, ANCHOR_S + b),
+                ranges_by_brute_force(t, ANCHOR_S + a, ANCHOR_S + b, 20_000),
+                "[{a}, {b})"
+            );
+        }
+        // a recording without anchors keeps start + declared rate, with no claimed bound
+        assert!(yes(&format!("SELECT utc_ns={} AND basis='start+rate' AND uncertainty_ns IS NULL FROM morlet_sample_utc('ta','plain',5000)",
+            ANCHOR_S + 5_000 * MS)));
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_time_axis_version('ta','plain')")
+                .unwrap()
+                .as_deref(),
+            Some("start+rate")
+        );
+        // retracting every anchor restores today's mapping exactly
+        let v = Spi::get_one::<String>("SELECT morlet_time_axis_version('ta','drift')")
+            .unwrap()
+            .unwrap();
+        assert!(v.starts_with("anchors:"));
+        Spi::run("SELECT morlet_revise_time_anchor('ta',anchor_id,retract=>true) FROM ta_time_anchors WHERE recording_id='drift' ORDER BY anchor_id").unwrap();
+        assert!(yes(&format!(
+            "SELECT utc_ns={} AND basis='start+rate' FROM morlet_sample_utc('ta','drift',5000)",
+            ANCHOR_S + 5_000 * MS
+        )));
+        assert_eq!(
+            Spi::get_one::<String>("SELECT morlet_time_axis_version('ta','drift')")
+                .unwrap()
+                .as_deref(),
+            Some("start+rate")
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ta_time_anchors WHERE recording_id='drift'")
+                .unwrap(),
+            Some(4)
+        ); // kept
+    }
+
+    #[pg_test]
+    fn time_anchors_with_breaks_map_block_stamped_time_exactly() {
+        // #383: blocks of 100 samples at 1 kHz; block 1 starts 13 ms late, block 2 starts 5 ms before block 1 ends.
+        anchor_fixture();
+        let starts: [(i128, i128); 3] = [(0, 0), (100, 113 * MS), (200, 208 * MS)];
+        let rows = anchor_rows(&[
+            ("blocks", 0, ANCHOR_S, 0, "daq-timestamps", false),
+            (
+                "blocks",
+                100,
+                ANCHOR_S + 113 * MS,
+                0,
+                "daq-timestamps",
+                true,
+            ),
+            (
+                "blocks",
+                200,
+                ANCHOR_S + 208 * MS,
+                0,
+                "daq-timestamps",
+                true,
+            ),
+        ]);
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','b1','{rows}')"
+        ))
+        .unwrap();
+        let t = |n: i128| {
+            let &(nb, tb) = starts.iter().rev().find(|(nb, _)| *nb <= n).unwrap();
+            ANCHOR_S + tb + (n - nb) * MS
+        };
+        // exact lookup at every block start (#383's done-when)
+        for (nb, tb) in starts {
+            assert!(
+                yes(&format!(
+                    "SELECT bool_or(sample={nb}) FROM morlet_utc_to_sample('ta','blocks',{})",
+                    ANCHOR_S + tb
+                )),
+                "block at {nb}"
+            );
+        }
+        // inside the forward jump: the first sample of the later block, marked as a gap
+        assert!(yes(&format!("SELECT sample=100 AND gap AND NOT ambiguous FROM morlet_utc_to_sample('ta','blocks',{})", ANCHOR_S + 105 * MS)));
+        assert!(yes(&format!(
+            "SELECT sample=100 AND NOT gap FROM morlet_utc_to_sample('ta','blocks',{})",
+            ANCHOR_S + 113 * MS
+        )));
+        // after the backward step a time has two samples; both are returned, marked ambiguous
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT string_agg(sample||':'||ambiguous,',' ORDER BY sample) FROM morlet_utc_to_sample('ta','blocks',{})",
+            ANCHOR_S + 208 * MS)).unwrap().as_deref(), Some("195:true,200:true"));
+        assert!(yes(&format!(
+            "SELECT bool_and(ambiguous) FROM morlet_utc_to_samples('ta','blocks',{},{})",
+            ANCHOR_S + 208 * MS,
+            ANCHOR_S + 210 * MS
+        )));
+        // adjacent sample ranges from two blocks whose times overlap still mark the range ambiguous (review)
+        assert_eq!(
+            Spi::get_one::<String>(&format!(
+                "SELECT string_agg(start_sample||'-'||end_sample||':'||ambiguous,',') FROM morlet_utc_to_samples('ta','blocks',{},{})",
+                ANCHOR_S + 205 * MS,
+                ANCHOR_S + 213 * MS
+            ))
+            .unwrap()
+            .as_deref(),
+            Some("192-205:true")
+        );
+        for (a, b) in [
+            (208 * MS, 210 * MS),
+            (0, 400 * MS),
+            (99 * MS, 114 * MS),
+            (100 * MS, 113 * MS),
+            (150 * MS + 1, 290 * MS - 1),
+        ] {
+            assert_eq!(
+                sql_ranges("blocks", ANCHOR_S + a, ANCHOR_S + b),
+                ranges_by_brute_force(t, ANCHOR_S + a, ANCHOR_S + b, 400),
+                "[{a}, {b})"
+            );
+        }
+        // inside a one-anchor segment: the declared rate from its anchor, bound u + ρ·period·d = 1e-4 · 1 ms · 50
+        assert!(yes(&format!("SELECT utc_ns={} AND segment=1 AND extrapolated AND uncertainty_ns=5000 FROM morlet_sample_utc('ta','blocks',150)", t(150))));
+        // an estimate carries no default bound
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','e1','{}')",
+            anchor_rows(&[("plain", 0, ANCHOR_S, 0, "estimate:xcorr", false)])
+        ))
+        .unwrap();
+        assert!(yes(
+            "SELECT assumes_linear_clock FROM morlet_sample_utc('ta','plain',10)"
+        ));
+    }
+
+    /// Randomized consistency of the time-anchor mapping (seeded, deterministic): drifting clocks with forward,
+    /// zero and backward breaks. Properties checked without the model's internals: every anchor maps exactly both
+    /// ways; the floor of every sample's time maps back to a candidate set containing that sample; and the ranges of
+    /// morlet_utc_to_samples equal a brute-force filter of every sample's time (morlet_sample_utc).
+    #[pg_test]
+    fn time_anchor_mapping_is_consistent_on_random_clocks() {
+        anchor_fixture();
+        let mut state: u64 = 0x5eed_0393;
+        let mut next = |m: u64| {
+            state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (state >> 33) % m
+        };
+        for case in 0..4 {
+            let rid = format!("rnd{case}");
+            Spi::run(&format!("SELECT morlet_start_recording('ta','{rid}',1000,'x','g',jsonb_build_object('start_ns','1700000000000000000'))")).unwrap();
+            let (mut n, mut t) = (next(40) as i64, ANCHOR_S + next(1000) as i128 * 1000);
+            let mut rows = vec![];
+            for k in 0..15 {
+                // anchors 4 and 8 are always a zero and a backward step; others break at random
+                let brk = k == 4 || k == 8 || (k > 0 && next(10) < 3);
+                if k > 0 {
+                    let step = 5 + next(60) as i64;
+                    let nominal = step as i128 * MS;
+                    if k == 4 {
+                        // the stamp stands still: the block starts at the previous anchor's time
+                    } else if k == 8 {
+                        t -= 7 * MS; // the stamp steps back 7 ms below the previous anchor's time
+                    } else if brk {
+                        // a block start: anywhere from 20 ms early (backward) to 20 ms late, zero steps included
+                        t = t + nominal - 20 * MS + next(41) as i128 * MS;
+                    } else {
+                        // the same clock running up to 2% fast or slow, never standing still
+                        t += nominal + (nominal * (next(4001) as i128 - 2000)) / 100_000;
+                    }
+                    n += step;
+                }
+                rows.push((rid.clone(), n, t, next(2000) as i64, "pps", brk));
+            }
+            let last = n + 60;
+            let refs: Vec<(&str, i64, i128, i64, &str, bool)> = rows
+                .iter()
+                .map(|r| (r.0.as_str(), r.1, r.2, r.3, r.4, r.5))
+                .collect();
+            Spi::run(&format!(
+                "SELECT morlet_add_time_anchors('ta','r{case}','{}')",
+                anchor_rows(&refs)
+            ))
+            .unwrap();
+            Spi::run(&format!(
+                "DROP TABLE IF EXISTS pg_temp.tn; CREATE TEMP TABLE tn AS SELECT n, s.utc_ns AS t
+                FROM generate_series(0,{last}) n, LATERAL morlet_sample_utc('ta','{rid}',n) s"
+            ))
+            .unwrap();
+            // 1. exact at every anchor, both ways
+            for r in &rows {
+                let (an, at) = (r.1, r.2);
+                assert!(
+                    yes(&format!("SELECT t={at} FROM tn WHERE n={an}")),
+                    "case {case}: T({an})"
+                );
+                assert!(
+                    yes(&format!(
+                        "SELECT bool_or(sample={an}) FROM morlet_utc_to_sample('ta','{rid}',{at})"
+                    )),
+                    "case {case}: n({at})"
+                );
+            }
+            // 2. the floor of a sample's time maps back to that sample (among the candidates); every third sample
+            assert_eq!(Spi::get_one::<i64>(&format!("SELECT count(*) FROM tn WHERE n>0 AND n%3=0 AND NOT EXISTS(
+                SELECT 1 FROM morlet_utc_to_sample('ta','{rid}',floor(tn.t)) c WHERE c.sample=tn.n)")).unwrap(), Some(0), "case {case}");
+            // 3. time ranges equal the brute-force filter, for random intervals inside the anchored span
+            let (t0, t1) = (rows[0].2, rows.iter().map(|r| r.2).max().unwrap());
+            for _ in 0..40 {
+                let a = t0 - 50 * MS + (next(((t1 - t0) / 1000) as u64 + 1) as i128) * 1000;
+                let b = a + next(80) as i128 * MS + next(1000) as i128;
+                let brute = Spi::get_one::<String>(&format!("WITH s AS (SELECT n FROM tn WHERE t>={a} AND t<{b}),
+                    g AS (SELECT n, n-row_number() OVER (ORDER BY n) AS k FROM s)
+                    SELECT coalesce(string_agg(lo||'-'||hi,',' ORDER BY lo),'') FROM (SELECT min(n) AS lo, max(n)+1 AS hi FROM g GROUP BY k) r")).unwrap().unwrap();
+                assert_eq!(sql_ranges(&rid, a, b), brute, "case {case}: [{a}, {b})");
+            }
+        }
+    }
+
+    /// Review findings on the first version: a slope change inside a segment is not a gap; the anchor's own sample
+    /// is not extrapolated; direct SQL keeps the rules (order checked, rows append-only, the cascade allowed); a
+    /// malformed clock bound in the metadata is an error, not a silent default; revision batch ids are reserved.
+    #[pg_test]
+    fn time_anchors_hold_their_rules_beyond_the_happy_path() {
+        anchor_fixture();
+        let err = |q: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT pg_temp.ta_err2({})",
+                pgrx::spi::quote_literal(q)
+            ))
+            .unwrap()
+            .unwrap()
+        };
+        Spi::run(
+            "CREATE FUNCTION pg_temp.ta_err2(q text) RETURNS text LANGUAGE plpgsql AS $$
+            BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLERRM; END $$",
+        )
+        .unwrap();
+        // the slope drops from 10 to 2 ns per sample at sample 10: time 95 ns is sample 10, inside the segment
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','s1','{}')",
+            anchor_rows(&[
+                ("plain", 0, ANCHOR_S, 0, "pps", false),
+                ("plain", 10, ANCHOR_S + 100, 0, "pps", false),
+                ("plain", 20, ANCHOR_S + 120, 0, "pps", false)
+            ])
+        ))
+        .unwrap();
+        assert!(yes(&format!(
+            "SELECT sample=10 AND NOT gap FROM morlet_utc_to_sample('ta','plain',{})",
+            ANCHOR_S + 95
+        )));
+        assert!(yes(
+            "SELECT NOT extrapolated FROM morlet_sample_utc('ta','plain',20)"
+        )); // the last anchor itself
+        assert!(yes(
+            "SELECT extrapolated FROM morlet_sample_utc('ta','plain',21)"
+        ));
+        // direct SQL
+        assert_eq!(err(&format!("INSERT INTO ta_time_anchors(recording_id,sample_offset,utc_ns,uncertainty_ns,source,batch_id) VALUES ('plain',30,{},0,'pps','x')", ANCHOR_S + 50)),
+            format!("recording plain: time anchor at sample 30 ({} ns) does not follow the one at sample 20 ({} ns) in time; mark a clock step with break_before", ANCHOR_S + 50, ANCHOR_S + 120));
+        assert_eq!(
+            err("UPDATE ta_time_anchors SET utc_ns=utc_ns+1"),
+            "time anchors are append-only: revise or retract with morlet_revise_time_anchor"
+        );
+        assert_eq!(
+            err("DELETE FROM ta_time_anchors"),
+            "time anchors are append-only: revise or retract with morlet_revise_time_anchor"
+        );
+        assert_eq!(
+            err("TRUNCATE ta_time_anchors"),
+            "time anchors are append-only: revise or retract with morlet_revise_time_anchor"
+        );
+        Spi::run("DELETE FROM ta WHERE recording_id='plain'").unwrap(); // the cascade is allowed
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ta_time_anchors").unwrap(),
+            Some(0)
+        );
+        // a malformed clock bound in the metadata
+        Spi::run("SELECT morlet_start_recording('ta','badrho',1000,'x','g','{\"start_ns\":\"1700000000000000000\",\"time_axis\":{\"rho\":-0.5}}')").unwrap();
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','s2','{}')",
+            anchor_rows(&[("badrho", 0, ANCHOR_S, 0, "pps", false)])
+        ))
+        .unwrap();
+        assert_eq!(
+            err("SELECT * FROM morlet_sample_utc('ta','badrho',5)"),
+            "recording badrho: metadata time_axis.rho must be a number in [0, 1)"
+        );
+        // reserved batch ids, and JSON types
+        assert!(err(&format!(
+            "SELECT morlet_add_time_anchors('ta','revision:1','{}')",
+            anchor_rows(&[("drift", 0, ANCHOR_S, 0, "pps", false)])
+        ))
+        .contains("reserved for revisions"));
+        assert!(err(r#"SELECT morlet_add_time_anchors('ta','n1','[{"recording_id":7,"sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"pps"}]')"#).starts_with("every time anchor needs"));
+    }
+
+    #[pg_test(
+        error = "recording blocks: time anchor at sample 200 (1700000000208000000 ns) does not follow the one at sample 100 (1700000000213000000 ns) in time; mark a clock step with break_before"
+    )]
+    fn time_anchors_refuse_a_backward_step_without_a_break() {
+        anchor_fixture();
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','b1','{}')",
+            anchor_rows(&[
+                (
+                    "blocks",
+                    100,
+                    ANCHOR_S + 213 * MS,
+                    0,
+                    "daq-timestamps",
+                    false
+                ),
+                (
+                    "blocks",
+                    200,
+                    ANCHOR_S + 208 * MS,
+                    0,
+                    "daq-timestamps",
+                    false
+                )
+            ])
+        ))
+        .unwrap();
+    }
+
+    #[pg_test(error = "time anchor batch d1 already exists with different rows")]
+    fn time_anchor_batch_retry_must_be_identical() {
+        anchor_fixture();
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','d1','{}')",
+            anchor_rows(&[("drift", 0, ANCHOR_S, 0, "pps", false)])
+        ))
+        .unwrap();
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','d1','{}')",
+            anchor_rows(&[("drift", 0, ANCHOR_S + 1, 0, "pps", false)])
+        ))
+        .unwrap();
+    }
+
+    #[pg_test(error = "recording drift: two active time anchors at sample 0")]
+    fn time_anchors_refuse_a_second_time_for_one_sample() {
+        anchor_fixture();
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','d1','{}')",
+            anchor_rows(&[("drift", 0, ANCHOR_S, 0, "pps", false)])
+        ))
+        .unwrap();
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('ta','d2','{}')",
+            anchor_rows(&[("drift", 0, ANCHOR_S + 5, 0, "pps", false)])
+        ))
+        .unwrap();
+    }
+
+    fn time_anchor_tenant_check(anchors_first: bool) {
+        tenant_fixture();
+        if anchors_first {
+            Spi::run("SELECT morlet_enable_time_anchors('ten'); SELECT morlet_enable_row_security('ten')").unwrap();
+        } else {
+            Spi::run("SELECT morlet_enable_row_security('ten'); SELECT morlet_enable_time_anchors('ten')").unwrap();
+        }
+        Spi::run(r#"CREATE FUNCTION pg_temp.ta_err(q text) RETURNS text LANGUAGE plpgsql AS $$
+              BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLERRM; END $$;
+            SELECT morlet_add_time_anchors('ten','owner',
+              '[{"recording_id":"a1","sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"pps"},
+                {"recording_id":"b1","sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"pps"}]');
+            GRANT SELECT ON ten TO morlet_tenant_a; GRANT SELECT, INSERT ON ten_time_anchors TO morlet_tenant_a;
+            SET LOCAL ROLE morlet_tenant_a"#).unwrap();
+        assert!(yes(
+            "SELECT relrowsecurity FROM pg_class WHERE relname='ten_time_anchors'"
+        ));
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ten_time_anchors WHERE recording_id='b1'")
+                .unwrap(),
+            Some(0)
+        );
+        assert_eq!(
+            Spi::get_one::<i64>("SELECT count(*) FROM ten_time_anchors WHERE recording_id='a1'")
+                .unwrap(),
+            Some(1)
+        );
+        let err = |q: &str| {
+            Spi::get_one::<String>(&format!(
+                "SELECT pg_temp.ta_err({})",
+                pgrx::spi::quote_literal(q)
+            ))
+            .unwrap()
+            .unwrap()
+        };
+        assert_eq!(
+            err(
+                r#"SELECT morlet_add_time_anchors('ten','t1','[{"recording_id":"b1","sample_offset":5,"utc_ns":9,"uncertainty_ns":0,"source":"pps"}]')"#
+            ),
+            "recording b1 does not exist or is not visible"
+        );
+        assert_eq!(err("INSERT INTO ten_time_anchors(recording_id,sample_offset,utc_ns,uncertainty_ns,source,batch_id) VALUES ('b1',5,9,0,'pps','x')"),
+            "new row violates row-level security policy for table \"ten_time_anchors\"");
+        assert_eq!(
+            err("SELECT * FROM morlet_sample_utc('ten','b1',0)"),
+            "recording b1 does not exist or is not visible"
+        );
+    }
+
+    /// Row security, anchors enabled first: a tenant sees only its recordings' anchors and cannot write to a hidden one.
+    #[pg_test]
+    fn row_security_covers_time_anchors_enabled_first() {
+        time_anchor_tenant_check(true);
+    }
+
+    /// Row security, anchors enabled later: the new table follows at once.
+    #[pg_test]
+    fn row_security_covers_time_anchors_enabled_later() {
+        time_anchor_tenant_check(false);
+    }
+
     #[pg_test(
         error = "overlapping context intervals for key block in recording r1 (ctx_id 3 and 8)"
     )]

@@ -103,6 +103,27 @@ class IntervalStats:
 
 
 @dataclass(frozen=True)
+class TimeRange:
+    """Samples whose UTC time lies in a requested time range (Client.time_ranges), as the half-open range
+    [start_sample, end_sample).
+
+    `basis` says how the times are derived: "anchors" (the recording's time anchors, the source's own timestamps)
+    or "start+rate" (start time plus declared rate). `ambiguous` is true when the time range maps to more than one
+    disjoint sample range because the source's clock stepped back; every range is then returned. `extrapolated`:
+    some sample lies outside its block's anchors. The uncertainties are the time error at the first and last sample
+    in whole ns, rounded up (None for start+rate: unknown). They are bounds only when `assumes_linear_clock` is
+    false; when it is true (estimated anchors without a clock bound), they assume a linear clock and are not bounds."""
+    start_sample: int
+    end_sample: int
+    basis: str
+    ambiguous: bool
+    extrapolated: bool
+    start_uncertainty_ns: int | None
+    end_uncertainty_ns: int | None
+    assumes_linear_clock: bool
+
+
+@dataclass(frozen=True)
 class NotifiedRange:
     """Samples one committed transaction stored in a recording: the half-open range [first_sample, end_sample),
     and the same in seconds from the recording's first sample."""

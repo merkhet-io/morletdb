@@ -7,6 +7,7 @@ Every test works in its own schema, dropped afterwards.
 """
 import os
 import threading
+import json
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -109,6 +110,36 @@ class Contract(unittest.TestCase):
                                 start_time=1_000_000_000_000_015_625)
         self.assertEqual(ns_rec.start_ns, 1_000_000_000_000_015_625)
         self.conn.commit()
+
+    def test_samples_for_time_uses_time_anchors(self):
+        """#393, #383 (SQL 0.3.13): blocks of 100 samples at 1 kHz; block 1 starts 13 ms late, block 2 starts 5 ms
+        before block 1 ends. auto uses the anchors, start+rate keeps the old mapping, and a range that the backward
+        step makes ambiguous is refused by samples_for_time and returned whole by time_ranges."""
+        if not self.db._has("public.morlet_add_time_anchors(regclass,text,jsonb)"):
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        base = 1_772_366_400_000_000_000                                   # 2026-03-01T12:00:00Z
+        rec = self.db.ingest(self.coll, "blocks", np.arange(300, dtype=np.float64), sample_rate_hz=1000, channel="c",
+                             unit="u", start_time=base)
+        rows = [{"recording_id": "blocks", "sample_offset": n, "utc_ns": str(base + ms * 1_000_000),
+                 "uncertainty_ns": 1000, "source": "daq-timestamps", "break_before": n > 0}
+                for n, ms in ((0, 0), (100, 113), (200, 208))]
+        self.conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (self.coll,))
+        self.conn.execute("SELECT morlet_add_time_anchors(%s::regclass,'b1',%s::jsonb)", (self.coll, json.dumps(rows)))
+        ms = 1_000_000
+        self.assertEqual(self.db.samples_for_time(rec, base + 113 * ms, base + 123 * ms), (100, 110))
+        self.assertEqual(self.db.samples_for_time(rec, base + 113 * ms, base + 123 * ms, basis="start+rate"), (113, 123))
+        self.assertEqual(self.db.samples_for_time(rec, base + 105 * ms, base + 106 * ms), (100, 100))   # in the jump
+        with self.assertRaisesRegex(InvalidInputError, "disjoint"):
+            self.db.samples_for_time(rec, base + 208 * ms, base + 210 * ms)
+        r = self.db.time_ranges(rec, base + 208 * ms, base + 210 * ms)
+        self.assertEqual([(x.start_sample, x.end_sample, x.basis, x.ambiguous) for x in r],
+                         [(195, 197, "anchors", True), (200, 202, "anchors", True)])
+        self.assertEqual(r[0].start_uncertainty_ns, 1000 + 95 * 100)        # u + rho*period*d, rho 1e-4, d 95
+        plain = self.db.ingest(self.coll, "plain", np.arange(10, dtype=np.float64), sample_rate_hz=1000, channel="c",
+                               unit="u", start_time=base)
+        with self.assertRaisesRegex(InvalidInputError, "no time anchors"):
+            self.db.samples_for_time(plain, base, base + ms, basis="anchors")
+        self.assertEqual(self.db.samples_for_time(plain, base, base + ms), (0, 1))
 
     def test_search_results_resolve_to_retrievable_intervals(self):
         rate = 8000

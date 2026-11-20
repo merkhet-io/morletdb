@@ -43,6 +43,9 @@ class Steward:
         self.grids_at = 0.0
         self.verified_at: float | None = None      # monotonic time of the last verify batch (minimum share)
         self.analyzed: dict[str, float] = {}
+        # (monotonic time, bytes) of the last measurement; None before the first tick, False far from the reserve
+        self.reusable: tuple[float, int | None] | bool | None = None
+        self.reusable_missing = False                 # pg_freespacemap is not installed
         self.stop = False
 
     # -- observation ---------------------------------------------------------------------------------------------
@@ -57,9 +60,31 @@ class Steward:
         try:
             S.record_disk(self.conn, S.db_bytes(self.conn), free, total)
             growth = P.growth_per_day(S.disk_history(self.conn))
+            reusable = self.reusable_space(free, total)
         except psycopg.Error:
             return P.disk_state(self.cfg, P.Disk(None, None, None))
-        return P.disk_state(self.cfg, P.Disk(total, free, growth))
+        return P.disk_state(self.cfg, P.Disk(total, free, growth, reusable, self.reusable_missing))
+
+    def reusable_space(self, free: int | None, total: int | None, every_s: float = 600.0) -> int | None:
+        """Free space inside the chunk tables of collections that still receive chunks (#538). Which collections
+        receive chunks is observed every tick; the free space map is read only near the reserve (free disk below
+        twice the reserve) or while the steward's own ingest hold stands, at most every every_s seconds."""
+        cols = [c for c in S.collections(self.conn) if S.privileged(self.conn, c)]
+        active = S.receiving(self.conn, cols, self.cfg.active_days, held_since=S.hold_since(self.conn))
+        self.reusable_missing = S.freespace_function(self.conn) is None
+        if free is None or total is None or total <= 0:
+            return None
+        held = (S.hold(self.conn) or (None, None))[1] == S.STEWARD_ROLE
+        if free >= 2 * P.reserve(self.cfg, total) and not held:
+            if self.reusable is not False:          # once after leaving the reserve zone, or after a start
+                S.record_reusable(self.conn, None)
+            self.reusable = False
+            return None
+        if not self.reusable or time.monotonic() - self.reusable[0] >= every_s:
+            n = S.reusable_bytes(self.conn, active)
+            self.reusable = (time.monotonic(), n)
+            S.record_reusable(self.conn, n)
+        return self.reusable[1]
 
     def backlog(self, cols: list[str]) -> dict[str, list]:
         """For each job, the work found: (collection, recording, end, grid) tuples, or tables to analyze."""

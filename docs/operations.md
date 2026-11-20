@@ -95,6 +95,12 @@ LISTEN morlet_line;                                         -- in the consumer's
   consumer that starts or reconnects catches up with `morlet_latest` and then listens.
 - **Cost:** a statement trigger and a deferred row trigger on the chunk table. Appends write one chunk row per
   call, so the overhead is one small JSON update per statement and one cheap check per row at commit.
+- **Idle listeners on PostgreSQL 17 and 18:** every notifying commit wakes every backend that listens on any channel.
+  With 200 idle `LISTEN` connections on other channels, PostgreSQL 17.11 committed 698 notifying appends per second
+  instead of 1,511, and the server used about 8× the CPU; on a Raspberry Pi with 50, 54 instead of 64. PostgreSQL 19
+  wakes only the notified channel's listeners and lost about 1% (1,738 instead of 1,762; development measurement,
+  [evaluation/pg19_features](../evaluation/pg19_features/README.md)). On 17 and 18, keep the number of idle
+  listening connections small, or move to 19.
 - **Other switches:**
   - `morlet_enable_notifications(collection, channel)` changes the channel.
   - `morlet_disable_notifications(collection)` turns notifications off.
@@ -214,6 +220,15 @@ version with populated data (identical reads, searches, summaries and roll-ups; 
 fresh install), and that a **failed** update rolls back completely and leaves the old version
 working. Take a backup before updating anyway ([api stability](api-stability.md)). Step by step, including the way back from chunk format
 version 6: [runbook 9](runbooks.md#9-upgrading-the-extension-and-the-image).
+
+**PostgreSQL 17 to 19 with `pg_upgrade`** (development check on macOS; [evaluation/pg19_features](../evaluation/pg19_features/README.md)):
+install the same pg_morlet version for both majors, then create the new cluster **without** data checksums if the
+old one has none: since PostgreSQL 18, `initdb` enables them by default, and `pg_upgrade --check` then stops with "old
+cluster does not use data checksums but the new one does". Either `initdb --no-data-checksums` for the new cluster,
+or `pg_checksums --enable` on the stopped old cluster first (it rewrites every page, so it takes time and needs the
+old cluster offline). With that, `--copy`, `--clone` and `--link` each gave byte-identical chunks, envelopes and time
+anchors, identical search results, and kept row security and notifications; optimizer statistics come across.
+Container images and Debian's `pg_upgradecluster` were not tested.
 
 ## Known limits
 

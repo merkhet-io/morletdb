@@ -11,7 +11,9 @@ import importlib.util
 import json
 import math
 import os
+import re
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -140,8 +142,8 @@ def at(t0, rate, sample):
 
 
 def time_quality(meta, rate):
-    """How a recording's UTC times are derived, and how far off they may be (#393). Today always start + rate: there
-    are no time anchors yet. When an import measured how the source's own timestamps departed from that axis
+    """How the UTC times of a recording without time anchors are derived (start + rate), and how far off they may
+    be (#393; anchored recordings: locate_by_anchors, anchor_times). When an import measured how the source's own timestamps departed from that axis
     (metadata time_axis, tools/ingest), that departure is the uncertainty of every derived time."""
     q = {"time_basis": "start + rate"}
     ax = meta.get("time_axis") if isinstance(meta, dict) else None
@@ -152,6 +154,171 @@ def time_quality(meta, rate):
         if isinstance(ax.get("fitted_rate_hz"), (int, float)):
             q["fitted_rate_hz"] = ax["fitted_rate_hz"]
     return q
+
+
+def anchor_table(conn, collection):
+    """The collection's time-anchor table as a quoted name, or None (built from the catalog, so quoted or mixed-case
+    collection names work)."""
+    return conn.execute("SELECT to_regclass(format('%%I.%%I', n.nspname, c.relname || '_time_anchors'))::text "
+                        "FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.oid = %s::regclass",
+                        (collection,)).fetchone()[0]
+
+
+def anchored_recordings(conn, collection):
+    """Recordings of a collection with active time anchors (SQL 0.3.13, #393), or an empty set when the server or the
+    collection has none."""
+    if conn.execute("SELECT to_regproc('public.morlet_utc_to_sample') IS NULL").fetchone()[0]:
+        return set()
+    rel = anchor_table(conn, collection)
+    if rel is None:
+        return set()
+    return {r[0] for r in conn.execute(
+        f"SELECT DISTINCT x.recording_id FROM {rel} x WHERE NOT x.retracted "
+        f"AND NOT EXISTS (SELECT 1 FROM {rel} y WHERE y.supersedes = x.anchor_id)").fetchall()}
+
+
+ISO_FRACTION = re.compile(r"^(.*?[T ]\d{2}:\d{2}:\d{2})[.,](\d+)(.*)$")
+
+
+def utc_ns_of(text):
+    """UTC nanoseconds of an ISO 8601 time, exact to the nanosecond (datetime keeps only microseconds); UTC when no
+    offset is given."""
+    t = text.strip().replace("Z", "+00:00")
+    m = ISO_FRACTION.match(t)
+    frac = ""
+    if m:
+        t, frac = m.group(1) + m.group(3), m.group(2)
+    if len(frac) > 9:
+        raise ValueError(f"time {text!r} has more than 9 fraction digits")
+    d = datetime.fromisoformat(t)
+    d = d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    return (d - datetime(1970, 1, 1, tzinfo=timezone.utc)) // timedelta(seconds=1) * 1_000_000_000 \
+        + int(frac.ljust(9, "0") or 0)
+
+
+def locate_by_anchors(conn, collection, rid, rate, t_ns, end):
+    """locate_time for a recording with time anchors: the sample whose period contains t_ns, from the server's
+    exact mapping (morlet_utc_to_sample gives the first sample at or after t_ns per segment). None outside the
+    recording. After a backward clock step a time can lie in two blocks: every candidate is listed."""
+    rows = conn.execute("SELECT sample, utc_ns, ambiguous, gap, before_start, extrapolated, uncertainty_ns, "
+                        "assumes_linear_clock FROM morlet_utc_to_sample(%s::regclass, %s, %s)",
+                        (collection, rid, t_ns)).fetchall()
+    found = []
+    for sample, utc, _amb, gap, before, extrap, unc, linear in rows:
+        if before:
+            continue
+        n = sample if utc == t_ns else sample - 1             # the period containing t: the last sample at or before it
+        if n != sample:                                      # the bound and flags of the sample actually returned
+            extrap, unc, linear = conn.execute(
+                "SELECT extrapolated, uncertainty_ns, assumes_linear_clock FROM morlet_sample_utc(%s::regclass,%s,%s)",
+                (collection, rid, n)).fetchone()
+        if 0 <= n < end:
+            found.append((n, gap, extrap, unc, linear, sample))
+    if not found:
+        return None
+    n, gap, extrap, unc, linear, after_jump = found[0]
+    hit = {"sample": n, "time_basis": "anchors"}
+    if unc is not None:
+        hit["time_uncertainty_s"] = float(unc) / 1e9
+        hit["time_uncertainty_samples"] = round(float(unc) / 1e9 * rate, 2)
+    notes = []
+    if len(found) > 1:
+        hit["candidate_samples"] = [f[0] for f in found]
+        notes.append("the source's clock stepped back, so this time occurs twice in the recording; every "
+                     "candidate is listed in candidate_samples")
+    if gap:
+        hit["first_sample_after_jump"] = after_jump
+        notes.append("the time falls into a jump of the source's clock between two blocks; this is the last sample "
+                     "before the jump, and first_sample_after_jump the first after it")
+    if extrap:
+        notes.append("the sample lies outside the anchors of its block, so its time is extrapolated")
+    if linear:
+        notes.append("the anchors are estimates without a clock bound, so the uncertainty assumes a linear clock")
+    if notes:
+        hit["time_note"] = "; ".join(notes)
+    return hit
+
+
+UTC_FIELDS = {"start_utc": "start_sample", "end_utc": "end_sample", "trigger_utc": "trigger_sample",
+              "from_utc": "from_sample", "to_utc": "to_sample"}
+
+
+def utc_from_ns(ns):
+    return (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=int(ns) // 1000)) \
+        .isoformat().replace("+00:00", "Z")
+
+
+def anchor_times(fn):
+    """Recompute the UTC times a tool reports for recordings with time anchors (#393): every *_utc field next to its
+    sample field (start_utc/start_sample, end_utc/end_sample, ...; in list_recordings sample 0 and the length) of a
+    dict whose recording_id (its own or an enclosing dict's) has anchors comes from morlet_sample_utc instead of
+    start + rate, and the dict gets time_basis "anchors" and the largest error of those times. Metadata is never
+    touched. All times of a result are mapped in one query. Results without anchored recordings are returned
+    unchanged. coverage's group times have no sample offsets and stay start + rate."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        out = fn(*args, **kwargs)
+        collection = kwargs.get("collection", args[0] if args else None)
+        if not isinstance(out, dict) or not isinstance(collection, str):
+            return out
+        if NO_ANCHORS.get(collection, 0.0) > time.monotonic():
+            return out
+        with connect() as conn:
+            c = checked(conn, collection)
+            anchored = anchored_recordings(conn, c)
+            if anchored:
+                slots = []
+                collect_times(anchored, out, out.get("recording_id"), slots)
+                fill_times(conn, c, slots)
+            elif anchor_table(conn, c) is None:
+                NO_ANCHORS[collection] = time.monotonic() + NO_ANCHORS_TTL_S
+        return out
+    return wrapper
+
+
+NO_ANCHORS: dict[str, float] = {}   # collections without an anchor table, until when (monotonic seconds)
+NO_ANCHORS_TTL_S = 60.0             # a newly enabled anchor table is seen within this time
+
+
+def collect_times(anchored, node, rid, slots):
+    """(dict, utc key, recording, sample) for every *_utc field of an anchored recording in a tool result."""
+    if isinstance(node, list):
+        for x in node:
+            collect_times(anchored, x, rid, slots)
+        return
+    if not isinstance(node, dict):
+        return
+    rid = node.get("recording_id", rid)
+    if rid in anchored:
+        for utc_key, sample_key in UTC_FIELDS.items():
+            if utc_key not in node:
+                continue
+            sample = node.get(sample_key)
+            if sample is None and "samples" in node and "start_sample" not in node:   # list_recordings
+                sample = 0 if utc_key == "start_utc" else node["samples"] if utc_key == "end_utc" else None
+            if isinstance(sample, int) and not isinstance(sample, bool) and sample >= 0:
+                slots.append((node, utc_key, rid, sample))
+    for k, v in node.items():
+        if k != "metadata" and isinstance(v, (dict, list)):
+            collect_times(anchored, v, rid, slots)
+
+
+def fill_times(conn, c, slots):
+    if not slots:
+        return
+    pairs = sorted({(rid, sample) for _, _, rid, sample in slots})
+    rows = conn.execute("SELECT p.rid, p.n, s.utc_ns, s.uncertainty_ns FROM unnest(%s::text[], %s::bigint[]) p(rid, n), "
+                        "LATERAL morlet_sample_utc(%s::regclass, p.rid, p.n) s",
+                        ([p[0] for p in pairs], [p[1] for p in pairs], c)).fetchall()
+    found = {(rid, int(n)): (utc, unc) for rid, n, utc, unc in rows}
+    for node, utc_key, rid, sample in slots:
+        if (rid, sample) not in found:
+            continue
+        utc, unc = found[(rid, sample)]
+        node[utc_key] = utc_from_ns(utc)
+        node["time_basis"] = "anchors"
+        if unc is not None:
+            node["time_uncertainty_s"] = max(node.get("time_uncertainty_s", 0.0), float(unc) / 1e9)
 
 
 def occurrences_at(conn, collection, points):
@@ -334,6 +501,7 @@ def iso(t):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", max_gaps: int = 10) -> dict:
     """Overview of what is recorded, per group of recordings (group_by: a metadata key such as "station" or
     "bearing"; empty for one group): number of recordings, samples, first and last UTC time, the recording
@@ -398,6 +566,7 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit: int = 100) -> dict:
     """The newest data of every recording whose metadata contains metadata_filter: "what is the current value
     of each sensor?". samples=1 (default) gives each recording's last value; up to 1000 gives its last values
@@ -575,6 +744,7 @@ def trend(collection: str, metadata_filter: str, start_utc: str = "", end_utc: s
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 50, offset: int = 0,
                     include_metadata: bool = False) -> dict:
     """List recordings in a collection: id, length and (when the metadata has a start time) UTC start and
@@ -612,20 +782,50 @@ def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 5
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> dict:
-    """Find which recordings contain a UTC time (ISO 8601, e.g. 2025-03-01T14:02:10Z) and the sample offset
-    of that time in each. Needs recordings whose metadata has a start time. When no recording contains the
+    """Find which recordings contain a UTC time (ISO 8601, e.g. 2025-03-01T14:02:10Z; a time without an offset is
+    UTC, fractions count to the nanosecond) and the sample offset of that time in each. Needs recordings whose
+    metadata has a start time, or time anchors. When no recording contains the
     time, a note says whether it falls into a gap, before the first or after the last recording, with the
     nearest recording on each side. Each match says how its time axis is derived (time_basis: start + rate)
     and, when the import measured how the source's timestamps departed from it, the uncertainty in seconds and
-    samples: a clock that drifts or stamps blocks puts the located sample off by up to that much."""
-    t = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
+    samples: a clock that drifts or stamps blocks puts the located sample off by up to that much. The located sample is
+    the one whose period contains the time: the last sample at or before it. Recordings with
+    time anchors (the source's own timestamps, stored by the importer) are located by them instead (time_basis:
+    anchors), exactly at every anchor, with the bound on the error. A time_note says when the time falls into a
+    jump of the source's clock (the match is then the last sample before the jump, and first_sample_after_jump the
+    first after it), when it is extrapolated beyond its block's anchors, or when the anchors are estimates without
+    a clock bound; a time that a backward clock step puts into two blocks lists every sample in candidate_samples."""
+    t_ns = utc_ns_of(utc_time)
+    t = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=t_ns // 1000)
     flt = json.loads(metadata_filter or "{}")
+    anchored_hits = {}
     with connect() as conn:
         c = checked(conn, collection)
         rows = conn.execute(f"SELECT recording_id, sample_rate_hz, metadata, (checkpoint->>'end')::bigint FROM {c} "
                             f"WHERE metadata @> %s::jsonb", (json.dumps(flt),)).fetchall()
+        anchored = anchored_recordings(conn, c)
+        anchored_span = {}
+        for rid, rate, _meta, n in rows:
+            if rid in anchored:
+                anchored_hits[rid] = locate_by_anchors(conn, c, rid, rate, t_ns, n)
+                if anchored_hits[rid] is None and n:              # for the gap note: its first and end times
+                    first, end_ = (conn.execute("SELECT utc_ns FROM morlet_sample_utc(%s::regclass,%s,%s)",
+                                                (c, rid, k)).fetchone()[0] for k in (0, n))
+                    anchored_span[rid] = tuple(datetime(1970, 1, 1, tzinfo=timezone.utc)
+                                               + timedelta(microseconds=int(x) // 1000) for x in (first, end_))
     hits, before, after, timed = [], None, None, 0
     for rid, rate, meta, n in rows:
+        if rid in anchored:
+            timed += 1
+            if anchored_hits[rid] is not None:
+                hits.append({"recording_id": rid, **anchored_hits[rid], "metadata": meta})
+            elif rid in anchored_span:
+                t0a, t1a = anchored_span[rid]
+                if t1a <= t and (before is None or t1a > before[1]):
+                    before = (rid, t1a)
+                if t0a > t and (after is None or t0a < after[1]):
+                    after = (rid, t0a)
+            continue
         t0 = start_time(meta)
         if t0 is None:
             continue
@@ -636,7 +836,7 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
             if hit.get("time_uncertainty_samples", 0) > 1:
                 hit["time_note"] = (f"the source's timestamps departed from start + rate by up to "
                                     f"{hit['time_uncertainty_s']:.3g} s, so this sample may be off by up to "
-                                    f"{hit['time_uncertainty_samples']:.4g} samples (no time anchors yet, #393)")
+                                    f"{hit['time_uncertainty_samples']:.4g} samples (the recording has no time anchors, #393)")
             hits.append(hit)
             continue
         t1 = t0 + timedelta(seconds=n / rate)
@@ -647,7 +847,7 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
     out = {"utc_time": utc_time, "matches": sorted(hits, key=lambda h: h["recording_id"])}
     if not hits:
         if not timed:
-            out["note"] = "no matching recording has a start time, so no time can be located"
+            out["note"] = "no matching recording has a start time or time anchors, so no time can be located"
         else:
             out["note"] = ("the time falls into a gap between recordings" if before and after else
                            "the time is before the first recording" if after else "the time is after the last recording")
@@ -798,6 +998,7 @@ def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), befo
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def search_similar(collection: str, recording_id: str, start_sample: int, end_sample: int,
                    metadata_filter: str = "{}", top_k: int = 10, shifts: int = 0, before_only: bool = False,
                    time_from: str = "", time_to: str = "", evidence: bool = True, exclude: str = "") -> dict:
@@ -941,6 +1142,7 @@ def frame_window(onset, rate, window):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}", search_filter: str = "{}",
                      top_k: int = 10, min_frequency_hz: float = 0.0, look_seconds: float = 30.0,
                      before_only: bool = False) -> dict:
@@ -1011,6 +1213,7 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def read_interval(collection: str, recording_id: str, start_sample: int, end_sample: int,
                   max_points: int = 1000) -> dict:
     """Read the original samples of [start_sample, end_sample). Up to max_points values are returned as is;
@@ -1035,6 +1238,7 @@ def read_interval(collection: str, recording_id: str, start_sample: int, end_sam
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def describe_interval(collection: str, recording_id: str, start_sample: int, end_sample: int,
                       bands: str = "", min_frequency_hz: float = 0.0) -> dict:
     """Characterise [start_sample, end_sample) of a recording: level (mean, std, rms, min, max, peak),
@@ -1072,6 +1276,7 @@ def background(x_before, x_after, n, rate, edges):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def compare_intervals(collection: str, recording_id: str, start_sample: int, end_sample: int,
                       reference_start_sample: int = -1, reference_end_sample: int = -1,
                       reference_recording_id: str = "", bands: str = "", background_minutes: float = 10.0) -> dict:
@@ -1154,6 +1359,7 @@ def envelope(x, rate, lo, hi):
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def envelope_spectrum(collection: str, recording_id: str, start_sample: int, end_sample: int, band: str = "",
                       max_frequency_hz: float = 600.0, check_frequencies: str = "", harmonics: int = 3,
                       tolerance_percent: float = 3.0, top_peaks: int = 8) -> dict:
@@ -1221,6 +1427,7 @@ def envelope_spectrum(collection: str, recording_id: str, start_sample: int, end
 
 @mcp.tool(annotations=READ_ONLY)
 @safe
+@anchor_times
 def find_onsets(collection: str, recording_id: str, start_sample: int, end_sample: int,
                 min_frequency_hz: float = 0.0, max_frequency_hz: float = 0.0, sta_seconds: float = 1.0,
                 lta_seconds: float = 30.0, threshold: float = 4.0, max_onsets: int = 20) -> dict:

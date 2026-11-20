@@ -1,0 +1,107 @@
+{
+ "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+ "runs": [
+  {
+   "round": 1,
+   "server": "pg17",
+   "version": "17.11",
+   "load_db_s": 3.9121447829529643,
+   "load_wall_s": 4.182000040775165,
+   "final_checkpoint_s": 0.03642249992117286,
+   "wal_bytes": 74761920,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    4.27294921875,
+    3.5615234375,
+    3.51806640625
+   ]
+  },
+  {
+   "round": 1,
+   "server": "pg19",
+   "version": "19.0",
+   "load_db_s": 3.781991916242987,
+   "load_wall_s": 3.9032038748264313,
+   "final_checkpoint_s": 0.03968437504954636,
+   "wal_bytes": 74838056,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    4.3310546875,
+    3.5849609375,
+    3.5263671875
+   ]
+  },
+  {
+   "round": 2,
+   "server": "pg19",
+   "version": "19.0",
+   "load_db_s": 3.846039262600243,
+   "load_wall_s": 3.966325500048697,
+   "final_checkpoint_s": 0.0367104581091553,
+   "wal_bytes": 74841872,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    4.46435546875,
+    3.625,
+    3.54052734375
+   ]
+  },
+  {
+   "round": 2,
+   "server": "pg17",
+   "version": "17.11",
+   "load_db_s": 3.961980216903612,
+   "load_wall_s": 4.084957290906459,
+   "final_checkpoint_s": 0.03636095905676484,
+   "wal_bytes": 74753856,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    4.2666015625,
+    3.59765625,
+    3.53125
+   ]
+  },
+  {
+   "round": 3,
+   "server": "pg17",
+   "version": "17.11",
+   "load_db_s": 3.929452819051221,
+   "load_wall_s": 4.049182333983481,
+   "final_checkpoint_s": 0.03643124992959201,
+   "wal_bytes": 74761880,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    4.1650390625,
+    3.58740234375,
+    3.52783203125
+   ]
+  },
+  {
+   "round": 3,
+   "server": "pg19",
+   "version": "19.0",
+   "load_db_s": 3.789971452439204,
+   "load_wall_s": 3.9072232078760862,
+   "final_checkpoint_s": 0.03751362510956824,
+   "wal_bytes": 74841864,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    4.1513671875,
+    3.59423828125,
+    3.5302734375
+   ]
+  }
+ ]
+}

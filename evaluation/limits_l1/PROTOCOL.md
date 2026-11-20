@@ -103,7 +103,7 @@ stored samples intact.
 | D6 | Query extremes | intervals up to 2³⁰ samples; overviews of a year; search galleries of 10⁵ … 10⁸ windows with filters selecting 100% … 0.01% | latency, memory, refusals at the documented budgets | none |
 | D7 | Resources | 2 GB, 512 MB, 256 MB memory; 2 / 1 CPUs; a slow card; a full disk | out-of-memory events, behaviour at disk full (must fail visibly, data intact) | none |
 | D8 | Irregular data | event series with random timestamps | documented as out of scope; L1 shows the cost of forcing them into recordings | **yes**: storage and range queries |
-| D9 | Archive scale on one node | windows 10⁶, 10⁷, 10⁸ (10⁹ by extrapolation from the measured curve, labelled as such); recordings 10⁶, 10⁷, 10⁸ (short and long recordings); archive volume 10 GB, 100 GB, 1 TB (10 TB if hardware allows) | probe p95 and recall as the HNSW index outgrows memory (at a fixed 16 GB and a fixed 64 GB limit); screened-exact p95 unfiltered and at 10% / 1% / 0.1% filter selectivity; catalogue, listing and filter latency; storage per window and per recording; VACUUM, index build, backup and restore time | none; output = the tipping points below |
+| D9 | Archive scale on one node | windows 10⁶, 10⁷, 10⁸ (10⁹ by extrapolation from the measured curve, labelled as such); recordings 10⁶, 10⁷, 10⁸ (short and long recordings); archive volume 10 GB, 100 GB, 1 TB (10 TB if hardware allows) | probe p95 and recall as the HNSW index outgrows memory (at a fixed 16 GB and a fixed 64 GB limit), and with filters that leave more eligible windows than `exact_threshold` (10% / 1% / 0.1% selectivity, per-query recall minimum as well as the mean); screened-exact p95 unfiltered and at 10% / 1% / 0.1% filter selectivity; catalogue, listing and filter latency; storage per window and per recording; VACUUM, index build, backup and restore time | none; output = the tipping points below |
 
 
 ## D9: scaling questions and tipping points
@@ -112,7 +112,9 @@ D9 answers how far one node scales and where the current search design stops wor
 smallest scale at which a fixed criterion fails in all three repeats:
 
 1. **Memory:** probe search p95 more than 2× its in-memory value, or recall@10 below 0.95, as the HNSW index
-   exceeds the container's memory (measured at 16 GB and 64 GB, so the curve can be scaled to other machines).
+   exceeds the container's memory (measured at 16 GB and 64 GB, so the curve can be scaled to other machines). The criterion uses
+   the mean recall@10 over the query set; the per-query minimum is reported alongside it but does not decide a
+   tipping point.
 2. **Interactive exact search:** screened exact search p95 above 1 s, unfiltered and per filter selectivity.
 3. **Catalogue:** listing or filtering recordings by metadata above 100 ms p95, or ingest of a new recording
    slowed more than 2× by the catalogue's size.
@@ -126,6 +128,21 @@ Beyond the tipping points, the study names what would have to change, as hypothe
 claims: time-partitioned companion tables (chunks, envelopes, probe rows and their indexes partitioned by collection and time, as TDengine partitions by vgroup and duration), so each search, retention step and index rebuild touches only the partitions it needs, with filter-first routing; disk-based or quantised vector
 indexes (DiskANN-style, binary or product quantisation) with exact re-ranking; coarse-to-fine screening from
 chunk summaries; sharding across nodes with a merged top-k (Citus or application-level).
+
+Draft note (2026-11-19), on the middle filter range and cluster indexes:
+
+- **The middle filter range is where filtered vector search is weakest.** Probe search routes to the exact search at
+  up to `exact_threshold` (5,000) eligible windows and to HNSW with pgvector's iterative scan above it. Just above
+  the threshold, the scan may walk far into the graph before it finds `per_probe` eligible windows. Earlier
+  evaluations reported recall@10 of 0.977–1.0 at five filter levels with single queries as low as 0.6; D9 reports
+  latency and the per-query recall minimum for that range, not only the mean.
+- **Hypothesis: a cluster index for closed time partitions.** A cluster-based (IVF-style) index stores each
+  cluster's vectors together, so a search reads a few blocks in sequence. A graph index (HNSW, DiskANN-style)
+  reads at random once it no longer fits in memory, which costs most on SD cards and hard disks (D7's slow card;
+  #528). Cluster indexes are known to suit mostly static data; with time partitions (#211) a past period never
+  changes, so closed partitions could carry a cluster index built once with bounded memory, and the current
+  partition keeps HNSW or the exact search. pgvector's IVFFlat can test this without new code. Ideas from the
+  published SPANN and Quake papers; a hypothesis for a later study, not part of D9's measurements.
 
 Hardware: D9 at 1 TB and above needs a machine with enough fast storage; the run is planned once that machine
 is chosen (named before the freeze). Scale points that cannot be run are reported as not measured, never
