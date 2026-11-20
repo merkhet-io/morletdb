@@ -1,0 +1,29 @@
+# The same image for PostgreSQL 17 and 19, for same-session comparisons on a small arm64 edge machine:
+#   docker build -f evaluation/pg19_features/Dockerfile.same --build-arg PG_MAJOR=19 --build-arg PG_TAG=19.0-bookworm -t morlet-same:pg19 .
+# It follows deploy/Dockerfile (the release image) except for the parameterised major version; the official
+# Debian-based postgres images supply the server, so both versions are packaged the way users get them.
+ARG PG_MAJOR=17
+ARG PG_TAG=17.12-bookworm
+FROM postgres:${PG_TAG} AS postgres
+ARG PG_MAJOR
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-server-dev-${PG_MAJOR} && rm -rf /var/lib/apt/lists/*
+FROM rust:1.99.0-bookworm AS builder
+ARG PG_MAJOR
+RUN apt-get update && apt-get install -y --no-install-recommends clang libclang-dev libssl-dev pkg-config && rm -rf /var/lib/apt/lists/*
+COPY --from=postgres /usr/lib/postgresql/${PG_MAJOR} /usr/lib/postgresql/${PG_MAJOR}
+COPY --from=postgres /usr/include/postgresql /usr/include/postgresql
+COPY --from=postgres /usr/share/postgresql/${PG_MAJOR} /usr/share/postgresql/${PG_MAJOR}
+RUN cargo install cargo-pgrx --version 0.19.3 --locked --debug
+RUN cargo pgrx init --pg${PG_MAJOR} /usr/lib/postgresql/${PG_MAJOR}/bin/pg_config
+WORKDIR /src
+COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
+COPY .cargo .cargo
+COPY crates crates
+COPY extensions extensions
+COPY testdata testdata
+WORKDIR /src/extensions/pg_morlet
+RUN cargo pgrx package --pg-config /usr/lib/postgresql/${PG_MAJOR}/bin/pg_config --no-default-features --features pg${PG_MAJOR}
+RUN mkdir /out && cp -a /src/target/release/pg_morlet-pg${PG_MAJOR}/usr /out/
+
+FROM postgres:${PG_TAG}
+COPY --from=builder /out/usr/ /usr/

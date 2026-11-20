@@ -1,0 +1,41 @@
+{
+ "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+ "cpus": 18,
+ "server": "pg19",
+ "mode": "repack",
+ "data": {
+  "every": 20,
+  "samples": 101586735,
+  "samples_sha256": "1e13dd017c666497f8303d3728d2a3b291ea2448b2d0ce83748e463acdf25bd8"
+ },
+ "version": "19.0",
+ "wal_level": "replica",
+ "max_wal_size": "8GB",
+ "shared_buffers": "1GB",
+ "size_full": 146300928,
+ "size_after_delete_vacuum": 146317312,
+ "chunks_kept": 1744,
+ "old_snapshot_sees_chunks": 0,
+ "statement": "REPACK (CONCURRENTLY) rp19_chunks",
+ "error": null,
+ "rewrite_s": 0.31314433296211064,
+ "size_after_rewrite": 84107264,
+ "appends": {
+  "total": 8530,
+  "during_rewrite": 365,
+  "latency_ms_before": {
+   "p50": 0.7158754160627723,
+   "max": 5.38474996574223
+  },
+  "latency_ms_during": {
+   "p50": 0.8291248232126236,
+   "max": 2.609916962683201
+  },
+  "longest_wait_ms": 5.38474996574223,
+  "longest_gap_without_completed_append_ms": 2.6113330386579037
+ },
+ "kept_chunks_unchanged": true,
+ "chunks_after": 10274,
+ "all_appends_stored": true,
+ "verify_problems": 0
+}

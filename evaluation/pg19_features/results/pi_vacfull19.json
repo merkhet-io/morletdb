@@ -1,0 +1,41 @@
+{
+ "host": "Linux-6.1.21-v8+-aarch64-with-glibc2.31",
+ "cpus": 4,
+ "server": "pg19",
+ "mode": "vacuum_full",
+ "data": {
+  "every": 40,
+  "samples": 50853629,
+  "samples_sha256": "90ad0e5220b65d9010284a4f21aecc5de47d1bfe1ff42b511673853f5bb490a3"
+ },
+ "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+ "wal_level": "replica",
+ "max_wal_size": "1GB",
+ "shared_buffers": "128MB",
+ "size_full": 72826880,
+ "size_after_delete_vacuum": 72826880,
+ "chunks_kept": 875,
+ "old_snapshot_sees_chunks": 875,
+ "statement": "VACUUM FULL rp19_chunks",
+ "error": null,
+ "rewrite_s": 12.93543370300904,
+ "size_after_rewrite": 37650432,
+ "appends": {
+  "total": 291,
+  "during_rewrite": 2,
+  "latency_ms_before": {
+   "p50": 14.423731015995145,
+   "max": 747.9470979887992
+  },
+  "latency_ms_during": {
+   "p50": 6971.5552814886905,
+   "max": 12861.172157921828
+  },
+  "longest_wait_ms": 12861.172157921828,
+  "longest_gap_without_completed_append_ms": 12861.20934493374
+ },
+ "kept_chunks_unchanged": true,
+ "chunks_after": 1166,
+ "all_appends_stored": true,
+ "verify_problems": 0
+}

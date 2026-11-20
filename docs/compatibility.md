@@ -9,7 +9,7 @@ pg_morlet is a pgrx 0.19.3 extension (Rust 1.99.0). One build targets one Postgr
 |---|---|---|---|---|
 | **17** (17.12), reference | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test, upgrades from v0.1.0-alpha.3, v0.2.0-alpha.1 and v0.3.0-alpha.1, seismic example | without; with pgvector 0.8.0 | release images are built for 17 only (amd64 and arm64); Debian packages for 17 and 18 |
 | **18** (18.7) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | no upgrade path tested (earlier releases were never built for 18; install fresh), no release image (Debian packages for amd64 and arm64 from 0.3.5-alpha.1), no measurements |
-| **19** (19.0) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | built from the pinned 19.0 source tarball (pgrx 0.19.3 downloads only 19beta4); no upgrade path tested (earlier releases were never built for 19; install fresh), no release image; Debian packages and an extension-only image once the official `postgres:19` image is published (#537); storage checked (below), no speed measurements |
+| **19** (19.0) | yes, CI | yes, CI: all `#[pg_test]`s without and with pgvector, probe-enable race test | without; with pgvector 0.8.7 | built from the pinned 19.0 source tarball (pgrx 0.19.3 downloads only 19beta4); no upgrade path tested (earlier releases were never built for 19; install fresh), no release image; Debian packages and an extension-only image once the official `postgres:19` image is published (#537); storage checked (below); development measurements against 17, no benchmark (below) |
 | 13–16 | no | no | — | not supported; pgrx 0.19.3 could build them, but no user need is documented |
 
 A version is listed as supported only while its CI jobs pass (`compat` in
@@ -198,3 +198,10 @@ the most useful addition is `REPACK (CONCURRENTLY)`, which gives the space of re
 while appends continue (checked on 19.0: kept chunks byte for byte unchanged, `morlet_verify` clean). Selective
 `NOTIFY` wakeups help commit notifications, `WAIT FOR LSN` gives read-your-writes on standbys, and new statistics views
 help the steward. Using them is optional; pg_morlet's SQL stays the same on 17, 18 and 19.
+
+Measured 2026-11-20 on MorletDB's own tasks, same session, on a desktop and a Raspberry Pi (development runs):
+19.0 stores byte-identical chunks and envelopes and returns identical search results; reading every sample is 7%
+faster; reads, search, `latest` and verify are otherwise within ±3%, and so are loads and envelope builds on the
+desktop (on the Pi, write times varied too much between rounds to compare); commit notifications keep their rate
+with many idle listeners (19 lost 1–3%), where 17 loses up to half. In a desktop-only check, `pg_upgrade` from 17
+works once the new cluster is created without data checksums (or the old one gets them). See the [measurements](../evaluation/pg19_features/README.md#measured-on-morletdbs-own-tasks-2026-11-20).

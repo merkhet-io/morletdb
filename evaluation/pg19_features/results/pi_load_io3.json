@@ -1,0 +1,260 @@
+{
+ "host": "Linux-6.1.21-v8+-aarch64-with-glibc2.31",
+ "runs": [
+  {
+   "round": 1,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_db_s": 93.63678932969924,
+   "load_wall_s": 115.99135526595637,
+   "final_checkpoint_s": 17.3400883639697,
+   "wal_bytes": 75288784,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    3.09,
+    2.3,
+    2.52
+   ]
+  },
+  {
+   "round": 1,
+   "server": "pg19-no-checksums",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 83.10183466714807,
+   "load_wall_s": 107.93282401398756,
+   "final_checkpoint_s": 11.4751575429691,
+   "wal_bytes": 75377656,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    2.71,
+    2.45,
+    2.54
+   ]
+  },
+  {
+   "round": 1,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 95.09107037563808,
+   "load_wall_s": 116.24995144596323,
+   "final_checkpoint_s": 15.242470500059426,
+   "wal_bytes": 75424528,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    2.62,
+    2.35,
+    2.49
+   ]
+  },
+  {
+   "round": 2,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 95.73251464986242,
+   "load_wall_s": 115.12130912893917,
+   "final_checkpoint_s": 12.499046150944196,
+   "wal_bytes": 75576296,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    2.48,
+    2.24,
+    2.41
+   ]
+  },
+  {
+   "round": 2,
+   "server": "pg19-no-checksums",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 95.87671175098512,
+   "load_wall_s": 119.81217650102917,
+   "final_checkpoint_s": 10.419863207964227,
+   "wal_bytes": 75486568,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    2.24,
+    2.1,
+    2.33
+   ]
+  },
+  {
+   "round": 2,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_db_s": 88.48082602466457,
+   "load_wall_s": 109.00158918101806,
+   "final_checkpoint_s": 7.755867898929864,
+   "wal_bytes": 75186800,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    1.73,
+    1.89,
+    2.22
+   ]
+  },
+  {
+   "round": 3,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_db_s": 92.03356535255443,
+   "load_wall_s": 111.50113215704914,
+   "final_checkpoint_s": 8.373439503018744,
+   "wal_bytes": 75187592,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72818688,
+   "load_avg": [
+    2.03,
+    1.89,
+    2.17
+   ]
+  },
+  {
+   "round": 3,
+   "server": "pg19-no-checksums",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 114.97034994582646,
+   "load_wall_s": 137.4252360590035,
+   "final_checkpoint_s": 11.02302093792241,
+   "wal_bytes": 75473136,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    2.2,
+    1.91,
+    2.12
+   ]
+  },
+  {
+   "round": 3,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 104.22444495989475,
+   "load_wall_s": 131.3518164480338,
+   "final_checkpoint_s": 10.289271454908885,
+   "wal_bytes": 75755064,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    2.42,
+    1.95,
+    2.09
+   ]
+  },
+  {
+   "round": 4,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 115.581721082679,
+   "load_wall_s": 146.37965902907308,
+   "final_checkpoint_s": 12.192171561997384,
+   "wal_bytes": 75752896,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    3.11,
+    2.2,
+    2.15
+   ]
+  },
+  {
+   "round": 4,
+   "server": "pg19-no-checksums",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 89.02769622532651,
+   "load_wall_s": 118.30828413495328,
+   "final_checkpoint_s": 21.238007724983618,
+   "wal_bytes": 75231304,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    3.12,
+    2.33,
+    2.19
+   ]
+  },
+  {
+   "round": 4,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_db_s": 121.7154249008745,
+   "load_wall_s": 148.04092190193478,
+   "final_checkpoint_s": 15.975194230908528,
+   "wal_bytes": 75459400,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    3.03,
+    2.34,
+    2.21
+   ]
+  },
+  {
+   "round": 5,
+   "server": "pg17",
+   "version": "17.12 (Debian 17.12-1.pgdg12+1)",
+   "load_db_s": 107.35367473296355,
+   "load_wall_s": 132.91456334700342,
+   "final_checkpoint_s": 13.135808255989105,
+   "wal_bytes": 75538312,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    2.68,
+    2.38,
+    2.23
+   ]
+  },
+  {
+   "round": 5,
+   "server": "pg19-no-checksums",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 134.22349161433522,
+   "load_wall_s": 155.61270578589756,
+   "final_checkpoint_s": 18.531660014064983,
+   "wal_bytes": 75404032,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    3.05,
+    2.39,
+    2.24
+   ]
+  },
+  {
+   "round": 5,
+   "server": "pg19",
+   "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+   "load_db_s": 90.27587801485788,
+   "load_wall_s": 115.35409062192775,
+   "final_checkpoint_s": 10.00509864592459,
+   "wal_bytes": 75398320,
+   "checkpoints_timed": 0,
+   "checkpoints_requested": 0,
+   "collection_bytes": 72826880,
+   "load_avg": [
+    2.43,
+    2.23,
+    2.2
+   ]
+  }
+ ]
+}

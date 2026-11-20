@@ -548,7 +548,9 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
      Prefer the shortest rewrite: one table at a time, soon after the removal.
    - **Readers with an older snapshot can see an empty table.** `REPACK (CONCURRENTLY)` is not MVCC-safe: once it
      commits, a transaction whose snapshot was taken before it started sees the repacked table as empty if it reads the
-     table only then. A single query is safe. A `REPEATABLE READ` transaction of several statements is not: the search
+     table only then. (Reproduced on 19.0 with a MorletDB collection: such a transaction counted 0 of 1,744
+     chunks; in a separate run that rewrote the table with `VACUUM FULL` instead, it counted all 1,744;
+     [measurements](../evaluation/pg19_features/README.md).) A single query is safe. A `REPEATABLE READ` transaction of several statements is not: the search
      contract suggests one for a single snapshot, and the MCP decision tool uses one. Such a reader could report "no
      match" where data exists. So start the repack only when no other transaction is open, and stop the MCP server,
      the steward and other multi-statement readers until it has finished:
