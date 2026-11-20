@@ -26,14 +26,20 @@ class Config:
     verify_share_every_s: float = 900.0   # a due verification gets a batch at least this often, even under load
     verify_timeout_s: float = 600.0   # statement timeout of a verify batch of one recording (a whole recording is read)
     breaker_failures: int = 3
+    active_days: float = 7.0          # free space inside a collection counts only if it received chunks this recently
+    hard_floor_fraction: float = 0.5  # below this share of the reserve in free disk, ingest is held whatever is reusable
 
 
 @dataclass(frozen=True)
 class Disk:
-    """Filesystem holding the data directory, and the database's growth (bytes per day, None when not yet known)."""
+    """Filesystem holding the data directory, and the database's growth (bytes per day, None when not yet known).
+    reusable_bytes: free space inside the tables of collections that still receive chunks, which new chunks take
+    before the files grow (space freed by retention or removed recordings after VACUUM; #538). None when it cannot be
+    measured (no pg_freespacemap); then only the filesystem counts, as before."""
     total_bytes: int | None
     free_bytes: int | None
     growth_per_day: float | None
+    reusable_bytes: int | None = None
 
 
 @dataclass(frozen=True)
@@ -45,6 +51,8 @@ class DiskState:
     hold_ingest: bool                 # new appends must stop
     unknown: bool
     cause: str
+    reusable_bytes: int | None = None  # as measured (None: not measurable)
+    borrowing: bool = False            # free disk is below the reserve, and space inside the tables takes new chunks
 
 
 def reserve(cfg: Config, total: int) -> int:
@@ -56,21 +64,37 @@ def disk_state(cfg: Config, d: Disk) -> DiskState:
     if d.total_bytes is None or d.free_bytes is None or d.total_bytes <= 0 or d.free_bytes < 0:
         return DiskState(ACTION, None, True, False, False, True,
                          "the free disk space cannot be read, so automatic work is paused")
-    usable = d.free_bytes - reserve(cfg, d.total_bytes)
+    res = reserve(cfg, d.total_bytes)
+    reusable = max(0, d.reusable_bytes or 0)
+    usable = d.free_bytes + reusable - res
+    extra = dict(reusable_bytes=d.reusable_bytes, borrowing=d.free_bytes <= res and usable > 0)
     if usable <= 0:
         return DiskState(ACTION, 0.0, True, True, True, False,
-                         "the disk reserve is reached: new recordings are refused until space is freed")
+                         "the disk reserve is reached: new recordings are refused until space is freed", **extra)
+    # Space inside the tables is an estimate and may sit in tables that stop receiving chunks; it never lets the
+    # filesystem itself fall below the hard floor, so PostgreSQL cannot run out of disk on its account.
+    if d.free_bytes <= cfg.hard_floor_fraction * res:
+        return DiskState(ACTION, 0.0, True, True, True, False,
+                         "the free disk is below half its reserve: new recordings are refused until space is freed "
+                         "(space freed inside the database is not relied on below this floor)", **extra)
     if not d.growth_per_day or d.growth_per_day <= 0:
-        return DiskState(NORMAL, None, False, False, False, False, "the database is not growing")
+        return DiskState(NORMAL, None, False, False, False, False, "the database is not growing", **extra)
     days = usable / d.growth_per_day
     cause = f"disk full in {fmt_days(days)} at the current rate"
     if days <= cfg.drop_days:
-        return DiskState(ACTION, days, True, True, False, False, cause)
+        return DiskState(ACTION, days, True, True, False, False, cause, **extra)
     if days <= cfg.pause_days:
-        return DiskState(ACTION, days, True, False, False, False, cause)
+        return DiskState(ACTION, days, True, False, False, False, cause, **extra)
     if days <= cfg.attention_days:
-        return DiskState(ATTENTION, days, False, False, False, False, cause)
-    return DiskState(NORMAL, days, False, False, False, False, cause)
+        return DiskState(ATTENTION, days, False, False, False, False, cause, **extra)
+    return DiskState(NORMAL, days, False, False, False, False, cause, **extra)
+
+
+def fmt_bytes(n: int) -> str:
+    for unit, k in (("GB", 1 << 30), ("MB", 1 << 20)):
+        if n >= k:
+            return f"{n / k:.1f} {unit}"
+    return f"{n} bytes"
 
 
 def fmt_days(days: float) -> str:
@@ -215,12 +239,26 @@ def status_items(cfg: Config, o: Observed) -> list[Item]:
         items.append(Item("disk", ACTION, d.cause, "upkeep stops; new recordings may fail when the disk fills",
                           "check that the data volume is mounted and readable by the steward", "controls engineer"))
     elif d.hold_ingest:
+        action = "free space: approve a retention plan or add storage"
+        if d.reusable_bytes is None:
+            action += ("; space freed inside the database is not counted (pg_freespacemap is not installed, or its "
+                       "map could not be read; morlet-steward init as a superuser installs it)")
+        elif d.reusable_bytes > 0:
+            action += (f"; {fmt_bytes(d.reusable_bytes)} freed inside the database already count toward the "
+                       "reserve")
         items.append(Item("disk", ACTION, d.cause, "recording has stopped; collectors buffer what they can",
-                          "free space: approve a retention plan or add storage", "data owner"))
+                          action, "data owner"))
     elif d.level != NORMAL:
         conseq = "upkeep is paused; search and statistics fall behind" if d.pause else "recording stops when it is full"
         items.append(Item("disk", d.level, d.cause, conseq,
                           "approve a retention plan or add storage", "data owner"))
+    if d.borrowing and not d.hold_ingest and not d.unknown:
+        items.append(Item("disk-reuse", ATTENTION,
+                          f"the free disk is below its reserve, but {fmt_bytes(d.reusable_bytes or 0)} freed inside the "
+                          "database (by retention or removed recordings) take new samples first",
+                          "recording continues; the disk itself does not get more free space",
+                          "nothing is needed; to give the space back to the operating system, see runbook 8",
+                          "data owner"))
     for job, b in sorted(o.breakers.items()):
         if b.open:
             items.append(Item(f"job:{job}", ACTION, f"{job} failed {b.failures} times: {b.last_error[:200]}",

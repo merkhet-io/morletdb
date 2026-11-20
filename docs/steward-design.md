@@ -111,7 +111,20 @@ error. An approver resets it.
 - **Free space:** read by the steward from the filesystem holding the data directory (`statvfs`), because PostgreSQL
   cannot report it.
 - **Growth rate:** database and WAL size, sampled every hour into `state`, over the last 7 days.
-- **Time remaining:** free space minus a reserve (default 5% or 2 GB, whichever is larger) divided by the growth rate.
+- **Space freed inside the database (#538):** removing data (retention, memory level 4, deleted recordings) frees
+  space inside the table files, which new chunks reuse after `VACUUM`; the files do not shrink, so the filesystem's
+  free space does not grow. Near the reserve (free space below twice the reserve) and while its own hold stands, the
+  steward also counts this reusable space, read from the free space map (`pg_freespacemap`, at most every 10 minutes):
+  - only in the chunk tables (and their TOAST tables) of collections that received chunks in the last 7 days, since
+    freed space in one collection cannot take another collection's chunks; which collections receive chunks is
+    observed every tick from the insert counters and kept across restarts and holds;
+  - per page in whole tuples (2 kB in TOAST, 1 kB in the chunk table), so fragments do not count.
+  Without `pg_freespacemap` (it is not a trusted extension: `init` creates it when run as a superuser), only the
+  filesystem counts, as before, and the status says so.
+- **Time remaining:** free space plus reusable space, minus a reserve (default 5% or 2 GB, whichever is larger),
+  divided by the growth rate.
+- **Hard floor:** whatever is reusable, the ingest hold is set when the filesystem's free space falls below half the
+  reserve. Reusable space is an estimate; the floor keeps an overcount from ever running PostgreSQL out of disk.
 
 | Time remaining | State | The steward |
 |---|---|---|
@@ -122,7 +135,10 @@ error. An approver resets it.
 | reserve reached | Action required | sets the **ingest hold**: appends fail with a typed error, and the collector logs and buffers |
 
 - **Unknown disk state** (statvfs fails, a size query fails): automatic work pauses and the status says so.
-- **Released hold:** when space is freed, the hold is released and work resumes, with no person needed.
+- **Released hold:** when space is freed, the hold is released and work resumes, with no person needed. This
+  includes space freed inside the database: after an approved retention plan is applied and vacuumed, the hold is
+  released once free plus reusable space is above the reserve and free space above the hard floor. While new
+  samples use reused space below the reserve, the status says so (attention, `disk-reuse`).
 - **Emergency removal of raw chunks** exists only as a policy written beforehand. It applies only to recordings with
   a checksum-verified copy elsewhere, and still goes through a plan.
 

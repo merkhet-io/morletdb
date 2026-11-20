@@ -17,6 +17,12 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
   samples fail with SQLSTATE 53100 (`disk_full`) and the reason; identical replays still pass. When space is free
   again, it releases the hold it set. A hold set by a person (`morlet_set_ingest_hold`) stays until a person
   releases it.
+- **Space freed inside the database (#538):** near the reserve, space freed by retention or removed recordings
+  counts too, once vacuumed: the free space map of the chunk tables of collections that received chunks in the last
+  7 days, in whole tuples. So an applied retention plan lifts the hold, although the files do not shrink. A hard
+  floor (half the reserve of real free disk) holds ingest whatever is reusable. Needs the `pg_freespacemap`
+  extension, which `init` creates when run as a superuser; without it only the filesystem counts, and the status
+  says so. Metric: `morlet_disk_reusable_bytes`.
 - **Plans (P3):** anything that removes or changes stored samples, or updates the extension, is a plan.
   - The steward proposes extension updates on its own when the server has a newer pg_morlet. A person proposes
     memory-level changes from a policy dry run (`propose-levels COLLECTION MOVES.json`; the evidence is the dry
@@ -37,7 +43,7 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
   `127.0.0.1:9188`), using only the standard library. A scrape only reads. It covers:
   - the overall state (0 normal, 1 attention, 2 action required) and the items by level;
   - the heartbeat age, circuit breakers, actions in the last 24 hours, and waiting plans;
-  - the ingest hold, and disk free, total and database bytes;
+  - the ingest hold, and disk free, total, reusable (#538) and database bytes;
   - the last integrity pass per collection;
   - `morlet_collection_status` per collection and window size (backlogs and bytes);
   - dead tuples and vacuum age of each collection's tables.

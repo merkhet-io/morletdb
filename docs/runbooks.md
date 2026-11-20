@@ -506,7 +506,9 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
    `morlet_finish_memory_run` yourself ([memory design](memory-design.md#moving-episodes-one-primitive); not
    exercised here).
 4. **Space:** the removed rows become free space inside the tables after `VACUUM` (autovacuum does it). The files do
-   not shrink, so the disk's free space does not grow; new samples reuse the space. After many removals, rebuild the
+   not shrink, so the disk's free space does not grow; new samples reuse the space. The steward counts that space
+   toward its disk reserve (with `pg_freespacemap`; #538), so a retention plan applied at the reserve releases its
+   ingest hold once the removal is vacuumed. After many removals, rebuild the
    probe index ([7](#7-rebuilding-envelopes-probe-rows-and-indexes)).
 
    **To give the space back to the disk on PostgreSQL 19**, rewrite the collection's tables with
