@@ -46,7 +46,8 @@ def notify(r):
         cps = [x["commits_per_s"] for x in xs]
         p99 = statistics.median(x["latency_ms"]["p99"] for x in xs)
         cpu = statistics.median(x["postgres_cpu_s"] / x["appends"] * 1000 for x in xs)
-        print(f"| {s} | {k} | {statistics.median(cps):.0f} ({min(cps):.0f}–{max(cps):.0f}) | {p99:.2f} | {cpu:.2f} |")
+        print(f"| {s} | {k} | {statistics.median(cps):.0f} ({min(cps):.0f}–{max(cps):.0f}) | {p99:.2f} | {cpu:.1f} |")
+    print("\nCPU from `ps` (macOS: hundredths of a second per process; Linux: whole seconds, so coarse).")
 
 
 for path in sys.argv[1:]:

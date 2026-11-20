@@ -26,6 +26,8 @@ def main():
     ap.add_argument("--every", type=int, default=20)
     ap.add_argument("--offset", type=int, default=0)
     a = ap.parse_args()
+    if a.every < 1 or not 0 <= a.offset < a.every:
+        raise SystemExit("--every must be at least 1 and --offset in [0, every)")
     files = sorted(wl.DATA.glob("*/*.mat"))
     if len(files) != 2480:
         raise SystemExit(f"expected 2,480 Paderborn files in {wl.DATA}, found {len(files)}")
@@ -34,6 +36,12 @@ def main():
     recs, digest, n = [], hashlib.sha256(), 0
     for path in files[a.offset::a.every]:
         data = wl.load(path)
+        for g, spec in wl.GROUPS.items():          # every channel of B3, and one length per group
+            missing = set(spec["channels"]) - set(data)
+            if missing:
+                raise SystemExit(f"{path.name}: channels {sorted(missing)} missing")
+            if len({len(data[ch]) for ch in spec["channels"]}) != 1:
+                raise SystemExit(f"{path.name}: channels of group {g} differ in length")
         for ch in sorted(data):
             x = np.ascontiguousarray(data[ch], dtype="<f8")
             g = next(g for g, s in wl.GROUPS.items() if ch in s["channels"])

@@ -19,9 +19,10 @@ from pathlib import Path
 import numpy as np
 import psycopg
 
-from same_session import sh, wait_ready
+from same_session import SCHEMA, drop_schema, fresh_schema, sh, wait_ready
 
-C = "io19"
+NAME = "io19"
+C = f"{SCHEMA}.{NAME}"
 
 
 def ckpt_counts(c):
@@ -53,12 +54,8 @@ def main():
                 wait_ready(srv["dsn"])
                 with psycopg.connect(srv["dsn"], autocommit=True) as c:
                     c.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
-                    names = [r[0] for r in c.execute("SELECT quote_ident(tablename) FROM pg_tables WHERE "
-                                                     "schemaname='public' AND (tablename=%s OR tablename LIKE %s)",
-                                                     (C, C + "\\_%"))]
-                    if names:
-                        c.execute(f"DROP TABLE {', '.join(names)} CASCADE")
-                    c.execute("SELECT morlet_create_stream_collection('public', %s)", (C,))
+                    fresh_schema(c)
+                    c.execute("SELECT morlet_create_stream_collection(%s, %s)", (SCHEMA, NAME))
                     c.execute("CHECKPOINT")
                     lsn0 = c.execute("SELECT pg_current_wal_lsn()").fetchone()[0]
                     k0 = ckpt_counts(c)
@@ -89,7 +86,7 @@ def main():
                            "checkpoints_requested": None if k0[1] is None else k1[1] - k0[1],
                            "collection_bytes": c.execute(f"SELECT pg_total_relation_size('{C}_chunks')").fetchone()[0],
                            "load_avg": os.getloadavg()}
-                    c.execute(f"DROP TABLE {C}, {C}_chunks CASCADE")
+                    drop_schema(c)
             finally:
                 sh(srv["stop"])
             out["runs"].append(run)

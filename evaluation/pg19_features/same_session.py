@@ -6,8 +6,9 @@
 servers.json lists two servers: [{"name": "pg17", "dsn": "...", "start": "<shell>", "stop": "<shell>"}, ...].
 Only one server runs at a time. Each round starts each server in turn (the order alternates: AB, BA, AB, ...),
 loads the data (prepare_data.py) into a fresh collection, builds envelopes, runs every task once to warm up and
-once timed, and stops the server. Timings are wall-clock seconds of the database calls only (reading the .npy
-files is excluded). Every round also records digests of the stored chunks and envelopes and of the search results:
+once timed, and stops the server. Timings are the client's wall-clock seconds around the database calls (reading
+the .npy files is excluded; slicing the array into chunk payloads during the load is included). All tables live in
+the schema morlet_pg19exp, which the script drops and recreates. Every round also records digests of the stored chunks and envelopes and of the search results:
 the script fails if they differ between rounds or servers, so a timing is never reported for different results.
 
 Tasks: load (morlet_start_recording + morlet_append_chunk_raw, one transaction per recording), envelopes
@@ -28,7 +29,9 @@ from pathlib import Path
 import numpy as np
 import psycopg
 
-C = "ss19"
+SCHEMA = "morlet_pg19exp"   # every script works only in this schema, which it creates and drops
+NAME = "ss19"
+C = f"{SCHEMA}.{NAME}"
 CHUNK = 32768
 N_RANDOM = 2000
 N_QUERIES = 20
@@ -51,11 +54,14 @@ def wait_ready(dsn, timeout=120):
             time.sleep(1)
 
 
-def drop(c):
-    names = [r[0] for r in c.execute("SELECT quote_ident(tablename) FROM pg_tables WHERE schemaname='public' "
-                                     "AND (tablename=%s OR tablename LIKE %s)", (C, C + "\\_%"))]
-    if names:
-        c.execute(f"DROP TABLE {', '.join(names)} CASCADE")
+def fresh_schema(c):
+    """Drop and recreate the scripts' own schema; nothing outside it is touched."""
+    c.execute(f"DROP SCHEMA IF EXISTS {SCHEMA} CASCADE")
+    c.execute(f"CREATE SCHEMA {SCHEMA}")
+
+
+def drop_schema(c):
+    c.execute(f"DROP SCHEMA IF EXISTS {SCHEMA} CASCADE")
 
 
 def settings(c):
@@ -190,9 +196,9 @@ def main():
                 with psycopg.connect(srv["dsn"], autocommit=True) as c:
                     c.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
                     out["servers"][srv["name"]] = settings(c)
-                    drop(c)
+                    fresh_schema(c)
                     c.execute("CHECKPOINT")
-                    c.execute("SELECT morlet_create_stream_collection('public', %s)", (C,))
+                    c.execute("SELECT morlet_create_stream_collection(%s, %s)", (SCHEMA, NAME))
                     c.execute("SELECT morlet_enable_envelopes(%s::regclass)", (C,))
                     load_avg = os.getloadavg()
                     t_load, t_env = load(c, data, recs)
@@ -210,7 +216,7 @@ def main():
                         reference = key
                     elif key != reference:
                         raise SystemExit(f"{srv['name']} round {rnd + 1}: results differ from the first run: {key} != {reference}")
-                    drop(c)
+                    drop_schema(c)
             finally:
                 sh(srv["stop"])
             out["rounds"].append(r)
@@ -218,6 +224,9 @@ def main():
                               "envelopes_s": round(t_env, 2),
                               **{k: round(v["s"], 3) for k, v in r["tasks"].items()}}), flush=True)
             Path(a.out).write_text(json.dumps(out, indent=1) + "\n")
+    ran = {r["server"] for r in out["rounds"]}
+    if len(servers) < 2 or ran != {s["name"] for s in servers}:
+        raise SystemExit("needs at least two servers, each with at least one completed round")
     out["identical_results"] = True
     Path(a.out).write_text(json.dumps(out, indent=1) + "\n")
 

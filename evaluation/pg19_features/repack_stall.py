@@ -23,9 +23,10 @@ from pathlib import Path
 import numpy as np
 import psycopg
 
-from same_session import sh, wait_ready
+from same_session import SCHEMA, drop_schema, fresh_schema, sh, wait_ready
 
-C = "rp19"
+NAME = "rp19"
+C = f"{SCHEMA}.{NAME}"
 
 
 def q1(c, sql, args=None):
@@ -53,12 +54,8 @@ def main():
             res["version"] = q1(c, "SHOW server_version")
             for s in ("wal_level", "max_wal_size", "shared_buffers"):
                 res[s] = q1(c, f"SHOW {s}")
-            names = [r[0] for r in c.execute("SELECT quote_ident(tablename) FROM pg_tables WHERE schemaname='public' "
-                                             "AND (tablename=%s OR tablename LIKE %s)", (C, C + "\\_%"))]
-            if names:
-                c.execute(f"DROP TABLE {', '.join(names)} CASCADE")
-            c.execute(f"DROP TABLE IF EXISTS {C}_keys")
-            c.execute("SELECT morlet_create_stream_collection('public', %s)", (C,))
+            fresh_schema(c)
+            c.execute("SELECT morlet_create_stream_collection(%s, %s)", (SCHEMA, NAME))
             # chunks only: envelopes are not part of this check
             for r in recs:
                 x = np.load(Path(a.data) / r["file"])
@@ -87,6 +84,8 @@ def main():
 
             stop = threading.Event()
             log = []
+            attempts = [0]
+            failures = []
 
             def writer():
                 x = (np.arange(4096) % 97).astype("<f8").tobytes()
@@ -96,7 +95,12 @@ def main():
                     while not stop.is_set():
                         rid = kept[i % len(kept)]
                         t = time.perf_counter()
-                        w.execute("SELECT morlet_append_chunk_raw(%s::regclass,%s,%s,%s)", (C, rid, offs[rid], x))
+                        attempts[0] += 1
+                        try:
+                            w.execute("SELECT morlet_append_chunk_raw(%s::regclass,%s,%s,%s)", (C, rid, offs[rid], x))
+                        except psycopg.Error as e:
+                            failures.append(str(e).strip())
+                            return
                         log.append((t, time.perf_counter() - t))
                         offs[rid] += 4096
                         i += 1
@@ -145,7 +149,10 @@ def main():
             res["appends"]["longest_gap_without_completed_append_ms"] = float(np.diff(edges).max() * 1e3)
             res["kept_chunks_unchanged"] = q1(c, sig_sql) == sig0
             res["chunks_after"] = q1(c, f"SELECT count(*) FROM {C}_chunks")
-            res["all_appends_stored"] = res["chunks_after"] == chunks0 + len(log)
+            res["append_attempts"] = attempts[0]
+            res["append_failures"] = failures
+            res["all_appends_stored"] = (not failures and attempts[0] == len(log)
+                                         and res["chunks_after"] == chunks0 + len(log))
             problems, after = 0, None
             while True:
                 page = c.execute("SELECT recording_id, cardinality(problems) FROM morlet_verify(%s::regclass,%s,100)",
@@ -155,7 +162,7 @@ def main():
                     break
                 after = page[-1][0]
             res["verify_problems"] = problems
-            c.execute(f"DROP TABLE {C}, {C}_chunks, {C}_keys CASCADE")
+            drop_schema(c)
     finally:
         sh(srv["stop"])
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")

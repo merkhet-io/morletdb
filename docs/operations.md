@@ -98,7 +98,7 @@ LISTEN morlet_line;                                         -- in the consumer's
 - **Idle listeners on PostgreSQL 17 and 18:** every notifying commit wakes every backend that listens on any channel.
   With 200 idle `LISTEN` connections on other channels, PostgreSQL 17.11 committed 698 notifying appends per second
   instead of 1,511, and the server used about 8× the CPU; on a Raspberry Pi with 50, 54 instead of 64. PostgreSQL 19
-  wakes only the notified channel's listeners and was unaffected (1,738 and 1,762; development measurement,
+  wakes only the notified channel's listeners and lost about 1% (1,738 instead of 1,762; development measurement,
   [evaluation/pg19_features](../evaluation/pg19_features/README.md)). On 17 and 18, keep the number of idle
   listening connections small, or move to 19.
 - **Other switches:**

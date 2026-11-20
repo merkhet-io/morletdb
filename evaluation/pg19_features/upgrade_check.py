@@ -22,9 +22,10 @@ from pathlib import Path
 import numpy as np
 import psycopg
 
-from same_session import load
+from same_session import SCHEMA, load
 
-C = "up19"
+NAME = "up19"
+C = f"{SCHEMA}.{NAME}"
 PORT_OLD, PORT_NEW = 28937, 28939
 
 
@@ -80,7 +81,8 @@ def snapshot(c, queries, anchored):
         problems += sum(1 for p in page if p[1])
         after = page[-1][0] if page else None
     out["verify_problems"] = problems
-    out["chunk_stats_rows"] = q(f"SELECT count(*) FROM pg_stats WHERE tablename='{C}_chunks'")
+    out["chunk_stats_rows"] = q("SELECT count(*) FROM pg_stats WHERE schemaname=%s AND tablename=%s",
+                                (SCHEMA, NAME + "_chunks"))
     return out
 
 
@@ -94,10 +96,15 @@ def main():
     ap.add_argument("--socketdir", default=None, help="pg_upgrade's socket directory (default: the work directory; "
                     "macOS limits socket paths to 103 bytes)")
     a = ap.parse_args()
-    work = Path(a.work)
-    sock = ["-s", a.socketdir or str(work)]
+    work = Path(a.work).resolve()
+    a.bin17, a.bin19 = str(Path(a.bin17).resolve()), str(Path(a.bin19).resolve())
+    sock = ["-s", str(Path(a.socketdir).resolve()) if a.socketdir else str(work)]
+    marker = work / ".upgrade_check_work"
+    if work.exists() and any(work.iterdir()) and not marker.exists():
+        raise SystemExit(f"{work} exists and was not created by this script: choose a new or empty directory")
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
+    marker.touch()
     manifest = json.loads((Path(a.data) / "manifest.json").read_text())
     recs = manifest["recordings"]
     res = {"host": platform.platform(), "data": {k: manifest[k] for k in ("every", "samples", "samples_sha256")}}
@@ -107,7 +114,8 @@ def main():
     ctl(a.bin17, old, PORT_OLD, "start")
     with psycopg.connect(dsn(PORT_OLD), autocommit=True) as c:
         c.execute("CREATE EXTENSION pg_morlet")
-        c.execute("SELECT morlet_create_stream_collection('public', %s)", (C,))
+        c.execute(f"CREATE SCHEMA {SCHEMA}")
+        c.execute("SELECT morlet_create_stream_collection(%s, %s)", (SCHEMA, NAME))
         c.execute("SELECT morlet_enable_envelopes(%s::regclass)", (C,))
         load(c, Path(a.data), recs, coll=C)
         c.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (C,))
@@ -165,7 +173,7 @@ def main():
                                                     ).fetchone()[0]
             same = {k: m["after"][k] == res["before"][k] for k in res["before"] if k != "chunk_stats_rows"}
             m["identical"] = same
-            m["all_identical"] = all(same.values())
+            m["all_identical"] = all(same.values()) and m["after"]["verify_problems"] == 0
             t = time.perf_counter()
             c.execute("ANALYZE")
             m["analyze_s"] = time.perf_counter() - t

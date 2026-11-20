@@ -25,9 +25,10 @@ from pathlib import Path
 import numpy as np
 import psycopg
 
-from same_session import sh, wait_ready
+from same_session import SCHEMA, drop_schema, fresh_schema, sh, wait_ready
 
-C = "nt19"
+NAME = "nt19"
+C = f"{SCHEMA}.{NAME}"
 
 
 def postgres_cpu_s():
@@ -54,11 +55,8 @@ def arm(dsn, k, n):
     received = [0]
     with psycopg.connect(dsn, autocommit=True) as w:
         w.execute("SELECT set_config('client_min_messages','warning',false)")
-        names = [r[0] for r in w.execute("SELECT quote_ident(tablename) FROM pg_tables WHERE schemaname='public' "
-                                         "AND (tablename=%s OR tablename LIKE %s)", (C, C + "\\_%"))]
-        if names:
-            w.execute(f"DROP TABLE {', '.join(names)} CASCADE")
-        w.execute("SELECT morlet_create_stream_collection('public', %s)", (C,))
+        fresh_schema(w)
+        w.execute("SELECT morlet_create_stream_collection(%s, %s)", (SCHEMA, NAME))
         ch = w.execute("SELECT morlet_enable_notifications(%s::regclass)", (C,)).fetchone()[0]
         for r in range(8):
             w.execute("SELECT morlet_start_recording(%s::regclass,%s,1000,'x','u','{}'::jsonb,512,256,'zscore','none')",
@@ -94,7 +92,7 @@ def arm(dsn, k, n):
         done.set()
         th.join(timeout=5)
         consumer.close()
-        w.execute(f"DROP TABLE {C}, {C}_chunks CASCADE")
+        drop_schema(w)
     for c in idle:
         c.close()
     if received[0] != n:

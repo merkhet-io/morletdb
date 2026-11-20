@@ -3,9 +3,10 @@
 **Development review, 2026-11-19, PostgreSQL 19.0 (released that day); measurements added 2026-11-20.** It reads the
 19.0 release notes against pg_morlet's code and operations, runs one development check (`repack_check.sh`), and
 compares 17 and 19 on MorletDB's own tasks on a desktop and a Raspberry Pi ([below](#measured-on-morletdbs-own-tasks-2026-11-20)). It is not a frozen protocol and
-not a benchmark. The sizes, counts and times below are observations from single development runs on one machine
-(Apple M5 Max, macOS); they show that something works, not how fast or how well it works elsewhere. The measurements
-section makes speed comparisons only for the tasks, machines and settings it names.
+not a benchmark. The sizes, counts and times in the sections before the measurements are observations from single
+development runs on one machine (Apple M5 Max, macOS); they show that something works, not how fast or how well it
+works elsewhere. The measurements section uses several rounds on a desktop and a Raspberry Pi, and makes speed
+comparisons only for the tasks, machines and settings it names.
 
 ## Compatibility
 
@@ -122,7 +123,8 @@ tasks on these machines, nothing more. Result files are in `results/`, and `summ
 `morlet_verify` found nothing. `same_session.py` stops if any of that differs, so no timing below compares different
 results.
 
-**Task times** (`same_session.py`; seconds, median and range; database calls only):
+**Task times** (`same_session.py`; seconds, median and range; the client's wall time around the database calls,
+excluding reading the input files; during the load it includes slicing the arrays into chunk payloads):
 
 | Task | Desktop 17.11 | Desktop 19.0 | 19/17 | Pi 17.12 | Pi 19.0 | 19/17 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -149,7 +151,7 @@ results.
   difference between the versions that this SD card lets us establish.
 - **Data checksums:** since 18, `initdb` turns them on by default, so the 19 clusters in all these runs had them
   and the 17 clusters did not, as a default installation would. Arms of 19 without checksums (`--no-data-checksums`)
-  matched 19 with them: on the desktop within 1% on every task (3 rounds,
+  matched 19 with them: on the desktop within 2% on every task (reading every sample 2.09 s against 2.12 s; 3 rounds,
   `results/mac_same_session_checksums.json`), on the Pi in load time (`results/pi_load_io3.json`).
 
 **Commit notifications with idle listeners** (`notify_check.py`): one writer commits small appends (1,024 samples,
@@ -215,7 +217,7 @@ time anchors on four recordings, row security and commit notifications; 241 MB c
 **What this changes.**
 - Nothing in pg_morlet needs to change for 19. 19 is not slower on any task we measured, and two things are better:
   full reads (7%) and commit notifications with many listeners (17 loses half its notifying commit rate to 200 idle
-  listeners; 19 loses none).
+  listeners; 19 loses about 1%).
 - The release image stays on PostgreSQL 17 for 0.4; images and packages for 19 (#537) can now be built on the
   official `postgres:19` image, which is available (checked 2026-11-20).
 - Operations: the upgrade guide needs the checksum step, and on 17 many idle `LISTEN` connections cost notifying
@@ -225,6 +227,7 @@ time anchors on four recordings, row security and commit notifications; 241 MB c
 
 ```sh
 python evaluation/pg19_features/prepare_data.py --out /tmp/b3-20 --every 20      # needs the B3 data (tsdb_b3)
+python evaluation/pg19_features/prepare_data.py --out /tmp/b3-40 --every 40      # the smaller set (Pi, upgrade)
 # servers.json: [{"name": "pg17", "dsn": ..., "start": "<shell>", "stop": "<shell>"}, {"name": "pg19", ...}]
 python evaluation/pg19_features/same_session.py --data /tmp/b3-20 --servers servers.json --rounds 5 --out same.json
 python evaluation/pg19_features/notify_check.py --servers servers.json --listeners 0,200 --out notify.json
@@ -233,6 +236,12 @@ python evaluation/pg19_features/load_io.py --data /tmp/b3-20 --servers servers.j
 python evaluation/pg19_features/upgrade_check.py --bin17 <17/bin> --bin19 <19/bin> --data /tmp/b3-40 --work /tmp/upg --out upg.json
 python evaluation/pg19_features/summarize.py same.json notify.json
 ```
+
+Every script works only in the schema `morlet_pg19exp`, which it drops and recreates, and `upgrade_check.py` refuses
+a work directory it did not create. These safeguards, input checks in `prepare_data.py`, and stricter pass
+conditions (failed appends in `repack_stall.py`, zero `morlet_verify` problems after an upgrade, both servers
+compared in `same_session.py`) were added after the runs above, from review; the measured statements are unchanged,
+and every script was run again once afterwards with the same outcomes.
 
 ## Reproduce
 
