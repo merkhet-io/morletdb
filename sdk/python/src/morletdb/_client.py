@@ -401,7 +401,9 @@ class Client:
         """The samples whose UTC time lies in [t_start_ns, t_end_ns) (integer nanoseconds), by the recording's time
         anchors when it has any, else by start + rate (`morlet_utc_to_samples`, SQL 0.3.13). Usually one range;
         several, each marked ambiguous, when the source's clock stepped back; none when no sample's time lies in
-        the range. `rho` overrides the clock bound used for the uncertainties."""
+        the range. Ranges are offsets on the time axis, not clipped to the samples stored (Recording.samples), as in
+        samples_for_time; one beyond the last anchor is marked extrapolated. The error bounds are None for start + rate.
+        `rho` overrides the clock bound used for the uncertainties."""
         if not self._has("public.morlet_utc_to_samples(regclass,text,numeric,numeric,double precision)"):
             raise UnsupportedError("time anchors need pg_morlet SQL 0.3.13 or later")
         if recording.start_ns is None and not self._one("SELECT morlet_time_axis_version(%s::regclass,%s)",
