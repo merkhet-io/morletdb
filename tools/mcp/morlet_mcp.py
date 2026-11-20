@@ -847,7 +847,7 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
     out = {"utc_time": utc_time, "matches": sorted(hits, key=lambda h: h["recording_id"])}
     if not hits:
         if not timed:
-            out["note"] = "no matching recording has a start time, so no time can be located"
+            out["note"] = "no matching recording has a start time or time anchors, so no time can be located"
         else:
             out["note"] = ("the time falls into a gap between recordings" if before and after else
                            "the time is before the first recording" if after else "the time is after the last recording")
