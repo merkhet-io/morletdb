@@ -10,6 +10,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 import psycopg
 
@@ -299,6 +300,105 @@ class StewardDatabase(unittest.TestCase):
         self.admin.execute("SELECT morlet_append_chunk('line','r1',1100000,ARRAY[1,2,3]::float8[])")
         self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job='ingest_hold' "
                                   "AND outcome='done'"), 2)
+
+    # ---- #538: space freed inside the tables counts toward the reserve ------------------------------------------------
+    TOTAL = 100 << 30
+
+    def fs(self, free):
+        """A filesystem of 100 GB with `free` bytes available (the steward reads f_bavail, f_blocks and f_frsize)."""
+        return os.statvfs_result((4096, 4096, self.TOTAL // 4096, free // 4096, free // 4096, 0, 0, 0, 0, 255))
+
+    def noise(self, collection, rid, start, n=327_680):
+        """Samples that do not compress, so their chunks go to TOAST (about 256 kB each)."""
+        for s in range(start, start + n, 262_144):          # at most 262,144 samples per call
+            k = min(262_144, start + n - s)
+            self.admin.execute(f"SELECT morlet_append_chunks_raw('{collection}',%s,%s,morlet_float8_le_bytes(ARRAY("
+                               "SELECT random()*1000 FROM generate_series(1,%s))),32768)", (rid, s, k))
+        # table statistics reach other sessions at most about once a second; the steward's next tick follows at once
+        self.admin.execute("SELECT pg_stat_force_next_flush()")
+        self.admin.execute("SELECT 1")
+
+    def tick(self, st, free):
+        with mock.patch("steward.os.statvfs", return_value=self.fs(free)):
+            return st.tick()
+
+    def near_reserve(self, st, deficit):
+        """Free disk just below the reserve (1 GB): deficit bytes plus what the tables already hold free."""
+        return (1 << 30) - deficit - (S.reusable_bytes(self.admin, ["public.line"]) or 0)
+
+    def test_space_freed_by_removing_a_recording_lifts_the_hold_and_the_files_keep_their_size(self):
+        a = self.admin
+        a.execute("SELECT morlet_start_recording('line','r3',1000,'x','g','{}',512,256,'zscore','none')")
+        self.noise("line", "r3", 0)
+        self.noise("line", "r1", 1_100_000)          # after r3, so r3's pages are not at the end of the files
+        st = self.steward(reserve_bytes=1 << 30, reserve_fraction=0.0)
+        self.tick(st, 50 << 30)                       # first observation of the insert counters
+        self.noise("line", "r1", 1_427_680, 32_768)   # line receives chunks
+        self.tick(st, 50 << 30)
+        free = self.near_reserve(st, 512 << 10)       # 512 kB short of the reserve
+        self.tick(st, free)
+        self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
+        size = self.one("SELECT pg_total_relation_size('line_chunks')")
+        a.execute("DELETE FROM line WHERE recording_id='r3'")     # retention: about 2.6 MB of chunks
+        a.execute("VACUUM line_chunks")
+        st.reusable = None                            # measure again now, not after the cache period
+        self.tick(st, free)
+        self.assertIsNone(a.execute("SELECT * FROM morlet_ingest_hold").fetchone())
+        self.assertGreater(self.one("SELECT (value->>'bytes')::bigint FROM morlet_steward.meta WHERE key='reusable'"),
+                           512 << 10)
+        self.assertGreaterEqual(self.one("SELECT pg_total_relation_size('line_chunks')"), size)   # files did not shrink
+        self.assertIn("freed inside the database",
+                      self.one("SELECT cause FROM morlet_steward.status WHERE key='disk-reuse'"))
+        self.noise("line", "r1", 1_460_448, 32_768)   # appends work again
+        # the hard floor: below half the reserve the hold returns, whatever is reusable
+        st.reusable = None
+        self.tick(st, 400 << 20)
+        self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
+
+    def test_space_freed_in_a_collection_that_receives_no_chunks_does_not_lift_the_hold(self):
+        a = self.admin
+        a.execute("SELECT morlet_create_stream_collection('public','old')")
+        a.execute("SELECT morlet_start_recording('old',r,1000,'x','g','{}',512,256,'zscore','none') "
+                  "FROM unnest(ARRAY['o1','o2']) r")
+        self.noise("old", "o1", 0)
+        self.noise("old", "o2", 0)                    # after o1, so VACUUM cannot give o1's pages back by truncation
+        S.grant(a)
+        st = self.steward(reserve_bytes=1 << 30, reserve_fraction=0.0)
+        self.tick(st, 50 << 30)                       # baselines; only line receives chunks from now on
+        self.noise("line", "r1", 1_100_000, 32_768)
+        self.tick(st, 50 << 30)
+        free = self.near_reserve(st, 512 << 10)
+        self.tick(st, free)
+        self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
+        a.execute("DELETE FROM old WHERE recording_id='o1'")
+        a.execute("VACUUM old_chunks")
+        self.assertGreater(S.reusable_bytes(a, ["public.old"]), 512 << 10)   # the space is there, in old
+        st.reusable = None
+        self.tick(st, free)
+        self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
+
+    def test_a_collection_keeps_counting_however_long_a_hold_lasts_and_gaps_never_look_recent(self):
+        a, c, day = self.admin, self.conn, 86400.0
+        cols = ["public.line"]
+        S.receiving(c, cols, 7, at=1000.0)                       # first observation: no insert time yet
+        self.assertEqual(S.receiving(c, cols, 7, at=1030.0), [])
+        self.noise("line", "r1", 1_100_000, 32_768)
+        self.assertEqual(S.receiving(c, cols, 7, at=1060.0), cols)   # dated at the previous observation (1030)
+        # a hold from 1100 on stops all inserts: ages are measured at the start of the hold
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 30 * day, held_since=1100.0), cols)
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 30 * day), [])          # without a hold: too old
+        # the steward was stopped for 30 days; an increase seen afterwards is dated at the last observation
+        self.noise("line", "r1", 1_132_768, 32_768)
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 60 * day), [])
+        self.noise("line", "r1", 1_165_536, 32_768)
+        self.assertEqual(S.receiving(c, cols, 7, at=1100.0 + 60 * day + 30), cols)  # ingest goes on: counts again
+
+    def test_without_pg_freespacemap_only_the_filesystem_counts_and_status_says_so(self):
+        self.admin.execute("DROP EXTENSION pg_freespacemap")
+        st = self.steward(reserve_bytes=1 << 30, reserve_fraction=0.0)
+        self.tick(st, (1 << 30) - (1 << 20))
+        self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
+        self.assertIn("pg_freespacemap", self.one("SELECT action FROM morlet_steward.status WHERE key='disk'"))
 
     def test_a_hold_set_by_a_person_stays(self):
         self.admin.execute("SELECT morlet_set_ingest_hold('maintenance window')")

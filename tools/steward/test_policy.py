@@ -169,5 +169,44 @@ class VerifyTimeout(unittest.TestCase):
         self.assertFalse(b.open)
 
 
+class ReusableSpace(unittest.TestCase):
+    """#538: space freed inside the tables (retention, removed recordings) counts toward the reserve, within a floor."""
+    # 100 GB disk: reserve 5 GB, hard floor 2.5 GB
+
+    def at(self, free_gb, reusable_gb, growth_gb_per_day=None):
+        return P.disk_state(CFG, P.Disk(100 * GB, int(free_gb * GB),
+                                        None if growth_gb_per_day is None else growth_gb_per_day * GB,
+                                        None if reusable_gb is None else int(reusable_gb * GB)))
+
+    def test_without_a_measurement_only_the_filesystem_counts(self):
+        self.assertTrue(self.at(4, None).hold_ingest)
+        self.assertTrue(self.at(4, 0).hold_ingest)
+        self.assertEqual(self.at(50, None, 1).days_left, disk(50, 1).days_left)
+
+    def test_space_freed_inside_the_tables_lifts_the_hold(self):
+        d = self.at(4, 2)                                  # 1 GB short of the reserve, 2 GB reusable
+        self.assertFalse(d.hold_ingest)
+        self.assertTrue(d.borrowing)
+        self.assertAlmostEqual(self.at(4, 2, 1).days_left, 1.0)   # (4 + 2 - 5) GB at 1 GB a day
+
+    def test_the_hard_floor_holds_whatever_is_reusable(self):
+        d = self.at(2.5, 100)
+        self.assertTrue(d.hold_ingest)
+        self.assertIn("half its reserve", d.cause)
+        self.assertFalse(self.at(2.6, 100).hold_ingest)
+
+    def test_status_says_what_counts(self):
+        o = lambda d: {i.key: i for i in P.status_items(CFG, P.Observed(d))}   # noqa: E731
+        reuse = o(self.at(4, 2))["disk-reuse"]
+        self.assertEqual(reuse.level, P.ATTENTION)
+        self.assertIn("2.0 GB freed inside the database", reuse.cause)
+        self.assertNotIn("disk-reuse", o(self.at(50, 2)))
+        missing = P.disk_state(CFG, P.Disk(100 * GB, 4 * GB, None, None, True))
+        self.assertIn("pg_freespacemap is not installed", o(missing)["disk"].action)
+        self.assertIn("could not be measured", o(self.at(4, None))["disk"].action)   # installed, map not read
+        self.assertNotIn("init", o(self.at(4, None))["disk"].action)
+        self.assertIn("already count", o(self.at(2, 1))["disk"].action)
+
+
 if __name__ == "__main__":
     unittest.main()
