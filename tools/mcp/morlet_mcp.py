@@ -142,8 +142,8 @@ def at(t0, rate, sample):
 
 
 def time_quality(meta, rate):
-    """How a recording's UTC times are derived, and how far off they may be (#393). Today always start + rate: there
-    are no time anchors yet. When an import measured how the source's own timestamps departed from that axis
+    """How the UTC times of a recording without time anchors are derived (start + rate), and how far off they may
+    be (#393; anchored recordings: locate_by_anchors, anchor_times). When an import measured how the source's own timestamps departed from that axis
     (metadata time_axis, tools/ingest), that departure is the uncertainty of every derived time."""
     q = {"time_basis": "start + rate"}
     ax = meta.get("time_axis") if isinstance(meta, dict) else None
@@ -782,16 +782,19 @@ def list_recordings(collection: str, metadata_filter: str = "{}", limit: int = 5
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> dict:
-    """Find which recordings contain a UTC time (ISO 8601, e.g. 2025-03-01T14:02:10Z) and the sample offset
-    of that time in each. Needs recordings whose metadata has a start time. When no recording contains the
+    """Find which recordings contain a UTC time (ISO 8601, e.g. 2025-03-01T14:02:10Z; a time without an offset is
+    UTC, fractions count to the nanosecond) and the sample offset of that time in each. Needs recordings whose
+    metadata has a start time, or time anchors. When no recording contains the
     time, a note says whether it falls into a gap, before the first or after the last recording, with the
     nearest recording on each side. Each match says how its time axis is derived (time_basis: start + rate)
     and, when the import measured how the source's timestamps departed from it, the uncertainty in seconds and
     samples: a clock that drifts or stamps blocks puts the located sample off by up to that much. The located sample is
     the one whose period contains the time: the last sample at or before it. Recordings with
     time anchors (the source's own timestamps, stored by the importer) are located by them instead (time_basis:
-    anchors), exactly at every anchor, with the bound on the error; a time that a clock step puts into two blocks
-    lists both samples."""
+    anchors), exactly at every anchor, with the bound on the error. A time_note says when the time falls into a
+    jump of the source's clock (the match is then the last sample before the jump, and first_sample_after_jump the
+    first after it), when it is extrapolated beyond its block's anchors, or when the anchors are estimates without
+    a clock bound; a time that a backward clock step puts into two blocks lists every sample in candidate_samples."""
     t_ns = utc_ns_of(utc_time)
     t = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=t_ns // 1000)
     flt = json.loads(metadata_filter or "{}")
@@ -833,7 +836,7 @@ def locate_time(collection: str, utc_time: str, metadata_filter: str = "{}") -> 
             if hit.get("time_uncertainty_samples", 0) > 1:
                 hit["time_note"] = (f"the source's timestamps departed from start + rate by up to "
                                     f"{hit['time_uncertainty_s']:.3g} s, so this sample may be off by up to "
-                                    f"{hit['time_uncertainty_samples']:.4g} samples (no time anchors yet, #393)")
+                                    f"{hit['time_uncertainty_samples']:.4g} samples (the recording has no time anchors, #393)")
             hits.append(hit)
             continue
         t1 = t0 + timedelta(seconds=n / rate)
