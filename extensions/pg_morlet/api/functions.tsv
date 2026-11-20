@@ -9,6 +9,7 @@ morlet_add_acquisition_context	stable	0.3.0	documented since SQL 0.3.0 or earlie
 morlet_add_context	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_add_episodes	experimental	0.3.5	documented; new in SQL 0.3.5
 morlet_add_label	stable	0.2.0	documented since SQL 0.2.0 or earlier
+morlet_add_time_anchors	experimental	0.3.13	documented; new in SQL 0.3.13
 morlet_append_acquisition_raw	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_append_chunk	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_append_chunk_raw	stable	0.3.3	documented since SQL 0.3.3 or earlier
@@ -28,6 +29,7 @@ morlet_check_candidates	internal	0.3.3	not documented
 morlet_check_chunk	internal	0.3.5	not documented
 morlet_check_context_overlaps	internal	0.2.0	not documented
 morlet_check_ingest_hold	experimental	0.3.6	documented; new in SQL 0.3.6
+morlet_check_time_anchors	internal	0.3.13	not documented
 morlet_chunk_batch	internal	0.3.4	not documented
 morlet_chunk_checkpoint	internal	0.1.0	not documented
 morlet_chunk_step	internal	0.1.0	helper
@@ -53,6 +55,7 @@ morlet_declare_sync	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_decode_chunk	internal	0.2.0	not documented
 morlet_decode_interval	internal	0.3.1	not documented
 morlet_decode_interval_raw	internal	0.3.3	not documented
+morlet_default_clock_rho	internal	0.3.13	not documented
 morlet_define_label	experimental	0.3.9	label glossary (#333)
 morlet_disable_notifications	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_distance	stable	0.1.0	documented since SQL 0.1.0 or earlier
@@ -67,6 +70,7 @@ morlet_enable_rollups	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_enable_row_security	stable	0.3.1	documented since SQL 0.3.1 or earlier
 morlet_enable_segments	internal	0.1.0	not documented
 morlet_enable_sync	experimental	0.3.6	documented; new in SQL 0.3.6
+morlet_enable_time_anchors	experimental	0.3.13	documented; new in SQL 0.3.13
 morlet_enable_typed_segments	internal	0.1.0	not documented
 morlet_encode_chunk	internal	0.2.0	not documented
 morlet_encoded_chunk_kind	internal	0.2.0	not documented
@@ -113,11 +117,13 @@ morlet_interval_stats_fast	internal	0.3.8	helper (#346)
 morlet_interval_stats_final	internal	0.3.3	helper
 morlet_interval_stats_step	internal	0.3.3	helper
 morlet_invalidate_context_segments	internal	0.3.3	not documented
+morlet_json_bigint	internal	0.3.13	not documented
 morlet_label_definitions	experimental	0.3.9	label glossary (#333)
 morlet_label_glossary_table	internal	0.3.9	creates the glossary table (#333)
 morlet_latest	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_level_track	stable	0.3.1	documented since SQL 0.3.1 or earlier
 morlet_lock_context	internal	0.3.3	not documented
+morlet_lock_time_anchors	internal	0.3.13	not documented
 morlet_memory_relations	internal	0.3.5	helper
 morlet_memory_status	experimental	0.3.5	documented; new in SQL 0.3.5
 morlet_normalize	stable	0.1.0	documented since SQL 0.1.0 or earlier
@@ -125,6 +131,8 @@ morlet_notification_channel	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_notify_collect	internal	0.3.6	helper
 morlet_notify_commit	internal	0.3.6	helper
 morlet_ns_to_samples	internal	0.3.8	helper (#343)
+morlet_piece_ceil	internal	0.3.13	not documented
+morlet_piece_uncertainty	internal	0.3.13	not documented
 morlet_pin_toast_compression	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_probe_search	internal	0.3.11	helper
 morlet_quantised_step	experimental	0.3.9	value rules simple-v2 (study V2, #387)
@@ -141,6 +149,7 @@ morlet_recording_storage	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_release_ingest_hold	experimental	0.3.6	documented; new in SQL 0.3.6
 morlet_retract_label	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_revise_context	stable	0.2.0	documented since SQL 0.2.0 or earlier
+morlet_revise_time_anchor	experimental	0.3.13	documented; new in SQL 0.3.13
 morlet_rms	stable	0.1.0	documented since SQL 0.1.0 or earlier
 morlet_rollup_agg	internal	0.3.6	not documented
 morlet_rollup_relation	internal	0.3.6	helper
@@ -148,6 +157,7 @@ morlet_rollup_step	internal	0.3.6	helper
 morlet_rollup_values	internal	0.3.6	not documented
 morlet_row_security_enabled	stable	0.3.1	documented since SQL 0.3.1 or earlier
 morlet_sample_time_ns	stable	0.3.0	documented since SQL 0.3.0 or earlier
+morlet_sample_utc	experimental	0.3.13	documented; new in SQL 0.3.13
 morlet_samples_overview	internal	0.3.3	not documented
 morlet_samples_to_ns	internal	0.3.8	helper (#343)
 morlet_search	internal	0.1.0	not documented
@@ -183,10 +193,18 @@ morlet_stream_relations	internal	0.2.0	helper
 morlet_stream_status	stable	0.1.0	documented since SQL 0.1.0 or earlier
 morlet_sync_group	internal	0.3.6	not documented
 morlet_sync_guard	internal	0.3.6	helper
+morlet_time_anchor_relation	internal	0.3.13	not documented
+morlet_time_anchors_append_only	internal	0.3.13	not documented
+morlet_time_anchors_inserted	internal	0.3.13	not documented
+morlet_time_anchors_lock	internal	0.3.13	not documented
+morlet_time_axis_version	experimental	0.3.13	documented; new in SQL 0.3.13
 morlet_time_bounds	internal	0.3.3	not documented
 morlet_time_ns	internal	0.3.3	not documented
+morlet_time_pieces	internal	0.3.13	not documented
 morlet_time_to_samples	stable	0.3.0	documented since SQL 0.3.0 or earlier
 morlet_typed_spec	internal	0.1.0	not documented
+morlet_utc_to_sample	experimental	0.3.13	documented; new in SQL 0.3.13
+morlet_utc_to_samples	experimental	0.3.13	documented; new in SQL 0.3.13
 morlet_valid_chunk	internal	0.1.0	not documented
 morlet_valid_encoded_chunk	internal	0.2.0	not documented
 morlet_valid_recording	internal	0.1.0	not documented

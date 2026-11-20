@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- **Time anchors (SQL 0.3.13, experimental; #393, #383).** A recording can carry sync points: "sample n was at UTC
+  time T, give or take u, according to source". `morlet_enable_time_anchors` adds the opt-in table
+  `<collection>_time_anchors`; `morlet_add_time_anchors` writes idempotent batches (an identical retry returns 0, a
+  different one under the same id fails) and `morlet_revise_time_anchor` revises or retracts an anchor, keeping the
+  old row. `morlet_sample_utc`, `morlet_utc_to_samples` and `morlet_utc_to_sample` map between samples and UTC
+  exactly at every anchor and piecewise linearly between them, in integer arithmetic, with an error bound from the
+  anchors' uncertainties and a clock bound ρ (default 1e-4 for measured sources; override per call or with
+  `time_axis.rho` in the recording metadata). By default no ρ is assumed for estimated anchors, and the result is
+  marked `assumes_linear_clock`: its uncertainty is then not a bound (a ρ given per call or in the metadata applies to
+  them too). For block-stamped sources, an anchor with `break_before`
+  starts a new segment: a time in the jump between two blocks maps to the first sample of the later one (`gap`), and
+  a time that a backward step puts into two blocks returns both samples, marked `ambiguous`. A backward or zero step
+  without a break is refused. Recordings without anchors keep start + declared rate, and no stable function
+  changes. Samples are never resampled or changed. Row security covers the new table in both enablement orders.
+  Direct SQL on the table is held to the same rules (a statement trigger checks inserts; rows are append-only),
+  and anchor writes need READ COMMITTED.
+  The importer, MCP `locate_time`, the collectors and the SDK use the anchors in the next steps
+  ([design](docs/clock-drift.md), section 8). Update script 0.3.12 → 0.3.13; the upgrade tests now start from
+  v0.4.0-beta.1 as well.
 - **Release image on PostgreSQL 17.12** (was 17.6). The image's base moves to `postgres:17.12-bookworm`, the
   November 2026 minor release, which brings the security and bug fixes of 17.7–17.12 (CVE-2026-6460 among them). The
   build stage already used 17.12's server headers from apt; now build and runtime match. A minor release keeps the
@@ -20,7 +39,7 @@
   back to the disk with `REPACK (CONCURRENTLY)` while ingest continues (checked on 19.0; `evaluation/pg19_features`).
   Runbook 3 shows read-your-writes on a replica with `WAIT FOR LSN`, and runbook 5 says not to repack on a full
   disk. The website's install page says when PostgreSQL 19 packages follow and lists what 19 adds.
-  A steward action for the repack is proposed in #535.
+  The repack stays a manual tool (#535); the steward's space accounting comes first (#538).
 
 ## 0.4.0-beta.1
 

@@ -1,8 +1,10 @@
 # Design proposal: clock drift within a recording (time anchors)
 
 Status: **proposal, decisions taken 2026-11-19** for [#393](https://github.com/merkhet-io/morletdb/issues/393) and
-[#383](https://github.com/merkhet-io/morletdb/issues/383); section 8 records them. Nothing in this document
-changes the SQL API, the SDK or a file format yet. SQL is illustrative: names, types and limits are subject to
+[#383](https://github.com/merkhet-io/morletdb/issues/383); section 8 records them. Step 1 of section 8's order
+(the anchor table, batches, revisions, the mapping with segments and breaks, row security) has shipped in SQL 0.3.13;
+`morlet_check_time_axis` moves to step 3, with the clients. The SDK and file formats are
+unchanged so far. SQL is illustrative: names, types and limits are subject to
 implementation review. The first part of #393 has shipped, and section 1 describes it. Behaviour claims about
 existing code cite `extensions/pg_morlet/sql/streams.sql` as `streams.sql:line`, and other files by their path
 from the repository root. No result in this document is measured. Section 7 says what would be measured, and how.
@@ -97,6 +99,12 @@ The rules mirror context:
   segment (section 3.1), they must also be strictly increasing in `utc_ns`. A clock that steps backwards or
   stands still is the block-stamp case of #383: the writer marks it with `break_before`, and it is never
   accepted implicitly. Without a break, a backward or zero step is an error.
+- **Direct SQL too (SQL 0.3.13).** A statement trigger checks these rules after every insert into the table, so a
+  direct `INSERT` that breaks them fails like a call of the functions. A row trigger refuses `UPDATE` and `DELETE`:
+  anchors are append-only, and only deleting their recording removes them (the foreign key's cascade). Writes need
+  READ COMMITTED: under REPEATABLE READ or SERIALIZABLE the snapshot predates the per-recording lock, so two
+  sessions could each add an anchor at the same sample; the functions refuse instead. Batch ids starting with
+  `revision:` are reserved for revisions.
 - **Provenance.** `source`, `batch_id`, `recorded_by` and the revision chain say where each anchor came from.
   An estimate (for example #208's cross-correlation) is labelled as such in `source` and is never presented
   as a measurement.
@@ -207,8 +215,10 @@ source never had. An anchor with `break_before = true` therefore starts a new **
   source, every block start is an anchor with a break, so each block maps as `T_i + (n − n_i)/rate`, exactly
   what the source states.
 - **Sample to time** stays a function: every sample belongs to exactly one segment.
-- **Time to sample** may not be. After a forward jump, a time can fall between two segments (a **gap**): it maps
-  to the first sample of the next segment, the first sample at or after it, and the result is marked `gap`.
+- **Time to sample** may not be. After a forward jump, a time can fall between two segments (a **gap**): after
+  the earlier segment's last sample and more than one sample period, on the later segment's own line, before the
+  later segment's first sample. It maps to that first sample, the first sample at or after it, and the result is
+  marked `gap`. A time within one period before a segment's first sample is that sample's own period, not a gap.
   After a backward or zero step, a time can fall in several segments (an **overlap**): every candidate is
   returned, and the result is marked `ambiguous`. A function that returns one sample returns the lowest
   candidate and says so; it never picks silently.
@@ -310,15 +320,16 @@ which grows with the duration.
 
 ## 6. Compatibility and API
 
-**New, all experimental:**
+**New in SQL 0.3.13, all experimental:**
 
 - `morlet_enable_time_anchors`;
 - `morlet_add_time_anchors`;
 - `morlet_revise_time_anchor`;
-- `morlet_utc_to_samples`;
+- `morlet_utc_to_samples` (time range to sample ranges) and `morlet_utc_to_sample` (one time to its candidates);
 - `morlet_sample_utc`, which returns the time, the uncertainty and the basis;
-- `morlet_check_time_axis`;
 - `morlet_time_axis_version`.
+
+**Planned:** `morlet_check_time_axis` (section 4), with the clients (section 8, step 3).
 
 **Stable functions do not change.** No stable signature or documented behaviour changes
 (`docs/api-stability.md`): `morlet_time_to_samples`, `morlet_sample_time_ns`, `morlet_add_context`,
@@ -411,10 +422,11 @@ implementation.
 
 **Order of work:**
 1. SQL: the anchor table with breaks, `morlet_enable_time_anchors`, `morlet_add_time_anchors`,
-   `morlet_revise_time_anchor`, `morlet_utc_to_samples`, `morlet_sample_utc`, `morlet_check_time_axis`,
-   `morlet_time_axis_version`, row security, upgrade script.
+   `morlet_revise_time_anchor`, `morlet_utc_to_samples`, `morlet_utc_to_sample`, `morlet_sample_utc`,
+   `morlet_time_axis_version`, row security, upgrade script (shipped in SQL 0.3.13).
 2. The importer writes anchors from a time column, with block detection; #383's done-when on synthetic block
    data.
-3. MCP `locate_time`, the event importer, the collectors and the SDK call the server mapping.
+3. MCP `locate_time`, the event importer, the collectors and the SDK call the server mapping;
+   `morlet_check_time_axis`.
 4. The mapping in `crates/morlet-core`, with shared test vectors; anchor-aware search (decision 4); the exchange
    format 2 and file format 2.
