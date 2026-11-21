@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.4.0-beta.2
+
+**The second beta.** SQL version 0.3.13, with an update script from 0.3.12: run `ALTER EXTENSION pg_morlet UPDATE`
+after installing. Python SDK 0.1.0b2. The chunk format is unchanged. New:
+- time anchors (experimental), used by the importer, the MCP server and the SDK;
+- PostgreSQL 19.0 packages and an extension-only `-pg19` image;
+- the release image on PostgreSQL 17.12;
+- steward fixes for disk space and for its own tables.
+
+Updates on PostgreSQL 19 are not tested; install fresh. The known limits of 0.4.0-beta.1 (#527, #528) still apply.
+
 - **Clients use time anchors (#393, #383).** On recordings with time anchors (SQL 0.3.13):
   - MCP `locate_time` locates a UTC time by them (`time_basis: anchors`): exact at every anchor, with the error bound,
     a note for a time in a clock jump or outside a block's anchors, and `candidate_samples` when a backward clock step
@@ -9,7 +20,7 @@
     fractions are read to the nanosecond.
   - `morlet_events.py` places messages by the anchors, with `time_basis`, the error bound and
     `time_candidate_samples` in the event's value (the event goes on the first candidate).
-  - Python SDK (unreleased): `samples_for_time` uses the anchors by default (`basis="auto"`; `"start+rate"` keeps the previous
+  - Python SDK 0.1.0b2: `samples_for_time` uses the anchors by default (`basis="auto"`; `"start+rate"` keeps the previous
     mapping) and refuses a range that a backward step makes ambiguous; the new `time_ranges` returns every range as
     a `TimeRange` with its basis and error (a bound unless `assumes_linear_clock`). Both raise when a recording has
     neither anchors nor a start time.
@@ -68,6 +79,28 @@
   Runbook 3 shows read-your-writes on a replica with `WAIT FOR LSN`, and runbook 5 says not to repack on a full
   disk. The website's install page says when PostgreSQL 19 packages follow and lists what 19 adds.
   The repack stays a manual tool (#535); the steward's space accounting comes first (#538).
+- **The steward counts space freed inside the database (#538).** Retention, memory level 4 and removed recordings
+  free space inside the chunk tables that new chunks take before the files grow, but not on the filesystem. The
+  steward now counts it toward the disk reserve, so it can lift its own ingest hold once space is free there
+  (`usable = free + reusable - reserve`). It counts only collections that received chunks in the 7 days before now (or
+  before the ingest hold began, while a hold stands, so a long hold does not stop the count), and whole tuples only,
+  read from `pg_freespacemap`. A hard floor stays: below half the reserve in real free disk,
+  ingest is held whatever is reusable. Without `pg_freespacemap`, only the filesystem counts and the status says so.
+  New status item `disk-reuse` and metric `morlet_disk_reusable_bytes`.
+- **The steward bounds its own tables (#540).** Every hour, in bounded batches:
+  - finished actions go after 30 days, failed and interrupted ones and ingest hold changes after 180 days
+    (`--keep-actions-days`, `--keep-failures-days`), and a proposal's row once its plan is gone and it is older than
+    `--keep-actions-days`;
+  - undecided plans go 7 days after they expired, while decided and applied plans stay as the approval record;
+  - progress, verify cursors and insert counters of removed recordings and collections are removed.
+
+  The plans table's trigger allows exactly that deletion, also for direct SQL. Run `morlet-steward init` again after
+  updating; the compose file does so at every start. New metric `morlet_steward_table_rows`.
+- **Removing old data by time partition, measured on a Raspberry Pi (#211; development measurement,
+  `evaluation/partition_retention`).** Dropping a month's partition took 0.17–0.30 s, gave its space back to the
+  filesystem at once, and did not hold up appends (longest wait 18–72 ms). A `DELETE` plus `VACUUM` of the same
+  month took 17–33 s, gave nothing back and held appends up to 10.5 s. MorletDB does not partition its tables yet;
+  this is the evidence for #211.
 
 ## 0.4.0-beta.1
 
