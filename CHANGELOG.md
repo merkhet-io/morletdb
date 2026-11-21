@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Evidence bundles (experimental, part of #575).** `Client.export_evidence` captures an investigation from one
+  read-only snapshot as a versioned manifest with exact SHA-256 digests and a static, script-free HTML report, with or
+  without the exact samples. `verify_evidence` checks a bundle offline, and `Client.resolve_evidence` reports which
+  intervals have since changed, been removed or become unavailable. Exporting discloses what the caller can read; it
+  does not pin stored data.
 - **From a machine and a time to an interval (experimental, #580).** `Client.resolve_incident` and the MCP tool
   `resolve_incident` map an asset and a timezone-aware incident time to recording intervals in one read-only
   snapshot, with the time basis, uncertainty and coverage of each. Recordings are never concatenated or resampled;

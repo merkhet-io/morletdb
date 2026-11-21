@@ -109,6 +109,22 @@ are separate rankings and must not be compared numerically.
 
 ### From an asset and a time to an interval
 
+**Experimental, from the release after 0.4.0-beta.4.** Evidence bundles record an investigation so that it can be
+checked later:
+
+```python
+bundle = db.export_evidence("public.line3", "r1", 8192, 12288, include_samples=True)
+bundle.write("case-42")                                   # manifest.json, report.html, samples/
+morletdb.verify_evidence("case-42").ok                    # offline: manifest, report and sample digests
+db.resolve_evidence("case-42")                            # each interval now: unchanged, changed, missing, ...
+```
+
+The manifest digest covers its canonical JSON; sample digests cover little-endian float64 bytes, so signed zero is
+preserved. To detect someone who edits a bundle and recomputes its digest, keep `manifest_sha256` elsewhere and pass it
+as `expected_manifest_sha256`. Without `include_samples`, a bundle holds digests only: they detect a change but cannot
+restore data. Exporting discloses what this role can read and cannot be revoked later. Limits raise instead of producing
+a partial bundle. A bundle does not pin data against retention or compaction, and it is not a diagnosis.
+
 **Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
 asset and an incident time to recording intervals in one read-only snapshot, with the same transaction rules as
 `investigate`:
