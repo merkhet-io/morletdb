@@ -184,6 +184,7 @@ case "$OLD_VERSION" in
   0.3.9) BLOCKER="" ;;   # 0.3.9 -> 0.3.10 only replaces existing functions: nothing new to block
   0.3.11) BLOCKER="" ;;  # 0.3.11 -> 0.3.12 only replaces existing functions: nothing new to block
   0.3.12) BLOCKER="public.morlet_time_axis_version(regclass, text)" ;;
+  0.3.13) BLOCKER="public.morlet_latest_per_stream(regclass, text[], integer, jsonb, integer)" ;;
   0.3.10) BLOCKER="public.morlet_history_comparison(regclass, bigint, text[], jsonb, text[], integer, integer, boolean, boolean)" ;;
   0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;

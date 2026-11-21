@@ -5632,6 +5632,129 @@ END $$"#).unwrap();
         )
         .unwrap();
     }
+    /// morlet_latest_per_stream (#527): one row per stream, its newest recording, read exactly as the default
+    /// reads it; the default's rows are unchanged; and the chunk rows it reads do not grow with the older recordings of
+    /// the same stream (a collector that starts a new recording per stream every day).
+    #[pg_test]
+    fn latest_per_stream_reads_only_the_newest_recording_of_each_stream() {
+        // stream X/Z: days 1 and 2 (day 2 newest by start time, though its id sorts first); stream X/N: day 1;
+        // stream Y/Z: two recordings without a start time (the greater id wins)
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','lps'); SELECT morlet_enable_chunk_summaries('lps');
+             SELECT morlet_start_recording('lps',r,100,'x','g',m::jsonb,512,256,'zscore','none') FROM (VALUES
+               ('xz-b','{\"station\":\"X\",\"channel\":\"Z\",\"start\":\"2026-01-01T00:00:00Z\"}'),
+               ('xz-a','{\"station\":\"X\",\"channel\":\"Z\",\"start\":\"2026-01-02T00:00:00Z\"}'),
+               ('xn-1','{\"station\":\"X\",\"channel\":\"N\",\"start\":\"2026-01-01T00:00:00Z\"}'),
+               ('yz-1','{\"station\":\"Y\",\"channel\":\"Z\"}'),
+               ('yz-2','{\"station\":\"Y\",\"channel\":\"Z\"}')) v(r,m);
+             SELECT morlet_append_chunks_raw('lps',r,0,morlet_float8_le_bytes(ARRAY(SELECT (i%7)::float8+length(r)
+               FROM generate_series(0,2999) i)),1000) FROM unnest(ARRAY['xz-b','xz-a','xn-1','yz-1','yz-2']) r;",
+        )
+        .unwrap();
+        let text = |sql: &str| Spi::get_one::<String>(sql).unwrap().unwrap_or_default();
+        let yes = |sql: &str| Spi::get_one::<bool>(sql).unwrap().unwrap();
+        let keys = "ARRAY['station','channel']";
+        assert_eq!(
+            text(&format!("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest_per_stream('lps',{keys},5)")),
+            "xn-1,xz-a,yz-2"
+        );
+        // each row equals the default's row of that recording
+        assert!(yes(&format!(
+            "SELECT bool_and(row(s.*)::text=(SELECT row(d.*)::text FROM morlet_latest('lps',5) d WHERE d.recording_id=s.recording_id))
+             FROM morlet_latest_per_stream('lps',{keys},5) s"
+        )));
+        // the filter applies first; a key a recording lacks is its own value
+        assert_eq!(
+            text(&format!("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',ARRAY['station'],1,'{{\"channel\":\"Z\"}}')")),
+            "xz-a,yz-2"
+        );
+        assert_eq!(
+            text("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',ARRAY['site'],1)"),
+            "xz-a"
+        );
+        // the four-argument signature that earlier clients look up is still there
+        assert!(yes(
+            "SELECT to_regprocedure('morlet_latest(regclass,integer,jsonb,integer)') IS NOT NULL"
+        ));
+        // the default is unchanged: every recording, in recording_id order
+        assert_eq!(
+            text("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest('lps',5)"),
+            "xn-1,xz-a,xz-b,yz-1,yz-2"
+        );
+        assert_eq!(
+            text("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',NULL,5)"),
+            "xn-1,xz-a,xz-b,yz-1,yz-2"
+        );
+        // Work: scans of the chunk index and the entries they returned in this transaction (chunks are read through
+        // it; the table's own counters do not see these reads), by one call, before and after 20 older days of stream X/Z.
+        let fetched = |sql: &str| {
+            let before = Spi::get_one::<i64>(
+                "SELECT pg_stat_get_xact_numscans('lps_chunks_pkey'::regclass)+pg_stat_get_xact_tuples_fetched('lps_chunks_pkey'::regclass)",
+            )
+            .unwrap()
+            .unwrap();
+            Spi::run(sql).unwrap();
+            Spi::get_one::<i64>("SELECT pg_stat_get_xact_numscans('lps_chunks_pkey'::regclass)+pg_stat_get_xact_tuples_fetched('lps_chunks_pkey'::regclass)")
+                .unwrap()
+                .unwrap()
+                - before
+        };
+        let per_stream =
+            format!("SELECT count(*) FROM morlet_latest_per_stream('lps',{keys},1500)");
+        let all = "SELECT count(*) FROM morlet_latest('lps',1500)";
+        let (s1, d1) = (fetched(&per_stream), fetched(all));
+        Spi::run(
+            "SELECT morlet_start_recording('lps','old-'||d,100,'x','g',
+               format('{\"station\":\"X\",\"channel\":\"Z\",\"start\":\"2025-12-%sT00:00:00Z\"}',lpad(d::text,2,'0'))::jsonb,
+               512,256,'zscore','none') FROM generate_series(1,20) d;
+             SELECT morlet_append_chunks_raw('lps','old-'||d,0,morlet_float8_le_bytes(ARRAY(SELECT i::float8
+               FROM generate_series(0,2999) i)),1000) FROM generate_series(1,20) d;",
+        )
+        .unwrap();
+        let (s2, d2) = (fetched(&per_stream), fetched(all));
+        assert!(
+            s1 > 0,
+            "the per-stream call reads chunks ({s1}, default {d1})"
+        );
+        assert_eq!(
+            s2, s1,
+            "per stream: the same chunk rows with 20 more old recordings"
+        );
+        assert!(
+            d2 > d1,
+            "the default reads every recording, so it reads more ({d1} -> {d2})"
+        );
+        assert_eq!(
+            text(&format!("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest_per_stream('lps',{keys},1)")),
+            "xn-1,xz-a,yz-2"
+        );
+    }
+    /// morlet_latest_per_stream: max_recordings bounds the streams, not the recordings; malformed keys are refused.
+    #[pg_test]
+    fn latest_per_stream_budget_counts_streams() {
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','lps_b');
+             SELECT morlet_start_recording('lps_b',r,250,'x','g','{\"s\":\"one\"}',512,256,'zscore','none') FROM unnest(ARRAY['A','B','C']) r;
+             SELECT morlet_append_chunks_raw('lps_b',r,0,morlet_float8_le_bytes(ARRAY[1,2,3]::float8[]),1000) FROM unnest(ARRAY['A','B','C']) r;",
+        )
+        .unwrap();
+        assert_eq!(
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM morlet_latest_per_stream('lps_b',ARRAY['s'],1,'{}',1)"
+            )
+            .unwrap(),
+            Some(1)
+        );
+        // each malformed stream_keys is refused with its message (an accepted one raises 'accepted' and fails)
+        for keys in ["ARRAY[]::text[]", "ARRAY[NULL]::text[]", "ARRAY['']"] {
+            Spi::run(&format!(
+                "DO $$ BEGIN PERFORM * FROM morlet_latest_per_stream('lps_b',{keys},1,'{{}}',10); RAISE EXCEPTION 'accepted {keys}';
+                 EXCEPTION WHEN raise_exception THEN
+                   IF SQLERRM NOT LIKE 'stream_keys must be%' THEN RAISE; END IF; END $$"
+            ))
+            .unwrap();
+        }
+    }
     /// A window that spans two adjacent episodes leaves search only when both are out of search.
     #[pg_test]
     fn memory_windows_spanning_adjacent_episodes() {
