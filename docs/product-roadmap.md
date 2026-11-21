@@ -20,6 +20,36 @@ engineer or an AI agent can explain a finding with evidence that anyone can chec
 decision stay with the user's application. Validate one recurring investigation with an external engineer before
 expanding the product surface.
 
+## Direction: from a similar waveform to a comparison an engineer can defend
+
+MorletDB already returns samples and provenance. The next step is to make the reasoning around those results
+explicit, so that an investigation ends in a comparison an engineer can defend, not in a nearest match. The useful
+answer reads like this:
+
+> This transient resembles three previous events after a small time alignment. Two occurred during tool changes and
+> one during a confirmed bearing fault. The current operating phase matches the tool-change examples; waveform
+> similarity alone does not distinguish the causes.
+
+That is more useful than "nearest match: bearing fault". Seven capabilities lead there:
+
+| | Capability | What exists today | What is missing |
+|---|---|---|---|
+| 1 | **Search within comparable operating conditions:** the same machine, sensor position, tool, program phase, speed or load, and which conditions match and which differ. A similar event under a different load may be a poor precedent | Metadata filters on every search; context segments and values, and comparison with the same context in a machine's own history ([context workflow](context-workflow.md)) | Search restricted to matching context, and a per-match report of which conditions match and which differ |
+| 2 | **Explain what made each interval similar:** the aligned waveforms, the selected time shift, the amplitude difference, the regions that contribute to the match; envelope shape distinguished from frequency content. Computed from the scorer, never an LLM's guess | The exact bounded-lag score; searches return a distance only | The shift, scale and per-region contributions of the score in the results, and their display in the viewer |
+| 3 | **Retrieve contrasting evidence:** normal runs, similar signals with different outcomes, known faults that look different. "Does this pattern also occur during successful operation?" | Labels on intervals; search that excludes labelled intervals (`morlet_search_similar_excluding`) | Outcome-aware retrieval: the nearest matches per label or outcome, including normal operation, side by side |
+| 4 | **Make archive coverage visible:** what was searched, which filters and exclusions applied, whether candidate selection was approximate, whether missing representations or retained-data limits restricted it. "No useful match in this search" stays distinguishable from "this has never happened" | `morlet_coverage` per recording; the [search contract](search-contract.md) defines budgets, exclusions and the probe path | A coverage summary returned with each search |
+| 5 | **Turn investigated events into reviewed cases:** observations, operating context, maintenance findings, conclusions and supporting intervals, with who made each claim and whether it is suspected, confirmed, disputed or superseded; an observed fault distinguished from an inferred cause | Labels with author, time and retraction; context records | Cases with claims, their status and their supporting intervals (#216, #217, #337) |
+| 6 | **Produce a reproducible evidence report:** the query interval, search settings, representation version, searched scope, results and annotations, every factual claim linked to its interval or external record, repeatable where the data remains | Recording IDs and sample intervals that read back the original samples | The report itself (stage M2 of the [wave-RAG specification](wave-rag-spec.md)) |
+| 7 | **Constrain AI explanations to the evidence:** an assistant drafts observations, possible interpretations and unresolved questions; signal claims need interval references; it surfaces contradictions and missing evidence and can say "the retrieved examples do not distinguish these explanations" | The read-only MCP server and its tools | Explanation drafts in that structure, checked against the report's intervals |
+
+**Order.** Contextual comparison (1), scorer explanations (2) and reproducible reports (6) first, built on the
+existing context lanes, labels and viewer; then contrasting evidence, coverage, cases and constrained AI
+explanations.
+
+**Evaluation.** Each capability is evaluated on held-out investigations, under a protocol frozen before the data
+are read: time to a supported conclusion, correctness, unsupported claims, and whether insufficient evidence is
+recognized as such. Better-looking explanations alone do not count as improvement.
+
 ## Where it stands
 
 The server edition is in **beta** since 0.4.0-beta.1 (2026-11-19); 0.4.0-beta.3 is the current release. From the
