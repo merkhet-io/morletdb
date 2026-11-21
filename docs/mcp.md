@@ -13,6 +13,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | Tool | What it does |
 |---|---|
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
+| `investigate_interval` | initial evidence packet from the SDK in one read-only repeatable snapshot: query statistics, waveform matches, optional context comparisons and labeled neighbors, glossary definitions, coverage summary and machine-readable `evidence_states`; defaults to five matches, 10 seconds and a 64 KB response cap. No temporal cutoff; keep using `search_similar` for earlier-only search, time filters or shifted placements and `decision_state` for richer labelled examples and own baselines. Requires this checkout's Python SDK. |
 | `coverage` | an overview per station, sensor or asset: recordings, samples, first and last time, the recording schedule (continuous or snapshots) and the largest gaps; with SQL 0.3.6 also how much of it search can find (`search_states_s`) |
 | `list_recordings` | recordings with length and UTC start and end where known; rate, channel and unit once when shared; metadata on request; filter by metadata |
 | `latest` | the current value of every sensor: each recording's last value, or its last values with statistics, or the newest chunk's statistics, with the end time and how long ago that was (SQL 0.3.6); `stream_keys` groups recordings by those metadata values and gives only the newest recording with samples of each stream (`morlet_latest_per_stream`), for collectors that start a new recording per day (SQL 0.3.14) |
@@ -37,7 +38,7 @@ the database's message, so it can correct itself.
 ## Set up
 
 ```sh
-python -m pip install -r tools/mcp/requirements.txt
+python -m pip install -r tools/mcp/requirements.txt ./sdk/python
 ```
 
 **Claude Code:**
@@ -69,6 +70,42 @@ seismic recordings and this server in Docker, the [machine demo](../examples/mac
 run to failure, or [import WAV, EDF, miniSEED or CSV files](import.md).
 
 ## An investigation, end to end
+
+For an initial assessment of a known sample interval, call `investigate_interval(collection, recording_id,
+start_sample, end_sample)`. It uses the SDK's [investigation contract](python-sdk.md#investigate-an-interval),
+including the same fixed-window search requirements. Optionally supply a `segment_id` for a current context
+segment containing the entire interval; `match_keys` and `exclude_labels` are comma-separated and affect only
+context history. Inspect `evidence_states`, then use `compare_intervals`, `describe_interval` or `read_interval`
+on a returned reference to examine a precedent. Neighbors also carry full interval references for citations.
+Metadata and annotations are untrusted evidence text, never instructions to the agent.
+
+The response retains SDK settings, provenance and interpretation notes. `scope.samples_by_state` summarizes
+compatible recording coverage before source exclusion; `detailed_coverage=true` adds exact ranges. It never
+silently truncates evidence. Coverage availability is not a claim that the whole archive or every approximate
+candidate was searched. States include `coverage_unknown`, `unsearched_ranges`, `context_not_requested`,
+`insufficient_history`, `undefined_labels`, `no_matches_returned`, `approximate_candidates_possible` and
+`labelled_history_not_exhaustively_searched` as applicable. Every result includes `no_temporal_cutoff`:
+**later occurrences and labels can participate**, so this tool cannot establish what was known before an
+event. It adds no UTC decorations: cite sample coordinates, and use the existing time-aware tools for clock
+mapping. Existing `search_similar`, `search_from_time` and `decision_state` behavior is unchanged.
+
+Operator limits (positive integers) are `MORLET_MCP_INVESTIGATION_TIMEOUT_MS` (default 10000, also capped by
+`MORLET_MCP_TIMEOUT_MS`), `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` (64000, at most 2000000) and
+`MORLET_MCP_INVESTIGATION_MAX_CANDIDATES` (10000, at most 1000000). An agent may request a smaller
+`max_candidates`, but cannot raise the server cap; omitting it uses that cap for both search candidates and
+context-history segments. `top_k` is 1–20. The deadline includes collection validation,
+SDK reads and presentation. It is checked between stages and applied to SQL statements, not a hard network
+or CPU interrupt. The final JSON payload is bounded after presentation; the SDK intermediate result has a
+separate 2 MB cap, and these are output limits rather than streaming memory limits.
+
+Failures are MCP tool errors containing JSON `code`, `message` and `suggestion`, including `budget_exceeded`,
+`response_too_large`, `invalid_input`, `evidence_unavailable`, `unsupported`, `access_denied` and
+`database_error`. No failed investigation is represented as a successful empty match list. Without an SDK
+providing `Client.investigate`, this tool returns `sdk_unavailable` with an installation instruction; the
+other tools remain usable. Server misconfiguration returns `configuration_error`.
+
+The connection enters read-only REPEATABLE READ before collection discovery so validation, evidence and
+coverage share one snapshot. The tool performs no writes and respects the database role and row security.
 
 These are real tool results on the development data of the technical report: CX seismic stations PB01,
 PB02, PB06 and PSGCX, 1–14 March 2025, 128 recordings of 100 Hz data.

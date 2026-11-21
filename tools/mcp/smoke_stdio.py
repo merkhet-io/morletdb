@@ -24,10 +24,14 @@ async def main(collection, recording_id, start, window=4096):
             print("instructions:", (session.instructions or "")[:80], "...")
             print("tools:", [t.name for t in (await session.list_tools()).tools])
             steps = [("list_collections", {}),
+                     ("investigate_interval", {"collection": collection, "recording_id": recording_id,
+                                               "start_sample": start, "end_sample": start + window}),
                      ("describe_interval", {"collection": collection, "recording_id": recording_id,
                                             "start_sample": start, "end_sample": start + window}),
                      ("search_similar", {"collection": collection, "recording_id": recording_id,
                                          "start_sample": start, "end_sample": start + window, "top_k": 5}),
+                     ("investigate_interval", {"collection": collection, "recording_id": recording_id,
+                                               "start_sample": start, "end_sample": start + window, "top_k": 21}),
                      ("list_recordings", {"collection": "public.does_not_exist"})]
             for name, args in steps:
                 r = await session.call_tool(name, args)

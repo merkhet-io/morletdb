@@ -10,5 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev \
  && apt-get purge -y gcc libc6-dev && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 COPY tools/ingest tools/ingest
 COPY tools/mcp tools/mcp
+COPY sdk/python sdk/python
+RUN pip install --no-cache-dir ./sdk/python
 COPY examples/agent-demo examples/agent-demo
 ENV PYTHONUNBUFFERED=1
