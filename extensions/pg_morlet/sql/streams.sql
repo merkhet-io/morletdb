@@ -1716,6 +1716,63 @@ BEGIN
     public.morlet_time_ns(time_from),to_ns);
 END $$;
 
+-- Why a stored window scored as it did against a stored query interval (#573, experimental). Only the pair asked for, by
+-- the scorer's own arithmetic; ranking and stored data are untouched. Contributions explain the similarity score, not a
+-- fault's cause, and normalized envelopes say nothing about amplitude: the raw statistics are reported beside them, and
+-- are NULL with match_raw_status 'unavailable' where a memory level has removed the match's raw chunks.
+CREATE FUNCTION public.morlet_explain_match(collection regclass,query_recording_id text,query_start bigint,query_end bigint,
+  match_recording_id text,match_start bigint,max_lag_fraction float8 DEFAULT 0.075,contribution_bins integer DEFAULT 32,
+  include_envelopes boolean DEFAULT false)
+RETURNS TABLE(representation text,window_size integer,step_samples integer,distance float8,lag_steps integer,
+  lag_samples bigint,max_lag_steps integer,zero_lag_correlation float8,best_correlation float8,overlap_steps integer,
+  envelope_steps integer,bin_start integer[],bin_end integer[],contributions float8[],contribution_residual float8,
+  query_envelope float8[],stored_envelope float8[],query_stats jsonb,match_stats jsonb,match_raw_status text)
+LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE src record; m record; rel record; env regclass; qe float8[]; width integer; allowed integer; stored bytea; raw bigint;
+  qs jsonb; ms jsonb;
+BEGIN
+  IF collection IS NULL OR query_recording_id IS NULL OR query_start IS NULL OR query_end IS NULL
+    OR match_recording_id IS NULL OR match_start IS NULL OR include_envelopes IS NULL THEN
+    RAISE EXCEPTION 'collection, the query interval, the match and include_envelopes must not be NULL';
+  END IF;
+  IF max_lag_fraction IS NULL OR NOT (max_lag_fraction BETWEEN 0 AND 0.5) OR contribution_bins IS NULL
+    OR contribution_bins NOT BETWEEN 1 AND 1024 THEN
+    RAISE EXCEPTION 'max_lag_fraction must be in 0..0.5 and contribution_bins in 1..1024';
+  END IF;
+  env:=public.morlet_envelope_relation(collection);
+  SELECT * INTO src FROM public.morlet_read_interval(collection,query_recording_id,query_start,query_end);
+  width:=cardinality(src.samples);
+  qe:=public.morlet_envelope(src.samples);
+  allowed:=floor(max_lag_fraction*cardinality(qe));
+  EXECUTE format('SELECT t.sample_rate_hz,t.channel,t.unit FROM %s t WHERE t.recording_id=$1',collection) INTO m
+    USING match_recording_id;
+  IF m.sample_rate_hz IS NULL THEN
+    RAISE EXCEPTION 'recording % does not exist or is not visible',match_recording_id;
+  END IF;
+  IF (m.sample_rate_hz,m.channel,m.unit) IS DISTINCT FROM (src.sample_rate_hz,src.channel,src.unit) THEN
+    RAISE EXCEPTION 'recording % is not comparable with the query: rate, channel and unit must be equal',match_recording_id;
+  END IF;
+  EXECUTE format('SELECT e.envelope FROM %s e WHERE e.recording_id=$1 AND e.window_size=$2 AND e.start_sample=$3',env)
+    INTO stored USING match_recording_id,width,match_start;
+  IF stored IS NULL THEN
+    RAISE EXCEPTION 'no stored envelope of % samples at sample % of recording %',width,match_start,match_recording_id
+      USING ERRCODE='no_data_found';
+  END IF;
+  SELECT * INTO rel FROM public.morlet_stream_relations(collection);
+  EXECUTE format('SELECT coalesce(sum(least(c.start_sample+%2$s,$2+$3)-greatest(c.start_sample,$2)),0) FROM %1$s c
+    WHERE c.recording_id=$1 AND c.start_sample<$2+$3 AND c.start_sample+%2$s>$2',rel.chunks,rel.count_expr)
+    INTO raw USING match_recording_id,match_start,width::bigint;
+  SELECT to_jsonb(s) INTO qs FROM public.morlet_interval_stats(collection,query_recording_id,query_start,query_end) s;
+  IF raw=width THEN
+    SELECT to_jsonb(s) INTO ms FROM public.morlet_interval_stats(collection,match_recording_id,match_start,match_start+width) s;
+  END IF;
+  RETURN QUERY SELECT public.morlet_envelope_version()::text,width,10,x.distance,x.lag,x.lag*10::bigint,allowed,
+    x.zero_lag_correlation,x.best_correlation,x.overlap,cardinality(qe),x.bin_start,x.bin_end,x.contributions,
+    x.contribution_residual,CASE WHEN include_envelopes THEN qe END,CASE WHEN include_envelopes THEN x.stored_envelope END,
+    qs,ms,CASE WHEN raw=width THEN 'available' ELSE 'unavailable' END
+    FROM public.morlet_envelope_explain(qe,stored,allowed,contribution_bins) x;
+END $$;
+
 -- Probe search (opt-in; needs pgvector). A float16 vector copy of one window size's
 -- envelopes with an inner-product HNSW index. Each lag term of morlet_envelope_distance is
 -- the inner product of the stored envelope with a zero-padded shifted query

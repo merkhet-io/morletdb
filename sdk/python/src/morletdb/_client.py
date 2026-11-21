@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import (Evidence, EvidencePart, IncidentResolution, Interval, IntervalRef, IntervalStats, InvestigationResult, Latest, Match, NotifiedRange, Notification,
+from ._types import (MatchContribution, MatchExplanation, Evidence, EvidencePart, IncidentResolution, Interval, IntervalRef, IntervalStats, InvestigationResult, Latest, Match, NotifiedRange, Notification,
                      OverviewBucket, Recording, SearchResult, TimeRange)
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
@@ -391,6 +391,30 @@ class Client:
         row = self._execute("SELECT sample_count, min, max, mean, rms FROM morlet_interval_stats(%s::regclass,%s,%s,%s)",
                             (collection, recording_id, int(start_sample), int(end_sample))).fetchone()
         return IntervalStats(int(row[0]), *map(float, row[1:]))
+
+    def explain_match(self, query: IntervalRef, match: IntervalRef, *, max_lag_fraction: float = 0.075,
+                      contribution_bins: int = 32, include_envelopes: bool = False) -> MatchExplanation:
+        """Why the stored window `match` scored as it did against `query` (SQL 0.3.16, experimental): winning lag,
+        correlations, and contributions that add up to the correlation. Use the search's `max_lag_fraction`. It explains
+        the similarity score, not a fault's cause, and does not change ranking or stored data."""
+        if query.collection != match.collection:
+            raise InvalidInputError("query and match must be in one collection")
+        if query.end_sample - query.start_sample != match.end_sample - match.start_sample:
+            raise InvalidInputError("query and match must have the same length")
+        if not self._has("public.morlet_explain_match(regclass,text,bigint,bigint,text,bigint,double precision,integer,boolean)"):
+            raise UnsupportedError("explain_match needs pg_morlet SQL 0.3.16 or later")
+        r = self._execute(
+            "SELECT * FROM morlet_explain_match(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (query.collection, query.recording_id, query.start_sample, query.end_sample, match.recording_id,
+             match.start_sample, max_lag_fraction, contribution_bins, include_envelopes)).fetchone()
+        stats = lambda v: None if v is None else IntervalStats(int(v["sample_count"]), float(v["min"]), float(v["max"]),
+                                                               float(v["mean"]), float(v["rms"]))
+        array = lambda v: None if v is None else np.asarray(v, dtype=np.float64)
+        lag = int(r[4])
+        bins = tuple(MatchContribution(int(a), int(b), int(a) + lag, int(b) + lag, float(c))
+                     for a, b, c in zip(r[11], r[12], r[13]))
+        return MatchExplanation(query, match, r[0], int(r[2]), r[3], lag, int(r[5]), int(r[6]), r[7], r[8], int(r[9]),
+                                int(r[10]), bins, r[14], stats(r[17]), stats(r[18]), r[19], array(r[15]), array(r[16]))
 
     def overview(self, collection: str, recording_id: str, start_sample: int, end_sample: int,
                  buckets: int = 100) -> list[OverviewBucket]:

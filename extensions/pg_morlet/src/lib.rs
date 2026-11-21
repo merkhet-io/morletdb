@@ -776,6 +776,57 @@ fn morlet_envelope_distance(
         .unwrap_or_else(|_| pgrx::error!("envelope lengths differ or max_lag is too large"))
 }
 
+/// Why `morlet_envelope_distance` gave its value for one pair (#573): the winning lag, the correlations and bounded
+/// contribution bins. A diagnostic of the similarity score, not of a fault's cause; search ranking never calls it.
+#[pg_extern(immutable, parallel_safe, strict)]
+#[allow(clippy::type_complexity)]
+fn morlet_envelope_explain(
+    query_envelope: Vec<Option<f64>>,
+    stored: &[u8],
+    max_lag: i32,
+    max_bins: i32,
+) -> TableIterator<
+    'static,
+    (
+        name!(distance, f64),
+        name!(lag, i32),
+        name!(zero_lag_correlation, f64),
+        name!(best_correlation, f64),
+        name!(overlap, i32),
+        name!(bin_start, Vec<i32>),
+        name!(bin_end, Vec<i32>),
+        name!(contributions, Vec<f64>),
+        name!(contribution_residual, f64),
+        name!(stored_envelope, Vec<f64>),
+    ),
+> {
+    if max_lag < 0 || !(1..=1024).contains(&max_bins) {
+        pgrx::error!("max_lag must be nonnegative and max_bins in 1..1024");
+    }
+    let query: Vec<f64> = query_envelope
+        .into_iter()
+        .map(|v| v.unwrap_or_else(|| pgrx::error!("NULL waveform elements are unsupported")))
+        .collect();
+    let g = morlet_core::envelope::decode(stored).unwrap_or_else(|e| pgrx::error!("{}", e));
+    let e = morlet_core::envelope::explain(&query, &g, max_lag as usize, max_bins as usize)
+        .unwrap_or_else(|e| pgrx::error!("{}", e));
+    let starts = e.bins.iter().map(|b| b.start as i32).collect();
+    let ends = e.bins.iter().map(|b| b.end as i32).collect();
+    let parts = e.bins.iter().map(|b| b.contribution).collect();
+    TableIterator::once((
+        e.distance,
+        e.lag as i32,
+        e.zero_lag_correlation,
+        e.best_correlation,
+        e.overlap as i32,
+        starts,
+        ends,
+        parts,
+        e.residual,
+        g,
+    ))
+}
+
 /// Zero-padded shift of a query envelope by `lag` values. Its inner product with a stored
 /// envelope is the distance's lag term, so probe search can use an inner-product index.
 #[pg_extern(immutable, parallel_safe, strict)]
@@ -2026,6 +2077,65 @@ pgrx::extension_sql_file!("../sql/streams.sql", name = "streams", finalize);
 mod tests {
     use pgrx::prelude::*;
     use pgrx::JsonB;
+    #[pg_test]
+    fn explain_match_is_the_search_distance_and_respects_access() {
+        Spi::run(
+            r#"SELECT morlet_create_stream_collection('public','xm');
+SELECT morlet_enable_envelopes('public.xm');
+SELECT morlet_start_recording('public.xm','q',1000,'x','g','{"owner":"a"}'::jsonb);
+SELECT morlet_start_recording('public.xm','m',1000,'x','g','{"owner":"b"}'::jsonb);
+SELECT morlet_start_recording('public.xm','other',500,'x','g','{}'::jsonb);"#,
+        )
+        .unwrap();
+        for (id, shift) in [("q", 0), ("m", 40), ("other", 0)] {
+            Spi::run(&format!("SELECT morlet_append_chunk('public.xm','{id}',0,ARRAY(SELECT sin((i+{shift})/9.0)+0.2*cos((i+{shift})/2.7) FROM generate_series(0,8191) i)::float8[])")).unwrap();
+            Spi::run(&format!(
+                "SELECT morlet_build_envelopes('public.xm','{id}',2048,1024)"
+            ))
+            .unwrap();
+        }
+        assert_eq!(Spi::get_one::<bool>(r#"WITH hit AS (SELECT * FROM morlet_search_envelope_interval('public.xm','q',0,2048,top_k=>20) WHERE recording_id='m' ORDER BY distance LIMIT 1),
+x AS (SELECT e.* FROM hit, morlet_explain_match('public.xm','q',0,2048,hit.recording_id,hit.start_sample,include_envelopes=>true) e)
+SELECT float8send(x.distance)=float8send(hit.distance) AND x.lag_samples=x.lag_steps*10 AND x.representation=morlet_envelope_version()
+  AND cardinality(x.stored_envelope)=x.envelope_steps AND abs(x.contribution_residual)<1e-12
+  AND x.match_raw_status='available' AND (x.match_stats->>'sample_count')::bigint=2048 FROM hit,x"#).unwrap(), Some(true));
+        Spi::run("CREATE FUNCTION pg_temp.xm_error(q text) RETURNS text LANGUAGE plpgsql AS $$ BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLERRM; END $$").unwrap();
+        for bad in [
+            "SELECT * FROM morlet_explain_match('public.xm','q',0,2048,'other',0)",
+            "SELECT * FROM morlet_explain_match('public.xm','q',0,2048,'m',7)",
+            "SELECT * FROM morlet_explain_match('public.xm','q',0,2048,'none',0)",
+            "SELECT * FROM morlet_explain_match('public.xm','q',0,2048,'m',0,contribution_bins=>0)",
+        ] {
+            assert_ne!(
+                Spi::get_one_with_args::<String>("SELECT pg_temp.xm_error($1)", &[bad.into()])
+                    .unwrap()
+                    .unwrap(),
+                "",
+                "{bad}"
+            );
+        }
+        Spi::run("DELETE FROM public.xm_chunks WHERE recording_id='m'").unwrap();
+        assert_eq!(Spi::get_one::<bool>("SELECT match_raw_status='unavailable' AND match_stats IS NULL AND distance IS NOT NULL FROM morlet_explain_match('public.xm','q',0,2048,'m',0)").unwrap(), Some(true));
+        Spi::run("CREATE ROLE xm_reader; GRANT SELECT ON public.xm TO xm_reader; GRANT EXECUTE ON FUNCTION pg_temp.xm_error(text) TO xm_reader; DO $$ BEGIN EXECUTE format('GRANT USAGE ON SCHEMA %I TO xm_reader', pg_my_temp_schema()::regnamespace); END $$; SET LOCAL ROLE xm_reader").unwrap();
+        assert_ne!(Spi::get_one::<String>("SELECT pg_temp.xm_error($q$SELECT * FROM morlet_explain_match('public.xm','q',0,2048,'m',0)$q$)").unwrap().unwrap(), "", "no grant on the companion tables");
+        Spi::run("RESET ROLE").unwrap();
+        // with the grants but behind row security, the hidden recording is not explained
+        Spi::run(
+            r#"GRANT SELECT ON public.xm_chunks, public.xm_envelopes TO xm_reader;
+SELECT morlet_enable_row_security('public.xm');
+ALTER TABLE public.xm ENABLE ROW LEVEL SECURITY;
+CREATE POLICY xm_a ON public.xm FOR SELECT TO xm_reader USING (metadata->>'owner'='a');
+SET LOCAL ROLE xm_reader"#,
+        )
+        .unwrap();
+        let hidden = Spi::get_one::<String>("SELECT pg_temp.xm_error($q$SELECT * FROM morlet_explain_match('public.xm','q',0,2048,'m',0)$q$)").unwrap().unwrap();
+        assert!(
+            hidden.contains("does not exist or is not visible"),
+            "{hidden}"
+        );
+        Spi::run("RESET ROLE").unwrap();
+    }
+
     #[pg_test]
     fn continuous_interval_workflow() {
         Spi::run(include_str!("../sql/interval_tests.sql")).unwrap();
