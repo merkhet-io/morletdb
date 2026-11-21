@@ -71,7 +71,8 @@ a leading v; GHCR image tags do not.
 - **0.4.0-beta.2:** SQL version 0.3.13 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2. The chunk
   format is unchanged.
   - **Time anchors (experimental, #393, #383):** sync points per recording, written by the importer from CSV
-    timestamps, used by MCP `locate_time`, the reported UTC times and the SDK's `samples_for_time`.
+    timestamps, used by MCP `locate_time`, the UTC times other MCP tools report for anchored recordings, and the
+    SDK's `samples_for_time`. MCP `coverage` times and the SQL search functions' UTC evidence still use start + rate.
   - **PostgreSQL 19.0:** Debian packages for 19 (amd64, arm64) and the extension-only image `<version>-pg19`. Updates
     on 19 are not tested; install fresh.
   - **Release image on PostgreSQL 17.12** (was 17.6).
@@ -141,11 +142,11 @@ Compose project, and pushes that same image to
 `ghcr.io/merkhet-io/morletdb:<VERSION>`. It then pulls the registry digest,
 repeats the trial with a fresh volume and creates a GitHub prerelease containing
 the image digest and source commit. Failed trials prevent the GitHub release.
-In parallel it builds a Debian package of the extension for PostgreSQL 17
-and 18 on amd64 and arm64 (`deploy/Dockerfile.deb`, against the PostgreSQL
+In parallel it builds a Debian package of the extension for PostgreSQL 17,
+18 and 19 (19 from 0.4.0-beta.2) on amd64 and arm64 (`deploy/Dockerfile.deb`, against the PostgreSQL
 project's packages on Debian bookworm), installs each one with apt into a clean
 official `postgres` image and runs the same quickstart and restart; the release
-attaches the four packages with `SHA256SUMS` and a build provenance attestation.
+attaches the six packages (four up to 0.4.0-beta.1) with `SHA256SUMS` and a build provenance attestation.
 It also builds the Python SDK wheels (`.github/workflows/sdk-wheels.yml`): one per
 platform with the native decoder for compressed transfer (Linux x86-64 and arm64,
 tagged with the glibc version the library needs; macOS 11+ on arm64), each installed

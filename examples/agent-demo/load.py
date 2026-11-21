@@ -101,6 +101,7 @@ def main():
     dsn = os.environ["DATABASE_URL"]
     with psycopg.connect(dsn) as conn:
         conn.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
+        conn.execute("ALTER EXTENSION pg_morlet UPDATE")   # a volume kept from an older image gets the image's SQL
         conn.commit()
         done = imported(conn)
     if done:

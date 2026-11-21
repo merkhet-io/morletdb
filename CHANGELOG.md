@@ -82,13 +82,15 @@ Updates on PostgreSQL 19 are not tested; install fresh. The known limits of 0.4.
 - **The steward counts space freed inside the database (#538).** Retention, memory level 4 and removed recordings
   free space inside the chunk tables that new chunks take before the files grow, but not on the filesystem. The
   steward now counts it toward the disk reserve, so it can lift its own ingest hold once space is free there
-  (`usable = free + reusable - reserve`). It counts only collections that received chunks in the last 7 days, and
-  whole tuples only, read from `pg_freespacemap`. A hard floor stays: below half the reserve in real free disk,
+  (`usable = free + reusable - reserve`). It counts only collections that received chunks in the 7 days before now (or
+  before the ingest hold began, while a hold stands, so a long hold does not stop the count), and whole tuples only,
+  read from `pg_freespacemap`. A hard floor stays: below half the reserve in real free disk,
   ingest is held whatever is reusable. Without `pg_freespacemap`, only the filesystem counts and the status says so.
   New status item `disk-reuse` and metric `morlet_disk_reusable_bytes`.
 - **The steward bounds its own tables (#540).** Every hour, in bounded batches:
   - finished actions go after 30 days, failed and interrupted ones and ingest hold changes after 180 days
-    (`--keep-actions-days`, `--keep-failures-days`);
+    (`--keep-actions-days`, `--keep-failures-days`), and a proposal's row once its plan is gone and it is older than
+    `--keep-actions-days`;
   - undecided plans go 7 days after they expired, while decided and applied plans stay as the approval record;
   - progress, verify cursors and insert counters of removed recordings and collections are removed.
 

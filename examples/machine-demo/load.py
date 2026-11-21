@@ -126,6 +126,7 @@ def main():
     dsn = os.environ["DATABASE_URL"]
     with psycopg.connect(dsn) as conn:
         conn.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
+        conn.execute("ALTER EXTENSION pg_morlet UPDATE")   # a volume kept from an older image gets the image's SQL
         conn.commit()
         have = loaded_tests(conn)
     todo = [t for t, spec in TESTS.items() if have.get(t, 0) < 4 * len(range(0, spec["files"], spec["every"]))]
