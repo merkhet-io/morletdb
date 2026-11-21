@@ -429,5 +429,6 @@ jobs:
             printf '\nEmbedded edition (experimental, MorletDB in one SQLite file, no server): morlet-sqlite-<platform>.tar.gz holds the morlet-sqlite command line, the shared library and its C header (include/morlet_sqlite.h) for Linux x86-64 and arm64 and macOS 11+ on arm64. See embedded-edition.md inside.\n'
             printf '\nExtension-only images for PostgreSQL 18 and 19 (amd64, arm64), for image volumes and other extensions-on-demand setups: %s (tag %s-pg18) and %s (tag %s-pg19). Mount one, for example at /extensions/pg_morlet, set extension_control_path = %s and dynamic_library_path = %s, then CREATE EXTENSION pg_morlet. Each is trialled in a clean postgres image of its major before release. Verify with: gh attestation verify oci://<digest> --owner %s\n' \
               "$EXT_DIGEST18" "$VERSION" "$EXT_DIGEST19" "$VERSION" "'\$system:/extensions/pg_morlet/share'" "'\$libdir:/extensions/pg_morlet/lib'" "$GITHUB_REPOSITORY_OWNER"; } > release-notes.md
-          test "$(wc -c < release-notes.md)" -lt 125000 || { echo "::error::release notes too long"; exit 1; }
+          chars=$(python3 -c 'import sys; print(len(open(sys.argv[1], encoding="utf-8").read()))' release-notes.md)
+          test "$chars" -le 125000 || { echo "::error::release notes have $chars characters; GitHub allows 125000"; exit 1; }
           gh release create "v$VERSION" image-digest.txt morletdb-*.spdx.json ./*.deb ./*.whl ./morlet-sqlite-*.tar.gz SHA256SUMS --target "$GITHUB_SHA" --title "MorletDB $VERSION" --prerelease --notes-file release-notes.md
