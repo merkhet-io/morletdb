@@ -13,6 +13,13 @@ the source end read at the start are appended with morlet_append_encoded_chunk, 
 target decodes and checks each one). An interrupted run continues without duplicates; an identical resend is a
 no-op; a source that keeps recording is shipped up to the end read at the start. At the end the SHA-256 over the
 chunk bytes up to that end is compared on both sides. Needs SQL 0.3.9 on both servers.
+
+Time anchors (#564): a recording's time axis is part of it. The source's active anchors, read at the start, are
+shipped with it: added to the target in one transaction before the chunks, under a batch id derived from the
+source's time-axis version, so a resend is a no-op. Before anything is written, a target recording whose active
+anchors differ from the source's (including anchors the source does not have) is refused, and so is a target
+server without time anchors (SQL 0.3.13) for an anchored source. At the end morlet_time_axis_version must be equal
+on both sides. Only the current anchors are shipped, not their revision history.
 """
 from __future__ import annotations
 
@@ -68,6 +75,63 @@ def chunks(conn, coll, rid, start=0, upto=None, page=1000):
         start = rows[-1][0] + rows[-1][1]
 
 
+ANCHOR_BATCH = 10000
+
+
+def has_anchor_support(conn):
+    return conn.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NOT NULL").fetchone()[0]
+
+
+def anchor_table(conn, coll):
+    return conn.execute("SELECT to_regclass(%s)::text", (coll + "_time_anchors",)).fetchone()[0]
+
+
+def active_anchors(conn, coll, rid):
+    """The recording's active time anchors (neither retracted nor superseded), by sample, as morlet_add_time_anchors
+    rows; [] without an anchor table."""
+    table = anchor_table(conn, coll) if has_anchor_support(conn) else None
+    if table is None:
+        return []
+    return [{"recording_id": rid, "sample_offset": int(n), "utc_ns": str(t), "uncertainty_ns": int(u), "source": src,
+             "break_before": bool(b)} for n, t, u, src, b in conn.execute(
+        f"SELECT x.sample_offset, x.utc_ns, x.uncertainty_ns, x.source, x.break_before FROM {table} x "
+        f"WHERE x.recording_id = %s AND NOT x.retracted "
+        f"AND NOT EXISTS (SELECT 1 FROM {table} y WHERE y.supersedes = x.anchor_id) ORDER BY x.sample_offset",
+        (rid,)).fetchall()]
+
+
+def time_axis(conn, coll, rid):
+    if not has_anchor_support(conn):
+        return "start+rate"
+    return conn.execute("SELECT morlet_time_axis_version(%s::regclass, %s)", (coll, rid)).fetchone()[0]
+
+
+def check_anchors(tgt, tgt_coll, rid, anchors, target_exists):
+    """Refuse, before anything is written, a target whose anchors would not be the source's (#564)."""
+    if anchors and not has_anchor_support(tgt):
+        raise ValueError(f"{rid}: the source has time anchors and the target server has none (SQL 0.3.13 needed); "
+                         f"nothing was written")
+    have = active_anchors(tgt, tgt_coll, rid) if target_exists else []
+    if have and have != anchors:
+        raise ValueError(f"{rid}: the target's time anchors differ from the source's ({len(have)} there, "
+                         f"{len(anchors)} in the source); revise or retract them with morlet_revise_time_anchor "
+                         f"on one side first; nothing was written")
+    return have
+
+
+def ship_anchors(tgt, tgt_coll, rid, anchors, version):
+    """Add the source's anchors to a target recording that has none, in one transaction; the number written."""
+    n = 0
+    with tgt.transaction():
+        if anchor_table(tgt, tgt_coll) is None:
+            tgt.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (tgt_coll,))
+        for k in range(0, len(anchors), ANCHOR_BATCH):
+            n += tgt.execute("SELECT morlet_add_time_anchors(%s::regclass, %s, %s::jsonb)",
+                             (tgt_coll, f"ship:{rid}:{version}:{k // ANCHOR_BATCH}",
+                              json.dumps(anchors[k:k + ANCHOR_BATCH]))).fetchone()[0]
+    return n
+
+
 def same_prefix(src, tgt, src_coll, tgt_coll, rid, end):
     """Whether the target's chunks [0, end) equal the source's, byte for byte and on the same boundaries (#444)."""
     a, b = chunks(src, src_coll, rid, 0, end), chunks(tgt, tgt_coll, rid, 0, end)
@@ -89,11 +153,17 @@ def ship(src, tgt, src_coll, tgt_coll, flt, batch):
     for rec in recordings(src, src_coll, flt):
         rid, src_end = rec[0], int(rec[6]["end"])        # the end shipped to: read once, at the start
         t0 = time.time()
+        anchors = active_anchors(src, src_coll, rid)      # the time axis shipped: read once, at the start
+        version = time_axis(src, src_coll, rid)
+        exists = tgt.execute(f"SELECT 1 FROM {tgt_coll} WHERE recording_id = %s", (rid,)).fetchone() is not None
+        have = check_anchors(tgt, tgt_coll, rid, anchors, exists)
         end = ensure_target(tgt, tgt_coll, rec)
         if end > src_end:
             raise ValueError(f"{rid}: the target holds {end} samples, more than the source's {src_end}")
         if not same_prefix(src, tgt, src_coll, tgt_coll, rid, end):
             raise ValueError(f"{rid}: the target's first {end} samples are not the source's chunks; nothing was written")
+        # the time axis before the samples: an interrupted run never leaves chunks on the wrong axis
+        anchors_sent = ship_anchors(tgt, tgt_coll, rid, anchors, version.split(":")[-1]) if anchors and not have else 0
         sent = bytes_sent = 0
         while end < src_end:
             rows = src.execute("SELECT start_sample, sample_count, encoded FROM morlet_encoded_chunks(%s::regclass,%s,%s,%s)",
@@ -113,10 +183,16 @@ def ship(src, tgt, src_coll, tgt_coll, flt, batch):
                     sent += 1
                     bytes_sent += len(e)
         a, b = digest(src, src_coll, rid, end), digest(tgt, tgt_coll, rid, end)
+        axis_src, axis_tgt = time_axis(src, src_coll, rid), time_axis(tgt, tgt_coll, rid)
         report.append({"recording_id": rid, "chunks_sent": sent, "bytes_sent": bytes_sent, "end": end,
-                       "chunks": a[1], "sha256": a[0], "identical": a == b, "seconds": round(time.time() - t0, 2)})
+                       "chunks": a[1], "sha256": a[0], "anchors_sent": anchors_sent, "time_axis": axis_src,
+                       "identical": a == b and axis_src == axis_tgt, "seconds": round(time.time() - t0, 2)})
         if a != b:
             raise ValueError(f"{rid}: chunk bytes differ after shipping (source {a}, target {b})")
+        if axis_src != axis_tgt:
+            why = "the source's time anchors changed while shipping; run again" if axis_src != version else \
+                "the time axes differ after shipping"
+            raise ValueError(f"{rid}: {why} (source {axis_src}, target {axis_tgt})")
     return report
 
 

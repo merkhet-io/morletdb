@@ -32,5 +32,13 @@ python tools/ingest/morlet_ship.py --source-dsn "postgresql://...@edge/db" --tar
   parameters (`morlet_ensure_recording`); otherwise the recording is refused before any sample is written, and the
   error names the differing fields (#443). Context, labels and search envelopes are
   not shipped; build envelopes on the target as usual.
+- **Time anchors ship with the recording (#564).** A recording's [time anchors](clock-drift.md) are its time axis.
+  The source's active anchors, read when the run starts, are added to the target in one transaction before the
+  chunks, so an interrupted run never leaves chunks on the wrong axis. The anchor table is enabled on the target if
+  needed, and a resend is a no-op. Only the current anchors travel, not their revision history. Before anything is
+  written, a target recording whose active anchors differ from the source's is refused, and so are anchors the
+  source does not have; revise or retract them on one side first (`morlet_revise_time_anchor`). An anchored source
+  also needs SQL 0.3.13 on the target. At the end `morlet_time_axis_version` must be equal on both sides; the report
+  gives it as `time_axis`, with `anchors_sent`, and `identical` covers chunks and time axis.
 
 Both servers need pg_morlet SQL 0.3.9 or later (`morlet_encoded_chunks`, `morlet_append_encoded_chunk`).

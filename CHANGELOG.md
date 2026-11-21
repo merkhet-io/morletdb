@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **The edge shipper ships time anchors (#564).** `tools/ingest/morlet_ship.py` copied a recording's chunks and
+  parameters but not its time anchors, and still reported `identical: true`: on the target, sample 5000 of the test
+  mapped to 5 s by start + rate instead of the anchors' 2.5 s. The source's active anchors now go to the target
+  before the chunks (one transaction, a resend is a no-op), a target whose anchors differ is refused before anything
+  is written, and `morlet_time_axis_version` is compared at the end.
+
 ## 0.4.0-beta.3
 
 **The third beta.** SQL version 0.3.14, with an update script from 0.3.13: run `ALTER EXTENSION pg_morlet UPDATE`

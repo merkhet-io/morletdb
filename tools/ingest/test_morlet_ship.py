@@ -42,7 +42,8 @@ class Shipping(unittest.TestCase):
         if self.c.execute("SELECT to_regproc('public.morlet_append_encoded_chunk') IS NULL").fetchone()[0]:
             self.skipTest("server without chunk shipping (SQL 0.3.9)")
         for coll in ("ship_edge", "ship_central"):
-            for t in ("chunks", "segments", "envelopes", "episodes", "kept_summaries", "ledger", "memory_runs"):
+            for t in ("chunks", "segments", "envelopes", "episodes", "kept_summaries", "ledger", "memory_runs",
+                      "time_anchors"):
                 self.c.execute(f"DROP TABLE IF EXISTS public.{coll}_{t} CASCADE")
             self.c.execute(f"DROP TABLE IF EXISTS public.{coll} CASCADE")
             self.c.execute("SELECT morlet_create_stream_collection('public',%s)", (coll,))
@@ -74,6 +75,50 @@ class Shipping(unittest.TestCase):
     def central(self):
         return self.c.execute("SELECT checkpoint->>'end', (SELECT count(*) FROM ship_central_chunks) "
                               "FROM ship_central WHERE recording_id='spindle'").fetchone()
+
+    def anchor(self, coll, batch, rows):
+        if self.c.execute("SELECT to_regclass(%s)", (f"public.{coll}_time_anchors",)).fetchone()[0] is None:
+            self.c.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (coll,))
+        self.c.execute("SELECT morlet_add_time_anchors(%s::regclass,%s,%s::jsonb)", (coll, batch, json.dumps(
+            [{"recording_id": "spindle", "sample_offset": n, "utc_ns": str(t), "uncertainty_ns": 1000,
+              "source": "daq", "break_before": n > 0} for n, t in rows])))
+
+    def utc(self, coll, n):
+        return self.c.execute("SELECT utc_ns::bigint, basis FROM morlet_sample_utc(%s::regclass,'spindle',%s)",
+                              (coll, n)).fetchone()
+
+    def test_time_anchors_ship_with_the_recording(self):                         # #564
+        """The report: chunk bytes were identical, but sample 5000 mapped to 5 s instead of the anchors' 2.5 s.
+        The anchors now ship before the chunks, a resend is a no-op, and the time axes are compared."""
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.c.execute("UPDATE ship_edge SET metadata = metadata || '{\"start_ns\": 0}' WHERE recording_id='spindle'")
+        self.anchor("ship_edge", "b1", [(0, 0), (5000, 2_500_000_000)])
+        rep = ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)[0]
+        self.assertEqual(self.utc("ship_central", 5000), (2_500_000_000, "anchors"))
+        self.assertEqual(self.utc("ship_central", 5000), self.utc("ship_edge", 5000))
+        self.assertEqual((rep["chunks_sent"], rep["anchors_sent"], rep["identical"]), (4, 2, True))
+        self.assertTrue(rep["time_axis"].startswith("anchors:"))
+        rep = ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)[0]
+        self.assertEqual((rep["chunks_sent"], rep["anchors_sent"], rep["identical"]), (0, 0, True))
+        # a revision at the source is not silently left behind: refused until the sides agree again
+        aid = self.c.execute("SELECT anchor_id FROM ship_edge_time_anchors WHERE sample_offset=5000").fetchone()[0]
+        self.c.execute("SELECT morlet_revise_time_anchor('ship_edge',%s,'{\"uncertainty_ns\": 2000}')", (aid,))
+        self.append(10000, 12500)
+        before = self.central()
+        with self.assertRaisesRegex(ValueError, "time anchors differ"):
+            ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+        self.assertEqual(self.central(), before)                           # nothing written
+
+    def test_target_anchors_the_source_lacks_are_refused_before_writing(self):    # #564
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.c.execute("SELECT morlet_start_recording('ship_central','spindle',1000,'acc','g',%s,512,256,'zscore','none',0.001)",
+                       (json.dumps({"machine": "M1"}),))
+        self.anchor("ship_central", "c1", [(0, 7)])
+        with self.assertRaisesRegex(ValueError, "time anchors differ"):
+            ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+        self.assertEqual(self.central(), ("0", 0))
 
     def test_a_target_with_other_parameters_is_refused_before_writing(self):      # #443
         for args, what in (((2000, "acc", "g", {"machine": "M1"}, 0.001), "sample_rate_hz"),
