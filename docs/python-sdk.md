@@ -109,7 +109,7 @@ are separate rankings and must not be compared numerically.
 
 ### From an asset and a time to an interval
 
-**Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.13 or later.** `Client.resolve_incident` maps an
+**Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
 asset and an incident time to recording intervals in one read-only snapshot, with the same transaction rules as
 `investigate`:
 

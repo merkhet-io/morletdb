@@ -7,7 +7,8 @@ import time
 
 import psycopg
 
-OFFSET = re.compile(r"(Z|[+-]\d{2}(:?\d{2})?)$", re.I)
+# a clock time and then its offset: the "-01" of the date-only 2026-03-01 is a day, not an offset
+OFFSET = re.compile(r"[T ]\d{2}(:?\d{2}(:?\d{2}([.,]\d+)?)?)?(Z|[+-]\d{2}(:?\d{2})?)$", re.I)
 
 
 def _config():

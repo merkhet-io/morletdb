@@ -116,6 +116,46 @@ class Incident(unittest.TestCase):
                          (900, 1000, 200, False))
         self.assertIn("partial_window", result.states)
 
+    def test_first_sample_a_period_late_is_partial(self):
+        # a first sample a whole period after the inclusive window start leaves one position uncovered
+        self.add("late", n=1000, start=BASE + SECOND)
+        c = self.resolve(at=BASE + SECOND, before_s=0.001, after_s=0.1).candidates[0]
+        self.assertEqual((c.ref.start_sample, c.samples, c.expected_samples, c.covers_window), (0, 100, 101, False))
+        self.conn.rollback()
+
+    def test_start_time_is_read_as_the_server_reads_it(self):
+        self.db.ingest(self.coll, "text-ns", np.zeros(2000), sample_rate_hz=1000, channel="x", unit="g",
+                       metadata={"asset": "P7", "start_ns": str(BASE)}, search_window=512)
+        self.conn.commit()
+        result = self.resolve()
+        self.assertEqual(result.recordings_without_time_axis, [])
+        self.assertEqual(result.candidates[0].ref.start_sample, 900)
+
+    def test_clipped_candidate_describes_only_stored_samples(self):
+        self.add("r", n=1000)
+        self.anchors("r", [(0, 0), (999, 999 * MS)], breaks=False)
+        c = self.resolve(at=BASE + 950 * MS, before_s=0.05, after_s=0.15).candidates[0]
+        self.assertEqual((c.ref.start_sample, c.ref.end_sample, c.extrapolated), (900, 1000, False))
+        self.assertLessEqual(c.end_uncertainty_ns, 1000)
+
+    def test_removed_chunks_under_a_retained_window_are_unreadable(self):
+        self.add("r", n=20000)
+        lo, hi = self.conn.execute(f"SELECT start_sample, start_sample+sample_count FROM {self.coll}_chunks "
+                                   "WHERE recording_id='r' AND start_sample>0 ORDER BY 1 LIMIT 1").fetchone()
+        self.conn.execute(f"DELETE FROM {self.coll}_chunks WHERE recording_id='r' AND start_sample=%s", (lo,))
+        self.conn.commit()
+        c = self.resolve(at=BASE + (lo + 10) * MS, before_s=0.01, after_s=0.01).candidates[0]
+        self.assertGreater(c.unreadable_samples, 0)
+
+    def test_equal_json_numbers_verify_and_missing_sensors_stay_apart(self):
+        self.add("a", wo=42.0)
+        self.add("b", wo=42)
+        result = self.resolve(sensor_key="position", references={"work_order": 42}, reference_keys={"work_order": "wo"})
+        self.assertEqual({c.references["work_order"]["status"] for c in result.candidates}, {"verified"})
+        self.assertIn("sensor_not_recorded", result.states)
+        self.assertIn("multiple_sensors", result.states)
+        self.assertNotIn("multiple_recordings_per_sensor", result.states)
+
     def test_two_recordings_are_never_concatenated(self):
         self.add("a", n=1000)
         self.add("b", n=1000, start=BASE + SECOND)

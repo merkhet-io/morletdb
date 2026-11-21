@@ -33,7 +33,7 @@ class Requests(unittest.TestCase):
         self.assertEqual(set(tool.input_schema["required"]), {"collection", "asset", "incident_time"})
 
     def test_a_time_without_a_timezone_is_refused(self):
-        for value in ("2026-03-01T12:00:01", "2026-03-01 12:00:01", "yesterday"):
+        for value in ("2026-03-01T12:00:01", "2026-03-01 12:00:01", "2026-03-01", "yesterday"):
             with self.subTest(value=value):
                 result = call(collection="public.signals", asset="P7", incident_time=value)
                 self.assertTrue(result.is_error)
