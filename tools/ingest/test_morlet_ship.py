@@ -42,7 +42,8 @@ class Shipping(unittest.TestCase):
         if self.c.execute("SELECT to_regproc('public.morlet_append_encoded_chunk') IS NULL").fetchone()[0]:
             self.skipTest("server without chunk shipping (SQL 0.3.9)")
         for coll in ("ship_edge", "ship_central"):
-            for t in ("chunks", "segments", "envelopes", "episodes", "kept_summaries", "ledger", "memory_runs"):
+            for t in ("chunks", "segments", "envelopes", "episodes", "kept_summaries", "ledger", "memory_runs",
+                      "time_anchors"):
                 self.c.execute(f"DROP TABLE IF EXISTS public.{coll}_{t} CASCADE")
             self.c.execute(f"DROP TABLE IF EXISTS public.{coll} CASCADE")
             self.c.execute("SELECT morlet_create_stream_collection('public',%s)", (coll,))
@@ -74,6 +75,151 @@ class Shipping(unittest.TestCase):
     def central(self):
         return self.c.execute("SELECT checkpoint->>'end', (SELECT count(*) FROM ship_central_chunks) "
                               "FROM ship_central WHERE recording_id='spindle'").fetchone()
+
+    def anchor(self, coll, batch, rows):
+        if ms.anchor_table(self.c, coll) is None:
+            self.c.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (coll,))
+        self.c.execute("SELECT morlet_add_time_anchors(%s::regclass,%s,%s::jsonb)", (coll, batch, json.dumps(
+            [{"recording_id": "spindle", "sample_offset": n, "utc_ns": str(t), "uncertainty_ns": 1000,
+              "source": "daq", "break_before": n > 0} for n, t in rows])))
+
+    def utc(self, coll, n):
+        return self.c.execute("SELECT utc_ns::bigint, basis FROM morlet_sample_utc(%s::regclass,'spindle',%s)",
+                              (coll, n)).fetchone()
+
+    def test_time_anchors_ship_with_the_recording(self):                         # #564
+        """The report: chunk bytes were identical, but sample 5000 mapped to 5 s instead of the anchors' 2.5 s.
+        The anchors now ship before the chunks, a resend is a no-op, and the time axes are compared."""
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.c.execute("UPDATE ship_edge SET metadata = metadata || '{\"start_ns\": 0}' WHERE recording_id='spindle'")
+        self.anchor("ship_edge", "b1", [(0, 0), (5000, 2_500_000_000)])
+        rep = ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)[0]
+        self.assertEqual(self.utc("ship_central", 5000), (2_500_000_000, "anchors"))
+        self.assertEqual(self.utc("ship_central", 5000), self.utc("ship_edge", 5000))
+        self.assertEqual((rep["chunks_sent"], rep["anchors_sent"], rep["identical"]), (4, 2, True))
+        self.assertTrue(rep["time_axis"].startswith("anchors:"))
+        rep = ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)[0]
+        self.assertEqual((rep["chunks_sent"], rep["anchors_sent"], rep["identical"]), (0, 0, True))
+        # a revision at the edge replaces the anchors shipped earlier (the earlier rows stay, retracted)
+        aid = self.c.execute("SELECT anchor_id FROM ship_edge_time_anchors WHERE sample_offset=5000").fetchone()[0]
+        self.c.execute("SELECT morlet_revise_time_anchor('ship_edge',%s,'{\"utc_ns\": 2600000000}')", (aid,))
+        self.append(10000, 12500)
+        rep = ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)[0]
+        self.assertEqual((rep["chunks_sent"], rep["anchors_sent"], rep["identical"]), (1, 2, True))
+        self.assertEqual(self.utc("ship_central", 5000), (2_600_000_000, "anchors"))
+        # review: shipped anchors retracted on the target are shipped again under a new batch, before any chunk
+        self.c.execute("SELECT morlet_revise_time_anchor('ship_central',x.anchor_id,retract=>true) "
+                       "FROM ship_central_time_anchors x WHERE NOT x.retracted AND NOT EXISTS "
+                       "(SELECT 1 FROM ship_central_time_anchors y WHERE y.supersedes=x.anchor_id)")
+        self.assertEqual(self.utc("ship_central", 5000)[1], "start+rate")
+        self.append(12500, 15000)
+        rep = ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)[0]
+        self.assertEqual((rep["chunks_sent"], rep["anchors_sent"], rep["identical"]), (1, 2, True))
+        self.assertEqual(self.utc("ship_central", 5000), (2_600_000_000, "anchors"))
+
+    def test_anchors_of_a_quoted_collection_name_ship(self):                    # #564 review
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        for t in ("chunks", "segments", "time_anchors"):
+            self.c.execute(f'DROP TABLE IF EXISTS public."Edge X_{t}" CASCADE')
+        self.c.execute('DROP TABLE IF EXISTS public."Edge X" CASCADE')
+        self.c.execute("SELECT morlet_create_stream_collection('public','Edge X')")
+        self.c.execute("""SELECT morlet_start_recording('"Edge X"','spindle',1000,'acc','g','{"start_ns": 0}',512,256,
+            'zscore','none',0.001)""")
+        self.c.execute("""SELECT morlet_append_chunks_raw('"Edge X"','spindle',0,morlet_read_interval_raw('ship_edge',
+            'spindle',0,5000),2500)""")
+        self.anchor('"Edge X"', "q1", [(0, 0), (2500, 1_000_000_000)])
+        try:
+            rep = ms.ship(self.c, self.c, 'public."Edge X"', "public.ship_central", {}, 3)[0]
+            self.assertEqual((rep["anchors_sent"], rep["identical"]), (2, True))
+            self.assertEqual(self.utc("ship_central", 2500), (1_000_000_000, "anchors"))
+        finally:
+            for t in ("chunks", "segments", "time_anchors"):
+                self.c.execute(f'DROP TABLE IF EXISTS public."Edge X_{t}" CASCADE')
+            self.c.execute('DROP TABLE IF EXISTS public."Edge X" CASCADE')
+
+    def test_anchors_revised_on_the_target_are_refused_before_writing(self):      # #564
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.anchor("ship_edge", "b1", [(0, 0)])
+        ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+        aid = self.c.execute("SELECT anchor_id FROM ship_central_time_anchors").fetchone()[0]
+        self.c.execute("SELECT morlet_revise_time_anchor('ship_central',%s,'{\"uncertainty_ns\": 5}')", (aid,))
+        self.append(10000, 12500)
+        before = self.central(), self.target_anchors()
+        with self.assertRaisesRegex(ValueError, "anchors of its own"):
+            ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+        self.assertEqual((self.central(), self.target_anchors()), before)        # chunks and anchors unchanged
+
+    def target_anchors(self):
+        return self.c.execute("SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY anchor_id), '[]') "
+                              "FROM ship_central_time_anchors x").fetchone()[0]
+
+    def test_a_batch_named_like_a_shipment_is_not_the_shippers(self):           # #564 review
+        """Anyone may choose a batch id: a target anchor added under ship:<rid>:... is refused, not retracted."""
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.anchor("ship_edge", "b1", [(0, 0)])
+        self.c.execute("SELECT morlet_start_recording('ship_central','spindle',1000,'acc','g',%s,512,256,'zscore','none',0.001)",
+                       (json.dumps({"machine": "M1"}),))
+        for batch in ("ship:spindle:local", "ship:spindle:0123456789abcdef0123456789abcdef-0:0"):
+            self.anchor("ship_central", batch, [(0, len(batch))])
+            before = self.central(), self.target_anchors()
+            with self.assertRaisesRegex(ValueError, "anchors of its own"):
+                ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+            self.assertEqual((self.central(), self.target_anchors()), before)
+            self.c.execute("SELECT morlet_revise_time_anchor('ship_central',anchor_id,retract=>true) "
+                           "FROM ship_central_time_anchors x WHERE batch_id=%s", (batch,))
+
+    def test_anchor_edits_on_the_target_wait_for_a_shipment(self):              # #564 review
+        """Between the axis check and the last chunk, another session's revision of the recording's anchors waits
+        (the shipper holds the anchor lock), so no chunk is committed on an axis other than the one checked."""
+        import psycopg
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.anchor("ship_edge", "b1", [(0, 0)])
+        other = psycopg.connect(URL, autocommit=True)
+        tried = []
+
+        class During:                                    # tries a revision from another session mid-shipment
+            def __init__(self, conn):
+                self.conn = conn
+
+            def execute(self, q, *a, **k):
+                if "morlet_append_encoded_chunk" in q and not tried:
+                    aid = self.conn.execute("SELECT anchor_id FROM ship_central_time_anchors").fetchone()[0]
+                    try:
+                        with other.transaction():
+                            other.execute("SET LOCAL lock_timeout = '300ms'")
+                            other.execute("SELECT morlet_revise_time_anchor('ship_central',%s,"
+                                          "'{\"uncertainty_ns\": 7}')", (aid,))
+                        tried.append("revised")
+                    except psycopg.errors.LockNotAvailable:
+                        tried.append("waited")
+                return self.conn.execute(q, *a, **k)
+
+            def transaction(self):
+                return self.conn.transaction()
+        try:
+            rep = ms.ship(self.c, During(self.c), "public.ship_edge", "public.ship_central", {}, 3)[0]
+        finally:
+            other.close()
+        self.assertEqual(tried, ["waited"])
+        self.assertTrue(rep["identical"])
+        # after the shipment the lock is released: a revision goes through
+        aid = self.c.execute("SELECT anchor_id FROM ship_central_time_anchors").fetchone()[0]
+        self.c.execute("SELECT morlet_revise_time_anchor('ship_central',%s,'{\"uncertainty_ns\": 7}')", (aid,))
+
+    def test_target_anchors_the_source_lacks_are_refused_before_writing(self):    # #564
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.c.execute("SELECT morlet_start_recording('ship_central','spindle',1000,'acc','g',%s,512,256,'zscore','none',0.001)",
+                       (json.dumps({"machine": "M1"}),))
+        self.anchor("ship_central", "c1", [(0, 7)])
+        with self.assertRaisesRegex(ValueError, "anchors of its own"):
+            ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+        self.assertEqual(self.central(), ("0", 0))
 
     def test_a_target_with_other_parameters_is_refused_before_writing(self):      # #443
         for args, what in (((2000, "acc", "g", {"machine": "M1"}, 0.001), "sample_rate_hz"),
