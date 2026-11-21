@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morlet UPDATE`).
+
+- **Time mapping without an anchor table (SQL 0.3.15, #562).** `morlet_sample_utc`, `morlet_utc_to_sample`,
+  `morlet_utc_to_samples` and the SDK's `time_ranges` failed with "record r is not assigned yet" on a collection
+  where `morlet_enable_time_anchors` had never run, the usual case, instead of using start time and rate. The
+  function behind them read a field of a record that was never assigned without the table. A test checks each state
+  on its own: no anchor table, an empty one, anchors, every anchor retracted.
+- **SDK `samples_for_time` refuses every ambiguous interval (#563).** When a backward clock step makes some times
+  occur twice in adjacent samples, the server returns them as one range marked ambiguous; `samples_for_time`
+  refused only several disjoint ranges and returned that one as if it were unique. It now raises
+  `InvalidInputError` for any ambiguous range; `time_ranges` returns it with the flag.
+
 ## 0.4.0-beta.3
 
 **The third beta.** SQL version 0.3.14, with an update script from 0.3.13: run `ALTER EXTENSION pg_morlet UPDATE`

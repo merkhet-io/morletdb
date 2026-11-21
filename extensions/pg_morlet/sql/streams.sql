@@ -3101,7 +3101,7 @@ CREATE FUNCTION public.morlet_time_pieces(collection regclass,recording_id text,
 RETURNS TABLE(piece integer,segment integer,lo bigint,hi bigint,n_ref bigint,t_ref numeric,dn numeric,dt numeric,
   kind text,u_ref numeric,na bigint,nb bigint,ua numeric,ub numeric,rho_used float8,period_ns numeric)
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rec record; rel regclass; r record; num numeric; den numeric; rho_rec float8; start_ns numeric;
+DECLARE rec record; rel regclass; active bigint:=0; num numeric; den numeric; rho_rec float8; start_ns numeric;
 BEGIN
   IF collection IS NULL OR recording_id IS NULL OR (rho IS NOT NULL AND NOT (rho>=0 AND rho<1)) THEN
     RAISE EXCEPTION 'collection and recording_id are required, and rho must be in [0, 1)';
@@ -3121,9 +3121,11 @@ BEGIN
     FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
   IF rel IS NOT NULL THEN
     EXECUTE format('SELECT count(*) FROM %1$s x WHERE x.recording_id=$1 AND NOT x.retracted
-      AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.anchor_id)',rel) INTO r USING recording_id;
+      AND NOT EXISTS(SELECT 1 FROM %1$s y WHERE y.supersedes=x.anchor_id)',rel) INTO active USING recording_id;
   END IF;
-  IF rel IS NULL OR r.count=0 THEN
+  -- a scalar, not a record: without the anchor table a record is never assigned, and reading a field of it fails
+  -- even behind OR (#562)
+  IF active=0 THEN
     start_ns:=public.morlet_recording_start_ns(rec.metadata);
     IF start_ns IS NULL THEN RETURN; END IF;
     RETURN QUERY SELECT 0,0,0::bigint,NULL::bigint,0::bigint,start_ns,num,den*1000000000,'start+rate'::text,
