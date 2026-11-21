@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
+from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, InvestigationResult, Latest, Match, NotifiedRange, Notification,
                      OverviewBucket, Recording, SearchResult, TimeRange)
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
@@ -67,7 +67,8 @@ def _samples(values: Any) -> np.ndarray:
 class Client:
     """One connection to a MorletDB (PostgreSQL with pg_morlet) database.
 
-    Transactions: methods run in the connection's current transaction and never commit. With
+    Transactions: ordinary methods run in the connection's current transaction and never commit. `investigate`
+    owns a read-only transaction on an idle connection, or uses a savepoint in a compatible caller snapshot. With
     `Client.connect(...)` used as a context manager, the client owns the connection and commits on a
     clean exit (rolls back on an exception) and closes it. With `Client(connection)` the caller keeps
     ownership: commit, roll back and close it yourself.
@@ -149,6 +150,36 @@ class Client:
             raise
         except psycopg.Error as exc:
             raise translate(exc) from exc
+
+    # --- investigation -------------------------------------------------------------------------------
+    def investigate(self, collection: str, recording_id: str, start_sample: int,
+                    end_sample: int | None = None, *, segment_id: int | None = None,
+                    metadata_filter: Mapping[str, Any] | None = None, top_k: int = 10,
+                    max_lag_fraction: float = 0.075, max_candidates: int = 10000,
+                    match_keys: tuple[str, ...] = (), exclude_labels: tuple[str, ...] = (),
+                    min_history: int = 5, max_history: int = 10000,
+                    timeout_ms: int = 10000, max_recordings: int = 1000,
+                    max_coverage_ranges: int = 10000, max_output_bytes: int = 2_000_000
+                    ) -> "InvestigationResult":
+        """Search, query statistics, optional context comparison and coverage in one snapshot.
+
+        An idle connection gets a dedicated read-only REPEATABLE READ transaction. An existing transaction
+        must already be read-only and REPEATABLE READ or SERIALIZABLE; it is never committed here. Failures
+        roll back only the investigation's transaction/savepoint. Source overlaps are excluded and result
+        overlaps suppressed. This first API searches all compatible history, without a temporal cutoff.
+
+        `segment_id`, when supplied, must identify a current context segment containing the entire query.
+        Its comparison uses the SQL defaults, `match_keys` and `exclude_labels`; these do not filter the
+        separate waveform search. Coverage is for compatible recordings before source exclusion, not ANN
+        recall. Deadlines/limits raise InvestigationLimitError, never an answer-ready partial report.
+        """
+        from ._investigation import investigate
+        return investigate(self, collection, recording_id, start_sample, end_sample,
+                           segment_id=segment_id, metadata_filter=metadata_filter, top_k=top_k,
+                           max_lag_fraction=max_lag_fraction, max_candidates=max_candidates,
+                           match_keys=match_keys, exclude_labels=exclude_labels, min_history=min_history,
+                           max_history=max_history, timeout_ms=timeout_ms, max_recordings=max_recordings,
+                           max_coverage_ranges=max_coverage_ranges, max_output_bytes=max_output_bytes)
 
     # --- collections ---------------------------------------------------------------------------------
     def create_collection(self, name: str, *, searchable: bool = True, summaries: bool = True) -> None:

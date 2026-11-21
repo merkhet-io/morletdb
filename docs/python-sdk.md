@@ -40,6 +40,93 @@ and generated event, and saves `quickstart.png` (the query and its three best ma
 it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the electrical transients follow
 (≈ 0.16–0.19).
 
+## Investigate an interval
+
+`Client.investigate` composes existing SQL search, query statistics, recording coverage and optional
+context comparison in one read-only snapshot. This is the first SDK slice of
+[#572](https://github.com/merkhet-io/morletdb/issues/572), not a diagnosis or a durable evidence archive.
+It needs SQL 0.3.3 or later for interval statistics; coverage is available from 0.3.6 and optional context
+comparison needs 0.3.9 or later. It does not create representations or change data.
+
+```python
+import json
+import morletdb
+
+# Use a separate connection if the application has pending writes.
+with morletdb.Client.connect("postgresql://...") as db:
+    report = db.investigate(
+        "public.signals", "pump-7/accel-x", 40960, 45056,
+        metadata_filter={"asset": "pump-7"}, top_k=5,
+        timeout_ms=10000, max_candidates=10000,
+    )
+    for hit in report.search.matches:
+        print(hit.distance, hit.ref)
+    print(report.coverage_status, report.notes)
+    payload = json.dumps(report.to_dict(), allow_nan=False)
+```
+
+The interval must be a power-of-two window of 512–32768 samples supported by the collection's search
+representations. `end_sample` defaults to `start_sample + 4096`. Original samples are not included or
+resampled; `read_ref` is a separate operation and therefore observes its own transaction state.
+
+The typed `InvestigationResult` (version 1) contains:
+
+- `recording`, `search`, `query_stats`: query specification/metadata, ranked waveform matches and
+  interval statistics using the existing SDK result types.
+- `context`: optional `InvestigationContext`, or `None` when not requested. Supply `segment_id` for a
+  current context segment containing the entire query interval in the same recording. It returns the
+  segment's full interval, context, occurrence, segmentation spec and value-rule version, named SQL
+  comparison rows, nearest history neighbors and glossary definitions for labels on those neighbors.
+- `coverage_status` and `coverage`: `available` with recording ranges and their states, or `unknown`
+  if the server lacks the coverage API. Ranges cover caller-visible recordings matching the query's
+  rate/channel/unit and `metadata_filter`, before source exclusion. They do **not** count windows actually
+  scored, prove probe-index completeness or measure approximate-search recall. See the
+  [search contract](search-contract.md#not-found-versus-not-searched).
+- `settings`, `provenance`, `notes`: effective API settings, representation versions, database/collection
+  identity within this database, caller role, SQL extension version, snapshot identifier and interpretation
+  limits. The snapshot identifier is diagnostic, not a token that can reopen the snapshot later.
+
+Context comparison calls `morlet_compare_to_history` and `morlet_history_neighbors`; it adds no new
+numerical implementation. `match_keys` (default all segment context keys) and `exclude_labels` (default
+none) apply **only to context history**, not waveform search. `min_history` defaults to 5. Per-value
+statuses are kept, and small histories are explicitly noted. A context segment can be longer than the
+query window: its deviations describe that whole segment. Neighbors' labels describe those occurrences,
+not the query. Missing glossary definitions are reported. This first slice does not search all labelled
+history for precedents; an unlabelled neighbor list does not prove that labelled cases are absent.
+
+Waveform search excludes source-overlapping windows and suppresses overlapping results. Both search
+and context comparison use **no temporal cutoff** in this first API. Later occurrences and labels added
+after the event can participate; do not use it as a causally valid historical decision replay. The
+existing separate `search` API retains its time filters. Context neighbor scores and waveform distances
+are separate rankings and must not be compared numerically.
+
+### Investigation transactions and limits
+
+On an idle connection the method opens and finishes its own `REPEATABLE READ READ ONLY` transaction,
+including on an autocommit connection. If a transaction is already active, it must be read-only and
+`REPEATABLE READ` or `SERIALIZABLE`; otherwise the call raises `InvalidInputError` without committing or
+rolling back caller work. A compatible caller transaction is used through a savepoint. Failures roll back
+only that savepoint, and the caller's statement timeout is restored. Connection settings such as
+autocommit are not changed. Do not share the connection with concurrent operations during investigation.
+
+The default limits are 10 seconds overall, 10,000 search candidates, 10,000 context-history segments,
+1,000 compatible recordings, 10,000 coverage ranges and 2,000,000 bytes of compact UTF-8 JSON output.
+They are configurable with `timeout_ms`, `max_candidates`, `max_history`, `max_recordings`,
+`max_coverage_ranges` and `max_output_bytes`. `top_k` (1–100) bounds both returned matches and context neighbors.
+Candidate budgets retain the existing SQL semantics, including probe routing; they are not physical I/O
+or total-memory limits. The final output-size check is after assembly, not a streaming memory cap.
+
+Before each data query the remaining overall deadline becomes its statement timeout (or the caller's
+shorter timeout). The deadline is also checked after queries and serialization. SQL cancellation and
+size/candidate-limit failures raise `InvestigationLimitError`; no partial report is returned as complete.
+Other SQL errors retain the SDK's error translation, and permission errors remain psycopg permission
+errors. Unknown coverage, insufficient history and undefined labels are explicit result states/notes;
+unreadable query samples or invalid context segments raise instead of silently dropping those stages.
+
+`to_dict()` is JSON-compatible and maps non-finite diagnostic numbers to `None`. It captures observations
+but does not freeze source samples, preserve deleted evidence or provide content hashes. Viewer/MCP
+adoption of this shared API and archival report export are follow-up work.
+
 ## The recording model, as the SDK exposes it
 
 - **Recording:** one channel of one acquisition, uniformly sampled. Identity: `(collection, recording_id)`;

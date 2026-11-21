@@ -25,6 +25,10 @@ class DatabaseError(MorletError):
     """Any other database error, with the server's message."""
 
 
+class InvestigationLimitError(MorletError):
+    """An investigation exceeded its deadline or size/candidate limit; no partial result is returned."""
+
+
 def translate(exc):
     """Map a psycopg error from pg_morlet to the SDK's exceptions (by the server's documented messages)."""
     msg = getattr(getattr(exc, "diag", None), "message_primary", None) or str(exc)

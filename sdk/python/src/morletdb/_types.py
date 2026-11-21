@@ -215,3 +215,57 @@ class TransferCheck:
     chunk_bytes: str
     sender_encoder: str
     receiver_encoder: str
+
+
+@dataclass(frozen=True)
+class CoverageRange:
+    """Recording coverage for a window size, before search exclusions (not ANN candidate coverage)."""
+    recording_id: str
+    start_sample: int
+    end_sample: int
+    state: str
+    windows: int
+
+
+@dataclass(frozen=True)
+class InvestigationContext:
+    """Comparison of an explicitly selected context segment containing the query interval.
+
+    SQL comparison/neighbor rows retain their named fields and status semantics. Neighbors are browsing
+    aids, not predicted labels; an empty labelled subset does not mean no labelled history exists.
+    """
+    segment_id: int
+    ref: IntervalRef
+    context: dict[str, Any]
+    occurrence: dict[str, Any]
+    spec: dict[str, Any]
+    value_rules: str
+    comparisons: list[dict[str, Any]]
+    neighbors: list[dict[str, Any]]
+    label_definitions: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class InvestigationResult:
+    """Version-1 investigation captured in one read-only repeatable snapshot.
+
+    Coverage describes compatible recordings before source exclusion, not windows actually scored or
+    probe recall. `coverage_status` is unknown on servers without morlet_coverage. `notes` state limits
+    on interpretation; completion of the API call does not imply complete archive coverage or diagnosis.
+    This captures results, not immutable samples or a replayable database snapshot.
+    """
+    version: int
+    recording: Recording
+    search: SearchResult
+    query_stats: IntervalStats
+    context: InvestigationContext | None
+    coverage_status: Literal["available", "unknown"]
+    coverage: list[CoverageRange]
+    settings: dict[str, Any]
+    provenance: dict[str, Any]
+    notes: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        """JSON-compatible result, with non-finite diagnostic values represented as null."""
+        from ._investigation import result_dict
+        return result_dict(self)
