@@ -8,6 +8,7 @@ from pathlib import Path
 import tempfile
 import math
 import unittest
+from unittest import mock
 import wave
 
 import numpy as np
@@ -266,6 +267,12 @@ class Readers(unittest.TestCase):
         a = [(0, 0, False), (2, 2 ** 53 - 3, False)]
         mid = Fraction(2 ** 53 - 3, 2)
         self.assertEqual(mi.anchor_uncertainties(far, 1e-6, a, 0), [math.ceil(abs(2 ** 52 + 1 - mid))] * 2)
+        # review: the residual is computed in bounded steps; a step boundary inside a block changes nothing
+        jit = [k * 1_000_000 + (k * 7919 % 801 - 400) * 1000 for k in range(3000)]
+        a = mi.time_anchors(jit, 1000, 5_000_000)
+        whole = mi.anchor_uncertainties(jit, 1000, a, 1)
+        with mock.patch.object(mi, "RESIDUAL_ROWS", 7):
+            self.assertEqual(mi.anchor_uncertainties(jit, 1000, a, 1), whole)
         # exact timestamps keep the resolution alone
         even = [k * 1_000_000 for k in range(50)]
         self.assertEqual(mi.anchor_uncertainties(even, 1000, mi.time_anchors(even, 1000), 1000), [1000])

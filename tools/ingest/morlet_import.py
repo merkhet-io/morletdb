@@ -394,6 +394,9 @@ def time_axis(path, opts, header, body):
     return rate, meta
 
 
+RESIDUAL_ROWS = 65536   # rows per exact residual step (Python integers): bounds memory for one-anchor blocks
+
+
 def anchor_uncertainties(t_ns, rate, anchors, resolution_ns):
     """Each anchor's uncertainty_ns (#561): the column's resolution plus the largest departure of a row's timestamp
     from the server's mapping on either side of the anchor, rounded up to whole ns. The server interpolates linearly
@@ -414,10 +417,12 @@ def anchor_uncertainties(t_ns, rate, anchors, resolution_ns):
         hi = nxt if nxt is not None else ends[block] - 1        # the rows this anchor's piece maps
         # residual(n) = (t[n] - t[k]) - (n - k) * num / den, so den * residual is an integer: exact in Python ints
         num, den = (int(t[nxt] - t[k]), nxt - k) if nxt is not None else (period.numerator, period.denominator)
-        rel = (t[k:hi + 1] - t[k]).astype(object)
-        steps = np.arange(hi - k + 1, dtype=np.int64).astype(object)
-        scaled = rel * den - steps * num
-        r = max((abs(int(x)) for x in scaled), default=0)
+        r = 0
+        for lo in range(k, hi + 1, RESIDUAL_ROWS):              # bounded memory: one block can be the whole file
+            up = min(hi + 1, lo + RESIDUAL_ROWS)
+            rel = (t[lo:up] - t[k]).astype(object)
+            steps = np.arange(lo - k, up - k, dtype=np.int64).astype(object)
+            r = max(r, max((abs(int(x)) for x in rel * den - steps * num), default=0))
         r = -(-r // den)                                        # ceil
         worst[k] = max(worst.get(k, 0), r)
         if nxt is not None:
