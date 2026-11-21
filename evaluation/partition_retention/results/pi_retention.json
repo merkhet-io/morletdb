@@ -1,0 +1,480 @@
+{
+ "host": "Linux-6.1.21-v8+-aarch64-with-glibc2.31",
+ "runs": [
+  {
+   "round": 1,
+   "load_avg": [
+    2.53,
+    1.56,
+    0.65
+   ],
+   "arm": "delete_vacuum",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3112226816,
+   "fs_free_after": 3107663872,
+   "steps": {
+    "delete_s": 31.183345334022306,
+    "vacuum_s": 1.4524483130080625
+   },
+   "removal_s": 32.63603668799624,
+   "wal_bytes": 85324240,
+   "fs_free_after_checkpoint": 3107602432,
+   "size_after": 149962752,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 9374131,
+   "inserts": {
+    "total": 238,
+    "failures": [],
+    "during_removal": 58,
+    "p50_ms_before": 18.755862023681402,
+    "p50_ms_during": 152.45839301496744,
+    "max_ms_during": 10490.57242507115,
+    "longest_gap_ms": 10490.596693009138
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    4.04,
+    2.96,
+    1.4
+   ],
+   "arm": "delete_vacuum",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3112206336,
+   "fs_free_after": 3108872192,
+   "steps": {
+    "delete_s": 15.858056912082247,
+    "vacuum_s": 1.2717681910144165
+   },
+   "removal_s": 17.131275797029957,
+   "wal_bytes": 79572296,
+   "fs_free_after_checkpoint": 3108864000,
+   "size_after": 148676608,
+   "old_snapshot_sees": {
+    "part1": 1748,
+    "part2": 1748
+   },
+   "inserted_bytes": 4072106,
+   "inserts": {
+    "total": 103,
+    "failures": [],
+    "during_removal": 29,
+    "p50_ms_before": 16.83593151392415,
+    "p50_ms_during": 427.0872629713267,
+    "max_ms_during": 5635.811381042004,
+    "longest_gap_ms": 5635.842262068763
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    3.39,
+    2.99,
+    1.57
+   ],
+   "arm": "delete_vacuum_repack",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3112173568,
+   "fs_free_after": 3177672704,
+   "steps": {
+    "delete_s": 12.168326211976819,
+    "vacuum_s": 0.5436114490730688,
+    "repack_s": 38.573758197017014
+   },
+   "removal_s": 51.28604846901726,
+   "wal_bytes": 171390656,
+   "fs_free_after_checkpoint": 3169095680,
+   "size_after": 88408064,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 14739869,
+   "inserts": {
+    "total": 375,
+    "failures": [],
+    "during_removal": 120,
+    "p50_ms_before": 16.025091521441936,
+    "p50_ms_during": 58.107511431444436,
+    "max_ms_during": 6770.3309919452295,
+    "longest_gap_ms": 6770.353697007522
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    4.13,
+    3.58,
+    2.02
+   ],
+   "arm": "delete_vacuum_repack",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3095543808,
+   "fs_free_after": 3161911296,
+   "steps": {
+    "delete_s": 10.889618451008573,
+    "vacuum_s": 0.42006594489794225,
+    "repack_s": 32.841999081894755
+   },
+   "removal_s": 44.15268175606616,
+   "wal_bytes": 164926680,
+   "fs_free_after_checkpoint": 3157983232,
+   "size_after": 82690048,
+   "old_snapshot_sees": {
+    "part1": 1748,
+    "part2": 1748
+   },
+   "inserted_bytes": 9354134,
+   "inserts": {
+    "total": 237,
+    "failures": [],
+    "during_removal": 93,
+    "p50_ms_before": 18.39113957248628,
+    "p50_ms_during": 229.96726108249277,
+    "max_ms_during": 7244.243869092315,
+    "longest_gap_ms": 7244.280146085657
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    4.54,
+    3.83,
+    2.33
+   ],
+   "arm": "detach_drop",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145457152,
+   "fs_free_before": 3095281664,
+   "fs_free_after": 3165560832,
+   "steps": {
+    "detach_s": 0.05284963094163686,
+    "drop_s": 0.20642465399578214
+   },
+   "removal_s": 0.2595572971040383,
+   "wal_bytes": 3657248,
+   "fs_free_after_checkpoint": 3164348416,
+   "size_after": 76226560,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 3235338,
+   "inserts": {
+    "total": 83,
+    "failures": [],
+    "during_removal": 4,
+    "p50_ms_before": 14.35278297867626,
+    "p50_ms_during": 18.221105507109314,
+    "max_ms_during": 55.33437605481595,
+    "longest_gap_ms": 99.46496703196317
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 1,
+   "load_avg": [
+    3.75,
+    3.8,
+    2.45
+   ],
+   "arm": "detach_drop",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145457152,
+   "fs_free_before": 3095252992,
+   "fs_free_after": 3165528064,
+   "steps": {
+    "detach_s": 0.026489897980354726,
+    "drop_s": 0.14492610900197178
+   },
+   "removal_s": 0.17204209906049073,
+   "wal_bytes": 7831392,
+   "fs_free_after_checkpoint": 3160080384,
+   "size_after": 80429056,
+   "old_snapshot_sees": {
+    "part1": 0,
+    "part2": 1748
+   },
+   "inserted_bytes": 7161805,
+   "inserts": {
+    "total": 182,
+    "failures": [],
+    "during_removal": 2,
+    "p50_ms_before": 14.44797747535631,
+    "p50_ms_during": 15.89436549693346,
+    "max_ms_during": 21.618808968923986,
+    "longest_gap_ms": 147.57610007654876
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 2,
+   "load_avg": [
+    2.72,
+    3.52,
+    2.48
+   ],
+   "arm": "detach_drop",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145457152,
+   "fs_free_before": 3095183360,
+   "fs_free_after": 3165495296,
+   "steps": {
+    "detach_s": 0.037850029999390244,
+    "drop_s": 0.198256921954453
+   },
+   "removal_s": 0.23627554904669523,
+   "wal_bytes": 3629448,
+   "fs_free_after_checkpoint": 3164250112,
+   "size_after": 76226560,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 3235338,
+   "inserts": {
+    "total": 83,
+    "failures": [],
+    "during_removal": 2,
+    "p50_ms_before": 14.38401296036318,
+    "p50_ms_during": 15.693219960667193,
+    "max_ms_during": 18.53501598816365,
+    "longest_gap_ms": 105.71094299666584
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 2,
+   "load_avg": [
+    2.89,
+    3.43,
+    2.52
+   ],
+   "arm": "detach_drop",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145457152,
+   "fs_free_before": 3095142400,
+   "fs_free_after": 3165421568,
+   "steps": {
+    "detach_s": 0.10393365600612015,
+    "drop_s": 0.19383033900521696
+   },
+   "removal_s": 0.29835871898103505,
+   "wal_bytes": 8015600,
+   "fs_free_after_checkpoint": 3160236032,
+   "size_after": 80396288,
+   "old_snapshot_sees": {
+    "part1": 0,
+    "part2": 1748
+   },
+   "inserted_bytes": 7127184,
+   "inserts": {
+    "total": 181,
+    "failures": [],
+    "during_removal": 3,
+    "p50_ms_before": 13.856387056875974,
+    "p50_ms_during": 17.19045010395348,
+    "max_ms_during": 71.85075001325458,
+    "longest_gap_ms": 104.22706604003906
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 2,
+   "load_avg": [
+    2.45,
+    3.22,
+    2.54
+   ],
+   "arm": "delete_vacuum_repack",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3095080960,
+   "fs_free_after": 3157753856,
+   "steps": {
+    "delete_s": 12.394899833016098,
+    "vacuum_s": 0.31348969496320933,
+    "repack_s": 46.02111585100647
+   },
+   "removal_s": 58.729786377982236,
+   "wal_bytes": 169771832,
+   "fs_free_after_checkpoint": 3156742144,
+   "size_after": 83681280,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 10291437,
+   "inserts": {
+    "total": 262,
+    "failures": [],
+    "during_removal": 186,
+    "p50_ms_before": 14.473794435616583,
+    "p50_ms_during": 78.7162235355936,
+    "max_ms_during": 8413.499037036672,
+    "longest_gap_ms": 8413.550324039534
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 2,
+   "load_avg": [
+    4.05,
+    3.57,
+    2.77
+   ],
+   "arm": "delete_vacuum_repack",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3095265280,
+   "fs_free_after": 3156045824,
+   "steps": {
+    "delete_s": 12.42166863300372,
+    "vacuum_s": 0.3490279879188165,
+    "repack_s": 46.22529960295651
+   },
+   "removal_s": 58.996971786022186,
+   "wal_bytes": 180448512,
+   "fs_free_after_checkpoint": 3147980800,
+   "size_after": 92422144,
+   "old_snapshot_sees": {
+    "part1": 1748,
+    "part2": 1748
+   },
+   "inserted_bytes": 18535136,
+   "inserts": {
+    "total": 471,
+    "failures": [],
+    "during_removal": 227,
+    "p50_ms_before": 17.161792959086597,
+    "p50_ms_during": 94.14197597652674,
+    "max_ms_during": 5292.893873061985,
+    "longest_gap_ms": 5292.919022031128
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 2,
+   "load_avg": [
+    3.53,
+    3.65,
+    2.95
+   ],
+   "arm": "delete_vacuum",
+   "pass": "space",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3095236608,
+   "fs_free_after": 3086888960,
+   "steps": {
+    "delete_s": 16.96541821898427,
+    "vacuum_s": 0.4084236230701208
+   },
+   "removal_s": 17.374029844999313,
+   "wal_bytes": 86023760,
+   "fs_free_after_checkpoint": 3086848000,
+   "size_after": 153534464,
+   "old_snapshot_sees": null,
+   "inserted_bytes": 9929018,
+   "inserts": {
+    "total": 253,
+    "failures": [],
+    "during_removal": 147,
+    "p50_ms_before": 14.07793298130855,
+    "p50_ms_during": 83.26410292647779,
+    "max_ms_during": 1695.0045719277114,
+    "longest_gap_ms": 1695.032654912211
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  },
+  {
+   "round": 2,
+   "load_avg": [
+    3.72,
+    3.7,
+    3.04
+   ],
+   "arm": "delete_vacuum",
+   "pass": "snapshot",
+   "rate_per_s": 10.0,
+   "rows_per_part": 1748,
+   "size_before": 145342464,
+   "fs_free_before": 3095035904,
+   "fs_free_after": 3089391616,
+   "steps": {
+    "delete_s": 20.344700227025896,
+    "vacuum_s": 6.692791125969961
+   },
+   "removal_s": 27.038539469009265,
+   "wal_bytes": 88573736,
+   "fs_free_after_checkpoint": 3089309696,
+   "size_after": 151068672,
+   "old_snapshot_sees": {
+    "part1": 1748,
+    "part2": 1748
+   },
+   "inserted_bytes": 12357444,
+   "inserts": {
+    "total": 315,
+    "failures": [],
+    "during_removal": 94,
+    "p50_ms_before": 15.383976977318525,
+    "p50_ms_during": 83.41933152405545,
+    "max_ms_during": 6803.625946980901,
+    "longest_gap_ms": 6803.648135042749
+   },
+   "part2_unchanged": true,
+   "all_inserts_stored": true,
+   "part1_left": 0
+  }
+ ],
+ "version": "19.0 (Debian 19.0-1.pgdg12+1)",
+ "settings": {
+  "shared_buffers": "128MB",
+  "max_wal_size": "1GB",
+  "wal_level": "replica",
+  "data_checksums": "on"
+ },
+ "source_chunks": 1748,
+ "source_bytes": 72826880
+}
