@@ -4,12 +4,6 @@
 
 SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morlet UPDATE`).
 
-SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morlet UPDATE`).
-
-- **MCP: reported times keep their qualifications (#565).** Tool results with times from time anchors carried
-  `time_uncertainty_s` without saying when it is not a bound: an extrapolated time from an estimated anchor came
-  back as a 1 ns uncertainty. They now also report `time_extrapolated` and `time_assumes_linear_clock` when any of
-  their times has them, explained in `time_note` as `locate_time` already did.
 - **Time mapping without an anchor table (SQL 0.3.15, #562).** `morlet_sample_utc`, `morlet_utc_to_sample`,
   `morlet_utc_to_samples` and the SDK's `time_ranges` failed with "record r is not assigned yet" on a collection
   where `morlet_enable_time_anchors` had never run, the usual case, instead of using start time and rate. The
@@ -25,7 +19,10 @@ SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morle
   the builder then wrote half of the new windows and reported nothing wrong, so search coverage shrank after
   retention (samples were unaffected). The stride is now the greatest common divisor of the gaps among the first and
   the last 16 envelopes of each recording, still by index lookups; the last ones decide where new windows go.
-
+- **MCP: reported times keep their qualifications (#565).** Tool results with times from time anchors carried
+  `time_uncertainty_s` without saying when it is not a bound: an extrapolated time from an estimated anchor came
+  back as a 1 ns uncertainty. They now also report `time_extrapolated` and `time_assumes_linear_clock` when any of
+  their times has them, explained in `time_note` as `locate_time` already did.
 
 ## 0.4.0-beta.3
 
