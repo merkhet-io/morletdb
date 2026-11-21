@@ -161,6 +161,35 @@ class StewardDatabase(unittest.TestCase):
                          (1_110_000 - 4096) // 2048 + 1)
         self.assertLess(self.one("SELECT count(*) FROM morlet_steward.actions") - before, 10)
 
+    def test_a_recording_late_in_order_is_not_starved_by_a_live_feed(self):
+        # soak S1 (#528): candidates came in recording_id order and the first one was served, so while a live feed
+        # kept adding samples to the first recordings, the last ones fell behind without limit
+        a = self.admin
+        names = [f"a{i}" for i in range(1, 8)] + ["z"]
+        a.execute("SELECT morlet_create_stream_collection('public','feed'); SELECT morlet_enable_envelopes('feed')")
+        for r in names:
+            a.execute("SELECT morlet_start_recording('feed',%s,100,'HHZ','counts','{}',2048,512,'zscore',"
+                      "'morlet-energy-lowrate-v1')", (r,))
+        ends = {r: 0 for r in names}
+
+        def feed(r, n):
+            a.execute("SELECT morlet_append_chunks_raw('feed',%s,%s,morlet_float8_le_bytes(ARRAY(SELECT "
+                      "round(100*sin(i/9.0))::float8 FROM generate_series(%s::bigint,%s::bigint) i)),4096)", (r, ends[r], ends[r],
+                                                                                          ends[r] + n - 1))
+            ends[r] += n
+        for r in names:
+            feed(r, 4096)
+        S.grant(a)
+        st = self.steward()
+        self.run_until_idle(st)
+        feed("z", 100_000)                      # z falls far behind
+        for _ in range(60):                     # while every other recording keeps receiving samples
+            for r in names[:-1]:
+                feed(r, 600)
+            st.tick()
+        want = (ends["z"] - 2048) // 512 + 1
+        self.assertEqual(self.one("SELECT count(*) FROM feed_envelopes WHERE recording_id='z' AND window_size=2048"), want)
+
     def test_a_new_collection_gets_envelopes_without_any_built_by_hand(self):
         # soak S1: grids came only from existing envelopes, so a fresh collection never got its first one
         a = self.admin
