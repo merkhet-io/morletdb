@@ -24,48 +24,49 @@ def _limit(name, default, maximum):
 
 
 def present(report, detailed_coverage):
+    """The SDK result for an agent. Coverage comes summarized by the SDK (ranges only when detailed_coverage),
+    and evidence_states are the SDK's own: this layer adds no interpretation rules of its own (#577 review)."""
     out = report.to_dict()
     ranges = out.pop("coverage")
-    samples = {}
-    for row in ranges:
-        samples[row["state"]] = samples.get(row["state"], 0) + row["end_sample"] - row["start_sample"]
+    summary = out.pop("coverage_summary")
     out["scope"] = {
         "status": out.pop("coverage_status"), "basis": "compatible_recordings_before_source_exclusion",
-        "samples_by_state": samples, "range_count": len(ranges), "ranges_included": detailed_coverage,
+        "samples_by_state": summary["samples_by_state"], "range_count": summary["range_count"],
+        "ranges_included": detailed_coverage,
         "candidate_completeness": "unknown" if out["search"]["mode"] == "probes" else "all_eligible_stored_windows",
     }
     if detailed_coverage:
         out["scope"]["ranges"] = ranges
-    states = ["no_temporal_cutoff"]
-    if out["scope"]["status"] == "unknown":
-        states.append("coverage_unknown")
-    if any(state != "searchable" for state in samples):
-        states.append("unsearched_ranges")
-    if out["search"]["mode"] == "probes":
-        states.append("approximate_candidates_possible")
-    if not out["search"]["matches"]:
-        states.append("no_matches_returned")
     ctx = out["context"]
-    if ctx is None:
-        states.append("context_not_requested")
-    else:
-        if any(row["hist_n"] < out["settings"]["min_history"] for row in ctx["comparisons"]):
-            states.append("insufficient_history")
-        defined = {row["label"] for row in ctx["label_definitions"]}
-        labels = {label["label"] for neighbor in ctx["neighbors"] for label in neighbor["labels"]}
-        if labels - defined:
-            states.append("undefined_labels")
-        states.append("labelled_history_not_exhaustively_searched")
+    if ctx is not None:
         for neighbor in ctx["neighbors"]:
             neighbor["ref"] = {"collection": ctx["ref"]["collection"],
                                "recording_id": neighbor["recording_id"],
                                "start_sample": neighbor["start_sample"], "end_sample": neighbor["end_sample"]}
-    out["evidence_states"] = states
+    out["evidence_states"] = out.pop("evidence_states")
     return out
 
 
+def wire_size(result):
+    """Bytes the client receives: a dict result travels twice, as text content (indented JSON) and as
+    structuredContent (compact JSON); the bound covers both (#577 review)."""
+    text = json.dumps(result, ensure_ascii=True, allow_nan=False, indent=2)
+    compact = json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(",", ":"))
+    return len(text.encode("utf-8")) + len(compact.encode("utf-8"))
+
+
+def server_timeout_ms():
+    """MORLET_MCP_TIMEOUT_MS as connect() reads it (0 or less: no statement timeout); None for no cap."""
+    try:
+        value = int(os.environ.get("MORLET_MCP_TIMEOUT_MS", "30000"))
+    except ValueError:
+        fail("configuration_error", "MORLET_MCP_TIMEOUT_MS must be an integer (milliseconds; 0 for none)",
+             "Ask the server operator to correct MORLET_MCP_TIMEOUT_MS.")
+    return value if value > 0 else None
+
+
 def run(connect, checked, collection, recording_id, start_sample, end_sample, *, metadata_filter,
-        top_k, segment_id, match_keys, exclude_labels, detailed_coverage, max_candidates):
+        top_k, segment_id, match_keys, exclude_labels, detailed_coverage, max_candidates, max_history=None):
     try:
         import morletdb
         if not hasattr(morletdb.Client, "investigate"):
@@ -80,9 +81,18 @@ def run(connect, checked, collection, recording_id, start_sample, end_sample, *,
         max_candidates = cap
     if isinstance(max_candidates, bool) or not isinstance(max_candidates, int) or not 1 <= max_candidates <= cap:
         fail("invalid_input", f"max_candidates must be in 1..{cap}", "Narrow metadata_filter to fit the server budget.")
-    budget = min(_limit("MORLET_MCP_TIMEOUT_MS", 30000, 300000),
-                 _limit("MORLET_MCP_INVESTIGATION_TIMEOUT_MS", 10000, 300000))
+    history_cap = _limit("MORLET_MCP_INVESTIGATION_MAX_HISTORY", 10000, 1_000_000)
+    if max_history is None:
+        max_history = history_cap
+    if isinstance(max_history, bool) or not isinstance(max_history, int) or not 1 <= max_history <= history_cap:
+        fail("invalid_input", f"max_history must be in 1..{history_cap}",
+             "Lower it, or omit it to use the server's context-history cap.")
+    own = _limit("MORLET_MCP_INVESTIGATION_TIMEOUT_MS", 10000, 300000)
+    server = server_timeout_ms()
+    budget = own if server is None else min(server, own)
     max_bytes = _limit("MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES", 64000, 2_000_000)
+    max_recordings = _limit("MORLET_MCP_INVESTIGATION_MAX_RECORDINGS", 1000, 100_000)
+    max_ranges = _limit("MORLET_MCP_INVESTIGATION_MAX_COVERAGE_RANGES", 10000, 1_000_000)
     try:
         flt = json.loads(metadata_filter)
         if not isinstance(flt, dict):
@@ -108,20 +118,23 @@ def run(connect, checked, collection, recording_id, start_sample, end_sample, *,
                 metadata_filter=flt, top_k=top_k, segment_id=segment_id,
                 match_keys=tuple(k.strip() for k in match_keys.split(",") if k.strip()),
                 exclude_labels=tuple(k.strip() for k in exclude_labels.split(",") if k.strip()),
-                max_candidates=max_candidates, max_history=max_candidates,
+                max_candidates=max_candidates, max_history=max_history, max_recordings=max_recordings,
+                max_coverage_ranges=max_ranges, coverage_ranges=detailed_coverage,
                 timeout_ms=remaining(), max_output_bytes=2_000_000)
             result = present(report, detailed_coverage)
             result["tool_limits"] = {"timeout_ms": budget, "max_output_bytes": max_bytes,
-                                     "max_candidates": max_candidates}
-            # Bound the final MCP payload, including wrapper fields. Match the MCP JSON serializer's
-            # non-compact formatting conservatively; SDK's full intermediate result has its own cap.
-            size = len(json.dumps(result, ensure_ascii=True, allow_nan=False, indent=2).encode("utf-8"))
+                                     "max_candidates": max_candidates, "max_history": max_history,
+                                     "max_recordings": max_recordings, "max_coverage_ranges": max_ranges}
+            # Bound what the client receives, wrapper fields included: text and structured content together.
+            size = wire_size(result)
             if size > max_bytes:
                 fail("response_too_large", f"Investigation response exceeds {max_bytes} bytes.",
                      "Reduce top_k, narrow metadata_filter, or set detailed_coverage=false.")
             remaining()
             return result
     except morletdb.InvestigationLimitError as exc:
+        if "max_output_bytes" in str(exc):     # the same condition as below, detected by the SDK: one code
+            fail("response_too_large", str(exc), "Reduce top_k, narrow metadata_filter, or set detailed_coverage=false.")
         fail("budget_exceeded", str(exc), "Narrow metadata_filter or reduce top_k; do not interpret this as no match.")
     except (morletdb.InvalidInputError, ValueError) as exc:
         fail("invalid_input", str(exc), "Check the collection, interval/window size and optional context segment.")

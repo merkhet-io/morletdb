@@ -89,14 +89,23 @@ candidate was searched. States include `coverage_unknown`, `unsearched_ranges`, 
 event. It adds no UTC decorations: cite sample coordinates, and use the existing time-aware tools for clock
 mapping. Existing `search_similar`, `search_from_time` and `decision_state` behavior is unchanged.
 
-Operator limits (positive integers) are `MORLET_MCP_INVESTIGATION_TIMEOUT_MS` (default 10000, also capped by
-`MORLET_MCP_TIMEOUT_MS`), `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` (64000, at most 2000000) and
-`MORLET_MCP_INVESTIGATION_MAX_CANDIDATES` (10000, at most 1000000). An agent may request a smaller
-`max_candidates`, but cannot raise the server cap; omitting it uses that cap for both search candidates and
-context-history segments. `top_k` is 1–20. The deadline includes collection validation,
-SDK reads and presentation. It is checked between stages and applied to SQL statements, not a hard network
-or CPU interrupt. The final JSON payload is bounded after presentation; the SDK intermediate result has a
-separate 2 MB cap, and these are output limits rather than streaming memory limits.
+Operator limits (positive integers) are `MORLET_MCP_INVESTIGATION_TIMEOUT_MS` (default 10000, at most 300000;
+also capped by `MORLET_MCP_TIMEOUT_MS` when that is positive, read as for every other tool, so 0 means no
+statement timeout), `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` (64000, at most 2000000),
+`MORLET_MCP_INVESTIGATION_MAX_CANDIDATES` (10000, at most 1000000; waveform search),
+`MORLET_MCP_INVESTIGATION_MAX_HISTORY` (10000, at most 1000000; context-history segments),
+`MORLET_MCP_INVESTIGATION_MAX_RECORDINGS` (1000, at most 100000; compatible recordings, which a collector with
+a recording per stream per day reaches within weeks) and `MORLET_MCP_INVESTIGATION_MAX_COVERAGE_RANGES` (10000,
+at most 1000000). An agent may request a smaller `max_candidates` or `max_history`, but cannot raise the server
+caps; each defaults to its own cap. Every result reports the limits in force as `tool_limits`. `top_k` is 1–20.
+The deadline includes collection validation, SDK reads and presentation. It is checked between stages and
+applied to SQL statements, not a hard network or CPU interrupt.
+
+The output bound covers what the client receives: a result travels as indented text and as structured content,
+and `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` bounds the two together. Coverage ranges are fetched only with
+`detailed_coverage=true`; otherwise the SDK returns just the summary, so ranges never count against a summarized
+answer. The SDK's own result has a separate 2 MB cap; exceeding either is `response_too_large`. These are output
+limits rather than streaming memory limits. `evidence_states` come from the SDK unchanged.
 
 Failures are MCP tool errors containing JSON `code`, `message` and `suggestion`, including `budget_exceeded`,
 `response_too_large`, `invalid_input`, `evidence_unavailable`, `unsupported`, `access_denied` and

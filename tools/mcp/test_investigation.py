@@ -35,12 +35,16 @@ def call(**kwargs):
 
 class Errors(unittest.TestCase):
     def test_probe_candidates_do_not_claim_complete_coverage(self):
-        report = SimpleNamespace(to_dict=lambda: {"coverage": [], "coverage_status": "unknown",
-                                                  "search": {"mode": "probes", "matches": []}, "context": None})
+        # the states and the coverage summary are the SDK's; present() passes them through (#577 review)
+        states = ["no_temporal_cutoff", "no_matches_returned", "approximate_candidates_possible", "coverage_unknown"]
+        report = SimpleNamespace(to_dict=lambda: {
+            "coverage": [], "coverage_status": "unknown", "search": {"mode": "probes", "matches": []},
+            "context": None, "evidence_states": list(states),
+            "coverage_summary": {"samples_by_state": {}, "range_count": 0, "ranges_included": False}})
         result = m._sibling("investigation").present(report, False)
         self.assertEqual(result["scope"]["candidate_completeness"], "unknown")
-        self.assertIn("approximate_candidates_possible", result["evidence_states"])
-        self.assertIn("coverage_unknown", result["evidence_states"])
+        self.assertEqual(result["evidence_states"], states)
+        self.assertNotIn("coverage_summary", result)
 
     def test_registration_schema_and_readonly_annotation(self):
         tool = next(t for t in asyncio.run(m.mcp.list_tools()) if t.name == "investigate_interval")
@@ -119,6 +123,46 @@ class InvestigationOnDatabase(unittest.TestCase):
         detailed = self.payload(detailed_coverage=True)
         self.assertTrue(detailed["scope"]["ranges_included"])
         self.assertEqual(len(detailed["scope"]["ranges"]), detailed["scope"]["range_count"])
+
+    def test_operator_limits_reach_the_sdk_and_are_reported(self):                # #577 review
+        seen = {}
+        real = morletdb.Client.investigate
+
+        def spy(client, *args, **kwargs):
+            seen.update(kwargs)
+            return real(client, *args, **kwargs)
+        env = {"MORLET_MCP_INVESTIGATION_MAX_RECORDINGS": "50", "MORLET_MCP_INVESTIGATION_MAX_COVERAGE_RANGES": "70",
+               "MORLET_MCP_INVESTIGATION_MAX_HISTORY": "90"}
+        with patch.dict(os.environ, env), patch.object(morletdb.Client, "investigate", spy):
+            result = self.payload(max_candidates=100)
+        self.assertEqual((seen["max_recordings"], seen["max_coverage_ranges"], seen["max_history"],
+                          seen["max_candidates"], seen["coverage_ranges"]), (50, 70, 90, 100, False))
+        self.assertEqual({k: result["tool_limits"][k] for k in ("max_recordings", "max_coverage_ranges", "max_history")},
+                         {"max_recordings": 50, "max_coverage_ranges": 70, "max_history": 90})
+        with patch.dict(os.environ, {"MORLET_MCP_INVESTIGATION_MAX_RECORDINGS": "1"}):
+            result = self.request()
+        self.assertIn('"code": "budget_exceeded"', result.content[0].text)
+        self.assertTrue(self.request(max_history=0).is_error)
+
+    def test_the_server_timeout_is_read_as_connect_reads_it(self):              # #577 review
+        for value in ("0", "600000"):
+            with self.subTest(value=value), patch.dict(os.environ, {"MORLET_MCP_TIMEOUT_MS": value}):
+                self.assertEqual(self.payload()["tool_limits"]["timeout_ms"], 10000)
+
+    def test_the_size_bound_counts_what_is_sent(self):                          # #577 review
+        result = self.payload()
+        text = len(json.dumps(result, ensure_ascii=True, indent=2).encode())
+        with patch.dict(os.environ, {"MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES": str(text + 50)}):
+            refused = self.request()
+        self.assertTrue(refused.is_error)                  # the indented copy alone fits; with the structured copy not
+        self.assertIn('"code": "response_too_large"', refused.content[0].text)
+
+    def test_an_sdk_size_limit_is_response_too_large(self):                     # #577 review
+        def big(*_a, **_k):
+            raise morletdb.InvestigationLimitError("investigation exceeds max_output_bytes; narrow scope or reduce top_k")
+        with patch.object(morletdb.Client, "investigate", big):
+            result = self.request()
+        self.assertIn('"code": "response_too_large"', result.content[0].text)
 
     def test_readonly_is_set_before_discovery(self):
         original = m.checked

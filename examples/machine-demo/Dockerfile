@@ -8,6 +8,6 @@ RUN pip install --no-cache-dir -r tools/ingest/requirements.txt -r tools/mcp/req
 COPY tools/ingest tools/ingest
 COPY tools/mcp tools/mcp
 COPY sdk/python sdk/python
-RUN pip install --no-cache-dir ./sdk/python
+RUN pip install --no-cache-dir --no-deps ./sdk/python   # its dependencies come pinned from the requirements above
 COPY examples/machine-demo examples/machine-demo
 ENV PYTHONUNBUFFERED=1

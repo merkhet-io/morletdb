@@ -1048,7 +1048,7 @@ def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), befo
 def investigate_interval(collection: str, recording_id: str, start_sample: int, end_sample: int,
                          metadata_filter: str = "{}", top_k: int = 5, segment_id: int | None = None,
                          match_keys: str = "", exclude_labels: str = "", detailed_coverage: bool = False,
-                         max_candidates: int | None = None) -> dict:
+                         max_candidates: int | None = None, max_history: int | None = None) -> dict:
     """Initial investigation in one read-only snapshot: query statistics, waveform matches, optional context
     deviations/neighbors and coverage. Inspect evidence_states before drawing conclusions. Cite returned
     collection/recording/sample interval references; distances and neighbor labels are not diagnoses.
@@ -1060,13 +1060,15 @@ def investigate_interval(collection: str, recording_id: str, start_sample: int, 
     segment_id optionally selects a current context segment containing the entire query. match_keys and
     exclude_labels are comma-separated and apply only to context history, not waveform search. top_k is
     1..20 (default 5). Coverage is summarized by state; detailed_coverage adds exact ranges without silent
-    truncation. max_candidates defaults to the server cap; an explicit value may only lower it.
+    truncation. max_candidates (waveform search) and max_history (context history) default to the server
+    caps; an explicit value may only lower it.
     Server-controlled time/output/candidate limits apply; failures are tool errors, never empty
     matches. Requires the Python SDK from this checkout (`pip install ./sdk/python` at repository root).
     """
     return _sibling("investigation").run(connect, checked, collection, recording_id, start_sample, end_sample,
         metadata_filter=metadata_filter, top_k=top_k, segment_id=segment_id, match_keys=match_keys,
-        exclude_labels=exclude_labels, detailed_coverage=detailed_coverage, max_candidates=max_candidates)
+        exclude_labels=exclude_labels, detailed_coverage=detailed_coverage, max_candidates=max_candidates,
+        max_history=max_history)
 
 
 @mcp.tool(annotations=READ_ONLY)

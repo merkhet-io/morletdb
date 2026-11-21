@@ -11,6 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev \
 COPY tools/ingest tools/ingest
 COPY tools/mcp tools/mcp
 COPY sdk/python sdk/python
-RUN pip install --no-cache-dir ./sdk/python
+RUN pip install --no-cache-dir --no-deps ./sdk/python   # its dependencies come pinned from the requirements above
 COPY examples/agent-demo examples/agent-demo
 ENV PYTHONUNBUFFERED=1
