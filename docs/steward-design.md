@@ -86,6 +86,7 @@ destructive functions successfully, so a bug in the steward cannot remove raw da
 | verify | `morlet_verify` with a stored cursor, `max_recordings` per batch; a full pass per collection every 7 days by default. A *missing* chunk summary is builder backlog, not a problem; every other finding is damage | a pass completes; problems become status items |
 | analyze | `ANALYZE` of tables that changed by more than 10% since the last one | — |
 | housekeeping | mark memory runs left `running` by a dead process as `failed` (prerequisite in #221); mark `actions` left `started` as `interrupted` | — |
+| retention (#540) | hourly, in bounded batches: finished `actions` after 30 days, failed and interrupted ones and ingest hold changes after 180 days; undecided plans 7 days after expiry (decided and applied plans stay); `progress` and verify cursors of removed recordings and collections. Skipped at the ingest hold; a failure waits for the next hour | — |
 
 **Gating:**
 
