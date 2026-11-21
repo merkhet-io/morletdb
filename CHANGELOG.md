@@ -19,6 +19,10 @@ SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morle
   the builder then wrote half of the new windows and reported nothing wrong, so search coverage shrank after
   retention (samples were unaffected). The stride is now the greatest common divisor of the gaps among the first and
   the last 16 envelopes of each recording, still by index lookups; the last ones decide where new windows go.
+- **MCP: reported times keep their qualifications (#565).** Tool results with times from time anchors carried
+  `time_uncertainty_s` without saying when it is not a bound: an extrapolated time from an estimated anchor came
+  back as a 1 ns uncertainty. They now also report `time_extrapolated` and `time_assumes_linear_clock` when any of
+  their times has them, explained in `time_note` as `locate_time` already did.
 - **The edge shipper ships time anchors (#564).** `tools/ingest/morlet_ship.py` copied a recording's chunks and
   parameters but not its time anchors, and still reported `identical: true`: on the target, sample 5000 of the test
   mapped to 5 s by start + rate instead of the anchors' 2.5 s. The source's active anchors now go to the target
