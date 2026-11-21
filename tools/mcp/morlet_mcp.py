@@ -567,7 +567,8 @@ def coverage(collection: str, group_by: str = "", metadata_filter: str = "{}", m
 @mcp.tool(annotations=READ_ONLY)
 @safe
 @anchor_times
-def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit: int = 100) -> dict:
+def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit: int = 100,
+           stream_keys: str = "") -> dict:
     """The newest data of every recording whose metadata contains metadata_filter: "what is the current value
     of each sensor?". samples=1 (default) gives each recording's last value; up to 1000 gives its last values
     with their statistics (rms, min, max, mean), for example the last second (samples = the sample rate);
@@ -575,25 +576,38 @@ def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit
     (UTC where the recording has a start time) and how many seconds before now that was; a recording that
     stopped long ago is not live. When the newest samples are not readable (compacted, or a gap), the row says
     why instead of giving values. More than limit (max 1000) matching recordings is an error: narrow the
-    filter. Servers with pg_morlet SQL 0.3.6."""
+    filter. stream_keys (comma-separated metadata keys that identify a stream, for example
+    "network,station,location,channel"; SQL 0.3.14) gives only the newest recording of each stream, which is
+    what you want when a collector starts a new recording per day; limit then counts streams. Servers with
+    pg_morlet SQL 0.3.6."""
     n = max(0, min(int(samples), 1000))
     limit = max(1, min(int(limit), 1000))
     flt = json.dumps(json.loads(metadata_filter or "{}"))
+    keys = [k.strip() for k in (stream_keys or "").split(",") if k.strip()] or None
     with connect() as conn:
         c = checked(conn, collection)
         if not conn.execute("SELECT to_regproc('public.morlet_latest') IS NOT NULL").fetchone()[0]:
             raise ValueError("latest needs a server with pg_morlet SQL 0.3.6")
+        if keys and not conn.execute("SELECT to_regprocedure('public.morlet_latest(regclass,integer,jsonb,integer,"
+                                     "text[])') IS NOT NULL").fetchone()[0]:
+            raise ValueError("stream_keys needs a server with pg_morlet SQL 0.3.14")
+        cols = ("SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, samples, "
+                "sample_count, min, max, mean, rms, note FROM ")
         try:
-            rows, now = conn.execute(
-                "SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, samples, "
-                "sample_count, min, max, mean, rms, note FROM morlet_latest(%s::regclass, %s, %s::jsonb, %s)",
-                (c, n, flt, limit)).fetchall(), datetime.now(timezone.utc)
+            if keys:
+                rows = conn.execute(cols + "morlet_latest(%s::regclass, %s, %s::jsonb, %s, %s::text[])",
+                                    (c, n, flt, limit, keys)).fetchall()
+            else:
+                rows = conn.execute(cols + "morlet_latest(%s::regclass, %s, %s::jsonb, %s)",
+                                    (c, n, flt, limit)).fetchall()
+            now = datetime.now(timezone.utc)
         except psycopg.Error as e:
             # the SQL function names its own argument (max_recordings); the caller of this tool passed limit
             msg = getattr(getattr(e, "diag", None), "message_primary", None) or str(e)
             if "max_recordings" in msg:
-                matched = msg.split(" recordings match")[0].strip()
-                raise ValueError(f"{matched} recordings match, more than limit ({limit}). Narrow metadata_filter "
+                what = "streams" if " streams match" in msg else "recordings"
+                matched = msg.split(f" {what} match")[0].strip()
+                raise ValueError(f"{matched} {what} match, more than limit ({limit}). Narrow metadata_filter "
                                  f"or pass a larger limit (at most 1000).") from None
             raise
     out = []
@@ -610,7 +624,10 @@ def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit
         if count is not None and (n != 1 or values is None):
             row["stats"] = {"samples": count, "rms": rms, "min": lo, "max": hi, "mean": mean}
         out.append(row)
-    return {"collection": collection, "samples": n, "recordings": out}
+    res = {"collection": collection, "samples": n, "recordings": out}
+    if keys:
+        res["stream_keys"] = keys
+    return res
 
 
 def change_point(values, baseline_n, k=3, z=5.0):

@@ -625,31 +625,47 @@ END $$;
 -- chunks it has. When the newest samples are not readable (compacted by a memory level, or a gap), samples and
 -- statistics are NULL and note gives the reason; other recordings are unaffected. More than max_recordings
 -- matching recordings is an error. Privileges and row security apply as for every reader.
+-- stream_keys (SQL 0.3.14, #527): metadata keys that identify a stream (for example network, station, location and
+-- channel). Given, only the newest matching recording with samples of each stream is returned: the one with the
+-- latest start time (morlet_recording_start_ns), recordings without one after those with one, then the greatest
+-- recording_id. A key a recording lacks counts as its own value (NULL). A collector that starts a new recording per
+-- stream every day then reads one recording per stream, however many days it has stored, and max_recordings bounds
+-- the streams returned. NULL (the default) keeps one row per recording.
 CREATE FUNCTION public.morlet_latest(collection regclass,n integer DEFAULT 1,metadata_filter jsonb DEFAULT '{}'::jsonb,
-  max_recordings integer DEFAULT 1000)
+  max_recordings integer DEFAULT 1000,stream_keys text[] DEFAULT NULL)
 RETURNS TABLE(recording_id text,sample_rate_hz float8,channel text,unit text,start_sample bigint,end_sample bigint,
   end_time timestamptz,samples float8[],sample_count bigint,min float8,max float8,mean float8,rms float8,note text)
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE rel record; r record; matching bigint; lo bigint; chunk_end bigint; st record; t numeric;
+DECLARE rel record; r record; matching bigint; lo bigint; chunk_end bigint; st record; t numeric; pick text;
 BEGIN
   IF collection IS NULL OR n IS NULL OR metadata_filter IS NULL OR max_recordings IS NULL THEN
     RAISE EXCEPTION 'collection, n, metadata_filter and max_recordings must not be NULL';
+  END IF;
+  IF stream_keys IS NOT NULL AND (cardinality(stream_keys)=0 OR array_position(stream_keys,NULL) IS NOT NULL
+      OR array_position(stream_keys,'') IS NOT NULL) THEN
+    RAISE EXCEPTION 'stream_keys must be NULL or a non-empty array of non-empty metadata keys';
   END IF;
   IF n NOT BETWEEN 0 AND 32768 THEN RAISE EXCEPTION 'n must be 0..32768'; END IF;
   IF jsonb_typeof(metadata_filter)<>'object' THEN RAISE EXCEPTION 'metadata_filter must be a JSON object'; END IF;
   IF max_recordings NOT BETWEEN 1 AND 100000 THEN RAISE EXCEPTION 'max_recordings must be 1..100000'; END IF;
   SELECT * INTO rel FROM public.morlet_stream_relations(collection);
   IF n=0 AND NOT rel.encoded THEN RAISE EXCEPTION 'n = 0 (chunk statistics) needs a collection with encoded chunks'; END IF;
-  EXECUTE format('SELECT count(*) FROM %s t WHERE t.metadata @> $1 AND coalesce((t.checkpoint->>''end'')::bigint,0)>0',
-    collection) INTO matching USING metadata_filter;
+  -- the recordings to read: every matching recording with samples, or (stream_keys) the newest of each stream
+  pick:=CASE WHEN stream_keys IS NULL THEN format('SELECT t.* FROM %s t WHERE t.metadata @> $1
+      AND coalesce((t.checkpoint->>''end'')::bigint,0)>0',collection)
+    ELSE format('SELECT DISTINCT ON (ARRAY(SELECT t.metadata->>k FROM unnest($2) k)) t.* FROM %s t
+      WHERE t.metadata @> $1 AND coalesce((t.checkpoint->>''end'')::bigint,0)>0
+      ORDER BY ARRAY(SELECT t.metadata->>k FROM unnest($2) k),public.morlet_recording_start_ns(t.metadata) DESC NULLS LAST,
+        t.recording_id DESC',collection) END;
+  EXECUTE format('SELECT count(*) FROM (%s) x',pick) INTO matching USING metadata_filter,stream_keys;
   IF matching>max_recordings THEN
-    RAISE EXCEPTION '% recordings match, more than max_recordings (%)',matching,max_recordings
+    RAISE EXCEPTION '% %, more than max_recordings (%)',matching,
+      CASE WHEN stream_keys IS NULL THEN 'recordings match' ELSE 'streams match' END,max_recordings
       USING HINT='Narrow metadata_filter or pass a larger max_recordings.';
   END IF;
   FOR r IN EXECUTE format('SELECT t.recording_id,t.sample_rate_hz,t.channel,t.unit,t.metadata,
-      (t.checkpoint->>''end'')::bigint AS e FROM %s t
-      WHERE t.metadata @> $1 AND coalesce((t.checkpoint->>''end'')::bigint,0)>0 ORDER BY t.recording_id',collection)
-      USING metadata_filter LOOP
+      (t.checkpoint->>''end'')::bigint AS e FROM (%s) t ORDER BY t.recording_id',pick)
+      USING metadata_filter,stream_keys LOOP
     recording_id:=r.recording_id; sample_rate_hz:=r.sample_rate_hz; channel:=r.channel; unit:=r.unit;
     end_sample:=r.e; samples:=NULL; sample_count:=NULL; min:=NULL; max:=NULL; mean:=NULL; rms:=NULL; note:=NULL;
     t:=public.morlet_recording_start_ns(r.metadata);

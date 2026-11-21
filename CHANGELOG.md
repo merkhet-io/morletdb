@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **`morlet_latest` per stream (SQL 0.3.14, #527).** A new last argument, `stream_keys`, names the metadata keys
+  that identify a stream (for example `ARRAY['network','station','location','channel']`). Given, only the newest
+  recording with samples of each stream is read and returned: the latest start time, then the greatest
+  `recording_id`. A collector that starts a new recording per stream every day then reads one recording per stream
+  however many days it has stored, and `max_recordings` counts streams. The default (NULL) is unchanged: one row per
+  recording. A regression test checks that the chunk rows read do not grow with 20 older recordings of the same
+  stream, while the default's do. MCP `latest` takes `stream_keys` too. Update script 0.3.13 → 0.3.14: a new
+  signature, so the 0.3.13 function is dropped and created again (`morlet_latest` is experimental; calls with up to
+  four arguments return what they did). The upgrade tests now start from v0.4.0-beta.2 as well.
+
 ## 0.4.0-beta.2
 
 **The second beta.** SQL version 0.3.13, with an update script from 0.3.12: run `ALTER EXTENSION pg_morlet UPDATE`

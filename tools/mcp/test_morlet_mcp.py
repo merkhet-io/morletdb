@@ -585,6 +585,20 @@ class FieldFindingsOnADatabase(unittest.TestCase):
         self.assertIn("limit (2)", str(cm.exception))
         self.assertNotIn("max_recordings", str(cm.exception))
 
+    def test_latest_per_stream_gives_the_newest_recording_of_each(self):          # #527, SQL 0.3.14
+        import psycopg
+        with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
+            if not conn.execute("SELECT to_regprocedure('public.morlet_latest(regclass,integer,jsonb,integer,"
+                                "text[])') IS NOT NULL").fetchone()[0]:
+                self.skipTest("needs pg_morlet SQL 0.3.14")
+        r = m.latest("public.mcp_parts", stream_keys="channel")
+        self.assertEqual(sorted(x["recording_id"] for x in r["recordings"]), ["p2.x", "p2.y"])   # the newest part
+        self.assertEqual(r["stream_keys"], ["channel"])
+        self.assertEqual(len(m.latest("public.mcp_parts")["recordings"]), 6)                     # the default
+        with self.assertRaises(Exception) as cm:
+            m.latest("public.mcp_parts", stream_keys="channel", limit=1)
+        self.assertIn("2 streams match, more than limit (1)", str(cm.exception))
+
     def test_search_can_exclude_the_query_recording_or_part(self):
         plain = m.search_similar("public.mcp_parts", "p1.x", 512, 1024, top_k=20)
         self.assertNotIn("exclude", plain["query"])
