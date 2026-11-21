@@ -21,7 +21,7 @@ docker compose build load
 docker compose run --rm load
 ```
 
-This starts PostgreSQL 17 with pg_morlet (the `0.4.0-beta.3` release image, native on amd64 and arm64) and fetches
+This starts PostgreSQL 17 with pg_morlet (the `0.4.0-beta.4` release image, native on amd64 and arm64) and fetches
 four days, 11–14 March 2025, of four broadband stations in northern Chile (CX.PB01, PB02, PB06 and PSGCX,
 vertical, 100 Hz, about 115 MB) from the GEOFON data service. It checks them against
 [`manifest.json`](manifest.json), imports them and builds the search envelopes: 77 recordings (a recording
@@ -88,7 +88,7 @@ windows with catalogued earthquakes about twice as often as zero-lag similarity
 ([E5](../../evaluation/task_relevance/RESULTS.md), [E5-H](../../evaluation/task_relevance/RESULTS_HELDOUT.md)).
 It finds leads for review. It is not an earthquake detector.
 
-**Investigation in one call** (experimental, from the release after 0.4.0-beta.3). `investigate_interval` returns
+**Investigation in one call** (experimental, from 0.4.0-beta.4). `investigate_interval` returns
 the query's statistics, the closest matches, coverage and `evidence_states` in one snapshot, each match with an
 interval reference to check. It is an alternative first step to the calls above; it reports what was searched
 and found, and adds no interpretation. The sessions below predate it.
