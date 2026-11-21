@@ -6,6 +6,7 @@ import contextlib
 from fractions import Fraction
 from pathlib import Path
 import tempfile
+import math
 import unittest
 import wave
 
@@ -259,7 +260,12 @@ class Readers(unittest.TestCase):
                 self.assertLessEqual(abs(tn - mapped), bound - 1, f"{name}: row {n}")   # 1 ns: the resolution
         # the report's case: one anchor kept, and its bound now holds the 400 us approximation of row 1
         anchors = mi.time_anchors([0, 1_400_000, 2_000_000], 1000)
-        self.assertEqual(mi.anchor_uncertainties([0, 1_400_000, 2_000_000], 1000, anchors, 1), [1 + 400_000 + 1])
+        self.assertEqual(mi.anchor_uncertainties([0, 1_400_000, 2_000_000], 1000, anchors, 1), [1 + 400_000])
+        # exact near the largest span accepted (2^53 ns): float64 would lose the odd nanoseconds here (review)
+        far = [0, 2 ** 52 + 1, 2 ** 53 - 3]
+        a = [(0, 0, False), (2, 2 ** 53 - 3, False)]
+        mid = Fraction(2 ** 53 - 3, 2)
+        self.assertEqual(mi.anchor_uncertainties(far, 1e-6, a, 0), [math.ceil(abs(2 ** 52 + 1 - mid))] * 2)
         # exact timestamps keep the resolution alone
         even = [k * 1_000_000 for k in range(50)]
         self.assertEqual(mi.anchor_uncertainties(even, 1000, mi.time_anchors(even, 1000), 1000), [1000])

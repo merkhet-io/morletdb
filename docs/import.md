@@ -122,9 +122,10 @@ by them instead of by start + rate:
 - Inside a block, one anchor suffices while start + declared rate stays within the tolerance of every row. A
   drifting clock gets more anchors, until the line through them is within the tolerance of every timestamp.
 - Each anchor's uncertainty is the time column's resolution (1 µs for ISO times with microseconds) plus the largest
-  amount by which a row next to it departs from the mapping through the anchors (rounded up, plus 1 ns). Rows within
-  the tolerance are approximated, not stored, so the reported uncertainty covers every row's own timestamp, not
-  only the anchors (#561). A clock with jitter up to the tolerance therefore reports up to the tolerance. Its
+  amount by which a row next to it departs from the mapping through the anchors (computed exactly, rounded up to
+  whole ns). Rows within the tolerance are approximated, not stored, so the reported uncertainty covers every row's
+  own timestamp, not only the anchors (#561). A clock with jitter up to the tolerance therefore reports up to the
+  tolerance plus the resolution, and the clock-bound term grows it further with the distance from an anchor. Its
   source is `import:<file>`. A rerun writes nothing new (identical batches). Anchors written by an importer from
   before #561 are revised to the wider uncertainty by a rerun; their earlier rows are kept.
 - Anchors need an absolute time: ISO 8601 times (fractions up to nanoseconds are kept exactly), or a column of

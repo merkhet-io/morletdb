@@ -396,13 +396,14 @@ def time_axis(path, opts, header, body):
 
 def anchor_uncertainties(t_ns, rate, anchors, resolution_ns):
     """Each anchor's uncertainty_ns (#561): the column's resolution plus the largest departure of a row's timestamp
-    from the server's mapping on either side of the anchor. The server interpolates linearly between two anchors of a
-    block (and extrapolates with the declared rate from a block's only anchor), and it interpolates their
-    uncertainties: with both ends at least resolution + the residual of the rows between them, the reported bound
-    covers every timestamp the importer approximated, not only the anchors themselves. anchors: (sample, utc_ns,
-    break_before) from time_anchors; the residuals are rounded up, plus 1 ns for float64 rounding."""
+    from the server's mapping on either side of the anchor, rounded up to whole ns. The server interpolates linearly
+    between two anchors of a block (and extrapolates with the declared rate from a block's only anchor), and it
+    interpolates their uncertainties: with both ends at least resolution + the residual of the rows between them,
+    the reported bound covers every timestamp the importer approximated, not only the anchors themselves. The
+    residuals are computed exactly, in integers (float64 loses nanoseconds near the 2^53 ns span the importer
+    accepts). anchors: (sample, utc_ns, break_before) from time_anchors."""
     t = np.asarray(t_ns, dtype=np.int64)
-    period = float(Fraction(1_000_000_000) / Fraction(repr(float(rate))))
+    period = Fraction(1_000_000_000) / Fraction(repr(float(rate)))
     ends = [a[0] for a in anchors[1:] if a[2]] + [t.size]       # where each block ends (the next break, or the end)
     worst = {}                                                  # anchor sample -> largest residual next to it
     block = 0
@@ -411,11 +412,13 @@ def anchor_uncertainties(t_ns, rate, anchors, resolution_ns):
             block += 1
         nxt = anchors[i + 1][0] if i + 1 < len(anchors) and not anchors[i + 1][2] else None
         hi = nxt if nxt is not None else ends[block] - 1        # the rows this anchor's piece maps
-        n = np.arange(k, hi + 1)
-        rel = (t[k:hi + 1] - t[k]).astype(np.float64)
-        slope = (float(t[nxt] - t[k]) / (nxt - k)) if nxt is not None else period
-        r = float(np.max(np.abs(rel - (n - k) * slope))) if n.size else 0.0
-        r = 0 if r == 0 else math.ceil(r) + 1
+        # residual(n) = (t[n] - t[k]) - (n - k) * num / den, so den * residual is an integer: exact in Python ints
+        num, den = (int(t[nxt] - t[k]), nxt - k) if nxt is not None else (period.numerator, period.denominator)
+        rel = (t[k:hi + 1] - t[k]).astype(object)
+        steps = np.arange(hi - k + 1, dtype=np.int64).astype(object)
+        scaled = rel * den - steps * num
+        r = max((abs(int(x)) for x in scaled), default=0)
+        r = -(-r // den)                                        # ceil
         worst[k] = max(worst.get(k, 0), r)
         if nxt is not None:
             worst[nxt] = max(worst.get(nxt, 0), r)
@@ -572,7 +575,7 @@ def add_time_anchors(conn, collection, recs, source, batch_rows=10000):
     import psycopg
     if conn.execute("SELECT to_regproc('public.morlet_add_time_anchors') IS NULL").fetchone()[0]:
         return None
-    if conn.execute("SELECT to_regclass(%s)", (collection + "_time_anchors",)).fetchone()[0] is None:
+    if anchor_table(conn, collection) is None:
         conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (collection,))
     n = 0
     for r in recs:
@@ -593,10 +596,18 @@ def add_time_anchors(conn, collection, recs, source, batch_rows=10000):
     return n
 
 
+def anchor_table(conn, collection):
+    """The collection's time-anchor table as a quoted name, or None (from the catalog, so quoted or mixed-case
+    collection names work)."""
+    return conn.execute("SELECT to_regclass(format('%%I.%%I', n.nspname, c.relname || '_time_anchors'))::text "
+                        "FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.oid = %s::regclass",
+                        (collection,)).fetchone()[0]
+
+
 def widen_time_anchors(conn, collection, recording_id, batch, rows):
     """Revise the active anchors at rows' samples to rows' uncertainty where only that is smaller (#561); the number
     revised. Raises ValueError when the active anchors differ otherwise, or are missing."""
-    table = collection + "_time_anchors"
+    table = anchor_table(conn, collection)
     active = {int(s): (a, int(t), int(u), src, bool(b)) for a, s, t, u, src, b in conn.execute(
         f"SELECT x.anchor_id, x.sample_offset, x.utc_ns, x.uncertainty_ns, x.source, x.break_before FROM {table} x "
         f"WHERE x.recording_id=%s AND x.sample_offset = ANY(%s) AND NOT x.retracted "
