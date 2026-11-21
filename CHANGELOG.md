@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **The steward serves the recording furthest behind first (#528).** Its candidates came in `recording_id` order and
+  it served the first one. A live feed always has new samples in the first recordings, so the last ones fell behind
+  without limit: at the end of soak S1, the unsearchable hours per station rose in alphabetical order from 0.4 h
+  (CX.PB01) to 141 h (GE.WLF). Of about 350,000 envelope actions, CX stations got about 270,000 and GE.WLF about 3,400.
+  Builders now take the recording with the most stored samples since the job last finished it, then the lowest
+  `recording_id`; context values, the one with the most new segments. A regression test feeds seven recordings
+  continuously while an eighth falls 100,000 samples behind. In 60 ticks the old order built 5 of its 200 windows;
+  the new order builds all of them. Among those candidates, the one served least recently goes first, so a recording
+  that grows faster than one batch builds cannot take every tick either: in a second test, three quiet recordings
+  are built completely while a fourth receives 200,000 samples every tick, and the order by backlog alone built 5
+  of 44 windows of the first.
+
 ## 0.4.0-beta.2
 
 **The second beta.** SQL version 0.3.13, with an update script from 0.3.12: run `ALTER EXTENSION pg_morlet UPDATE`
