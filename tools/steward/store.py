@@ -361,12 +361,16 @@ def envelope_grids(conn: psycopg.Connection, collection: str) -> list[tuple[int,
 
 
 def candidates(conn: psycopg.Connection, job: str, collection: str, limit: int = 20) -> list[tuple[str, int]]:
-    """Recordings whose stored end changed since the job last finished them: (recording_id, end)."""
+    """Recordings whose stored end changed since the job last finished them: (recording_id, end), the furthest
+    behind first (stored samples since the job last finished the recording), then by recording_id. In recording_id
+    order alone, a live feed always had new samples in the first recordings, so the steward served them again and
+    again and the last ones fell behind without limit (soak S1: GE.WLF 141 h unsearchable, CX.PB01 0.4 h; #528)."""
     rows = conn.execute(f"""
       SELECT r.recording_id,(r.checkpoint->>'end')::bigint FROM {collection} r
       LEFT JOIN morlet_steward.progress p ON p.job=%s AND p.collection=%s AND p.recording_id=r.recording_id
       WHERE p.done_end IS DISTINCT FROM (r.checkpoint->>'end')::bigint
-      ORDER BY r.recording_id LIMIT %s""", (job, collection, limit)).fetchall()
+      ORDER BY coalesce((r.checkpoint->>'end')::bigint,0)-coalesce(p.done_end,0) DESC, r.recording_id
+      LIMIT %s""", (job, collection, limit)).fetchall()
     return [(r[0], int(r[1] or 0)) for r in rows]
 
 
@@ -377,8 +381,9 @@ def mark_done(conn: psycopg.Connection, job: str, collection: str, recording_id:
 
 
 def context_candidates(conn: psycopg.Connection, collection: str, limit: int = 20) -> list[tuple[str, int]]:
-    """Recordings with segments that have no values: (recording_id, segment count). A recording the builder could
-    not complete (for example compacted samples) is skipped until its segment count changes."""
+    """Recordings with segments that have no values: (recording_id, segment count), the most segments since the job
+    last finished the recording first (#528). A recording the builder could not complete (for example compacted
+    samples) is skipped until its segment count changes."""
     seg, val = sibling(conn, collection, "_ctx_segments"), sibling(conn, collection, "_ctx_values")
     if not seg or not val:
         return []
@@ -387,7 +392,8 @@ def context_candidates(conn: psycopg.Connection, collection: str, limit: int = 2
         FROM {seg} s WHERE NOT s.stale AND NOT EXISTS(SELECT 1 FROM {val} v WHERE v.segment_id=s.segment_id)
         GROUP BY s.recording_id) x
       LEFT JOIN morlet_steward.progress p ON p.job='context_values' AND p.collection=%s AND p.recording_id=x.recording_id
-      WHERE p.done_end IS DISTINCT FROM x.n ORDER BY 1 LIMIT %s""", (collection, limit)).fetchall()
+      WHERE p.done_end IS DISTINCT FROM x.n ORDER BY x.n-coalesce(p.done_end,0) DESC, 1 LIMIT %s""",
+                        (collection, limit)).fetchall()
     return [(r[0], int(r[1])) for r in rows]
 
 
