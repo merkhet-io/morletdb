@@ -238,6 +238,81 @@ class Investigation(unittest.TestCase):
         with self.assertRaisesRegex(InvalidInputError, "contain the entire"):
             self.run_query(segment_id=sid)
 
+    def test_segment_is_checked_before_the_search(self):                         # review of #576
+        sid = self.add_context()
+        self.conn.commit()
+        with patch.object(_Reader, "search", side_effect=AssertionError("search ran before the segment check")):
+            with self.assertRaises(morletdb.NotFoundError):
+                self.run_query(segment_id=sid + 10_000)
+
+    def test_provenance_reads_the_value_rules_from_the_server(self):              # review of #576
+        sid = self.add_context()
+        if self.conn.execute("SELECT to_regprocedure('public.morlet_set_value_rules(regclass,text)') IS NULL").fetchone()[0]:
+            self.skipTest("server without simple-v2 value rules")
+        self.conn.execute("SELECT morlet_set_value_rules(%s::regclass,'simple-v2')", (self.coll,))
+        self.conn.commit()
+        result = self.run_query(segment_id=sid, min_history=1)
+        self.assertEqual(result.provenance["context_representation"], "simple-v2")
+        self.assertEqual(result.provenance["envelope_representation"], "xc-envelope-f16-v1")
+        self.assertNotIn("context_representation", result.settings)
+        self.assertEqual(json.loads(result.to_json()), result.to_dict())
+
+    def test_an_interval_past_the_end_is_not_found_like_read(self):              # review of #576
+        with self.assertRaises(morletdb.NotFoundError):
+            self.db.read(self.coll, "query", 512, 1536)
+        self.conn.rollback()
+        with self.assertRaises(morletdb.NotFoundError):
+            self.db.investigate(self.coll, "query", 512, 1536)
+
+    def test_server_budget_errors_are_limits(self):                               # review of #576
+        def over(*_a, **_k):
+            raise psycopg.errors.RaiseException("spread population exceeds 100000 segments; narrow the metadata filter")
+        with patch.object(morletdb.Client, "_execute", over), self.assertRaises(InvestigationLimitError):
+            _Reader(self.conn, __import__("time").monotonic() + 5)._execute("SELECT 1")
+        self.conn.rollback()
+
+    def test_a_cancel_request_is_not_reported_as_a_limit(self):                   # review of #576
+        other = psycopg.connect(DSN, autocommit=True)
+        pid = self.conn.info.backend_pid
+
+        def slow(reader, *args):
+            import threading
+            threading.Timer(0.3, lambda: other.execute("SELECT pg_cancel_backend(%s)", (pid,))).start()
+            reader._execute("SELECT pg_sleep(5)")
+        try:
+            with patch("morletdb._investigation._collect", slow):
+                with self.assertRaises(morletdb.MorletError) as caught:
+                    self.run_query(timeout_ms=20_000)
+        finally:
+            other.close()
+        self.assertNotIsInstance(caught.exception, InvestigationLimitError)
+        self.assertEqual(self.conn.info.transaction_status, TransactionStatus.IDLE)
+
+    def test_the_statement_timeout_is_not_sent_before_every_statement(self):     # review of #576
+        sent = []
+        real = psycopg.Connection.execute
+
+        def count(conn, query, *a, **k):
+            if "set_config('statement_timeout'" in str(query):
+                sent.append(query)
+            return real(conn, query, *a, **k)
+        with patch.object(psycopg.Connection, "execute", count):
+            self.run_query()
+        self.assertLessEqual(len(sent), 4)          # first set, at most a few resends, the restore
+
+    def test_evidence_states_and_summarized_coverage(self):                     # review of #577
+        full = self.run_query()
+        brief = self.run_query(coverage_ranges=False)
+        self.assertEqual(brief.coverage, [])
+        self.assertEqual(brief.coverage_summary["range_count"], len(full.coverage))
+        self.assertEqual(brief.coverage_summary["samples_by_state"],
+                         {r.state: sum(x.end_sample - x.start_sample for x in full.coverage if x.state == r.state)
+                          for r in full.coverage})
+        self.assertFalse(brief.coverage_summary["ranges_included"])
+        self.assertIn("no_temporal_cutoff", full.evidence_states)
+        self.assertIn("context_not_requested", full.evidence_states)
+        self.assertEqual(len(full.evidence_states), len(set(full.evidence_states)))
+
     def test_non_owner_rls_and_role_changes(self):
         self.check_rls(context_first=True)
 

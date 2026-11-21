@@ -7,6 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 import json
 import math
+import re
 import time
 
 import psycopg
@@ -35,6 +36,21 @@ def result_dict(result):
     return clean(asdict(result))
 
 
+# Server budget errors: compare_to_history's history, value spreads and stream search ("... exceeds N segments"),
+# and envelope search's candidate cap. They narrow scope; they are not failures of the data (review of #576).
+_BUDGET = re.compile(r"history exceeds|more than max_candidates|exceeds \d+ segments")
+# The only envelope representation pg_morlet defines; recorded next to the extension version that defines it.
+ENVELOPE_REPRESENTATION = "xc-envelope-f16-v1"
+
+
+def _cancel(exc, deadline):
+    """A cancelled statement is a limit when the deadline or a statement timeout ended it; otherwise (a cancel
+    request from another session or thread, or an administrator) it is reported as the database error it is."""
+    if time.monotonic() >= deadline or "statement timeout" in str(exc):
+        return InvestigationLimitError("investigation deadline or statement timeout exceeded")
+    return translate(exc)
+
+
 def _integer(name, value, low, high):
     if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
         raise InvalidInputError(f"{name} must be an integer in {low}..{high}")
@@ -47,6 +63,7 @@ class _Reader(Client):
         super().__init__(connection)
         self.deadline = deadline
         self.statement_limit = 0
+        self.timeout_set = None       # the statement_timeout last sent, in ms
 
     def remaining(self):
         ms = math.floor((self.deadline - time.monotonic()) * 1000)
@@ -57,15 +74,19 @@ class _Reader(Client):
     def _execute(self, query, args=(), **kw):
         remaining = self.remaining()
         limit = min(remaining, self.statement_limit) if self.statement_limit else remaining
-        self.connection.execute("SELECT set_config('statement_timeout', %s, true)", (str(limit),))
+        # Resend the timeout only when the deadline has moved closer than a tenth of it (at least 50 ms): one
+        # round trip per statement doubled the cost on remote and edge databases. A statement can then overrun
+        # the deadline by at most that slack; the deadline is checked again after every statement.
+        if self.timeout_set is None or self.timeout_set - limit > max(50, limit // 10):
+            self.connection.execute("SELECT set_config('statement_timeout', %s, true)", (str(limit),))
+            self.timeout_set = limit
         try:
             cursor = super()._execute(query, args, **kw)
         except Exception as exc:
             cause = exc.__cause__ or exc
             if isinstance(cause, psycopg.errors.QueryCanceled):
-                raise InvestigationLimitError("investigation statement cancelled or deadline exceeded") from exc
-            if isinstance(cause, psycopg.Error) and (
-                    "history exceeds" in str(cause) or "more than max_candidates" in str(cause)):
+                raise _cancel(cause, self.deadline) from exc
+            if isinstance(cause, psycopg.Error) and _BUDGET.search(str(cause)):
                 raise InvestigationLimitError(str(cause)) from exc
             raise
         self.remaining()
@@ -78,7 +99,9 @@ def _rows(reader, query, args=()):
     return [dict(zip(names, row)) for row in cursor.fetchall()]
 
 
-def _context(reader, collection, rid, start, end, segment_id, settings):
+def _segment(reader, collection, rid, start, end, segment_id):
+    """The context segment row, checked before any search runs: a wrong or stale segment, a collection without
+    context or an older server fails at once instead of after the search has used the deadline."""
     for signature in ("public.morlet_label_definitions(regclass)", "public.morlet_value_rules(regclass)"):
         if not reader._has(signature):
             raise UnsupportedError("investigation context needs pg_morlet SQL 0.3.9 or later")
@@ -94,6 +117,10 @@ def _context(reader, collection, rid, start, end, segment_id, settings):
         raise InvalidInputError("context segment must contain the entire query interval in the same recording")
     if row[6]:
         raise InvalidInputError("context segment is stale; rebuild context segments")
+    return row
+
+
+def _context(reader, collection, rid, row, segment_id, settings):
     common = (collection, segment_id, list(settings["match_keys"]), Jsonb(settings["metadata_filter"]),
               list(settings["exclude_labels"]))
     comparisons = _rows(reader,
@@ -125,6 +152,8 @@ def investigate(client, collection, recording_id, start_sample, end_sample, **se
     lag = settings["max_lag_fraction"]
     if isinstance(lag, bool) or not isinstance(lag, (int, float)) or not math.isfinite(lag) or not 0 <= lag <= 0.5:
         raise InvalidInputError("max_lag_fraction must be finite and in [0,0.5]")
+    if not isinstance(settings["coverage_ranges"], bool):
+        raise InvalidInputError("coverage_ranges must be true or false")
     segment_id = settings.pop("segment_id")
     if segment_id is not None:
         _integer("segment_id", segment_id, 1, 2**63 - 1)
@@ -143,8 +172,7 @@ def investigate(client, collection, recording_id, start_sample, end_sample, **se
         settings = json.loads(json.dumps(settings, allow_nan=False))
     except (TypeError, ValueError) as exc:
         raise InvalidInputError("investigation settings must be JSON-compatible") from exc
-    settings.update(segment_id=segment_id, exclude_source=True, suppress_overlaps=True, before_only=False,
-                    envelope_representation="xc-envelope-f16-v1", context_representation="simple-v1")
+    settings.update(segment_id=segment_id, exclude_source=True, suppress_overlaps=True, before_only=False)
     connection = client.connection
     status = connection.info.transaction_status
     if status not in (TransactionStatus.IDLE, TransactionStatus.INTRANS):
@@ -171,13 +199,14 @@ def investigate(client, collection, recording_id, start_sample, end_sample, **se
             encoded = json.dumps(result.to_dict(), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
             if len(encoded.encode("utf-8")) > settings["max_output_bytes"]:
                 raise InvestigationLimitError("investigation exceeds max_output_bytes; narrow scope or reduce top_k")
+            object.__setattr__(result, "_json", encoded)      # to_json() reuses it instead of encoding again
             reader.remaining()
             connection.execute("SELECT set_config('statement_timeout', %s, true)", (old_timeout,))
         return result
     except psycopg.errors.InsufficientPrivilege:
         raise
     except psycopg.errors.QueryCanceled as exc:
-        raise InvestigationLimitError("investigation cancelled or deadline exceeded") from exc
+        raise _cancel(exc, deadline) from exc
     except psycopg.Error as exc:
         raise translate(exc) from exc
 
@@ -185,12 +214,16 @@ def investigate(client, collection, recording_id, start_sample, end_sample, **se
 def _collect(reader, collection, rid, start, end, settings):
     recording = reader.recording(collection, rid)
     if end > recording.samples:
-        raise InvalidInputError("query interval exceeds recording length")
+        # as read(), search() and stats() report it: not stored (yet)
+        raise NotFoundError("query interval exceeds recording length")
+    segment = (_segment(reader, collection, rid, start, end, settings["segment_id"])
+               if settings["segment_id"] is not None else None)
     provenance = _rows(reader,
         "SELECT current_database() AS database, current_user AS role, "
         "current_setting('transaction_isolation') AS isolation, transaction_timestamp() AS transaction_started_at, "
         "pg_current_snapshot()::text AS snapshot, "
         "(SELECT extversion FROM pg_extension WHERE extname='pg_morlet') AS extension_version")[0]
+    provenance["envelope_representation"] = ENVELOPE_REPRESENTATION   # defined by that extension version
     provenance.update(_rows(reader,
         "SELECT c.oid::bigint AS collection_oid, n.nspname AS collection_schema, c.relname AS collection_name "
         "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=%s::regclass", (collection,))[0])
@@ -204,6 +237,8 @@ def _collect(reader, collection, rid, start, end, settings):
     if len(ids) > settings["max_recordings"]:
         raise InvestigationLimitError("investigation exceeds max_recordings; narrow metadata_filter")
     provenance["compatible_recordings"] = len(ids)
+    # max_coverage_ranges bounds the ranges returned, not the server's work: morlet_coverage computes every
+    # range of the listed recordings before the LIMIT (max_recordings bounds those).
     coverage = []
     coverage_status = "unknown"
     if reader._has("public.morlet_coverage(regclass,text[],integer)"):
@@ -214,32 +249,49 @@ def _collect(reader, collection, rid, start, end, settings):
         if len(coverage) > settings["max_coverage_ranges"]:
             raise InvestigationLimitError("investigation exceeds max_coverage_ranges; narrow metadata_filter")
         coverage_status = "available"
+    summary = {"samples_by_state": {}, "range_count": len(coverage), "ranges_included": settings["coverage_ranges"]}
+    for r in coverage:
+        summary["samples_by_state"][r.state] = summary["samples_by_state"].get(r.state, 0) + r.end_sample - r.start_sample
     query_stats = reader.stats(collection, rid, start, end)
     search = reader.search(collection, rid, start, end, metadata_filter=settings["metadata_filter"],
                            top_k=settings["top_k"], max_candidates=settings["max_candidates"],
                            max_lag_fraction=settings["max_lag_fraction"])
-    context = (_context(reader, collection, rid, start, end, settings["segment_id"], settings)
-               if settings["segment_id"] is not None else None)
+    context = (_context(reader, collection, rid, segment, settings["segment_id"], settings)
+               if segment is not None else None)
+    if context is not None:
+        provenance["context_representation"] = context.value_rules   # read from the server
+    # Machine-readable counterparts of the notes, for agents and reports (#577 review): one rule set, here.
+    states = ["no_temporal_cutoff"]
     notes = ["Coverage describes compatible recordings before source exclusion; it is not a count of scored candidates.",
              "Search considers stored windows on a grid, not every sample offset. A missing match is not proof of absence.",
              "No temporal cutoff: history may include later occurrences and labels added after the event."]
+    if not search.matches:
+        states.append("no_matches_returned")
     if search.mode == "probes":
+        states.append("approximate_candidates_possible")
         notes.append("Probe search is enabled: candidate selection can be approximate; small galleries may route to exact. "
                      "Recording coverage does not establish probe-index completeness or recall.")
     if coverage_status == "unknown":
+        states.append("coverage_unknown")
         notes.append("Server cannot report recording coverage; unsearched periods are unknown.")
     elif any(r.state != "searchable" for r in coverage):
+        states.append("unsearched_ranges")
         notes.append("Some compatible recording ranges are not directly searchable; inspect coverage states.")
     if context is None:
+        states.append("context_not_requested")
         notes.append("Context comparison was not requested (supply segment_id).")
     else:
+        states.append("labelled_history_not_exhaustively_searched")
         notes.append("Context neighbors use simple-value distance, not envelope distance. Their labels describe those "
                      "occurrences, not the query; this is not an exhaustive search of labelled cases.")
-        if any(r["hist_n"] < settings["min_history"] for r in context.comparisons):
+        if any(r["hist_n"] is None or r["hist_n"] < settings["min_history"] for r in context.comparisons):
+            states.append("insufficient_history")
             notes.append("Insufficient comparable history for one or more context values.")
         defined = {d["label"] for d in context.label_definitions}
         undefined = sorted({l["label"] for n in context.neighbors for l in n["labels"]} - defined)
         if undefined:
+            states.append("undefined_labels")
             notes.append("Labels without glossary definitions: " + ", ".join(undefined))
-    return InvestigationResult(1, recording, search, query_stats, context, coverage_status, coverage,
-                               settings, provenance, notes)
+    return InvestigationResult(1, recording, search, query_stats, context, coverage_status,
+                               coverage if settings["coverage_ranges"] else [], settings, provenance, notes,
+                               states, summary)
