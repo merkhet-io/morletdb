@@ -6,7 +6,9 @@ import contextlib
 from fractions import Fraction
 from pathlib import Path
 import tempfile
+import math
 import unittest
+from unittest import mock
 import wave
 
 import numpy as np
@@ -224,6 +226,56 @@ class Readers(unittest.TestCase):
         self.assertEqual(mi.iso_ns("2026-03-01T08:00:00.123456789+01:00"), (base - 3_600_000_000_000 + 123_456_789, 9))
         with self.assertRaisesRegex(ValueError, "9 fraction digits"):
             mi.iso_ns("2026-03-01T08:00:00.1234567891Z")
+
+    def test_anchor_uncertainty_covers_every_timestamp_it_approximates(self):
+        """#561: the importer keeps one anchor while rows stay within the tolerance of the mapping, so the rows in
+        between are approximated; the reported uncertainty must still cover them. Checked independently with the
+        server's rule in exact fractions: between two anchors of a block the time and the uncertainty are interpolated
+        linearly, after a block's only anchor the time follows the declared rate and the uncertainty is the anchor's
+        (the clock-bound term rho only adds). Jitter, a sparse wide tolerance, drift with jitter, and blocks."""
+        import random
+        rnd = random.Random(561)
+        base = 1_772_352_000_000_000_000
+        cases = {
+            "report": ([0, 1_400_000, 2_000_000], 1000, None),
+            "jitter": ([k * 1_000_000 + rnd.randint(-450_000, 450_000) for k in range(2000)], 1000, None),
+            "sparse": ([k * 1_000_000 + rnd.randint(-450_000, 450_000) for k in range(2000)], 1000, 5_000_000),
+            "drift+jitter": ([round(k * 1_003_000) + rnd.randint(-200_000, 200_000) for k in range(5000)], 1000, None),
+            "blocks": ([b * 120_000_000 + k * 1_000_000 + rnd.randint(-300_000, 300_000)
+                        for b in range(3) for k in range(100)], 1000, None),
+        }
+        for name, (rel, rate, tol) in cases.items():
+            t = [base + x for x in rel]
+            anchors = mi.time_anchors(t, rate, tol)
+            u = mi.anchor_uncertainties(t, rate, anchors, 1)
+            period = Fraction(1_000_000_000) / Fraction(repr(float(rate)))
+            for n, tn in enumerate(t):
+                i = max(j for j, a in enumerate(anchors) if a[0] <= n)
+                k, tk, _ = anchors[i]
+                if i + 1 < len(anchors) and not anchors[i + 1][2]:
+                    k2, tk2, _ = anchors[i + 1]
+                    lam = Fraction(n - k, k2 - k)
+                    mapped, bound = tk + lam * (tk2 - tk), (1 - lam) * u[i] + lam * u[i + 1]
+                else:
+                    mapped, bound = tk + (n - k) * period, Fraction(u[i])
+                self.assertLessEqual(abs(tn - mapped), bound - 1, f"{name}: row {n}")   # 1 ns: the resolution
+        # the report's case: one anchor kept, and its bound now holds the 400 us approximation of row 1
+        anchors = mi.time_anchors([0, 1_400_000, 2_000_000], 1000)
+        self.assertEqual(mi.anchor_uncertainties([0, 1_400_000, 2_000_000], 1000, anchors, 1), [1 + 400_000])
+        # exact near the largest span accepted (2^53 ns): float64 would lose the odd nanoseconds here (review)
+        far = [0, 2 ** 52 + 1, 2 ** 53 - 3]
+        a = [(0, 0, False), (2, 2 ** 53 - 3, False)]
+        mid = Fraction(2 ** 53 - 3, 2)
+        self.assertEqual(mi.anchor_uncertainties(far, 1e-6, a, 0), [math.ceil(abs(2 ** 52 + 1 - mid))] * 2)
+        # review: the residual is computed in bounded steps; a step boundary inside a block changes nothing
+        jit = [k * 1_000_000 + (k * 7919 % 801 - 400) * 1000 for k in range(3000)]
+        a = mi.time_anchors(jit, 1000, 5_000_000)
+        whole = mi.anchor_uncertainties(jit, 1000, a, 1)
+        with mock.patch.object(mi, "RESIDUAL_ROWS", 7):
+            self.assertEqual(mi.anchor_uncertainties(jit, 1000, a, 1), whole)
+        # exact timestamps keep the resolution alone
+        even = [k * 1_000_000 for k in range(50)]
+        self.assertEqual(mi.anchor_uncertainties(even, 1000, mi.time_anchors(even, 1000), 1000), [1000])
 
     def test_an_even_clock_needs_one_anchor(self):
         p = self.tmp / "even.csv"
