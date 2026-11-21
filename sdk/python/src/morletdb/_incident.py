@@ -1,0 +1,186 @@
+"""From an asset and an incident time to recording intervals (#580): existing metadata and time mapping only.
+
+Nothing is guessed: every way the mapping can be uncertain is a candidate field or an entry in `states`, recordings are
+never concatenated or resampled, and a recording the caller cannot see is indistinguishable from one that does not exist.
+"""
+from __future__ import annotations
+
+from collections.abc import Mapping
+from datetime import datetime
+from fractions import Fraction
+import json
+import math
+import time
+
+from psycopg import sql
+from psycopg.types.json import Jsonb
+
+from ._client import _start_ns
+from ._errors import InvalidInputError, InvestigationLimitError, UnsupportedError
+from ._investigation import read_snapshot
+from ._types import IncidentCandidate, IncidentResolution, IntervalRef
+
+MAX_WINDOW_S = 31 * 86400
+UNREADABLE = ("represented", "summarized", "gone", "missing")      # search contract: states without raw samples
+
+
+def _key(name, value):
+    if not isinstance(value, str) or not value:
+        raise InvalidInputError(f"{name} must be a non-empty string")
+    return value
+
+
+def _seconds_ns(name, value):
+    """Whole nanoseconds, rounded up, so the requested window is never narrower than asked. From the shortest decimal
+    of the number, as written: the binary value of 0.05 is a little above it and would add a nanosecond, and with it
+    a sample whose time is exactly on the window's end."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) \
+            or not 0 <= value <= MAX_WINDOW_S:
+        raise InvalidInputError(f"{name} must be a finite number of seconds in 0..{MAX_WINDOW_S}")
+    return math.ceil(Fraction(repr(value)) * 1_000_000_000)
+
+
+def _incident_ns(value):
+    if value is None or isinstance(value, bool):
+        raise InvalidInputError("incident_time must be a timezone-aware datetime or integer UTC nanoseconds")
+    if isinstance(value, datetime) and (value.tzinfo is None or value.utcoffset() is None):
+        raise InvalidInputError("incident_time must be timezone-aware (naive datetimes are ambiguous)")
+    return _start_ns(value)
+
+
+def _references(claimed, keys, metadata):
+    """Each claimed reference against what the recording stores: a join is verified only by an equal stored value."""
+    out = {}
+    for name, value in claimed.items():
+        recorded = metadata.get(keys[name])
+        status = "not_recorded" if recorded is None else "verified" if str(recorded) == value else "different"
+        out[name] = {"claimed": value, "metadata_key": keys[name], "recorded": recorded, "status": status}
+    return out
+
+
+def resolve_incident(client, collection, asset, incident_time, *, before_s, after_s, sensor, metadata_filter, asset_key,
+                     sensor_key, identity_keys, references, reference_keys, timeout_ms, max_recordings):
+    _key("asset", asset)
+    _key("asset_key", asset_key)
+    if sensor is not None:
+        _key("sensor", sensor)
+    if sensor_key is not None:
+        _key("sensor_key", sensor_key)
+    t = _incident_ns(incident_time)
+    before, after = _seconds_ns("before_s", before_s), _seconds_ns("after_s", after_s)
+    if before + after == 0:
+        raise InvalidInputError("before_s and after_s must not both be zero")
+    for name, value, high in (("timeout_ms", timeout_ms, 300_000), ("max_recordings", max_recordings, 100_000)):
+        if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= high:
+            raise InvalidInputError(f"{name} must be an integer in 1..{high}")
+    if not isinstance(identity_keys, (tuple, list)) or any(not isinstance(k, str) or not k for k in identity_keys):
+        raise InvalidInputError("identity_keys must be a sequence of non-empty strings")
+    for name, value in (("references", references), ("reference_keys", reference_keys)):
+        if not isinstance(value, Mapping) or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
+                                                 for k, v in value.items()):
+            raise InvalidInputError(f"{name} must map non-empty strings to non-empty strings")
+    unmapped = sorted(set(references) - set(reference_keys))
+    if unmapped:
+        raise InvalidInputError("references without a metadata key in reference_keys: " + ", ".join(unmapped))
+    if metadata_filter is not None and not isinstance(metadata_filter, Mapping):
+        raise InvalidInputError("metadata_filter must be a JSON object")
+    flt = dict(metadata_filter or {})
+    for key, value in ((asset_key, asset), (sensor_key, sensor if sensor_key else None)):
+        if value is None:
+            continue
+        if key in flt and flt[key] != value:
+            raise InvalidInputError(f"metadata_filter sets {key} to another value")
+        flt[key] = value
+    try:
+        json.dumps(flt, allow_nan=False)
+    except (TypeError, ValueError) as exc:
+        raise InvalidInputError("metadata_filter must be JSON-compatible") from exc
+    start, end = t - before, t + after
+    mapping = {"asset_key": asset_key, "sensor_key": sensor_key, "identity_keys": list(identity_keys),
+               "reference_keys": dict(reference_keys), "metadata_filter": flt,
+               "boundary": "samples whose UTC time t satisfies window_start_ns <= t < window_end_ns"}
+    with read_snapshot(client.connection, time.monotonic() + timeout_ms / 1000) as reader:
+        if not reader._has("public.morlet_utc_to_samples(regclass,text,numeric,numeric,double precision)"):
+            raise UnsupportedError("resolving an incident needs pg_morlet SQL 0.3.13 or later")
+        rel = reader._one("SELECT %s::regclass::text", (collection,))
+        query = "SELECT recording_id FROM {} WHERE metadata @> %s"
+        args = [Jsonb(flt)]
+        if sensor is not None and sensor_key is None:
+            query += " AND channel = %s"
+            args.append(sensor)
+        ids = [r[0] for r in reader._execute(sql.SQL(query + " ORDER BY recording_id LIMIT %s").format(sql.SQL(rel)),
+                                             (*args, max_recordings + 1)).fetchall()]
+        if len(ids) > max_recordings:
+            raise InvestigationLimitError("incident matches more than max_recordings recordings; narrow metadata_filter")
+        candidates, no_time, outside, identities = [], [], [], set()
+        for rid in ids:
+            rec = reader.recording(collection, rid)
+            identities.add(tuple(json.dumps(rec.metadata.get(k), sort_keys=True) for k in identity_keys))
+            axis = reader._one("SELECT public.morlet_time_axis_version(%s::regclass,%s)", (collection, rid))
+            if rec.start_ns is None and not axis.startswith("anchors"):
+                no_time.append(rid)
+                continue
+            found = []
+            for r in reader.time_ranges(rec, start, end):                # offsets on the time axis, not clipped
+                a, b = max(r.start_sample, 0), min(r.end_sample, rec.samples)
+                if a < b:
+                    found.append((r, a, b))
+            if not found:
+                outside.append(rid)
+                continue
+            rate = Fraction(repr(float(rec.sample_rate_hz)))
+            expected = math.ceil(Fraction(end - start, 1_000_000_000) * rate)
+            for r, a, b in found:
+                states = {s: int(n) for s, n in reader._execute(
+                    "SELECT state, sum(least(end_sample,%s)-greatest(start_sample,%s)) "
+                    "FROM public.morlet_coverage(%s::regclass,ARRAY[%s]::text[],NULL) "
+                    "WHERE start_sample<%s AND end_sample>%s GROUP BY state", (b, a, collection, rid, b, a)).fetchall()}
+                candidates.append(IncidentCandidate(
+                    IntervalRef(collection, rid, a, b), rec.sample_rate_hz, rec.channel, rec.unit,
+                    rec.metadata.get(sensor_key) if sensor_key else rec.channel, r.basis, r.ambiguous, r.extrapolated,
+                    r.start_uncertainty_ns, r.end_uncertainty_ns, r.assumes_linear_clock, axis,
+                    # one sample of tolerance: which samples fall in a window depends on its phase against the grid
+                    expected, b - a, b - a >= expected - 1, states, sum(states.get(s, 0) for s in UNREADABLE),
+                    _references(references, reference_keys, rec.metadata)))
+        result_states = _states(ids, no_time, candidates, identities, identity_keys)
+        provenance = reader._execute(
+            "SELECT current_database(), current_user, transaction_timestamp(), "
+            "(SELECT extversion FROM pg_extension WHERE extname='pg_morlet')").fetchone()
+    return IncidentResolution(1, asset, t, start, end, mapping, candidates, no_time, outside,
+                              [dict(zip(identity_keys, (json.loads(v) for v in i))) for i in sorted(identities)]
+                              if identity_keys else [], result_states,
+                              dict(zip(("database", "role", "transaction_started_at", "extension_version"), provenance)))
+
+
+def _states(ids, no_time, candidates, identities, identity_keys):
+    """Machine-readable: what an agent must not gloss over before it treats a candidate as the incident's interval."""
+    states = []
+    if not ids:
+        return ["asset_not_found"]
+    if not identity_keys:
+        states.append("asset_identity_not_scoped")
+    elif len(identities) > 1:
+        states.append("ambiguous_asset")
+    if no_time:
+        states.append("recordings_without_time_axis")
+    if not candidates:
+        states.append("no_recording_at_time")
+    by_sensor = {}
+    for c in candidates:
+        by_sensor.setdefault(c.sensor, set()).add(c.ref.recording_id)
+    if len(by_sensor) > 1:
+        states.append("multiple_sensors")
+    if any(len(r) > 1 for r in by_sensor.values()):
+        states.append("multiple_recordings_per_sensor")
+    for state, test in (("partial_window", lambda c: not c.covers_window),
+                        ("unreadable_samples", lambda c: c.unreadable_samples > 0),
+                        ("ambiguous_time", lambda c: c.ambiguous),
+                        ("extrapolated_time", lambda c: c.extrapolated),
+                        ("time_uncertainty_unknown", lambda c: c.start_uncertainty_ns is None),
+                        ("assumes_linear_clock", lambda c: c.assumes_linear_clock),
+                        ("reference_different", lambda c: any(r["status"] == "different" for r in c.references.values())),
+                        ("reference_not_recorded", lambda c: any(r["status"] == "not_recorded"
+                                                                 for r in c.references.values()))):
+        if any(test(c) for c in candidates):
+            states.append(state)
+    return states

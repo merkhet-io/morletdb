@@ -54,6 +54,9 @@ Typical investigation:
    exists (metadata_filter narrows by metadata); trend shows how a signal changed over days or weeks;
    latest gives the current value of every sensor.
 2. Pick an interval of interest (locate_time converts a UTC time to a sample offset).
+   Starting from a machine and a time rather than a sample range? resolve_incident maps an asset and an incident
+   time (with its UTC offset) to recording intervals. Inspect its states; never pick among ambiguous candidates
+   silently, and do not treat no candidates as "nothing happened".
    investigate_interval gives an initial evidence packet (statistics, matches, optional context comparison,
    coverage and evidence_states) in one snapshot. It has NO temporal cutoff: do not use it to claim what
    was known before an event. For earlier-only search or shifted placements keep using search_similar;
@@ -1041,6 +1044,27 @@ def search_scope_exact(conn, c, src, flt, window, time_bounds=(None, None), befo
                    f"({', '.join(k for k in out['seconds'] if k in NOT_SEARCHED)}): a missing match says nothing "
                    f"about those periods")
     return out
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def resolve_incident(collection: str, asset: str, incident_time: str, before_s: float = 60, after_s: float = 10,
+                     sensor: str | None = None, metadata_filter: str = "{}", references: str = "{}") -> dict:
+    """Map an asset and an incident time to recording intervals, in one read-only snapshot. incident_time is ISO 8601
+    WITH a UTC offset or Z: ask for the plant's timezone rather than assuming one. The window is
+    [incident - before_s, incident + after_s). sensor selects a channel (or the operator's sensor key).
+    references is a JSON object of claimed identifiers ({"work_order":"WO-17"}), compared with what each recording
+    stores: verified, different or not_recorded; a free-text claim is not a verified join.
+
+    Each candidate is one recording's zero-based, half-open sample interval with its time basis, uncertainty and
+    coverage. Recordings are never concatenated or resampled. Read `states` before using a candidate: for example
+    ambiguous_asset, ambiguous_time, partial_window, unreadable_samples, multiple_sensors. asset_not_found,
+    recordings_without_time_axis and no_recording_at_time are different findings, and none means nothing happened.
+    Pass a candidate's interval to investigate_interval (a power-of-two window of 512..32768 samples)."""
+    _sibling("investigation")          # its limits and error format are shared
+    return _sibling("incident").run(connect, checked, utc_ns_of, collection, asset, incident_time, before_s=before_s,
+                                    after_s=after_s, sensor=sensor, metadata_filter=metadata_filter,
+                                    references=references)
 
 
 @mcp.tool(annotations=READ_ONLY)

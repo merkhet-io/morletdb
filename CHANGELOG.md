@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **From a machine and a time to an interval (experimental, #580).** `Client.resolve_incident` and the MCP tool
+  `resolve_incident` map an asset and a timezone-aware incident time to recording intervals in one read-only
+  snapshot, with the time basis, uncertainty and coverage of each. Recordings are never concatenated or resampled;
+  ambiguous assets and times, gaps, unreadable samples, missing time axes and claimed references that the recording
+  does not confirm are explicit states. Plant identifiers are configuration.
+
 SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morlet UPDATE`).
 
 - **Time mapping without an anchor table (SQL 0.3.15, #562).** `morlet_sample_utc`, `morlet_utc_to_sample`,

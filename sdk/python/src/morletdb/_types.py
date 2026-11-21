@@ -228,6 +228,62 @@ class CoverageRange:
 
 
 @dataclass(frozen=True)
+class IncidentCandidate:
+    """One sample interval of one recording that may hold an incident's time window (never concatenated).
+
+    `basis`, `ambiguous`, `extrapolated`, the uncertainties and `assumes_linear_clock` are the server's time mapping
+    (see TimeRange). `covers_window` compares the stored samples with what the window needs at this rate;
+    `coverage_states` counts the interval's samples per morlet_coverage state; `unreadable_samples` have no raw
+    samples. `references` holds each claimed work order, lot or part with what the recording stores: `verified`,
+    `different` or `not_recorded`.
+    """
+    ref: IntervalRef
+    sample_rate_hz: float
+    channel: str
+    unit: str
+    sensor: Any
+    basis: str
+    ambiguous: bool
+    extrapolated: bool
+    start_uncertainty_ns: int | None
+    end_uncertainty_ns: int | None
+    assumes_linear_clock: bool
+    time_axis_version: str
+    expected_samples: int
+    samples: int
+    covers_window: bool
+    coverage_states: dict[str, int]
+    unreadable_samples: int
+    references: dict[str, dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class IncidentResolution:
+    """Version-1 mapping of an asset and an incident time to recording intervals, from one read-only snapshot.
+
+    `states` say what is uncertain or missing. No candidates does not mean nothing happened: `asset_not_found`,
+    `recordings_without_time_axis` and `no_recording_at_time` are different findings.
+    """
+    version: int
+    asset: str
+    incident_ns: int
+    window_start_ns: int
+    window_end_ns: int
+    mapping: dict[str, Any]
+    candidates: list[IncidentCandidate]
+    recordings_without_time_axis: list[str]
+    recordings_outside_window: list[str]
+    identities: list[dict[str, Any]]
+    states: list[str]
+    provenance: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        """JSON-compatible result; UTC nanoseconds stay exact integers."""
+        from ._investigation import result_dict
+        return result_dict(self)
+
+
+@dataclass(frozen=True)
 class InvestigationContext:
     """Comparison of an explicitly selected context segment containing the query interval.
 

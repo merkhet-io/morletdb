@@ -107,6 +107,29 @@ after the event can participate; do not use it as a causally valid historical de
 existing separate `search` API retains its time filters. Context neighbor scores and waveform distances
 are separate rankings and must not be compared numerically.
 
+### From an asset and a time to an interval
+
+**Experimental, from the release after 0.4.0-beta.4.** `Client.resolve_incident` maps an asset and an incident time
+to recording intervals in one read-only snapshot, with the same transaction rules as `investigate`:
+
+```python
+from datetime import datetime, timedelta, timezone
+
+when = datetime(2026, 3, 1, 14, 32, tzinfo=timezone(timedelta(hours=1)))   # naive datetimes are refused
+found = db.resolve_incident("public.line3", "P7", when, before_s=30, after_s=5, asset_key="machine",
+                            identity_keys=("plant",), references={"work_order": "WO-17"},
+                            reference_keys={"work_order": "wo"})
+print(found.states)                        # every ambiguity, gap and missing time axis, by name
+for c in found.candidates:
+    print(c.ref, c.basis, c.start_uncertainty_ns, c.covers_window, c.references)
+```
+
+The window is `[incident - before_s, incident + after_s)`, rounded outward to whole nanoseconds. A candidate holds
+the samples whose UTC time lies in it, by the recording's time anchors or start + rate. Recordings are never
+concatenated or resampled, and nothing is chosen for you. No candidates is not "nothing happened":
+`asset_not_found`, `recordings_without_time_axis` and `no_recording_at_time` are different findings. The states are
+listed in the [MCP guide](mcp.md#from-a-machine-and-a-time-to-an-interval).
+
 ### Investigation transactions and limits
 
 On an idle connection the method opens and finishes its own `REPEATABLE READ READ ONLY` transaction,
