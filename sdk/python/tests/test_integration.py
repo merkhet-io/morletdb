@@ -140,6 +140,18 @@ class Contract(unittest.TestCase):
         with self.assertRaisesRegex(InvalidInputError, "no time anchors"):
             self.db.samples_for_time(plain, base, base + ms, basis="anchors")
         self.assertEqual(self.db.samples_for_time(plain, base, base + ms), (0, 1))
+        # #563: 1 Hz, sample 10 restarts at 5 s, so [5 s, 10 s) is samples 5..9 and again 10..14: adjacent, merged into
+        # one range by the server, still ambiguous
+        twice = self.db.ingest(self.coll, "twice", np.arange(20, dtype=np.float64), sample_rate_hz=1, channel="c",
+                               unit="u", start_time=base)
+        rows = [{"recording_id": "twice", "sample_offset": n, "utc_ns": str(base + t), "uncertainty_ns": 0,
+                 "source": "daq-timestamps", "break_before": n > 0} for n, t in ((0, 0), (10, 5 * 10 ** 9))]
+        self.conn.execute("SELECT morlet_add_time_anchors(%s::regclass,'b2',%s::jsonb)", (self.coll, json.dumps(rows)))
+        r = self.db.time_ranges(twice, base + 5 * 10 ** 9, base + 10 * 10 ** 9)
+        self.assertEqual([(x.start_sample, x.end_sample, x.ambiguous) for x in r], [(5, 15, True)])
+        with self.assertRaisesRegex(InvalidInputError, "more than once"):
+            self.db.samples_for_time(twice, base + 5 * 10 ** 9, base + 10 * 10 ** 9)
+        self.assertEqual(self.db.samples_for_time(twice, base + 11 * 10 ** 9, base + 12 * 10 ** 9), (16, 17))
 
     def test_search_results_resolve_to_retrievable_intervals(self):
         rate = 8000

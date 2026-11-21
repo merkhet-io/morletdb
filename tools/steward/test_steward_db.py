@@ -86,6 +86,34 @@ class StewardDatabase(unittest.TestCase):
         a.execute("SELECT morlet_build_envelopes('line','r2',8192,8192,1)")     # one window only: stride unknown
         self.assertEqual(S.envelope_grids(self.conn, "public.line"), [(1024, 256), (4096, 2048), (8192, 4096)])
 
+    def test_the_grid_survives_episodic_memory_removing_early_windows(self):
+        """#560: level 1 for every other early window left only windows 1024 apart among a recording's first 16, and
+        the grid came out (512, 1024): the builder then wrote 4 of the 8 new windows and reported nothing wrong. The
+        last windows are dense, and they decide the stride."""
+        a = self.admin
+        a.execute("""SELECT morlet_start_recording('line','r3',1000,'x','g','{}',512,512,'zscore','none');
+          SELECT morlet_append_chunks_raw('line','r3',0,morlet_float8_le_bytes(ARRAY(SELECT sin(i/13.0)::float8
+            FROM generate_series(0,39999) i)),32768);
+          SELECT morlet_build_envelopes('line','r3',512,512,1000); SELECT morlet_enable_memory('line')""")
+        eps = [{"recording_id": "r3", "start_sample": s, "end_sample": s + 512} for s in range(512, 16384, 1024)]
+        a.execute("""SELECT morlet_set_level('line',morlet_start_memory_run('line','retention','1'),
+            jsonb_agg(jsonb_build_object('episode_id',e,'level',1)))
+          FROM morlet_add_episodes('line',%s::jsonb) e""", (json.dumps(eps),))
+        S.init(a)        # grants on the new memory tables
+        S.grant(a)
+        first16 = [r[0] for r in a.execute("SELECT start_sample FROM line_envelopes WHERE recording_id='r3' "
+                                           "AND window_size=512 ORDER BY start_sample LIMIT 16")]
+        self.assertEqual({b - x for x, b in zip(first16, first16[1:])}, {1024})   # the trap of #560 is set
+        grids = dict(S.envelope_grids(self.conn, "public.line"))
+        self.assertEqual(grids[512], 512)
+        a.execute("SELECT morlet_append_chunks_raw('line','r3',40000,morlet_float8_le_bytes(ARRAY(SELECT "
+                  "sin(i/13.0)::float8 FROM generate_series(40000,44095) i)),32768)")
+        while S.call_builder(self.conn, "envelopes", "public.line", "r3", 100, (512, grids[512]), 30):
+            pass
+        self.assertEqual([r[0] for r in a.execute("SELECT start_sample FROM line_envelopes WHERE recording_id='r3' "
+                                                  "AND window_size=512 AND start_sample>=39424 ORDER BY 1")],
+                         list(range(39424, 44032, 512)))
+
     def test_a_verify_timeout_halves_the_batch_and_does_not_open_the_breaker(self):
         """Soak S1's box: 20 daily recordings per verify batch exceeded the statement timeout three times and the
         breaker stopped verification. A timeout now halves the batch; only one recording timing out is a failure."""

@@ -307,7 +307,7 @@ def privileged(conn: psycopg.Connection, collection: str) -> bool:
 
 
 def envelope_strides(firsts) -> list[tuple[int, int]]:
-    """(window, stride) from each recording's first envelope starts per window size: a recording's stride is the
+    """(window, stride) from each recording's first and last envelope starts per window size: a recording's stride is the
     greatest common divisor of its gaps, so windows skipped by an episode-aware build (gaps that are multiples of the
     stride) do not make it coarser; the window's stride is the most common one among its recordings, ties to the
     smaller, and half the window when no recording has two envelopes of that size."""
@@ -327,17 +327,20 @@ def envelope_strides(firsts) -> list[tuple[int, int]]:
 
 def envelope_grids(conn: psycopg.Connection, collection: str) -> list[tuple[int, int]]:
     """(window, stride) pairs the collection maintains: every window size present in its envelopes, with its most
-    common stride between a recording's first envelopes of that size (half the window when no recording has two
-    windows yet), and the window and stride the recordings
+    common stride between a recording's first and last envelopes of that size (half the window when no recording has
+    two windows yet), and the window and stride the recordings
     declare in their checkpoints (recordings with extractor 'none' declare no envelopes). The checkpoints are what a
     new collection has before its first envelope: without them the steward would never start building (soak S1)."""
     env = sibling(conn, collection, "_envelopes")
     if not env:
         return []
     # Index lookups only (the key is recording_id, window_size, start_sample): per recording, its window sizes by a
-    # skip scan, and per size its first 16 envelope starts. Sorting the whole envelope table instead took more than
-    # 10 minutes on soak S1's box at 4.4 million rows, and the steward repeats this every hour.
-    firsts = conn.execute(f"""
+    # skip scan, and per size its first and its last 16 envelope starts. Sorting the whole envelope table instead
+    # took more than 10 minutes on soak S1's box at 4.4 million rows, and the steward repeats this every hour. The
+    # first starts alone were not enough: episodic memory can remove every other early window, and from the
+    # surviving first 16 the stride came out twice the real one, so the builder skipped half the new windows (#560).
+    # New windows continue after the last ones, so those decide the grid the builder keeps.
+    rows = conn.execute(f"""
       WITH RECURSIVE ws AS (
         SELECT r.recording_id rid,
                (SELECT min(e.window_size) FROM {env} e WHERE e.recording_id=r.recording_id) w
@@ -346,10 +349,12 @@ def envelope_grids(conn: psycopg.Connection, collection: str) -> list[tuple[int,
         SELECT ws.rid, (SELECT min(e.window_size) FROM {env} e WHERE e.recording_id=ws.rid AND e.window_size>ws.w)
         FROM ws WHERE ws.w IS NOT NULL)
       SELECT ws.w, ARRAY(SELECT e.start_sample FROM {env} e WHERE e.recording_id=ws.rid AND e.window_size=ws.w
-                         ORDER BY e.start_sample LIMIT 16)
+                         ORDER BY e.start_sample LIMIT 16),
+                   ARRAY(SELECT e.start_sample FROM {env} e WHERE e.recording_id=ws.rid AND e.window_size=ws.w
+                         ORDER BY e.start_sample DESC LIMIT 16)
       FROM ws WHERE ws.w IS NOT NULL""").fetchall()
-    rows = envelope_strides(firsts)
-    grids = {int(w): int(s) for w, s in rows}
+    starts = [(w, sorted(set(first) | set(last))) for w, first, last in rows]
+    grids = {int(w): int(s) for w, s in envelope_strides(starts)}
     declared = conn.execute(f"""
       SELECT DISTINCT (checkpoint->>'window')::int, (checkpoint->>'stride')::int FROM {collection}
       WHERE checkpoint ? 'window' AND checkpoint ? 'stride'
