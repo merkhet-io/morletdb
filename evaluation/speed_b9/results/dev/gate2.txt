@@ -1,0 +1,76 @@
+B9 gate 2 on the candidate 8517ef1183cead4330bf5d5a7a4a56864eb018c2, M5 Max macOS 27 (2026-11-16 ~08:25 UTC)
+cargo test --locked -p grizzbit -p morlet-core -p morlet-ffi -p morlet-sqlite: test exit 0
+Running unittests src/lib.rs (target/debug/deps/grizzbit-1e62a09bf3668511)
+test result: ok. 45 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 59.96s
+Running tests/codec_golden.rs (target/debug/deps/codec_golden-a11213300769d09e)
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.46s
+Running tests/codec_props.rs (target/debug/deps/codec_props-360a2395c0f67756)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.55s
+Running tests/corpus_bytes.rs (target/debug/deps/corpus_bytes-bb249a641705f9e1)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.56s
+Running tests/encoder_equivalence.rs (target/debug/deps/encoder_equivalence-d01d39b860a7c741)
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.15s
+Running tests/float32.rs (target/debug/deps/float32-eea40e385c92fa97)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.20s
+Running tests/float32_equivalence.rs (target/debug/deps/float32_equivalence-4877acd1b411575a)
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.44s
+Running tests/grizzbit21.rs (target/debug/deps/grizzbit21-d66393849767dab7)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.49s
+Running tests/grizzbit21_edges.rs (target/debug/deps/grizzbit21_edges-1c4a78eb8a7d3402)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.76s
+Running unittests src/lib.rs (target/debug/deps/morlet_core-d8d368a2b0d4785e)
+test result: ok. 76 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.69s
+Running tests/golden.rs (target/debug/deps/golden-e05d69b40b9f5967)
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+Running unittests src/lib.rs (target/debug/deps/morlet_ffi-910bcd7e1b1b1631)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+Running unittests src/lib.rs (target/debug/deps/morlet_sqlite-b97e8ea84c3a71af)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+Running unittests src/bin/morlet-sqlite.rs (target/debug/deps/morlet_sqlite-1ab5478cf37704f7)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+Running tests/store.rs (target/debug/deps/store-f49e5d7d12590814)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.82s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+cargo clippy --locked (same crates) --all-targets -- -D warnings: clippy exit 0
+cargo fmt --all -- --check: fmt exit 0
+
+grizzbit test binaries (x86_64-unknown-linux-musl, debug, cross-built with rust-lld from the candidate tree) under linux/amd64 emulation (Docker Desktop, rust:1.99.0-bookworm image as the runtime):
+(a first attempt mounted the tree at another path, so the golden-file tests could not find testdata/ at the compile-time CARGO_MANIFEST_DIR; rerun with the tree at that path; both logs kept)
+x86_64
+avx2
+== codec_golden-4c5674b2e494da8e
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.04s
+== codec_props-31af371e83baa341
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 49.55s
+== corpus_bytes-79be1be3042acc12
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.46s
+== encoder_equivalence-f5cd5bc6ac2e4719
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.19s
+== float32-213e3be4882ab3e0
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.37s
+== float32_equivalence-52e8f5c256c5745f
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.62s
+== grizzbit-fa57d27786ca4b6e
+LPC kernels: [Scalar, Sse2, Avx2test g21::tests::majority_takes_the_most_frequent_correction ... ok
+test result: ok. 45 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 81.66s
+== grizzbit21-eb83b4655f02dba6
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.41s
+== grizzbit21_edges-19f861946345b84c
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.39s
+overall 0
+exit 0
+
+binaries:
+e606b990524e3832f83c4f31f1fea7bcb7b7258108edd88dc9d3559fe33646a4  codec_golden-4c5674b2e494da8e
+fbf8f813dfcc3818e18be2a66e3b182dd3123a5b04209c19d01442c16b4361a6  codec_props-31af371e83baa341
+cd9d293b0d6ff6bcfb66815d5c2b895b9eaad09deab66251d75bb3c46565f978  corpus_bytes-79be1be3042acc12
+29a911e156b8e33fa5d81d737efe3fec852d3fb3b93b7f15782301bb5a2830ec  encoder_equivalence-f5cd5bc6ac2e4719
+4e4af47761a6dd86ad5e13ae189fb629d9043af798e61f16ff4fbfe45b474858  float32_equivalence-52e8f5c256c5745f
+dc3cf155882a775785566fdf9e8c4a2b697732c737d3641c4f49c0bf884f01b6  float32-213e3be4882ab3e0
+bc33cd7005ce7a3ebd948b59b2b243cb484b18b12a6e4ca51ddb04b59343f87a  grizzbit-fa57d27786ca4b6e
+8837d0e46c6a118f499ed95039673ed6f6ef2a805704cbb6f6609f2f8a1a360f  grizzbit21_edges-19f861946345b84c
+cb03b5a86213c0b9a7bb5f589e845fe247fa8ce8662a257386278b1aa24c6819  grizzbit21-eb83b4655f02dba6

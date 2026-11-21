@@ -1,0 +1,25 @@
+"\000\000\000\000\000\000\000 " # Uses: 437162
+"7\000\000\000" # Uses: 317231
+"\377\377\377\034" # Uses: 314699
+"\377\002" # Uses: 202109
+"\000\006" # Uses: 101420
+###### End of recommended dictionary. ######
+Done 269599012 runs in 7601 second(s)
+     7601.63 real      7389.19 user        78.60 sys
+           631586816  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              165682  page reclaims
+                  40  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                 691  signals received
+                2151  voluntary context switches
+             9528344  involuntary context switches
+           152590388  instructions retired
+            58599142  cycles elapsed
+             2212200  peak memory footprint
