@@ -12,12 +12,13 @@ intervals within a compatible acquisition cohort, and inspect the original sampl
 and provenance. A developer embeds this workflow through SQL and a thin Python
 client. Acquisition control and automatic diagnosis remain outside this promise.
 
-The target customer hypothesis is a signal-data or ML infrastructure team that
-reuses recorded sensor data for development, testing or investigation, including
-defense technology companies. Industrial monitoring teams can validate shared
-infrastructure needs. Industrial or laboratory results do not establish defense
-requirements, adoption or relevance. Validate one recurring task with an external
-engineer before expanding the product surface.
+**Customer hypothesis: MorletDB should be strong at investigation and explanation.** Teams that keep recorded
+sensor data, from machines, test benches or laboratories, need to find out why something happened: where a signal
+like this occurred before, under which operating conditions, and what was found then. MorletDB answers with
+recordings and sample intervals that read back the original samples, their metadata and context, so that an
+engineer or an AI agent can explain a finding with evidence that anyone can check. Detection, diagnosis and the
+decision stay with the user's application. Validate one recurring investigation with an external engineer before
+expanding the product surface.
 
 ## Where it stands
 
