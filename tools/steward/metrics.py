@@ -13,6 +13,8 @@ The metrics:
 - morlet_steward_status_items{level}, morlet_steward_heartbeat_age_seconds.
 - morlet_steward_breaker_open{job}, morlet_steward_breaker_failures{job}.
 - morlet_steward_actions_24h{job,outcome}, morlet_steward_plans_waiting.
+- morlet_steward_table_rows{table}: estimated rows of the steward's own tables (actions, plans, progress,
+  verify_cursor), from pg_stat_user_tables, so their growth is visible (#540).
 - morlet_ingest_hold: 1 while appends of new samples are held.
 - morlet_disk_free_bytes, morlet_disk_total_bytes, morlet_database_bytes: the steward's latest disk sample.
 - morlet_disk_reusable_bytes: free space inside the chunk tables of collections that still receive chunks, which new
@@ -47,6 +49,7 @@ HELP = {
     "morlet_steward_breaker_failures": "consecutive failures of a job",
     "morlet_steward_actions_24h": "steward actions started in the last 24 hours, by job and outcome",
     "morlet_steward_plans_waiting": "plans neither decided nor expired",
+    "morlet_steward_table_rows": "estimated live rows of a steward table (pg_stat_user_tables.n_live_tup)",
     "morlet_ingest_hold": "1 while appends of new samples are held",
     "morlet_disk_free_bytes": "free bytes on the database's filesystem (steward's latest sample)",
     "morlet_disk_total_bytes": "size of the database's filesystem (steward's latest sample)",
@@ -145,6 +148,10 @@ class Collector:
                 s.append(("morlet_steward_actions_24h", {"job": job, "outcome": outcome}, n))
             s.append(("morlet_steward_plans_waiting", {}, conn.execute(
                 "SELECT count(*) FROM morlet_steward.plans WHERE decision IS NULL AND now()<=valid_until").fetchone()[0]))
+            for table, n in conn.execute(
+                    "SELECT relname,n_live_tup FROM pg_stat_user_tables WHERE schemaname='morlet_steward' "
+                    "AND relname IN ('actions','plans','progress','verify_cursor') ORDER BY relname"):
+                s.append(("morlet_steward_table_rows", {"table": table}, n))
             disk = conn.execute("SELECT free_bytes,total_bytes,db_bytes FROM morlet_steward.disk_samples "
                                 "ORDER BY at DESC LIMIT 1").fetchone()
             if disk:

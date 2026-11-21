@@ -28,6 +28,9 @@ class Config:
     breaker_failures: int = 3
     active_days: float = 7.0          # free space inside a collection counts only if it received chunks this recently
     hard_floor_fraction: float = 0.5  # below this share of the reserve in free disk, ingest is held whatever is reusable
+    keep_actions_days: float = 30.0   # audit rows of finished work (done, nothing to do) are kept this long (#540)
+    keep_failures_days: float = 180.0  # failed and interrupted actions, and ingest hold changes, are kept this long
+    retention_every_s: float = 3600.0  # how often the steward prunes its own tables
 
 
 @dataclass(frozen=True)

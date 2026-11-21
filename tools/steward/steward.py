@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import signal
 import sys
@@ -46,6 +47,8 @@ class Steward:
         # (monotonic time, bytes) of the last measurement; None before the first tick, False far from the reserve
         self.reusable: tuple[float, int | None] | bool | None = None
         self.reusable_missing = False                 # pg_freespacemap is not installed
+        self.pruned_at: float | None = None           # monotonic time of the last retention of the steward's tables
+        self.prune_more = False                       # the last retention stopped at its batch limit
         self.stop = False
 
     # -- observation ---------------------------------------------------------------------------------------------
@@ -134,6 +137,8 @@ class Steward:
                     if not ok:
                         note += f" (minimum share for integrity checks; {why})"
         self.propose_extension_update()
+        if not disk.hold_ingest:
+            self.retention(all_cols, cols)
         open_plans = [(r[0], r[1], r[5]) for r in S.plans(conn) if r[7] is None and r[5] != "rejected"
                       and r[4] is not None and r[4].timestamp() > time.time()]
         problems, ages = S.verify_summary(conn)
@@ -143,6 +148,34 @@ class Steward:
                                                [c for c in all_cols if c not in cols], open_plans))
         S.write_status(conn, items, cfg.tick_s, note)
         return note
+
+    def retention(self, all_cols: list[str], cols: list[str]) -> None:
+        """The steward's own tables stay bounded (#540): every retention_every_s, and on the next tick again while a
+        table had more to delete. A failure (a lock or statement timeout, for example) is recorded and retried at the
+        next interval; it never stops the tick. Skipped while ingest is held at the disk reserve."""
+        cfg = self.cfg
+        if (not self.prune_more and self.pruned_at is not None
+                and time.monotonic() - self.pruned_at < cfg.retention_every_s):
+            return
+        self.pruned_at = time.monotonic()
+        try:
+            deleted, self.prune_more, errors = S.prune(self.conn, all_cols, cols, cfg.keep_actions_days,
+                                                       cfg.keep_failures_days)
+        except psycopg.Error as e:
+            if self.conn.closed:
+                raise
+            deleted, self.prune_more = {}, False
+            errors = [str(e).strip().splitlines()[0] if str(e).strip() else type(e).__name__]
+        if not any(deleted.values()) and not errors:
+            return
+        args = {"keep_actions_days": cfg.keep_actions_days, "keep_failures_days": cfg.keep_failures_days}
+        try:
+            aid = S.start_action(self.conn, "retention", None, None, args)
+            S.finish_action(self.conn, aid, "failed" if errors else "done", {"deleted": deleted, "more": self.prune_more},
+                            error="; ".join(errors) or None)
+        except psycopg.Error:
+            if self.conn.closed:
+                raise
 
     def propose_extension_update(self) -> None:
         """A newer pg_morlet installed on the server becomes a plan; the steward never updates anything itself."""
@@ -309,15 +342,22 @@ def main(argv=None) -> int:
                     help="seconds: statement timeout of a verify batch of one recording")
     ap.add_argument("--reserve-bytes", type=int, default=2 << 30, help="disk kept free: the larger of this and the share")
     ap.add_argument("--reserve-fraction", type=float, default=0.05)
+    ap.add_argument("--keep-actions-days", type=float, default=30.0,
+                    help="days the audit rows of finished work (done, nothing to do) are kept")
+    ap.add_argument("--keep-failures-days", type=float, default=180.0,
+                    help="days failed and interrupted actions and ingest hold changes are kept")
     ap.add_argument("--listen", default="127.0.0.1:9188", help="metrics: host:port to serve /metrics on")
     ap.add_argument("--collection-every", type=float, default=60.0,
                     help="metrics: seconds per-collection statistics are cached between scrapes")
     a = ap.parse_args(argv)
+    if not all(math.isfinite(d) and 1 <= d <= 36500 for d in (a.keep_actions_days, a.keep_failures_days)):
+        ap.error("--keep-actions-days and --keep-failures-days must be between 1 and 36500")
     if a.verify_timeout < 0.001:
         ap.error("--verify-timeout must be at least 0.001 seconds (0 would disable the statement timeout)")
     cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,
                    reserve_fraction=a.reserve_fraction, verify_share_every_s=a.verify_share_every,
-                   verify_timeout_s=a.verify_timeout)
+                   verify_timeout_s=a.verify_timeout, keep_actions_days=a.keep_actions_days,
+                   keep_failures_days=a.keep_failures_days)
     if a.command == "run":
         return cmd_run(a, cfg)
     if a.command == "metrics":

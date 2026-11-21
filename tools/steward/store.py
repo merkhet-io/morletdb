@@ -114,8 +114,9 @@ END $$;
 -- unapplied, with its author, creation time and 24-hour validity set here; a plan's identity (kind, collection,
 -- payload, evidence, hash, author, validity) never changes; a decision is made once, by an approver who is not the
 -- author, before expiry, and records who decided and the hash approved; an application is made once, by an approver,
--- of an approved, unchanged, unexpired plan; plans are not deleted. The table's owner (who runs init and could drop
--- this trigger) is exempt, for maintenance.
+-- of an approved, unchanged, unexpired plan; a plan is deleted only when nobody decided or applied it and it expired
+-- 7 days ago (the steward's retention, #540), so decided and applied plans stay as the approval record. The table's
+-- owner (who runs init and could drop this trigger) is exempt, for maintenance.
 CREATE OR REPLACE FUNCTION morlet_steward.plans_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE owner name;
@@ -125,7 +126,12 @@ BEGIN
     RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;
   END IF;
   IF TG_OP='DELETE' THEN
-    RAISE EXCEPTION 'plans are kept: a plan is never deleted' USING ERRCODE='insufficient_privilege';
+    -- the approval record stays: only a plan nobody decided or applied, expired for 7 days, may go (#540)
+    IF OLD.decision IS NULL AND OLD.applied_at IS NULL AND OLD.valid_until<now()-interval '7 days' THEN
+      RETURN OLD;
+    END IF;
+    RAISE EXCEPTION 'plans are kept: only an undecided plan expired for 7 days is deleted'
+      USING ERRCODE='insufficient_privilege';
   END IF;
   IF TG_OP='INSERT' THEN
     IF NEW.decision IS NOT NULL OR NEW.decided_by IS NOT NULL OR NEW.decided_at IS NOT NULL
@@ -197,7 +203,9 @@ def init(conn: psycopg.Connection) -> None:
         conn.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA morlet_steward TO {STEWARD_ROLE}")
         conn.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA morlet_steward TO {APPROVER_ROLE}")
         # plans: the steward proposes and reads; only approvers decide and apply (through the functions above)
-        conn.execute(f"REVOKE UPDATE, DELETE, TRUNCATE ON morlet_steward.plans FROM {STEWARD_ROLE}")
+        conn.execute(f"REVOKE UPDATE, TRUNCATE ON morlet_steward.plans FROM {STEWARD_ROLE}")
+        # DELETE for the retention of undecided plans long expired; the guard trigger refuses every other row
+        conn.execute(f"GRANT DELETE ON morlet_steward.plans TO {STEWARD_ROLE}")
         conn.execute(f"GRANT UPDATE (decision, decided_by, decided_at, approved_sha256, applied_by, applied_at, outcome) "
                      f"ON morlet_steward.plans TO {APPROVER_ROLE}")
         conn.execute(f"GRANT INSERT ON morlet_steward.plans TO {APPROVER_ROLE}")   # people propose too; another decides
@@ -484,6 +492,83 @@ def verify_summary(conn) -> tuple[dict[str, int], dict[str, float | None]]:
     rows = conn.execute("SELECT collection,coalesce(last_pass_problems,0),extract(epoch FROM now()-last_pass_finished_at)"
                         "/86400 FROM morlet_steward.verify_cursor").fetchall()
     return {r[0]: int(r[1]) for r in rows}, {r[0]: None if r[2] is None else float(r[2]) for r in rows}
+
+
+# ---- the steward's own tables (#540) ---------------------------------------------------------------------------
+
+def prune(conn, collections_: list[str], readable: list[str], keep_actions_days: float, keep_failures_days: float,
+          batch: int = 5000, max_batches: int = 20, timeout_s: float = 10.0) -> tuple[dict[str, int], bool, list[str]]:
+    """Bounds the steward's own tables. Deletes, oldest first, in batches of at most batch rows, each batch in its
+    own transaction with a lock and a statement timeout:
+    - actions: done and nothing_to_do rows older than keep_actions_days; failed and interrupted rows, and ingest hold
+      changes, older than keep_failures_days; a proposal's row once its plan is gone and it is older than
+      keep_actions_days. A started action (running, or interrupted and not yet marked) is never deleted.
+    - plans: undecided, unapplied plans expired 7 days ago (the guard trigger refuses every other plan).
+    - progress: rows of collections that no longer exist (collections_), and of recordings that no longer exist in a
+      collection the steward can read (readable).
+    - verify_cursor, and the insert counters in meta: entries of collections that no longer exist.
+    A table whose batch fails (a lock or statement timeout, a collection that cannot be read) is left for the next
+    retention; the others go on. Returns the rows deleted per table, whether a table had more to delete than
+    max_batches allowed, and the errors."""
+    keep, keep_f = make_days(keep_actions_days), make_days(keep_failures_days)
+    targets = [
+        # plans first: a proposal's action goes in the same retention as its plan
+        ("plans", "DELETE FROM morlet_steward.plans WHERE plan_id IN (SELECT plan_id FROM morlet_steward.plans "
+         "WHERE decision IS NULL AND applied_at IS NULL AND valid_until<now()-interval '7 days' ORDER BY plan_id LIMIT %s)",
+         ()),
+        ("actions", "DELETE FROM morlet_steward.actions WHERE action_id IN (SELECT action_id FROM morlet_steward.actions a "
+         "WHERE a.outcome<>'started' AND a.started_at<now()-least(%s::interval,%s::interval) AND ("
+         "(a.job='ingest_hold' AND a.started_at<now()-%s::interval) "
+         "OR (a.job='propose' AND a.started_at<now()-%s::interval AND NOT EXISTS(SELECT 1 FROM morlet_steward.plans p "
+         "WHERE p.plan_id=(a.args->>'plan_id')::bigint)) "
+         "OR (a.job NOT IN ('ingest_hold','propose') AND a.outcome IN ('done','nothing_to_do') "
+         "AND a.started_at<now()-%s::interval) "
+         "OR (a.job NOT IN ('ingest_hold','propose') AND a.outcome IN ('failed','interrupted') "
+         "AND a.started_at<now()-%s::interval)) ORDER BY action_id LIMIT %s)",
+         (keep, keep_f, keep_f, keep, keep, keep_f)),
+        ("progress", "DELETE FROM morlet_steward.progress WHERE ctid IN (SELECT ctid FROM morlet_steward.progress "
+         "WHERE collection<>ALL(%s::text[]) LIMIT %s)", (collections_,)),
+        ("verify_cursor", "DELETE FROM morlet_steward.verify_cursor WHERE collection IN (SELECT collection FROM "
+         "morlet_steward.verify_cursor WHERE collection<>ALL(%s::text[]) LIMIT %s)", (collections_,)),
+    ]
+    for c in readable:
+        targets.append(("progress", f"DELETE FROM morlet_steward.progress WHERE ctid IN (SELECT p.ctid FROM "
+                        f"morlet_steward.progress p WHERE p.collection=%s AND NOT EXISTS(SELECT 1 FROM {c} r "
+                        f"WHERE r.recording_id=p.recording_id) LIMIT %s)", (c,)))
+    deleted = {"actions": 0, "plans": 0, "progress": 0, "verify_cursor": 0}
+    # One budget for the whole call: each table gets one batch, and full batches (more may be left) draw from
+    # max_batches; when it is spent, the call stops and the next one continues.
+    more, errors, left = False, [], max_batches
+    for table, q, args in targets:
+        if more:
+            break
+        try:
+            while True:
+                with conn.transaction():
+                    conn.execute(f"SET LOCAL lock_timeout = {int(min(timeout_s, 1.0) * 1000)}")
+                    conn.execute(f"SET LOCAL statement_timeout = {int(timeout_s * 1000)}")
+                    n = conn.execute(q, args + (batch,)).rowcount
+                deleted[table] += n
+                if n < batch:
+                    break
+                left -= 1
+                if left <= 0:
+                    more = True
+                    break
+        except psycopg.Error as e:          # this table waits for the next retention; the others go on
+            if conn.closed:
+                raise
+            errors.append(f"{table}: {str(e).strip().splitlines()[0] if str(e).strip() else type(e).__name__}")
+    row = conn.execute("SELECT value FROM morlet_steward.meta WHERE key='chunk_inserts'").fetchone()
+    if row and any(k not in collections_ for k in row[0]):
+        kept = {k: v for k, v in row[0].items() if k in collections_}
+        conn.execute("UPDATE morlet_steward.meta SET value=%s WHERE key='chunk_inserts'", (json.dumps(kept),))
+    return deleted, more, errors
+
+
+def make_days(days: float) -> str:
+    """An interval literal of a number of days, to the second."""
+    return f"{max(0, int(days * 86400))} seconds"
 
 
 # ---- plans (#287, P3) ----------------------------------------------------------------------------------------------

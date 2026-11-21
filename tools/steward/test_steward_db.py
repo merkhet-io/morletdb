@@ -4,7 +4,8 @@
 
 Creates a database of its own (morlet_steward_test), runs the steward as the morlet_steward role, and checks that
 backlogs return to 0 with an audit row for every action, that verification runs and is recorded, that the steward's
-role cannot remove samples, that a failing job opens its breaker, and that the disk reserve pauses all upkeep.
+role cannot remove samples, that a failing job opens its breaker, that the disk reserve pauses all upkeep, and that
+the steward's own tables stay bounded (#540).
 """
 import json
 import os
@@ -287,7 +288,9 @@ class StewardDatabase(unittest.TestCase):
 
     def test_the_disk_reserve_pauses_upkeep_holds_ingest_and_releases_it(self):
         st = self.steward(reserve_bytes=1 << 62)      # more than any disk: the reserve is reached
-        st.tick()
+        with mock.patch.object(S, "prune") as prune:
+            st.tick()
+        prune.assert_not_called()                     # nor does the retention of its own tables run (#540)
         self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job<>'ingest_hold'"), 0)
         self.assertEqual(self.one("SELECT set_by FROM morlet_ingest_hold"), "morlet_steward")
         with self.assertRaises(psycopg.errors.DiskFull) as e:
@@ -407,7 +410,9 @@ class StewardDatabase(unittest.TestCase):
 
     def test_the_disk_reserve_pauses_all_upkeep(self):
         st = self.steward(reserve_bytes=1 << 62)      # more than any disk: the reserve is reached
-        st.tick()
+        with mock.patch.object(S, "prune") as prune:
+            st.tick()
+        prune.assert_not_called()                     # nor does the retention of its own tables run (#540)
         self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE job<>'ingest_hold'"), 0)
         cause = self.one("SELECT cause FROM morlet_steward.status WHERE key='disk'")
         self.assertIn("reserve", cause)
@@ -422,6 +427,147 @@ class StewardDatabase(unittest.TestCase):
         self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.status WHERE key='steward'"), 0)
         self.admin.execute("UPDATE morlet_steward.heartbeat SET at=now()-interval '1 hour'")
         self.assertIn("has not reported", self.one("SELECT cause FROM morlet_steward.status WHERE key='steward'"))
+
+
+    # ---- #540: the steward's own tables stay bounded; the approval record stays ----
+
+    def action(self, job, outcome, days, plan_id=None):
+        args = json.dumps({"plan_id": plan_id} if plan_id is not None else {})
+        return self.one("INSERT INTO morlet_steward.actions(job,outcome,started_at,finished_at,args) "
+                        "VALUES (%s,%s,now()-make_interval(days=>%s),now()-make_interval(days=>%s),%s) RETURNING action_id",
+                        (job, outcome, days, days, args))
+
+    def plan(self, expired_days, decision=None, applied=False):
+        # as the table's owner, who is exempt from the guard, so old and decided plans can be made directly
+        return self.one("""INSERT INTO morlet_steward.plans(kind,payload,sha256,created_at,valid_until,decision,
+            decided_by,decided_at,approved_sha256,applied_by,applied_at)
+          SELECT 'extension_update',p,h,now()-make_interval(days=>%s+1),now()-make_interval(days=>%s),%s::text,
+            CASE WHEN %s::text IS NOT NULL THEN 'bob' END,CASE WHEN %s::text IS NOT NULL THEN now() END,
+            CASE WHEN %s::text='approved' THEN h END,CASE WHEN %s::bool THEN 'bob' END,CASE WHEN %s::bool THEN now() END
+          FROM (SELECT p,encode(sha256(convert_to(p::text,'UTF8')),'hex') h
+                FROM (SELECT jsonb_build_object('to',gen_random_uuid()::text) p) x) y RETURNING plan_id""",
+                        (expired_days, expired_days, decision, decision, decision, decision, applied, applied))
+
+    def retention(self, st):
+        st.pruned_at = None
+        st.retention(S.collections(self.conn), [c for c in S.collections(self.conn) if S.privileged(self.conn, c)])
+
+    def test_old_rows_go_by_outcome_and_decided_plans_stay(self):
+        gone_plan = self.plan(8)
+        keep = {"recent undecided plan": self.plan(6), "rejected": self.plan(400, "rejected"),
+                "applied": self.plan(400, "approved", applied=True), "approved": self.plan(400, "approved")}
+        drop = {"undecided expired 8 days": gone_plan}
+        acts_keep = {"done 29 d": self.action("envelopes", "done", 29),
+                     "failed 31 d": self.action("rollups", "failed", 31),
+                     "interrupted 179 d": self.action("verify", "interrupted", 179),
+                     "started 400 d": self.action("envelopes", "started", 400),
+                     "hold 31 d": self.action("ingest_hold", "done", 31),
+                     "proposal of a kept plan": self.action("propose", "done", 400, keep["rejected"])}
+        acts_drop = {"done 31 d": self.action("envelopes", "done", 31),
+                     "nothing to do 31 d": self.action("chunk_summaries", "nothing_to_do", 31),
+                     "failed 181 d": self.action("rollups", "failed", 181),
+                     "interrupted 181 d": self.action("verify", "interrupted", 181),
+                     "hold 181 d": self.action("ingest_hold", "failed", 181),
+                     "proposal of a removed plan": self.action("propose", "done", 31, gone_plan)}
+        # as the steward, by direct SQL, only the undecided plan expired for 7 days can be deleted
+        for name, pid in keep.items():
+            with self.subTest(plan=name), self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                self.conn.execute("DELETE FROM morlet_steward.plans WHERE plan_id=%s", (pid,))
+        self.retention(self.steward())
+        plans = {r[0] for r in self.admin.execute("SELECT plan_id FROM morlet_steward.plans")}
+        acts = {r[0] for r in self.admin.execute("SELECT action_id FROM morlet_steward.actions")}
+        for name, pid in keep.items():
+            self.assertIn(pid, plans, name)
+        for name, pid in drop.items():
+            self.assertNotIn(pid, plans, name)
+        for name, aid in acts_keep.items():
+            self.assertIn(aid, acts, name)
+        for name, aid in acts_drop.items():
+            self.assertNotIn(aid, acts, name)
+        self.assertEqual(self.one("SELECT result->'deleted' FROM morlet_steward.actions WHERE job='retention'"),
+                         {"actions": 6, "plans": 1, "progress": 0, "verify_cursor": 0})
+
+    def test_removed_recordings_and_collections_leave_no_progress_and_finished_work_is_not_redone(self):
+        st = self.steward()
+        self.run_until_idle(st)
+        self.assertGreater(self.one("SELECT count(*) FROM morlet_steward.progress WHERE recording_id='r2'"), 0)
+        a = self.admin
+        a.execute("""SELECT morlet_create_stream_collection('public','gone');
+          SELECT morlet_start_recording('gone','g1',1000,'x','g','{}',512,256,'zscore','none')""")
+        a.execute("SELECT morlet_append_chunks_raw('gone','g1',0,morlet_float8_le_bytes(ARRAY(SELECT i::float8 "
+                  "FROM generate_series(0,9999) i)),32768)")
+        S.grant(a)
+        self.run_until_idle(st)
+        self.assertGreater(self.one("SELECT count(*) FROM morlet_steward.progress WHERE collection='public.gone'"), 0)
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.verify_cursor WHERE collection='public.gone'"), 1)
+        a.execute("DELETE FROM line WHERE recording_id='r2'")
+        a.execute("DROP TABLE gone, gone_chunks CASCADE")
+        before = self.one("SELECT max(action_id) FROM morlet_steward.actions")
+        st.pruned_at = None
+        self.run_until_idle(st)
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.progress WHERE recording_id='r2' "
+                                  "OR collection='public.gone'"), 0)
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.verify_cursor WHERE collection='public.gone'"), 0)
+        self.assertNotIn("public.gone", self.one("SELECT value FROM morlet_steward.meta WHERE key='chunk_inserts'"))
+        self.assertGreater(self.one("SELECT count(*) FROM morlet_steward.progress WHERE recording_id='r1'"), 0)
+        # r1 was finished before: no builder wrote anything for it again
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE action_id>%s AND outcome='done' "
+                                  "AND job IN ('envelopes','chunk_summaries','rollups','context_values')", (before,)), 0)
+        # and new samples of r1 are still built
+        a.execute("SELECT morlet_append_chunks_raw('line','r1',1100000,morlet_float8_le_bytes(ARRAY(SELECT "
+                  "i::float8 FROM generate_series(0,9999) i)),32768)")
+        self.run_until_idle(st)
+        self.assertEqual(self.one("SELECT count(*) FROM line_envelopes WHERE recording_id='r1'"),
+                         (1_110_000 - 4096) // 2048 + 1)
+
+    def test_a_failing_retention_is_recorded_and_the_tick_goes_on(self):
+        old = self.action("envelopes", "done", 31)
+        st = self.steward()
+        with mock.patch.object(S, "prune", side_effect=psycopg.errors.LockNotAvailable("lock timeout")):
+            self.run_until_idle(st)
+        self.assertEqual(self.one("SELECT error FROM morlet_steward.actions WHERE job='retention'"), "lock timeout")
+        self.assertEqual(self.one("SELECT count(*) FROM line_chunks WHERE summary IS NULL"), 0)   # the work went on
+        self.assertEqual(self.one("SELECT count(*) FROM morlet_steward.actions WHERE action_id=%s", (old,)), 1)
+        # a table that cannot be locked waits; the other tables are pruned
+        self.admin.execute("INSERT INTO morlet_steward.verify_cursor(collection) VALUES ('public.nowhere')")
+        locker = psycopg.connect(dsn_for(DB))
+        self.addCleanup(locker.close)
+        locker.execute("LOCK TABLE morlet_steward.verify_cursor IN ACCESS EXCLUSIVE MODE")
+        deleted, more, errors = S.prune(self.conn, S.collections(self.conn), [], 30, 180)
+        locker.rollback()
+        self.assertEqual(deleted["actions"], 1)
+        self.assertEqual([e.split(":")[0] for e in errors], ["verify_cursor"])
+        self.assertFalse(more)
+        self.assertEqual(S.prune(self.conn, S.collections(self.conn), [], 30, 180)[0]["verify_cursor"], 1)
+
+    def test_retention_stops_at_its_batch_limit_and_continues_on_the_next_tick(self):
+        self.admin.execute("INSERT INTO morlet_steward.actions(job,outcome,started_at) "
+                           "SELECT 'envelopes','done',now()-interval '40 days' FROM generate_series(1,25)")
+        deleted, more, errors = S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10, max_batches=2)
+        self.assertEqual((deleted["actions"], more, errors), (20, True, []))
+        self.assertEqual(S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10)[0]["actions"], 5)
+        # the budget is shared by all tables: progress rows of a removed collection wait for the next call
+        self.admin.execute("INSERT INTO morlet_steward.actions(job,outcome,started_at) "
+                           "SELECT 'envelopes','done',now()-interval '40 days' FROM generate_series(1,25)")
+        self.admin.execute("INSERT INTO morlet_steward.progress SELECT 'rollups','public.gone','g'||i,1 "
+                           "FROM generate_series(1,5) i")
+        deleted, more, _ = S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10, max_batches=2)
+        self.assertEqual((deleted["actions"], deleted["progress"], more), (20, 0, True))
+        deleted = S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10)[0]
+        self.assertEqual((deleted["actions"], deleted["progress"]), (5, 5))
+
+    def test_retention_ages_must_be_finite(self):
+        for v in ("inf", "nan", "0.5", "1e9"):
+            with self.subTest(v=v), self.assertRaises(SystemExit):
+                steward.main(["status", "--dsn", dsn_for(DB), "--keep-actions-days", v])
+
+    def test_the_tables_are_visible_in_metrics(self):
+        import metrics as M
+        self.run_until_idle(self.steward())
+        self.admin.execute("SELECT pg_stat_force_next_flush()")
+        out = M.Collector(dsn_for(DB, "morlet_steward"), collection_every_s=0).scrape()
+        for t in ("actions", "progress"):
+            self.assertTrue(any(x.startswith(f'morlet_steward_table_rows{{table="{t}"}} ') for x in out.splitlines()), t)
 
 
 @unittest.skipUnless(DSN, "set MORLET_STEWARD_TEST_DSN to run the steward database tests")

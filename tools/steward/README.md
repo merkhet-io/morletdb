@@ -33,8 +33,23 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
     transaction.
   - `morlet_steward.decide` and `morlet_steward.apply` enforce the rules in SQL: no self-approval; a payload tied to
     its hash and the hash that was approved; expiry after 24 hours; applied once.
-  - The steward's role can propose and read plans, but cannot decide, apply or delete them, and cannot remove
-    samples itself.
+  - The steward's role can propose and read plans, but cannot decide or apply them, and cannot remove samples
+    itself. It can delete only a plan nobody decided or applied that expired 7 days ago (retention below); decided
+    and applied plans stay as the approval record. The rule is enforced by the plans table's trigger, also for
+    direct SQL.
+- **Retention of its own tables (#540):** every hour, the steward prunes its own tables in batches of 5,000 rows,
+  each with a lock and a statement timeout, at most 20 full batches per run (again on the next tick if more is left):
+  - `actions`: finished work (`done`, `nothing_to_do`) after 30 days (`--keep-actions-days`); `failed` and
+    `interrupted` actions and ingest hold changes after 180 days (`--keep-failures-days`); a proposal's row once
+    its plan is gone and it is older than `--keep-actions-days`. A `started` action is never deleted.
+  - `plans`: undecided plans 7 days after they expired.
+  - `progress`, `verify_cursor` and the insert counters: rows of recordings and collections that no longer exist.
+
+  A table it cannot prune (a lock timeout, for example) waits for the next hour, and the other tables and the rest
+  of the tick go on; the attempt is recorded as a `retention` action. It does not run while ingest is held at the
+  disk reserve. An existing installation gets the new plan rule by running `morlet-steward init` again (the
+  compose file does so at every start); until then, plans are not pruned and each hourly attempt is recorded as a
+  failed `retention` action, while the other tables are pruned.
 - **Packaging (P4):**
   - `deploy/steward/Dockerfile` is a sidecar image. Its health check is healthy while the status is normal or
     attention.
@@ -45,6 +60,7 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
   `127.0.0.1:9188`), using only the standard library. A scrape only reads. It covers:
   - the overall state (0 normal, 1 attention, 2 action required) and the items by level;
   - the heartbeat age, circuit breakers, actions in the last 24 hours, and waiting plans;
+  - the estimated rows of the steward's tables `actions`, `plans`, `progress` and `verify_cursor` (#540);
   - the ingest hold, and disk free, total, reusable (#538) and database bytes;
   - the last integrity pass per collection;
   - `morlet_collection_status` per collection and window size (backlogs and bytes);
