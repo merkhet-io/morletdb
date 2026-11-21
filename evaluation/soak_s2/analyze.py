@@ -109,6 +109,8 @@ def analyze(a) -> dict:
     t1 = t0 + a.days * 86400
     w = a.window_hours * HOUR
     inweek = lambda r: t0 <= r.get("at", -1) < t1
+    malformed = {f: sum(1 for r in lines(p) if "unparsable" in r)        # malformed rows: their checks stay PENDING
+           for f, p in (("probe", res / "probe.jsonl"), ("host", res / "host.jsonl"), ("gaps", spool / "gaps.jsonl"))}
     probe = [r for r in lines(res / "probe.jsonl") if inweek(r)]
     host = [r for r in lines(res / "host.jsonl") if inweek(r)]
     gaps = [r for r in lines(spool / "gaps.jsonl") if inweek(r)]
@@ -122,7 +124,7 @@ def analyze(a) -> dict:
     V = Verdicts()
     S = {"schedule": {k: {"at": iso(v.get("at")), "window": [iso(x) for x in v.get("window", [])]}
                       for k, v in sched.items()},
-         "week": {"start": iso(t0), "end": iso(t1), "last_record": iso(last), "complete": complete,
+         "unparsable_lines": malformed, "week": {"start": iso(t0), "end": iso(t1), "last_record": iso(last), "complete": complete,
                   "probe_rounds": len(probe), "host_records": len(host), "gap_lines": len(gaps)}}
 
     # ---- H1, nothing lost or changed ---------------------------------------------------------------------------
@@ -152,8 +154,8 @@ def analyze(a) -> dict:
     holes = [g for g in gaps if g.get("cause") == "spool hole on replay"]
     have_gaps = (spool / "gaps.jsonl").exists()
     V.add("H1", "no 'spool hole on replay' in the collector's gaps.jsonl",
-          False if holes else (True if have_gaps and complete else None),
-          {"holes": len(holes), "gaps_log": have_gaps})
+          False if holes else (True if have_gaps and complete and not malformed["gaps"] else None),
+          {"holes": len(holes), "gaps_log": have_gaps, "unparsable_lines": malformed["gaps"]})
 
     # ---- H2, unattended ------------------------------------------------------------------------------------------
     V.add("H2", "no manual action besides D1 and D2", None if a.manual_actions is None else a.manual_actions == 0,
@@ -197,7 +199,7 @@ def analyze(a) -> dict:
         else:
             run_start = None
     hold = [iso(t) for t, _, txt in levels if re.search(r"ingest", txt, re.I) and re.search(r"\bhold", txt, re.I)]
-    unknown = sum(1 for _, lvl, _ in levels if lvl not in ("NORMAL", "ATTENTION", "ACTION REQUIRED"))
+    unknown = sum(1 for _, lvl, _ in levels if lvl not in ("NORMAL", "ATTENTION", "ACTION REQUIRED")) + malformed["host"]
     counts = {k: sum(1 for _, lvl, _ in levels if lvl == k) for k in ("NORMAL", "ATTENTION", "ACTION REQUIRED")}
     V.add("H2", "steward never ACTION REQUIRED > 1 h, never sets the ingest hold",
           # an unreadable status snapshot proves nothing: PENDING until each is explained
@@ -312,13 +314,14 @@ def analyze(a) -> dict:
         stored = endp["stored_samples"]
         unsearchable = stored - cov.get("searchable", 0)
         if "coverage_older" in endp:   # S2: both sides clipped at one hour before each recording's end
-            older = max(1, endp.get("stored_older", 0))
-            frac = min(1.0, endp["coverage_older"].get("searchable", 0) / older)
+            older = endp.get("stored_older")
+            frac = None if not older else min(1.0, endp["coverage_older"].get("searchable", 0) / older)
         else:                          # S1's probe: older samples at the nominal rate
             older = max(1, stored - int(NOMINAL * HOUR))
             frac = min(1.0, cov.get("searchable", 0) / older)
-        V.add("H5", "at the end, >= 99% of samples older than 1 h searchable", frac >= 0.99 if complete else None,
-              {"searchable_fraction_of_older": round(frac, 5), "unsearchable_h_of_feed": round(unsearchable / NOMINAL / HOUR, 3),
+        V.add("H5", "at the end, >= 99% of samples older than 1 h searchable",
+              None if frac is None or not complete else frac >= 0.99,
+              {"searchable_fraction_of_older": None if frac is None else round(frac, 5), "unsearchable_h_of_feed": round(unsearchable / NOMINAL / HOUR, 3),
                "at": iso(endp["at"])})
     else:
         V.add("H5", "at the end, >= 99% of samples older than 1 h searchable", None, "no coverage in probe.jsonl")

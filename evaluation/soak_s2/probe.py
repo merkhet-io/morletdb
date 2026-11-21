@@ -68,17 +68,19 @@ def round_(conn, c: str, k: int) -> dict:
     out["db_bytes"] = int(conn.execute("SELECT pg_database_size(current_database())").fetchone()[0])
     try:
         # each range in full, and clipped at one hour before its recording's stored end (H5: samples older than 1 h)
-        cov = conn.execute(f"""SELECT v.state, sum(v.end_sample - v.start_sample)::bigint,
-              sum(greatest(0, least(v.end_sample, r.cut) - v.start_sample))::bigint
-            FROM morlet_coverage(%s::regclass) v
-            JOIN (SELECT recording_id, (checkpoint->>'end')::bigint - round(sample_rate_hz * 3600)::bigint cut
-                  FROM {c}) r USING (recording_id)
-            GROUP BY v.state""", (c,)).fetchall()
-        out["coverage"] = {s: int(n) for s, n, _ in cov}
-        out["coverage_older"] = {s: int(o) for s, _, o in cov}
-        out["stored_older"] = int(conn.execute(
-            f"SELECT coalesce(sum(greatest(0, (checkpoint->>'end')::bigint - round(sample_rate_hz * 3600)::bigint)),0) "
-            f"FROM {c}").fetchone()[0])
+        # one statement, so both sides see the same snapshot: each range in full and clipped at one hour before its
+        # recording's stored end, and the stored samples older than that (H5: samples older than 1 h)
+        cov = conn.execute(f"""WITH r AS (SELECT recording_id, (checkpoint->>'end')::bigint
+                                              - round(sample_rate_hz * 3600)::bigint cut FROM {c}),
+              v AS (SELECT * FROM morlet_coverage(%s::regclass))
+            SELECT v.state, sum(v.end_sample - v.start_sample)::bigint,
+              sum(greatest(0, least(v.end_sample, r.cut) - v.start_sample))::bigint,
+              (SELECT coalesce(sum(greatest(0, cut)), 0) FROM r)::bigint
+            FROM v JOIN r USING (recording_id) GROUP BY v.state""", (c,)).fetchall()
+        out["coverage"] = {s: int(n) for s, n, _, _ in cov}
+        out["coverage_older"] = {s: int(o) for s, _, o, _ in cov}
+        if cov:
+            out["stored_older"] = int(cov[0][3])
     except Exception as exc:  # noqa: BLE001
         out["coverage_error"] = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
     return out

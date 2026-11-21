@@ -93,7 +93,8 @@ for id in D1 D2; do
   t_at=$(now); log "$id start: $cmd"
   python3 -c 'import json,sys; print(json.dumps({"id": sys.argv[1], "cmd": sys.argv[2], "at": float(sys.argv[3])}))' \
     "$id" "$cmd" "$t_at" >> "$ATT"
-  $cmd >/dev/null || log "$id: command returned $?"
+  # a command that fails stops here: the attempt stays without a result and is logged as interrupted next tick
+  if ! $cmd >/dev/null; then log "$id: command failed; recorded as interrupted on the next tick"; exit 1; fi
   t_done=$(now)
   # one 15-minute deadline from the disturbance for the whole measurement; a poll starts every 10 s at most
   deadline=$(python3 -c "print($t_at + 900)")
