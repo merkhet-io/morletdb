@@ -4198,6 +4198,47 @@ END $$"#).unwrap();
         .unwrap();
     }
 
+    #[pg_test]
+    fn time_mapping_falls_back_to_start_and_rate_without_an_anchor_table() {
+        // #562: morlet_time_pieces read r.count from a record never assigned when the collection had no anchor
+        // table, so every mapping function failed there instead of using start time and rate. Each state on its
+        // own: no table, an empty table, anchors, every anchor retracted.
+        Spi::run(
+            "SELECT morlet_create_stream_collection('public','tp');
+            SELECT morlet_start_recording('tp','r',1000,'x','u','{\"start_ns\":0}')",
+        )
+        .unwrap();
+        let mapping = || {
+            Spi::get_one::<String>(
+                "SELECT (SELECT utc_ns::bigint||' '||basis FROM morlet_sample_utc('tp','r',10))
+            ||' | '||(SELECT sample||' '||basis FROM morlet_utc_to_sample('tp','r',7000000))
+            ||' | '||(SELECT string_agg(start_sample||'-'||end_sample||' '||basis,',')
+                      FROM morlet_utc_to_samples('tp','r',5000000,7000000))",
+            )
+            .unwrap()
+            .unwrap()
+        };
+        let plain = "10000000 start+rate | 7 start+rate | 5-7 start+rate";
+        assert_eq!(mapping(), plain, "no anchor table");
+        Spi::run("SELECT morlet_enable_time_anchors('tp')").unwrap();
+        assert_eq!(mapping(), plain, "an empty anchor table");
+        let rows = anchor_rows(&[("r", 0, MS, 0, "pps", false)]);
+        Spi::run(&format!(
+            "SELECT morlet_add_time_anchors('tp','b1','{rows}')"
+        ))
+        .unwrap();
+        assert_eq!(
+            mapping(),
+            "11000000 anchors | 6 anchors | 4-6 anchors",
+            "one anchor: sample 0 at 1 ms"
+        );
+        Spi::run(
+            "SELECT morlet_revise_time_anchor('tp',anchor_id,retract=>true) FROM tp_time_anchors",
+        )
+        .unwrap();
+        assert_eq!(mapping(), plain, "every anchor retracted");
+    }
+
     fn time_anchor_tenant_check(anchors_first: bool) {
         tenant_fixture();
         if anchors_first {
