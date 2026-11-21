@@ -661,11 +661,14 @@ BEGIN
       WHERE t.metadata @> $1 AND coalesce((t.checkpoint->>''end'')::bigint,0)>0
       ORDER BY ARRAY(SELECT t.metadata->>k FROM unnest($2) k),public.morlet_recording_start_ns(t.metadata) DESC NULLS LAST,
         t.recording_id DESC',collection) END;
-  -- chosen once: the budget check and the reads below use the same recordings
-  EXECUTE format('SELECT array_agg(x.recording_id ORDER BY x.recording_id) FROM (%s) x',pick)
-    INTO ids USING metadata_filter,stream_keys;
+  -- chosen once, at most max_recordings + 1 of them, so an oversized call holds no more than that; the reads below
+  -- use the same recordings. Only for the error are all matches counted.
+  EXECUTE format('SELECT array_agg(x.recording_id ORDER BY x.recording_id) FROM (SELECT y.recording_id FROM (%s) y
+      LIMIT $3) x',pick)
+    INTO ids USING metadata_filter,stream_keys,max_recordings+1;
   matching:=coalesce(cardinality(ids),0);
   IF matching>max_recordings THEN
+    EXECUTE format('SELECT count(*) FROM (%s) x',pick) INTO matching USING metadata_filter,stream_keys;
     RAISE EXCEPTION '% %, more than max_recordings (%)',matching,
       CASE WHEN stream_keys IS NULL THEN 'recordings match' ELSE 'streams match' END,max_recordings
       USING HINT='Narrow metadata_filter or pass a larger max_recordings.';
