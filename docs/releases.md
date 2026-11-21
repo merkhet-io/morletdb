@@ -71,10 +71,12 @@ a leading v; GHCR image tags do not.
 - **0.4.0-beta.3:** SQL version 0.3.14 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2 (unchanged). The
   chunk format is unchanged.
   - **`morlet_latest_per_stream` (experimental, #527):** the newest recording with samples of each stream, so a
-    collector's daily recordings no longer make "latest" read every stored day. `morlet_latest` keeps its signature.
+    collector's daily recordings no longer make "latest" read the chunks of every stored day (choosing the recording
+    still reads one metadata row per stored recording). `morlet_latest` keeps its signature.
     MCP `latest` takes `stream_keys`.
-  - **Steward (#528):** the recording furthest behind is served first, and among those the least recently served.
-    In soak S1, recordings late in alphabetical order fell behind without limit.
+  - **Steward (#528):** the candidates are the recordings furthest behind (up to five per collection), and of those
+    the steward serves the one it served least recently, never-served first, ties in backlog order. In soak S1,
+    recordings late in alphabetical order fell behind without limit.
 - **0.4.0-beta.2:** SQL version 0.3.13 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2. The chunk
   format is unchanged.
   - **Time anchors (experimental, #393, #383):** sync points per recording, written by the importer from CSV
