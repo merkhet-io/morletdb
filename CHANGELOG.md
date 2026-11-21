@@ -37,6 +37,12 @@ SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morle
   before the chunks (one transaction, a resend is a no-op); anchors shipped earlier are replaced after a revision at
   the source; a target with anchors of its own that differ is refused before anything is written; and the time
   axes are compared before the first chunk and at the end.
+- **SDK: `Client.investigate`, one bounded snapshot of an investigation (first part of #572).** Waveform matches,
+  query statistics, optional context comparison with labelled neighbours and glossary definitions, and recording
+  coverage, read in one read-only REPEATABLE READ transaction (or a savepoint in a compatible caller snapshot) under
+  one deadline and explicit limits; a limit raises `InvestigationLimitError` instead of returning a partial answer.
+  The typed, versioned result records the effective settings and provenance, notes and machine-readable
+  `evidence_states`, and keeps coverage distinct from candidate completeness and approximate-search recall.
 
 ## 0.4.0-beta.3
 
