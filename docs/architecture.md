@@ -1,78 +1,96 @@
-# One recording workflow
+# Architecture
 
-MorletDB's active development path is a portable Rust signal core, a PostgreSQL
-17 integration, and Python ingestion and inspection tools. The first workflow is
-**import a recording, query an interval, inspect related intervals and provenance**.
-It is an early prototype, not a supported production database or diagnostic system.
+Status: describes release 0.4.0-beta.3 and `main`. What each part promises is in the maturity table below;
+the [support boundaries](../SUPPORT.md) say what the beta supports, and the
+[roadmap](product-roadmap.md) what remains before 1.0. When this page and the code disagree, the code and the
+[README](../README.md) win; please open an issue.
 
-## Canonical model
+## Editions and maturity
 
-A recording is an append-only, uniformly sampled channel with an ID, sample rate,
-unit, acquisition metadata and global half-open sample coordinates. Both short
-files and long streams use the same recording/chunk/segment tables and append
-contract. Chunks are transport/storage boundaries; search windows can cross them.
+MorletDB has two editions that store the same bytes for the same samples:
 
-`crates/morlet-core` owns numerical semantics and chunk extraction.
-`extensions/pg_morlet/sql/streams.sql` owns the active SQL recording API.
-`tools/ingest` imports existing recordings. Python clients call these SQL APIs;
-they must not implement another extractor or storage engine.
+- the **server edition**, PostgreSQL with the pg_morlet extension. This is the product, in beta;
+- the **embedded edition**, a recording in one SQLite file inside a program. It is experimental.
 
-Raw samples remain authoritative. `morlet-energy-v1` is a baseline representation,
-not a promise that spectral similarity equals the event similarity a user wants.
-Its search features pool energy across each window; localized tokens are not a
-temporal search index. Representation changes require versioning and evaluation.
-See the [advanced retrieval proposal](advanced-retrieval.md) for a staged design
-covering temporal energy grids, wave-token indexes, ordered motifs and ML datasets.
-The [offline wave-index PoC](wave-index-poc.md) now experiments with localized
-energy cells, exhaustive temporal scoring and approximate candidate postings.
-Database generations, migrations and production retrieval remain proposed.
+| Part | Path | Maturity |
+|---|---|---|
+| PostgreSQL extension | `extensions/pg_morlet` | **Beta.** Every SQL function is classified stable, experimental or internal ([API stability](api-stability.md)); stable functions keep their signature and behaviour, experimental ones may change between minor releases |
+| Chunk formats (Grizzbit) | `crates/grizzbit` | **Frozen for reading:** chunk format versions 2, 3, 5 and 6 stay readable by every later release of the same major version ([chunk format](chunk-format.md)) |
+| Portable core | `crates/morlet-core` | Internal library of both editions: envelopes, features, summaries, checkpoints; no PostgreSQL dependency |
+| Python SDK | `sdk/python` | **Beta** (0.1.0b2), for the server edition ([Python SDK](python-sdk.md)) |
+| Embedded edition | `crates/morlet-sqlite`, `morletdb.open` in the SDK | **Experimental** (#351): one writer per file, no search yet; file format 1 frozen with the release that first ships it ([embedded edition](embedded-edition.md), [file format](file-format.md)) |
+| C decoder | `crates/morlet-ffi` | For clients of compressed transfer, which is an experimental SQL feature ([compressed transfer](compressed-transfer.md)) |
+| Steward | `tools/steward` | Ships with the beta: unattended upkeep on edge machines without a DBA (phase 1 of #287; [design](steward-design.md)) |
+| MCP server | `tools/mcp` | Ships with the beta; read-only ([MCP](mcp.md)) |
+| Import, export, shipping | `tools/ingest` | Ships with the beta: file importers, the edge-to-central chunk shipper ([chunk shipping](chunk-shipping.md)), S3 import and export |
+| Recording viewer | `tools/viewer` | Local, read-only page |
+| WinCC OA integration | `integrations/winccoa` | **Experimental**, awaiting native acceptance in WinCC OA (#474) |
+| Numerical reference | `tools/reference-go` | Frozen; used only to maintain the numerical contract, not run |
 
-## Experiments retained, not expanded
+The promises of the beta (API stability, readable data, upgrades) cover the SQL API and the on-disk formats.
+The tools follow the documented behaviour on their pages and carry no separate API promise.
 
-| Component | Status |
-|---|---|
-| Rust core and continuous recording SQL | Active prototype path |
-| Go extractor and fixture generator | Frozen numerical reference in tools/reference-go; no runtime |
-| Bounded-recording SQL, JSONB grids and typed composite arrays | Legacy experiments; no new product features |
-| JSONB/typed/DuckDB comparison harness | Historical storage experiments, not a backend selection |
+## Recording model
 
-Existing experimental SQL APIs remain installable to preserve tests. The legacy Go server, CLI and dashboard have been removed; their source remains in Git history.
-New examples and features target the continuous model. The Go fixture generator
-remains available for deliberate numerical-contract maintenance, not normal use.
+A recording is one append-only, uniformly sampled channel: an ID, a sample rate, a channel name, a unit, a sample
+quantum and its acquisition metadata, with zero-based, half-open sample intervals. Short files and long streams use
+the same recording, chunk and segment tables and the same append contract. Appends must be contiguous; an
+identical retry is a no-op and a conflicting one fails. Chunks (1 to 32,768 samples) are storage and transfer
+boundaries; reads and search windows can cross them.
+
+Raw samples are authoritative. Grizzbit codes every chunk losslessly, bit for bit, with a CRC-32C, and the append
+decodes it again and compares it before storing it (`morlet.verify_appends`, on by default). Everything else is
+derived from the chunks and can be rebuilt from them.
+
+## Server edition: data flow
+
+1. **Append.** `morlet_append_chunk` and its variants write coded chunks at their global sample offset.
+2. **Derive.** Builders write chunk summaries, amplitude envelopes, probe rows (with pgvector), roll-ups, context
+   values and coverage. An application can call them in the append transaction, so new windows are searchable at
+   commit; on edge machines the steward runs them in one budgeted loop. The extension itself starts no background
+   worker.
+3. **Search.** Exact search scores every eligible window with a bounded-lag score. Probe search takes candidates
+   from a pgvector HNSW index and re-ranks them with the same exact score: it is approximate in which windows it
+   considers, never in the distances it returns ([search contract](search-contract.md)). Budgets are explicit; a
+   search that would exceed its budget fails rather than truncating silently.
+4. **Read back.** Every match is a recording and a sample interval that reads back the original samples, with its
+   metadata, context and labels.
+
+Around this core, all opt-in per collection: context segments and labels ([context model](context-model.md)),
+memory levels that compact old episodes while keeping their summaries, with a ledger ([memory
+levels](memory-design.md)), time anchors for a source's own timestamps ([clock drift](clock-drift.md)), the integrity
+check `morlet_verify`, notifications, synchronous groups, the ingest hold, and row-level security on every companion
+table ([access control](access-control.md)). Which of these are stable and which experimental is listed in
+[API stability](api-stability.md).
+
+Operations stay with PostgreSQL: roles, backups, point-in-time recovery and replicas
+([runbooks](runbooks.md), [operations](operations.md)). The steward adds upkeep, disk watching with the ingest hold,
+rolling verification, and plans for destructive moves that another person approves.
+
+## Embedded edition
+
+`crates/morlet-sqlite` stores recordings in one SQLite file through `morlet-core`, so it holds the same chunk bytes
+and computes the same interval statistics as the server. It has one writer per file, the file's permissions as
+access control, and no search yet. The Python SDK opens such a file with `morletdb.open`, and recordings move
+between the two editions with the SDK's `import_file` and `export_file`, verified on arrival
+([embedded edition](embedded-edition.md#use)).
 
 ## Decisions and boundaries
 
-- PostgreSQL is the first integration, not an irreversible requirement to keep
-  every raw archive in database arrays. Keep the core independent of pgrx.
-- Keep extraction synchronous until measured partner workloads justify durable
-  background jobs. Do not introduce a queue merely to anticipate scale.
-- Keep bounded exact search as a reference. Broader search must expose its budget;
-  never return a silently truncated candidate population.
-- No new storage engine, hosted service, acquisition controller or automatic
-  diagnosis is needed to evaluate the first workflow.
-- Recording identity and extraction specifications should eventually be separate
-  entities to support re-extraction. The current single checkpoint representation
-  is an explicit limitation; this consolidation does not claim a schema migration.
-- Approved source hashes, acquisition timestamps and calibration can be retained
-  in metadata today. Formal multi-channel synchronization, gaps and calibration
-  schemas require partner evidence before implementation.
+- **The core stays portable.** `morlet-core` and `grizzbit` have no PostgreSQL dependency; both editions use them.
+- **Exact search is the reference.** Approximate retrieval reports its recall against it, separately from relevance.
+- **No silent changes to samples.** Unsupported input is refused, never rounded, resampled or interpolated.
+  Compaction keeps the summaries, coverage reporting and the ledger, and missing evidence is distinguishable from a
+  negative search result.
+- **Upkeep outside the extension.** Derived data is built by explicit builder calls, by the application or the
+  steward, not by a worker inside PostgreSQL. This keeps the work visible and budgeted on small machines.
+- **Not provided:** automatic diagnosis, resampling, gap interpolation, cross-channel search or synchronized
+  multichannel matching. Search distances are not confidence scores.
+- **Known limitation:** a recording has one extraction specification (its checkpoint). Separating recording
+  identity from representation specifications, for re-extraction or several representations, is not done.
 
-## Delivery status and next work
+## Proposals, not built
 
-Cross-chunk reads, stored-interval queries, source exclusion, overlap suppression
-and the container/Python walkthrough are implemented. A small CWRU evaluation
-and a 10k feature-only ranking smoke are implemented; neither establishes
-differentiation or production capacity.
-
-Next: independently exercise onboarding, evaluate harder partner-approved
-recordings with negative queries, and measure sustained ingest/search resource
-use before selecting indexes, asynchronous jobs or external raw storage.
-See [support boundaries](../SUPPORT.md) and [evaluation](../evaluation/README.md).
-
-## Toward waveform evidence for RAG
-
-The [wave-RAG specification](wave-rag-spec.md) proposes interval annotations,
-versioned evidence export and an optional grounded-answer application. These are
-not implemented. Start with annotation/revision permissions and a deterministic
-report over the existing exact SQL retrieval; generation stays outside PostgreSQL.
-Multiple durable representations still require advanced-retrieval stage A1.
+The [advanced retrieval proposal](advanced-retrieval.md), with its [offline wave-index PoC](wave-index-poc.md),
+and the [wave-RAG specification](wave-rag-spec.md) are designs for review. They are not part of the beta and make
+no promise.

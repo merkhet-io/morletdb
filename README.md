@@ -165,6 +165,8 @@ CREATE EXTENSION vector;   -- optional: only for probe search (pgvector 0.8 or l
 
 **Use it from Python**: ingest a NumPy waveform, read exact intervals and search similar ones with the
 [Python SDK](docs/python-sdk.md) (`sdk/python`, beta), starting with a [runnable quickstart](examples/python/quickstart.py).
+Its platform wheels also carry the [embedded edition](docs/embedded-edition.md) (experimental): a recording in one
+SQLite file, with no server, and no search yet.
 
 **Let an AI agent investigate your recordings** through a read-only MCP server (Claude Code,
 Claude Desktop and other MCP clients): [MorletDB for AI agents](docs/mcp.md).
@@ -357,7 +359,9 @@ Every evaluation with its data, baselines, confidence intervals and verdict:
 Append-only recordings; 1–32,768 samples per chunk; explicit channel and unit; no
 resampling, gap interpolation, background extraction worker or cross-channel search.
 Exact search scans eligible windows; probe search is approximate and opt-in. Beta: the
-[API and on-disk promises](docs/api-stability.md) apply; semantic versioning starts at 1.0. Details: [support boundaries](SUPPORT.md) ·
+[API and on-disk promises](docs/api-stability.md) apply to the server edition; the embedded SQLite edition and the
+WinCC OA integration are experimental. Semantic versioning starts at 1.0. Maturity of every part:
+[architecture](docs/architecture.md#editions-and-maturity). Details: [support boundaries](SUPPORT.md) ·
 [compatibility](docs/compatibility.md) · [numerical contract](docs/morlet-extractor.md).
 
 **The name.** MorletDB honours Jean Morlet and the project's starting hypothesis that
@@ -371,7 +375,10 @@ to that transform, and our evaluations have not shown a general advantage for it
 | [extensions/pg_morlet](extensions/pg_morlet) | the PostgreSQL extension: storage, ingestion, interval reads, search |
 | [crates/grizzbit](crates/grizzbit) | [Grizzbit](docs/grizzbit.md), the lossless chunk codec ([specification](docs/chunk-format.md)) |
 | [crates/morlet-core](crates/morlet-core) | portable Rust core: envelopes, features, checkpoints; re-exports the codec |
-| [tools](tools) | Parquet import, Python client, recording viewer, independent numerical reference |
+| [crates/morlet-sqlite](crates/morlet-sqlite) · [crates/morlet-ffi](crates/morlet-ffi) | the [embedded edition](docs/embedded-edition.md) (experimental); a C chunk decoder for [compressed transfer](docs/compressed-transfer.md) |
+| [sdk/python](sdk/python) | the [Python SDK](docs/python-sdk.md) (beta) |
+| [tools](tools) | importers and the edge shipper, the [steward](tools/steward/README.md), the read-only [MCP server](docs/mcp.md), recording viewer, independent numerical reference |
+| [integrations/winccoa](integrations/winccoa) | WinCC OA companion and adapter (experimental) |
 | [examples](examples) | sleep staging, notebooks and other worked examples |
 | [evaluation](evaluation) · [benchmarks](benchmarks) | frozen evaluations and workload benchmarks |
 | [research/paper](research/paper) | the paper, supplement and reproduction package |
