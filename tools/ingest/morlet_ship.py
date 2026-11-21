@@ -15,11 +15,12 @@ no-op; a source that keeps recording is shipped up to the end read at the start.
 chunk bytes up to that end is compared on both sides. Needs SQL 0.3.9 on both servers.
 
 Time anchors (#564): a recording's time axis is part of it. The source's active anchors, read at the start, are
-shipped with it: added to the target in one transaction before the chunks, under a batch id derived from the
-source's time-axis version, so a resend is a no-op. Before anything is written, a target recording whose active
-anchors differ from the source's (including anchors the source does not have) is refused, and so is a target
-server without time anchors (SQL 0.3.13) for an anchored source. At the end morlet_time_axis_version must be equal
-on both sides. Only the current anchors are shipped, not their revision history.
+shipped with it, in one transaction before the chunks: added when the target recording has none, or replacing the
+anchors an earlier run shipped when the source's changed since (a revision at the edge). Before anything is
+written, a target recording with anchors of its own that differ from the source's is refused, and so is a target
+server without time anchors (SQL 0.3.13) for an anchored source. The target's time axis must equal the source's
+before the first chunk is sent, and morlet_time_axis_version is compared again at the end. Only the current
+anchors are shipped, not their revision history.
 """
 from __future__ import annotations
 
@@ -83,52 +84,80 @@ def has_anchor_support(conn):
 
 
 def anchor_table(conn, coll):
-    return conn.execute("SELECT to_regclass(%s)::text", (coll + "_time_anchors",)).fetchone()[0]
+    """The collection's time-anchor table as a quoted name, or None (from the catalog, so quoted or mixed-case
+    collection names work)."""
+    return conn.execute("SELECT to_regclass(format('%%I.%%I', n.nspname, c.relname || '_time_anchors'))::text "
+                        "FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.oid = %s::regclass",
+                        (coll,)).fetchone()[0]
 
 
 def active_anchors(conn, coll, rid):
-    """The recording's active time anchors (neither retracted nor superseded), by sample, as morlet_add_time_anchors
-    rows; [] without an anchor table."""
+    """(the recording's active time anchors by sample, as morlet_add_time_anchors rows with their batch_id and
+    anchor_id, its morlet_time_axis_version), read in one statement, so from one snapshot: ([], "start+rate") without
+    anchors."""
     table = anchor_table(conn, coll) if has_anchor_support(conn) else None
     if table is None:
-        return []
-    return [{"recording_id": rid, "sample_offset": int(n), "utc_ns": str(t), "uncertainty_ns": int(u), "source": src,
-             "break_before": bool(b)} for n, t, u, src, b in conn.execute(
-        f"SELECT x.sample_offset, x.utc_ns, x.uncertainty_ns, x.source, x.break_before FROM {table} x "
-        f"WHERE x.recording_id = %s AND NOT x.retracted "
-        f"AND NOT EXISTS (SELECT 1 FROM {table} y WHERE y.supersedes = x.anchor_id) ORDER BY x.sample_offset",
-        (rid,)).fetchall()]
+        return [], "start+rate"
+    version, rows = conn.execute(
+        f"SELECT morlet_time_axis_version(%s::regclass, %s), (SELECT coalesce(jsonb_agg(jsonb_build_array("
+        f"x.sample_offset, x.utc_ns::text, x.uncertainty_ns, x.source, x.break_before, x.batch_id, x.anchor_id) "
+        f"ORDER BY x.sample_offset), '[]') FROM {table} x WHERE x.recording_id = %s AND NOT x.retracted "
+        f"AND NOT EXISTS (SELECT 1 FROM {table} y WHERE y.supersedes = x.anchor_id))", (coll, rid, rid)).fetchone()
+    return [{"recording_id": rid, "sample_offset": int(n), "utc_ns": t, "uncertainty_ns": int(u), "source": src,
+             "break_before": bool(br), "batch_id": batch, "anchor_id": aid}
+            for n, t, u, src, br, batch, aid in rows], version
+
+
+def axis_rows(anchors):
+    """The anchors as morlet_add_time_anchors rows, without where they are stored (batch_id, anchor_id)."""
+    return [{k: v for k, v in a.items() if k not in ("batch_id", "anchor_id")} for a in anchors]
 
 
 def time_axis(conn, coll, rid):
-    if not has_anchor_support(conn):
-        return "start+rate"
-    return conn.execute("SELECT morlet_time_axis_version(%s::regclass, %s)", (coll, rid)).fetchone()[0]
+    return active_anchors(conn, coll, rid)[1] if has_anchor_support(conn) else "start+rate"
 
 
-def check_anchors(tgt, tgt_coll, rid, anchors, target_exists):
-    """Refuse, before anything is written, a target whose anchors would not be the source's (#564)."""
+def plan_anchors(tgt, tgt_coll, rid, anchors, target_exists):
+    """What the target's anchors need, decided before anything is written (#564): "same" (nothing), "add" (the
+    target has none), "replace" (every active target anchor was written by the shipper, and the source's changed
+    since: they are retracted and the source's added). Anchors the target got otherwise, and that differ from the
+    source's, are refused."""
     if anchors and not has_anchor_support(tgt):
         raise ValueError(f"{rid}: the source has time anchors and the target server has none (SQL 0.3.13 needed); "
                          f"nothing was written")
-    have = active_anchors(tgt, tgt_coll, rid) if target_exists else []
-    if have and have != anchors:
-        raise ValueError(f"{rid}: the target's time anchors differ from the source's ({len(have)} there, "
-                         f"{len(anchors)} in the source); revise or retract them with morlet_revise_time_anchor "
-                         f"on one side first; nothing was written")
-    return have
+    have = active_anchors(tgt, tgt_coll, rid)[0] if target_exists else []
+    if axis_rows(have) == axis_rows(anchors):
+        return "same", have
+    if not have:
+        return "add", have
+    if all(a["batch_id"].startswith(f"ship:{rid}:") for a in have):
+        return "replace", have
+    raise ValueError(f"{rid}: the target has time anchors of its own that differ from the source's ({len(have)} "
+                     f"there, {len(anchors)} in the source); revise or retract them with morlet_revise_time_anchor "
+                     f"first; nothing was written")
 
 
-def ship_anchors(tgt, tgt_coll, rid, anchors, version):
-    """Add the source's anchors to a target recording that has none, in one transaction; the number written."""
+def ship_anchors(tgt, tgt_coll, rid, anchors, version, have):
+    """Retract the target's shipped anchors (have) and add the source's, in one transaction; the number written.
+    The batch id names the source's time-axis version and how many times this recording's anchors were shipped,
+    so a resend after an interruption repeats an identical batch, and anchors shipped again after a retraction or
+    a source revision get a new one."""
     n = 0
     with tgt.transaction():
         if anchor_table(tgt, tgt_coll) is None:
             tgt.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (tgt_coll,))
-        for k in range(0, len(anchors), ANCHOR_BATCH):
+        for a in have:
+            tgt.execute("SELECT morlet_revise_time_anchor(%s::regclass, %s, retract => true)", (tgt_coll, a["anchor_id"]))
+        table = anchor_table(tgt, tgt_coll)
+        # distinct shipments: batch ids without their trailing :<k> (a recording id may itself contain colons)
+        shipped = tgt.execute(f"SELECT count(DISTINCT regexp_replace(batch_id, ':[0-9]+$', '')) FROM {table} "
+                              f"WHERE recording_id = %s AND starts_with(batch_id, %s)",
+                              (rid, f"ship:{rid}:")).fetchone()[0]
+        rows = axis_rows(anchors)
+        for k in range(0, len(rows), ANCHOR_BATCH):
             n += tgt.execute("SELECT morlet_add_time_anchors(%s::regclass, %s, %s::jsonb)",
-                             (tgt_coll, f"ship:{rid}:{version}:{k // ANCHOR_BATCH}",
-                              json.dumps(anchors[k:k + ANCHOR_BATCH]))).fetchone()[0]
+                             (tgt_coll, f"ship:{rid}:{version}-{shipped}:{k // ANCHOR_BATCH}",
+                              json.dumps(rows[k:k + ANCHOR_BATCH]))).fetchone()[0]
     return n
 
 
@@ -153,17 +182,19 @@ def ship(src, tgt, src_coll, tgt_coll, flt, batch):
     for rec in recordings(src, src_coll, flt):
         rid, src_end = rec[0], int(rec[6]["end"])        # the end shipped to: read once, at the start
         t0 = time.time()
-        anchors = active_anchors(src, src_coll, rid)      # the time axis shipped: read once, at the start
-        version = time_axis(src, src_coll, rid)
+        anchors, version = active_anchors(src, src_coll, rid)   # the time axis shipped: read once, at the start
         exists = tgt.execute(f"SELECT 1 FROM {tgt_coll} WHERE recording_id = %s", (rid,)).fetchone() is not None
-        have = check_anchors(tgt, tgt_coll, rid, anchors, exists)
+        action, have = plan_anchors(tgt, tgt_coll, rid, anchors, exists)
         end = ensure_target(tgt, tgt_coll, rec)
         if end > src_end:
             raise ValueError(f"{rid}: the target holds {end} samples, more than the source's {src_end}")
         if not same_prefix(src, tgt, src_coll, tgt_coll, rid, end):
             raise ValueError(f"{rid}: the target's first {end} samples are not the source's chunks; nothing was written")
         # the time axis before the samples: an interrupted run never leaves chunks on the wrong axis
-        anchors_sent = ship_anchors(tgt, tgt_coll, rid, anchors, version.split(":")[-1]) if anchors and not have else 0
+        anchors_sent = 0 if action == "same" else ship_anchors(tgt, tgt_coll, rid, anchors, version.split(":")[-1], have)
+        if time_axis(tgt, tgt_coll, rid) != version:
+            raise ValueError(f"{rid}: the target's time axis is not the source's after shipping its anchors "
+                             f"(source {version}, target {time_axis(tgt, tgt_coll, rid)}); no chunk was written")
         sent = bytes_sent = 0
         while end < src_end:
             rows = src.execute("SELECT start_sample, sample_count, encoded FROM morlet_encoded_chunks(%s::regclass,%s,%s,%s)",

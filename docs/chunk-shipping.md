@@ -33,12 +33,17 @@ python tools/ingest/morlet_ship.py --source-dsn "postgresql://...@edge/db" --tar
   error names the differing fields (#443). Context, labels and search envelopes are
   not shipped; build envelopes on the target as usual.
 - **Time anchors ship with the recording (#564).** A recording's [time anchors](clock-drift.md) are its time axis.
-  The source's active anchors, read when the run starts, are added to the target in one transaction before the
-  chunks, so an interrupted run never leaves chunks on the wrong axis. The anchor table is enabled on the target if
-  needed, and a resend is a no-op. Only the current anchors travel, not their revision history. Before anything is
-  written, a target recording whose active anchors differ from the source's is refused, and so are anchors the
-  source does not have; revise or retract them on one side first (`morlet_revise_time_anchor`). An anchored source
-  also needs SQL 0.3.13 on the target. At the end `morlet_time_axis_version` must be equal on both sides; the report
-  gives it as `time_axis`, with `anchors_sent`, and `identical` covers chunks and time axis.
+  The source's active anchors and their `morlet_time_axis_version` are read in one statement when the run starts,
+  and go to the target in one transaction before the chunks. A target recording without anchors gets them (the
+  anchor table is enabled if needed). A target whose anchors were all written by the shipper gets them replaced
+  when the source's changed since, for example after a revision at the edge; the earlier rows stay, retracted. A
+  target with anchors of its own (added or revised there) that differ from the source's is refused before anything
+  is written: revise or retract them first (`morlet_revise_time_anchor`). An anchored source also needs SQL 0.3.13
+  on the target. Only the current anchors travel, not their revision history.
+- **The time axis is checked twice:** after the anchors and before the first chunk, the target's
+  `morlet_time_axis_version` must equal the source's as read at the start; at the end both sides are compared
+  again. The report gives it as `time_axis`, with `anchors_sent`, and `identical` covers chunks and time axis. A
+  revision at the source during the run makes the final check fail with "run again"; the chunks shipped by then lie
+  on the time axis read at the start until the next run replaces it.
 
 Both servers need pg_morlet SQL 0.3.9 or later (`morlet_encoded_chunks`, `morlet_append_encoded_chunk`).
