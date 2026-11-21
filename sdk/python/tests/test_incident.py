@@ -175,6 +175,50 @@ class Incident(unittest.TestCase):
         self.assertEqual((result.recordings_outside_window, result.recordings_outside_window_count),
                          (["old-1", "old-2"], 3))
 
+    def test_very_long_recording_does_not_overflow_the_selection(self):
+        self.add("r")
+        self.conn.execute(f"UPDATE {self.coll} SET checkpoint=jsonb_set(checkpoint,'{{end}}','10000000000') WHERE recording_id='r'")
+        self.conn.commit()
+        self.assertEqual(len(self.resolve(at=BASE - 86400 * SECOND).candidates), 0)
+
+    def test_non_finite_start_time_is_not_outside_the_window(self):
+        for rid, value in (("nan", "NaN"), ("inf", "Infinity"), ("neg", "-Infinity")):
+            self.db.ingest(self.coll, rid, np.zeros(600), sample_rate_hz=1000, channel="x", unit="g",
+                           metadata={"asset": "P7", "start_ns": value}, search_window=512)
+        self.conn.commit()
+        result = self.resolve()
+        self.assertEqual((result.recordings_without_time_axis, result.recordings_outside_window), (["inf", "nan", "neg"], []))
+        self.assertIn("recordings_without_time_axis", result.states)
+
+    def test_identities_are_bounded_but_checked_in_full(self):
+        for lot in "abc":
+            self.add("r" + lot, lot=lot)
+        with patch("morletdb._incident.MAX_LISTED", 2):
+            result = self.resolve(identity_keys=("lot",))
+        self.assertEqual((result.identities, result.identities_count), ([{"lot": "a"}, {"lot": "b"}], 3))
+        self.assertIn("ambiguous_asset", result.states)
+        self.assertIn("lists_truncated", result.states)
+
+    def test_role_without_anchor_access_can_still_learn_an_asset_is_absent(self):
+        self.add("r")
+        self.anchors("r", [(0, 0)], breaks=False)
+        role = "inc_" + uuid.uuid4().hex[:8]
+        self.conn.execute(f"CREATE ROLE {role}")
+        self.conn.execute(f"GRANT USAGE ON SCHEMA {self.schema} TO {role}")
+        self.conn.execute(f"GRANT SELECT ON {self.coll} TO {role}")
+        self.conn.commit()
+        try:
+            self.conn.execute(f"SET ROLE {role}")
+            self.conn.commit()
+            self.assertEqual(self.resolve(asset="absent").states, ["asset_not_found"])
+            self.conn.rollback()
+        finally:
+            self.conn.rollback()
+            self.conn.execute("RESET ROLE")
+            self.conn.execute(f"DROP OWNED BY {role}")
+            self.conn.execute(f"DROP ROLE {role}")
+            self.conn.commit()
+
     def test_anchored_recording_is_mapped_despite_its_start_time(self):
         self.add("moved", n=2000, start=BASE - 86400 * SECOND)
         self.anchors("moved", [(0, 0), (1999, 1999 * MS)], breaks=False)

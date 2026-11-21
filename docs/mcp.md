@@ -95,6 +95,7 @@ The states:
 - `no_recording_at_time`: no candidate could be placed at this time. Check `recordings_without_time_axis` first: those recordings may hold it. This is not "nothing happened"
 - `asset_identity_not_scoped`, `ambiguous_asset`: no identity keys are configured or a recording has no value for one; or the asset ID occurs under several identities (`identities`)
 - `sensor_not_recorded`: a sensor key is configured and a candidate has no value for it; such recordings are never treated as one sensor
+- `lists_truncated`: `recordings_without_time_axis`, `recordings_outside_window` or `identities` show their first 100 entries; the exact totals are in `recordings_without_time_axis_count`, `recordings_outside_window_count` and `identities_count`, and the states still consider every recording
 - `multiple_sensors`, `multiple_recordings_per_sensor`: several channels (or values of the configured sensor key), or the window crosses recordings of one sensor
 - `partial_window`, `unreadable_samples`: fewer samples than the window needs; samples compacted, gone or never stored
 - `ambiguous_time`, `extrapolated_time`: a backward clock step puts the time in several places; a time beyond its block's anchors
