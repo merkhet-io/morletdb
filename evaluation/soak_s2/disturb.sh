@@ -19,10 +19,13 @@
 # "stored" is the sum of the recordings' stored ends in public.live, read with psql in the database container.
 # base is the stored count once the disturbance has returned (for D2, the first count the restarted database
 # answers); storing has resumed at the first poll whose count is above base. Polls every 10 s for up to 15 minutes;
-# if storing has not resumed by then, resume_s is null (H3 fails).
+# if storing has not resumed by then, resume_s is null (H3 fails). One deadline of 15 minutes from the disturbance
+# covers both waits (for the database to answer, then for a count above base), however long each psql call takes.
+# Before its command runs, each attempt is appended to results/disturb.attempts.jsonl, so an interrupted run is
+# logged as interrupted on the next tick and never repeated.
 set -euo pipefail
 SOAK_DIR=${SOAK_DIR:?Set SOAK_DIR}
-RES=$SOAK_DIR/results; SCHED=$RES/schedule.json; OUT=$RES/disturbances.jsonl
+RES=$SOAK_DIR/results; SCHED=$RES/schedule.json; OUT=$RES/disturbances.jsonl; ATT=$RES/disturb.attempts.jsonl
 mkdir -p "$RES"
 now() { python3 -c 'import time; print(time.time())'; }
 stored() {   # the database's stored samples, or empty while it does not answer
@@ -66,6 +69,13 @@ t=$(now)
 for id in D1 D2; do
   read -r at lo hi < <(python3 -c 'import json,sys; d=json.load(open(sys.argv[1]))["disturbances"][sys.argv[2]]; print(d["at"], *d["window"])' "$SCHED" "$id")
   [ -f "$OUT" ] && grep -q "\"id\": \"$id\"" "$OUT" && continue
+  # once only: an attempt is recorded before its command runs. One that was started but never logged (the script was
+  # interrupted) is logged as interrupted, with resume_s null (H3 fails), and never run again.
+  if [ -f "$ATT" ] && grep -q "\"id\": \"$id\"" "$ATT"; then
+    log "$id interrupted: attempted ($(grep "\"id\": \"$id\"" "$ATT" | tail -1)) but not logged"
+    python3 -c 'import json,sys; a=[json.loads(l) for l in open(sys.argv[3]) if json.loads(l)["id"]==sys.argv[1]][-1]; print(json.dumps({"id": sys.argv[1], "cmd": a["cmd"], "scheduled_at": float(sys.argv[2]), "at": a["at"], "interrupted": True, "resume_s": None}))' "$id" "$at" "$ATT" >> "$OUT"
+    continue
+  fi
   python3 -c "import sys; sys.exit(0 if $t >= $at else 1)" || continue
   if python3 -c "import sys; sys.exit(0 if $t >= $hi else 1)"; then
     log "$id missed: window closed at $hi"
@@ -81,13 +91,18 @@ for id in D1 D2; do
   fi
   before=$(stored)
   t_at=$(now); log "$id start: $cmd"
-  $cmd >/dev/null
+  python3 -c 'import json,sys; print(json.dumps({"id": sys.argv[1], "cmd": sys.argv[2], "at": float(sys.argv[3])}))' \
+    "$id" "$cmd" "$t_at" >> "$ATT"
+  $cmd >/dev/null || log "$id: command returned $?"
   t_done=$(now)
+  # one 15-minute deadline from the disturbance for the whole measurement; a poll starts every 10 s at most
+  deadline=$(python3 -c "print($t_at + 900)")
+  left() { python3 -c "import sys,time; sys.exit(0 if time.time() < $deadline else 1)"; }
   base=""
-  for _ in $(seq 1 90); do base=$(stored); [ -n "$base" ] && break; sleep 10; done
+  while left; do base=$(stored); [ -n "$base" ] && break; sleep 10; done
   resumed=""; after=""
   if [ -n "$base" ]; then
-    for _ in $(seq 1 90); do
+    while left; do
       sleep 10
       s=$(stored)
       if [ -n "$s" ] && [ "$s" -gt "$base" ]; then resumed=$(now); after=$s; break; fi

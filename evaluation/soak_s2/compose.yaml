@@ -1,8 +1,11 @@
 # Soak S2 (#529, S1 #191 on the beta) on a small x86 box: the release image, the SeedLink collector, the steward and the probe.
 # Data lives in a directory of a dedicated, size-limited filesystem (SOAK_DIR, 40 GB) so the soak can never fill the host's disk.
 #
-#   cd evaluation/soak_s2 && MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:<tag>@<digest> SOAK_DIR=/srv/morlet-soak \
+#   mkdir -p /srv/morlet-soak/s2/results /srv/morlet-soak/s2/spool   # as the box's user (UID 1000) first: Compose
+#                                       # would create missing bind sources as root, which the probe cannot write
+#   cd evaluation/soak_s2 && MORLET_IMAGE=ghcr.io/merkhet-io/morletdb:<tag>@<digest> SOAK_DIR=/srv/morlet-soak/s2 \
 #     MORLET_DB_PASSWORD=... MORLET_STEWARD_PASSWORD=... docker compose -p soak-s2 up -d --build
+# The passwords go into DSNs verbatim, so they must be URL-safe: generate them with `openssl rand -hex 24`.
 x-dsn: &dsn
   DATABASE_URL: postgresql://morlet:${MORLET_DB_PASSWORD:?Set MORLET_DB_PASSWORD}@db:5432/morlet
 services:

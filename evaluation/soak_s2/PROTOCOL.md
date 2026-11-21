@@ -39,7 +39,16 @@ changes, and nothing else:
      answers.
    - Storing has resumed at the first 10-second poll whose count is above `base`.
    - Rows stored before `base` is read are counted in it, so the measured time can only be later than the real one.
-5. **Its own directory** on the soak file system (`/srv/morlet-soak/s2`), Compose project `soak-s2`, and port 54349.
+5. **The analysis and the probes are stricter** (from review, before freezing):
+   - H1 is PENDING, not PASS, while any archive window could not be fetched, and while `gaps.jsonl` is missing.
+   - H2 is PENDING while a steward status snapshot is unreadable.
+   - H3 fails on an explicit `resume_s: null` (the poll saw no resumption), and on a disturbance that was attempted
+     but never logged (`disturb.sh` records each attempt before running it and never repeats it).
+   - H5's searchable share clips both stored and searchable samples at one hour before each recording's end (the
+     probe records both); S1 subtracted one nominal hour from the stored samples only.
+   - The host probe records stopped containers of the household's project as down. It also writes one JSON value
+     when the steward's status cannot be read.
+6. **Its own directory** on the soak file system (`/srv/morlet-soak/s2`), Compose project `soak-s2`, and port 54349.
    S1's data stays where it is, untouched.
 
 ## Setup
@@ -48,7 +57,9 @@ S1's setup, unchanged except as above:
 
 - **Box:** Celeron J3060 (2 cores), 3.7 GB RAM, internal SATA hard disk, Debian 12 (kernel 6.1.0-54 since
   2026-11-21), Docker. The box also runs a household document service; the soak must not disturb it (stop rules).
-- **Storage:** the dedicated 40 GB ext4 file system (loop file) of S1. S2 uses `/srv/morlet-soak/s2`. S1's data
+- **Storage:** the dedicated 40 GB ext4 file system (loop file) of S1. S2 uses `/srv/morlet-soak/s2`; its
+  `results` and `spool` are created by the box's user before `docker compose up` (Compose would create missing bind
+  sources as root). S1's data
   takes 22% of it, which leaves about 30 GB; S1's week took less than that.
 - **Software** (`compose.yaml`, project `soak-s2`), with S1's limits:
   - the database, 1 CPU and 1 GB;

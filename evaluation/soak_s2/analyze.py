@@ -133,8 +133,9 @@ def analyze(a) -> dict:
             t = rep.get("total", rep) if isinstance(rep, dict) else {}
             for k in tot:
                 tot[k] += int(t.get(k, 0))
-        V.add("H1", "verify_fdsn: 0 samples differ from the archive", tot["different"] == 0 and tot["compared"] > 0,
-              tot)
+        # a window the archive could not be fetched for is not compared: errors leave H1 PENDING, never PASS
+        V.add("H1", "verify_fdsn: 0 samples differ from the archive",
+              False if tot["different"] else (None if tot["errors"] or not tot["compared"] else True), tot)
     else:
         V.add("H1", "verify_fdsn: 0 samples differ from the archive", None, "report not given")
     if a.morlet_verify:
@@ -149,8 +150,10 @@ def analyze(a) -> dict:
     else:
         V.add("H1", "morlet_verify at the end: 0 problems", None, "output not given")
     holes = [g for g in gaps if g.get("cause") == "spool hole on replay"]
-    V.add("H1", "no 'spool hole on replay' in the collector's gaps.jsonl", len(holes) == 0 if gaps or complete else None,
-          {"holes": len(holes)})
+    have_gaps = (spool / "gaps.jsonl").exists()
+    V.add("H1", "no 'spool hole on replay' in the collector's gaps.jsonl",
+          False if holes else (True if have_gaps and complete else None),
+          {"holes": len(holes), "gaps_log": have_gaps})
 
     # ---- H2, unattended ------------------------------------------------------------------------------------------
     V.add("H2", "no manual action besides D1 and D2", None if a.manual_actions is None else a.manual_actions == 0,
@@ -197,7 +200,8 @@ def analyze(a) -> dict:
     unknown = sum(1 for _, lvl, _ in levels if lvl not in ("NORMAL", "ATTENTION", "ACTION REQUIRED"))
     counts = {k: sum(1 for _, lvl, _ in levels if lvl == k) for k in ("NORMAL", "ATTENTION", "ACTION REQUIRED")}
     V.add("H2", "steward never ACTION REQUIRED > 1 h, never sets the ingest hold",
-          (worst <= HOUR and not hold) if levels else None,
+          # an unreadable status snapshot proves nothing: PENDING until each is explained
+          (False if worst > HOUR or hold else (None if unknown else True)) if levels else None,
           {"status_records": counts, "unreadable": unknown, "longest_action_required_h": round(worst / HOUR, 2),
            "hold_seen": hold})
 
@@ -218,8 +222,9 @@ def analyze(a) -> dict:
             V.add("H3", f"{k} ({what}): storing resumes within 5 min", None if not complete else False,
                   "not carried out yet" if not complete else "missing from disturbances.jsonl")
             continue
-        rs = d.get("resume_s")
-        V.add("H3", f"{k} ({what}): storing resumes within 5 min", None if rs is None else rs <= 300,
+        rs = d.get("resume_s")   # an explicit null: the 15-minute poll saw no resumption (FAIL); missing: PENDING
+        V.add("H3", f"{k} ({what}): storing resumes within 5 min",
+              (None if "resume_s" not in d else False) if rs is None else rs <= 300,
               {"at": iso(d["at"]), "resume_s": rs, "stored_before": d.get("stored_before"), "base": d.get("base"),
                "stored_after": d.get("stored_after"), "measured": "database stored counts (sum of stored ends)"})
     d1 = dist.get("D1")
@@ -306,8 +311,12 @@ def analyze(a) -> dict:
         cov = endp["coverage"]
         stored = endp["stored_samples"]
         unsearchable = stored - cov.get("searchable", 0)
-        older = max(1, stored - int(NOMINAL * HOUR))     # stored samples older than one hour, at the nominal rate
-        frac = min(1.0, cov.get("searchable", 0) / older)
+        if "coverage_older" in endp:   # S2: both sides clipped at one hour before each recording's end
+            older = max(1, endp.get("stored_older", 0))
+            frac = min(1.0, endp["coverage_older"].get("searchable", 0) / older)
+        else:                          # S1's probe: older samples at the nominal rate
+            older = max(1, stored - int(NOMINAL * HOUR))
+            frac = min(1.0, cov.get("searchable", 0) / older)
         V.add("H5", "at the end, >= 99% of samples older than 1 h searchable", frac >= 0.99 if complete else None,
               {"searchable_fraction_of_older": round(frac, 5), "unsearchable_h_of_feed": round(unsearchable / NOMINAL / HOUR, 3),
                "at": iso(endp["at"])})
