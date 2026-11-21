@@ -4,7 +4,7 @@
 timing and metadata, read exact sample intervals, search for similar intervals, and resolve every result to
 the stored samples. It wraps pg_morlet's SQL functions and adds no database features of its own.
 
-- Package: `morletdb` 0.1.0b2 (beta), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
+- Package: `morletdb` 0.1.0b3 (beta), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
   (`[plot]` extra, matplotlib) is optional and used only by the example.
 - Not on PyPI yet: install a release wheel ([releases](releases.md#install-the-python-sdk)), or
   `pip install "./sdk/python[plot]"` from a checkout.
@@ -28,7 +28,7 @@ the stored samples. It wraps pg_morlet's SQL functions and adds no database feat
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.4.0-beta.3
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.4.0-beta.4
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 python -m venv .venv && . .venv/bin/activate && pip install "./sdk/python[plot]"
 DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet python examples/python/quickstart.py
@@ -42,7 +42,7 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
 
 ## Investigate an interval
 
-**Experimental, from the release after 0.4.0-beta.3.** The method and its version-1 result may still change
+**Experimental, from 0.4.0-beta.4.** The method and its version-1 result may still change
 between releases; changes are listed in the changelog. `Client.investigate` composes existing SQL search, query
 statistics, recording coverage and optional context comparison in one read-only snapshot. This is the first SDK slice of
 [#572](https://github.com/merkhet-io/morletdb/issues/572), not a diagnosis or a durable evidence archive.

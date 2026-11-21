@@ -1,6 +1,6 @@
 # Releases
 
-The current package identifier is in VERSION (`0.4.0-beta.3`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
+The current package identifier is in VERSION (`0.4.0-beta.4`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -68,6 +68,18 @@ a leading v; GHCR image tags do not.
     the steward no longer stops verifying on slow boxes (#532) and finds envelope grids by index (#531); the SeedLink
     collector survives a database restart (#525); WinCC OA fixes (#496, #497).
   - **New:** the MCP `labels` tool (#333); operator runbooks (#197); the experimental WinCC OA integration (#474).
+- **0.4.0-beta.4:** SQL version 0.3.15 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b3. The chunk
+  format is unchanged.
+  - **Fixes from the review of beta.3 (#560–#565):** the time mapping functions work on collections without an
+    anchor table (SQL 0.3.15, #562); the SDK refuses every ambiguous time interval (#563); the steward keeps the
+    envelope stride after episodic memory removes early windows (#560); MCP times keep their linear-clock and
+    extrapolation qualifications (#565); CSV anchors report an uncertainty that covers every row (#561); the
+    edge shipper ships and verifies time anchors (#564).
+  - **Investigation snapshot (experimental, #572):** `Client.investigate` and the MCP tool `investigate_interval`
+    read matches, query statistics, an optional context comparison and coverage in one read-only snapshot, with
+    `evidence_states` and interval references. No temporal cutoff; not a diagnosis.
+  - The known limits of 0.4.0-beta.1 from soak S1 (#527, #528) are addressed in beta.3; the confirmation soak S2
+    (#529) is planned on this release (protocol still a draft; not yet run).
 - **0.4.0-beta.3:** SQL version 0.3.14 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2 (unchanged). The
   chunk format is unchanged.
   - **`morlet_latest_per_stream` (experimental, #527):** the newest recording with samples of each stream, so a

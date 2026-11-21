@@ -1,6 +1,6 @@
 # Architecture
 
-Status: describes release 0.4.0-beta.3 and `main`. What each part promises is in the maturity table below;
+Status: describes release 0.4.0-beta.4 and `main`. What each part promises is in the maturity table below;
 the [support boundaries](../SUPPORT.md) say what the beta supports, and the
 [roadmap](product-roadmap.md) what remains before 1.0. When this page and the code disagree, the code and the
 [README](../README.md) win; please open an issue.
@@ -17,7 +17,7 @@ MorletDB has two editions that store the same samples bit for bit, with the same
 | PostgreSQL extension | `extensions/pg_morlet` | **Beta.** Every SQL function is classified stable, experimental or internal ([API stability](api-stability.md)); stable functions keep their signature and behaviour, experimental ones may change between minor releases |
 | Chunk formats (Grizzbit) | `crates/grizzbit` | **Frozen for reading:** chunk format versions 2, 3, 5 and 6 stay readable by every later release of the same major version ([chunk format](chunk-format.md)) |
 | Portable core | `crates/morlet-core` | Internal library of both editions: envelopes, features, summaries, checkpoints; no PostgreSQL dependency |
-| Python SDK | `sdk/python` | **Beta** (0.1.0b2), for the server edition ([Python SDK](python-sdk.md)); `Client.investigate` is **experimental** |
+| Python SDK | `sdk/python` | **Beta** (0.1.0b3), for the server edition ([Python SDK](python-sdk.md)); `Client.investigate` is **experimental** |
 | Embedded edition | `crates/morlet-sqlite`, `morletdb.open` in the SDK | **Experimental** (#351): one writer per file, no search yet; file format 1 frozen with the release that first ships it ([embedded edition](embedded-edition.md), [file format](file-format.md)) |
 | C decoder | `crates/morlet-ffi` | For clients of compressed transfer, which is an experimental SQL feature ([compressed transfer](compressed-transfer.md)) |
 | Steward | `tools/steward` | Ships with the beta: unattended upkeep on edge machines without a DBA (phase 1 of #287; [design](steward-design.md)) |

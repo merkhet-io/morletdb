@@ -78,13 +78,20 @@ read-only [MCP server](docs/mcp.md). Four of the five closest matches it finds a
 The [machine demo](examples/machine-demo/README.md) does the same for a bearing run to failure (NASA/IMS):
 Claude finds when the failing bearing first changed and whether the others show it.
 
+**One call for a first look** (experimental): the MCP tool `investigate_interval`, and `Client.investigate` in the
+Python SDK, return the interval's statistics, its closest matches, an optional comparison with the same operating
+context in the machine's history, and coverage of the compatible recordings, in one read-only snapshot. Coverage
+is not a count of the windows the search scored. `evidence_states` say when coverage is unknown, ranges are not
+searchable or candidates may be approximate, and every match is an interval
+reference the agent can read back and cite. It reports evidence; it does not interpret it.
+
 > [!IMPORTANT]
 > The SQL function above is an integration pattern; the bundled MCP server only reads. Detection models,
 > agent orchestration and machine controls come from your application. On seismic data, this search
 > returns catalogued earthquakes about twice as often as zero-lag similarity
 > ([E5](evaluation/task_relevance/RESULTS.md), [E5-H](evaluation/task_relevance/RESULTS_HELDOUT.md));
 > anomaly workflows have not been evaluated, and similarity alone does not establish normality, a fault
-> or its cause.
+> or its cause. An empty result means no match in what was searched, not that it never happened.
 
 ## How it works
 
@@ -134,7 +141,7 @@ build provenance; no pgvector, so no probe search; choose your own password):
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 -v morletdb-data:/var/lib/postgresql/data \
-  ghcr.io/merkhet-io/morletdb:0.4.0-beta.3
+  ghcr.io/merkhet-io/morletdb:0.4.0-beta.4
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION pg_morlet"
 ```
 
@@ -217,6 +224,15 @@ approximate in which windows it considers, never in the distances it returns.
 ```sql
 SELECT morlet_enable_envelope_probes('signals', 4096);
 SELECT * FROM morlet_search_similar('signals', 'pump-7', 8192, 12288);   -- now uses probes
+```
+
+From Python, one call gathers a first investigation in a single snapshot (experimental):
+
+```python
+import morletdb
+with morletdb.Client.connect("postgresql://...") as db:
+    report = db.investigate("public.signals", "pump-7", 8192, 12288, metadata_filter={"asset": "P7"})
+print(report.search.matches, report.coverage_summary, report.evidence_states)  # matches, coverage, caveats
 ```
 
 `morlet_search_similar` uses probe search when it is enabled for the window size and exact search
