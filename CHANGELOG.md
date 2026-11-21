@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.0-beta.3
+
+**The third beta.** SQL version 0.3.14, with an update script from 0.3.13: run `ALTER EXTENSION pg_morlet UPDATE`
+after installing. The Python SDK stays 0.1.0b2 (unchanged). The chunk format is unchanged. The release has two
+fixes for the soak S1 failures, so the confirmation soak S2 (#529) can run on it:
+- `morlet_latest_per_stream`, the newest recording of each stream (#527);
+- the steward choosing among the recordings furthest behind the one it served least recently (#528).
+
 - **`morlet_latest_per_stream` (SQL 0.3.14, experimental, #527).** `morlet_latest_per_stream(collection,
   stream_keys, n, metadata_filter, max_recordings)` groups recordings by the metadata keys that identify a stream
   (for example `ARRAY['network','station','location','channel']`) and reads and returns only the newest one with
@@ -12,15 +20,16 @@
   `morlet_latest` keeps its signature and results. A regression test checks that the chunk index reads do not grow
   with 20 older recordings of the same stream, while `morlet_latest`'s do. MCP `latest` takes `stream_keys`. Update
   script 0.3.13 → 0.3.14; the upgrade tests now start from v0.4.0-beta.2 as well.
-- **The steward serves the recording furthest behind first (#528).** Its candidates came in `recording_id` order and
+- **The steward no longer starves recordings late in order (#528).** Its candidates came in `recording_id` order and
   it served the first one. A live feed always has new samples in the first recordings, so the last ones fell behind
   without limit: at the end of soak S1, the unsearchable hours per station rose in alphabetical order from 0.4 h
   (CX.PB01) to 141 h (GE.WLF). Of about 350,000 envelope actions, CX stations got about 270,000 and GE.WLF about 3,400.
-  Builders now take the recording with the most stored samples since the job last finished it, then the lowest
-  `recording_id`; context values, the one with the most new segments. A regression test feeds seven recordings
-  continuously while an eighth falls 100,000 samples behind. In 60 ticks the old order built 5 of its 200 windows;
-  the new order builds all of them. Among those candidates, the one served least recently goes first, so a recording
-  that grows faster than one batch builds cannot take every tick either: in a second test, three quiet recordings
+  The candidates are now the recordings furthest behind (up to five per collection: the most stored samples since the
+  job last finished them, then the lowest `recording_id`; for context values, the most new segments). Of those, the
+  steward serves the one it served least recently, never-served first, ties in backlog order. A regression test feeds
+  seven recordings continuously while an eighth falls 100,000 samples behind. In 60 ticks the old order built 5 of
+  its 200 windows; the new order builds all of them. Because the least recently served goes first, a recording that
+  grows faster than one batch builds cannot take every tick either: in a second test, three quiet recordings
   are built completely while a fourth receives 200,000 samples every tick, and the order by backlog alone built 5
   of 44 windows of the first.
 

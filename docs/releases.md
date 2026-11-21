@@ -1,6 +1,6 @@
 # Releases
 
-The current package identifier is in VERSION (`0.4.0-beta.2`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
+The current package identifier is in VERSION (`0.4.0-beta.3`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -68,6 +68,15 @@ a leading v; GHCR image tags do not.
     the steward no longer stops verifying on slow boxes (#532) and finds envelope grids by index (#531); the SeedLink
     collector survives a database restart (#525); WinCC OA fixes (#496, #497).
   - **New:** the MCP `labels` tool (#333); operator runbooks (#197); the experimental WinCC OA integration (#474).
+- **0.4.0-beta.3:** SQL version 0.3.14 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2 (unchanged). The
+  chunk format is unchanged.
+  - **`morlet_latest_per_stream` (experimental, #527):** the newest recording with samples of each stream, so a
+    collector's daily recordings no longer make "latest" read the chunks of every stored day (choosing the recording
+    still reads one metadata row per stored recording). `morlet_latest` keeps its signature.
+    MCP `latest` takes `stream_keys`.
+  - **Steward (#528):** the candidates are the recordings furthest behind (up to five per collection), and of those
+    the steward serves the one it served least recently, never-served first, ties in backlog order. In soak S1,
+    recordings late in alphabetical order fell behind without limit.
 - **0.4.0-beta.2:** SQL version 0.3.13 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2. The chunk
   format is unchanged.
   - **Time anchors (experimental, #393, #383):** sync points per recording, written by the importer from CSV
