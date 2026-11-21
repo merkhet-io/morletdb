@@ -102,6 +102,8 @@ def main(argv=None) -> int:
     ap.add_argument("--coverage-every", type=int, default=24, help="measure coverage every this many rounds")
     ap.add_argument("--coverage-only", action="store_true", help="one round of totals and coverage, no checks")
     a = ap.parse_args(argv)
+    if a.coverage_only:
+        a.rounds = 1                    # one measurement, then stop
     import psycopg
     k = 0
     while not a.rounds or k < a.rounds:

@@ -316,7 +316,8 @@ def analyze(a) -> dict:
     pr = [r for r in probe if "stored_samples" in r]
     # S2: the end measurement (probe.py --coverage-only after the week, --coverage-end); S1's probe: its last round
     if a.coverage_end is not None:
-        ends = [r for r in lines(Path(a.coverage_end)) if "stored_samples" in r and r.get("at", 0) >= t1]
+        # within 30 minutes after the week (PROTOCOL.md, H5): a later run could show a backlog that caught up since
+        ends = [r for r in lines(Path(a.coverage_end)) if "stored_samples" in r and t1 <= r.get("at", 0) <= t1 + 1800]
         endp = ends[-1] if ends else None
     else:
         endp = pr[-1] if pr and "coverage" in pr[-1] and "coverage_older" not in pr[-1] else None
@@ -336,7 +337,7 @@ def analyze(a) -> dict:
                "at": iso(endp["at"])})
     else:
         V.add("H5", "at the end, >= 99% of samples older than 1 h searchable", None,
-              "no end measurement: run probe.py --coverage-only after the week and pass --coverage-end")
+              "no end measurement within 30 min after the week: run probe.py --coverage-only then and pass --coverage-end")
     if len(pr) >= 2:
         span = pr[-1]["at"] - pr[0]["at"]
         rate = (pr[-1]["stored_samples"] - pr[0]["stored_samples"]) / span if span > 0 else None
