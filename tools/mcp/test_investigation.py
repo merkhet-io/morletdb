@@ -148,10 +148,16 @@ class InvestigationOnDatabase(unittest.TestCase):
         for value in ("0", "600000"):
             with self.subTest(value=value), patch.dict(os.environ, {"MORLET_MCP_TIMEOUT_MS": value}):
                 self.assertEqual(self.payload()["tool_limits"]["timeout_ms"], 10000)
+        with patch.dict(os.environ, {"MORLET_MCP_TIMEOUT_MS": "-1"}):
+            self.assertIn('"code": "configuration_error"', self.request().content[0].text)
 
     def test_the_size_bound_counts_what_is_sent(self):                          # #577 review
         result = self.payload()
-        text = len(json.dumps(result, ensure_ascii=True, indent=2).encode())
+        inv = m._sibling("investigation")
+        pretty = json.dumps(result, ensure_ascii=True, indent=2)
+        self.assertEqual(inv.wire_size(result), len(json.dumps(pretty).encode())        # the text copy as sent
+                         + len(json.dumps(result, ensure_ascii=True, separators=(",", ":")).encode()))
+        text = len(pretty.encode())
         with patch.dict(os.environ, {"MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES": str(text + 50)}):
             refused = self.request()
         self.assertTrue(refused.is_error)                  # the indented copy alone fits; with the structured copy not

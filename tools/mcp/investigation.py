@@ -48,21 +48,25 @@ def present(report, detailed_coverage):
 
 
 def wire_size(result):
-    """Bytes the client receives: a dict result travels twice, as text content (indented JSON) and as
-    structuredContent (compact JSON); the bound covers both (#577 review)."""
+    """Bytes the client receives: a dict result travels twice, as text content (indented JSON, itself a JSON
+    string in the message, so its quotes, backslashes and newlines are escaped once more) and as
+    structuredContent (compact JSON); the bound covers both as sent (#577 review)."""
     text = json.dumps(result, ensure_ascii=True, allow_nan=False, indent=2)
     compact = json.dumps(result, ensure_ascii=True, allow_nan=False, separators=(",", ":"))
-    return len(text.encode("utf-8")) + len(compact.encode("utf-8"))
+    return len(json.dumps(text).encode("utf-8")) + len(compact.encode("utf-8"))
 
 
 def server_timeout_ms():
-    """MORLET_MCP_TIMEOUT_MS as connect() reads it (0 or less: no statement timeout); None for no cap."""
+    """MORLET_MCP_TIMEOUT_MS as connect() passes it to PostgreSQL's statement_timeout: 0 is no timeout (None
+    here: no cap), a negative value is invalid there, so it is a configuration error here too."""
     try:
         value = int(os.environ.get("MORLET_MCP_TIMEOUT_MS", "30000"))
+        if value < 0:
+            raise ValueError
     except ValueError:
-        fail("configuration_error", "MORLET_MCP_TIMEOUT_MS must be an integer (milliseconds; 0 for none)",
+        fail("configuration_error", "MORLET_MCP_TIMEOUT_MS must be a non-negative integer (milliseconds; 0 for none)",
              "Ask the server operator to correct MORLET_MCP_TIMEOUT_MS.")
-    return value if value > 0 else None
+    return value or None
 
 
 def run(connect, checked, collection, recording_id, start_sample, end_sample, *, metadata_filter,

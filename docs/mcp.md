@@ -90,8 +90,8 @@ event. It adds no UTC decorations: cite sample coordinates, and use the existing
 mapping. Existing `search_similar`, `search_from_time` and `decision_state` behavior is unchanged.
 
 Operator limits (positive integers) are `MORLET_MCP_INVESTIGATION_TIMEOUT_MS` (default 10000, at most 300000;
-also capped by `MORLET_MCP_TIMEOUT_MS` when that is positive, read as for every other tool, so 0 means no
-statement timeout), `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` (64000, at most 2000000),
+also capped by `MORLET_MCP_TIMEOUT_MS` when that is positive; 0 there means no statement timeout, and a
+negative value is a configuration error, as PostgreSQL refuses it for every tool), `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` (64000, at most 2000000),
 `MORLET_MCP_INVESTIGATION_MAX_CANDIDATES` (10000, at most 1000000; waveform search),
 `MORLET_MCP_INVESTIGATION_MAX_HISTORY` (10000, at most 1000000; context-history segments),
 `MORLET_MCP_INVESTIGATION_MAX_RECORDINGS` (1000, at most 100000; compatible recordings, which a collector with
@@ -102,9 +102,10 @@ The deadline includes collection validation, SDK reads and presentation. It is c
 applied to SQL statements, not a hard network or CPU interrupt.
 
 The output bound covers what the client receives: a result travels as indented text and as structured content,
-and `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` bounds the two together. Coverage ranges are fetched only with
-`detailed_coverage=true`; otherwise the SDK returns just the summary, so ranges never count against a summarized
-answer. The SDK's own result has a separate 2 MB cap; exceeding either is `response_too_large`. These are output
+and `MORLET_MCP_INVESTIGATION_MAX_OUTPUT_BYTES` bounds the two together, counted as sent (the text copy is
+itself a JSON string in the message). With `detailed_coverage=false` the SDK leaves the coverage ranges out of
+the response and returns only the summary, so they never count against the output size; the coverage query
+still runs, and `MORLET_MCP_INVESTIGATION_MAX_COVERAGE_RANGES` still applies to it (`budget_exceeded`). The SDK's own result has a separate 2 MB cap; exceeding either is `response_too_large`. These are output
 limits rather than streaming memory limits. `evidence_states` come from the SDK unchanged.
 
 Failures are MCP tool errors containing JSON `code`, `message` and `suggestion`, including `budget_exceeded`,
