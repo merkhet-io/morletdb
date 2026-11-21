@@ -394,9 +394,46 @@ def time_axis(path, opts, header, body):
     return rate, meta
 
 
+RESIDUAL_ROWS = 65536   # rows per exact residual step (Python integers): bounds memory for one-anchor blocks
+
+
+def anchor_uncertainties(t_ns, rate, anchors, resolution_ns):
+    """Each anchor's uncertainty_ns (#561): the column's resolution plus the largest departure of a row's timestamp
+    from the server's mapping on either side of the anchor, rounded up to whole ns. The server interpolates linearly
+    between two anchors of a block (and extrapolates with the declared rate from a block's only anchor), and it
+    interpolates their uncertainties: with both ends at least resolution + the residual of the rows between them,
+    the reported bound covers every timestamp the importer approximated, not only the anchors themselves. The
+    residuals are computed exactly, in integers (float64 loses nanoseconds near the 2^53 ns span the importer
+    accepts). anchors: (sample, utc_ns, break_before) from time_anchors."""
+    t = np.asarray(t_ns, dtype=np.int64)
+    period = Fraction(1_000_000_000) / Fraction(repr(float(rate)))
+    ends = [a[0] for a in anchors[1:] if a[2]] + [t.size]       # where each block ends (the next break, or the end)
+    worst = {}                                                  # anchor sample -> largest residual next to it
+    block = 0
+    for i, (k, _, _) in enumerate(anchors):
+        while k >= ends[block]:
+            block += 1
+        nxt = anchors[i + 1][0] if i + 1 < len(anchors) and not anchors[i + 1][2] else None
+        hi = nxt if nxt is not None else ends[block] - 1        # the rows this anchor's piece maps
+        # residual(n) = (t[n] - t[k]) - (n - k) * num / den, so den * residual is an integer: exact in Python ints
+        num, den = (int(t[nxt] - t[k]), nxt - k) if nxt is not None else (period.numerator, period.denominator)
+        r = 0
+        for lo in range(k, hi + 1, RESIDUAL_ROWS):              # bounded memory: one block can be the whole file
+            up = min(hi + 1, lo + RESIDUAL_ROWS)
+            rel = (t[lo:up] - t[k]).astype(object)
+            steps = np.arange(lo - k, up - k, dtype=np.int64).astype(object)
+            r = max(r, max((abs(int(x)) for x in rel * den - steps * num), default=0))
+        r = -(-r // den)                                        # ceil
+        worst[k] = max(worst.get(k, 0), r)
+        if nxt is not None:
+            worst[nxt] = max(worst.get(nxt, 0), r)
+    return [resolution_ns + worst[k] for k, _, _ in anchors]
+
+
 def csv_anchors(path, opts, header, body, rate):
     """Time anchors from the time column (#393, #383), or [] without an absolute time. Each anchor:
-    (sample, utc_ns, uncertainty_ns, break_before); the uncertainty is the column's resolution."""
+    (sample, utc_ns, uncertainty_ns, break_before); the uncertainty is the column's resolution plus how far the rows
+    next to the anchor depart from the mapping through the anchors (anchor_uncertainties, #561)."""
     if opts.time_column is None or getattr(opts, "no_anchors", False):
         return []
     origin = getattr(opts, "time_origin", None)
@@ -409,7 +446,8 @@ def csv_anchors(path, opts, header, body, rate):
     if parsed is None:
         return []
     t, resolution = parsed
-    return [(n, tn, resolution, br) for n, tn, br in time_anchors(t, rate, None if tol is None else tol * 1e9)]
+    anchors = time_anchors(t, rate, None if tol is None else tol * 1e9)
+    return [(n, tn, u, br) for (n, tn, br), u in zip(anchors, anchor_uncertainties(t, rate, anchors, resolution))]
 
 
 def context_runs(path, header, body, columns):
@@ -533,10 +571,16 @@ def add_context(conn, collection, recs):
 
 def add_time_anchors(conn, collection, recs, source, batch_rows=10000):
     """Time anchors of each recording (#393, #383), in batches of batch_rows; a rerun repeats identical batches (no-ops).
-    Enables anchors if needed. Returns the number written, or None when the server has no time anchors (SQL < 0.3.13)."""
+    Enables anchors if needed. Returns the number written (revisions included), or None when the server has no time
+    anchors (SQL < 0.3.13).
+
+    A batch an earlier importer wrote with a smaller uncertainty (before #561 it declared only the column's
+    resolution) is brought up to date by revising those anchors (morlet_revise_time_anchor keeps the earlier rows):
+    the same samples, times, breaks and source with a wider uncertainty. Any other difference is refused."""
+    import psycopg
     if conn.execute("SELECT to_regproc('public.morlet_add_time_anchors') IS NULL").fetchone()[0]:
         return None
-    if conn.execute("SELECT to_regclass(%s)", (collection + "_time_anchors",)).fetchone()[0] is None:
+    if anchor_table(conn, collection) is None:
         conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (collection,))
     n = 0
     for r in recs:
@@ -544,11 +588,49 @@ def add_time_anchors(conn, collection, recs, source, batch_rows=10000):
             rows = [{"recording_id": r.recording_id, "sample_offset": s, "utc_ns": str(t), "uncertainty_ns": u,
                      "source": f"import:{source[r.recording_id]}", "break_before": bool(b)}
                     for s, t, u, b in r.anchors[k:k + batch_rows]]
-            n += conn.execute("SELECT morlet_add_time_anchors(%s::regclass, %s, %s::jsonb)",
-                              (collection, f"import-anchors-{r.recording_id}-{k // batch_rows}",
-                               json.dumps(rows))).fetchone()[0]
+            batch = f"import-anchors-{r.recording_id}-{k // batch_rows}"
+            try:
+                with conn.transaction():
+                    n += conn.execute("SELECT morlet_add_time_anchors(%s::regclass, %s, %s::jsonb)",
+                                      (collection, batch, json.dumps(rows))).fetchone()[0]
+            except psycopg.errors.RaiseException as exc:
+                if "already exists with different rows" not in str(exc):
+                    raise
+                n += widen_time_anchors(conn, collection, r.recording_id, batch, rows)
     conn.commit()
     return n
+
+
+def anchor_table(conn, collection):
+    """The collection's time-anchor table as a quoted name, or None (from the catalog, so quoted or mixed-case
+    collection names work)."""
+    return conn.execute("SELECT to_regclass(format('%%I.%%I', n.nspname, c.relname || '_time_anchors'))::text "
+                        "FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.oid = %s::regclass",
+                        (collection,)).fetchone()[0]
+
+
+def widen_time_anchors(conn, collection, recording_id, batch, rows):
+    """Revise the active anchors at rows' samples to rows' uncertainty where only that is smaller (#561); the number
+    revised. Raises ValueError when the active anchors differ otherwise, or are missing."""
+    table = anchor_table(conn, collection)
+    active = {int(s): (a, int(t), int(u), src, bool(b)) for a, s, t, u, src, b in conn.execute(
+        f"SELECT x.anchor_id, x.sample_offset, x.utc_ns, x.uncertainty_ns, x.source, x.break_before FROM {table} x "
+        f"WHERE x.recording_id=%s AND x.sample_offset = ANY(%s) AND NOT x.retracted "
+        f"AND NOT EXISTS (SELECT 1 FROM {table} y WHERE y.supersedes=x.anchor_id)",
+        (recording_id, [row["sample_offset"] for row in rows])).fetchall()}
+    widen = []
+    for row in rows:
+        have = active.get(row["sample_offset"])
+        if have is None or (have[1], have[3], have[4]) != (int(row["utc_ns"]), row["source"], row["break_before"]):
+            raise ValueError(f"time anchor batch {batch} of {recording_id} was written with other anchors; this "
+                             f"import's anchors differ at sample {row['sample_offset']} (revise or retract them with "
+                             f"morlet_revise_time_anchor)")
+        if have[2] < row["uncertainty_ns"]:
+            widen.append((have[0], row["uncertainty_ns"]))
+    for anchor_id, u in widen:
+        conn.execute("SELECT morlet_revise_time_anchor(%s::regclass, %s, %s::jsonb)",
+                     (collection, anchor_id, json.dumps({"uncertainty_ns": u})))
+    return len(widen)
 
 
 def build(conn, collection, ids, window, probes):
