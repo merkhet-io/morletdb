@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Steward: envelope stride from a recording's first and last windows (#560).** The steward inferred each window
+  size's stride from the gaps between a recording's first 16 envelopes. Episodic memory may remove every other early
+  window (level 1 for episodes one window long), and from the 16 survivors the stride came out twice the real one:
+  the builder then wrote half of the new windows and reported nothing wrong, so search coverage shrank after
+  retention (samples were unaffected). The stride is now the greatest common divisor of the gaps among the first and
+  the last 16 envelopes of each recording, still by index lookups; the last ones decide where new windows go.
+
 ## 0.4.0-beta.3
 
 **The third beta.** SQL version 0.3.14, with an update script from 0.3.13: run `ALTER EXTENSION pg_morlet UPDATE`
