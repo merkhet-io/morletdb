@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import signal
 import sys
@@ -349,8 +350,8 @@ def main(argv=None) -> int:
     ap.add_argument("--collection-every", type=float, default=60.0,
                     help="metrics: seconds per-collection statistics are cached between scrapes")
     a = ap.parse_args(argv)
-    if not (a.keep_actions_days >= 1 and a.keep_failures_days >= 1):
-        ap.error("--keep-actions-days and --keep-failures-days must be at least 1")
+    if not all(math.isfinite(d) and 1 <= d <= 36500 for d in (a.keep_actions_days, a.keep_failures_days)):
+        ap.error("--keep-actions-days and --keep-failures-days must be between 1 and 36500")
     if a.verify_timeout < 0.001:
         ap.error("--verify-timeout must be at least 0.001 seconds (0 would disable the statement timeout)")
     cfg = P.Config(tick_s=a.tick, load_per_cpu=a.load_per_cpu, reserve_bytes=a.reserve_bytes,

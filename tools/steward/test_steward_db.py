@@ -546,6 +546,20 @@ class StewardDatabase(unittest.TestCase):
         deleted, more, errors = S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10, max_batches=2)
         self.assertEqual((deleted["actions"], more, errors), (20, True, []))
         self.assertEqual(S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10)[0]["actions"], 5)
+        # the budget is shared by all tables: progress rows of a removed collection wait for the next call
+        self.admin.execute("INSERT INTO morlet_steward.actions(job,outcome,started_at) "
+                           "SELECT 'envelopes','done',now()-interval '40 days' FROM generate_series(1,25)")
+        self.admin.execute("INSERT INTO morlet_steward.progress SELECT 'rollups','public.gone','g'||i,1 "
+                           "FROM generate_series(1,5) i")
+        deleted, more, _ = S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10, max_batches=2)
+        self.assertEqual((deleted["actions"], deleted["progress"], more), (20, 0, True))
+        deleted = S.prune(self.conn, S.collections(self.conn), [], 30, 180, batch=10)[0]
+        self.assertEqual((deleted["actions"], deleted["progress"]), (5, 5))
+
+    def test_retention_ages_must_be_finite(self):
+        for v in ("inf", "nan", "0.5", "1e9"):
+            with self.subTest(v=v), self.assertRaises(SystemExit):
+                steward.main(["status", "--dsn", dsn_for(DB), "--keep-actions-days", v])
 
     def test_the_tables_are_visible_in_metrics(self):
         import metrics as M

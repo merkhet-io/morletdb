@@ -38,10 +38,10 @@ Keeps a MorletDB database healthy on an edge machine without a DBA. Design and r
     and applied plans stay as the approval record. The rule is enforced by the plans table's trigger, also for
     direct SQL.
 - **Retention of its own tables (#540):** every hour, the steward prunes its own tables in batches of 5,000 rows,
-  each with a lock and a statement timeout:
+  each with a lock and a statement timeout, at most 20 full batches per run (again on the next tick if more is left):
   - `actions`: finished work (`done`, `nothing_to_do`) after 30 days (`--keep-actions-days`); `failed` and
     `interrupted` actions and ingest hold changes after 180 days (`--keep-failures-days`); a proposal's row once
-    its plan is gone. A `started` action is never deleted.
+    its plan is gone and it is older than `--keep-actions-days`. A `started` action is never deleted.
   - `plans`: undecided plans 7 days after they expired.
   - `progress`, `verify_cursor` and the insert counters: rows of recordings and collections that no longer exist.
 

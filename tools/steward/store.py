@@ -536,19 +536,24 @@ def prune(conn, collections_: list[str], readable: list[str], keep_actions_days:
                         f"morlet_steward.progress p WHERE p.collection=%s AND NOT EXISTS(SELECT 1 FROM {c} r "
                         f"WHERE r.recording_id=p.recording_id) LIMIT %s)", (c,)))
     deleted = {"actions": 0, "plans": 0, "progress": 0, "verify_cursor": 0}
-    more, errors = False, []
+    # One budget for the whole call: each table gets one batch, and full batches (more may be left) draw from
+    # max_batches; when it is spent, the call stops and the next one continues.
+    more, errors, left = False, [], max_batches
     for table, q, args in targets:
+        if more:
+            break
         try:
-            for i in range(max_batches + 1):
-                if i == max_batches:
-                    more = True
-                    break
+            while True:
                 with conn.transaction():
                     conn.execute(f"SET LOCAL lock_timeout = {int(min(timeout_s, 1.0) * 1000)}")
                     conn.execute(f"SET LOCAL statement_timeout = {int(timeout_s * 1000)}")
                     n = conn.execute(q, args + (batch,)).rowcount
                 deleted[table] += n
                 if n < batch:
+                    break
+                left -= 1
+                if left <= 0:
+                    more = True
                     break
         except psycopg.Error as e:          # this table waits for the next retention; the others go on
             if conn.closed:
