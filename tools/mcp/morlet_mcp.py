@@ -1053,14 +1053,15 @@ def resolve_incident(collection: str, asset: str, incident_time: str, before_s: 
     """Map an asset and an incident time to recording intervals, in one read-only snapshot. incident_time is ISO 8601
     WITH a UTC offset or Z: ask for the plant's timezone rather than assuming one. The window is
     [incident - before_s, incident + after_s). sensor selects a channel (or the operator's sensor key).
-    references is a JSON object of claimed identifiers ({"work_order":"WO-17"}), compared with what each recording
+    references is a JSON object of claimed identifiers ({"work_order":"WO-17"}), compared as JSON with what each recording
     stores: verified, different or not_recorded; a free-text claim is not a verified join.
 
     Each candidate is one recording's zero-based, half-open sample interval with its time basis, uncertainty and
     coverage. Recordings are never concatenated or resampled. Read `states` before using a candidate: for example
     ambiguous_asset, ambiguous_time, partial_window, unreadable_samples, multiple_sensors. asset_not_found,
     recordings_without_time_axis and no_recording_at_time are different findings, and none means nothing happened.
-    Pass a candidate's interval to investigate_interval (a power-of-two window of 512..32768 samples)."""
+    investigate_interval needs a power-of-two window of 512..32768 samples: select one inside a candidate (the default
+    window is usually longer), rather than passing the candidate's whole interval."""
     _sibling("investigation")          # its limits and error format are shared
     return _sibling("incident").run(connect, checked, utc_ns_of, collection, asset, incident_time, before_s=before_s,
                                     after_s=after_s, sensor=sensor, metadata_filter=metadata_filter,

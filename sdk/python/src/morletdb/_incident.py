@@ -34,10 +34,11 @@ def _seconds_ns(name, value):
     """Whole nanoseconds, rounded up, so the requested window is never narrower than asked. From the shortest decimal
     of the number, as written: the binary value of 0.05 is a little above it and would add a nanosecond, and with it
     a sample whose time is exactly on the window's end."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) \
-            or not 0 <= value <= MAX_WINDOW_S:
+    # the range test also refuses NaN and infinities, and integers too large for a float
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= MAX_WINDOW_S:
         raise InvalidInputError(f"{name} must be a finite number of seconds in 0..{MAX_WINDOW_S}")
-    return math.ceil(Fraction(repr(value)) * 1_000_000_000)
+    exact = Fraction(value) if isinstance(value, int) else Fraction(repr(float(value)))
+    return math.ceil(exact * 1_000_000_000)
 
 
 def _incident_ns(value):
@@ -53,9 +54,42 @@ def _references(claimed, keys, metadata):
     out = {}
     for name, value in claimed.items():
         recorded = metadata.get(keys[name])
-        status = "not_recorded" if recorded is None else "verified" if str(recorded) == value else "different"
+        # the stored JSON value itself: the number 42 is not the string "42", and a stored null is not an absent key
+        same = json.dumps(recorded, sort_keys=True) == json.dumps(value, sort_keys=True)
+        status = "not_recorded" if keys[name] not in metadata else "verified" if same else "different"
         out[name] = {"claimed": value, "metadata_key": keys[name], "recorded": recorded, "status": status}
     return out
+
+
+def _covers(reader, collection, rid, axis, rate, a, b, start, end):
+    """Whether [a, b) covers the window on the recording's own time axis. By the mapped times, not the nominal sample
+    count: a drifting clock has more or fewer samples per second than declared. The first and last samples must lie
+    within one local sample period of the window's ends, and no clock break inside may skip more than half a period."""
+    nominal = Fraction(1_000_000_000) / rate
+    points = sorted({a, min(a + 1, b - 1), max(b - 2, a), b - 1})
+    t = {int(n): Fraction(u) for n, u in reader._execute(
+        "SELECT p.n, s.utc_ns FROM unnest(%s::bigint[]) p(n), LATERAL public.morlet_sample_utc(%s::regclass,%s,p.n) s",
+        (points, collection, rid)).fetchall()}
+    first = max(nominal, t[min(a + 1, b - 1)] - t[a])
+    last = max(nominal, t[b - 1] - t[max(b - 2, a)])
+    if t[a] - start > first or end - t[b - 1] > last:
+        return False
+    if not axis.startswith("anchors"):
+        return True
+    table = reader._one("SELECT format('%%I.%%I', n.nspname, c.relname || '_time_anchors') "
+                        "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=%s::regclass",
+                        (collection,))
+    breaks = [r[0] for r in reader._execute(sql.SQL(
+        "SELECT x.sample_offset FROM {0} x WHERE x.recording_id=%s AND x.break_before AND x.sample_offset>%s "
+        "AND x.sample_offset<%s AND NOT x.retracted AND NOT EXISTS(SELECT 1 FROM {0} y WHERE y.supersedes=x.anchor_id)"
+    ).format(sql.SQL(table)), (rid, a, b)).fetchall()]
+    if not breaks:
+        return True
+    return reader._execute(
+        "SELECT NOT EXISTS(SELECT 1 FROM unnest(%s::bigint[]) b(n), "
+        "LATERAL public.morlet_sample_utc(%s::regclass,%s,b.n-1) p, LATERAL public.morlet_sample_utc(%s::regclass,%s,b.n) q "
+        "WHERE q.utc_ns-p.utc_ns > %s)", (breaks, collection, rid, collection, rid, str(float(nominal * 3 / 2)))
+    ).fetchone()[0]
 
 
 def resolve_incident(client, collection, asset, incident_time, *, before_s, after_s, sensor, metadata_filter, asset_key,
@@ -75,10 +109,13 @@ def resolve_incident(client, collection, asset, incident_time, *, before_s, afte
             raise InvalidInputError(f"{name} must be an integer in 1..{high}")
     if not isinstance(identity_keys, (tuple, list)) or any(not isinstance(k, str) or not k for k in identity_keys):
         raise InvalidInputError("identity_keys must be a sequence of non-empty strings")
-    for name, value in (("references", references), ("reference_keys", reference_keys)):
-        if not isinstance(value, Mapping) or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
-                                                 for k, v in value.items()):
-            raise InvalidInputError(f"{name} must map non-empty strings to non-empty strings")
+    if not isinstance(reference_keys, Mapping) or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
+                                                      for k, v in reference_keys.items()):
+        raise InvalidInputError("reference_keys must map non-empty strings to non-empty strings")
+    if not isinstance(references, Mapping) or any(
+            not isinstance(k, str) or not k or v == "" or not isinstance(v, (str, int, float, bool))
+            or (isinstance(v, float) and not math.isfinite(v)) for k, v in references.items()):
+        raise InvalidInputError("references must map non-empty strings to JSON scalars")
     unmapped = sorted(set(references) - set(reference_keys))
     if unmapped:
         raise InvalidInputError("references without a metadata key in reference_keys: " + ", ".join(unmapped))
@@ -139,8 +176,7 @@ def resolve_incident(client, collection, asset, incident_time, *, before_s, afte
                     IntervalRef(collection, rid, a, b), rec.sample_rate_hz, rec.channel, rec.unit,
                     rec.metadata.get(sensor_key) if sensor_key else rec.channel, r.basis, r.ambiguous, r.extrapolated,
                     r.start_uncertainty_ns, r.end_uncertainty_ns, r.assumes_linear_clock, axis,
-                    # one sample of tolerance: which samples fall in a window depends on its phase against the grid
-                    expected, b - a, b - a >= expected - 1, states, sum(states.get(s, 0) for s in UNREADABLE),
+                    expected, b - a, _covers(reader, collection, rid, axis, rate, a, b, start, end), states, sum(states.get(s, 0) for s in UNREADABLE),
                     _references(references, reference_keys, rec.metadata)))
         result_states = _states(ids, no_time, candidates, identities, identity_keys)
         provenance = reader._execute(
@@ -157,9 +193,10 @@ def _states(ids, no_time, candidates, identities, identity_keys):
     states = []
     if not ids:
         return ["asset_not_found"]
-    if not identity_keys:
+    # a configured key without a value on some recording does not scope that recording
+    if not identity_keys or any("null" in identity for identity in identities):
         states.append("asset_identity_not_scoped")
-    elif len(identities) > 1:
+    if len(identities) > 1:
         states.append("ambiguous_asset")
     if no_time:
         states.append("recordings_without_time_axis")
@@ -167,7 +204,8 @@ def _states(ids, no_time, candidates, identities, identity_keys):
         states.append("no_recording_at_time")
     by_sensor = {}
     for c in candidates:
-        by_sensor.setdefault(c.sensor, set()).add(c.ref.recording_id)
+        # the sensor is any stored JSON value, lists and objects included
+        by_sensor.setdefault(json.dumps(c.sensor, sort_keys=True), set()).add(c.ref.recording_id)
     if len(by_sensor) > 1:
         states.append("multiple_sensors")
     if any(len(r) > 1 for r in by_sensor.values()):

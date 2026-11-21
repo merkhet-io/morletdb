@@ -232,7 +232,7 @@ class IncidentCandidate:
     """One sample interval of one recording that may hold an incident's time window (never concatenated).
 
     `basis`, `ambiguous`, `extrapolated`, the uncertainties and `assumes_linear_clock` are the server's time mapping
-    (see TimeRange). `covers_window` compares the stored samples with what the window needs at this rate;
+    (see TimeRange). `covers_window` is judged on the recording's mapped times (`expected_samples` is the nominal count);
     `coverage_states` counts the interval's samples per morlet_coverage state; `unreadable_samples` have no raw
     samples. `references` holds each claimed work order, lot or part with what the recording stores: `verified`,
     `different` or `not_recorded`.

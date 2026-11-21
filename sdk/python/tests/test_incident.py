@@ -27,7 +27,8 @@ class Validation(unittest.TestCase):
         naive = datetime(2026, 3, 1, 12)
         for args, kwargs in ((("", BASE), {}), (("a", naive), {}), (("a", None), {}), (("a", True), {}),
                              (("a", BASE), {"before_s": 0, "after_s": 0}), (("a", BASE), {"before_s": -1}),
-                             (("a", BASE), {"after_s": float("nan")}), (("a", BASE), {"before_s": 86400 * 32}),
+                             (("a", BASE), {"after_s": float("nan")}), (("a", BASE), {"before_s": 10 ** 1000}),
+                             (("a", BASE), {"references": []}), (("a", BASE), {"reference_keys": []}), (("a", BASE), {"before_s": 86400 * 32}),
                              (("a", BASE), {"max_recordings": 0}), (("a", BASE), {"timeout_ms": True}),
                              (("a", BASE), {"identity_keys": "plant"}), (("a", BASE), {"metadata_filter": []}),
                              (("a", BASE), {"references": {"work_order": "WO-1"}}),     # no metadata key for it
@@ -65,11 +66,11 @@ class Incident(unittest.TestCase):
         self.conn.commit()
         return rec
 
-    def anchors(self, rid, rows):
+    def anchors(self, rid, rows, breaks=True):
         self.conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (self.coll,))
         self.conn.execute("SELECT morlet_add_time_anchors(%s::regclass,%s,%s::jsonb)", (self.coll, "b-" + rid, json.dumps(
             [{"recording_id": rid, "sample_offset": n, "utc_ns": str(BASE + t), "uncertainty_ns": 1000,
-              "source": "daq", "break_before": n > 0} for n, t in rows])))
+              "source": "daq", "break_before": breaks and n > 0} for n, t in rows])))
         self.conn.commit()
 
     def resolve(self, at=BASE + SECOND, before_s=0.1, after_s=0.05, asset="P7", **kwargs):
@@ -165,6 +166,21 @@ class Incident(unittest.TestCase):
                          (70, 120, 100, False))
         self.assertIn("partial_window", result.states)
 
+    def test_a_drifting_clock_is_not_a_partial_window(self):                  # #583 review
+        self.add("r", n=2000)
+        self.anchors("r", ((0, 0), (1999, 2019 * MS + 990_000)), breaks=False)  # 1% slow: fewer samples per second
+        c = self.resolve(at=BASE + 1100 * MS, before_s=0.9, after_s=0.1).candidates[0]
+        self.assertLess(c.samples, c.expected_samples - 1)
+        self.assertTrue(c.covers_window)
+
+    def test_identity_without_a_value_and_unusual_sensor_values(self):        # #583 review
+        self.add("a", plant="north", position=["DE", 1])
+        self.add("b", position=["DE", 1])
+        result = self.resolve(identity_keys=("plant",), sensor_key="position")
+        self.assertIn("asset_identity_not_scoped", result.states)
+        self.assertIn("ambiguous_asset", result.states)
+        self.assertIn("multiple_recordings_per_sensor", result.states)
+
     def test_extrapolated_time_is_named(self):
         self.add("r", n=1000)
         self.anchors("r", ((0, 0),))
@@ -193,6 +209,9 @@ class Incident(unittest.TestCase):
                          {"work_order": "verified", "lot": "different", "part": "not_recorded"})
         result = self.resolve(references={"lot": "41", "part": "P-1"}, reference_keys={"lot": "lot", "part": "part"})
         self.assertIn("reference_different", result.states)
+        typed = self.resolve(references={"as_text": "42", "as_number": 42}, reference_keys={"as_text": "lot", "as_number": "lot"})
+        self.assertEqual({k: v["status"] for k, v in typed.candidates[0].references.items()},
+                         {"as_text": "different", "as_number": "verified"})
         self.assertIn("reference_not_recorded", result.states)
 
     def test_limits_snapshot_and_serialization(self):

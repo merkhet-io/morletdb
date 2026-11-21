@@ -82,7 +82,7 @@ not have to guess:
 1. `resolve_incident(collection="public.line3", asset="P7", incident_time="2026-03-01T14:32:00+01:00", before_s=30,
    after_s=5, references='{"work_order":"WO-17"}')`
 2. Read `states`, then each candidate's `ref`, time basis, uncertainty, `covers_window` and `references`.
-3. Choose a power-of-two window inside a candidate and call `investigate_interval` on it.
+3. Choose a power-of-two window of 512–32768 samples inside a candidate (the whole candidate usually is not one) and call `investigate_interval` on it.
 
 `incident_time` must carry a UTC offset or `Z`; a time without one is refused rather than assumed to be UTC. A
 candidate holds the samples whose UTC time lies in `[incident - before_s, incident + after_s)`, by the recording's
@@ -92,9 +92,9 @@ The states:
 
 - `asset_not_found`: no recording visible to this role has the asset (also when one exists but is hidden from it)
 - `recordings_without_time_axis`: matching recordings have neither anchors nor a start time, so they cannot be placed
-- `no_recording_at_time`: no candidate: the asset has recordings, none at this time. This is not "nothing happened"
-- `asset_identity_not_scoped`, `ambiguous_asset`: no identity keys are configured, or the asset ID occurs under several identities (`identities`)
-- `multiple_sensors`, `multiple_recordings_per_sensor`: several channels, or the window crosses recordings of one sensor
+- `no_recording_at_time`: no candidate could be placed at this time. Check `recordings_without_time_axis` first: those recordings may hold it. This is not "nothing happened"
+- `asset_identity_not_scoped`, `ambiguous_asset`: no identity keys are configured or a recording has no value for one; or the asset ID occurs under several identities (`identities`)
+- `multiple_sensors`, `multiple_recordings_per_sensor`: several channels (or values of the configured sensor key), or the window crosses recordings of one sensor
 - `partial_window`, `unreadable_samples`: fewer samples than the window needs; samples compacted, gone or never stored
 - `ambiguous_time`, `extrapolated_time`: a backward clock step puts the time in several places; a time beyond its block's anchors
 - `time_uncertainty_unknown`, `assumes_linear_clock`: start + rate has no error bound; estimated anchors give no bound
@@ -103,8 +103,8 @@ The states:
 Plant identifiers are configuration, not schema: `MORLET_MCP_ASSET_KEY` (metadata key of the asset, default `asset`),
 `MORLET_MCP_SENSOR_KEY` (default: the channel), `MORLET_MCP_ASSET_IDENTITY_KEYS` (comma-separated, for example `plant`,
 to expose an asset ID reused across sites) and `MORLET_MCP_REFERENCE_KEYS` (a JSON object such as `{"work_order":"wo"}`).
-A reference is `verified` only when the recording stores an equal value; a free-text claim is not a join. Limits:
-`MORLET_MCP_INCIDENT_TIMEOUT_MS` (10000), `MORLET_MCP_INCIDENT_MAX_RECORDINGS` (200) and
+A reference is `verified` only when the recording stores an equal JSON value (the number 42 is not the string "42"); a free-text claim is not a join. Limits:
+`MORLET_MCP_INCIDENT_TIMEOUT_MS` (10000; also capped by a positive `MORLET_MCP_TIMEOUT_MS`, where 0 means no cap), `MORLET_MCP_INCIDENT_MAX_RECORDINGS` (200) and
 `MORLET_MCP_INCIDENT_MAX_OUTPUT_BYTES` (64000). The tool reads only, under the caller's role and row security.
 
 **Experimental, from 0.4.0-beta.4.** For an initial assessment of a known sample interval,

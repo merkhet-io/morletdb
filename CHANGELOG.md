@@ -6,7 +6,8 @@
   `resolve_incident` map an asset and a timezone-aware incident time to recording intervals in one read-only
   snapshot, with the time basis, uncertainty and coverage of each. Recordings are never concatenated or resampled;
   ambiguous assets and times, gaps, unreadable samples, missing time axes and claimed references that the recording
-  does not confirm are explicit states. Plant identifiers are configuration.
+  does not confirm are explicit states. Plant identifiers are parameters in the SDK and operator configuration in
+  the MCP server.
 
 ## 0.4.0-beta.4
 
