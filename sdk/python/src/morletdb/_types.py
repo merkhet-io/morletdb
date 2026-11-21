@@ -273,9 +273,7 @@ class InvestigationResult:
         return result_dict(self)
 
     def to_json(self) -> str:
-        """to_dict() as compact JSON; the encoding measured against max_output_bytes, not encoded again."""
-        cached = getattr(self, "_json", None)
-        if cached is not None:
-            return cached
+        """to_dict() as compact JSON, the encoding measured against max_output_bytes. Serialized from the
+        current fields each time: the result's lists and dicts can be changed after the call."""
         import json
         return json.dumps(self.to_dict(), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
