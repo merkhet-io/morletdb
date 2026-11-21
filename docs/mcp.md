@@ -71,8 +71,8 @@ run to failure, or [import WAV, EDF, miniSEED or CSV files](import.md).
 
 ## An investigation, end to end
 
-For an initial assessment of a known sample interval, call `investigate_interval(collection, recording_id,
-start_sample, end_sample)`. It uses the SDK's [investigation contract](python-sdk.md#investigate-an-interval),
+**Experimental, from the release after 0.4.0-beta.3.** For an initial assessment of a known sample interval,
+call `investigate_interval(collection, recording_id, start_sample, end_sample)`. It uses the SDK's [investigation contract](python-sdk.md#investigate-an-interval),
 including the same fixed-window search requirements. Optionally supply a `segment_id` for a current context
 segment containing the entire interval; `match_keys` and `exclude_labels` are comma-separated and affect only
 context history. Inspect `evidence_states`, then use `compare_intervals`, `describe_interval` or `read_interval`
