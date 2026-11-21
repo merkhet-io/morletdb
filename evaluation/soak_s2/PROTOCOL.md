@@ -17,7 +17,7 @@ on a small edge box without a person? That means:
 S2 is S1's protocol (`evaluation/soak_s1/PROTOCOL.md`, frozen 2026-11-10, with shakedown changes 1–7) with these
 changes, and nothing else:
 
-1. **The release:** the first release with #556 (SQL 0.3.14, `morlet_latest` per stream) and #557 (the steward
+1. **The release:** the first release with #556 (SQL 0.3.14, `morlet_latest_per_stream`) and #557 (the steward
    serves the recording furthest behind first), expected as `0.4.0-beta.3`, with the steward and the collector of the
    freezing commit (S1: 0.3.10-alpha.1). The fixes are named for the S1 failures they address (#527, #528).
    The SeedLink collector reconnects after a database restart (#525). The steward has its fixes since S1:
@@ -56,7 +56,7 @@ changes, and nothing else:
      10 minutes per round by day 6. The harness itself was then keeping the 1-CPU database busy two thirds of the time.
      S2 measures coverage every 24th round (6 hours), and H5's end value comes from one `probe.py --coverage-only`
      run after the week.
-   - The probe's `latest` passes `stream_keys` (network, station, location, channel), so it reads the stream's newest
+   - The probe's `latest` uses `morlet_latest_per_stream` (network, station, location, channel), so it reads the stream's newest
      recording, as an application on 0.3.14 would (#527).
    - H4's collector bound uses its process memory (anon + shmem), as the database's already does (S1 shakedown change
      7). In S1 the collector's anon memory stayed at 51–56 MiB all week, while Docker's figure grew with the spool's

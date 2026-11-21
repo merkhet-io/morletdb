@@ -2,7 +2,7 @@
 """Soak S2 probe: every --every seconds, measures what a user of the live archive would do, and appends one JSON line.
 
 Per round, three stations are chosen in a fixed rotation (by round number), one channel each:
-- latest:  morlet_latest(collection, 4096, {network, station, channel}, stream_keys): the newest 4,096 samples of
+- latest:  morlet_latest_per_stream(collection, stream keys, 4096, {network, station, channel}): the newest 4,096 samples of
            the stream's newest recording (latency, rows).
 - stats:   morlet_interval_stats over the last hour of that channel's current recording (latency); skipped while the
            recording is shorter than an hour.
@@ -43,8 +43,8 @@ def round_(conn, c: str, k: int, coverage: bool = True, checks: bool = True) -> 
         flt = json.dumps({"network": net, "station": sta, "channel": cha})
         chk = {"station": f"{net}.{sta}", "channel": cha}
         # S2 (#527, SQL 0.3.14): the newest recording of the stream only, not one per stored day
-        dt, rows, err = timed(conn, "SELECT recording_id, sample_count FROM morlet_latest(%s::regclass,4096,%s::jsonb,"
-                              "1000,ARRAY['network','station','location','channel'])", (c, flt))
+        dt, rows, err = timed(conn, "SELECT recording_id, sample_count FROM morlet_latest_per_stream(%s::regclass,"
+                              "ARRAY['network','station','location','channel'],4096,%s::jsonb)", (c, flt))
         chk["latest"] = {"s": round(dt, 4), "rows": len(rows), "error": err}
         cur = conn.execute(f"SELECT recording_id, sample_rate_hz, (checkpoint->>'end')::bigint FROM {c} "
                            "WHERE metadata @> %s::jsonb ORDER BY (metadata->>'start_ns')::bigint DESC LIMIT 1",
