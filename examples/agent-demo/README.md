@@ -88,6 +88,11 @@ windows with catalogued earthquakes about twice as often as zero-lag similarity
 ([E5](../../evaluation/task_relevance/RESULTS.md), [E5-H](../../evaluation/task_relevance/RESULTS_HELDOUT.md)).
 It finds leads for review. It is not an earthquake detector.
 
+**Investigation in one call** (experimental, from 0.4.0-beta.4). `investigate_interval` returns
+the query's statistics, the closest matches, coverage and `evidence_states` in one snapshot, each match with an
+interval reference to check. It is an alternative first step to the calls above; it reports what was searched
+and found, and adds no interpretation. The sessions below predate it.
+
 **Real sessions.** Two unattended Claude Code runs (Opus 5.5, MCP tools only) with a prompt close to the one
 above that also asks Claude to chase uncatalogued matches:
 

@@ -42,8 +42,9 @@ it runs in a few seconds; the four impacts rank first (distance ≈ 0.01), the e
 
 ## Investigate an interval
 
-`Client.investigate` composes existing SQL search, query statistics, recording coverage and optional
-context comparison in one read-only snapshot. This is the first SDK slice of
+**Experimental, from 0.4.0-beta.4.** The method and its version-1 result may still change
+between releases; changes are listed in the changelog. `Client.investigate` composes existing SQL search, query
+statistics, recording coverage and optional context comparison in one read-only snapshot. This is the first SDK slice of
 [#572](https://github.com/merkhet-io/morletdb/issues/572), not a diagnosis or a durable evidence archive.
 It needs SQL 0.3.3 or later for interval statistics; coverage is available from 0.3.6 and optional context
 comparison needs 0.3.9 or later. It does not create representations or change data.

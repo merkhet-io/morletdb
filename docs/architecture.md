@@ -17,11 +17,11 @@ MorletDB has two editions that store the same samples bit for bit, with the same
 | PostgreSQL extension | `extensions/pg_morlet` | **Beta.** Every SQL function is classified stable, experimental or internal ([API stability](api-stability.md)); stable functions keep their signature and behaviour, experimental ones may change between minor releases |
 | Chunk formats (Grizzbit) | `crates/grizzbit` | **Frozen for reading:** chunk format versions 2, 3, 5 and 6 stay readable by every later release of the same major version ([chunk format](chunk-format.md)) |
 | Portable core | `crates/morlet-core` | Internal library of both editions: envelopes, features, summaries, checkpoints; no PostgreSQL dependency |
-| Python SDK | `sdk/python` | **Beta** (0.1.0b3), for the server edition ([Python SDK](python-sdk.md)) |
+| Python SDK | `sdk/python` | **Beta** (0.1.0b3), for the server edition ([Python SDK](python-sdk.md)); `Client.investigate` is **experimental** |
 | Embedded edition | `crates/morlet-sqlite`, `morletdb.open` in the SDK | **Experimental** (#351): one writer per file, no search yet; file format 1 frozen with the release that first ships it ([embedded edition](embedded-edition.md), [file format](file-format.md)) |
 | C decoder | `crates/morlet-ffi` | For clients of compressed transfer, which is an experimental SQL feature ([compressed transfer](compressed-transfer.md)) |
 | Steward | `tools/steward` | Ships with the beta: unattended upkeep on edge machines without a DBA (phase 1 of #287; [design](steward-design.md)) |
-| MCP server | `tools/mcp` | Ships with the beta; read-only ([MCP](mcp.md)) |
+| MCP server | `tools/mcp` | Ships with the beta; read-only ([MCP](mcp.md)); `investigate_interval` is **experimental** |
 | Import, export, shipping | `tools/ingest` | Ships with the beta: file importers, the edge-to-central chunk shipper ([chunk shipping](chunk-shipping.md)), S3 import and export |
 | Recording viewer | `tools/viewer` | Local, read-only page |
 | WinCC OA integration | `integrations/winccoa` | **Experimental**, awaiting native acceptance in WinCC OA (#474) |
@@ -59,6 +59,10 @@ own and need their own backups.
    return fewer than `top_k` when its per-probe budget leaves too few candidates.
 4. **Read back.** Every match is a recording and a sample interval, with the recording's metadata, that reads back
    the original samples; its context and labels are separate reads.
+5. **Investigate.** `Client.investigate` (and the MCP tool `investigate_interval`) reads the matches, the query's
+   statistics, coverage and an optional context comparison in one read-only snapshot, with machine-readable
+   evidence states, so that what was searched stays apart from what was found. It composes the functions above
+   and adds no scoring of its own.
 
 Around this core, opt-in per collection: context segments and labels ([context model](context-model.md)),
 memory levels that compact old episodes while keeping their summaries, with a ledger ([memory
