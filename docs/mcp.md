@@ -190,7 +190,9 @@ This starts the server over stdio as an MCP client would, lists its tools and ru
   operator.
 - **UTC times:** every `*_utc` a tool reports is derived from the sample offset. For recordings with
   [time anchors](clock-drift.md) (SQL 0.3.13; the importer writes them from a source's own timestamps) it comes from
-  the anchors, and the result says `time_basis: anchors` with `time_uncertainty_s`, the largest error bound of its
-  times. Otherwise it is start + declared rate. Exception: `coverage`'s first, last and gap times per group have no
+  the anchors, and the result says `time_basis: anchors` with `time_uncertainty_s`, the largest error of its
+  times. When any of those times lies outside its block's anchors the result also has `time_extrapolated: true`,
+  and when the anchors are estimates without a clock bound `time_assumes_linear_clock: true` (the uncertainty is then
+  not a bound); `time_note` says both in words, as in `locate_time`. Otherwise it is start + declared rate. Exception: `coverage`'s first, last and gap times per group have no
   sample offsets and stay start + rate. The server remembers for 60 s that a collection has no anchor
   table, so anchors enabled meanwhile show up within a minute.
