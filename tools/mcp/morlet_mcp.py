@@ -577,26 +577,30 @@ def latest(collection: str, metadata_filter: str = "{}", samples: int = 1, limit
     stopped long ago is not live. When the newest samples are not readable (compacted, or a gap), the row says
     why instead of giving values. More than limit (max 1000) matching recordings is an error: narrow the
     filter. stream_keys (comma-separated metadata keys that identify a stream, for example
-    "network,station,location,channel"; SQL 0.3.14) gives only the newest recording of each stream, which is
-    what you want when a collector starts a new recording per day; limit then counts streams. Servers with
+    "network,station,location,channel"; SQL 0.3.14) groups recordings by those metadata values and gives only
+    the newest recording with samples of each stream, which is what you want when a collector starts a new
+    recording per day; limit then counts streams. Servers with
     pg_morlet SQL 0.3.6."""
     n = max(0, min(int(samples), 1000))
     limit = max(1, min(int(limit), 1000))
     flt = json.dumps(json.loads(metadata_filter or "{}"))
-    keys = [k.strip() for k in (stream_keys or "").split(",") if k.strip()] or None
+    keys = None
+    if (stream_keys or "").strip():
+        keys = [k.strip() for k in stream_keys.split(",")]
+        if not all(keys):
+            raise ValueError("stream_keys: comma-separated metadata keys, none of them empty")
     with connect() as conn:
         c = checked(conn, collection)
         if not conn.execute("SELECT to_regproc('public.morlet_latest') IS NOT NULL").fetchone()[0]:
             raise ValueError("latest needs a server with pg_morlet SQL 0.3.6")
-        if keys and not conn.execute("SELECT to_regprocedure('public.morlet_latest(regclass,integer,jsonb,integer,"
-                                     "text[])') IS NOT NULL").fetchone()[0]:
+        if keys and not conn.execute("SELECT to_regproc('public.morlet_latest_per_stream') IS NOT NULL").fetchone()[0]:
             raise ValueError("stream_keys needs a server with pg_morlet SQL 0.3.14")
         cols = ("SELECT recording_id, sample_rate_hz, channel, unit, start_sample, end_sample, end_time, samples, "
                 "sample_count, min, max, mean, rms, note FROM ")
         try:
             if keys:
-                rows = conn.execute(cols + "morlet_latest(%s::regclass, %s, %s::jsonb, %s, %s::text[])",
-                                    (c, n, flt, limit, keys)).fetchall()
+                rows = conn.execute(cols + "morlet_latest_per_stream(%s::regclass, %s::text[], %s, %s::jsonb, %s)",
+                                    (c, keys, n, flt, limit)).fetchall()
             else:
                 rows = conn.execute(cols + "morlet_latest(%s::regclass, %s, %s::jsonb, %s)",
                                     (c, n, flt, limit)).fetchall()

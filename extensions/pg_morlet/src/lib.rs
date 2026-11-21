@@ -5632,7 +5632,7 @@ END $$"#).unwrap();
         )
         .unwrap();
     }
-    /// morlet_latest with stream_keys (#527): one row per stream, its newest recording, read exactly as the default
+    /// morlet_latest_per_stream (#527): one row per stream, its newest recording, read exactly as the default
     /// reads it; the default's rows are unchanged; and the chunk rows it reads do not grow with the older recordings of
     /// the same stream (a collector that starts a new recording per stream every day).
     #[pg_test]
@@ -5655,30 +5655,34 @@ END $$"#).unwrap();
         let yes = |sql: &str| Spi::get_one::<bool>(sql).unwrap().unwrap();
         let keys = "ARRAY['station','channel']";
         assert_eq!(
-            text(&format!("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest('lps',5,'{{}}',1000,{keys})")),
+            text(&format!("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest_per_stream('lps',{keys},5)")),
             "xn-1,xz-a,yz-2"
         );
         // each row equals the default's row of that recording
         assert!(yes(&format!(
             "SELECT bool_and(row(s.*)::text=(SELECT row(d.*)::text FROM morlet_latest('lps',5) d WHERE d.recording_id=s.recording_id))
-             FROM morlet_latest('lps',5,'{{}}',1000,{keys}) s"
+             FROM morlet_latest_per_stream('lps',{keys},5) s"
         )));
         // the filter applies first; a key a recording lacks is its own value
         assert_eq!(
-            text(&format!("SELECT string_agg(recording_id,',') FROM morlet_latest('lps',1,'{{\"channel\":\"Z\"}}',1000,ARRAY['station'])")),
+            text(&format!("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',ARRAY['station'],1,'{{\"channel\":\"Z\"}}')")),
             "xz-a,yz-2"
         );
         assert_eq!(
-            text("SELECT string_agg(recording_id,',') FROM morlet_latest('lps',1,'{}',1000,ARRAY['site'])"),
+            text("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',ARRAY['site'],1)"),
             "xz-a"
         );
+        // the four-argument signature that earlier clients look up is still there
+        assert!(yes(
+            "SELECT to_regprocedure('morlet_latest(regclass,integer,jsonb,integer)') IS NOT NULL"
+        ));
         // the default is unchanged: every recording, in recording_id order
         assert_eq!(
             text("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest('lps',5)"),
             "xn-1,xz-a,xz-b,yz-1,yz-2"
         );
         assert_eq!(
-            text("SELECT string_agg(recording_id,',') FROM morlet_latest('lps',5,'{}',1000,NULL)"),
+            text("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',NULL,5)"),
             "xn-1,xz-a,xz-b,yz-1,yz-2"
         );
         // Work: scans of the chunk index and the entries they returned in this transaction (chunks are read through
@@ -5696,7 +5700,7 @@ END $$"#).unwrap();
                 - before
         };
         let per_stream =
-            format!("SELECT count(*) FROM morlet_latest('lps',1500,'{{}}',1000,{keys})");
+            format!("SELECT count(*) FROM morlet_latest_per_stream('lps',{keys},1500)");
         let all = "SELECT count(*) FROM morlet_latest('lps',1500)";
         let (s1, d1) = (fetched(&per_stream), fetched(all));
         Spi::run(
@@ -5721,11 +5725,11 @@ END $$"#).unwrap();
             "the default reads every recording, so it reads more ({d1} -> {d2})"
         );
         assert_eq!(
-            text(&format!("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest('lps',1,'{{}}',1000,{keys})")),
+            text(&format!("SELECT string_agg(recording_id,',' ORDER BY recording_id) FROM morlet_latest_per_stream('lps',{keys},1)")),
             "xn-1,xz-a,yz-2"
         );
     }
-    /// stream_keys: max_recordings bounds the streams, not the recordings; malformed keys are refused.
+    /// morlet_latest_per_stream: max_recordings bounds the streams, not the recordings; malformed keys are refused.
     #[pg_test]
     fn latest_per_stream_budget_counts_streams() {
         Spi::run(
@@ -5735,14 +5739,16 @@ END $$"#).unwrap();
         )
         .unwrap();
         assert_eq!(
-            Spi::get_one::<i64>("SELECT count(*) FROM morlet_latest('lps_b',1,'{}',1,ARRAY['s'])")
-                .unwrap(),
+            Spi::get_one::<i64>(
+                "SELECT count(*) FROM morlet_latest_per_stream('lps_b',ARRAY['s'],1,'{}',1)"
+            )
+            .unwrap(),
             Some(1)
         );
         // each malformed stream_keys is refused with its message (an accepted one raises 'accepted' and fails)
         for keys in ["ARRAY[]::text[]", "ARRAY[NULL]::text[]", "ARRAY['']"] {
             Spi::run(&format!(
-                "DO $$ BEGIN PERFORM * FROM morlet_latest('lps_b',1,'{{}}',10,{keys}); RAISE EXCEPTION 'accepted {keys}';
+                "DO $$ BEGIN PERFORM * FROM morlet_latest_per_stream('lps_b',{keys},1,'{{}}',10); RAISE EXCEPTION 'accepted {keys}';
                  EXCEPTION WHEN raise_exception THEN
                    IF SQLERRM NOT LIKE 'stream_keys must be%' THEN RAISE; END IF; END $$"
             ))

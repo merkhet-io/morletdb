@@ -2,15 +2,16 @@
 
 ## Unreleased
 
-- **`morlet_latest` per stream (SQL 0.3.14, #527).** A new last argument, `stream_keys`, names the metadata keys
-  that identify a stream (for example `ARRAY['network','station','location','channel']`). Given, only the newest
-  recording with samples of each stream is read and returned: the latest start time, then the greatest
-  `recording_id`. A collector that starts a new recording per stream every day then reads one recording per stream
-  however many days it has stored, and `max_recordings` counts streams. The default (NULL) is unchanged: one row per
-  recording. A regression test checks that the chunk rows read do not grow with 20 older recordings of the same
-  stream, while the default's do. MCP `latest` takes `stream_keys` too. Update script 0.3.13 → 0.3.14: a new
-  signature, so the 0.3.13 function is dropped and created again (`morlet_latest` is experimental; calls with up to
-  four arguments return what they did). The upgrade tests now start from v0.4.0-beta.2 as well.
+- **`morlet_latest_per_stream` (SQL 0.3.14, experimental, #527).** `morlet_latest_per_stream(collection,
+  stream_keys, n, metadata_filter, max_recordings)` groups recordings by the metadata keys that identify a stream
+  (for example `ARRAY['network','station','location','channel']`) and reads and returns only the newest one with
+  samples of each stream: the latest start time, then the greatest `recording_id`. A collector that starts a new
+  recording per stream every day then reads the chunks of one recording per stream however many days it has stored
+  (choosing it still reads one row of metadata per stored recording), and `max_recordings` counts streams. A new name
+  rather than an overload of `morlet_latest`, which clients look up by name (MCP) or by signature (SDK 0.1.0b2):
+  `morlet_latest` keeps its signature and results. A regression test checks that the chunk index reads do not grow
+  with 20 older recordings of the same stream, while `morlet_latest`'s do. MCP `latest` takes `stream_keys`. Update
+  script 0.3.13 → 0.3.14; the upgrade tests now start from v0.4.0-beta.2 as well.
 
 ## 0.4.0-beta.2
 

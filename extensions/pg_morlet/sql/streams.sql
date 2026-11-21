@@ -625,18 +625,22 @@ END $$;
 -- chunks it has. When the newest samples are not readable (compacted by a memory level, or a gap), samples and
 -- statistics are NULL and note gives the reason; other recordings are unaffected. More than max_recordings
 -- matching recordings is an error. Privileges and row security apply as for every reader.
--- stream_keys (SQL 0.3.14, #527): metadata keys that identify a stream (for example network, station, location and
--- channel). Given, only the newest matching recording with samples of each stream is returned: the one with the
--- latest start time (morlet_recording_start_ns), recordings without one after those with one, then the greatest
--- recording_id. A key a recording lacks counts as its own value (NULL). A collector that starts a new recording per
--- stream every day then reads one recording per stream, however many days it has stored, and max_recordings bounds
--- the streams returned. NULL (the default) keeps one row per recording.
-CREATE FUNCTION public.morlet_latest(collection regclass,n integer DEFAULT 1,metadata_filter jsonb DEFAULT '{}'::jsonb,
-  max_recordings integer DEFAULT 1000,stream_keys text[] DEFAULT NULL)
+-- morlet_latest_per_stream (SQL 0.3.14, #527): morlet_latest for the newest recording of each stream. stream_keys
+-- are the metadata keys that identify a stream (for example network, station, location and channel). Recordings are
+-- grouped by those metadata values, and only the newest matching recording with samples of each stream is read and
+-- returned: the one with the latest start time (morlet_recording_start_ns), recordings without one after those with
+-- one, then the greatest recording_id. A key a recording lacks counts as its own value (NULL). A collector that starts
+-- a new recording per stream every day then reads the chunks of one recording per stream, however many days it has
+-- stored; choosing it still reads the matching recordings' rows (one per stored day), not their chunks.
+-- max_recordings bounds the streams returned. NULL stream_keys: one row per recording, which is morlet_latest (it
+-- calls this function; a separate name, so clients that look morlet_latest up by name or signature still find it).
+CREATE FUNCTION public.morlet_latest_per_stream(collection regclass,stream_keys text[],n integer DEFAULT 1,
+  metadata_filter jsonb DEFAULT '{}'::jsonb,max_recordings integer DEFAULT 1000)
 RETURNS TABLE(recording_id text,sample_rate_hz float8,channel text,unit text,start_sample bigint,end_sample bigint,
   end_time timestamptz,samples float8[],sample_count bigint,min float8,max float8,mean float8,rms float8,note text)
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel record; r record; matching bigint; lo bigint; chunk_end bigint; st record; t numeric; pick text;
+  ids text[];
 BEGIN
   IF collection IS NULL OR n IS NULL OR metadata_filter IS NULL OR max_recordings IS NULL THEN
     RAISE EXCEPTION 'collection, n, metadata_filter and max_recordings must not be NULL';
@@ -657,15 +661,18 @@ BEGIN
       WHERE t.metadata @> $1 AND coalesce((t.checkpoint->>''end'')::bigint,0)>0
       ORDER BY ARRAY(SELECT t.metadata->>k FROM unnest($2) k),public.morlet_recording_start_ns(t.metadata) DESC NULLS LAST,
         t.recording_id DESC',collection) END;
-  EXECUTE format('SELECT count(*) FROM (%s) x',pick) INTO matching USING metadata_filter,stream_keys;
+  -- chosen once: the budget check and the reads below use the same recordings
+  EXECUTE format('SELECT array_agg(x.recording_id ORDER BY x.recording_id) FROM (%s) x',pick)
+    INTO ids USING metadata_filter,stream_keys;
+  matching:=coalesce(cardinality(ids),0);
   IF matching>max_recordings THEN
     RAISE EXCEPTION '% %, more than max_recordings (%)',matching,
       CASE WHEN stream_keys IS NULL THEN 'recordings match' ELSE 'streams match' END,max_recordings
       USING HINT='Narrow metadata_filter or pass a larger max_recordings.';
   END IF;
   FOR r IN EXECUTE format('SELECT t.recording_id,t.sample_rate_hz,t.channel,t.unit,t.metadata,
-      (t.checkpoint->>''end'')::bigint AS e FROM (%s) t ORDER BY t.recording_id',pick)
-      USING metadata_filter,stream_keys LOOP
+      (t.checkpoint->>''end'')::bigint AS e FROM %s t WHERE t.recording_id=ANY($1) ORDER BY t.recording_id',collection)
+      USING coalesce(ids,'{}') LOOP
     recording_id:=r.recording_id; sample_rate_hz:=r.sample_rate_hz; channel:=r.channel; unit:=r.unit;
     end_sample:=r.e; samples:=NULL; sample_count:=NULL; min:=NULL; max:=NULL; mean:=NULL; rms:=NULL; note:=NULL;
     t:=public.morlet_recording_start_ns(r.metadata);
@@ -699,6 +706,13 @@ BEGIN
     RETURN NEXT;
   END LOOP;
 END $$;
+CREATE FUNCTION public.morlet_latest(collection regclass,n integer DEFAULT 1,metadata_filter jsonb DEFAULT '{}'::jsonb,
+  max_recordings integer DEFAULT 1000)
+RETURNS TABLE(recording_id text,sample_rate_hz float8,channel text,unit text,start_sample bigint,end_sample bigint,
+  end_time timestamptz,samples float8[],sample_count bigint,min float8,max float8,mean float8,rms float8,note text)
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT * FROM public.morlet_latest_per_stream(collection,NULL::text[],n,metadata_filter,max_recordings)
+$$;
 
 -- Shared body of morlet_interval_stats and morlet_interval_overview: per-bucket statistics as
 -- [bucket_start, bucket_end, count, min, max, mean, rms] per non-empty bucket. With chunk summaries
