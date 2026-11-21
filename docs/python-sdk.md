@@ -120,7 +120,9 @@ The default limits are 10 seconds overall, 10,000 search candidates, 10,000 cont
 They are configurable with `timeout_ms`, `max_candidates`, `max_history`, `max_recordings`,
 `max_coverage_ranges` and `max_output_bytes`. `max_coverage_ranges` bounds the ranges returned, not the
 server's work: `morlet_coverage` computes every range of the compatible recordings, which `max_recordings`
-bounds. `top_k` (1–100) bounds both returned matches and context neighbors.
+bounds. `max_history` bounds the context history; the pooled value spreads that the context comparison
+computes have the server's own cap of 100,000 segments, so a history beyond that fails with
+`InvestigationLimitError` whatever `max_history` allows. `top_k` (1–100) bounds both returned matches and context neighbors.
 Candidate budgets retain the existing SQL semantics, including probe routing; they are not physical I/O
 or total-memory limits. The final output-size check is after assembly, not a streaming memory cap.
 
@@ -138,8 +140,8 @@ Other SQL errors retain the SDK's error translation, and permission errors remai
 errors. Unknown coverage, insufficient history and undefined labels are explicit result states/notes;
 unreadable query samples or invalid context segments raise instead of silently dropping those stages.
 
-`to_dict()` is JSON-compatible and maps non-finite diagnostic numbers to `None`; `to_json()` returns the
-compact JSON already measured against `max_output_bytes`. It captures observations
+`to_dict()` is JSON-compatible and maps non-finite diagnostic numbers to `None`; `to_json()` returns it as
+compact JSON, the encoding measured against `max_output_bytes`, serialized from the current fields. It captures observations
 but does not freeze source samples, preserve deleted evidence or provide content hashes. Viewer/MCP
 adoption of this shared API and archival report export are follow-up work.
 

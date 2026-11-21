@@ -256,6 +256,8 @@ class Investigation(unittest.TestCase):
         self.assertEqual(result.provenance["envelope_representation"], "xc-envelope-f16-v1")
         self.assertNotIn("context_representation", result.settings)
         self.assertEqual(json.loads(result.to_json()), result.to_dict())
+        result.notes.append("added by the caller")                 # review: to_json follows the current fields
+        self.assertIn("added by the caller", json.loads(result.to_json())["notes"])
 
     def test_an_interval_past_the_end_is_not_found_like_read(self):              # review of #576
         with self.assertRaises(morletdb.NotFoundError):

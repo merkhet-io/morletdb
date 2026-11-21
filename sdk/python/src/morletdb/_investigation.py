@@ -199,7 +199,6 @@ def investigate(client, collection, recording_id, start_sample, end_sample, **se
             encoded = json.dumps(result.to_dict(), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
             if len(encoded.encode("utf-8")) > settings["max_output_bytes"]:
                 raise InvestigationLimitError("investigation exceeds max_output_bytes; narrow scope or reduce top_k")
-            object.__setattr__(result, "_json", encoded)      # to_json() reuses it instead of encoding again
             reader.remaining()
             connection.execute("SELECT set_config('statement_timeout', %s, true)", (old_timeout,))
         return result
