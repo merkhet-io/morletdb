@@ -17,7 +17,9 @@ on a small edge box without a person? That means:
 S2 is S1's protocol (`evaluation/soak_s1/PROTOCOL.md`, frozen 2026-11-10, with shakedown changes 1–7) with these
 changes, and nothing else:
 
-1. **The release:** `0.4.0-beta.2`, and the steward and the collector of the freezing commit (S1: 0.3.10-alpha.1).
+1. **The release:** the first release with #556 (SQL 0.3.14, `morlet_latest` per stream) and #557 (the steward
+   serves the recording furthest behind first), expected as `0.4.0-beta.3`, with the steward and the collector of the
+   freezing commit (S1: 0.3.10-alpha.1). The fixes are named for the S1 failures they address (#527, #528).
    The SeedLink collector reconnects after a database restart (#525). The steward has its fixes since S1:
    - verification on slow boxes (#532);
    - envelope grids by index (#531);
@@ -48,7 +50,18 @@ changes, and nothing else:
      probe records both); S1 subtracted one nominal hour from the stored samples only.
    - The host probe records stopped containers of the household's project as down. It also writes one JSON value
      when the steward's status cannot be read.
-6. **Its own directory** on the soak file system (`/srv/morlet-soak/s2`), Compose project `soak-s2`, and port 54349.
+6. **The probe stops loading the box it measures, and two bounds measure what they name** (#528, from S1's data,
+   before any S2 data exists):
+   - `morlet_coverage` reads the whole archive. In S1, run every 15-minute round, it took 7 s on day 0 and about
+     10 minutes per round by day 6. The harness itself was then keeping the 1-CPU database busy two thirds of the time.
+     S2 measures coverage every 24th round (6 hours), and H5's end value comes from one `probe.py --coverage-only`
+     run after the week.
+   - The probe's `latest` passes `stream_keys` (network, station, location, channel), so it reads the stream's newest
+     recording, as an application on 0.3.14 would (#527).
+   - H4's collector bound uses its process memory (anon + shmem), as the database's already does (S1 shakedown change
+     7). In S1 the collector's anon memory stayed at 51–56 MiB all week, while Docker's figure grew with the spool's
+     page cache (137 to 223 MiB). Docker's figure and the page cache are reported, not bounded.
+7. **Its own directory** on the soak file system (`/srv/morlet-soak/s2`), Compose project `soak-s2`, and port 54349.
    S1's data stays where it is, untouched.
 
 ## Setup
@@ -110,18 +123,22 @@ S1's hypotheses and bounds, unchanged, with H3 extended to the schedule:
 - **H4, steady.** The last 24 hours of the test week compared with the first 24 hours:
   - the p95 latency of `latest` and of interval statistics is at most 2× as high;
   - for similarity search, the p95 of latency divided by the searched history is at most 2× as high;
-  - the database container's peak process memory (anon + shmem) is at most 1.25× as high, and the collector's peak
-    memory as well.
+  - the database container's and the collector's peak process memory (anon + shmem) are each at most 1.25× as
+    high (change 6).
 - **H5, keeps up.**
   - The collector's backlog never exceeds 10,000 packets.
-  - At the end, at least 99% of the stored samples older than one hour are searchable.
+  - At the end, at least 99% of the stored samples older than one hour are searchable, measured once by
+    `probe.py --coverage-only` within 30 minutes after the week (change 6).
   - Stored samples are at least 97% of the nominal 3,600 samples/s, and every shortfall is explained.
 
-**Expected from S1, stated before the week:** S1 failed H4 (all five bounds) and H5's searchable share (97.67%).
-The causes are open in #527 (`morlet_latest` reads every daily recording) and #528 (envelope building and search
-fall behind on this box), and 0.4.0-beta.2 does not fix them. S2 is therefore expected to fail H4 and H5 again.
-The bounds are not relaxed for that: a failure is reported as it is. What S2 can newly show is H3 with both
-disturbances, and H1 and H2 on the beta.
+**From S1, stated before the week:** S1 failed H4 (all five bounds) and H5's searchable share (97.67%). The
+diagnosis on S1's data (#528) found these causes:
+- the steward starving recordings late in `recording_id` order (H5; fixed in #557);
+- `morlet_latest` reading every daily recording (#527, #556);
+- the probe's own coverage scan loading the box (change 6);
+- the collector bound measuring page cache (change 6).
+
+Contention on the hard disk remains. The bounds are not relaxed, and a failure is reported as it is.
 
 ## Stop rules
 

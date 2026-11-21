@@ -296,10 +296,16 @@ def analyze(a) -> dict:
            "ratio": None if r_ is None else round(r_, 3),
            "page_cache_peak_mib_reported": [peak_file(hf, "db"), peak_file(hl, "db")],
            "docker_figure_peak_mib_reported": [peak(hf, "db"), peak(hl, "db")]})
-    f, l = peak(hf, "collector"), peak(hl, "collector")
+    # S2: the collector's process memory too; in S1 Docker's figure grew with the spool's page cache while its anon
+    # memory stayed at 51-56 MiB (#528)
+    f, l = peak_proc(hf, "collector"), peak_proc(hl, "collector")
     r_ = ratio(l, f)
-    V.add("H4", "collector peak memory: last window at most 1.25x the first", None if r_ is None or not complete else r_ <= 1.25,
-          {"first_mib": f, "last_mib": l, "ratio": None if r_ is None else round(r_, 3)})
+    V.add("H4", "collector peak process memory (anon + shmem): last window at most 1.25x the first",
+          None if r_ is None or not complete else r_ <= 1.25,
+          {"first_mib": None if f is None else round(f, 1), "last_mib": None if l is None else round(l, 1),
+           "ratio": None if r_ is None else round(r_, 3),
+           "page_cache_peak_mib_reported": [peak_file(hf, "collector"), peak_file(hl, "collector")],
+           "docker_figure_peak_mib_reported": [peak(hf, "collector"), peak(hl, "collector")]})
 
     # ---- H5, keeps up --------------------------------------------------------------------------------------------
     backlog = [((r.get("collector") or {}).get("backlog"), r["at"]) for r in host]
@@ -308,7 +314,12 @@ def analyze(a) -> dict:
     V.add("H5", "collector backlog never above 10,000 packets", None if not backlog else mx[0] <= 10000,
           {"max_packets": mx[0], "at": iso(mx[1]), "snapshots": len(backlog)})
     pr = [r for r in probe if "stored_samples" in r]
-    endp = pr[-1] if pr else None
+    # S2: the end measurement (probe.py --coverage-only after the week, --coverage-end); S1's probe: its last round
+    if a.coverage_end is not None:
+        ends = [r for r in lines(Path(a.coverage_end)) if "stored_samples" in r and r.get("at", 0) >= t1]
+        endp = ends[-1] if ends else None
+    else:
+        endp = pr[-1] if pr and "coverage" in pr[-1] and "coverage_older" not in pr[-1] else None
     if endp and "coverage" in endp:
         cov = endp["coverage"]
         stored = endp["stored_samples"]
@@ -324,7 +335,8 @@ def analyze(a) -> dict:
               {"searchable_fraction_of_older": None if frac is None else round(frac, 5), "unsearchable_h_of_feed": round(unsearchable / NOMINAL / HOUR, 3),
                "at": iso(endp["at"])})
     else:
-        V.add("H5", "at the end, >= 99% of samples older than 1 h searchable", None, "no coverage in probe.jsonl")
+        V.add("H5", "at the end, >= 99% of samples older than 1 h searchable", None,
+              "no end measurement: run probe.py --coverage-only after the week and pass --coverage-end")
     if len(pr) >= 2:
         span = pr[-1]["at"] - pr[0]["at"]
         rate = (pr[-1]["stored_samples"] - pr[0]["stored_samples"]) / span if span > 0 else None
@@ -393,6 +405,7 @@ def main(argv=None) -> int:
     ap.add_argument("--verify-fdsn", nargs="*", default=[])
     ap.add_argument("--morlet-verify")
     ap.add_argument("--manual-actions", type=int)
+    ap.add_argument("--coverage-end", help="S2: probe.py --coverage-only output, taken after the week (H5)")
     ap.add_argument("--json", help="also write the full result as JSON")
     a = ap.parse_args(argv)
     out = analyze(a)
