@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.0-beta.3
+
+**The third beta.** SQL version 0.3.14, with an update script from 0.3.13: run `ALTER EXTENSION pg_morlet UPDATE`
+after installing. The Python SDK stays 0.1.0b2 (unchanged). The chunk format is unchanged. The release has two
+fixes for the soak S1 failures, so the confirmation soak S2 (#529) can run on it:
+- `morlet_latest_per_stream`, the newest recording of each stream (#527);
+- the steward serving the recording furthest behind first (#528).
+
 - **`morlet_latest_per_stream` (SQL 0.3.14, experimental, #527).** `morlet_latest_per_stream(collection,
   stream_keys, n, metadata_filter, max_recordings)` groups recordings by the metadata keys that identify a stream
   (for example `ARRAY['network','station','location','channel']`) and reads and returns only the newest one with
