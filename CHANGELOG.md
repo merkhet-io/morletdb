@@ -2,7 +2,18 @@
 
 ## Unreleased
 
-SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morlet UPDATE`).
+## 0.4.0-beta.4
+
+**The fourth beta.** SQL version 0.3.15, with an update script from 0.3.14: run `ALTER EXTENSION pg_morlet UPDATE`
+after installing. Python SDK 0.1.0b3. The chunk format is unchanged. The release has:
+- the fixes from the review of 0.4.0-beta.3 (#560–#565): time mapping on collections without anchors, ambiguous
+  intervals in the SDK, the steward's envelope stride after compaction, qualified MCP timestamps, CSV anchor
+  bounds, and time anchors in the edge shipper;
+- the first investigation snapshot, experimental: `Client.investigate` in the SDK and `investigate_interval` in the
+  MCP server (#572), one read-only snapshot of matches, context comparison and coverage with machine-readable
+  evidence states.
+
+The confirmation soak S2 (#529) runs on this release.
 
 - **Time mapping without an anchor table (SQL 0.3.15, #562).** `morlet_sample_utc`, `morlet_utc_to_sample`,
   `morlet_utc_to_samples` and the SDK's `time_ranges` failed with "record r is not assigned yet" on a collection
