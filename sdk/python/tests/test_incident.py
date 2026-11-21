@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import os
 import unittest
+from unittest.mock import patch
 import uuid
 
 import numpy as np
@@ -155,6 +156,30 @@ class Incident(unittest.TestCase):
         self.assertIn("sensor_not_recorded", result.states)
         self.assertIn("multiple_sensors", result.states)
         self.assertNotIn("multiple_recordings_per_sensor", result.states)
+
+    def test_the_limit_follows_the_window_not_the_history(self):
+        for day in (1, 2, 3):
+            self.add(f"old-{day}", n=500, start=BASE - day * 86400 * SECOND, plant="north" if day == 1 else "south")
+        self.add("now", plant="south")
+        result = self.resolve(max_recordings=1, identity_keys=("plant",))
+        self.assertEqual([c.ref.recording_id for c in result.candidates], ["now"])
+        self.assertEqual((result.recordings_outside_window, result.recordings_outside_window_count),
+                         (["old-1", "old-2", "old-3"], 3))
+        self.assertIn("ambiguous_asset", result.states)      # the identity is checked over the whole history
+
+    def test_listed_ids_are_bounded_and_counts_exact(self):
+        for day in (1, 2, 3):
+            self.add(f"old-{day}", n=500, start=BASE - day * 86400 * SECOND)
+        with patch("morletdb._incident.MAX_LISTED", 2):
+            result = self.resolve()
+        self.assertEqual((result.recordings_outside_window, result.recordings_outside_window_count),
+                         (["old-1", "old-2"], 3))
+
+    def test_anchored_recording_is_mapped_despite_its_start_time(self):
+        self.add("moved", n=2000, start=BASE - 86400 * SECOND)
+        self.anchors("moved", [(0, 0), (1999, 1999 * MS)], breaks=False)
+        result = self.resolve(max_recordings=1)
+        self.assertEqual([c.ref.recording_id for c in result.candidates], ["moved"])
 
     def test_two_recordings_are_never_concatenated(self):
         self.add("a", n=1000)

@@ -105,7 +105,7 @@ Plant identifiers are configuration, not schema: `MORLET_MCP_ASSET_KEY` (metadat
 `MORLET_MCP_SENSOR_KEY` (default: the channel), `MORLET_MCP_ASSET_IDENTITY_KEYS` (comma-separated, for example `plant`,
 to expose an asset ID reused across sites) and `MORLET_MCP_REFERENCE_KEYS` (a JSON object such as `{"work_order":"wo"}`).
 A reference is `verified` only when the recording stores an equal JSON value (the number 42 is not the string "42"); a free-text claim is not a join. Limits:
-`MORLET_MCP_INCIDENT_TIMEOUT_MS` (10000; also capped by a positive `MORLET_MCP_TIMEOUT_MS`, where 0 means no cap), `MORLET_MCP_INCIDENT_MAX_RECORDINGS` (200) and
+`MORLET_MCP_INCIDENT_TIMEOUT_MS` (10000; also capped by a positive `MORLET_MCP_TIMEOUT_MS`, where 0 means no cap), `MORLET_MCP_INCIDENT_MAX_RECORDINGS` (200; recordings that may overlap the window, so older days of a per-day collector do not count, while recordings with time anchors always do) and
 `MORLET_MCP_INCIDENT_MAX_OUTPUT_BYTES` (64000). The tool reads only, under the caller's role and row security.
 
 **Experimental, from 0.4.0-beta.4.** For an initial assessment of a known sample interval,

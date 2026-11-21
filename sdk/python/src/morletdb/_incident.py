@@ -22,6 +22,7 @@ from ._investigation import read_snapshot
 from ._types import IncidentCandidate, IncidentResolution, IntervalRef
 
 MAX_WINDOW_S = 31 * 86400
+MAX_LISTED = 100      # recording ids listed per finding; the counts stay exact
 MIN_SQL = (0, 3, 15)      # morlet_time_pieces fails before it on collections without a time-anchor table (#562)
 
 
@@ -117,6 +118,36 @@ def _raw_samples(reader, collection, rid, a, b):
         (b, a, rid, b, a)).fetchone()[0])
 
 
+def _select(reader, collection, rel, flt, channel, identity_keys, start, end, max_recordings):
+    """All matching recordings in one statement, so the cost and the limit follow the window and not the asset's history.
+    Only a recording that certainly lies outside is settled here: without anchors, by its start time and rate, with a
+    second of margin for the rate's decimal form. Anchored recordings are always mapped, since a clock step can move them."""
+    anchors = reader._one("SELECT to_regclass(format('%%I.%%I', n.nspname, c.relname || '_time_anchors'))::text "
+                          "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=%s::regclass",
+                          (collection,))
+    anchored = sql.SQL("EXISTS(SELECT 1 FROM {0} x WHERE x.recording_id=t.recording_id AND NOT x.retracted "
+                       "AND NOT EXISTS(SELECT 1 FROM {0} y WHERE y.supersedes=x.anchor_id))").format(sql.SQL(anchors)) \
+        if anchors else sql.SQL("false")
+    row = reader._execute(sql.SQL(
+        "WITH m AS (SELECT t.recording_id, {anchored} AS anchored, public.morlet_recording_start_ns(t.metadata) AS s, "
+        "t.sample_rate_hz::numeric AS rate, coalesce((t.checkpoint->>'end')::bigint,0) AS n, "
+        "coalesce((SELECT jsonb_agg(coalesce(t.metadata->u.k,'null'::jsonb) ORDER BY u.o) "
+        "FROM unnest(%s::text[]) WITH ORDINALITY u(k,o)),'[]'::jsonb) AS identity "
+        "FROM {rel} t WHERE t.metadata @> %s AND (%s::text IS NULL OR t.channel = %s)), "
+        "c AS (SELECT m.*, CASE WHEN anchored THEN 'map' WHEN s IS NULL THEN 'untimed' "
+        "WHEN n=0 OR s-1000000000>=%s::numeric OR s+(n+1)*1000000000/rate+1000000000<%s::numeric THEN 'outside' "
+        "ELSE 'map' END AS k FROM m) "
+        "SELECT count(*), count(*) FILTER (WHERE k='untimed'), count(*) FILTER (WHERE k='outside'), "
+        "(array_agg(recording_id ORDER BY recording_id) FILTER (WHERE k='map'))[1:%s], "
+        "(array_agg(recording_id ORDER BY recording_id) FILTER (WHERE k='untimed'))[1:%s], "
+        "(array_agg(recording_id ORDER BY recording_id) FILTER (WHERE k='outside'))[1:%s], "
+        "coalesce(jsonb_agg(DISTINCT identity),'[]'::jsonb) FROM c").format(anchored=anchored, rel=sql.SQL(rel)),
+        (list(identity_keys), Jsonb(flt), channel, channel, end, start, max_recordings + 1, MAX_LISTED, MAX_LISTED)
+    ).fetchone()
+    identities = {tuple(json.dumps(v, sort_keys=True) for v in i) for i in row[6]}
+    return int(row[0]), row[3] or [], row[4] or [], row[5] or [], int(row[1]), int(row[2]), identities
+
+
 def resolve_incident(client, collection, asset, incident_time, *, before_s, after_s, sensor, metadata_filter, asset_key,
                      sensor_key, identity_keys, references, reference_keys, timeout_ms, max_recordings):
     _key("asset", asset)
@@ -168,27 +199,19 @@ def resolve_incident(client, collection, asset, incident_time, *, before_s, afte
         if tuple(int(p) for p in version.split("-")[0].split(".")) < MIN_SQL:
             raise UnsupportedError(f"resolving an incident needs pg_morlet SQL 0.3.15 or later (this server: {version})")
         rel = reader._one("SELECT %s::regclass::text", (collection,))
-        query = "SELECT recording_id FROM {} WHERE metadata @> %s"
-        args = [Jsonb(flt)]
-        if sensor is not None and sensor_key is None:
-            query += " AND channel = %s"
-            args.append(sensor)
-        ids = [r[0] for r in reader._execute(sql.SQL(query + " ORDER BY recording_id LIMIT %s").format(sql.SQL(rel)),
-                                             (*args, max_recordings + 1)).fetchall()]
+        matched, ids, no_time, outside, n_no_time, n_outside, identities = _select(
+            reader, collection, rel, flt, sensor if sensor_key is None else None, identity_keys, start, end, max_recordings)
         if len(ids) > max_recordings:
-            raise InvestigationLimitError("incident matches more than max_recordings recordings; narrow metadata_filter")
-        candidates, no_time, outside, identities = [], [], [], set()
+            raise InvestigationLimitError("the incident window overlaps more than max_recordings recordings; "
+                                          "narrow metadata_filter or the window")
+        candidates = []
         for rid in ids:
             rec = reader.recording(collection, rid)
-            identities.add(tuple(json.dumps(rec.metadata.get(k), sort_keys=True) for k in identity_keys))
             axis = reader._one("SELECT public.morlet_time_axis_version(%s::regclass,%s)", (collection, rid))
-            # the server's reading of the start time, since the server does the mapping
-            server_start = reader._one("SELECT public.morlet_recording_start_ns(%s)", (Jsonb(rec.metadata),))
-            if server_start is None and not axis.startswith("anchors"):
-                no_time.append(rid)
-                continue
-            if rec.start_ns is None and server_start is not None:
-                rec = replace(rec, start_ns=math.floor(server_start))
+            if rec.start_ns is None:      # the server's reading of the start time, since the server does the mapping
+                server_start = reader._one("SELECT public.morlet_recording_start_ns(%s)", (Jsonb(rec.metadata),))
+                if server_start is not None:
+                    rec = replace(rec, start_ns=math.floor(server_start))
             found = []
             for r in reader.time_ranges(rec, start, end):                # offsets on the time axis, not clipped
                 a, b = max(r.start_sample, 0), min(r.end_sample, rec.samples)
@@ -196,6 +219,7 @@ def resolve_incident(client, collection, asset, incident_time, *, before_s, afte
                     found.append((r, a, b))
             if not found:
                 outside.append(rid)
+                n_outside += 1
                 continue
             rate = Fraction(repr(float(rec.sample_rate_hz)))
             expected = math.ceil(Fraction(end - start, 1_000_000_000) * rate)
@@ -212,20 +236,21 @@ def resolve_incident(client, collection, asset, incident_time, *, before_s, afte
                     expected, b - a, _covers(reader, collection, rid, axis, rate, a, b, start, end), states,
                     b - a - _raw_samples(reader, collection, rid, a, b),
                     _references(references, reference_keys, rec.metadata)))
-        result_states = _states(ids, no_time, candidates, identities, identity_keys, sensor_key)
+        result_states = _states(matched, n_no_time, candidates, identities, identity_keys, sensor_key)
         provenance = reader._execute(
             "SELECT current_database(), current_user, transaction_timestamp(), "
             "(SELECT extversion FROM pg_extension WHERE extname='pg_morlet')").fetchone()
-    return IncidentResolution(1, asset, t, start, end, mapping, candidates, no_time, outside,
+    return IncidentResolution(1, asset, t, start, end, mapping, candidates, no_time, sorted(outside)[:MAX_LISTED],
                               [dict(zip(identity_keys, (json.loads(v) for v in i))) for i in sorted(identities)]
                               if identity_keys else [], result_states,
-                              dict(zip(("database", "role", "transaction_started_at", "extension_version"), provenance)))
+                              dict(zip(("database", "role", "transaction_started_at", "extension_version"), provenance)),
+                              n_no_time, n_outside)
 
 
-def _states(ids, no_time, candidates, identities, identity_keys, sensor_key=None):
+def _states(matched, no_time, candidates, identities, identity_keys, sensor_key=None):
     """Machine-readable: what an agent must not gloss over before it treats a candidate as the incident's interval."""
     states = []
-    if not ids:
+    if not matched:
         return ["asset_not_found"]
     # a configured key without a value on some recording does not scope that recording
     if not identity_keys or any("null" in identity for identity in identities):
