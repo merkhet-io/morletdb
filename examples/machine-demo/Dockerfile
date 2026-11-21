@@ -7,5 +7,7 @@ COPY tools/mcp/requirements.txt tools/mcp/requirements.txt
 RUN pip install --no-cache-dir -r tools/ingest/requirements.txt -r tools/mcp/requirements.txt
 COPY tools/ingest tools/ingest
 COPY tools/mcp tools/mcp
+COPY sdk/python sdk/python
+RUN pip install --no-cache-dir --no-deps ./sdk/python   # its dependencies come pinned from the requirements above
 COPY examples/machine-demo examples/machine-demo
 ENV PYTHONUNBUFFERED=1

@@ -43,6 +43,12 @@ SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morle
   one deadline and explicit limits; a limit raises `InvestigationLimitError` instead of returning a partial answer.
   The typed, versioned result records the effective settings and provenance, notes and machine-readable
   `evidence_states`, and keeps coverage distinct from candidate completeness and approximate-search recall.
+- **MCP: `investigate_interval` (continues #572).** A read-only tool over `Client.investigate`: one snapshot of
+  statistics, matches, optional context comparisons and labelled neighbours with glossary definitions, a coverage
+  summary (exact ranges on request) and the SDK's `evidence_states`, with interval references for citations.
+  Operator limits for time, candidates, context history, compatible recordings, coverage ranges and output size
+  are reported in `tool_limits`; the output bound covers both copies a client receives. Failures are tool errors
+  with `code`, `message` and `suggestion`, never an empty match list.
 
 ## 0.4.0-beta.3
 
