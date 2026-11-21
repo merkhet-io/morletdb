@@ -1,6 +1,7 @@
 """Bounded composition of existing SQL operations; no new numerical or search semantics."""
 from __future__ import annotations
 
+import contextlib
 from dataclasses import asdict
 from collections.abc import Mapping
 from datetime import datetime
@@ -173,11 +174,22 @@ def investigate(client, collection, recording_id, start_sample, end_sample, **se
     except (TypeError, ValueError) as exc:
         raise InvalidInputError("investigation settings must be JSON-compatible") from exc
     settings.update(segment_id=segment_id, exclude_source=True, suppress_overlaps=True, before_only=False)
-    connection = client.connection
+    deadline = time.monotonic() + settings["timeout_ms"] / 1000
+    with read_snapshot(client.connection, deadline) as reader:
+        result = _collect(reader, collection, recording_id, start_sample, end, settings)
+        encoded = json.dumps(result.to_dict(), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+        if len(encoded.encode("utf-8")) > settings["max_output_bytes"]:
+            raise InvestigationLimitError("investigation exceeds max_output_bytes; narrow scope or reduce top_k")
+    return result
+
+
+@contextlib.contextmanager
+def read_snapshot(connection, deadline):
+    """A _Reader in one read-only snapshot under one deadline: its own REPEATABLE READ READ ONLY transaction on an
+    idle connection, or a savepoint in a compatible caller transaction, whose work and timeout are left as found."""
     status = connection.info.transaction_status
     if status not in (TransactionStatus.IDLE, TransactionStatus.INTRANS):
         raise InvalidInputError("investigation requires an idle connection or a healthy read-only snapshot")
-    deadline = time.monotonic() + settings["timeout_ms"] / 1000
     reader = _Reader(connection, deadline)
     try:
         # transaction() is a savepoint in an existing transaction, so errors cannot roll back caller work.
@@ -195,13 +207,9 @@ def investigate(client, collection, recording_id, start_sample, end_sample, **se
                 "SELECT current_setting('statement_timeout'), setting::int FROM pg_settings "
                 "WHERE name='statement_timeout'").fetchone()
             reader.statement_limit = timeout_ms
-            result = _collect(reader, collection, recording_id, start_sample, end, settings)
-            encoded = json.dumps(result.to_dict(), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
-            if len(encoded.encode("utf-8")) > settings["max_output_bytes"]:
-                raise InvestigationLimitError("investigation exceeds max_output_bytes; narrow scope or reduce top_k")
+            yield reader
             reader.remaining()
             connection.execute("SELECT set_config('statement_timeout', %s, true)", (old_timeout,))
-        return result
     except psycopg.errors.InsufficientPrivilege:
         raise
     except psycopg.errors.QueryCanceled as exc:

@@ -13,6 +13,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | Tool | What it does |
 |---|---|
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
+| `resolve_incident` | an asset and an incident time (with its UTC offset) to recording intervals, with the time basis, uncertainty, coverage and explicit states for every ambiguity; experimental |
 | `investigate_interval` | initial evidence packet from the SDK in one read-only repeatable snapshot: query statistics, waveform matches, optional context comparisons and labeled neighbors, glossary definitions, coverage summary and machine-readable `evidence_states`; defaults to five matches, 10 seconds and a 64 KB response cap. No temporal cutoff; keep using `search_similar` for earlier-only search, time filters or shifted placements and `decision_state` for richer labelled examples and own baselines. Requires this checkout's Python SDK. |
 | `coverage` | an overview per station, sensor or asset: recordings, samples, first and last time, the recording schedule (continuous or snapshots) and the largest gaps; with SQL 0.3.6 also how much of it search can find (`search_states_s`) |
 | `list_recordings` | recordings with length and UTC start and end where known; rate, channel and unit once when shared; metadata on request; filter by metadata |
@@ -70,6 +71,42 @@ seismic recordings and this server in Docker, the [machine demo](../examples/mac
 run to failure, or [import WAV, EDF, miniSEED or CSV files](import.md).
 
 ## An investigation, end to end
+
+### From a machine and a time to an interval
+
+**Experimental, from the release after 0.4.0-beta.4.** An investigation usually starts with "machine P7, around
+14:32", not with a sample range. `resolve_incident(collection, asset, incident_time, before_s=60, after_s=10)` maps
+that to recording intervals through the SDK's `Client.resolve_incident`, in one read-only snapshot, so an agent does
+not have to guess:
+
+1. `resolve_incident(collection="public.line3", asset="P7", incident_time="2026-03-01T14:32:00+01:00", before_s=30,
+   after_s=5, references='{"work_order":"WO-17"}')`
+2. Read `states`, then each candidate's `ref`, time basis, uncertainty, `covers_window` and `references`.
+3. Choose a power-of-two window of 512–32768 samples inside a candidate (the whole candidate usually is not one) and call `investigate_interval` on it.
+
+`incident_time` must carry a UTC offset or `Z`; a time without one is refused rather than assumed to be UTC. A
+candidate holds the samples whose UTC time lies in `[incident - before_s, incident + after_s)`, by the recording's
+time anchors or start + rate. Every candidate is returned: recordings are never concatenated or resampled.
+
+The states:
+
+- `asset_not_found`: no recording visible to this role has the asset (also when one exists but is hidden from it)
+- `recordings_without_time_axis`: matching recordings have neither anchors nor a start time, so they cannot be placed
+- `no_recording_at_time`: no candidate could be placed at this time. Check `recordings_without_time_axis` first: those recordings may hold it. This is not "nothing happened"
+- `asset_identity_not_scoped`, `ambiguous_asset`: no identity keys are configured or a recording has no value for one; or the asset ID occurs under several identities (`identities`)
+- `sensor_not_recorded`: a sensor key is configured and a candidate has no value for it; such recordings are never treated as one sensor
+- `multiple_sensors`, `multiple_recordings_per_sensor`: several channels (or values of the configured sensor key), or the window crosses recordings of one sensor
+- `partial_window`, `unreadable_samples`: fewer samples than the window needs; samples compacted, gone or never stored
+- `ambiguous_time`, `extrapolated_time`: a backward clock step puts the time in several places; a time beyond its block's anchors
+- `time_uncertainty_unknown`, `assumes_linear_clock`: start + rate has no error bound; estimated anchors give no bound
+- `reference_different`, `reference_not_recorded`: a claimed work order, lot or part disagrees with the recording, or is not stored there
+
+Plant identifiers are configuration, not schema: `MORLET_MCP_ASSET_KEY` (metadata key of the asset, default `asset`),
+`MORLET_MCP_SENSOR_KEY` (default: the channel), `MORLET_MCP_ASSET_IDENTITY_KEYS` (comma-separated, for example `plant`,
+to expose an asset ID reused across sites) and `MORLET_MCP_REFERENCE_KEYS` (a JSON object such as `{"work_order":"wo"}`).
+A reference is `verified` only when the recording stores an equal JSON value (the number 42 is not the string "42"); a free-text claim is not a join. Limits:
+`MORLET_MCP_INCIDENT_TIMEOUT_MS` (10000; also capped by a positive `MORLET_MCP_TIMEOUT_MS`, where 0 means no cap), `MORLET_MCP_INCIDENT_MAX_RECORDINGS` (200) and
+`MORLET_MCP_INCIDENT_MAX_OUTPUT_BYTES` (64000). The tool reads only, under the caller's role and row security.
 
 **Experimental, from 0.4.0-beta.4.** For an initial assessment of a known sample interval,
 call `investigate_interval(collection, recording_id, start_sample, end_sample)`. It uses the SDK's [investigation contract](python-sdk.md#investigate-an-interval),

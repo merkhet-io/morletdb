@@ -23,7 +23,7 @@ class Server(unittest.TestCase):
         self.assertEqual(sorted(t.name for t in tools), ["compare_intervals", "coverage", "decision_state", "decisions", "describe_interval", "envelope_spectrum",
                                                          "find_onsets", "investigate_interval", "labels", "latest",
                                                          "list_collections", "list_recordings", "locate_time",
-                                                         "read_interval", "search_from_time", "search_similar",
+                                                         "read_interval", "resolve_incident", "search_from_time", "search_similar",
                                                          "trend"])
         for t in tools:
             self.assertTrue(t.annotations.read_only_hint, t.name)

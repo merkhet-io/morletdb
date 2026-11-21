@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import (Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, InvestigationResult, Latest, Match, NotifiedRange, Notification,
+from ._types import (Evidence, EvidencePart, IncidentResolution, Interval, IntervalRef, IntervalStats, InvestigationResult, Latest, Match, NotifiedRange, Notification,
                      OverviewBucket, Recording, SearchResult, TimeRange)
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
@@ -152,6 +152,34 @@ class Client:
             raise translate(exc) from exc
 
     # --- investigation -------------------------------------------------------------------------------
+    def resolve_incident(self, collection: str, asset: str, incident_time: datetime | int, *, before_s: float = 60,
+                         after_s: float = 10, sensor: str | None = None,
+                         metadata_filter: Mapping[str, Any] | None = None, asset_key: str = "asset",
+                         sensor_key: str | None = None, identity_keys: tuple[str, ...] = (),
+                         references: Mapping[str, Any] | None = None,
+                         reference_keys: Mapping[str, str] | None = None, timeout_ms: int = 10000,
+                         max_recordings: int = 1000) -> "IncidentResolution":
+        """Recording intervals for an asset around an incident time, in one read-only snapshot (experimental, #580).
+
+        `incident_time` is a timezone-aware datetime or integer UTC nanoseconds. The window is
+        [incident - before_s, incident + after_s), rounded outward to whole ns; a candidate holds the samples whose
+        UTC time lies in it, by the recording's time anchors or start + rate. Plant identifiers are configuration:
+        `asset_key` and `sensor_key` name metadata keys (without `sensor_key`, `sensor` matches the channel);
+        `identity_keys` (for example ("plant",)) expose an asset ID reused across sites as `ambiguous_asset`;
+        `references` ({"work_order": "WO-17"}) are compared, as JSON values, with the metadata keys in `reference_keys`.
+        Needs SQL 0.3.13 or later.
+
+        Nothing is chosen for you: every candidate is returned, recordings are not concatenated or resampled, and
+        `states` name each ambiguity, gap, unreadable range and missing time axis.
+        """
+        from ._incident import resolve_incident
+        return resolve_incident(self, collection, asset, incident_time, before_s=before_s, after_s=after_s,
+                                sensor=sensor, metadata_filter=metadata_filter, asset_key=asset_key,
+                                sensor_key=sensor_key, identity_keys=identity_keys,
+                                references={} if references is None else references,
+                                reference_keys={} if reference_keys is None else reference_keys, timeout_ms=timeout_ms,
+                                max_recordings=max_recordings)
+
     def investigate(self, collection: str, recording_id: str, start_sample: int,
                     end_sample: int | None = None, *, segment_id: int | None = None,
                     metadata_filter: Mapping[str, Any] | None = None, top_k: int = 10,
