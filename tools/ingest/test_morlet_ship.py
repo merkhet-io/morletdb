@@ -147,10 +147,69 @@ class Shipping(unittest.TestCase):
         aid = self.c.execute("SELECT anchor_id FROM ship_central_time_anchors").fetchone()[0]
         self.c.execute("SELECT morlet_revise_time_anchor('ship_central',%s,'{\"uncertainty_ns\": 5}')", (aid,))
         self.append(10000, 12500)
-        before = self.central()
+        before = self.central(), self.target_anchors()
         with self.assertRaisesRegex(ValueError, "anchors of its own"):
             ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
-        self.assertEqual(self.central(), before)
+        self.assertEqual((self.central(), self.target_anchors()), before)        # chunks and anchors unchanged
+
+    def target_anchors(self):
+        return self.c.execute("SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY anchor_id), '[]') "
+                              "FROM ship_central_time_anchors x").fetchone()[0]
+
+    def test_a_batch_named_like_a_shipment_is_not_the_shippers(self):           # #564 review
+        """Anyone may choose a batch id: a target anchor added under ship:<rid>:... is refused, not retracted."""
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.anchor("ship_edge", "b1", [(0, 0)])
+        self.c.execute("SELECT morlet_start_recording('ship_central','spindle',1000,'acc','g',%s,512,256,'zscore','none',0.001)",
+                       (json.dumps({"machine": "M1"}),))
+        for batch in ("ship:spindle:local", "ship:spindle:0123456789abcdef0123456789abcdef-0:0"):
+            self.anchor("ship_central", batch, [(0, len(batch))])
+            before = self.central(), self.target_anchors()
+            with self.assertRaisesRegex(ValueError, "anchors of its own"):
+                ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+            self.assertEqual((self.central(), self.target_anchors()), before)
+            self.c.execute("SELECT morlet_revise_time_anchor('ship_central',anchor_id,retract=>true) "
+                           "FROM ship_central_time_anchors x WHERE batch_id=%s", (batch,))
+
+    def test_anchor_edits_on_the_target_wait_for_a_shipment(self):              # #564 review
+        """Between the axis check and the last chunk, another session's revision of the recording's anchors waits
+        (the shipper holds the anchor lock), so no chunk is committed on an axis other than the one checked."""
+        import psycopg
+        if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        self.anchor("ship_edge", "b1", [(0, 0)])
+        other = psycopg.connect(URL, autocommit=True)
+        tried = []
+
+        class During:                                    # tries a revision from another session mid-shipment
+            def __init__(self, conn):
+                self.conn = conn
+
+            def execute(self, q, *a, **k):
+                if "morlet_append_encoded_chunk" in q and not tried:
+                    aid = self.conn.execute("SELECT anchor_id FROM ship_central_time_anchors").fetchone()[0]
+                    try:
+                        with other.transaction():
+                            other.execute("SET LOCAL lock_timeout = '300ms'")
+                            other.execute("SELECT morlet_revise_time_anchor('ship_central',%s,"
+                                          "'{\"uncertainty_ns\": 7}')", (aid,))
+                        tried.append("revised")
+                    except psycopg.errors.LockNotAvailable:
+                        tried.append("waited")
+                return self.conn.execute(q, *a, **k)
+
+            def transaction(self):
+                return self.conn.transaction()
+        try:
+            rep = ms.ship(self.c, During(self.c), "public.ship_edge", "public.ship_central", {}, 3)[0]
+        finally:
+            other.close()
+        self.assertEqual(tried, ["waited"])
+        self.assertTrue(rep["identical"])
+        # after the shipment the lock is released: a revision goes through
+        aid = self.c.execute("SELECT anchor_id FROM ship_central_time_anchors").fetchone()[0]
+        self.c.execute("SELECT morlet_revise_time_anchor('ship_central',%s,'{\"uncertainty_ns\": 7}')", (aid,))
 
     def test_target_anchors_the_source_lacks_are_refused_before_writing(self):    # #564
         if self.c.execute("SELECT to_regproc('public.morlet_time_axis_version') IS NULL").fetchone()[0]:

@@ -35,11 +35,15 @@ python tools/ingest/morlet_ship.py --source-dsn "postgresql://...@edge/db" --tar
 - **Time anchors ship with the recording (#564).** A recording's [time anchors](clock-drift.md) are its time axis.
   The source's active anchors and their `morlet_time_axis_version` are read in one statement when the run starts,
   and go to the target in one transaction before the chunks. A target recording without anchors gets them (the
-  anchor table is enabled if needed). A target whose anchors were all written by the shipper gets them replaced
-  when the source's changed since, for example after a revision at the edge; the earlier rows stay, retracted. A
+  anchor table is enabled if needed). A target whose anchors are exactly one earlier shipment, unchanged, gets them replaced when the
+  source's changed since, for example after a revision at the edge; the earlier rows stay, retracted. "Exactly one
+  earlier shipment" is checked, not taken from the batch name: the target's time-axis version must equal the one
+  that shipment recorded. A
   target with anchors of its own (added or revised there) that differ from the source's is refused before anything
   is written: revise or retract them first (`morlet_revise_time_anchor`). An anchored source also needs SQL 0.3.13
   on the target. Only the current anchors travel, not their revision history.
+- **Anchor edits wait for a shipment:** while a recording ships, the shipper holds its time-anchor lock on the
+  target, so anchor additions and revisions of that recording from other sessions wait until its chunks are in.
 - **The time axis is checked twice:** after the anchors and before the first chunk, the target's
   `morlet_time_axis_version` must equal the source's as read at the start; at the end both sides are compared
   again. The report gives it as `time_axis`, with `anchors_sent`, and `identical` covers chunks and time axis. A

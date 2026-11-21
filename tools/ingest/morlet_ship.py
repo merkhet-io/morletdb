@@ -25,6 +25,7 @@ anchors are shipped, not their revision history.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import itertools
 import json
@@ -130,11 +131,49 @@ def plan_anchors(tgt, tgt_coll, rid, anchors, target_exists):
         return "same", have
     if not have:
         return "add", have
-    if all(a["batch_id"].startswith(f"ship:{rid}:") for a in have):
+    if shipped_by_us(tgt, tgt_coll, rid, have):
         return "replace", have
     raise ValueError(f"{rid}: the target has time anchors of its own that differ from the source's ({len(have)} "
                      f"there, {len(anchors)} in the source); revise or retract them with morlet_revise_time_anchor "
                      f"first; nothing was written")
+
+
+def shipped_by_us(tgt, tgt_coll, rid, have):
+    """Whether the target's active anchors are exactly one earlier shipment, unchanged: all in batches of one
+    shipment (ship:<rid>:<md5>-<n>:<k>) and the target's time-axis version equal to the <md5> that shipment records.
+    The name alone proves nothing, since anyone may choose a batch id; a set that hashes to the recorded version
+    is a copy of a source state, so replacing it loses nothing written on the target (review of #564)."""
+    prefix = f"ship:{rid}:"
+    shipments = set()
+    for a in have:
+        if not a["batch_id"].startswith(prefix):
+            return False
+        shipment, _, k = a["batch_id"][len(prefix):].rpartition(":")
+        if not k.isdigit() or "-" not in shipment:
+            return False
+        shipments.add(shipment)
+    if len(shipments) != 1:
+        return False
+    md5 = shipments.pop().rpartition("-")[0]
+    return time_axis(tgt, tgt_coll, rid) == f"anchors:{md5}"
+
+
+@contextlib.contextmanager
+def anchor_lock(tgt, tgt_coll, rid):
+    """Hold the target's time-anchor lock of the recording for the whole shipment (#564 review): a session-level
+    advisory lock on the key morlet_lock_time_anchors takes per transaction, so other sessions' anchor additions
+    and revisions of this recording wait until the chunks are on the axis that was checked; the shipper's own
+    anchor writes take the same lock in its session and pass. Without anchor support there is nothing to lock."""
+    key = "SELECT hashtextextended('morlet-anchor-rec/' || %s::regclass::oid || '/' || %s, 0)"
+    if not has_anchor_support(tgt):
+        yield
+        return
+    k = tgt.execute(key, (tgt_coll, rid)).fetchone()[0]
+    tgt.execute("SELECT pg_advisory_lock(%s)", (k,))
+    try:
+        yield
+    finally:
+        tgt.execute("SELECT pg_advisory_unlock(%s)", (k,))
 
 
 def ship_anchors(tgt, tgt_coll, rid, anchors, version, have):
@@ -180,51 +219,57 @@ def digest(conn, coll, rid, upto):
 def ship(src, tgt, src_coll, tgt_coll, flt, batch):
     report = []
     for rec in recordings(src, src_coll, flt):
-        rid, src_end = rec[0], int(rec[6]["end"])        # the end shipped to: read once, at the start
-        t0 = time.time()
-        anchors, version = active_anchors(src, src_coll, rid)   # the time axis shipped: read once, at the start
-        exists = tgt.execute(f"SELECT 1 FROM {tgt_coll} WHERE recording_id = %s", (rid,)).fetchone() is not None
-        action, have = plan_anchors(tgt, tgt_coll, rid, anchors, exists)
-        end = ensure_target(tgt, tgt_coll, rec)
-        if end > src_end:
-            raise ValueError(f"{rid}: the target holds {end} samples, more than the source's {src_end}")
-        if not same_prefix(src, tgt, src_coll, tgt_coll, rid, end):
-            raise ValueError(f"{rid}: the target's first {end} samples are not the source's chunks; nothing was written")
-        # the time axis before the samples: an interrupted run never leaves chunks on the wrong axis
-        anchors_sent = 0 if action == "same" else ship_anchors(tgt, tgt_coll, rid, anchors, version.split(":")[-1], have)
-        if time_axis(tgt, tgt_coll, rid) != version:
-            raise ValueError(f"{rid}: the target's time axis is not the source's after shipping its anchors "
-                             f"(source {version}, target {time_axis(tgt, tgt_coll, rid)}); no chunk was written")
-        sent = bytes_sent = 0
-        while end < src_end:
-            rows = src.execute("SELECT start_sample, sample_count, encoded FROM morlet_encoded_chunks(%s::regclass,%s,%s,%s)",
-                               (src_coll, rid, end, batch)).fetchall()
-            rows = [r for r in rows if r[0] < src_end]      # chunks appended to the source since the start wait
-            at = end
-            for s, c, _e in rows:                           # checked before this batch's transaction opens
-                if s != at:
-                    raise ValueError(f"{rid}: the source has no chunk at {at} (a gap in the source?)")
-                at = s + c
-            if not rows:
-                raise ValueError(f"{rid}: the source has no chunk at {end} (a gap in the source?)")
-            with tgt.transaction():
-                for s, c, e in rows:
-                    end = tgt.execute("SELECT morlet_append_encoded_chunk(%s::regclass,%s,%s,%s)",
-                                      (tgt_coll, rid, s, e)).fetchone()[0]
-                    sent += 1
-                    bytes_sent += len(e)
-        a, b = digest(src, src_coll, rid, end), digest(tgt, tgt_coll, rid, end)
-        axis_src, axis_tgt = time_axis(src, src_coll, rid), time_axis(tgt, tgt_coll, rid)
-        report.append({"recording_id": rid, "chunks_sent": sent, "bytes_sent": bytes_sent, "end": end,
-                       "chunks": a[1], "sha256": a[0], "anchors_sent": anchors_sent, "time_axis": axis_src,
-                       "identical": a == b and axis_src == axis_tgt, "seconds": round(time.time() - t0, 2)})
-        if a != b:
-            raise ValueError(f"{rid}: chunk bytes differ after shipping (source {a}, target {b})")
-        if axis_src != axis_tgt:
-            why = "the source's time anchors changed while shipping; run again" if axis_src != version else \
-                "the time axes differ after shipping"
-            raise ValueError(f"{rid}: {why} (source {axis_src}, target {axis_tgt})")
+        with anchor_lock(tgt, tgt_coll, rec[0]):
+            report.append(ship_recording(src, tgt, src_coll, tgt_coll, rec, batch))
     return report
+
+
+def ship_recording(src, tgt, src_coll, tgt_coll, rec, batch):
+    """Ship one recording (see the module docstring); its report entry."""
+    rid, src_end = rec[0], int(rec[6]["end"])        # the end shipped to: read once, at the start
+    t0 = time.time()
+    anchors, version = active_anchors(src, src_coll, rid)   # the time axis shipped: read once, at the start
+    exists = tgt.execute(f"SELECT 1 FROM {tgt_coll} WHERE recording_id = %s", (rid,)).fetchone() is not None
+    action, have = plan_anchors(tgt, tgt_coll, rid, anchors, exists)
+    end = ensure_target(tgt, tgt_coll, rec)
+    if end > src_end:
+        raise ValueError(f"{rid}: the target holds {end} samples, more than the source's {src_end}")
+    if not same_prefix(src, tgt, src_coll, tgt_coll, rid, end):
+        raise ValueError(f"{rid}: the target's first {end} samples are not the source's chunks; nothing was written")
+    # the time axis before the samples: an interrupted run never leaves chunks on the wrong axis
+    anchors_sent = 0 if action == "same" else ship_anchors(tgt, tgt_coll, rid, anchors, version.split(":")[-1], have)
+    if time_axis(tgt, tgt_coll, rid) != version:
+        raise ValueError(f"{rid}: the target's time axis is not the source's after shipping its anchors "
+                         f"(source {version}, target {time_axis(tgt, tgt_coll, rid)}); no chunk was written")
+    sent = bytes_sent = 0
+    while end < src_end:
+        rows = src.execute("SELECT start_sample, sample_count, encoded FROM morlet_encoded_chunks(%s::regclass,%s,%s,%s)",
+                           (src_coll, rid, end, batch)).fetchall()
+        rows = [r for r in rows if r[0] < src_end]      # chunks appended to the source since the start wait
+        at = end
+        for s, c, _e in rows:                           # checked before this batch's transaction opens
+            if s != at:
+                raise ValueError(f"{rid}: the source has no chunk at {at} (a gap in the source?)")
+            at = s + c
+        if not rows:
+            raise ValueError(f"{rid}: the source has no chunk at {end} (a gap in the source?)")
+        with tgt.transaction():
+            for s, c, e in rows:
+                end = tgt.execute("SELECT morlet_append_encoded_chunk(%s::regclass,%s,%s,%s)",
+                                  (tgt_coll, rid, s, e)).fetchone()[0]
+                sent += 1
+                bytes_sent += len(e)
+    a, b = digest(src, src_coll, rid, end), digest(tgt, tgt_coll, rid, end)
+    axis_src, axis_tgt = time_axis(src, src_coll, rid), time_axis(tgt, tgt_coll, rid)
+    if a != b:
+        raise ValueError(f"{rid}: chunk bytes differ after shipping (source {a}, target {b})")
+    if axis_src != axis_tgt:
+        why = "the source's time anchors changed while shipping; run again" if axis_src != version else \
+            "the time axes differ after shipping"
+        raise ValueError(f"{rid}: {why} (source {axis_src}, target {axis_tgt})")
+    return {"recording_id": rid, "chunks_sent": sent, "bytes_sent": bytes_sent, "end": end,
+            "chunks": a[1], "sha256": a[0], "anchors_sent": anchors_sent, "time_axis": axis_src,
+            "identical": True, "seconds": round(time.time() - t0, 2)}
 
 
 def main(argv=None):
