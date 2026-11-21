@@ -425,8 +425,9 @@ class Client:
 
         basis "auto" (default) uses the recording's time anchors when it has any (SQL 0.3.13), else start + rate;
         "anchors" requires anchors; "start+rate" ignores them (the behaviour before anchors). With anchors, a time
-        range that a backward clock step maps to several disjoint ranges raises InvalidInputError: use time_ranges,
-        which returns them all with their basis and error bounds. Without anchors it needs the start time."""
+        range that a backward clock step makes ambiguous raises InvalidInputError, whether it maps to several
+        disjoint ranges or to adjacent ones merged into one: use time_ranges, which returns them all with their
+        basis and error bounds. Without anchors it needs the start time."""
         if basis not in ("auto", "anchors", "start+rate"):
             raise InvalidInputError("basis must be 'auto', 'anchors' or 'start+rate'")
         anchored = False
@@ -441,6 +442,13 @@ class Client:
                 raise InvalidInputError(
                     f"[{t_start_ns}, {t_end_ns}) maps to {len(ranges)} disjoint sample ranges of "
                     f"{recording.recording_id} because its clock stepped back; use time_ranges")
+            # one range can still be ambiguous: two occurrences of the same times in adjacent samples, which the
+            # server merges into one range (#563)
+            if any(r.ambiguous for r in ranges):
+                raise InvalidInputError(
+                    f"[{t_start_ns}, {t_end_ns}) occurs more than once in samples {ranges[0].start_sample}.."
+                    f"{ranges[0].end_sample} of {recording.recording_id} because its clock stepped back (ambiguous); "
+                    f"use time_ranges")
             if ranges:
                 return ranges[0].start_sample, ranges[0].end_sample
             row = self._execute("SELECT min(sample) FROM morlet_utc_to_sample(%s::regclass,%s,%s)",
