@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **CSV time anchors: the reported uncertainty covers every row (#561).** The importer keeps one anchor while rows
+  stay within the tolerance (default half a period) of the mapping, so the rows in between are approximated. Their
+  anchors still declared only the time column's resolution: a row 400 µs off was reported with a 101 ns bound. Each
+  anchor's uncertainty now adds the largest departure of the rows on either side of it; the server interpolates
+  uncertainties between anchors, so every row's timestamp lies within the reported bound. Exact clocks keep the
+  resolution alone. Importing a file again revises anchors that an earlier importer wrote with a smaller uncertainty
+  (`morlet_revise_time_anchor`, the earlier rows are kept) instead of failing on the changed batch; anchors that
+  differ in anything else are refused with a message.
+
 ## 0.4.0-beta.3
 
 **The third beta.** SQL version 0.3.14, with an update script from 0.3.13: run `ALTER EXTENSION pg_morlet UPDATE`

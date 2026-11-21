@@ -225,6 +225,45 @@ class Readers(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "9 fraction digits"):
             mi.iso_ns("2026-03-01T08:00:00.1234567891Z")
 
+    def test_anchor_uncertainty_covers_every_timestamp_it_approximates(self):
+        """#561: the importer keeps one anchor while rows stay within the tolerance of the mapping, so the rows in
+        between are approximated; the reported uncertainty must still cover them. Checked independently with the
+        server's rule in exact fractions: between two anchors of a block the time and the uncertainty are interpolated
+        linearly, after a block's only anchor the time follows the declared rate and the uncertainty is the anchor's
+        (the clock-bound term rho only adds). Jitter, a sparse wide tolerance, drift with jitter, and blocks."""
+        import random
+        rnd = random.Random(561)
+        base = 1_772_352_000_000_000_000
+        cases = {
+            "report": ([0, 1_400_000, 2_000_000], 1000, None),
+            "jitter": ([k * 1_000_000 + rnd.randint(-450_000, 450_000) for k in range(2000)], 1000, None),
+            "sparse": ([k * 1_000_000 + rnd.randint(-450_000, 450_000) for k in range(2000)], 1000, 5_000_000),
+            "drift+jitter": ([round(k * 1_003_000) + rnd.randint(-200_000, 200_000) for k in range(5000)], 1000, None),
+            "blocks": ([b * 120_000_000 + k * 1_000_000 + rnd.randint(-300_000, 300_000)
+                        for b in range(3) for k in range(100)], 1000, None),
+        }
+        for name, (rel, rate, tol) in cases.items():
+            t = [base + x for x in rel]
+            anchors = mi.time_anchors(t, rate, tol)
+            u = mi.anchor_uncertainties(t, rate, anchors, 1)
+            period = Fraction(1_000_000_000) / Fraction(repr(float(rate)))
+            for n, tn in enumerate(t):
+                i = max(j for j, a in enumerate(anchors) if a[0] <= n)
+                k, tk, _ = anchors[i]
+                if i + 1 < len(anchors) and not anchors[i + 1][2]:
+                    k2, tk2, _ = anchors[i + 1]
+                    lam = Fraction(n - k, k2 - k)
+                    mapped, bound = tk + lam * (tk2 - tk), (1 - lam) * u[i] + lam * u[i + 1]
+                else:
+                    mapped, bound = tk + (n - k) * period, Fraction(u[i])
+                self.assertLessEqual(abs(tn - mapped), bound - 1, f"{name}: row {n}")   # 1 ns: the resolution
+        # the report's case: one anchor kept, and its bound now holds the 400 us approximation of row 1
+        anchors = mi.time_anchors([0, 1_400_000, 2_000_000], 1000)
+        self.assertEqual(mi.anchor_uncertainties([0, 1_400_000, 2_000_000], 1000, anchors, 1), [1 + 400_000 + 1])
+        # exact timestamps keep the resolution alone
+        even = [k * 1_000_000 for k in range(50)]
+        self.assertEqual(mi.anchor_uncertainties(even, 1000, mi.time_anchors(even, 1000), 1000), [1000])
+
     def test_an_even_clock_needs_one_anchor(self):
         p = self.tmp / "even.csv"
         p.write_text("t,a\n" + "".join(f"2026-03-01T08:00:00.{i * 10:03d}Z,{i}\n" for i in range(100)))

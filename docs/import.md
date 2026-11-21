@@ -121,8 +121,12 @@ by them instead of by start + rate:
   that a backward step puts into two blocks returns both, marked `ambiguous`.
 - Inside a block, one anchor suffices while start + declared rate stays within the tolerance of every row. A
   drifting clock gets more anchors, until the line through them is within the tolerance of every timestamp.
-- Each anchor's uncertainty is the time column's resolution (1 µs for ISO times with microseconds), and its source
-  is `import:<file>`. A rerun writes nothing new (identical batches).
+- Each anchor's uncertainty is the time column's resolution (1 µs for ISO times with microseconds) plus the largest
+  amount by which a row next to it departs from the mapping through the anchors (rounded up, plus 1 ns). Rows within
+  the tolerance are approximated, not stored, so the reported uncertainty covers every row's own timestamp, not
+  only the anchors (#561). A clock with jitter up to the tolerance therefore reports up to the tolerance. Its
+  source is `import:<file>`. A rerun writes nothing new (identical batches). Anchors written by an importer from
+  before #561 are revised to the wider uncertainty by a rerun; their earlier rows are kept.
 - Anchors need an absolute time: ISO 8601 times (fractions up to nanoseconds are kept exactly), or a column of
   seconds with `--time-origin <ISO time>`. Without one, or with `--no-anchors`, no anchors are written; the
   `time_axis` summary and, for ISO times, the start time are stored as before. On a server older than SQL 0.3.13 the
