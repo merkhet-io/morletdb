@@ -7,7 +7,7 @@ the [support boundaries](../SUPPORT.md) say what the beta supports, and the
 
 ## Editions and maturity
 
-MorletDB has two editions that store the same bytes for the same samples:
+MorletDB has two editions that store the same samples bit for bit, with the same codec:
 
 - the **server edition**, PostgreSQL with the pg_morlet extension. This is the product, in beta;
 - the **embedded edition**, a recording in one SQLite file inside a program. It is experimental.
@@ -39,28 +39,33 @@ identical retry is a no-op and a conflicting one fails. Chunks (1 to 32,768 samp
 boundaries; reads and search windows can cross them.
 
 Raw samples are authoritative. Grizzbit codes every chunk losslessly, bit for bit, with a CRC-32C, and the append
-decodes it again and compares it before storing it (`morlet.verify_appends`, on by default). Everything else is
-derived from the chunks and can be rebuilt from them.
+decodes it again and compares it before storing it (`morlet.verify_appends`, on by default). The derived
+representations (chunk summaries, envelopes, probe rows, roll-ups, context values) are computed from the chunks and
+can be rebuilt from them. Recording metadata, context segments and labels are not derived: they are stored on their
+own and need their own backups.
 
 ## Server edition: data flow
 
 1. **Append.** `morlet_append_chunk` and its variants write coded chunks at their global sample offset.
-2. **Derive.** Builders write chunk summaries, amplitude envelopes, probe rows (with pgvector), roll-ups, context
-   values and coverage. An application can call them in the append transaction, so new windows are searchable at
+2. **Derive.** Builders write chunk summaries, amplitude envelopes, probe rows (with pgvector), roll-ups and context
+   values; `morlet_coverage` reports, when called, which ranges are searchable. An application can call them in the append transaction, so new windows are searchable at
    commit; on edge machines the steward runs them in one budgeted loop. The extension itself starts no background
    worker.
-3. **Search.** Exact search scores every eligible window with a bounded-lag score. Probe search takes candidates
+3. **Search.** Exact search scores every eligible stored window (the windows on the envelope grid, not every sample
+   offset) with a bounded-lag score. Probe search takes candidates
    from a pgvector HNSW index and re-ranks them with the same exact score: it is approximate in which windows it
-   considers, never in the distances it returns ([search contract](search-contract.md)). Budgets are explicit; a
-   search that would exceed its budget fails rather than truncating silently.
-4. **Read back.** Every match is a recording and a sample interval that reads back the original samples, with its
-   metadata, context and labels.
+   considers, never in the distances it returns ([search contract](search-contract.md)). Budgets are explicit: an
+   exact search that would exceed `max_candidates` fails rather than truncating silently, and probe search can
+   return fewer than `top_k` when its per-probe budget leaves too few candidates.
+4. **Read back.** Every match is a recording and a sample interval, with the recording's metadata, that reads back
+   the original samples; its context and labels are separate reads.
 
-Around this core, all opt-in per collection: context segments and labels ([context model](context-model.md)),
+Around this core, opt-in per collection: context segments and labels ([context model](context-model.md)),
 memory levels that compact old episodes while keeping their summaries, with a ledger ([memory
 levels](memory-design.md)), time anchors for a source's own timestamps ([clock drift](clock-drift.md)), the integrity
-check `morlet_verify`, notifications, synchronous groups, the ingest hold, and row-level security on every companion
-table ([access control](access-control.md)). Which of these are stable and which experimental is listed in
+check `morlet_verify`, notifications, synchronous groups, and row-level security on every companion table
+([access control](access-control.md)). The ingest hold is not per collection: it is one switch for the database
+that every append checks. Which of these are stable and which experimental is listed in
 [API stability](api-stability.md).
 
 Operations stay with PostgreSQL: roles, backups, point-in-time recovery and replicas
@@ -69,8 +74,10 @@ rolling verification, and plans for destructive moves that another person approv
 
 ## Embedded edition
 
-`crates/morlet-sqlite` stores recordings in one SQLite file through `morlet-core`, so it holds the same chunk bytes
-and computes the same interval statistics as the server. It has one writer per file, the file's permissions as
+`crates/morlet-sqlite` stores recordings in one SQLite file through `morlet-core`, so it stores the same samples bit
+for bit and computes the same interval statistics as the server. Its file format 1 holds chunk format versions 2 and
+3 only, while the server may write versions 5 or 6: a transfer re-encodes on the receiving side and verifies the
+decoded samples, every bit, so the chunk bytes of the two sides need not match. It has one writer per file, the file's permissions as
 access control, and no search yet. The Python SDK opens such a file with `morletdb.open`, and recordings move
 between the two editions with the SDK's `import_file` and `export_file`, verified on arrival
 ([embedded edition](embedded-edition.md#use)).
@@ -80,8 +87,8 @@ between the two editions with the SDK's `import_file` and `export_file`, verifie
 - **The core stays portable.** `morlet-core` and `grizzbit` have no PostgreSQL dependency; both editions use them.
 - **Exact search is the reference.** Approximate retrieval reports its recall against it, separately from relevance.
 - **No silent changes to samples.** Unsupported input is refused, never rounded, resampled or interpolated.
-  Compaction keeps the summaries, coverage reporting and the ledger, and missing evidence is distinguishable from a
-  negative search result.
+  Compaction keeps the ledger and coverage reporting, and the chunk summaries through level 3 (level 4 removes
+  them too); missing evidence is distinguishable from a negative search result.
 - **Upkeep outside the extension.** Derived data is built by explicit builder calls, by the application or the
   steward, not by a worker inside PostgreSQL. This keeps the work visible and budgeted on small machines.
 - **Not provided:** automatic diagnosis, resampling, gap interpolation, cross-channel search or synchronized

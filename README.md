@@ -359,8 +359,8 @@ Every evaluation with its data, baselines, confidence intervals and verdict:
 Append-only recordings; 1–32,768 samples per chunk; explicit channel and unit; no
 resampling, gap interpolation, background extraction worker or cross-channel search.
 Exact search scans eligible windows; probe search is approximate and opt-in. Beta: the
-[API and on-disk promises](docs/api-stability.md) apply to the server edition; the embedded SQLite edition and the
-WinCC OA integration are experimental. Semantic versioning starts at 1.0. Maturity of every part:
+[API and on-disk promises](docs/api-stability.md) apply to the server edition; the embedded SQLite edition is experimental, though its
+file format 1 stays readable by later releases, and the WinCC OA integration is experimental. Semantic versioning starts at 1.0. Maturity of every part:
 [architecture](docs/architecture.md#editions-and-maturity). Details: [support boundaries](SUPPORT.md) ·
 [compatibility](docs/compatibility.md) · [numerical contract](docs/morlet-extractor.md).
 

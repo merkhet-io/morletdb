@@ -21,7 +21,8 @@ starts at 1.0.
 nothing was lost or changed, but on a 2-core box with a hard disk the system did not stay steady. `latest` slowed
 as daily recordings accumulated (#527), search slowed, and envelope building and verification fell behind
 (#528). A database restart was tested only after the week. 0.4.0-beta.3 adds `morlet_latest_per_stream` for #527
-and makes the steward serve the recordings furthest behind for #528; whether the system now stays steady is what
+and changes the steward's order for #528: of the five recordings furthest behind in each collection, it serves the
+one it served least recently, never-served first; whether the system now stays steady is what
 the confirmation soak S2 (#529) will test, and it has not run yet.
 
 No automatic diagnosis, resampling, speed invariance, gap interpolation or synchronized multichannel matching is
