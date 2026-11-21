@@ -79,7 +79,7 @@ a leading v; GHCR image tags do not.
     read matches, query statistics, an optional context comparison and coverage in one read-only snapshot, with
     `evidence_states` and interval references. No temporal cutoff; not a diagnosis.
   - The known limits of 0.4.0-beta.1 from soak S1 (#527, #528) are addressed in beta.3; the confirmation soak S2
-    (#529) runs on this release.
+    (#529) is planned on this release (protocol still a draft; not yet run).
 - **0.4.0-beta.3:** SQL version 0.3.14 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2 (unchanged). The
   chunk format is unchanged.
   - **`morlet_latest_per_stream` (experimental, #527):** the newest recording with samples of each stream, so a

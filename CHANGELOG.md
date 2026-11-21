@@ -13,7 +13,7 @@ after installing. Python SDK 0.1.0b3. The chunk format is unchanged. The release
   MCP server (#572), one read-only snapshot of matches, context comparison and coverage with machine-readable
   evidence states.
 
-The confirmation soak S2 (#529) runs on this release.
+The confirmation soak S2 (#529) is planned on this release; its protocol is still a draft and it has not run.
 
 - **Time mapping without an anchor table (SQL 0.3.15, #562).** `morlet_sample_utc`, `morlet_utc_to_sample`,
   `morlet_utc_to_samples` and the SDK's `time_ranges` failed with "record r is not assigned yet" on a collection

@@ -80,8 +80,9 @@ Claude finds when the failing bearing first changed and whether the others show 
 
 **One call for a first look** (experimental): the MCP tool `investigate_interval`, and `Client.investigate` in the
 Python SDK, return the interval's statistics, its closest matches, an optional comparison with the same operating
-context in the machine's history, and what was searched, in one read-only snapshot. `evidence_states` say when
-coverage is unknown, ranges were not searched or candidates may be approximate, and every match is an interval
+context in the machine's history, and coverage of the compatible recordings, in one read-only snapshot. Coverage
+is not a count of the windows the search scored. `evidence_states` say when coverage is unknown, ranges are not
+searchable or candidates may be approximate, and every match is an interval
 reference the agent can read back and cite. It reports evidence; it does not interpret it.
 
 > [!IMPORTANT]
@@ -231,7 +232,7 @@ From Python, one call gathers a first investigation in a single snapshot (experi
 import morletdb
 with morletdb.Client.connect("postgresql://...") as db:
     report = db.investigate("public.signals", "pump-7", 8192, 12288, metadata_filter={"asset": "P7"})
-print(report.search.matches, report.coverage_summary, report.evidence_states)  # matches, what was searched, caveats
+print(report.search.matches, report.coverage_summary, report.evidence_states)  # matches, coverage, caveats
 ```
 
 `morlet_search_similar` uses probe search when it is enabled for the window size and exact search

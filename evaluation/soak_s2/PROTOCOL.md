@@ -17,10 +17,10 @@ on a small edge box without a person? That means:
 S2 is S1's protocol (`evaluation/soak_s1/PROTOCOL.md`, frozen 2026-11-10, with shakedown changes 1–7) with these
 changes, and nothing else:
 
-1. **The release:** the first release with #556 (SQL 0.3.14, `morlet_latest_per_stream`) and #557 (the steward
-   serves the recording furthest behind first), expected as `0.4.0-beta.4` (0.4.0-beta.3 shipped both; beta.4
-   adds the fixes of its review, among them the steward's envelope stride after compaction, #560), with the
-   steward and the collector of the freezing commit (S1: 0.3.10-alpha.1). The fixes are named for the S1 failures they address (#527, #528).
+1. **The release:** `0.4.0-beta.4`, which contains #556 (SQL 0.3.14, `morlet_latest_per_stream`) and #557 (the
+   steward serves the recording furthest behind first), both first shipped in 0.4.0-beta.3, and the fixes of
+   beta.3's review, among them the steward's envelope stride after compaction (#560); with the steward and the
+   collector of the freezing commit (S1: 0.3.10-alpha.1). The fixes are named for the S1 failures they address (#527, #528).
    The SeedLink collector reconnects after a database restart (#525). The steward has its fixes since S1:
    - verification on slow boxes (#532);
    - envelope grids by index (#531);
