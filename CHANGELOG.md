@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **MCP: reported times keep their qualifications (#565).** Tool results with times from time anchors carried
+  `time_uncertainty_s` without saying when it is not a bound: an extrapolated time from an estimated anchor came
+  back as a 1 ns uncertainty. They now also report `time_extrapolated` and `time_assumes_linear_clock` when any of
+  their times has them, explained in `time_note` as `locate_time` already did.
+
 ## 0.4.0-beta.3
 
 **The third beta.** SQL version 0.3.14, with an update script from 0.3.13: run `ALTER EXTENSION pg_morlet UPDATE`
