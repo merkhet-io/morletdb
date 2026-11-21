@@ -310,22 +310,41 @@ def collect_times(anchored, node, rid, slots):
             collect_times(anchored, v, rid, slots)
 
 
+EXTRAPOLATED_NOTE = "a time lies outside the anchors of its block, so it is extrapolated"
+LINEAR_CLOCK_NOTE = ("the anchors are estimates without a clock bound, so the uncertainty assumes a linear clock and "
+                     "is not a bound")
+
+
 def fill_times(conn, c, slots):
+    """Each slot's UTC time from morlet_sample_utc, with the dict's largest error and the qualifications of any of its
+    times (#565): time_extrapolated when a time lies outside its block's anchors, time_assumes_linear_clock when the
+    uncertainty is not a bound (estimated anchors without a clock bound), both explained in time_note as in
+    locate_time. A number alone would read as a measured bound."""
     if not slots:
         return
     pairs = sorted({(rid, sample) for _, _, rid, sample in slots})
-    rows = conn.execute("SELECT p.rid, p.n, s.utc_ns, s.uncertainty_ns FROM unnest(%s::text[], %s::bigint[]) p(rid, n), "
+    rows = conn.execute("SELECT p.rid, p.n, s.utc_ns, s.uncertainty_ns, s.extrapolated, s.assumes_linear_clock "
+                        "FROM unnest(%s::text[], %s::bigint[]) p(rid, n), "
                         "LATERAL morlet_sample_utc(%s::regclass, p.rid, p.n) s",
                         ([p[0] for p in pairs], [p[1] for p in pairs], c)).fetchall()
-    found = {(rid, int(n)): (utc, unc) for rid, n, utc, unc in rows}
+    found = {(rid, int(n)): (utc, unc, ext, lin) for rid, n, utc, unc, ext, lin in rows}
     for node, utc_key, rid, sample in slots:
         if (rid, sample) not in found:
             continue
-        utc, unc = found[(rid, sample)]
+        utc, unc, extrapolated, linear = found[(rid, sample)]
         node[utc_key] = utc_from_ns(utc)
         node["time_basis"] = "anchors"
         if unc is not None:
             node["time_uncertainty_s"] = max(node.get("time_uncertainty_s", 0.0), float(unc) / 1e9)
+        notes = [n for n in node.get("time_note", "").split("; ") if n]
+        for flag, key, note in ((extrapolated, "time_extrapolated", EXTRAPOLATED_NOTE),
+                                (linear, "time_assumes_linear_clock", LINEAR_CLOCK_NOTE)):
+            if flag:
+                node[key] = True
+                if note not in notes:
+                    notes.append(note)
+        if notes:
+            node["time_note"] = "; ".join(notes)
 
 
 def occurrences_at(conn, collection, points):

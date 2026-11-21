@@ -19,6 +19,30 @@ SQL version 0.3.15, with an update script from 0.3.14 (`ALTER EXTENSION pg_morle
   the builder then wrote half of the new windows and reported nothing wrong, so search coverage shrank after
   retention (samples were unaffected). The stride is now the greatest common divisor of the gaps among the first and
   the last 16 envelopes of each recording, still by index lookups; the last ones decide where new windows go.
+- **MCP: reported times keep their qualifications (#565).** Tool results with times from time anchors carried
+  `time_uncertainty_s` without saying when it is not a bound: an extrapolated time from an estimated anchor came
+  back as a 1 ns uncertainty. They now also report `time_extrapolated` and `time_assumes_linear_clock` when any of
+  their times has them, explained in `time_note` as `locate_time` already did.
+- **CSV time anchors: the reported uncertainty covers every row (#561).** The importer keeps one anchor while rows
+  stay within the tolerance (default half a period) of the mapping, so the rows in between are approximated. Their
+  anchors still declared only the time column's resolution: a row 400 µs off was reported with a 101 ns bound. Each
+  anchor's uncertainty now adds the largest departure of the rows on either side of it; the server interpolates
+  uncertainties between anchors, so every row's timestamp lies within the reported bound. Exact clocks keep the
+  resolution alone. Importing a file again revises anchors that an earlier importer wrote with a smaller uncertainty
+  (`morlet_revise_time_anchor`, the earlier rows are kept) instead of failing on the changed batch; anchors that
+  differ in anything else are refused with a message.
+- **The edge shipper ships time anchors (#564).** `tools/ingest/morlet_ship.py` copied a recording's chunks and
+  parameters but not its time anchors, and still reported `identical: true`: on the target, sample 5000 of the test
+  mapped to 5 s by start + rate instead of the anchors' 2.5 s. The source's active anchors now go to the target
+  before the chunks (one transaction, a resend is a no-op); anchors shipped earlier are replaced after a revision at
+  the source; a target with anchors of its own that differ is refused before anything is written; and the time
+  axes are compared before the first chunk and at the end.
+- **SDK: `Client.investigate`, one bounded snapshot of an investigation (first part of #572).** Waveform matches,
+  query statistics, optional context comparison with labelled neighbours and glossary definitions, and recording
+  coverage, read in one read-only REPEATABLE READ transaction (or a savepoint in a compatible caller snapshot) under
+  one deadline and explicit limits; a limit raises `InvestigationLimitError` instead of returning a partial answer.
+  The typed, versioned result records the effective settings and provenance, notes and machine-readable
+  `evidence_states`, and keeps coverage distinct from candidate completeness and approximate-search recall.
 
 ## 0.4.0-beta.3
 

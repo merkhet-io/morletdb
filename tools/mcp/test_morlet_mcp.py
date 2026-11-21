@@ -357,7 +357,7 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
             conn.execute("DROP TABLE IF EXISTS public.mcp_anchor CASCADE")
             conn.execute("SELECT morlet_create_stream_collection('public','mcp_anchor')")
             for rid, meta in (("blocks", {"start_utc": "as recorded", "start_sample": 0}),   # anchors only, no start
-                              ("plain", {"start": "2026-02-01T12:00:00Z"})):
+                              ("plain", {"start": "2026-02-01T12:00:00Z"}), ("estimated", {}), ("measured", {})):
                 conn.execute("SELECT morlet_start_recording('mcp_anchor',%s,1000,'acc','g',%s,512,256,'zscore','none')",
                              (rid, json.dumps(meta)))
                 conn.execute("SELECT morlet_append_chunks_raw('mcp_anchor',%s,0,morlet_float8_le_bytes(ARRAY("
@@ -366,6 +366,12 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
             rows = [{"recording_id": "blocks", "sample_offset": n, "utc_ns": str(base + ms * 1000000),
                      "uncertainty_ns": 1000, "source": "daq-timestamps", "break_before": n > 0}
                     for n, ms in ((0, 0), (100, 113), (200, 208))]
+            # #565: one estimated anchor without a clock bound (every other time extrapolated, not a bound), and two
+            # measured anchors 299 samples apart (times between them qualified by neither)
+            rows += [{"recording_id": "estimated", "sample_offset": 0, "utc_ns": str(base), "uncertainty_ns": 1,
+                      "source": "estimate:test", "break_before": False}]
+            rows += [{"recording_id": "measured", "sample_offset": n, "utc_ns": str(base + n * 1000000),
+                      "uncertainty_ns": 1000, "source": "pps", "break_before": False} for n in (0, 299)]
             conn.execute("SELECT morlet_enable_time_anchors('mcp_anchor')")
             conn.execute("SELECT morlet_add_time_anchors('mcp_anchor','b1',%s)", (json.dumps(rows),))
         os.environ["DATABASE_URL"] = url
@@ -405,6 +411,26 @@ class TimeAnchorsOnADatabase(unittest.TestCase):
         meta = m.list_recordings("public.mcp_anchor", include_metadata=True)["recordings"]
         self.assertEqual({x["recording_id"]: x.get("metadata") for x in meta}["blocks"],
                          {"start_utc": "as recorded", "start_sample": 0})
+
+    def test_reported_times_keep_their_qualifications(self):
+        """#565: the decorated result carried the uncertainty of an extrapolated estimate (1 ns) without saying that
+        it is neither measured nor a bound."""
+        r = m.read_interval("public.mcp_anchor", "estimated", 10, 20)
+        self.assertEqual((r["start_utc"], r["time_basis"]), ("2026-02-01T12:00:00.010000Z", "anchors"))
+        self.assertTrue(r["time_extrapolated"])
+        self.assertTrue(r["time_assumes_linear_clock"])
+        self.assertIn("extrapolated", r["time_note"])
+        self.assertIn("not a bound", r["time_note"])
+        measured = m.read_interval("public.mcp_anchor", "measured", 10, 20)
+        self.assertEqual(measured["time_basis"], "anchors")
+        for key in ("time_extrapolated", "time_assumes_linear_clock", "time_note"):
+            self.assertNotIn(key, measured)
+        # start_utc between the anchors, end_utc (sample 300) beyond the last one: the dict is qualified once
+        rec = {x["recording_id"]: x for x in m.list_recordings("public.mcp_anchor")["recordings"]}["measured"]
+        self.assertEqual(rec["end_utc"], "2026-02-01T12:00:00.300000Z")
+        self.assertTrue(rec["time_extrapolated"])
+        self.assertNotIn("time_assumes_linear_clock", rec)
+        self.assertEqual(rec["time_note"].count("extrapolated"), 1)
 
     def test_nanoseconds_and_the_gap_note_for_an_anchored_recording(self):
         # nanoseconds count: 1 ns before block 1's start the last sample at or before it is still 99, at the start 100

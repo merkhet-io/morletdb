@@ -224,7 +224,7 @@ class CoverageRange:
     start_sample: int
     end_sample: int
     state: str
-    windows: int
+    windows: int | None          # searchable ranges only; None for not_indexed, gone, missing and the others
 
 
 @dataclass(frozen=True)
@@ -264,8 +264,18 @@ class InvestigationResult:
     settings: dict[str, Any]
     provenance: dict[str, Any]
     notes: list[str]
+    evidence_states: list[str]             # machine-readable counterparts of the notes
+    coverage_summary: dict[str, Any]       # samples per coverage state, range count, whether ranges are included
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-compatible result, with non-finite diagnostic values represented as null."""
         from ._investigation import result_dict
         return result_dict(self)
+
+    def to_json(self) -> str:
+        """to_dict() as compact JSON; the encoding measured against max_output_bytes, not encoded again."""
+        cached = getattr(self, "_json", None)
+        if cached is not None:
+            return cached
+        import json
+        return json.dumps(self.to_dict(), ensure_ascii=False, allow_nan=False, separators=(",", ":"))

@@ -159,8 +159,8 @@ class Client:
                     match_keys: tuple[str, ...] = (), exclude_labels: tuple[str, ...] = (),
                     min_history: int = 5, max_history: int = 10000,
                     timeout_ms: int = 10000, max_recordings: int = 1000,
-                    max_coverage_ranges: int = 10000, max_output_bytes: int = 2_000_000
-                    ) -> "InvestigationResult":
+                    max_coverage_ranges: int = 10000, max_output_bytes: int = 2_000_000,
+                    coverage_ranges: bool = True) -> "InvestigationResult":
         """Search, query statistics, optional context comparison and coverage in one snapshot.
 
         An idle connection gets a dedicated read-only REPEATABLE READ transaction. An existing transaction
@@ -172,6 +172,8 @@ class Client:
         Its comparison uses the SQL defaults, `match_keys` and `exclude_labels`; these do not filter the
         separate waveform search. Coverage is for compatible recordings before source exclusion, not ANN
         recall. Deadlines/limits raise InvestigationLimitError, never an answer-ready partial report.
+        `coverage_ranges=False` returns only `coverage_summary` (samples per state), not the ranges, so they
+        do not count against `max_output_bytes`.
         """
         from ._investigation import investigate
         return investigate(self, collection, recording_id, start_sample, end_sample,
@@ -179,7 +181,8 @@ class Client:
                            max_lag_fraction=max_lag_fraction, max_candidates=max_candidates,
                            match_keys=match_keys, exclude_labels=exclude_labels, min_history=min_history,
                            max_history=max_history, timeout_ms=timeout_ms, max_recordings=max_recordings,
-                           max_coverage_ranges=max_coverage_ranges, max_output_bytes=max_output_bytes)
+                           max_coverage_ranges=max_coverage_ranges, max_output_bytes=max_output_bytes,
+                           coverage_ranges=coverage_ranges)
 
     # --- collections ---------------------------------------------------------------------------------
     def create_collection(self, name: str, *, searchable: bool = True, summaries: bool = True) -> None:
