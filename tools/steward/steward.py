@@ -49,6 +49,10 @@ class Steward:
         self.reusable_missing = False                 # pg_freespacemap is not installed
         self.pruned_at: float | None = None           # monotonic time of the last retention of the steward's tables
         self.prune_more = False                       # the last retention stopped at its batch limit
+        # monotonic time each (job key, collection, recording) was last served: among the candidates (furthest
+        # behind first), the one served least recently goes first, so a recording that grows faster than one batch
+        # builds cannot take every tick (#528)
+        self.served: dict[tuple[str, str, str], float] = {}
         self.stop = False
 
     # -- observation ---------------------------------------------------------------------------------------------
@@ -249,8 +253,16 @@ class Steward:
             b.record(cfg, True)
             S.save_breaker(conn, job, b)
             return f"analyze {t}"
-        c, rid, end, grid = work[job][0]
-        key = f"envelopes:{grid[0]}:{grid[1]}" if job == "envelopes" else job
+        def job_key(w):
+            return f"envelopes:{w[3][0]}:{w[3][1]}" if job == "envelopes" else job
+        order = {id(w): i for i, w in enumerate(work[job])}
+        c, rid, end, grid = min(work[job], key=lambda w: (self.served.get((job_key(w), w[0], w[1]), float("-inf")),
+                                                           order[id(w)]))
+        key = job_key((c, rid, end, grid))
+        self.served[(key, c, rid)] = time.monotonic()
+        if len(self.served) > 10000:                        # bounded: forget the longest-unserved half
+            for k in sorted(self.served, key=self.served.get)[:5000]:
+                del self.served[k]
         args = {"batch": self.batch[job]} | ({"window": grid[0], "stride": grid[1]} if grid else {})
         aid = S.start_action(conn, job, c, rid, args)
         t = time.time()

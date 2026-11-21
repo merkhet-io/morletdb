@@ -190,6 +190,36 @@ class StewardDatabase(unittest.TestCase):
         want = (ends["z"] - 2048) // 512 + 1
         self.assertEqual(self.one("SELECT count(*) FROM feed_envelopes WHERE recording_id='z' AND window_size=2048"), want)
 
+    def test_a_recording_that_outgrows_one_batch_does_not_take_every_tick(self):
+        # review of #557: furthest behind first alone would serve a recording that grows faster than one batch builds
+        # at every tick; the least recently served candidate goes first
+        a = self.admin
+        names = ["a1", "a2", "a3", "big"]
+        a.execute("SELECT morlet_create_stream_collection('public','burst'); SELECT morlet_enable_envelopes('burst')")
+        for r in names:
+            a.execute("SELECT morlet_start_recording('burst',%s,100,'HHZ','counts','{}',2048,512,'zscore',"
+                      "'morlet-energy-lowrate-v1')", (r,))
+        ends = {r: 0 for r in names}
+
+        def feed(r, n):
+            a.execute("SELECT morlet_append_chunks_raw('burst',%s,%s,morlet_float8_le_bytes(ARRAY(SELECT "
+                      "round(100*sin(i/9.0))::float8 FROM generate_series(%s::bigint,%s::bigint) i)),4096)",
+                      (r, ends[r], ends[r], ends[r] + n - 1))
+            ends[r] += n
+        for r in names:
+            feed(r, 4096)
+        S.grant(a)
+        st = self.steward()
+        self.run_until_idle(st)
+        for r in names[:-1]:
+            feed(r, 20_000)
+        for _ in range(40):
+            feed("big", 200_000)                # more than one batch builds, every tick
+            st.tick()
+        for r in names[:-1]:
+            self.assertEqual(self.one("SELECT count(*) FROM burst_envelopes WHERE recording_id=%s AND window_size=2048",
+                                      (r,)), (ends[r] - 2048) // 512 + 1, r)
+
     def test_a_new_collection_gets_envelopes_without_any_built_by_hand(self):
         # soak S1: grids came only from existing envelopes, so a fresh collection never got its first one
         a = self.admin
