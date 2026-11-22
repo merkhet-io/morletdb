@@ -81,6 +81,7 @@ morlet_envelope	internal	0.2.0	not documented
 morlet_envelope_decode	internal	0.2.0	not documented
 morlet_envelope_distance	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_envelope_encode	internal	0.2.0	not documented
+morlet_envelope_explain	internal	0.3.16	helper of morlet_explain_match
 morlet_envelope_probe	stable	0.3.1	documented since SQL 0.3.1 or earlier
 morlet_envelope_probe_relation	internal	0.3.1	helper
 morlet_envelope_ranked	internal	0.2.0	not documented
@@ -94,6 +95,7 @@ morlet_envelope_screen_step	internal	0.3.3	helper
 morlet_envelope_screen_supported	internal	0.3.3	not documented
 morlet_envelope_version	stable	0.2.0	documented since SQL 0.2.0 or earlier
 morlet_envelopes_from_chunks	internal	0.3.1	not documented
+morlet_explain_match	experimental	0.3.16	documented; new in SQL 0.3.16
 morlet_extractor_version	stable	0.1.0	documented since SQL 0.1.0 or earlier
 morlet_feature_distance	internal	0.1.0	not documented
 morlet_feature_vector_distance	internal	0.1.0	not documented
