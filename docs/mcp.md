@@ -14,7 +14,7 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 |---|---|
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
 | `resolve_incident` | an asset and an incident time (with its UTC offset) to recording intervals, with the time basis, uncertainty, coverage and explicit states for every ambiguity; experimental |
-| `explain_match` | why one stored window scored as it did, from the scorer itself: exact distance, winning lag, correlations, contributions by position and raw statistics of both intervals; it explains the score, not a fault's cause; experimental (SQL 0.3.16, from the release after 0.4.0-beta.4) |
+| `explain_match` | why one stored window scored as it did, from the scorer itself: exact distance, winning lag, correlations, contributions by position and raw statistics of both intervals; it explains the score, not a fault's cause; experimental (SQL 0.3.16, from 0.4.0-beta.5) |
 | `investigate_interval` | initial evidence packet from the SDK in one read-only repeatable snapshot: query statistics, waveform matches, optional context comparisons and labeled neighbors, glossary definitions, coverage summary and machine-readable `evidence_states`; defaults to five matches, 10 seconds and a 64 KB response cap. No temporal cutoff; keep using `search_similar` for earlier-only search, time filters or shifted placements and `decision_state` for richer labelled examples and own baselines. Requires this checkout's Python SDK. |
 | `coverage` | an overview per station, sensor or asset: recordings, samples, first and last time, the recording schedule (continuous or snapshots) and the largest gaps; with SQL 0.3.6 also how much of it search can find (`search_states_s`) |
 | `list_recordings` | recordings with length and UTC start and end where known; rate, channel and unit once when shared; metadata on request; filter by metadata |
@@ -75,7 +75,7 @@ run to failure, or [import WAV, EDF, miniSEED or CSV files](import.md).
 
 ### From a machine and a time to an interval
 
-**Experimental, from the release after 0.4.0-beta.4.** An investigation usually starts with "machine P7, around
+**Experimental, from 0.4.0-beta.5.** An investigation usually starts with "machine P7, around
 14:32", not with a sample range. `resolve_incident(collection, asset, incident_time, before_s=60, after_s=10)` maps
 that to recording intervals through the SDK's `Client.resolve_incident`, in one read-only snapshot, so an agent does
 not have to guess:

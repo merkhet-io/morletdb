@@ -1,6 +1,6 @@
 # Releases
 
-The current package identifier is in VERSION (`0.4.0-beta.4`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
+The current package identifier is in VERSION (`0.4.0-beta.5`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -68,6 +68,10 @@ a leading v; GHCR image tags do not.
     the steward no longer stops verifying on slow boxes (#532) and finds envelope grids by index (#531); the SeedLink
     collector survives a database restart (#525); WinCC OA fixes (#496, #497).
   - **New:** the MCP `labels` tool (#333); operator runbooks (#197); the experimental WinCC OA integration (#474).
+- **0.4.0-beta.5:** SQL version 0.3.16 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b4. The chunk format
+  is unchanged. New and experimental: `explain_match` (#573), resolving a machine and a time to intervals (#580) and
+  evidence bundles (part of #575). The MCP server gains an optional cap on concurrent calls, off by default (part of
+  #541). The steward, the ingest tools and the codec are unchanged.
 - **0.4.0-beta.4:** SQL version 0.3.15 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b3. The chunk
   format is unchanged.
   - **Fixes from the review of beta.3 (#560–#565):** the time mapping functions work on collections without an

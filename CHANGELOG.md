@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.4.0-beta.5
+
+**The fifth beta.** SQL version 0.3.16, with an update script from 0.3.15: run `ALTER EXTENSION pg_morlet UPDATE` after
+installing. Python SDK 0.1.0b4. The chunk format is unchanged, and so are the steward, the ingest tools and the codec.
+The new investigation features are experimental. The confirmation soak S2 (#529) is planned on this release; its
+protocol is still a draft and it has not run.
+
 - **Evidence bundles (experimental, part of #575).** `Client.export_evidence` captures an investigation from one
   read-only snapshot as a versioned manifest with exact SHA-256 digests and a static, script-free HTML report, with or
   without the exact samples. `verify_evidence` checks a bundle offline, and `Client.resolve_evidence` reports which
@@ -9,7 +16,7 @@
   does not pin stored data.
 - **A cap on concurrent agent calls (part of #541).** `MORLET_MCP_MAX_CONCURRENT` limits MCP tool calls across all server
   processes on a database, off by default. A call that finds no slot within `MORLET_MCP_QUEUE_MS` is refused as `busy`,
-  never reported as an empty result.
+  never reported as an empty result. Its effect on ingest latency has not been shown.
 - **Why a match scored as it did (SQL 0.3.16, experimental, #573).** `morlet_explain_match` and `Client.explain_match`
   return, for one selected match, the scorer's exact distance, the winning lag with its sign and raw-sample mapping,
   the zero-lag and winning correlations, bounded contributions that add up to the correlation, and raw statistics of
@@ -20,6 +27,8 @@
   ambiguous assets and times, gaps, unreadable samples, missing time axes and claimed references that the recording
   does not confirm are explicit states. Plant identifiers are parameters in the SDK and operator configuration in
   the MCP server.
+- **Monitoring example.** `examples/opentelemetry` scrapes the steward's metrics into Prometheus through an
+  OpenTelemetry Collector.
 
 ## 0.4.0-beta.4
 

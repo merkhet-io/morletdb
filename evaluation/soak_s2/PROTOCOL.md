@@ -17,7 +17,7 @@ on a small edge box without a person? That means:
 S2 is S1's protocol (`evaluation/soak_s1/PROTOCOL.md`, frozen 2026-11-10, with shakedown changes 1–7) with these
 changes, and nothing else:
 
-1. **The release:** `0.4.0-beta.4`, which contains #556 (SQL 0.3.14, `morlet_latest_per_stream`) and #557 (of the five
+1. **The release:** `0.4.0-beta.5`, which contains #556 (SQL 0.3.14, `morlet_latest_per_stream`) and #557 (of the five
    recordings furthest behind in each collection, the steward serves the one it served least recently,
    never-served first), both first shipped in 0.4.0-beta.3, and the fixes of
    beta.3's review, among them the steward's envelope stride after compaction (#560); with the steward and the
