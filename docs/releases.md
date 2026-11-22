@@ -1,6 +1,6 @@
 # Releases
 
-The current package identifier is in VERSION (`0.4.0-beta.4`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
+The current package identifier is in VERSION (`0.4.0-beta.5`; releases up to 0.3.14-alpha.1 were alphas). GitHub tags use
 a leading v; GHCR image tags do not.
 - **Up to 0.1.0-alpha.3:** releases report SQL extension version 0.1.0, with no
   upgrade scripts between them.
@@ -80,6 +80,10 @@ a leading v; GHCR image tags do not.
     `evidence_states` and interval references. No temporal cutoff; not a diagnosis.
   - The known limits of 0.4.0-beta.1 from soak S1 (#527, #528) are addressed in beta.3; the confirmation soak S2
     (#529) is planned on this release (protocol still a draft; not yet run).
+- **0.4.0-beta.5:** SQL version 0.3.16 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b4. The chunk format
+  is unchanged. New and experimental: `explain_match` (#573), resolving a machine and a time to intervals (#580) and
+  evidence bundles (part of #575). The MCP server gains an optional cap on concurrent calls, off by default (part of
+  #541). The steward, the ingest tools and the codec are unchanged.
 - **0.4.0-beta.3:** SQL version 0.3.14 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2 (unchanged). The
   chunk format is unchanged.
   - **`morlet_latest_per_stream` (experimental, #527):** the newest recording with samples of each stream, so a

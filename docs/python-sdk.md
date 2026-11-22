@@ -4,7 +4,7 @@
 timing and metadata, read exact sample intervals, search for similar intervals, and resolve every result to
 the stored samples. It wraps pg_morlet's SQL functions and adds no database features of its own.
 
-- Package: `morletdb` 0.1.0b3 (beta), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
+- Package: `morletdb` 0.1.0b4 (beta), Python 3.10+, depends on `numpy` and `psycopg` 3.2 or later only; plotting
   (`[plot]` extra, matplotlib) is optional and used only by the example.
 - Not on PyPI yet: install a release wheel ([releases](releases.md#install-the-python-sdk)), or
   `pip install "./sdk/python[plot]"` from a checkout.
@@ -28,7 +28,7 @@ the stored samples. It wraps pg_morlet's SQL functions and adds no database feat
 
 ```sh
 docker run -d --name morletdb -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=change-me \
-  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.4.0-beta.4
+  -e POSTGRES_DB=morlet -p 127.0.0.1:54329:5432 ghcr.io/merkhet-io/morletdb:0.4.0-beta.5
 docker exec morletdb psql -U morlet -d morlet -c "CREATE EXTENSION IF NOT EXISTS pg_morlet"
 python -m venv .venv && . .venv/bin/activate && pip install "./sdk/python[plot]"
 DATABASE_URL=postgresql://morlet:change-me@127.0.0.1:54329/morlet python examples/python/quickstart.py
@@ -109,7 +109,7 @@ are separate rankings and must not be compared numerically.
 
 ### From an asset and a time to an interval
 
-**Experimental, from the release after 0.4.0-beta.4.** Evidence bundles record an investigation so that it can be
+**Experimental, from 0.4.0-beta.5.** Evidence bundles record an investigation so that it can be
 checked later:
 
 ```python
@@ -126,7 +126,7 @@ and a bundle with some raw samples unavailable is labelled `partial-samples`. Wi
 restore data. Exporting discloses what this role can read and cannot be revoked later. Limits raise instead of producing
 a partial bundle. A bundle does not pin data against retention or compaction, and it is not a diagnosis.
 
-**Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
+**Experimental, from 0.4.0-beta.5; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
 asset and an incident time to recording intervals in one read-only snapshot, with the same transaction rules as
 `investigate`:
 
@@ -261,7 +261,7 @@ interval `[start, end)` as the query.
 
 ### Explain one match
 
-**Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.16.** `Client.explain_match(result.query, hit.ref,
+**Experimental, from 0.4.0-beta.5; needs SQL 0.3.16.** `Client.explain_match(result.query, hit.ref,
 max_lag_fraction=result.max_lag_fraction)` explains one selected match with the scorer's own arithmetic: exact
 distance, winning lag, correlations, contributions and the raw statistics of both intervals
 ([contract](search-contract.md#explaining-one-match-sql-0316-experimental-573)). It explains the similarity score, not a
