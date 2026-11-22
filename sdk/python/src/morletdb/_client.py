@@ -152,6 +152,36 @@ class Client:
             raise translate(exc) from exc
 
     # --- investigation -------------------------------------------------------------------------------
+    def export_evidence(self, collection: str, recording_id: str, start_sample: int, end_sample: int | None = None, *,
+                        include_samples: bool = False, max_sample_bytes: int = 64 * 1024 * 1024,
+                        segment_id: int | None = None, metadata_filter: Mapping[str, Any] | None = None,
+                        top_k: int = 10, max_lag_fraction: float = 0.075, max_candidates: int = 10000,
+                        match_keys: tuple[str, ...] = (), exclude_labels: tuple[str, ...] = (),
+                        min_history: int = 5, max_history: int = 10000, timeout_ms: int = 30000,
+                        max_recordings: int = 1000, max_coverage_ranges: int = 10000,
+                        max_output_bytes: int = 2_000_000) -> "EvidenceBundle":
+        """An investigation as a portable bundle (experimental, #575), from one read-only snapshot: a versioned manifest
+        with exact SHA-256 digests of every interval, and a static HTML report. `include_samples=True` also carries the
+        exact samples. Exporting discloses what this role can read. A limit raises rather than returning a partial
+        bundle. It is not a diagnosis, and it does not pin or restore stored data."""
+        from ._evidence import export_evidence
+        return export_evidence(self, collection, recording_id, start_sample, end_sample,
+                               include_samples=include_samples, max_sample_bytes=max_sample_bytes,
+                               settings=dict(segment_id=segment_id, metadata_filter=metadata_filter, top_k=top_k,
+                                             max_lag_fraction=max_lag_fraction, max_candidates=max_candidates,
+                                             match_keys=match_keys, exclude_labels=exclude_labels,
+                                             min_history=min_history, max_history=max_history, timeout_ms=timeout_ms,
+                                             max_recordings=max_recordings, max_coverage_ranges=max_coverage_ranges,
+                                             max_output_bytes=max_output_bytes, coverage_ranges=True))
+
+    def resolve_evidence(self, bundle: Any, *, timeout_ms: int = 30000, max_sample_bytes: int = 64 * 1024 * 1024,
+                         expected_manifest_sha256: str | None = None) -> list[dict[str, Any]]:
+        """Each interval of a verified bundle (or bundle path) against the database now, under this role's permissions.
+        A bundle that fails verification is refused."""
+        from ._evidence import resolve_evidence
+        return resolve_evidence(self, bundle, timeout_ms=timeout_ms, max_sample_bytes=max_sample_bytes,
+                                expected_manifest_sha256=expected_manifest_sha256)
+
     def resolve_incident(self, collection: str, asset: str, incident_time: datetime | int, *, before_s: float = 60,
                          after_s: float = 10, sensor: str | None = None,
                          metadata_filter: Mapping[str, Any] | None = None, asset_key: str = "asset",
