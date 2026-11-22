@@ -31,12 +31,13 @@ if touches '^extensions/pg_morlet/(src|sql)/|gen_upgrade\.py$'; then
     step "update script check skipped (needs cargo-pgrx, $pgc, and tests/gen_upgrade.py for SQL $ver)"
   fi
 fi
-if touches '^(research/paper|docs)/|^README\.md$|^VERSION$'; then
+if touches '^(research/paper|docs)/|^README\.md$|^VERSION$|^tools/site_seo\.py$'; then
   step "paper and site checks"
   python3 research/paper/gen_numbers.py --check
   research/paper/sync_site.sh --check >/dev/null
   python3 research/paper/release_manifest.py --check
   python3 tools/site_versions.py --check
+  python3 tools/site_seo.py --check
   python3 tools/highlight_site.py --check
   python3 tools/check_sql_docs.py && python3 tools/check_mcp_docs.py
   python3 tools/benchmark_chart.py --check

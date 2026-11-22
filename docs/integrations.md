@@ -133,6 +133,26 @@ Verification levels:
 - **Run:** [`tools/viewer`](../tools/viewer/README.md).
 - **Verified:** CI (helper tests); Manual, links from Grafana.
 
+## Monitoring
+
+### Prometheus metrics
+- **What:** `morlet-steward metrics` serves database reachability, steward state, ingest hold, disk space, integrity
+  passes, backlogs and table health on `/metrics`.
+- **Run:** [`examples/opentelemetry`](../examples/opentelemetry/README.md) (`--profile prometheus`);
+  [steward](../tools/steward/README.md).
+- **Scope:** Prometheus text format 0.0.4, read-only scrapes. The endpoint has no authentication, so keep it on a
+  private network.
+- **Verified:** CI for the text format and the database metrics; Manual (2026-11-22), a healthy scrape target and
+  queries in Prometheus 3.5.0 against 0.4.0-beta.4.
+
+### OpenTelemetry Collector
+- **What:** the same operational metrics through an OpenTelemetry Collector, ready to forward to an OTLP backend.
+- **Run:** [`examples/opentelemetry`](../examples/opentelemetry/README.md).
+- **Scope:** metrics only, through the collector's Prometheus receiver. No traces or logs, no MCP instrumentation, and
+  not an ingest path for waveforms. Labels include collection and table names.
+- **Verified:** Manual (2026-11-22), OpenTelemetry Collector Contrib 0.165.0 against 0.4.0-beta.4: 26 `morlet_*` metrics
+  reached its debug exporter. Forwarding to an OTLP backend was not tested.
+
 ## Archive exchange
 
 ### Apache Parquet exchange
@@ -183,6 +203,8 @@ Checked on 2026-11-02 against each owner's published policy. The website lists a
 | Modbus | no | named as plain text |
 | NI, LabVIEW (TDMS) | no | NI grants no permission to display its logos; word marks only for reference, with a notice |
 | ObsPy | no | no logo policy published |
+| Prometheus | no | logo rules not checked; named as plain text |
+| OpenTelemetry | no | logo rules not checked; named as plain text |
 
 Trademark notices:
 - Postgres, PostgreSQL and the Slonik Logo are trademarks or registered trademarks of the PostgreSQL Community
