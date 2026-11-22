@@ -146,6 +146,28 @@ class Offline(unittest.TestCase):
                 with self.assertRaises(InvalidInputError):
                     render(m)
 
+    def test_a_manifest_missing_a_reported_field_is_refused_not_a_crash(self):
+        def rich():
+            m = json.loads(canonical(self.manifest))
+            ref = {"recording_id": "r", "start_sample": 2, "end_sample": 4}
+            m["bundle"] = "partial-samples"
+            m["intervals"].append({**m["intervals"][0], **ref, "id": "match-1", "role": "match", "rank": 1,
+                                   "raw_status": "unavailable", "sample_sha256": None, "file": None})
+            m["intervals_without_samples"] = ["match-1"]
+            m["investigation"]["search"]["matches"] = [{"rank": 1, "distance": 0.5, "ref": ref}]
+            m["investigation"]["context"] = {"context": {}, "comparisons": [{
+                "value_name": "rpm", "value": 1.0, "hist_n": 3, "hist_median": 1.0, "relative_deviation": 0.0, "status": "ok"}]}
+            return m
+        self.assertIn("rpm", render(rich()))
+        inv = lambda m: m["investigation"]
+        for owner, key in ((lambda m: inv(m)["query_stats"], "rms"), (lambda m: inv(m)["search"]["matches"][0], "distance"),
+                           (lambda m: inv(m)["context"]["comparisons"][0], "status"),
+                           (lambda m: m["intervals"][0]["specification"], "unit")):
+            m = rich()
+            del owner(m)[key]
+            with self.subTest(key=key), self.assertRaises(InvalidInputError):
+                render(m)
+
     def test_a_manifest_with_a_non_finite_or_deep_value_is_a_failed_check(self):
         for text in ('{"format":"morletdb-evidence","version":1,"x":NaN}',
                      '{"format":"morletdb-evidence","version":1,"x":' + "[" * 200000 + "]" * 200000 + "}"):

@@ -77,6 +77,11 @@ def _is_cell(value) -> bool:
     return value is None or isinstance(value, str) or isinstance(value, bool) or _is_number(value)
 
 
+def _has_cells(value, keys) -> bool:
+    """Every key is present (a null cell is allowed, a missing one is not) and holds a table cell."""
+    return isinstance(value, dict) and all(k in value and _is_cell(value[k]) for k in keys)
+
+
 def _is_strings(value) -> bool:
     return isinstance(value, list) and all(isinstance(x, str) for x in value)
 
@@ -97,6 +102,7 @@ def _check_interval(item):
           and item["start_sample"] < item["end_sample"], f"{name}: sample bounds")
     spec = item.get("specification")
     _need(isinstance(spec, dict) and _is_number(spec.get("sample_rate_hz")) and "metadata" in spec
+          and "channel" in spec and "unit" in spec
           and all(spec.get(k) is None or isinstance(spec[k], str) for k in ("channel", "unit", "time_axis_version")),
           f"{name}: specification")
     digest, file = item.get("sample_sha256"), item.get("file")
@@ -133,15 +139,14 @@ def validate_manifest(manifest) -> None:
     _need(isinstance(inv, dict), "investigation")
     _need(_is_strings(inv.get("evidence_states")) and _is_strings(inv.get("notes")), "evidence states and notes")
     stats = inv.get("query_stats")
-    _need(isinstance(stats, dict) and all(_is_cell(stats.get(k)) for k in ("sample_count", "min", "max", "mean", "rms")),
-          "query statistics")
+    _need(_has_cells(stats, ("sample_count", "min", "max", "mean", "rms")), "query statistics")
     search = inv.get("search")
     _need(isinstance(search, dict) and isinstance(search.get("mode"), str) and isinstance(search.get("matches"), list),
           "search")
     _need(len(search["matches"]) == len(intervals) - 1, "matches and intervals disagree")
     for match in search["matches"]:
         ref = match.get("ref") if isinstance(match, dict) else None
-        _need(isinstance(ref, dict) and _is_int(match.get("rank")) and _is_cell(match.get("distance")), "match")
+        _need(isinstance(ref, dict) and _is_int(match.get("rank")) and _has_cells(match, ("distance",)), "match")
         item = by_id.get(f"match-{match['rank']}")
         _need(item is not None and all(ref.get(k) == item[k] for k in ("recording_id", "start_sample", "end_sample")),
               "match and interval disagree")
@@ -155,8 +160,8 @@ def validate_manifest(manifest) -> None:
         rows = context.get("comparisons") if isinstance(context, dict) else None
         _need(isinstance(rows, list) and "context" in context, "context")
         for row in rows:
-            _need(isinstance(row, dict) and all(_is_cell(row.get(k)) for k in (
-                "value_name", "value", "hist_n", "hist_median", "relative_deviation", "status")), "context comparison")
+            _need(_has_cells(row, ("value_name", "value", "hist_n", "hist_median", "relative_deviation", "status")),
+                  "context comparison")
 
 
 def _sample_problem(item, data) -> str | None:
