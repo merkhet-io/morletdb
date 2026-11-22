@@ -68,6 +68,10 @@ a leading v; GHCR image tags do not.
     the steward no longer stops verifying on slow boxes (#532) and finds envelope grids by index (#531); the SeedLink
     collector survives a database restart (#525); WinCC OA fixes (#496, #497).
   - **New:** the MCP `labels` tool (#333); operator runbooks (#197); the experimental WinCC OA integration (#474).
+- **0.4.0-beta.5:** SQL version 0.3.16 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b4. The chunk format
+  is unchanged. New and experimental: `explain_match` (#573), resolving a machine and a time to intervals (#580) and
+  evidence bundles (part of #575). The MCP server gains an optional cap on concurrent calls, off by default (part of
+  #541). The steward, the ingest tools and the codec are unchanged.
 - **0.4.0-beta.4:** SQL version 0.3.15 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b3. The chunk
   format is unchanged.
   - **Fixes from the review of beta.3 (#560–#565):** the time mapping functions work on collections without an
@@ -80,10 +84,6 @@ a leading v; GHCR image tags do not.
     `evidence_states` and interval references. No temporal cutoff; not a diagnosis.
   - The known limits of 0.4.0-beta.1 from soak S1 (#527, #528) are addressed in beta.3; the confirmation soak S2
     (#529) is planned on this release (protocol still a draft; not yet run).
-- **0.4.0-beta.5:** SQL version 0.3.16 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b4. The chunk format
-  is unchanged. New and experimental: `explain_match` (#573), resolving a machine and a time to intervals (#580) and
-  evidence bundles (part of #575). The MCP server gains an optional cap on concurrent calls, off by default (part of
-  #541). The steward, the ingest tools and the codec are unchanged.
 - **0.4.0-beta.3:** SQL version 0.3.14 (run `ALTER EXTENSION pg_morlet UPDATE`); Python SDK 0.1.0b2 (unchanged). The
   chunk format is unchanged.
   - **`morlet_latest_per_stream` (experimental, #527):** the newest recording with samples of each stream, so a
