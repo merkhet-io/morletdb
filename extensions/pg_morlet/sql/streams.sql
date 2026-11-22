@@ -1719,7 +1719,7 @@ END $$;
 -- Why a stored window scored as it did against a stored query interval (#573, experimental). Only the pair asked for, by
 -- the scorer's own arithmetic; ranking and stored data are untouched. Contributions explain the similarity score, not a
 -- fault's cause, and normalized envelopes say nothing about amplitude: the raw statistics are reported beside them, and
--- are NULL with match_raw_status 'unavailable' where a memory level has removed the match's raw chunks.
+-- are NULL with match_raw_status 'unavailable' where the match's raw chunks were removed or are hidden from this role.
 CREATE FUNCTION public.morlet_explain_match(collection regclass,query_recording_id text,query_start bigint,query_end bigint,
   match_recording_id text,match_start bigint,max_lag_fraction float8 DEFAULT 0.075,contribution_bins integer DEFAULT 32,
   include_envelopes boolean DEFAULT false)
@@ -1733,11 +1733,17 @@ DECLARE src record; m record; rel record; env regclass; qe float8[]; width integ
 BEGIN
   IF collection IS NULL OR query_recording_id IS NULL OR query_start IS NULL OR query_end IS NULL
     OR match_recording_id IS NULL OR match_start IS NULL OR include_envelopes IS NULL THEN
-    RAISE EXCEPTION 'collection, the query interval, the match and include_envelopes must not be NULL';
+    RAISE EXCEPTION 'collection, the query interval, the match and include_envelopes must not be NULL'
+      USING ERRCODE='invalid_parameter_value';
   END IF;
   IF max_lag_fraction IS NULL OR NOT (max_lag_fraction BETWEEN 0 AND 0.5) OR contribution_bins IS NULL
     OR contribution_bins NOT BETWEEN 1 AND 1024 THEN
-    RAISE EXCEPTION 'max_lag_fraction must be in 0..0.5 and contribution_bins in 1..1024';
+    RAISE EXCEPTION 'max_lag_fraction must be in 0..0.5 and contribution_bins in 1..1024'
+      USING ERRCODE='invalid_parameter_value';
+  END IF;
+  IF query_end-query_start NOT IN (512,1024,2048,4096,8192,16384,32768) THEN
+    RAISE EXCEPTION 'the query interval must be a stored window size: a power of two in 512..32768 samples'
+      USING ERRCODE='invalid_parameter_value';
   END IF;
   env:=public.morlet_envelope_relation(collection);
   SELECT * INTO src FROM public.morlet_read_interval(collection,query_recording_id,query_start,query_end);
@@ -1747,10 +1753,11 @@ BEGIN
   EXECUTE format('SELECT t.sample_rate_hz,t.channel,t.unit FROM %s t WHERE t.recording_id=$1',collection) INTO m
     USING match_recording_id;
   IF m.sample_rate_hz IS NULL THEN
-    RAISE EXCEPTION 'recording % does not exist or is not visible',match_recording_id;
+    RAISE EXCEPTION 'recording % does not exist or is not visible',match_recording_id USING ERRCODE='no_data_found';
   END IF;
   IF (m.sample_rate_hz,m.channel,m.unit) IS DISTINCT FROM (src.sample_rate_hz,src.channel,src.unit) THEN
-    RAISE EXCEPTION 'recording % is not comparable with the query: rate, channel and unit must be equal',match_recording_id;
+    RAISE EXCEPTION 'recording % is not comparable with the query: rate, channel and unit must be equal',match_recording_id
+      USING ERRCODE='invalid_parameter_value';
   END IF;
   EXECUTE format('SELECT e.envelope FROM %s e WHERE e.recording_id=$1 AND e.window_size=$2 AND e.start_sample=$3',env)
     INTO stored USING match_recording_id,width,match_start;

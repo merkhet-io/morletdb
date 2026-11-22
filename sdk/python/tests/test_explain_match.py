@@ -25,6 +25,12 @@ class Validation(unittest.TestCase):
         q = IntervalRef("a.c", "q", 0, 2048)
         with self.assertRaises(InvalidInputError):
             client.explain_match(q, IntervalRef("a.c", "m", 0, 1024), max_lag_fraction=0.075)
+        for bad in ({"max_lag_fraction": True}, {"max_lag_fraction": 0.6}, {"max_lag_fraction": 0.075, "contribution_bins": 0},
+                    {"max_lag_fraction": 0.075, "include_envelopes": 1}):
+            with self.subTest(bad=bad), self.assertRaises(InvalidInputError):
+                client.explain_match(q, IntervalRef("a.c", "m", 0, 2048), **bad)
+        with self.assertRaises(InvalidInputError):      # not a stored window size
+            client.explain_match(IntervalRef("a.c", "q", 0, 1000), IntervalRef("a.c", "m", 0, 1000), max_lag_fraction=0.075)
         with self.assertRaises(TypeError):      # the search's value is required: another one explains another score
             client.explain_match(q, IntervalRef("a.c", "m", 0, 2048))
 
@@ -92,8 +98,13 @@ class ExplainMatch(unittest.TestCase):
         with self.assertRaises(morletdb.NotFoundError):
             self.db.explain_match(q, IntervalRef(self.coll, "none", 0, 2048), max_lag_fraction=0.075)
         self.conn.rollback()
+        self.db.ingest(self.coll, "other", wave(0), sample_rate_hz=500, channel="x", unit="g", search_window=2048)
+        self.conn.commit()
         with self.assertRaises(InvalidInputError):
-            self.db.explain_match(q, IntervalRef(self.coll, "m", 0, 2048), max_lag_fraction=0.075, contribution_bins=0)
+            self.db.explain_match(q, IntervalRef(self.coll, "other", 0, 2048), max_lag_fraction=0.075)
+        self.conn.rollback()
+        with self.assertRaises(morletdb.NotFoundError):      # the id's own words do not change the error's meaning
+            self.db.explain_match(q, IntervalRef(self.coll, "pump must be in service", 0, 2048), max_lag_fraction=0.075)
         self.conn.rollback()
         spelled = '"' + self.schema + '"."signals"'
         e = self.db.explain_match(q, IntervalRef(spelled, "m", 0, 2048), max_lag_fraction=0.075)

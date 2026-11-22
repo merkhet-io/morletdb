@@ -244,7 +244,7 @@ class MatchExplanation:
     `lag_steps` > 0 means a feature of the query lies that many envelope steps earlier in the stored window. Timing is
     no finer than one step (`step_samples`). Contributions explain the similarity score, not a fault's cause; envelopes
     are normalized, so compare amplitude with `query_stats` and `match_stats`, which are None for a match whose raw
-    samples were removed (`match_raw_status` "unavailable").
+    samples were removed or are hidden from this role (`match_raw_status` "unavailable").
     """
     query: IntervalRef
     match: IntervalRef
@@ -263,8 +263,8 @@ class MatchExplanation:
     query_stats: IntervalStats | None      # None on an older collection without encoded chunks
     match_stats: IntervalStats | None
     match_raw_status: str
-    query_envelope: np.ndarray | None = None
-    stored_envelope: np.ndarray | None = None
+    query_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
+    stored_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
 
 
 @dataclass(frozen=True)

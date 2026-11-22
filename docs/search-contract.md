@@ -69,8 +69,8 @@ Use the search's `max_lag_fraction` (`Client.explain_match` requires it): anothe
 - **What it does not say.** Contributions explain the similarity score, not a fault's cause. Envelopes are normalized,
   so a close match can differ in amplitude: compare `query_stats` and `match_stats` (`[min, max, mean, rms]`, NULL on an
   older collection without encoded chunks).
-- **Missing evidence.** No stored envelope at that position is an error. If a memory level removed the match's raw
-  chunks, the score is still explained, with `match_stats` NULL and `match_raw_status` `unavailable`.
+- **Missing evidence.** No stored envelope at that position is an error. If the match's raw chunks were removed or are
+  hidden from this role, the score is still explained, with `match_stats` NULL and `match_raw_status` `unavailable`.
 - **Access.** The function runs with the caller's privileges and row security, like search.
 
 ## Eligibility
