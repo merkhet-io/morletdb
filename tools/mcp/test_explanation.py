@@ -85,7 +85,20 @@ class Database(unittest.TestCase):
         self.assertNotIn("stored_envelope", out)
         json.dumps(out, allow_nan=False)
 
-    def test_a_missing_match_is_not_found(self):
+    def test_a_missing_match_is_unavailable_evidence(self):
         result = call(**self.args(match_start=7))
         self.assertTrue(result.is_error)
-        self.assertIn('"code": "not_found"', result.content[0].text)
+        self.assertIn('"code": "evidence_unavailable"', result.content[0].text)
+
+    def test_an_unknown_collection_is_structured(self):
+        result = call(**self.args(collection="public.missing"))
+        self.assertIn('"code": "invalid_input"', result.content[0].text)
+
+    def test_a_shifted_hit_is_explained_against_its_shifted_query(self):
+        shift = 512
+        expected = self.conn.execute(
+            "SELECT distance FROM morlet_explain_match(%s::regclass,'q',%s,%s,'m',0)",
+            (self.coll, shift, 2048 + shift)).fetchone()[0]
+        out = json.loads(call(**self.args(query_shift_samples=shift)).content[0].text)
+        self.assertEqual(out["distance"], expected)
+        self.assertEqual((out["query"]["start_sample"], out["query"]["end_sample"]), (shift, 2048 + shift))

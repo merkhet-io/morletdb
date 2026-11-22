@@ -1072,18 +1072,19 @@ def resolve_incident(collection: str, asset: str, incident_time: str, before_s: 
 @mcp.tool(annotations=READ_ONLY)
 @safe
 def explain_match(collection: str, query_recording_id: str, query_start: int, query_end: int, match_recording_id: str,
-                  match_start: int, contribution_bins: int = 16) -> dict:
+                  match_start: int, contribution_bins: int = 16, query_shift_samples: int = 0) -> dict:
     """Why one stored window scored as it did against the query, computed by the search scorer itself: exact distance,
     winning lag (positive: the query's feature lies that many steps earlier in the match), zero-lag and winning
     correlation, contributions by position (1..64 bins), and raw statistics of both intervals.
 
-    Pass the query interval of the search and a returned match's recording_id and start_sample. Use it on selected
-    hits, not on every result. It explains the similarity score, not a fault's cause: a close envelope can differ in
+    Pass the query interval of the search and a returned match's recording_id and start_sample. If the hit has
+    query_shift_samples (search_from_time, or search_similar with shifts), pass it too: the hit was scored against the
+    shifted query, and without it this explains another score. Use it on selected hits, not on every result. It explains the similarity score, not a fault's cause: a close envelope can differ in
     amplitude, so compare query_stats and match_stats. match_raw_status "unavailable" means the score is explained
-    but the match's raw samples were removed. Needs SQL 0.3.16 and the SDK from this checkout."""
+    but the match's raw samples were removed or are hidden from this role. Needs SQL 0.3.16 and the SDK from this checkout."""
     _sibling("investigation")          # its error format is shared
     return _sibling("explanation").run(connect, checked, collection, query_recording_id, query_start, query_end,
-                                       match_recording_id, match_start, contribution_bins)
+                                       match_recording_id, match_start, contribution_bins, query_shift_samples)
 
 
 @mcp.tool(annotations=READ_ONLY)
