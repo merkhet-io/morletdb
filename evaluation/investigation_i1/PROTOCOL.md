@@ -42,7 +42,7 @@ measurement, and **completing I1 does not close #582**.
 | | Metric | PASS | FAIL | Otherwise |
 |---|---|---|---|---|
 | **H1** (superiority) | Case recall@5, families A and B | Δ ≥ **+0.15** and 95% interval lower bound > 0 | interval upper bound < +0.15 | INCONCLUSIVE |
-| **H2** (non-inferiority, with a floor) | Supported-claim share, all families | MorletDB arm ≥ **0.90**, and interval lower bound of Δ > **−0.05** | MorletDB arm < 0.90, or interval upper bound of Δ < −0.05 | INCONCLUSIVE |
+| **H2** (non-inferiority, with a floor) | Grounded-answer score, all families, on the same runs in both arms ([section 11](#11-metrics)) | MorletDB arm ≥ **0.90**, and interval lower bound of Δ > **−0.05** | MorletDB arm < 0.90, or interval upper bound of Δ < −0.05 | INCONCLUSIVE |
 | **H3** (non-inferiority, with a floor) | Appropriate-response share, families C–F | MorletDB arm ≥ **0.80**, and interval lower bound of Δ > **−0.10** | MorletDB arm < 0.80, or interval upper bound of Δ < −0.10 | INCONCLUSIVE |
 
 **The claim "MorletDB improved retrieval without degrading grounding or restraint" needs all three to PASS.** Each
@@ -326,10 +326,27 @@ and arm-specific wording are not part of it.
 | `hypothesis` (`unconfirmed`) | a cited `envelope_peak` at that component's frequency, or a cited prior case with that documented component |
 | `hypothesis` (`confirmed`) | a documented component for the **cited prior case** only. The query unit's cause is never known at incident time, so calling it confirmed is unsupported |
 
-- **Supported-claim share (H2):** supported typed claims over all typed claims, per run. A run with no valid final
-  answer scores 0. In families A and B, a valid answer with no typed claims also scores 0, so saying nothing cannot
-  pass H2. In families C–F, making no claim can be correct: such a run has no share, is left out of H2, and is counted
-  and reported per arm.
+- **Grounded-answer score (H2).** Every scheduled run of every incident has a score in both arms, so the paired Δ
+  always compares the same incident mix:
+
+  | Run outcome | Score |
+  |---|---|
+  | No valid final answer | 0 |
+  | One or more typed claims, any family | supported typed claims / all typed claims |
+  | No typed claims, family A or B | 0, so saying nothing cannot pass H2 |
+  | No typed claims, family C–F, response appropriate under H3 | 1, a correct abstention makes no unsupported claim |
+  | No typed claims, family C–F, response not appropriate under H3 | 0 |
+
+- **Reported beside H2 for each arm and family, deciding nothing:**
+  - **claim coverage:** the share of runs with at least one typed claim;
+  - **conditional support:** the supported share over incidents where **both** arms have a claim-bearing run, averaged
+    within incident and unit as in [section 12](#12-analysis-and-decision-rules), with the number of incidents and units;
+  - **strict sensitivity:** the H2 score and its paired interval with every no-claim run scored 0;
+  - **abstention sensitivity:** the H2 score and its paired interval with no-claim C–F runs left out of **both** arms'
+    incident averages whenever either arm abstained on that incident repeat.
+
+  If the H2 verdict differs under a sensitivity analysis, the result says so, and no statement about citation quality
+  may rest on the primary score alone.
 - **Unsupported diagnostic claims:** count per run, reported separately from the share, including diagnostic statements
   found in prose ([section 13](#13-adjudication)).
 
@@ -420,7 +437,9 @@ and every mechanical failure a reviewer disputes.
 2. The UNSW admission gate is applied from documentation only.
 3. The XJTU-SY component table is re-checked against its source.
 4. The owner confirms that neither held-out dataset was used outside git.
-5. The harness, validator, scorer, oracle and baselines pass their tests on **synthetic fixtures**.
+5. The harness, validator, scorer, oracle and baselines pass their tests on **synthetic fixtures**. The scorer's tests
+   include pairs of runs where only one arm's claim or abstention pattern changes, and check the H2 score, coverage,
+   conditional support and both sensitivities.
 6. A development rehearsal on XJTU-SY sets prompts, window size, budgets and compute limits. Development results are
    committed and labelled as development.
 7. The leak control of [section 8](#8-information-available-at-incident-time) passes.
@@ -511,4 +530,9 @@ data comes only after the freeze.
 
 ## Deviations and amendments
 
-(none; the protocol is not frozen)
+The protocol is not frozen. Changes recorded before the freeze, made without any measurement:
+
+- **2026-11-22, H2 population.** H2 previously left no-claim C–F runs out per arm, so the paired averages could cover
+  different incidents and an arm could gain by omitting its harder cases. H2 now scores every run on one common
+  population, with coverage, conditional support and abstention sensitivities reported beside it. The thresholds are
+  unchanged.
