@@ -12,7 +12,7 @@ from ._client import Client
 from ._local import LocalStore, open
 from ._errors import (ConflictError, DatabaseError, InvalidInputError, InvestigationLimitError, MorletError, NotFoundError,
                       UnsupportedError)
-from ._types import (CoverageRange, IncidentCandidate, IncidentResolution, InvestigationContext, InvestigationResult,
+from ._types import (MatchContribution, MatchExplanation, CoverageRange, IncidentCandidate, IncidentResolution, InvestigationContext, InvestigationResult,
                      Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
                      OverviewBucket, Recording, SearchResult, TimeRange, TransferCheck)
 
@@ -23,4 +23,4 @@ __all__ = ["Client", "LocalStore", "open", "Recording", "Interval", "IntervalRef
            "MorletError", "InvalidInputError", "NotFoundError", "ConflictError", "UnsupportedError",
            "DatabaseError", "InvestigationLimitError", "InvestigationResult", "InvestigationContext", "CoverageRange",
            "IncidentCandidate", "IncidentResolution", "EvidenceBundle", "EvidenceCheck", "load_evidence",
-           "verify_evidence"]
+           "verify_evidence", "MatchContribution", "MatchExplanation"]

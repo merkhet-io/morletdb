@@ -1,0 +1,27 @@
+# Scrapes the steward's Prometheus endpoint. The debug exporter prints what would be sent; replace it with your backend.
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: morletdb
+          scrape_interval: 30s
+          scrape_timeout: 20s
+          static_configs:
+            - targets: ["steward-metrics:9188"]
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 96
+    spike_limit_mib: 24
+  batch: {}
+exporters:
+  debug:
+    verbosity: basic
+  # otlphttp:
+  #   endpoint: https://collector.example.internal:4318
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [memory_limiter, batch]
+      exporters: [debug]      # for example [otlphttp]

@@ -101,6 +101,7 @@ case "$MODE" in
     "$TESTS/upgrade_from_release.sh" v0.3.14-alpha.1 0.3.11
     "$TESTS/upgrade_from_release.sh" v0.4.0-beta.1 0.3.12
     "$TESTS/upgrade_from_release.sh" v0.4.0-beta.2 0.3.13
-    "$TESTS/upgrade_from_release.sh" v0.4.0-beta.3 0.3.14 ;;
+    "$TESTS/upgrade_from_release.sh" v0.4.0-beta.3 0.3.14
+    "$TESTS/upgrade_from_release.sh" v0.4.0-beta.4 0.3.15 ;;
 esac
 echo "== pg$MAJOR $MODE: PASS"

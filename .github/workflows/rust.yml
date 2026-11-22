@@ -312,6 +312,7 @@ jobs:
           git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.1:refs/tags/v0.4.0-beta.1
           git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.2:refs/tags/v0.4.0-beta.2
           git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.3:refs/tags/v0.4.0-beta.3
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.4:refs/tags/v0.4.0-beta.4
       - name: PostgreSQL 17.12
         id: pg
         uses: ./.github/actions/pgrx-postgres
@@ -350,11 +351,11 @@ jobs:
         with:
           path: ${{ runner.temp }}/upgrade-releases
           key: upgrade-releases-${{ runner.os }}-${{ runner.arch }}-pg17.12-pgrx-${{ steps.pg.outputs.pgrx }}-${{ hashFiles('extensions/pg_morlet/tests/ci_local.sh') }}
-      - name: The 0.3.14 -> 0.3.15 update script is generated from the current sources
-        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.14--0.3.15.sql') != ''
+      - name: The 0.3.15 -> 0.3.16 update script is generated from the current sources
+        if: hashFiles('extensions/pg_morlet/sql/pg_morlet--0.3.15--0.3.16.sql') != ''
         working-directory: extensions/pg_morlet
         run: |
-          if grep -q "^default_version = '0.3.15'" pg_morlet.control; then
+          if grep -q "^default_version = '0.3.16'" pg_morlet.control; then
             cargo pgrx schema pg17 --pg-config "$PG_CONFIG" -o "$RUNNER_TEMP/new.sql"
             python3 tests/gen_upgrade.py "$RUNNER_TEMP/new.sql" --check
           fi
@@ -455,7 +456,7 @@ jobs:
           MORLET_SDK_REQUIRE_SQLITE: '1'
         run: |
           python -c 'import morletdb, sys; assert "site-packages" in morletdb.__file__, morletdb.__file__'
-          python -m unittest -v test_offline test_native test_integration test_investigation test_evidence test_incident test_local test_transfer 2>&1 | tee unittest.log
+          python -m unittest -v test_offline test_native test_integration test_investigation test_evidence test_incident test_explain_match test_local test_transfer 2>&1 | tee unittest.log
           test "${PIPESTATUS[0]}" -eq 0
           python ../../../reference/python/test_reference.py 2>&1 | tee reference.log
           test "${PIPESTATUS[0]}" -eq 0

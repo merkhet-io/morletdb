@@ -13,7 +13,7 @@ from psycopg.types.json import Jsonb
 
 from . import _native, _pgnumpy
 from ._errors import InvalidInputError, NotFoundError, UnsupportedError, translate
-from ._types import (Evidence, EvidencePart, IncidentResolution, Interval, IntervalRef, IntervalStats, InvestigationResult, Latest, Match, NotifiedRange, Notification,
+from ._types import (MatchContribution, MatchExplanation, Evidence, EvidencePart, IncidentResolution, Interval, IntervalRef, IntervalStats, InvestigationResult, Latest, Match, NotifiedRange, Notification,
                      OverviewBucket, Recording, SearchResult, TimeRange)
 
 CHUNK = 4096                 # samples per stored chunk (the importer's default)
@@ -421,6 +421,51 @@ class Client:
         row = self._execute("SELECT sample_count, min, max, mean, rms FROM morlet_interval_stats(%s::regclass,%s,%s,%s)",
                             (collection, recording_id, int(start_sample), int(end_sample))).fetchone()
         return IntervalStats(int(row[0]), *map(float, row[1:]))
+
+    def explain_match(self, query: IntervalRef, match: IntervalRef, *, max_lag_fraction: float,
+                      contribution_bins: int = 32, include_envelopes: bool = False) -> MatchExplanation:
+        """Why the stored window `match` scored as it did against `query` (SQL 0.3.16, experimental): winning lag,
+        correlations, and contributions that add up to the correlation. `max_lag_fraction` must be the search's
+        (`SearchResult.max_lag_fraction`): another value explains another score. It explains the similarity score, not
+        a fault's cause, and does not change ranking or stored data."""
+        length = query.end_sample - query.start_sample
+        if length != match.end_sample - match.start_sample:
+            raise InvalidInputError("query and match must have the same length")
+        if length < 512 or length > 32768 or length & (length - 1):
+            raise InvalidInputError("the query must be a stored window size: a power of two in 512..32768 samples")
+        if isinstance(max_lag_fraction, bool) or not isinstance(max_lag_fraction, (int, float)) \
+                or not 0 <= max_lag_fraction <= 0.5:
+            raise InvalidInputError("max_lag_fraction must be in [0, 0.5]")
+        if isinstance(contribution_bins, bool) or not isinstance(contribution_bins, int) \
+                or not 1 <= contribution_bins <= 1024:
+            raise InvalidInputError("contribution_bins must be an integer in 1..1024")
+        if not isinstance(include_envelopes, bool):
+            raise InvalidInputError("include_envelopes must be true or false")
+        if not self._has("public.morlet_explain_match(regclass,text,bigint,bigint,text,bigint,double precision,integer,boolean)"):
+            raise UnsupportedError("explain_match needs pg_morlet SQL 0.3.16 or later")
+        if not self._one("SELECT %s::regclass=%s::regclass", (query.collection, match.collection)):
+            raise InvalidInputError("query and match must be in one collection")
+        try:
+            r = self.connection.execute(
+                "SELECT * FROM morlet_explain_match(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (query.collection, query.recording_id, query.start_sample, query.end_sample, match.recording_id,
+                 match.start_sample, float(max_lag_fraction), contribution_bins, include_envelopes)).fetchone()
+        except (psycopg.errors.InsufficientPrivilege, psycopg.errors.QueryCanceled):
+            raise
+        except psycopg.Error as exc:      # by SQLSTATE: the message holds the caller's recording id
+            text = exc.diag.message_primary or str(exc)
+            if exc.sqlstate == "P0002" or "were compacted to level" in text:
+                raise NotFoundError(text) from exc
+            if exc.sqlstate == "22023":
+                raise InvalidInputError(text) from exc
+            raise translate(exc) from exc
+        stats = lambda v: None if v is None else IntervalStats(length, *v)
+        array = lambda v: None if v is None else np.asarray(v, dtype=np.float64)
+        lag = int(r[4])
+        bins = tuple(MatchContribution(int(a), int(b), int(a) + lag, int(b) + lag, float(c))
+                     for a, b, c in zip(r[11], r[12], r[13]))
+        return MatchExplanation(query, match, r[0], int(r[2]), r[3], lag, int(r[5]), int(r[6]), r[7], r[8], int(r[9]),
+                                int(r[10]), bins, r[14], stats(r[17]), stats(r[18]), r[19], array(r[15]), array(r[16]))
 
     def overview(self, collection: str, recording_id: str, start_sample: int, end_sample: int,
                  buckets: int = 100) -> list[OverviewBucket]:

@@ -259,6 +259,14 @@ interval `[start, end)` as the query.
   come from an approximate index (small galleries are still searched exhaustively), while the distances are
   computed exactly. See the [search contract](search-contract.md).
 
+### Explain one match
+
+**Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.16.** `Client.explain_match(result.query, hit.ref,
+max_lag_fraction=result.max_lag_fraction)` explains one selected match with the scorer's own arithmetic: exact
+distance, winning lag, correlations, contributions and the raw statistics of both intervals
+([contract](search-contract.md#explaining-one-match-sql-0316-experimental-573)). It explains the similarity score, not a
+fault's cause.
+
 ## Connections and transactions
 
 - `Client.connect(conninfo)` opens and **owns** a connection; as a context manager it commits on a clean exit,
