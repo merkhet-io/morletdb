@@ -252,10 +252,14 @@ before SQL 0.3.6 report the searched windows and say that they cannot list what 
 
 ## Bounding agent load
 
-On a small box, ingest comes first. `MORLET_MCP_MAX_CONCURRENT` caps the tool calls running at once across all MCP
-server processes on one database (default 0, no cap; 2 is a reasonable start on a small edge box). A call waits up to
-`MORLET_MCP_QUEUE_MS` (default 2000) for a slot and is then refused with the code `busy`. A refusal means the question
-was not answered: it is never an empty or negative result, and an agent should retry later.
+`MORLET_MCP_MAX_CONCURRENT` is an optional guard that caps the tool calls running at once across all MCP server
+processes on one database (default 0, no cap). A call waits up to `MORLET_MCP_QUEUE_MS` (default 2000) for a slot and is
+then refused with the code `busy`. A refusal means the question was not answered: it is never an empty or negative
+result, and an agent should retry later.
+
+The cap bounds concurrency. It has not been shown to protect ingest latency, and we do not recommend a particular value.
+Under load, a low cap can refuse many calls, so if you set one, watch both ingest lag and the `busy` rate on your own
+workload.
 
 Slots are PostgreSQL session advisory locks, released when a client disconnects or crashes. A running call uses one
 extra connection to hold its slot; a waiting call holds none between attempts. If you set a `CONNECTION LIMIT` on the MCP
