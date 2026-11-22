@@ -250,6 +250,21 @@ The server instructions tell agents to state the scope with every negative resul
 event in the searched 2024-03 to 2026-11; 2021 to 2023 is summarized only and was not searched". Servers
 before SQL 0.3.6 report the searched windows and say that they cannot list what was not searched.
 
+## Bounding agent load
+
+On a small box, ingest comes first. `MORLET_MCP_MAX_CONCURRENT` caps the tool calls running at once across all MCP
+server processes on one database (default 0, no cap; 2 is a reasonable start on a small edge box). A call waits up to
+`MORLET_MCP_QUEUE_MS` (default 2000) for a slot and is then refused with the code `busy`. A refusal means the question
+was not answered: it is never an empty or negative result, and an agent should retry later.
+
+Slots are PostgreSQL session advisory locks, released when a client disconnects or crashes. A running call uses one
+extra connection to hold its slot; a waiting call holds none between attempts. If you set a `CONNECTION LIMIT` on the MCP
+role, make it at least twice the cap plus a few for waiters' attempts, or admitted calls can fail to connect.
+
+The cap limits accidental load. A role that can connect can take these locks directly, so it is no defense against a
+hostile client. If a slot's session is terminated while its call runs, that call continues outside the cap. A client that
+gives up while queued can still run its call if a slot frees within the queue time.
+
 ## Check an installation
 
 ```sh
