@@ -54,6 +54,25 @@ samples and the default `max_lag_fraction` 0.075, that is ±30 steps, about ±30
 The recall of each choice by offset, event duration and signal domain has not been measured yet (#156). Until
 then, treat a missing match at the default stride as "not found on the stored grid", not as "does not exist".
 
+## Explaining one match (SQL 0.3.16, experimental, #573)
+
+`morlet_explain_match(collection, query_recording_id, query_start, query_end, match_recording_id, match_start,
+max_lag_fraction, contribution_bins, include_envelopes)` explains one stored window with the scorer's arithmetic.
+Use the search's `max_lag_fraction` (`Client.explain_match` requires it): another value explains another score. Its `distance` is bitwise the value of `morlet_envelope_distance`.
+
+- **Lag.** `lag_steps > 0` pairs `q[t + lag]` with `g[t]`: a feature of the query lies that many envelope steps earlier
+  in the stored window. One step is 10 raw samples, so `lag_samples` is no more precise than that. Among equal scores
+  the smallest `|lag|` wins, then the positive lag.
+- **Contributions.** Up to `contribution_bins` (1..1024) contiguous groups of the overlap, in stored-envelope
+  positions (the paired query position is `position + lag`). Each is its products added in ascending position, divided
+  by the full envelope length, as in the scorer. `contribution_residual` is the rounding left by grouping.
+- **What it does not say.** Contributions explain the similarity score, not a fault's cause. Envelopes are normalized,
+  so a close match can differ in amplitude: compare `query_stats` and `match_stats` (`[min, max, mean, rms]`, NULL on an
+  older collection without encoded chunks).
+- **Missing evidence.** No stored envelope at that position is an error. If the match's raw chunks were removed or are
+  hidden from this role, the score is still explained, with `match_stats` NULL and `match_raw_status` `unavailable`.
+- **Access.** The function runs with the caller's privileges and row security, like search.
+
 ## Eligibility
 
 A stored window is a candidate when its recording has the query's sample rate, channel and

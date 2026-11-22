@@ -17,6 +17,8 @@ use crate::{validate, SignalError};
 pub const ENVELOPE_VERSION: &str = "xc-envelope-f16-v1";
 const SMOOTH: usize = 50;
 const DECIMATE: usize = 10;
+/// Raw samples per envelope position.
+pub const ENVELOPE_STEP: usize = DECIMATE;
 const HEADER: [u8; 1] = [1];
 
 pub fn valid_window(n: usize) -> bool {
@@ -164,6 +166,109 @@ pub fn distance(q: &[f64], g: &[f64], max_lag: usize) -> Result<f64, SignalError
     // Positive lags pair q[t + lag] with g[t]; negative lags pair g[t + lag] with q[t].
     let best = max_lagged_sum(q, g, 0, max_lag).max(max_lagged_sum(g, q, 1, max_lag));
     Ok(1.0 - best / n as f64)
+}
+
+/// Consecutive aligned positions of a match and their share of the correlation.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ContributionBin {
+    /// First stored-envelope position (inclusive). The paired query position is `start + lag`.
+    pub start: usize,
+    /// End stored-envelope position (exclusive).
+    pub end: usize,
+    /// The products of this bin, added in ascending position, divided by the full envelope length.
+    pub contribution: f64,
+}
+
+/// Why [`distance`] gave its value: a diagnostic of the similarity score, not of a fault's cause.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MatchExplanation {
+    /// Bitwise the value of [`distance`].
+    pub distance: f64,
+    /// The winning lag in envelope steps. Positive: `q[t + lag]` is paired with `g[t]`, so a feature of the query
+    /// lies `lag` steps earlier in the stored window. Among equal scores, the smallest `|lag|`, then the positive one.
+    pub lag: isize,
+    pub zero_lag_correlation: f64,
+    /// `1 - distance` up to rounding; the winning lag's sum divided by the full envelope length.
+    pub best_correlation: f64,
+    /// Paired positions at the winning lag, `n - |lag|`. The denominator stays `n`.
+    pub overlap: usize,
+    pub bins: Vec<ContributionBin>,
+    /// `best_correlation` minus the bins added in order: only floating-point rounding of the grouping.
+    pub residual: f64,
+}
+
+/// The sum of the scorer at one lag, in its order: ascending `t`, from the same neutral element.
+fn lag_sum(q: &[f64], g: &[f64], lag: isize) -> f64 {
+    let l = lag.unsigned_abs();
+    if lag >= 0 {
+        q[l..].iter().zip(g).map(|(a, b)| a * b).sum()
+    } else {
+        g[l..].iter().zip(q).map(|(a, b)| a * b).sum()
+    }
+}
+
+/// Explains [`distance`] for one pair, at `O(n * max_lag)`, with at most `max_bins` contiguous contribution bins of
+/// near-equal size over the overlap. Search ranking never calls this.
+pub fn explain(
+    q: &[f64],
+    g: &[f64],
+    max_lag: usize,
+    max_bins: usize,
+) -> Result<MatchExplanation, SignalError> {
+    let distance = distance(q, g, max_lag)?;
+    if max_bins == 0 {
+        return Err(SignalError::InvalidLength);
+    }
+    if q.iter().chain(g).any(|v| !v.is_finite()) {
+        return Err(SignalError::InvalidEnvelope);
+    }
+    let n = q.len();
+    // finite inputs can still overflow a product; such a pair has no meaningful explanation
+    let (mut lag, mut best) = (0isize, lag_sum(q, g, 0));
+    if !best.is_finite() {
+        return Err(SignalError::NumericalFailure);
+    }
+    let zero_lag_correlation = best / n as f64;
+    for l in 1..=max_lag as isize {
+        for candidate in [l, -l] {
+            let s = lag_sum(q, g, candidate);
+            if !s.is_finite() {
+                return Err(SignalError::NumericalFailure);
+            }
+            if s > best {
+                (lag, best) = (candidate, s);
+            }
+        }
+    }
+    let overlap = n - lag.unsigned_abs();
+    let first = if lag < 0 { lag.unsigned_abs() } else { 0 };
+    let count = max_bins.min(overlap);
+    let mut bins = Vec::with_capacity(count);
+    let mut grouped = 0.0;
+    for i in 0..count {
+        let (a, b) = (i * overlap / count, (i + 1) * overlap / count);
+        let (start, end) = (first + a, first + b);
+        let sum: f64 = (start..end)
+            .map(|s| q[(s as isize + lag) as usize] * g[s])
+            .sum();
+        let contribution = sum / n as f64;
+        grouped += contribution;
+        bins.push(ContributionBin {
+            start,
+            end,
+            contribution,
+        });
+    }
+    let best_correlation = best / n as f64;
+    Ok(MatchExplanation {
+        distance,
+        lag,
+        zero_lag_correlation,
+        best_correlation,
+        overlap,
+        bins,
+        residual: best_correlation - grouped,
+    })
 }
 
 /// A query prepared for scoring many stored envelopes: the zero-padded shifted copies of
@@ -424,6 +529,86 @@ pub fn f16_to_f64(h: u16) -> f64 {
 
 #[cfg(test)]
 mod tests {
+    fn wave(n: usize, phase: f64) -> Vec<f64> {
+        (0..n)
+            .map(|i| ((i as f64 + phase) / 7.0).sin() + 0.3 * ((i as f64 + phase) / 2.3).cos())
+            .collect()
+    }
+
+    #[test]
+    fn explain_is_the_scorer_bit_for_bit() {
+        for (shift, max_lag) in [(0.0, 5), (3.0, 5), (-3.0, 5), (5.0, 5), (-5.0, 5), (2.5, 8)] {
+            let (q, g) = (wave(410, shift), wave(410, 0.0));
+            let e = explain(&q, &g, max_lag, 16).unwrap();
+            assert_eq!(
+                e.distance.to_bits(),
+                distance(&q, &g, max_lag).unwrap().to_bits()
+            );
+            assert_eq!(
+                (1.0 - e.best_correlation).to_bits(),
+                e.distance.to_bits(),
+                "the winning lag is the scorer's maximum"
+            );
+            assert!(e.residual.abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    fn explain_lag_sign_and_boundaries_from_a_known_pair() {
+        // an impulse at 20 in the query and at 17 in the stored window: q[t + 3] pairs with g[t]
+        let (mut q, mut g) = (vec![0.0; 51], vec![0.0; 51]);
+        q[20] = 1.0;
+        g[17] = 1.0;
+        let e = explain(&q, &g, 3, 4).unwrap();
+        assert_eq!((e.lag, e.overlap, e.best_correlation), (3, 48, 1.0 / 51.0));
+        assert_eq!(e.zero_lag_correlation, 0.0);
+        let e = explain(&g, &q, 3, 4).unwrap();
+        assert_eq!((e.lag, e.overlap), (-3, 48));
+        assert_eq!((e.bins[0].start, e.bins.last().unwrap().end), (3, 51));
+        assert_eq!(
+            e.bins.iter().map(|b| b.contribution).sum::<f64>(),
+            1.0 / 51.0
+        );
+        // outside the allowed lag the pair does not align
+        assert_eq!(explain(&q, &g, 2, 4).unwrap().best_correlation, 0.0);
+    }
+
+    #[test]
+    fn explain_ties_and_constant_envelopes_are_deterministic() {
+        let e = explain(&[0.0; 40], &[0.0; 40], 4, 8).unwrap();
+        assert_eq!((e.lag, e.distance, e.overlap), (0, 1.0, 40));
+        // equal peaks at both signs: the smaller |lag| wins, then the positive one
+        let (mut q, mut g) = (vec![0.0; 21], vec![0.0; 21]);
+        q[10] = 1.0;
+        g[8] = 1.0;
+        g[12] = 1.0;
+        assert_eq!(explain(&q, &g, 3, 2).unwrap().lag, 2);
+    }
+
+    #[test]
+    fn explain_reconstructs_from_stored_float16() {
+        let samples = wave(4096, 0.0);
+        let q = envelope(&samples).unwrap();
+        let g = decode(&encode(&wave(4096, 20.0)).unwrap()).unwrap();
+        let e = explain(&q, &g, 30, 32).unwrap();
+        assert_eq!(
+            e.distance.to_bits(),
+            distance(&q, &g, 30).unwrap().to_bits()
+        );
+        assert_eq!(e.bins.len(), 32);
+        assert_eq!(e.bins.last().unwrap().end - e.bins[0].start, e.overlap);
+    }
+
+    #[test]
+    fn explain_rejects_invalid_input() {
+        assert!(explain(&[1.0; 8], &[1.0; 8], 2, 0).is_err());
+        assert!(explain(&[1.0; 8], &[1.0; 7], 2, 1).is_err());
+        assert!(explain(&[f64::NAN; 8], &[1.0; 8], 2, 1).is_err());
+        // finite values whose products overflow to +inf and -inf: refused, not explained with NaN correlations
+        let q = [1e308, -1e308, 1e308, -1e308];
+        assert!(explain(&q, &[1e308, 1e308, 1e308, 1e308], 1, 1).is_err());
+    }
+
     use super::*;
 
     #[test]

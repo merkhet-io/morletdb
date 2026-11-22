@@ -228,6 +228,46 @@ class CoverageRange:
 
 
 @dataclass(frozen=True)
+class MatchContribution:
+    """Consecutive aligned envelope positions and their share of the winning correlation."""
+    stored_start: int      # envelope positions, half-open; times `step_samples` for raw samples
+    stored_end: int
+    query_start: int
+    query_end: int
+    contribution: float
+
+
+@dataclass(frozen=True)
+class MatchExplanation:
+    """Why a stored window scored as it did, by the scorer's own arithmetic (SQL 0.3.16, experimental).
+
+    `lag_steps` > 0 means a feature of the query lies that many envelope steps earlier in the stored window. Timing is
+    no finer than one step (`step_samples`). Contributions explain the similarity score, not a fault's cause; envelopes
+    are normalized, so compare amplitude with `query_stats` and `match_stats`, which are None for a match whose raw
+    samples were removed or are hidden from this role (`match_raw_status` "unavailable").
+    """
+    query: IntervalRef
+    match: IntervalRef
+    representation: str
+    step_samples: int
+    distance: float
+    lag_steps: int
+    lag_samples: int
+    max_lag_steps: int
+    zero_lag_correlation: float
+    best_correlation: float
+    overlap_steps: int
+    envelope_steps: int
+    contributions: tuple[MatchContribution, ...]
+    contribution_residual: float
+    query_stats: IntervalStats | None      # None on an older collection without encoded chunks
+    match_stats: IntervalStats | None
+    match_raw_status: str
+    query_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
+    stored_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
+
+
+@dataclass(frozen=True)
 class IncidentCandidate:
     """One sample interval of one recording that may hold an incident's time window (never concatenated).
 
