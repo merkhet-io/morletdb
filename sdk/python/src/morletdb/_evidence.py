@@ -10,8 +10,10 @@ from dataclasses import dataclass
 import hashlib
 from html import escape
 import json
+import math
 import os
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import time
@@ -57,6 +59,131 @@ def _describe(role, rank, ref, rec, raw, digest, bundled, axis):
                               "metadata": rec.metadata, "time_axis_version": axis},
             "raw_status": "available" if raw else "unavailable", "sample_sha256": digest,
             "file": f"samples/{name}.f64le" if bundled and raw else None}
+
+
+_SHA256 = re.compile(r"[0-9a-f]{64}")
+_BUNDLES = ("reference-only", "exact-samples", "partial-samples")
+
+
+def _is_int(value, low=0, high=2**63 - 1) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and low <= value <= high
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _is_cell(value) -> bool:
+    return value is None or isinstance(value, str) or isinstance(value, bool) or _is_number(value)
+
+
+def _is_strings(value) -> bool:
+    return isinstance(value, list) and all(isinstance(x, str) for x in value)
+
+
+def _need(condition, what):
+    if not condition:
+        raise InvalidInputError(f"invalid evidence manifest: {what}")
+
+
+def _check_interval(item):
+    _need(isinstance(item, dict), "an interval is not an object")
+    name, rank = item.get("id"), item.get("rank")
+    _need(_is_int(rank), "interval rank")
+    _need((name, item.get("role"), rank == 0) == ("query", "query", True)
+          or (rank > 0 and name == f"match-{rank}" and item.get("role") == "match"), "interval id, role and rank")
+    _need(isinstance(item.get("collection"), str) and isinstance(item.get("recording_id"), str), f"{name}: reference")
+    _need(_is_int(item.get("start_sample")) and _is_int(item.get("end_sample"))
+          and item["start_sample"] < item["end_sample"], f"{name}: sample bounds")
+    spec = item.get("specification")
+    _need(isinstance(spec, dict) and _is_number(spec.get("sample_rate_hz")) and "metadata" in spec
+          and all(spec.get(k) is None or isinstance(spec[k], str) for k in ("channel", "unit", "time_axis_version")),
+          f"{name}: specification")
+    digest, file = item.get("sample_sha256"), item.get("file")
+    _need(item.get("raw_status") in ("available", "unavailable"), f"{name}: raw status")
+    _need((digest is None) == (item["raw_status"] == "unavailable"), f"{name}: digest and raw status disagree")
+    _need(digest is None or (isinstance(digest, str) and _SHA256.fullmatch(digest)), f"{name}: sample digest")
+    _need(file is None or (digest is not None and file == f"samples/{name}.f64le"), f"{name}: sample file")
+
+
+def validate_manifest(manifest) -> None:
+    """Hold a manifest, which may come from anyone, to the schema `export_evidence` writes. Raises InvalidInputError."""
+    _need(isinstance(manifest, dict) and manifest.get("format") == FORMAT and manifest.get("version") == VERSION,
+          f"not a {FORMAT} version {VERSION} manifest")
+    try:
+        canonical(manifest)
+    except (ValueError, TypeError, RecursionError):
+        raise InvalidInputError("invalid evidence manifest: not canonical JSON") from None
+    _need(manifest.get("bundle") in _BUNDLES, "bundle kind")
+    _need(_is_strings(manifest.get("limitations")), "limitations")
+    _need(manifest.get("manifest_sha256") is None or isinstance(manifest["manifest_sha256"], str), "manifest digest")
+    intervals = manifest.get("intervals")
+    _need(isinstance(intervals, list) and intervals, "intervals")
+    for item in intervals:
+        _check_interval(item)
+    by_id = {i["id"]: i for i in intervals}
+    _need(len(by_id) == len(intervals) and "query" in by_id, "interval ids")
+    files = [bool(i["file"]) for i in intervals]
+    _need(not any(files) if manifest["bundle"] == "reference-only" else
+          all(files) if manifest["bundle"] == "exact-samples" else not all(files), "bundle kind and sample files disagree")
+    missing = manifest.get("intervals_without_samples")
+    _need(missing is None or missing == [i["id"] for i in intervals if i["raw_status"] != "available"],
+          "intervals without samples")
+    inv = manifest.get("investigation")
+    _need(isinstance(inv, dict), "investigation")
+    _need(_is_strings(inv.get("evidence_states")) and _is_strings(inv.get("notes")), "evidence states and notes")
+    stats = inv.get("query_stats")
+    _need(isinstance(stats, dict) and all(_is_cell(stats.get(k)) for k in ("sample_count", "min", "max", "mean", "rms")),
+          "query statistics")
+    search = inv.get("search")
+    _need(isinstance(search, dict) and isinstance(search.get("mode"), str) and isinstance(search.get("matches"), list),
+          "search")
+    _need(len(search["matches"]) == len(intervals) - 1, "matches and intervals disagree")
+    for match in search["matches"]:
+        ref = match.get("ref") if isinstance(match, dict) else None
+        _need(isinstance(ref, dict) and _is_int(match.get("rank")) and _is_cell(match.get("distance")), "match")
+        item = by_id.get(f"match-{match['rank']}")
+        _need(item is not None and all(ref.get(k) == item[k] for k in ("recording_id", "start_sample", "end_sample")),
+              "match and interval disagree")
+    _need(isinstance(inv.get("coverage_status"), str), "coverage status")
+    coverage = inv.get("coverage_summary")
+    states = coverage.get("samples_by_state") if isinstance(coverage, dict) else None
+    _need(isinstance(states, dict) and all(_is_cell(v) for v in states.values()), "coverage")
+    _need(isinstance(inv.get("provenance"), dict), "provenance")
+    context = inv.get("context")
+    if context:
+        rows = context.get("comparisons") if isinstance(context, dict) else None
+        _need(isinstance(rows, list) and "context" in context, "context")
+        for row in rows:
+            _need(isinstance(row, dict) and all(_is_cell(row.get(k)) for k in (
+                "value_name", "value", "hist_n", "hist_median", "relative_deviation", "status")), "context comparison")
+
+
+def _sample_problem(item, data) -> str | None:
+    if not isinstance(data, (bytes, bytearray)):
+        return f"{item['id']}: sample file is missing"
+    if len(data) != (item["end_sample"] - item["start_sample"]) * 8:
+        return f"{item['id']}: sample file has the wrong size"
+    if hashlib.sha256(data).hexdigest() != item["sample_sha256"]:
+        return f"{item['id']}: samples differ from their digest"
+    return None
+
+
+def _bundle_problems(bundle) -> list[str]:
+    """Every declared interval against the bytes this object holds, and nothing held that is not declared."""
+    declared = {i["id"] for i in bundle.manifest["intervals"] if i["file"]}
+    problems = [p for i in bundle.manifest["intervals"] if i["file"]
+                if (p := _sample_problem(i, bundle.samples.get(i["id"])))]
+    return problems + [f"{name}: samples are not declared in the manifest" for name in sorted(set(bundle.samples) - declared)]
+
+
+def _read_manifest(root):
+    def refuse(token):
+        raise ValueError(f"{token} is not valid evidence JSON")
+    try:
+        return json.loads((root / MANIFEST).read_text(encoding="utf-8"), parse_constant=refuse)
+    except RecursionError:
+        raise ValueError("manifest is nested too deeply") from None
 
 
 @dataclass(frozen=True)
@@ -147,17 +274,22 @@ def export_evidence(client, collection, recording_id, start_sample, end_sample, 
 
 
 def load_evidence(path) -> EvidenceBundle:
-    """Read a bundle directory. Sample files are found from the interval ids, never from a path in the manifest."""
+    """Read a bundle directory and hold it to the manifest schema. Sample files are found from the interval ids, never
+    from a path in the manifest. Their digests are checked by `verify_evidence` and `resolve_evidence`."""
     root = Path(path)
-    manifest = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
-    if not isinstance(manifest, dict) or manifest.get("format") != FORMAT or manifest.get("version") != VERSION:
-        raise InvalidInputError(f"{root} is not a {FORMAT} version {VERSION} bundle")
+    try:
+        manifest = _read_manifest(root)
+    except ValueError as exc:
+        raise InvalidInputError(f"{root}: manifest unreadable: {exc}") from None
+    validate_manifest(manifest)
     samples = {}
     for item in manifest["intervals"]:
-        if item.get("file"):
+        if item["file"]:
             file = _sample_file(root, item)
             if file.is_symlink() or not file.is_file():
                 raise InvalidInputError(f"{item['id']}: sample file is missing or not a regular file")
+            if file.stat().st_size != (item["end_sample"] - item["start_sample"]) * 8:      # before reading it
+                raise InvalidInputError(f"{item['id']}: sample file has the wrong size")
             samples[item["id"]] = file.read_bytes()
     return EvidenceBundle(manifest, samples)
 
@@ -175,37 +307,40 @@ def verify_evidence(path, *, expected_manifest_sha256: str | None = None) -> Evi
     root = Path(path)
     problems = []
     try:
-        manifest = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
+        manifest = _read_manifest(root)
         if not isinstance(manifest, dict) or manifest.get("format") != FORMAT or manifest.get("version") != VERSION:
             raise ValueError("unknown format or version")
         digest = manifest_digest(manifest)
-    except (OSError, ValueError, TypeError) as exc:
+    except (OSError, ValueError, TypeError, RecursionError) as exc:
         return EvidenceCheck(False, None, (f"manifest unreadable: {exc}",))
     if manifest.get("manifest_sha256") != digest:
         problems.append("manifest content does not match manifest_sha256")
     if expected_manifest_sha256 is not None and digest != expected_manifest_sha256:
         problems.append("manifest digest differs from the expected digest")
     try:
+        validate_manifest(manifest)
+    except InvalidInputError as exc:
+        return EvidenceCheck(False, digest, (*problems, str(exc)))
+    try:
         if (root / REPORT).read_bytes() != render(manifest).encode("utf-8"):
             problems.append("report.html differs from the report of this manifest")
     except OSError:
         problems.append("report.html is missing")
-    except (KeyError, TypeError, AttributeError, ValueError):
+    except (KeyError, TypeError, AttributeError, ValueError, InvalidInputError):
         problems.append("the report cannot be rendered from this manifest")
-    try:
-        for item in manifest["intervals"]:
-            if not item.get("file"):
-                continue
-            file = _sample_file(root, item)
-            expected = (item["end_sample"] - item["start_sample"]) * 8
-            if not file.is_file() or file.is_symlink():
+    for item in manifest["intervals"]:
+        if not item["file"]:
+            continue
+        file = _sample_file(root, item)
+        try:
+            if file.is_symlink() or not file.is_file():
                 problems.append(f"{item['id']}: sample file is missing")
-            elif file.stat().st_size != expected:
+            elif file.stat().st_size != (item["end_sample"] - item["start_sample"]) * 8:
                 problems.append(f"{item['id']}: sample file has the wrong size")
-            elif hashlib.sha256(file.read_bytes()).hexdigest() != item["sample_sha256"]:
-                problems.append(f"{item['id']}: samples differ from their digest")
-    except (KeyError, TypeError, AttributeError, ValueError, OSError, InvalidInputError) as exc:
-        problems.append(f"intervals unreadable: {exc}")
+            elif problem := _sample_problem(item, file.read_bytes()):
+                problems.append(problem)
+        except OSError as exc:
+            problems.append(f"{item['id']}: sample file unreadable: {exc}")
     return EvidenceCheck(not problems, digest, tuple(problems))
 
 
@@ -225,9 +360,12 @@ def resolve_evidence(client, bundle, *, timeout_ms, max_sample_bytes, expected_m
             raise InvalidInputError("bundle failed verification: " + "; ".join(check.problems))
         bundle = load_evidence(bundle)
     manifest = bundle.manifest
+    validate_manifest(manifest)
     digest = manifest_digest(manifest)
     if manifest.get("manifest_sha256") != digest or expected_manifest_sha256 not in (None, digest):
         raise InvalidInputError("bundle failed verification: its manifest does not match the digest")
+    if problems := _bundle_problems(bundle):      # the same check for a path, a loaded bundle or a changed object
+        raise InvalidInputError("bundle failed verification: " + "; ".join(problems))
     needed = sum((i["end_sample"] - i["start_sample"]) * 8 for i in manifest["intervals"] if i["sample_sha256"])
     if needed > max_sample_bytes:
         raise InvestigationLimitError(f"resolving needs {needed} sample bytes, above max_sample_bytes")
@@ -277,12 +415,13 @@ def _text(value):
 
 def render(manifest: dict[str, Any]) -> str:
     """The factual report of a manifest: deterministic, escaped, with no script, link or external asset."""
+    validate_manifest(manifest)
     inv = manifest["investigation"]
     intervals = manifest["intervals"]
     by_id = {i["id"]: i for i in intervals}
     query = by_id["query"]
     parts = [f"<h1>Evidence report</h1><p class=m>{escape(query['collection'])} · {escape(query['recording_id'])} · "
-             f"samples [{query['start_sample']}, {query['end_sample']})</p>",
+             f"samples [{escape(_text(query['start_sample']))}, {escape(_text(query['end_sample']))})</p>",
              "<h2>Read this first</h2><ul>" + "".join(f"<li>{escape(x)}</li>" for x in manifest["limitations"]) + "</ul>",
              "<h2>Evidence states</h2><ul>" + "".join(f"<li><code>{escape(s)}</code></li>" for s in inv["evidence_states"])
              + "</ul><ul>" + "".join(f"<li>{escape(n)}</li>" for n in inv["notes"]) + "</ul>",
@@ -291,7 +430,7 @@ def render(manifest: dict[str, Any]) -> str:
                  query["specification"]["unit"], inv["query_stats"]["sample_count"], inv["query_stats"]["min"],
                  inv["query_stats"]["max"], inv["query_stats"]["mean"], inv["query_stats"]["rms"])])]
     matches = inv["search"]["matches"]
-    parts.append(f"<h2>Similar stored windows ({escape(inv['search']['mode'])} search)</h2>")
+    parts.append(f"<h2>Similar stored windows ({escape(_text(inv['search']['mode']))} search)</h2>")
     parts.append(_table(("Rank", "Recording", "Interval", "Distance", "Raw samples"), [(
         m["rank"], m["ref"]["recording_id"], f"[{m['ref']['start_sample']}, {m['ref']['end_sample']})", m["distance"],
         by_id[f"match-{m['rank']}"]["raw_status"]) for m in matches]) if matches else "<p>No match was returned. "

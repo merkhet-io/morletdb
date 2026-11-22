@@ -96,12 +96,63 @@ class Offline(unittest.TestCase):
         self.rewrite(lambda m: m["intervals"][0].update(id="../../outside"))
         self.assertFalse(verify_evidence(self.path).ok)
 
-    def test_writing_a_loaded_bundle_cannot_escape_its_directory(self):
+    def test_a_manifest_file_path_outside_the_bundle_is_refused(self):
         victim = Path(self.dir.name) / "victim"
-        self.rewrite(lambda m: m["intervals"][0].update(file=str(victim)))      # samples are found by id, never by this
-        morletdb.load_evidence(self.path).write(Path(self.dir.name) / "copy")
+        self.rewrite(lambda m: m["intervals"][0].update(file=str(victim)))
+        with self.assertRaises(InvalidInputError):
+            morletdb.load_evidence(self.path)
+        self.assertFalse(verify_evidence(self.path).ok)
         self.assertFalse(victim.exists())
-        self.assertTrue((Path(self.dir.name) / "copy/samples/query.f64le").is_file())
+
+    def test_a_loaded_or_changed_object_is_checked_like_a_path(self):
+        class NoDatabase:
+            connection = None
+        def resolve(bundle):
+            return morletdb._evidence.resolve_evidence(NoDatabase(), bundle, timeout_ms=1000, max_sample_bytes=1024)
+        file = self.path / "samples/query.f64le"
+        flipped = bytearray(self.data)
+        flipped[0] ^= 1
+        file.write_bytes(flipped)
+        for bundle in (morletdb.load_evidence(self.path), EvidenceBundle(self.manifest, {"query": bytes(flipped)}),
+                       EvidenceBundle(self.manifest, {"query": self.data[:-1]}), EvidenceBundle(self.manifest, {}),
+                       EvidenceBundle(self.manifest, {"query": self.data, "match-9": b""})):
+            with self.subTest(samples=sorted(bundle.samples)), self.assertRaisesRegex(InvalidInputError, "failed verification"):
+                resolve(bundle)
+
+    def test_manifests_outside_the_schema_are_refused_everywhere(self):
+        def interval(**fields):
+            return lambda m: m["intervals"][0].update(fields)
+        def stats(m):
+            m["investigation"]["query_stats"] = "x"
+        def duplicate(m):
+            m["intervals"].append(dict(m["intervals"][0]))
+        def reference_only(m):
+            m["bundle"] = "reference-only"
+            m["intervals"][0]["file"] = None
+            m["intervals"][0]["start_sample"] = "not a number"
+        for change in (interval(start_sample="not a number"), interval(end_sample=True), interval(start_sample=2),
+                       interval(recording_id=7), interval(sample_sha256="Z"), interval(raw_status="other"),
+                       interval(specification={"sample_rate_hz": "fast", "metadata": {}}), stats, duplicate, reference_only):
+            m = json.loads(canonical(self.manifest))
+            change(m)
+            m["manifest_sha256"] = manifest_digest(m)
+            path = Path(tempfile.mkdtemp(dir=self.dir.name)) / "forged"
+            path.mkdir()
+            (path / "manifest.json").write_bytes(canonical(m))
+            with self.subTest(manifest=m["intervals"][0].get("start_sample")):
+                self.assertFalse(verify_evidence(path).ok)
+                with self.assertRaises(InvalidInputError):
+                    morletdb.load_evidence(path)
+                with self.assertRaises(InvalidInputError):
+                    render(m)
+
+    def test_a_manifest_with_a_non_finite_or_deep_value_is_a_failed_check(self):
+        for text in ('{"format":"morletdb-evidence","version":1,"x":NaN}',
+                     '{"format":"morletdb-evidence","version":1,"x":' + "[" * 200000 + "]" * 200000 + "}"):
+            (self.path / "manifest.json").write_text(text)
+            self.assertFalse(verify_evidence(self.path).ok)
+            with self.assertRaises(InvalidInputError):
+                morletdb.load_evidence(self.path)
 
     def test_sample_symlink_and_missing_file_are_refused_on_load(self):
         file = self.path / "samples/query.f64le"
