@@ -88,6 +88,7 @@ has not happened before, state the scope with it, e.g. "no similar event in the 
 2021-2023 is summarized only and was not searched"."""
 
 mcp = MCPServer("morletdb", instructions=INSTRUCTIONS)
+admission = _sibling("admission")
 
 
 def safe(fn):
@@ -96,7 +97,8 @@ def safe(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
-            return fn(*args, **kwargs)
+            with admission.admission():
+                return fn(*args, **kwargs)
         except (ValueError, KeyError, psycopg.Error) as exc:
             msg = exc.diag.message_primary if isinstance(exc, psycopg.Error) and exc.diag.message_primary else str(exc)
             hint = exc.diag.message_hint if isinstance(exc, psycopg.Error) else None
@@ -1282,7 +1284,9 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
     try:
         onsets = find_onsets(collection, rid, a, b, min_frequency_hz, 0.0, sta, lta, 4.0, 50)["onsets"]
         why = "no onset found"
-    except ToolError:                            # recording too short for onset detection (e.g. snapshots)
+    except ToolError as exc:                     # recording too short for onset detection (e.g. snapshots)
+        if "interval too short" not in str(exc):  # a load or database failure is not a property of the recording
+            raise
         onsets, why = [], f"recording too short to detect onsets ({n / rate:g} s)"
     near = [o for o in onsets if abs(o["trigger_sample"] - k) <= look_seconds * rate]
     if near:
