@@ -11,6 +11,7 @@ import math
 import re
 import time
 
+import numpy as np
 import psycopg
 from psycopg import sql
 from psycopg.pq import TransactionStatus
@@ -27,6 +28,8 @@ def result_dict(result):
             return {k: clean(v) for k, v in value.items()}
         if isinstance(value, (list, tuple)):
             return [clean(v) for v in value]
+        if isinstance(value, np.ndarray):
+            return clean(value.tolist())
         if isinstance(value, datetime):
             return value.isoformat()
         if isinstance(value, Decimal):

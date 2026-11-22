@@ -76,7 +76,8 @@ Typical investigation:
    what counts as close differs between signal types, so rank hits against each other and inspect them rather
    than applying a fixed cut-off. A constant window has no envelope: its distance to everything, itself
    included, is 1, and search_similar says so (query_note).
-4. read_interval or describe_interval on each hit to check it, and cite hits as collection, recording,
+4. explain_match on a selected hit to see the winning alignment and which positions drive its score, and
+   read_interval or describe_interval on each hit to check it, and cite hits as collection, recording,
    start_sample..end_sample: they refer to the original stored samples, which read back bit for bit.
 Search results are candidates for inspection, not diagnoses.
 
@@ -1068,6 +1069,24 @@ def resolve_incident(collection: str, asset: str, incident_time: str, before_s: 
     return _sibling("incident").run(connect, checked, utc_ns_of, collection, asset, incident_time, before_s=before_s,
                                     after_s=after_s, sensor=sensor, metadata_filter=metadata_filter,
                                     references=references)
+
+
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def explain_match(collection: str, query_recording_id: str, query_start: int, query_end: int, match_recording_id: str,
+                  match_start: int, contribution_bins: int = 16, query_shift_samples: int = 0) -> dict:
+    """Why one stored window scored as it did against the query, computed by the search scorer itself: exact distance,
+    winning lag (positive: the query's feature lies that many steps earlier in the match), zero-lag and winning
+    correlation, contributions by position (1..64 bins), and raw statistics of both intervals.
+
+    Pass the query interval of the search and a returned match's recording_id and start_sample. If the hit has
+    query_shift_samples (search_from_time, or search_similar with shifts), pass it too: the hit was scored against the
+    shifted query, and without it this explains another score. Use it on selected hits, not on every result. It explains the similarity score, not a fault's cause: a close envelope can differ in
+    amplitude, so compare query_stats and match_stats. match_raw_status "unavailable" means the score is explained
+    but the match's raw samples were removed or are hidden from this role. Needs SQL 0.3.16 and the SDK from this checkout."""
+    _sibling("investigation")          # its error format is shared
+    return _sibling("explanation").run(connect, checked, collection, query_recording_id, query_start, query_end,
+                                       match_recording_id, match_start, contribution_bins, query_shift_samples)
 
 
 @mcp.tool(annotations=READ_ONLY)

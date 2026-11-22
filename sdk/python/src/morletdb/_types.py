@@ -266,6 +266,11 @@ class MatchExplanation:
     query_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
     stored_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
 
+    def to_dict(self) -> dict[str, Any]:
+        """JSON-compatible result; envelopes become lists."""
+        from ._investigation import result_dict
+        return result_dict(self)
+
 
 @dataclass(frozen=True)
 class IncidentCandidate:
