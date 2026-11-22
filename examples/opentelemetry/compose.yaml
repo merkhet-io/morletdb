@@ -1,0 +1,29 @@
+# The steward's metrics in an OpenTelemetry Collector, and optionally in Prometheus. See README.md.
+include:
+  - ../../deploy/steward/compose.yaml
+services:
+  steward-metrics:
+    build: {context: ../.., dockerfile: deploy/steward/Dockerfile}
+    command: ["metrics", "--listen", "0.0.0.0:9188"]
+    environment:
+      MORLET_STEWARD_DSN: postgresql://morlet_steward:${MORLET_STEWARD_PASSWORD}@db:5432/morlet
+    healthcheck: {disable: true}      # the image's check is the steward's, which this process does not run
+    depends_on:
+      steward-init: {condition: service_completed_successfully}
+    restart: unless-stopped
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.165.0@sha256:e40d61f10c9a617cca1ffd1be4d7e2b3a4b0f0001798ff07e58cabe82e618cea
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otelcol.yaml:/etc/otelcol/config.yaml:ro
+    depends_on: [steward-metrics]
+    restart: unless-stopped
+  prometheus:
+    profiles: [prometheus]
+    image: prom/prometheus:v3.5.0@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on: [steward-metrics]
+    restart: unless-stopped
