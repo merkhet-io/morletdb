@@ -174,11 +174,13 @@ class Client:
                                              max_recordings=max_recordings, max_coverage_ranges=max_coverage_ranges,
                                              max_output_bytes=max_output_bytes, coverage_ranges=True))
 
-    def resolve_evidence(self, bundle: Any, *, timeout_ms: int = 30000,
-                         max_sample_bytes: int = 64 * 1024 * 1024) -> list[dict[str, Any]]:
-        """Each interval of a bundle (or bundle path) against the database now, under this role's permissions."""
+    def resolve_evidence(self, bundle: Any, *, timeout_ms: int = 30000, max_sample_bytes: int = 64 * 1024 * 1024,
+                         expected_manifest_sha256: str | None = None) -> list[dict[str, Any]]:
+        """Each interval of a verified bundle (or bundle path) against the database now, under this role's permissions.
+        A bundle that fails verification is refused."""
         from ._evidence import resolve_evidence
-        return resolve_evidence(self, bundle, timeout_ms=timeout_ms, max_sample_bytes=max_sample_bytes)
+        return resolve_evidence(self, bundle, timeout_ms=timeout_ms, max_sample_bytes=max_sample_bytes,
+                                expected_manifest_sha256=expected_manifest_sha256)
 
     def resolve_incident(self, collection: str, asset: str, incident_time: datetime | int, *, before_s: float = 60,
                          after_s: float = 10, sensor: str | None = None,

@@ -121,7 +121,8 @@ db.resolve_evidence("case-42")                            # each interval now: u
 
 The manifest digest covers its canonical JSON; sample digests cover little-endian float64 bytes, so signed zero is
 preserved. To detect someone who edits a bundle and recomputes its digest, keep `manifest_sha256` elsewhere and pass it
-as `expected_manifest_sha256`. Without `include_samples`, a bundle holds digests only: they detect a change but cannot
+as `expected_manifest_sha256` to `verify_evidence` or `resolve_evidence`. Bundle directories are private to their owner,
+and a bundle with some raw samples unavailable is labelled `partial-samples`. Without `include_samples`, a bundle holds digests only: they detect a change but cannot
 restore data. Exporting discloses what this role can read and cannot be revoked later. Limits raise instead of producing
 a partial bundle. A bundle does not pin data against retention or compaction, and it is not a diagnosis.
 

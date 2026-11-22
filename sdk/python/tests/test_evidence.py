@@ -73,10 +73,11 @@ class Offline(unittest.TestCase):
         file.write_bytes(np.array([0.0, 1.5]).astype("<f8").tobytes())
         self.assertIn("query: samples differ from their digest", verify_evidence(self.path).problems)
 
-    def test_detects_changed_manifest_specification_and_report(self):
+    def test_detects_a_changed_specification(self):
         self.rewrite(lambda m: m["intervals"][0]["specification"].update(unit="mm"))
         self.assertIn("manifest content does not match manifest_sha256", verify_evidence(self.path).problems)
-        self.setUp()
+
+    def test_detects_a_changed_report(self):
         (self.path / "report.html").write_text("changed")
         self.assertIn("report.html differs from the report of this manifest", verify_evidence(self.path).problems)
 
@@ -94,6 +95,41 @@ class Offline(unittest.TestCase):
         outside.write_bytes(self.data)
         self.rewrite(lambda m: m["intervals"][0].update(id="../../outside"))
         self.assertFalse(verify_evidence(self.path).ok)
+
+    def test_writing_a_loaded_bundle_cannot_escape_its_directory(self):
+        victim = Path(self.dir.name) / "victim"
+        self.rewrite(lambda m: m["intervals"][0].update(file=str(victim)))      # samples are found by id, never by this
+        morletdb.load_evidence(self.path).write(Path(self.dir.name) / "copy")
+        self.assertFalse(victim.exists())
+        self.assertTrue((Path(self.dir.name) / "copy/samples/query.f64le").is_file())
+
+    def test_sample_symlink_and_missing_file_are_refused_on_load(self):
+        file = self.path / "samples/query.f64le"
+        private = Path(self.dir.name) / "private"
+        private.write_bytes(self.data)
+        file.unlink()
+        file.symlink_to(private)
+        with self.assertRaises(InvalidInputError):
+            morletdb.load_evidence(self.path)
+        self.assertFalse(verify_evidence(self.path).ok)
+        file.unlink()
+        with self.assertRaises(InvalidInputError):
+            morletdb.load_evidence(self.path)
+
+    def test_report_is_compared_as_bytes(self):
+        report = self.path / "report.html"
+        report.write_bytes(report.read_bytes().replace(b"\n", b"\r\n"))
+        self.assertIn("report.html differs from the report of this manifest", verify_evidence(self.path).problems)
+
+    def test_malformed_intervals_are_a_failed_check_not_a_crash(self):
+        def forge(m):
+            m["intervals"] = ["x"]
+            m["manifest_sha256"] = manifest_digest(m)
+        self.rewrite(forge)
+        self.assertFalse(verify_evidence(self.path).ok)
+
+    def test_bundle_directory_is_private(self):
+        self.assertEqual(self.path.stat().st_mode & 0o777, 0o700)
 
     def test_existing_target_is_refused(self):
         with self.assertRaises(InvalidInputError):
@@ -163,6 +199,38 @@ class Export(unittest.TestCase):
         html = self.db.export_evidence(self.coll, "q", 0, 2048, segment_id=segment[0]).html()
         self.assertIn("Operating context", html)
         self.assertIn("History median", html)
+
+    def test_partial_samples_are_labelled_and_tampered_paths_refused(self):
+        self.conn.execute(f"DELETE FROM {self.coll}_chunks WHERE recording_id='m'")
+        self.conn.commit()
+        bundle = self.db.export_evidence(self.coll, "q", 0, 2048, top_k=8, include_samples=True)
+        self.assertEqual(bundle.manifest["bundle"], "partial-samples")
+        self.assertTrue(bundle.manifest["intervals_without_samples"])
+        self.assertIn("Raw samples were unavailable", bundle.html())
+        path = bundle.write(Path(self.dir.name) / "partial")
+        m = json.loads((path / "manifest.json").read_text())
+        m["intervals"][0]["sample_sha256"] = "0" * 64
+        (path / "manifest.json").write_bytes(canonical(m))
+        with self.assertRaises(InvalidInputError):
+            self.db.resolve_evidence(path)
+
+    def test_revised_time_axis_is_reported(self):
+        self.conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)", (self.coll,))
+        self.conn.commit()
+        bundle = self.db.export_evidence(self.coll, "q", 0, 2048, top_k=3)
+        self.conn.execute("SELECT morlet_add_time_anchors(%s::regclass,'b1',%s::jsonb)", (self.coll, json.dumps(
+            [{"recording_id": "q", "sample_offset": 0, "utc_ns": "1772366400000000000", "uncertainty_ns": 1000,
+              "source": "daq", "break_before": False}])))
+        self.conn.commit()
+        status = {r["id"]: r["status"] for r in self.db.resolve_evidence(bundle)}
+        self.assertEqual(status["query"], "time_axis_changed")
+
+    def test_manifest_is_held_to_the_output_budget(self):
+        size = len(self.db.export_evidence(self.coll, "q", 0, 2048, top_k=3).html())
+        self.assertGreater(size, 0)
+        with self.assertRaises(InvestigationLimitError):
+            self.db.export_evidence(self.coll, "q", 0, 2048, top_k=3, max_output_bytes=3000)
+        self.assertEqual(self.conn.info.transaction_status, psycopg.pq.TransactionStatus.IDLE)
 
     def test_limit_produces_no_partial_bundle(self):
         with self.assertRaises(InvestigationLimitError):

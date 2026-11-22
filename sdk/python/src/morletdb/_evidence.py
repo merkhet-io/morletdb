@@ -49,12 +49,12 @@ def _sample_bytes(samples) -> bytes:
     return np.asarray(samples, dtype=np.float64).astype("<f8").tobytes()      # bit for bit, signed zero included
 
 
-def _describe(role, rank, ref, rec, raw, digest, bundled):
+def _describe(role, rank, ref, rec, raw, digest, bundled, axis):
     name = "query" if role == "query" else f"match-{rank}"
     return {"id": name, "role": role, "rank": rank, "collection": ref.collection, "recording_id": ref.recording_id,
             "start_sample": ref.start_sample, "end_sample": ref.end_sample,
             "specification": {"sample_rate_hz": rec.sample_rate_hz, "channel": rec.channel, "unit": rec.unit,
-                              "metadata": rec.metadata},
+                              "metadata": rec.metadata, "time_axis_version": axis},
             "raw_status": "available" if raw else "unavailable", "sample_sha256": digest,
             "file": f"samples/{name}.f64le" if bundled and raw else None}
 
@@ -79,20 +79,19 @@ class EvidenceBundle:
 
     def write(self, path: str | os.PathLike) -> Path:
         """Write a new directory (manifest.json, report.html, samples/). An existing path is refused. Files appear
-        together: the bundle is built beside the target and renamed."""
+        together: the bundle is built beside the target and renamed. The directory is private to its owner (0700)."""
         target = Path(path)
         if target.exists():
             raise InvalidInputError(f"{target} already exists")
         work = Path(tempfile.mkdtemp(prefix=f".{target.name}.", dir=target.parent))
         try:
             (work / MANIFEST).write_bytes(canonical(self.manifest))
-            (work / REPORT).write_text(self.html(), encoding="utf-8")
+            (work / REPORT).write_bytes(self.html().encode("utf-8"))
             if self.samples:
                 (work / "samples").mkdir()
             for item in self.manifest["intervals"]:
-                if item["file"]:
-                    (work / item["file"]).write_bytes(self.samples[item["id"]])
-            os.chmod(work, 0o755)
+                if item["file"]:      # never a path from the manifest: a loaded bundle is untrusted
+                    _sample_file(work, item).write_bytes(self.samples[item["id"]])
             os.rename(work, target)
         except BaseException:
             shutil.rmtree(work, ignore_errors=True)
@@ -110,7 +109,11 @@ def export_evidence(client, collection, recording_id, start_sample, end_sample, 
     with read_snapshot(client.connection, deadline) as reader:
         result = reader.investigate(collection, recording_id, start_sample, end_sample,
                                     **{**settings, "timeout_ms": max(1, reader.remaining())})
+        # the relation itself, not the caller's spelling, which another search_path would resolve elsewhere
+        relation = reader._one("SELECT format('%%I.%%I', n.nspname, c.relname) FROM pg_class c "
+                               "JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid=%s::regclass", (collection,))
         refs = [("query", 0, result.search.query)] + [("match", m.rank, m.ref) for m in result.search.matches]
+        refs = [(role, rank, IntervalRef(relation, r.recording_id, r.start_sample, r.end_sample)) for role, rank, r in refs]
         needed = sum((r.end_sample - r.start_sample) * 8 for _, _, r in refs)
         if needed > max_sample_bytes:
             raise InvestigationLimitError(f"evidence needs {needed} sample bytes, above max_sample_bytes; "
@@ -125,16 +128,20 @@ def export_evidence(client, collection, recording_id, start_sample, end_sample, 
             if raw:
                 data = _sample_bytes(reader.read_ref(ref).samples)
                 digest = hashlib.sha256(data).hexdigest()
-            item = _describe(role, rank, ref, rec, raw, digest, include_samples)
+            item = _describe(role, rank, ref, rec, raw, digest, include_samples, _axis(reader, ref))
             intervals.append(item)
             if include_samples and raw:
                 samples[item["id"]] = data
     manifest = {"format": FORMAT, "version": VERSION,
                 "digests": {"algorithm": "sha256", "manifest": "canonical JSON of every field except manifest_sha256",
                             "samples": "the interval's samples as little-endian float64 bytes, signed zero preserved"},
-                "bundle": "exact-samples" if include_samples else "reference-only",
+                "bundle": ("reference-only" if not include_samples else "exact-samples"
+                           if all(i["file"] for i in intervals) else "partial-samples"),
+                "intervals_without_samples": [i["id"] for i in intervals if i["raw_status"] != "available"],
                 "limitations": list(LIMITATIONS), "investigation": result.to_dict(), "intervals": intervals}
-    canonical(manifest)      # refuses a value JSON cannot carry before anything is returned
+    # refuses a value JSON cannot carry, and holds the whole manifest to the output budget
+    if len(canonical(manifest)) > settings["max_output_bytes"]:
+        raise InvestigationLimitError("the evidence manifest exceeds max_output_bytes; no partial bundle was produced")
     manifest["manifest_sha256"] = manifest_digest(manifest)
     return EvidenceBundle(manifest, samples)
 
@@ -149,8 +156,9 @@ def load_evidence(path) -> EvidenceBundle:
     for item in manifest["intervals"]:
         if item.get("file"):
             file = _sample_file(root, item)
-            if file.is_file():
-                samples[item["id"]] = file.read_bytes()
+            if file.is_symlink() or not file.is_file():
+                raise InvalidInputError(f"{item['id']}: sample file is missing or not a regular file")
+            samples[item["id"]] = file.read_bytes()
     return EvidenceBundle(manifest, samples)
 
 
@@ -178,7 +186,7 @@ def verify_evidence(path, *, expected_manifest_sha256: str | None = None) -> Evi
     if expected_manifest_sha256 is not None and digest != expected_manifest_sha256:
         problems.append("manifest digest differs from the expected digest")
     try:
-        if (root / REPORT).read_text(encoding="utf-8") != render(manifest):
+        if (root / REPORT).read_bytes() != render(manifest).encode("utf-8"):
             problems.append("report.html differs from the report of this manifest")
     except OSError:
         problems.append("report.html is missing")
@@ -196,16 +204,30 @@ def verify_evidence(path, *, expected_manifest_sha256: str | None = None) -> Evi
                 problems.append(f"{item['id']}: sample file has the wrong size")
             elif hashlib.sha256(file.read_bytes()).hexdigest() != item["sample_sha256"]:
                 problems.append(f"{item['id']}: samples differ from their digest")
-    except (KeyError, TypeError, InvalidInputError) as exc:
+    except (KeyError, TypeError, AttributeError, ValueError, OSError, InvalidInputError) as exc:
         problems.append(f"intervals unreadable: {exc}")
     return EvidenceCheck(not problems, digest, tuple(problems))
 
 
-def resolve_evidence(client, bundle, *, timeout_ms, max_sample_bytes):
+def _axis(reader, ref):
+    if not reader._has("public.morlet_time_axis_version(regclass,text)"):
+        return None
+    return reader._one("SELECT public.morlet_time_axis_version(%s::regclass,%s)", (ref.collection, ref.recording_id))
+
+
+def resolve_evidence(client, bundle, *, timeout_ms, max_sample_bytes, expected_manifest_sha256=None):
     """Each interval against the database now, under the caller's permissions, in one snapshot: `unchanged`, `changed`,
-    `specification_changed`, `metadata_changed`, `samples_unavailable`, `missing` (or not visible to this role), or
+    `specification_changed`, `time_axis_changed`, `metadata_changed`, `samples_unavailable`, `missing` (or not visible to this role), or
     `no_digest` when its raw samples were already unavailable at export."""
-    manifest = bundle.manifest if isinstance(bundle, EvidenceBundle) else load_evidence(bundle).manifest
+    if not isinstance(bundle, EvidenceBundle):
+        check = verify_evidence(bundle, expected_manifest_sha256=expected_manifest_sha256)
+        if not check.ok:
+            raise InvalidInputError("bundle failed verification: " + "; ".join(check.problems))
+        bundle = load_evidence(bundle)
+    manifest = bundle.manifest
+    digest = manifest_digest(manifest)
+    if manifest.get("manifest_sha256") != digest or expected_manifest_sha256 not in (None, digest):
+        raise InvalidInputError("bundle failed verification: its manifest does not match the digest")
     needed = sum((i["end_sample"] - i["start_sample"]) * 8 for i in manifest["intervals"] if i["sample_sha256"])
     if needed > max_sample_bytes:
         raise InvestigationLimitError(f"resolving needs {needed} sample bytes, above max_sample_bytes")
@@ -228,6 +250,8 @@ def _status(reader, item, ref):
     rec, spec = rows[0], item["specification"]
     if (rec.sample_rate_hz, rec.channel, rec.unit) != (spec["sample_rate_hz"], spec["channel"], spec["unit"]):
         return "specification_changed"
+    if "time_axis_version" in spec and spec["time_axis_version"] != _axis(reader, ref):
+        return "time_axis_changed"
     if item["sample_sha256"] is None:
         return "no_digest"
     length = ref.end_sample - ref.start_sample
@@ -285,6 +309,9 @@ def render(manifest: dict[str, Any]) -> str:
         i["id"], i["recording_id"], i["raw_status"], "yes" if i["file"] else "no", i["sample_sha256"]) for i in intervals]))
     parts.append(f"<p class=m>Manifest SHA-256: {escape(str(manifest.get('manifest_sha256')))}<br>Bundle: "
                  f"{escape(manifest['bundle'])}</p>")
+    if manifest.get("intervals_without_samples"):
+        parts.append("<p>Raw samples were unavailable at export for: "
+                     + escape(", ".join(manifest["intervals_without_samples"])) + ".</p>")
     parts.append("<h2>Provenance</h2>" + _table(("Field", "Value"), sorted(
         (k, v) for k, v in inv["provenance"].items())))
     style = ("body{font:15px/1.5 system-ui,sans-serif;max-width:60rem;margin:0 auto;padding:1rem;color:#1c2024;"
