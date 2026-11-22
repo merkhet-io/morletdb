@@ -401,6 +401,16 @@ class Client:
         length = query.end_sample - query.start_sample
         if length != match.end_sample - match.start_sample:
             raise InvalidInputError("query and match must have the same length")
+        if length < 512 or length > 32768 or length & (length - 1):
+            raise InvalidInputError("the query must be a stored window size: a power of two in 512..32768 samples")
+        if isinstance(max_lag_fraction, bool) or not isinstance(max_lag_fraction, (int, float)) \
+                or not 0 <= max_lag_fraction <= 0.5:
+            raise InvalidInputError("max_lag_fraction must be in [0, 0.5]")
+        if isinstance(contribution_bins, bool) or not isinstance(contribution_bins, int) \
+                or not 1 <= contribution_bins <= 1024:
+            raise InvalidInputError("contribution_bins must be an integer in 1..1024")
+        if not isinstance(include_envelopes, bool):
+            raise InvalidInputError("include_envelopes must be true or false")
         if not self._has("public.morlet_explain_match(regclass,text,bigint,bigint,text,bigint,double precision,integer,boolean)"):
             raise UnsupportedError("explain_match needs pg_morlet SQL 0.3.16 or later")
         if not self._one("SELECT %s::regclass=%s::regclass", (query.collection, match.collection)):
@@ -409,15 +419,15 @@ class Client:
             r = self.connection.execute(
                 "SELECT * FROM morlet_explain_match(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (query.collection, query.recording_id, query.start_sample, query.end_sample, match.recording_id,
-                 match.start_sample, max_lag_fraction, contribution_bins, include_envelopes)).fetchone()
-        except psycopg.errors.NoDataFound as exc:
-            raise NotFoundError(str(exc)) from exc
-        except psycopg.errors.RaiseException as exc:
-            text = str(exc)
-            if "not comparable" in text or "must be in" in text:
-                raise InvalidInputError(text) from exc
-            if "does not exist or is not visible" in text:
+                 match.start_sample, float(max_lag_fraction), contribution_bins, include_envelopes)).fetchone()
+        except (psycopg.errors.InsufficientPrivilege, psycopg.errors.QueryCanceled):
+            raise
+        except psycopg.Error as exc:      # by SQLSTATE: the message holds the caller's recording id
+            text = exc.diag.message_primary or str(exc)
+            if exc.sqlstate == "P0002" or "were compacted to level" in text:
                 raise NotFoundError(text) from exc
+            if exc.sqlstate == "22023":
+                raise InvalidInputError(text) from exc
             raise translate(exc) from exc
         stats = lambda v: None if v is None else IntervalStats(length, *v)
         array = lambda v: None if v is None else np.asarray(v, dtype=np.float64)
