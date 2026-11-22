@@ -1284,7 +1284,9 @@ def search_from_time(collection: str, utc_time: str, metadata_filter: str = "{}"
     try:
         onsets = find_onsets(collection, rid, a, b, min_frequency_hz, 0.0, sta, lta, 4.0, 50)["onsets"]
         why = "no onset found"
-    except ToolError:                            # recording too short for onset detection (e.g. snapshots)
+    except ToolError as exc:                     # recording too short for onset detection (e.g. snapshots)
+        if "interval too short" not in str(exc):  # a load or database failure is not a property of the recording
+            raise
         onsets, why = [], f"recording too short to detect onsets ({n / rate:g} s)"
     near = [o for o in onsets if abs(o["trigger_sample"] - k) <= look_seconds * rate]
     if near:

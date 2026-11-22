@@ -6,6 +6,7 @@ when a client disconnects or crashes. Off by default (MORLET_MCP_MAX_CONCURRENT=
 """
 import contextlib
 import json
+import math
 import os
 import threading
 import time
@@ -20,7 +21,7 @@ _state = threading.local()
 
 
 def _setting(name, default, low, high):
-    raw = os.environ.get(name, str(default))
+    raw = os.environ.get(name, "").strip() or str(default)      # blank is unset
     try:
         value = int(raw)
         if not low <= value <= high:
@@ -33,8 +34,41 @@ def _setting(name, default, low, high):
 
 
 def _take(conn, cap):
-    return any(conn.execute("SELECT pg_try_advisory_lock(%s,%s)", (SLOT_CLASS, slot)).fetchone()[0]
-               for slot in range(cap))
+    """One round trip: the statement stops at the first free slot."""
+    return conn.execute("SELECT s FROM generate_series(0,%s) s WHERE pg_try_advisory_lock(%s,s::int) LIMIT 1",
+                        (cap - 1, SLOT_CLASS)).fetchone() is not None
+
+
+def _refuse(code, message, suggestion):
+    raise ToolError(json.dumps({"code": code, "message": message, "suggestion": suggestion}))
+
+
+def _busy(cap):
+    _refuse("busy", f"All {cap} MCP slots are in use, so this question was not answered. This is not a negative result.",
+            "Retry in a few seconds, or ask fewer questions at once.")
+
+
+def _attempt(cap, deadline):
+    """A connection holding a slot, or None. A waiter holds no connection between attempts, so a queue of agents cannot
+    use up the connections that ingest needs."""
+    timeout = max(2, math.ceil(deadline - time.monotonic()))      # libpq's shortest connect timeout is 2 s
+    try:
+        conn = psycopg.connect(os.environ.get("DATABASE_URL", ""), autocommit=True, connect_timeout=timeout,
+                               options="-c default_transaction_read_only=on -c statement_timeout=5000")
+    except psycopg.OperationalError as exc:
+        if exc.sqlstate == "53300" or "too many" in str(exc).lower():      # no connection free: wait like a full cap
+            return None
+        _refuse("database_error", "The database could not be reached to admit this call. This is not a negative result.",
+                "Check database availability and retry.")
+    try:
+        if _take(conn, cap):
+            return conn
+    except psycopg.Error:
+        conn.close()
+        _refuse("database_error", "The admission check failed. This is not a negative result.",
+                "Check database availability and retry.")
+    conn.close()
+    return None
 
 
 @contextlib.contextmanager
@@ -42,24 +76,25 @@ def admission():
     """Hold one of the slots for a whole tool call, including its follow-up reads. A call that finds none within
     MORLET_MCP_QUEUE_MS is refused: a refusal says the question was not answered and is never an empty result."""
     cap = _setting("MORLET_MCP_MAX_CONCURRENT", 0, 0, MAX_SLOTS)
-    wait_ms = _setting("MORLET_MCP_QUEUE_MS", 2000, 0, MAX_QUEUE_MS)
     if cap == 0 or getattr(_state, "held", False):
         yield
         return
+    wait_ms = _setting("MORLET_MCP_QUEUE_MS", 2000, 0, MAX_QUEUE_MS)
     deadline = time.monotonic() + wait_ms / 1000
-    with psycopg.connect(os.environ.get("DATABASE_URL", ""), autocommit=True,
-                         options="-c default_transaction_read_only=on -c statement_timeout=5000") as conn:
-        while not _take(conn, cap):
-            left = deadline - time.monotonic()
-            if left <= 0:
-                raise ToolError(json.dumps({
-                    "code": "busy",
-                    "message": f"All {cap} MCP slots are in use, so this question was not answered. This is not a "
-                               "negative result.",
-                    "suggestion": "Retry in a few seconds, or ask fewer questions at once."}))
-            time.sleep(min(0.05, left))
-        _state.held = True
+    pause = 0.1
+    while (conn := _attempt(cap, deadline)) is None:
+        left = deadline - time.monotonic()
+        if left <= 0:
+            _busy(cap)
+        time.sleep(min(pause, left))
+        pause = min(pause * 2, 1.0)
+    _state.held = True
+    try:
+        yield
+    finally:
+        _state.held = False
         try:
-            yield
-        finally:
-            _state.held = False
+            conn.execute("SELECT pg_advisory_unlock_all()")      # free at once, not when the backend has exited
+        except psycopg.Error:
+            pass      # the session is gone, and with it the lock
+        conn.close()

@@ -256,9 +256,13 @@ server processes on one database (default 0, no cap; 2 is a reasonable start on 
 `MORLET_MCP_QUEUE_MS` (default 2000) for a slot and is then refused with the code `busy`. A refusal means the question
 was not answered: it is never an empty or negative result, and an agent should retry later.
 
-Slots are PostgreSQL session advisory locks, released when a client disconnects or crashes. Each running call uses one
-extra connection to hold its slot, so also set a `CONNECTION LIMIT` on the MCP role. A role that can connect can also
-take these locks directly, so the cap protects against too much work, not against a hostile client.
+Slots are PostgreSQL session advisory locks, released when a client disconnects or crashes. A running call uses one
+extra connection to hold its slot; a waiting call holds none between attempts. If you set a `CONNECTION LIMIT` on the MCP
+role, make it at least twice the cap plus a few for waiters' attempts, or admitted calls can fail to connect.
+
+The cap limits accidental load. A role that can connect can take these locks directly, so it is no defense against a
+hostile client. If a slot's session is terminated while its call runs, that call continues outside the cap. A client that
+gives up while queued can still run its call if a slot frees within the queue time.
 
 ## Check an installation
 
