@@ -4,10 +4,10 @@ name: paper-numbers
 # Standard library only; runs no benchmark and needs no database.
 on:
   pull_request:
-    paths: ["research/paper/**", "research/paper2/*.pdf", "research/paper3/*.pdf", "evaluation/consolidated/**", "evaluation/industrial_iu1/**", "evaluation/industrial_iu2/**", "evaluation/analysis_io.py", "docs/morletdb*.pdf", "docs/*.html", "README.md", "VERSION", "tools/site_versions.py", "tools/highlight_site.py", ".github/workflows/paper-numbers.yml"]
+    paths: ["research/paper/**", "research/paper2/*.pdf", "research/paper3/*.pdf", "evaluation/consolidated/**", "evaluation/industrial_iu1/**", "evaluation/industrial_iu2/**", "evaluation/analysis_io.py", "docs/morletdb*.pdf", "docs/*.html", "docs/CNAME", "docs/robots.txt", "docs/sitemap.xml", "tools/site_seo.py", "README.md", "VERSION", "tools/site_versions.py", "tools/highlight_site.py", ".github/workflows/paper-numbers.yml"]
   push:
     branches: [main]
-    paths: ["research/paper/**", "research/paper2/*.pdf", "research/paper3/*.pdf", "evaluation/consolidated/**", "evaluation/industrial_iu1/**", "evaluation/industrial_iu2/**", "evaluation/analysis_io.py", "docs/morletdb*.pdf", "docs/*.html", "README.md", "VERSION", "tools/site_versions.py"]
+    paths: ["research/paper/**", "research/paper2/*.pdf", "research/paper3/*.pdf", "evaluation/consolidated/**", "evaluation/industrial_iu1/**", "evaluation/industrial_iu2/**", "evaluation/analysis_io.py", "docs/morletdb*.pdf", "docs/*.html", "docs/CNAME", "docs/robots.txt", "docs/sitemap.xml", "tools/site_seo.py", "README.md", "VERSION", "tools/site_versions.py"]
 jobs:
   check:
     runs-on: ubuntu-24.04
@@ -36,6 +36,8 @@ jobs:
           python3 research/paper/check_submission.py
       - name: Release manifest matches the report files
         run: python3 research/paper/release_manifest.py --check
+      - name: Website SEO metadata and crawl files are consistent
+        run: python3 tools/site_seo.py --check
       - name: Website shows the current release and report versions
         run: python3 tools/site_versions.py --check
 
