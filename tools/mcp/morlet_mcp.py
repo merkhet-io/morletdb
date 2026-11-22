@@ -88,6 +88,7 @@ has not happened before, state the scope with it, e.g. "no similar event in the 
 2021-2023 is summarized only and was not searched"."""
 
 mcp = MCPServer("morletdb", instructions=INSTRUCTIONS)
+admission = _sibling("admission")
 
 
 def safe(fn):
@@ -96,7 +97,8 @@ def safe(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
-            return fn(*args, **kwargs)
+            with admission.admission():
+                return fn(*args, **kwargs)
         except (ValueError, KeyError, psycopg.Error) as exc:
             msg = exc.diag.message_primary if isinstance(exc, psycopg.Error) and exc.diag.message_primary else str(exc)
             hint = exc.diag.message_hint if isinstance(exc, psycopg.Error) else None

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **A cap on concurrent agent calls (part of #541).** `MORLET_MCP_MAX_CONCURRENT` limits MCP tool calls across all server
+  processes on a database, off by default. A call that finds no slot within `MORLET_MCP_QUEUE_MS` is refused as `busy`,
+  never reported as an empty result.
 - **From a machine and a time to an interval (experimental, #580).** `Client.resolve_incident` and the MCP tool
   `resolve_incident` map an asset and a timezone-aware incident time to recording intervals in one read-only
   snapshot, with the time basis, uncertainty and coverage of each. Recordings are never concatenated or resampled;
