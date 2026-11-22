@@ -127,6 +127,69 @@ class Cap(unittest.TestCase):
         with patch.dict(os.environ, {"MORLET_MCP_QUEUE_MS": "5000"}), m.admission.admission():
             pass
 
+    def test_a_slot_acquired_after_the_queue_time_is_released_and_refused(self):
+        real = m.admission._take
+        def slow(conn, cap):
+            taken = real(conn, cap)
+            m.admission.time.sleep(0.25)      # the round trip returns after the budget
+            return taken
+        ran = []
+        with patch.dict(os.environ, {"MORLET_MCP_QUEUE_MS": "50"}), patch.object(m.admission, "_take", slow), \
+                self.assertRaises(ToolError) as caught:
+            with m.admission.admission():
+                ran.append(True)
+        self.assertEqual(ran, [])
+        self.assertEqual(json.loads(str(caught.exception))["code"], "busy")
+        self.hold(0)      # the late slot was given back at once
+        self.hold(1)
+
+    def test_zero_queue_time_still_admits_a_slow_first_attempt(self):
+        real = m.admission._take
+        def slow(conn, cap):
+            taken = real(conn, cap)
+            m.admission.time.sleep(0.1)
+            return taken
+        ran = []
+        with patch.object(m.admission, "_take", slow), m.admission.admission():
+            ran.append(True)
+        self.assertEqual(ran, [True])
+
+    def test_the_admission_statement_is_bounded_by_the_remaining_time(self):
+        options = []
+        real = psycopg.connect
+        def recording(*args, **kwargs):
+            options.append(kwargs["options"])
+            return real(*args, **kwargs)
+        with patch.dict(os.environ, {"MORLET_MCP_QUEUE_MS": "300"}), patch.object(psycopg, "connect", recording), \
+                m.admission.admission():
+            pass
+        self.assertLessEqual(int(options[0].rsplit("statement_timeout=", 1)[1]), 300)
+
+    def test_a_statement_cancelled_by_the_budget_is_busy_not_a_database_error(self):
+        def cancelled(conn, cap):
+            m.admission.time.sleep(0.06)
+            raise psycopg.errors.QueryCanceled("canceling statement due to statement timeout")
+        with patch.dict(os.environ, {"MORLET_MCP_QUEUE_MS": "50"}), patch.object(m.admission, "_take", cancelled), \
+                self.assertRaises(ToolError) as caught:
+            with m.admission.admission():
+                pass
+        self.assertEqual(json.loads(str(caught.exception))["code"], "busy")
+
+    def test_no_attempt_starts_after_the_final_sleep(self):
+        self.hold(0)
+        self.hold(1)
+        attempts = []
+        real = m.admission._attempt
+        def counted(*args):
+            attempts.append(m.admission.time.monotonic())
+            return real(*args)
+        started = m.admission.time.monotonic()
+        with patch.dict(os.environ, {"MORLET_MCP_QUEUE_MS": "150"}), patch.object(m.admission, "_attempt", counted), \
+                self.assertRaises(ToolError):
+            with m.admission.admission():
+                pass
+        self.assertTrue(all(t - started < 0.15 for t in attempts))
+
     def test_nested_admission_takes_one_slot(self):
         self.hold(0)
         with m.admission.admission(), m.admission.admission():
