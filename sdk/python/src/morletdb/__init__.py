@@ -16,8 +16,11 @@ from ._types import (MatchContribution, MatchExplanation, CoverageRange, Inciden
                      Evidence, EvidencePart, Interval, IntervalRef, IntervalStats, Latest, Match, NotifiedRange, Notification,
                      OverviewBucket, Recording, SearchResult, TimeRange, TransferCheck)
 
+from ._evidence import EvidenceBundle, EvidenceCheck, load_evidence, verify_evidence
+
 __version__ = "0.1.0b3"
 __all__ = ["Client", "LocalStore", "open", "Recording", "Interval", "IntervalRef", "IntervalStats", "Latest", "Notification", "NotifiedRange", "OverviewBucket", "Match", "Evidence", "EvidencePart", "SearchResult", "TimeRange", "TransferCheck",
            "MorletError", "InvalidInputError", "NotFoundError", "ConflictError", "UnsupportedError",
            "DatabaseError", "InvestigationLimitError", "InvestigationResult", "InvestigationContext", "CoverageRange",
-           "IncidentCandidate", "IncidentResolution", "MatchContribution", "MatchExplanation"]
+           "IncidentCandidate", "IncidentResolution", "EvidenceBundle", "EvidenceCheck", "load_evidence",
+           "verify_evidence", "MatchContribution", "MatchExplanation"]

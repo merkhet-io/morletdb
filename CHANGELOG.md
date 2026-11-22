@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Evidence bundles (experimental, part of #575).** `Client.export_evidence` captures an investigation from one
+  read-only snapshot as a versioned manifest with exact SHA-256 digests and a static, script-free HTML report, with or
+  without the exact samples. `verify_evidence` checks a bundle offline, and `Client.resolve_evidence` reports which
+  intervals have since changed, been removed or become unavailable. Exporting discloses what the caller can read; it
+  does not pin stored data.
 - **A cap on concurrent agent calls (part of #541).** `MORLET_MCP_MAX_CONCURRENT` limits MCP tool calls across all server
   processes on a database, off by default. A call that finds no slot within `MORLET_MCP_QUEUE_MS` is refused as `busy`,
   never reported as an empty result.
