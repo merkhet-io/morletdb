@@ -276,6 +276,9 @@ class IncidentResolution:
     identities: list[dict[str, Any]]
     states: list[str]
     provenance: dict[str, Any]
+    recordings_without_time_axis_count: int = 0      # exact; the two lists hold at most the first 100 ids
+    recordings_outside_window_count: int = 0
+    identities_count: int = 0      # exact; `identities` holds at most the first 100
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-compatible result; UTC nanoseconds stay exact integers."""
