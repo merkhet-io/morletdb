@@ -5,7 +5,7 @@
 - **Why a match scored as it did (SQL 0.3.16, experimental, #573).** `morlet_explain_match` and `Client.explain_match`
   return, for one selected match, the scorer's exact distance, the winning lag with its sign and raw-sample mapping,
   the zero-lag and winning correlations, bounded contributions that add up to the correlation, and raw statistics of
-  both intervals beside the normalized comparison. Ranking and stored data do not change. Update script 0.3.15 → 0.3.16.
+  both intervals beside the normalized comparison. Ranking and stored data do not change. Update script 0.3.15 → 0.3.16. The read-only MCP tool `explain_match` gives agents the same explanation.
 - **From a machine and a time to an interval (experimental, #580).** `Client.resolve_incident` and the MCP tool
   `resolve_incident` map an asset and a timezone-aware incident time to recording intervals in one read-only
   snapshot, with the time basis, uncertainty and coverage of each. Recordings are never concatenated or resampled;
