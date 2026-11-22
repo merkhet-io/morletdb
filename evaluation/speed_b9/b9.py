@@ -23,10 +23,12 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import b9blocks  # noqa: E402
+
 CONFIGS = ["G1", "G1+6", "G21", "G21+6"]
 OPS = [("encode", "encode_s"), ("decode", "decode_s")]
 WAIT_MAX_S = int(os.environ.get("B9_WAIT_MAX_S", "1800"))
-ATTEMPTS = 3
 # Docker Desktop's own processes (allowed by the start condition: "no process other than Docker's").
 DOCKER = re.compile(r"docker|qemu|vpnkit|com\.apple\.Virtua|containerd", re.I)
 # Build, test, fuzz and benchmark processes: one found during a pass makes it invalid (section 6.E).
@@ -161,76 +163,35 @@ def run_pass(binary, path):
     return json.loads(p.stdout.strip().splitlines()[-1]), None
 
 
-def mac_speed(out, machine_dir, arms, order, passes, specs, label):
+def mac_speed(out, machine_dir, arms, order, passes, specs, label, deadline=None, cross_arm=True):
     machine_dir = Path(machine_dir)
     machine_dir.mkdir(parents=True, exist_ok=True)
     bins = {k: (v, sha_file(v)) for k, v in arms.items()}
-    queue = list(specs)
-    set_aside = []
-    retried = set()
-    with open(out, "a") as f:
-        def rec(d):
-            f.write(json.dumps(d) + "\n")
-            f.flush()
 
-        while queue:
-            name, path = queue.pop(0)
-            attempt, measured = 0, False
-            while attempt < ATTEMPTS and not measured:
-                attempt += 1
-                tag = f"{label}-{name}-attempt{attempt}"
-                mac_snapshot(machine_dir / f"{tag}-before.txt")
-                void, timed_out = None, False
-                for run, arm in enumerate(order, 1):
-                    for pi in range(passes):
-                        c = wait_condition(mac_condition)
-                        if c is None:
-                            timed_out = True
-                            break
-                        t0, s0 = time.time(), now()
-                        res, err = run_pass(bins[arm][0], path)
-                        t1, s1 = time.time(), now()
-                        events = pmset_events(t0, t1)
-                        after = {"forbidden": forbidden_running(), "ac_power": "AC Power" in sh("pmset -g batt")}
-                        reason = None
-                        if res is None:
-                            reason = f"harness error: {err}"
-                        elif events:
-                            reason = f"sleep or battery: {events}"
-                        elif after["forbidden"] or not after["ac_power"]:
-                            reason = f"after the pass: {after}"
-                        rec({"machine": "mac", "label": label, "input": name, "file": str(path), "attempt": attempt,
-                             "run": run, "arm": arm, "binary": bins[arm][0], "binary_sha256": bins[arm][1],
-                             "pass": pi, "start": s0, "end": s1, "seconds": round(t1 - t0, 3), "condition": c,
-                             "after": after, "valid": reason is None, "invalid_reason": reason, "result": res})
-                        if res is None and err and "round trip" in err:
-                            raise SystemExit(f"B9 stops: round-trip mismatch on {name} ({arm})")
-                        if reason:
-                            void = reason
-                            break
-                    if void or timed_out:
-                        break
-                mac_snapshot(machine_dir / f"{tag}-after.txt")
-                if timed_out:
-                    rec({"machine": "mac", "label": label, "input": name, "attempt": attempt, "block": "set aside",
-                         "reason": "start condition not met within 30 minutes"})
-                    if name in retried:
-                        rec({"machine": "mac", "label": label, "input": name, "block": "not measured"})
-                    else:
-                        retried.add(name)
-                        set_aside.append((name, path))
-                    break
-                if void:
-                    rec({"machine": "mac", "label": label, "input": name, "attempt": attempt, "block": "void",
-                         "reason": void})
-                    continue
-                measured = True
-                rec({"machine": "mac", "label": label, "input": name, "attempt": attempt, "block": "complete"})
-            if not measured and not timed_out:
-                rec({"machine": "mac", "label": label, "input": name, "block": "not measured",
-                     "reason": "three void attempts"})
-            if not queue and set_aside:
-                queue, set_aside = set_aside, []
+    def do_pass(name, path, arm, tag, run, p, attempt):
+        c = wait_condition(mac_condition)
+        if c is None:
+            return None
+        t0, s0 = time.time(), now()
+        res, err = run_pass(bins[arm][0], path)
+        t1, s1 = time.time(), now()
+        events = pmset_events(t0, t1)
+        after = {"forbidden": forbidden_running(), "ac_power": "AC Power" in sh("pmset -g batt")}
+        reason, stop = None, False
+        if res is None:
+            reason = f"harness error: {err}"
+            stop = bool(err and "round trip" in err)
+        elif events:
+            reason = f"sleep or battery: {events}"
+        elif after["forbidden"] or not after["ac_power"]:
+            reason = f"after the pass: {after}"
+        return {"file": str(path), "binary": bins[arm][0], "binary_sha256": bins[arm][1], "start": s0, "end": s1,
+                "seconds": round(t1 - t0, 3), "condition": c, "after": after, "valid": reason is None,
+                "invalid_reason": "round-trip mismatch" if stop else reason, "stop": stop, "result": res}
+
+    return b9blocks.run_blocks(out, "mac", label, specs, order, passes, do_pass,
+                               lambda suffix: mac_snapshot(machine_dir / f"{label}-{suffix}"),
+                               deadline=deadline, cross_arm=cross_arm)
 
 
 # ---------------------------------------------------------------- section 7: analysis
@@ -413,8 +374,54 @@ def report(paths, out_json, out_md, label="b9"):
                       "below_bound": [b for b in below1 if not b[5]], "below_1": len(below1)}))
 
 
+def platforms(out, paths):
+    """H3(a): every (platform, arm) hash of each input and configuration must be one value. Exit 1 on a difference."""
+    h, meta = {}, {}
+    for p in paths:
+        for line in open(p):
+            if not line.strip():
+                continue
+            d = json.loads(line)
+            if "hash" not in d:
+                continue
+            meta.setdefault(d["platform"], set()).add(d["arm"])
+            for c in CONFIGS:
+                h.setdefault(d["input"], {}).setdefault(c, {})[f"{d['platform']}/{d['arm']}"] = d["hash"][c]["sha256"]
+                if d["platform"].startswith("linux-amd64"):
+                    meta.setdefault("x86_kernel", set()).add(
+                        "avx2" if d["hash"].get("x86_avx2") else ("sse2" if "x86_avx2" in d["hash"] else "?"))
+    diffs = [(n, c, v) for n, cs in h.items() for c, v in cs.items() if len(set(v.values())) != 1]
+    res = {"platforms_and_arms": {k: sorted(v) for k, v in meta.items()}, "inputs": len(h),
+           "all_equal": not diffs, "differences": diffs, "hashes": h}
+    Path(out).write_text(json.dumps(res, indent=1) + "\n")
+    print(json.dumps({"inputs": len(h), "all_equal": not diffs, "differences": len(diffs),
+                      "platforms_and_arms": res["platforms_and_arms"]}))
+    if diffs:
+        raise SystemExit("B9 stops: H3(a) hash difference")
+
+
+def chunkdiff(out, bin_a, bin_b, specs):
+    """6.D: per input and configuration, how many chunks differ between two arms (b9codec chunks)."""
+    res = []
+    for name, path in specs:
+        da = json.loads(subprocess.run([bin_a, "chunks", path], capture_output=True, text=True, check=True).stdout)
+        db = json.loads(subprocess.run([bin_b, "chunks", path], capture_output=True, text=True, check=True).stdout)
+        row = {"input": name, "chunks": da["chunks"]}
+        for c in CONFIGS:
+            row[c] = sum(1 for x, y in zip(da[c], db[c]) if x != y)
+        res.append(row)
+        print(json.dumps(row), flush=True)
+    Path(out).write_text(json.dumps({"arm_a": bin_a, "arm_b": bin_b, "rows": res}, indent=1) + "\n")
+
+
 def main():
     a = sys.argv[1:]
+    if a[0] == "platforms":
+        platforms(a[1], a[2:])
+        return
+    if a[0] == "chunkdiff":
+        chunkdiff(a[1], a[2], a[3], [(s.split("=", 1)[0], s.split("=", 1)[1]) for s in a[4:]])
+        return
     if a[0] == "report":
         # report OUT.json OUT.md LABEL SPEED.jsonl...
         report(a[4:], a[1], a[2], a[3])
@@ -423,7 +430,7 @@ def main():
         verify(a[1], a[2])
     elif a[0] == "mac-speed":
         out, mdir = a[1], a[2]
-        order, passes, label, rest = "ABBAABBA", 3, "b9", []
+        order, passes, label, rest, deadline, cross = "ABBAABBA", 3, "b9", [], None, True
         it = iter(a[3:])
         arms = {}
         for x in it:
@@ -433,12 +440,16 @@ def main():
                 passes = int(next(it))
             elif x == "--label":
                 label = next(it)
+            elif x == "--deadline":
+                deadline = float(next(it))
+            elif x == "--per-arm-hashes":
+                cross = False
             elif re.match(r"^[AB]=", x):
                 arms[x[0]] = x[2:]
             else:
                 rest.append(x)
         specs = [(s.split("=", 1)[0], s.split("=", 1)[1]) for s in rest]
-        mac_speed(out, mdir, arms, order, passes, specs, label)
+        print(mac_speed(out, mdir, arms, order, passes, specs, label, deadline, cross))
     elif a[0] == "analyse":
         res = analyse_rows(load_passes(a[1:]))
         print(json.dumps(res, indent=1))

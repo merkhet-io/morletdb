@@ -21,9 +21,11 @@ import sys
 import threading
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import b9blocks  # noqa: E402
+
 IMAGE = "sha256:06001cf262e0684d505218be89ef045e23cc3270af43a127d4ab94a4a78e1344"
 WAIT_MAX_S = int(os.environ.get("B9_WAIT_MAX_S", "1800"))
-ATTEMPTS = 3
 
 
 def sh(cmd):
@@ -132,90 +134,49 @@ def run_pass(binary, path):
     return json.loads(p.stdout.strip().splitlines()[-1]), None
 
 
-def speed(out, sdir, mdir, arms, order, passes, specs, label):
+def speed(out, sdir, mdir, arms, order, passes, specs, label, deadline=None):
     for d in (sdir, mdir):
         os.makedirs(d, exist_ok=True)
     bins = {k: (v, sha_file(v)) for k, v in arms.items()}
-    queue, set_aside, retried = list(specs), [], set()
-    with open(out, "a") as f:
-        def rec(d):
-            f.write(json.dumps(d) + "\n")
-            f.flush()
 
-        while queue:
-            name, path = queue.pop(0)
-            attempt, measured, timed_out = 0, False, False
-            while attempt < ATTEMPTS and not measured:
-                attempt += 1
-                tag = "%s-%s-attempt%d" % (label, name, attempt)
-                snapshot(os.path.join(mdir, tag + "-before.txt"))
-                void = None
-                for run, arm in enumerate(order, 1):
-                    for pi in range(passes):
-                        c = wait_condition()
-                        if c is None:
-                            timed_out = True
-                            break
-                        sticky0 = throttled()
-                        sp = os.path.join(sdir, "%s-run%d-pass%d.tsv" % (tag, run, pi))
-                        s = Sampler(sp)
-                        s.start()
-                        t0, s0 = time.time(), now()
-                        res, err = run_pass(bins[arm][0], path)
-                        t1, s1 = time.time(), now()
-                        s.stop.set()
-                        s.join()
-                        sticky1 = throttled()
-                        rows = s.rows
-                        ths = sorted(set(r[3] for r in rows))
-                        smp = {"n": len(rows), "max_temp": max(r[1] for r in rows) if rows else None,
-                               "min_arm_hz": min(r[2] for r in rows) if rows else None,
-                               "throttled_values": [hex(x) for x in ths],
-                               "sticky_before": hex(sticky0), "sticky_after": hex(sticky1)}
-                        reason = None
-                        new_sticky = (sticky1 & ~sticky0) & 0xF0000
-                        if res is None:
-                            reason = "harness error: %s" % err
-                        elif smp["max_temp"] is not None and smp["max_temp"] >= 60.0:
-                            reason = "temperature %.1f C" % smp["max_temp"]
-                        elif any(x & 0xF for x in ths) or sticky1 & 0xF:
-                            reason = "get_throttled bits 0-3 set: %s" % smp["throttled_values"]
-                        elif new_sticky:
-                            reason = "sticky bit appeared: %s -> %s" % (hex(sticky0), hex(sticky1))
-                        rec({"machine": "pi", "label": label, "input": name, "file": path, "attempt": attempt,
-                             "run": run, "arm": arm, "binary": bins[arm][0], "binary_sha256": bins[arm][1],
-                             "pass": pi, "start": s0, "end": s1, "seconds": round(t1 - t0, 3), "condition": c,
-                             "sampler": smp, "sampler_file": os.path.basename(sp), "valid": reason is None,
-                             "invalid_reason": reason, "result": res})
-                        if res is None and err and "round trip" in err:
-                            raise SystemExit("B9 stops: round-trip mismatch on %s (%s)" % (name, arm))
-                        if reason:
-                            void = reason
-                            break
-                    if void or timed_out:
-                        break
-                snapshot(os.path.join(mdir, tag + "-after.txt"))
-                if timed_out:
-                    rec({"machine": "pi", "label": label, "input": name, "attempt": attempt, "block": "set aside",
-                         "reason": "start condition not met within 30 minutes"})
-                    if name in retried:
-                        rec({"machine": "pi", "label": label, "input": name, "block": "not measured"})
-                    else:
-                        retried.add(name)
-                        set_aside.append((name, path))
-                    break
-                if void:
-                    rec({"machine": "pi", "label": label, "input": name, "attempt": attempt, "block": "void",
-                         "reason": void})
-                    continue
-                measured = True
-                rec({"machine": "pi", "label": label, "input": name, "attempt": attempt, "block": "complete"})
-            if not measured and not timed_out:
-                rec({"machine": "pi", "label": label, "input": name, "block": "not measured",
-                     "reason": "three void attempts"})
-            if not queue and set_aside:
-                queue, set_aside = set_aside, []
-    print("DONE")
+    def do_pass(name, path, arm, tag, run, pi, attempt):
+        c = wait_condition()
+        if c is None:
+            return None
+        sticky0 = throttled()
+        sp = os.path.join(sdir, "%s-run%d-pass%d.tsv" % (tag, run, pi))
+        s = Sampler(sp)
+        s.start()
+        t0, s0 = time.time(), now()
+        res, err = run_pass(bins[arm][0], path)
+        t1, s1 = time.time(), now()
+        s.stop.set()
+        s.join()
+        sticky1 = throttled()
+        rows = s.rows
+        ths = sorted(set(r[3] for r in rows))
+        smp = {"n": len(rows), "max_temp": max(r[1] for r in rows) if rows else None,
+               "min_arm_hz": min(r[2] for r in rows) if rows else None,
+               "throttled_values": [hex(x) for x in ths], "sticky_before": hex(sticky0), "sticky_after": hex(sticky1)}
+        reason, stop = None, False
+        new_sticky = (sticky1 & ~sticky0) & 0xF0000
+        if res is None:
+            reason = "harness error: %s" % err
+            stop = bool(err and "round trip" in err)
+        elif smp["max_temp"] is not None and smp["max_temp"] >= 60.0:
+            reason = "temperature %.1f C" % smp["max_temp"]
+        elif any(x & 0xF for x in ths) or sticky1 & 0xF:
+            reason = "get_throttled bits 0-3 set: %s" % smp["throttled_values"]
+        elif new_sticky:
+            reason = "sticky bit appeared: %s -> %s" % (hex(sticky0), hex(sticky1))
+        return {"file": path, "binary": bins[arm][0], "binary_sha256": bins[arm][1], "start": s0, "end": s1,
+                "seconds": round(t1 - t0, 3), "condition": c, "sampler": smp, "sampler_file": os.path.basename(sp),
+                "valid": reason is None, "invalid_reason": "round-trip mismatch" if stop else reason, "stop": stop,
+                "result": res}
+
+    r = b9blocks.run_blocks(out, "pi", label, specs, order, passes, do_pass,
+                            lambda suffix: snapshot(os.path.join(mdir, "%s-%s" % (label, suffix))), deadline=deadline)
+    print("DONE", r)
 
 
 def main():
@@ -231,7 +192,7 @@ def main():
     if a[0] != "speed":
         raise SystemExit(__doc__)
     out, sdir, mdir = a[1], a[2], a[3]
-    order, passes, label, arms, rest = "ABBAABBA", 3, "b9", {}, []
+    order, passes, label, arms, rest, deadline = "ABBAABBA", 3, "b9", {}, [], None
     it = iter(a[4:])
     for x in it:
         if x == "--order":
@@ -240,11 +201,13 @@ def main():
             passes = int(next(it))
         elif x == "--label":
             label = next(it)
+        elif x == "--deadline":
+            deadline = float(next(it))
         elif x[:2] in ("A=", "B="):
             arms[x[0]] = x[2:]
         else:
             rest.append(x)
-    speed(out, sdir, mdir, arms, order, passes, [tuple(s.split("=", 1)) for s in rest], label)
+    speed(out, sdir, mdir, arms, order, passes, [tuple(s.split("=", 1)) for s in rest], label, deadline)
 
 
 if __name__ == "__main__":
