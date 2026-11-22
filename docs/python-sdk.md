@@ -109,11 +109,6 @@ are separate rankings and must not be compared numerically.
 
 ### From an asset and a time to an interval
 
-**Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.16.** `Client.explain_match(query, match)` explains
-one selected match with the scorer's own arithmetic: exact distance, winning lag, correlations, contributions and the
-raw statistics of both intervals ([contract](search-contract.md#explaining-one-match-sql-0316-experimental-573)). It
-explains the similarity score, not a fault's cause.
-
 **Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
 asset and an incident time to recording intervals in one read-only snapshot, with the same transaction rules as
 `investigate`:
@@ -246,6 +241,14 @@ interval `[start, end)` as the query.
   collection has probe search enabled for this window size (`morlet_enable_envelope_probes`): candidates then
   come from an approximate index (small galleries are still searched exhaustively), while the distances are
   computed exactly. See the [search contract](search-contract.md).
+
+### Explain one match
+
+**Experimental, from the release after 0.4.0-beta.4; needs SQL 0.3.16.** `Client.explain_match(result.query, hit.ref,
+max_lag_fraction=result.max_lag_fraction)` explains one selected match with the scorer's own arithmetic: exact
+distance, winning lag, correlations, contributions and the raw statistics of both intervals
+([contract](search-contract.md#explaining-one-match-sql-0316-experimental-573)). It explains the similarity score, not a
+fault's cause.
 
 ## Connections and transactions
 

@@ -798,6 +798,7 @@ fn morlet_envelope_explain(
         name!(contributions, Vec<f64>),
         name!(contribution_residual, f64),
         name!(stored_envelope, Vec<f64>),
+        name!(step_samples, i32),
     ),
 > {
     if max_lag < 0 || !(1..=1024).contains(&max_bins) {
@@ -824,6 +825,7 @@ fn morlet_envelope_explain(
         parts,
         e.residual,
         g,
+        morlet_core::envelope::ENVELOPE_STEP as i32,
     ))
 }
 
@@ -2098,7 +2100,7 @@ SELECT morlet_start_recording('public.xm','other',500,'x','g','{}'::jsonb);"#,
 x AS (SELECT e.* FROM hit, morlet_explain_match('public.xm','q',0,2048,hit.recording_id,hit.start_sample,include_envelopes=>true) e)
 SELECT float8send(x.distance)=float8send(hit.distance) AND x.lag_samples=x.lag_steps*10 AND x.representation=morlet_envelope_version()
   AND cardinality(x.stored_envelope)=x.envelope_steps AND abs(x.contribution_residual)<1e-12
-  AND x.match_raw_status='available' AND (x.match_stats->>'sample_count')::bigint=2048 FROM hit,x"#).unwrap(), Some(true));
+  AND x.match_raw_status='available' AND cardinality(x.match_stats)=4 FROM hit,x"#).unwrap(), Some(true));
         Spi::run("CREATE FUNCTION pg_temp.xm_error(q text) RETURNS text LANGUAGE plpgsql AS $$ BEGIN EXECUTE q; RETURN ''; EXCEPTION WHEN OTHERS THEN RETURN SQLERRM; END $$").unwrap();
         for bad in [
             "SELECT * FROM morlet_explain_match('public.xm','q',0,2048,'other',0)",

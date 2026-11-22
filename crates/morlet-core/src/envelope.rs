@@ -17,6 +17,8 @@ use crate::{validate, SignalError};
 pub const ENVELOPE_VERSION: &str = "xc-envelope-f16-v1";
 const SMOOTH: usize = 50;
 const DECIMATE: usize = 10;
+/// Raw samples per envelope position.
+pub const ENVELOPE_STEP: usize = DECIMATE;
 const HEADER: [u8; 1] = [1];
 
 pub fn valid_window(n: usize) -> bool {
@@ -221,11 +223,18 @@ pub fn explain(
         return Err(SignalError::InvalidEnvelope);
     }
     let n = q.len();
+    // finite inputs can still overflow a product; such a pair has no meaningful explanation
     let (mut lag, mut best) = (0isize, lag_sum(q, g, 0));
+    if !best.is_finite() {
+        return Err(SignalError::NumericalFailure);
+    }
     let zero_lag_correlation = best / n as f64;
     for l in 1..=max_lag as isize {
         for candidate in [l, -l] {
             let s = lag_sum(q, g, candidate);
+            if !s.is_finite() {
+                return Err(SignalError::NumericalFailure);
+            }
             if s > best {
                 (lag, best) = (candidate, s);
             }
@@ -595,6 +604,9 @@ mod tests {
         assert!(explain(&[1.0; 8], &[1.0; 8], 2, 0).is_err());
         assert!(explain(&[1.0; 8], &[1.0; 7], 2, 1).is_err());
         assert!(explain(&[f64::NAN; 8], &[1.0; 8], 2, 1).is_err());
+        // finite values whose products overflow to +inf and -inf: refused, not explained with NaN correlations
+        let q = [1e308, -1e308, 1e308, -1e308];
+        assert!(explain(&q, &[1e308, 1e308, 1e308, 1e308], 1, 1).is_err());
     }
 
     use super::*;

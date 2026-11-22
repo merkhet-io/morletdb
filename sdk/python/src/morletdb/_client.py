@@ -392,23 +392,34 @@ class Client:
                             (collection, recording_id, int(start_sample), int(end_sample))).fetchone()
         return IntervalStats(int(row[0]), *map(float, row[1:]))
 
-    def explain_match(self, query: IntervalRef, match: IntervalRef, *, max_lag_fraction: float = 0.075,
+    def explain_match(self, query: IntervalRef, match: IntervalRef, *, max_lag_fraction: float,
                       contribution_bins: int = 32, include_envelopes: bool = False) -> MatchExplanation:
         """Why the stored window `match` scored as it did against `query` (SQL 0.3.16, experimental): winning lag,
-        correlations, and contributions that add up to the correlation. Use the search's `max_lag_fraction`. It explains
-        the similarity score, not a fault's cause, and does not change ranking or stored data."""
-        if query.collection != match.collection:
-            raise InvalidInputError("query and match must be in one collection")
-        if query.end_sample - query.start_sample != match.end_sample - match.start_sample:
+        correlations, and contributions that add up to the correlation. `max_lag_fraction` must be the search's
+        (`SearchResult.max_lag_fraction`): another value explains another score. It explains the similarity score, not
+        a fault's cause, and does not change ranking or stored data."""
+        length = query.end_sample - query.start_sample
+        if length != match.end_sample - match.start_sample:
             raise InvalidInputError("query and match must have the same length")
         if not self._has("public.morlet_explain_match(regclass,text,bigint,bigint,text,bigint,double precision,integer,boolean)"):
             raise UnsupportedError("explain_match needs pg_morlet SQL 0.3.16 or later")
-        r = self._execute(
-            "SELECT * FROM morlet_explain_match(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
-            (query.collection, query.recording_id, query.start_sample, query.end_sample, match.recording_id,
-             match.start_sample, max_lag_fraction, contribution_bins, include_envelopes)).fetchone()
-        stats = lambda v: None if v is None else IntervalStats(int(v["sample_count"]), float(v["min"]), float(v["max"]),
-                                                               float(v["mean"]), float(v["rms"]))
+        if not self._one("SELECT %s::regclass=%s::regclass", (query.collection, match.collection)):
+            raise InvalidInputError("query and match must be in one collection")
+        try:
+            r = self.connection.execute(
+                "SELECT * FROM morlet_explain_match(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (query.collection, query.recording_id, query.start_sample, query.end_sample, match.recording_id,
+                 match.start_sample, max_lag_fraction, contribution_bins, include_envelopes)).fetchone()
+        except psycopg.errors.NoDataFound as exc:
+            raise NotFoundError(str(exc)) from exc
+        except psycopg.errors.RaiseException as exc:
+            text = str(exc)
+            if "not comparable" in text or "must be in" in text:
+                raise InvalidInputError(text) from exc
+            if "does not exist or is not visible" in text:
+                raise NotFoundError(text) from exc
+            raise translate(exc) from exc
+        stats = lambda v: None if v is None else IntervalStats(length, *v)
         array = lambda v: None if v is None else np.asarray(v, dtype=np.float64)
         lag = int(r[4])
         bins = tuple(MatchContribution(int(a), int(b), int(a) + lag, int(b) + lag, float(c))

@@ -58,7 +58,7 @@ then, treat a missing match at the default stride as "not found on the stored gr
 
 `morlet_explain_match(collection, query_recording_id, query_start, query_end, match_recording_id, match_start,
 max_lag_fraction, contribution_bins, include_envelopes)` explains one stored window with the scorer's arithmetic.
-Use the search's `max_lag_fraction`. Its `distance` is bitwise the value of `morlet_envelope_distance`.
+Use the search's `max_lag_fraction` (`Client.explain_match` requires it): another value explains another score. Its `distance` is bitwise the value of `morlet_envelope_distance`.
 
 - **Lag.** `lag_steps > 0` pairs `q[t + lag]` with `g[t]`: a feature of the query lies that many envelope steps earlier
   in the stored window. One step is 10 raw samples, so `lag_samples` is no more precise than that. Among equal scores
@@ -67,7 +67,8 @@ Use the search's `max_lag_fraction`. Its `distance` is bitwise the value of `mor
   positions (the paired query position is `position + lag`). Each is its products added in ascending position, divided
   by the full envelope length, as in the scorer. `contribution_residual` is the rounding left by grouping.
 - **What it does not say.** Contributions explain the similarity score, not a fault's cause. Envelopes are normalized,
-  so a close match can differ in amplitude: compare `query_stats` and `match_stats`.
+  so a close match can differ in amplitude: compare `query_stats` and `match_stats` (`[min, max, mean, rms]`, NULL on an
+  older collection without encoded chunks).
 - **Missing evidence.** No stored envelope at that position is an error. If a memory level removed the match's raw
   chunks, the score is still explained, with `match_stats` NULL and `match_raw_status` `unavailable`.
 - **Access.** The function runs with the caller's privileges and row security, like search.

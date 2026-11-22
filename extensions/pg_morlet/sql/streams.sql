@@ -1726,10 +1726,10 @@ CREATE FUNCTION public.morlet_explain_match(collection regclass,query_recording_
 RETURNS TABLE(representation text,window_size integer,step_samples integer,distance float8,lag_steps integer,
   lag_samples bigint,max_lag_steps integer,zero_lag_correlation float8,best_correlation float8,overlap_steps integer,
   envelope_steps integer,bin_start integer[],bin_end integer[],contributions float8[],contribution_residual float8,
-  query_envelope float8[],stored_envelope float8[],query_stats jsonb,match_stats jsonb,match_raw_status text)
+  query_envelope float8[],stored_envelope float8[],query_stats float8[],match_stats float8[],match_raw_status text)
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE src record; m record; rel record; env regclass; qe float8[]; width integer; allowed integer; stored bytea; raw bigint;
-  qs jsonb; ms jsonb;
+  qs float8[]; ms float8[];
 BEGIN
   IF collection IS NULL OR query_recording_id IS NULL OR query_start IS NULL OR query_end IS NULL
     OR match_recording_id IS NULL OR match_start IS NULL OR include_envelopes IS NULL THEN
@@ -1760,13 +1760,19 @@ BEGIN
   END IF;
   SELECT * INTO rel FROM public.morlet_stream_relations(collection);
   EXECUTE format('SELECT coalesce(sum(least(c.start_sample+%2$s,$2+$3)-greatest(c.start_sample,$2)),0) FROM %1$s c
-    WHERE c.recording_id=$1 AND c.start_sample<$2+$3 AND c.start_sample+%2$s>$2',rel.chunks,rel.count_expr)
+    WHERE c.recording_id=$1 AND c.start_sample>$2-32768 AND c.start_sample<$2+$3 AND c.start_sample+%2$s>$2',rel.chunks,rel.count_expr)
     INTO raw USING match_recording_id,match_start,width::bigint;
-  SELECT to_jsonb(s) INTO qs FROM public.morlet_interval_stats(collection,query_recording_id,query_start,query_end) s;
-  IF raw=width THEN
-    SELECT to_jsonb(s) INTO ms FROM public.morlet_interval_stats(collection,match_recording_id,match_start,match_start+width) s;
+  -- float8, not jsonb: json has no negative zero. Interval statistics need encoded chunks; on an older float8[]
+  -- collection they stay NULL and the score is still explained.
+  IF rel.encoded THEN
+    SELECT ARRAY[s.min,s.max,s.mean,s.rms] INTO qs
+      FROM public.morlet_interval_stats(collection,query_recording_id,query_start,query_end) s;
+    IF raw=width THEN
+      SELECT ARRAY[s.min,s.max,s.mean,s.rms] INTO ms
+        FROM public.morlet_interval_stats(collection,match_recording_id,match_start,match_start+width) s;
+    END IF;
   END IF;
-  RETURN QUERY SELECT public.morlet_envelope_version()::text,width,10,x.distance,x.lag,x.lag*10::bigint,allowed,
+  RETURN QUERY SELECT public.morlet_envelope_version()::text,width,x.step_samples,x.distance,x.lag,x.lag*x.step_samples::bigint,allowed,
     x.zero_lag_correlation,x.best_correlation,x.overlap,cardinality(qe),x.bin_start,x.bin_end,x.contributions,
     x.contribution_residual,CASE WHEN include_envelopes THEN qe END,CASE WHEN include_envelopes THEN x.stored_envelope END,
     qs,ms,CASE WHEN raw=width THEN 'available' ELSE 'unavailable' END

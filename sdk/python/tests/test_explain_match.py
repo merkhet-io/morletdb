@@ -23,9 +23,10 @@ class Validation(unittest.TestCase):
     def test_refused_before_any_query(self):
         client = object.__new__(morletdb.Client)
         q = IntervalRef("a.c", "q", 0, 2048)
-        for match in (IntervalRef("b.c", "m", 0, 2048), IntervalRef("a.c", "m", 0, 1024)):
-            with self.subTest(match=match), self.assertRaises(InvalidInputError):
-                client.explain_match(q, match)
+        with self.assertRaises(InvalidInputError):
+            client.explain_match(q, IntervalRef("a.c", "m", 0, 1024), max_lag_fraction=0.075)
+        with self.assertRaises(TypeError):      # the search's value is required: another one explains another score
+            client.explain_match(q, IntervalRef("a.c", "m", 0, 2048))
 
 
 @unittest.skipUnless(DSN, "set MORLET_SDK_TEST_DSN to run the explanation integration tests")
@@ -57,7 +58,7 @@ class ExplainMatch(unittest.TestCase):
             "SELECT start_sample, distance FROM morlet_search_envelope_interval(%s::regclass,'q',0,2048,top_k=>20) "
             "WHERE recording_id='m' ORDER BY distance LIMIT 1", (self.coll,)).fetchone()
         e = self.db.explain_match(IntervalRef(self.coll, "q", 0, 2048), IntervalRef(self.coll, "m", start, start + 2048),
-                                  contribution_bins=8, include_envelopes=True)
+                                  max_lag_fraction=0.075, contribution_bins=8, include_envelopes=True)
         self.assertEqual(e.distance.hex(), distance.hex())
         self.assertEqual((e.step_samples, e.lag_samples), (10, e.lag_steps * 10))
         self.assertLessEqual(abs(e.lag_steps), e.max_lag_steps)
@@ -76,11 +77,36 @@ class ExplainMatch(unittest.TestCase):
 
     def test_envelopes_only_on_request_and_removed_raw_is_explicit(self):
         q, m = IntervalRef(self.coll, "q", 0, 2048), IntervalRef(self.coll, "m", 0, 2048)
-        self.assertIsNone(self.db.explain_match(q, m).stored_envelope)
+        self.assertIsNone(self.db.explain_match(q, m, max_lag_fraction=0.075).stored_envelope)
         self.conn.execute(f"DELETE FROM {self.coll}_chunks WHERE recording_id='m' AND start_sample=0")
-        e = self.db.explain_match(q, m)
+        e = self.db.explain_match(q, m, max_lag_fraction=0.075)
         self.assertEqual((e.match_raw_status, e.match_stats), ("unavailable", None))
         self.assertIsNotNone(e.query_stats)
+        self.conn.rollback()
+
+    def test_errors_are_typed_and_collection_spelling_does_not_matter(self):
+        q = IntervalRef(self.coll, "q", 0, 2048)
+        with self.assertRaises(morletdb.NotFoundError):
+            self.db.explain_match(q, IntervalRef(self.coll, "m", 7, 2055), max_lag_fraction=0.075)
+        self.conn.rollback()
+        with self.assertRaises(morletdb.NotFoundError):
+            self.db.explain_match(q, IntervalRef(self.coll, "none", 0, 2048), max_lag_fraction=0.075)
+        self.conn.rollback()
+        with self.assertRaises(InvalidInputError):
+            self.db.explain_match(q, IntervalRef(self.coll, "m", 0, 2048), max_lag_fraction=0.075, contribution_bins=0)
+        self.conn.rollback()
+        spelled = '"' + self.schema + '"."signals"'
+        e = self.db.explain_match(q, IntervalRef(spelled, "m", 0, 2048), max_lag_fraction=0.075)
+        self.assertEqual(e.match_raw_status, "available")
+        self.conn.rollback()
+
+    def test_signed_zero_in_raw_statistics_survives(self):
+        self.db.ingest(self.coll, "z", np.full(8192, -0.0), sample_rate_hz=1000, channel="x", unit="g", search_window=2048)
+        self.conn.commit()
+        e = self.db.explain_match(IntervalRef(self.coll, "z", 0, 2048), IntervalRef(self.coll, "z", 2048, 4096),
+                                  max_lag_fraction=0.075)
+        self.assertEqual(e.query_stats.min.hex(), self.db.stats(self.coll, "z", 0, 2048).min.hex())
+        self.assertTrue(np.signbit(e.query_stats.min))
         self.conn.rollback()
 
 

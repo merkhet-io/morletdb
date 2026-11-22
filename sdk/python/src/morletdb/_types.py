@@ -260,7 +260,7 @@ class MatchExplanation:
     envelope_steps: int
     contributions: tuple[MatchContribution, ...]
     contribution_residual: float
-    query_stats: IntervalStats
+    query_stats: IntervalStats | None      # None on an older collection without encoded chunks
     match_stats: IntervalStats | None
     match_raw_status: str
     query_envelope: np.ndarray | None = None
