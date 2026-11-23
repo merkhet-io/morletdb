@@ -1,0 +1,452 @@
+{
+  "means": {
+    "0": {
+      "source-encoder": 0.40771428571428575,
+      "spectral-knn": 0.34158730158730155,
+      "embedding-knn": 0.45371428571428574,
+      "random-knn": 0.2243809523809524,
+      "shuffled-knn": 0.162,
+      "adapted-logistic": 0.18,
+      "adapted-RF": 0.2857142857142857,
+      "balanced-RF": 0.2857142857142857,
+      "balanced-SVM": 0.39999999999999997
+    },
+    "1": {
+      "source-encoder": 0.40771428571428575,
+      "spectral-knn": 0.34158730158730155,
+      "embedding-knn": 0.45371428571428574,
+      "random-knn": 0.18638095238095237,
+      "shuffled-knn": 0.10980952380952383,
+      "adapted-logistic": 0.6433333333333333,
+      "adapted-RF": 0.6786666666666666,
+      "balanced-RF": 0.6373333333333333,
+      "balanced-SVM": 0.9466666666666665
+    },
+    "2": {
+      "source-encoder": 0.40771428571428575,
+      "spectral-knn": 0.34158730158730155,
+      "embedding-knn": 0.47371428571428564,
+      "random-knn": 0.1883809523809524,
+      "shuffled-knn": 0.19352380952380951,
+      "adapted-logistic": 0.7066666666666668,
+      "adapted-RF": 0.7226666666666667,
+      "balanced-RF": 0.7546666666666667,
+      "balanced-SVM": 0.9466666666666665
+    },
+    "8": {
+      "source-encoder": 0.40771428571428575,
+      "spectral-knn": 0.9466666666666665,
+      "embedding-knn": 0.868,
+      "random-knn": 0.10893650793650796,
+      "shuffled-knn": 0.15593650793650796,
+      "adapted-logistic": 0.9466666666666667,
+      "adapted-RF": 0.9359999999999999,
+      "balanced-RF": 0.9586666666666668,
+      "balanced-SVM": 0.9466666666666665
+    }
+  },
+  "per_target": {
+    "0": {
+      "6207": {
+        "source-encoder": 0.45066666666666666,
+        "spectral-knn": 0.39428571428571424,
+        "embedding-knn": 0.5093333333333333,
+        "random-knn": 0.3220952380952381,
+        "shuffled-knn": 0.236,
+        "adapted-logistic": 0.36,
+        "adapted-RF": 0.3333333333333333,
+        "balanced-RF": 0.3333333333333333,
+        "balanced-SVM": 0.5
+      },
+      "6208": {
+        "source-encoder": 0.36476190476190473,
+        "spectral-knn": 0.28888888888888886,
+        "embedding-knn": 0.3980952380952381,
+        "random-knn": 0.12666666666666665,
+        "shuffled-knn": 0.088,
+        "adapted-logistic": 0.0,
+        "adapted-RF": 0.23809523809523808,
+        "balanced-RF": 0.23809523809523808,
+        "balanced-SVM": 0.3
+      }
+    },
+    "1": {
+      "6207": {
+        "source-encoder": 0.45066666666666666,
+        "spectral-knn": 0.39428571428571424,
+        "embedding-knn": 0.5093333333333333,
+        "random-knn": 0.152,
+        "shuffled-knn": 0.10019047619047619,
+        "adapted-logistic": 0.5,
+        "adapted-RF": 0.47733333333333333,
+        "balanced-RF": 0.5626666666666666,
+        "balanced-SVM": 1.0
+      },
+      "6208": {
+        "source-encoder": 0.36476190476190473,
+        "spectral-knn": 0.28888888888888886,
+        "embedding-knn": 0.3980952380952381,
+        "random-knn": 0.22076190476190477,
+        "shuffled-knn": 0.11942857142857141,
+        "adapted-logistic": 0.7866666666666666,
+        "adapted-RF": 0.8800000000000001,
+        "balanced-RF": 0.712,
+        "balanced-SVM": 0.8933333333333333
+      }
+    },
+    "2": {
+      "6207": {
+        "source-encoder": 0.45066666666666666,
+        "spectral-knn": 0.39428571428571424,
+        "embedding-knn": 0.5493333333333333,
+        "random-knn": 0.2780952380952381,
+        "shuffled-knn": 0.22933333333333333,
+        "adapted-logistic": 0.52,
+        "adapted-RF": 0.5306666666666666,
+        "balanced-RF": 0.7226666666666666,
+        "balanced-SVM": 1.0
+      },
+      "6208": {
+        "source-encoder": 0.36476190476190473,
+        "spectral-knn": 0.28888888888888886,
+        "embedding-knn": 0.3980952380952381,
+        "random-knn": 0.09866666666666665,
+        "shuffled-knn": 0.15771428571428572,
+        "adapted-logistic": 0.8933333333333333,
+        "adapted-RF": 0.9146666666666666,
+        "balanced-RF": 0.7866666666666667,
+        "balanced-SVM": 0.8933333333333333
+      }
+    },
+    "8": {
+      "6207": {
+        "source-encoder": 0.45066666666666666,
+        "spectral-knn": 1.0,
+        "embedding-knn": 0.7573333333333332,
+        "random-knn": 0.08,
+        "shuffled-knn": 0.15911111111111112,
+        "adapted-logistic": 0.8933333333333333,
+        "adapted-RF": 0.9786666666666667,
+        "balanced-RF": 1.0,
+        "balanced-SVM": 1.0
+      },
+      "6208": {
+        "source-encoder": 0.36476190476190473,
+        "spectral-knn": 0.8933333333333333,
+        "embedding-knn": 0.9786666666666667,
+        "random-knn": 0.13787301587301587,
+        "shuffled-knn": 0.15276190476190474,
+        "adapted-logistic": 1.0,
+        "adapted-RF": 0.8933333333333333,
+        "balanced-RF": 0.9173333333333333,
+        "balanced-SVM": 0.8933333333333333
+      }
+    }
+  },
+  "per_target_load": {
+    "0": {
+      "6207": {
+        "200": {
+          "source-encoder": 0.44000000000000006,
+          "spectral-knn": 0.4666666666666666,
+          "embedding-knn": 0.48,
+          "random-knn": 0.22666666666666666,
+          "shuffled-knn": 0.13999999999999999,
+          "adapted-logistic": 0.4,
+          "adapted-RF": 0.3333333333333333,
+          "balanced-RF": 0.3333333333333333,
+          "balanced-SVM": 0.5
+        },
+        "400": {
+          "source-encoder": 0.4533333333333334,
+          "spectral-knn": 0.3,
+          "embedding-knn": 0.52,
+          "random-knn": 0.3533333333333334,
+          "shuffled-knn": 0.30666666666666664,
+          "adapted-logistic": 0.3333333333333333,
+          "adapted-RF": 0.3333333333333333,
+          "balanced-RF": 0.3333333333333333,
+          "balanced-SVM": 0.5
+        }
+      },
+      "6208": {
+        "200": {
+          "source-encoder": 0.2866666666666667,
+          "spectral-knn": 0.3,
+          "embedding-knn": 0.3,
+          "random-knn": 0.13333333333333333,
+          "shuffled-knn": 0.08666666666666667,
+          "adapted-logistic": 0.0,
+          "adapted-RF": 0.21999999999999997,
+          "balanced-RF": 0.21999999999999997,
+          "balanced-SVM": 0.3
+        },
+        "400": {
+          "source-encoder": 0.38666666666666666,
+          "spectral-knn": 0.27999999999999997,
+          "embedding-knn": 0.44000000000000006,
+          "random-knn": 0.09333333333333334,
+          "shuffled-knn": 0.06666666666666667,
+          "adapted-logistic": 0.0,
+          "adapted-RF": 0.24,
+          "balanced-RF": 0.24,
+          "balanced-SVM": 0.3
+        }
+      }
+    },
+    "1": {
+      "6207": {
+        "200": {
+          "source-encoder": 0.44000000000000006,
+          "spectral-knn": 0.4666666666666666,
+          "embedding-knn": 0.48,
+          "random-knn": 0.15999999999999998,
+          "shuffled-knn": 0.10666666666666666,
+          "adapted-logistic": 0.4,
+          "adapted-RF": 0.4933333333333333,
+          "balanced-RF": 0.4666666666666666,
+          "balanced-SVM": 1.0
+        },
+        "400": {
+          "source-encoder": 0.4533333333333334,
+          "spectral-knn": 0.3,
+          "embedding-knn": 0.52,
+          "random-knn": 0.10666666666666669,
+          "shuffled-knn": 0.08,
+          "adapted-logistic": 0.5333333333333333,
+          "adapted-RF": 0.4666666666666666,
+          "balanced-RF": 0.6266666666666667,
+          "balanced-SVM": 1.0
+        }
+      },
+      "6208": {
+        "200": {
+          "source-encoder": 0.2866666666666667,
+          "spectral-knn": 0.3,
+          "embedding-knn": 0.3,
+          "random-knn": 0.20933333333333332,
+          "shuffled-knn": 0.10266666666666668,
+          "adapted-logistic": 0.7333333333333333,
+          "adapted-RF": 0.9466666666666667,
+          "balanced-RF": 0.8400000000000001,
+          "balanced-SVM": 1.0
+        },
+        "400": {
+          "source-encoder": 0.38666666666666666,
+          "spectral-knn": 0.27999999999999997,
+          "embedding-knn": 0.44000000000000006,
+          "random-knn": 0.16666666666666666,
+          "shuffled-knn": 0.11333333333333333,
+          "adapted-logistic": 0.7333333333333333,
+          "adapted-RF": 0.7866666666666666,
+          "balanced-RF": 0.5599999999999999,
+          "balanced-SVM": 0.7333333333333333
+        }
+      }
+    },
+    "2": {
+      "6207": {
+        "200": {
+          "source-encoder": 0.44000000000000006,
+          "spectral-knn": 0.4666666666666666,
+          "embedding-knn": 0.5599999999999999,
+          "random-knn": 0.22266666666666665,
+          "shuffled-knn": 0.2066666666666667,
+          "adapted-logistic": 0.6,
+          "adapted-RF": 0.5733333333333334,
+          "balanced-RF": 0.6799999999999999,
+          "balanced-SVM": 1.0
+        },
+        "400": {
+          "source-encoder": 0.4533333333333334,
+          "spectral-knn": 0.3,
+          "embedding-knn": 0.52,
+          "random-knn": 0.26,
+          "shuffled-knn": 0.1933333333333333,
+          "adapted-logistic": 0.4666666666666666,
+          "adapted-RF": 0.4666666666666666,
+          "balanced-RF": 0.7333333333333334,
+          "balanced-SVM": 1.0
+        }
+      },
+      "6208": {
+        "200": {
+          "source-encoder": 0.2866666666666667,
+          "spectral-knn": 0.3,
+          "embedding-knn": 0.3,
+          "random-knn": 0.0,
+          "shuffled-knn": 0.14666666666666667,
+          "adapted-logistic": 0.7333333333333333,
+          "adapted-RF": 1.0,
+          "balanced-RF": 0.8400000000000001,
+          "balanced-SVM": 1.0
+        },
+        "400": {
+          "source-encoder": 0.38666666666666666,
+          "spectral-knn": 0.27999999999999997,
+          "embedding-knn": 0.44000000000000006,
+          "random-knn": 0.16666666666666666,
+          "shuffled-knn": 0.15999999999999998,
+          "adapted-logistic": 1.0,
+          "adapted-RF": 0.7866666666666666,
+          "balanced-RF": 0.7066666666666667,
+          "balanced-SVM": 0.7333333333333333
+        }
+      }
+    },
+    "8": {
+      "6207": {
+        "200": {
+          "source-encoder": 0.44000000000000006,
+          "spectral-knn": 1.0,
+          "embedding-knn": 0.7866666666666667,
+          "random-knn": 0.13333333333333336,
+          "shuffled-knn": 0.12266666666666666,
+          "adapted-logistic": 1.0,
+          "adapted-RF": 0.9466666666666667,
+          "balanced-RF": 1.0,
+          "balanced-SVM": 1.0
+        },
+        "400": {
+          "source-encoder": 0.4533333333333334,
+          "spectral-knn": 1.0,
+          "embedding-knn": 0.7333333333333333,
+          "random-knn": 0.0,
+          "shuffled-knn": 0.18,
+          "adapted-logistic": 0.7333333333333333,
+          "adapted-RF": 1.0,
+          "balanced-RF": 1.0,
+          "balanced-SVM": 1.0
+        }
+      },
+      "6208": {
+        "200": {
+          "source-encoder": 0.2866666666666667,
+          "spectral-knn": 1.0,
+          "embedding-knn": 1.0,
+          "random-knn": 0.17333333333333334,
+          "shuffled-knn": 0.14666666666666667,
+          "adapted-logistic": 1.0,
+          "adapted-RF": 1.0,
+          "balanced-RF": 1.0,
+          "balanced-SVM": 1.0
+        },
+        "400": {
+          "source-encoder": 0.38666666666666666,
+          "spectral-knn": 0.7333333333333333,
+          "embedding-knn": 0.9466666666666667,
+          "random-knn": 0.052000000000000005,
+          "shuffled-knn": 0.15999999999999998,
+          "adapted-logistic": 1.0,
+          "adapted-RF": 0.7333333333333333,
+          "balanced-RF": 0.8133333333333332,
+          "balanced-SVM": 0.7333333333333333
+        }
+      }
+    }
+  },
+  "diagnostics": {
+    "0": {
+      "purity": 0.47064736842105265,
+      "random_purity": 0.1946263157894737,
+      "target_support_share": 0.0,
+      "retrieval_ms_per_window": 0.07645334415505395
+    },
+    "1": {
+      "purity": 0.5544526315789473,
+      "random_purity": 0.19925263157894735,
+      "target_support_share": 0.18113157894736842,
+      "retrieval_ms_per_window": 0.0815095712467538
+    },
+    "2": {
+      "purity": 0.6423842105263158,
+      "random_purity": 0.20405263157894735,
+      "target_support_share": 0.36589473684210533,
+      "retrieval_ms_per_window": 0.07994490836771499
+    },
+    "8": {
+      "purity": 0.8992473684210525,
+      "random_purity": 0.19375263157894734,
+      "target_support_share": 0.9059578947368422,
+      "retrieval_ms_per_window": 0.08948122445910581
+    }
+  },
+  "n8_differences": {
+    "source-encoder": 0.46028571428571424,
+    "spectral-knn": -0.07866666666666655,
+    "random-knn": 0.759063492063492,
+    "shuffled-knn": 0.7120634920634921,
+    "adapted-logistic": -0.07866666666666666,
+    "adapted-RF": -0.06799999999999995,
+    "balanced-RF": -0.09066666666666678,
+    "balanced-SVM": -0.07866666666666655
+  },
+  "primary_advance_passed": false,
+  "paired_disagreements": {
+    "source-encoder": {
+      "retrieval_correct_other_wrong": 47,
+      "retrieval_wrong_other_correct": 0,
+      "same_correctness": 53,
+      "recording_seed_observations": 100
+    },
+    "spectral-knn": {
+      "retrieval_correct_other_wrong": 4,
+      "retrieval_wrong_other_correct": 9,
+      "same_correctness": 87,
+      "recording_seed_observations": 100
+    },
+    "random-knn": {
+      "retrieval_correct_other_wrong": 77,
+      "retrieval_wrong_other_correct": 0,
+      "same_correctness": 23,
+      "recording_seed_observations": 100
+    },
+    "shuffled-knn": {
+      "retrieval_correct_other_wrong": 71,
+      "retrieval_wrong_other_correct": 1,
+      "same_correctness": 28,
+      "recording_seed_observations": 100
+    },
+    "adapted-logistic": {
+      "retrieval_correct_other_wrong": 5,
+      "retrieval_wrong_other_correct": 10,
+      "same_correctness": 85,
+      "recording_seed_observations": 100
+    },
+    "adapted-RF": {
+      "retrieval_correct_other_wrong": 4,
+      "retrieval_wrong_other_correct": 8,
+      "same_correctness": 88,
+      "recording_seed_observations": 100
+    },
+    "balanced-RF": {
+      "retrieval_correct_other_wrong": 4,
+      "retrieval_wrong_other_correct": 10,
+      "same_correctness": 86,
+      "recording_seed_observations": 100
+    },
+    "balanced-SVM": {
+      "retrieval_correct_other_wrong": 4,
+      "retrieval_wrong_other_correct": 9,
+      "same_correctness": 87,
+      "recording_seed_observations": 100
+    }
+  },
+  "source_validation": {
+    "ce": 0.3548744588744589,
+    "contrastive": 0.4489696969696969,
+    "rf": 0.5,
+    "logistic": 0.7333333333333333,
+    "svm": 0.7333333333333333
+  },
+  "selected_family": "contrastive",
+  "selected_epoch_counts": [
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "logistic_C": 0.1,
+  "svm_C": 1.0
+}
