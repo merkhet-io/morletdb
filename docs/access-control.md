@@ -113,3 +113,10 @@ measured.
 - **Collection-level metadata.** Catalog information is visible to every role with schema
   access, as usual in PostgreSQL: table names and the window sizes encoded in probe-table
   names.
+
+## Diagnostic calibration sets (SQL 0.3.17)
+
+The optional `_calibration_sets` table follows all referenced recordings: a partially visible manifest is entirely
+hidden. Both enablement orders are supported. Approval additionally requires a configured reviewer role and is guarded
+against direct SQL edits. See [calibration sets](calibration-sets.md) for grants, snapshot semantics and the limitations
+of captured annotations and trusted table owners.

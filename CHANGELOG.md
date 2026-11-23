@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- SQL 0.3.17 (experimental): diagnostic calibration-set drafts, reviewed immutable revisions, content manifests,
+  resolution and Python SDK helpers (#601). Opt-in companion table; no sample-format changes. Approval is enforced
+  through SQL triggers and a separate role. Writes require REPEATABLE READ or SERIALIZABLE; as-of selection and
+  derived feature profiles remain unsupported. Upgrade with `ALTER EXTENSION pg_morlet UPDATE` and explicitly enable
+  each collection. See `docs/calibration-sets.md` for privileges, limits and retention behavior.
+
+
 ## 0.4.0-beta.5
 
 **The fifth beta.** SQL version 0.3.16, with an update script from 0.3.15: run `ALTER EXTENSION pg_morlet UPDATE` after

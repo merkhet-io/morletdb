@@ -151,6 +151,37 @@ class Client:
         except psycopg.Error as exc:
             raise translate(exc) from exc
 
+    # --- diagnostic calibration sets (experimental, SQL 0.3.17) --------------------------------------
+    def enable_calibration_sets(self, collection: str, *, approver_role: str) -> str:
+        """Owner operation; context must already be enabled. Does not grant privileges."""
+        return self._one("SELECT morlet_enable_calibration_sets(%s::regclass,%s::regrole)::text",
+                         (collection, approver_role))
+
+    def put_calibration_set(self, collection: str, set_id: str, revision: int, members: list[dict], *,
+                            replace_draft: bool = False, decision_at: datetime | None = None) -> dict:
+        """Create/retry a draft; explicitly refresh/edit with replace_draft=True.
+
+        Writes require a caller-owned REPEATABLE READ or SERIALIZABLE transaction. No commit is performed.
+        Each member has recording_id, start_sample, end_sample and label_id. As-of selection is unsupported.
+        """
+        return self._one("SELECT morlet_put_calibration_set(%s::regclass,%s,%s,%s,%s,%s)",
+                         (collection, set_id, revision, Jsonb(members), replace_draft, decision_at))
+
+    def approve_calibration_set(self, collection: str, set_id: str, revision: int, *, expected_digest: str, reason: str) -> dict:
+        """Approve unchanged draft evidence using the configured approver role; immutable afterward."""
+        return self._one("SELECT morlet_approve_calibration_set(%s::regclass,%s,%s,%s,%s)",
+                         (collection, set_id, revision, expected_digest, reason))
+
+    def get_calibration_set(self, collection: str, set_id: str, revision: int) -> dict:
+        """Read the entire visible revision, including its frozen manifest and approval."""
+        return self._one("SELECT morlet_get_calibration_set(%s::regclass,%s,%s)",
+                         (collection, set_id, revision))
+
+    def resolve_calibration_set(self, collection: str, set_id: str, revision: int) -> dict:
+        """Compare captured evidence to current evidence without altering the stored revision."""
+        return self._one("SELECT morlet_resolve_calibration_set(%s::regclass,%s,%s)",
+                         (collection, set_id, revision))
+
     # --- investigation -------------------------------------------------------------------------------
     def export_evidence(self, collection: str, recording_id: str, start_sample: int, end_sample: int | None = None, *,
                         include_samples: bool = False, max_sample_bytes: int = 64 * 1024 * 1024,
