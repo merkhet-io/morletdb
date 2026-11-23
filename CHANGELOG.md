@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Interpretation revisions (experimental, SQL 0.3.17, part of #600).** A calibration correction can change what stored
+  samples mean without changing one byte. `morlet_enable_interpretation` adds an opt-in, append-only history of a
+  recording's unit and `metadata.calibration`; `morlet_correct_interpretation` applies a correction atomically and never
+  rewrites samples. Once enabled, direct SQL cannot change those fields without a matching revision. Labels record the
+  revision they were written under, and `morlet_interpretation_review` lists those that need review without changing
+  them. Investigations and evidence bundles carry the revision, and `resolve_evidence` reports `interpretation_changed`
+  separately from `metadata_changed`. Run `ALTER EXTENSION pg_morlet UPDATE`; collections are unchanged until enabled.
+
 ## 0.4.0-beta.5
 
 **The fifth beta.** SQL version 0.3.16, with an update script from 0.3.15: run `ALTER EXTENSION pg_morlet UPDATE` after

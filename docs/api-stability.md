@@ -11,8 +11,8 @@ Every SQL function and aggregate of the extension is classified in
 | Class | What it means | Count today |
 |---|---|---|
 | **stable** | Documented and in use for at least two releases. Its name, arguments and result do not change and it is not removed, except through a deprecation cycle. Its documented behaviour is kept; bug fixes are allowed. | 64 (65 signatures) |
-| **experimental** | Documented, but new (SQL 0.3.5 or later): memory levels, `morlet_verify`, compressed transfer, notifications, synchronous groups, the ingest hold, roll-ups, `morlet_latest`, `morlet_coverage`, TOAST pinning, `morlet_search_similar_excluding`, time anchors (SQL 0.3.13), `morlet_latest_per_stream` (SQL 0.3.14), `morlet_explain_match` (SQL 0.3.16). It may still change between minor releases; every change is in the changelog. It becomes stable after it has been in use for two releases without a breaking change. | 43 |
-| **internal** | Helpers of other functions (aggregate steps, triggers, relation lookups) and undocumented functions. No promise: they may change or disappear in any release. Do not call them from applications. | 108 |
+| **experimental** | Documented, but new (SQL 0.3.5 or later): memory levels, `morlet_verify`, compressed transfer, notifications, synchronous groups, the ingest hold, roll-ups, `morlet_latest`, `morlet_coverage`, TOAST pinning, `morlet_search_similar_excluding`, time anchors (SQL 0.3.13), `morlet_latest_per_stream` (SQL 0.3.14), `morlet_explain_match` (SQL 0.3.16), interpretation revisions (SQL 0.3.17). It may still change between minor releases; every change is in the changelog. It becomes stable after it has been in use for two releases without a breaking change. | 48 |
+| **internal** | Helpers of other functions (aggregate steps, triggers, relation lookups) and undocumented functions. No promise: they may change or disappear in any release. Do not call them from applications. | 115 |
 | **deprecated** | Stable functions on their way out (none today). | 0 |
 
 ## The promises

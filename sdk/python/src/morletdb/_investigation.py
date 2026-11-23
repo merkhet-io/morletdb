@@ -270,6 +270,13 @@ def _collect(reader, collection, rid, start, end, settings):
                if segment is not None else None)
     if context is not None:
         provenance["context_representation"] = context.value_rules   # read from the server
+    if reader._has("public.morlet_interpretation_revisions(regclass,text[])"):
+        # #600: which unit and calibration revision each returned recording was read under; absent when not tracked
+        shown = sorted({rid, *(m.ref.recording_id for m in search.matches)})
+        revisions = dict(reader._execute("SELECT recording_id, revision FROM public.morlet_interpretation_revisions("
+                                         "%s::regclass,%s::text[])", (collection, shown)).fetchall())
+        if revisions:
+            provenance["interpretation_revisions"] = revisions
     # Machine-readable counterparts of the notes, for agents and reports (#577 review): one rule set, here.
     states = ["no_temporal_cutoff"]
     notes = ["Coverage describes compatible recordings before source exclusion; it is not a count of scored candidates.",

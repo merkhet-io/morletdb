@@ -51,12 +51,13 @@ def _sample_bytes(samples) -> bytes:
     return np.asarray(samples, dtype=np.float64).astype("<f8").tobytes()      # bit for bit, signed zero included
 
 
-def _describe(role, rank, ref, rec, raw, digest, bundled, axis):
+def _describe(role, rank, ref, rec, raw, digest, bundled, axis, revision=None):
     name = "query" if role == "query" else f"match-{rank}"
     return {"id": name, "role": role, "rank": rank, "collection": ref.collection, "recording_id": ref.recording_id,
             "start_sample": ref.start_sample, "end_sample": ref.end_sample,
             "specification": {"sample_rate_hz": rec.sample_rate_hz, "channel": rec.channel, "unit": rec.unit,
-                              "metadata": rec.metadata, "time_axis_version": axis},
+                              "metadata": rec.metadata, "time_axis_version": axis,
+                              **({} if revision is None else {"interpretation_revision": revision})},
             "raw_status": "available" if raw else "unavailable", "sample_sha256": digest,
             "file": f"samples/{name}.f64le" if bundled and raw else None}
 
@@ -105,6 +106,8 @@ def _check_interval(item):
           and "channel" in spec and "unit" in spec
           and all(spec.get(k) is None or isinstance(spec[k], str) for k in ("channel", "unit", "time_axis_version")),
           f"{name}: specification")
+    _need("interpretation_revision" not in spec or _is_int(spec["interpretation_revision"], 0, 2**31 - 1),
+          f"{name}: interpretation revision")
     digest, file = item.get("sample_sha256"), item.get("file")
     _need(item.get("raw_status") in ("available", "unavailable"), f"{name}: raw status")
     _need((digest is None) == (item["raw_status"] == "unavailable"), f"{name}: digest and raw status disagree")
@@ -260,7 +263,8 @@ def export_evidence(client, collection, recording_id, start_sample, end_sample, 
             if raw:
                 data = _sample_bytes(reader.read_ref(ref).samples)
                 digest = hashlib.sha256(data).hexdigest()
-            item = _describe(role, rank, ref, rec, raw, digest, include_samples, _axis(reader, ref))
+            item = _describe(role, rank, ref, rec, raw, digest, include_samples, _axis(reader, ref),
+                             _interpretation_revision(reader, ref))
             intervals.append(item)
             if include_samples and raw:
                 samples[item["id"]] = data
@@ -355,9 +359,28 @@ def _axis(reader, ref):
     return reader._one("SELECT public.morlet_time_axis_version(%s::regclass,%s)", (ref.collection, ref.recording_id))
 
 
+def _interpretation_revision(reader, ref):
+    """The recording's revision (#600), or None on an older server, with the history off, or without access to it."""
+    if not reader._has("public.morlet_interpretation_revisions(regclass,text[])"):
+        return None
+    return reader._one("SELECT revision FROM public.morlet_interpretation_revisions(%s::regclass,%s::text[])",
+                       (ref.collection, [ref.recording_id]))
+
+
+def _interpretation_changed(reader, item, ref, rec):
+    """The calibration differs, or a recorded revision moved (also when a later correction restored the same value)."""
+    spec = item["specification"]
+    before, after = spec["metadata"], rec.metadata
+    if isinstance(before, dict) and canonical(before.get("calibration")) != canonical(after.get("calibration")):
+        return True
+    return ("interpretation_revision" in spec
+            and _interpretation_revision(reader, ref) != spec["interpretation_revision"])
+
+
 def resolve_evidence(client, bundle, *, timeout_ms, max_sample_bytes, expected_manifest_sha256=None):
     """Each interval against the database now, under the caller's permissions, in one snapshot: `unchanged`, `changed`,
-    `specification_changed`, `time_axis_changed`, `metadata_changed`, `samples_unavailable`, `missing` (or not visible to this role), or
+    `specification_changed`, `time_axis_changed`, `interpretation_changed` (a calibration correction),
+    `metadata_changed` (another metadata field), `samples_unavailable`, `missing` (or not visible to this role), or
     `no_digest` when its raw samples were already unavailable at export."""
     if not isinstance(bundle, EvidenceBundle):
         check = verify_evidence(bundle, expected_manifest_sha256=expected_manifest_sha256)
@@ -395,14 +418,17 @@ def _status(reader, item, ref):
         return "specification_changed"
     if "time_axis_version" in spec and spec["time_axis_version"] != _axis(reader, ref):
         return "time_axis_changed"
+    interpretation = _interpretation_changed(reader, item, ref, rec)
     if item["sample_sha256"] is None:
-        return "no_digest"
+        return "interpretation_changed" if interpretation else "no_digest"
     length = ref.end_sample - ref.start_sample
     if ref.end_sample > rec.samples or _raw_samples(reader, ref.collection, ref.recording_id, ref.start_sample,
                                                     ref.end_sample) != length:
         return "samples_unavailable"
     if hashlib.sha256(_sample_bytes(reader.read_ref(ref).samples)).hexdigest() != item["sample_sha256"]:
         return "changed"
+    if interpretation:
+        return "interpretation_changed"
     return "metadata_changed" if canonical(rec.metadata) != canonical(spec["metadata"]) else "unchanged"
 
 

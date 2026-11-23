@@ -422,6 +422,48 @@ class Client:
                             (collection, recording_id, int(start_sample), int(end_sample))).fetchone()
         return IntervalStats(int(row[0]), *map(float, row[1:]))
 
+    # --- interpretation revisions (#600) ------------------------------------------------------------
+    def _need_interpretation(self) -> None:
+        if not self._has("public.morlet_enable_interpretation(regclass)"):
+            raise UnsupportedError("interpretation revisions need pg_morlet SQL 0.3.17 or later")
+
+    def enable_interpretation(self, collection: str) -> None:
+        """Keep an append-only history of unit and calibration corrections for this collection (experimental)."""
+        self._need_interpretation()
+        self._execute("SELECT public.morlet_enable_interpretation(%s::regclass)", (collection,))
+
+    def correct_interpretation(self, collection: str, recording_id: str, *, unit: str, calibration: Mapping[str, Any],
+                               reason: str) -> int:
+        """Record a corrected unit and `metadata["calibration"]` and return the revision. Samples are not changed. An
+        identical retry returns the current revision; labels written earlier are listed by `interpretation_review`."""
+        if not isinstance(unit, str) or not isinstance(calibration, Mapping):
+            raise InvalidInputError("unit must be a string and calibration a mapping")
+        if not isinstance(reason, str) or not reason.strip():
+            raise InvalidInputError("a correction needs a reason")
+        self._need_interpretation()
+        return self._one("SELECT public.morlet_correct_interpretation(%s::regclass,%s,%s,%s,%s)",
+                         (collection, recording_id, unit, Jsonb(dict(calibration)), reason))
+
+    def interpretation_history(self, collection: str, recording_id: str) -> list[dict[str, Any]]:
+        """Every correction of a recording, oldest first, with the previous and new values, reason, author and time."""
+        self._need_interpretation()
+        cursor = self._execute("SELECT * FROM public.morlet_interpretation_history(%s::regclass,%s)",
+                               (collection, recording_id))
+        names = [c.name for c in cursor.description]
+        return [dict(zip(names, row)) for row in cursor.fetchall()]
+
+    def interpretation_review(self, collection: str, recording_id: str | None = None, *,
+                              max_rows: int = 1000) -> list[dict[str, Any]]:
+        """Active labels written under an older revision (`stale`) or with none recorded (`unversioned`). Read-only:
+        nothing is changed or retracted. Each row's `truncated` is true when more than `max_rows` labels are due."""
+        if isinstance(max_rows, bool) or not isinstance(max_rows, int) or not 1 <= max_rows <= 100000:
+            raise InvalidInputError("max_rows must be an integer in 1..100000")
+        self._need_interpretation()
+        cursor = self._execute("SELECT * FROM public.morlet_interpretation_review(%s::regclass,%s,%s)",
+                               (collection, recording_id, max_rows))
+        names = [c.name for c in cursor.description]
+        return [dict(zip(names, row)) for row in cursor.fetchall()]
+
     def explain_match(self, query: IntervalRef, match: IntervalRef, *, max_lag_fraction: float,
                       contribution_bins: int = 32, include_envelopes: bool = False) -> MatchExplanation:
         """Why the stored window `match` scored as it did against `query` (SQL 0.3.16, experimental): winning lag,
