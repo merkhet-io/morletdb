@@ -206,8 +206,27 @@ psql -d morlet_upgrade_rel_old -c "DROP FUNCTION $BLOCKER"
 echo "ok: a failed update rolls back; $OLD_VERSION stays installed and reads are identical"
 fi
 
+# Time anchors set up by the old release (#607): before 0.3.17 their triggers stored the collection's OID; the update
+# recreates them without arguments.
+if ver_ge "$OLD_VERSION" 0.3.13 && ! ver_ge "$OLD_VERSION" 0.3.17; then psql -d morlet_upgrade_rel_old <<'SQL'
+SELECT morlet_create_stream_collection('public', 'anch');
+SELECT morlet_ensure_recording('anch'::regclass, r, 1000.0, 'x', 'u', '{}'::jsonb) FROM unnest(ARRAY['a1','a2']) r;
+SELECT morlet_enable_time_anchors('anch');
+SELECT morlet_add_time_anchors('anch', 'b1', '[{"recording_id":"a1","sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"gps"},
+  {"recording_id":"a2","sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"gps"}]');
+SQL
+ANCHORS=1
+fi
 psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
+if [ -n "${ANCHORS:-}" ]; then
+  args=$(psql -d morlet_upgrade_rel_old -c "SELECT count(*)||' '||max(tgnargs) FROM pg_trigger
+    WHERE tgrelid='anch_time_anchors'::regclass AND NOT tgisinternal")
+  psql -d morlet_upgrade_rel_old -c "DELETE FROM anch WHERE recording_id='a2'"
+  left=$(psql -d morlet_upgrade_rel_old -c "SELECT string_agg(recording_id,',') FROM anch_time_anchors")
+  [ "$args" = "4 0" ] && [ "$left" = a1 ] || { echo "FAIL: anchor triggers after the update: $args, anchors left: $left"; exit 1; }
+  echo "ok: the update recreated the existing time-anchor triggers without OID arguments (#607)"
+fi
 snapshot morlet_upgrade_rel_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
 echo "ok: updated to $NEW_VERSION; reads, envelope search and comparisons are identical"

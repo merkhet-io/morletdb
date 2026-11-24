@@ -153,6 +153,38 @@ class Contract(unittest.TestCase):
             self.db.samples_for_time(twice, base + 5 * 10 ** 9, base + 10 * 10 ** 9)
         self.assertEqual(self.db.samples_for_time(twice, base + 11 * 10 ** 9, base + 12 * 10 ** 9), (16, 17))
 
+    def test_time_anchor_triggers_survive_restore(self):
+        """#607: the anchor triggers stored the collection's OID as an argument; pg_dump keeps it verbatim and the OID
+        changes on restore, so deleting a recording with anchors failed afterwards. The triggers below are given a
+        stale OID, as in a restored database: the rules must hold and the cascade must work."""
+        if not self.db._has("public.morlet_add_time_anchors(regclass,text,jsonb)"):
+            self.skipTest("server without time anchors (SQL 0.3.13)")
+        for rid in ("keep", "gone"):
+            self.db.ingest(self.coll, rid, np.arange(10, dtype=np.float64), sample_rate_hz=1000, channel="c", unit="u")
+        rel = self.conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)::text", (self.coll,)).fetchone()[0]
+        self.assertEqual(self.conn.execute("SELECT count(*), max(tgnargs) FROM pg_trigger WHERE NOT tgisinternal "
+                                           "AND tgrelid=%s::regclass", (rel,)).fetchone(), (4, 0))
+        oid = self.conn.execute("SELECT max(oid)::bigint + 100000 FROM pg_class").fetchone()[0]   # no such relation
+        for name, when, each, func in (
+                ("morlet_time_anchors_lock", "BEFORE INSERT", "ROW", "morlet_time_anchors_lock"),
+                ("morlet_time_anchors_append_only", "BEFORE UPDATE OR DELETE", "ROW", "morlet_time_anchors_append_only"),
+                ("morlet_time_anchors_no_truncate", "BEFORE TRUNCATE", "STATEMENT", "morlet_time_anchors_append_only")):
+            self.conn.execute(f"DROP TRIGGER {name} ON {rel}")
+            self.conn.execute(f"CREATE TRIGGER {name} {when} ON {rel} FOR EACH {each} "
+                              f"EXECUTE FUNCTION public.{func}('{oid}')")
+        rows = [{"recording_id": rid, "sample_offset": 0, "utc_ns": "1000", "uncertainty_ns": 0, "source": "gps"}
+                for rid in ("keep", "gone")]
+        self.assertEqual(self.conn.execute("SELECT morlet_add_time_anchors(%s::regclass,'b1',%s::jsonb)",
+                                           (self.coll, json.dumps(rows))).fetchone()[0], 2)
+        self.conn.commit()
+        for stmt in (f"UPDATE {rel} SET source='x'", f"DELETE FROM {rel} WHERE recording_id='keep'", f"TRUNCATE {rel}"):
+            with self.assertRaisesRegex(psycopg.Error, "append-only"):
+                self.conn.execute(stmt)
+            self.conn.rollback()
+        self.conn.execute(f"DELETE FROM {self.coll} WHERE recording_id='gone'")     # cascades to its anchor
+        self.assertEqual(self.conn.execute(f"SELECT array_agg(recording_id) FROM {rel}").fetchone()[0], ["keep"])
+        self.conn.commit()
+
     def test_search_results_resolve_to_retrievable_intervals(self):
         rate = 8000
         a = events(60_000, [8192, 30_000, 50_000], rate, seed=2)

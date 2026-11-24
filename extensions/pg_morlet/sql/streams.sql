@@ -2951,15 +2951,16 @@ BEGIN
     EXECUTE format('CREATE UNIQUE INDEX ON %I.%I(supersedes) WHERE supersedes IS NOT NULL',s,c||'_time_anchors');
     rel:=format('%I.%I',s,c||'_time_anchors')::regclass;
     -- The rules hold for direct SQL too: every insert is checked per statement, and rows are never changed or
-    -- removed (revisions and retractions are new rows), except when their recording is deleted.
+    -- removed (revisions and retractions are new rows), except when their recording is deleted. The triggers take no
+    -- arguments: pg_dump keeps arguments verbatim, and an OID changes on restore (#607).
     EXECUTE format('CREATE TRIGGER morlet_time_anchors_lock BEFORE INSERT ON %s
-      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_lock(%L)',rel,collection::oid);
+      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_lock()',rel);
     EXECUTE format('CREATE TRIGGER morlet_time_anchors_check AFTER INSERT ON %s REFERENCING NEW TABLE AS morlet_new_anchors
       FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_time_anchors_inserted()',rel);
     EXECUTE format('CREATE TRIGGER morlet_time_anchors_append_only BEFORE UPDATE OR DELETE ON %s
-      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_append_only(%L)',rel,collection::oid);
+      FOR EACH ROW EXECUTE FUNCTION public.morlet_time_anchors_append_only()',rel);
     EXECUTE format('CREATE TRIGGER morlet_time_anchors_no_truncate BEFORE TRUNCATE ON %s
-      FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_time_anchors_append_only(%L)',rel,collection::oid);
+      FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_time_anchors_append_only()',rel);
   END IF;
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
   RETURN rel;
@@ -3043,27 +3044,30 @@ END $$;
 -- Row trigger (before insert) of every <c>_time_anchors table: every insert, direct or through the functions, runs
 -- under READ COMMITTED and holds the collection's anchor-write lock until it commits, so the statement check below
 -- sees every anchor committed before it. One lock per collection (not per recording in row order) cannot deadlock
--- between multi-recording inserts; anchor writes are rare. TG_ARGV[0]: the collection's oid.
+-- between multi-recording inserts; anchor writes are rare. The key is the anchor table's oid, read when the trigger
+-- runs (never stored in the trigger, #607), so every writer of one database agrees on it.
 CREATE FUNCTION public.morlet_time_anchors_lock()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 BEGIN
   IF current_setting('transaction_isolation')<>'read committed' THEN
     RAISE EXCEPTION 'time anchors are written under READ COMMITTED (this transaction is %)',current_setting('transaction_isolation');
   END IF;
-  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-anchor-coll/'||TG_ARGV[0],0));
+  PERFORM pg_advisory_xact_lock(hashtextextended('morlet-anchor-coll/'||TG_RELID,0));
   RETURN NEW;
 END $$;
 
 -- Row and truncate trigger of every <c>_time_anchors table: anchors are append-only. A delete is allowed only as the
 -- cascade of deleting their recording: from another trigger (the foreign key's), with the recording gone. The check
 -- reads the collection as the deleting role, which a DELETE with a WHERE clause needs anyway (SELECT on its columns).
--- TG_ARGV[0]: the collection's oid.
+-- The collection is found through the foreign key, not a trigger argument (#607); without one, nothing is removed.
 CREATE FUNCTION public.morlet_time_anchors_append_only()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE parent boolean;
+DECLARE parent boolean; collection regclass;
 BEGIN
   IF TG_OP='DELETE' AND pg_trigger_depth()>1 THEN
-    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE recording_id=$1)',TG_ARGV[0]::oid::regclass)
+    collection:=public.morlet_companion_parent(TG_RELID);
+    IF collection IS NULL THEN RAISE EXCEPTION 'time anchor table % has no foreign key to its collection',TG_RELID::regclass; END IF;
+    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE recording_id=$1)',collection)
       INTO parent USING OLD.recording_id;
     IF NOT parent THEN RETURN OLD; END IF;
   END IF;
@@ -4575,9 +4579,9 @@ RETURNS regclass LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_
     FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection
 $$;
 
--- The collection a companion table (history or labels) belongs to, from its foreign key on recording_id: it
+-- The collection a companion table (interpretation history, labels, time anchors) belongs to, from its foreign key on recording_id: it
 -- survives dump and restore, where OIDs change, and renames.
-CREATE FUNCTION public.morlet_interpretation_parent(companion regclass)
+CREATE FUNCTION public.morlet_companion_parent(companion regclass)
 RETURNS regclass LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
   SELECT k.confrelid::regclass FROM pg_constraint k JOIN pg_attribute a ON a.attrelid=k.conrelid AND a.attnum=k.conkey[1]
     WHERE k.conrelid=companion AND k.contype='f' AND cardinality(k.conkey)=1 AND a.attname='recording_id'
@@ -4644,7 +4648,7 @@ RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS 
 DECLARE rel regclass; current_revision integer;
 BEGIN
   IF TG_OP='UPDATE' THEN NEW.interpretation_revision:=OLD.interpretation_revision; RETURN NEW; END IF;
-  rel:=public.morlet_interpretation_relation(public.morlet_interpretation_parent(TG_RELID));
+  rel:=public.morlet_interpretation_relation(public.morlet_companion_parent(TG_RELID));
   IF rel IS NOT NULL AND has_table_privilege(rel,'SELECT') THEN
     EXECUTE format('SELECT coalesce(max(revision),0) FROM %s WHERE recording_id=$1',rel)
       INTO current_revision USING NEW.recording_id;
@@ -4658,7 +4662,7 @@ RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS 
 DECLARE parent boolean;
 BEGIN
   IF TG_OP='DELETE' AND pg_trigger_depth()>1 THEN
-    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE recording_id=$1)',public.morlet_interpretation_parent(TG_RELID))
+    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE recording_id=$1)',public.morlet_companion_parent(TG_RELID))
       INTO parent USING OLD.recording_id;
     IF NOT parent THEN RETURN OLD; END IF;
   END IF;
@@ -4670,7 +4674,7 @@ CREATE FUNCTION public.morlet_interpretation_insert()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE cur_unit text; cur_cal jsonb; cur integer; last_unit text; last_cal jsonb;
 BEGIN
-  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1 FOR UPDATE',public.morlet_interpretation_parent(TG_RELID))
+  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1 FOR UPDATE',public.morlet_companion_parent(TG_RELID))
     INTO cur_unit,cur_cal USING NEW.recording_id;
   IF cur_unit IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
   EXECUTE format('SELECT coalesce(max(revision),0) FROM %s WHERE recording_id=$1',TG_RELID::regclass) INTO cur USING NEW.recording_id;
@@ -4695,7 +4699,7 @@ CREATE FUNCTION public.morlet_interpretation_applied()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE cur_unit text; cur_cal jsonb; latest integer;
 BEGIN
-  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1',public.morlet_interpretation_parent(TG_RELID))
+  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1',public.morlet_companion_parent(TG_RELID))
     INTO cur_unit,cur_cal USING NEW.recording_id;
   IF cur_unit IS NULL THEN RETURN NULL; END IF;     -- the recording was deleted, and its history with it
   EXECUTE format('SELECT max(revision) FROM %s WHERE recording_id=$1',TG_RELID::regclass) INTO latest USING NEW.recording_id;
