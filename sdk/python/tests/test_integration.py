@@ -157,8 +157,8 @@ class Contract(unittest.TestCase):
         """#607: the anchor triggers stored the collection's OID as an argument; pg_dump keeps it verbatim and the OID
         changes on restore, so deleting a recording with anchors failed afterwards. The triggers below are given a
         stale OID, as in a restored database: the rules must hold and the cascade must work."""
-        if not self.db._has("public.morlet_add_time_anchors(regclass,text,jsonb)"):
-            self.skipTest("server without time anchors (SQL 0.3.13)")
+        if not self.db._has("public.morlet_companion_parent(regclass)"):
+            self.skipTest("server before SQL 0.3.17: its anchor triggers read the OID argument")
         for rid in ("keep", "gone"):
             self.db.ingest(self.coll, rid, np.arange(10, dtype=np.float64), sample_rate_hz=1000, channel="c", unit="u")
         rel = self.conn.execute("SELECT morlet_enable_time_anchors(%s::regclass)::text", (self.coll,)).fetchone()[0]
