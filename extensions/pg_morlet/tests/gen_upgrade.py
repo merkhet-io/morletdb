@@ -19,7 +19,7 @@ control = (EXT / "pg_morlet.control").read_text()
 assert "default_version = '0.3.17'" in control, "control file"
 
 C_FUNCTIONS = ()
-NEW = ("morlet_interpretation_relation", "morlet_enable_interpretation", "morlet_bind_label_interpretation",
+NEW = ("morlet_interpretation_relation", "morlet_interpretation_parent", "morlet_enable_interpretation", "morlet_bind_label_interpretation",
        "morlet_label_interpretation", "morlet_interpretation_append_only", "morlet_interpretation_insert",
        "morlet_interpretation_applied", "morlet_interpretation_guard", "morlet_correct_interpretation",
        "morlet_interpretation_revisions", "morlet_interpretation_history", "morlet_interpretation_review")

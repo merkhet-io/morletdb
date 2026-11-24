@@ -127,7 +127,8 @@ restore data. Exporting discloses what this role can read and cannot be revoked 
 a partial bundle. A bundle does not pin data against retention or compaction, and it is not a diagnosis.
 
 `resolve_evidence` reports `interpretation_changed` when `metadata["calibration"]` or a recorded interpretation revision
-differs, and `metadata_changed` for any other metadata field. A changed unit stays `specification_changed`.
+differs, `interpretation_unverified` when the bundle recorded a revision that this role or server cannot read, and
+`metadata_changed` for any other metadata field. A changed unit stays `specification_changed`.
 
 ### Correct a unit or calibration
 

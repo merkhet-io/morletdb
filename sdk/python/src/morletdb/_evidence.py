@@ -367,19 +367,25 @@ def _interpretation_revision(reader, ref):
                        (ref.collection, [ref.recording_id]))
 
 
-def _interpretation_changed(reader, item, ref, rec):
-    """The calibration differs, or a recorded revision moved (also when a later correction restored the same value)."""
+def _interpretation_state(reader, item, ref, rec):
+    """"changed" when the calibration differs or a known revision moved (also when a later correction restored the
+    value); "unverified" when the bundle recorded a revision that this role or server cannot read; else None."""
     spec = item["specification"]
     before, after = spec["metadata"], rec.metadata
     if isinstance(before, dict) and canonical(before.get("calibration")) != canonical(after.get("calibration")):
-        return True
-    return ("interpretation_revision" in spec
-            and _interpretation_revision(reader, ref) != spec["interpretation_revision"])
+        return "changed"
+    if "interpretation_revision" not in spec:
+        return None
+    now = _interpretation_revision(reader, ref)
+    if now is None:
+        return "unverified"
+    return "changed" if now != spec["interpretation_revision"] else None
 
 
 def resolve_evidence(client, bundle, *, timeout_ms, max_sample_bytes, expected_manifest_sha256=None):
     """Each interval against the database now, under the caller's permissions, in one snapshot: `unchanged`, `changed`,
-    `specification_changed`, `time_axis_changed`, `interpretation_changed` (a calibration correction),
+    `specification_changed`, `time_axis_changed`, `interpretation_changed` (a calibration correction), `interpretation_unverified` (a recorded revision this role or
+    server cannot read),
     `metadata_changed` (another metadata field), `samples_unavailable`, `missing` (or not visible to this role), or
     `no_digest` when its raw samples were already unavailable at export."""
     if not isinstance(bundle, EvidenceBundle):
@@ -418,9 +424,9 @@ def _status(reader, item, ref):
         return "specification_changed"
     if "time_axis_version" in spec and spec["time_axis_version"] != _axis(reader, ref):
         return "time_axis_changed"
-    interpretation = _interpretation_changed(reader, item, ref, rec)
+    interpretation = _interpretation_state(reader, item, ref, rec)
     if item["sample_sha256"] is None:
-        return "interpretation_changed" if interpretation else "no_digest"
+        return f"interpretation_{interpretation}" if interpretation else "no_digest"
     length = ref.end_sample - ref.start_sample
     if ref.end_sample > rec.samples or _raw_samples(reader, ref.collection, ref.recording_id, ref.start_sample,
                                                     ref.end_sample) != length:
@@ -428,7 +434,7 @@ def _status(reader, item, ref):
     if hashlib.sha256(_sample_bytes(reader.read_ref(ref).samples)).hexdigest() != item["sample_sha256"]:
         return "changed"
     if interpretation:
-        return "interpretation_changed"
+        return f"interpretation_{interpretation}"
     return "metadata_changed" if canonical(rec.metadata) != canonical(spec["metadata"]) else "unchanged"
 
 

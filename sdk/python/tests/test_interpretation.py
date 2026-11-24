@@ -271,6 +271,28 @@ class Interpretation(unittest.TestCase):
         self.assertEqual(self.db.read(self.c, "r1", 8192, 9216).samples.tobytes(), more.tobytes())
         self.assertEqual(len(self.db.interpretation_history(self.c, "r1")), 1)
 
+    def test_triggers_hold_no_database_local_oids(self):
+        # pg_dump keeps trigger arguments verbatim; OIDs change on restore (review of #605)
+        self.enable_all()
+        rows = self.admin.execute("SELECT tgname, tgnargs FROM pg_trigger WHERE NOT tgisinternal AND tgrelid IN "
+                                  "(SELECT oid FROM pg_class WHERE relnamespace=%s::regnamespace) "
+                                  "AND tgname LIKE 'morlet_%%interpretation%%'", (self.schema,)).fetchall()
+        self.assertEqual(len(rows), 6)
+        self.assertEqual({n for _, n in rows}, {0})
+
+    def test_staged_revisions_must_form_one_chain(self):
+        # review of #605: revision 2 staged before revision 1 was applied
+        self.enable_all()
+        t = sql.Identifier(self.schema, "rec_interpretation")
+        conn = self.db.connection
+        conn.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
+                             "VALUES ('r1',1,'x','mV','{{\"mv_per_count\":2}}','one')").format(t))
+        with self.assertRaises(psycopg.Error):
+            conn.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
+                                 "VALUES ('r1',2,'x','mV','{{\"mv_per_count\":3}}','two')").format(t))
+        conn.rollback()
+        self.assertEqual(self.db.interpretation_history(self.c, "r1"), [])
+
     def test_evidence_separates_a_calibration_change_from_a_note(self):
         self.enable_all()
         with tempfile.TemporaryDirectory() as tmp:
@@ -296,6 +318,23 @@ class Interpretation(unittest.TestCase):
             self.assertEqual(status(), "interpretation_changed")
             self.correct(1)                           # the value is back, but it is a different revision
             self.assertEqual(status(), "interpretation_changed")
+            self.grant()                              # a reader who cannot see the history: unverified, not changed
+            self.admin.execute(sql.SQL("REVOKE SELECT ON {} FROM {}").format(
+                sql.Identifier(self.schema, "rec_interpretation"), sql.Identifier(self.role)))
+            fresh = os.path.join(tmp, "fresh")
+            self.commit()
+            self.db.export_evidence(self.c, "r2", 0, 512, include_samples=True).write(fresh)
+            self.commit()
+            conn = self.db.connection
+            conn.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(self.role)))
+            conn.commit()
+            try:
+                statuses = {i["status"] for i in self.db.resolve_evidence(fresh)}
+                self.commit()
+            finally:
+                conn.execute("RESET ROLE")
+                conn.commit()
+            self.assertEqual(statuses, {"interpretation_unverified"})
 
 
 if __name__ == "__main__":

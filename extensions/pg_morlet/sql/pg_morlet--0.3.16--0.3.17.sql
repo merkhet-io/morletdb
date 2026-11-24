@@ -8,6 +8,12 @@ RETURNS regclass LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_
     FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection
 $$;
 
+CREATE FUNCTION public.morlet_interpretation_parent(companion regclass)
+RETURNS regclass LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT k.confrelid::regclass FROM pg_constraint k JOIN pg_attribute a ON a.attrelid=k.conrelid AND a.attnum=k.conkey[1]
+    WHERE k.conrelid=companion AND k.contype='f' AND cardinality(k.conkey)=1 AND a.attname='recording_id'
+$$;
+
 CREATE FUNCTION public.morlet_enable_interpretation(collection regclass)
 RETURNS regclass LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE s text; c text; rel regclass;
@@ -26,19 +32,21 @@ BEGIN
       recorded_by text NOT NULL DEFAULT current_user,
       UNIQUE(recording_id,revision))',s,c||'_interpretation',c);
     rel:=format('%I.%I',s,c||'_interpretation')::regclass;
+    -- Trigger functions find related tables from the catalog, never from an OID argument: pg_dump keeps trigger
+    -- arguments verbatim, and OIDs differ after a restore.
     -- The rules hold for direct SQL too: history is append-only, and the recording's unit or calibration can only
     -- change together with a revision that records it.
     EXECUTE format('CREATE TRIGGER morlet_interpretation_insert BEFORE INSERT ON %s
-      FOR EACH ROW EXECUTE FUNCTION public.morlet_interpretation_insert(%L)',rel,collection::oid);
+      FOR EACH ROW EXECUTE FUNCTION public.morlet_interpretation_insert()',rel);
     EXECUTE format('CREATE CONSTRAINT TRIGGER morlet_interpretation_applied AFTER INSERT ON %s
-      DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.morlet_interpretation_applied(%L)',rel,collection::oid);
+      DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.morlet_interpretation_applied()',rel);
     EXECUTE format('CREATE TRIGGER morlet_interpretation_append_only BEFORE UPDATE OR DELETE ON %s
-      FOR EACH ROW EXECUTE FUNCTION public.morlet_interpretation_append_only(%L)',rel,collection::oid);
+      FOR EACH ROW EXECUTE FUNCTION public.morlet_interpretation_append_only()',rel);
     EXECUTE format('CREATE TRIGGER morlet_interpretation_no_truncate BEFORE TRUNCATE ON %s
-      FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_interpretation_append_only(%L)',rel,collection::oid);
+      FOR EACH STATEMENT EXECUTE FUNCTION public.morlet_interpretation_append_only()',rel);
     EXECUTE format('CREATE TRIGGER morlet_interpretation_guard BEFORE UPDATE OF unit,metadata ON %s FOR EACH ROW
       WHEN (OLD.unit IS DISTINCT FROM NEW.unit OR OLD.metadata->''calibration'' IS DISTINCT FROM NEW.metadata->''calibration'')
-      EXECUTE FUNCTION public.morlet_interpretation_guard(%L)',collection,collection::oid);
+      EXECUTE FUNCTION public.morlet_interpretation_guard()',collection);
   END IF;
   PERFORM public.morlet_bind_label_interpretation(collection);
   IF public.morlet_row_security_enabled(collection) THEN PERFORM public.morlet_enable_row_security(collection); END IF;
@@ -55,7 +63,7 @@ BEGIN
     OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=labels AND tgname='morlet_label_interpretation') THEN RETURN; END IF;
   EXECUTE format('ALTER TABLE %s ADD COLUMN interpretation_revision integer CHECK(interpretation_revision>=0)',labels);
   EXECUTE format('CREATE TRIGGER morlet_label_interpretation BEFORE INSERT OR UPDATE OF interpretation_revision ON %s
-    FOR EACH ROW EXECUTE FUNCTION public.morlet_label_interpretation(%L)',labels,collection::oid);
+    FOR EACH ROW EXECUTE FUNCTION public.morlet_label_interpretation()',labels);
 END $$;
 
 CREATE FUNCTION public.morlet_label_interpretation()
@@ -63,7 +71,7 @@ RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS 
 DECLARE rel regclass; current_revision integer;
 BEGIN
   IF TG_OP='UPDATE' THEN NEW.interpretation_revision:=OLD.interpretation_revision; RETURN NEW; END IF;
-  rel:=public.morlet_interpretation_relation(TG_ARGV[0]::oid::regclass);
+  rel:=public.morlet_interpretation_relation(public.morlet_interpretation_parent(TG_RELID));
   IF rel IS NOT NULL AND has_table_privilege(rel,'SELECT') THEN
     EXECUTE format('SELECT coalesce(max(revision),0) FROM %s WHERE recording_id=$1',rel)
       INTO current_revision USING NEW.recording_id;
@@ -77,7 +85,7 @@ RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS 
 DECLARE parent boolean;
 BEGIN
   IF TG_OP='DELETE' AND pg_trigger_depth()>1 THEN
-    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE recording_id=$1)',TG_ARGV[0]::oid::regclass)
+    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %s WHERE recording_id=$1)',public.morlet_interpretation_parent(TG_RELID))
       INTO parent USING OLD.recording_id;
     IF NOT parent THEN RETURN OLD; END IF;
   END IF;
@@ -86,12 +94,19 @@ END $$;
 
 CREATE FUNCTION public.morlet_interpretation_insert()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE cur_unit text; cur_cal jsonb; cur integer;
+DECLARE cur_unit text; cur_cal jsonb; cur integer; last_unit text; last_cal jsonb;
 BEGIN
-  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1 FOR UPDATE',TG_ARGV[0]::oid::regclass)
+  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1 FOR UPDATE',public.morlet_interpretation_parent(TG_RELID))
     INTO cur_unit,cur_cal USING NEW.recording_id;
   IF cur_unit IS NULL THEN RAISE EXCEPTION 'recording does not exist or is not visible'; END IF;
   EXECUTE format('SELECT coalesce(max(revision),0) FROM %s WHERE recording_id=$1',TG_RELID::regclass) INTO cur USING NEW.recording_id;
+  IF cur>0 THEN     -- the history stays one chain: each revision replaces what the previous one applied
+    EXECUTE format('SELECT unit,calibration FROM %s WHERE recording_id=$1 AND revision=$2',TG_RELID::regclass)
+      INTO last_unit,last_cal USING NEW.recording_id,cur;
+    IF last_unit IS DISTINCT FROM cur_unit OR last_cal IS DISTINCT FROM cur_cal THEN
+      RAISE EXCEPTION 'interpretation revision % is not applied to recording %',cur,NEW.recording_id;
+    END IF;
+  END IF;
   IF NEW.revision<>cur+1 THEN RAISE EXCEPTION 'interpretation revision must be %',cur+1; END IF;
   IF NEW.unit=cur_unit AND NEW.calibration IS NOT DISTINCT FROM cur_cal THEN
     RAISE EXCEPTION 'an interpretation revision must change the unit or the calibration';
@@ -105,7 +120,7 @@ CREATE FUNCTION public.morlet_interpretation_applied()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE cur_unit text; cur_cal jsonb; latest integer;
 BEGIN
-  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1',TG_ARGV[0]::oid::regclass)
+  EXECUTE format('SELECT unit,metadata->''calibration'' FROM %s WHERE recording_id=$1',public.morlet_interpretation_parent(TG_RELID))
     INTO cur_unit,cur_cal USING NEW.recording_id;
   IF cur_unit IS NULL THEN RETURN NULL; END IF;     -- the recording was deleted, and its history with it
   EXECUTE format('SELECT max(revision) FROM %s WHERE recording_id=$1',TG_RELID::regclass) INTO latest USING NEW.recording_id;
@@ -119,7 +134,8 @@ CREATE FUNCTION public.morlet_interpretation_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; rev_unit text; rev_cal jsonb;
 BEGIN
-  rel:=public.morlet_interpretation_relation(TG_ARGV[0]::oid::regclass);
+  rel:=public.morlet_interpretation_relation(TG_RELID);
+  IF rel IS NULL THEN RAISE EXCEPTION 'unit and calibration change only through morlet_correct_interpretation'; END IF;
   EXECUTE format('SELECT unit,calibration FROM %s WHERE recording_id=$1 ORDER BY revision DESC LIMIT 1',rel)
     INTO rev_unit,rev_cal USING NEW.recording_id;
   IF rev_unit IS NULL OR rev_unit IS DISTINCT FROM NEW.unit OR rev_cal IS DISTINCT FROM NEW.metadata->'calibration' THEN

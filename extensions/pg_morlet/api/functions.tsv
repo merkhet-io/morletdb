@@ -118,6 +118,7 @@ morlet_interpretation_applied	internal	0.3.17	helper of interpretation revisions
 morlet_interpretation_guard	internal	0.3.17	helper of interpretation revisions
 morlet_interpretation_history	experimental	0.3.17	documented; new in SQL 0.3.17
 morlet_interpretation_insert	internal	0.3.17	helper of interpretation revisions
+morlet_interpretation_parent	internal	0.3.17	helper of interpretation revisions
 morlet_interpretation_relation	internal	0.3.17	helper of interpretation revisions
 morlet_interpretation_review	experimental	0.3.17	documented; new in SQL 0.3.17
 morlet_interpretation_revisions	experimental	0.3.17	documented; new in SQL 0.3.17
