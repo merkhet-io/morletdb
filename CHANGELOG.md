@@ -9,6 +9,11 @@
   revision they were written under, and `morlet_interpretation_review` lists those that need review without changing
   them. Investigations and evidence bundles carry the revision, and `resolve_evidence` reports `interpretation_changed`
   separately from `metadata_changed`. Run `ALTER EXTENSION pg_morlet UPDATE`; collections are unchanged until enabled.
+- **Fix: time anchors survive dump and restore (#607, SQL 0.3.17).** The time-anchor triggers stored the collection's
+  OID as an argument. pg_dump keeps it verbatim while the OID changes, so after a restore, deleting a recording with
+  anchors failed. The cascade check now finds the collection through its foreign key and the lock key comes from the
+  anchor table itself; both functions ignore the argument, and new anchor tables get triggers without one. Run `ALTER EXTENSION pg_morlet UPDATE`; existing triggers are left as
+  they are and work unchanged.
 
 ## 0.4.0-beta.5
 
