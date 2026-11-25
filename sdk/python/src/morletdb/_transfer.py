@@ -25,7 +25,7 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from ._client import RAW_READ_MAX
-from ._errors import ConflictError, DatabaseError, InvalidInputError, NotFoundError, translate
+from ._errors import ConflictError, DatabaseError, InvalidInputError, NotFoundError, UnsupportedError, translate
 from ._local import LocalStore
 from ._types import Recording, TransferCheck
 
@@ -108,6 +108,27 @@ def _server_hash(client: "Client", chunks: sql.Composable, recording_id: str, a:
 
 
 # --- samples: what is verified ------------------------------------------------------------------------------
+def _refuse_revised(client: "Client", collection: str, ids: list[str]) -> None:
+    """Refuse recordings of `collection` among `ids` that have interpretation revisions (#600): a corrected unit or
+    calibration. A copy would carry the corrected values without their history, so they are refused until copies
+    can carry it (#609). A history the caller cannot read is refused too: whether a recording was corrected is
+    then unknown."""
+    hist, readable = client._execute(
+        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT') FROM (SELECT to_regclass(format('%%I.%%I',"
+        "n.nspname,c.relname||'_interpretation')) h FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+        "WHERE c.oid=%s::regclass) q", (collection,)).fetchone()
+    if hist is None or not ids:
+        return
+    if not readable:
+        raise UnsupportedError(f"cannot read {hist}: whether these recordings have a corrected unit or calibration "
+                               "is unknown, so nothing is exported (#609)")
+    revised = [r[0] for r in client._execute(sql.SQL("SELECT DISTINCT recording_id FROM {} WHERE recording_id = "
+                                                     "ANY(%s) ORDER BY 1").format(sql.SQL(hist)), (ids,)).fetchall()]
+    if revised:
+        raise UnsupportedError(f"{', '.join(revised)}: corrected unit or calibration (interpretation revisions); a copy "
+                               "cannot carry that history yet, so nothing is exported (#609)")
+
+
 def _pieces(a: int, b: int) -> list[tuple[int, int]]:
     return [(s, min(s + RAW_READ_MAX, b)) for s in range(a, b, RAW_READ_MAX)]
 
@@ -215,6 +236,7 @@ def export_file(client: "Client", collection: str, path: str | Path,
     path = str(path)
     table, chunks = _names(collection)
     ids = list(recording_ids) if recording_ids is not None else [r.recording_id for r in client.recordings(collection)]
+    _refuse_revised(client, collection, ids)      # before the file is created or written
     sender = _server_encoder(client)
     out = []
     with LocalStore(path) as local:

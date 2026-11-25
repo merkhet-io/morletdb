@@ -65,6 +65,33 @@ class Interpretation(unittest.TestCase):
         return self.db.connection.execute("SELECT public.morlet_add_label(%s::regclass,%s,0,512,%s)",
                                           (self.c, rid, text)).fetchone()[0]
 
+    def test_export_refuses_corrected_recordings_before_writing(self):
+        # #609: a file copy would carry the corrected values without their history
+        self.enable_all()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "copy.morlet")
+            self.assertEqual(len(self.db.export_file(self.c, path, ["r1"])), 1)      # nothing corrected yet
+            self.correct()
+            self.commit()
+            other = os.path.join(tmp, "other.morlet")
+            with self.assertRaisesRegex(morletdb.UnsupportedError, "r1: corrected unit or calibration"):
+                self.db.export_file(self.c, other)                                    # r1 among all recordings
+            self.assertFalse(os.path.exists(other))                                   # not even created
+            self.db.connection.rollback()
+            self.assertEqual(len(self.db.export_file(self.c, other, ["r2"])), 1)      # the others still export
+            self.commit()
+            # a role that cannot read the history cannot tell, so nothing is exported
+            self.admin.execute(sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(sql.Identifier(self.schema),
+                                                                              sql.Identifier(self.role)))
+            self.admin.execute(sql.SQL("GRANT SELECT ON {}.rec, {}.rec_chunks TO {}").format(
+                sql.Identifier(self.schema), sql.Identifier(self.schema), sql.Identifier(self.role)))
+            self.db.connection.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(self.role)))
+            third = os.path.join(tmp, "third.morlet")
+            with self.assertRaisesRegex(morletdb.UnsupportedError, "cannot read"):
+                self.db.export_file(self.c, third, ["r2"])
+            self.assertFalse(os.path.exists(third))
+            self.db.connection.rollback()
+
     def enable_all(self):
         self.db.connection.execute("SELECT public.morlet_enable_context(%s::regclass)", (self.c,))
         self.db.enable_interpretation(self.c)

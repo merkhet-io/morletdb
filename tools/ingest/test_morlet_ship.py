@@ -43,7 +43,7 @@ class Shipping(unittest.TestCase):
             self.skipTest("server without chunk shipping (SQL 0.3.9)")
         for coll in ("ship_edge", "ship_central"):
             for t in ("chunks", "segments", "envelopes", "episodes", "kept_summaries", "ledger", "memory_runs",
-                      "time_anchors"):
+                      "time_anchors", "interpretation"):
                 self.c.execute(f"DROP TABLE IF EXISTS public.{coll}_{t} CASCADE")
             self.c.execute(f"DROP TABLE IF EXISTS public.{coll} CASCADE")
             self.c.execute("SELECT morlet_create_stream_collection('public',%s)", (coll,))
@@ -220,6 +220,40 @@ class Shipping(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "anchors of its own"):
             ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
         self.assertEqual(self.central(), ("0", 0))
+
+    def interpretation(self):
+        if self.c.execute("SELECT to_regproc('public.morlet_enable_interpretation') IS NULL").fetchone()[0]:
+            self.skipTest("server without interpretation revisions (SQL 0.3.17)")
+        self.c.execute("SELECT morlet_enable_interpretation('ship_edge')")
+
+    def correct(self):
+        self.c.execute("SELECT morlet_correct_interpretation('ship_edge','spindle','g','{\"g_per_count\":2}','swap')")
+
+    def test_a_corrected_recording_is_refused_before_writing(self):               # #609
+        self.interpretation()                       # enabled, nothing corrected: ships as before
+        self.assertEqual(ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)[0]["end"], 10000)
+        self.correct()
+        self.append(10000, 15000)
+        with self.assertRaisesRegex(ValueError, "spindle: corrected unit or calibration"):
+            ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+        self.assertEqual(self.central(), ("10000", 4))                       # nothing more written
+
+    def test_export_refuses_a_corrected_recording_before_writing(self):          # #609
+        try:
+            import morlet_export as me
+        except ImportError:
+            self.skipTest("pyarrow not installed")
+        import tempfile
+        from pathlib import Path
+        self.interpretation()
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "x.parquet"
+            self.assertEqual(me.export(URL, "public.ship_edge", out)["recordings"], 1)
+            out.unlink()
+            self.correct()
+            with self.assertRaisesRegex(ValueError, "spindle: corrected unit or calibration"):
+                me.export(URL, "public.ship_edge", out)
+            self.assertEqual(sorted(p.name for p in Path(d).iterdir()), [])     # no file, no partial file
 
     def test_a_target_with_other_parameters_is_refused_before_writing(self):      # #443
         for args, what in (((2000, "acc", "g", {"machine": "M1"}, 0.001), "sample_rate_hz"),

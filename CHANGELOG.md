@@ -14,6 +14,10 @@
   anchors failed. The cascade check now finds the collection through its foreign key and the lock key comes from the
   anchor table itself; both functions ignore the argument, and new anchor tables get triggers without one. Run `ALTER EXTENSION pg_morlet UPDATE`; existing triggers are left as
   they are and work unchanged.
+- **Copies refuse corrected recordings (#609).** A copy cannot carry interpretation history yet, so `export_file`,
+  `morlet_export.py` (and the S3 export) and `morlet_ship.py` refuse a selection that includes a recording with a
+  corrected unit or calibration, before anything is written. So does a role that cannot read the history. Recordings
+  without corrections copy as before.
 
 ## 0.4.0-beta.5
 

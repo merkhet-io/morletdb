@@ -355,7 +355,9 @@ class Client:
                     report: list | None = None) -> list[Recording]:
         """Copy recordings of `collection` into a MorletDB file, chunk for chunk. The file's decoded samples are
         checked bit for bit against the server's after every batch. Continues recordings already in the file
-        if their samples equal the server's first samples. `report`: as for import_file."""
+        if their samples equal the server's first samples. `report`: as for import_file. Recordings with a corrected
+        unit or calibration (interpretation revisions) are refused with UnsupportedError before anything is
+        written, since the file cannot carry their history yet (#609)."""
         from ._transfer import export_file
         return export_file(self, collection, path, recording_ids, report)
 

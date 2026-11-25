@@ -153,6 +153,12 @@ search windows and the time axis. `investigate` and evidence bundles carry the r
 `explain_match` do not yet. A client that re-declares the recording with the old calibration is refused until it uses
 the corrected value, and copies on another database do not receive the correction.
 
+Copies cannot carry the history yet (#609), so a corrected recording is not copied at all. `export_file`,
+`tools/ingest/morlet_export.py` (and the S3 export, which uses it) and `tools/ingest/morlet_ship.py` refuse a selection
+that includes a recording with a revision, before anything is written; export the other recordings by name. A role
+that cannot read the history is refused as well, because whether a recording was corrected is then unknown.
+Recordings of a collection with the history enabled but no correction copy as before.
+
 **Experimental, from 0.4.0-beta.5; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
 asset and an incident time to recording intervals in one read-only snapshot, with the same transaction rules as
 `investigate`:

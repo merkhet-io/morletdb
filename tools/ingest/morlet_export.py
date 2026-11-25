@@ -14,7 +14,9 @@ SHA-256 of its samples (little-endian float64 in order), so an import can be che
 
 Samples are read with morlet_read_interval, i.e. the values as stored (on their quantum grid), not the source
 file the recording came from, nor the compressed chunks. Reads run in a read-only transaction; memory is bounded
-by one batch of rows.
+by one batch of rows. A selection that includes a recording with a corrected unit or calibration (interpretation
+revisions, #600) is refused before the file is opened, since the format cannot carry that history yet (#609); so is a
+collection whose history this role cannot read.
 """
 import argparse
 import hashlib
@@ -71,6 +73,27 @@ def recordings(conn, collection, flt, ids):
     return rows
 
 
+def refuse_revised(conn, collection, ids):
+    """Refuse recordings of `collection` among `ids` that have interpretation revisions (#600): a corrected unit or
+    calibration. A copy would carry the corrected values without their history, so they are refused until copies
+    can carry it (#609). A history the caller cannot read is refused too: whether a recording was corrected is
+    then unknown."""
+    hist, readable = conn.execute(
+        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT') FROM (SELECT to_regclass(format('%%I.%%I',"
+        "n.nspname,c.relname||'_interpretation')) h FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+        "WHERE c.oid=%s::regclass) q", (collection,)).fetchone()
+    if hist is None or not ids:
+        return
+    if not readable:
+        raise ValueError(f"cannot read {hist}: whether these recordings have a corrected unit or calibration is "
+                         "unknown, so nothing is exported (#609)")
+    revised = [r[0] for r in conn.execute(f"SELECT DISTINCT recording_id FROM {hist} WHERE recording_id = ANY(%s) "
+                                          "ORDER BY 1", (list(ids),)).fetchall()]
+    if revised:
+        raise ValueError(f"{', '.join(revised)}: corrected unit or calibration (interpretation revisions); a copy "
+                         "cannot carry that history yet, so nothing is exported (#609)")
+
+
 def read(conn, collection, rid, start, end):
     return np.asarray(conn.execute("SELECT samples FROM morlet_read_interval(%s::regclass, %s, %s, %s)",
                                    (collection, rid, start, end)).fetchone()[0], dtype="<f8")
@@ -86,6 +109,7 @@ def export(dsn, collection, out, flt=None, ids=None):
     with connect(dsn) as conn:
         c = checked(conn, collection)
         recs = recordings(conn, c, flt or {}, ids)
+        refuse_revised(conn, c, [r[0] for r in recs])      # before the file is opened
         writer = pq.ParquetWriter(tmp, SCHEMA, compression="zstd")
         try:
             batch = []
