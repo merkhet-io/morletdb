@@ -2,12 +2,23 @@
 
 ## Unreleased
 
+- **Interpretation revisions (experimental, SQL 0.3.17, part of #600).** A calibration correction can change what stored
+  samples mean without changing one byte. `morlet_enable_interpretation` adds an opt-in, append-only history of a
+  recording's unit and `metadata.calibration`; `morlet_correct_interpretation` applies a correction atomically and never
+  rewrites samples. Once enabled, direct SQL cannot change those fields without a matching revision. Labels record the
+  revision they were written under, and `morlet_interpretation_review` lists those that need review without changing
+  them. Investigations and evidence bundles carry the revision, and `resolve_evidence` reports `interpretation_changed`
+  separately from `metadata_changed`. Run `ALTER EXTENSION pg_morlet UPDATE`; collections are unchanged until enabled.
+- **Fix: time anchors survive dump and restore (#607, SQL 0.3.17).** The time-anchor triggers stored the collection's
+  OID as an argument. pg_dump keeps it verbatim while the OID changes, so after a restore, deleting a recording with
+  anchors failed. The cascade check now finds the collection through its foreign key and the lock key comes from the
+  anchor table itself; both functions ignore the argument, and new anchor tables get triggers without one. Run `ALTER EXTENSION pg_morlet UPDATE`; existing triggers are left as
+  they are and work unchanged.
 - SQL 0.3.17 (experimental): diagnostic calibration-set drafts, reviewed immutable revisions, content manifests,
   resolution and Python SDK helpers (#601). Opt-in companion table; no sample-format changes. Approval is enforced
   through SQL triggers and a separate role. Writes require REPEATABLE READ or SERIALIZABLE; as-of selection and
   derived feature profiles remain unsupported. Upgrade with `ALTER EXTENSION pg_morlet UPDATE` and explicitly enable
   each collection. See `docs/calibration-sets.md` for privileges, limits and retention behavior.
-
 
 ## 0.4.0-beta.5
 

@@ -126,6 +126,33 @@ and a bundle with some raw samples unavailable is labelled `partial-samples`. Wi
 restore data. Exporting discloses what this role can read and cannot be revoked later. Limits raise instead of producing
 a partial bundle. A bundle does not pin data against retention or compaction, and it is not a diagnosis.
 
+`resolve_evidence` reports `interpretation_changed` when `metadata["calibration"]` or a recorded interpretation revision
+differs, `interpretation_unverified` when the bundle recorded a revision that this role or server cannot read, and
+`metadata_changed` for any other metadata field. A changed unit stays `specification_changed`.
+
+### Correct a unit or calibration
+
+**Experimental; needs SQL 0.3.17.** Correcting a calibration can change what stored samples mean without changing one
+sample byte, so a conclusion drawn earlier may no longer hold. Enable the history per collection, then correct through it:
+
+```python
+db.enable_interpretation("public.line3")
+revision = db.correct_interpretation("public.line3", "r1", unit="mV", calibration={"mv_per_count": 10},
+                                     reason="calibration certificate 42")
+db.interpretation_history("public.line3", "r1")           # previous and new values, reason, author, time
+db.interpretation_review("public.line3")                  # labels to review: `stale` or `unversioned`
+```
+
+Revision 0 is the state as ingested. An identical retry is a no-op. Once enabled, direct SQL cannot change the unit or
+`metadata.calibration` without a matching revision, and the history is append-only. MorletDB records the calibration but
+does not apply it: samples, envelopes, context values and search scores are unchanged. Review lists labels and changes
+none of them; a label written before the history existed, or by a role that cannot read it, is `unversioned`.
+
+A correction applies to the whole recording. Sample-rate corrections are not supported, because they also change stored
+search windows and the time axis. `investigate` and evidence bundles carry the revision; plain `search` and
+`explain_match` do not yet. A client that re-declares the recording with the old calibration is refused until it uses
+the corrected value, and copies on another database do not receive the correction.
+
 **Experimental, from 0.4.0-beta.5; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
 asset and an incident time to recording intervals in one read-only snapshot, with the same transaction rules as
 `investigate`:

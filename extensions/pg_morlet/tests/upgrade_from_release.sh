@@ -187,6 +187,7 @@ case "$OLD_VERSION" in
   0.3.13) BLOCKER="public.morlet_latest_per_stream(regclass, text[], integer, jsonb, integer)" ;;
   0.3.14) BLOCKER="" ;;  # 0.3.14 -> 0.3.15 only replaces an existing function: nothing new to block
   0.3.15) BLOCKER="public.morlet_explain_match(regclass, text, bigint, bigint, text, bigint, double precision, integer, boolean)" ;;
+  0.3.16) BLOCKER="public.morlet_enable_interpretation(regclass)" ;;
   0.3.10) BLOCKER="public.morlet_history_comparison(regclass, bigint, text[], jsonb, text[], integer, integer, boolean, boolean)" ;;
   0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
@@ -205,8 +206,29 @@ psql -d morlet_upgrade_rel_old -c "DROP FUNCTION $BLOCKER"
 echo "ok: a failed update rolls back; $OLD_VERSION stays installed and reads are identical"
 fi
 
+# Time anchors set up by the old release (#607): their triggers keep the collection's OID argument after the update
+# (dropping them would reset their firing mode); the 0.3.17 functions ignore it.
+if ver_ge "$OLD_VERSION" 0.3.13 && ! ver_ge "$OLD_VERSION" 0.3.17; then psql -d morlet_upgrade_rel_old <<'SQL'
+SELECT morlet_create_stream_collection('public', 'anch');
+SELECT morlet_ensure_recording('anch'::regclass, r, 1000.0, 'x', 'u', '{}'::jsonb) FROM unnest(ARRAY['a1','a2']) r;
+SELECT morlet_enable_time_anchors('anch');
+SELECT morlet_add_time_anchors('anch', 'b1', '[{"recording_id":"a1","sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"gps"},
+  {"recording_id":"a2","sample_offset":0,"utc_ns":1,"uncertainty_ns":0,"source":"gps"}]');
+SQL
+ANCHORS=1
+fi
 psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
+if [ -n "${ANCHORS:-}" ]; then
+  args=$(psql -d morlet_upgrade_rel_old -c "SELECT count(*)||' '||max(tgnargs) FROM pg_trigger
+    WHERE tgrelid='anch_time_anchors'::regclass AND NOT tgisinternal")
+  psql -d morlet_upgrade_rel_old -c "SELECT morlet_add_time_anchors('anch', 'b2',
+    '[{\"recording_id\":\"a1\",\"sample_offset\":5,\"utc_ns\":5000001,\"uncertainty_ns\":0,\"source\":\"gps\"}]')" >/dev/null
+  psql -d morlet_upgrade_rel_old -c "DELETE FROM anch WHERE recording_id='a2'"
+  left=$(psql -d morlet_upgrade_rel_old -c "SELECT string_agg(recording_id,',' ORDER BY anchor_id) FROM anch_time_anchors")
+  [ "$args" = "4 1" ] && [ "$left" = a1,a1 ] || { echo "FAIL: anchor triggers after the update: $args, anchors left: $left"; exit 1; }
+  echo "ok: existing time-anchor triggers keep working after the update; a recording with anchors can be deleted (#607)"
+fi
 snapshot morlet_upgrade_rel_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
 echo "ok: updated to $NEW_VERSION; reads, envelope search and comparisons are identical"
