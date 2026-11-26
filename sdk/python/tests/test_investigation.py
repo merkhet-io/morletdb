@@ -318,6 +318,28 @@ class Investigation(unittest.TestCase):
     def test_non_owner_rls_and_role_changes(self):
         self.check_rls(context_first=True)
 
+    def test_provenance_has_the_revision_of_every_returned_recording(self):
+        # review of #605: context neighbours are returned recordings too
+        if not self.db._has("public.morlet_interpretation_revisions(regclass,text[])"):
+            self.skipTest("server without interpretation revisions (SQL 0.3.17)")
+        # shorter than the 512-sample search window: never a match, but a context neighbour
+        self.db.ingest(self.coll, "short", self.wave[:300], sample_rate_hz=1000, channel="x", unit="V",
+                       metadata={"site": "public"}, search_window=512)
+        sid = self.add_context()
+        rows = [{"recording_id": "short", "key": k, "value": v, "start_sample": 0, "end_sample": 300}
+                for k, v in (("tool", 7), ("part", "short"))]
+        self.conn.execute("SELECT morlet_add_context(%s::regclass,'short',%s)", (self.coll, Jsonb(rows)))
+        self.conn.execute("SELECT morlet_build_context_segments(%s::regclass,'short',ARRAY['tool'],ARRAY['part'])",
+                          (self.coll,))
+        self.conn.execute("SELECT morlet_build_context_values(%s::regclass,'short')", (self.coll,))
+        self.db.enable_interpretation(self.coll)
+        self.conn.commit()
+        result = self.run_query(segment_id=sid, top_k=10)
+        shown = {result.search.query.recording_id, *(m.ref.recording_id for m in result.search.matches)}
+        neighbours = {n["recording_id"] for n in result.context.neighbors}
+        self.assertIn("short", neighbours - shown)          # a neighbour that is neither the query nor a match
+        self.assertEqual(set(result.provenance["interpretation_revisions"]), shown | neighbours)
+
     def test_rls_enabled_before_context(self):
         self.check_rls(context_first=False)
 

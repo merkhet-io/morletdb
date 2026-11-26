@@ -21,6 +21,10 @@ written, a target recording with anchors of its own that differ from the source'
 server without time anchors (SQL 0.3.13) for an anchored source. The target's time axis must equal the source's
 before the first chunk is sent, and morlet_time_axis_version is compared again at the end. Only the current
 anchors are shipped, not their revision history.
+
+Interpretation revisions (#600, #609): a recording with a corrected unit or calibration cannot be shipped with its
+history yet, so a selection that includes one is refused before anything is written, as is a source whose history
+this role cannot read.
 """
 from __future__ import annotations
 
@@ -216,9 +220,37 @@ def digest(conn, coll, rid, upto):
     return h.hexdigest(), n
 
 
+def refuse_revised(conn, collection, ids):
+    """Refuse recordings of `collection` among `ids` that have interpretation revisions (#600): a corrected unit or
+    calibration. A copy would carry the corrected values without their history, so they are refused until copies
+    can carry it (#609). A history the caller cannot read is refused too: whether a recording was corrected is
+    then unknown. MorletDB's own row policy shows a recording's whole history to anyone who sees the
+    recording; a history table with any other policy is refused, since rows could be hidden."""
+    hist, readable, foreign = conn.execute(
+        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT'), EXISTS(SELECT 1 FROM pg_policy p "
+        "WHERE p.polrelid=h AND p.polname<>'morlet_follows_recording') FROM (SELECT to_regclass(format('%%I.%%I',"
+        "n.nspname,c.relname||'_interpretation')) h FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+        "WHERE c.oid=%s::regclass) q", (collection,)).fetchone()
+    if hist is None or not ids:
+        return
+    if not readable:
+        raise ValueError(f"cannot read {hist}: whether these recordings have a corrected unit or calibration is "
+                         "unknown, so nothing is shipped (#609)")
+    if foreign:
+        raise ValueError(f"{hist} has row policies other than MorletDB's own, which could hide revisions: whether "
+                         "these recordings have a corrected unit or calibration is unknown, so nothing is shipped (#609)")
+    revised = [r[0] for r in conn.execute(f"SELECT DISTINCT recording_id FROM {hist} WHERE recording_id = ANY(%s) "
+                                          "ORDER BY 1", (list(ids),)).fetchall()]
+    if revised:
+        raise ValueError(f"{', '.join(revised)}: corrected unit or calibration (interpretation revisions); a copy "
+                         "cannot carry that history yet, so nothing is shipped (#609)")
+
+
 def ship(src, tgt, src_coll, tgt_coll, flt, batch):
     report = []
-    for rec in recordings(src, src_coll, flt):
+    recs = recordings(src, src_coll, flt)
+    refuse_revised(src, src_coll, [r[0] for r in recs])    # before anything is written to the target
+    for rec in recs:
         with anchor_lock(tgt, tgt_coll, rec[0]):
             report.append(ship_recording(src, tgt, src_coll, tgt_coll, rec, batch))
     return report

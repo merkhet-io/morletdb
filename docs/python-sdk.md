@@ -107,7 +107,7 @@ after the event can participate; do not use it as a causally valid historical de
 existing separate `search` API retains its time filters. Context neighbor scores and waveform distances
 are separate rankings and must not be compared numerically.
 
-### From an asset and a time to an interval
+### Evidence bundles
 
 **Experimental, from 0.4.0-beta.5.** Evidence bundles record an investigation so that it can be
 checked later:
@@ -126,9 +126,19 @@ and a bundle with some raw samples unavailable is labelled `partial-samples`. Wi
 restore data. Exporting discloses what this role can read and cannot be revoked later. Limits raise instead of producing
 a partial bundle. A bundle does not pin data against retention or compaction, and it is not a diagnosis.
 
-`resolve_evidence` reports `interpretation_changed` when `metadata["calibration"]` or a recorded interpretation revision
-differs, `interpretation_unverified` when the bundle recorded a revision that this role or server cannot read, and
-`metadata_changed` for any other metadata field. A changed unit stays `specification_changed`.
+`resolve_evidence` gives each interval the first status that applies, in this order:
+
+1. `missing`: the recording no longer exists or is not visible.
+2. `specification_changed`: its sample rate, channel or unit differs.
+3. `time_axis_changed`: its time anchors changed since the bundle recorded them.
+4. Without a sample digest (the raw samples were not available when the bundle was made), the interval gets
+   `interpretation_changed` or `interpretation_unverified` (see below) if one applies, and otherwise `no_digest`.
+5. `samples_unavailable`: the samples cannot be read now.
+6. `changed`: the samples differ from their digest.
+7. `interpretation_changed`, when `metadata["calibration"]` or a recorded interpretation revision differs, or
+   `interpretation_unverified`, when the bundle recorded a revision that this role or server cannot read.
+8. `metadata_changed`: any other metadata field differs.
+9. `unchanged`.
 
 ### Correct a unit or calibration
 
@@ -145,13 +155,25 @@ db.interpretation_review("public.line3")                  # labels to review: `s
 
 Revision 0 is the state as ingested. An identical retry is a no-op. Once enabled, direct SQL cannot change the unit or
 `metadata.calibration` without a matching revision, and the history is append-only. MorletDB records the calibration but
-does not apply it: samples, envelopes, context values and search scores are unchanged. Review lists labels and changes
+does not apply it: samples, envelopes, context values and the scores of matches are unchanged. A unit change can change
+which recordings a search compares, since search only compares recordings with the same unit. Review lists labels and changes
 none of them; a label written before the history existed, or by a role that cannot read it, is `unversioned`.
 
 A correction applies to the whole recording. Sample-rate corrections are not supported, because they also change stored
 search windows and the time axis. `investigate` and evidence bundles carry the revision; plain `search` and
 `explain_match` do not yet. A client that re-declares the recording with the old calibration is refused until it uses
 the corrected value, and copies on another database do not receive the correction.
+
+Copies cannot carry the history yet (#609), so a corrected recording is not copied at all. `export_file`,
+`tools/ingest/morlet_export.py` (and the S3 export, which uses it) and `tools/ingest/morlet_ship.py` refuse a selection
+that includes a recording with a revision, before anything is written. To copy the others, select them: by name with
+`export_file` and `morlet_export.py --recording`, by metadata filter with `morlet_ship.py` and the S3 export. A role
+that cannot read the history is refused as well (the message starts with "cannot read"), and so is any role when the
+history table has row policies other than MorletDB's own, since they could hide revisions (the message says so). In
+both cases whether a recording was corrected is unknown.
+Recordings of a collection with the history enabled but no correction copy as before.
+
+### From an asset and a time to an interval
 
 **Experimental, from 0.4.0-beta.5; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an
 asset and an incident time to recording intervals in one read-only snapshot, with the same transaction rules as
