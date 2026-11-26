@@ -22,6 +22,8 @@ and a sample interval you can read back, for an engineer or for an AI agent.
 
 ## Why MorletDB
 
+**Store signals, not timestamps.** Your sensors measure physics; most databases keep it as rows of timestamps and values.
+
 **Recordings, not rows.** A recording is one channel with a sample rate, a unit and its
 acquisition metadata, including any calibration you record there. MorletDB keeps that unit intact inside
 PostgreSQL, instead of scattering samples over rows or vectors.
