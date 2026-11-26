@@ -40,23 +40,21 @@ class Interpretation(unittest.TestCase):
         self.role = "interp_role_" + uuid.uuid4().hex[:10]
         self.c = f"{self.schema}.rec"
         self.admin = psycopg.connect(DSN, autocommit=True)
+        self.addCleanup(self.admin.close)
         self.admin.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(self.schema)))
+        self.addCleanup(self.admin.execute, sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(self.schema)))
         self.admin.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(self.role)))
+        self.addCleanup(self.admin.execute, sql.SQL("DROP ROLE {}").format(sql.Identifier(self.role)))
+        self.addCleanup(self.admin.execute, sql.SQL("DROP OWNED BY {}").format(sql.Identifier(self.role)))
         self.db = morletdb.Client.connect(DSN)
+        self.addCleanup(self.db.connection.close)
+        self.addCleanup(self.db.connection.rollback)
         self.db.create_collection(self.c)
         self.meta = {"asset": "p1", "note": "a", "calibration": {"mv_per_count": 1}}
         for rid, shift in (("r1", 0), ("r2", 700)):
             self.db.ingest(self.c, rid, wave(shift=shift), sample_rate_hz=1000.0, channel="accel", unit="mV",
                            metadata=self.meta, search_window=512)
         self.db.connection.commit()
-
-    def tearDown(self):
-        self.db.connection.rollback()
-        self.db.connection.close()
-        self.admin.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(self.role)))
-        self.admin.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(self.schema)))
-        self.admin.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(self.role)))
-        self.admin.close()
 
     def commit(self):
         self.db.connection.commit()
@@ -122,13 +120,14 @@ class Interpretation(unittest.TestCase):
                           sql.SQL("UPDATE {} SET reason='rewritten'").format(t),
                           sql.SQL("DELETE FROM {}").format(t),
                           sql.SQL("TRUNCATE {}").format(t)):
-            with self.subTest(statement=statement.as_string(self.db.connection)), self.assertRaises(psycopg.Error):
+            with self.subTest(statement=statement.as_string(self.db.connection)), \
+                    self.assertRaisesRegex(psycopg.errors.RaiseException, "change only through|append-only"):
                 self.db.connection.execute(statement)
             self.db.connection.rollback()
         # a history row without the matching change fails at commit
         self.db.connection.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
                                            "VALUES ('r1',2,'x','mV','{{\"mv_per_count\":99}}','forged')").format(t))
-        with self.assertRaises(psycopg.Error):
+        with self.assertRaisesRegex(psycopg.errors.RaiseException, "does not match recording"):
             self.db.connection.commit()
         self.db.connection.rollback()
         self.assertEqual(len(self.db.interpretation_history(self.c, "r1")), 1)
@@ -179,7 +178,7 @@ class Interpretation(unittest.TestCase):
         self.commit()
         conn = self.db.connection
         conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
-        with self.assertRaises(psycopg.Error):
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):
             conn.execute("SELECT public.morlet_correct_interpretation(%s::regclass,'r1','mV','{\"mv_per_count\":5}','x')",
                          (self.c,))
         conn.rollback()
@@ -287,7 +286,7 @@ class Interpretation(unittest.TestCase):
         conn = self.db.connection
         conn.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
                              "VALUES ('r1',1,'x','mV','{{\"mv_per_count\":2}}','one')").format(t))
-        with self.assertRaises(psycopg.Error):
+        with self.assertRaisesRegex(psycopg.errors.RaiseException, "is not applied"):
             conn.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
                                  "VALUES ('r1',2,'x','mV','{{\"mv_per_count\":3}}','two')").format(t))
         conn.rollback()
