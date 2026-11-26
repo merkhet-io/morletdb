@@ -114,8 +114,8 @@ def _refuse_revised(client: "Client", collection: str, ids: list[str]) -> None:
     can carry it (#609). A history the caller cannot read is refused too: whether a recording was corrected is
     then unknown. MorletDB's own row policy shows a recording's whole history to anyone who sees the
     recording; a history table with any other policy is refused, since rows could be hidden."""
-    hist, readable = client._execute(
-        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT') AND NOT EXISTS(SELECT 1 FROM pg_policy p "
+    hist, readable, foreign = client._execute(
+        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT'), EXISTS(SELECT 1 FROM pg_policy p "
         "WHERE p.polrelid=h AND p.polname<>'morlet_follows_recording') FROM (SELECT to_regclass(format('%%I.%%I',"
         "n.nspname,c.relname||'_interpretation')) h FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
         "WHERE c.oid=%s::regclass) q", (collection,)).fetchone()
@@ -124,6 +124,9 @@ def _refuse_revised(client: "Client", collection: str, ids: list[str]) -> None:
     if not readable:
         raise UnsupportedError(f"cannot read {hist}: whether these recordings have a corrected unit or calibration "
                                "is unknown, so nothing is exported (#609)")
+    if foreign:
+        raise UnsupportedError(f"{hist} has row policies other than MorletDB's own, which could hide revisions: whether "
+                         "these recordings have a corrected unit or calibration is unknown, so nothing is exported (#609)")
     revised = [r[0] for r in client._execute(sql.SQL("SELECT DISTINCT recording_id FROM {} WHERE recording_id = "
                                                      "ANY(%s) ORDER BY 1").format(sql.SQL(hist)), (ids,)).fetchall()]
     if revised:

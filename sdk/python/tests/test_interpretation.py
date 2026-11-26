@@ -94,7 +94,7 @@ class Interpretation(unittest.TestCase):
             # a policy of its own on the history could hide revisions: refused as unverifiable
             self.admin.execute(sql.SQL("CREATE POLICY extra ON {}.rec_interpretation USING (true)").format(
                 sql.Identifier(self.schema)))
-            with self.assertRaisesRegex(morletdb.UnsupportedError, "cannot read"):
+            with self.assertRaisesRegex(morletdb.UnsupportedError, "row policies other than MorletDB's own"):
                 self.db.export_file(self.c, third, ["r2"])
             self.db.connection.rollback()
 

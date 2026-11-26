@@ -358,8 +358,8 @@ class Client:
         if their samples equal the server's first samples. `report`: as for import_file. Recordings with a corrected
         unit or calibration (interpretation revisions) are refused with UnsupportedError before anything is
         written, since the file cannot carry their history yet (#609). So is every recording of a collection whose
-        history this role cannot read (or which has row policies of its own), as whether a recording was corrected
-        is then unknown; the message starts with "cannot read" in that case."""
+        history this role cannot read (the message starts with "cannot read") or which has row policies other than
+        MorletDB's own (the message names them), as whether a recording was corrected is then unknown."""
         from ._transfer import export_file
         return export_file(self, collection, path, recording_ids, report)
 
