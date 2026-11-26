@@ -126,11 +126,19 @@ and a bundle with some raw samples unavailable is labelled `partial-samples`. Wi
 restore data. Exporting discloses what this role can read and cannot be revoked later. Limits raise instead of producing
 a partial bundle. A bundle does not pin data against retention or compaction, and it is not a diagnosis.
 
-For an interval whose samples are available and match their recorded digest, `resolve_evidence` reports
-`interpretation_changed` when `metadata["calibration"]` or a recorded interpretation revision differs,
-`interpretation_unverified` when the bundle recorded a revision that this role or server cannot read, and
-`metadata_changed` for any other metadata field. A changed unit stays `specification_changed`. Intervals without a
-sample digest report `no_digest`, and intervals whose samples cannot be read now report `samples_unavailable`.
+`resolve_evidence` gives each interval the first status that applies, in this order:
+
+1. `missing`: the recording no longer exists or is not visible.
+2. `specification_changed`: its sample rate, channel or unit differs.
+3. `time_axis_changed`: its time anchors changed since the bundle recorded them.
+4. Without a sample digest (a bundle made without access to the raw samples), the interval gets
+   `interpretation_changed` or `interpretation_unverified` (see below) if one applies, and otherwise `no_digest`.
+5. `samples_unavailable`: the samples cannot be read now.
+6. `changed`: the samples differ from their digest.
+7. `interpretation_changed`, when `metadata["calibration"]` or a recorded interpretation revision differs, or
+   `interpretation_unverified`, when the bundle recorded a revision that this role or server cannot read.
+8. `metadata_changed`: any other metadata field differs.
+9. `unchanged`.
 
 ### Correct a unit or calibration
 
