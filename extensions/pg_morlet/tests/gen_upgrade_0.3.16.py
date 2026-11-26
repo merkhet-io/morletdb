@@ -1,5 +1,7 @@
-"""HISTORICAL: frozen 0.3.15 -> 0.3.16 generator; do not rerun."""
-"""Generate sql/pg_morlet--0.3.15--0.3.16.sql. Usage: gen_upgrade.py NEW.sql [--check]
+"""HISTORICAL. Generated sql/pg_morlet--0.3.15--0.3.16.sql, which is frozen as released in 0.4.0-beta.5.
+Do not re-run: the control file now names a later version. Newer scripts come from tests/gen_upgrade.py.
+
+Generate sql/pg_morlet--0.3.15--0.3.16.sql. Usage: gen_upgrade.py NEW.sql [--check]
 (NEW.sql from `cargo pgrx schema pg17 -o NEW.sql`; --check compares instead of writing and fails when the committed
 script is stale)
 

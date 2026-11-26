@@ -313,6 +313,7 @@ jobs:
           git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.2:refs/tags/v0.4.0-beta.2
           git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.3:refs/tags/v0.4.0-beta.3
           git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.4:refs/tags/v0.4.0-beta.4
+          git fetch --no-tags --depth=1 origin +refs/tags/v0.4.0-beta.5:refs/tags/v0.4.0-beta.5
       - name: PostgreSQL 17.12
         id: pg
         uses: ./.github/actions/pgrx-postgres
@@ -456,7 +457,7 @@ jobs:
           MORLET_SDK_REQUIRE_SQLITE: '1'
         run: |
           python -c 'import morletdb, sys; assert "site-packages" in morletdb.__file__, morletdb.__file__'
-          python -m unittest -v test_offline test_native test_integration test_investigation test_evidence test_incident test_explain_match test_calibration test_local test_transfer 2>&1 | tee unittest.log
+          python -m unittest -v test_offline test_native test_integration test_investigation test_evidence test_incident test_explain_match test_interpretation test_calibration test_local test_transfer 2>&1 | tee unittest.log
           test "${PIPESTATUS[0]}" -eq 0
           python ../../../reference/python/test_reference.py 2>&1 | tee reference.log
           test "${PIPESTATUS[0]}" -eq 0

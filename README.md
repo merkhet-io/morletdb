@@ -22,8 +22,8 @@ and a sample interval you can read back, for an engineer or for an AI agent.
 
 ## Why MorletDB
 
-**Recordings, not rows.** A recording is one channel with a sample rate, a unit, a
-calibration and its acquisition metadata. MorletDB keeps that unit intact inside
+**Recordings, not rows.** A recording is one channel with a sample rate, a unit and its
+acquisition metadata, including any calibration you record there. MorletDB keeps that unit intact inside
 PostgreSQL, instead of scattering samples over rows or vectors.
 
 - **Lossless and compact.** Raw samples are coded bit-exactly, often several times
