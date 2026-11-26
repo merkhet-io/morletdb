@@ -112,9 +112,11 @@ def _refuse_revised(client: "Client", collection: str, ids: list[str]) -> None:
     """Refuse recordings of `collection` among `ids` that have interpretation revisions (#600): a corrected unit or
     calibration. A copy would carry the corrected values without their history, so they are refused until copies
     can carry it (#609). A history the caller cannot read is refused too: whether a recording was corrected is
-    then unknown."""
+    then unknown. MorletDB's own row policy shows a recording's whole history to anyone who sees the
+    recording; a history table with any other policy is refused, since rows could be hidden."""
     hist, readable = client._execute(
-        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT') FROM (SELECT to_regclass(format('%%I.%%I',"
+        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT') AND NOT EXISTS(SELECT 1 FROM pg_policy p "
+        "WHERE p.polrelid=h AND p.polname<>'morlet_follows_recording') FROM (SELECT to_regclass(format('%%I.%%I',"
         "n.nspname,c.relname||'_interpretation')) h FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
         "WHERE c.oid=%s::regclass) q", (collection,)).fetchone()
     if hist is None or not ids:
@@ -246,6 +248,9 @@ def export_file(client: "Client", collection: str, path: str | Path,
         for rid in ids:
             rec = client.recording(collection, rid)
             quantum = client._one(sql.SQL("SELECT sample_quantum FROM {} WHERE recording_id=%s").format(table), (rid,))
+            # again, after the unit and calibration were read: a correction commits its history row with the new
+            # values, so if `rec` saw corrected values, this check sees the revision
+            _refuse_revised(client, collection, [rid])
             layout = [tuple(map(int, r)) for r in client._execute(
                 sql.SQL("SELECT start_sample, sample_count, encoded IS NULL FROM {} WHERE recording_id=%s "
                         "ORDER BY start_sample").format(chunks), (rid,)).fetchall()]

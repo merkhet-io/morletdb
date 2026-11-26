@@ -155,8 +155,10 @@ the corrected value, and copies on another database do not receive the correctio
 
 Copies cannot carry the history yet (#609), so a corrected recording is not copied at all. `export_file`,
 `tools/ingest/morlet_export.py` (and the S3 export, which uses it) and `tools/ingest/morlet_ship.py` refuse a selection
-that includes a recording with a revision, before anything is written; export the other recordings by name. A role
-that cannot read the history is refused as well, because whether a recording was corrected is then unknown.
+that includes a recording with a revision, before anything is written. To copy the others, select them: by name with
+`export_file` and `morlet_export.py --recording`, by metadata filter with `morlet_ship.py` and the S3 export. A role
+that cannot read the history is refused as well (the message starts with "cannot read"), because whether a recording
+was corrected is then unknown.
 Recordings of a collection with the history enabled but no correction copy as before.
 
 **Experimental, from 0.4.0-beta.5; needs SQL 0.3.15 or later.** `Client.resolve_incident` maps an

@@ -238,6 +238,23 @@ class Shipping(unittest.TestCase):
             ms.ship(self.c, self.c, "public.ship_edge", "public.ship_central", {}, 3)
         self.assertEqual(self.central(), ("10000", 4))                       # nothing more written
 
+    def test_a_source_whose_history_this_role_cannot_read_is_refused(self):     # #609 review
+        import psycopg
+        self.interpretation()
+        role = "ship_reader_609"
+        self.c.execute(f"DROP ROLE IF EXISTS {role}")
+        self.c.execute(f"CREATE ROLE {role}")
+        try:
+            self.c.execute(f"GRANT SELECT ON ship_edge, ship_edge_chunks TO {role}")
+            with psycopg.connect(URL, autocommit=True) as src:
+                src.execute(f"SET ROLE {role}")
+                with self.assertRaisesRegex(ValueError, "cannot read"):
+                    ms.ship(src, self.c, "public.ship_edge", "public.ship_central", {}, 3)
+            self.assertIsNone(self.central())                                    # nothing written
+        finally:
+            self.c.execute(f"DROP OWNED BY {role}")
+            self.c.execute(f"DROP ROLE {role}")
+
     def test_export_refuses_a_corrected_recording_before_writing(self):          # #609
         try:
             import morlet_export as me

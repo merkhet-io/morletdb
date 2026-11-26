@@ -224,9 +224,11 @@ def refuse_revised(conn, collection, ids):
     """Refuse recordings of `collection` among `ids` that have interpretation revisions (#600): a corrected unit or
     calibration. A copy would carry the corrected values without their history, so they are refused until copies
     can carry it (#609). A history the caller cannot read is refused too: whether a recording was corrected is
-    then unknown."""
+    then unknown. MorletDB's own row policy shows a recording's whole history to anyone who sees the
+    recording; a history table with any other policy is refused, since rows could be hidden."""
     hist, readable = conn.execute(
-        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT') FROM (SELECT to_regclass(format('%%I.%%I',"
+        "SELECT h::text, h IS NOT NULL AND has_table_privilege(h,'SELECT') AND NOT EXISTS(SELECT 1 FROM pg_policy p "
+        "WHERE p.polrelid=h AND p.polname<>'morlet_follows_recording') FROM (SELECT to_regclass(format('%%I.%%I',"
         "n.nspname,c.relname||'_interpretation')) h FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
         "WHERE c.oid=%s::regclass) q", (collection,)).fetchone()
     if hist is None or not ids:
