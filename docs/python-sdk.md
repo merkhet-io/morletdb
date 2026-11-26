@@ -131,7 +131,7 @@ a partial bundle. A bundle does not pin data against retention or compaction, an
 1. `missing`: the recording no longer exists or is not visible.
 2. `specification_changed`: its sample rate, channel or unit differs.
 3. `time_axis_changed`: its time anchors changed since the bundle recorded them.
-4. Without a sample digest (a bundle made without access to the raw samples), the interval gets
+4. Without a sample digest (the raw samples were not available when the bundle was made), the interval gets
    `interpretation_changed` or `interpretation_unverified` (see below) if one applies, and otherwise `no_digest`.
 5. `samples_unavailable`: the samples cannot be read now.
 6. `changed`: the samples differ from their digest.
