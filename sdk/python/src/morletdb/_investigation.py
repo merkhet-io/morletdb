@@ -272,7 +272,8 @@ def _collect(reader, collection, rid, start, end, settings):
         provenance["context_representation"] = context.value_rules   # read from the server
     if reader._has("public.morlet_interpretation_revisions(regclass,text[])"):
         # #600: which unit and calibration revision each returned recording was read under; absent when not tracked
-        shown = sorted({rid, *(m.ref.recording_id for m in search.matches)})
+        shown = sorted({rid, *(m.ref.recording_id for m in search.matches),
+                        *(n["recording_id"] for n in (context.neighbors if context is not None else []))})
         revisions = dict(reader._execute("SELECT recording_id, revision FROM public.morlet_interpretation_revisions("
                                          "%s::regclass,%s::text[])", (collection, shown)).fetchall())
         if revisions:
