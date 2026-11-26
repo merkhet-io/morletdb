@@ -86,6 +86,30 @@ class Calibration(unittest.TestCase):
             self.fails(lambda: self.conn.execute(stmt), 'immutable|cannot be removed')
         self.assertEqual(approved, self.db.get_calibration_set(self.coll, 'commissioning', 1))
 
+    def statuses(self):
+        r = self.resolve()
+        return r['needs_review'], [m['status'] for m in r['members']]
+
+    def test_enabling_interpretation_later_leaves_approved_members_unchanged(self):
+        # #612 review: enabling #600 adds a column to the labels; an approved set must not look changed
+        if not self.db._has('public.morlet_enable_interpretation(regclass)'):
+            self.skipTest('server without interpretation revisions (SQL 0.3.17)')
+        self.put(); self.approve(); self.conn.commit()
+        self.conn.execute('SELECT morlet_enable_interpretation(%s::regclass)', (self.coll,)); self.conn.commit()
+        self.assertEqual(self.statuses(), (False, ['unchanged', 'unchanged']))
+        self.conn.commit()
+
+    def test_a_calibration_correction_after_approval_needs_review(self):
+        if not self.db._has('public.morlet_enable_interpretation(regclass)'):
+            self.skipTest('server without interpretation revisions (SQL 0.3.17)')
+        self.conn.execute('SELECT morlet_enable_interpretation(%s::regclass)', (self.coll,)); self.conn.commit()
+        self.put(); self.approve(); self.conn.commit()
+        self.conn.execute("SELECT morlet_correct_interpretation(%s::regclass,'a','g',%s,'sensor swap')",
+                          (self.coll, Jsonb({'g_per_count': 2})))
+        self.conn.commit()
+        self.assertEqual(self.statuses(), (True, ['changed', 'unchanged']))
+        self.conn.commit()
+
     def test_correction_requires_refresh_then_new_revision(self):
         original = self.put()
         self.conn.execute(f"UPDATE {self.coll} SET metadata=metadata || '{{\"scale\":10}}' WHERE recording_id='a'")

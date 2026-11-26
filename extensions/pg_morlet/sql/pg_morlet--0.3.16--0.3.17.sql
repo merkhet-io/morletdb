@@ -262,7 +262,11 @@ BEGIN
     EXECUTE format('SELECT jsonb_build_object(''sample_rate_hz'',sample_rate_hz,''channel'',channel,''unit'',unit,
       ''metadata'',metadata) FROM %s WHERE recording_id=$1',collection) INTO rec USING rid;
     IF rec IS NULL THEN RAISE EXCEPTION 'member recording unavailable'; END IF;
-    EXECUTE format('SELECT to_jsonb(l) FROM %s l WHERE label_id=$1 AND recording_id=$2
+    -- The label's own columns, named: a column another feature adds later (interpretation_revision, #600) must not
+    -- make an approved, unchanged member look changed.
+    EXECUTE format('SELECT jsonb_build_object(''label_id'',l.label_id,''recording_id'',l.recording_id,
+      ''start_sample'',l.start_sample,''end_sample'',l.end_sample,''label'',l.label,''note'',l.note,
+      ''author'',l.author,''created_at'',l.created_at,''retracted'',l.retracted) FROM %s l WHERE label_id=$1 AND recording_id=$2
       AND start_sample<=$3 AND end_sample>=$4 AND NOT retracted',rel.labels)
       INTO lab USING label_id,rid,lo,hi;
     IF lab IS NULL THEN RAISE EXCEPTION 'member requires a visible active label covering its interval'; END IF;
