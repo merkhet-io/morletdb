@@ -254,6 +254,8 @@ def export_evidence(client, collection, recording_id, start_sample, end_sample, 
             raise InvestigationLimitError(f"evidence needs {needed} sample bytes, above max_sample_bytes; "
                                           "no partial bundle was produced")
         intervals, samples = [], {}
+        # read with the investigation, in the same snapshot; absent when not tracked or not readable (#600)
+        revisions = result.provenance.get("interpretation_revisions", {})
         for role, rank, ref in refs:
             rec = reader.recording(ref.collection, ref.recording_id)
             length = ref.end_sample - ref.start_sample
@@ -264,7 +266,7 @@ def export_evidence(client, collection, recording_id, start_sample, end_sample, 
                 data = _sample_bytes(reader.read_ref(ref).samples)
                 digest = hashlib.sha256(data).hexdigest()
             item = _describe(role, rank, ref, rec, raw, digest, include_samples, _axis(reader, ref),
-                             _interpretation_revision(reader, ref))
+                             revisions.get(ref.recording_id))
             intervals.append(item)
             if include_samples and raw:
                 samples[item["id"]] = data

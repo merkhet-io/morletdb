@@ -40,9 +40,15 @@ class Interpretation(unittest.TestCase):
         self.role = "interp_role_" + uuid.uuid4().hex[:10]
         self.c = f"{self.schema}.rec"
         self.admin = psycopg.connect(DSN, autocommit=True)
+        self.addCleanup(self.admin.close)
         self.admin.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(self.schema)))
+        self.addCleanup(self.admin.execute, sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(self.schema)))
         self.admin.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(self.role)))
+        self.addCleanup(self.admin.execute, sql.SQL("DROP ROLE {}").format(sql.Identifier(self.role)))
+        self.addCleanup(self.admin.execute, sql.SQL("DROP OWNED BY {}").format(sql.Identifier(self.role)))
         self.db = morletdb.Client.connect(DSN)
+        self.addCleanup(self.db.connection.close)
+        self.addCleanup(self.db.connection.rollback)
         self.db.create_collection(self.c)
         self.meta = {"asset": "p1", "note": "a", "calibration": {"mv_per_count": 1}}
         for rid, shift in (("r1", 0), ("r2", 700)):
@@ -50,20 +56,73 @@ class Interpretation(unittest.TestCase):
                            metadata=self.meta, search_window=512)
         self.db.connection.commit()
 
-    def tearDown(self):
-        self.db.connection.rollback()
-        self.db.connection.close()
-        self.admin.execute(sql.SQL("DROP OWNED BY {}").format(sql.Identifier(self.role)))
-        self.admin.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(self.schema)))
-        self.admin.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(self.role)))
-        self.admin.close()
-
     def commit(self):
         self.db.connection.commit()
 
     def label(self, rid="r1", text="below_limit"):
         return self.db.connection.execute("SELECT public.morlet_add_label(%s::regclass,%s,0,512,%s)",
                                           (self.c, rid, text)).fetchone()[0]
+
+    def test_export_refuses_corrected_recordings_before_writing(self):
+        # #609: a file copy would carry the corrected values without their history
+        self.enable_all()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "copy.morlet")
+            self.assertEqual(len(self.db.export_file(self.c, path, ["r1"])), 1)      # nothing corrected yet
+            self.correct()
+            self.commit()
+            other = os.path.join(tmp, "other.morlet")
+            with self.assertRaisesRegex(morletdb.UnsupportedError, "r1: corrected unit or calibration"):
+                self.db.export_file(self.c, other)                                    # r1 among all recordings
+            self.assertFalse(os.path.exists(other))                                   # not even created
+            self.db.connection.rollback()
+            self.assertEqual(len(self.db.export_file(self.c, other, ["r2"])), 1)      # the others still export
+            self.commit()
+            # a role that cannot read the history cannot tell, so nothing is exported
+            self.admin.execute(sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(sql.Identifier(self.schema),
+                                                                              sql.Identifier(self.role)))
+            self.admin.execute(sql.SQL("GRANT SELECT ON {}.rec, {}.rec_chunks TO {}").format(
+                sql.Identifier(self.schema), sql.Identifier(self.schema), sql.Identifier(self.role)))
+            self.db.connection.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(self.role)))
+            third = os.path.join(tmp, "third.morlet")
+            with self.assertRaisesRegex(morletdb.UnsupportedError, "cannot read"):
+                self.db.export_file(self.c, third, ["r2"])
+            self.assertFalse(os.path.exists(third))
+            self.db.connection.rollback()
+            # a policy of its own on the history could hide revisions: refused as unverifiable
+            self.admin.execute(sql.SQL("CREATE POLICY extra ON {}.rec_interpretation USING (true)").format(
+                sql.Identifier(self.schema)))
+            with self.assertRaisesRegex(morletdb.UnsupportedError, "row policies other than MorletDB's own"):
+                self.db.export_file(self.c, third, ["r2"])
+            self.db.connection.rollback()
+
+    def test_export_rechecks_after_reading_the_recording(self):
+        # #609 review: a correction committed between the first check and the read of the unit and calibration
+        from morletdb import _transfer
+        self.enable_all()
+        real = _transfer._refuse_revised
+        calls = []
+
+        def first_passes_then_corrected(client, collection, ids):
+            calls.append(list(ids))
+            if len(calls) == 1:
+                real(client, collection, ids)
+                other = morletdb.Client.connect(DSN)              # commits a correction in between
+                other.correct_interpretation(self.c, "r1", unit="mV", calibration={"mv_per_count": 7},
+                                             reason="late certificate")
+                other.connection.commit()
+                other.connection.close()
+                return
+            real(client, collection, ids)
+        _transfer._refuse_revised = first_passes_then_corrected
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaisesRegex(morletdb.UnsupportedError, "r1: corrected unit or calibration"):
+                    self.db.export_file(self.c, os.path.join(tmp, "copy.morlet"), ["r1"])
+        finally:
+            _transfer._refuse_revised = real
+        self.db.connection.rollback()
+        self.assertEqual(calls, [["r1"], ["r1"]])
 
     def enable_all(self):
         self.db.connection.execute("SELECT public.morlet_enable_context(%s::regclass)", (self.c,))
@@ -122,13 +181,14 @@ class Interpretation(unittest.TestCase):
                           sql.SQL("UPDATE {} SET reason='rewritten'").format(t),
                           sql.SQL("DELETE FROM {}").format(t),
                           sql.SQL("TRUNCATE {}").format(t)):
-            with self.subTest(statement=statement.as_string(self.db.connection)), self.assertRaises(psycopg.Error):
+            with self.subTest(statement=statement.as_string(self.db.connection)), \
+                    self.assertRaisesRegex(psycopg.errors.RaiseException, "change only through|append-only"):
                 self.db.connection.execute(statement)
             self.db.connection.rollback()
         # a history row without the matching change fails at commit
         self.db.connection.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
                                            "VALUES ('r1',2,'x','mV','{{\"mv_per_count\":99}}','forged')").format(t))
-        with self.assertRaises(psycopg.Error):
+        with self.assertRaisesRegex(psycopg.errors.RaiseException, "does not match recording"):
             self.db.connection.commit()
         self.db.connection.rollback()
         self.assertEqual(len(self.db.interpretation_history(self.c, "r1")), 1)
@@ -179,7 +239,7 @@ class Interpretation(unittest.TestCase):
         self.commit()
         conn = self.db.connection
         conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
-        with self.assertRaises(psycopg.Error):
+        with self.assertRaises(psycopg.errors.InsufficientPrivilege):
             conn.execute("SELECT public.morlet_correct_interpretation(%s::regclass,'r1','mV','{\"mv_per_count\":5}','x')",
                          (self.c,))
         conn.rollback()
@@ -287,7 +347,7 @@ class Interpretation(unittest.TestCase):
         conn = self.db.connection
         conn.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
                              "VALUES ('r1',1,'x','mV','{{\"mv_per_count\":2}}','one')").format(t))
-        with self.assertRaises(psycopg.Error):
+        with self.assertRaisesRegex(psycopg.errors.RaiseException, "is not applied"):
             conn.execute(sql.SQL("INSERT INTO {}(recording_id,revision,previous_unit,unit,calibration,reason) "
                                  "VALUES ('r1',2,'x','mV','{{\"mv_per_count\":3}}','two')").format(t))
         conn.rollback()

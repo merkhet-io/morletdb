@@ -19,6 +19,10 @@
   through SQL triggers and a separate role. Writes require REPEATABLE READ or SERIALIZABLE; as-of selection and
   derived feature profiles remain unsupported. Upgrade with `ALTER EXTENSION pg_morlet UPDATE` and explicitly enable
   each collection. See `docs/calibration-sets.md` for privileges, limits and retention behavior.
+- **Copies refuse corrected recordings (#609).** A copy cannot carry interpretation history yet, so `export_file`,
+  `morlet_export.py` (and the S3 export) and `morlet_ship.py` refuse a selection that includes a recording with a
+  corrected unit or calibration, before anything is written. So does a role that cannot read the history. Recordings
+  without corrections copy as before.
 
 ## 0.4.0-beta.5
 
