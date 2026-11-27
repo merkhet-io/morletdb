@@ -237,3 +237,6 @@ morlet_put_calibration_set	experimental	0.3.17	diagnostic calibration sets (#601
 morlet_approve_calibration_set	experimental	0.3.17	diagnostic calibration sets (#601)
 morlet_get_calibration_set	experimental	0.3.17	diagnostic calibration sets (#601)
 morlet_resolve_calibration_set	experimental	0.3.17	diagnostic calibration sets (#601)
+morlet_calibration_bind_refs	internal	0.3.18	calibration references (#621)
+morlet_calibration_refs_guard	internal	0.3.18	calibration references (#621)
+morlet_calibration_track_refs	internal	0.3.18	calibration references (#621)

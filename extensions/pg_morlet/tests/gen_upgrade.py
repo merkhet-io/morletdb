@@ -1,41 +1,31 @@
-"""Generate sql/pg_morlet--0.3.16--0.3.17.sql. Usage: gen_upgrade.py NEW.sql [--check]
+"""Generate sql/pg_morlet--0.3.17--0.3.18.sql. Usage: gen_upgrade.py NEW.sql [--check]
 (NEW.sql from `cargo pgrx schema pg17 -o NEW.sql`; --check compares instead of writing and fails when the committed
 script is stale)
 
-0.3.16 is released (0.4.0-beta.5). 0.3.17 adds opt-in interpretation revisions (#600): an append-only history of unit
-and calibration corrections, and labels bound to the revision they were written under. morlet_enable_context and
-morlet_enable_row_security are replaced to include the new companion table. Everything is taken verbatim from the
-generated schema, so tests/upgrade.sh and tests/upgrade_from_release.sh find an upgraded catalog equal to a fresh 0.3.17
-installation. No existing table changes until a collection enables the feature.
-
-It also makes the time-anchor triggers restore-safe (#607): they stored the collection's OID as an argument, which
-pg_dump keeps verbatim while the OID changes. The trigger functions now find the collection through the foreign key and
-ignore their arguments, so existing triggers (from an update or from a restored dump) keep working unchanged; the update
-does not drop or recreate them, which would reset their firing mode.
-
-It also adds opt-in diagnostic calibration sets (#601): drafts, reviewed immutable revisions and content manifests in
-a companion table per collection. The scripts of earlier steps are frozen."""
+0.3.17 is released (0.4.0-beta.6). 0.3.18 hardens diagnostic calibration sets:
+- Each revision keeps references to the recordings it was captured from, which a deletion cuts and a later recording
+  under the same ID does not restore; row security requires every reference intact (#621).
+- A member records the interpretation revision of its recording and label, so a correction that was later reverted
+  still needs review, and unreadable history is reported as unverified rather than unchanged (#620).
+The update brings every existing calibration table up to date (a reference key per revision, the reference table and
+its triggers, and the row-security policies when the collection uses them): members whose recording no longer exists
+start cut. Everything else is taken verbatim from the generated schema, so tests/upgrade.sh and
+tests/upgrade_from_release.sh find an upgraded catalog equal to a fresh 0.3.18 installation. The scripts of earlier
+steps are frozen."""
 import re
 import sys
 from pathlib import Path
 
 EXT = Path(__file__).resolve().parent.parent
-OUT = EXT / "sql/pg_morlet--0.3.16--0.3.17.sql"
+OUT = EXT / "sql/pg_morlet--0.3.17--0.3.18.sql"
 schema = Path(sys.argv[1]).read_text()
 CHECK = "--check" in sys.argv[2:]
 control = (EXT / "pg_morlet.control").read_text()
-assert "default_version = '0.3.17'" in control, "control file"
+assert "default_version = '0.3.18'" in control, "control file"
 
-C_FUNCTIONS = ()
-NEW = ("morlet_interpretation_relation", "morlet_companion_parent", "morlet_enable_interpretation", "morlet_bind_label_interpretation",
-       "morlet_label_interpretation", "morlet_interpretation_append_only", "morlet_interpretation_insert",
-       "morlet_interpretation_applied", "morlet_interpretation_guard", "morlet_correct_interpretation",
-       "morlet_interpretation_revisions", "morlet_interpretation_history", "morlet_interpretation_review",
-       "morlet_calibration_relation", "morlet_calibration_capture", "morlet_calibration_guard",
-       "morlet_enable_calibration_sets", "morlet_put_calibration_set", "morlet_approve_calibration_set",
-       "morlet_get_calibration_set", "morlet_resolve_calibration_set")
-REPLACED = ("morlet_enable_context", "morlet_enable_row_security", "morlet_enable_time_anchors",
-            "morlet_time_anchors_lock", "morlet_time_anchors_append_only")
+NEW = ("morlet_calibration_bind_refs", "morlet_calibration_refs_guard", "morlet_calibration_track_refs")
+REPLACED = ("morlet_enable_row_security", "morlet_calibration_capture", "morlet_calibration_guard",
+            "morlet_enable_calibration_sets", "morlet_resolve_calibration_set")
 
 
 def definitions(name, replace):
@@ -52,24 +42,39 @@ def definitions(name, replace):
     return out
 
 
-def c_definition(name):
-    """The generated definition of a new Rust (C) function, before the SQL function that calls it."""
-    m = re.search(r'CREATE  FUNCTION "' + name + r'"\(.*?;\n', schema, re.S)
-    assert m, f"{name}: not in the schema"
-    return re.sub(r"\s+/\*.*?\*/", "", m.group(0)).replace("CREATE  FUNCTION", "CREATE FUNCTION").rstrip()
+# Existing calibration tables (found by their guard trigger) get their references now, not on the next enable call.
+# Run as the extension's updater: a role that cannot alter one of them makes the update fail and roll back. A table
+# created by an update script would become a member of the extension (and pg_dump would skip its rows): it belongs to
+# the collection, as when morlet_enable_calibration_sets creates it, so it leaves the extension at once.
+REAPPLY = r"""DO $morlet_upgrade$
+DECLARE c regclass; refs regclass;
+BEGIN
+  FOR c IN SELECT to_regclass(format('%I.%I',n.nspname,left(cl.relname,-length('_calibration_sets'))))
+    FROM pg_trigger t JOIN pg_class cl ON cl.oid=t.tgrelid JOIN pg_namespace n ON n.oid=cl.relnamespace
+    WHERE t.tgname='morlet_calibration_guard' AND right(cl.relname,17)='_calibration_sets' ORDER BY 1
+  LOOP
+    IF c IS NOT NULL THEN
+      PERFORM public.morlet_calibration_bind_refs(c);
+      SELECT to_regclass(format('%I.%I',n.nspname,cl.relname||'_calibration_refs')) INTO refs
+        FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=c;
+      IF EXISTS(SELECT 1 FROM pg_depend WHERE classid='pg_class'::regclass AND objid=refs AND deptype='e') THEN
+        EXECUTE format('ALTER EXTENSION pg_morlet DROP TABLE %s',refs);
+      END IF;
+    END IF;
+  END LOOP;
+END $morlet_upgrade$;
+"""
 
-
-script = ("-- pg_morlet 0.3.16 -> 0.3.17 (generated by tests/gen_upgrade.py; do not edit).\n"
-          "-- Interpretation revisions (#600): versioned unit and calibration corrections.\n"
-          "-- Time-anchor trigger functions no longer read their OID argument, so they survive dump and restore (#607).\n"
-          "-- Diagnostic calibration sets (#601), opt-in tables; existing formats unchanged.\n"
-          "\\echo Use \"ALTER EXTENSION pg_morlet UPDATE TO '0.3.17'\" to load this file. \\quit\n\n"
-          + "\n\n".join([c_definition(n) for n in C_FUNCTIONS] + [d for n in NEW for d in definitions(n, False)]
-                        + [d for n in REPLACED for d in definitions(n, True)]) + "\n")
+script = ("-- pg_morlet 0.3.17 -> 0.3.18 (generated by tests/gen_upgrade.py; do not edit).\n"
+          "-- Calibration sets: evidence follows recordings, not reusable IDs (#621); members record their\n"
+          "-- interpretation revisions (#620). Existing calibration tables are brought up to date (below).\n"
+          "\\echo Use \"ALTER EXTENSION pg_morlet UPDATE TO '0.3.18'\" to load this file. \\quit\n\n"
+          + "\n\n".join([d for n in NEW for d in definitions(n, False)]
+                        + [d for n in REPLACED for d in definitions(n, True)]) + "\n\n" + REAPPLY)
 if CHECK:
     if OUT.read_text() != script:
         sys.exit(f"{OUT.name} is stale: run tests/gen_upgrade.py")
     print(f"{OUT.name} up to date")
 else:
     OUT.write_text(script)
-    print(f"wrote {OUT.name}: {len(C_FUNCTIONS) + len(NEW)} new and {len(REPLACED)} replaced SQL functions")
+    print(f"wrote {OUT.name}: {len(NEW)} new and {len(REPLACED)} replaced SQL functions")

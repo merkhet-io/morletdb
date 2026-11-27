@@ -188,6 +188,7 @@ case "$OLD_VERSION" in
   0.3.14) BLOCKER="" ;;  # 0.3.14 -> 0.3.15 only replaces an existing function: nothing new to block
   0.3.15) BLOCKER="public.morlet_explain_match(regclass, text, bigint, bigint, text, bigint, double precision, integer, boolean)" ;;
   0.3.16) BLOCKER="public.morlet_enable_interpretation(regclass)" ;;
+  0.3.17) BLOCKER="public.morlet_calibration_bind_refs(regclass)" ;;
   0.3.10) BLOCKER="public.morlet_history_comparison(regclass, bigint, text[], jsonb, text[], integer, integer, boolean, boolean)" ;;
   0.3.3) BLOCKER="public.morlet_search_envelope_probes(regclass, text, bigint, bigint, jsonb, integer, double precision, boolean, boolean, integer, integer, integer, timestamp with time zone, timestamp with time zone, boolean, integer)" ;;
   *) BLOCKER="public.morlet_decode_interval(bytea[], bigint[], bigint, bigint)" ;;
@@ -217,6 +218,27 @@ SELECT morlet_add_time_anchors('anch', 'b1', '[{"recording_id":"a1","sample_offs
 SQL
 ANCHORS=1
 fi
+# Calibration sets of the old release (#621): the update gives every revision references to its recordings; a member
+# whose recording was deleted and recreated before the update starts cut, and recreating it again does not restore it.
+if ver_ge "$OLD_VERSION" 0.3.17 && ! ver_ge "$OLD_VERSION" 0.3.18; then psql -d morlet_upgrade_rel_old <<'SQL'
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='morlet_upgrade_cal_approver') THEN
+  CREATE ROLE morlet_upgrade_cal_approver; END IF; END $$;
+SELECT morlet_create_stream_collection('public', 'cal');
+SELECT morlet_enable_context('cal');
+SELECT morlet_start_recording('cal', r, 1000, 'x', 'g', '{}') FROM unnest(ARRAY['k1','k2']) r;
+SELECT morlet_append_chunk('cal', r, 0, ARRAY[0,1,2,3]::float8[]) FROM unnest(ARRAY['k1','k2']) r;
+SELECT morlet_add_label('cal', r, 0, 4, 'normal') FROM unnest(ARRAY['k1','k2']) r;
+SELECT morlet_enable_calibration_sets('cal', 'morlet_upgrade_cal_approver');
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT morlet_put_calibration_set('cal', 's'||r, 1, jsonb_build_array(jsonb_build_object('recording_id',r,
+  'start_sample',0,'end_sample',4,'label_id',(SELECT label_id FROM cal_labels l WHERE l.recording_id=r))))
+  FROM unnest(ARRAY['k1','k2']) r;
+COMMIT;
+DELETE FROM cal WHERE recording_id='k1';
+SELECT morlet_start_recording('cal', 'k1', 1000, 'x', 'g', '{}');
+SQL
+CALIBRATION=1
+fi
 psql -d morlet_upgrade_rel_old -c "ALTER EXTENSION pg_morlet UPDATE"
 test "$(psql -d morlet_upgrade_rel_old -c "SELECT extversion FROM pg_extension WHERE extname='pg_morlet'")" = "$NEW_VERSION"
 if [ -n "${ANCHORS:-}" ]; then
@@ -228,6 +250,19 @@ if [ -n "${ANCHORS:-}" ]; then
   left=$(psql -d morlet_upgrade_rel_old -c "SELECT string_agg(recording_id,',' ORDER BY anchor_id) FROM anch_time_anchors")
   [ "$args" = "4 1" ] && [ "$left" = a1,a1 ] || { echo "FAIL: anchor triggers after the update: $args, anchors left: $left"; exit 1; }
   echo "ok: existing time-anchor triggers keep working after the update; a recording with anchors can be deleted (#607)"
+fi
+if [ -n "${CALIBRATION:-}" ]; then
+  refs_now() { psql -d morlet_upgrade_rel_old -c "SELECT string_agg(r.recording_id||'='||coalesce(r.live,'cut'),',' ORDER BY r.recording_id)
+    FROM cal_calibration_refs r JOIN cal_calibration_sets x ON x.ref_key=r.ref_key"; }
+  # the update itself: k1 was deleted and recreated under 0.3.17, so its member starts cut; k2 is intact
+  refs=$(refs_now)
+  [ "$refs" = "k1=cut,k2=k2" ] || { echo "FAIL: calibration references right after the update: $refs"; exit 1; }
+  # then a deletion under 0.3.18 cuts k2, and recreating it does not restore the reference
+  psql -d morlet_upgrade_rel_old -c "DELETE FROM cal WHERE recording_id='k2'" \
+    -c "SELECT morlet_start_recording('cal', 'k2', 1000, 'x', 'g', '{}')" >/dev/null
+  refs=$(refs_now)
+  [ "$refs" = "k1=cut,k2=cut" ] || { echo "FAIL: calibration references after deleting and recreating k2: $refs"; exit 1; }
+  echo "ok: the update cut the member recreated before it; a deletion afterwards cuts for good (#621)"
 fi
 snapshot morlet_upgrade_rel_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
