@@ -252,12 +252,17 @@ if [ -n "${ANCHORS:-}" ]; then
   echo "ok: existing time-anchor triggers keep working after the update; a recording with anchors can be deleted (#607)"
 fi
 if [ -n "${CALIBRATION:-}" ]; then
-  psql -d morlet_upgrade_rel_old -c "DELETE FROM cal WHERE recording_id='k1'" \
-    -c "SELECT morlet_start_recording('cal', 'k1', 1000, 'x', 'g', '{}')" >/dev/null
-  refs=$(psql -d morlet_upgrade_rel_old -c "SELECT string_agg(r.recording_id||'='||coalesce(r.live,'cut'),',' ORDER BY r.recording_id)
-    FROM cal_calibration_refs r JOIN cal_calibration_sets x ON x.ref_key=r.ref_key")
-  [ "$refs" = "k1=cut,k2=k2" ] || { echo "FAIL: calibration references after the update: $refs"; exit 1; }
-  echo "ok: the update gave existing calibration revisions references; a deleted member stays cut after its ID is reused (#621)"
+  refs_now() { psql -d morlet_upgrade_rel_old -c "SELECT string_agg(r.recording_id||'='||coalesce(r.live,'cut'),',' ORDER BY r.recording_id)
+    FROM cal_calibration_refs r JOIN cal_calibration_sets x ON x.ref_key=r.ref_key"; }
+  # the update itself: k1 was deleted and recreated under 0.3.17, so its member starts cut; k2 is intact
+  refs=$(refs_now)
+  [ "$refs" = "k1=cut,k2=k2" ] || { echo "FAIL: calibration references right after the update: $refs"; exit 1; }
+  # then a deletion under 0.3.18 cuts k2, and recreating it does not restore the reference
+  psql -d morlet_upgrade_rel_old -c "DELETE FROM cal WHERE recording_id='k2'" \
+    -c "SELECT morlet_start_recording('cal', 'k2', 1000, 'x', 'g', '{}')" >/dev/null
+  refs=$(refs_now)
+  [ "$refs" = "k1=cut,k2=cut" ] || { echo "FAIL: calibration references after deleting and recreating k2: $refs"; exit 1; }
+  echo "ok: the update cut the member recreated before it; a deletion afterwards cuts for good (#621)"
 fi
 snapshot morlet_upgrade_rel_old > "$WORK/after.txt"
 diff "$WORK/before.txt" "$WORK/after.txt"
