@@ -67,3 +67,9 @@ with morletdb.Client.connect("postgresql://...", autocommit=True) as listener:
 
 The contract (intervals, timing, what the distance means, transactions, limits) is in the
 [Python SDK guide](https://github.com/merkhet-io/morletdb/blob/main/docs/python-sdk.md).
+
+## Diagnostic calibration sets (experimental)
+
+SQL 0.3.17 adds explicit draft/approved support-set revisions with immutable manifests and exact sample hashes.
+See [the calibration-set contract](../../docs/calibration-sets.md) for SQL/SDK examples, role grants, repeatable-read
+transactions, retries and retention limits. No feature training or MCP writes are introduced.

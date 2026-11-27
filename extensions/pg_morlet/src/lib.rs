@@ -849,7 +849,7 @@ fn morlet_simple_values(samples: Vec<Option<f64>>, sample_rate_hz: f64) -> Vec<f
 /// encoded collection in one raw read and computes here, instead of joining float8[] pieces in PL/pgSQL (#414).
 #[pg_extern(immutable, parallel_safe, strict)]
 fn morlet_simple_values_raw(raw: &[u8], sample_rate_hz: f64) -> Vec<f64> {
-    if raw.len() % 8 != 0 {
+    if !raw.len().is_multiple_of(8) {
         pgrx::error!("raw samples must be a multiple of 8 bytes (little-endian float64)");
     }
     let samples: Vec<f64> = raw
@@ -902,7 +902,7 @@ fn calibrated_score(
     let q = checked_samples(query);
     let flat = checked_samples(history);
     let w = width as usize;
-    if w == 0 || q.len() != w || spreads.len() != w || flat.len() % w != 0 {
+    if w == 0 || q.len() != w || spreads.len() != w || !flat.len().is_multiple_of(w) {
         pgrx::error!("query, spreads and history rows must all have width values");
     }
     let rows: Vec<&[f64]> = flat.chunks_exact(w).collect();
@@ -3609,7 +3609,7 @@ END $$"#).unwrap();
         cal_fixture();
         let a3 = "(SELECT segment_id FROM cal_ctx_segments WHERE recording_id='A3')";
         // Same context (block A), other parts; the anomalous A6 is the farthest.
-        assert_eq!(Spi::get_one::<String>(&format!("SELECT string_agg(recording_id,',' ORDER BY distance) FROM morlet_history_neighbors('cal',{a3})")).unwrap().unwrap().split(',').last(), Some("A6"));
+        assert_eq!(Spi::get_one::<String>(&format!("SELECT string_agg(recording_id,',' ORDER BY distance) FROM morlet_history_neighbors('cal',{a3})")).unwrap().unwrap().split(',').next_back(), Some("A6"));
         assert_eq!(
             Spi::get_one::<i64>(&format!(
                 "SELECT count(*) FROM morlet_history_neighbors('cal',{a3})"
@@ -5818,7 +5818,7 @@ END $$"#).unwrap();
         )));
         // the filter applies first; a key a recording lacks is its own value
         assert_eq!(
-            text(&format!("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',ARRAY['station'],1,'{{\"channel\":\"Z\"}}')")),
+            text("SELECT string_agg(recording_id,',') FROM morlet_latest_per_stream('lps',ARRAY['station'],1,'{\"channel\":\"Z\"}')"),
             "xz-a,yz-2"
         );
         assert_eq!(
