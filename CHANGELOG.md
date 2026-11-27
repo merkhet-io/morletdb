@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.4.0-beta.6
+
+**The sixth beta.** SQL version 0.3.17, with an update script from 0.3.16: run `ALTER EXTENSION pg_morlet UPDATE` after
+installing. Python SDK 0.1.0b5. The chunk format is unchanged, and so are the steward, the MCP server and the codec.
+Interpretation revisions and calibration sets are experimental and opt-in per collection; collections that do not
+enable them behave as before.
+
 - **Interpretation revisions (experimental, SQL 0.3.17, part of #600).** A calibration correction can change what stored
   samples mean without changing one byte. `morlet_enable_interpretation` adds an opt-in, append-only history of a
   recording's unit and `metadata.calibration`; `morlet_correct_interpretation` applies a correction atomically and never
