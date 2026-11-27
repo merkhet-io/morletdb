@@ -178,7 +178,13 @@ class Client:
                          (collection, set_id, revision))
 
     def resolve_calibration_set(self, collection: str, set_id: str, revision: int) -> dict:
-        """Compare captured evidence to current evidence without altering the stored revision."""
+        """Compare captured evidence to current evidence without altering the stored revision.
+
+        Each member gets the first status that applies: `unavailable` (the recording, a visible active label
+        covering the interval, or its raw samples can no longer be read), `changed` (the captured evidence differs),
+        `unverified` (nothing else differs, but the interpretation history cannot be fully read), `changed` (the
+        recording's or label's interpretation revision differs, even if a correction was reverted), else
+        `unchanged`. `needs_review` is true unless every member is unchanged."""
         return self._one("SELECT morlet_resolve_calibration_set(%s::regclass,%s,%s)",
                          (collection, set_id, revision))
 

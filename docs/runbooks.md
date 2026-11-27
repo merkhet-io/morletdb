@@ -587,6 +587,9 @@ SELECT * FROM morlet_coverage('public.line', ARRAY['p1']);          -- what is s
 **Deleting whole recordings** (`DELETE FROM line WHERE recording_id = …`) also removes their chunks, envelopes and
 probe rows, but leaves no trace: `morlet_coverage` no longer lists the recording, so a later search cannot tell
 "removed" from "never recorded". Prefer level 4. If you delete, keep the export and its checksums as your record.
+With [calibration sets](calibration-sets.md) (SQL 0.3.18), deleting a recording also makes every calibration
+revision captured from it unavailable to non-owners for good, even if a new recording later takes the same ID. Create
+a new revision from the new recording.
 
 **Restoring archived data:** import the exchange file into another collection (step 2). Restoring into the same
 recording after level 4 is not supported: the importer refuses it, and nothing changes (#204).
