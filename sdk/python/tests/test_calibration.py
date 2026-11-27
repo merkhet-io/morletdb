@@ -166,8 +166,37 @@ class Calibration(unittest.TestCase):
             self.db.correct_interpretation(self.coll, 'a', unit='g', calibration={'g_per_count': factor},
                                            reason='test correction')
             self.conn.commit()
-        self.assertEqual(self.statuses(), (True, ['unchanged', 'changed']))
+        result = self.resolve()
+        self.assertEqual((True, {'a': 'changed', 'b': 'unchanged'}),
+                         (result['needs_review'], {m['recording_id']: m['status'] for m in result['members']}))
         self.conn.commit()
+
+    def test_history_behind_extra_row_policies_is_unknown(self):
+        self.needs_refs()
+        self.interpretation_then_revert()
+        self.conn.execute(f'ALTER TABLE {self.coll}_interpretation ENABLE ROW LEVEL SECURITY')
+        self.conn.execute(f"CREATE POLICY hide_some ON {self.coll}_interpretation USING (reason <> 'secret')")
+        self.conn.execute(f'GRANT SELECT ON ALL TABLES IN SCHEMA {self.schema} TO {self.role}')
+        self.conn.execute(f'GRANT USAGE ON SCHEMA {self.schema} TO {self.role}')
+        self.conn.execute(f'GRANT INSERT,UPDATE ON {self.table}, {self.refs_table()} TO {self.role}')
+        self.conn.commit()
+        self.conn.execute(f'SET LOCAL ROLE {self.role}')
+        self.db.put_calibration_set(self.coll, 'own', 1, [self.members[0]])
+        own = self.db.get_calibration_set(self.coll, 'own', 1)['manifest']['members'][0]
+        self.assertEqual('unknown', own['interpretation_revision'])
+        self.conn.execute('RESET ROLE')
+
+    def test_references_cannot_be_forged_or_cut_by_hand(self):
+        self.needs_refs()
+        self.put(); self.grant_tenants(); self.conn.commit()
+        key = self.conn.execute(f'SELECT ref_key FROM {self.table}').fetchone()[0]
+        self.conn.execute(f'SET LOCAL ROLE {self.role}')
+        self.fails(lambda: self.conn.execute(f"UPDATE {self.refs_table()} SET live=NULL"), 'maintained by MorletDB')
+        self.fails(lambda: self.conn.execute(f"INSERT INTO {self.refs_table()} VALUES (gen_random_uuid(),'a','a')"),
+                   'maintained by MorletDB')
+        self.conn.execute('RESET ROLE')
+        self.assertEqual(2, self.conn.execute(f'SELECT count(*) FROM {self.refs_table()} WHERE ref_key=%s AND live IS NOT NULL',
+                                              (key,)).fetchone()[0])
 
     def test_unreadable_history_is_unverified_not_unchanged(self):
         self.needs_refs()

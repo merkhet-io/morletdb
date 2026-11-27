@@ -2,12 +2,12 @@
 
 ## Unreleased
 
-- **Calibration sets: evidence follows recordings, not reusable IDs (#621, SQL 0.3.18).** Each revision now keeps
+- **Calibration sets (experimental): evidence follows recordings, not reusable IDs (#621, SQL 0.3.18).** Each revision now keeps
   references to the recordings it was captured from. Deleting a member recording cuts its reference for good, so a
   later recording under the same ID never makes the earlier evidence visible under row security. Run
   `ALTER EXTENSION pg_morlet UPDATE`, then grant writers INSERT and readers SELECT on the new
   `<collection>_calibration_refs` table.
-- **Calibration sets record interpretation revisions (#620, SQL 0.3.18).** A member captures the revision of its
+- **Calibration sets (experimental) record interpretation revisions (#620, SQL 0.3.18).** A member captures the revision of its
   recording and label. A correction makes it `changed` even if a later correction restored the values, and history
   the role cannot read is reported as `unverified` rather than `unchanged`.
 

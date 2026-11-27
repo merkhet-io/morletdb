@@ -130,7 +130,8 @@ Resolution returns each member as `unchanged`, `changed`, `unverified` or `unava
 approved revision. Metadata/label/context/time-axis or sample changes make it changed; a retracted/missing label or
 missing/compacted raw samples makes it unavailable. From SQL 0.3.18 an interpretation correction of the member's
 recording makes it changed even when a later correction restored the original values, and a member whose
-interpretation history the resolving role cannot read is `unverified`, never `unchanged`. Revision 0 matches a member
+interpretation history the resolving role cannot read, or that has row policies other than MorletDB's own, is
+`unverified`, never `unchanged`. Revision 0 matches a member
 captured before the history existed. Permission errors, corruption and operational failures are raised,
 not hidden as missing data. The original manifest remains available under its access rules. A note-only metadata edit
 currently also causes review; #600 will provide more precise interpretation-versus-annotation distinctions.
@@ -144,8 +145,8 @@ when a calibration revision must stay reproducible. No change is made to sample 
 SQL 0.3.16 upgrades to 0.3.17 with `ALTER EXTENSION pg_morlet UPDATE`; existing collections remain unchanged until
 enabled. The update to 0.3.18 brings every existing calibration table up to date: each revision gets references to
 its recordings, a member whose recording no longer exists starts cut, and row-security policies are rewritten where
-the collection uses them. Grant writers INSERT and readers SELECT on the new reference table. A recording that was
-deleted and recreated under the same ID before the update cannot be told apart from the original: check revisions
-whose members were recreated, and create new revisions where needed. Standard `pg_dump`/restore preserves manifests and audit fields: data is restored before these triggers are
+the collection uses them. Grant writers INSERT and readers SELECT on the new reference table. A member whose
+recording was deleted and recreated under the same ID before the update also starts cut: its label was deleted with the
+old recording, and label IDs are never reused. Standard `pg_dump`/restore preserves manifests and audit fields: data is restored before these triggers are
 installed. Restore the configured roles as well (roles are cluster-level objects, not included in a database dump).
 Do not restore table data alone through active write triggers. The new tests exercise a full schema-and-data restore.

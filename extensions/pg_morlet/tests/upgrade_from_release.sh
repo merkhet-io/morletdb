@@ -219,7 +219,7 @@ SQL
 ANCHORS=1
 fi
 # Calibration sets of the old release (#621): the update gives every revision references to its recordings; a member
-# whose recording is already gone starts cut, and a later recording under that ID does not restore it.
+# whose recording was deleted and recreated before the update starts cut, and recreating it again does not restore it.
 if ver_ge "$OLD_VERSION" 0.3.17 && ! ver_ge "$OLD_VERSION" 0.3.18; then psql -d morlet_upgrade_rel_old <<'SQL'
 DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='morlet_upgrade_cal_approver') THEN
   CREATE ROLE morlet_upgrade_cal_approver; END IF; END $$;
@@ -235,6 +235,7 @@ SELECT morlet_put_calibration_set('cal', 's'||r, 1, jsonb_build_array(jsonb_buil
   FROM unnest(ARRAY['k1','k2']) r;
 COMMIT;
 DELETE FROM cal WHERE recording_id='k1';
+SELECT morlet_start_recording('cal', 'k1', 1000, 'x', 'g', '{}');
 SQL
 CALIBRATION=1
 fi
@@ -251,7 +252,8 @@ if [ -n "${ANCHORS:-}" ]; then
   echo "ok: existing time-anchor triggers keep working after the update; a recording with anchors can be deleted (#607)"
 fi
 if [ -n "${CALIBRATION:-}" ]; then
-  psql -d morlet_upgrade_rel_old -c "SELECT morlet_start_recording('cal', 'k1', 1000, 'x', 'g', '{}')" >/dev/null
+  psql -d morlet_upgrade_rel_old -c "DELETE FROM cal WHERE recording_id='k1'" \
+    -c "SELECT morlet_start_recording('cal', 'k1', 1000, 'x', 'g', '{}')" >/dev/null
   refs=$(psql -d morlet_upgrade_rel_old -c "SELECT string_agg(r.recording_id||'='||coalesce(r.live,'cut'),',' ORDER BY r.recording_id)
     FROM cal_calibration_refs r JOIN cal_calibration_sets x ON x.ref_key=r.ref_key")
   [ "$refs" = "k1=cut,k2=k2" ] || { echo "FAIL: calibration references after the update: $refs"; exit 1; }

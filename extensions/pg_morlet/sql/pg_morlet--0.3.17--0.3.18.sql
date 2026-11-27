@@ -5,10 +5,11 @@
 
 CREATE FUNCTION public.morlet_calibration_bind_refs(collection regclass)
 RETURNS void LANGUAGE plpgsql VOLATILE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
-DECLARE s text; c text; rel regclass; refs regclass;
+DECLARE s text; c text; rel regclass; refs regclass; ctx record;
 BEGIN
   SELECT n.nspname,cl.relname INTO s,c FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=collection;
   rel:=public.morlet_calibration_relation(collection);
+  SELECT * INTO ctx FROM public.morlet_context_relations(collection);
   IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=rel AND attname='ref_key' AND NOT attisdropped) THEN
     EXECUTE format('ALTER TABLE %s ADD COLUMN ref_key uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE',rel);
     EXECUTE format('ALTER TABLE %s ALTER COLUMN ref_key DROP DEFAULT',rel);
@@ -19,10 +20,14 @@ BEGIN
       live text REFERENCES %1$I.%3$I(recording_id) ON DELETE SET NULL, PRIMARY KEY(ref_key,recording_id))',
       s,c||'_calibration_refs',c);
     refs:=format('%I.%I',s,c||'_calibration_refs')::regclass;
-    -- Before the guard exists: a member whose recording is already gone starts cut, never absent.
+    -- Before the guard exists: a member whose recording is gone starts cut, never absent. So does one whose label
+    -- is gone: labels are deleted with their recording and label IDs are never reused, so a recording recreated
+    -- under the same ID before this table existed is recognised too.
     EXECUTE format('INSERT INTO %s(ref_key,recording_id,live) SELECT x.ref_key,r,
-      CASE WHEN EXISTS(SELECT 1 FROM %s y WHERE y.recording_id=r) THEN r END FROM %s x,unnest(x.recording_ids) r',
-      refs,collection,rel);
+      CASE WHEN EXISTS(SELECT 1 FROM %s y WHERE y.recording_id=r) AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(x.members) m
+        WHERE m->>''recording_id''=r AND NOT EXISTS(SELECT 1 FROM %s l WHERE l.label_id=(m->>''label_id'')::bigint
+          AND l.recording_id=r)) THEN r END
+      FROM %s x,unnest(x.recording_ids) r',refs,collection,ctx.labels,rel);
     EXECUTE format('CREATE TRIGGER morlet_calibration_refs_guard BEFORE INSERT OR UPDATE OR DELETE ON %s
       FOR EACH ROW EXECUTE FUNCTION public.morlet_calibration_refs_guard()',refs);
     EXECUTE format('CREATE TRIGGER morlet_calibration_refs_truncate BEFORE TRUNCATE ON %s
@@ -37,10 +42,18 @@ END $$;
 
 CREATE FUNCTION public.morlet_calibration_refs_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE s text; c text; ok boolean;
 BEGIN
-  IF TG_OP='INSERT' AND NEW.live IS NOT DISTINCT FROM NEW.recording_id THEN RETURN NEW; END IF;
-  IF TG_OP='UPDATE' AND NEW.live IS NULL AND NEW.ref_key=OLD.ref_key AND NEW.recording_id=OLD.recording_id THEN
-    RETURN NEW;
+  SELECT n.nspname,left(cl.relname,-length('_calibration_refs')) INTO s,c
+    FROM pg_class cl JOIN pg_namespace n ON n.oid=cl.relnamespace WHERE cl.oid=TG_RELID;
+  IF TG_OP='INSERT' AND NEW.live IS NOT DISTINCT FROM NEW.recording_id THEN
+    EXECUTE format('SELECT EXISTS(SELECT 1 FROM %I.%I x WHERE x.ref_key=$1 AND $2=ANY(x.recording_ids))',s,c||'_calibration_sets')
+      INTO ok USING NEW.ref_key,NEW.recording_id;
+    IF ok THEN RETURN NEW; END IF;
+  ELSIF TG_OP='UPDATE' AND NEW.live IS NULL AND OLD.live IS NOT NULL AND NEW.ref_key=OLD.ref_key
+      AND NEW.recording_id=OLD.recording_id THEN
+    EXECUTE format('SELECT NOT EXISTS(SELECT 1 FROM %I.%I y WHERE y.recording_id=$1)',s,c) INTO ok USING OLD.live;
+    IF ok THEN RETURN NEW; END IF;
   END IF;
   RAISE EXCEPTION 'calibration references are maintained by MorletDB; a deleted member recording stays deleted';
 END $$;
@@ -162,7 +175,10 @@ BEGIN
     -- was written under. 'unversioned' without a history, or for a label older than it; 'unknown' when the history
     -- exists but this role cannot read it, so unreadable history is never reported as unchanged.
     IF history IS NULL THEN rec_revision:='"unversioned"';
-    ELSIF NOT has_table_privilege(history,'SELECT') THEN rec_revision:='"unknown"';
+    ELSIF NOT has_table_privilege(history,'SELECT')
+       OR EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=history AND p.polname<>'morlet_follows_recording') THEN
+      -- unreadable, or row policies other than MorletDB's own could hide revisions of a visible recording
+      rec_revision:='"unknown"';
     ELSE
       EXECUTE format('SELECT to_jsonb(coalesce(max(revision),0)) FROM %s WHERE recording_id=$1',history)
         INTO rec_revision USING rid;
