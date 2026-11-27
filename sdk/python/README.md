@@ -71,5 +71,8 @@ The contract (intervals, timing, what the distance means, transactions, limits) 
 ## Diagnostic calibration sets (experimental)
 
 SQL 0.3.17 adds explicit draft/approved support-set revisions with immutable manifests and exact sample hashes.
+From SQL 0.3.18 each revision keeps references to its recordings (a deleted recording makes it unavailable to
+non-owners, even under a reused ID) and each member records its interpretation revision; `resolve_calibration_set`
+reports `unchanged`, `changed`, `unverified` or `unavailable` per member.
 See [the calibration-set contract](../../docs/calibration-sets.md) for SQL/SDK examples, role grants, repeatable-read
 transactions, retries and retention limits. No feature training or MCP writes are introduced.
