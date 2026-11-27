@@ -72,6 +72,9 @@ Use the search's `max_lag_fraction` (`Client.explain_match` requires it): anothe
 - **Missing evidence.** No stored envelope at that position is an error. If the match's raw chunks were removed or are
   hidden from this role, the score is still explained, with `match_stats` NULL and `match_raw_status` `unavailable`.
 - **Access.** The function runs with the caller's privileges and row security, like search.
+- **Interpretation.** Scores use stored samples only; a unit or calibration correction (#600) changes no distance. The
+  SDK and MCP report each recording's interpretation revision beside the explanation and, on request, beside search hits
+  (#608). Reading it never changes scoring, ties or budgets.
 
 ## Eligibility
 

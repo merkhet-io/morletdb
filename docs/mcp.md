@@ -251,6 +251,14 @@ The server instructions tell agents to state the scope with every negative resul
 event in the searched 2024-03 to 2026-11; 2021 to 2023 is summarized only and was not searched". Servers
 before SQL 0.3.6 report the searched windows and say that they cannot list what was not searched.
 
+## Interpretation revisions
+
+A calibration correction changes what stored samples mean without changing them (#600). When a collection tracks
+interpretation history (SQL 0.3.17), `search_similar` and `search_from_time` give the query and each hit an
+`interpretation_revision`, and `explain_match` gives `interpretation_revisions` for both recordings (#608). Compare
+amplitudes across recordings only with their revisions in view. The field is absent when the collection has no history
+or the role cannot read it reliably; absent never means revision 0 or unchanged. Distances and order are unaffected.
+
 ## Bounding agent load
 
 `MORLET_MCP_MAX_CONCURRENT` is an optional guard that caps the tool calls running at once across all MCP server

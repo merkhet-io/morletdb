@@ -186,6 +186,21 @@ class Calibration(unittest.TestCase):
         self.assertEqual('unknown', own['interpretation_revision'])
         self.conn.execute('RESET ROLE')
 
+    def test_history_under_row_security_without_morlet_policy_is_unknown(self):
+        # #608: row security with no policy hides every revision from a non-owner; that is not revision 0
+        self.needs_refs()
+        self.interpretation_then_revert()
+        self.conn.execute(f'ALTER TABLE {self.coll}_interpretation ENABLE ROW LEVEL SECURITY')
+        self.conn.execute(f'GRANT SELECT ON ALL TABLES IN SCHEMA {self.schema} TO {self.role}')
+        self.conn.execute(f'GRANT USAGE ON SCHEMA {self.schema} TO {self.role}')
+        self.conn.execute(f'GRANT INSERT,UPDATE ON {self.table}, {self.refs_table()} TO {self.role}')
+        self.conn.commit()
+        self.conn.execute(f'SET LOCAL ROLE {self.role}')
+        self.db.put_calibration_set(self.coll, 'own', 1, [self.members[0]])
+        own = self.db.get_calibration_set(self.coll, 'own', 1)['manifest']['members'][0]
+        self.assertEqual('unknown', own['interpretation_revision'])
+        self.conn.execute('RESET ROLE')
+
     def test_references_cannot_be_forged_or_cut_by_hand(self):
         self.needs_refs()
         self.put(); self.grant_tenants(); self.conn.commit()

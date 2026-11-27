@@ -4,13 +4,14 @@ import tempfile
 import threading
 import unittest
 import uuid
+from dataclasses import replace
 
 import numpy as np
 import psycopg
 from psycopg import sql
 
 import morletdb
-from morletdb import InvalidInputError
+from morletdb import IntervalRef, InvalidInputError
 
 DSN = os.environ.get("MORLET_SDK_TEST_DSN", "")
 if not DSN and os.environ.get("MORLET_SDK_REQUIRE_DB") == "1":
@@ -287,6 +288,67 @@ class Interpretation(unittest.TestCase):
         self.commit()
         self.assertTrue(self.admin.execute("SELECT relrowsecurity FROM pg_class WHERE oid=%s::regclass",
                                            (f"{self.schema}.later_interpretation",)).fetchone()[0])
+
+    def test_revisions_are_not_reported_when_other_policies_could_hide_them(self):
+        # #608: an undercounted revision would be a guess, so the function reports none
+        self.enable_all()
+        self.correct()
+        self.grant()
+        revisions = "SELECT * FROM public.morlet_interpretation_revisions(%s::regclass,ARRAY['r1','r2'])"
+        conn = self.db.connection
+        conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
+        self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [("r1", 1), ("r2", 0)])
+        conn.rollback()
+        history = sql.Identifier(self.schema, "rec_interpretation")
+        self.admin.execute(sql.SQL("ALTER TABLE {} ENABLE ROW LEVEL SECURITY").format(history))   # no policy at all
+        conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
+        self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [])
+        conn.rollback()
+        self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [("r1", 1), ("r2", 0)])   # the owner bypasses it
+        conn.rollback()
+        self.admin.execute(sql.SQL("ALTER TABLE {} DISABLE ROW LEVEL SECURITY").format(history))
+        conn.execute("SELECT public.morlet_enable_row_security(%s::regclass)", (self.c,))
+        self.commit()
+        conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
+        self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [("r1", 1), ("r2", 0)])   # MorletDB's own policy
+        conn.rollback()
+        self.admin.execute(sql.SQL("CREATE POLICY hide_r1 ON {} AS RESTRICTIVE USING (recording_id<>'r1')").format(history))
+        conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
+        self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [])
+        conn.rollback()
+
+    def test_search_and_explanation_report_revisions_and_nothing_else_changes(self):
+        self.enable_all()
+        q = IntervalRef(self.c, "r1", 0, 512)
+        before = self.db.search(self.c, "r1", 0, 512, exclude_source=True, interpretation_revisions=True)
+        plain = self.db.search(self.c, "r1", 0, 512, exclude_source=True)
+        self.assertIsNone(plain.interpretation_revisions)
+        self.assertTrue(all(x.interpretation_revision is None for x in plain.matches))
+        self.assertTrue(before.matches)
+        m = before.matches[0].ref
+        self.assertEqual(before.interpretation_revisions, {"r1": 0, **{x.ref.recording_id: 0 for x in before.matches}})
+        e0 = self.db.explain_match(q, m, max_lag_fraction=before.max_lag_fraction)
+        self.assertEqual(e0.interpretation_revisions, {"r1": 0, m.recording_id: 0})
+        self.correct(rid=m.recording_id)
+        after = self.db.search(self.c, "r1", 0, 512, exclude_source=True, interpretation_revisions=True)
+        e1 = self.db.explain_match(q, m, max_lag_fraction=before.max_lag_fraction)
+        self.db.connection.rollback()
+        # the correction moved the reported revision and nothing else: distances, order, explanation
+        strip = lambda r: [(x.ref, x.distance.hex()) for x in r.matches]
+        self.assertEqual(strip(after), strip(before))
+        self.assertEqual(strip(plain), strip(before))
+        self.assertEqual(after.interpretation_revisions[m.recording_id], 1)
+        self.assertEqual(after.interpretation_revisions["r1"], 1 if m.recording_id == "r1" else 0)
+        self.assertEqual([x.interpretation_revision for x in after.matches],
+                         [after.interpretation_revisions[x.ref.recording_id] for x in after.matches])
+        self.assertEqual(e1.interpretation_revisions[m.recording_id], 1)
+        self.assertEqual(replace(e1, interpretation_revisions=None), replace(e0, interpretation_revisions=None))
+        # absent, not null, in JSON when not requested, so investigation output keeps its shape
+        found = self.db.investigate(self.c, "r1", 0, 512, top_k=3).to_dict()["search"]
+        self.db.connection.rollback()
+        self.assertNotIn("interpretation_revisions", found)
+        self.assertTrue(found["matches"])
+        self.assertTrue(all("interpretation_revision" not in x for x in found["matches"]))
 
     def test_deleting_a_recording_removes_its_history(self):
         self.enable_all()

@@ -75,6 +75,9 @@ class Match:
     distance: float
     metadata: dict[str, Any] = field(repr=False)
     evidence: "Evidence | None" = field(default=None, repr=False)
+    # The recording's current interpretation revision (#608), when requested with search(interpretation_revisions=True)
+    # and tracked and readable; None otherwise, never guessed. It does not affect the distance or the order.
+    interpretation_revision: int | None = None
 
 
 @dataclass(frozen=True)
@@ -84,11 +87,16 @@ class SearchResult:
     `mode` is "exact" when every eligible stored window was scored, or "probes" when probe search was
     enabled for this window size: candidates then come from an approximate index (small galleries are still
     searched exhaustively), while the distances returned are always computed exactly.
+
+    `interpretation_revisions` (#608) maps the query's and the matches' recording IDs to their current interpretation
+    revision (unit and calibration, #600). It is None unless requested with `search(interpretation_revisions=True)`;
+    a recording is missing from it when its history is off or cannot be read reliably by this role.
     """
     query: IntervalRef
     matches: list[Match]
     mode: Literal["exact", "probes"]
     max_lag_fraction: float
+    interpretation_revisions: dict[str, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -245,6 +253,11 @@ class MatchExplanation:
     no finer than one step (`step_samples`). Contributions explain the similarity score, not a fault's cause; envelopes
     are normalized, so compare amplitude with `query_stats` and `match_stats`, which are None for a match whose raw
     samples were removed or are hidden from this role (`match_raw_status` "unavailable").
+
+    Amplitudes depend on each recording's unit and calibration. `interpretation_revisions` (#608) maps the query's and
+    the match's recording IDs to the interpretation revision they were read under, in the explanation's own statement.
+    It is None when no revision is available: an older server, the history off, or history this role cannot read
+    reliably. Revisions are never guessed.
     """
     query: IntervalRef
     match: IntervalRef
@@ -265,6 +278,7 @@ class MatchExplanation:
     match_raw_status: str
     query_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
     stored_envelope: np.ndarray | None = field(default=None, repr=False, compare=False)
+    interpretation_revisions: dict[str, int] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-compatible result; envelopes become lists."""

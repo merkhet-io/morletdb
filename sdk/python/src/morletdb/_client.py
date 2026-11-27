@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator, Mapping
 
@@ -528,11 +529,17 @@ class Client:
             raise UnsupportedError("explain_match needs pg_morlet SQL 0.3.16 or later")
         if not self._one("SELECT %s::regclass=%s::regclass", (query.collection, match.collection)):
             raise InvalidInputError("query and match must be in one collection")
+        # #608: the interpretation revisions of both recordings, read in the explanation's own statement
+        revisions = ("(SELECT jsonb_object_agg(x.recording_id,x.revision) FROM public.morlet_interpretation_revisions("
+                     "%s::regclass,ARRAY[%s,%s]::text[]) x)"
+                     if self._has("public.morlet_interpretation_revisions(regclass,text[])") else "NULL::jsonb")
+        args = (query.collection, query.recording_id, match.recording_id) if revisions != "NULL::jsonb" else ()
         try:
             r = self.connection.execute(
-                "SELECT * FROM morlet_explain_match(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (query.collection, query.recording_id, query.start_sample, query.end_sample, match.recording_id,
-                 match.start_sample, float(max_lag_fraction), contribution_bins, include_envelopes)).fetchone()
+                "SELECT e.*," + revisions + " FROM morlet_explain_match(%s::regclass,%s,%s,%s,%s,%s,%s,%s,%s) e",
+                args + (query.collection, query.recording_id, query.start_sample, query.end_sample,
+                        match.recording_id, match.start_sample, float(max_lag_fraction), contribution_bins,
+                        include_envelopes)).fetchone()
         except (psycopg.errors.InsufficientPrivilege, psycopg.errors.QueryCanceled):
             raise
         except psycopg.Error as exc:      # by SQLSTATE: the message holds the caller's recording id
@@ -548,7 +555,8 @@ class Client:
         bins = tuple(MatchContribution(int(a), int(b), int(a) + lag, int(b) + lag, float(c))
                      for a, b, c in zip(r[11], r[12], r[13]))
         return MatchExplanation(query, match, r[0], int(r[2]), r[3], lag, int(r[5]), int(r[6]), r[7], r[8], int(r[9]),
-                                int(r[10]), bins, r[14], stats(r[17]), stats(r[18]), r[19], array(r[15]), array(r[16]))
+                                int(r[10]), bins, r[14], stats(r[17]), stats(r[18]), r[19], array(r[15]), array(r[16]),
+                                {k: int(v) for k, v in r[20].items()} if r[20] else None)
 
     def overview(self, collection: str, recording_id: str, start_sample: int, end_sample: int,
                  buckets: int = 100) -> list[OverviewBucket]:
@@ -687,7 +695,8 @@ class Client:
                max_lag_fraction: float = 0.075, exclude_source: bool = True, suppress_overlaps: bool = True,
                max_candidates: int = 1_000_000, time_from: datetime | int | None = None,
                time_to: datetime | int | None = None, before_only: bool = False,
-               evidence: bool = False, evidence_parts: int = 16, exclude: str | None = None) -> SearchResult:
+               evidence: bool = False, evidence_parts: int = 16, exclude: str | None = None,
+               interpretation_revisions: bool = False) -> SearchResult:
         """Stored intervals most similar to [start_sample, end_sample) of a recording (`morlet_search_similar`).
 
         The interval must have the length of a built search window (default 4096 samples). Candidates are
@@ -705,6 +714,11 @@ class Client:
         "window" (the windows overlapping the query, as `exclude_source=True`), "occurrence" (every context segment
         of the same part or occurrence, in any recording), "recording" (the whole source recording: on cyclic
         production, the same cut on earlier parts rather than the next cycle) or "none".
+
+        `interpretation_revisions=True` (#608) also reports the current interpretation revision (unit and calibration)
+        of the query's and each match's recording (`SearchResult.interpretation_revisions`, `Match.interpretation_revision`).
+        It is read by one more statement after the search and changes neither the distances, the order nor the budgets.
+        Without the history, or when this role cannot read it reliably, no revision is reported.
         """
         end = start_sample + SEARCH_WINDOW if end_sample is None else end_sample
         query = IntervalRef(collection, recording_id, int(start_sample), int(end))
@@ -728,6 +742,8 @@ class Client:
                 raise UnsupportedError("exclude needs pg_morlet SQL 0.3.11 or later")
         if evidence and not 1 <= int(evidence_parts) <= 1024:
             raise InvalidInputError("evidence_parts must be 1..1024")
+        if not isinstance(interpretation_revisions, bool):
+            raise InvalidInputError("interpretation_revisions must be true or false")
         probes = bool(query.length <= 32768
                       and self._has("public.morlet_envelope_probe_relation(regclass,integer)")
                       and self._one("SELECT public.morlet_envelope_probe_relation(%s::regclass,%s) IS NOT NULL",
@@ -764,7 +780,16 @@ class Client:
                 ev = Evidence(r[5], r[6], st, [EvidencePart(int(a), int(b), float(lo), float(hi), float(q))
                                                for a, b, lo, hi, q in (r[12] or [])])
             matches.append(Match(i + 1, IntervalRef(collection, r[0], int(r[1]), int(r[2])), float(r[3]), r[4], ev))
-        return SearchResult(query, matches, "probes" if probes else "exact", float(max_lag_fraction))
+        revisions = None
+        if interpretation_revisions:
+            revisions = {}
+            if self._has("public.morlet_interpretation_revisions(regclass,text[])"):
+                ids = sorted({recording_id, *(m.ref.recording_id for m in matches)})
+                revisions = {rid: int(rev) for rid, rev in self._execute(
+                    "SELECT recording_id, revision FROM public.morlet_interpretation_revisions(%s::regclass,%s::text[])",
+                    (collection, ids)).fetchall()}
+            matches = [replace(m, interpretation_revision=revisions.get(m.ref.recording_id)) for m in matches]
+        return SearchResult(query, matches, "probes" if probes else "exact", float(max_lag_fraction), revisions)
 
 def _notification(p: Mapping[str, Any]) -> Notification:
     if p.get("v") != 1:
