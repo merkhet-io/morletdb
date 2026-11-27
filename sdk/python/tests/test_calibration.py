@@ -86,6 +86,103 @@ class Calibration(unittest.TestCase):
             self.fails(lambda: self.conn.execute(stmt), 'immutable|cannot be removed')
         self.assertEqual(approved, self.db.get_calibration_set(self.coll, 'commissioning', 1))
 
+    def refs_table(self):
+        name = self.coll + '_calibration_refs'
+        return name if self.conn.execute('SELECT to_regclass(%s)', (name,)).fetchone()[0] else None
+
+    def needs_refs(self):
+        if not self.refs_table():
+            self.skipTest('server without calibration references (SQL 0.3.18)')
+
+    def visible_after_reuse(self, rls_first):
+        # #621: recording b is deleted and a new recording b is created for tenant a. The tenant-a reader must not
+        # see the revision captured from the old b, through direct SQL or the SDK.
+        if rls_first:
+            self.conn.execute(f'DROP TABLE {self.table}')
+            self.conn.execute(f'DROP TABLE {self.refs_table()}')
+            self.conn.execute('SELECT morlet_enable_row_security(%s::regclass)', (self.coll,))
+            self.db.enable_calibration_sets(self.coll, approver_role=self.approver)
+        self.put([self.members[1]]); self.approve()
+        self.grant_tenants()
+        self.conn.commit()
+        self.conn.execute(f'SET LOCAL ROLE {self.role}')
+        before = self.conn.execute(f'SELECT count(*) FROM {self.table}').fetchone()[0]
+        self.conn.execute('RESET ROLE'); self.conn.commit()
+        self.conn.execute(f"DELETE FROM {self.coll} WHERE recording_id='b'")
+        self.conn.execute("SELECT morlet_start_recording(%s::regclass,'b',1000,'x','g',%s)",
+                          (self.coll, Jsonb({'tenant': 'a'})))
+        self.conn.commit()
+        self.conn.execute(f'SET LOCAL ROLE {self.role}')
+        after = self.conn.execute(f'SELECT count(*) FROM {self.table}').fetchone()[0]
+        self.fails(lambda: self.db.get_calibration_set(self.coll, 'commissioning', 1), 'unavailable')
+        return before, after
+
+    def test_evidence_does_not_follow_a_reused_recording_id(self):
+        self.needs_refs()
+        self.assertEqual((0, 0), self.visible_after_reuse(rls_first=False))
+        # Nobody but a deletion changes a reference: the writer cannot restore or remove a cut one.
+        for stmt in (f"UPDATE {self.refs_table()} SET live=recording_id", f"DELETE FROM {self.refs_table()}",
+                     f"TRUNCATE {self.refs_table()}"):
+            self.fails(lambda: self.conn.execute(stmt), 'maintained by MorletDB')
+        self.conn.execute('RESET ROLE')
+        self.assertEqual([('b', None)], self.conn.execute(f'SELECT recording_id,live FROM {self.refs_table()}').fetchall())
+        self.assertEqual('unavailable', self.resolve()['members'][0]['status'])
+
+    def test_evidence_does_not_follow_a_reused_recording_id_with_row_security_first(self):
+        self.needs_refs()
+        self.assertEqual((0, 0), self.visible_after_reuse(rls_first=True))
+        self.conn.execute('RESET ROLE')
+
+    def test_a_new_revision_on_the_new_recording_is_visible(self):
+        self.needs_refs()
+        self.grant_tenants(); self.conn.commit()
+        self.conn.execute(f"DELETE FROM {self.coll} WHERE recording_id='b'")
+        self.conn.execute("SELECT morlet_start_recording(%s::regclass,'b',1000,'x','g',%s)",
+                          (self.coll, Jsonb({'tenant': 'a'})))
+        self.conn.execute("SELECT morlet_append_chunk(%s::regclass,'b',0,ARRAY[5::float8,6,7,8])", (self.coll,))
+        lid = self.conn.execute("SELECT morlet_add_label(%s::regclass,'b',0,4,'normal')", (self.coll,)).fetchone()[0]
+        self.conn.commit()
+        self.conn.execute(f'SET LOCAL ROLE {self.role}')
+        self.db.put_calibration_set(self.coll, 'fresh', 1, [dict(recording_id='b', start_sample=0, end_sample=4, label_id=lid)])
+        self.assertEqual([('fresh',)], self.conn.execute(f'SELECT set_id FROM {self.table}').fetchall())
+        self.conn.execute('RESET ROLE')
+
+    def interpretation_then_revert(self):
+        self.conn.execute(f"UPDATE {self.coll} SET metadata=metadata || %s WHERE recording_id='a'",
+                          (Jsonb({'calibration': {'g_per_count': 1}}),))
+        self.conn.execute('SELECT morlet_enable_interpretation(%s::regclass)', (self.coll,))
+        lid = self.conn.execute("SELECT morlet_add_label(%s::regclass,'a',0,4,'normal')", (self.coll,)).fetchone()[0]
+        self.members[0]['label_id'] = lid
+        self.put(); self.approve(); self.conn.commit()
+
+    def test_a_reverted_correction_still_needs_review(self):
+        # #620: two corrections restore the original calibration; the label was written under revision 0.
+        self.needs_refs()
+        self.interpretation_then_revert()
+        member = self.db.get_calibration_set(self.coll, 'commissioning', 1)['manifest']['members']
+        self.assertEqual([(0, 0)], [(m['interpretation_revision'], m['label_revision'])
+                                    for m in member if m['recording_id'] == 'a'])
+        for factor in (2, 1):
+            self.db.correct_interpretation(self.coll, 'a', unit='g', calibration={'g_per_count': factor},
+                                           reason='test correction')
+            self.conn.commit()
+        self.assertEqual(self.statuses(), (True, ['unchanged', 'changed']))
+        self.conn.commit()
+
+    def test_unreadable_history_is_unverified_not_unchanged(self):
+        self.needs_refs()
+        self.interpretation_then_revert()
+        self.grant_tenants()
+        self.conn.execute(f'REVOKE SELECT ON {self.coll}_interpretation FROM {self.role}')
+        self.conn.commit()
+        self.conn.execute(f'SET LOCAL ROLE {self.role}')
+        self.db.put_calibration_set(self.coll, 'own', 1, [self.members[0]])
+        own = self.db.get_calibration_set(self.coll, 'own', 1)['manifest']['members'][0]
+        self.assertEqual('unknown', own['interpretation_revision'])
+        result = self.db.resolve_calibration_set(self.coll, 'own', 1)
+        self.assertEqual((True, ['unverified']), (result['needs_review'], [m['status'] for m in result['members']]))
+        self.conn.execute('RESET ROLE')
+
     def statuses(self):
         r = self.resolve()
         return r['needs_review'], [m['status'] for m in r['members']]
@@ -144,6 +241,8 @@ class Calibration(unittest.TestCase):
         self.conn.execute(f'GRANT USAGE ON SCHEMA {self.schema} TO {self.role}, {self.approver}')
         self.conn.execute(f'GRANT SELECT ON ALL TABLES IN SCHEMA {self.schema} TO {self.role}, {self.approver}')
         self.conn.execute(f'GRANT INSERT,UPDATE,DELETE,TRUNCATE ON {self.table} TO {self.role}, {self.approver}')
+        if self.refs_table():
+            self.conn.execute(f'GRANT INSERT,UPDATE,DELETE,TRUNCATE ON {self.refs_table()} TO {self.role}, {self.approver}')
         self.conn.execute(f'ALTER TABLE {self.coll} ENABLE ROW LEVEL SECURITY')
         self.conn.execute(f"CREATE POLICY tenant ON {self.coll} TO {self.role},{self.approver} USING(metadata->>'tenant'='a')")
         self.conn.execute('SELECT morlet_enable_row_security(%s::regclass)', (self.coll,))

@@ -1,4 +1,4 @@
-# Diagnostic calibration sets (experimental, SQL 0.3.17)
+# Diagnostic calibration sets (experimental, SQL 0.3.17; revisions and recording references from 0.3.18)
 
 A calibration set is an explicitly selected, versioned set of labelled waveform intervals for diagnostic
 adaptation. It is not sensor calibration, a classifier, or a probability calibration service. One immutable
@@ -8,7 +8,8 @@ work (#602–604). No MCP write tools are added.
 ## Contract
 
 Enable context first, then `morlet_enable_calibration_sets(collection, approver_role)`, as the collection owner.
-This creates `<collection>_calibration_sets`. The role must already exist. Enabling again with the same authority
+This creates `<collection>_calibration_sets` and, from SQL 0.3.18, `<collection>_calibration_refs`, which records
+the recordings each revision was captured from. The role must already exist. Enabling again with the same authority
 is a no-op; another authority is refused. Provision a dedicated approval role rather than granting it to agents.
 
 Each `(set_id, revision)` stores its explicit members, an evidence manifest and its approval. Members live in one
@@ -25,9 +26,11 @@ The database captures:
   assertion of an independent physical specimen. Acquisition-level metadata is not included in this v1 contract.
 - The full selected label row, including author, timestamp and retraction state.
 - A `raw` representation specification, version 1. Derived feature/scaler profiles are not supported yet.
-- Explicit `unversioned` label and interpretation revision markers and `unknown` information availability.
-  Existing tables are not retroactively given an invented history. Any non-NULL `decision_at` is refused; historical
-  causal replay needs #158 and interpretation revisions need #600.
+- From SQL 0.3.18, the interpretation revision of the member's recording and the revision its label was written
+  under ([interpretation revisions](python-sdk.md), #600). `unversioned` means there is no history (or the label is
+  older than it); `unknown` means the history exists but the capturing role cannot read it. Revisions captured by SQL
+  0.3.17 are all `unversioned`. Information availability is `unknown`. Any non-NULL `decision_at` is refused;
+  historical causal replay needs #158.
 
 Bounds are 1–100 members, at most 1,000,000 samples/member and 4,000,000 samples/set. Raw chunks must be available in
 the encoded collection layout; legacy array-only collections are refused by the raw-read contract. Metadata/context
@@ -45,8 +48,10 @@ requires a future migration and is not supported for enabled calibration sets.
 All functions and triggers run with the caller's privileges. The owner provisions grants; enabling does not grant
 anything. A writer needs SELECT on the recording, raw, label, context and optional acquisition/time-anchor tables,
 and SELECT/INSERT/UPDATE on the calibration table. An approver needs the same read access and UPDATE on the
-calibration table, plus membership in the configured approval role. A reader needs SELECT on the calibration table
-and on recordings for its RLS policy; resolving additionally needs SELECT on source companion tables.
+calibration table, plus membership in the configured approval role. A writer also needs INSERT on the reference table
+(SQL 0.3.18), which MorletDB fills when a revision is written. A reader needs SELECT on the calibration table and, under
+row security, on the reference table and recordings for its policy; resolving additionally needs SELECT on source
+companion tables, including the interpretation history.
 
 ```sql
 -- Owner setup (example collection already has recordings and context/labels):
@@ -90,7 +95,11 @@ without a deliberate administrative migration.
 `morlet_enable_row_security` protects the new companion in either enablement order. A manifest is visible only when
 **every** referenced recording is visible. There is no partial manifest, hidden-member count or fallback to creator
 access. A hidden or deleted recording can make the whole revision unavailable to a non-owner; this intentionally
-prefers confidentiality to revealing why it disappeared. An administrator can resolve deleted sources. Source labels
+prefers confidentiality to revealing why it disappeared. From SQL 0.3.18, deleting a member recording cuts its
+reference for good: a later recording created under the same ID is a different recording, and evidence captured from
+the deleted one stays unavailable to non-owners whoever can see the new one. Create a new revision from the new
+recording. References are written only by MorletDB and cannot be edited or removed; truncating the collection with
+`CASCADE` is refused while they exist. An administrator can resolve deleted sources. Source labels
 and context follow recording-level access, as in the existing helper; separately restrictive custom policies on those
 tables are not automatically propagated to a previously captured manifest. Grant manifest access only to roles allowed
 to see captured annotations as well as the recordings. `FORCE ROW LEVEL SECURITY` follows PostgreSQL's usual rules.
@@ -117,9 +126,12 @@ Results are JSON dictionaries; these APIs are experimental. Use a fresh snapshot
 
 ## Changes, retention and restore
 
-Resolution returns each member as `unchanged`, `changed` or `unavailable`, plus `needs_review`. It does not mutate an
+Resolution returns each member as `unchanged`, `changed`, `unverified` or `unavailable`, plus `needs_review`. It does not mutate an
 approved revision. Metadata/label/context/time-axis or sample changes make it changed; a retracted/missing label or
-missing/compacted raw samples makes it unavailable. Permission errors, corruption and operational failures are raised,
+missing/compacted raw samples makes it unavailable. From SQL 0.3.18 an interpretation correction of the member's
+recording makes it changed even when a later correction restored the original values, and a member whose
+interpretation history the resolving role cannot read is `unverified`, never `unchanged`. Revision 0 matches a member
+captured before the history existed. Permission errors, corruption and operational failures are raised,
 not hidden as missing data. The original manifest remains available under its access rules. A note-only metadata edit
 currently also causes review; #600 will provide more precise interpretation-versus-annotation distinctions.
 
@@ -130,6 +142,10 @@ samples and is not a cheap indexed status query. Preserve data externally or coo
 when a calibration revision must stay reproducible. No change is made to sample storage or persisted chunk formats.
 
 SQL 0.3.16 upgrades to 0.3.17 with `ALTER EXTENSION pg_morlet UPDATE`; existing collections remain unchanged until
-enabled. Standard `pg_dump`/restore preserves manifests and audit fields: data is restored before these triggers are
+enabled. The update to 0.3.18 brings every existing calibration table up to date: each revision gets references to
+its recordings, a member whose recording no longer exists starts cut, and row-security policies are rewritten where
+the collection uses them. Grant writers INSERT and readers SELECT on the new reference table. A recording that was
+deleted and recreated under the same ID before the update cannot be told apart from the original: check revisions
+whose members were recreated, and create new revisions where needed. Standard `pg_dump`/restore preserves manifests and audit fields: data is restored before these triggers are
 installed. Restore the configured roles as well (roles are cluster-level objects, not included in a database dump).
 Do not restore table data alone through active write triggers. The new tests exercise a full schema-and-data restore.

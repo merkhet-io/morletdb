@@ -117,6 +117,8 @@ measured.
 ## Diagnostic calibration sets (SQL 0.3.17)
 
 The optional `_calibration_sets` table follows all referenced recordings: a partially visible manifest is entirely
-hidden. Both enablement orders are supported. Approval additionally requires a configured reviewer role and is guarded
+hidden. From SQL 0.3.18 it also stays hidden once a member recording was deleted, even after a new recording takes
+the same ID: the `_calibration_refs` table records each revision's recordings, and readers need SELECT on it. Both
+enablement orders are supported. Approval additionally requires a configured reviewer role and is guarded
 against direct SQL edits. See [calibration sets](calibration-sets.md) for grants, snapshot semantics and the limitations
 of captured annotations and trusted table owners.
