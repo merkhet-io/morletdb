@@ -13,9 +13,10 @@
 - **Search results and explanations report interpretation revisions (experimental, #608).** `explain_match` reports the
   revision of the query's and the match's recordings, `search(..., interpretation_revisions=True)` that of the query and
   every match, and the MCP `search_similar`, `search_from_time` and `explain_match` pass them on. Scores, order and
-  budgets are unchanged, and fields that are not reported are left out of JSON output. From SQL 0.3.18,
-  `morlet_interpretation_revisions` reports no revision, and calibration-set capture reports `unknown`, when row policies
-  other than MorletDB's own (or row security without it) could hide revisions from the role.
+  budgets are unchanged, and fields that are not reported are left out of JSON output. Revisions are reported from SQL
+  0.3.18, where `morlet_interpretation_revisions` reports none, calibration-set capture reports `unknown` and a new
+  label records no revision when row policies could hide revisions from the role (only MorletDB's own policy, permissive
+  for every role and command, is trusted).
 
 ## 0.4.0-beta.6
 

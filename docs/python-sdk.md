@@ -316,13 +316,14 @@ distance, winning lag, correlations, contributions and the raw statistics of bot
 ([contract](search-contract.md#explaining-one-match-sql-0316-experimental-573)). It explains the similarity score, not a
 fault's cause.
 
-Amplitudes depend on each recording's unit and calibration. With interpretation history enabled (SQL 0.3.17),
-`MatchExplanation.interpretation_revisions` maps the query's and the match's recording IDs to the revision they were read
+Amplitudes depend on each recording's unit and calibration. With interpretation history enabled, on SQL 0.3.18 or
+later, `MatchExplanation.interpretation_revisions` maps the query's and the match's recording IDs to the revision they were read
 under, read in the explanation's own statement. `search(..., interpretation_revisions=True)` reports the same for the
 query and every match (`SearchResult.interpretation_revisions`, `Match.interpretation_revision`), read by one more
 statement after the search; it changes neither distances, order nor budgets. A revision is reported only when it is
-known: there is none without the history, or when the role cannot read the history reliably (from SQL 0.3.18 that
-includes history behind row policies other than MorletDB's own). Absent is never the same as revision 0. In `to_dict()`
+known: there is none without the history, on SQL 0.3.17 (whose function could undercount behind row policies), or
+when the role cannot read the history completely: row policies other than MorletDB's own, or row security without it.
+Absent is never the same as revision 0. In `to_dict()`
 output the fields are left out when not reported, so investigation output and evidence bundles keep their shape.
 
 ## Connections and transactions

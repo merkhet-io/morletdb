@@ -201,6 +201,17 @@ class Calibration(unittest.TestCase):
         self.assertEqual('unknown', own['interpretation_revision'])
         self.conn.execute('RESET ROLE')
 
+    def test_owner_reads_history_behind_extra_policies(self):
+        # #608: row security does not apply to the table owner, so the owner's capture is a real revision
+        self.needs_refs()
+        self.interpretation_then_revert()
+        self.conn.execute(f'ALTER TABLE {self.coll}_interpretation ENABLE ROW LEVEL SECURITY')
+        self.conn.execute(f"CREATE POLICY hide_some ON {self.coll}_interpretation USING (reason <> 'secret')")
+        self.db.put_calibration_set(self.coll, 'own', 1, [self.members[0]])
+        own = self.db.get_calibration_set(self.coll, 'own', 1)['manifest']['members'][0]
+        self.assertIsInstance(own['interpretation_revision'], int)
+        self.conn.rollback()
+
     def test_references_cannot_be_forged_or_cut_by_hand(self):
         self.needs_refs()
         self.put(); self.grant_tenants(); self.conn.commit()

@@ -238,5 +238,6 @@ morlet_approve_calibration_set	experimental	0.3.17	diagnostic calibration sets (
 morlet_get_calibration_set	experimental	0.3.17	diagnostic calibration sets (#601)
 morlet_resolve_calibration_set	experimental	0.3.17	diagnostic calibration sets (#601)
 morlet_calibration_bind_refs	internal	0.3.18	calibration references (#621)
+morlet_interpretation_history_complete	internal	0.3.18	whether interpretation history can be read completely (#608)
 morlet_calibration_refs_guard	internal	0.3.18	calibration references (#621)
 morlet_calibration_track_refs	internal	0.3.18	calibration references (#621)

@@ -312,12 +312,26 @@ class Interpretation(unittest.TestCase):
         conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
         self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [("r1", 1), ("r2", 0)])   # MorletDB's own policy
         conn.rollback()
-        self.admin.execute(sql.SQL("CREATE POLICY hide_r1 ON {} AS RESTRICTIVE USING (recording_id<>'r1')").format(history))
+        # MorletDB's policy narrowed to one role is no longer trusted either
+        self.admin.execute(sql.SQL("ALTER POLICY morlet_follows_recording ON {} TO {}").format(
+            history, sql.Identifier(self.role)))
         conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
         self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [])
         conn.rollback()
+        self.admin.execute(sql.SQL("ALTER POLICY morlet_follows_recording ON {} TO PUBLIC").format(history))
+        self.admin.execute(sql.SQL("CREATE POLICY hide_r1 ON {} AS RESTRICTIVE USING (recording_id<>'r1')").format(history))
+        self.grant(("rec_labels", "INSERT"))
+        conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
+        self.assertEqual(conn.execute(revisions, (self.c,)).fetchall(), [])
+        label = self.label()                      # a label claims no revision it cannot see completely
+        conn.execute("RESET ROLE")
+        self.assertIsNone(conn.execute(sql.SQL("SELECT interpretation_revision FROM {} WHERE label_id=%s").format(
+            sql.Identifier(self.schema, "rec_labels")), (label,)).fetchone()[0])
+        conn.rollback()
 
     def test_search_and_explanation_report_revisions_and_nothing_else_changes(self):
+        untracked = self.db.search(self.c, "r1", 0, 512, exclude_source=True, interpretation_revisions=True)
+        self.assertIsNone(untracked.interpretation_revisions)       # none reported: absent, not {}
         self.enable_all()
         q = IntervalRef(self.c, "r1", 0, 512)
         before = self.db.search(self.c, "r1", 0, 512, exclude_source=True, interpretation_revisions=True)
@@ -349,6 +363,23 @@ class Interpretation(unittest.TestCase):
         self.assertNotIn("interpretation_revisions", found)
         self.assertTrue(found["matches"])
         self.assertTrue(all("interpretation_revision" not in x for x in found["matches"]))
+
+    def test_revisions_without_execute_leave_search_and_explanation_working(self):
+        self.enable_all()
+        self.correct()
+        self.grant()
+        fn = "public.morlet_interpretation_revisions(regclass,text[])"
+        self.admin.execute(f"REVOKE EXECUTE ON FUNCTION {fn} FROM PUBLIC")
+        self.addCleanup(self.admin.execute, f"GRANT EXECUTE ON FUNCTION {fn} TO PUBLIC")
+        conn = self.db.connection
+        conn.execute(sql.SQL("SET LOCAL ROLE {}").format(sql.Identifier(self.role)))
+        found = self.db.search(self.c, "r1", 0, 512, exclude_source=True, interpretation_revisions=True)
+        self.assertIsNone(found.interpretation_revisions)
+        self.assertTrue(found.matches)
+        e = self.db.explain_match(IntervalRef(self.c, "r1", 0, 512), found.matches[0].ref,
+                                  max_lag_fraction=found.max_lag_fraction)
+        self.assertIsNone(e.interpretation_revisions)
+        conn.rollback()
 
     def test_deleting_a_recording_removes_its_history(self):
         self.enable_all()

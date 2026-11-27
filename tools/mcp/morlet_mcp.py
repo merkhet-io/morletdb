@@ -977,9 +977,13 @@ SCOPE_TIMEOUT_MS = int(os.environ.get("MORLET_MCP_SCOPE_TIMEOUT_MS", "5000"))   
 
 def interpretation_revisions(conn, c, recording_ids):
     """The current interpretation revision (unit and calibration, #600) of each listed recording that has one: empty on
-    servers before SQL 0.3.17, with the history off, or when this role cannot read it reliably (#608)."""
-    if not conn.execute("SELECT to_regprocedure('public.morlet_interpretation_revisions(regclass,text[])') IS NOT NULL"
-                        ).fetchone()[0]:
+    servers before SQL 0.3.18 (0.3.17 could undercount behind row policies), without EXECUTE on the function, with the
+    history off, or when this role cannot read it reliably (#608)."""
+    if not conn.execute(                      # CASE: has_function_privilege fails on a function that does not exist
+            "SELECT CASE WHEN to_regprocedure('public.morlet_interpretation_history_complete(regclass)') IS NULL "
+            "THEN false ELSE has_function_privilege('public.morlet_interpretation_history_complete(regclass)','EXECUTE') "
+            "AND has_function_privilege('public.morlet_interpretation_revisions(regclass,text[])','EXECUTE') END"
+            ).fetchone()[0]:
         return {}
     return dict(conn.execute("SELECT recording_id, revision FROM public.morlet_interpretation_revisions(%s::regclass, "
                              "%s::text[])", (c, sorted(recording_ids))).fetchall())

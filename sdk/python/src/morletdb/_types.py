@@ -89,8 +89,9 @@ class SearchResult:
     searched exhaustively), while the distances returned are always computed exactly.
 
     `interpretation_revisions` (#608) maps the query's and the matches' recording IDs to their current interpretation
-    revision (unit and calibration, #600). It is None unless requested with `search(interpretation_revisions=True)`;
-    a recording is missing from it when its history is off or cannot be read reliably by this role.
+    revision (unit and calibration, #600), when requested with `search(interpretation_revisions=True)` on SQL 0.3.18
+    or later. A recording is missing from it when its history is off or cannot be read reliably by this role, and it is
+    None when no revision was reported.
     """
     query: IntervalRef
     matches: list[Match]
@@ -256,8 +257,8 @@ class MatchExplanation:
 
     Amplitudes depend on each recording's unit and calibration. `interpretation_revisions` (#608) maps the query's and
     the match's recording IDs to the interpretation revision they were read under, in the explanation's own statement.
-    It is None when no revision is available: an older server, the history off, or history this role cannot read
-    reliably. Revisions are never guessed.
+    It is None when no revision is available: a server before SQL 0.3.18, the history off, or history this role cannot
+    read reliably. Revisions are never guessed.
     """
     query: IntervalRef
     match: IntervalRef

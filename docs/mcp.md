@@ -254,10 +254,11 @@ before SQL 0.3.6 report the searched windows and say that they cannot list what 
 ## Interpretation revisions
 
 A calibration correction changes what stored samples mean without changing them (#600). When a collection tracks
-interpretation history (SQL 0.3.17), `search_similar` and `search_from_time` give the query and each hit an
+interpretation history, on SQL 0.3.18 or later, `search_similar` and `search_from_time` give the query and each hit an
 `interpretation_revision`, and `explain_match` gives `interpretation_revisions` for both recordings (#608). Compare
-amplitudes across recordings only with their revisions in view. The field is absent when the collection has no history
-or the role cannot read it reliably; absent never means revision 0 or unchanged. Distances and order are unaffected.
+amplitudes across recordings only with their revisions in view. The field is absent on older servers, when the
+collection has no history, or when the role cannot read it completely (row policies other than MorletDB's own); absent
+never means revision 0 or unchanged. Distances and order are unaffected.
 
 ## Bounding agent load
 

@@ -4648,15 +4648,28 @@ BEGIN
     FOR EACH ROW EXECUTE FUNCTION public.morlet_label_interpretation()',labels);
 END $$;
 
--- A role that may label but not read the history leaves NULL, which review reports as unversioned: labelling keeps
--- working and no revision is claimed. The stored revision cannot be set or rewritten by the caller.
+-- Whether this role sees every history row of each recording it can see (#608), so that a revision read from the
+-- history is not undercounted: it may read the table, and row security either does not apply to it or applies only
+-- MorletDB's own policy (permissive, for every role and command). A policy of another name, a restrictive one, or row
+-- security without MorletDB's policy could hide revisions of a visible recording.
+CREATE FUNCTION public.morlet_interpretation_history_complete(history regclass)
+RETURNS boolean LANGUAGE sql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
+  SELECT has_table_privilege(history,'SELECT') AND (NOT row_security_active(history) OR (
+    EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=history AND p.polname='morlet_follows_recording'
+      AND p.polpermissive AND p.polcmd='*' AND p.polroles='{0}'::oid[])
+    AND NOT EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=history AND (p.polname<>'morlet_follows_recording'
+      OR NOT p.polpermissive OR p.polcmd<>'*' OR p.polroles<>'{0}'::oid[]))))
+$$;
+
+-- A role that may label but not read the history completely leaves NULL, which review reports as unversioned:
+-- labelling keeps working and no revision is claimed. The stored revision cannot be set or rewritten by the caller.
 CREATE FUNCTION public.morlet_label_interpretation()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass; current_revision integer;
 BEGIN
   IF TG_OP='UPDATE' THEN NEW.interpretation_revision:=OLD.interpretation_revision; RETURN NEW; END IF;
   rel:=public.morlet_interpretation_relation(public.morlet_companion_parent(TG_RELID));
-  IF rel IS NOT NULL AND has_table_privilege(rel,'SELECT') THEN
+  IF rel IS NOT NULL AND public.morlet_interpretation_history_complete(rel) THEN
     EXECUTE format('SELECT coalesce(max(revision),0) FROM %s WHERE recording_id=$1',rel)
       INTO current_revision USING NEW.recording_id;
   END IF;
@@ -4752,20 +4765,15 @@ BEGIN
 END $$;
 
 -- The current revision of the visible listed recordings; no rows when the history is off or unreadable to this role.
--- Also no rows when row policies other than MorletDB's own (or row security without it) could hide revisions of a
--- visible recording (#608): an undercounted revision would be a guess.
+-- Also no rows when row policies could hide revisions of a visible recording (#608,
+-- morlet_interpretation_history_complete): an undercounted revision would be a guess.
 CREATE FUNCTION public.morlet_interpretation_revisions(collection regclass,recording_ids text[])
 RETURNS TABLE(recording_id text,revision integer)
 LANGUAGE plpgsql STABLE STRICT SECURITY INVOKER SET search_path=pg_catalog AS $$
 DECLARE rel regclass;
 BEGIN
   rel:=public.morlet_interpretation_relation(collection);
-  IF rel IS NULL OR NOT has_table_privilege(rel,'SELECT')
-     OR EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=rel AND p.polname<>'morlet_follows_recording')
-     OR (row_security_active(rel)
-         AND NOT EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=rel AND p.polname='morlet_follows_recording')) THEN
-    RETURN;
-  END IF;
+  IF rel IS NULL OR NOT public.morlet_interpretation_history_complete(rel) THEN RETURN; END IF;
   RETURN QUERY EXECUTE format('SELECT r.recording_id,coalesce((SELECT max(i.revision) FROM %s i
     WHERE i.recording_id=r.recording_id),0)::integer FROM %s r WHERE r.recording_id=ANY($1) ORDER BY 1',rel,collection)
     USING recording_ids;
@@ -4872,12 +4880,8 @@ BEGIN
     -- was written under. 'unversioned' without a history, or for a label older than it; 'unknown' when the history
     -- exists but this role cannot read it, so unreadable history is never reported as unchanged.
     IF history IS NULL THEN rec_revision:='"unversioned"';
-    ELSIF NOT has_table_privilege(history,'SELECT')
-       OR EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=history AND p.polname<>'morlet_follows_recording')
-       OR (row_security_active(history)
-           AND NOT EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=history AND p.polname='morlet_follows_recording')) THEN
-      -- unreadable, or row policies other than MorletDB's own (or row security without it) could hide revisions of
-      -- a visible recording
+    ELSIF NOT public.morlet_interpretation_history_complete(history) THEN
+      -- unreadable, or row policies could hide revisions of a visible recording
       rec_revision:='"unknown"';
     ELSE
       EXECUTE format('SELECT to_jsonb(coalesce(max(revision),0)) FROM %s WHERE recording_id=$1',history)

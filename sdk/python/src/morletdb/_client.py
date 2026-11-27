@@ -107,6 +107,15 @@ class Client:
             self._functions[signature] = self._one("SELECT to_regprocedure(%s) IS NOT NULL", (signature,))
         return self._functions[signature]
 
+    def _revisions_readable(self) -> bool:
+        """Whether interpretation revisions can be reported (#608): SQL 0.3.18, whose morlet_interpretation_revisions
+        reports none when row policies could hide revisions (0.3.17 could undercount), and EXECUTE on it."""
+        if not self._has("public.morlet_interpretation_history_complete(regclass)"):
+            return False
+        return bool(self._one(
+            "SELECT has_function_privilege('public.morlet_interpretation_revisions(regclass,text[])','EXECUTE') "
+            "AND has_function_privilege('public.morlet_interpretation_history_complete(regclass)','EXECUTE')"))
+
     def _raw_reads(self, collection: str) -> bool:
         """Whether raw float64 reads work for this collection: the server has morlet_read_interval_raw
         (SQL 0.3.3) and the collection stores encoded chunks. Collections created before encoded chunks keep
@@ -532,7 +541,7 @@ class Client:
         # #608: the interpretation revisions of both recordings, read in the explanation's own statement
         revisions = ("(SELECT jsonb_object_agg(x.recording_id,x.revision) FROM public.morlet_interpretation_revisions("
                      "%s::regclass,ARRAY[%s,%s]::text[]) x)"
-                     if self._has("public.morlet_interpretation_revisions(regclass,text[])") else "NULL::jsonb")
+                     if self._revisions_readable() else "NULL::jsonb")
         args = (query.collection, query.recording_id, match.recording_id) if revisions != "NULL::jsonb" else ()
         try:
             r = self.connection.execute(
@@ -782,13 +791,14 @@ class Client:
             matches.append(Match(i + 1, IntervalRef(collection, r[0], int(r[1]), int(r[2])), float(r[3]), r[4], ev))
         revisions = None
         if interpretation_revisions:
-            revisions = {}
-            if self._has("public.morlet_interpretation_revisions(regclass,text[])"):
+            found = {}
+            if self._revisions_readable():
                 ids = sorted({recording_id, *(m.ref.recording_id for m in matches)})
-                revisions = {rid: int(rev) for rid, rev in self._execute(
+                found = {rid: int(rev) for rid, rev in self._execute(
                     "SELECT recording_id, revision FROM public.morlet_interpretation_revisions(%s::regclass,%s::text[])",
                     (collection, ids)).fetchall()}
-            matches = [replace(m, interpretation_revision=revisions.get(m.ref.recording_id)) for m in matches]
+            matches = [replace(m, interpretation_revision=found.get(m.ref.recording_id)) for m in matches]
+            revisions = found or None             # none reported: absent, as without the request
         return SearchResult(query, matches, "probes" if probes else "exact", float(max_lag_fraction), revisions)
 
 def _notification(p: Mapping[str, Any]) -> Notification:
