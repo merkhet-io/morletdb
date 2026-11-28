@@ -31,6 +31,7 @@ python tools/ingest/morlet_import.py plant_export.csv --time-column time --conte
     --collection public.line3 --create     # wide plant export: rate and start from the time column
 python tools/ingest/morlet_import.py bench/*.tdms --collection public.bench --create
 python tools/ingest/morlet_import.py export.parquet --collection public.copy --create   # exchange file
+python tools/ingest/morlet_import.py influx-export.lp --collection public.plant --create  # InfluxDB line protocol
 ```
 
 `--dry-run` reads and validates the files without a database and prints what would be imported.
@@ -46,6 +47,7 @@ What becomes a recording, and how it is stored:
 | CSV with a header row (also wide plant exports) | numeric column, except the time and context columns | the values as parsed | 10⁻ᵈ for the most decimal places d in the column | `--unit` |
 | TDMS (npTDMS) | numeric waveform channel (with `wf_increment`) | scaled (physical) values as npTDMS computes them from the file's scaling; `--tdms-values raw` for the stored values | 1 (values stored exactly either way) | the channel's `unit_string` |
 | MorletDB exchange (Parquet) | recording | the exported samples, checked against the file's SHA-256 per recording | as exported | as exported |
+| InfluxDB line protocol (`.lp`) | numeric series (measurement, tag set, field) at `--min-rate` (default 100 Hz) or faster | the values as InfluxDB stores them (float64; integers up to 2⁵³) | 10⁻ᵈ for the most decimal places d of a float series, 1 for integers | `--unit` |
 
 The quantum is what lets the codec store calibrated values as integers. It decodes every sample bit for
 bit either way, but with the right quantum, EDF and seismic data take a fraction of their float64 size
@@ -95,6 +97,33 @@ string channels): stored samples are bit for bit what npTDMS reads, with rate, u
 by NI software were not available for testing. A TDMS file has no gaps within a channel; a recording that
 continues in another file is a separate recording. LabVIEW is a trademark of National Instruments; MorletDB is
 not affiliated with, endorsed by or sponsored by National Instruments.
+
+### InfluxDB line protocol
+
+For exports from InfluxDB (`influx_inspect export` in 1.x, `influxd inspect export-lp` in 2.x, or line protocol
+written from 3.x). Each numeric series, that is measurement, tag set and field key, becomes one recording
+`<file stem>.<measurement>[<tags>].<field>`; metadata keeps the measurement, the tags and the field. Points are put
+in time order and a repeated timestamp with the same value is dropped. The rate is that of the longest unbroken
+run of regular steps, end to end, so timestamp jitter does not skew it. The real timestamps become
+[time anchors](clock-drift.md), exactly as for a CSV time column, and gaps or clock steps start a new block. An
+anchor's uncertainty is the export's timestamp resolution (`--precision`, default `ns`) plus the largest departure
+of a timestamp from the line through its neighbouring anchors, because MorletDB interpolates between anchors: with
+jittered timestamps that residual dominates.
+
+Left out, with the reason in the report (`skipped`), not silently: series slower than `--min-rate` (trends,
+best left in InfluxDB), booleans and strings, series with two different values at one timestamp, integers beyond
+2⁵³ (no exact float64), values beyond ±1e9, series with fewer than two points and series spanning more than about
+104 days (split the export). Signed zero counts: `0.0` and `-0.0` at one timestamp are two values. A line without a
+timestamp fails the file: its time was the server's clock, which the export does not contain. `--max-points`
+(default 10 million, about 1 GB of memory) bounds memory; split larger exports.
+
+To try MorletDB on an export without changing anything, use the trial: it imports into a disposable database,
+proves every recording bit for bit and the time of the samples against the original timestamps, and writes a local
+report (see [MorletDB for InfluxDB users](influxdb.md)):
+
+```sh
+DATABASE_URL='host=localhost port=54329 dbname=trial user=morlet' python tools/ingest/morlet_trial.py influx-export.lp
+```
 
 ### Exchange files
 

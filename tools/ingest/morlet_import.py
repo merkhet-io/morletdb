@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Import WAV, EDF/EDF+, miniSEED or CSV files into a MorletDB collection and make them searchable.
+"""Import WAV, EDF/EDF+, miniSEED, CSV, TDMS or InfluxDB line-protocol files into a MorletDB collection and make
+them searchable.
 
   export DATABASE_URL=postgresql://localhost/mydb
   python tools/ingest/morlet_import.py recordings/*.wav --collection public.signals --create
@@ -11,6 +12,7 @@ for exact search and, with --probes, probe search is enabled.
 """
 import argparse
 import csv
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
@@ -20,6 +22,7 @@ import math
 import os
 from pathlib import Path
 import re
+import struct
 import sys
 import wave
 
@@ -27,9 +30,11 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from parquet_import import Config, ImportFailure, import_files  # noqa: E402
+import influx_lp  # noqa: E402
 
 SUFFIXES = {".wav": "wav", ".edf": "edf", ".bdf": None, ".mseed": "mseed", ".miniseed": "mseed",
-            ".msd": "mseed", ".csv": "csv", ".parquet": "exchange", ".tdms": "tdms"}
+            ".msd": "mseed", ".csv": "csv", ".parquet": "exchange", ".tdms": "tdms", ".lp": "influx"}
+SKIPPED = {}    # file path -> [{series, reason}]: series a reader left out on purpose, added to the report
 
 
 @dataclass
@@ -43,6 +48,7 @@ class Recording:
     metadata: dict = field(default_factory=dict)
     context: list = field(default_factory=list)          # (key, value, start_sample, end_sample), from CSV columns
     anchors: list = field(default_factory=list)          # (sample, utc_ns, uncertainty_ns, break_before), #393/#383
+    times_ns: list = None                                # original per-sample timestamps (influx), for verification
 
 
 def extractor_for(rate):
@@ -504,14 +510,138 @@ def read_csv(path, opts):
     return out
 
 
-READERS = {"wav": read_wav, "edf": read_edf, "mseed": read_mseed, "csv": read_csv, "exchange": read_exchange,
+MAX_EXACT_INT = 2 ** 53
+
+
+def check_unique(recs):
+    """Refuse two inputs that would write the same recording ID (for example same-named files from two folders):
+    the second would silently continue or conflict with the first."""
+    seen = {}
+    for f, r in recs:
+        if r.recording_id in seen:
+            raise ValueError(f"recording {r.recording_id} comes from both {seen[r.recording_id]} and {f}; rename a file "
+                             "or import them separately with different --prefix values")
+        seen[r.recording_id] = f
+
+
+def series_name(s):
+    """A readable name for reports: measurement[tags].field (may be ambiguous for unusual names)."""
+    tags = ",".join(f"{k}={v}" for k, v in s.tags)
+    return f"{s.measurement}{'[' + tags + ']' if tags else ''}.{s.field}"
+
+
+def series_id(s):
+    """The recording identifier part: the readable name plus a hash of the exact (measurement, tags, field), so two
+    series never get the same identifier however their names are spelled."""
+    canon = json.dumps([s.measurement, [list(t) for t in s.tags], s.field], ensure_ascii=False, separators=(",", ":"))
+    return f"{series_name(s)}~{hashlib.sha256(canon.encode()).hexdigest()[:12]}"
+
+
+def same_value(a, b):
+    """Equal including the sign of zero (and NaN, which line protocol cannot carry anyway): bit for bit."""
+    if isinstance(a, float) or isinstance(b, float):
+        return struct.pack("<d", float(a)) == struct.pack("<d", float(b))
+    return a == b
+
+
+def influx_rate(t):
+    """Sample rate from timestamps: the median step finds the regular steps (within half a step of it); the rate is
+    the longest unbroken run of them, end to end, so timestamp jitter averages out instead of skewing one step."""
+    steps = [b - a for a, b in zip(t, t[1:])]
+    med = sorted(steps)[(len(steps) - 1) // 2]
+    if med <= 0:
+        raise ValueError("timestamps do not advance")
+    best, run, start = (0, 0), 0, 0
+    for i, d in enumerate(steps):
+        if abs(d - med) <= med / 2:
+            if run == 0:
+                start = i
+            run += 1
+            if run > best[0]:
+                best = (run, start)
+        else:
+            run = 0
+    n, a = best
+    return float(f"{1e9 * n / (t[a + n] - t[a]):.9g}")
+
+
+def read_influx(path, opts):
+    """InfluxDB line protocol (#639 adoption): every numeric series (measurement, tag set, field) sampled at
+    --min-rate or faster becomes a recording; slower series are trends and stay where they are; booleans and strings
+    are not samples. Points are put in time order; a repeated timestamp with the same value is dropped, with another
+    value the series is refused. The rate is the median spacing of the timestamps; jitter, gaps and clock steps
+    become time anchors (as for a CSV time column), with the export's timestamp resolution as their uncertainty.
+    Integers beyond 2^53 cannot be float64 exactly and are refused. Each refusal is reported, not hidden."""
+    precision = getattr(opts, "precision", None) or "ns"
+    min_rate = getattr(opts, "min_rate", None)
+    min_rate = 100.0 if min_rate is None else min_rate
+    if not (math.isfinite(min_rate) and min_rate >= 0):
+        raise ValueError("--min-rate must be a finite number of Hz, zero or more")
+    with open(path, encoding="utf-8") as f:
+        series = influx_lp.read_series(f, precision, getattr(opts, "max_points", None))
+    resolution = influx_lp.PRECISION_NS[precision]
+    out, skipped = [], []
+    SKIPPED[str(path)] = skipped               # reset: the file is read once for the plan and once for the import
+    for s in series.values():
+        name = series_name(s)
+        if s.kind not in ("float", "integer", "unsigned"):
+            skipped.append({"series": name, "reason": f"{s.kind} values are not samples"})
+            continue
+        order = sorted(range(len(s.times)), key=lambda i: s.times[i])
+        t, v = [], []
+        bad = None
+        for i in order:
+            if t and s.times[i] == t[-1]:
+                if not same_value(s.values[i], v[-1]):
+                    bad = f"two values at {s.times[i]} ns"
+                    break
+                continue
+            t.append(s.times[i]); v.append(s.values[i])
+        del order
+        if bad is None and s.kind != "float" and any(abs(x) > MAX_EXACT_INT for x in v):
+            bad = "an integer beyond 2^53 has no exact float64"
+        if bad is None and any(abs(x) > 1e9 for x in v):
+            bad = "values beyond +/-1e9 (the importer's limit)"
+        if bad is None and len(t) < 2:
+            bad = "fewer than two points"
+        if bad is None and t[-1] - t[0] >= 2 ** 53:
+            bad = "spans more than about 104 days (2^53 ns); export shorter periods"
+        if bad:
+            skipped.append({"series": name, "reason": bad})
+            continue
+        rate = influx_rate(t)
+        if rate < min_rate:
+            skipped.append({"series": name, "reason": f"about {rate:.4g} Hz, below --min-rate {min_rate:g} Hz: a trend, "
+                            "best left in InfluxDB"})
+            continue
+        anchors = time_anchors(t, rate)
+        anchors = [(n, tn, u, br) for (n, tn, br), u in zip(anchors, anchor_uncertainties(t, rate, anchors, resolution))]
+        rel = (np.asarray(t, dtype=np.int64) - t[0]).astype(np.float64) / 1e9
+        offset = rel - np.arange(len(t)) / rate
+        axis = {"rate_source": "median spacing of the timestamps", "max_offset_s": float(np.max(np.abs(offset))),
+                "max_offset_samples": round(float(np.max(np.abs(offset))) * rate, 2),
+                "anchors": len(anchors), "blocks": 1 + sum(1 for a in anchors if a[3]), "resolution_ns": resolution}
+        d = s.decimals if s.kind == "float" else 0
+        start = datetime.fromtimestamp(t[0] // 1_000_000_000, timezone.utc) + timedelta(microseconds=(t[0] % 10 ** 9) // 1000)
+        out.append(Recording(f"{path.stem}.{series_id(s)}", rate, s.field, opts.unit or "unknown", 10.0 ** -d if d <= 9 else 1.0,
+                             np.array(v, dtype=np.float64),
+                             {"source": path.name, "format": "influx-line-protocol", "measurement": s.measurement,
+                              "tags": dict(s.tags), "field": s.field, "start_ns": t[0],
+                              "start": start.isoformat().replace("+00:00", "Z"), "time_axis": axis},
+                             [], anchors, t))
+    if not out and not skipped:
+        raise ValueError(f"{path.name}: no points")
+    return out
+
+
+READERS = {"influx": read_influx, "wav": read_wav, "edf": read_edf, "mseed": read_mseed, "csv": read_csv, "exchange": read_exchange,
            "tdms": read_tdms}
 
 
 def recordings(path, opts):
     fmt = opts.format or SUFFIXES.get(path.suffix.lower())
     if fmt not in READERS:
-        raise ValueError(f"{path.name}: unknown format (use --format wav|edf|mseed|csv|tdms|exchange)")
+        raise ValueError(f"{path.name}: unknown format (use --format wav|edf|mseed|csv|tdms|exchange|influx)")
     recs = READERS[fmt](path, opts)
     for r in recs:
         if not (math.isfinite(r.rate) and r.rate > 0):
@@ -694,6 +824,12 @@ def main(argv=None):
     p.add_argument("--context-columns", help="CSV: comma-separated controller columns (e.g. program,block) stored "
                    "as context on every signal of the file, not as recordings")
     p.add_argument("--unit", help="override the unit")
+    p.add_argument("--precision", choices=sorted(influx_lp.PRECISION_NS), default="ns",
+                   help="influx: unit of the line-protocol timestamps (default ns, as exports write them)")
+    p.add_argument("--min-rate", type=float, default=100.0,
+                   help="influx: series sampled slower than this (Hz) are trends and are left out (default 100)")
+    p.add_argument("--max-points", type=int, default=10_000_000,
+                   help="influx: refuse files with more points than this (default 10 million, about 1 GB of memory)")
     p.add_argument("--tdms-values", choices=["scaled", "raw"], default="scaled",
                    help="TDMS: store scaled (physical) values or the raw stored values")
     p.add_argument("--prefix", default="", help="prefix for recording identifiers")
@@ -704,21 +840,30 @@ def main(argv=None):
     p.add_argument("--no-build", action="store_true", help="append only; build envelopes later")
     p.add_argument("--dry-run", action="store_true", help="read and validate files, print what would be imported")
     opts = p.parse_args(argv)
+    SKIPPED.clear()                    # this run's skips only (main may be called repeatedly in one process)
     try:
         recs = [(f.name, r) for f in opts.files for r in recordings(f, opts)]
+        check_unique(recs)
         plan = [{"file": f, "recording_id": r.recording_id, "rate_hz": r.rate, "channel": r.channel, "unit": r.unit,
                  "samples": int(r.samples.size), "quantum": r.quantum,
                  "extractor": opts.extractor or extractor_for(r.rate),
                  **({"time_axis": r.metadata["time_axis"]} if "time_axis" in r.metadata else {}),
                  **({"context_rows": len(r.context)} if r.context else {})} for f, r in recs]
+        skipped = [dict(s, file=Path(f).name, path=f) for f in sorted(SKIPPED) for s in SKIPPED[f]]
+        if not plan:
+            print(json.dumps({"status": "nothing to import", "skipped": skipped}, indent=2), file=sys.stderr)
+            return 1
         if opts.dry_run:
-            print(json.dumps({"status": "dry-run", "recordings": plan, **warnings_of(plan)}, indent=2))
+            print(json.dumps({"status": "dry-run", "recordings": plan, **({"skipped": skipped} if skipped else {}),
+                              **warnings_of(plan)}, indent=2))
             return 0
         import psycopg
         with psycopg.connect(opts.dsn) as conn:
             prepare(conn, opts.collection, opts.create)
         report = import_files(opts.files, opts.collection, Config(), dsn=opts.dsn, reader=chunk_reader(opts))
         report["recordings"] = plan
+        if skipped:
+            report["skipped"] = skipped
         report.update(warnings_of(plan))
         if any(r.context for _f, r in recs):
             with psycopg.connect(opts.dsn) as conn:
