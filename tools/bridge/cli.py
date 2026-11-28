@@ -35,7 +35,7 @@ def drain_all(b, max_windows):
     for s in b.all("SELECT source_id FROM morlet_bridge.sources ORDER BY source_id"):
         try:
             total += b.drain(s["source_id"], max_windows)["published_windows"]
-        except ValueError as exc:      # a changed source stops only itself; Telegraf shows stderr in its log
+        except (ValueError, psycopg.Error) as exc:  # a failing source stops only itself; Telegraf logs stderr
             print(f"morlet-bridge: source {s['source_id']}: {exc}", file=sys.stderr, flush=True)
     return total
 
@@ -92,6 +92,12 @@ def main(argv=None):
     s.add_argument("source_id", type=int, nargs="?")
     s.add_argument("--sink")
     args = p.parse_args(argv)
+    if args.cmd == "telegraf" and not args.interval > 0:
+        p.error("--interval must be positive")
+    if args.cmd == "add-sink" and args.kind == "postgres" and args.measurement:
+        p.error("--measurement applies to line sinks only")
+    if args.cmd == "status" and args.source_id is not None and args.sink:
+        p.error("give a source ID or --sink, not both")
 
     with connect(args.dsn) as conn:
         b = Bridge(conn)
@@ -118,7 +124,7 @@ def main(argv=None):
         elif args.cmd == "telegraf":
             return telegraf(b, args.name, args.drain_all, args.signal, args.interval, args.max_windows)
         else:
-            out = b.sink_status(args.sink) if args.sink else b.status(args.source_id) if args.source_id else \
+            out = b.sink_status(args.sink) if args.sink else b.status(args.source_id) if args.source_id is not None else \
                 [b.status(r["source_id"]) for r in b.all("SELECT source_id FROM morlet_bridge.sources")]
         print(out if isinstance(out, str) else json.dumps(out, indent=1, default=str))
     return 0

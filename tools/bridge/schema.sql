@@ -37,8 +37,8 @@ CREATE TABLE morlet_bridge.ledger (
     end_sample bigint NOT NULL CHECK (end_sample > start_sample),
     time_ns bigint NOT NULL,
     end_time_ns bigint NOT NULL CHECK (end_time_ns > time_ns),
-    sample_count bigint NOT NULL CHECK (sample_count > 0),
-    minimum float8, maximum float8, mean float8, rms float8,
+    sample_count bigint NOT NULL CHECK (sample_count = end_sample - start_sample),
+    minimum float8 NOT NULL, maximum float8 NOT NULL, mean float8 NOT NULL, rms float8 NOT NULL,
     source_sha256 text NOT NULL CHECK (length(source_sha256) = 64),
     payload_sha256 text NOT NULL CHECK (length(payload_sha256) = 64),
     provenance jsonb NOT NULL,
@@ -66,10 +66,10 @@ CREATE TABLE morlet_bridge.deliveries (
     PRIMARY KEY (sink_id, ledger_id)
 );
 
--- The default PostgreSQL sink target: an ordinary table. It may be turned into a TimescaleDB hypertable on
--- time_ns (bigint nanoseconds); the bridge itself never requires TimescaleDB.
+-- The default PostgreSQL sink target: an ordinary table. Its key includes time_ns so that it can be turned into a
+-- TimescaleDB hypertable on time_ns (bigint nanoseconds; not yet tested). The bridge never requires TimescaleDB.
 CREATE TABLE morlet_bridge.metrics (
-    ledger_id bigint PRIMARY KEY,
+    ledger_id bigint NOT NULL,
     time_ns bigint NOT NULL,
     end_time_ns bigint NOT NULL,
     asset text NOT NULL,
@@ -80,9 +80,11 @@ CREATE TABLE morlet_bridge.metrics (
     start_sample bigint NOT NULL,
     end_sample bigint NOT NULL,
     sample_count bigint NOT NULL,
-    minimum float8, maximum float8, mean float8, rms float8,
-    interpretation_revision integer
+    minimum float8 NOT NULL, maximum float8 NOT NULL, mean float8 NOT NULL, rms float8 NOT NULL,
+    interpretation_revision integer,
+    PRIMARY KEY (time_ns, ledger_id)
 );
+CREATE INDEX ON morlet_bridge.metrics (ledger_id);
 CREATE INDEX ON morlet_bridge.metrics (asset, channel, time_ns);
 
 REVOKE ALL ON ALL TABLES IN SCHEMA morlet_bridge FROM PUBLIC;

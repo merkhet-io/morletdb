@@ -5,10 +5,12 @@
 - **Metric bridge (experimental, phase 1 of #639).** `tools/bridge` publishes interval metrics (minimum, maximum, mean,
   RMS) computed from exact waveform windows into a ledger with exact nanosecond times, a raw-sample hash and the
   recording's specification, time-axis version and interpretation revision. Sinks: a PostgreSQL table in the same
-  database, exactly once (an ordinary table or a TimescaleDB hypertable), and InfluxDB line protocol, at least once,
-  for Telegraf's `execd` input and so for any Telegraf output. A changed source, including a reverted calibration
-  correction, stops publication until reviewed; sources with row security are refused. No SQL change. See
-  `docs/metric-bridge.md`.
+  database, exactly once (tested with an ordinary table; a TimescaleDB hypertable is possible but untested), and
+  InfluxDB line protocol for Telegraf's `execd` input: handed to Telegraf at least once, best effort beyond it, not yet
+  tested end to end with a real Telegraf and InfluxDB. Phase 1 has one calculation over fixed windows, no read-back
+  check and no retention coordination. A changed source, including a reverted calibration correction, stops
+  publication until reviewed; sources with row security are refused. The pg_morlet extension SQL is unchanged; the
+  bridge creates its own schema, `morlet_bridge`. See `docs/metric-bridge.md`.
 
 ## 0.4.0-beta.7
 

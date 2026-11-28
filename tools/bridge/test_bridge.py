@@ -120,10 +120,20 @@ class Database(unittest.TestCase):
                 self.c.execute("SELECT 1/0")
         self.assertEqual(self.scalar("SELECT (checkpoint->>'end')::bigint FROM signals"), 1024)
         self.assertEqual(self.scalar("SELECT count(*) FROM morlet_bridge.ledger"), 1)
-        self.c.execute("UPDATE morlet_bridge.ledger SET rms = 99")
-        with self.assertRaisesRegex(ValueError, "conflicting metric retry"):
-            with self.b.transaction():
-                self.b.publish(self.sid, 0, 1024)
+        for change in ("rms = 99", "time_ns = time_ns + 1", "source_sha256 = repeat('0', 64)",
+                       "provenance = provenance || '{\"calculation\": \"other\"}'"):
+            with self.subTest(change=change):
+                self.c.execute("BEGIN")
+                self.c.execute(f"UPDATE morlet_bridge.ledger SET {change}")
+                self.c.execute("COMMIT")
+                with self.assertRaisesRegex(ValueError, "conflicting metric retry"):
+                    with self.b.transaction():
+                        self.b.publish(self.sid, 0, 1024)
+                self.c.execute("DELETE FROM morlet_bridge.ledger")
+                with self.b.transaction():
+                    self.b.publish(self.sid, 0, 1024)
+        with self.assertRaises(self.psycopg.errors.CheckViolation):
+            self.c.execute("UPDATE morlet_bridge.ledger SET sample_count = 1000")
 
     def test_partial_misaligned_and_outside_publications_are_refused(self):
         self.append("a", 1024)
@@ -208,9 +218,30 @@ class Database(unittest.TestCase):
     def test_sources_with_row_security_are_refused(self):
         self.c.execute("SELECT morlet_create_stream_collection('public','tenant')")
         self.c.execute("SELECT morlet_enable_row_security('tenant')")
-        with self.assertRaisesRegex(ValueError, "row security"):
-            with self.b.transaction():
-                self.b.register("public.tenant", "x", "pump-A", "vib", 1024)
+        self.c.execute("SELECT morlet_create_stream_collection('public','owned')")
+        self.c.execute("ALTER TABLE owned ENABLE ROW LEVEL SECURITY")
+        self.c.execute("SELECT morlet_create_stream_collection('public','labels_only')")
+        self.c.execute("ALTER TABLE labels_only_segments ENABLE ROW LEVEL SECURITY")
+        for coll in ("public.tenant", "public.owned", "public.labels_only"):
+            with self.subTest(coll=coll), self.assertRaisesRegex(ValueError, "row security"):
+                with self.b.transaction():
+                    self.b.register(coll, "x", "pump-A", "vib", 1024)
+
+    def test_two_recordings_never_publish_one_series_at_the_same_time(self):
+        self.start("twin")                               # same start time as "a"
+        self.append("twin", 0)
+        with self.b.transaction():
+            twin = self.b.register("public.signals", "twin", "pump-A", "vib-x", 1024)   # same asset and channel
+            other = self.b.register("public.signals", "twin", "pump-A", "vib-x", 1024)
+        self.assertEqual(twin, other)
+        self.b.drain(self.sid, 1)
+        with self.assertRaisesRegex(ValueError, "would overwrite each other"):
+            self.b.drain(twin, 1)
+        self.start("later", ns=T0 + 7)                   # same series, another time: fine
+        self.append("later", 0)
+        with self.b.transaction():
+            later = self.b.register("public.signals", "later", "pump-A", "vib-x", 1024)
+        self.assertEqual(self.b.drain(later, 1)["published_windows"], 1)
 
     # ---- sinks
     def test_postgres_sink_is_exactly_once_and_reports_a_changed_copy(self):
@@ -228,9 +259,10 @@ class Database(unittest.TestCase):
         self.append("a", 2048)
         self.b.drain(self.sid, 10)
         lid = self.scalar("SELECT max(ledger_id) FROM morlet_bridge.ledger")
+        t = self.scalar("SELECT time_ns FROM morlet_bridge.ledger WHERE ledger_id=%s", (lid,))
         self.c.execute("""INSERT INTO morlet_bridge.metrics (ledger_id,time_ns,end_time_ns,asset,channel,calculation,
             collection,recording_id,start_sample,end_sample,sample_count,minimum,maximum,mean,rms)
-            VALUES (%s,0,1,'x','x','x','x','x',0,1,1,0,0,0,0)""", (lid,))
+            VALUES (%s,%s,1,'x','x','x','x','x',0,1,1,0,0,0,0)""", (lid, t))
         with self.assertRaisesRegex(ValueError, "differs from the ledger"):
             self.b.deliver("pg")
         self.assertIn("differs", self.b.sink_status("pg")["last_error"])
@@ -290,6 +322,18 @@ class Database(unittest.TestCase):
         self.assertEqual(p.wait(timeout=30), 0, p.stderr.read())
         self.assertTrue(all(x.startswith("morlet_metric,asset=pump-A") for x in first), first)
         self.assertEqual(self.b.sink_status("telegraf")["pending"], 0)
+
+    def test_cli_refuses_contradictory_or_unsafe_arguments(self):
+        cli = Path(__file__).with_name("cli.py")
+        for args in (["telegraf", "x", "--signal", "none", "--interval", "0"], ["add-sink", "x", "postgres",
+                     "--measurement", "m"], ["status", "0", "--sink", "x"]):
+            with self.subTest(args=args):
+                p = subprocess.run([sys.executable, "-I", str(cli), "--dsn", self.dsn, *args], capture_output=True,
+                                   text=True, timeout=30)
+                self.assertEqual(p.returncode, 2, p.stderr)
+        p = subprocess.run([sys.executable, "-I", str(cli), "--dsn", self.dsn, "status", "0"], capture_output=True,
+                           text=True, timeout=30)
+        self.assertIn("source registration unavailable", p.stderr)          # 0 is a source ID, not "all"
 
     def test_metric_readers_need_their_own_grant_and_get_no_waveform_access(self):
         self.b.drain(self.sid, 10)

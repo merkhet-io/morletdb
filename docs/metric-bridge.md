@@ -19,7 +19,8 @@ store is a copy.
 | Provenance | The recording's specification, time-axis version and interpretation revision are fixed at registration. If any changes, including a calibration correction that was later reverted (#620), publication of that source stops until someone reviews it |
 | Evidence | Each ledger row stores the SHA-256 of the raw interval bytes (signed zero included), so a copy can be checked against the samples it came from |
 | PostgreSQL sink | Exactly once: the copy and its delivery record commit in one transaction. A target row that differs from the ledger is reported as an error, not kept silently |
-| Line-protocol sink | At least once. A batch is recorded as delivered only after it was written; after a crash it is written again. InfluxDB identifies a point by measurement, tags and timestamp, so the repeat overwrites itself with the same values |
+| Line-protocol sink | Handed over at least once: a batch is recorded as delivered only after it was written; after a crash it is written again. InfluxDB identifies a point by measurement, tags and timestamp, so the repeat overwrites itself with the same values. Beyond the handoff (Telegraf's buffer and outputs) delivery is best effort |
+| No overwrites downstream | Two recordings of the same asset, channel and calculation never publish at the same timestamp; the second is refused, because downstream one point would replace the other |
 | Access | Readers of metrics need explicit grants; nothing is granted to PUBLIC. A metric's interval reference grants no access to the waveform |
 
 ## What it does not do (yet)
@@ -29,6 +30,7 @@ store is a copy.
 - **One calculation:** `interval-stats-v1` (minimum, maximum, mean, RMS) over fixed windows aligned to sample 0.
   Windows are bucketed by their start; they are not split at calendar boundaries.
 - **No read-back verification** of InfluxDB yet, and no retention or lifecycle coordination (#634).
+- **Not yet tested end to end** with a real Telegraf and InfluxDB, nor with a TimescaleDB hypertable as target.
 - **Not a steward job yet.** Run `drain` and `deliver` from a timer, or `telegraf` under Telegraf.
 - **Telegraf into MorletDB** (context and events) is a later phase. Waveforms through Telegraf are out of scope:
   its points carry their own timestamps and decimal text, so uniform sampling and bit-exact values are not given.

@@ -25,7 +25,8 @@ GRANT USAGE ON SCHEMA morlet_bridge TO grafana_reader;
 GRANT SELECT ON morlet_bridge.metrics TO grafana_reader;
 ```
 
-The target may be a TimescaleDB hypertable (bring your own TimescaleDB; it is not part of MorletDB images):
+The target may be a TimescaleDB hypertable (bring your own TimescaleDB; it is not part of MorletDB images). Its
+key includes `time_ns` for this; the conversion has not been tested yet:
 
 ```sql
 SELECT create_hypertable('morlet_bridge.metrics', 'time_ns', chunk_time_interval => 86400000000000, migrate_data => true);
@@ -48,8 +49,9 @@ publishes new windows and answers with the pending points. See [telegraf.conf](t
   environment = ["PGHOST=localhost", "PGDATABASE=plant", "PGUSER=morlet_bridge"]
 ```
 
-Telegraf does not acknowledge receipt to an input, and it buffers in memory, so delivery through it is at least
-once and best effort. The ledger keeps every point; `status --sink telegraf` shows what was handed over.
+The bridge hands each point to Telegraf at least once. Telegraf does not acknowledge receipt to an input and
+buffers in memory, so delivery beyond that handoff, to Telegraf's outputs, is best effort. This path has not yet
+been tested end to end with a real Telegraf and InfluxDB. The ledger keeps every point; `status --sink telegraf` shows what was handed over.
 
 Atomic append and publication from Python, on one connection:
 
@@ -57,11 +59,14 @@ Atomic append and publication from Python, on one connection:
 import psycopg
 from morlet_bridge import Bridge            # tools/bridge on PYTHONPATH
 
+WINDOW = 4096                               # must equal the registered window_samples
 with psycopg.connect(autocommit=True) as conn:
     b = Bridge(conn)
     with b.transaction():
+        source_id = b.register("public.signals", rid, "pump-A", "vib-x", WINDOW)   # idempotent
+    with b.transaction():
         conn.execute("SELECT morlet_append_chunk('signals', %s, %s, %s::float8[])", (rid, offset, values))
-        b.publish(source_id, offset, offset + 4096)
+        b.publish(source_id, offset, offset + WINDOW)   # offset: a multiple of WINDOW; values: WINDOW samples
 ```
 
 ## Tests

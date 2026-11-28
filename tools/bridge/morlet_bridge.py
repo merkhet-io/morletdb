@@ -92,10 +92,11 @@ class Bridge:
     # ---- sources
     def source(self, collection, recording):
         """(qualified collection, specification, time-axis version, interpretation revision, received end)."""
-        # Row security on the collection (set by its owner) or on its companions (morlet_enable_row_security).
+        # Row security on the collection (set by its owner) or on any of its companions `<collection>_*`
+        # (morlet_enable_row_security); a table that merely shares the prefix also counts, erring on refusal.
         rel = self.one("""SELECT n.nspname, c.relname, format('%%I.%%I', n.nspname, c.relname) AS qualified,
-            c.relrowsecurity OR coalesce((SELECT k.relrowsecurity FROM pg_class k WHERE k.relnamespace = n.oid
-              AND k.relname = c.relname || '_chunks' AND k.relkind = 'r'), false) AS relrowsecurity
+            c.relrowsecurity OR EXISTS (SELECT 1 FROM pg_class k WHERE k.relnamespace = n.oid AND k.relrowsecurity
+              AND left(k.relname, length(c.relname) + 1) = c.relname || '_') AS relrowsecurity
             FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE c.oid = to_regclass(%s) AND c.relkind = 'r'""", (collection,))
         if not rel:
@@ -188,6 +189,17 @@ class Bridge:
         t0, t1 = a[0]["utc_ns"], b[0]["utc_ns"]
         if any(v != v.to_integral_value() or not -(2 ** 63) <= v < 2 ** 63 for v in (t0, t1)) or t1 <= t0:
             raise ValueError("interval endpoints must be increasing, exact bigint nanoseconds; nothing is rounded")
+        # Line-protocol sinks identify a point by measurement, tags (asset, calculation, channel) and timestamp:
+        # two recordings of one asset and channel must never publish at the same time, or one point would
+        # overwrite the other downstream. Serialised per asset and channel.
+        self.conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                          (json.dumps(["morlet-bridge-series", row["asset"], row["channel"], row["calculation"]]),))
+        clash = self.one("""SELECT s.recording_id FROM morlet_bridge.ledger l JOIN morlet_bridge.sources s USING (source_id)
+            WHERE s.asset = %s AND s.channel = %s AND s.calculation = %s AND l.time_ns = %s AND l.source_id <> %s
+            LIMIT 1""", (row["asset"], row["channel"], row["calculation"], int(t0), source_id))
+        if clash:
+            raise ValueError(f"recording {clash['recording_id']} already published asset {row['asset']!r}, channel "
+                             f"{row['channel']!r} at this time; points would overwrite each other downstream")
         args = (row["collection"], row["recording_id"], start, end)
         raw = bytes(self.one("SELECT public.morlet_read_interval_raw(%s::regclass, %s, %s, %s) AS raw", args)["raw"])
         st = self.one("SELECT * FROM public.morlet_interval_stats(%s::regclass, %s, %s, %s)", args)
@@ -207,9 +219,10 @@ class Bridge:
              source_sha, payload, Jsonb(provenance)))
         led = self.one("""SELECT * FROM morlet_bridge.ledger
             WHERE source_id = %s AND start_sample = %s AND end_sample = %s FOR UPDATE""", (source_id, start, end))
-        stored = {k: led[k] for k in STATS}
-        if led["payload_sha256"] != payload or {k: repr(v) for k, v in stored.items()} != \
-                {k: repr(v) for k, v in values.items()}:
+        expected = {"time_ns": int(t0), "end_time_ns": int(t1), "sample_count": st["sample_count"],
+                    "source_sha256": source_sha, "payload_sha256": payload, "provenance": provenance, **values}
+        # floats by repr, so -0.0 and 0.0 or NaN payloads count as different; provenance (jsonb) by value
+        if any((led[k] != v) if k == "provenance" else (repr(led[k]) != repr(v)) for k, v in expected.items()):
             raise ValueError("conflicting metric retry: the source or the calculated payload changed")
         return led["ledger_id"]
 
@@ -287,12 +300,12 @@ class Bridge:
                                   (f"morlet-bridge-sink-{sink['sink_id']}",))
                 rows = self.all(self.PENDING, (sink["sink_id"], limit))
                 for r in rows:
-                    self.conn.execute(sql.SQL("INSERT INTO {} ({}) VALUES ({}) ON CONFLICT (ledger_id) DO NOTHING")
+                    self.conn.execute(sql.SQL("INSERT INTO {} ({}) VALUES ({}) ON CONFLICT (time_ns, ledger_id) DO NOTHING")
                                       .format(target, sql.SQL(", ").join(map(sql.Identifier, cols)),
                                               sql.SQL(", ").join(sql.Placeholder() * len(cols))),
                                       [r[c] for c in cols])
-                    got = self.one(sql.SQL("SELECT {} FROM {} WHERE ledger_id = %s").format(
-                        sql.SQL(", ").join(map(sql.Identifier, cols)), target), (r["ledger_id"],))
+                    got = self.one(sql.SQL("SELECT {} FROM {} WHERE time_ns = %s AND ledger_id = %s").format(
+                        sql.SQL(", ").join(map(sql.Identifier, cols)), target), (r["time_ns"], r["ledger_id"]))
                     if any(repr(got[c]) != repr(r[c]) for c in cols):
                         raise ValueError(f"sink {name}: target row {r['ledger_id']} differs from the ledger")
                     self.conn.execute("INSERT INTO morlet_bridge.deliveries (sink_id, ledger_id) VALUES (%s, %s)",
