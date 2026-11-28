@@ -63,7 +63,7 @@ impacts visible.
 - **Demo credentials and synthetic data.** Do not reuse the passwords or the token.
 - **Telegraf delivery is at least once up to its input, best effort beyond.** It buffers in memory and does not
   acknowledge delivery to an input; the ledger in MorletDB keeps every point:
-  `docker compose exec -e PGHOST=morletdb -e PGDATABASE=plant -e PGUSER=morlet -e PGPASSWORD=influx-demo-only telegraf
-  python3 /opt/morlet/bridge/cli.py status --sink telegraf`. There is no read-back check of InfluxDB in the bridge yet; `check.py` does it for this example.
+  `docker compose exec telegraf python3 /opt/morlet/bridge/cli.py status --sink telegraf` (the container's
+  environment holds the connection settings, so no password goes on a command line). There is no read-back check of InfluxDB in the bridge yet; `check.py` does it for this example.
 - **The viewer runs on the host** and binds to 127.0.0.1 only, as everywhere in MorletDB.
 - Telegraf's image is extended with Python 3 and psycopg for the bridge (`Dockerfile.telegraf`).

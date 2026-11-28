@@ -70,7 +70,8 @@ def key(r):
 def main():
     with psycopg.connect(PG, row_factory=psycopg.rows.dict_row) as conn:
         for _ in range(60):                 # wait until the history is published and handed to Telegraf
-            n = conn.execute("SELECT count(*) AS n FROM morlet_bridge.deliveries").fetchone()["n"]
+            n = conn.execute("""SELECT count(*) AS n FROM morlet_bridge.deliveries d
+                JOIN morlet_bridge.sinks k ON k.sink_id = d.sink_id AND k.name = 'telegraf'""").fetchone()["n"]
             if n > 1000:
                 break
             time.sleep(5)

@@ -44,6 +44,10 @@ services:
     build: {context: ../.., dockerfile: examples/influxdb/Dockerfile.telegraf}
     environment:
       INFLUX_TOKEN: influx-demo-only-token
+      PGHOST: morletdb                      # for the bridge command, also when run with `docker compose exec`
+      PGDATABASE: plant
+      PGUSER: morlet
+      PGPASSWORD: influx-demo-only
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     depends_on:
