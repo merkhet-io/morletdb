@@ -157,11 +157,16 @@ def main(argv=None):
             p.error("give files or --influx-url, not both")
         if not (opts.measurement and opts.start and opts.end):
             p.error("--influx-url needs --measurement, --start and --end")
+        try:
+            start_ns, end_ns = mi.iso_ns(opts.start)[0], mi.iso_ns(opts.end)[0]
+        except ValueError as exc:
+            p.error(f"--start/--end: {exc} (use UTC ISO 8601, e.g. 2026-11-28T10:00:00Z)")
+        opts.precision = "ns"                      # the fetched file always carries nanoseconds
         opts.out.mkdir(parents=True, exist_ok=True)
         lp_path = opts.out / "source.lp"
         try:
-            source = influx_source.fetch(opts.influx_url, lp_path, opts.measurement, mi.iso_ns(opts.start)[0],
-                                         mi.iso_ns(opts.end)[0], db=opts.influx_db, org=opts.influx_org,
+            source = influx_source.fetch(opts.influx_url, lp_path, opts.measurement, start_ns, end_ns,
+                                         db=opts.influx_db, org=opts.influx_org,
                                          bucket=opts.influx_bucket, slice_s=opts.slice_s, pause_s=opts.pause_s,
                                          max_points=opts.max_points, iso_ns=mi.iso_ns,
                                          log=lambda m: print(m, file=sys.stderr))

@@ -33,10 +33,17 @@ read-only user or token; no export and nothing installed on the InfluxDB host. S
 
 ```sh
 cd examples/trial
-export INFLUX_USERNAME=reader INFLUX_PASSWORD='...'         # 1.x; for 2.x: export INFLUX_TOKEN='...'
+# InfluxDB 1.x
+export INFLUX_USERNAME=reader INFLUX_PASSWORD='...'
 docker compose run --rm trial --influx-url http://192.168.0.10:8086 --influx-db plant \
   --measurement vibration --start 2026-11-28T10:00:00Z --end 2026-11-28T10:10:00Z
+# InfluxDB 2.x
+export INFLUX_TOKEN='...'
+docker compose run --rm trial --influx-url http://192.168.0.10:8086 --influx-org plant --influx-bucket machines \
+  --measurement vibration --start 2026-11-28T10:00:00Z --end 2026-11-28T10:10:00Z
 ```
+
+Plain `http://` is only for a trusted local network; use `https://` otherwise.
 
 It reads in slices of 60 seconds with a pause between them, so a controller is not burdened, and keeps values
 exact: floats with every digit, negative zero and integer types included.

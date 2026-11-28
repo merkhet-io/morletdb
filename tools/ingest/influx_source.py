@@ -9,11 +9,13 @@ reading stops at a point limit. Values arrive exactly: floats as InfluxDB format
 parsed with correct rounding, typed by the field's InfluxDB type (1.x: SHOW FIELD KEYS; 2.x: the CSV's datatype
 annotation), so `-0` stays a negative zero and an integer-valued float stays a float. Standard library only.
 """
+import calendar
 import csv
 import io
 import json
 import math
 import os
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -102,6 +104,26 @@ def _flux_string(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"').replace("${", "\\${") + '"'
 
 
+RFC3339 = re.compile(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?Z")
+
+
+def rfc3339_ns(text):
+    """UTC nanoseconds of an RFC 3339 time as InfluxDB 2.x writes it (`...Z`, up to 9 fraction digits), exactly."""
+    m = RFC3339.fullmatch(text)
+    if not m:
+        raise SourceError(f"unexpected time {text!r} from InfluxDB")
+    sec = calendar.timegm(time.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S"))
+    return sec * 1_000_000_000 + int((m.group(2) or "").ljust(9, "0") or 0), len(m.group(2) or "")
+
+
+def safe_url(base):
+    """The address without credentials, query or fragment (IPv6 hosts in brackets), for reports."""
+    u = urllib.parse.urlsplit(base)
+    host = u.hostname or ""
+    host = f"[{host}]" if ":" in host else host
+    return urllib.parse.urlunsplit((u.scheme, host + (f":{u.port}" if u.port else ""), u.path.rstrip("/"), "", ""))
+
+
 def _rfc3339(ns):
     sec, frac = divmod(ns, 1_000_000_000)
     return time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(sec)) + f".{frac:09d}Z"
@@ -131,6 +153,9 @@ def _v1_slices(base, db, measurement, start_ns, end_ns, slice_ns):
     for res in keys["results"]:
         for s in res.get("series", []):
             for k, t in s["values"]:
+                if k in kinds and kinds[k] != V1_KINDS[t]:
+                    raise SourceError(f"field {k!r} of {measurement!r} has more than one type in InfluxDB "
+                                      f"({kinds[k]}, {V1_KINDS[t]}); its values cannot be read exactly by type")
                 kinds[k] = V1_KINDS[t]
     if not kinds:
         raise SourceError(f"measurement {measurement!r} not found in database {db!r} (or no fields readable)")
@@ -145,7 +170,7 @@ def _v1_slices(base, db, measurement, start_ns, end_ns, slice_ns):
                 for row in s["values"]:
                     fields = [(c, kinds[c], v) for c, v in zip(cols[1:], row[1:]) if v is not None and c in kinds]
                     if fields:
-                        lines.append(lp_line(s["name"], s.get("tags", {}), fields, int(row[0])))
+                        lines.append((lp_line(s["name"], s.get("tags", {}), fields, int(row[0])), len(fields)))
         yield lines
         a = b
 
@@ -193,23 +218,24 @@ def _v2_slices(base, org, bucket, measurement, start_ns, end_ns, slice_ns, iso_n
             if kind is None:
                 raise SourceError(f"unsupported value type {types and types[header.index('_value')]!r}")
             tags = {k: v for k, v in r.items() if k not in SKIP_V2}
-            lines.append(lp_line(r["_measurement"], tags, [(r["_field"], kind, _v2_value(kind, r["_value"]))],
-                                 iso_ns(r["_time"])[0]))
+            lines.append((lp_line(r["_measurement"], tags, [(r["_field"], kind, _v2_value(kind, r["_value"]))],
+                                  iso_ns(r["_time"])[0]), 1))
         yield lines
         a = b
 
 
 def fetch(base, out_path, measurement, start_ns, end_ns, *, db=None, org=None, bucket=None, slice_s=60.0,
-          pause_s=0.5, max_points=10_000_000, iso_ns=None, log=None):
-    """Write the measurement's points in [start_ns, end_ns) to out_path as line protocol. Returns provenance (no
-    credentials). 2.x writes one line per field; the importer joins fields of one series by time either way."""
+          pause_s=0.5, max_points=10_000_000, iso_ns=rfc3339_ns, log=None):
+    """Write the measurement's points in [start_ns, end_ns) to out_path as line protocol, all or nothing: the file
+    appears only after the last slice succeeded. Returns provenance (no credentials). 2.x writes one line per field;
+    the importer joins fields of one series by time either way. max_points counts field values."""
     if end_ns <= start_ns:
         raise SourceError("--end must be after --start")
-    if not (slice_s > 0 and pause_s >= 0):
-        raise SourceError("slices must be positive and pauses zero or more")
+    if not (math.isfinite(slice_s) and slice_s >= 1e-9 and math.isfinite(pause_s) and pause_s >= 0):
+        raise SourceError("--slice-s must be at least 1 ns and --pause-s zero or more, both finite")
     ver = version(base)
     major = ver.split(".")[0]
-    slice_ns = int(slice_s * 1e9)
+    slice_ns = max(1, int(slice_s * 1e9))
     if major == "1":
         if not db:
             raise SourceError("InfluxDB 1.x: give --influx-db")
@@ -220,18 +246,25 @@ def fetch(base, out_path, measurement, start_ns, end_ns, *, db=None, org=None, b
         slices = _v2_slices(base, org, bucket, measurement, start_ns, end_ns, slice_ns, iso_ns)
     else:
         raise SourceError(f"InfluxDB {ver} is not supported here (1.x and 2.x are); export line protocol instead")
-    points, n = 0, 0
-    with open(out_path, "w", encoding="utf-8") as f:
-        for lines in slices:
-            n += 1
-            points += len(lines)
-            if points > max_points:
-                raise SourceError(f"more than {max_points} points; shorten the window or raise --max-points")
-            f.write("".join(x + "\n" for x in lines))
-            if log:
-                log(f"slice {n}: {len(lines)} lines")
-            time.sleep(pause_s)
-    return {"influxdb_version": ver, "url": urllib.parse.urlsplit(base)._replace(netloc=urllib.parse.urlsplit(base).hostname
-            + (f":{urllib.parse.urlsplit(base).port}" if urllib.parse.urlsplit(base).port else "")).geturl(),
-            "database": db, "org": org, "bucket": bucket, "measurement": measurement, "start": _rfc3339(start_ns),
-            "end": _rfc3339(end_ns), "slices": n, "lines": points, "slice_s": slice_s, "pause_s": pause_s}
+    points, nlines, n = 0, 0, 0
+    tmp = f"{out_path}.partial"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            for lines in slices:
+                n += 1
+                nlines += len(lines)
+                points += sum(k for _, k in lines)
+                if points > max_points:
+                    raise SourceError(f"more than {max_points} points (field values); the run stops here: shorten "
+                                      "the window or raise --max-points")
+                f.write("".join(x + "\n" for x, _ in lines))
+                if log:
+                    log(f"slice {n}: {len(lines)} lines")
+                time.sleep(pause_s)
+        os.replace(tmp, out_path)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+    return {"influxdb_version": ver, "url": safe_url(base), "database": db, "org": org, "bucket": bucket,
+            "measurement": measurement, "start": _rfc3339(start_ns), "end": _rfc3339(end_ns), "slices": n,
+            "lines": nlines, "points": points, "slice_s": slice_s, "pause_s": pause_s}

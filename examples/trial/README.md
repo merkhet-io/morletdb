@@ -1,9 +1,9 @@
 # Try MorletDB on your InfluxDB data
 
 One command on a laptop in your network reads a few minutes of one measurement from your InfluxDB 1.x or 2.x,
-stores it in a throwaway MorletDB, proves that every value and timestamp came through unchanged, and writes a
-report. Nothing is installed on the controller or the InfluxDB host, no export is needed, and nothing leaves your
-network.
+stores it in a throwaway MorletDB, verifies every value bit for bit, checks the timestamps at every time anchor and
+at a sample of points (reporting the largest deviation), and writes a report. Nothing is installed on the
+controller or the InfluxDB host, no export is needed, and nothing leaves your network.
 
 ## What you need
 
@@ -31,6 +31,9 @@ docker compose run --rm trial --influx-url http://192.168.0.10:8086 --influx-org
 ```
 
 Times are UTC. Use your InfluxDB's address; for one running on the laptop itself, `http://host.docker.internal:8086`.
+**Plain `http://` sends the password or token and the data unencrypted:** use it only on a trusted local network,
+otherwise `https://`. Credentials can also go in a `.env` file next to `compose.yaml` (it is ignored by Git).
+On **Linux**, run `export TRIAL_UID=$(id -u) TRIAL_GID=$(id -g)` first, so the report folder stays writable.
 Already have a line-protocol export? Put it in `input/` and run `docker compose run --rm trial /input/export.lp`.
 
 When you are done:
@@ -42,8 +45,9 @@ docker compose down -v        # removes the trial database and everything in it
 ## What happens on your InfluxDB
 
 Only read queries: one `SHOW FIELD KEYS` (1.x) and then one query per 60 seconds of data, with half a second's
-pause between queries (`--slice-s`, `--pause-s` change both). Reading stops at 10 million points (`--max-points`).
-On a busy controller, choose a shorter window or a longer pause.
+pause between queries (`--slice-s`, `--pause-s` change both). Beyond 10 million values (`--max-points`) the run
+stops with an error and keeps nothing; choose a shorter window or raise the limit. On a busy controller, choose a
+shorter window or a longer pause.
 
 ## What you get
 

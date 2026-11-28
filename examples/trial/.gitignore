@@ -1,3 +1,4 @@
+.env
 morlet-trial-report/*
 !morlet-trial-report/.gitkeep
 input/*

@@ -21,6 +21,7 @@ T0 = 1767225600000000000
 class Fake(http.server.BaseHTTPRequestHandler):
     version = "1.8.10"
     seen = []
+    flux = []
 
     def log_message(self, *a):
         pass
@@ -41,6 +42,9 @@ class Fake(http.server.BaseHTTPRequestHandler):
         q = params["q"][0]
         if params["db"][0] == "nosuch":
             return self.reply(200, '{"results":[{"statement_id":0,"error":"database not found: nosuch"}]}')
+        if q.startswith("SHOW FIELD KEYS") and "conflict" in q:
+            return self.reply(200, json.dumps({"results": [{"statement_id": 0, "series": [{"name": "conflict", "columns":
+                ["fieldKey", "fieldType"], "values": [["a", "float"], ["a", "integer"]]}]}]}))
         if q.startswith("SHOW FIELD KEYS"):
             return self.reply(200, json.dumps({"results": [{"statement_id": 0, "series": [{"name": "vib", "columns":
                 ["fieldKey", "fieldType"], "values": [["a", "float"], ["n", "integer"], ["s", "string"], ["ok", "boolean"]]}]}]}))
@@ -56,7 +60,11 @@ class Fake(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         Fake.seen.append((self.path, self.headers.get("Authorization")))
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        if "nosuch" in body["query"]:
+        q, org = body["query"], urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("org", [""])[0]
+        Fake.flux.append(q)
+        expected = ('from(bucket: "machines") |> range(start: 2026-01-01T00:00:00.000000000Z, '
+                    'stop: 2026-01-01T00:00:01.000000000Z) |> filter(fn: (r) => r._measurement == "vib")')
+        if org != "plant" or q != expected:
             return self.reply(400, '{"code":"invalid","message":"bucket not found"}')
         return self.reply(200, V2_CSV, "text/csv")
 
@@ -112,6 +120,9 @@ class Source(unittest.TestCase):
         n = s[("vib", (("axis", "z,1"), ("machine", "line 3")), "n")]
         self.assertEqual((n.kind, n.values), ("integer", [1, 2 ** 60, -3]))
         self.assertEqual(s[("vib", (("axis", "z,1"), ("machine", "line 3")), "s")].values, ["x", "y, z"])
+        ok = s[("vib", (("axis", "z,1"), ("machine", "line 3")), "ok")]
+        self.assertEqual((ok.kind, ok.values), ("boolean", [True, False, True]))
+        self.assertEqual(prov["points"], 12)                     # field values, not lines
         self.assertTrue(all(auth and auth.startswith("Basic ") for path, auth in Fake.seen if "/query" in path))
         self.assertTrue(all("pw" not in path for path, _ in Fake.seen))            # never in the URL
 
@@ -119,7 +130,7 @@ class Source(unittest.TestCase):
         Fake.version = "v2.7.12"
         with mock.patch.dict(os.environ, {"INFLUX_TOKEN": "tok"}):
             prov = src.fetch(self.url, self.out, "vib", T0, T0 + 1_000_000_000, org="plant", bucket="machines",
-                             pause_s=0, iso_ns=mi.iso_ns)
+                             pause_s=0)                            # the built-in RFC 3339 parser
         self.assertEqual((prov["influxdb_version"], prov["lines"]), ("2.7.12", 3))
         s = self.series()
         a = s[("vib", (("axis", "z,1"), ("machine", "line 3")), "a")]
@@ -134,7 +145,16 @@ class Source(unittest.TestCase):
         with mock.patch.dict(os.environ, {}, clear=True), self.assertRaisesRegex(src.SourceError, "INFLUX_TOKEN"):
             src.fetch(self.url, self.out, "vib", T0, T0 + 10, org="o", bucket="b", pause_s=0, iso_ns=mi.iso_ns)
         with mock.patch.dict(os.environ, {"INFLUX_TOKEN": "t"}), self.assertRaisesRegex(src.SourceError, "400.*bucket"):
-            src.fetch(self.url, self.out, "vib", T0, T0 + 10, org="o", bucket="nosuch", pause_s=0, iso_ns=mi.iso_ns)
+            src.fetch(self.url, self.out, "vib", T0, T0 + 1_000_000_000, org="plant", bucket="other", pause_s=0)
+        with mock.patch.dict(os.environ, {"INFLUX_TOKEN": "t"}), self.assertRaisesRegex(src.SourceError, "400"):
+            src.fetch(self.url, self.out, "other", T0, T0 + 1_000_000_000, org="plant", bucket="machines", pause_s=0)
+        Fake.version = "1.8.10"
+        with self.assertRaisesRegex(src.SourceError, "more than one type"):
+            src.fetch(self.url, self.out, "conflict", T0, T0 + 10, db="plant", pause_s=0)
+        for bad in (0.0, 1e-12, float("nan"), float("inf")):
+            with self.subTest(slice_s=bad), self.assertRaisesRegex(src.SourceError, "slice"):
+                src.fetch(self.url, self.out, "vib", T0, T0 + 10, db="plant", slice_s=bad)
+        Fake.version = "v2.7.12"
         with self.assertRaisesRegex(src.SourceError, "--influx-org"):
             src.fetch(self.url, self.out, "vib", T0, T0 + 10, db="plant")
         Fake.version = "1.8.10"
@@ -148,10 +168,18 @@ class Source(unittest.TestCase):
         with self.assertRaisesRegex(src.SourceError, "cannot reach"):
             src.fetch("http://127.0.0.1:9", self.out, "vib", T0, T0 + 10, db="plant")
 
-    def test_the_point_limit_stops_reading(self):
+    def test_the_point_limit_stops_reading_and_keeps_nothing(self):
         Fake.version = "1.8.10"
-        with self.assertRaisesRegex(src.SourceError, "more than 3 points"):
-            src.fetch(self.url, self.out, "vib", T0, T0 + 4_000_000, db="plant", slice_s=0.004, pause_s=0, max_points=3)
+        with self.assertRaisesRegex(src.SourceError, "more than 5 points"):   # 4 values per row, 1 row per slice
+            src.fetch(self.url, self.out, "vib", T0, T0 + 4_000_000, db="plant", slice_s=0.001, pause_s=0, max_points=5)
+        selects = [p for p, _ in Fake.seen if "SELECT" in urllib.parse.unquote_plus(p)]
+        self.assertEqual(len(selects), 2)                       # stopped at the slice that crossed the limit
+        self.assertFalse(self.out.exists())
+        self.assertFalse(Path(f"{self.out}.partial").exists())
+
+    def test_addresses_in_reports_carry_no_secrets(self):
+        self.assertEqual(src.safe_url("https://u:p@[fe80::1]:8086/influx/?token=abc#x"), "https://[fe80::1]:8086/influx")
+        self.assertEqual(src.safe_url("http://plc:8086"), "http://plc:8086")
 
     def test_written_lines_parse_back_identically(self):
         line = src.lp_line("m x", {"t,1": "a b", "empty": ""}, [("f=1", "float", -0.0), ("s", "string", 'q"\\')], 5)

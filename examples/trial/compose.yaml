@@ -28,6 +28,7 @@ services:
       INFLUX_USERNAME: ${INFLUX_USERNAME:-}
       INFLUX_PASSWORD: ${INFLUX_PASSWORD:-}
       INFLUX_TOKEN: ${INFLUX_TOKEN:-}
+    user: "${TRIAL_UID:-1000}:${TRIAL_GID:-1000}"   # Linux: export TRIAL_UID=$(id -u) TRIAL_GID=$(id -g)
     extra_hosts:
       - "host.docker.internal:host-gateway"   # an InfluxDB on this laptop itself
     volumes:
