@@ -322,7 +322,9 @@ under, read in the explanation's own statement. `search(..., interpretation_revi
 query and every match (`SearchResult.interpretation_revisions`, `Match.interpretation_revision`), read by one more
 statement after the search; it changes neither distances, order nor budgets. A revision is reported only when it is
 known: there is none without the history, on SQL 0.3.17 (whose function could undercount behind row policies), or
-when the role cannot read the history completely: row policies other than MorletDB's own, or row security without it.
+when the role cannot read the history completely: it lacks `SELECT` on the history table or `EXECUTE` on
+`morlet_interpretation_revisions` or `morlet_interpretation_history_complete`, or row policies other than MorletDB's
+own apply, or row security applies without it.
 Absent is never the same as revision 0. In `to_dict()`
 output the fields are left out when not reported, so investigation output and evidence bundles keep their shape.
 
