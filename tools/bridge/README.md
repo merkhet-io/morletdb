@@ -25,11 +25,27 @@ GRANT USAGE ON SCHEMA morlet_bridge TO grafana_reader;
 GRANT SELECT ON morlet_bridge.metrics TO grafana_reader;
 ```
 
-The target may be a TimescaleDB hypertable (bring your own TimescaleDB; it is not part of MorletDB images). Its
-key includes `time_ns` for this; the conversion has not been tested yet:
+The target may be a TimescaleDB hypertable (bring your own TimescaleDB; it is not part of MorletDB images). Its key
+includes `time_ns` for this. Tested with TimescaleDB 2.32.1, including compression, a continuous aggregate and dump
+and restore (`test_bridge_timescale.py`, [details](../../docs/metric-bridge.md#relation-to-timescaledb)):
 
 ```sql
-SELECT create_hypertable('morlet_bridge.metrics', 'time_ns', chunk_time_interval => 86400000000000, migrate_data => true);
+SELECT create_hypertable('morlet_bridge.metrics', by_range('time_ns', 86400000000000::bigint), migrate_data => true);
+-- continuous aggregates on an integer time column need a "now" in the same unit
+CREATE FUNCTION morlet_bridge.now_ns() RETURNS bigint LANGUAGE sql STABLE
+  AS $$ SELECT (extract(epoch FROM now()) * 1e9)::bigint $$;
+SELECT set_integer_now_func('morlet_bridge.metrics', 'morlet_bridge.now_ns');
+```
+
+The hypertable tests need a server with both extensions; `timescale/Dockerfile` builds a local, unpublished test
+image from the MorletDB release image and Timescale's apt repository:
+
+```sh
+docker build -t morlet-bridge-timescale-test tools/bridge/timescale
+docker run -d --name morlet-bridge-ts -e POSTGRES_PASSWORD=... -p 127.0.0.1:28933:5432 morlet-bridge-timescale-test
+export PGPASSWORD=...                   # the POSTGRES_PASSWORD given to the container
+MORLET_BRIDGE_TIMESCALE_DSN='host=127.0.0.1 port=28933 user=postgres dbname=postgres' \
+  MORLET_PG_BIN=/usr/lib/postgresql/17/bin python -m unittest tools/bridge/test_bridge_timescale.py
 ```
 
 ## Telegraf

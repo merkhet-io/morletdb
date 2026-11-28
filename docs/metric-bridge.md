@@ -31,8 +31,8 @@ store is a copy.
   Windows are bucketed by their start; they are not split at calendar boundaries.
 - **No read-back verification** of InfluxDB yet, and no retention or lifecycle coordination (#634).
 - **Tested end to end with Telegraf 1.36.4 and InfluxDB 2.7.12** in [examples/influxdb](../examples/influxdb/README.md)
-  (every point handed to Telegraf arrived with the same timestamp, tags and fields, values bit for bit); not yet
-  with a TimescaleDB hypertable as target, and the bridge itself has no read-back check yet.
+  (every point handed to Telegraf arrived with the same timestamp, tags and fields, values bit for bit). The bridge
+  itself has no read-back check of InfluxDB yet.
 - **Not a steward job yet.** Run `drain` and `deliver` from a timer, or `telegraf` under Telegraf.
 - **Telegraf into MorletDB** (context and events) is a later phase. Waveforms through Telegraf are out of scope:
   its points carry their own timestamps and decimal text, so uniform sampling and bit-exact values are not given.
@@ -73,6 +73,24 @@ morlet_metric,asset=pump-A,calculation=interval-stats-v1,channel=vib-x minimum=-
 ## Relation to TimescaleDB
 
 The PostgreSQL sink works with an ordinary table or a TimescaleDB hypertable on `time_ns`; the bridge never requires
-TimescaleDB. TimescaleDB's continuous aggregates and compression are under the Timescale License, so MorletDB images
-do not include it; use your own installation. TimescaleDB-specific isolation, lifecycle and the Grafana example
-are tracked in #631, #633, #634 and #635.
+TimescaleDB. Tested on 2026-11-28 with TimescaleDB 2.32.1 on PostgreSQL 17.12 and pg_morlet SQL 0.3.18
+(`tools/bridge/test_bridge_timescale.py`). The suite runs by hand against the local test image (it needs
+`MORLET_BRIDGE_TIMESCALE_DSN`, and `MORLET_PG_BIN` for dump and restore); it is not part of CI yet:
+
+- both extensions in one database, in either installation order;
+- the metrics table turned into a hypertable with 1-day chunks, rows delivered before the conversion migrated;
+- exactly-once delivery across chunks, also from four concurrent deliverers;
+- delivery into a **compressed** chunk exactly once, and a differing copy placed in that compressed chunk reported as
+  an error;
+- a continuous aggregate per minute and asset equal to the same aggregate computed directly;
+- a reader role that needs its own grants on the hypertable and the aggregate and gets no access to the ledger or
+  the waveforms;
+- `pg_dump`/`pg_restore` with TimescaleDB's pre- and post-restore steps, after which delivery continues exactly once
+  and the samples read back bit for bit.
+
+TimescaleDB's continuous aggregates and compression are under the Timescale License, and they do not work on tables
+with row security, which the bridge refuses as sources anyway. MorletDB images do not include TimescaleDB; use your
+own installation (the test image in `tools/bridge/timescale` is for local tests only and is not published).
+Not tested: retention policies and scheduled jobs on the hypertable, TimescaleDB versions other than 2.32.1, and
+upgrades of either extension. TimescaleDB-specific isolation, lifecycle and the Grafana example are tracked in #631,
+#633, #634 and #635.

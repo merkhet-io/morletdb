@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Metric bridge: TimescaleDB hypertable as target, tested (#631, #639).** With TimescaleDB 2.32.1 on PostgreSQL 17:
+  both installation orders, conversion with migrated rows, exactly-once delivery across chunks and from concurrent
+  deliverers, delivery into compressed chunks with differing copies reported, a continuous aggregate equal to the
+  direct aggregate, reader grants, and dump and restore. The suite runs by hand against a local test image, not in CI. `tools/bridge/timescale` builds a local test image, never
+  published (TimescaleDB's compression and continuous aggregates are under the Timescale License).
+
 - **Example: MorletDB beside InfluxDB (`examples/influxdb`).** One `docker compose up`: a synthetic 4 kHz collector
   writes waveforms to MorletDB and publishes metrics per window through the bridge; Telegraf's `execd` input carries
   them to InfluxDB 2.7; a Grafana dashboard shows RMS and peak per pump and opens the exact waveform interval in the
@@ -23,7 +29,7 @@
 - **Metric bridge (experimental, phase 1 of #639).** `tools/bridge` publishes interval metrics (minimum, maximum, mean,
   RMS) computed from exact waveform windows into a ledger with exact nanosecond times, a raw-sample hash and the
   recording's specification, time-axis version and interpretation revision. Sinks: a PostgreSQL table in the same
-  database, exactly once (tested with an ordinary table; a TimescaleDB hypertable is possible but untested), and
+  database, exactly once (tested with an ordinary table and with a TimescaleDB hypertable, see below), and
   InfluxDB line protocol for Telegraf's `execd` input: handed to Telegraf at least once, best effort beyond it (tested end to end with
   Telegraf 1.36.4 and InfluxDB 2.7.12 in `examples/influxdb`). Phase 1 has one calculation over fixed windows, no read-back
   check and no retention coordination. A changed source, including a reverted calibration correction, stops
