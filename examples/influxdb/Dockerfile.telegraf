@@ -1,0 +1,5 @@
+# Telegraf with the MorletDB metric bridge for its execd input (examples/influxdb). Build context: repository root.
+FROM telegraf:1.36.4
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-psycopg && rm -rf /var/lib/apt/lists/*
+COPY tools/bridge/morlet_bridge.py tools/bridge/cli.py tools/bridge/schema.sql /opt/morlet/bridge/
+COPY examples/influxdb/collector.py /opt/morlet/

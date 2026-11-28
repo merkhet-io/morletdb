@@ -1,0 +1,6 @@
+apiVersion: 1
+providers:
+  - name: morletdb-influxdb
+    folder: MorletDB
+    type: file
+    options: {path: /var/lib/grafana/dashboards}

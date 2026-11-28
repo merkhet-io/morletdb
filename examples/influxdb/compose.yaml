@@ -1,0 +1,71 @@
+# MorletDB beside InfluxDB: waveforms in MorletDB, their metrics in InfluxDB through Telegraf, Grafana on top.
+# Synthetic data; local demo credentials. See README.md.
+#   docker compose up -d --build      # Grafana on http://127.0.0.1:3000 (admin / influx-demo-only)
+#   docker compose down -v            # removes everything
+name: morletdb-influxdb
+services:
+  morletdb:
+    image: ${MORLET_IMAGE:-ghcr.io/merkhet-io/morletdb:0.4.0-beta.7}
+    environment:
+      POSTGRES_USER: morlet
+      POSTGRES_PASSWORD: influx-demo-only
+      POSTGRES_DB: plant
+    ports:
+      - "127.0.0.1:54333:5432"          # for the viewer on this machine
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morlet -d plant && psql -U morlet -d plant -tAc \"SELECT 1 FROM pg_extension WHERE extname='pg_morlet'\" | grep -q 1"]
+      interval: 2s
+      retries: 60
+  influxdb:
+    image: influxdb:2.7.12
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: influx-demo-only
+      DOCKER_INFLUXDB_INIT_ORG: plant
+      DOCKER_INFLUXDB_INIT_BUCKET: machines
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: influx-demo-only-token
+    ports:
+      - "127.0.0.1:8086:8086"
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 2s
+      retries: 60
+  collector:                              # writes synthetic waveforms and publishes their metrics
+    build: {context: ../.., dockerfile: examples/influxdb/Dockerfile.telegraf}
+    entrypoint: ["python3", "/opt/morlet/collector.py"]
+    environment:
+      DATABASE_URL: host=morletdb dbname=plant user=morlet password=influx-demo-only
+    depends_on:
+      morletdb: {condition: service_healthy}
+  telegraf:
+    build: {context: ../.., dockerfile: examples/influxdb/Dockerfile.telegraf}
+    environment:
+      INFLUX_TOKEN: influx-demo-only-token
+      PGHOST: morletdb                      # for the bridge command, also when run with `docker compose exec`
+      PGDATABASE: plant
+      PGUSER: morlet
+      PGPASSWORD: influx-demo-only
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      influxdb: {condition: service_healthy}
+      collector: {condition: service_started}
+  grafana:
+    image: grafana/grafana-oss:11.2.2
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: influx-demo-only
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      influxdb: {condition: service_healthy}
