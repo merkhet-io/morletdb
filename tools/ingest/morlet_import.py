@@ -12,6 +12,7 @@ for exact search and, with --probes, probe search is enabled.
 """
 import argparse
 import csv
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
@@ -21,6 +22,7 @@ import math
 import os
 from pathlib import Path
 import re
+import struct
 import sys
 import wave
 
@@ -32,7 +34,7 @@ import influx_lp  # noqa: E402
 
 SUFFIXES = {".wav": "wav", ".edf": "edf", ".bdf": None, ".mseed": "mseed", ".miniseed": "mseed",
             ".msd": "mseed", ".csv": "csv", ".parquet": "exchange", ".tdms": "tdms", ".lp": "influx"}
-SKIPPED = {}    # file name -> [{series, reason}]: series a reader left out on purpose, added to the report
+SKIPPED = {}    # file path -> [{series, reason}]: series a reader left out on purpose, added to the report
 
 
 @dataclass
@@ -512,8 +514,23 @@ MAX_EXACT_INT = 2 ** 53
 
 
 def series_name(s):
+    """A readable name for reports: measurement[tags].field (may be ambiguous for unusual names)."""
     tags = ",".join(f"{k}={v}" for k, v in s.tags)
     return f"{s.measurement}{'[' + tags + ']' if tags else ''}.{s.field}"
+
+
+def series_id(s):
+    """The recording identifier part: the readable name plus a hash of the exact (measurement, tags, field), so two
+    series never get the same identifier however their names are spelled."""
+    canon = json.dumps([s.measurement, [list(t) for t in s.tags], s.field], ensure_ascii=False, separators=(",", ":"))
+    return f"{series_name(s)}~{hashlib.sha256(canon.encode()).hexdigest()[:12]}"
+
+
+def same_value(a, b):
+    """Equal including the sign of zero (and NaN, which line protocol cannot carry anyway): bit for bit."""
+    if isinstance(a, float) or isinstance(b, float):
+        return struct.pack("<d", float(a)) == struct.pack("<d", float(b))
+    return a == b
 
 
 def influx_rate(t):
@@ -545,33 +562,39 @@ def read_influx(path, opts):
     become time anchors (as for a CSV time column), with the export's timestamp resolution as their uncertainty.
     Integers beyond 2^53 cannot be float64 exactly and are refused. Each refusal is reported, not hidden."""
     precision = getattr(opts, "precision", None) or "ns"
-    min_rate = getattr(opts, "min_rate", None) or 100.0
+    min_rate = getattr(opts, "min_rate", None)
+    min_rate = 100.0 if min_rate is None else min_rate
+    if not (math.isfinite(min_rate) and min_rate >= 0):
+        raise ValueError("--min-rate must be a finite number of Hz, zero or more")
     with open(path, encoding="utf-8") as f:
         series = influx_lp.read_series(f, precision, getattr(opts, "max_points", None))
     resolution = influx_lp.PRECISION_NS[precision]
     out, skipped = [], []
-    SKIPPED[path.name] = skipped               # reset: the file is read once for the plan and once for the import
+    SKIPPED[str(path)] = skipped               # reset: the file is read once for the plan and once for the import
     for s in series.values():
         name = series_name(s)
         if s.kind not in ("float", "integer", "unsigned"):
             skipped.append({"series": name, "reason": f"{s.kind} values are not samples"})
             continue
         order = sorted(range(len(s.times)), key=lambda i: s.times[i])
-        t, v, txt = [], [], []
+        t, v = [], []
         bad = None
         for i in order:
             if t and s.times[i] == t[-1]:
-                if s.values[i] != v[-1]:
+                if not same_value(s.values[i], v[-1]):
                     bad = f"two values at {s.times[i]} ns"
                     break
                 continue
-            t.append(s.times[i]); v.append(s.values[i]); txt.append(s.texts[i])
+            t.append(s.times[i]); v.append(s.values[i])
+        del order
         if bad is None and s.kind != "float" and any(abs(x) > MAX_EXACT_INT for x in v):
             bad = "an integer beyond 2^53 has no exact float64"
         if bad is None and any(abs(x) > 1e9 for x in v):
             bad = "values beyond +/-1e9 (the importer's limit)"
         if bad is None and len(t) < 2:
             bad = "fewer than two points"
+        if bad is None and t[-1] - t[0] >= 2 ** 53:
+            bad = "spans more than about 104 days (2^53 ns); export shorter periods"
         if bad:
             skipped.append({"series": name, "reason": bad})
             continue
@@ -587,9 +610,9 @@ def read_influx(path, opts):
         axis = {"rate_source": "median spacing of the timestamps", "max_offset_s": float(np.max(np.abs(offset))),
                 "max_offset_samples": round(float(np.max(np.abs(offset))) * rate, 2),
                 "anchors": len(anchors), "blocks": 1 + sum(1 for a in anchors if a[3]), "resolution_ns": resolution}
-        d = max(decimals(x) for x in txt) if s.kind == "float" else 0
+        d = s.decimals if s.kind == "float" else 0
         start = datetime.fromtimestamp(t[0] // 1_000_000_000, timezone.utc) + timedelta(microseconds=(t[0] % 10 ** 9) // 1000)
-        out.append(Recording(f"{path.stem}.{name}", rate, s.field, opts.unit or "unknown", 10.0 ** -d if d <= 9 else 1.0,
+        out.append(Recording(f"{path.stem}.{series_id(s)}", rate, s.field, opts.unit or "unknown", 10.0 ** -d if d <= 9 else 1.0,
                              np.array(v, dtype=np.float64),
                              {"source": path.name, "format": "influx-line-protocol", "measurement": s.measurement,
                               "tags": dict(s.tags), "field": s.field, "start_ns": t[0],
@@ -794,8 +817,8 @@ def main(argv=None):
                    help="influx: unit of the line-protocol timestamps (default ns, as exports write them)")
     p.add_argument("--min-rate", type=float, default=100.0,
                    help="influx: series sampled slower than this (Hz) are trends and are left out (default 100)")
-    p.add_argument("--max-points", type=int, default=50_000_000,
-                   help="influx: refuse files with more points than this (memory bound, default 50 million)")
+    p.add_argument("--max-points", type=int, default=10_000_000,
+                   help="influx: refuse files with more points than this (default 10 million, about 1 GB of memory)")
     p.add_argument("--tdms-values", choices=["scaled", "raw"], default="scaled",
                    help="TDMS: store scaled (physical) values or the raw stored values")
     p.add_argument("--prefix", default="", help="prefix for recording identifiers")
@@ -806,6 +829,7 @@ def main(argv=None):
     p.add_argument("--no-build", action="store_true", help="append only; build envelopes later")
     p.add_argument("--dry-run", action="store_true", help="read and validate files, print what would be imported")
     opts = p.parse_args(argv)
+    SKIPPED.clear()                    # this run's skips only (main may be called repeatedly in one process)
     try:
         recs = [(f.name, r) for f in opts.files for r in recordings(f, opts)]
         plan = [{"file": f, "recording_id": r.recording_id, "rate_hz": r.rate, "channel": r.channel, "unit": r.unit,
@@ -813,7 +837,10 @@ def main(argv=None):
                  "extractor": opts.extractor or extractor_for(r.rate),
                  **({"time_axis": r.metadata["time_axis"]} if "time_axis" in r.metadata else {}),
                  **({"context_rows": len(r.context)} if r.context else {})} for f, r in recs]
-        skipped = [dict(s, file=f) for f in sorted(SKIPPED) for s in SKIPPED[f]]
+        skipped = [dict(s, file=Path(f).name, path=f) for f in sorted(SKIPPED) for s in SKIPPED[f]]
+        if not plan:
+            print(json.dumps({"status": "nothing to import", "skipped": skipped}, indent=2), file=sys.stderr)
+            return 1
         if opts.dry_run:
             print(json.dumps({"status": "dry-run", "recordings": plan, **({"skipped": skipped} if skipped else {}),
                               **warnings_of(plan)}, indent=2))

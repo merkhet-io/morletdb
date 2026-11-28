@@ -1,5 +1,6 @@
 """morlet_trial.py against a database: import, bit-exact proof, time check, report. Needs
 MORLET_MCP_TEST_DATABASE_URL (a database with pg_morlet SQL 0.3.13 or later where the role may create schemas)."""
+from decimal import Decimal
 import json
 import math
 import os
@@ -56,7 +57,9 @@ class Trial(unittest.TestCase):
         t = rec["time"]
         self.assertEqual((t["anchors_exact"], t["outside_reported_uncertainty"]), (t["anchors"], 0))
         self.assertGreaterEqual(t["anchors"], 2)                       # the gap starts a new block
-        self.assertLessEqual(t["max_deviation_ns"], 30_000)
+        self.assertLessEqual(Decimal(t["max_deviation_ns"]), 30_000)
+        self.assertGreater(r["import_seconds"], 0)
+        self.assertIsNone(r["envelope_build_seconds"])                # --no-build
         self.assertEqual(sorted(s["series"] for s in r["skipped"]), ["env[machine=press 7].on",
                                                                     "env[machine=press 7].temp"])
         self.assertGreater(r["storage"]["sample_data_bytes"], 0)
@@ -70,6 +73,12 @@ class Trial(unittest.TestCase):
             c.execute("SELECT morlet_create_stream_collection(%s, 'signals')", (self.schema,))
         with self.assertRaisesRegex(SystemExit, "exists"):
             self.run_trial()
+        with self.psycopg.connect(URL, autocommit=True) as c:
+            self.assertEqual(c.execute(f'SELECT count(*) FROM "{self.schema}".signals').fetchone()[0], 0)
+            self.assertEqual(c.execute(f'SELECT count(*) FROM "{self.schema}".signals_chunks').fetchone()[0], 0)
+
+    def test_collection_names_are_qualified(self):
+        self.assertEqual((mt.qualified("signals"), mt.qualified("plant.signals")), ("public.signals", "plant.signals"))
 
 
 if __name__ == "__main__":

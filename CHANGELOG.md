@@ -3,11 +3,13 @@
 ## Unreleased
 
 - **InfluxDB line-protocol import and a local trial (adoption).** `morlet_import.py` reads InfluxDB exports (`.lp`,
-  `--format influx`): each numeric series (measurement, tag set, field) at `--min-rate` (default 100 Hz) or faster
-  becomes a recording with its tags in the metadata and its timestamps as time anchors; slower series, booleans,
-  strings, conflicting points and integers beyond 2^53 are left out and reported. `morlet_trial.py` imports any
-  supported file into a new collection of a disposable database, proves every recording bit for bit and the time of
-  the samples against the original timestamps, and writes a local report (storage, import time, what was left out).
+  `--format influx`): each eligible numeric series (measurement, tag set, field; at `--min-rate`, default 100 Hz, or
+  faster) becomes a recording with its tags in the metadata and its timestamps as time anchors. Left out and
+  reported: slower series, booleans, strings, two values at one timestamp, integers beyond 2^53, values beyond
+  ±1e9, series with fewer than two points or spanning more than about 104 days. `morlet_trial.py` imports any
+  supported file into a new collection of a disposable database, proves every recording bit for bit, checks the time
+  of the samples against the original timestamps at every anchor and at a sample of up to 2,000 points per
+  recording, and writes a local report (storage, import and build time, what was left out).
   New guide: `docs/influxdb.md`.
 
 ## 0.4.0-beta.7

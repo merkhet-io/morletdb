@@ -105,21 +105,24 @@ written from 3.x). Each numeric series, that is measurement, tag set and field k
 `<file stem>.<measurement>[<tags>].<field>`; metadata keeps the measurement, the tags and the field. Points are put
 in time order and a repeated timestamp with the same value is dropped. The rate is that of the longest unbroken
 run of regular steps, end to end, so timestamp jitter does not skew it. The real timestamps become
-[time anchors](clock-drift.md), exactly as for a CSV time column, with the export's timestamp resolution
-(`--precision`, default `ns`) as their uncertainty, and gaps or clock steps start a new block.
+[time anchors](clock-drift.md), exactly as for a CSV time column, and gaps or clock steps start a new block. An
+anchor's uncertainty is the export's timestamp resolution (`--precision`, default `ns`) plus the largest departure
+of a timestamp from the line through its neighbouring anchors, because MorletDB interpolates between anchors: with
+jittered timestamps that residual dominates.
 
 Left out, with the reason in the report (`skipped`), not silently: series slower than `--min-rate` (trends,
 best left in InfluxDB), booleans and strings, series with two different values at one timestamp, integers beyond
-2⁵³ (no exact float64), values beyond ±1e9 and series with fewer than two points. A line without a timestamp fails
-the file: its time was the server's clock, which the export does not contain. `--max-points` (default 50 million)
-bounds memory; split larger exports.
+2⁵³ (no exact float64), values beyond ±1e9, series with fewer than two points and series spanning more than about
+104 days (split the export). Signed zero counts: `0.0` and `-0.0` at one timestamp are two values. A line without a
+timestamp fails the file: its time was the server's clock, which the export does not contain. `--max-points`
+(default 10 million, about 1 GB of memory) bounds memory; split larger exports.
 
 To try MorletDB on an export without changing anything, use the trial: it imports into a disposable database,
 proves every recording bit for bit and the time of the samples against the original timestamps, and writes a local
 report (see [MorletDB for InfluxDB users](influxdb.md)):
 
 ```sh
-python tools/ingest/morlet_trial.py influx-export.lp --dsn 'host=localhost port=54329 dbname=trial user=morlet'
+DATABASE_URL='host=localhost port=54329 dbname=trial user=morlet' python tools/ingest/morlet_trial.py influx-export.lp
 ```
 
 ### Exchange files

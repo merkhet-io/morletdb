@@ -15,11 +15,13 @@ there. MorletDB does not replace InfluxDB for DevOps metrics or low-rate telemet
 | Run on a small edge box | see below | designed for it, with an unattended steward |
 
 Measured once on our waveform workload (B3.18 and M1c, [results](../evaluation/tsdb_b3/RESULTS.md)): InfluxDB 3
-Core 3.12.2 with one client writing six channels of a machine recording, against MorletDB 0.3.9-alpha.1 on the same
+Core 3.12.2 with one client writing the seven channels of a machine recording (three at 64 kHz, three at 4 kHz,
+one temperature at 1 Hz), against MorletDB 0.3.9-alpha.1 on the same
 machine. All loads were bit-exact in both. Ingestion was about 15× faster in MorletDB without durable
 acknowledgement (D2) and about 130× with it (D1, where InfluxDB's one-second WAL flush dominates a single
-sequential client; several writers were not measured). After InfluxDB's snapshot to Parquet, the data took 2.5×
-less space in MorletDB. InfluxDB needed a 4 GB memory cap to finish the load, MorletDB passed at 256 MB (caps were
+sequential client; several writers were not measured). After InfluxDB's snapshot to Parquet, MorletDB's database took 2.5× less
+space than InfluxDB's volume; counting MorletDB's write-ahead log too (which B3 leaves out by convention), about
+1.2×. InfluxDB needed a 4 GB memory cap to finish the load, MorletDB passed at 256 MB (caps were
 powers of two). These are one workload, one client and one machine, not a general ranking: several writers, other
 data and other InfluxDB versions were not measured. The results page states every condition.
 
@@ -33,20 +35,33 @@ docker run -d --name morlet-trial -e POSTGRES_USER=morlet -e POSTGRES_PASSWORD=c
 docker exec morlet-trial psql -U morlet -d trial -c "CREATE EXTENSION pg_morlet"
 ```
 
-Export one measurement for a short period as line protocol (InfluxDB 1.x: `influx_inspect export -lponly`;
-2.x: `influxd inspect export-lp --bucket-id ... --measurement ... --start ... --end ...`), then:
+Export one measurement for a short period as line protocol. Replace the paths, names and times with yours:
+
+```sh
+# InfluxDB 1.x
+influx_inspect export -datadir /var/lib/influxdb/data -waldir /var/lib/influxdb/wal -database plant \
+  -start 2026-11-01T00:00:00Z -end 2026-11-01T01:00:00Z -lponly -out export.lp
+# InfluxDB 2.x
+influxd inspect export-lp --bucket-id 0123456789abcdef --engine-path ~/.influxdbv2/engine \
+  --measurement vibration --start 2026-11-01T00:00:00Z --end 2026-11-01T01:00:00Z --output-path export.lp
+```
+
+Then run the trial against the disposable database (the password goes in the environment, not on the command line):
 
 ```sh
 python -m pip install -r tools/ingest/requirements.txt
-PGPASSWORD=change-me python tools/ingest/morlet_trial.py export.lp \
-  --dsn 'host=localhost port=54329 dbname=trial user=morlet' --influx-bytes "$(du -sb /var/lib/influxdb/... | cut -f1)"
+export DATABASE_URL='host=localhost port=54329 dbname=trial user=morlet' PGPASSWORD=change-me
+python tools/ingest/morlet_trial.py export.lp
 ```
 
-The trial imports every series at 100 Hz or faster, reads each back and compares it bit for bit, compares the
-time of the samples with the original timestamps, and writes `morlet-trial-report/report.md`: what was imported,
-what was left out and why (slow trends, booleans, strings, conflicting points), storage and import time.
-`--influx-bytes` is optional: the size of the same data in your InfluxDB, measured by you. A trial is one run on
-one machine, not a benchmark.
+Optionally add `--influx-bytes N`: the size of the same data in your InfluxDB, measured by you, for example with
+`du -sb` on the directory that holds it.
+
+The trial imports every eligible numeric series at 100 Hz or faster, reads each back and compares it bit for bit,
+checks the time of the samples against the original timestamps (at every time anchor and at a sample of up to
+2,000 points per recording), and writes `morlet-trial-report/report.md`: what was imported, what was left out and
+why (slow trends, booleans, strings, conflicting points), storage, import and build time. A trial is one run on one
+machine, not a benchmark.
 
 ## 2. Bring history over
 
@@ -54,7 +69,8 @@ one machine, not a benchmark.
 python tools/ingest/morlet_import.py export.lp --collection public.plant --create
 ```
 
-Each numeric series (measurement, tag set, field) becomes a recording; the tags stay in its metadata. The
+Each numeric series (measurement, tag set, field) at `--min-rate` (default 100 Hz) or faster becomes a recording;
+the tags stay in its metadata. Slower series are trends and are left out, with the reason in the report. The
 timestamps become time anchors, so jitter, gaps and clock steps are kept, not smoothed: MorletDB reports the time
 of any sample with its uncertainty. Details: [import](import.md#influxdb-line-protocol).
 

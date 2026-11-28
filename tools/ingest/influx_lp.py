@@ -6,10 +6,12 @@ Syntax: https://docs.influxdata.com/influxdb/v2/reference/syntax/line-protocol/
 
 A series is (measurement, tag set, field key). Values keep their type: float (`1.5`, `1e3`), integer (`3i`), unsigned
 (`3u`), boolean and string. Each float is parsed from its text with correct rounding, the same float64 InfluxDB
-stores; the text is kept so the importer can find the decimal grid. A line without a timestamp is refused: its time
+stores; for numbers the series keeps the most decimal places seen, so the importer can find the decimal grid. A line without a timestamp is refused: its time
 was the server's clock, which the file does not contain.
 """
 from dataclasses import dataclass, field
+from decimal import Decimal
+import re
 
 PRECISION_NS = {"ns": 1, "us": 1_000, "ms": 1_000_000, "s": 1_000_000_000}
 BOOLEANS = {"t": True, "T": True, "true": True, "True": True, "TRUE": True,
@@ -28,7 +30,7 @@ class Series:
     kind: str                        # "float", "integer", "unsigned", "boolean", "string"
     times: list = field(default_factory=list)       # ns
     values: list = field(default_factory=list)      # float/int/bool/str
-    texts: list = field(default_factory=list)       # numbers as written (float/integer/unsigned)
+    decimals: int = 0                               # most decimal places of any value as written (numbers)
 
     @property
     def key(self):
@@ -74,16 +76,35 @@ def _unescape(s, chars):
     return "".join(out)
 
 
+INTEGER = re.compile(r"-?[0-9]+")
+UNSIGNED = re.compile(r"[0-9]+")
+
+
+def _escaped(s, i):
+    """Whether s[i] is escaped: preceded by an odd number of backslashes."""
+    n = 0
+    while i - n - 1 >= 0 and s[i - n - 1] == "\\":
+        n += 1
+    return n % 2 == 1
+
+
+def decimal_places(text):
+    """Decimal places of a number as written (`1.25` 2, `1.5e-05` 6, `3` 0)."""
+    exp = Decimal(text).as_tuple().exponent
+    return max(0, -exp) if isinstance(exp, int) else 0
+
+
 def _value(text):
     if text.startswith('"'):
-        if len(text) < 2 or not text.endswith('"'):
-            raise LineProtocolError(f"bad string field {text!r}")
+        if len(text) < 2 or not text.endswith('"') or _escaped(text, len(text) - 1) or any(
+                c == '"' and not _escaped(text, i) for i, c in enumerate(text[1:-1], 1)):
+            raise LineProtocolError(f"bad string field {text!r} (quotes inside must be escaped)")
         return "string", _unescape(text[1:-1], '"\\'), None
     if text in BOOLEANS:
         return "boolean", BOOLEANS[text], None
     if text.endswith("i") or text.endswith("u"):
         body, kind = text[:-1], "integer" if text.endswith("i") else "unsigned"
-        if not body or not body.lstrip("-").isdigit() or (kind == "unsigned" and body.startswith("-")):
+        if not (INTEGER if kind == "integer" else UNSIGNED).fullmatch(body):
             raise LineProtocolError(f"bad {kind} field {text!r}")
         return kind, int(body), body
     try:
@@ -116,7 +137,7 @@ def parse_line(line, precision="ns"):
     parsed = []
     for f in fields:
         k = f.find("=")
-        while k > 0 and f[k - 1] == "\\":
+        while k > 0 and _escaped(f, k):
             k = f.find("=", k + 1)
         if k <= 0:
             raise LineProtocolError(f"bad field {f!r}")
@@ -137,6 +158,8 @@ def read_series(lines, precision="ns", max_points=None):
     error (InfluxDB refuses it as well). max_points bounds memory."""
     if precision not in PRECISION_NS:
         raise LineProtocolError(f"precision must be one of {', '.join(PRECISION_NS)}")
+    if max_points is not None and max_points < 1:
+        raise LineProtocolError("max_points must be positive")
     series, points = {}, 0
     for n, line in enumerate(lines, 1):
         try:
@@ -152,8 +175,9 @@ def read_series(lines, precision="ns", max_points=None):
                 raise LineProtocolError(f"line {n}: field {fkey!r} of {measurement} changes type {s.kind} -> {kind}")
             s.times.append(t)
             s.values.append(value)
-            s.texts.append(text)
+            if kind == "float":
+                s.decimals = max(s.decimals, decimal_places(text))
             points += 1
-            if max_points and points > max_points:
+            if max_points is not None and points > max_points:
                 raise LineProtocolError(f"more than {max_points} points; raise --max-points or split the export")
     return series
