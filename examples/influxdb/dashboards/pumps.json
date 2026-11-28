@@ -1,0 +1,133 @@
+{
+ "uid": "morletdb-influxdb",
+ "title": "Pumps: trends in InfluxDB, waveforms in MorletDB",
+ "schemaVersion": 39,
+ "version": 1,
+ "time": {
+  "from": "now-15m",
+  "to": "now"
+ },
+ "refresh": "10s",
+ "tags": [
+  "morletdb",
+  "influxdb"
+ ],
+ "templating": {
+  "list": [
+   {
+    "name": "viewer",
+    "type": "textbox",
+    "label": "MorletDB viewer",
+    "query": "http://127.0.0.1:8765",
+    "current": {
+     "text": "http://127.0.0.1:8765",
+     "value": "http://127.0.0.1:8765"
+    }
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "timeseries",
+   "title": "Vibration RMS per window",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influxdb"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 24,
+    "x": 0,
+    "y": 0
+   },
+   "description": "From InfluxDB: one point per 4,096-sample window, published by MorletDB's metric bridge through Telegraf. Click a point to open that exact interval in the MorletDB viewer.",
+   "targets": [
+    {
+     "refId": "A",
+     "query": "from(bucket: \"machines\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vibration\" and r.calculation == \"interval-stats-v1\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with start_sample: string(v: r.start_sample), end_sample: string(v: r.end_sample)}))\n  |> keep(columns: [\"_time\", \"asset\", \"rms\", \"collection\", \"recording_id\", \"start_sample\", \"end_sample\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "links": [
+      {
+       "title": "Open waveform in MorletDB",
+       "targetBlank": true,
+       "url": "${viewer}/?collection=${__data.fields.collection}&recording=${__data.fields.recording_id}&start=${__data.fields.start_sample}&end=${__data.fields.end_sample}"
+      }
+     ],
+     "custom": {
+      "drawStyle": "line",
+      "pointSize": 4,
+      "showPoints": "always",
+      "lineWidth": 1
+     },
+     "displayName": "${__field.labels.asset}"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   }
+  },
+  {
+   "id": 2,
+   "type": "timeseries",
+   "title": "Vibration peak per window",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influxdb"
+   },
+   "gridPos": {
+    "h": 9,
+    "w": 24,
+    "x": 0,
+    "y": 9
+   },
+   "description": "From InfluxDB: one point per 4,096-sample window, published by MorletDB's metric bridge through Telegraf. Click a point to open that exact interval in the MorletDB viewer.",
+   "targets": [
+    {
+     "refId": "A",
+     "query": "from(bucket: \"machines\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vibration\" and r.calculation == \"interval-stats-v1\")\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with start_sample: string(v: r.start_sample), end_sample: string(v: r.end_sample)}))\n  |> keep(columns: [\"_time\", \"asset\", \"maximum\", \"collection\", \"recording_id\", \"start_sample\", \"end_sample\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "links": [
+      {
+       "title": "Open waveform in MorletDB",
+       "targetBlank": true,
+       "url": "${viewer}/?collection=${__data.fields.collection}&recording=${__data.fields.recording_id}&start=${__data.fields.start_sample}&end=${__data.fields.end_sample}"
+      }
+     ],
+     "custom": {
+      "drawStyle": "line",
+      "pointSize": 4,
+      "showPoints": "always",
+      "lineWidth": 1
+     },
+     "displayName": "${__field.labels.asset}"
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   }
+  }
+ ]
+}

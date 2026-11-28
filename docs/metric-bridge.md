@@ -30,7 +30,9 @@ store is a copy.
 - **One calculation:** `interval-stats-v1` (minimum, maximum, mean, RMS) over fixed windows aligned to sample 0.
   Windows are bucketed by their start; they are not split at calendar boundaries.
 - **No read-back verification** of InfluxDB yet, and no retention or lifecycle coordination (#634).
-- **Not yet tested end to end** with a real Telegraf and InfluxDB, nor with a TimescaleDB hypertable as target.
+- **Tested end to end with Telegraf 1.36.4 and InfluxDB 2.7.12** in [examples/influxdb](../examples/influxdb/README.md)
+  (every point handed to Telegraf arrived with the same timestamp, tags and fields, values bit for bit); not yet
+  with a TimescaleDB hypertable as target, and the bridge itself has no read-back check yet.
 - **Not a steward job yet.** Run `drain` and `deliver` from a timer, or `telegraf` under Telegraf.
 - **Telegraf into MorletDB** (context and events) is a later phase. Waveforms through Telegraf are out of scope:
   its points carry their own timestamps and decimal text, so uniform sampling and bit-exact values are not given.
