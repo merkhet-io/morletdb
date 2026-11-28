@@ -12,6 +12,11 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 
 | Tool | What it does |
 |---|---|
+| `list_operations` | compact operation index with summaries and versioned contract hashes; no database access |
+| `describe_operation` | actual registered input/output schemas and semantic qualifications for one operation or JSON Pointer; no database access |
+| `describe_collection` | catalog-only collection description: companion tables, caller grants and relevant SQL signatures; does not scan recordings or establish coverage |
+| `investigate_interval_v2` | experimental native JSON request and version-2 evidence schema; the existing bounded investigation with explicit results, coverage, context, provenance and limits |
+| `read_interval_v2` | experimental native interval request; version-2 result with recording specification, statistics, snapshot provenance and discriminated samples/min-max summaries with exact bucket ranges |
 | `list_collections` | collections the role can read, with recording counts, samples and search paths (window sizes, probe search) |
 | `resolve_incident` | an asset and an incident time (with its UTC offset) to recording intervals, with the time basis, uncertainty, coverage and explicit states for every ambiguity; experimental |
 | `explain_match` | why one stored window scored as it did, from the scorer itself: exact distance, winning lag, correlations, contributions by position and raw statistics of both intervals; it explains the score, not a fault's cause; experimental (SQL 0.3.16, from 0.4.0-beta.5) |
@@ -32,10 +37,130 @@ It lets an agent such as Claude look through recorded signals the way an enginee
 | `labels` | the labels of a collection and what they mean: per active label its definition, unit and source from the label glossary (`morlet_define_label`), how many intervals and recordings carry it, and a few examples; `undefined_labels` lists labels nobody defined, so an agent does not guess a meaning from the name (#333). Retracted labels are counted apart; decision labels (`s1:`) only with `include_decisions` |
 | `read_interval` | original samples of an interval, or a min/max envelope for long intervals, with statistics |
 
-**Safety:** the tools are typed signal operations; there is no tool that runs arbitrary SQL. Every call runs in a read-only transaction with a statement timeout, as the database role in
+**Safety:** the tools are typed signal operations; there is no tool that runs arbitrary SQL. Every database call runs in a read-only transaction with a statement timeout, as the database role in
 `DATABASE_URL`, so privileges and [row-level security](access-control.md) decide what the agent sees.
 Errors (an unknown collection, an interval of the wrong length) come back to the agent as tool errors with
 the database's message, so it can correct itself.
+
+## Discover operations and collection capabilities
+
+Start with `list_operations`, then `describe_operation(name="investigate_interval")` to retrieve one
+operation's registered input/output JSON Schemas and semantic qualifications. To retrieve just a field,
+pass `path="/input_schema/properties/top_k"`; `path="/semantics/top_k"` describes its runtime bounds and
+whether invalid values are rejected or clamped. Paths are JSON Pointers (escape `/` as `~1` and `~` as `~0`).
+Fragments carry their schema root's `$defs` in `definitions` so local references remain resolvable.
+
+The same discovery is available from a checkout, with the MCP dependencies installed:
+
+```sh
+python -I tools/mcp/morlet_cli.py operations --json
+python -I tools/mcp/morlet_cli.py explain investigate_interval --json
+python -I tools/mcp/morlet_cli.py explain investigate_interval --path /semantics/top_k --json
+DATABASE_URL=postgresql://reader@localhost/signals \
+  python -I tools/mcp/morlet_cli.py describe public.signals --json
+```
+
+Operation discovery works offline. Each definition has `version: 1` and a SHA-256 `contract_hash` over
+the complete definition (sorted-key, compact ASCII JSON), including its schemas, description, annotations
+and semantic qualifications. Field explanations carry the same hash. Cache definitions by hash; a hash
+is not a signature or a compatibility guarantee. The new discovery outputs themselves have explicit MCP
+output schemas and `kind` discriminators. Existing tools retain their current signatures, string-encoded
+filters and result shapes; a generic dictionary output schema does not yet specify all evidence fields.
+Unknown names and paths fail as tool errors; the CLI prints an error to stderr and exits nonzero.
+
+`describe_collection` uses a read-only repeatable snapshot and catalog queries only. It reports relevant
+SQL signatures with EXECUTE grants, chunks/envelopes/time-anchor table presence and SELECT grants, and
+probe-table presence for the supported window sizes. It never reads recordings, raw samples or envelopes.
+These checks do **not** prove that rows are visible, representations are populated, all dependencies are
+accessible, or an operation will succeed. `stored_window_sizes` is null and `coverage` is `not_checked`.
+Use `list_collections` when actual stored window sizes are needed (it scans rows), and `coverage` for
+evidence availability. Probe table presence is not a claim about candidate completeness or recall.
+
+Capabilities are queried under the current database role on every call, without a shared cache. Catalog
+table names remain visible according to PostgreSQL's usual rules; no recording metadata values are returned.
+Metadata fields are currently undeclared: filters use JSON containment, and discovery does not infer an
+enforced schema from observed values. Typed metadata is tracked in
+[#207](https://github.com/merkhet-io/morletdb/issues/207). Native evidence tools are described below;
+the discovery work is tracked in [#637](https://github.com/merkhet-io/morletdb/issues/637).
+No SQL or stored-format migration is required.
+
+## Native evidence tools (experimental v2)
+
+New integrations can use `investigate_interval_v2` with one `request` object:
+
+```json
+{
+  "request": {
+    "query": {
+      "collection": "public.signals",
+      "recording_id": "pump-7/accel-x",
+      "start_sample": 40960,
+      "end_sample": 45056
+    },
+    "metadata_filter": {"asset": "pump-7"},
+    "top_k": 5
+  }
+}
+```
+
+Filters are JSON objects; `match_keys` and `exclude_labels` are arrays of strings, preserving commas and
+whitespace within names. Both arrays require `segment_id` and apply only to context history. Unknown
+request fields, string-encoded filters, booleans in integer fields and out-of-range parameters are
+rejected. `top_k` is 1–20; `max_candidates` can only lower the operator cap. Interval lengths must be a
+power of two in 512–32768 and match a stored window. `max_history` independently lowers the server's
+context-history cap. JSON Schema exposes field bounds; runtime checks
+also enforce cross-field and database-dependent constraints. The original tools are unchanged.
+
+The version-2 investigation reuses the SDK and existing presentation in the same bounded, read-only
+repeatable snapshot. Its output schema explicitly describes matches, statistics, context comparisons,
+neighbor labels, glossary definitions, coverage states, settings, provenance and effective limits.
+Free-form metadata/context objects remain JSON values. `kind="investigation"`, `version=2` and
+`status="complete"` mean the call finished successfully, **not** that all archive history was searched
+or that probe candidates were exhaustive. `scope.ranges` is null unless detailed coverage was requested.
+`no_temporal_cutoff` remains mandatory; later occurrences and annotations can participate. Distances
+are not confidence, labels describe neighboring occurrences, and snapshot IDs cannot reopen a snapshot.
+
+`read_interval_v2` accepts `{"request":{"query":{...},"max_points":1000}}`, using the same interval
+reference. Its `data` has exactly one of these shapes:
+
+- `{"kind":"samples","values":[...]}` when the interval fits `max_points`;
+- `{"kind":"min_max_summary","buckets":[{"start_sample":0,"end_sample":103,"min":-1,"max":2},...]}`
+  otherwise. Bucket coordinates are exact, contiguous and half-open, including unequal final partitions.
+  These are derived extrema, never interpolated or original sample values.
+
+The read result includes the recording specification/metadata, SDK interval statistics, snapshot
+provenance and limits. It does not add UTC decorations; use the existing time-aware tools when needed.
+An exact `start_ns` is an integer, and consumers must preserve integer/float64 precision; use SDK binary
+transfer for bit-exact sample transport. References do not preserve compacted/deleted evidence.
+Reads require the SDK and SQL 0.3.3 or later. Maximum span is 2,000,000 samples; `max_points` is 10–20,000.
+`MORLET_MCP_TIMEOUT_MS` bounds the read deadline (default 30,000 ms; zero retains a 30-second tool deadline), and
+`MORLET_MCP_READ_MAX_OUTPUT_BYTES` caps the text and structured result together using the shared wire-size
+accounting (default 256,000 bytes, maximum 2,000,000).
+Deadline checks occur between stages with remaining time applied to statements; they are not a hard
+CPU/network interrupt. Output bounds apply after assembly, not as streaming memory limits.
+
+Both native tools validate output before returning and fail rather than silently dropping unknown
+fields or presenting a partial result as complete. Runtime failures are MCP tool errors with JSON
+`code`, `message`, and `suggestion`; `describe_operation` publishes their `error_schema`. Invalid request
+shapes are MCP argument-validation errors, which need not use that runtime JSON shape. A
+`contract_error` indicates SDK/server schema incompatibility; it is not an empty search result.
+
+For shell agents, retrieve `/input_schema` and `/semantics` with `morlet_cli.py explain
+investigate_interval_v2 --path ... --json`. Retrieve `/output_schema` or `/error_schema` when needed.
+Save the request example above as `request.json`, then execute the registered read-only tool:
+
+```sh
+DATABASE_URL=postgresql://reader@localhost/signals \
+  python -I tools/mcp/morlet_cli.py call investigate_interval_v2 --input request.json --json
+```
+
+`--input -` reads JSON arguments from stdin. Inputs are capped at 2 MB. The CLI invokes the same
+registered MCP tool and its validation; it offers no arbitrary SQL. Success prints only the structured
+result, avoiding a duplicate text copy. Errors go to stderr with a nonzero exit status.
+Clients that eagerly inject every MCP tool schema still pay for all of them; targeted discovery only
+reduces loaded context when the client can defer loading. The reproducible
+[D1 development measurement](../evaluation/agent_discovery/README.md) distinguishes these cases and
+does not claim measured LLM task success or end-to-end token savings.
 
 ## Set up
 

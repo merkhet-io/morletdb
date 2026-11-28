@@ -70,7 +70,8 @@ def server_timeout_ms():
 
 
 def run(connect, checked, collection, recording_id, start_sample, end_sample, *, metadata_filter,
-        top_k, segment_id, match_keys, exclude_labels, detailed_coverage, max_candidates, max_history=None):
+        top_k, segment_id, match_keys, exclude_labels, detailed_coverage, max_candidates, max_history=None,
+        native_inputs=False, result_adapter=None):
     try:
         import morletdb
         if not hasattr(morletdb.Client, "investigate"):
@@ -98,9 +99,10 @@ def run(connect, checked, collection, recording_id, start_sample, end_sample, *,
     max_recordings = _limit("MORLET_MCP_INVESTIGATION_MAX_RECORDINGS", 1000, 100_000)
     max_ranges = _limit("MORLET_MCP_INVESTIGATION_MAX_COVERAGE_RANGES", 10000, 1_000_000)
     try:
-        flt = json.loads(metadata_filter)
+        flt = metadata_filter if native_inputs else json.loads(metadata_filter)
         if not isinstance(flt, dict):
             raise ValueError("metadata_filter must be a JSON object")
+        json.dumps(flt, allow_nan=False)
     except (TypeError, ValueError) as exc:
         fail("invalid_input", str(exc), 'Use a JSON object, for example {"asset":"pump-7"}.')
     deadline = time.monotonic() + budget / 1000
@@ -120,8 +122,8 @@ def run(connect, checked, collection, recording_id, start_sample, end_sample, *,
             name = checked(conn, collection)
             report = morletdb.Client(conn).investigate(name, recording_id, start_sample, end_sample,
                 metadata_filter=flt, top_k=top_k, segment_id=segment_id,
-                match_keys=tuple(k.strip() for k in match_keys.split(",") if k.strip()),
-                exclude_labels=tuple(k.strip() for k in exclude_labels.split(",") if k.strip()),
+                match_keys=tuple(match_keys) if native_inputs else tuple(k.strip() for k in match_keys.split(",") if k.strip()),
+                exclude_labels=tuple(exclude_labels) if native_inputs else tuple(k.strip() for k in exclude_labels.split(",") if k.strip()),
                 max_candidates=max_candidates, max_history=max_history, max_recordings=max_recordings,
                 max_coverage_ranges=max_ranges, coverage_ranges=detailed_coverage,
                 timeout_ms=remaining(), max_output_bytes=2_000_000)
@@ -130,7 +132,14 @@ def run(connect, checked, collection, recording_id, start_sample, end_sample, *,
                                      "max_candidates": max_candidates, "max_history": max_history,
                                      "max_recordings": max_recordings, "max_coverage_ranges": max_ranges}
             # Bound what the client receives, wrapper fields included: text and structured content together.
-            size = wire_size(result)
+            if result_adapter is not None:
+                try:
+                    result = result_adapter(result)
+                except ValueError:
+                    fail("contract_error", "Investigation result does not match its versioned schema.",
+                         "Check SDK/server compatibility; this is not a negative search result.")
+            payload = result.model_dump(mode="json") if result_adapter is not None else result
+            size = wire_size(payload)
             if size > max_bytes:
                 fail("response_too_large", f"Investigation response exceeds {max_bytes} bytes.",
                      "Reduce top_k, narrow metadata_filter, or set detailed_coverage=false.")

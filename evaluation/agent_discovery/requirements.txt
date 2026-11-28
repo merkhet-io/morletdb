@@ -1,0 +1,2 @@
+# Optional measurement dependency only; not a server dependency.
+tiktoken==0.12.0

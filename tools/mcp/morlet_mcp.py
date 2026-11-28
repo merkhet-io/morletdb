@@ -40,6 +40,8 @@ def _sibling(name: str):
 
 
 decision = _sibling("decision")
+discovery = _sibling("discovery")
+evidence_contracts = _sibling("evidence_contracts")
 
 MAX_READ = 32768                 # samples per morlet_read_interval call
 MAX_SPAN = 2_000_000             # samples per read_interval / describe_interval request
@@ -50,6 +52,10 @@ sample rate, channel, unit and JSON metadata, losslessly. Positions are sample o
 exclusive), not times; if a recording's metadata has a start time, tools also report UTC times.
 
 Typical investigation:
+Use list_operations and describe_operation for targeted schemas; describe_collection reports cheap catalog
+capabilities, not stored window sizes or evidence completeness. investigate_interval_v2 accepts a native
+request object with query, metadata_filter and context arrays; read_interval_v2 explicitly distinguishes
+sample values from summary buckets. Both publish evidence schemas. Existing tools keep their string filters.
 1. list_collections, then coverage (an overview per station, sensor or asset) or list_recordings to see what
    exists (metadata_filter narrows by metadata); trend shows how a signal changed over days or weeks;
    latest gives the current value of every sensor.
@@ -92,6 +98,21 @@ mcp = MCPServer("morletdb", instructions=INSTRUCTIONS)
 admission = _sibling("admission")
 
 
+@mcp.tool(annotations=READ_ONLY)
+async def list_operations() -> discovery.OperationIndex:
+    """List operation names, short summaries and contract hashes without loading every schema. No database access."""
+    return discovery.operation_index(await mcp.list_tools())
+
+
+@mcp.tool(annotations=READ_ONLY)
+async def describe_operation(name: str, path: str = "") -> discovery.OperationExplanation:
+    """Explain one registered operation, or a JSON Pointer such as /input_schema/properties/top_k.
+    Returns its actual MCP schemas plus semantic qualifications. No database access. Contract hashes
+    cover the whole definition; selected schema fragments include root definitions for local references.
+    """
+    return discovery.explain(await mcp.list_tools(), name, path)
+
+
 def safe(fn):
     """Errors an agent can act on (bad arguments, unknown names, database refusals) become tool errors with
     the database's message, instead of failing the call."""
@@ -115,6 +136,18 @@ def connect():
     return conn
 
 
+@mcp.tool(annotations=READ_ONLY)
+@safe
+def describe_collection(collection: str) -> discovery.CollectionDescription:
+    """Describe a collection's catalog capabilities and caller grants without scanning recordings or samples.
+    Does not establish row visibility, stored window sizes, index readiness or coverage. Use list_collections
+    for stored window sizes and coverage for evidence availability. Metadata fields remain undeclared.
+    """
+    with connect() as conn:
+        conn.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
+        return discovery.describe_collection(conn, collection)
+
+
 def collections(conn):
     """Stream collections the role can read: a recordings table with a checkpoint and a _chunks companion."""
     return [r[0] for r in conn.execute("""
@@ -126,6 +159,32 @@ def collections(conn):
            AND to_regclass(format('%I.%I', c.table_schema, c.table_name || '_chunks')) IS NOT NULL
            AND has_table_privilege(format('%I.%I', c.table_schema, c.table_name), 'SELECT')
          ORDER BY 1""").fetchall()]
+
+
+@mcp.tool(annotations=READ_ONLY)
+def investigate_interval_v2(request: evidence_contracts.InvestigationRequest) -> evidence_contracts.InvestigationEvidence:
+    """Version-2 investigation: native JSON filter and context arrays, explicit evidence schema.
+    One bounded read-only snapshot. No temporal cutoff; complete means the call finished, not full
+    archive coverage or exhaustive probe candidates. Inspect scope and evidence_states; similarity
+    and neighbor labels are not diagnoses. Cite query/match interval references. Requires the SDK.
+    """
+    q = request.query
+    return _sibling("investigation").run(connect, checked, q.collection, q.recording_id, q.start_sample, q.end_sample,
+        metadata_filter=request.metadata_filter, top_k=request.top_k, segment_id=request.segment_id,
+        match_keys=request.match_keys, exclude_labels=request.exclude_labels,
+        detailed_coverage=request.detailed_coverage, max_candidates=request.max_candidates,
+        max_history=request.max_history,
+        native_inputs=True, result_adapter=evidence_contracts.investigation_result)
+
+
+@mcp.tool(annotations=READ_ONLY)
+def read_interval_v2(request: evidence_contracts.ReadRequest) -> evidence_contracts.ReadEvidence:
+    """Version-2 bounded read with recording specification and explicit samples/min_max_summary variants.
+    Native interval reference; half-open sample coordinates. At most max_points values or max_points/2
+    summary buckets with exact boundaries. One read-only snapshot, deadline and output cap. Requires SDK
+    and SQL 0.3.3 statistics. JSON is for inspection; use SDK binary transfer for bit-exact sample transport.
+    """
+    return _sibling("evidence_read").run(connect, checked, evidence_contracts, _sibling("investigation"), request)
 
 
 def checked(conn, collection):
