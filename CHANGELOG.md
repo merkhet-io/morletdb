@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Metric bridge: TimescaleDB hypertable as target, tested (#631, #639).** With TimescaleDB 2.32.1 on PostgreSQL 17:
+  both installation orders, conversion with migrated rows, exactly-once delivery across chunks and from concurrent
+  deliverers, delivery into compressed chunks with differing copies reported, a continuous aggregate equal to the
+  direct aggregate, reader grants, and dump and restore. `tools/bridge/timescale` builds a local test image, never
+  published (TimescaleDB's compression and continuous aggregates are under the Timescale License).
+
 - **Example: MorletDB beside InfluxDB (`examples/influxdb`).** One `docker compose up`: a synthetic 4 kHz collector
   writes waveforms to MorletDB and publishes metrics per window through the bridge; Telegraf's `execd` input carries
   them to InfluxDB 2.7; a Grafana dashboard shows RMS and peak per pump and opens the exact waveform interval in the
