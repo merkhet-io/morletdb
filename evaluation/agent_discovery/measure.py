@@ -87,6 +87,7 @@ def main():
     sources = sorted((ROOT / "tools/mcp").glob("*.py")) + [Path(__file__), Path(__file__).with_name("PROTOCOL.md")]
     report = {"protocol": "D1", "classification": "development; deterministic context accounting, not agent performance",
               "timestamp_utc": datetime.now(timezone.utc).isoformat(), "baseline_commit": baseline,
+              "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
               "baseline_definition_source": "current registrations filtered by baseline names; not historical schemas",
               "python": sys.version, "packages": {p: importlib.metadata.version(p) for p in ("tiktoken", "mcp", "pydantic")},
               "encoding": "o200k_base", "legacy_tools": len(old), "current_tools": len(tools),

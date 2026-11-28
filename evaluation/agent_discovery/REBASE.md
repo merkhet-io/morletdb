@@ -26,3 +26,13 @@ For a fresh rebase measurement, the same four scenario definitions apply, with t
 921bfe7 and its 19 registrations. The script defaults to that baseline and records the full revision,
 source hashes and actual tool counts. Such results must be saved separately and must not replace or
 be presented as the original D1 run. No new context measurement was required for preparing this PR.
+
+## Follow-up #643: frozen rerun plan
+
+Rerun the same four scenarios on merged main b9359f7 plus the #643 discovery qualifications.
+Use baseline 921bfe7 (19 registrations), current total 24, tiktoken 0.12.0 / o200k_base, and
+save a new `results-d1-20261128-643.json`. The original protocol's 17-tool baseline is historical;
+this 19-tool rerun follows the explicit rebase adjustment above. Do not change the selective
+operation or paths after measurement. Record the measured source commit as well as source hashes.
+The new notes affect contract hashes in the operation index; the frozen selective cases still
+retrieve investigate_interval_v2, not the full semantics of the two newer tools.

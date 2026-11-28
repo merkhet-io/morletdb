@@ -50,6 +50,11 @@ pass `path="/input_schema/properties/top_k"`; `path="/semantics/top_k"` describe
 whether invalid values are rejected or clamped. Paths are JSON Pointers (escape `/` as `~1` and `~` as `~0`).
 Fragments carry their schema root's `$defs` in `definitions` so local references remain resolvable.
 
+Discovery also covers `explain_match` and `resolve_incident`. Retrieve `/semantics` for score interpretation,
+revision visibility, incident time mapping, ambiguity, coverage and runtime bounds; their generic output schemas
+alone do not convey these qualifications. Missing evidence or revision metadata must not be read as a negative
+result or unchanged calibration.
+
 The same discovery is available from a checkout, with the MCP dependencies installed:
 
 ```sh

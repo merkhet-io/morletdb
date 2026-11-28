@@ -1,5 +1,6 @@
 """Discovery contracts through MCP, CLI and caller-scoped PostgreSQL catalogs."""
 import asyncio
+import copy
 import json
 import os
 from pathlib import Path
@@ -50,6 +51,43 @@ class Discovery(unittest.TestCase):
         self.assertIn("OperationSummary", fragment.definitions)
         schema = {**fragment.definition, "$defs": fragment.definitions}
         jsonschema.validate([x.model_dump() for x in asyncio.run(m.list_operations()).operations], schema)
+
+    def test_newer_tools_list_and_explain_semantics_over_mcp(self):
+        async def run():
+            index = (await m.mcp.call_tool("list_operations", {})).structured_content
+            listed = {item["name"]: item for item in index["operations"]}
+            for name, field, expected in (
+                ("explain_match", "contribution_bins", {"minimum": 1, "maximum": 64, "on_invalid": "error"}),
+                ("resolve_incident", "window_seconds", {"per_argument_minimum": 0,
+                    "per_argument_maximum": 2678400, "finite": True, "both_zero": "error", "on_invalid": "error"}),
+            ):
+                with self.subTest(name=name):
+                    full = (await m.mcp.call_tool("describe_operation", {"name": name})).structured_content
+                    selected = (await m.mcp.call_tool("describe_operation",
+                        {"name": name, "path": "/semantics"})).structured_content
+                    self.assertEqual(selected["definition"], full["definition"]["semantics"])
+                    self.assertEqual(selected["definition"][field], expected)
+                    self.assertEqual(selected["contract_hash"], listed[name]["contract_hash"])
+                    self.assertEqual(full["contract_hash"], selected["contract_hash"])
+        with patch.object(m, "connect", side_effect=AssertionError("discovery accessed DB")):
+            asyncio.run(run())
+
+    def test_newer_contract_hashes_track_schema_and_semantic_changes(self):
+        tools = {t.name: t for t in asyncio.run(m.mcp.list_tools())}
+        for name in ("explain_match", "resolve_incident"):
+            with self.subTest(name=name):
+                before = asyncio.run(m.describe_operation(name)).contract_hash
+                schema = copy.deepcopy(tools[name].input_schema)
+                schema["properties"]["collection"]["description"] = "Changed schema qualification"
+                changed = tools[name].model_copy(update={"input_schema": schema})
+                self.assertNotEqual(before, m.discovery.digest(m.discovery.contract(changed)))
+                notes = {**m.discovery.SEMANTICS[name], "qualification": "Changed semantic note"}
+                with patch.dict(m.discovery.SEMANTICS, {name: notes}):
+                    after = asyncio.run(m.describe_operation(name, "/semantics")).contract_hash
+                    self.assertNotEqual(before, after)
+                    index = asyncio.run(m.list_operations())
+                    self.assertEqual(after, next(x.contract_hash for x in index.operations if x.name == name))
+                self.assertEqual(before, asyncio.run(m.describe_operation(name)).contract_hash)
 
     def test_bad_names_and_pointers_are_errors(self):
         for name, path in (("does_not_exist", ""), ("read_interval", "input"),
