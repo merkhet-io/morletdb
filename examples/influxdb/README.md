@@ -28,20 +28,22 @@ docker compose up -d --build        # MorletDB 0.4.0-beta.7, InfluxDB 2.7.12, Te
 ```
 
 Open Grafana on http://127.0.0.1:3000 (admin / `influx-demo-only`), **Dashboards → MorletDB → Pumps**. For the links,
-start the viewer on this machine (it needs `pip install -r tools/viewer/requirements.txt`):
+start the viewer on this machine (still in `examples/influxdb`):
 
 ```sh
-DATABASE_URL=postgresql://morlet:influx-demo-only@127.0.0.1:54333/plant python tools/viewer/viewer.py
+python -m pip install -r ../../tools/viewer/requirements.txt
+DATABASE_URL=postgresql://morlet:influx-demo-only@127.0.0.1:54333/plant python ../../tools/viewer/viewer.py
 ```
 
 The dashboard's **MorletDB viewer** field holds the viewer address (default `http://127.0.0.1:8765`). Peak shows pump
 B's bursts clearly, RMS hardly: short impacts barely change the energy of a window. That is the point of keeping the
 waveform: the trend says *when*, the samples show *what*.
 
-Check that InfluxDB holds exactly what the bridge handed over, and that Grafana's query returns what the link needs:
+Check that InfluxDB holds exactly what the bridge handed over (no point missing, none extra, every field equal), and
+that Grafana's query and link carry what the drill-down needs:
 
 ```sh
-python examples/influxdb/check.py      # needs psycopg; prints PASS or FAIL
+python check.py                        # needs psycopg; prints PASS or FAIL
 ```
 
 ```sh
@@ -50,8 +52,8 @@ docker compose down -v                 # removes everything
 
 ## Verified
 
-On 2026-11-28 (macOS, Docker Desktop, the image versions above): `check.py` found every one of 1,660 ledger rows
-handed to Telegraf in InfluxDB, with the same timestamp, tags and fields, values bit for bit; Grafana's panel query
+On 2026-11-28 (macOS, Docker Desktop, the image versions above): `check.py` found every one of the ledger rows
+handed to Telegraf in InfluxDB, with the same timestamp, tags and fields, values bit for bit, and no other point; Grafana's panel query
 returned both pumps with the link fields; in Chrome, clicking a pump-B point in the burst opened the viewer on that
 recording at samples 1,560,576 to 1,564,672 (390.1 to 391.2 s after the start, the clicked point's time), with the
 impacts visible.
@@ -60,7 +62,8 @@ impacts visible.
 
 - **Demo credentials and synthetic data.** Do not reuse the passwords or the token.
 - **Telegraf delivery is at least once up to its input, best effort beyond.** It buffers in memory and does not
-  acknowledge delivery to an input; the ledger in MorletDB keeps every point (`python tools/bridge/cli.py status
-  --sink telegraf`). There is no read-back check of InfluxDB in the bridge yet; `check.py` does it for this example.
+  acknowledge delivery to an input; the ledger in MorletDB keeps every point:
+  `docker compose exec -e PGHOST=morletdb -e PGDATABASE=plant -e PGUSER=morlet -e PGPASSWORD=influx-demo-only telegraf
+  python3 /opt/morlet/bridge/cli.py status --sink telegraf`. There is no read-back check of InfluxDB in the bridge yet; `check.py` does it for this example.
 - **The viewer runs on the host** and binds to 127.0.0.1 only, as everywhere in MorletDB.
 - Telegraf's image is extended with Python 3 and psycopg for the bridge (`Dockerfile.telegraf`).

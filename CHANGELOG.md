@@ -5,7 +5,8 @@
 - **Example: MorletDB beside InfluxDB (`examples/influxdb`).** One `docker compose up`: a synthetic 4 kHz collector
   writes waveforms to MorletDB and publishes metrics per window through the bridge; Telegraf's `execd` input carries
   them to InfluxDB 2.7; a Grafana dashboard shows RMS and peak per pump and opens the exact waveform interval in the
-  viewer. `check.py` verifies that InfluxDB holds exactly what the bridge handed over.
+  viewer. `check.py` fixes the set of rows handed to Telegraf, waits until all are in InfluxDB, and checks that none is
+  missing, none extra and every field equal (values bit for bit), and that the Grafana link carries the interval.
 
 - **InfluxDB line-protocol import and a local trial (adoption).** `morlet_import.py` reads InfluxDB exports (`.lp`,
   `--format influx`): each eligible numeric series (measurement, tag set, field; at `--min-rate`, default 100 Hz, or

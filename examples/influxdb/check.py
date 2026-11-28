@@ -14,6 +14,7 @@ import time
 import urllib.request
 
 import psycopg
+import psycopg.rows
 
 PG = "host=127.0.0.1 port=54333 dbname=plant user=morlet password=influx-demo-only"
 INFLUX = "http://127.0.0.1:8086"
@@ -58,40 +59,51 @@ def influx_points():
     return points
 
 
+LEDGER = """SELECT l.*, s.asset, s.channel, s.calculation, s.collection, s.recording_id
+    FROM morlet_bridge.ledger l JOIN morlet_bridge.sources s USING (source_id)"""
+
+
+def key(r):
+    return (r["asset"], r["channel"], r["calculation"], "demo", r["time_ns"])
+
+
 def main():
-    with psycopg.connect(PG) as conn:
-        for _ in range(60):                 # wait until the history is published and handed over
-            pending = conn.execute("""SELECT (SELECT count(*) FROM morlet_bridge.ledger) -
-                (SELECT count(*) FROM morlet_bridge.deliveries d JOIN morlet_bridge.sinks s USING (sink_id)
-                 WHERE s.name = 'telegraf')""").fetchone()[0]
-            n = conn.execute("SELECT count(*) FROM morlet_bridge.ledger").fetchone()[0]
-            if n > 1000 and pending <= 4:
+    with psycopg.connect(PG, row_factory=psycopg.rows.dict_row) as conn:
+        for _ in range(60):                 # wait until the history is published and handed to Telegraf
+            n = conn.execute("SELECT count(*) AS n FROM morlet_bridge.deliveries").fetchone()["n"]
+            if n > 1000:
                 break
             time.sleep(5)
-        time.sleep(12)                      # Telegraf's flush interval, twice
-        rows = conn.execute("""SELECT l.*, s.asset, s.channel, s.calculation, s.collection, s.recording_id
-            FROM morlet_bridge.ledger l JOIN morlet_bridge.sources s USING (source_id)
-            JOIN morlet_bridge.deliveries d ON d.ledger_id = l.ledger_id
+        # the set to check is fixed now: every row handed to Telegraf so far
+        handed = conn.execute(LEDGER + """ JOIN morlet_bridge.deliveries d ON d.ledger_id = l.ledger_id
             JOIN morlet_bridge.sinks k ON k.sink_id = d.sink_id AND k.name = 'telegraf'""").fetchall()
-        cols = [c.name for c in conn.cursor().execute("SELECT l.*, s.asset, s.channel, s.calculation, s.collection, "
-               "s.recording_id FROM morlet_bridge.ledger l JOIN morlet_bridge.sources s USING (source_id) LIMIT 0").description]
-    ledger = [dict(zip(cols, r)) for r in rows]
-    points = influx_points()
-    missing, different = 0, 0
-    for r in ledger:
-        p = points.get((r["asset"], r["channel"], r["calculation"], "demo", r["time_ns"]))
+    complete = {*FIELDS, "sample_count", "start_sample", "end_sample", "ledger_id", "end_time_ns", "recording_id",
+                "collection"}
+    for _ in range(30):                     # until all of them are in InfluxDB with every field (each field is its
+        points = influx_points()            # own series there, so a query during a write can see a part of a point)
+        if all(set(points.get(key(r), ())) == complete for r in handed):
+            break
+        time.sleep(2)
+    with psycopg.connect(PG, row_factory=psycopg.rows.dict_row) as conn:
+        ledger_keys = {key(r) for r in conn.execute(LEDGER).fetchall()}
+    missing = sum(key(r) not in points for r in handed)
+    extra = sum(k not in ledger_keys for k in points)  # a point no ledger row accounts for
+    different = 0
+    for r in handed:
+        p = points.get(key(r))
         if p is None:
-            missing += 1
             continue
         want = {**{k: r[k] for k in FIELDS}, "sample_count": r["sample_count"], "start_sample": r["start_sample"],
                 "end_sample": r["end_sample"], "ledger_id": r["ledger_id"], "end_time_ns": r["end_time_ns"],
                 "recording_id": r["recording_id"], "collection": r["collection"]}
+        if set(p) != set(want):
+            different += 1
+            continue
         for k, v in want.items():
-            got = p.get(k)
-            same = struct.pack("<d", got) == struct.pack("<d", v) if k in FIELDS else got == v
+            same = struct.pack("<d", p[k]) == struct.pack("<d", v) if k in FIELDS else p[k] == v
             different += not same
-    print(f"ledger rows handed to Telegraf: {len(ledger)}; InfluxDB points: {len(points)}; "
-          f"missing in InfluxDB: {missing}; differing fields: {different}")
+    print(f"rows handed to Telegraf (fixed set): {len(handed)}; InfluxDB points: {len(points)}; missing: {missing}; "
+          f"not in any ledger row: {extra}; differing fields or field sets: {different}")
 
     req = urllib.request.Request(f"{GRAFANA}/api/dashboards/uid/morletdb-influxdb",
                                  headers={"Authorization": "Basic YWRtaW46aW5mbHV4LWRlbW8tb25seQ=="})
@@ -109,9 +121,11 @@ def main():
     assets = sorted({f["schema"]["fields"][1].get("labels", {}).get("asset") for f in frames})
     print(f"Grafana panel query: {len(frames)} frames ({', '.join(map(str, assets))}), fields {names}")
     link = panel["fieldConfig"]["defaults"]["links"][0]["url"]
-    ok = (not missing and not different and len(ledger) > 1000 and len(frames) == 2
+    link_ok = link.startswith("${viewer}/?") and all(f"{q}=${{__data.fields.{f}}}" in link for q, f in (
+        ("collection", "collection"), ("recording", "recording_id"), ("start", "start_sample"), ("end", "end_sample")))
+    ok = (not missing and not extra and not different and len(handed) > 1000 and len(frames) == 2 and link_ok
           and {"rms", "recording_id", "start_sample", "end_sample", "collection"} <= set(names))
-    print("data link:", link)
+    print("data link:", link, "ok" if link_ok else "MALFORMED")
     print("PASS" if ok else "FAIL")
     return 0 if ok else 1
 
