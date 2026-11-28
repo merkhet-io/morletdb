@@ -26,7 +26,9 @@ current recordings). Collections without calibration sets or interpretation hist
   budgets are unchanged, and fields that are not reported are left out of JSON output. Revisions are reported from SQL
   0.3.18, where `morlet_interpretation_revisions` reports none, calibration-set capture reports `unknown` and a new
   label records no revision when row policies could hide revisions from the role (only MorletDB's own policy, permissive
-  for every role and command, is trusted).
+  for every role and command, is trusted). A revision is reported only when the role can read the history completely,
+  with SELECT on the history table and EXECUTE on `morlet_interpretation_revisions` and
+  `morlet_interpretation_history_complete`; an omitted revision never means unchanged.
 - **Faster sample-to-time mapping on recordings with many time anchors (part of #546, SQL 0.3.18).** `morlet_sample_utc`
   no longer builds the recording's whole time axis: it reads the anchor at or before the sample and its neighbours by
   index. Results are unchanged. The segment number still counts the breaks before the sample. The SDK's incident
