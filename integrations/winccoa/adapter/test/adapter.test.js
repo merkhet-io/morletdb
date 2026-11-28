@@ -314,31 +314,46 @@ test('clean shutdown: backlog and a last heartbeat, then a gap; connections clos
 
 // The companion's health does database work, so its RTT includes database latency; heartbeats carry the RTT of
 // GET /v1/clock instead, which does none. A slow health stands in for a loaded database.
+// #611: Node timers run on libuv's millisecond loop clock, so a 150 ms timeout can end slightly less than 150 ms after
+// an hrtime start. The fake therefore records each health delay as it actually elapsed, on the client's clock
+// (process.hrtime), and the tests compare against that measured delay instead of the nominal SLOW_MS.
 const SLOW_MS = 150;
-const slowHealth = (clock) => async (r) => {
-  if (r.url === '/v1/health') await new Promise((res) => setTimeout(res, SLOW_MS));
+const slowHealth = (clock, delays = []) => async (r) => {
+  if (r.url === '/v1/health') {
+    const t0 = process.hrtime.bigint();
+    await new Promise((res) => setTimeout(res, SLOW_MS));
+    delays.push(process.hrtime.bigint() - t0);
+  }
   if (r.url === '/v1/clock' && clock) return clock;
   return undefined;
 };
+const minOf = (xs) => xs.reduce((a, b) => (b < a ? b : a));
 const heartbeatsSent = (c) => sent(c).filter((o) => o.kind === 'heartbeat');
 
 test('heartbeat RTT comes from GET /v1/clock, not from the slower health request', async (t) => {
-  const s = await started(t, { companion: { handler: slowHealth() } });
+  const delays = [];
+  const s = await started(t, { companion: { handler: slowHealth(undefined, delays) } });
   await waitFor(() => idle(s.adapter) && heartbeatsSent(s.companion).length >= 1);
   const urls = s.companion.requests.map((r) => r.url);
   assert.ok(urls.indexOf('/v1/clock') > urls.indexOf('/v1/health'));
   assert.ok(urls.indexOf('/v1/clock') < urls.indexOf('/v1/observations'));
   const rtt = BigInt(heartbeatsSent(s.companion)[0].rtt_ns);
-  assert.ok(rtt < BigInt(SLOW_MS) * 1_000_000n, `rtt ${rtt} ns includes the health request's delay`);
+  assert.ok(delays.length >= 1);
+  assert.ok(rtt < minOf(delays), `rtt ${rtt} ns includes the health request's delay (health took ${minOf(delays)} ns)`);
   assert.equal(s.adapter.clockEndpoint, true);
 });
 
 test('an older companion without /v1/clock (404): the health RTT is used, logged once', async (t) => {
-  const s = await started(t, { companion: { handler: slowHealth({ status: 404, body: { error: 'not_found' } }) } });
+  const delays = [];
+  const s = await started(t, { companion: { handler: slowHealth({ status: 404, body: { error: 'not_found' } }, delays) } });
   await waitFor(() => idle(s.adapter) && heartbeatsSent(s.companion).length >= 1);
   await s.adapter.tick();
   await waitFor(() => idle(s.adapter) && heartbeatsSent(s.companion).length >= 2);
-  for (const hb of heartbeatsSent(s.companion)) assert.ok(BigInt(hb.rtt_ns) >= BigInt(SLOW_MS) * 1_000_000n);
+  // Each heartbeat's RTT encloses one delayed health request, so it is at least the shortest measured delay.
+  const floor = minOf(delays);
+  for (const hb of heartbeatsSent(s.companion)) {
+    assert.ok(BigInt(hb.rtt_ns) >= floor, `rtt ${hb.rtt_ns} ns is shorter than the health delay (${floor} ns)`);
+  }
   assert.equal(s.companion.requests.filter((r) => r.url === '/v1/clock').length, 1);
   assert.equal(s.ctl.logs.filter((l) => /no GET \/v1\/clock/.test(l[1])).length, 1);
   assert.equal(s.adapter.clockEndpoint, false);
