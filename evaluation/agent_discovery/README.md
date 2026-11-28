@@ -44,11 +44,16 @@ a measurement of a published release. Timing is not a latency distribution.
 ```sh
 python -m pip install -r tools/mcp/requirements.txt ./sdk/python
 python -m pip install -r evaluation/agent_discovery/requirements.txt
+python -m unittest discover -s evaluation/agent_discovery -p 'test_*.py'
 python evaluation/agent_discovery/measure.py --output /tmp/discovery-new-run.json
 ```
 
 The tokenizer downloads public encoding data on first use; `TIKTOKEN_CACHE_DIR` controls its cache.
-The script refuses to overwrite results. Run from a checkout containing the baseline Git revision.
+The script refuses to overwrite results. `--output` and `--recount` are mutually exclusive.
+For new runs, `--baseline` selects only the initialization instructions and tool names from that
+revision; tool schemas and descriptions come from current registrations. The report records this
+in `baseline_definition_source`. This is not a reconstruction of historical tool definitions;
+compare unchanged registrations only, or recount archived contexts for historical measurements. Run from a checkout containing the baseline Git revision.
 
 ## Behavioral verification
 

@@ -25,12 +25,11 @@ def sha(text):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path)
-    parser.add_argument("--recount", type=Path, help="Verify token/byte counts from an archived exact context")
-    parser.add_argument("--baseline", default="921bfe7", help="Git revision for a new baseline (see REBASE.md)")
+    modes = parser.add_mutually_exclusive_group(required=True)
+    modes.add_argument("--output", type=Path)
+    modes.add_argument("--recount", type=Path, help="Verify token/byte counts from an archived exact context")
+    parser.add_argument("--baseline", default="921bfe7", help="Revision for baseline instructions and tool names only; schemas use current registrations (see REBASE.md)")
     args = parser.parse_args()
-    if not args.recount and not args.output:
-        parser.error("provide --output for a new run or --recount for an archived run")
     if args.output and args.output.exists():
         parser.error("output exists; preserve previous measurements and choose another filename")
     import tiktoken
@@ -38,18 +37,21 @@ def main():
         parser.error("D1 requires tiktoken==0.12.0")
     encoding = tiktoken.get_encoding("o200k_base")
     if args.recount:
-        archived = json.loads(args.recount.read_text())
+        archived = json.loads(args.recount.read_text(encoding="utf-8"))
         for case in archived["scenarios"]:
             text = case["serialized_context"]
-            assert sha(text) == case["sha256"]
-            assert len(text.encode()) == case["utf8_bytes"]
-            assert len(encoding.encode(text, disallowed_special=())) == case["tokens"]
+            if sha(text) != case["sha256"]:
+                raise ValueError(f"Context hash mismatch for {case['name']}")
+            if len(text.encode("utf-8")) != case["utf8_bytes"]:
+                raise ValueError(f"Context byte count mismatch for {case['name']}")
+            if len(encoding.encode(text, disallowed_special=())) != case["tokens"]:
+                raise ValueError(f"Context token count mismatch for {case['name']}")
         print("Verified all archived context hashes, byte counts and token counts.")
         return
     sys.path.insert(0, str(ROOT / "tools/mcp"))
     import morlet_mcp as server
-    baseline = subprocess.check_output(["git", "rev-parse", args.baseline], cwd=ROOT, text=True).strip()
-    original = subprocess.check_output(["git", "show", f"{baseline}:tools/mcp/morlet_mcp.py"], cwd=ROOT, text=True)
+    baseline = subprocess.check_output(["git", "rev-parse", args.baseline], cwd=ROOT, text=True, encoding="utf-8").strip()
+    original = subprocess.check_output(["git", "show", f"{baseline}:tools/mcp/morlet_mcp.py"], cwd=ROOT, text=True, encoding="utf-8")
     instructions = next(ast.literal_eval(n.value) for n in ast.parse(original).body
                         if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "INSTRUCTIONS" for t in n.targets))
     tools = asyncio.run(server.mcp.list_tools())
@@ -85,16 +87,17 @@ def main():
     sources = sorted((ROOT / "tools/mcp").glob("*.py")) + [Path(__file__), Path(__file__).with_name("PROTOCOL.md")]
     report = {"protocol": "D1", "classification": "development; deterministic context accounting, not agent performance",
               "timestamp_utc": datetime.now(timezone.utc).isoformat(), "baseline_commit": baseline,
+              "baseline_definition_source": "current registrations filtered by baseline names; not historical schemas",
               "python": sys.version, "packages": {p: importlib.metadata.version(p) for p in ("tiktoken", "mcp", "pydantic")},
               "encoding": "o200k_base", "legacy_tools": len(old), "current_tools": len(tools),
-              "source_sha256": {str(p.relative_to(ROOT)): sha(p.read_text()) for p in sources},
+              "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
               "discovery_seconds_single_observation": elapsed,
               "contract_hashes": {x["name"]: x["contract_hash"] for x in index["operations"]},
               "scenarios": scenarios,
               "limits": ["No model calls or behavioral token savings measured.",
                          "Selective CLI requires deferred discovery; eager MCP clients still load every schema.",
                          "No provider message overhead, hidden reasoning, or investigation result tokens counted."]}
-    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps([{k: v for k, v in row.items() if k != "serialized_context"} for row in scenarios], indent=2))
 
 

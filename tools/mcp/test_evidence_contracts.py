@@ -56,6 +56,22 @@ class Contracts(unittest.TestCase):
             for extra in ({"max_points": 9}, {"max_points": True}):
                 self.assertTrue(invoke("read_interval_v2", {**base, **extra}).is_error)
 
+    def test_native_tools_observe_admission_before_evidence_reads(self):
+        request = {"query": {"collection": "public.signals", "recording_id": "q", "start_sample": 0, "end_sample": 512}}
+        with patch.dict(os.environ, {"MORLET_MCP_MAX_CONCURRENT": "1", "MORLET_MCP_QUEUE_MS": "0"}), \
+             patch.object(m.admission, "_attempt", return_value=None) as attempt, \
+             patch.object(m, "connect", side_effect=AssertionError("refused call read evidence")):
+            for name in ("investigate_interval_v2", "read_interval_v2"):
+                with self.subTest(name=name):
+                    result = invoke(name, request)
+                    self.assertTrue(result.is_error)
+                    text = result.content[0].text
+                    error = json.loads(text[text.index("{"):])
+                    self.assertEqual(error["code"], "busy")
+                    schema = asyncio.run(m.describe_operation(name, "/error_schema")).definition
+                    jsonschema.validate(error, schema)
+            self.assertEqual(attempt.call_count, 2)
+
     def test_schema_exposes_bounds_and_discriminators(self):
         tools = {t.name: t for t in asyncio.run(m.mcp.list_tools())}
         schema = tools["investigate_interval_v2"].input_schema
@@ -292,6 +308,9 @@ class EvidenceOnDatabase(unittest.TestCase):
             failure = run(name, arguments)
             self.assertNotEqual(failure.returncode, 0)
             self.assertEqual(failure.stdout, "")
+            error = json.loads(failure.stderr)["error"]
+            expected = "unknown or non-read-only operation" if name == "execute_sql" else "max_points"
+            self.assertIn(expected, str(error))
 
 
 if __name__ == "__main__":

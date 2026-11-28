@@ -162,6 +162,7 @@ def collections(conn):
 
 
 @mcp.tool(annotations=READ_ONLY)
+@safe
 def investigate_interval_v2(request: evidence_contracts.InvestigationRequest) -> evidence_contracts.InvestigationEvidence:
     """Version-2 investigation: native JSON filter and context arrays, explicit evidence schema.
     One bounded read-only snapshot. No temporal cutoff; complete means the call finished, not full
@@ -178,6 +179,7 @@ def investigate_interval_v2(request: evidence_contracts.InvestigationRequest) ->
 
 
 @mcp.tool(annotations=READ_ONLY)
+@safe
 def read_interval_v2(request: evidence_contracts.ReadRequest) -> evidence_contracts.ReadEvidence:
     """Version-2 bounded read with recording specification and explicit samples/min_max_summary variants.
     Native interval reference; half-open sample coordinates. At most max_points values or max_points/2

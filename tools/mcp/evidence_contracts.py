@@ -333,7 +333,7 @@ class ReadEvidence(Contract):
 
 
 class EvidenceError(Contract):
-    code: Literal["budget_exceeded", "response_too_large", "invalid_input", "evidence_unavailable", "unsupported",
+    code: Literal["busy", "budget_exceeded", "response_too_large", "invalid_input", "evidence_unavailable", "unsupported",
                   "access_denied", "database_error", "sdk_unavailable", "configuration_error", "contract_error"]
     message: str
     suggestion: str

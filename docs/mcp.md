@@ -133,7 +133,7 @@ provenance and limits. It does not add UTC decorations; use the existing time-aw
 An exact `start_ns` is an integer, and consumers must preserve integer/float64 precision; use SDK binary
 transfer for bit-exact sample transport. References do not preserve compacted/deleted evidence.
 Reads require the SDK and SQL 0.3.3 or later. Maximum span is 2,000,000 samples; `max_points` is 10–20,000.
-`MORLET_MCP_TIMEOUT_MS` bounds the read deadline (default 30,000 ms; zero retains a 30-second tool deadline), and
+`MORLET_MCP_TIMEOUT_MS` bounds the read deadline (default 30,000 ms; zero retains a 30-second tool deadline; maximum 300,000 ms), and
 `MORLET_MCP_READ_MAX_OUTPUT_BYTES` caps the text and structured result together using the shared wire-size
 accounting (default 256,000 bytes, maximum 2,000,000).
 Deadline checks occur between stages with remaining time applied to statements; they are not a hard

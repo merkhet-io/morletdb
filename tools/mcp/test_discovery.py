@@ -95,19 +95,18 @@ class CollectionDiscovery(unittest.TestCase):
         self.schema = "discovery_" + uuid.uuid4().hex[:10]
         self.role = self.schema + "_reader"
         self.conn = psycopg.connect(URL, autocommit=True)
+        self.addCleanup(self.conn.close)
         self.conn.execute("CREATE EXTENSION IF NOT EXISTS pg_morlet")
         self.conn.execute(f"CREATE SCHEMA {self.schema}")
+        self.addCleanup(self.conn.execute, f"DROP SCHEMA {self.schema} CASCADE")
         self.conn.execute(f"CREATE ROLE {self.role} LOGIN")
+        self.addCleanup(self.conn.execute, f"DROP ROLE {self.role}")
+        self.addCleanup(self.conn.execute, f"DROP OWNED BY {self.role}")
         self.conn.execute(f"GRANT USAGE ON SCHEMA {self.schema} TO {self.role}")
         self.conn.execute("SELECT morlet_create_stream_collection(%s, 'Mixed Case')", (self.schema,))
         self.collection = f'{self.schema}."Mixed Case"'
         self.conn.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA {self.schema} TO {self.role}")
         self.reader = make_conninfo(URL, user=self.role)
-
-    def tearDown(self):
-        self.conn.execute(f"DROP SCHEMA {self.schema} CASCADE")
-        self.conn.execute(f"DROP ROLE {self.role}")
-        self.conn.close()
 
     def describe(self):
         with patch.dict(os.environ, {"DATABASE_URL": self.reader}):
