@@ -73,10 +73,16 @@ html{background:#090c0d}body{min-height:100vh}.post{max-width:680px}.post p,.pos
 <h2>Try it on your own InfluxDB data</h2>
 <p>You do not need an export, shell access to a controller, or anything installed on the InfluxDB host. On a laptop with Docker in your network, the trial reads a few minutes of one measurement from InfluxDB 1.x or 2.x with a read-only user or token, gently, in slices of 60 seconds with a pause between them:</p>
 <div class="code-block"><span class="code-label">Shell</span><pre><code>cd examples/trial
-export INFLUX_USERNAME=reader INFLUX_PASSWORD='...'      # InfluxDB 2.x: export INFLUX_TOKEN='...'
+# InfluxDB 1.x: a read-only user
+export INFLUX_USERNAME=reader INFLUX_PASSWORD='...'
 docker compose run --rm trial --influx-url http://192.168.0.10:8086 --influx-db plant \
   --measurement vibration --start 2026-11-28T10:00:00Z --end 2026-11-28T10:10:00Z
-docker compose down -v                                  # removes everything again</code></pre></div>
+# InfluxDB 2.x: a read token
+export INFLUX_TOKEN='...'
+docker compose run --rm trial --influx-url http://192.168.0.10:8086 --influx-org plant --influx-bucket machines \
+  --measurement vibration --start 2026-11-28T10:00:00Z --end 2026-11-28T10:10:00Z
+docker compose down -v                                  # removes the trial database</code></pre></div>
+<p>Plain <code>http://</code> sends the password or token and the data unencrypted: use it only on a trusted local network, and <code>https://</code> otherwise. <code>docker compose down -v</code> removes the trial database; the report folder stays, including <code>source.lp</code>, the data that was read, so delete it when you no longer need it.</p>
 <p>It stores the data in a throwaway MorletDB and writes a report: which series became recordings and which were left out and why (slow trends, booleans and strings stay in InfluxDB), whether every value reads back bit for bit, how MorletDB's timestamps compare with the original ones, and the storage per sample. Nothing leaves your network. We tested it against InfluxDB 1.8 and 2.7: what InfluxDB returned was exactly what had been written, negative zero and integer types included, and MorletDB returned exactly that again.</p>
 <p>To move history for good, the importer reads line-protocol exports. Every eligible series becomes a recording with its tags in the metadata, and the original timestamps become time anchors, so jitter, gaps and clock steps are kept rather than smoothed away.</p>
 <h2>What we measured against InfluxDB</h2>
