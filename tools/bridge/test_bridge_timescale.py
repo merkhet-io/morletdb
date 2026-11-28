@@ -110,30 +110,36 @@ class Hypertable(unittest.TestCase):
                 self.assertAlmostEqual(m[2], math.sqrt(1.5), places=15)
                 self.assertEqual(b.sink_status("ts")["pending"], 0)
 
-    def test_a_changed_copy_is_reported_in_a_hypertable_and_in_a_compressed_chunk(self):
+    def test_a_changed_copy_is_reported_in_a_compressed_chunk_and_delivery_stays_exactly_once(self):
         db, c, b = self.setup_db()
         b.drain(self.sources["day0"], 2)
         b.deliver("ts")
         c.execute("""ALTER TABLE morlet_bridge.metrics SET (timescaledb.compress,
                      timescaledb.compress_segmentby = 'asset, channel', timescaledb.compress_orderby = 'time_ns')""")
         self.assertEqual(self.scalar(c, """SELECT count(compress_chunk(ch)) FROM show_chunks('morlet_bridge.metrics') ch"""), 1)
-        # more windows of the compressed day are delivered into the compressed chunk, exactly once
+        chunk = "SELECT chunk_name, is_compressed FROM timescaledb_information.chunks WHERE hypertable_name = 'metrics'"
+        before = c.execute(chunk).fetchall()
+        self.assertEqual([r[1] for r in before], [True])
+        # the two remaining day-0 windows belong to the compressed chunk; a differing copy of one of them is placed
+        # there first: delivery must report it, not keep it
         b.drain(self.sources["day0"], 10)
-        self.assertEqual(b.deliver("ts"), 2)
-        self.assertEqual(b.deliver("ts"), 0)
-        rows = c.execute("SELECT ledger_id, rms FROM morlet_bridge.metrics ORDER BY time_ns").fetchall()
-        self.assertEqual(len(rows), 4)
-        self.assertTrue(all(struct.pack("<d", r[1]) == struct.pack("<d", math.sqrt(1.5)) for r in rows))
-        # a row that differs from the ledger, in the compressed chunk, is an error, not silently kept
-        b.drain(self.sources["day2"], 1)
         lid, t = c.execute("""SELECT l.ledger_id, l.time_ns FROM morlet_bridge.ledger l LEFT JOIN morlet_bridge.deliveries d
-            ON d.ledger_id = l.ledger_id WHERE d.ledger_id IS NULL""").fetchone()
+            ON d.ledger_id = l.ledger_id WHERE d.ledger_id IS NULL ORDER BY l.ledger_id DESC LIMIT 1""").fetchone()
+        self.assertLess(t, T0 + DAY)                               # inside the compressed day-0 chunk
         c.execute("""INSERT INTO morlet_bridge.metrics (ledger_id, time_ns, end_time_ns, asset, channel, calculation,
             collection, recording_id, start_sample, end_sample, sample_count, minimum, maximum, mean, rms)
             VALUES (%s, %s, 1, 'x', 'x', 'x', 'x', 'x', 0, 1, 1, 0, 0, 0, 0)""", (lid, t))
+        self.assertEqual(c.execute(chunk).fetchall(), before)     # still the one chunk, still compressed
         with self.assertRaisesRegex(ValueError, "differs from the ledger"):
             b.deliver("ts")
-        self.assertEqual(b.sink_status("ts")["pending"], 1)
+        self.assertEqual(b.sink_status("ts")["pending"], 2)       # nothing of that batch was recorded
+        # once the wrong copy is gone, both windows are delivered into the compressed chunk, exactly once
+        c.execute("DELETE FROM morlet_bridge.metrics WHERE ledger_id = %s", (lid,))
+        self.assertEqual(b.deliver("ts"), 2)
+        self.assertEqual(b.deliver("ts"), 0)
+        rows = c.execute("SELECT rms FROM morlet_bridge.metrics ORDER BY time_ns").fetchall()
+        self.assertEqual(len(rows), 4)
+        self.assertTrue(all(struct.pack("<d", r[0]) == struct.pack("<d", math.sqrt(1.5)) for r in rows))
 
     def test_concurrent_deliveries_into_a_hypertable(self):
         db, c, b = self.setup_db()
@@ -201,14 +207,15 @@ class Hypertable(unittest.TestCase):
             t.execute("CREATE EXTENSION timescaledb")
             t.execute("SELECT timescaledb_pre_restore()")
         conn = self.psycopg.conninfo.conninfo_to_dict(DSN)
-        env = dict(os.environ, PGPASSWORD=conn.get("password", ""))
+        env = dict(os.environ, **({"PGPASSWORD": conn["password"]} if conn.get("password") else {}))
         args = ["-h", conn.get("host", "localhost"), "-p", str(conn.get("port", 5432)), "-U", conn.get("user", "postgres")]
         with tempfile.TemporaryDirectory() as d:
             dump = os.path.join(d, "db.dump")
-            subprocess.run([os.path.join(PG_BIN, "pg_dump"), *args, "-Fc", "-f", dump, db], check=True, env=env,
-                           capture_output=True)
-            p = subprocess.run([os.path.join(PG_BIN, "pg_restore"), *args, "-d", target, dump], env=env,
-                               capture_output=True, text=True)
+            subprocess.run([os.path.join(PG_BIN, "pg_dump"), *args, "-w", "-Fc", "-f", dump, db], check=True, env=env,
+                           capture_output=True, stdin=subprocess.DEVNULL, timeout=300)
+            p = subprocess.run([os.path.join(PG_BIN, "pg_restore"), *args, "-w", "-d", target, dump], env=env,
+                               capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=300)
+        self.assertEqual(p.returncode, 0, p.stderr[-2000:])
         with self.connect(target) as t:
             t.execute("SELECT timescaledb_post_restore()")
             self.assertEqual(t.execute("SELECT count(*) FROM morlet_bridge.metrics").fetchone()[0], 6)
@@ -221,7 +228,6 @@ class Hypertable(unittest.TestCase):
             self.assertEqual(t.execute("SELECT count(*) FROM morlet_bridge.metrics").fetchone()[0], 8)
             raw = t.execute("SELECT public.morlet_read_interval_raw('signals', 'day0', 0, 1024)").fetchone()[0]
             self.assertEqual(bytes(raw), struct.pack("<1024d", *VALUES))
-        self.assertNotIn("ERROR", p.stderr.replace("WARNING", ""), p.stderr[-2000:])
 
 
 if __name__ == "__main__":

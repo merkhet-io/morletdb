@@ -73,13 +73,15 @@ morlet_metric,asset=pump-A,calculation=interval-stats-v1,channel=vib-x minimum=-
 ## Relation to TimescaleDB
 
 The PostgreSQL sink works with an ordinary table or a TimescaleDB hypertable on `time_ns`; the bridge never requires
-TimescaleDB. Tested with TimescaleDB 2.32.1 on PostgreSQL 17.12 and pg_morlet SQL 0.3.18
-(`tools/bridge/test_bridge_timescale.py`):
+TimescaleDB. Tested on 2026-11-28 with TimescaleDB 2.32.1 on PostgreSQL 17.12 and pg_morlet SQL 0.3.18
+(`tools/bridge/test_bridge_timescale.py`). The suite runs by hand against the local test image (it needs
+`MORLET_BRIDGE_TIMESCALE_DSN`, and `MORLET_PG_BIN` for dump and restore); it is not part of CI yet:
 
 - both extensions in one database, in either installation order;
 - the metrics table turned into a hypertable with 1-day chunks, rows delivered before the conversion migrated;
 - exactly-once delivery across chunks, also from four concurrent deliverers;
-- delivery into a **compressed** chunk, and a row there that differs from the ledger reported as an error;
+- delivery into a **compressed** chunk exactly once, and a differing copy placed in that compressed chunk reported as
+  an error;
 - a continuous aggregate per minute and asset equal to the same aggregate computed directly;
 - a reader role that needs its own grants on the hypertable and the aggregate and gets no access to the ledger or
   the waveforms;

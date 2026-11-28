@@ -43,6 +43,7 @@ image from the MorletDB release image and Timescale's apt repository:
 ```sh
 docker build -t morlet-bridge-timescale-test tools/bridge/timescale
 docker run -d --name morlet-bridge-ts -e POSTGRES_PASSWORD=... -p 127.0.0.1:28933:5432 morlet-bridge-timescale-test
+export PGPASSWORD=...                   # the POSTGRES_PASSWORD given to the container
 MORLET_BRIDGE_TIMESCALE_DSN='host=127.0.0.1 port=28933 user=postgres dbname=postgres' \
   MORLET_PG_BIN=/usr/lib/postgresql/17/bin python -m unittest tools/bridge/test_bridge_timescale.py
 ```
