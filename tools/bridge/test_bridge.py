@@ -297,7 +297,8 @@ class Database(unittest.TestCase):
         self.append("a", 1024)
         self.b.drain(self.sid, 10)
         self.b.add_sink("influx", "line", options={"measurement": "vibration"})
-        for bad in ({"tags": {"asset": "x"}}, {"tags": {"site": ""}}, {"tags": ["site"]}):
+        for bad in ({"tags": {"asset": "x"}}, {"tags": {"site": ""}}, {"tags": ["site"]}, {"tags": {"_field": "x"}},
+                    {"tags": {"time": "x"}}, {"tags": {"site": "a\nb"}}, {"tags": {"si\nte": "a"}}):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 self.b.add_sink("bad", "line", options=bad)
 
@@ -333,7 +334,8 @@ class Database(unittest.TestCase):
     def test_cli_refuses_contradictory_or_unsafe_arguments(self):
         cli = Path(__file__).with_name("cli.py")
         for args in (["telegraf", "x", "--signal", "none", "--interval", "0"], ["add-sink", "x", "postgres",
-                     "--measurement", "m"], ["status", "0", "--sink", "x"]):
+                     "--measurement", "m"], ["status", "0", "--sink", "x"],
+                     ["add-sink", "x", "line", "--tag", "site=a", "--tag", "site=b"]):
             with self.subTest(args=args):
                 p = subprocess.run([sys.executable, "-I", str(cli), "--dsn", self.dsn, *args], capture_output=True,
                                    text=True, timeout=30)

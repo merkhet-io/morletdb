@@ -265,10 +265,12 @@ class Bridge:
             raise ValueError("kind must be 'postgres' (with a target table) or 'line'")
         else:
             tags = (options or {}).get("tags", {})
-            if not isinstance(tags, dict) or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
-                                                 or k in ("asset", "calculation", "channel") for k, v in tags.items()):
-                raise ValueError("line sink tags must map nonempty strings to nonempty strings, other than "
-                                 "asset, calculation and channel")
+            if not isinstance(tags, dict) or any(
+                    not isinstance(k, str) or not isinstance(v, str) or not k or not v or "\n" in k + v or "\r" in k + v
+                    or k in ("asset", "calculation", "channel", "time") or k.startswith("_") for k, v in tags.items()):
+                raise ValueError("line sink tags must map nonempty strings without line breaks to nonempty strings; "
+                                 "asset, calculation, channel, time and keys starting with _ (reserved by InfluxDB) "
+                                 "are not allowed")
         self.conn.execute("""INSERT INTO morlet_bridge.sinks (name, kind, target, options) VALUES (%s, %s, %s, %s)
             ON CONFLICT (name) DO NOTHING""", (name, kind, target, Jsonb(options or {})))
         row = self.one("SELECT * FROM morlet_bridge.sinks WHERE name = %s", (name,))
@@ -372,8 +374,9 @@ def _string(s):
 
 
 def line(measurement, r, extra_tags=None):
-    """One point per ledger row. Tags (indexed) are asset, channel and calculation only, so the series count does
-    not grow with recordings; the recording, its interval and the ledger ID are fields, enough to open the
+    """One point per ledger row. Tags (indexed) are asset, channel and calculation, plus the sink's fixed
+    extra_tags (such as site), so the series count does not grow with recordings; the recording, its interval and
+    the ledger ID are fields, enough to open the
     original samples. Floats are written in Python's shortest round-trip form, so they parse back to the same
     float64; NaN and infinities have no line-protocol form and are left out and named in `nonfinite`."""
     # extra_tags: fixed per sink, e.g. {"site": "plant-a"}, so several MorletDB databases can share one bucket

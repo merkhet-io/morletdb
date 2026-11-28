@@ -117,7 +117,10 @@ def main(argv=None):
             if args.tag:
                 if any("=" not in t for t in args.tag):
                     p.error("--tag takes KEY=VALUE")
-                opts["tags"] = dict(t.split("=", 1) for t in args.tag)
+                pairs = [t.split("=", 1) for t in args.tag]
+                if len({k for k, _ in pairs}) != len(pairs):
+                    p.error("--tag: each key once")
+                opts["tags"] = dict(pairs)
             if args.kind == "line" and args.target:
                 p.error("a line sink takes no target table")
             out = {"sink_id": b.add_sink(args.name, args.kind, args.target, opts)}
