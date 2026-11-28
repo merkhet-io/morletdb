@@ -535,4 +535,4 @@ The protocol is not frozen. Changes recorded before the freeze, made without any
 - **2026-11-22, H2 population.** H2 previously left no-claim C–F runs out per arm, so the paired averages could cover
   different incidents and an arm could gain by omitting its harder cases. H2 now scores every run on one common
   population, with coverage, conditional support and abstention sensitivities reported beside it. The thresholds are
-  unchanged.
+  unchanged. Accepted by the owner on 2026-11-28.
