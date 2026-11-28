@@ -6,9 +6,9 @@ section 8's order (SQL 0.3.13: the anchor table, batches, revisions, the mapping
 security), step 2 (the importer writes anchors from a time column, with block detection) and the first part of
 step 3 (MCP `locate_time`, the event importer, and the SDK's `samples_for_time` and `time_ranges` use the anchors), and the MCP tools report the UTC times of anchored recordings by the anchors.
 Still open: the collectors, `morlet_check_time_axis` and step 4; the file formats are unchanged. From SQL 0.3.18,
-`morlet_sample_utc` finds a sample's piece from the anchors around it by index, and only numbering its segment counts
-the breaks before it; time-to-sample calls are still linear in a recording's anchors (#546). SQL is illustrative: names, types and limits are subject to
-implementation review. The first part of #393 has shipped, and section 1 describes it. Behaviour claims about
+`morlet_sample_utc` finds a sample's piece from the anchors around it by index instead of building the whole time
+axis. The segment number still counts the breaks before the sample, and time-to-sample calls are still linear in a
+recording's anchors (#546). SQL is illustrative: names, types and limits are subject to implementation review. The first part of #393 has shipped, and section 1 describes it. Behaviour claims about
 existing code cite `extensions/pg_morlet/sql/streams.sql` as `streams.sql:line`, and other files by their path
 from the repository root. No result in this document is measured. Section 7 says what would be measured, and how.
 
